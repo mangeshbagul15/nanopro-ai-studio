@@ -16,6 +16,13 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING 2^
     taskkill /f /pid %%a >nul 2>&1
 )
 
+REM Auto-sync latest cloud updates from GitHub before starting
+echo [*] Checking and auto-syncing with Cloud / GitHub...
+git pull origin main >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [*] Cloud Auto-Sync: Local codebase is 100%% up to date!
+)
+
 REM Find python in venv or system path
 set PYTHON_CMD=python
 if exist "venv\Scripts\python.exe" (
