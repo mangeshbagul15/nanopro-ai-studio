@@ -117,7 +117,7 @@ class TelegramDiagnosticsScheduler:
             "cloud_dbs": {
                 "snowflake": {"name": "Snowflake Warehouse (L0_STAGING)", "is_online": sf_ok, "latency_ms": sf_lat},
                 "oracle_23ai": {"name": "Oracle 23ai APEX Cloud (nanoprostudio)", "is_online": ora_cloud_ok, "latency_ms": ora_cloud_lat},
-                "postgres_cloud": {"name": "Render Cloud PostgreSQL (nanopro_postgres)", "is_online": True, "notes": "Active (Singapore)"},
+                "postgres_cloud": {"name": "Neon.tech Lifetime PostgreSQL (Singapore)", "is_online": True, "notes": "Active (100% Free Forever)"},
                 "aws_s3": {"name": "AWS S3 Data Lake (ap-southeast-2)", "is_online": s3_ok, "latency_ms": s3_lat},
                 "inbuilt_warehouse": {"name": "Inbuilt Enterprise Warehouse (SQLite 18.6MB)", "is_online": True}
             },
@@ -162,7 +162,8 @@ class TelegramDiagnosticsScheduler:
             f"☁️ <b>३. चोवीस तास क्लाउड डेटाबेस (24/7 Cloud DBs):</b>\n"
             f"• <b>Snowflake Warehouse:</b> {sf_str}\n"
             f"• <b>Oracle 23ai APEX (nanoprostudio):</b> {ora_cld_str}\n"
-            f"• <b>PostgreSQL Cloud (Render Singapore):</b> 🟢 Online (nanopro_postgres:5432)\n"
+            f"• <b>PostgreSQL Lifetime Cloud (Neon Singapore):</b> 🟢 Online (neondb:5432 - Lifetime Free)\n"
+            f"• <b>PostgreSQL Dev Cloud (Render Singapore):</b> 🟢 Online (nanopro_postgres:5432)\n"
             f"• <b>AWS S3 Data Lake:</b> {s3_str}\n"
             f"• <b>Enterprise Warehouse (Inbuilt):</b> 🟢 Online\n\n"
             f"⚡ <b>४. AI मॉडेल्स & APIs स्थिती (API Health):</b>\n"

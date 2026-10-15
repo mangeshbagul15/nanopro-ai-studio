@@ -93,6 +93,16 @@ POSTGRES_CONFIGS = {
     },
     "POSTGRES_CLOUD_FREE": {
         "connection_name": "POSTGRES_CLOUD_FREE",
+        "username": "neondb_owner",
+        "hostname": "ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech",
+        "port": 5432,
+        "database": "neondb",
+        "sslmode": "require",
+        "connection_url": "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+        "notes": "Neon.tech Serverless PostgreSQL 18 (Singapore Region - 100% Lifetime Free Forever)"
+    },
+    "POSTGRES_RENDER_CLOUD": {
+        "connection_name": "POSTGRES_RENDER_CLOUD",
         "username": "nanopro_postgres_user",
         "hostname": "dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com",
         "internal_hostname": "dpg-db89fqm89jmc73cnqd0g-a",
@@ -101,7 +111,7 @@ POSTGRES_CONFIGS = {
         "sslmode": "require",
         "connection_url_internal": "postgresql://nanopro_postgres_user:cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb@dpg-db89fqm89jmc73cnqd0g-a/nanopro_postgres",
         "connection_url_external": "postgresql://nanopro_postgres_user:cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb@dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com/nanopro_postgres",
-        "notes": "24/7 Render Cloud PostgreSQL Database (Singapore Region - Connected)"
+        "notes": "Render Cloud PostgreSQL Database (Singapore Region - 30-Day Dev Instance)"
     }
 }
 POSTGRES_CONFIG = POSTGRES_CONFIGS["MY_POSTGRES_LOCAL"]
@@ -235,11 +245,13 @@ class ConnectionManager:
             }
         )
 
-        # 5. PostgreSQL Connections (Local + Cloud Free)
+        # 5. PostgreSQL Connections (Local, Neon Lifetime Free, Render Cloud)
         active_pg_pw = os.environ.get("POSTGRES_PASSWORD") or "postgres"
         for pg_name, pg_info in POSTGRES_CONFIGS.items():
             pg_cred = credentials_vault.get_credential(pg_name)
             if pg_name == "POSTGRES_CLOUD_FREE":
+                curr_pg_pw = os.environ.get("NEON_POSTGRES_PASSWORD") or "npg_VWB8sLHgC3jX"
+            elif pg_name == "POSTGRES_RENDER_CLOUD":
                 curr_pg_pw = os.environ.get("RENDER_POSTGRES_PASSWORD") or "cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb"
             else:
                 curr_pg_pw = (pg_cred.get("secret_value") if pg_cred else "") or active_pg_pw
@@ -863,6 +875,21 @@ class ConnectionManager:
         user = meta.get("username") or cfg.get("username") or default_meta.get("username", "postgres")
         dbname = meta.get("database") or cfg.get("database_name") or default_meta.get("database", "nanopro_db")
         password = os.environ.get("POSTGRES_PASSWORD") or (cfg.get("secret_value") if cfg else "") or "postgres"
+
+        conn_url = meta.get("connection_url") or meta.get("connection_url_external") or ""
+        if host.startswith("postgres://") or host.startswith("postgresql://"):
+            conn_url = host
+        if conn_url and (conn_url.startswith("postgres://") or conn_url.startswith("postgresql://")):
+            try:
+                from urllib.parse import urlparse
+                u = urlparse(conn_url)
+                if u.hostname: host = u.hostname
+                if u.port: port = u.port
+                if u.username: user = u.username
+                if u.password: password = u.password
+                if u.path: dbname = u.path.lstrip("/")
+            except Exception:
+                pass
 
         # 1. Port reachability check with candidate host fallback
         candidate_hosts = [host]
