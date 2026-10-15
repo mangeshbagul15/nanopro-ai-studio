@@ -709,7 +709,7 @@ def get_auth_injection() -> str:
                         <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g8')">Toggle</span>
                     </div>
                     <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="career_hub"> Career &amp; Job Search</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="free_apis"> Free API Finder</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="free_apis"> Free API &amp; Resource Finder</label>
                     <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="github_explorer"> GitHub Explorer</label>
                     <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="app_launcher"> App Launcher</label>
                     <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="shopping_services"> Shopping Services</label>

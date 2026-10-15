@@ -4245,47 +4245,52 @@ def _get_raw_dashboard_html() -> str:
                         </p>
                     </div>
                     <!-- 24-hr Live Refresh & Export Buttons -->
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <button type="button" class="btn btn-secondary" onclick="exportDevApiCatalog('json')" style="font-size:11.5px; padding:6px 12px;" title="Download complete catalog as JSON">
-                            📥 Download JSON
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-secondary" onclick="exportDevApiCatalog('json')" style="font-size:11.5px; padding:6px 12px;" title="Export complete catalog as JSON file">
+                            📥 Export Catalog (JSON)
                         </button>
-                        <button type="button" class="btn btn-secondary" onclick="exportDevApiCatalog('csv')" style="font-size:11.5px; padding:6px 12px;" title="Download complete catalog as CSV">
-                            📊 Download CSV
+                        <button type="button" class="btn btn-secondary" onclick="exportDevApiCatalog('csv')" style="font-size:11.5px; padding:6px 12px;" title="Export complete catalog as CSV spreadsheet">
+                            📊 Export Catalog (CSV)
                         </button>
-                        <button type="button" class="btn btn-primary" id="btnRefreshDevApis" onclick="refreshDevApisLive()" style="font-size:11.5px; padding:6px 14px; display:flex; align-items:center; gap:6px;">
-                            <span id="refreshIconSpan">🔄</span> Live Refresh (24hr Sync)
+                        <button type="button" class="btn btn-primary" id="btnRefreshDevApis" onclick="refreshDevApisLive()" style="font-size:11.5px; padding:6px 14px; display:flex; align-items:center; gap:6px;" title="Scan internet & PyPI for newly released developer APIs">
+                            <span id="refreshIconSpan">🔄</span> Live 24-hr Sync
                         </button>
                     </div>
                 </div>
 
                 <!-- Search and Simple Radio/Checkbox Filters -->
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
-                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                        <div style="flex:1; min-width:280px; position:relative;">
-                            <input type="text" class="studio-input" id="devApiSearchInput" oninput="filterDevApis()" placeholder="🔍 Instant search any API, PIP package, or protocol (e.g., 'telegram', 'terabox', 'sms', 'torrent', 'apk', 'security', 'fastapi', 'tracking')..." style="width:100%; padding-left:12px; font-size:13px; height:38px; border-radius:6px;">
-                        </div>
-                        <div style="font-size:11.5px; color:#94A3B8;">
-                            Last Sync: <span id="devApiLastSyncTime" style="color:#10B981; font-weight:600;">24-hr Monitored Active</span>
+                    <div>
+                        <label for="devApiSearchInput" class="input-label" style="font-size:12px; font-weight:700; color:#CBD5E1; margin-bottom:4px; display:block;">
+                            🔍 Search Developer APIs, PIP Packages &amp; Tools:
+                        </label>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:280px; position:relative;">
+                                <input type="text" class="studio-input" id="devApiSearchInput" oninput="filterDevApis()" placeholder="Type to search (e.g. telegram, terabox, sms, torrent, apk, security, fastapi, tracking, game, doc)..." style="width:100%; padding-left:12px; font-size:13px; height:38px; border-radius:6px;">
+                            </div>
+                            <div style="font-size:11.5px; color:#94A3B8;">
+                                Live Status: <span id="devApiLastSyncTime" style="color:#10B981; font-weight:600;">24-hr Monitored Active</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Filter Selection (All, Free, Freemium, Paid) - Exactly as requested! -->
+                    <!-- Filter Selection (All, Free, Freemium, Paid) with Dynamic Counts -->
                     <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:8px 12px; background:rgba(30,41,59,0.5); border-radius:6px; border:1px solid rgba(148,163,184,0.15);">
                         <span style="font-size:12px; font-weight:700; color:#94A3B8;">FILTER BY TIER:</span>
-                        <label style="font-size:12px; color:#F8FAFC; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                            <input type="radio" name="devApiTierRadio" value="all" checked onchange="filterDevApis()"> 🌐 All APIs (No Filter)
+                        <label style="font-size:12px; color:#F8FAFC; display:flex; align-items:center; gap:6px; cursor:pointer;" title="Show all discovered developer APIs">
+                            <input type="radio" name="devApiTierRadio" value="all" checked onchange="filterDevApis()"> 🌐 All APIs <span id="tierCountAll" style="color:#38BDF8; font-weight:700;">(43)</span>
                         </label>
-                        <label style="font-size:12px; color:#10B981; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                            <input type="radio" name="devApiTierRadio" value="free" onchange="filterDevApis()"> 🟢 100% Free / Open
+                        <label style="font-size:12px; color:#10B981; display:flex; align-items:center; gap:6px; cursor:pointer;" title="Filter 100% free and open-source APIs">
+                            <input type="radio" name="devApiTierRadio" value="free" onchange="filterDevApis()"> 🟢 100% Free / Open <span id="tierCountFree" style="color:#10B981; font-weight:700;">(27)</span>
                         </label>
-                        <label style="font-size:12px; color:#38BDF8; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                            <input type="radio" name="devApiTierRadio" value="no_key" onchange="filterDevApis()"> ⚡ No Key Needed (Instant Access)
+                        <label style="font-size:12px; color:#38BDF8; display:flex; align-items:center; gap:6px; cursor:pointer;" title="Filter APIs requiring zero API keys">
+                            <input type="radio" name="devApiTierRadio" value="no_key" onchange="filterDevApis()"> ⚡ No Key Needed <span id="tierCountNoKey" style="color:#38BDF8; font-weight:700;">(26)</span>
                         </label>
-                        <label style="font-size:12px; color:#F59E0B; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                            <input type="radio" name="devApiTierRadio" value="freemium" onchange="filterDevApis()"> 🟡 Freemium (Free Key Available)
+                        <label style="font-size:12px; color:#F59E0B; display:flex; align-items:center; gap:6px; cursor:pointer;" title="Filter APIs offering free developer tokens">
+                            <input type="radio" name="devApiTierRadio" value="freemium" onchange="filterDevApis()"> 🟡 Freemium <span id="tierCountFreemium" style="color:#F59E0B; font-weight:700;">(9)</span>
                         </label>
-                        <label style="font-size:12px; color:#EF4444; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                            <input type="radio" name="devApiTierRadio" value="paid" onchange="filterDevApis()"> 🔴 Commercial / Paid
+                        <label style="font-size:12px; color:#EF4444; display:flex; align-items:center; gap:6px; cursor:pointer;" title="Filter commercial and paid enterprise APIs">
+                            <input type="radio" name="devApiTierRadio" value="paid" onchange="filterDevApis()"> 🔴 Commercial / Paid <span id="tierCountPaid" style="color:#EF4444; font-weight:700;">(7)</span>
                         </label>
                     </div>
                 </div>
@@ -13013,10 +13018,38 @@ function navigateHistory(direction) {
                 window.cachedDevApis = data.resources || [];
                 if (badge) badge.innerText = `${window.cachedDevApis.length}+ APIs Active`;
                 if (lastSync && data.last_sync) lastSync.innerText = data.last_sync;
+
+                // Dynamically update filter tier counters
+                const totalCount = window.cachedDevApis.length;
+                const freeCount = window.cachedDevApis.filter(a => a.tier === 'FREE').length;
+                const noKeyCount = window.cachedDevApis.filter(a => a.auth_type === 'NO_KEY_REQUIRED').length;
+                const freemiumCount = window.cachedDevApis.filter(a => a.tier === 'FREEMIUM').length;
+                const paidCount = window.cachedDevApis.filter(a => a.tier === 'PAID').length;
+
+                const elAll = document.getElementById('tierCountAll');
+                const elFree = document.getElementById('tierCountFree');
+                const elNoKey = document.getElementById('tierCountNoKey');
+                const elFreemium = document.getElementById('tierCountFreemium');
+                const elPaid = document.getElementById('tierCountPaid');
+
+                if (elAll) elAll.innerText = `(${totalCount})`;
+                if (elFree) elFree.innerText = `(${freeCount})`;
+                if (elNoKey) elNoKey.innerText = `(${noKeyCount})`;
+                if (elFreemium) elFreemium.innerText = `(${freemiumCount})`;
+                if (elPaid) elPaid.innerText = `(${paidCount})`;
+
                 filterDevApis();
             } catch (e) {
                 container.innerHTML = '<div style="color:var(--accent-red); padding:20px; grid-column:1/-1;">Failed to load developer resources: ' + e + '</div>';
             }
+        }
+
+        function resetDevApiFilters() {
+            const allRadio = document.querySelector('input[name="devApiTierRadio"][value="all"]');
+            if (allRadio) allRadio.checked = true;
+            const searchInput = document.getElementById('devApiSearchInput');
+            if (searchInput) searchInput.value = '';
+            filterDevApis();
         }
 
         function filterDevApis() {
@@ -13080,7 +13113,10 @@ function navigateHistory(direction) {
                     <div style="color:var(--text-muted); padding:35px; grid-column:1/-1; text-align:center; background:rgba(30,41,59,0.3); border-radius:8px; border:1px dashed rgba(148,163,184,0.2);">
                         <div style="font-size:24px; margin-bottom:8px;">🔍</div>
                         <div style="font-size:14px; color:#F8FAFC; font-weight:600;">No APIs matched your search criteria.</div>
-                        <div style="font-size:12px; margin-top:4px;">Try searching for generic terms like <code>sms</code>, <code>telegram</code>, <code>terabox</code>, <code>torrent</code>, <code>security</code>, or select <strong>All APIs</strong>.</div>
+                        <div style="font-size:12px; margin-top:4px; margin-bottom:12px;">Try searching for terms like <code>sms</code>, <code>telegram</code>, <code>terabox</code>, <code>torrent</code>, <code>security</code>, or clear the search filter.</div>
+                        <button type="button" class="btn btn-secondary" onclick="resetDevApiFilters()" style="font-size:11.5px; padding:6px 14px;">
+                            🔄 Reset All Filters
+                        </button>
                     </div>
                 `;
                 return;
@@ -13088,48 +13124,60 @@ function navigateHistory(direction) {
 
             container.innerHTML = apis.map(a => {
                 const isNoKey = a.auth_type === 'NO_KEY_REQUIRED';
+                const isPaid = a.tier === 'PAID' || a.auth_type === 'PAID_API_KEY';
                 const tierColor = a.tier === 'FREE' ? '#10B981' : (a.tier === 'FREEMIUM' ? '#F59E0B' : '#EF4444');
                 const tierBg = a.tier === 'FREE' ? 'rgba(16,185,129,0.12)' : (a.tier === 'FREEMIUM' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)');
+                const tierLabel = a.tier === 'FREE' ? '🟢 100% FREE' : (a.tier === 'FREEMIUM' ? '🟡 FREEMIUM' : '🔴 COMMERCIAL / PAID');
                 
-                const authBadge = isNoKey 
-                    ? '<span style="font-size:10px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.25); padding:2px 8px; border-radius:12px;">⚡ NO KEY NEEDED</span>'
-                    : '<span style="font-size:10px; font-weight:700; color:#CBD5E1; background:rgba(148,163,184,0.12); border:1px solid rgba(148,163,184,0.25); padding:2px 8px; border-radius:12px;">🔑 FREE KEY AVAILABLE</span>';
+                let authBadge = '';
+                if (isNoKey) {
+                    authBadge = '<span style="font-size:10px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.25); padding:2px 8px; border-radius:12px;">⚡ NO KEY NEEDED</span>';
+                } else if (isPaid) {
+                    authBadge = '<span style="font-size:10px; font-weight:700; color:#F87171; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); padding:2px 8px; border-radius:12px;">💳 PAID / COMMERCIAL KEY</span>';
+                } else {
+                    authBadge = '<span style="font-size:10px; font-weight:700; color:#34D399; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); padding:2px 8px; border-radius:12px;">🔑 FREE DEV KEY</span>';
+                }
 
                 return `
                     <div class="api-card" style="background:#0F172A; border:1px solid rgba(148,163,184,0.18); border-radius:8px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.3);" onmouseover="this.style.borderColor='#38BDF8'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='rgba(148,163,184,0.18)'; this.style.transform='none';">
                         <div>
                             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
                                 <span style="font-size:10px; font-weight:800; color:${tierColor}; background:${tierBg}; border:1px solid ${tierColor}40; padding:2px 8px; border-radius:12px;">
-                                    ${a.tier}
+                                    ${tierLabel}
                                 </span>
                                 ${authBadge}
                             </div>
                             <h3 style="font-size:15px; color:#F8FAFC; margin:4px 0; font-weight:700; line-height:1.3;">${a.name}</h3>
-                            <div style="font-size:11.5px; color:#94A3B8; margin-bottom:8px;">Provider: <strong style="color:#CBD5E1;">${a.provider}</strong></div>
+                            <div style="font-size:11.5px; color:#94A3B8; margin-bottom:8px;">Provider / Platform: <strong style="color:#CBD5E1;">${a.provider}</strong></div>
                             <p style="font-size:12px; color:#94A3B8; line-height:1.45; margin:0 0 10px 0; height:48px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
                                 ${a.description}
                             </p>
 
-                            <!-- PIP Package command with 1-click copy -->
-                            <div style="background:#090D16; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:6px 10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                                <code style="font-size:11.5px; color:#38BDF8; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:82%;">
-                                    ${a.pip_package}
-                                </code>
-                                <button type="button" onclick="copyDevApiPip('${a.pip_package}', this)" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:12px; padding:2px 6px;" title="Copy PIP install command">
-                                    📋 Copy
-                                </button>
+                            <!-- PIP Package command block with label and 1-click copy -->
+                            <div style="margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px;">PIP Install Command:</span>
+                                </div>
+                                <div style="background:#090D16; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:6px 10px; display:flex; align-items:center; justify-content:space-between;">
+                                    <code style="font-size:11.5px; color:#38BDF8; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:78%;">
+                                        ${a.pip_package}
+                                    </code>
+                                    <button type="button" onclick="copyDevApiPip('${a.pip_package}', this)" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:#38BDF8; border-radius:4px; cursor:pointer; font-size:11px; padding:3px 8px; font-weight:600;" title="Copy PIP install command">
+                                        📋 Copy PIP
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Card Action Buttons -->
                         <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; border-top:1px solid rgba(148,163,184,0.12); padding-top:10px; margin-top:4px;">
-                            <button type="button" class="btn btn-primary" onclick="openDevApiModal('${a.id}')" style="font-size:11px; padding:5px 10px; flex:1; text-align:center;">
-                                🔍 More Details &amp; Code
+                            <button type="button" class="btn btn-primary" onclick="openDevApiModal('${a.id}')" style="font-size:11px; padding:5px 10px; flex:1; text-align:center;" title="View endpoint details, key registration, and Python code">
+                                🔍 Inspect API &amp; Code
                             </button>
-                            <a href="${a.doc_url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11px; padding:5px 8px; text-decoration:none;" title="Official Documentation">
+                            <a href="${a.doc_url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11px; padding:5px 8px; text-decoration:none;" title="Open Official API Documentation">
                                 📖 Docs ↗
                             </a>
-                            <a href="${a.pip_link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11px; padding:5px 8px; text-decoration:none;" title="PyPI Package Registry">
+                            <a href="${a.pip_link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11px; padding:5px 8px; text-decoration:none;" title="Open PyPI Package Registry">
                                 📦 PyPI ↗
                             </a>
                         </div>
@@ -13147,69 +13195,92 @@ function navigateHistory(direction) {
             if (!item) return;
 
             const tierColor = item.tier === 'FREE' ? '#10B981' : (item.tier === 'FREEMIUM' ? '#F59E0B' : '#EF4444');
+            const tierLabel = item.tier === 'FREE' ? '🟢 100% Free / Open Tier' : (item.tier === 'FREEMIUM' ? '🟡 Freemium Tier' : '🔴 Commercial / Paid Tier');
+            
+            let authLabel = '🔑 Free Developer Key Available';
+            let guideTitle = '🔑 FREE DEVELOPER KEY REGISTRATION GUIDE:';
+            let guideColor = '#34D399';
+            if (item.auth_type === 'NO_KEY_REQUIRED') {
+                authLabel = '⚡ Instant Public (No Key Needed)';
+                guideTitle = '⚡ INSTANT PUBLIC ACCESS GUIDE:';
+                guideColor = '#38BDF8';
+            } else if (item.tier === 'PAID' || item.auth_type === 'PAID_API_KEY') {
+                authLabel = '💳 Commercial / Paid Subscription Key';
+                guideTitle = '💳 API KEY &amp; ACCOUNT ACCESS GUIDE:';
+                guideColor = '#F87171';
+            }
 
             body.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(148,163,184,0.15);">
                     <div>
-                        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-                            <span style="font-size:11px; font-weight:800; color:${tierColor}; background:${tierColor}20; border:1px solid ${tierColor}50; padding:2px 10px; border-radius:12px;">${item.tier} TIER</span>
-                            <span style="font-size:11px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); padding:2px 10px; border-radius:12px;">${item.auth_type}</span>
-                            <span style="font-size:11px; color:#94A3B8;">Verified: ${item.last_checked || 'Live 24h'}</span>
+                        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap;">
+                            <span style="font-size:11px; font-weight:800; color:${tierColor}; background:${tierColor}20; border:1px solid ${tierColor}50; padding:2px 10px; border-radius:12px;">${tierLabel}</span>
+                            <span style="font-size:11px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); padding:2px 10px; border-radius:12px;">${authLabel}</span>
+                            <span style="font-size:11px; color:#94A3B8;">Verified: ${item.last_checked || 'Live 24h Sync Active'}</span>
                         </div>
                         <h2 style="font-size:20px; color:#F8FAFC; margin:0 0 4px 0;">${item.name}</h2>
                         <div style="font-size:12px; color:#94A3B8;">Provider / Project: <strong style="color:#CBD5E1;">${item.provider}</strong></div>
                     </div>
                 </div>
 
-                <div style="font-size:13px; color:#CBD5E1; line-height:1.55; margin-bottom:16px;">
-                    ${item.description}
+                <div style="margin-bottom:16px;">
+                    <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">API &amp; Library Overview:</div>
+                    <div style="font-size:13px; color:#CBD5E1; line-height:1.55;">
+                        ${item.description}
+                    </div>
                 </div>
 
                 <!-- API Key / Access Guide -->
                 <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:12px; margin-bottom:16px;">
-                    <div style="font-size:12px; font-weight:700; color:#38BDF8; margin-bottom:4px;">🔑 HOW TO GET KEY / ACCESS:</div>
-                    <div style="font-size:12px; color:#F8FAFC; line-height:1.4;">${item.key_instructions || 'Direct public access with no credentials needed.'}</div>
-                    <div style="margin-top:8px; font-size:11.5px; color:#94A3B8;">
-                        Endpoint: <code style="color:#F1F5F9; background:#1E293B; padding:2px 6px; border-radius:4px;">${item.endpoint_url}</code>
+                    <div style="font-size:12px; font-weight:700; color:${guideColor}; margin-bottom:4px;">${guideTitle}</div>
+                    <div style="font-size:12px; color:#F8FAFC; line-height:1.45;">${item.key_instructions || 'Direct public access with no credentials needed.'}</div>
+                    <div style="margin-top:10px; font-size:11.5px; color:#94A3B8; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <span style="color:#CBD5E1; font-weight:600;">Base Endpoint URL:</span> 
+                        <code style="color:#F1F5F9; background:#1E293B; padding:3px 8px; border-radius:4px; font-family:monospace;">${item.endpoint_url}</code>
                     </div>
                 </div>
 
-                <!-- Quickstart Python Code with One-Click Copy -->
+                <!-- Quickstart Python Code with One-Click Copy & Download -->
                 <div style="margin-bottom:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span style="font-size:12px; font-weight:700; color:#CBD5E1;">🐍 READY-TO-RUN PYTHON QUICKSTART:</span>
+                        <span style="font-size:12px; font-weight:700; color:#CBD5E1;">🐍 READY-TO-RUN PYTHON QUICKSTART SCRIPT:</span>
                         <div style="display:flex; gap:6px;">
                             <button type="button" class="btn btn-secondary" onclick="copyDevApiCode('${item.id}', this)" style="font-size:11px; padding:4px 10px;">
-                                📋 Copy Code
+                                📋 Copy Script
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="downloadDevApiSnippet('${item.id}')" style="font-size:11px; padding:4px 10px;">
-                                💾 Download .py
+                                💾 Download Script (.py)
                             </button>
                         </div>
                     </div>
                     <pre id="codeSnippet_${item.id}" style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:12px; font-size:12px; color:#38BDF8; font-family:Consolas, monospace; overflow-x:auto; max-height:220px; margin:0;">${item.code_snippet}</pre>
                 </div>
 
-                <!-- Quick cURL snippet -->
+                <!-- Quick cURL snippet with Copy button -->
                 ${item.sample_curl ? `
                 <div style="margin-bottom:16px;">
-                    <div style="font-size:12px; font-weight:700; color:#CBD5E1; margin-bottom:4px;">💻 SAMPLE cURL TERMINAL COMMAND:</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:12px; font-weight:700; color:#CBD5E1;">💻 SAMPLE cURL TERMINAL COMMAND:</span>
+                        <button type="button" class="btn btn-secondary" onclick="copyDevApiCurl('${item.id}', this)" style="font-size:11px; padding:4px 10px;">
+                            📋 Copy cURL
+                        </button>
+                    </div>
                     <pre style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:10px; font-size:11.5px; color:#F59E0B; font-family:Consolas, monospace; overflow-x:auto; margin:0;">${item.sample_curl}</pre>
                 </div>
                 ` : ''}
 
-                <!-- Modal Footer -->
+                <!-- Modal Footer with Proper Buttons -->
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px solid rgba(148,163,184,0.15); padding-top:14px;">
-                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <a href="${item.doc_url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size:11.5px; padding:6px 14px; text-decoration:none;">
-                            Open Official Docs ↗
+                            📖 Official Documentation ↗
                         </a>
                         <a href="${item.pip_link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11.5px; padding:6px 14px; text-decoration:none;">
-                            Open PyPI Registry ↗
+                            📦 PyPI Package Registry ↗
                         </a>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="closeDevApiModal()" style="font-size:11.5px; padding:6px 16px;">
-                        Close
+                    <button type="button" class="btn btn-secondary" onclick="closeDevApiModal()" style="font-size:11.5px; padding:6px 18px;">
+                        ✕ Close Window
                     </button>
                 </div>
             `;
@@ -13236,6 +13307,18 @@ function navigateHistory(direction) {
             const item = (window.cachedDevApis || []).find(a => a.id === apiId);
             if (!item) return;
             navigator.clipboard.writeText(item.code_snippet).then(() => {
+                const orig = btn.innerText;
+                btn.innerText = 'Copied! ✅';
+                setTimeout(() => { btn.innerText = orig; }, 2000);
+            }).catch(e => {
+                console.error(e);
+            });
+        }
+
+        function copyDevApiCurl(apiId, btn) {
+            const item = (window.cachedDevApis || []).find(a => a.id === apiId);
+            if (!item || !item.sample_curl) return;
+            navigator.clipboard.writeText(item.sample_curl).then(() => {
                 const orig = btn.innerText;
                 btn.innerText = 'Copied! ✅';
                 setTimeout(() => { btn.innerText = orig; }, 2000);
