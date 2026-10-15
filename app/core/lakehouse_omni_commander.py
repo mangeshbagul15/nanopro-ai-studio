@@ -230,14 +230,14 @@ class LakehouseOmniCommander:
         md = []
         md.append("## 🏛️ NanoPro AI Studio — Enterprise Multi-Database Real Catalog & Lakehouse Status\n")
         
-        md.append("### 🕒 १. आजची बँकिंग कटऑफ, BOD आणि EOD स्थिती (Batch Execution Timings):")
-        md.append(f"- **🌅 {bt['bod']['name']}:** `{bt['bod']['time']}` ➡️ **स्थिती: {bt['bod']['status']}** ({bt['bod']['description']})")
-        md.append(f"- **⚡ {bt['sod']['name']}:** `{bt['sod']['time']}` ➡️ **स्थिती: {bt['sod']['status']}** ({bt['sod']['description']})")
-        md.append(f"- **⏰ {bt['intraday_cutoff']['name']}:** `{bt['intraday_cutoff']['time']}` ➡️ **स्थिती: {bt['intraday_cutoff']['status']}** ({bt['intraday_cutoff']['description']})")
-        md.append(f"- **🌙 {bt['eod']['name']}:** `{bt['eod']['time']}` ➡️ **स्थिती: {bt['eod']['status']}** ({bt['eod']['description']})\n")
+        md.append("### 🕒 1. Ajchi Banking Cutoff, BOD ani EOD Status (Batch Timings):")
+        md.append(f"- **🌅 {bt['bod']['name']}:** `{bt['bod']['time']}` ➡️ **Status: {bt['bod']['status']}** ({bt['bod']['description']})")
+        md.append(f"- **⚡ {bt['sod']['name']}:** `{bt['sod']['time']}` ➡️ **Status: {bt['sod']['status']}** ({bt['sod']['description']})")
+        md.append(f"- **⏰ {bt['intraday_cutoff']['name']}:** `{bt['intraday_cutoff']['time']}` ➡️ **Status: {bt['intraday_cutoff']['status']}** ({bt['intraday_cutoff']['description']})")
+        md.append(f"- **🌙 {bt['eod']['name']}:** `{bt['eod']['time']}` ➡️ **Status: {bt['eod']['status']}** ({bt['eod']['description']})\n")
 
-        md.append("### 🗄️ २. सर्व डेटाबेसचे रिअल स्ट्रक्चर & टेबल इन्व्हेंटरी (Real Database Inventory):")
-        md.append("| Database Engine | DB Name | Schema / Layer | मुख्य टेबल्स | रेकॉर्ड्स | PK / FK माहिती | L2 Clean Data? |")
+        md.append("### 🗄️ 2. Sarv Database che Real Structure & Table Inventory:")
+        md.append("| Database Engine | DB Name | Schema / Layer | Main Tables | Total Records | PK / FK Info | L2 Clean Data? |")
         md.append("|---|---|---|---|---|---|:---:|")
         md.append("| **Snowflake Data Cloud** | `BANK_DB` | `L0_STAGING` (Bronze) | `ACCOUNTS`, `CUSTOMERS`, `RAW_TRANSACTIONS` | ~1,70,950 | PK: Yes, FK: Yes | Raw CDC |")
         md.append("| **Snowflake Data Cloud** | `BANK_DB` | `L1_HARMONIZED` (Silver) | `DIM_ACCOUNTS`, `DIM_CUSTOMERS`, `FACT_TRANSACTIONS` | ~1,70,950 | PK: Surrogate, FK: Yes | Enriched |")
@@ -246,9 +246,9 @@ class LakehouseOmniCommander:
         md.append("| **Neon PostgreSQL (Cloud)** | `neondb` | `public` | `customer_profiles_pg`, `account_balances_pg` | Live Staged | PK: Yes | Clean Live |")
         md.append("| **SQLite Local Memory** | `studio_memory.db` | `main` | `production_release_ledger`, `scheduled_automation_tasks` | Operational | PK: Yes | Operational |\n")
 
-        md.append("### ✨ ३. L2 Medallion लेयरमध्ये डेटा क्लीन आहे का? (Data Quality SLA):")
+        md.append("### ✨ 3. L2 Medallion Layer madhe Data Clean ahe ka? (Data Quality SLA):")
         md.append("- **Cleanliness Score:** `99.85%` (Verified Clean)")
-        md.append("- **गुणवत्ता निकष (Quality Checks):** Zero duplicate primary keys, 100% referential integrity match between Accounts & Customers, सर्व Null व्हॅल्यूज क्लिअर आणि इम्पुट केलेल्या आहेत.")
+        md.append("- **Quality Checks (SLA):** Zero duplicate primary keys, 100% referential integrity match between Accounts & Customers, sarv Null values clean ani impute kelya ahet.")
 
         return "\n".join(md)
 
@@ -412,7 +412,7 @@ class LakehouseOmniCommander:
                     "task_name": target_task["name"],
                     "action": "SCHEDULE_POSTPONED_TO_DAY_AFTER_TOMORROW",
                     "new_next_run": new_run_str,
-                    "message_marathi": f"समजले! `{target_task['name']}` हे टास्क उद्या स्किप केले असून परवापासून ({new_date.strftime('%d-%b-%Y')} रोजी सकाळी ०८:०० वा.) पुन्हा रेग्युलर सेट केले आहे."
+                    "message_marathi": f"Samajla! `{target_task['name']}` he task udya skip kela asun parva pasun ({new_date.strftime('%d-%b-%Y')} roji sakali 08:00 AM) punha regular set kela ahe."
                 }
             except Exception as e:
                 return {"status": "error", "message": str(e)}
@@ -435,7 +435,7 @@ class LakehouseOmniCommander:
                     "task_name": target_task["name"],
                     "action": "AUTOMAILER_RECIPIENT_ADDED",
                     "recipient_email": new_email,
-                    "message_marathi": f"यशस्वी! `{new_email}` या ईमेल पत्त्याला `{target_task['name']}` च्या ऑटो-मेलर यादीमध्ये जोडले आहे. आता प्रत्येक रननंतर या युजरलाही ऑटो-रिपोर्ट मेल जाईल."
+                    "message_marathi": f"Success! `{new_email}` ya email address la `{target_task['name']}` chya auto-mailer list madhe add kela ahe. Ata pratek run nantar ya user la pn auto-report mail jail."
                 }
             except Exception as e:
                 return {"status": "error", "message": str(e)}

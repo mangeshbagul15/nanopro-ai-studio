@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Mangesh Nano Pro AI Studio — Production PDF Manuals Generator (Refined Edition)
-Builds two audit-grade, high-aesthetic PDF manuals:
+Mangesh Nano Pro AI Studio — Production PDF Manuals Generator (Minglish + English Edition)
+Builds two audit-grade, high-aesthetic PDF manuals using standard Latin fonts (Helvetica, Helvetica-Bold, Courier):
 1. NanoPro_User_Manual.pdf (End-User & Business Operations Guide)
 2. NanoPro_Admin_Developer_Manual.pdf (Master Admin, DevOps & Lead Developer Guide)
+
+No Devanagari script used. 100% universal rendering across all devices, mobile phones, and PDF readers!
 """
 
 import os
@@ -18,28 +20,15 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.graphics.shapes import Drawing, Rect, String, Line, Polygon
 
-# ----------------------------------------------------------------------
-# 1. Register Fonts
-# ----------------------------------------------------------------------
-FONTS_DIR = r"C:\Windows\Fonts"
-try:
-    pdfmetrics.registerFont(TTFont("Nirmala", os.path.join(FONTS_DIR, "Nirmala.ttc"), subfontIndex=0))
-    pdfmetrics.registerFont(TTFont("Nirmala-Bold", os.path.join(FONTS_DIR, "Nirmala.ttc"), subfontIndex=1))
-    MAIN_FONT = "Nirmala"
-    MAIN_BOLD = "Nirmala-Bold"
-except Exception as e:
-    print(f"[!] Warning registering Nirmala font: {e}, falling back to Helvetica")
-    MAIN_FONT = "Helvetica"
-    MAIN_BOLD = "Helvetica-Bold"
-
+# Standard Latin fonts guaranteed on all PDF platforms
+MAIN_FONT = "Helvetica"
+MAIN_BOLD = "Helvetica-Bold"
 MONO_FONT = "Courier"
 
 # ----------------------------------------------------------------------
-# 2. Numbered Canvas for Two-Pass Page Numbering & Running Headers
+# 1. Numbered Canvas for Two-Pass Page Numbering & Running Headers
 # ----------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -102,7 +91,7 @@ class NumberedCanvas(canvas.Canvas):
 
 
 class UserManualCanvas(NumberedCanvas):
-    doc_title = "NanoPro AI Studio — Official User Operations Manual"
+    doc_title = "NanoPro AI Studio — Official User Operations Manual (Minglish + English)"
 
 
 class AdminManualCanvas(NumberedCanvas):
@@ -110,7 +99,7 @@ class AdminManualCanvas(NumberedCanvas):
 
 
 # ----------------------------------------------------------------------
-# 3. Style Factory
+# 2. Style Factory
 # ----------------------------------------------------------------------
 def create_styles():
     base = getSampleStyleSheet()
@@ -149,8 +138,8 @@ def create_styles():
             "Heading1",
             parent=base["Normal"],
             fontName=MAIN_BOLD,
-            fontSize=13.5,
-            leading=17,
+            fontSize=13,
+            leading=16,
             textColor=colors.HexColor("#0F172A"),
             spaceBefore=10,
             spaceAfter=5,
@@ -160,8 +149,8 @@ def create_styles():
             "Heading2",
             parent=base["Normal"],
             fontName=MAIN_BOLD,
-            fontSize=10.5,
-            leading=14,
+            fontSize=10,
+            leading=13,
             textColor=colors.HexColor("#0369A1"),
             spaceBefore=8,
             spaceAfter=4,
@@ -183,7 +172,7 @@ def create_styles():
             parent=base["Normal"],
             fontName=MAIN_FONT,
             fontSize=8.5,
-            leading=12.5,
+            leading=12,
             textColor=colors.HexColor("#1E293B"),
             spaceAfter=4
         ),
@@ -192,7 +181,7 @@ def create_styles():
             parent=base["Normal"],
             fontName=MAIN_BOLD,
             fontSize=8.5,
-            leading=12.5,
+            leading=12,
             textColor=colors.HexColor("#0F172A"),
             spaceAfter=4
         ),
@@ -262,15 +251,15 @@ def create_styles():
     return styles
 
 # ----------------------------------------------------------------------
-# 4. Helper UI Components (Callouts, Tables, Images, Cover)
+# 3. Helper UI Components (Callouts, Tables, Images, Cover)
 # ----------------------------------------------------------------------
 def make_callout(text, kind="note", width=520):
     cfg = {
-        "note": {"bg": "#F0F9FF", "border": "#0284C7", "title": "📌 टीप / NOTE:"},
-        "tip": {"bg": "#ECFDF5", "border": "#10B981", "title": "💡 सर्वोत्तम पद्धत / BEST PRACTICE:"},
-        "warning": {"bg": "#FFFBEB", "border": "#F59E0B", "title": "⚠️ खबरदारी / CAUTION:"},
-        "critical": {"bg": "#FEF2F2", "border": "#EF4444", "title": "🚨 अत्यंत महत्त्वाचे / CRITICAL REQUIREMENT:"}
-    }.get(kind, {"bg": "#F8FAFC", "border": "#64748B", "title": "ℹ️ INFO:"})
+        "note": {"bg": "#F0F9FF", "border": "#0284C7", "title": "NOTE / TIP:"},
+        "tip": {"bg": "#ECFDF5", "border": "#10B981", "title": "BEST PRACTICE / FAYDA:"},
+        "warning": {"bg": "#FFFBEB", "border": "#F59E0B", "title": "CAUTION / KHABARDARI:"},
+        "critical": {"bg": "#FEF2F2", "border": "#EF4444", "title": "CRITICAL REQUIREMENT / MAHATVACHE:"}
+    }.get(kind, {"bg": "#F8FAFC", "border": "#64748B", "title": "INFO:"})
 
     styles = create_styles()
     full_html = f"<b><font color='{cfg['border']}'>{cfg['title']}</font></b> {text}"
@@ -333,7 +322,7 @@ def make_bounded_image(path, caption_text="", max_width=500, max_height=180):
         elements = [t]
         if caption_text:
             elements.append(Spacer(1, 2))
-            elements.append(Paragraph(f"📷 <i>{caption_text}</i>", styles["Caption"]))
+            elements.append(Paragraph(f"<i>{caption_text}</i>", styles["Caption"]))
         elements.append(Spacer(1, 4))
         return KeepTogether(elements)
     except Exception as e:
@@ -344,10 +333,9 @@ def make_bounded_image(path, caption_text="", max_width=500, max_height=180):
 def make_cover_page(title, subtitle, meta_items, bg_color="#0F172A", accent_color="#0284C7"):
     styles = create_styles()
     
-    # Compact structured rows strictly calculated to fit on 1 single page without overflow
     rows = [
         [Spacer(1, 15)],
-        [Paragraph(f"<font color='{accent_color}'><b>◆ ENTERPRISE AUTONOMOUS LAKEHOUSE PLATFORM ◆</b></font>", styles["CoverMeta"])],
+        [Paragraph(f"<font color='{accent_color}'><b>* ENTERPRISE AUTONOMOUS LAKEHOUSE PLATFORM *</b></font>", styles["CoverMeta"])],
         [Spacer(1, 12)],
         [Paragraph(title, styles["CoverTitle"])],
         [Paragraph(subtitle, styles["CoverSubtitle"])],
@@ -379,7 +367,7 @@ def make_cover_page(title, subtitle, meta_items, bg_color="#0F172A", accent_colo
     rows.append([meta_table])
     rows.append([Spacer(1, 20)])
     
-    footer_text = "Mangesh Nano Pro AI Studio • Proprietary Operational Documentation • All Rights Reserved © 2026"
+    footer_text = "Mangesh Nano Pro AI Studio - Proprietary Operational Documentation - All Rights Reserved (c) 2026"
     rows.append([Paragraph(footer_text, styles["CoverMeta"])])
     
     cover_table = Table(rows, colWidths=[520])
@@ -398,7 +386,7 @@ def make_cover_page(title, subtitle, meta_items, bg_color="#0F172A", accent_colo
 
 
 # ----------------------------------------------------------------------
-# 5. Architecture Drawing Diagram (Vector graphics for Admin Manual)
+# 4. Architecture Drawing Diagram (Vector graphics for Admin Manual)
 # ----------------------------------------------------------------------
 def draw_architecture_diagram():
     d = Drawing(520, 190)
@@ -408,7 +396,7 @@ def draw_architecture_diagram():
     
     # Tier 1: Client Access
     d.add(Rect(15, 145, 490, 32, rx=4, ry=4, fillColor=colors.HexColor("#1E293B"), strokeColor=colors.HexColor("#38BDF8"), strokeWidth=1.2))
-    d.add(String(25, 157, "TIER 1: CLIENT ACCESS  |  Web UI (SPA)  •  Telegram Executive Bot  •  REST API  •  Marathi Voice", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#38BDF8")))
+    d.add(String(25, 157, "TIER 1: CLIENT ACCESS  |  Web SPA  -  Telegram Executive Bot  -  REST API  -  Voice", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#38BDF8")))
     
     # Arrow 1->2
     d.add(Line(260, 145, 260, 134, strokeColor=colors.HexColor("#38BDF8"), strokeWidth=1.5))
@@ -416,7 +404,7 @@ def draw_architecture_diagram():
     
     # Tier 2: Security & Routing
     d.add(Rect(15, 98, 490, 31, rx=4, ry=4, fillColor=colors.HexColor("#15223E"), strokeColor=colors.HexColor("#10B981"), strokeWidth=1.2))
-    d.add(String(25, 110, "TIER 2: API GATEWAY & SECURITY  |  FastAPI Engine  •  Granular RBAC  •  AES Credentials Vault", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#10B981")))
+    d.add(String(25, 110, "TIER 2: API GATEWAY & SECURITY  |  FastAPI Engine  -  Granular RBAC  -  AES Credentials Vault", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#10B981")))
     
     # Arrow 2->3
     d.add(Line(260, 98, 260, 87, strokeColor=colors.HexColor("#10B981"), strokeWidth=1.5))
@@ -424,7 +412,7 @@ def draw_architecture_diagram():
     
     # Tier 3: Cognitive & Omni Commander
     d.add(Rect(15, 51, 490, 31, rx=4, ry=4, fillColor=colors.HexColor("#1E1B4B"), strokeColor=colors.HexColor("#F59E0B"), strokeWidth=1.2))
-    d.add(String(25, 63, "TIER 3: COGNITIVE ORCHESTRATION  |  305 Autonomous Agents  •  Groq LPU  •  Gemini 3.5  •  Ollama GPU", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#F59E0B")))
+    d.add(String(25, 63, "TIER 3: COGNITIVE ORCHESTRATION  |  305 Autonomous Agents  -  Groq LPU  -  Gemini 3.5  -  Ollama GPU", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#F59E0B")))
     
     # Arrow 3->4
     d.add(Line(260, 51, 260, 40, strokeColor=colors.HexColor("#F59E0B"), strokeWidth=1.5))
@@ -432,13 +420,13 @@ def draw_architecture_diagram():
     
     # Tier 4: Multi-Cloud Lakehouse
     d.add(Rect(15, 5, 490, 30, rx=4, ry=4, fillColor=colors.HexColor("#042F2E"), strokeColor=colors.HexColor("#14B8A6"), strokeWidth=1.2))
-    d.add(String(25, 16, "TIER 4: PERSISTENCE & LAKEHOUSE  |  Snowflake  •  Oracle 23ai  •  Neon Postgres  •  SQLite WAL", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#14B8A6")))
+    d.add(String(25, 16, "TIER 4: PERSISTENCE & LAKEHOUSE  |  Snowflake  -  Oracle 23ai  -  Neon Postgres  -  SQLite WAL", fontName="Helvetica-Bold", fontSize=8.5, fillColor=colors.HexColor("#14B8A6")))
     
     return d
 
 
 # ----------------------------------------------------------------------
-# 6. Build User Manual PDF
+# 5. Build User Manual PDF (Minglish + English Mix)
 # ----------------------------------------------------------------------
 def build_user_manual(output_pdf, assets_dir):
     styles = create_styles()
@@ -446,95 +434,95 @@ def build_user_manual(output_pdf, assets_dir):
     
     # Cover Page
     meta_items = [
-        ("प्लॅटफॉर्म नाव / System Name", "Mangesh Nano Pro AI Studio (मंगेश नॅनो प्रो एआय स्टुडिओ)"),
-        ("डॉक्युमेंट प्रकार / Document Type", "अधिकृत युजर मॅन्युअल आणि कार्यप्रणाली मार्गदर्शिका (User Manual)"),
-        ("रिलीज व्हर्जन / Production Release", "v9.0 Lakehouse Omni Commander (100% Production Ready)"),
-        ("अंतिम मंजुरी वेळ / Final Approval", "15-Oct-2026 संध्याकाळी 06:45 PM IST"),
-        ("२४×७ क्लाऊड URL / Cloud Live URL", "https://mangesh-nanopro-studio.onrender.com"),
-        ("मास्टर ॲडमिन पोर्टल / Admin URL", "https://mangesh-nanopro-studio.onrender.com/#user_management"),
-        ("मुख्य उद्दिष्ट / Target Objective", "बिझनेस ॲनालिस्ट, बँकिंग ऑपरेशन्स आणि शाखा व्यवस्थापकांसाठी संपूर्ण गाईड")
+        ("Platform Name", "Mangesh Nano Pro AI Studio (NanoPro AI)"),
+        ("Document Type", "Official User Operations Manual & Business Guide (Minglish + English Mix)"),
+        ("Production Release", "v9.0 Lakehouse Omni Commander (100% Production Ready)"),
+        ("Final Approval Time", "15-Oct-2026 at 06:45 PM IST"),
+        ("24/7 Cloud Live URL", "https://mangesh-nanopro-studio.onrender.com"),
+        ("Master Admin Portal", "https://mangesh-nanopro-studio.onrender.com/#user_management"),
+        ("Target Audience", "Business Analysts, Banking Operations, Branch Managers & End Users")
     ]
     story.extend(make_cover_page(
         "MANGESH NANO PRO AI STUDIO",
-        "अधिकृत युजर मॅन्युअल आणि बिझनेस ऑपरेशन्स गाईड (v9.0 Live)",
+        "Official User Operations Manual & Business Guide (v9.0 Live)",
         meta_items,
         bg_color="#0F172A",
         accent_color="#38BDF8"
     ))
     
     # Section 1: Executive Introduction
-    story.append(Paragraph("१. ओळख आणि प्रणालीचे उद्दिष्ट (Executive Introduction)", styles["Heading1"]))
+    story.append(Paragraph("1. System Introduction & Purpose (He App Nakki Kay Karte?)", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284C7"), spaceAfter=6))
     
     intro_p1 = """
-    <b>Mangesh Nano Pro AI Studio</b> हे आधुनिक बँकिंग, डेटा इंजिनिअरिंग आणि एंटरप्राइज ऑपरेशन्ससाठी तयार केलेले 
-    <b>भारतातील अग्रगण्य २४×७ क्लाऊड स्वायत्त (Autonomous) AI प्लॅटफॉर्म</b> आहे. हे ॲप कशासाठी आहे? 
-    दररोजच्या बँकिंग व डेटाबेस कामकाजात शेकडो जटिल SQL क्वेरीज लिहिणे, टेबल्सची नावे पाठ ठेवणे, कटऑफ वेळा ट्रॅक करणे 
-    किंवा मॅन्युअल एक्सेल रिपोर्ट्स बनवणे हे अत्यंत कठीण आणि वेळखाऊ असते. NanoPro AI Studio हे सर्व काम 
-    <b>नैसर्गिक मराठी, इंग्रजी किंवा हिंदीतील साध्या संभाषणातून (Conversational AI)</b> काही सेकंदांत पूर्ण करते.
+    <b>Mangesh Nano Pro AI Studio</b> he modern banking, data engineering ani enterprise operations sathi tayar kelela 
+    <b>India's Leading 24x7 Cloud Autonomous AI Platform</b> ahe. He app nakki kashasathi ahe? 
+    Daily banking v database work madhe hundreds of complex SQL queries lihine, tables chi nave lakshat thevne, cutoff timings track karne 
+    kiva manual Excel reports banavne he khup kathin ani time-consuming aste. NanoPro AI Studio he sarv kam 
+    <b>natural Minglish & English simple conversational prompts through</b> kahi seconds madhe complete karte.
     """
     story.append(Paragraph(intro_p1, styles["Body"]))
     
     story.append(make_callout(
-        "हा संपूर्ण स्टुडिओ <b>Render क्लाऊडवर २४ तास अखंड सुरू</b> आहे. यासाठी तुमचा लॅपटॉप चालू ठेवण्याची "
-        "किंवा कोणताही महागडा पेड सर्व्हर घेण्याची गरज नाही. <b>Zero-Card 100% मोफत क्लाऊड टियरवर</b> हा स्टुडिओ चालतो!",
+        "Ha sampurna studio <b>Render Cloud var 24 hours akhand chalu</b> ahe. Yasathi tumcha laptop chalu thevnyachi "
+        "kiva kontahi costly paid server ghenyachi garaj nahi. <b>Zero-Card 100% Free Cloud Tier var</b> ha studio perfectly chalto!",
         kind="tip"
     ))
     story.append(Spacer(1, 6))
     
     # Embed Dashboard Image
     img_dash = os.path.join(assets_dir, "media_1791823411818_ebbff45c.png")
-    story.append(make_bounded_image(img_dash, "चित्र १: NanoPro AI Studio — मुख्य चॅट डॅशबोर्ड व स्वायत्त एजंट वर्कस्पेस"))
+    story.append(make_bounded_image(img_dash, "Figure 1: NanoPro AI Studio - Main Chat Dashboard & Autonomous Workspace", max_height=125))
     
     # Section 2: Core Capabilities
-    story.append(Paragraph("२. मुख्य फीचर्स आणि क्षमतांची सूची (Core Features Matrix)", styles["Heading1"]))
+    story.append(Paragraph("2. Core Features & Capabilities Matrix (Main Features Chi Yadi)", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284C7"), spaceAfter=6))
     
     features_data = [
-        [Paragraph("फीचरचे नाव (Feature)", styles["TableHead"]), 
-         Paragraph("विभाग (Category)", styles["TableHead"]), 
-         Paragraph("युजरला होणारा थेट फायदा (User Benefit in Marathi)", styles["TableHead"]), 
-         Paragraph("स्थिती (Status)", styles["TableHead"])],
+        [Paragraph("Feature Name", styles["TableHead"]), 
+         Paragraph("Category", styles["TableHead"]), 
+         Paragraph("User Benefit (Minglish Summary)", styles["TableHead"]), 
+         Paragraph("Status", styles["TableHead"])],
         
-        [Paragraph("<b>३०५ स्वायत्त AI एजंट्स</b>", styles["TableCellBold"]),
+        [Paragraph("<b>305 Autonomous AI Agents</b>", styles["TableCellBold"]),
          Paragraph("Cognitive AI", styles["TableCell"]),
-         Paragraph("बँकिंग, फ्रॉड तपासणी, लेजर खाती, कंप्लायन्स आणि रिस्क मॅनेजमेंटचे स्वतंत्र तज्ज्ञ एजंट्स.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("Banking, fraud detection, ledger accounts, compliance ani risk management che specialized agents.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
         [Paragraph("<b>Lakehouse Omni Commander</b>", styles["TableCellBold"]),
          Paragraph("Data Architecture", styles["TableCell"]),
-         Paragraph("कोणतीही Data Dictionary न पाहता Snowflake, Oracle 23ai आणि Postgres चे टेबल्स शोधून जॉइन करणे.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("Kontahi Data Dictionary na pahata Snowflake, Oracle 23ai ani Postgres che tables shodhun join karne.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
-        [Paragraph("<b>BOD, SOD, EOD ट्रॅकर</b>", styles["TableCellBold"]),
+        [Paragraph("<b>BOD, SOD, EOD Tracker</b>", styles["TableCellBold"]),
          Paragraph("Banking Core", styles["TableCell"]),
-         Paragraph("सकाळचे BOD (08:00 AM), SOD (09:00 AM), कटऑफ (03:30 PM) आणि रात्रीचे EOD (08:30 PM) चे लाइव्ह ट्रॅकिंग.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("Morning BOD (08:00 AM), SOD (09:00 AM), Intraday Cutoff (15:30 PM) ani Night EOD (20:30 PM) live status.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
-        [Paragraph("<b>L2 99.85% क्लीन डेटा SLA</b>", styles["TableCellBold"]),
+        [Paragraph("<b>L2 99.85% Clean Data SLA</b>", styles["TableCellBold"]),
          Paragraph("Data Quality", styles["TableCell"]),
-         Paragraph("Medallion L2 लेयरमधील डेटा १००% स्वच्छ, डुप्लिकेट-मुक्त आणि ऑडिट-रेडी असण्याची हमी.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("Medallion L2 layer madhe 100% clean data, zero duplicate primary keys ani referential integrity assurance.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
-        [Paragraph("<b>क्रॉस-डीबी जॉइन & एक्सेल डाऊनलोड</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Cross-DB Join & Excel Download</b>", styles["TableCellBold"]),
          Paragraph("Analytics & BI", styles["TableCell"]),
-         Paragraph("दोन वेगवेगळ्या डेटाबेसचा डेटा एकत्र जोडून स्क्रीनवर ५-ओळींचा प्रिव्ह्यू आणि थेट Excel (.xlsx) डाऊनलोड.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("Don vegveglya database cha data merge karun screen var 5-row preview ani direct Excel (.xlsx) download link.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
-        [Paragraph("<b>बोलून शेड्युलर बदलणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Conversational Task Scheduler</b>", styles["TableCellBold"]),
          Paragraph("Automation", styles["TableCell"]),
-         Paragraph("'उद्या नको, परवापासून रेग्युलर कर' असे मराठीत बोलून टास्कची वेळ आणि ऑटोमेलर लिस्ट बदलणे.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("'Udya nako, parva pasun regular kar' asa bolun task schedule chi timing ani auto-mailer list change karne.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
-        [Paragraph("<b>Tavily Live इंटरनेट सर्च</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Tavily Live Web Search</b>", styles["TableCellBold"]),
          Paragraph("Web Intelligence", styles["TableCell"]),
-         Paragraph("थेट इंटरनेटवरून ताज्या बातम्या, RBI सर्क्युलर्स, आणि मार्केट ट्रेंड्स चॅटमध्ये शोधणे.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+         Paragraph("Direct internet varun latest financial news, RBI circulars ani market trends chat madhe ground karne.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
 
-        [Paragraph("<b>टेलीग्राम एक्झिक्युटिव्ह अलर्ट्स</b>", styles["TableCellBold"]),
-         Paragraph("Multi-Channel Alert", styles["TableCell"]),
-         Paragraph("महत्त्वाचे फ्रॉड अलर्ट्स आणि ईओडी रिपोर्ट्स थेट बँक अधिकाऱ्यांच्या टेलिग्रामवर प्राप्त होणे.", styles["TableCell"]),
-         Paragraph("<font color='#10B981'><b>ACTIVE ✅</b></font>", styles["TableCell"])],
+        [Paragraph("<b>Telegram Executive Alerts</b>", styles["TableCellBold"]),
+         Paragraph("Multi-Channel", styles["TableCell"]),
+         Paragraph("Critical fraud anomaly alerts ani EOD financial summary reports direct Telegram var receive karne.", styles["TableCell"]),
+         Paragraph("<font color='#10B981'><b>ACTIVE</b></font>", styles["TableCell"])],
     ]
     
     t_feat = Table(features_data, colWidths=[110, 85, 255, 70])
@@ -552,55 +540,55 @@ def build_user_manual(output_pdf, assets_dir):
     story.append(Spacer(1, 8))
     
     # Section 3: Step-by-Step User Walkthrough
-    story.append(Paragraph("३. स्टुडिओ कसा वापरावा? (Step-by-Step User Walkthrough)", styles["Heading1"]))
+    story.append(Paragraph("3. Step-by-Step User Walkthrough (Studio Kasa Vapraycha?)", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284C7"), spaceAfter=6))
     
     steps_guide = [
-        ("पायरी १: URL उघडणे", "तुमच्या मोबाईल किंवा लॅपटॉपच्या ब्राउझरमध्ये <b>https://mangesh-nanopro-studio.onrender.com</b> ही सुरक्षित लिंक उघडा. कोणताही VPN किंवा सॉफ्टवेअर इन्स्टॉल करण्याची आवश्यकता नाही."),
-        ("पायरी २: सुरक्षित लॉगिन", "लॉगिन स्क्रीनवर तुमचा अधिकृत User ID आणि Password टाका. <i>(सुरक्षेसाठी लॉगिन स्क्रीनवरून ॲडमिन पासवर्ड पूर्णपणे हटवला आहे, त्यामुळे कोणतीही माहिती बाहेर फुटणार नाही.)</i>"),
-        ("पायरी ३: नैसर्गिक भाषेत प्रश्न विचारणे", "स्क्रीनच्या खालच्या चॅट बॉक्समध्ये तुमच्या नेहमीच्या भाषेत (मराठी/इंग्रजी) प्रॉम्ट टाईप करा किंवा माइकवर बोला. उदा. <i>'कटऑफ कधी घेतला आणि आजचे ईओडी सेटलमेंट झाले का?'</i>"),
-        ("पायरी ४: क्रॉस-डेटाबेस जॉइन करणे", "जर तुम्हाला ओरेकल आणि स्नोफ्लेकचा डेटा एकत्र हवा असेल, तर फक्त सांगा: <i>'GAM आणि CUSTOMER_MASTER जॉइन कर आणि सॅम्पल दाखव'</i>. NanoPro स्वतः दोन्ही डेटाबेसमधून डेटा मॅच करून स्क्रीनवर ५ ओळी दाखवेल."),
-        ("पायरी ५: एक्सेल रिपोर्ट १-क्लिक डाऊनलोड", "प्रिव्ह्यू टेबलच्या खाली निळ्या रंगाची <b>[Download Excel (.xlsx)]</b> लिंक दिसेल. त्यावर क्लिक करताच संपूर्ण रिपोर्ट तुमच्या लॅपटॉपवर डाऊनलोड होईल."),
-        ("पायरी ६: ऑटोमेलर आणि शेड्युल बदलणे", "जर एखाद्या रिपोर्टची तारीख बदलायची असेल, तर फक्त म्हणा: <i>'aik na ha daily hotoy na tr yala udya nako pathau parva pasun regular kar'</i>. NanoPro स्वतः टास्क शेड्युलर अपडेट करेल!")
+        ("Step 1: Open Cloud URL", "Tumchya mobile kiva laptop browser madhe <b>https://mangesh-nanopro-studio.onrender.com</b> hi secure link open kara. Kontahi VPN kiva installation required nahi."),
+        ("Step 2: Secure Login", "Login screen var tumcha authorized User ID ani Password taka. <i>(Security sathi login screen varun admin password complete remove kela ahe, so konachya hati lagnyachi risk nahi.)</i>"),
+        ("Step 3: Natural Language Prompt", "Chat box madhe regular Minglish/English madhe prompt type kara kiva mic var bola. E.g., <i>'Cutoff kadhi ghetla ani aaj EOD settlement zale ka?'</i>"),
+        ("Step 4: Cross-Database Join", "Jar Oracle ani Snowflake data merge karaycha asel, tr fakt mhana: <i>'GAM ani CUSTOMER_MASTER join kar and sample dakhav'</i>. NanoPro automatically matching keys find out karun 5-row preview dakhavel."),
+        ("Step 5: 1-Click Excel Download", "Preview table chya khali blue color chi <b>[Download Excel (.xlsx)]</b> link disel. Tyavar click kartach complete federated report tumchya device var download hoil."),
+        ("Step 6: Shift Automation Schedule", "Jar daily report postpone karaycha asel, tr fakt prompt dya: <i>'aik na ha daily hotoy na tr yala udya nako pathau parva pasun regular kar'</i>. NanoPro task scheduler update karel!")
     ]
     
     for s_title, s_desc in steps_guide:
-        story.append(Paragraph(f"<b><font color='#0284C7'>■ {s_title}:</font></b> {s_desc}", styles["Bullet"]))
+        story.append(Paragraph(f"<b><font color='#0284C7'>* {s_title}:</font></b> {s_desc}", styles["Bullet"]))
     
     story.append(Spacer(1, 6))
     
     # Embed Task Scheduler image
     img_task = os.path.join(assets_dir, "media_1791821757982_059be921.png")
-    story.append(make_bounded_image(img_task, "चित्र २: NanoPro AI Studio — टास्क शेड्युलर आणि ऑटोमेशन मॅनेजमेंट स्क्रीन"))
+    story.append(make_bounded_image(img_task, "Figure 2: NanoPro AI Studio - Task Scheduler & Automation Management Screen", max_height=125))
     
     # Section 4: Real-Life Prompt Cheatsheet
-    story.append(Paragraph("४. दररोज वापरण्यासाठी तयार प्रॉम्ट्स (Practical Prompt Cheatsheet)", styles["Heading1"]))
+    story.append(Paragraph("4. Practical Prompt Cheatsheet (Daily Use Sathi Ready Prompts)", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284C7"), spaceAfter=6))
     
     prompts_data = [
-        [Paragraph("काम / टास्कचा प्रकार", styles["TableHead"]), 
-         Paragraph("तुम्ही काय प्रॉम्ट द्यायचा? (Sample User Prompt)", styles["TableHead"]), 
-         Paragraph("NanoPro काय उत्तर देईल? (Expected Output)", styles["TableHead"])],
+        [Paragraph("Task Type", styles["TableHead"]), 
+         Paragraph("Tumhi Kay Prompt Dyaycha? (Sample Prompt)", styles["TableHead"]), 
+         Paragraph("NanoPro Kay Reply Deil? (Expected Output)", styles["TableHead"])],
         
-        [Paragraph("<b>BOD / EOD स्थिती</b>", styles["TableCellBold"]),
-         Paragraph("<i>'कटऑफ कधी घेतला, eod कधी bod कधी झाली आणि l2 madhe clean data ahe ka?'</i>", styles["TableCell"]),
-         Paragraph("सर्व कटऑफ वेळा आणि ९९.८५% L2 क्लीन डेटा रिपोर्ट तात्काळ सादर करेल.", styles["TableCell"])],
+        [Paragraph("<b>BOD / EOD Status</b>", styles["TableCellBold"]),
+         Paragraph("<i>'Cutoff kadhi ghetla, eod kadhi bod kadhi jhali and l2 madhe clean data ahe ka?'</i>", styles["TableCell"]),
+         Paragraph("Sarv cutoff timings, batch status ani 99.85% L2 clean data SLA report instant disel.", styles["TableCell"])],
 
-        [Paragraph("<b>क्रॉस-डीबी जॉइन</b>", styles["TableCellBold"]),
-         Paragraph("<i>'ha table havay kuthe ahe? dusra table snowflake madhe ahe check kar, join possible ahe ka, sample dakhava'</i>", styles["TableCell"]),
-         Paragraph("टेबलचे लोकेशन, LEFT JOIN आर्किटेक्चर, कॉलम मॅचिंग आणि ५-रो सॅम्पल प्रिव्ह्यू विथ एक्सेल डाऊनलोड देईल.", styles["TableCell"])],
+        [Paragraph("<b>Cross-DB Join</b>", styles["TableCellBold"]),
+         Paragraph("<i>'Ha table havay kuthe ahe? Dusra table snowflake madhe ahe check kar, join possible ahe ka, sample dakhav'</i>", styles["TableCell"]),
+         Paragraph("Table locations, LEFT JOIN architecture, column matching, 5-row sample preview ani Excel download link deil.", styles["TableCell"])],
 
-        [Paragraph("<b>टास्क पुढे ढकलणे</b>", styles["TableCellBold"]),
-         Paragraph("<i>'aik na ha daily hotoy na tr yala udya nako pathau parva pasun regular kar'</i>", styles["TableCell"]),
-         Paragraph("उद्याचा रन रद्द करून परवापासून (२ दिवस पुढे) टास्क शेड्युल करेल आणि पुष्टी देईल.", styles["TableCell"])],
+        [Paragraph("<b>Postpone Schedule</b>", styles["TableCellBold"]),
+         Paragraph("<i>'Aik na ha daily hotoy na tr yala udya nako pathau parva pasun regular kar'</i>", styles["TableCell"]),
+         Paragraph("Udya cha run cancel karun parva pasun (+2 days) task schedule update karel ani confirmation deil.", styles["TableCell"])],
 
-        [Paragraph("<b>नवीन ईमेल जोडणे</b>", styles["TableCellBold"]),
-         Paragraph("<i>'tya madhe as change kar ki patil@bank.com la pn auto mailer report jayla hava'</i>", styles["TableCell"]),
-         Paragraph("ऑटोमेलरच्या यादीमध्ये नवीन ईमेल आयडी ॲड करून कन्फर्मेशन मेसेज दाखवेल.", styles["TableCell"])],
+        [Paragraph("<b>Add AutoMailer Email</b>", styles["TableCellBold"]),
+         Paragraph("<i>'Tya madhe as change kar ki patil@bank.com la pn auto mailer report jayla hava'</i>", styles["TableCell"]),
+         Paragraph("Auto-mailer recipient list madhe email add karel ani automated confirmation message display karel.", styles["TableCell"])],
 
-        [Paragraph("<b>सर्व ऑटोमेशन पाहणे</b>", styles["TableCellBold"]),
-         Paragraph("<i>'hepn dakhav ki ata kiti task automate ahet'</i>", styles["TableCell"]),
-         Paragraph("सध्या सुरू असलेले सर्व शेड्युल्ड टास्क्स, त्यांची वेळ आणि ऑटोमेलरची स्थिती दाखवेल.", styles["TableCell"])],
+        [Paragraph("<b>List All Automations</b>", styles["TableCellBold"]),
+         Paragraph("<i>'He pn dakhav ki ata kiti task automate ahet'</i>", styles["TableCell"]),
+         Paragraph("Active automation tasks chi full table, next run dates ani AutoMailer health report deil.", styles["TableCell"])],
     ]
     
     t_prompts = Table(prompts_data, colWidths=[95, 215, 210])
@@ -618,18 +606,18 @@ def build_user_manual(output_pdf, assets_dir):
     story.append(Spacer(1, 8))
     
     # Section 5: FAQs & Troubleshooting
-    story.append(Paragraph("५. वारंवार विचारले जाणारे प्रश्न आणि अडचणी निवारण (User FAQs)", styles["Heading1"]))
+    story.append(Paragraph("5. User FAQs & Troubleshooting (Adchani Nivaran)", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284C7"), spaceAfter=6))
     
     faqs = [
-        ("प्रश्न १: माझा पासवर्ड विसरल्यास मी काय करावे?", 
-         "उत्तर: सुरक्षा नियमांनुसार पासवर्ड लॉगिन स्क्रीनवर दाखवला जात नाही. तुमच्या संस्थेच्या मुख्य ॲडमिनिस्ट्रेटरशी संपर्क साधा. ॲडमिन <code>#user_management</code> पोर्टलवरून १ सेकंदात तुमचा पासवर्ड रीसेट करू शकतात."),
-        ("प्रश्न २: लॅपटॉप बंद असताना ऑटोमेलर किंवा शेड्युल्ड रिपोर्ट्स जातात का?", 
-         "उत्तर: <b>होय, १००%!</b> हा स्टुडिओ २४×७ Render क्लाऊडवर अखंड कार्यरत असतो. तुमचा लॅपटॉप बंद असला किंवा इंटरनेट नसले, तरी क्लाऊडवरील शेड्युलनुसार वेळेवर रिपोर्ट्स आपोआप पाठवले जातात."),
-        ("प्रश्न ३: एक्सेल फाईल डाऊनलोड होत नसेल तर काय करावे?", 
-         "उत्तर: तुमच्या ब्राउझरमध्ये 'Pop-up Blocker' सुरू असल्यास तो बंद करा. तरीही अडचण आल्यास चॅटमध्ये <i>'मला हा रिपोर्ट पुन्हा तयार करून दे'</i> असा प्रॉम्ट द्या; NanoPro नवीन फ्रेश लिंक जनरेट करेल."),
-        ("प्रश्न ४: मला नवीन फीचर्स (उदा. फ्रॉड एमएल किंवा व्हॉईस एसक्यूएल) दिसत नाहीत?", 
-         "उत्तर: तुमच्या युजर रोलला कदाचित तेवढीच परमिशन दिली गेली असेल. ॲडमिनला सांगून तुमच्या प्रोफाइलमध्ये Granular RBAC Permissions अपडेट करून घ्या.")
+        ("Q1: Password visaralyas kay karave?", 
+         "Ans: Security rules mule password login screen var display hot nahi. Tumchya organization chya Master Admin shi contact kara. Admin #user_management portal varun 1 second madhe password reset karu shaktat."),
+        ("Q2: Laptop band astana AutoMailer kiva scheduled reports jatat ka?", 
+         "Ans: <b>Yes, 100%!</b> Ha studio 24x7 Render cloud var continuous running ahe. Tumcha laptop band asla kiva internet nasle, tari cloud scheduler pramane exact time var reports email v telegram var send hotat."),
+        ("Q3: Excel report file download hot nasel tr kay karave?", 
+         "Ans: Browser madhe 'Pop-up Blocker' enabled asel tr allow kara. Tasech chat box madhe <i>'Mala ha report parat generate karun de'</i> asa prompt dya; NanoPro fresh download link create karel."),
+        ("Q4: Mala navin features (e.g. Fraud ML kiva Voice SQL) disat nahit?", 
+         "Ans: Tumchya user profile la limited permissions asu shaktat. Master Admin la sangun Granular RBAC Permissions update karun ghya.")
     ]
     
     for q, a in faqs:
@@ -639,7 +627,7 @@ def build_user_manual(output_pdf, assets_dir):
         
     story.append(Spacer(1, 10))
     story.append(make_callout(
-        "कोणत्याही तातडीच्या मदतीसाठी किंवा नवीन फीचरच्या विनंतीसाठी मास्टर ॲडमिनशी <b>admin@nanopro.ai</b> वर संपर्क साधा.",
+        "Kontyahi emergency help kiva navin feature request sathi Master Admin shi <b>admin@nanopro.ai</b> var contact kara.",
         kind="note"
     ))
     
@@ -652,11 +640,11 @@ def build_user_manual(output_pdf, assets_dir):
         bottomMargin=44
     )
     doc.build(story, canvasmaker=UserManualCanvas)
-    print(f"[OK] User Manual successfully generated: {output_pdf}")
+    print(f"[OK] User Manual generated (Minglish + English): {output_pdf}")
 
 
 # ----------------------------------------------------------------------
-# 7. Build Admin & Developer Architecture Manual PDF
+# 6. Build Admin & Developer Architecture Manual PDF (Minglish + English)
 # ----------------------------------------------------------------------
 def build_admin_developer_manual(output_pdf, assets_dir):
     styles = create_styles()
@@ -664,32 +652,32 @@ def build_admin_developer_manual(output_pdf, assets_dir):
     
     # Cover Page
     meta_items = [
-        ("प्लॅटफॉर्म नाव / System Name", "Mangesh Nano Pro AI Studio (मंगेश नॅनो प्रो एआय स्टुडिओ)"),
-        ("डॉक्युमेंट प्रकार / Document Type", "मास्टर ॲडमिन, टेक्निकल आर्किटेक्चर आणि लीड डेव्हलपर मॅन्युअल (Admin & Dev Guide)"),
-        ("ऑडिट ग्रेड / Compliance Grade", "Enterprise Tier-1 Audit Compliant (Strict RBAC & Encrypted Vault)"),
-        ("अंतिम रिलीज व्हर्जन / Live Version", "v9.0 Lakehouse Omni Commander (Commit: 49baa4b)"),
-        ("अंतिम मंजुरी वेळ / Timestamp", "15-Oct-2026 संध्याकाळी 06:45 PM IST"),
-        ("GitHub रिपॉझिटरी / Source Code", "https://github.com/mangeshbagul15/nanopro-ai-studio"),
-        ("२४×७ क्लाऊड प्रॉडक्शन होस्टिंग", "Render Cloud Native (Zero-Card Free Tier Architecture)"),
-        ("मास्टर ॲडमिन पोर्टल / RBAC Portal", "https://mangesh-nanopro-studio.onrender.com/#user_management"),
-        ("प्रणाली निर्माता व मुख्य आर्किटेक्ट", "Mangesh Bagul (मंगेश बागुल) & Autonomous AI Core Team")
+        ("Platform Name", "Mangesh Nano Pro AI Studio (NanoPro AI)"),
+        ("Document Type", "Master Admin, Technical Architecture & Lead Developer Manual (Minglish + English)"),
+        ("Audit Grade", "Enterprise Tier-1 Audit Compliant (Strict RBAC & Encrypted Vault)"),
+        ("Production Release", "v9.0 Lakehouse Omni Commander (Commit: 82c8536)"),
+        ("Final Approval Timestamp", "15-Oct-2026 at 06:45 PM IST"),
+        ("GitHub Repository", "https://github.com/mangeshbagul15/nanopro-ai-studio"),
+        ("24/7 Cloud Hosting", "Render Cloud Native (Zero-Card Free Tier Architecture)"),
+        ("Master Admin Portal", "https://mangesh-nanopro-studio.onrender.com/#user_management"),
+        ("Lead Architect & Founder", "Mangesh Bagul & Autonomous AI Core Team")
     ]
     story.extend(make_cover_page(
         "MANGESH NANO PRO AI STUDIO",
-        "मास्टर ॲडमिन, टेक्निकल आर्किटेक्चर & लीड डेव्हलपर मॅन्युअल (v9.0 Live)",
+        "Master Admin, Technical Architecture & Lead Developer Manual (v9.0 Live)",
         meta_items,
         bg_color="#090D16",
         accent_color="#10B981"
     ))
     
     # Section 1: Architecture & Data Flow
-    story.append(Paragraph("१. एंटरप्राइज टेक्निकल आर्किटेक्चर आणि डेटा फ्लो (System Architecture)", styles["Heading1"]))
+    story.append(Paragraph("1. Enterprise Technical Architecture & Data Flow", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#10B981"), spaceAfter=6))
     
     arch_desc = """
-    NanoPro AI Studio हे <b>५-स्तरीय (5-Tier) हायब्रिड मायक्रोसर्व्हिस व क्लाऊड-नेटिव्ह आर्किटेक्चरवर</b> उभारलेले आहे. 
-    हे डिझाइन अत्यंत वेगवान, सुरक्षित आणि शून्य-खर्च (Zero-Card Free Cloud) तत्त्वावर आधारलेले आहे. 
-    जेव्हा कोणताही युजर किंवा बाह्य प्रणाली विनंती पाठवते, तेव्हा ती खालीलप्रमाणे विविध स्तरांमधून प्रक्रिया केली जाते:
+    NanoPro AI Studio he <b>5-Tier Hybrid Microservice & Cloud-Native Architecture</b> var based ahe. 
+    He design ultra-fast, highly resilient ani zero-card free cloud tier architecture follow karte. 
+    Kontehi user query kiva external webhook call kashi process hote, tyache tier breakdown khali pramane ahe:
     """
     story.append(Paragraph(arch_desc, styles["Body"]))
     story.append(Spacer(1, 3))
@@ -697,39 +685,39 @@ def build_admin_developer_manual(output_pdf, assets_dir):
     # Vector Drawing Architecture Diagram
     story.append(draw_architecture_diagram())
     story.append(Spacer(1, 4))
-    story.append(Paragraph("डायग्राम १: NanoPro AI Studio — ५-स्तरीय हायब्रिड मल्टि-क्लाऊड आर्किटेक्चर आणि डेटा फ्लो", styles["Caption"]))
+    story.append(Paragraph("Figure 1: NanoPro AI Studio - 5-Tier Hybrid Multi-Cloud Architecture & Data Pipeline", styles["Caption"]))
     story.append(Spacer(1, 4))
     
     # Tier breakdown table
     tier_data = [
-        [Paragraph("स्तर (Tier)", styles["TableHead"]), 
-         Paragraph("तांत्रिक घटक (Components)", styles["TableHead"]), 
-         Paragraph("कामाचे स्वरूप व कार्यप्रणाली (Engineering Responsibility)", styles["TableHead"]), 
-         Paragraph("SLA / लेटन्सी", styles["TableHead"])],
+        [Paragraph("Tier Level", styles["TableHead"]), 
+         Paragraph("Technical Components", styles["TableHead"]), 
+         Paragraph("Engineering Role & Responsibility (Minglish)", styles["TableHead"]), 
+         Paragraph("SLA / Latency", styles["TableHead"])],
         
         [Paragraph("<b>Tier 1: Client Access</b>", styles["TableCellBold"]),
          Paragraph("SPA Frontend, Telegram Bot, REST Webhooks", styles["TableCell"]),
-         Paragraph("अतिजलद वेब युआय, मराठी व्हॉईस इनपुट, टेलिग्राम बॉट आणि बाह्य सिस्टम्ससाठी JSON REST API.", styles["TableCell"]),
+         Paragraph("High-speed web UI, Marathi voice input, executive Telegram bot ani external REST API integration.", styles["TableCell"]),
          Paragraph("< 50ms", styles["TableCell"])],
 
         [Paragraph("<b>Tier 2: Security Gateway</b>", styles["TableCellBold"]),
          Paragraph("FastAPI 0.110+, Granular RBAC, AES Vault", styles["TableCell"]),
-         Paragraph("युजर ऑथेंटिकेशन, आयपी व्हेरिफिकेशन, सुरक्षित पासवर्ड हॅशिंग (PBKDF2) आणि क्रेडेंशियल्स व्हॉल्ट.", styles["TableCell"]),
+         Paragraph("User authentication, IP verification, PBKDF2 password hashing ani encrypted secrets vault.", styles["TableCell"]),
          Paragraph("< 5ms", styles["TableCell"])],
 
         [Paragraph("<b>Tier 3: Cognitive AI</b>", styles["TableCellBold"]),
          Paragraph("Groq LPU, Google Gemini 3.5, Ollama GPU", styles["TableCell"]),
-         Paragraph("Groq वर १२०B पॅरामीटर मॉडेल (सुपरफास्ट), Gemini वर १० लाख टोकन मेमरी आणि ऑफलाइन लोकल GPU बॅकअप.", styles["TableCell"]),
+         Paragraph("Groq var 120B parameter model (sub-second), Gemini var 1M tokens memory ani offline Ollama backup.", styles["TableCell"]),
          Paragraph("< 1,200ms", styles["TableCell"])],
 
         [Paragraph("<b>Tier 4: Omni Commander</b>", styles["TableCellBold"]),
          Paragraph("Lakehouse Omni Commander Engine", styles["TableCell"]),
-         Paragraph("क्रॉस-डेटाबेस जॉइन मॅपिंग, BOD/SOD/EOD कटऑफ ट्रॅकिंग, आणि ९९.८५% L2 क्लीन डेटा पडताळणी.", styles["TableCell"]),
+         Paragraph("Cross-database join mapping, BOD/SOD/EOD batch tracking, and 99.85% L2 clean data SLA audits.", styles["TableCell"]),
          Paragraph("< 15ms", styles["TableCell"])],
 
         [Paragraph("<b>Tier 5: Persistence</b>", styles["TableCellBold"]),
          Paragraph("Snowflake, Oracle 23ai, Postgres, SQLite", styles["TableCell"]),
-         Paragraph("मल्टी-क्लाऊड डेटा वेअरहाऊस (Snowflake), कोअर बँकिंग (Oracle Finacle), क्लाऊड रिलेशनल (Neon) व मेमरी (SQLite WAL).", styles["TableCell"]),
+         Paragraph("Cloud DW (Snowflake), Core Banking CBS (Oracle Finacle), Relational DB (Neon) & Memory (SQLite WAL).", styles["TableCell"]),
          Paragraph("< 8ms", styles["TableCell"])],
     ]
     t_tier = Table(tier_data, colWidths=[90, 120, 240, 70])
@@ -747,10 +735,9 @@ def build_admin_developer_manual(output_pdf, assets_dir):
     story.append(Spacer(1, 8))
     
     # Section 2: Code Hierarchy & Directory Structure
-    story.append(Paragraph("२. संपूर्ण कोड हायराॅर्की आणि फोल्डर रचना (Code Hierarchy & Directory Structure)", styles["Heading1"]))
+    story.append(Paragraph("2. Complete Code Hierarchy & Folder Structure", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#10B981"), spaceAfter=6))
     
-    # Clean ASCII tree without Unicode box-drawing characters
     tree_text = """
 Mangesh_Nano_Pro_AI_Studio/
 |-- app/
@@ -774,6 +761,7 @@ Mangesh_Nano_Pro_AI_Studio/
 |-- data/
 |   |-- reports/                         --> Generated Excel (.xlsx) & CSV Federated Reports
 |   \-- banking/                         --> Core Banking Mock States & Master Corpora
+|-- docs/                                --> Generated PDF Manuals & Documentation Assets
 |-- main.py                              --> FastAPI Server Entrypoint & REST Route Handlers
 |-- sync_studio.bat                      --> 1-Click Two-Way GitHub & Cloud Synchronizer
 |-- run_studio.bat                       --> 1-Click Local Laptop Offline Studio Launcher
@@ -784,55 +772,55 @@ Mangesh_Nano_Pro_AI_Studio/
     story.append(Spacer(1, 8))
     
     # Section 3: Exact Code Modification Guide
-    story.append(Paragraph("३. डेव्हलपर कोड मॉडिफिकेशन गाईड (Exact Code Modification Guide)", styles["Heading1"]))
+    story.append(Paragraph("3. Lead Developer Code Modification Guide (Kuthe Jaun Code Badlava?)", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#10B981"), spaceAfter=6))
     
     story.append(Paragraph(
-        "कोणताही नवीन बदल करायचा असल्यास डेव्हलपर किंवा ॲडमिनने <b>नेमक्या कोणत्या फाईलमध्ये आणि कुठे बदल करावा</b>, "
-        "याची अचूक मार्गदर्शिका खालीलप्रमाणे आहे:",
+        "Kontehi navin change karaycha asel tr developer kiva admin ne <b>konthya file madhe ani kuthe change karava</b>, "
+        "tyachi exact reference table khali pramane ahe:",
         styles["Body"]
     ))
     
     mod_guide = [
-        [Paragraph("बदलायचा विषय / टास्क (Requirement)", styles["TableHead"]), 
-         Paragraph("फाईलचा अचूक पाथ (Exact File Path)", styles["TableHead"]), 
-         Paragraph("संबंधित फंक्शन / क्लास (Function / Class)", styles["TableHead"]), 
-         Paragraph("काय व कसा बदल करावा? (Action in Marathi)", styles["TableHead"])],
+        [Paragraph("Requirement / Task", styles["TableHead"]), 
+         Paragraph("Exact File Path", styles["TableHead"]), 
+         Paragraph("Function / Class / Dict", styles["TableHead"]), 
+         Paragraph("How to Modify? (Minglish Action)", styles["TableHead"])],
         
-        [Paragraph("<b>नवीन प्रॉम्ट किंवा इंटेंट जोडणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Navin Prompt / Intent Add Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>app/agents/extended_intents.py</code>", styles["TableCell"]),
          Paragraph("<code>handle_extended_intents()</code>", styles["TableCell"]),
-         Paragraph("नवीन regex पॅटर्न किंवा कीवर्ड तपासून संबंधित मॅनेजर फंक्शनला कॉल करा.", styles["TableCell"])],
+         Paragraph("Navin regex pattern kiva keyword check karun related manager function call kara.", styles["TableCell"])],
 
-        [Paragraph("<b>नवीन DB टेबल / स्कीमा जोडणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Navin DB Table / Schema Add Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>app/core/lakehouse_omni_commander.py</code>", styles["TableCell"]),
-         Paragraph("<code>MULTI_DB_CATALOG</code> डिक्शनरी", styles["TableCell"]),
-         Paragraph("नवीन डेटाबेसचे नाव, स्कीमा, टेबल, कॉलम्स, डेटाटाइप्स आणि PK/FK टाका.", styles["TableCell"])],
+         Paragraph("<code>MULTI_DB_CATALOG</code> dict", styles["TableCell"]),
+         Paragraph("Navin DB name, schema, table name, columns, datatypes ani PK/FK define kara.", styles["TableCell"])],
 
-        [Paragraph("<b>BOD / SOD / EOD वेळा बदलणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>BOD / SOD / EOD Timings Change Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>app/core/lakehouse_omni_commander.py</code>", styles["TableCell"]),
-         Paragraph("<code>BATCH_TIMINGS</code> डिक्शनरी", styles["TableCell"]),
-         Paragraph("BOD (08:00), SOD (09:00), Cutoff (15:30) किंवा EOD (20:30) ची वेळ बदला.", styles["TableCell"])],
+         Paragraph("<code>BATCH_TIMINGS</code> dict", styles["TableCell"]),
+         Paragraph("BOD (08:00), SOD (09:00), Cutoff (15:30) kiva EOD (20:30) timing change kara.", styles["TableCell"])],
 
-        [Paragraph("<b>नवीन REST API एंडपॉईंट जोडणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Navin REST API Endpoint Add Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>main.py</code>", styles["TableCell"]),
-         Paragraph("<code>@app.get()</code> किंवा <code>@app.post()</code>", styles["TableCell"]),
-         Paragraph("नवीन API राऊट डिक्लेअर करून बिझनेस लॉजिक किंवा डेटा रिटर्न करा.", styles["TableCell"])],
+         Paragraph("<code>@app.get()</code> / <code>@app.post()</code>", styles["TableCell"]),
+         Paragraph("Navin API route declare karun business logic kiva data return kara.", styles["TableCell"])],
 
-        [Paragraph("<b>UI ची सीएसएस / रंग बदलणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>UI CSS, Colors & Theme Change Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>app/ui/dashboard_css.py</code>", styles["TableCell"]),
-         Paragraph("<code>DASHBOARD_CSS</code> स्ट्रिंग", styles["TableCell"]),
-         Paragraph("रंग, फॉन्ट, बॉर्डर, पॅडिंग किंवा बटण स्टाईल्स सीएसएस मध्ये बदला.", styles["TableCell"])],
+         Paragraph("<code>DASHBOARD_CSS</code> string", styles["TableCell"]),
+         Paragraph("Colors, fonts, mobile breakpoints, padding kiva buttons CSS change kara.", styles["TableCell"])],
 
-        [Paragraph("<b>नवीन युजर परमिशन (RBAC) जोडणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>Navin User Permission (RBAC) Add Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>app/ui/auth_components.py</code>", styles["TableCell"]),
          Paragraph("<code>RBACEngine.assign_permissions()</code>", styles["TableCell"]),
-         Paragraph("नवीन परमिशन की (उदा. 'can_view_fraud') जोडून मोडलमध्ये चेकबॉक्स टाका.", styles["TableCell"])],
+         Paragraph("Navin permission key (e.g. 'can_view_fraud') add karun modal madhe checkbox dya.", styles["TableCell"])],
 
-        [Paragraph("<b>ऑटोमेलर Gmail SMTP बदलणे</b>", styles["TableCellBold"]),
+        [Paragraph("<b>AutoMailer Gmail SMTP Change Karne</b>", styles["TableCellBold"]),
          Paragraph("<code>app/database/studio_memory.db</code>", styles["TableCell"]),
-         Paragraph("<code>credentials_vault</code> टेबल", styles["TableCell"]),
-         Paragraph("नवीन SMTP_USER आणि SMTP_PASS व्हॉल्टमध्ये अपडेट करा (किंवा चॅटमधून द्या).", styles["TableCell"])],
+         Paragraph("<code>credentials_vault</code> table", styles["TableCell"]),
+         Paragraph("Navin SMTP_USER ani SMTP_PASS vault madhe update kara (kiva chat madhun dya).", styles["TableCell"])],
     ]
     t_mod = Table(mod_guide, colWidths=[110, 140, 115, 155])
     t_mod.setStyle(TableStyle([
@@ -850,27 +838,27 @@ Mangesh_Nano_Pro_AI_Studio/
     
     # Embed Lakehouse workbench image
     img_admin = os.path.join(assets_dir, "media_1791822118000_3ecd518f.png")
-    story.append(make_bounded_image(img_admin, "चित्र ३: लेकहाऊस इंजिनिअरिंग व मल्टि-डेटाबेस आर्किटेक्चर वर्कबेंच स्क्रीन"))
+    story.append(make_bounded_image(img_admin, "Figure 3: Data Engineering & Multi-Database Architecture Workbench"))
     
     # Section 4: Tech Stack, Versions & Credentials
-    story.append(Paragraph("४. टेक स्टॅक, व्हर्जन्स, डेटाबेस आणि क्रेडेंशियल्स संदर्भ (Tech Stack & Secrets)", styles["Heading1"]))
+    story.append(Paragraph("4. Tech Stack, Versions, DB Schema & Credentials Reference", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#10B981"), spaceAfter=6))
     
     tech_data = [
-        [Paragraph("घटक (Component)", styles["TableHead"]), 
-         Paragraph("वापरलेले तंत्रज्ञान (Technology)", styles["TableHead"]), 
-         Paragraph("व्हर्जन (Version)", styles["TableHead"]), 
-         Paragraph("वापर कशासाठी आहे? (Role & Purpose)", styles["TableHead"])],
+        [Paragraph("Component", styles["TableHead"]), 
+         Paragraph("Technology", styles["TableHead"]), 
+         Paragraph("Version", styles["TableHead"]), 
+         Paragraph("Role & Purpose", styles["TableHead"])],
         
-        [Paragraph("<b>प्रोग्रामिंग लँग्वेज</b>", styles["TableCellBold"]), Paragraph("Python", styles["TableCell"]), Paragraph("3.11 / 3.12", styles["TableCell"]), Paragraph("कोअर सर्व्हर, एजंट्स, डेटा इंजिनिअरिंग व ऑटोमेशन.", styles["TableCell"])],
-        [Paragraph("<b>वेब फ्रेमवर्क</b>", styles["TableCellBold"]), Paragraph("FastAPI + Uvicorn", styles["TableCell"]), Paragraph("0.110.0+", styles["TableCell"]), Paragraph("हाय-स्पीड असिंक्रोनस (Async) REST API गेटवे.", styles["TableCell"])],
-        [Paragraph("<b>लोकल व क्लाऊड मेमरी</b>", styles["TableCellBold"]), Paragraph("SQLite3 WAL Mode", styles["TableCell"]), Paragraph("3.45+", styles["TableCell"]), Paragraph("अतिजलद (<5ms) लोकल ट्रान्झॅक्शन आणि ऑडिट लॉगिंग.", styles["TableCell"])],
-        [Paragraph("<b>क्लाऊड रिलेशनल डीबी</b>", styles["TableCellBold"]), Paragraph("PostgreSQL (Neon Cloud)", styles["TableCell"]), Paragraph("16.0", styles["TableCell"]), Paragraph("सर्व्हरलेस पोस्टग्रेस (सिंगापूर रीजन, 0.5 GB मोफत).", styles["TableCell"])],
-        [Paragraph("<b>क्लाऊड डेटा वेअरहाऊस</b>", styles["TableCellBold"]), Paragraph("Snowflake Lakehouse", styles["TableCell"]), Paragraph("2026 Native", styles["TableCell"]), Paragraph("मोठ्या प्रमाणातील बँकिंग डेटा व मेडॅलियन लेकहाऊस.", styles["TableCell"])],
-        [Paragraph("<b>कोअर बँकिंग डीबी</b>", styles["TableCellBold"]), Paragraph("Oracle 23ai Finacle APEX", styles["TableCell"]), Paragraph("23.4 AI", styles["TableCell"]), Paragraph("कोअर बँकिंग लेजर आणि अकाउंट्स ट्रान्झॅक्शन्स.", styles["TableCell"])],
-        [Paragraph("<b>सुपरफास्ट AI चिप मॉडेल</b>", styles["TableCellBold"]), Paragraph("Groq LPU (GPT-OSS 120B)", styles["TableCell"]), Paragraph("Cloud v1", styles["TableCell"]), Paragraph("सब-सेकंद (<1.2s) रिस्पॉन्स टाईम विथ झिरो कार्ड.", styles["TableCell"])],
-        [Paragraph("<b>हाय-मेमरी AI मॉडेल</b>", styles["TableCellBold"]), Paragraph("Google Gemini 3.5 Flash", styles["TableCell"]), Paragraph("2026 Live", styles["TableCell"]), Paragraph("१० लाख टोकन्स कॉन्टेक्स्ट मेमरी व जटिल ॲनालिसिस.", styles["TableCell"])],
-        [Paragraph("<b>स्थानिक ऑफलाइन मॉडेल</b>", styles["TableCellBold"]), Paragraph("Local Ollama GPU (Qwen/Llama)", styles["TableCell"]), Paragraph("v0.3.0+", styles["TableCell"]), Paragraph("इंटरनेट बंद असताना लॅपटॉपवर ऑफलाइन बॅकअप.", styles["TableCell"])],
+        [Paragraph("<b>Programming Language</b>", styles["TableCellBold"]), Paragraph("Python", styles["TableCell"]), Paragraph("3.11 / 3.12", styles["TableCell"]), Paragraph("Core server, agents, data engineering & automations.", styles["TableCell"])],
+        [Paragraph("<b>Web Framework</b>", styles["TableCellBold"]), Paragraph("FastAPI + Uvicorn", styles["TableCell"]), Paragraph("0.110.0+", styles["TableCell"]), Paragraph("High-speed asynchronous REST API gateway.", styles["TableCell"])],
+        [Paragraph("<b>Local / Cloud Memory</b>", styles["TableCellBold"]), Paragraph("SQLite3 WAL Mode", styles["TableCell"]), Paragraph("3.45+", styles["TableCell"]), Paragraph("Sub-5ms local transactions, release ledger & audit logs.", styles["TableCell"])],
+        [Paragraph("<b>Cloud Relational DB</b>", styles["TableCellBold"]), Paragraph("PostgreSQL (Neon Cloud)", styles["TableCell"]), Paragraph("16.0", styles["TableCell"]), Paragraph("Serverless Postgres (Singapore region, 0.5 GB free tier).", styles["TableCell"])],
+        [Paragraph("<b>Cloud Data Warehouse</b>", styles["TableCellBold"]), Paragraph("Snowflake Lakehouse", styles["TableCell"]), Paragraph("2026 Native", styles["TableCell"]), Paragraph("Enterprise big data, Medallion Bronze/Silver/Gold layers.", styles["TableCell"])],
+        [Paragraph("<b>Core Banking CBS</b>", styles["TableCellBold"]), Paragraph("Oracle 23ai Finacle APEX", styles["TableCell"]), Paragraph("23.4 AI", styles["TableCell"]), Paragraph("Core CBS general ledgers, accounts & transaction records.", styles["TableCell"])],
+        [Paragraph("<b>Fast AI Hardware Chip</b>", styles["TableCellBold"]), Paragraph("Groq LPU (GPT-OSS 120B)", styles["TableCell"]), Paragraph("Cloud v1", styles["TableCell"]), Paragraph("Sub-second (<1.2s) prompt generation on zero-card tier.", styles["TableCell"])],
+        [Paragraph("<b>High-Memory AI Model</b>", styles["TableCellBold"]), Paragraph("Google Gemini 3.5 Flash", styles["TableCell"]), Paragraph("2026 Live", styles["TableCell"]), Paragraph("1 Million tokens context memory & deep analytics.", styles["TableCell"])],
+        [Paragraph("<b>Offline GPU Model</b>", styles["TableCellBold"]), Paragraph("Local Ollama GPU (Qwen/Llama)", styles["TableCell"]), Paragraph("v0.3.0+", styles["TableCell"]), Paragraph("Offline local backup when internet is unavailable.", styles["TableCell"])],
     ]
     t_tech = Table(tech_data, colWidths=[105, 130, 80, 205])
     t_tech.setStyle(TableStyle([
@@ -887,36 +875,36 @@ Mangesh_Nano_Pro_AI_Studio/
     story.append(Spacer(1, 8))
     
     # API Keys Reference Table
-    story.append(Paragraph("API Keys संदर्भ आणि नवीन की कुठून जनरेट करावी? (API Keys Reference)", styles["Heading2"]))
+    story.append(Paragraph("API Keys Reference & Where to Generate New Keys?", styles["Heading2"]))
     
     keys_data = [
-        [Paragraph("API / सेवेचे नाव", styles["TableHead"]), 
-         Paragraph("वापरलेली की (Key Environment Variable)", styles["TableHead"]), 
-         Paragraph("नवीन की मिळवण्याची अधिकृत लिंक (Official URL to Generate)", styles["TableHead"])],
+        [Paragraph("Service / Provider", styles["TableHead"]), 
+         Paragraph("Key Environment Variable", styles["TableHead"]), 
+         Paragraph("Official URL to Generate New Key (Free)", styles["TableHead"])],
         
         [Paragraph("<b>Groq Cloud LPU</b>", styles["TableCellBold"]), 
          Paragraph("<code>GROQ_API_KEY</code>", styles["TableCell"]), 
-         Paragraph("<b>https://console.groq.com/keys</b> (१००% मोफत)", styles["TableCell"])],
+         Paragraph("<b>https://console.groq.com/keys</b> (100% Free)", styles["TableCell"])],
 
         [Paragraph("<b>Google Gemini Cloud</b>", styles["TableCellBold"]), 
          Paragraph("<code>GEMINI_API_KEY</code>", styles["TableCell"]), 
-         Paragraph("<b>https://aistudio.google.com/app/apikey</b> (मोफत टियर)", styles["TableCell"])],
+         Paragraph("<b>https://aistudio.google.com/app/apikey</b> (Free tier)", styles["TableCell"])],
 
         [Paragraph("<b>Tavily Live Search</b>", styles["TableCellBold"]), 
          Paragraph("<code>TAVILY_API_KEY</code>", styles["TableCell"]), 
-         Paragraph("<b>https://tavily.com</b> (१००० मोफत सर्च दरमहा)", styles["TableCell"])],
+         Paragraph("<b>https://tavily.com</b> (1,000 free searches/month)", styles["TableCell"])],
 
         [Paragraph("<b>Telegram Executive Bot</b>", styles["TableCellBold"]), 
          Paragraph("<code>TELEGRAM_BOT_TOKEN</code>", styles["TableCell"]), 
-         Paragraph("Telegram वर <b>@BotFather</b> सर्च करून <code>/newbot</code> करा.", styles["TableCell"])],
+         Paragraph("Telegram madhe <b>@BotFather</b> search karun <code>/newbot</code> dya.", styles["TableCell"])],
 
         [Paragraph("<b>Neon Cloud Postgres</b>", styles["TableCellBold"]), 
          Paragraph("<code>NEON_POSTGRES_URL</code>", styles["TableCell"]), 
-         Paragraph("<b>https://console.neon.tech</b> (मोफत सर्व्हरलेस डीबी)", styles["TableCell"])],
+         Paragraph("<b>https://console.neon.tech</b> (Free serverless Postgres)", styles["TableCell"])],
 
         [Paragraph("<b>Oracle 23ai APEX</b>", styles["TableCellBold"]), 
          Paragraph("<code>ORACLE_23AI_DSN</code>", styles["TableCell"]), 
-         Paragraph("<b>https://cloud.oracle.com</b> (Always Free Autonomous)", styles["TableCell"])],
+         Paragraph("<b>https://cloud.oracle.com</b> (Always Free Autonomous DB)", styles["TableCell"])],
     ]
     t_keys = Table(keys_data, colWidths=[120, 140, 260])
     t_keys.setStyle(TableStyle([
@@ -933,41 +921,41 @@ Mangesh_Nano_Pro_AI_Studio/
     story.append(Spacer(1, 8))
     
     # Section 5: Disaster Recovery & Multi-Laptop Setup
-    story.append(Paragraph("५. डिझास्टर रिकव्हरी, फेलओव्हर आणि दुसऱ्या लॅपटॉपवरून डेव्हलपमेंट (Disaster Recovery)", styles["Heading1"]))
+    story.append(Paragraph("5. Disaster Recovery, Failover & Multi-Laptop Setup Guide", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#10B981"), spaceAfter=6))
     
     recovery_text = """
-    जर कधी <b>BOD/SOD/EOD बॅच क्रॅश झाली, कोडमध्ये त्रुटी आली, Render ने पॉलिसी बदलली किंवा तुम्हाला नवीन/दुसऱ्या लॅपटॉपवरून 
-    काम करायचे असेल</b>, तर खालील अधिकृत मार्गदर्शक तत्त्वांचे पालन करा. यामुळे तुमचे काम कधीही अडकणार नाही:
+    Kadhihi <b>BOD/SOD/EOD batch crash zali, code fatal, Render ne policy change keli kiva dusrya/navin laptop varun 
+    kam karayche asel</b>, tr khali dilelya standard protocols follow kara. Tumche kam kadhihi thambnar nahi:
     """
     story.append(Paragraph(recovery_text, styles["Body"]))
     
     story.append(make_callout(
-        "<b>दुसऱ्या / नवीन लॅपटॉपवरून काम सुरू करण्याची १-मिनिट पद्धत:</b><br/>"
-        "१. नवीन लॅपटॉपवर कमांड प्रॉम्प्ट उघडा आणि टाईप करा: <code>git clone https://github.com/mangeshbagul15/nanopro-ai-studio.git</code><br/>"
-        "२. प्रोजेक्ट फोल्डरमध्ये जा आणि चालवा: <code>pip install -r requirements.txt</code><br/>"
-        "३. <b>sync_studio.bat</b> वर डबल-क्लिक करा — ते क्लाऊडवरील सर्व डेटाबेस आणि कोड आपोआप सिंक करेल.<br/>"
-        "४. <b>run_studio.bat</b> वर क्लिक करा — स्टुडिओ तात्काळ तुमच्या नवीन लॅपटॉपवर सुरू होईल!",
+        "<b>Dusrya / Navin Laptop Varun Kam Shuru Karnyachi 1-Minute Method:</b><br/>"
+        "1. Navin laptop var command prompt open kara ani run kara: <code>git clone https://github.com/mangeshbagul15/nanopro-ai-studio.git</code><br/>"
+        "2. Project folder madhe ja ani run kara: <code>pip install -r requirements.txt</code><br/>"
+        "3. <b>sync_studio.bat</b> var double-click kara - te cloud varil all databases ani code automatically sync karel.<br/>"
+        "4. <b>run_studio.bat</b> var click kara - Studio instant tumchya navin laptop var start hoil!",
         kind="critical"
     ))
     story.append(Spacer(1, 6))
     
-    story.append(Paragraph("<b>काय करावे जर खालील परिस्थिती उद्भवली?</b>", styles["Heading3"]))
+    story.append(Paragraph("<b>Disaster Recovery Scenarios (Kay Karave Jar...):</b>", styles["Heading3"]))
     
     recovery_cases = [
-        ("परिस्थिती १: Render ने अचानक पॉलिसी बदलली किंवा सर्व्हर डाऊन झाला?", 
-         "<b>उपाय:</b> घाबरण्याचे काहीच कारण नाही! हा संपूर्ण प्रोजेक्ट <b>कंटेनर-रेडी आणि डॉकर-कंपॅटिबल</b> आहे. "
-         "तुम्ही हा संपूर्ण कोड <b>Railway.app, HuggingFace Spaces किंवा AWS Lightsail</b> वर अवघ्या ५ मिनिटांत डिप्लॉय करू शकता. "
-         "फक्त नवीन प्लॅटफॉर्मवर GitHub Repo कनेक्ट करा, ते <code>requirements.txt</code> वाचून स्वतः सर्व्हर सुरू करेल."),
+        ("Scenario 1: Render ne suddenly policy change keli kiva server down jhala?", 
+         "<b>Solution:</b> Ghabarnyachi garaj nahi! Ha project 100% <b>Container-Ready & Docker-Compatible</b> ahe. "
+         "Ha entire codebase <b>Railway.app, HuggingFace Spaces kiva AWS Lightsail</b> var avaghya 5 minutes madhe deploy hou shakto. "
+         "Fakt navin platform var GitHub Repo connect kara, te requirements.txt read karun server automatically start karel."),
         
-        ("परिस्थिती २: BOD/SOD/EOD बॅचच्या वेळी डेटाबेस लॉक झाला किंवा स्पेस संपली?", 
-         "<b>उपाय:</b> <code>app/core/lakehouse_omni_commander.py</code> मध्ये <b>Auto-Vacuum Engine</b> जोडलेले आहे. "
-         "ते दर तासाला जुने टेम्पररी डेटाबेसेस साफ करते. बॅकअप रीस्टोअर करण्यासाठी <code>app/backups/</code> मधील "
-         "शेवटचा सुरक्षित <code>.tar.gz</code> बॅकअप १ सेकंदात अनपॅक करा."),
+        ("Scenario 2: BOD/SOD/EOD batch chya veles DB lock jhala kiva disk space sampali?", 
+         "<b>Solution:</b> <code>app/core/lakehouse_omni_commander.py</code> madhe <b>Auto-Vacuum Engine</b> integrated ahe. "
+         "Te hourly temp DB files clean karte. Backup restore karnyasathi <code>app/backups/</code> madhil "
+         "shevat cha safe <code>.tar.gz</code> archive 1 second madhe unpack kara."),
         
-        ("परिस्थिती ३: बाहेरून बदल केले आणि लॅपटॉपवरील कोड मागे पडला?", 
-         "<b>उपाय:</b> तुमच्या लॅपटॉपमधील <code>sync_studio.bat</code> फाईलवर फक्त १ डबल-क्लिक करा. "
-         "ती क्लाऊडवरून नवीन बदल ओढून घेईल आणि <code>NanoPro_AI_Studio_COMPLETE.zip</code> फाईलही ५ सेकंदात अपडेट करेल.")
+        ("Scenario 3: Baherun changes kele ani laptop varil code mage padla?", 
+         "<b>Solution:</b> Laptop madhil <code>sync_studio.bat</code> file var fakt 1 double-click kara. "
+         "Te cloud varun latest updates pull karel ani <code>NanoPro_AI_Studio_COMPLETE.zip</code> file 5 seconds madhe refresh karel.")
     ]
     
     for c_title, c_sol in recovery_cases:
@@ -978,25 +966,25 @@ Mangesh_Nano_Pro_AI_Studio/
     story.append(Spacer(1, 8))
     
     # Section 6: Production Audit Ledger & Sign-off
-    story.append(Paragraph("६. प्रॉडक्शन ऑडिट लेजर आणि कंप्लायन्स साईन-ऑफ (Production Audit Ledger)", styles["Heading1"]))
+    story.append(Paragraph("6. Production Audit Ledger & Compliance Sign-off", styles["Heading1"]))
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#10B981"), spaceAfter=6))
     
     ledger_data = [
         [Paragraph("Release ID", styles["TableHead"]), 
-         Paragraph("तारीख व वेळ (Timestamp)", styles["TableHead"]), 
-         Paragraph("रिलीज व्हर्जन व नाव (Milestone Name)", styles["TableHead"]), 
-         Paragraph("विभाग (Category)", styles["TableHead"]), 
-         Paragraph("स्थिती (Audit Status)", styles["TableHead"])],
+         Paragraph("Date & Time", styles["TableHead"]), 
+         Paragraph("Milestone Release Name", styles["TableHead"]), 
+         Paragraph("Category", styles["TableHead"]), 
+         Paragraph("Audit Status", styles["TableHead"])],
         
-        [Paragraph("<b>REL-01</b>", styles["TableCellBold"]), Paragraph("11-Oct 08:00 PM", styles["TableCell"]), Paragraph("v1.0 Core AI Center (305 Agents)", styles["TableCell"]), Paragraph("Core Framework", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-02</b>", styles["TableCellBold"]), Paragraph("12-Oct 06:30 PM", styles["TableCell"]), Paragraph("v2.0 Hybrid Multi-Cloud AI Adapter", styles["TableCell"]), Paragraph("AI Core & LLM", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-03</b>", styles["TableCellBold"]), Paragraph("13-Oct 04:15 PM", styles["TableCell"]), Paragraph("v3.0 Enterprise Multi-Cloud Lakehouse", styles["TableCell"]), Paragraph("Data Engineering", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-04</b>", styles["TableCellBold"]), Paragraph("14-Oct 07:45 PM", styles["TableCell"]), Paragraph("v4.0 Tavily Live Web Intelligence", styles["TableCell"]), Paragraph("Web Search", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-05</b>", styles["TableCellBold"]), Paragraph("15-Oct 02:30 PM", styles["TableCell"]), Paragraph("v5.0 Granular RBAC User Governance", styles["TableCell"]), Paragraph("Auth & Security", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-06</b>", styles["TableCellBold"]), Paragraph("15-Oct 04:45 PM", styles["TableCell"]), Paragraph("v6.0 Top 5 Futuristic AI Pipelines", styles["TableCell"]), Paragraph("Automation", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-07</b>", styles["TableCellBold"]), Paragraph("15-Oct 05:25 PM", styles["TableCell"]), Paragraph("v7.0 24/7 Cloud Production Hosting", styles["TableCell"]), Paragraph("Cloud & DevOps", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-08</b>", styles["TableCellBold"]), Paragraph("15-Oct 05:40 PM", styles["TableCell"]), Paragraph("v8.0 Security Hardening & 1-Click Sync", styles["TableCell"]), Paragraph("Security & Sync", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL ✅</b></font>", styles["TableCell"])],
-        [Paragraph("<b>REL-09</b>", styles["TableCellBold"]), Paragraph("15-Oct 06:45 PM", styles["TableCell"]), Paragraph("v9.0 Lakehouse Omni Commander", styles["TableCell"]), Paragraph("Lakehouse & Auto", styles["TableCell"]), Paragraph("<font color='#10B981'><b>LIVE 🚀</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-01</b>", styles["TableCellBold"]), Paragraph("11-Oct 08:00 PM", styles["TableCell"]), Paragraph("v1.0 Core AI Center (305 Agents)", styles["TableCell"]), Paragraph("Core Framework", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-02</b>", styles["TableCellBold"]), Paragraph("12-Oct 06:30 PM", styles["TableCell"]), Paragraph("v2.0 Hybrid Multi-Cloud AI Adapter", styles["TableCell"]), Paragraph("AI Core & LLM", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-03</b>", styles["TableCellBold"]), Paragraph("13-Oct 04:15 PM", styles["TableCell"]), Paragraph("v3.0 Enterprise Multi-Cloud Lakehouse", styles["TableCell"]), Paragraph("Data Engineering", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-04</b>", styles["TableCellBold"]), Paragraph("14-Oct 07:45 PM", styles["TableCell"]), Paragraph("v4.0 Tavily Live Web Intelligence", styles["TableCell"]), Paragraph("Web Search", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-05</b>", styles["TableCellBold"]), Paragraph("15-Oct 02:30 PM", styles["TableCell"]), Paragraph("v5.0 Granular RBAC User Governance", styles["TableCell"]), Paragraph("Auth & Security", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-06</b>", styles["TableCellBold"]), Paragraph("15-Oct 04:45 PM", styles["TableCell"]), Paragraph("v6.0 Top 5 Futuristic AI Pipelines", styles["TableCell"]), Paragraph("Automation", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-07</b>", styles["TableCellBold"]), Paragraph("15-Oct 05:25 PM", styles["TableCell"]), Paragraph("v7.0 24/7 Cloud Production Hosting", styles["TableCell"]), Paragraph("Cloud & DevOps", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-08</b>", styles["TableCellBold"]), Paragraph("15-Oct 05:40 PM", styles["TableCell"]), Paragraph("v8.0 Security Hardening & 1-Click Sync", styles["TableCell"]), Paragraph("Security & Sync", styles["TableCell"]), Paragraph("<font color='#10B981'><b>FINAL</b></font>", styles["TableCell"])],
+        [Paragraph("<b>REL-09</b>", styles["TableCellBold"]), Paragraph("15-Oct 06:45 PM", styles["TableCell"]), Paragraph("v9.0 Lakehouse Omni Commander", styles["TableCell"]), Paragraph("Lakehouse & Auto", styles["TableCell"]), Paragraph("<font color='#10B981'><b>LIVE</b></font>", styles["TableCell"])],
     ]
     t_ledger = Table(ledger_data, colWidths=[60, 95, 185, 110, 70])
     t_ledger.setStyle(TableStyle([
@@ -1013,15 +1001,15 @@ Mangesh_Nano_Pro_AI_Studio/
     story.append(Spacer(1, 8))
     
     # Audit SQL query
-    story.append(Paragraph("<b>ऑडिटर्ससाठी डेटाबेस पडताळणी SQL क्वेरी:</b>", styles["Heading3"]))
+    story.append(Paragraph("<b>Auditors Sathi Database Verification SQL Query:</b>", styles["Heading3"]))
     audit_sql = "SELECT release_id, milestone_date, finalized_time, feature_name, status FROM production_release_ledger ORDER BY release_id ASC;"
     story.append(make_code_block(audit_sql, "SQL AUDIT QUERY"))
     
     story.append(Spacer(1, 10))
     story.append(make_callout(
-        "<b>LEAD ARCHITECT SIGN-OFF:</b> सदर सिस्टीम एंटरप्राइज सुरक्षा, शून्य-दोष (Zero-Defect) कोड, "
-        "आणि ९९.८५% L2 क्लीन डेटा निकषांवर पूर्णपणे प्रमाणित करण्यात आली आहे.<br/>"
-        "<b>हस्ताक्षर:</b> Mangesh Bagul (Lead Architect & Founder) • <b>तारीख:</b> १५ ऑक्टोबर २०२६",
+        "<b>LEAD ARCHITECT SIGN-OFF:</b> He system enterprise security, zero-defect code, "
+        "ani 99.85% L2 clean data criteria var fully certified kela ahe.<br/>"
+        "<b>Signature:</b> Mangesh Bagul (Lead Architect & Founder) - <b>Date:</b> 15-October-2026",
         kind="tip"
     ))
     
@@ -1034,11 +1022,11 @@ Mangesh_Nano_Pro_AI_Studio/
         bottomMargin=44
     )
     doc.build(story, canvasmaker=AdminManualCanvas)
-    print(f"[OK] Admin & Developer Manual successfully generated: {output_pdf}")
+    print(f"[OK] Admin & Developer Manual generated (Minglish + English): {output_pdf}")
 
 
 # ----------------------------------------------------------------------
-# 8. Main Execution
+# 7. Main Execution
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     out_dir = r"C:\Mangesh\NanoPro_AI_Studio_Made_By_Mangesh\NanoPro_Documents"
@@ -1050,14 +1038,14 @@ if __name__ == "__main__":
     user_pdf = os.path.join(out_dir, "NanoPro_User_Manual.pdf")
     admin_pdf = os.path.join(out_dir, "NanoPro_Admin_Developer_Manual.pdf")
     
-    print("[*] Generating NanoPro User Manual...")
+    print("[*] Generating NanoPro User Manual (Minglish + English)...")
     build_user_manual(user_pdf, assets_dir)
     
-    print("[*] Generating NanoPro Admin & Developer Manual...")
+    print("[*] Generating NanoPro Admin & Developer Manual (Minglish + English)...")
     build_admin_developer_manual(admin_pdf, assets_dir)
     
     print("\n=======================================================")
-    print("SUCCESS: Both manuals generated in high aesthetic standard!")
+    print("SUCCESS: Both Minglish + English manuals generated successfully!")
     print(f"1. {user_pdf} ({round(os.path.getsize(user_pdf)/1024, 1)} KB)")
     print(f"2. {admin_pdf} ({round(os.path.getsize(admin_pdf)/1024, 1)} KB)")
     print("=======================================================")
