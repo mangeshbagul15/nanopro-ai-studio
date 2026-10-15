@@ -2420,7 +2420,7 @@ def _get_raw_dashboard_html() -> str:
     <aside id="sidebar" class="app-sidebar">
         <!-- Brand Header -->
         <div class="sidebar-header">
-            <div class="sidebar-brand" onclick="switchView('dashboard')" title="Studio Overview (Home)" style="cursor:pointer;">
+            <div class="sidebar-brand" onclick="navigateToUserHome()" title="Studio Home Workspace" style="cursor:pointer;">
                 <div class="brand-logo-orb">&#129302;</div>
                 <div class="brand-text">
                     <span class="brand-name">NANO PRO</span>
@@ -9563,10 +9563,25 @@ Ready for message compilation and automated dispatch.
         let historyIndex = -1;
         let isNavigatingHistory = false;
 
+        function navigateToUserHome() {
+            const home = (typeof getUserFirstAllowedFeature === 'function') 
+                ? getUserFirstAllowedFeature(window.currentUser) 
+                : 'dashboard';
+            switchView(home);
+        }
+        window.navigateToUserHome = navigateToUserHome;
+
         function switchView(viewName, skipHistoryPush = false) {
             if (!viewName) return;
-            // RBAC Granular Permission Guard
-            if (window.checkViewAllowed && !window.checkViewAllowed(viewName)) {
+            // RBAC Granular Permission Guard: if unallowed, seamlessly route to user's first allowed home feature
+            if (window.checkViewAllowed && !window.checkViewAllowed(viewName, false)) {
+                const safeHome = (typeof getUserFirstAllowedFeature === 'function') 
+                    ? getUserFirstAllowedFeature(window.currentUser) 
+                    : 'dashboard';
+                if (safeHome && safeHome !== viewName) {
+                    console.warn(`[RBAC] '${viewName}' not allowed. Falling back to first allowed feature: '${safeHome}'`);
+                    switchView(safeHome, skipHistoryPush);
+                }
                 return;
             }
             logLocal('Navigation', 'Switched center workspace to: ' + viewName);
@@ -9594,7 +9609,10 @@ Ready for message compilation and automated dispatch.
             const allViews = document.querySelectorAll('.workspace-view');
             let targetView = document.getElementById('view-' + viewName);
             if (!targetView) {
-                targetView = document.getElementById('view-ai_manager') || allViews[0];
+                const fallbackId = (typeof getUserFirstAllowedFeature === 'function')
+                    ? getUserFirstAllowedFeature(window.currentUser)
+                    : 'ai_manager';
+                targetView = document.getElementById('view-' + fallbackId) || document.getElementById('view-ai_manager') || allViews[0];
             }
 
             allViews.forEach(v => {
@@ -15470,7 +15488,12 @@ function formatMarkdown(text) {
 
 
 window.addEventListener('DOMContentLoaded', () => {
-            try { switchView('ai_manager'); } catch(e) { console.error('switchView error:', e); }
+            try { 
+                const initTarget = (typeof getUserFirstAllowedFeature === 'function') 
+                    ? getUserFirstAllowedFeature(window.currentUser) 
+                    : 'ai_manager';
+                switchView(initTarget); 
+            } catch(e) { console.error('switchView error:', e); }
             try { renderOfficeStations('dashOfficeFloor'); } catch(e) {}
             try { renderOfficeStations('officeFloorFull'); } catch(e) {}
 

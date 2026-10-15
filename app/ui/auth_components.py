@@ -489,8 +489,8 @@ def get_auth_injection() -> str:
         </div>
 
         <div class="auth-tabs">
-            <button type="button" class="auth-tab-btn active" id="tabBtnLogin" onclick="switchAuthTab('login')">लॉगिन (Sign In)</button>
-            <button type="button" class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthTab('register')">नवीन नोंदणी (Sign Up)</button>
+            <button type="button" class="auth-tab-btn active" id="tabBtnLogin" onclick="switchAuthTab('login')">Sign In (Login)</button>
+            <button type="button" class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthTab('register')">Register (Sign Up)</button>
         </div>
 
         <div class="auth-body">
@@ -500,14 +500,14 @@ def get_auth_injection() -> str:
             <!-- LOGIN FORM -->
             <form id="authLoginForm" onsubmit="handleAuthLogin(event)">
                 <div class="auth-form-group">
-                    <label>युझरनेम (Username)</label>
-                    <input type="text" id="loginUsername" class="auth-input" placeholder="उदा. nanopro" required autocomplete="username" />
+                    <label>Username (युझरनेम)</label>
+                    <input type="text" id="loginUsername" class="auth-input" placeholder="e.g. nanopro" required autocomplete="username" />
                 </div>
                 <div class="auth-form-group">
-                    <label>पासवर्ड (Password)</label>
+                    <label>Password (पासवर्ड)</label>
                     <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••••••" required autocomplete="current-password" />
                 </div>
-                <button type="submit" id="loginSubmitBtn" class="auth-btn-primary">🔐 सुरक्षित लॉगिन करा (Sign In)</button>
+                <button type="submit" id="loginSubmitBtn" class="auth-btn-primary">🔐 Sign In (Surakshit Login)</button>
                 <div class="auth-footer-hint" style="color: #64748b; font-size: 11px; margin-top: 10px;">
                     🛡️ Enterprise Hardware-Bound 256-Bit TLS Secured Access
                 </div>
@@ -516,33 +516,33 @@ def get_auth_injection() -> str:
             <!-- REGISTRATION FORM -->
             <form id="authRegisterForm" style="display:none;" onsubmit="handleAuthRegister(event)">
                 <div class="auth-form-group">
-                    <label>पूर्ण नाव (Full Name)</label>
-                    <input type="text" id="regFullName" class="auth-input" placeholder="उदा. Rahul Sharma" required />
+                    <label>Full Name (पूर्ण नाव)</label>
+                    <input type="text" id="regFullName" class="auth-input" placeholder="e.g. Rahul Sharma" required />
                 </div>
                 <div class="auth-form-group">
-                    <label>युझरनेम (Username - 3 to 20 chars)</label>
-                    <input type="text" id="regUsername" class="auth-input" placeholder="उदा. rahul_de" required />
+                    <label>Username (3 to 20 chars)</label>
+                    <input type="text" id="regUsername" class="auth-input" placeholder="e.g. rahul_de" required />
                 </div>
                 <div class="auth-form-group">
-                    <label>ईमेल आयडी (Email ID)</label>
-                    <input type="email" id="regEmail" class="auth-input" placeholder="उदा. user@company.com" required />
+                    <label>Email ID (ईमेल)</label>
+                    <input type="email" id="regEmail" class="auth-input" placeholder="e.g. user@company.com" required />
                 </div>
                 <div class="auth-form-group">
-                    <label>पासवर्ड (Password)</label>
+                    <label>Password (पासवर्ड)</label>
                     <input type="password" id="regPassword" class="auth-input" placeholder="••••••••••••" oninput="checkPasswordRules(this.value)" required />
                     
                     <!-- Real-time Security Checklist -->
                     <div class="pwd-rules-box">
-                        <div id="ruleLength" class="pwd-rule-item invalid">किमान ८ अक्षरे (8+ Characters)</div>
-                        <div id="ruleUpper" class="pwd-rule-item invalid">एक मोठे अक्षर (Uppercase A-Z)</div>
-                        <div id="ruleLower" class="pwd-rule-item invalid">एक लहान अक्षर (Lowercase a-z)</div>
-                        <div id="ruleNumber" class="pwd-rule-item invalid">एक अंक (Number 0-9)</div>
-                        <div id="ruleSpecial" class="pwd-rule-item invalid">एक विशेष चिन्ह (@$!%*?&#)</div>
+                        <div id="ruleLength" class="pwd-rule-item invalid">Min 8 Characters</div>
+                        <div id="ruleUpper" class="pwd-rule-item invalid">Uppercase Letter (A-Z)</div>
+                        <div id="ruleLower" class="pwd-rule-item invalid">Lowercase Letter (a-z)</div>
+                        <div id="ruleNumber" class="pwd-rule-item invalid">Number (0-9)</div>
+                        <div id="ruleSpecial" class="pwd-rule-item invalid">Special Symbol (@$!%*?&#)</div>
                     </div>
                 </div>
-                <button type="submit" id="regSubmitBtn" class="auth-btn-primary">📝 खाते तयार करा (Submit for Approval)</button>
+                <button type="submit" id="regSubmitBtn" class="auth-btn-primary">📝 Create Account (Submit for Approval)</button>
                 <div class="auth-footer-hint">
-                    सुरक्षा धोरण: नोंदणीनंतर ॲडमिन (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.
+                    Security Policy: Admin (nanopro) kadun manjur zalya nantar account active hoil.
                 </div>
             </form>
         </div>
@@ -555,10 +555,10 @@ def get_auth_injection() -> str:
         <div class="perm-modal-header">
             <div>
                 <h3 style="margin:0; font-size:16px; font-weight:800; color:#38BDF8; display:flex; align-items:center; gap:8px;">
-                    🛡️ युझर प्रवेश अधिकार &amp; फिचर्स वाटप (User RBAC Permissions)
+                    🛡️ User RBAC Permissions &amp; Feature Allocation
                 </h3>
                 <div style="font-size:12px; color:#94A3B8; margin-top:4px;">
-                    युझर: <b id="permModalUsername" style="color:#FFFFFF;">-</b> | ईमेल: <span id="permModalEmail">-</span>
+                    User: <b id="permModalUsername" style="color:#FFFFFF;">-</b> | Email: <span id="permModalEmail">-</span>
                 </div>
             </div>
             <button type="button" onclick="closePermissionsModal()" style="background:none; border:none; color:#94A3B8; font-size:22px; cursor:pointer;" title="Close">&times;</button>
@@ -571,15 +571,15 @@ def get_auth_injection() -> str:
 
             <!-- 1. ACCESS LEVEL SELECTION -->
             <div class="perm-section-title">
-                <span>1. प्रवेश स्तर निवडा (Access Mode)</span>
+                <span>1. Select Access Mode (Pravesh Star)</span>
             </div>
             <div class="perm-mode-grid">
                 <label class="perm-mode-card active" id="modeCardModify" onclick="setPermAccessMode('MODIFY')">
                     <input type="radio" name="accessModeRadio" id="radioModeModify" value="MODIFY" checked style="accent-color:#38BDF8; margin-top:2px;">
                     <div>
-                        <div style="font-weight:700; color:#38BDF8; font-size:13px;">✏️ MODIFY (पूर्ण अधिकार)</div>
+                        <div style="font-weight:700; color:#38BDF8; font-size:13px;">✏️ MODIFY (Full Control &amp; Edit)</div>
                         <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
-                            युझरला सर्व डेटा तयार करणे, मॉडेल्स चालवणे, SQL रन करणे आणि एडिट करण्याचे पूर्ण अधिकार राहतील.
+                            User can create data, run AI models, execute SQL, and perform full modifications.
                         </div>
                     </div>
                 </label>
@@ -587,9 +587,9 @@ def get_auth_injection() -> str:
                 <label class="perm-mode-card" id="modeCardReadOnly" onclick="setPermAccessMode('READ_ONLY')">
                     <input type="radio" name="accessModeRadio" id="radioModeReadOnly" value="READ_ONLY" style="accent-color:#F59E0B; margin-top:2px;">
                     <div>
-                        <div style="font-weight:700; color:#F59E0B; font-size:13px;">👁️ READ_ONLY (फक्त वाचन)</div>
+                        <div style="font-weight:700; color:#F59E0B; font-size:13px;">👁️ READ_ONLY (View Only)</div>
                         <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
-                            युझर फक्त डॅशबोर्ड, चार्ट्स, रिपोर्ट्स आणि डेटा वाचू शकेल; कोणताही नवीन बदल किंवा डेटा डिलीट करता येणार नाही.
+                            User can view dashboards, charts, and reports; no data edits or deletion allowed.
                         </div>
                     </div>
                 </label>
@@ -597,11 +597,11 @@ def get_auth_injection() -> str:
 
             <!-- 2. FEATURE SELECTION TOOLBAR -->
             <div class="perm-section-title">
-                <span>2. डाव्या बाजूच्या फिचर्सची निवड (Left-Sidebar Navigation Features)</span>
+                <span>2. Select Navigation Features (Left-Sidebar)</span>
             </div>
             <div class="perm-actions-toolbar">
-                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true)">✅ सर्व निवडा (Select All)</button>
-                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false)">❌ सर्व हटवा (Deselect All)</button>
+                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true)">✅ Select All (Sarva Nivada)</button>
+                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false)">❌ Deselect All (Hatawa)</button>
                 <button type="button" class="perm-preset-btn" onclick="selectPermPreset('data_stack')">📊 Data Stack Only</button>
                 <button type="button" class="perm-preset-btn" onclick="selectPermPreset('ai_stack')">🤖 AI &amp; Automation Only</button>
                 <button type="button" class="perm-preset-btn" onclick="selectPermPreset('media_comm')">💬 Comm &amp; Media</button>
@@ -718,9 +718,9 @@ def get_auth_injection() -> str:
         </div>
 
         <div class="perm-modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closePermissionsModal()" style="padding:8px 16px;">रद्द करा (Cancel)</button>
+            <button type="button" class="btn btn-secondary" onclick="closePermissionsModal()" style="padding:8px 16px;">Cancel (Radd Kara)</button>
             <button type="button" id="permModalSaveBtn" class="btn btn-primary" onclick="submitUserPermissions()" style="background:linear-gradient(135deg, #0284C7 0%, #2563EB 100%); padding:8px 20px; font-weight:700;">
-                💾 अधिकार लागू करा (Save &amp; Apply)
+                💾 Save &amp; Apply Permissions
             </button>
         </div>
     </div>
@@ -779,7 +779,7 @@ async function handleAuthLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('loginSubmitBtn');
     btn.disabled = true;
-    btn.innerText = 'पडताळणी करत आहे...';
+    btn.innerText = 'Verifying (Padtalani karat ahe)...';
 
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -796,15 +796,16 @@ async function handleAuthLogin(e) {
             localStorage.setItem('nanopro_session_token', data.session_token);
             currentSessionToken = data.session_token;
             currentUser = data.user;
+            window.currentUser = data.user;
             onAuthSuccess(data.user);
         } else {
-            showAuthAlert(data.error || 'लॉगिन अयशस्वी!', 'error');
+            showAuthAlert(data.error || 'Login failed! Krupaya credentials check kara.', 'error');
         }
     } catch (err) {
-        showAuthAlert('सर्व्हरशी संपर्क होऊ शकला नाही: ' + err.message, 'error');
+        showAuthAlert('Server connection error: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerText = '🔐 सुरक्षित लॉगिन करा (Sign In)';
+        btn.innerText = '🔐 Sign In (Surakshit Login)';
     }
 }
 
@@ -812,13 +813,13 @@ async function handleAuthRegister(e) {
     e.preventDefault();
     const pwd = document.getElementById('regPassword').value;
     if (!checkPasswordRules(pwd)) {
-        showAuthAlert('कृपया सर्व पासवर्ड सुरक्षा नियम पूर्ण करा.', 'error');
+        showAuthAlert('Krupaya sarva password security rules purna kara.', 'error');
         return;
     }
 
     const btn = document.getElementById('regSubmitBtn');
     btn.disabled = true;
-    btn.innerText = 'नोंदणी करत आहे...';
+    btn.innerText = 'Registering (Nondani karat ahe)...';
 
     const payload = {
         full_name: document.getElementById('regFullName').value.trim(),
@@ -840,18 +841,50 @@ async function handleAuthRegister(e) {
             document.getElementById('authRegisterForm').reset();
             setTimeout(() => switchAuthTab('login'), 3500);
         } else {
-            showAuthAlert(data.error || 'नोंदणी अयशस्वी!', 'error');
+            showAuthAlert(data.error || 'Nondani ayashasvi!', 'error');
         }
     } catch (err) {
-        showAuthAlert('त्रुटी आली: ' + err.message, 'error');
+        showAuthAlert('Truti aali: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerText = '📝 खाते तयार करा (Submit for Approval)';
+        btn.innerText = '📝 Create Account (Submit for Approval)';
     }
 }
 
+// Universal First Allowed Feature Calculator: Guarantees NO BLANK SCREEN for New/Existing Users
+function getUserFirstAllowedFeature(user) {
+    const u = user || window.currentUser || currentUser;
+    if (!u) return 'dashboard';
+    const isSuperAdmin = (u.role === 'admin' || u.username === 'nanopro');
+    const allowed = u.allowed_views || ['*'];
+    if (isSuperAdmin || allowed.includes('*')) {
+        return 'dashboard';
+    }
+    
+    // Check user's assigned allowed_views list in order
+    if (Array.isArray(allowed)) {
+        for (const view of allowed) {
+            if (view && view !== '*' && document.getElementById('view-' + view)) {
+                return view;
+            }
+        }
+    }
+    
+    // Fallback to first visible sidebar navigation item in the DOM
+    const firstVisible = document.querySelector('.sidebar .nav-item:not([style*="display: none"]), .app-sidebar .nav-item:not([style*="display: none"])');
+    if (firstVisible) {
+        const oc = firstVisible.getAttribute('onclick') || '';
+        const m = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
+        if (m && m[1]) return m[1];
+    }
+    
+    return (allowed && allowed[0] && allowed[0] !== '*') ? allowed[0] : 'dashboard';
+}
+window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
+
 function onAuthSuccess(user) {
     currentUser = user;
+    window.currentUser = user;
     const gateway = document.getElementById('nanoProAuthGateway');
     if (gateway) gateway.style.display = 'none';
 
@@ -865,6 +898,12 @@ function onAuthSuccess(user) {
     const navMgmt = document.getElementById('nav_user_management');
     if (navMgmt) {
         navMgmt.style.display = (user.role === 'admin' || user.username === 'nanopro') ? 'flex' : 'none';
+    }
+
+    // AUTOMATIC FIRST-FEATURE HOME PAGE: Immediately open user's first permitted feature so no blank screen is shown!
+    const homeView = getUserFirstAllowedFeature(user);
+    if (homeView && typeof switchView === 'function') {
+        switchView(homeView);
     }
 
     // Start Inactivity Timer for regular users
@@ -918,7 +957,7 @@ function startInactivityTracker(user) {
 }
 
 async function triggerAutoLogout() {
-    alert('⏱️ सुरक्षा सूचना: १५ मिनिटांच्या निष्क्रियतेमुळे (Inactivity) तुमचे सत्र आपोआप बंद होत आहे.');
+    alert('⏱️ Security Alert: 15-Minute inactivity mule session auto-logout zale ahe. Krupaya punha login kara.');
     await performLogout(true);
 }
 
@@ -935,6 +974,7 @@ async function performLogout(isAuto=false) {
     localStorage.removeItem('nanopro_session_token');
     currentSessionToken = null;
     currentUser = null;
+    window.currentUser = null;
     location.reload();
 }
 
@@ -1047,14 +1087,14 @@ async function submitUserPermissions() {
     }
 
     if (allowedViews.length === 0) {
-        alert('कृपया किमान एक तरी फिचर निवडा!');
+        alert('Krupaya kiman ek tari feature select kara!');
         return;
     }
 
     const btn = document.getElementById('permModalSaveBtn');
     if (btn) {
         btn.disabled = true;
-        btn.innerText = 'जतन करत आहे...';
+        btn.innerText = 'Saving (Jatan karat ahe)...';
     }
 
     try {
@@ -1071,18 +1111,18 @@ async function submitUserPermissions() {
         });
         const data = await resp.json();
         if (data.status === 'success') {
-            alert('✅ ' + (data.message || 'अधिकार यशस्वीरीत्या लागू करण्यात आले!'));
+            alert('✅ ' + (data.message || 'Permissions yashasviritya lagu karnyayt aale!'));
             closePermissionsModal();
             loadAdminUsers();
         } else {
-            alert('त्रुटी: ' + (data.error || 'अधिकार जतन करता आले नाहीत!'));
+            alert('Truti: ' + (data.error || 'Permissions save karta aale nahit!'));
         }
     } catch (err) {
-        alert('सर्व्हर त्रुटी: ' + err.message);
+        alert('Server Truti: ' + err.message);
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerText = '💾 अधिकार लागू करा (Save & Apply)';
+            btn.innerText = '💾 Save & Apply Permissions';
         }
     }
 }
@@ -1136,7 +1176,7 @@ function applyUserPermissions(user) {
             banner.style.cssText = 'background:linear-gradient(90deg, rgba(245,158,11,0.25) 0%, rgba(239,68,68,0.2) 100%); border-bottom:1px solid rgba(245,158,11,0.5); color:#FCD34D; font-size:12px; font-weight:700; padding:6px 16px; display:flex; align-items:center; justify-content:space-between; position:fixed; top:0; left:0; width:100%; z-index:99999; backdrop-filter:blur(8px);';
             banner.innerHTML = `
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span>👁️ <b>फक्त वाचन मोड (Read-Only Mode):</b> तुमचे खाते व्ह्यू-ओन्ली मोडमध्ये आहे. तुम्ही डेटा पाहू शकता, नवीन बदल किंवा एडिट करू शकत नाही.</span>
+                    <span>👁️ <b>Read-Only Mode:</b> Tumche account view-only mode madhe ahe. Data pahuta yeil, naveen badal kiva edit karta yenar nahi.</span>
                 </div>
                 <span style="font-size:11px; background:rgba(0,0,0,0.4); border:1px solid rgba(245,158,11,0.4); padding:2px 8px; border-radius:4px;">RBAC Enforced</span>
             `;
@@ -1148,23 +1188,25 @@ function applyUserPermissions(user) {
         banner.style.display = 'none';
     }
 
-    // Switch view if current active view is unauthorized
+    // Switch view if current active view is unauthorized or undefined
+    const homeView = getUserFirstAllowedFeature(user);
     if (!hasAll && typeof currentActiveView !== 'undefined' && currentActiveView && !allowed.includes(currentActiveView)) {
-        const firstAllowed = allowed[0] || 'dashboard';
         if (typeof switchView === 'function') {
-            switchView(firstAllowed);
+            switchView(homeView);
         }
     }
 }
 
 // Global guard for switchView
-window.checkViewAllowed = function(viewName) {
+window.checkViewAllowed = function(viewName, showAlert = false) {
     if (!currentUser) return true;
     if (currentUser.role === 'admin' || currentUser.username === 'nanopro') return true;
     const allowed = currentUser.allowed_views || ['*'];
     if (allowed.includes('*') || allowed.includes(viewName)) return true;
     
-    alert(`🚫 प्रवेश नाकारला (Access Denied): तुम्हाला '${viewName}' या फिचरचे अधिकार नाहीत.\nकृपया Admin 'nanopro' शी संपर्क साधा.`);
+    if (showAlert) {
+        alert(`🚫 Access Denied (Pravesh Nakarla): Tumhala '${viewName}' ya feature che permissions nahit.\nKrupaya Admin 'nanopro' shi sampark sadha.`);
+    }
     return false;
 };
 
@@ -1193,19 +1235,19 @@ async function loadAdminUsers() {
 
             const views = u.allowed_views || ['*'];
             const featuresBadge = (views.includes('*'))
-                ? '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">All (सर्व ४२)</span>'
+                ? '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">All (Sarva 42)</span>'
                 : `<span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">${views.length} Features</span>`;
 
             let actionsHtml = '';
             const viewsJson = JSON.stringify(views).replace(/"/g, '&quot;');
             if (u.status === 'PENDING_APPROVAL') {
-                actionsHtml = `<button class="btn-action-sm btn-approve" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'approve', ${viewsJson}, '${mode}')">🛡️ मंजूर करा (Approve)</button>`;
+                actionsHtml = `<button class="btn-action-sm btn-approve" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'approve', ${viewsJson}, '${mode}')">🛡️ Approve (Manjur Kara)</button>`;
             } else if (u.username !== 'nanopro') {
                 const nextSt = (u.status === 'ACTIVE') ? 'DISABLED' : 'ACTIVE';
                 const btnLabel = (u.status === 'ACTIVE') ? 'Disable 🚫' : 'Enable ✅';
                 const btnClass = (u.status === 'ACTIVE') ? 'btn-disable' : 'btn-enable';
                 actionsHtml = `
-                    <button class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; margin-right:4px;" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'update', ${viewsJson}, '${mode}')">⚙️ अधिकार</button>
+                    <button class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; margin-right:4px;" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'update', ${viewsJson}, '${mode}')">⚙️ Permissions</button>
                     <button class="btn-action-sm ${btnClass}" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>
                 `;
             }
@@ -1246,17 +1288,17 @@ async function toggleUserStatus(userId, newStatus) {
         const data = await resp.json();
         alert(data.message);
         loadAdminUsers();
-    } catch(e) { alert('त्रुटी: ' + e.message); }
+    } catch(e) { alert('Truti: ' + e.message); }
 }
 
 async function triggerTelegramDiagnosticsNow() {
     const btn = document.getElementById('btnTriggerTelegramDiag');
-    if (btn) { btn.disabled = true; btn.innerText = 'Telegram ला पाठवत आहे...'; }
+    if (btn) { btn.disabled = true; btn.innerText = 'Telegram var pathavat ahe...'; }
     try {
         const resp = await fetch('/api/telegram/send_diagnostics_now', { method: 'POST' });
         const data = await resp.json();
-        alert('✅ ३-तासी सिस्टीम आरोग्य अहवाल Telegram ला त्वरित पाठवला गेला आहे!');
-    } catch(e) { alert('त्रुटी: ' + e.message); }
+        alert('✅ 3-Hour System Health Audit report Telegram var tatkal send zala ahe!');
+    } catch(e) { alert('Truti: ' + e.message); }
     finally {
         if (btn) { btn.disabled = false; btn.innerText = '📱 Send Telegram Health Audit Now'; }
     }
@@ -1301,11 +1343,11 @@ def get_user_management_view_html() -> str:
                         </div>
                         <div>
                             <h2 style="margin:0; font-size:17px; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
-                                युझर व्यवस्थापन &amp; सुरक्षा प्रशासन (User Management &amp; Security Control)
+                                User Management &amp; Security Governance
                                 <span class="badge" style="background:#0F172A; border:1px solid #10B981; color:#10B981; font-size:11px;">ADMIN ONLY</span>
                             </h2>
                             <span style="font-size:12px; color:#94A3B8;">
-                                नवीन खात्यांना मंजुरी (Approval Workflow), सत्र नियंत्रण, 15-Min Inactivity Auto-Logout, आणि तात्काळ 3-Hour Telegram हेल्थ ऑडिट
+                                Navin account approval workflow, session control, 15-Min inactivity auto-logout, ani instant Telegram health audit.
                             </span>
                         </div>
                     </div>
@@ -1323,22 +1365,22 @@ def get_user_management_view_html() -> str:
             <!-- KPI Grid -->
             <div class="mgmt-stat-cards">
                 <div class="mgmt-card" style="border-left:4px solid #38BDF8;">
-                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">एकूण नोंदणीकृत (Total Users)</div>
+                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">Total Registered Users</div>
                     <div class="mgmt-card-num" id="statTotalUsers">0</div>
                     <div style="font-size:11px; color:#38BDF8;">Enterprise Directory</div>
                 </div>
                 <div class="mgmt-card" style="border-left:4px solid #F59E0B;">
-                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">मंजुरी प्रलंबित (Pending Approval)</div>
+                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">Pending Approval (Pravesh Bandi)</div>
                     <div class="mgmt-card-num" id="statPendingUsers" style="color:#F59E0B;">0</div>
-                    <div style="font-size:11px; color:#F59E0B;">प्रवेश बंदी (Needs Approval)</div>
+                    <div style="font-size:11px; color:#F59E0B;">Needs Admin Approval</div>
                 </div>
                 <div class="mgmt-card" style="border-left:4px solid #10B981;">
-                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">सक्रिय खाती (Active Users)</div>
+                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">Active Users (Verified)</div>
                     <div class="mgmt-card-num" id="statActiveUsers" style="color:#10B981;">0</div>
                     <div style="font-size:11px; color:#10B981;">Verified Accounts</div>
                 </div>
                 <div class="mgmt-card" style="border-left:4px solid #A855F7;">
-                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">ऑटो-लॉगआउट धोरण (Inactivity Rule)</div>
+                    <div style="font-size:11px; color:#94A3B8; font-weight:700; text-transform:uppercase;">Inactivity Auto-Logout</div>
                     <div class="mgmt-card-num" style="color:#A855F7; font-size:18px;">15 Minutes</div>
                     <div style="font-size:11px; color:#94A3B8;">Admin (nanopro) Exempt</div>
                 </div>
@@ -1348,9 +1390,9 @@ def get_user_management_view_html() -> str:
             <div class="panel-card" style="margin-bottom:16px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <h3 style="margin:0; font-size:14px; font-weight:700; color:#38BDF8; display:flex; align-items:center; gap:6px;">
-                        👥 नोंदणीकृत युझर्स &amp; मंजुरी यादी (User Approval &amp; Role Management)
+                        👥 User Approvals &amp; Role Directory
                     </h3>
-                    <span style="font-size:11.5px; color:#94A3B8;">फक्त Admin 'nanopro' ला खाती चालू/बंद करण्याचे अधिकार आहेत</span>
+                    <span style="font-size:11.5px; color:#94A3B8;">Fakta Admin 'nanopro' la account enable/disable karnyache rights ahet</span>
                 </div>
                 <div style="overflow-x:auto;">
                     <table class="mgmt-table">
@@ -1369,7 +1411,7 @@ def get_user_management_view_html() -> str:
                             </tr>
                         </thead>
                         <tbody id="adminUsersTableBody">
-                            <tr><td colspan="10" style="text-align:center; padding:18px; color:#94A3B8;">युझर्स लोड होत आहेत...</td></tr>
+                            <tr><td colspan="10" style="text-align:center; padding:18px; color:#94A3B8;">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1379,7 +1421,7 @@ def get_user_management_view_html() -> str:
             <div class="panel-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <h3 style="margin:0; font-size:14px; font-weight:700; color:#10B981; display:flex; align-items:center; gap:6px;">
-                        📜 सुरक्षा ऑडिट ट्रेल &amp; लॉगिन हिस्ट्री (Real-Time Security &amp; Audit Logs)
+                        📜 Security Audit Trail &amp; Login History
                     </h3>
                     <button type="button" class="btn btn-secondary" onclick="loadAdminAuditLogs()" style="font-size:10.5px; padding:4px 8px;">Refresh Logs</button>
                 </div>
@@ -1396,11 +1438,12 @@ def get_user_management_view_html() -> str:
                             </tr>
                         </thead>
                         <tbody id="adminAuditLogsBody">
-                            <tr><td colspan="6" style="text-align:center; padding:18px; color:#94A3B8;">ऑडिट लॉग लोड होत आहेत...</td></tr>
+                            <tr><td colspan="6" style="text-align:center; padding:18px; color:#94A3B8;">Loading audit logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     """
+
 
