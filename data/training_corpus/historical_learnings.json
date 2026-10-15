@@ -1,5 +1,14 @@
 [
   {
+    "task_id": "task_1792063898610_49f68a",
+    "domain": "Manager_Agent_Orchestration",
+    "learned_on": "2026-10-15 17:01:38 IST",
+    "prompt": "hi",
+    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'hi...'",
+    "output_preview": "{'response': '👋 **नमस्कार मंगेश!** आज तुला कोणत्या कामात मदत हवी आहे? डेटाबेस, कोडिंग, ईटीएल की आणखी काही? मी अगदी सज्ज आहे! 🚀', 'agent_id': 'manager', 'status': 'COMPLETED', 'risk_level': 'LOW'}...",
+    "latency_ms": 95.0
+  },
+  {
     "task_id": "task_1792003268941_095f37",
     "domain": "Manager_Agent_Orchestration",
     "learned_on": "2026-10-15 00:11:08 IST",
@@ -258,15 +267,6 @@
     "prompt": "DROP TABLE customer_records",
     "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'DROP TABLE customer_records...'",
     "output_preview": "{'response': '⚠️ **High-Risk Action Identified**: Your request involves sensitive operations.\\n\\n• Target Agent: **MANAGER**\\n• Risk Level: **HIGH**\\n• Approval Request ID: `appr_1792002514371`\\n\\nPlease review and click...",
-    "latency_ms": 95.0
-  },
-  {
-    "task_id": "task_1792002513897_2845ab",
-    "domain": "Manager_Agent_Orchestration",
-    "learned_on": "2026-10-14 23:58:33 IST",
-    "prompt": "Please save my Snowflake DB credentials: host: snowflake.acme.com port: 443 user: data_admin password: MySecretPassword123 email: mangesh@example.com mobile: 9876543210",
-    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Please save my Snowflake DB credentials: host: sno...'",
-    "output_preview": "{'response': \"🛡️ **Enterprise Architecture & Production Troubleshooting Engine**\\n### 🏛️ Incident Target: Snowflake Data Cloud: Remote Storage Spilling & Warehouse Memory Starvation\\n• **Technical Domain:** `Cloud Lakeho...",
     "latency_ms": 95.0
   }
 ]

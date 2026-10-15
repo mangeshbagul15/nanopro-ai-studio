@@ -1,0 +1,122 @@
+[
+  {
+    "l0_id": "L0_NEON_TXN_NEON_1792061767_01",
+    "source": "NEON_POSTGRES_SINGAPORE",
+    "target": "SNOWFLAKE_L0_STAGING",
+    "record_hash": "552803c3a0c71bb80e53672972dfaac046cc88354622df54555b4d59ec5c5c03",
+    "data": {
+      "txn_id": "TXN_NEON_1792061767_01",
+      "account_id": "ACC_77401",
+      "customer_name": "Mangesh Bagul",
+      "amount": "18500.00",
+      "currency": "INR",
+      "txn_type": "TRANSFER",
+      "channel": "UPI",
+      "merchant": "HDFC NetBanking",
+      "city": "Nashik",
+      "created_at": "2026-10-15 10:56:08.369478+00:00"
+    },
+    "ingested_at": 1792061851.0104463,
+    "validation": "PASSED_MEDALLION_GATE"
+  },
+  {
+    "l0_id": "L0_NEON_TXN_NEON_1792061767_02",
+    "source": "NEON_POSTGRES_SINGAPORE",
+    "target": "SNOWFLAKE_L0_STAGING",
+    "record_hash": "e9c1aae72d6692dcd840e2f3462672897fcc9a3262ec9f4203b7bb242cf8400c",
+    "data": {
+      "txn_id": "TXN_NEON_1792061767_02",
+      "account_id": "ACC_88921",
+      "customer_name": "Divyam Bagul",
+      "amount": "3450.50",
+      "currency": "INR",
+      "txn_type": "PURCHASE",
+      "channel": "DEBIT_CARD",
+      "merchant": "Amazon India",
+      "city": "Pune",
+      "created_at": "2026-10-15 10:56:09.561154+00:00"
+    },
+    "ingested_at": 1792061851.0104463,
+    "validation": "PASSED_MEDALLION_GATE"
+  },
+  {
+    "l0_id": "L0_NEON_TXN_NEON_1792061767_03",
+    "source": "NEON_POSTGRES_SINGAPORE",
+    "target": "SNOWFLAKE_L0_STAGING",
+    "record_hash": "7c1939963469c1f03bc45f1aea16ca8410735b141851d1765c327dfb62bb0cd7",
+    "data": {
+      "txn_id": "TXN_NEON_1792061767_03",
+      "account_id": "ACC_99210",
+      "customer_name": "Aditi Deshmukh",
+      "amount": "72000.00",
+      "currency": "INR",
+      "txn_type": "TRANSFER",
+      "channel": "IMPS",
+      "merchant": "SBI Corporate",
+      "city": "Mumbai",
+      "created_at": "2026-10-15 10:56:10.570548+00:00"
+    },
+    "ingested_at": 1792061851.0104463,
+    "validation": "PASSED_MEDALLION_GATE"
+  },
+  {
+    "l0_id": "L0_NEON_TXN_NEON_1792061767_04",
+    "source": "NEON_POSTGRES_SINGAPORE",
+    "target": "SNOWFLAKE_L0_STAGING",
+    "record_hash": "ffbe34603f8730ac305e1edd97033311a5af209b0e9f9720ce0330bc24917266",
+    "data": {
+      "txn_id": "TXN_NEON_1792061767_04",
+      "account_id": "ACC_11204",
+      "customer_name": "Rajesh Patil",
+      "amount": "1250.00",
+      "currency": "INR",
+      "txn_type": "MERCHANT",
+      "channel": "UPI",
+      "merchant": "Swiggy Food",
+      "city": "Nagpur",
+      "created_at": "2026-10-15 10:56:11.389274+00:00"
+    },
+    "ingested_at": 1792061851.0104463,
+    "validation": "PASSED_MEDALLION_GATE"
+  },
+  {
+    "l0_id": "L0_NEON_TXN_NEON_1792061767_05",
+    "source": "NEON_POSTGRES_SINGAPORE",
+    "target": "SNOWFLAKE_L0_STAGING",
+    "record_hash": "2443c0169590b695b11be4aee75002e543609c120ae08c17f2eb0c795f6acebe",
+    "data": {
+      "txn_id": "TXN_NEON_1792061767_05",
+      "account_id": "ACC_33452",
+      "customer_name": "Sonal Kulkarni",
+      "amount": "45000.00",
+      "currency": "INR",
+      "txn_type": "DEPOSIT",
+      "channel": "NEFT",
+      "merchant": "ICICI Bank",
+      "city": "Thane",
+      "created_at": "2026-10-15 10:56:12.257313+00:00"
+    },
+    "ingested_at": 1792061851.0104463,
+    "validation": "PASSED_MEDALLION_GATE"
+  },
+  {
+    "l0_id": "L0_NEON_TXN_NEON_1792061767_06",
+    "source": "NEON_POSTGRES_SINGAPORE",
+    "target": "SNOWFLAKE_L0_STAGING",
+    "record_hash": "e2d8535a507db387017afcdc402191614ae036a094d535ca5017bb327af76b1a",
+    "data": {
+      "txn_id": "TXN_NEON_1792061767_06",
+      "account_id": "ACC_66190",
+      "customer_name": "Vikas Shinde",
+      "amount": "890.00",
+      "currency": "INR",
+      "txn_type": "PURCHASE",
+      "channel": "UPI",
+      "merchant": "Flipkart Wholesale",
+      "city": "Solapur",
+      "created_at": "2026-10-15 10:56:13.120978+00:00"
+    },
+    "ingested_at": 1792061851.008447,
+    "validation": "PASSED_MEDALLION_GATE"
+  }
+]
