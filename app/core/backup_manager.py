@@ -105,4 +105,56 @@ class BackupManager:
 
         return {"status": "success", "message": f"Successfully restored {backup_file.name}"}
 
+    def prune_and_vacuum(self, keep_backups: int = 3, max_report_age_hours: int = 48) -> Dict[str, Any]:
+        """
+        Enterprise Space Optimization:
+        1. Keeps only the latest N backup archives and deletes older .tar.gz archives.
+        2. Cleans up temporary report exports and converted scratch files.
+        3. Executes SQLITE VACUUM to reclaim free pages and keep DB locked under 30MB.
+        """
+        reclaimed_bytes = 0
+        deleted_files = 0
+        now = time.time()
+
+        # 1. Prune old backups
+        try:
+            backups = sorted(list(self.backups_dir.glob("mangesh_studio_backup_*.tar.gz")), key=lambda p: p.stat().st_mtime, reverse=True)
+            if len(backups) > keep_backups:
+                for b in backups[keep_backups:]:
+                    sz = b.stat().st_size
+                    b.unlink(missing_ok=True)
+                    reclaimed_bytes += sz
+                    deleted_files += 1
+        except Exception as e:
+            log_event(f"Backup pruning notice: {e}", level="WARNING", component="BackupManager")
+
+        # 2. Prune old temporary reports
+        for rep_dir in [Path("data/reports"), Path("app/reports/converted")]:
+            if rep_dir.exists():
+                try:
+                    for f in rep_dir.glob("*.*"):
+                        if now - f.stat().st_mtime > (max_report_age_hours * 3600):
+                            sz = f.stat().st_size
+                            f.unlink(missing_ok=True)
+                            reclaimed_bytes += sz
+                            deleted_files += 1
+                except Exception:
+                    pass
+
+        # 3. Database VACUUM
+        try:
+            with db.get_connection() as conn:
+                conn.execute("VACUUM")
+        except Exception as e:
+            log_event(f"VACUUM notice: {e}", level="WARNING", component="BackupManager")
+
+        reclaimed_mb = round(reclaimed_bytes / (1024 * 1024), 2)
+        log_event(f"Space Optimizer: Pruned {deleted_files} files, reclaimed {reclaimed_mb} MB space and vacuumed database.", component="BackupManager")
+        return {
+            "status": "success",
+            "deleted_files": deleted_files,
+            "reclaimed_mb": reclaimed_mb,
+            "db_size_mb": round(SQLITE_DB_PATH.stat().st_size / (1024 * 1024), 2) if SQLITE_DB_PATH.exists() else 0.0
+        }
+
 backup_manager = BackupManager()

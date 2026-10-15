@@ -4552,6 +4552,12 @@ async def api_data_science_fraud_detection_scan(req: Optional[FraudScanRequest] 
     res = fraud_detection_agent.scan_recent_transactions(limit=limit)
     return JSONResponse(res)
 
+@app.post("/api/admin/space/prune")
+async def api_admin_space_prune():
+    """Enterprise Space Optimizer: Prunes old backup archives, temporary report exports, and vacuums SQLite database."""
+    res = backup_manager.prune_and_vacuum()
+    return JSONResponse(res)
+
 
 if __name__ == "__main__":
     run_server()
