@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR.parent))
 
-from fastapi import FastAPI, Form, Body, Query, HTTPException, UploadFile, File
+from fastapi import FastAPI, Form, Body, Query, HTTPException, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 try:
@@ -428,6 +428,34 @@ class CloudTrendsGenerateCodeRequest(BaseModel):
 class CloudTrendsBenchmarkRequest(BaseModel):
     workload: str = "lakehouse_ingestion"
 
+class AuthRegisterRequest(BaseModel):
+    full_name: str
+    username: str
+    email: str
+    password: str
+
+class AuthLoginRequest(BaseModel):
+    username: str
+    password: str
+
+class AuthLogoutRequest(BaseModel):
+    session_token: Optional[str] = None
+
+class AuthValidateRequest(BaseModel):
+    session_token: str
+
+class AdminApproveUserRequest(BaseModel):
+    user_id: str
+    admin_username: Optional[str] = "nanopro"
+
+class AdminToggleUserRequest(BaseModel):
+    user_id: str
+    status: str
+
+class AdminResetPasswordRequest(BaseModel):
+    user_id: str
+    new_password: str
+
 def _execute_staged_boot_phases_2_and_3():
     """
     Phase 2 and Phase 3: Background Decoupled Daemon Spin-up.
@@ -489,6 +517,15 @@ def _execute_staged_boot_phases_2_and_3():
         career_hub_agent.start_autonomous_email_dispatcher()
     except Exception as e:
         log_event(f"Phase 3E notice: {e}", level="WARNING", component="BootSequence")
+
+    # T + 20s: Telegram 3-Hour Autonomous Diagnostics Scheduler
+    time.sleep(3.0)
+    try:
+        log_event("=== [PHASE 3F] Starting Telegram 3-Hour Autonomous Diagnostics Scheduler (T + 20s) ===", component="BootSequence")
+        from app.core.telegram_diagnostics_scheduler import telegram_diagnostics_scheduler
+        telegram_diagnostics_scheduler.start()
+    except Exception as e:
+        log_event(f"Phase 3F notice: {e}", level="WARNING", component="BootSequence")
 
     log_event("=== Staged Boot Sequence Complete: All NanoPro Systems Synchronized & Healthy ===", component="BootSequence")
 
@@ -4346,6 +4383,98 @@ async def api_vault_sentinel_status():
     """Returns active connection sentinel diagnostics and lockout flags."""
     from app.core.connection_manager import connection_manager
     return JSONResponse(connection_manager.get_sentinel_status())
+
+# ============================================================================
+# ENTERPRISE AUTHENTICATION, USER MANAGEMENT & TELEGRAM DIAGNOSTICS ROUTES
+# ============================================================================
+
+@app.post("/api/auth/register")
+async def api_auth_register(req: AuthRegisterRequest, request: Request):
+    """Registers a new user account with PENDING_APPROVAL status."""
+    from app.core.auth_manager import auth_manager
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "Unknown")
+    res = auth_manager.register_user(
+        full_name=req.full_name,
+        username=req.username,
+        email=req.email,
+        password=req.password,
+        ip_address=ip,
+        user_agent=ua
+    )
+    status_code = 200 if res.get("status") == "success" else 400
+    return JSONResponse(res, status_code=status_code)
+
+@app.post("/api/auth/login")
+async def api_auth_login(req: AuthLoginRequest, request: Request):
+    """Authenticates user, validates credentials, and creates an active session."""
+    from app.core.auth_manager import auth_manager
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "Unknown")
+    res = auth_manager.authenticate_user(
+        username=req.username,
+        password=req.password,
+        ip_address=ip,
+        user_agent=ua
+    )
+    status_code = 200 if res.get("status") == "success" else 401
+    return JSONResponse(res, status_code=status_code)
+
+@app.post("/api/auth/logout")
+async def api_auth_logout(req: AuthLogoutRequest):
+    """Logs out user session and records duration."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.logout_user(req.session_token)
+    return JSONResponse(res)
+
+@app.post("/api/auth/validate")
+async def api_auth_validate(req: AuthValidateRequest):
+    """Validates session token and checks inactivity timeout."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.validate_session(req.session_token)
+    return JSONResponse(res)
+
+@app.get("/api/admin/users/list")
+async def api_admin_users_list():
+    """Lists all users for the Admin User Management panel."""
+    from app.core.auth_manager import auth_manager
+    users = auth_manager.list_users()
+    return JSONResponse({"status": "success", "users": users})
+
+@app.post("/api/admin/users/approve")
+async def api_admin_users_approve(req: AdminApproveUserRequest):
+    """Approves a pending registration, making the user account active."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.approve_user(req.user_id, admin_username=req.admin_username)
+    return JSONResponse(res)
+
+@app.post("/api/admin/users/toggle")
+async def api_admin_users_toggle(req: AdminToggleUserRequest):
+    """Toggles account status between ACTIVE and DISABLED."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.toggle_user_status(req.user_id, req.status)
+    return JSONResponse(res)
+
+@app.post("/api/admin/users/reset_password")
+async def api_admin_users_reset_password(req: AdminResetPasswordRequest):
+    """Admin-initiated password reset."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.reset_user_password(req.user_id, req.new_password)
+    return JSONResponse(res)
+
+@app.get("/api/admin/audit_logs")
+async def api_admin_audit_logs(limit: int = 40):
+    """Returns real-time security and audit logs."""
+    from app.core.auth_manager import auth_manager
+    logs = auth_manager.get_audit_logs(limit=limit)
+    return JSONResponse({"status": "success", "logs": logs})
+
+@app.post("/api/telegram/send_diagnostics_now")
+async def api_telegram_send_diagnostics_now():
+    """Immediately triggers and delivers the 3-hour diagnostics report to Telegram."""
+    from app.core.telegram_diagnostics_scheduler import telegram_diagnostics_scheduler
+    res = telegram_diagnostics_scheduler.send_diagnostics_report(trigger="MANUAL")
+    return JSONResponse(res)
 
 
 if __name__ == "__main__":

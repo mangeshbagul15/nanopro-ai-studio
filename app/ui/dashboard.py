@@ -3,6 +3,11 @@ Mangesh Nano Pro AI Studio - Central UI Dashboard Templates
 """
 
 def get_dashboard_html() -> str:
+    from app.ui.auth_components import get_auth_injection, get_user_management_view_html
+    raw = _get_raw_dashboard_html()
+    return raw.replace("<!-- INSERT_USER_MANAGEMENT_VIEW_HERE -->", get_user_management_view_html()).replace("</body>", get_auth_injection() + "\n</body>")
+
+def _get_raw_dashboard_html() -> str:
     return r'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2465,6 +2470,10 @@ def get_dashboard_html() -> str:
                     <li class="nav-item" onclick="switchView('discovery_dashboard')" data-tooltip="Autonomous Discovery Governance">
                         <span class="nav-item-icon">&#128269;</span>
                         <span class="nav-item-label">Discovery Dashboard</span>
+                    </li>
+                    <li class="nav-item" id="nav_user_management" style="display:none;" onclick="switchView('user_management')" data-tooltip="User Management (Admin Only)">
+                        <span class="nav-item-icon">&#128737;</span>
+                        <span class="nav-item-label">User Management 🛡️</span>
                     </li>
                 </ul>
             </div>
@@ -8794,7 +8803,8 @@ Ready for message compilation and automated dispatch.
     </div>
     <div id="studioToastContainer" style="position:fixed; bottom:24px; right:340px; z-index:99999; display:flex; flex-direction:column; gap:8px; pointer-events:none;"></div>
 
-    
+        <!-- INSERT_USER_MANAGEMENT_VIEW_HERE -->
+
         </main> <!-- Close #main-content-viewport -->
     </div> <!-- Close #main-panel -->
 
@@ -9200,6 +9210,7 @@ Ready for message compilation and automated dispatch.
                 storage_dashboard: "Local Storage & Data Usage Dashboard",
                 vault: "Credentials Vault (Encrypted Secrets)",
                 bitcoin_wallet: "Bitcoin Wallet & Live Payment Center",
+                user_management: "User Management & Security Administration (Admin Only)",
 
                 dashboard: "Dashboard & Overview",
                 sql_video: "SQL Video Maker Workspace",
@@ -9233,6 +9244,9 @@ Ready for message compilation and automated dispatch.
 
         function runViewContextualLoader(viewName) {
             try {
+                if (viewName === 'user_management') {
+                    if (typeof loadAdminUsers === 'function') loadAdminUsers();
+                }
                 if (viewName === 'assistant') loadReminders();
                 if (viewName === 'backups') loadMemoryStats();
                 if (viewName === 'logs') pollLogs();
