@@ -508,8 +508,8 @@ def get_auth_injection() -> str:
                     <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••••••" required autocomplete="current-password" />
                 </div>
                 <button type="submit" id="loginSubmitBtn" class="auth-btn-primary">🔐 सुरक्षित लॉगिन करा (Sign In)</button>
-                <div class="auth-footer-hint">
-                    Default Master Admin: <b>nanopro</b> | Pass: <b>Divyam@123</b>
+                <div class="auth-footer-hint" style="color: #64748b; font-size: 11px; margin-top: 10px;">
+                    🛡️ Enterprise Hardware-Bound 256-Bit TLS Secured Access
                 </div>
             </form>
 
