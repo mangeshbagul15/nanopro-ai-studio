@@ -1733,6 +1733,71 @@ class ConnectionManager:
                     "status": "Connection Failed"
                 }
 
+        # PostgreSQL execution (Neon Cloud Free, Render Cloud, Local)
+        if connection_name in ["POSTGRES_CLOUD_FREE", "MY_POSTGRES_LOCAL", "POSTGRES_RENDER_CLOUD"]:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                cred = credentials_vault.get_credential(connection_name)
+                conn_kwargs = {}
+                conn_str = None
+                if cred and cred.get("host"):
+                    conn_kwargs = {
+                        "host": cred.get("host"),
+                        "user": cred.get("username"),
+                        "password": cred.get("secret_value"),
+                        "port": cred.get("port") or 5432,
+                        "dbname": cred.get("database_name") or ("neondb" if "NEON" in connection_name or "FREE" in connection_name else "nanopro_postgres"),
+                        "connect_timeout": 8
+                    }
+                    if "CLOUD" in connection_name or "FREE" in connection_name:
+                        conn_kwargs["sslmode"] = "require"
+                elif connection_name == "POSTGRES_CLOUD_FREE":
+                    conn_str = "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+                elif connection_name == "POSTGRES_RENDER_CLOUD":
+                    conn_str = "postgresql://nanopro_postgres_user:cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb@dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com/nanopro_postgres"
+                else:
+                    conn_str = "postgresql://postgres:postgres@127.0.0.1:5432/nanopro_db"
+                
+                if conn_kwargs:
+                    pconn = psycopg2.connect(**conn_kwargs)
+                else:
+                    pconn = psycopg2.connect(conn_str, connect_timeout=8)
+                
+                with pconn:
+                    with pconn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as pcur:
+                        pcur.execute(query_clean)
+                        if pcur.description:
+                            rows = pcur.fetchmany(limit)
+                            columns = [d[0] for d in pcur.description]
+                            data = [dict(r) for r in rows]
+                        else:
+                            columns = []
+                            data = []
+                        duration = round((time.time() - start_time) * 1000, 2)
+                        self._record_query_history(query_id, connection_name, database_name or "neondb", schema_name or "public", query_clean, duration, len(data), "success", None)
+                        return {
+                            "success": True,
+                            "query_id": query_id,
+                            "connection_name": connection_name,
+                            "columns": columns,
+                            "rows": data,
+                            "row_count": len(data),
+                            "execution_time_ms": duration,
+                            "status": "Success"
+                        }
+            except Exception as pe:
+                duration = round((time.time() - start_time) * 1000, 2)
+                err = str(pe)
+                self._record_query_history(query_id, connection_name, database_name or "neondb", schema_name or "public", query_clean, duration, 0, "error", err)
+                return {
+                    "success": False,
+                    "query_id": query_id,
+                    "error": f"PostgreSQL Execution Error: {err}",
+                    "execution_time_ms": duration,
+                    "status": "Error"
+                }
+
         duration = round((time.time() - start_time) * 1000, 2)
         return {
             "success": False,
