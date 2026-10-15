@@ -31,7 +31,7 @@ class EnterpriseKnowledgeEngine:
             # 1. APACHE KAFKA & DISTRIBUTED STREAMING
             # -----------------------------------------------------------------
             "kafka_rebalance": {
-                "keys": ["kafka", "consumer group", "rebalance", "max.poll.interval.ms", "heartbeat", "rebalancing"],
+                "keys": ["kafka rebalance", "rebalance storm", "max.poll.interval", "consumer group rebalance", "partition assignor lag"],
                 "title": "Apache Kafka: Consumer Group Rebalance Storm & Max Poll Interval Starvation",
                 "domain": "Distributed Event Streaming",
                 "root_cause": "A consumer thread spent longer processing a batch of records than configured in `max.poll.interval.ms` (default 300,000ms / 5 mins). The Kafka broker assumed the consumer died and triggered a cluster-wide group rebalance, halting all partitions.",
@@ -53,7 +53,7 @@ class EnterpriseKnowledgeEngine:
             # 2. SNOWFLAKE REMOTE DISK SPILLING & FINOPS WAREHOUSE TUNING
             # -----------------------------------------------------------------
             "snowflake_spilling": {
-                "keys": ["snowflake", "spill", "spilling", "remote storage", "local storage", "bytes spilled", "warehouse spill"],
+                "keys": ["snowflake spill", "snowflake spilling", "remote storage spill", "bytes spilled to remote", "warehouse memory spill", "spill to remote storage", "warehouse spilling"],
                 "title": "Snowflake Data Cloud: Remote Storage Spilling & Warehouse Memory Starvation",
                 "domain": "Cloud Lakehouse / Data Warehouse",
                 "root_cause": "An intensive query (huge Hash Joins, unbounded `GROUP BY`, Cartesian Products, or large `ORDER BY`) exceeded the physical memory of the Snowflake virtual warehouse nodes. Snowflake spilled intermediate scratch buffers first to local SSD, then to high-latency AWS S3 / Azure Blob remote storage.",
@@ -74,7 +74,7 @@ class EnterpriseKnowledgeEngine:
             # 3. ORACLE ENTERPRISE ORA-01555 (SNAPSHOT TOO OLD)
             # -----------------------------------------------------------------
             "oracle_ora_01555": {
-                "keys": ["ora-01555", "snapshot too old", "rollback segment", "undo retention", "undo tablespace", "oracle 1555"],
+                "keys": ["ora-01555", "ora 01555", "snapshot too old", "undo retention expired", "oracle 1555"],
                 "title": "Oracle Database: ORA-01555 Snapshot Too Old (Read Consistency Undersized UNDO)",
                 "domain": "Enterprise Relational Database (Oracle XE / RAC)",
                 "root_cause": "A long-running read query started at System Change Number (SCN) $T_0$. While it was scanning data, concurrent transactions modified and committed those blocks. When the reader needed the pre-image blocks from UNDO to reconstruct consistency at $T_0$, Oracle had already overwritten them because `UNDO_RETENTION` expired or the UNDO tablespace was full.",
@@ -95,7 +95,7 @@ class EnterpriseKnowledgeEngine:
             # 4. ORACLE DEADLOCK ORA-00060
             # -----------------------------------------------------------------
             "oracle_ora_00060": {
-                "keys": ["ora-00060", "deadlock detected", "deadlock", "oracle 60"],
+                "keys": ["ora-00060", "ora 00060", "deadlock graph", "oracle deadlock detected", "ora deadlock"],
                 "title": "Oracle Database: ORA-00060 Deadlock Detected on Resource",
                 "domain": "Enterprise Relational Database (Oracle XE / RAC)",
                 "root_cause": "Two or more concurrent sessions attempted to lock rows in mutually conflicting order (e.g. Session 1 holds Lock A and requests Lock B, while Session 2 holds Lock B and requests Lock A), or unindexed Foreign Key constraints caused full table share locks.",
@@ -115,7 +115,7 @@ class EnterpriseKnowledgeEngine:
             # 5. POSTGRES TRANSACTION ID WRAPAROUND & VACUUM FREEZE
             # -----------------------------------------------------------------
             "postgres_wraparound": {
-                "keys": ["wraparound", "vacuum freeze", "transaction id wraparound", "postgres txid", "autovacuum", "datfrozenxid"],
+                "keys": ["txid wraparound", "transaction id wraparound", "vacuum freeze emergency", "datfrozenxid wraparound"],
                 "title": "PostgreSQL: Transaction ID (XID) Wraparound & Database Shutdown Emergency",
                 "domain": "Relational Database (PostgreSQL)",
                 "root_cause": "PostgreSQL uses 32-bit transaction IDs, providing a maximum of $\\approx 2$ billion active transactions. If `VACUUM FREEZE` does not freeze old transaction IDs before the count reaches $2^{31} - 10,000,000$, PostgreSQL halts write operations and forces read-only emergency mode to prevent silent data corruption.",
@@ -135,7 +135,7 @@ class EnterpriseKnowledgeEngine:
             # 6. KUBERNETES CRASHLOOPBACKOFF & OOMKILLED (EXIT CODE 137)
             # -----------------------------------------------------------------
             "k8s_crashloop_oom": {
-                "keys": ["crashloopbackoff", "oomkilled", "exit code 137", "exit 137", "kubernetes oom", "pod evicted"],
+                "keys": ["crashloopbackoff", "oomkilled", "exit code 137", "exit 137", "pod crashloop", "pod oom"],
                 "title": "Kubernetes Microservices: CrashLoopBackOff & OOMKilled (Exit Code 137)",
                 "domain": "Cloud Native Orchestration (Kubernetes / Docker)",
                 "root_cause": "The containerized process exceeded its hard cgroup memory ceiling defined in `resources.limits.memory`. The Linux kernel Out-Of-Memory Killer sent a `SIGKILL` (signal 9, exit code $128 + 9 = 137$). Kubernetes restarts the pod with an exponential backoff delay (10s, 20s, 40s ... up to 300s).",
@@ -157,7 +157,7 @@ class EnterpriseKnowledgeEngine:
             # 7. HIGH-FREQUENCY TRADING & KERNEL BYPASS ARCHITECTURE
             # -----------------------------------------------------------------
             "hft_latency_optimization": {
-                "keys": ["hft", "kernel bypass", "dpdk", "openonload", "core pinning", "cache bouncing", "false sharing", "low latency"],
+                "keys": ["kernel bypass", "openonload", "dpdk low latency", "core pinning hft", "false sharing hft", "sub-microsecond trading"],
                 "title": "Low-Latency High-Frequency Trading (HFT): Kernel Bypass & Sub-Microsecond Optimization",
                 "domain": "High-Frequency Trading & Systems Engineering",
                 "root_cause": "Standard Linux OS kernel network stack incurs context switches, page interrupts, and memory copies between kernel space and user space, adding 15-40 microseconds of latency and high jitter.",
@@ -179,7 +179,7 @@ class EnterpriseKnowledgeEngine:
             # 8. DEEP LEARNING GPU OOM & FLASHATTENTION OPTIMIZATION
             # -----------------------------------------------------------------
             "gpu_cuda_oom_attention": {
-                "keys": ["cuda out of memory", "cuda oom", "gpu out of memory", "flashattention", "attention", "kv cache", "pagedattention", "cuda error", "pytorch", "llm", "cuda", "gpu"],
+                "keys": ["cuda out of memory", "cuda oom", "gpu out of memory", "flashattention oom", "pagedattention oom"],
                 "title": "Deep Learning / LLM Infrastructure: CUDA Out of Memory & FlashAttention v2/v3",
                 "domain": "AI / Deep Learning MLOps",
                 "root_cause": "The quadratic $\\mathcal{O}(N^2)$ memory footprint of standard Softmax attention matrix ($Q K^T / \\sqrt{d_k}$) exceeded High Bandwidth Memory (HBM) on NVIDIA A100/H100 GPUs during long-context inference or batch training.",
@@ -203,6 +203,18 @@ class EnterpriseKnowledgeEngine:
     def evaluate(self, prompt: str) -> Optional[Dict[str, Any]]:
         p = prompt.lower()
 
+        # Safeguard: Never hijack standard conversational questions as incidents!
+        is_informational = any(w in p for w in [
+            "konte", "what is", "which", "list", "show", "kiti", "kuthe", "kasa", "ahet", 
+            "database", "db", "table", "connect", "where", "how to", "sang", "dakhva", "mahiti"
+        ])
+        has_incident_intent = any(err in p for err in [
+            "error", "troubleshoot", "crash", "incident", "failure", "issue", "bug", "broken",
+            "spill", "rebalance", "oom", "deadlock", "wraparound", "starvation"
+        ])
+        if is_informational and not has_incident_intent:
+            return None
+
         # Score all diagnostic modules
         best_match = None
         highest_score = 0
@@ -212,21 +224,12 @@ class EnterpriseKnowledgeEngine:
             for key in mod["keys"]:
                 if key in p:
                     score += len(key.split()) * 2
-            if score > highest_score and score >= 2:
+            if score > highest_score and score >= 4:  # Require multi-word exact phrase
                 highest_score = score
                 best_match = mod
 
         if not best_match:
-            # Check for general enterprise failure keywords
-            is_infra_query = any(k in p for k in [
-                "infrastructure", "1000+ issue", "troubleshoot", "production issue",
-                "failure scenario", "deadlock", "crashloop", "kafka lag", "spill to remote",
-                "ora-", "wraparound", "oomkilled"
-            ])
-            if not is_infra_query:
-                return None
-            # Default to overarching enterprise diagnostic report
-            best_match = self.diagnostic_modules["snowflake_spilling"]
+            return None
 
         # Format diagnostic response
         title = best_match["title"]
