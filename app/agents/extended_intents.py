@@ -270,95 +270,6 @@ def _resolve_sql_target(p_lower: str, user_message: str, session_id: str = "defa
 
 def dispatch_lakehouse_omni_commander(p_lower: str, user_message: str) -> Optional[Dict[str, Any]]:
     """Priority Omni Lakehouse Commander for Data Catalog, Batch Timings, Cross-DB Joins, and Schedulers."""
-    # 0. SHORT CONVERSATIONAL DATABASE CATALOG & TABLE LOCATIONS (<1ms, Crisp Minglish + English)
-    # 0A. Snowflake databases inquiry: "snowflake madhe konte db ahet", "snowflake database list", etc.
-    is_sf_db_inquiry = ("snowflake" in p_lower and any(k in p_lower for k in [
-        "konte db", "konte database", "which db", "which database", "show db", "list db",
-        "kiti db", "kiti database", "databases", "database name", "db name", "db ahet", "database ahet"
-    ]))
-    if is_sf_db_inquiry:
-        reply = (
-            "Snowflake madhe khali pramane databases available ahet:\n\n"
-            "1. 🏛️ **BANK_DB** (Main Production Lakehouse)\n"
-            "   • **L0_STAGING:** Raw tables (`ACCOUNTS`, `CUSTOMERS`, `RAW_TRANSACTIONS`)\n"
-            "   • **L1_HARMONIZED:** Cleansed dimensions (`DIM_CUSTOMERS`, `DIM_ACCOUNTS`)\n"
-            "   • **L2_ANALYTICS:** Curated Gold marts (`AML_RISK_MART`, `BRANCH_PROFITABILITY` — 99.85% Clean)\n"
-            "2. ⚙️ **SNOWFLAKE:** Account usage, audit logs & metering metadata.\n"
-            "3. 🧪 **SNOWFLAKE_SAMPLE_DATA:** TPC-H & TPC-DS sample datasets.\n\n"
-            "💡 Tula ya madhil kontya specific table cha data ki sample preview pahaycha ahe?"
-        )
-        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
-
-    # 0B. Oracle databases inquiry: "oracle madhe konte db ahet", "oracle database list", etc.
-    is_ora_db_inquiry = ("oracle" in p_lower and any(k in p_lower for k in [
-        "konte db", "konte database", "which db", "which database", "show db", "list db",
-        "kiti db", "kiti database", "databases", "database name", "db name", "db ahet", "database ahet"
-    ]))
-    if is_ora_db_inquiry:
-        reply = (
-            "Oracle madhe khali pramane databases/instances configured ahet:\n\n"
-            "1. 🏛️ **MY_ORACLE_XE_LOCAL** (Pluggable DB: `XEPDB1`)\n"
-            "   • **Schema:** `SYSTEM` / `BANKING_ADMIN`\n"
-            "   • **Tables:** `CUSTOMER_MASTER` (24.8K rows), `ACCOUNT_MASTER` (17.2K rows), `CBS_BATCH`\n"
-            "2. ☁️ **ORACLE_APEX_23AI_CLOUD:** Autonomous Cloud Transaction Processing instance.\n\n"
-            "💡 Tula Oracle cha schema, batch status ki query verify karaychi ahe?"
-        )
-        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
-
-    # 0C. General all-databases inquiry: "konte db ahet", "show all databases", "kiti database ahet"
-    is_all_db_inquiry = any(k in p_lower for k in [
-        "konte db ahet", "konte database ahet", "all databases", "list databases",
-        "kiti database ahet", "show all db", "all connected db", "sarv databases"
-    ]) or (
-        any(k in p_lower for k in ["konte db", "which db", "show db", "list db"]) and
-        not any(db_k in p_lower for k in ["snowflake", "oracle", "postgres", "sqlite"])
-    )
-    if is_all_db_inquiry:
-        reply = (
-            "NanoPro AI Studio madhe connect aslele databases:\n\n"
-            "1. ❄️ **Snowflake Data Cloud:** `BANK_DB` (Schemas: `L0_STAGING`, `L1_HARMONIZED`, `L2_ANALYTICS`)\n"
-            "2. 🏛️ **Oracle 23ai / XE:** `MY_ORACLE_XE_LOCAL` (Pluggable DB: `XEPDB1`, Schema: `SYSTEM`)\n"
-            "3. 🐘 **Neon PostgreSQL:** `neondb` (Cloud PostgreSQL, Schema: `public`)\n"
-            "4. 💾 **Studio Local State:** `studio_memory.db` (Task schedules, vault & logs)\n\n"
-            "💡 Kontya database madhil table ki schema check karaycha ahe?"
-        )
-        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
-
-    # 0D. Table location inquiry: "accounts table kuthe ahe", "customers table kuthe ahe", etc.
-    is_table_loc_inquiry = (
-        ("kuthe ahe" in p_lower or "where is" in p_lower or "location" in p_lower) and
-        ("table" in p_lower or any(t in p_lower for t in ["account", "customer", "transaction", "branch", "loan", "aml"])) and
-        not any(w in p_lower for w in ["join", "architecture", "match", "cross", "left join"])
-    )
-    if is_table_loc_inquiry:
-        if "customer" in p_lower:
-            reply = (
-                "📍 **CUSTOMERS Table Location:**\n\n"
-                "1. **Snowflake:** `BANK_DB.L0_STAGING.CUSTOMERS` (25,000 rows, PK: `CUSTOMER_ID`)\n"
-                "2. **Oracle XE:** `XEPDB1.SYSTEM.CUSTOMER_MASTER` (24,800 rows, PK: `CUSTOMER_ID`)\n\n"
-                "💡 Donhi tables madhe `CUSTOMER_ID` common key ahe. Tula ya table cha sample preview pahaycha ahe ka?"
-            )
-        elif "account" in p_lower:
-            reply = (
-                "📍 **ACCOUNTS Table Location:**\n\n"
-                "1. **Snowflake:** `BANK_DB.L0_STAGING.ACCOUNTS` (17,500 rows, PK: `ACCOUNT_ID`, FK: `CUSTOMER_ID`)\n"
-                "2. **Oracle XE:** `XEPDB1.SYSTEM.ACCOUNT_MASTER` (17,200 rows, PK: `ACCOUNT_NUMBER`, FK: `CUSTOMER_ID`)\n\n"
-                "💡 Tula columns ki sample 5 rows cha preview pahaycha ahe?"
-            )
-        elif "transaction" in p_lower or "txn" in p_lower:
-            reply = (
-                "📍 **TRANSACTIONS Table Location:**\n\n"
-                "1. **Snowflake (Bronze):** `BANK_DB.L0_STAGING.RAW_TRANSACTIONS` (128,450 rows, PK: `TXN_ID`)\n"
-                "2. **Snowflake (Silver):** `BANK_DB.L1_HARMONIZED.FACT_TRANSACTIONS`\n\n"
-                "💡 Tula transaction volume ki sample preview pahaycha ahe?"
-            )
-        else:
-            reply = (
-                "📍 Ha table **Snowflake** (`BANK_DB`) aani **Oracle** (`XEPDB1`) madhe available ahe.\n\n"
-                "💡 Tula table che schema details, datatypes ki live sample rows pahayche ahet?"
-            )
-        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
-
     # 1. BATCH TIMINGS, CUTOFF, BOD, SOD, EOD & L2 CLEAN DATA AUDIT
     is_omni_catalog_req = any(k in p_lower for k in [
         "cutoff", "cut off", "bod", "sod", "eod", "l2 madhe clean", "clean data ahe ka",
@@ -442,24 +353,24 @@ def dispatch_lakehouse_omni_commander(p_lower: str, user_message: str) -> Option
         if any(k in p_lower for k in ["parva pasun", "udya nako", "@", "add user", "change"]):
             mod_res = lakehouse_omni_commander.modify_schedule_conversational(user_message)
             msg = mod_res.get("message_marathi") or mod_res.get("message")
-            return {"handled": True, "reply": f"⚙️ **Automation Scheduler Update:**\n\n{msg}", "agent_id": "manager"}
+            return {"handled": True, "reply": f"⚙️ **ऑटोमेशन शेड्युलर अपडेट:**\n\n{msg}", "agent_id": "manager"}
         else:
             tasks = lakehouse_omni_commander.list_active_automations()
             md = ["## ⏱️ NanoPro Active Automation Schedulers & AutoMailer Status\n"]
-            md.append("| # | Task Name | Schedule Type | Recurrence | Next Run | Auto-Mailer Status | Status |")
+            md.append("| # | टास्कचे नाव | शेड्यूलिंग प्रकार | वारंवारता | पुढील रन (Next Run) | ऑटो-मेलर स्थिती | स्टेटस |")
             md.append("|---|---|---|---|---|---|:---:|")
             for idx, t in enumerate(tasks, 1):
                 notif = t.get("notification_pref") or {}
                 recips = notif.get("recipients", ["Admin (mangeshbagul15@gmail.com)"])
                 recip_str = ", ".join(recips) if isinstance(recips, list) else str(recips)
                 md.append(f"| {idx} | `{t['name']}` | {t['schedule_type']} | `{t['recurrence_expr']}` | `{t.get('next_run_at') or 'Active'}` | 📧 {recip_str} | **{t['last_status']} ✅** |")
-            md.append("\n### 📧 AutoMailer Health:")
-            md.append("- **SMTP Server:** Gmail TLS Port 587 (Configured & Vault Active)")
-            md.append("- **Delivery Success Rate:** **100% Success** (Zero undelivered errors)")
-            md.append("- **Telegram Broadcast:** Chat ID `1200023268` (Active Live Alerts)")
-            md.append("\n💡 **Tumi mala prompt deu shakta:**")
-            md.append("- *\"Ha daily hotoy na, tr yala udya nako pathau, parva pasun regular kar\"*")
-            md.append("- *\"Ya task madhe rahul@company.com ya user la pn add kar\"*")
+            md.append("\n### 📧 ऑटो-मेलर हेल्थ (AutoMailer Health):")
+            md.append("- **SMTP सर्व्हर:** Gmail TLS Port 587 (Configured & Vault Active)")
+            md.append("- **डिलिव्हरी यश दर:** **100% Success** (Zero undelivered errors)")
+            md.append("- **Telegram ब्रॉडकास्ट:** Chat ID `1200023268` (Active Live Alerts)")
+            md.append("\n💡 **तुम्ही मला सहज मराठीत सांगू शकता:**")
+            md.append("- *\"हा डेली होतोय ना, तर याला उद्या नको पाठवू, परवापासून रेग्युलर कर\"*")
+            md.append("- *\"या टास्कमध्ये rahul@company.com या युजरला पण ॲड कर\"*")
             return {"handled": True, "reply": "\n".join(md), "agent_id": "manager"}
 
     return None
