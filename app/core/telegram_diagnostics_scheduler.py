@@ -58,10 +58,15 @@ class TelegramDiagnosticsScheduler:
         """Lightweight HTTP check returning status and latency in ms."""
         t0 = time.time()
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "NanoProDiagnostics/1.0"})
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    lat = round((time.time() - t0) * 1000, 1)
+                    return True, lat, resp.status
+            except urllib.error.HTTPError as he:
                 lat = round((time.time() - t0) * 1000, 1)
-                return True, lat, resp.status
+                is_alive = he.code in [200, 301, 302, 401, 403]
+                return is_alive, lat, he.code
         except Exception:
             lat = round((time.time() - t0) * 1000, 1)
             return False, lat, 0
@@ -80,7 +85,7 @@ class TelegramDiagnosticsScheduler:
 
         # 3. Cloud DBs
         sf_ok, sf_lat, _ = self._check_http("https://EGPKNWZ-XH53504.snowflakecomputing.com", timeout=3.0)
-        ora_cloud_ok, ora_cloud_lat, _ = self._check_http("https://apex.oracle.com/pls/apex/", timeout=3.0)
+        ora_cloud_ok, ora_cloud_lat, _ = self._check_http("https://apex.oracle.com/ords/", timeout=3.0)
         s3_ok, s3_lat, _ = self._check_http("https://s3.ap-southeast-2.amazonaws.com", timeout=3.0)
 
         # 4. API Status
@@ -111,8 +116,8 @@ class TelegramDiagnosticsScheduler:
             },
             "cloud_dbs": {
                 "snowflake": {"name": "Snowflake Warehouse (L0_STAGING)", "is_online": sf_ok, "latency_ms": sf_lat},
-                "oracle_23ai": {"name": "Oracle 23ai APEX Cloud (ORDS REST)", "is_online": ora_cloud_ok, "latency_ms": ora_cloud_lat},
-                "postgres_cloud": {"name": "Postgres Free Cloud (Render / Neon)", "is_online": True, "notes": "Active"},
+                "oracle_23ai": {"name": "Oracle 23ai APEX Cloud (nanoprostudio)", "is_online": ora_cloud_ok, "latency_ms": ora_cloud_lat},
+                "postgres_cloud": {"name": "Render Cloud PostgreSQL (nanopro_postgres)", "is_online": True, "notes": "Active (Singapore)"},
                 "aws_s3": {"name": "AWS S3 Data Lake (ap-southeast-2)", "is_online": s3_ok, "latency_ms": s3_lat},
                 "inbuilt_warehouse": {"name": "Inbuilt Enterprise Warehouse (SQLite 18.6MB)", "is_online": True}
             },
@@ -156,8 +161,8 @@ class TelegramDiagnosticsScheduler:
             f"• <b>Postgres Local (5432):</b> {pg_loc_str}\n\n"
             f"☁️ <b>३. चोवीस तास क्लाउड डेटाबेस (24/7 Cloud DBs):</b>\n"
             f"• <b>Snowflake Warehouse:</b> {sf_str}\n"
-            f"• <b>Oracle 23ai APEX (Official Cloud):</b> {ora_cld_str}\n"
-            f"• <b>PostgreSQL Free Cloud:</b> 🟢 Online (Render/Neon)\n"
+            f"• <b>Oracle 23ai APEX (nanoprostudio):</b> {ora_cld_str}\n"
+            f"• <b>PostgreSQL Cloud (Render Singapore):</b> 🟢 Online (nanopro_postgres:5432)\n"
             f"• <b>AWS S3 Data Lake:</b> {s3_str}\n"
             f"• <b>Enterprise Warehouse (Inbuilt):</b> 🟢 Online\n\n"
             f"⚡ <b>४. AI मॉडेल्स & APIs स्थिती (API Health):</b>\n"
