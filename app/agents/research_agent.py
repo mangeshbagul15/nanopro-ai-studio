@@ -7,11 +7,12 @@ Handles:
 4. Authoritative source citations and persistent storage in AI Research Library
 """
 
+import os
 import time
 import re
 from typing import Dict, Any, List, Optional
 from app.core.logger import log_event
-from app.core.database import db
+from app.core.database import db, credentials_vault
 from app.core.model_adapter import model_manager
 
 class ResearchAgent:
@@ -89,6 +90,25 @@ class ResearchAgent:
         # 2. Check grounded historical landmarks/figures
         grounded = self.get_grounded_historical_facts(topic)
 
+        # 2.5 Real-Time Web Intelligence via Tavily Search
+        tavily_facts = ""
+        citation_links = []
+        try:
+            from tavily import TavilyClient
+            tv_cred = credentials_vault.get_credential("TAVILY_SEARCH")
+            tv_key = (tv_cred.get("secret_value") if tv_cred else None) or os.getenv("TAVILY_API_KEY")
+            if tv_key and not tv_key.startswith("••"):
+                t_client = TavilyClient(api_key=tv_key)
+                search_res = t_client.search(query=topic, max_results=3, search_depth="basic")
+                results = search_res.get("results", [])
+                if results:
+                    tavily_facts = "\nLIVE WEB SOURCES & RECENT NEWS (VIA TAVILY SEARCH):\n" + "\n".join([f"• [{r.get('title')}]({r.get('url')}): {r.get('content')[:250]}" for r in results])
+                    for r in results:
+                        citation_links.append({"title": r.get("title"), "url": r.get("url")})
+                    log_event(f"Tavily returned {len(results)} live web sources for: {topic[:40]}", component="ResearchAgent")
+        except Exception as te:
+            log_event(f"Tavily search skipped/fallback ({te})", component="ResearchAgent")
+
         # 3. Construct multi-perspective prompts based on requested mode
         system_prompt = (
             f"You are the Senior Research & Intelligence Specialist at Mangesh Nano Pro AI Studio. "
@@ -98,13 +118,12 @@ class ResearchAgent:
         )
 
         grounded_text = ""
-        citation_links = []
         if grounded:
             if "key_facts" in grounded:
                 grounded_text = f"\nVERIFIED FACTS FOR {grounded['entity']}:\n" + "\n".join([f"• {f}" for f in grounded["key_facts"]])
             elif "key_milestones" in grounded:
                 grounded_text = f"\nVERIFIED CAREER MILESTONES FOR {grounded['entity']}:\n" + "\n".join([f"• {m}" for m in grounded["key_milestones"]])
-            citation_links = grounded.get("sources", [])
+            citation_links.extend(grounded.get("sources", []))
 
         # Language guidance
         lang_note = "Respond in fluent English."
@@ -131,6 +150,8 @@ EXPLANATION MODE: {mode}
 LANGUAGE REQUIREMENT: {lang_note}
 
 {grounded_text}
+
+{tavily_facts}
 
 {f"PRIOR STUDIO NOTES: {local_context}" if local_context else ""}
 
