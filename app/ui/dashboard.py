@@ -4649,6 +4649,32 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
             </div>
         </div>
 
+        <!-- AUTONOMOUS CLOUD-TO-CLOUD ETL SYNC CARD (NEON POSTGRES <-> SNOWFLAKE) -->
+        <div class="panel-card" style="margin-bottom:12px; padding:14px 18px; border:1px solid #10B981; background:linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(6,78,59,0.25) 100%);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <h3 style="margin:0; font-size:15px; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
+                        <span>⚡</span> स्वायत्त क्लाउड-टू-क्लाउड ETL सिंक (Neon PostgreSQL &harr; Snowflake Medallion L0)
+                        <span class="badge" style="background:#0F172A; border:1px solid #10B981; color:#10B981; font-size:10px;">LIFETIME FREE CLOUD ENGINE</span>
+                    </h3>
+                    <p style="font-size:12px; color:#94A3B8; margin:4px 0 0 0;">
+                        Neon Cloud Postgres (Singapore AWS) मधून ट्रान्झॅक्शन्सचे स्वयंचलित एक्सट्रॅक्शन, SHA-256 स्कीमा व्हॅलिडेशन, आणि Snowflake L0 Staging मध्ये अखंड लोडिंग.
+                    </p>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <span class="badge" style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; font-size:11px;">🌐 Neon PG: Online</span>
+                    <span class="badge" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; font-size:11px;">❄️ Snowflake L0: Ready</span>
+                    <button type="button" id="btnRunCloudSync" class="btn btn-primary" onclick="triggerCloudEtlSync()" style="background:#10B981; font-weight:700; font-size:12px; padding:7px 16px;">
+                        ⚡ Run Cloud Sync Now (सिंक करा)
+                    </button>
+                </div>
+            </div>
+            <!-- Sync Live Logs / Result Box -->
+            <div id="cloudSyncLogBox" style="margin-top:10px; padding:10px 14px; background:rgba(10,15,29,0.7); border-radius:8px; border:1px solid rgba(255,255,255,0.06); font-size:11.5px; color:#94A3B8;">
+                सिंक स्टेटस: सज्ज &bull; एका क्लिकवर Neon Cloud मधील डेटा थेट Snowflake L0 Medallion Staging मध्ये सिंक करा.
+            </div>
+        </div>
+
         <!-- Database Health & Bidirectional Live Telemetry Row (All 9 Databases + Cloud S3) -->
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:12px;" id="de3dDatabaseHealthGrid">
             <!-- 1. Snowflake Cloud DW -->
@@ -5751,9 +5777,78 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                     Explore schemas, run analytical SQL queries, profile dataset distributions, and generate business KPI visualizations.
                 </p>
             </div>
-            <div style="display:flex; gap:6px;">
-                <button type="button" class="btn btn-primary" onclick="runDataAnalystReport()">&#128202; Generate Executive Report</button>
-                <button type="button" class="btn btn-secondary" onclick="runDataProfiling()">&#128269; Profile Active DB</button>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" id="btnSendExecTelegram" class="btn btn-primary" onclick="sendExecutiveTelegramReport()" style="background:#0284C7; font-weight:700; font-size:11.5px; padding:6px 14px;">📱 Send Daily Executive BI to Telegram</button>
+                <button type="button" class="btn btn-secondary" onclick="runDataAnalystReport()" style="font-size:11.5px; padding:6px 12px;">&#128202; Generate Executive Report</button>
+                <button type="button" class="btn btn-secondary" onclick="runDataProfiling()" style="font-size:11.5px; padding:6px 12px;">&#128269; Profile Active DB</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI TEXT & MARATHI VOICE TO SQL QUERY CENTER -->
+    <div class="panel-card" style="margin-bottom:12px; padding:16px 20px; border:1px solid #38BDF8; background:linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(14,165,233,0.15) 100%);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div>
+                <h3 style="margin:0; font-size:16px; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
+                    <span>🗣️</span> AI Text &amp; Marathi Voice to SQL Center (मराठीतून SQL &amp; व्हिज्युअलायझेशन)
+                    <span class="badge" style="background:#0F172A; border:1px solid #38BDF8; color:#38BDF8; font-size:10.5px;">GROQ LPU &bull; ZERO-CARD AI</span>
+                </h3>
+                <p style="font-size:12px; color:#94A3B8; margin:3px 0 0 0;">
+                    नैसर्गिक मराठी किंवा इंग्रजी भाषेत बोला किंवा लिहा — AI आपोआप अचूक SQL तयार करून Neon Postgres वर चालवेल व Chart.js चार्ट दाखवेल.
+                </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label class="input-label" style="display:inline; margin:0; font-size:11px;">Target Database:</label>
+                <select class="studio-input" id="textToSqlDbSelect" style="font-weight:700; color:#38BDF8; padding:4px 8px; font-size:11.5px;">
+                    <option value="POSTGRES_CLOUD_FREE" selected>Neon Cloud Postgres (Singapore)</option>
+                    <option value="studio_memory.db">Local SQLite (NVMe)</option>
+                    <option value="ORACLE_APEX_23AI_CLOUD">Oracle 23ai Cloud APEX</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Query Input Bar with Speech Recognition -->
+        <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <input type="text" id="textToSqlInput" class="studio-input" placeholder="उदा. गेल्या आठवड्यातील टॉप ५ बँकिंग ट्रान्झॅक्शन्स दाखव... किंवा शहरानुसार एकूण रक्कम किती?" style="flex:1; min-width:280px; font-size:13px; padding:9px 14px;" onkeydown="if(event.key==='Enter') runTextToSql()" />
+            <button type="button" id="btnVoiceSearch" class="btn btn-secondary" onclick="startMarathiSpeechRecognition()" style="font-size:12px; padding:8px 14px; font-weight:700; border-color:#38BDF8; color:#38BDF8;" title="Click and speak in Marathi or English">
+                🎤 बोलून शोधा
+            </button>
+            <button type="button" id="btnRunTextToSql" class="btn btn-primary" onclick="runTextToSql()" style="font-size:12px; padding:8px 18px; font-weight:700; background:linear-gradient(135deg, #0284C7 0%, #2563EB 100%);">
+                🚀 Run AI Query
+            </button>
+        </div>
+
+        <!-- Quick Sample Marathi Query Chips -->
+        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+            <span style="font-size:11px; color:#64748B; font-weight:bold;">मराठी सॅम्पल क्वेरीज:</span>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='गेल्या आठवड्यातील टॉप ५ बँकिंग ट्रान्झॅक्शन्स दाखव'; runTextToSql();">🏆 टॉप ५ ट्रान्झॅक्शन्स</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='शहरानुसार ट्रान्झॅक्शन्सचे वर्गीकरण दाखव'; runTextToSql();">🏙️ शहरानुसार एकूण रक्कम</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='UPI द्वारे झालेले सर्व व्यवहार दाखव'; runTextToSql();">📱 UPI द्वारे झालेले व्यवहार</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='सर्व ट्रान्झॅक्शन्सची एकूण रक्कम आणि सरासरी किती आहे?'; runTextToSql();">📊 एकूण रक्कम व सरासरी समरी</button>
+        </div>
+
+        <!-- Dynamic Output Container (SQL + Chart + Table) -->
+        <div id="textToSqlResultContainer" style="display:none; margin-top:14px; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+            <div id="textToSqlExplanation" style="margin-bottom:10px; font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.5); padding:10px 14px; border-radius:8px; border:1px solid rgba(56,189,248,0.2);">
+            </div>
+
+            <!-- Generated SQL Query Display -->
+            <div style="background:#020617; border:1px solid #1E293B; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-family:monospace; font-size:12px; color:#34D399; overflow-x:auto;">
+                <div style="font-size:10px; color:#64748B; margin-bottom:4px; text-transform:uppercase; font-weight:bold;">Generated ANSI SQL:</div>
+                <code id="textToSqlGeneratedQuery">SELECT * FROM neon_banking_stream;</code>
+            </div>
+
+            <!-- Dynamic Chart.js Canvas -->
+            <div style="height:280px; margin-bottom:14px; background:rgba(15,23,42,0.6); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); display:none;">
+                <canvas id="textToSqlChartCanvas"></canvas>
+            </div>
+
+            <!-- Results Table Preview -->
+            <div style="max-height:260px; overflow-y:auto; overflow-x:auto; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                <table class="mgmt-table">
+                    <thead id="textToSqlTableHead"></thead>
+                    <tbody id="textToSqlTableBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -5850,6 +5945,30 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                 </p>
             </div>
             <button type="button" class="btn btn-primary" onclick="runDSExperiment()">&#9889; Run Quick ML Pipeline</button>
+        </div>
+    </div>
+
+    <!-- HUGGING FACE ANOMALY & BANKING FRAUD DETECTION ENGINE -->
+    <div class="panel-card" style="margin-bottom:12px; padding:16px 20px; border:1px solid #EF4444; background:linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(127,29,29,0.2) 100%);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+                <h3 style="margin:0; font-size:16px; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
+                    <span>🛡️</span> Hugging Face बँकिंग एनॉमली &amp; फ्रॉड डिटेक्शन इंजिन (AI Fraud Scanner)
+                    <span class="badge" style="background:#0F172A; border:1px solid #EF4444; color:#FCA5A5; font-size:10.5px;">HF AUTHENTICATED: mangeshv</span>
+                </h3>
+                <p style="font-size:12px; color:#94A3B8; margin:4px 0 0 0;">
+                    Neon PostgreSQL मधील ट्रान्झॅक्शन्सचे मल्टि-फॅक्टर रिस्क मॉडेलिंग (Velocity Spikes, High Amount Outliers, Geo-Location Anomaly). धोका &ge; 75% असल्यास तात्काळ Telegram अलर्ट!
+                </p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <span class="badge" style="background:rgba(239,68,68,0.15); color:#FCA5A5; border:1px solid #EF4444; font-size:11px;">Threshold: 75% Risk</span>
+                <button type="button" id="btnRunFraudScan" class="btn btn-primary" onclick="runFraudScan()" style="background:#DC2626; font-weight:700; font-size:12px; padding:8px 18px;">
+                    🔍 Run Hugging Face Fraud Scan
+                </button>
+            </div>
+        </div>
+        <!-- Fraud Scan Results Box -->
+        <div id="fraudScanResultsBox" style="display:none; margin-top:12px; padding:12px; background:rgba(10,15,29,0.8); border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
         </div>
     </div>
 
@@ -9142,6 +9261,10 @@ Ready for message compilation and automated dispatch.
 
         function switchView(viewName, skipHistoryPush = false) {
             if (!viewName) return;
+            // RBAC Granular Permission Guard
+            if (window.checkViewAllowed && !window.checkViewAllowed(viewName)) {
+                return;
+            }
             logLocal('Navigation', 'Switched center workspace to: ' + viewName);
             currentActiveView = viewName;
 
@@ -17713,18 +17836,19 @@ ${d.preview}`;
             ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
             lakehouse3dNodes = [
-                { id: 'node_sources', name: 'Sources', icon: '🗄️', layer: 'Oracle XE & AWS S3', color: '#06B6D4', x: W * 0.10, y: H * 0.50, r: 26, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.8%' },
-                { id: 'node_ingestion', name: 'Ingestion', icon: '⚡', layer: 'Snowpipe & Python CDC', color: '#F59E0B', x: W * 0.26, y: H * 0.40, r: 24, throughput: '142,500 rec/s', latency: '4.5 ms', health: '100%' },
-                { id: 'node_bronze', name: 'Bronze L0', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.42, y: H * 0.60, r: 28, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
-                { id: 'node_silver', name: 'Silver L1', icon: '🥈', layer: 'Harmonized SCD2', color: '#E2E8F0', x: W * 0.58, y: H * 0.40, r: 28, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
-                { id: 'node_gold', name: 'Gold L2', icon: '🥇', layer: 'AML Star Schema', color: '#EAB308', x: W * 0.74, y: H * 0.60, r: 28, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
-                { id: 'node_dispatch', name: 'Dispatch', icon: '📧', layer: 'SMTP & T-1 Excel', color: '#10B981', x: W * 0.90, y: H * 0.50, r: 26, throughput: '141,980 rec/s', latency: '22.1 ms', health: '100%' }
+                { id: 'node_neon', name: 'Neon Postgres', icon: '🌐', layer: 'AWS Singapore (Free)', color: '#10B981', x: W * 0.08, y: H * 0.35, r: 26, throughput: 'Stream Live', latency: '2.1 ms', health: '100%' },
+                { id: 'node_oracle', name: 'Oracle & S3', icon: '🗄️', layer: 'Oracle 23ai & AWS S3', color: '#06B6D4', x: W * 0.08, y: H * 0.65, r: 26, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.8%' },
+                { id: 'node_ingestion', name: 'Autonomous ETL', icon: '⚡', layer: 'Schema Gate & CDC', color: '#F59E0B', x: W * 0.25, y: H * 0.50, r: 25, throughput: 'Real-Time Sync', latency: '3.8 ms', health: '100%' },
+                { id: 'node_bronze', name: 'Snowflake L0', icon: '🥉', layer: 'Medallion Staging (L0)', color: '#CD7F32', x: W * 0.42, y: H * 0.50, r: 28, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
+                { id: 'node_silver', name: 'Silver L1', icon: '🥈', layer: 'Harmonized SCD2 (L1)', color: '#38BDF8', x: W * 0.59, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
+                { id: 'node_gold', name: 'Gold L2', icon: '🥇', layer: 'Analytics Star Schema', color: '#EAB308', x: W * 0.76, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
+                { id: 'node_dispatch', name: 'BI & Alerts', icon: '📱', layer: 'Telegram & Exec Excel', color: '#8B5CF6', x: W * 0.92, y: H * 0.50, r: 26, throughput: 'Instant Push', latency: '15.4 ms', health: '100%' }
             ];
 
             lakehouse3dParticles = [];
-            for (let i = 0; i < 48; i++) {
+            for (let i = 0; i < 54; i++) {
                 lakehouse3dParticles.push({
-                    segment: Math.floor(Math.random() * 5),
+                    segment: Math.floor(Math.random() * 6),
                     t: Math.random(),
                     speed: 0.003 + Math.random() * 0.004,
                     size: 2.5 + Math.random() * 2,
@@ -17819,18 +17943,19 @@ ${d.preview}`;
                 }
 
                 // Self-healing: if nodes were initialized when canvas had 0 width, recompute coordinates
-                if (lakehouse3dNodes.length === 0 || !lakehouse3dNodes[5] || Math.abs(lakehouse3dNodes[5].x - W * 0.90) > 15) {
+                if (lakehouse3dNodes.length === 0 || !lakehouse3dNodes[6] || Math.abs(lakehouse3dNodes[6].x - W * 0.92) > 15) {
                     canvas.width = W * (window.devicePixelRatio || 1);
                     canvas.height = H * (window.devicePixelRatio || 1);
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
                     lakehouse3dNodes = [
-                        { id: 'node_sources', name: 'Sources', icon: '🗄️', layer: 'Oracle XE & AWS S3', color: '#06B6D4', x: W * 0.10, y: H * 0.50, r: 26, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.8%' },
-                        { id: 'node_ingestion', name: 'Ingestion', icon: '⚡', layer: 'Snowpipe & Python CDC', color: '#F59E0B', x: W * 0.26, y: H * 0.40, r: 24, throughput: '142,500 rec/s', latency: '4.5 ms', health: '100%' },
-                        { id: 'node_bronze', name: 'Bronze L0', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.42, y: H * 0.60, r: 28, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
-                        { id: 'node_silver', name: 'Silver L1', icon: '🥈', layer: 'Harmonized SCD2', color: '#E2E8F0', x: W * 0.58, y: H * 0.40, r: 28, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
-                        { id: 'node_gold', name: 'Gold L2', icon: '🥇', layer: 'AML Star Schema', color: '#EAB308', x: W * 0.74, y: H * 0.60, r: 28, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
-                        { id: 'node_dispatch', name: 'Dispatch', icon: '📧', layer: 'SMTP & T-1 Excel', color: '#10B981', x: W * 0.90, y: H * 0.50, r: 26, throughput: '141,980 rec/s', latency: '22.1 ms', health: '100%' }
+                        { id: 'node_neon', name: 'Neon Postgres', icon: '🌐', layer: 'AWS Singapore (Free)', color: '#10B981', x: W * 0.08, y: H * 0.35, r: 26, throughput: 'Stream Live', latency: '2.1 ms', health: '100%' },
+                        { id: 'node_oracle', name: 'Oracle & S3', icon: '🗄️', layer: 'Oracle 23ai & AWS S3', color: '#06B6D4', x: W * 0.08, y: H * 0.65, r: 26, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.8%' },
+                        { id: 'node_ingestion', name: 'Autonomous ETL', icon: '⚡', layer: 'Schema Gate & CDC', color: '#F59E0B', x: W * 0.25, y: H * 0.50, r: 25, throughput: 'Real-Time Sync', latency: '3.8 ms', health: '100%' },
+                        { id: 'node_bronze', name: 'Snowflake L0', icon: '🥉', layer: 'Medallion Staging (L0)', color: '#CD7F32', x: W * 0.42, y: H * 0.50, r: 28, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
+                        { id: 'node_silver', name: 'Silver L1', icon: '🥈', layer: 'Harmonized SCD2 (L1)', color: '#38BDF8', x: W * 0.59, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
+                        { id: 'node_gold', name: 'Gold L2', icon: '🥇', layer: 'Analytics Star Schema', color: '#EAB308', x: W * 0.76, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
+                        { id: 'node_dispatch', name: 'BI & Alerts', icon: '📱', layer: 'Telegram & Exec Excel', color: '#8B5CF6', x: W * 0.92, y: H * 0.50, r: 26, throughput: 'Instant Push', latency: '15.4 ms', health: '100%' }
                     ];
                 }
 
@@ -17943,6 +18068,278 @@ ${d.preview}`;
             } catch (err) {
                 console.warn('[3dLakehouseLoop] Handled render loop frame exception:', err);
                 lakehouse3dAnimFrame = requestAnimationFrame(render3dLakehouseLoop);
+            }
+        }
+
+        /* =====================================================================
+           FUTURISTIC FEATURES: CLOUD SYNC, TEXT-TO-SQL, BI & FRAUD CONTROLLERS
+           ===================================================================== */
+        // F1: Autonomous Cloud-to-Cloud ETL Sync
+        async function triggerCloudEtlSync() {
+            const btn = document.getElementById('btnRunCloudSync');
+            const logBox = document.getElementById('cloudSyncLogBox');
+            if (btn) { btn.disabled = true; btn.innerText = '⚡ सिंक करत आहे (Syncing Cloud)...'; }
+            if (logBox) logBox.innerHTML = '<span style="color:#38BDF8;">⏳ Neon PostgreSQL मधून नवीन डेटा एक्सट्रॅक्ट करून Snowflake L0 Staging मध्ये लोड करत आहे...</span>';
+
+            try {
+                const resp = await fetch('/api/data_engineer/cloud_sync', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ batch_size: 50 })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    if (logBox) {
+                        logBox.innerHTML = `
+                            <div style="color:#10B981; font-weight:bold; margin-bottom:4px;">✅ क्लाउड-टू-क्लाउड ETL सिंक यशस्वी! (${data.duration_ms} ms)</div>
+                            <div style="font-size:11px; color:#E2E8F0;">• Source: <b>${data.source}</b></div>
+                            <div style="font-size:11px; color:#E2E8F0;">• Target: <b>${data.target}</b></div>
+                            <div style="font-size:11px; color:#38BDF8;">• सिंक केलेले ट्रान्झॅक्शन्स: <b>${data.synced_count} रेकॉर्ड्स</b></div>
+                            <div style="font-size:11px; color:#A78BFA;">• Telegram वर तात्काळ अलर्ट पाठवला गेला आहे! 📱</div>
+                        `;
+                    }
+                    if (typeof simulate3dParticleBurst === 'function') simulate3dParticleBurst();
+                } else {
+                    if (logBox) logBox.innerHTML = `<span style="color:#EF4444;">❌ त्रुटी: ${data.error || 'सिंक अयशस्वी'}</span>`;
+                }
+            } catch (e) {
+                if (logBox) logBox.innerHTML = `<span style="color:#EF4444;">सर्व्हर त्रुटी: ${e.message}</span>`;
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '⚡ Run Cloud Sync Now (सिंक करा)'; }
+            }
+        }
+
+        // F2: AI Text & Marathi Voice to SQL
+        let recognitionInstance = null;
+        function startMarathiSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('तुमच्या ब्राऊझरमध्ये Web Speech API सपोर्ट उपलब्ध नाही. कृपया क्रोम (Chrome) वापरा किंवा खाली टाइप करा.');
+                return;
+            }
+            const voiceBtn = document.getElementById('btnVoiceSearch');
+            if (recognitionInstance) {
+                recognitionInstance.stop();
+                recognitionInstance = null;
+                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                return;
+            }
+
+            recognitionInstance = new SpeechRecognition();
+            recognitionInstance.lang = 'mr-IN';
+            recognitionInstance.interimResults = false;
+            recognitionInstance.maxAlternatives = 1;
+
+            if (voiceBtn) voiceBtn.innerHTML = '🔴 ऐकत आहे (Listening)...';
+
+            recognitionInstance.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                const input = document.getElementById('textToSqlInput');
+                if (input) input.value = transcript;
+                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                recognitionInstance = null;
+                runTextToSql();
+            };
+
+            recognitionInstance.onerror = function(event) {
+                console.warn('Speech recognition error:', event.error);
+                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                recognitionInstance = null;
+            };
+
+            recognitionInstance.onend = function() {
+                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                recognitionInstance = null;
+            };
+
+            recognitionInstance.start();
+        }
+
+        let activeTextToSqlChart = null;
+        async function runTextToSql() {
+            const input = document.getElementById('textToSqlInput');
+            const prompt = (input ? input.value : '').trim();
+            if (!prompt) {
+                alert('कृपया प्रश्न टाइप करा किंवा माईकवर बोला!');
+                return;
+            }
+
+            const targetDb = document.getElementById('textToSqlDbSelect') ? document.getElementById('textToSqlDbSelect').value : 'POSTGRES_CLOUD_FREE';
+            const btn = document.getElementById('btnRunTextToSql');
+            const resBox = document.getElementById('textToSqlResultContainer');
+            if (btn) { btn.disabled = true; btn.innerText = '🧠 AI विचार करत आहे...'; }
+
+            try {
+                const resp = await fetch('/api/analyst/text_to_sql', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: prompt, target_db: targetDb })
+                });
+                const data = await resp.json();
+
+                if (resBox) resBox.style.display = 'block';
+
+                // Display SQL
+                const sqlEl = document.getElementById('textToSqlGeneratedQuery');
+                if (sqlEl) sqlEl.innerText = data.generated_sql || 'SELECT * FROM neon_banking_stream;';
+
+                // Display Explanation
+                const expEl = document.getElementById('textToSqlExplanation');
+                if (expEl) expEl.innerHTML = data.explanation_mr || '';
+
+                // Render Chart.js
+                const canvas = document.getElementById('textToSqlChartCanvas');
+                if (canvas && data.chart_config) {
+                    if (activeTextToSqlChart) {
+                        activeTextToSqlChart.destroy();
+                        activeTextToSqlChart = null;
+                    }
+                    if (typeof Chart !== 'undefined') {
+                        activeTextToSqlChart = new Chart(canvas.getContext('2d'), {
+                            type: data.chart_config.type || 'bar',
+                            data: {
+                                labels: data.chart_config.labels,
+                                datasets: data.chart_config.datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { labels: { color: '#E2E8F0', font: { family: 'Inter' } } }
+                                },
+                                scales: (data.chart_config.type === 'bar' || data.chart_config.type === 'line') ? {
+                                    x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+                                    y: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+                                } : {}
+                            }
+                        });
+                        canvas.parentElement.style.display = 'block';
+                    }
+                } else if (canvas) {
+                    canvas.parentElement.style.display = 'none';
+                }
+
+                // Render Table
+                const thead = document.getElementById('textToSqlTableHead');
+                const tbody = document.getElementById('textToSqlTableBody');
+                if (thead && tbody) {
+                    thead.innerHTML = '';
+                    tbody.innerHTML = '';
+                    const trH = document.createElement('tr');
+                    (data.columns || []).forEach(c => {
+                        const th = document.createElement('th');
+                        th.innerText = c;
+                        trH.appendChild(th);
+                    });
+                    thead.appendChild(trH);
+
+                    (data.rows || []).slice(0, 15).forEach(r => {
+                        const tr = document.createElement('tr');
+                        (data.columns || []).forEach(c => {
+                            const td = document.createElement('td');
+                            td.innerText = r[c] !== undefined ? r[c] : '';
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                alert('त्रुटी: ' + e.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '🚀 Run AI Query'; }
+            }
+        }
+
+        // F3: Executive Excel & Telegram Dispatch
+        async function sendExecutiveTelegramReport() {
+            const btn = document.getElementById('btnSendExecTelegram');
+            if (btn) { btn.disabled = true; btn.innerText = '📱 Telegram ला पाठवत आहे...'; }
+
+            try {
+                const resp = await fetch('/api/reports/send_executive_telegram', { method: 'POST' });
+                const data = await resp.json();
+                if (data.status === 'success' && data.telegram_delivered) {
+                    alert(`✅ दैनिक बिझनेस BI रिपोर्ट आणि एक्सेल वर्कबुक (${data.report_file}) Telegram वर यशस्वीरीत्या पाठवले गेले आहेत!`);
+                } else {
+                    alert('त्रुटी: रिपोर्ट तयार झाला परंतु Telegram पाठवता आला नाही: ' + (data.error || 'Check Bot'));
+                }
+            } catch (e) {
+                alert('सर्व्हर त्रुटी: ' + e.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '📱 Send Daily Executive BI to Telegram'; }
+            }
+        }
+
+        // F4: Hugging Face Fraud Detection Scan
+        async function runFraudScan() {
+            const btn = document.getElementById('btnRunFraudScan');
+            const container = document.getElementById('fraudScanResultsBox');
+            if (btn) { btn.disabled = true; btn.innerText = '🔍 Hugging Face स्कॅन चालू आहे...'; }
+
+            try {
+                const resp = await fetch('/api/data_science/fraud_detection_scan', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ limit: 20 })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    if (container) {
+                        container.style.display = 'block';
+                        let alertHtml = '';
+                        if (data.critical_anomalies_count > 0) {
+                            alertHtml = `<div style="background:rgba(239,68,68,0.15); border:1px solid #EF4444; color:#FCA5A5; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:bold;">
+                                🚨 ${data.critical_anomalies_count} संशयास्पद व्यवहार आढळले! तात्काळ Telegram अलर्ट पाठवला गेला आहे.
+                            </div>`;
+                        } else {
+                            alertHtml = `<div style="background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#6EE7B7; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:bold;">
+                                ✅ सर्व व्यवहार सुरक्षित आणि सामान्य मर्यादेत आहेत (Zero Critical Fraud).
+                            </div>`;
+                        }
+
+                        let rowsHtml = '';
+                        (data.all_transactions || []).forEach(t => {
+                            const badgeColor = (t.risk_category === 'CRITICAL_FRAUD') ? '#EF4444' : ((t.risk_category === 'HIGH_RISK') ? '#F59E0B' : '#10B981');
+                            rowsHtml += `
+                                <tr>
+                                    <td><b>${t.txn_id}</b></td>
+                                    <td>${t.customer_name}</td>
+                                    <td>₹ ${Number(t.amount).toLocaleString('en-IN')}</td>
+                                    <td>${t.channel}</td>
+                                    <td>${t.city}</td>
+                                    <td><span style="background:${badgeColor}22; color:${badgeColor}; border:1px solid ${badgeColor}; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">${t.risk_score}% [${t.risk_category}]</span></td>
+                                    <td style="font-size:11px; color:#94A3B8;">${t.risk_factors.join(', ')}</td>
+                                </tr>
+                            `;
+                        });
+
+                        container.innerHTML = `
+                            ${alertHtml}
+                            <div style="overflow-x:auto;">
+                                <table class="mgmt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Txn ID</th>
+                                            <th>Customer</th>
+                                            <th>Amount</th>
+                                            <th>Channel</th>
+                                            <th>City</th>
+                                            <th>Risk Score</th>
+                                            <th>Risk Indicators</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (e) {
+                alert('त्रुटी: ' + e.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '🔍 Run Hugging Face Fraud Scan'; }
             }
         }
 

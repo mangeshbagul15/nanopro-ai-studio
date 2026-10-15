@@ -305,6 +305,178 @@ def get_auth_injection() -> str:
 .btn-disable:hover { background: #DC2626; }
 .btn-enable { background: #0284C7; color: #FFFFFF; }
 .btn-enable:hover { background: #0369A1; }
+
+/* Permissions Modal Overlay */
+#nanoProPermissionsModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 7, 18, 0.88);
+    z-index: 99999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(14px);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #F8FAFC;
+}
+
+.perm-modal-card {
+    width: 860px;
+    max-width: 95vw;
+    max-height: 92vh;
+    background: #0F172A;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(56, 189, 248, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: authFadeIn 0.25s ease-out;
+}
+
+.perm-modal-header {
+    padding: 18px 24px;
+    background: linear-gradient(90deg, #1E293B 0%, #0F172A 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.perm-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.perm-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #38BDF8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.perm-mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.perm-mode-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.perm-mode-card:hover {
+    border-color: #38BDF8;
+    background: rgba(30, 41, 59, 0.9);
+}
+
+.perm-mode-card.active {
+    border-color: #38BDF8;
+    background: rgba(56, 189, 248, 0.12);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+}
+
+.perm-actions-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    background: rgba(30, 41, 59, 0.45);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.perm-preset-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #E2E8F0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.perm-preset-btn:hover {
+    background: #38BDF8;
+    color: #0F172A;
+    border-color: #38BDF8;
+}
+
+.perm-groups-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.perm-group-box {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+
+.perm-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #CBD5E1;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.perm-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 12px;
+    color: #94A3B8;
+    cursor: pointer;
+}
+
+.perm-item-row:hover {
+    color: #F8FAFC;
+}
+
+.perm-item-row input[type="checkbox"] {
+    accent-color: #38BDF8;
+    cursor: pointer;
+    width: 15px;
+    height: 15px;
+}
+
+.perm-modal-footer {
+    padding: 14px 24px;
+    background: #0B1120;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
 </style>
 
 <!-- AUTHENTICATION GATEWAY MODAL OVERLAY -->
@@ -373,6 +545,183 @@ def get_auth_injection() -> str:
                     सुरक्षा धोरण: नोंदणीनंतर ॲडमिन (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- RBAC GRANULAR PERMISSIONS MODAL OVERLAY -->
+<div id="nanoProPermissionsModal">
+    <div class="perm-modal-card">
+        <div class="perm-modal-header">
+            <div>
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#38BDF8; display:flex; align-items:center; gap:8px;">
+                    🛡️ युझर प्रवेश अधिकार &amp; फिचर्स वाटप (User RBAC Permissions)
+                </h3>
+                <div style="font-size:12px; color:#94A3B8; margin-top:4px;">
+                    युझर: <b id="permModalUsername" style="color:#FFFFFF;">-</b> | ईमेल: <span id="permModalEmail">-</span>
+                </div>
+            </div>
+            <button type="button" onclick="closePermissionsModal()" style="background:none; border:none; color:#94A3B8; font-size:22px; cursor:pointer;" title="Close">&times;</button>
+        </div>
+
+        <div class="perm-modal-body">
+            <!-- Hidden context fields -->
+            <input type="hidden" id="permModalUserId" value="" />
+            <input type="hidden" id="permModalActionType" value="update" />
+
+            <!-- 1. ACCESS LEVEL SELECTION -->
+            <div class="perm-section-title">
+                <span>1. प्रवेश स्तर निवडा (Access Mode)</span>
+            </div>
+            <div class="perm-mode-grid">
+                <label class="perm-mode-card active" id="modeCardModify" onclick="setPermAccessMode('MODIFY')">
+                    <input type="radio" name="accessModeRadio" id="radioModeModify" value="MODIFY" checked style="accent-color:#38BDF8; margin-top:2px;">
+                    <div>
+                        <div style="font-weight:700; color:#38BDF8; font-size:13px;">✏️ MODIFY (पूर्ण अधिकार)</div>
+                        <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
+                            युझरला सर्व डेटा तयार करणे, मॉडेल्स चालवणे, SQL रन करणे आणि एडिट करण्याचे पूर्ण अधिकार राहतील.
+                        </div>
+                    </div>
+                </label>
+
+                <label class="perm-mode-card" id="modeCardReadOnly" onclick="setPermAccessMode('READ_ONLY')">
+                    <input type="radio" name="accessModeRadio" id="radioModeReadOnly" value="READ_ONLY" style="accent-color:#F59E0B; margin-top:2px;">
+                    <div>
+                        <div style="font-weight:700; color:#F59E0B; font-size:13px;">👁️ READ_ONLY (फक्त वाचन)</div>
+                        <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
+                            युझर फक्त डॅशबोर्ड, चार्ट्स, रिपोर्ट्स आणि डेटा वाचू शकेल; कोणताही नवीन बदल किंवा डेटा डिलीट करता येणार नाही.
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- 2. FEATURE SELECTION TOOLBAR -->
+            <div class="perm-section-title">
+                <span>2. डाव्या बाजूच्या फिचर्सची निवड (Left-Sidebar Navigation Features)</span>
+            </div>
+            <div class="perm-actions-toolbar">
+                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true)">✅ सर्व निवडा (Select All)</button>
+                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false)">❌ सर्व हटवा (Deselect All)</button>
+                <button type="button" class="perm-preset-btn" onclick="selectPermPreset('data_stack')">📊 Data Stack Only</button>
+                <button type="button" class="perm-preset-btn" onclick="selectPermPreset('ai_stack')">🤖 AI &amp; Automation Only</button>
+                <button type="button" class="perm-preset-btn" onclick="selectPermPreset('media_comm')">💬 Comm &amp; Media</button>
+            </div>
+
+            <!-- 3. FEATURE CHECKBOXES (8 USER-ACCESSIBLE CATEGORIES) -->
+            <div class="perm-groups-container">
+                <!-- Group 1: AI Command Center -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>1. AI Command Center</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g1')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="dashboard"> Studio Overview</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="ai_manager"> AI Manager</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="ai_office"> AI Agent Office</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="models_hub"> AI Model Hub</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="agent_control"> Agent Operations</label>
+                </div>
+
+                <!-- Group 2: Data & Analytics -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>2. Data &amp; Analytics</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g2')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="data_engineer"> Data Engineering</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="data_analyst"> Data Analyst</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="data_science"> Data Science &amp; ML</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="learning_hub"> Learning SQL &amp; Drills</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="file_converter"> File Converter</label>
+                </div>
+
+                <!-- Group 3: Research & Security -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>3. Research &amp; Security</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g3')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="research_knowledge"> Research &amp; Knowledge</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="live_discovery"> Live Discovery</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="cyber_lab"> Cybersecurity Lab</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="book_reader"> Books &amp; Learning</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="research_library"> Research Library</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="research_agent"> Research Agent</label>
+                </div>
+
+                <!-- Group 4: Automation & Operations -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>4. Automation &amp; Operations</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g4')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="automation_scheduler"> Task Scheduler</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="task_history"> Task History</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="assistant"> Reminders &amp; Tasks</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="amazon_tracker"> Amazon Price Tracker</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="startup_recovery"> Startup Recovery</label>
+                </div>
+
+                <!-- Group 5: Data & Storage -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>5. Data &amp; Storage</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g5')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="storage_dashboard"> Storage Dashboard</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="vault"> Database Vault</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="cloud_trends"> Cloud Trends 2026</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="bitcoin_wallet"> Bitcoin Wallet &amp; Pay</label>
+                </div>
+
+                <!-- Group 6: Creation & Media -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>6. Creation &amp; Media</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g6')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="sql_video"> SQL Video Maker</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="python_video"> Python Video Maker</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="image_agent"> Image Maker</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="coding_agent"> Coding Agent</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="document_studio"> Document Studio</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="media_discovery"> Media Discovery</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="entertainment_center"> Entertainment Hub</label>
+                </div>
+
+                <!-- Group 7: Communication & Alerts -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>7. Communication &amp; Alerts</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g7')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="communication"> Communication Center</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="telegram_agent"> Telegram AI Agent</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="whatsapp_hub"> WhatsApp Hub</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="news_center"> News Center</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="approvals"> Action Approvals</label>
+                </div>
+
+                <!-- Group 8: Career & Developer -->
+                <div class="perm-group-box">
+                    <div class="perm-group-title">
+                        <span>8. Career &amp; Developer</span>
+                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g8')">Toggle</span>
+                    </div>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="career_hub"> Career &amp; Job Search</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="free_apis"> Free API Finder</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="github_explorer"> GitHub Explorer</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="app_launcher"> App Launcher</label>
+                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="shopping_services"> Shopping Services</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="perm-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closePermissionsModal()" style="padding:8px 16px;">रद्द करा (Cancel)</button>
+            <button type="button" id="permModalSaveBtn" class="btn btn-primary" onclick="submitUserPermissions()" style="background:linear-gradient(135deg, #0284C7 0%, #2563EB 100%); padding:8px 20px; font-weight:700;">
+                💾 अधिकार लागू करा (Save &amp; Apply)
+            </button>
         </div>
     </div>
 </div>
@@ -509,6 +858,9 @@ function onAuthSuccess(user) {
     // Show User info in top header
     updateHeaderUserProfile(user);
 
+    // Apply granular RBAC feature permissions & sidebar pruning
+    applyUserPermissions(user);
+
     // Show User Management menu item if Admin
     const navMgmt = document.getElementById('nav_user_management');
     if (navMgmt) {
@@ -534,10 +886,12 @@ function updateHeaderUserProfile(user) {
         }
     }
     if (badge) {
-        const roleLabel = (user.role === 'admin') ? '<span style="color:#10B981; font-weight:bold;">[Admin]</span>' : '<span style="color:#38BDF8;">[User]</span>';
+        const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
+        const roleLabel = isSuperAdmin ? '<span style="color:#10B981; font-weight:bold;">[Admin]</span>' : '<span style="color:#38BDF8;">[User]</span>';
+        const modeBadge = (!isSuperAdmin && user.access_mode === 'READ_ONLY') ? '<span style="color:#F59E0B; font-size:10px; border:1px solid #F59E0B; padding:1px 5px; border-radius:10px; margin-left:4px;">👁️ Read-Only</span>' : '';
         badge.innerHTML = `
-            <div style="font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.7); padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
-                👤 <b>${user.username}</b> ${roleLabel}
+            <div style="font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.7); padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center;">
+                👤 <b style="margin-left:4px;">${user.username}</b> ${roleLabel} ${modeBadge}
             </div>
             <button type="button" onclick="performLogout()" style="background:rgba(239,68,68,0.15); border:1px solid #EF4444; color:#FCA5A5; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:11.5px; font-weight:bold;" title="Sign Out">
                 Logout 🚪
@@ -605,6 +959,215 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (gateway) gateway.style.display = 'flex';
 });
 
+/* ========================================================================= */
+/* RBAC PERMISSION CONTROLLERS & GRANULAR ACCESS FUNCTIONS                   */
+/* ========================================================================= */
+function setPermAccessMode(mode) {
+    const radioMod = document.getElementById('radioModeModify');
+    const radioRO = document.getElementById('radioModeReadOnly');
+    if (radioMod) radioMod.checked = (mode === 'MODIFY');
+    if (radioRO) radioRO.checked = (mode === 'READ_ONLY');
+    const cardMod = document.getElementById('modeCardModify');
+    const cardRO = document.getElementById('modeCardReadOnly');
+    if (cardMod) cardMod.classList.toggle('active', mode === 'MODIFY');
+    if (cardRO) cardRO.classList.toggle('active', mode === 'READ_ONLY');
+}
+
+function selectAllPermFeatures(checkVal) {
+    document.querySelectorAll('.perm-cb').forEach(cb => { cb.checked = checkVal; });
+}
+
+function toggleGroupCheckboxes(groupClass) {
+    const cbs = document.querySelectorAll('.perm-cb.' + groupClass);
+    const anyUnchecked = Array.from(cbs).some(c => !c.checked);
+    cbs.forEach(c => { c.checked = anyUnchecked; });
+}
+
+function selectPermPreset(preset) {
+    selectAllPermFeatures(false);
+    let views = [];
+    if (preset === 'data_stack') {
+        views = ['dashboard', 'data_engineer', 'data_analyst', 'data_science', 'learning_hub', 'file_converter', 'storage_dashboard', 'vault', 'cloud_trends'];
+    } else if (preset === 'ai_stack') {
+        views = ['dashboard', 'ai_manager', 'ai_office', 'models_hub', 'agent_control', 'automation_scheduler', 'task_history', 'assistant'];
+    } else if (preset === 'media_comm') {
+        views = ['dashboard', 'sql_video', 'python_video', 'image_agent', 'coding_agent', 'document_studio', 'communication', 'telegram_agent', 'whatsapp_hub', 'news_center'];
+    }
+    views.forEach(v => {
+        const el = document.querySelector(`.perm-cb[value="${v}"]`);
+        if (el) el.checked = true;
+    });
+}
+
+function openPermissionsModal(userId, username, email, actionType='update', allowedViews=['*'], accessMode='MODIFY') {
+    const uidEl = document.getElementById('permModalUserId');
+    const atEl = document.getElementById('permModalActionType');
+    const unEl = document.getElementById('permModalUsername');
+    const emEl = document.getElementById('permModalEmail');
+    if (uidEl) uidEl.value = userId;
+    if (atEl) atEl.value = actionType;
+    if (unEl) unEl.innerText = username;
+    if (emEl) emEl.innerText = email || '-';
+    
+    setPermAccessMode(accessMode || 'MODIFY');
+
+    if (!allowedViews || allowedViews.includes('*')) {
+        selectAllPermFeatures(true);
+    } else {
+        selectAllPermFeatures(false);
+        allowedViews.forEach(v => {
+            const el = document.querySelector(`.perm-cb[value="${v}"]`);
+            if (el) el.checked = true;
+        });
+    }
+
+    const modal = document.getElementById('nanoProPermissionsModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closePermissionsModal() {
+    const modal = document.getElementById('nanoProPermissionsModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function submitUserPermissions() {
+    const userId = document.getElementById('permModalUserId').value;
+    const actionType = document.getElementById('permModalActionType').value;
+    const radioChecked = document.querySelector('input[name="accessModeRadio"]:checked');
+    const accessMode = radioChecked ? radioChecked.value : 'MODIFY';
+
+    const allCheckboxes = document.querySelectorAll('.perm-cb');
+    const checkedCheckboxes = document.querySelectorAll('.perm-cb:checked');
+
+    let allowedViews = [];
+    if (checkedCheckboxes.length === allCheckboxes.length) {
+        allowedViews = ['*'];
+    } else {
+        checkedCheckboxes.forEach(cb => allowedViews.push(cb.value));
+    }
+
+    if (allowedViews.length === 0) {
+        alert('कृपया किमान एक तरी फिचर निवडा!');
+        return;
+    }
+
+    const btn = document.getElementById('permModalSaveBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'जतन करत आहे...';
+    }
+
+    try {
+        const endpoint = (actionType === 'approve') ? '/api/admin/users/approve' : '/api/admin/users/permissions';
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                admin_username: currentUser ? currentUser.username : 'nanopro',
+                allowed_views: allowedViews,
+                access_mode: accessMode
+            })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            alert('✅ ' + (data.message || 'अधिकार यशस्वीरीत्या लागू करण्यात आले!'));
+            closePermissionsModal();
+            loadAdminUsers();
+        } else {
+            alert('त्रुटी: ' + (data.error || 'अधिकार जतन करता आले नाहीत!'));
+        }
+    } catch (err) {
+        alert('सर्व्हर त्रुटी: ' + err.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = '💾 अधिकार लागू करा (Save & Apply)';
+        }
+    }
+}
+
+// Client-side RBAC pruning & guard
+function applyUserPermissions(user) {
+    if (!user) return;
+    const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
+    const allowed = user.allowed_views || ['*'];
+    const hasAll = isSuperAdmin || allowed.includes('*');
+
+    // Filter sidebar navigation items
+    document.querySelectorAll('.nav-group').forEach(group => {
+        let visibleCount = 0;
+        const isSystemGroup = (group.id === 'navGroup-system-mgmt');
+
+        group.querySelectorAll('.nav-item').forEach(item => {
+            const oc = item.getAttribute('onclick') || '';
+            const match = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
+            if (match) {
+                const v = match[1];
+                if (v === 'user_management') {
+                    item.style.display = isSuperAdmin ? 'flex' : 'none';
+                    if (isSuperAdmin) visibleCount++;
+                    return;
+                }
+                if (hasAll || allowed.includes(v)) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+
+        // If no items are visible in this group (and not super admin), hide the group
+        if (!hasAll && visibleCount === 0) {
+            group.style.display = 'none';
+        } else {
+            group.style.display = 'block';
+        }
+    });
+
+    // Handle access mode banner
+    const mode = user.access_mode || 'MODIFY';
+    let banner = document.getElementById('nanoProReadOnlyBanner');
+    if (mode === 'READ_ONLY' && !isSuperAdmin) {
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'nanoProReadOnlyBanner';
+            banner.style.cssText = 'background:linear-gradient(90deg, rgba(245,158,11,0.25) 0%, rgba(239,68,68,0.2) 100%); border-bottom:1px solid rgba(245,158,11,0.5); color:#FCD34D; font-size:12px; font-weight:700; padding:6px 16px; display:flex; align-items:center; justify-content:space-between; position:fixed; top:0; left:0; width:100%; z-index:99999; backdrop-filter:blur(8px);';
+            banner.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span>👁️ <b>फक्त वाचन मोड (Read-Only Mode):</b> तुमचे खाते व्ह्यू-ओन्ली मोडमध्ये आहे. तुम्ही डेटा पाहू शकता, नवीन बदल किंवा एडिट करू शकत नाही.</span>
+                </div>
+                <span style="font-size:11px; background:rgba(0,0,0,0.4); border:1px solid rgba(245,158,11,0.4); padding:2px 8px; border-radius:4px;">RBAC Enforced</span>
+            `;
+            document.body.appendChild(banner);
+        } else {
+            banner.style.display = 'flex';
+        }
+    } else if (banner) {
+        banner.style.display = 'none';
+    }
+
+    // Switch view if current active view is unauthorized
+    if (!hasAll && typeof currentActiveView !== 'undefined' && currentActiveView && !allowed.includes(currentActiveView)) {
+        const firstAllowed = allowed[0] || 'dashboard';
+        if (typeof switchView === 'function') {
+            switchView(firstAllowed);
+        }
+    }
+}
+
+// Global guard for switchView
+window.checkViewAllowed = function(viewName) {
+    if (!currentUser) return true;
+    if (currentUser.role === 'admin' || currentUser.username === 'nanopro') return true;
+    const allowed = currentUser.allowed_views || ['*'];
+    if (allowed.includes('*') || allowed.includes(viewName)) return true;
+    
+    alert(`🚫 प्रवेश नाकारला (Access Denied): तुम्हाला '${viewName}' या फिचरचे अधिकार नाहीत.\nकृपया Admin 'nanopro' शी संपर्क साधा.`);
+    return false;
+};
+
 /* --- ADMIN USER MANAGEMENT APIS --- */
 async function loadAdminUsers() {
     try {
@@ -623,14 +1186,28 @@ async function loadAdminUsers() {
 
             const statusClass = (u.status === 'ACTIVE') ? 'status-badge-active' : (u.status === 'PENDING_APPROVAL' ? 'status-badge-pending' : 'status-badge-disabled');
             
+            const mode = u.access_mode || 'MODIFY';
+            const modeBadge = (mode === 'READ_ONLY') 
+                ? '<span style="background:rgba(245,158,11,0.15); color:#F59E0B; border:1px solid #F59E0B; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">👁️ READ-ONLY</span>' 
+                : '<span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">✏️ MODIFY</span>';
+
+            const views = u.allowed_views || ['*'];
+            const featuresBadge = (views.includes('*'))
+                ? '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">All (सर्व ४२)</span>'
+                : `<span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">${views.length} Features</span>`;
+
             let actionsHtml = '';
+            const viewsJson = JSON.stringify(views).replace(/"/g, '&quot;');
             if (u.status === 'PENDING_APPROVAL') {
-                actionsHtml = `<button class="btn-action-sm btn-approve" onclick="approveUser('${u.id}')">Approve ✔️</button>`;
+                actionsHtml = `<button class="btn-action-sm btn-approve" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'approve', ${viewsJson}, '${mode}')">🛡️ मंजूर करा (Approve)</button>`;
             } else if (u.username !== 'nanopro') {
                 const nextSt = (u.status === 'ACTIVE') ? 'DISABLED' : 'ACTIVE';
                 const btnLabel = (u.status === 'ACTIVE') ? 'Disable 🚫' : 'Enable ✅';
                 const btnClass = (u.status === 'ACTIVE') ? 'btn-disable' : 'btn-enable';
-                actionsHtml = `<button class="btn-action-sm ${btnClass}" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>`;
+                actionsHtml = `
+                    <button class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; margin-right:4px;" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'update', ${viewsJson}, '${mode}')">⚙️ अधिकार</button>
+                    <button class="btn-action-sm ${btnClass}" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>
+                `;
             }
 
             const tr = document.createElement('tr');
@@ -640,6 +1217,8 @@ async function loadAdminUsers() {
                 <td>${u.email}</td>
                 <td><span style="text-transform:uppercase; font-size:11px; font-weight:bold;">${u.role}</span></td>
                 <td><span class="${statusClass}">${u.status}</span></td>
+                <td>${modeBadge}</td>
+                <td>${featuresBadge}</td>
                 <td>${u.last_login_fmt}</td>
                 <td>${u.total_usage_fmt}</td>
                 <td>${actionsHtml}</td>
@@ -655,20 +1234,6 @@ async function loadAdminUsers() {
     } catch (err) {
         console.error('Error loading admin users:', err);
     }
-}
-
-async function approveUser(userId) {
-    if (!confirm('या युझरला NanoPro वापरण्याची मंजुरी (Approve) द्यायची का?')) return;
-    try {
-        const resp = await fetch('/api/admin/users/approve', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId, admin_username: currentUser ? currentUser.username : 'nanopro' })
-        });
-        const data = await resp.json();
-        alert(data.message || 'युझर मंजूर झाला!');
-        loadAdminUsers();
-    } catch(e) { alert('त्रुटी: ' + e.message); }
 }
 
 async function toggleUserStatus(userId, newStatus) {
@@ -796,13 +1361,15 @@ def get_user_management_view_html() -> str:
                                 <th>Email</th>
                                 <th>Role</th>
                                 <th>Status</th>
+                                <th>Access Mode</th>
+                                <th>Allowed Features</th>
                                 <th>Last Login</th>
                                 <th>Total Usage</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="adminUsersTableBody">
-                            <tr><td colspan="8" style="text-align:center; padding:18px; color:#94A3B8;">युझर्स लोड होत आहेत...</td></tr>
+                            <tr><td colspan="10" style="text-align:center; padding:18px; color:#94A3B8;">युझर्स लोड होत आहेत...</td></tr>
                         </tbody>
                     </table>
                 </div>

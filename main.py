@@ -447,6 +447,14 @@ class AuthValidateRequest(BaseModel):
 class AdminApproveUserRequest(BaseModel):
     user_id: str
     admin_username: Optional[str] = "nanopro"
+    allowed_views: Optional[List[str]] = None
+    access_mode: Optional[str] = "MODIFY"
+
+class AdminUpdatePermissionsRequest(BaseModel):
+    user_id: str
+    admin_username: Optional[str] = "nanopro"
+    allowed_views: Optional[List[str]] = None
+    access_mode: Optional[str] = "MODIFY"
 
 class AdminToggleUserRequest(BaseModel):
     user_id: str
@@ -455,6 +463,16 @@ class AdminToggleUserRequest(BaseModel):
 class AdminResetPasswordRequest(BaseModel):
     user_id: str
     new_password: str
+
+class TextToSQLRequest(BaseModel):
+    prompt: str
+    target_db: Optional[str] = "POSTGRES_CLOUD_FREE"
+
+class CloudSyncRequest(BaseModel):
+    batch_size: Optional[int] = 50
+
+class FraudScanRequest(BaseModel):
+    limit: Optional[int] = 25
 
 def _execute_staged_boot_phases_2_and_3():
     """
@@ -4443,9 +4461,16 @@ async def api_admin_users_list():
 
 @app.post("/api/admin/users/approve")
 async def api_admin_users_approve(req: AdminApproveUserRequest):
-    """Approves a pending registration, making the user account active."""
+    """Approves a pending registration, making the user account active with designated feature permissions."""
     from app.core.auth_manager import auth_manager
-    res = auth_manager.approve_user(req.user_id, admin_username=req.admin_username)
+    res = auth_manager.approve_user(req.user_id, admin_username=req.admin_username, allowed_views=req.allowed_views, access_mode=req.access_mode)
+    return JSONResponse(res)
+
+@app.post("/api/admin/users/permissions")
+async def api_admin_users_permissions(req: AdminUpdatePermissionsRequest):
+    """Updates an existing user's feature permissions and access mode."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.update_user_permissions(req.user_id, admin_username=req.admin_username, allowed_views=req.allowed_views, access_mode=req.access_mode)
     return JSONResponse(res)
 
 @app.post("/api/admin/users/toggle")
@@ -4474,6 +4499,57 @@ async def api_telegram_send_diagnostics_now():
     """Immediately triggers and delivers the 3-hour diagnostics report to Telegram."""
     from app.core.telegram_diagnostics_scheduler import telegram_diagnostics_scheduler
     res = telegram_diagnostics_scheduler.send_diagnostics_report(trigger="MANUAL")
+    return JSONResponse(res)
+
+# ============================================================================
+# FUTURISTIC ENTERPRISE FEATURES: CLOUD SYNC, TEXT-TO-SQL, BI & FRAUD ML
+# ============================================================================
+
+@app.post("/api/data_engineer/cloud_sync")
+async def api_data_engineer_cloud_sync(req: Optional[CloudSyncRequest] = None):
+    """F1: Autonomous Cloud-to-Cloud sync between Neon Postgres and Snowflake Medallion L0 Staging."""
+    from app.core.cloud_etl_sync import cloud_etl_manager
+    batch_size = req.batch_size if req else 50
+    res = cloud_etl_manager.run_cloud_to_cloud_sync(batch_size=batch_size)
+    return JSONResponse(res)
+
+@app.get("/api/data_engineer/cloud_sync_status")
+async def api_data_engineer_cloud_sync_status():
+    """Returns status and recent history of Cloud-to-Cloud ETL Sync."""
+    ledger_path = os.path.join("data", "banking", "snowflake_l0_staging_ledger.json")
+    records = []
+    if os.path.exists(ledger_path):
+        try:
+            with open(ledger_path, "r", encoding="utf-8") as f:
+                records = json.load(f)
+        except Exception:
+            pass
+    return JSONResponse({
+        "status": "success",
+        "total_staged": len(records),
+        "recent_records": records[:10]
+    })
+
+@app.post("/api/analyst/text_to_sql")
+async def api_analyst_text_to_sql(req: TextToSQLRequest):
+    """F2: Natural language questions (Marathi/English) to SQL with automated execution and Chart.js."""
+    from app.core.text_to_sql import text_to_sql_engine
+    res = text_to_sql_engine.generate_and_execute(prompt=req.prompt, target_db=req.target_db or "POSTGRES_CLOUD_FREE")
+    return JSONResponse(res)
+
+@app.post("/api/reports/send_executive_telegram")
+async def api_reports_send_executive_telegram():
+    """F3: Generates a styled Excel BI report and dispatches it directly to Telegram with executive HTML summary."""
+    from app.core.executive_reports import executive_report_manager
+    res = executive_report_manager.generate_and_dispatch()
+    return JSONResponse(res)
+
+@app.post("/api/data_science/fraud_detection_scan")
+async def api_data_science_fraud_detection_scan(req: Optional[FraudScanRequest] = None):
+    """F4: Scans streaming transactions for fraud, computes multi-factor risk scores, and triggers instant alerts."""
+    from app.agents.fraud_detection_agent import fraud_detection_agent
+    limit = req.limit if req else 25
+    res = fraud_detection_agent.scan_recent_transactions(limit=limit)
     return JSONResponse(res)
 
 

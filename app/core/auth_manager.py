@@ -7,6 +7,7 @@ inactivity tracking, audit logging, and Telegram security alerts.
 import os
 import re
 import time
+import json
 import uuid
 import hashlib
 import sqlite3
@@ -26,8 +27,29 @@ class AuthManager:
         conn.row_factory = sqlite3.Row
         return conn
 
+    def _parse_allowed_views(self, views_val: Any, role: str) -> List[str]:
+        """Parses allowed view IDs into a clean list. Admin always gets ['*']."""
+        if role == "admin":
+            return ["*"]
+        if not views_val or views_val == "*":
+            return ["*"]
+        try:
+            if isinstance(views_val, str):
+                v_str = views_val.strip()
+                if v_str.startswith("[") and v_str.endswith("]"):
+                    return json.loads(v_str)
+                elif "," in v_str:
+                    return [x.strip() for x in v_str.split(",") if x.strip()]
+                elif v_str:
+                    return [v_str]
+            elif isinstance(views_val, list):
+                return views_val
+        except Exception:
+            pass
+        return ["dashboard", "ai_manager"]
+
     def _init_auth_tables(self):
-        """Creates users, user_sessions, and user_audit_logs tables."""
+        """Creates users, user_sessions, and user_audit_logs tables with granular RBAC permissions."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -44,8 +66,20 @@ class AuthManager:
                     created_at REAL NOT NULL,
                     last_login_at REAL,
                     last_active_at REAL,
-                    total_usage_seconds INTEGER DEFAULT 0
+                    total_usage_seconds INTEGER DEFAULT 0,
+                    allowed_views TEXT DEFAULT '*',
+                    access_mode TEXT DEFAULT 'MODIFY'
                 )""")
+
+                # Migrations: Add allowed_views and access_mode if they don't exist
+                try:
+                    cursor.execute("ALTER TABLE users ADD COLUMN allowed_views TEXT DEFAULT '*'")
+                except Exception:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE users ADD COLUMN access_mode TEXT DEFAULT 'MODIFY'")
+                except Exception:
+                    pass
 
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -252,6 +286,9 @@ class AuthManager:
                 f"💻 <b>Device:</b> {user_agent[:40]}..."
             )
 
+            parsed_views = self._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user["role"])
+            acc_mode = (user["access_mode"] if "access_mode" in user.keys() else "MODIFY") or "MODIFY"
+
             return {
                 "status": "success",
                 "session_token": session_token,
@@ -260,7 +297,9 @@ class AuthManager:
                     "username": user["username"],
                     "full_name": user["full_name"],
                     "email": user["email"],
-                    "role": user["role"]
+                    "role": user["role"],
+                    "allowed_views": parsed_views,
+                    "access_mode": acc_mode
                 }
             }
         except Exception as e:
@@ -277,7 +316,7 @@ class AuthManager:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                SELECT s.*, u.full_name, u.email, u.status as user_status
+                SELECT s.*, u.full_name, u.email, u.status as user_status, u.allowed_views, u.access_mode
                 FROM user_sessions s
                 JOIN users u ON s.user_id = u.id
                 WHERE s.session_token = ? AND s.is_active = 1
@@ -319,6 +358,9 @@ class AuthManager:
                 cursor.execute("UPDATE users SET last_active_at = ? WHERE id = ?", (now, sess["user_id"]))
                 conn.commit()
 
+                parsed_views = self._parse_allowed_views(sess["allowed_views"] if "allowed_views" in sess.keys() else "*", sess["role"])
+                acc_mode = (sess["access_mode"] if "access_mode" in sess.keys() else "MODIFY") or "MODIFY"
+
                 return {
                     "is_valid": True,
                     "user": {
@@ -326,7 +368,9 @@ class AuthManager:
                         "username": sess["username"],
                         "full_name": sess["full_name"],
                         "email": sess["email"],
-                        "role": sess["role"]
+                        "role": sess["role"],
+                        "allowed_views": parsed_views,
+                        "access_mode": acc_mode
                     },
                     "session_age_seconds": int(now - sess["login_time"]),
                     "idle_seconds": int(idle_duration)
@@ -375,13 +419,15 @@ class AuthManager:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                SELECT id, username, full_name, email, role, status, created_at, last_login_at, last_active_at, total_usage_seconds
+                SELECT id, username, full_name, email, role, status, created_at, last_login_at, last_active_at, total_usage_seconds, allowed_views, access_mode
                 FROM users
                 ORDER BY created_at DESC
                 """)
                 rows = cursor.fetchall()
                 users = []
                 for r in rows:
+                    p_views = self._parse_allowed_views(r["allowed_views"] if "allowed_views" in r.keys() else "*", r["role"])
+                    acc_m = (r["access_mode"] if "access_mode" in r.keys() else "MODIFY") or "MODIFY"
                     users.append({
                         "id": r["id"],
                         "username": r["username"],
@@ -389,6 +435,8 @@ class AuthManager:
                         "email": r["email"],
                         "role": r["role"],
                         "status": r["status"],
+                        "allowed_views": p_views,
+                        "access_mode": acc_m,
                         "created_at_fmt": time.strftime('%d-%m-%Y %H:%M', time.localtime(r["created_at"])) if r["created_at"] else "-",
                         "last_login_fmt": time.strftime('%d-%m-%Y %H:%M', time.localtime(r["last_login_at"])) if r["last_login_at"] else "Never",
                         "total_usage_fmt": f"{r['total_usage_seconds'] // 60}m {r['total_usage_seconds'] % 60}s"
@@ -398,8 +446,8 @@ class AuthManager:
             log_event(f"Error listing users: {e}", component="AuthManager", level="ERROR")
             return []
 
-    def approve_user(self, user_id: str, admin_username: str = "nanopro") -> Dict[str, Any]:
-        """Approves a pending user account."""
+    def approve_user(self, user_id: str, admin_username: str = "nanopro", allowed_views: Optional[List[str]] = None, access_mode: str = "MODIFY") -> Dict[str, Any]:
+        """Approves a pending user account with specific allowed features and access mode (Read-Only vs Modify)."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -408,21 +456,55 @@ class AuthManager:
                 if not user:
                     return {"status": "error", "error": "User not found"}
 
-                cursor.execute("UPDATE users SET status = 'ACTIVE' WHERE id = ?", (user_id,))
+                views_json = "*" if (not allowed_views or "*" in allowed_views) else json.dumps(allowed_views)
+                mode_clean = access_mode.upper() if access_mode in ["READ_ONLY", "MODIFY"] else "MODIFY"
+
+                cursor.execute("UPDATE users SET status = 'ACTIVE', allowed_views = ?, access_mode = ? WHERE id = ?", (views_json, mode_clean, user_id))
                 conn.commit()
 
-            self._record_audit_log(user_id, user["username"], "APPROVAL", f"Approved by admin {admin_username}")
+            feature_summary = "All Features (सर्व फिचर्स)" if views_json == "*" else f"{len(allowed_views)} Features (विशिष्ट फिचर्स)"
+            mode_desc = "पूर्ण अधिकार (Modify/Edit)" if mode_clean == "MODIFY" else "फक्त वाचन (Read-Only)"
+
+            self._record_audit_log(user_id, user["username"], "APPROVAL", f"Approved by {admin_username} (Mode: {mode_clean}, Features: {feature_summary})")
             self._notify_telegram(
                 f"✅ <b>युझर मंजूर झाला (User Approved)</b>\n"
                 f"👤 <b>Username:</b> {user['username']} ({user['full_name']})\n"
                 f"📧 <b>Email:</b> {user['email']}\n"
                 f"👑 <b>Approved By:</b> {admin_username}\n"
-                f"<i>आता हा युझर NanoPro मध्ये लॉगिन करू शकतो.</i>"
+                f"🔒 <b>प्रवेश स्तर (Mode):</b> {mode_desc}\n"
+                f"📂 <b>मंजूर फिचर्स:</b> {feature_summary}\n"
+                f"<i>आता हा युझर दिलेल्या अधिकारांसह लॉगिन करू शकतो.</i>"
             )
 
-            return {"status": "success", "message": f"युझर '{user['username']}' यशस्वीरीत्या मंजूर आणि सक्रिय करण्यात आला आहे!"}
+            return {"status": "success", "message": f"युझर '{user['username']}' {mode_desc} अधिकारांसह यशस्वीरीत्या मंजूर करण्यात आला आहे!"}
         except Exception as e:
             log_event(f"Error approving user: {e}", component="AuthManager", level="ERROR")
+            return {"status": "error", "error": str(e)}
+
+    def update_user_permissions(self, user_id: str, admin_username: str = "nanopro", allowed_views: Optional[List[str]] = None, access_mode: str = "MODIFY") -> Dict[str, Any]:
+        """Updates allowed features and access mode (Read-Only vs Modify) for an existing user."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT username, role FROM users WHERE id = ?", (user_id,))
+                user = cursor.fetchone()
+                if not user:
+                    return {"status": "error", "error": "User not found"}
+                if user["username"] == "nanopro":
+                    return {"status": "error", "error": "Super Admin खात्याचे अधिकार बदलता येणार नाहीत!"}
+
+                views_json = "*" if (not allowed_views or "*" in allowed_views) else json.dumps(allowed_views)
+                mode_clean = access_mode.upper() if access_mode in ["READ_ONLY", "MODIFY"] else "MODIFY"
+
+                cursor.execute("UPDATE users SET allowed_views = ?, access_mode = ? WHERE id = ?", (views_json, mode_clean, user_id))
+                conn.commit()
+
+            feature_summary = "All Features" if views_json == "*" else f"{len(allowed_views)} Features"
+            mode_desc = "पूर्ण अधिकार (Modify/Edit)" if mode_clean == "MODIFY" else "फक्त वाचन (Read-Only)"
+
+            self._record_audit_log(user_id, user["username"], "PERMISSIONS_UPDATED", f"Updated by {admin_username} (Mode: {mode_clean}, Features: {feature_summary})")
+            return {"status": "success", "message": f"युझर '{user['username']}' चे अधिकार यशस्वीरीत्या अपडेट करण्यात आले ({mode_desc})!"}
+        except Exception as e:
             return {"status": "error", "error": str(e)}
 
     def toggle_user_status(self, user_id: str, new_status: str) -> Dict[str, Any]:
