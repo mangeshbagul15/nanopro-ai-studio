@@ -1,0 +1,44 @@
+{
+  "entities": [
+    {
+      "name": "AML_Surveillance",
+      "type": "Banking_Project",
+      "sources": [
+        "16_SFTP_Files",
+        "16_Oracle_Tables"
+      ],
+      "target": "Snowflake_L2_Gold"
+    },
+    {
+      "name": "5MB_SFTP_Rule",
+      "type": "Governance_Policy",
+      "threshold_mb": 5.0,
+      "action": "Store_SFTP_Embed_Path_In_Email"
+    },
+    {
+      "name": "SCD_Type_2",
+      "type": "ETL_Pattern",
+      "algorithm": "SHA256_Hash_Diff",
+      "flag": "is_current_flag"
+    },
+    {
+      "name": "JLG_Collection",
+      "type": "Microfinance",
+      "metrics": [
+        "PAR_30",
+        "PAR_60",
+        "PAR_90"
+      ],
+      "region": "Mumbai_Thane"
+    },
+    {
+      "name": "Finacle_Migration",
+      "type": "CBS_Reconciliation",
+      "systems": [
+        "Legacy_Oracle_XE",
+        "Target_Finacle"
+      ]
+    }
+  ],
+  "last_updated": "2026-10-15 00:32:12 IST"
+}

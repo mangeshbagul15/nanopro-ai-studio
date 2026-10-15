@@ -1,0 +1,37 @@
+[
+  {
+    "EmployeeID":101,
+    "Name":"Anand Verma",
+    "Department":"Data Engineering",
+    "Salary":2400000,
+    "City":"Mumbai"
+  },
+  {
+    "EmployeeID":102,
+    "Name":"Priya Nair",
+    "Department":"Risk Analytics",
+    "Salary":1850000,
+    "City":"Pune"
+  },
+  {
+    "EmployeeID":103,
+    "Name":"Siddharth Joshi",
+    "Department":"CBS Operations",
+    "Salary":2100000,
+    "City":"Thane"
+  },
+  {
+    "EmployeeID":104,
+    "Name":"Meera Rao",
+    "Department":"AML Compliance",
+    "Salary":1950000,
+    "City":"Bengaluru"
+  },
+  {
+    "EmployeeID":105,
+    "Name":"Karan Malhotra",
+    "Department":"Cloud Security",
+    "Salary":2600000,
+    "City":"New Delhi"
+  }
+]

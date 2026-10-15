@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Employees>
+  <Employee id="101">
+    <EmployeeID>101</EmployeeID>
+    <Name>Anand Verma</Name>
+    <Department>Data Engineering</Department>
+    <Salary>2400000</Salary>
+    <City>Mumbai</City>
+  </Employee>
+  <Employee id="102">
+    <EmployeeID>102</EmployeeID>
+    <Name>Priya Nair</Name>
+    <Department>Risk Analytics</Department>
+    <Salary>1850000</Salary>
+    <City>Pune</City>
+  </Employee>
+  <Employee id="103">
+    <EmployeeID>103</EmployeeID>
+    <Name>Siddharth Joshi</Name>
+    <Department>CBS Operations</Department>
+    <Salary>2100000</Salary>
+    <City>Thane</City>
+  </Employee>
+  <Employee id="104">
+    <EmployeeID>104</EmployeeID>
+    <Name>Meera Rao</Name>
+    <Department>AML Compliance</Department>
+    <Salary>1950000</Salary>
+    <City>Bengaluru</City>
+  </Employee>
+  <Employee id="105">
+    <EmployeeID>105</EmployeeID>
+    <Name>Karan Malhotra</Name>
+    <Department>Cloud Security</Department>
+    <Salary>2600000</Salary>
+    <City>New Delhi</City>
+  </Employee>
+</Employees>

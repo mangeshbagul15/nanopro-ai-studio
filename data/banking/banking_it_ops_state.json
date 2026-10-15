@@ -1,0 +1,152 @@
+{
+  "password_expirations": [
+    {
+      "account": "svc_snowflake_etl",
+      "type": "Service Account",
+      "days_remaining": 8,
+      "status": "EXPIRING_SOON",
+      "last_rotated": "2026-07-14",
+      "policy": "90 Days"
+    },
+    {
+      "account": "mangesh_bagul_admin",
+      "type": "Personal Named",
+      "days_remaining": 42,
+      "status": "ACTIVE",
+      "last_rotated": "2026-09-01",
+      "policy": "60 Days"
+    },
+    {
+      "account": "svc_oracle_cdc_stream",
+      "type": "Database User",
+      "days_remaining": -2,
+      "status": "EXPIRED",
+      "last_rotated": "2026-07-10",
+      "policy": "90 Days"
+    },
+    {
+      "account": "svc_sftp_aml_landing",
+      "type": "SFTP Service",
+      "days_remaining": 15,
+      "status": "EXPIRING_SOON",
+      "last_rotated": "2026-07-27",
+      "policy": "90 Days"
+    },
+    {
+      "account": "svc_rbi_cims_gateway",
+      "type": "API Token",
+      "days_remaining": 64,
+      "status": "ACTIVE",
+      "last_rotated": "2026-09-12",
+      "policy": "90 Days"
+    }
+  ],
+  "server_patching": [
+    {
+      "host": "prod-snowflake-gateway-01.bank.net",
+      "os": "RHEL 9.4",
+      "patch_id": "RHSA-2026-4819",
+      "cve": "CVE-2026-3810 (OpenSSL)",
+      "status": "COMPLETED",
+      "reboot_required": false,
+      "patch_date": "2026-10-10"
+    },
+    {
+      "host": "prod-oracle-dw-node01.bank.net",
+      "os": "Oracle Linux 8.9",
+      "patch_id": "ELSA-2026-2918",
+      "cve": "CVE-2026-1928 (Kernel)",
+      "status": "PENDING_MAINTENANCE",
+      "reboot_required": true,
+      "patch_date": "Scheduled 2026-10-15"
+    },
+    {
+      "host": "prod-sftp-recon-gateway.bank.net",
+      "os": "Ubuntu 24.04 LTS",
+      "patch_id": "USN-6921-1",
+      "cve": "CVE-2026-4411 (OpenSSH)",
+      "status": "COMPLETED",
+      "reboot_required": false,
+      "patch_date": "2026-10-11"
+    },
+    {
+      "host": "prod-kafka-cdc-cluster-03.bank.net",
+      "os": "RHEL 9.4",
+      "patch_id": "RHSA-2026-5120",
+      "cve": "CVE-2026-5012 (Glibc)",
+      "status": "IN_PROGRESS",
+      "reboot_required": true,
+      "patch_date": "Today"
+    }
+  ],
+  "firewall_port_requests": [
+    {
+      "rfc_id": "RFC-89104",
+      "source_ip": "10.14.82.15 (SFTP Server)",
+      "dest_ip": "10.20.100.45 (Snowflake Proxy)",
+      "port": "443 (HTTPS)",
+      "protocol": "TCP",
+      "status": "APPROVED_OPEN",
+      "approved_by": "CyberSec Ops"
+    },
+    {
+      "rfc_id": "RFC-89145",
+      "source_ip": "192.168.31.240 (Oracle XE)",
+      "dest_ip": "10.20.100.45 (CDC Worker)",
+      "port": "1521 (Oracle TNS)",
+      "protocol": "TCP",
+      "status": "APPROVED_OPEN",
+      "approved_by": "Network Security"
+    },
+    {
+      "rfc_id": "RFC-89201",
+      "source_ip": "10.14.82.90 (Finacle CBS)",
+      "dest_ip": "10.50.12.80 (Recon Lake)",
+      "port": "22 (SFTP/SSH)",
+      "protocol": "TCP",
+      "status": "PENDING_APPROVAL",
+      "approved_by": "Under Review"
+    },
+    {
+      "rfc_id": "RFC-89230",
+      "source_ip": "10.112.86.83 (Remote Worker)",
+      "dest_ip": "10.20.100.45 (Snowflake Gateway)",
+      "port": "8443 (REST API)",
+      "protocol": "TCP",
+      "status": "APPROVED_OPEN",
+      "approved_by": "CISO Office"
+    }
+  ],
+  "pam_server_access": [
+    {
+      "session_id": "PAM-77812",
+      "user": "mangesh.bagul",
+      "target_host": "prod-oracle-dw-node01",
+      "protocol": "SSH",
+      "start_time": "2026-10-12 10:14:00",
+      "end_time": "2026-10-12 11:30:15",
+      "commands_executed": 34,
+      "risk_score": "LOW"
+    },
+    {
+      "session_id": "PAM-77855",
+      "user": "svc_automation_runner",
+      "target_host": "prod-snowflake-gateway-01",
+      "protocol": "RDP",
+      "start_time": "2026-10-12 11:00:00",
+      "end_time": "Active",
+      "commands_executed": 12,
+      "risk_score": "NORMAL"
+    },
+    {
+      "session_id": "PAM-77890",
+      "user": "compliance.auditor",
+      "target_host": "prod-sftp-recon-gateway",
+      "protocol": "SSH",
+      "start_time": "2026-10-12 09:30:00",
+      "end_time": "2026-10-12 10:00:00",
+      "commands_executed": 8,
+      "risk_score": "LOW"
+    }
+  ]
+}

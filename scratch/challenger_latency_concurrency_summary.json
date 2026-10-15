@@ -1,0 +1,28 @@
+{
+  "wall_duration_ms": 8292.03,
+  "create_job_stats": {
+    "min": 0.2249,
+    "p50": 0.7374,
+    "p90": 18.7926,
+    "p95": 28.2222,
+    "p99": 143.6886,
+    "max": 369.3675,
+    "avg": 6.9359,
+    "count": 1000
+  },
+  "get_chat_history_stats": {
+    "min": 0.2289,
+    "p50": 0.8479,
+    "p90": 16.6564,
+    "p95": 54.0029,
+    "p99": 222.3023,
+    "max": 341.0465,
+    "avg": 11.967,
+    "count": 1000
+  },
+  "lock_errors_count": 0,
+  "other_errors_count": 0,
+  "final_db_size_mb": 14.27,
+  "integrity": "ok",
+  "verdict": "REJECT"
+}

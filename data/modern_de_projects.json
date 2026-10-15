@@ -1,0 +1,157 @@
+[
+  {
+    "id": "AML_V1",
+    "name": "Anti-Money Laundering Core Recon & Surveillance",
+    "code": "AML_CORE_RECON",
+    "domain": "Regulatory & Financial Crime (AML/CFT)",
+    "asset_count": 8,
+    "linked_tables": [
+      "CUSTOMERS",
+      "ACCOUNT_MASTER",
+      "TXN_JOURNAL",
+      "AML_DAILY_TRANSACTIONS_STAGE"
+    ],
+    "linked_scripts": [
+      "aml_daily_ingest.py",
+      "aml_scd2_harmonize.py",
+      "aml_anomaly_score.py"
+    ],
+    "linked_sql": [
+      "aml_wire_velocity.sql",
+      "aml_pan_cash_recon.sql"
+    ],
+    "recurrence": "Daily (02:00 IST)",
+    "next_run_time": "Tomorrow at 02:00 AM IST",
+    "status": "ACTIVE",
+    "last_run_status": "SUCCESS",
+    "dispatch_rules": {
+      "to": "mangeshbagul15@gmail.com",
+      "cc": "compliance.officer@bank.com",
+      "bcc": "audit.archive@bank.com",
+      "subject": "[CRITICAL] AML Daily Wire Recon & High-Velocity Threshold Audit",
+      "enforce_5mb": true
+    }
+  },
+  {
+    "id": "RECON_01",
+    "name": "Core Banking CBS to Snowflake Medallion Reconciler",
+    "code": "CBS_SNOWFLAKE_RECON",
+    "domain": "Core Banking Technology (CBS/Finacle)",
+    "asset_count": 12,
+    "linked_tables": [
+      "RAW_CUSTOMERS",
+      "RAW_ACCOUNTS",
+      "RAW_TRANSACTIONS",
+      "FACT_DAILY_BALANCES"
+    ],
+    "linked_scripts": [
+      "cbs_extract_sftp.py",
+      "cbs_gl_recon.py"
+    ],
+    "linked_sql": [
+      "cbs_balance_freeze.sql"
+    ],
+    "recurrence": "Daily (EOD 23:45 IST)",
+    "next_run_time": "Today at 11:45 PM IST",
+    "status": "ACTIVE",
+    "last_run_status": "SUCCESS",
+    "dispatch_rules": {
+      "to": "mangeshbagul15@gmail.com",
+      "cc": "corebanking.lead@bank.com",
+      "bcc": "mangeshbagul15@gmail.com",
+      "subject": "[EOD AUDIT] CBS to Snowflake Medallion General Ledger Reconciliation",
+      "enforce_5mb": true
+    }
+  },
+  {
+    "id": "FRAUD_02",
+    "name": "Credit Card Velocity & Fraud Ring Detection Engine",
+    "code": "CC_FRAUD_VELOCITY",
+    "domain": "Credit Risk & Bureau Mart",
+    "asset_count": 6,
+    "linked_tables": [
+      "RAW_CREDIT_CARDS",
+      "FACT_TRANSACTIONS",
+      "AML_SUSPICIOUS_ALERTS"
+    ],
+    "linked_scripts": [
+      "fraud_velocity_tracker.py",
+      "card_token_analyzer.py"
+    ],
+    "linked_sql": [
+      "fraud_velocity_window.sql"
+    ],
+    "recurrence": "Every 15 Minutes",
+    "next_run_time": "In 8 minutes",
+    "status": "RUNNING",
+    "last_run_status": "SUCCESS",
+    "dispatch_rules": {
+      "to": "mangeshbagul15@gmail.com",
+      "cc": "fraud.monitoring@bank.com",
+      "bcc": "mangeshbagul15@gmail.com",
+      "subject": "[ALERT] Credit Card Velocity Spike & High-Risk Cross-Border Declines",
+      "enforce_5mb": true
+    }
+  },
+  {
+    "id": "TREASURY_01",
+    "name": "Treasury ALM & Derivative Settlement Mart",
+    "code": "TREASURY_ALM_MART",
+    "domain": "Treasury & Market Risk (ALM)",
+    "asset_count": 9,
+    "linked_tables": [
+      "GL_LEDGER_MASTER",
+      "TERM_DEPOSITS",
+      "FOREX_RATES_MASTER"
+    ],
+    "linked_scripts": [
+      "treasury_settle.py",
+      "fx_rate_curve.py"
+    ],
+    "linked_sql": [
+      "alm_liquidity_gap.sql"
+    ],
+    "recurrence": "Weekly (Monday 06:00 IST)",
+    "next_run_time": "Monday at 06:00 AM IST",
+    "status": "ACTIVE",
+    "last_run_status": "SUCCESS",
+    "dispatch_rules": {
+      "to": "mangeshbagul15@gmail.com",
+      "cc": "treasury.head@bank.com",
+      "bcc": "mangeshbagul15@gmail.com",
+      "subject": "[TREASURY] Weekly ALM Liquidity Gap & Interest Rate Sensitivity Report",
+      "enforce_5mb": true
+    }
+  },
+  {
+    "id": "C360_01",
+    "name": "Enterprise Customer 360 Medallion Lakehouse",
+    "code": "CUST_360_MEDALLION",
+    "domain": "Retail Growth & Deposits (CASA)",
+    "asset_count": 14,
+    "linked_tables": [
+      "CUSTOMERS",
+      "ACCOUNT_MASTER",
+      "RAW_DEPOSITS",
+      "DIM_CUSTOMERS"
+    ],
+    "linked_scripts": [
+      "c360_harmonize.py",
+      "c360_feature_store.py"
+    ],
+    "linked_sql": [
+      "c360_rfm_segmentation.sql"
+    ],
+    "recurrence": "Daily (04:00 IST)",
+    "next_run_time": "Tomorrow at 04:00 AM IST",
+    "status": "ACTIVE",
+    "last_run_status": "SUCCESS",
+    "dispatch_rules": {
+      "to": "mangeshbagul15@gmail.com",
+      "cc": "marketing.analytics@bank.com",
+      "bcc": "mangeshbagul15@gmail.com",
+      "subject": "[C360] Customer 360 Churn Risk & High-Net-Worth Affinity Metrics",
+      "enforce_5mb": true
+    }
+  }
+]

@@ -1,0 +1,5 @@
+log_id|server_ip|service_name|response_time_ms|status_code
+LOG_01|192.168.1.10|api_gateway|14.2|200
+LOG_02|192.168.1.11|ollama_inference|85.4|200
+LOG_03|192.168.1.12|telegram_dispatcher|42.1|200
+LOG_04|192.168.1.10|sqlite_persistence|4.8|200

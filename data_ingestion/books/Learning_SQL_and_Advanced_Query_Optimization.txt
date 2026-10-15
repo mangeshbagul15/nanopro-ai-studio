@@ -1,0 +1,37 @@
+# Learning SQL & Advanced Database Query Optimization
+Author: Database Internals Lab & Mangesh Nano Pro AI
+Edition: 2026 Production Edition
+
+## Chapter 1: Relational Algebra & The Declarative SQL Engine
+SQL is a declarative language: you specify *what* data you need, and the cost-based optimizer (CBO) determines *how* to retrieve it.
+When a SQL statement is submitted:
+1. Syntax & Semantic Parser checks validity against data dictionary catalog.
+2. Query Optimizer produces multiple candidate physical execution plans.
+3. Statistics Collector provides table cardinality and index histograms.
+4. Execution Engine processes data using vectorized or Volcano iterator model.
+
+## Chapter 2: Index Architectures — B-Trees, Bitmap & Hash Indexes
+Indexes are auxiliary access paths designed to avoid exhaustive full table scans.
+- B-Tree Index: Balanced hierarchical search tree with root, branch, and leaf blocks. Highly efficient for equality (`=`) and range (`BETWEEN`, `>`, `<`) queries.
+- Composite Index: Indexed on `(tenant_id, created_at)`. The leftmost prefix rule dictates that queries must filter by `tenant_id` to leverage the index.
+- Covering Index: An index containing all columns requested in the `SELECT` clause, completely eliminating table heap block lookups.
+
+## Chapter 3: High-Performance Multi-Table Joins (Nested Loops, Hash Joins & Merge Joins)
+Understanding join mechanisms is crucial for sub-second query performance:
+1. Nested Loop Join: Outer table drives row-by-row lookups into an indexed inner table. Optimal for small OLTP lookups.
+2. Hash Join: Builds an in-memory hash table on the smaller build input, then streams and probes the probe input. Optimal for large analytical joins without indexes.
+3. Sort-Merge Join: Sorts both inputs on join keys and merges sequentially. Optimal for large pre-sorted datasets or non-equality range joins.
+
+## Chapter 4: Window Functions, CTEs & Financial Analytics
+Modern SQL analytics relies heavily on window functions:
+- `ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY txn_time DESC)` assigns sequential ranks for deduplication.
+- `LAG()` and `LEAD()` enable inter-row delta comparisons (e.g. tracking suspicious fund transfers within 60 seconds).
+- Common Table Expressions (`WITH ... AS`) break complex multi-step pipelines into maintainable logical units.
+
+## Chapter 5: Query Plan Diagnostics & Performance Tuning
+Identifying slow queries requires analyzing physical execution plans:
+- `EXPLAIN` or `EXPLAIN ANALYZE` reveals plan steps, cost estimates, actual row counts, and buffer hits.
+- Common anti-patterns:
+  * Applying functions on indexed columns (`WHERE YEAR(created_at) = 2026` suppresses index usage; rewrite as `WHERE created_at >= '2026-01-01'`).
+  * Using `SELECT *` across wide tables causing excessive I/O bus saturation.
+  * Cartesian joins caused by missing join predicates.

@@ -1,0 +1,8 @@
+CUSTOMER_ID|CUSTOMER_NAME|EMAIL|PHONE|CITY|BALANCE|STATUS
+1001|Mangesh|Bagul|mangeshbagul15@gmail.com|+91 84337 55448|Thane|Maharashtra|VERIFIED|2024-01-15 10:30:00
+1002|Sunil|Sharma|sunil.sharma@tcs.com|+91 98201 44102|Mumbai|Maharashtra|VERIFIED|2024-02-10 14:15:00
+1003|Priyanka|Verma|priyanka.verma@hdfcbank.com|+91 98192 33419|Navi Mumbai|Maharashtra|VERIFIED|2024-03-01 09:00:00
+1004|Rahul|Mehta|rahul.mehta@morganstanley.com|+91 97690 11283|Mumbai|Maharashtra|PENDING|2024-04-12 16:45:00
+1005|Ananya|Patil|ananya.patil@reliance.com|+91 99304 55671|Pune|Maharashtra|VERIFIED|2024-05-20 11:20:00
+1006|Aditya|Deshmukh|aditya.d@ltimindtree.com|+91 98670 99412|Thane|Maharashtra|VERIFIED|2024-06-18 13:10:00
+1007|Kavita|Jadhav|kavita.j@barclays.com|+91 98190 22340|Mumbai|Maharashtra|VERIFIED|2024-07-04 15:35:00

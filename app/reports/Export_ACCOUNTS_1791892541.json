@@ -1,0 +1,76 @@
+{
+  "table": "ACCOUNTS",
+  "total_records": 7,
+  "records": [
+    {
+      "ACCOUNT_ID": 101,
+      "CUSTOMER_ID": 1001,
+      "ACCOUNT_NUMBER": "ACC_1001_CORP",
+      "ACCOUNT_TYPE": "CURRENT",
+      "BALANCE": 14250000.5,
+      "CURRENCY": "INR",
+      "STATUS": "ACTIVE",
+      "OPENED_DATE": "2024-01-15"
+    },
+    {
+      "ACCOUNT_ID": 102,
+      "CUSTOMER_ID": 1002,
+      "ACCOUNT_NUMBER": "ACC_1002_SAV",
+      "ACCOUNT_TYPE": "SAVINGS",
+      "BALANCE": 2890000.0,
+      "CURRENCY": "INR",
+      "STATUS": "ACTIVE",
+      "OPENED_DATE": "2024-03-20"
+    },
+    {
+      "ACCOUNT_ID": 103,
+      "CUSTOMER_ID": 1003,
+      "ACCOUNT_NUMBER": "ACC_1003_CORP",
+      "ACCOUNT_TYPE": "CURRENT",
+      "BALANCE": 1250000.0,
+      "CURRENCY": "INR",
+      "STATUS": "ACTIVE",
+      "OPENED_DATE": "2024-06-11"
+    },
+    {
+      "ACCOUNT_ID": 104,
+      "CUSTOMER_ID": 1004,
+      "ACCOUNT_NUMBER": "ACC_1004_SAV",
+      "ACCOUNT_TYPE": "SAVINGS",
+      "BALANCE": 780000.0,
+      "CURRENCY": "INR",
+      "STATUS": "DORMANT",
+      "OPENED_DATE": "2023-11-05"
+    },
+    {
+      "ACCOUNT_ID": 105,
+      "CUSTOMER_ID": 1005,
+      "ACCOUNT_NUMBER": "ACC_1005_SAL",
+      "ACCOUNT_TYPE": "SALARY",
+      "BALANCE": 345000.0,
+      "CURRENCY": "INR",
+      "STATUS": "ACTIVE",
+      "OPENED_DATE": "2025-02-18"
+    },
+    {
+      "ACCOUNT_ID": 106,
+      "CUSTOMER_ID": 1006,
+      "ACCOUNT_NUMBER": "ACC_1006_CORP",
+      "ACCOUNT_TYPE": "CURRENT",
+      "BALANCE": 19200000.0,
+      "CURRENCY": "INR",
+      "STATUS": "ACTIVE",
+      "OPENED_DATE": "2024-08-30"
+    },
+    {
+      "ACCOUNT_ID": 107,
+      "CUSTOMER_ID": 1007,
+      "ACCOUNT_NUMBER": "ACC_1007_SAV",
+      "ACCOUNT_TYPE": "SAVINGS",
+      "BALANCE": 850000.0,
+      "CURRENCY": "INR",
+      "STATUS": "ACTIVE",
+      "OPENED_DATE": "2024-12-04"
+    }
+  ]
+}

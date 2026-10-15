@@ -1,0 +1,27 @@
+# Python for High-Throughput Data & Distributed Systems
+Author: Enterprise Systems Guild
+Edition: 2026 Edition
+
+## Chapter 1: Memory-Efficient Data Ingestion with Generators & Iterators
+Processing multi-gigabyte datasets in Python requires streaming techniques rather than loading entire payloads into RAM:
+- Generators (`yield`) produce values lazily on-demand, maintaining O(1) space complexity.
+- The `itertools` module provides memory-frugal pipeline combinators (`islice`, `chain`, `groupby`).
+- Reading large files with chunking: `iter(lambda: file.read(65536), b'')` prevents Out-Of-Memory (OOM) fatal crashes.
+
+## Chapter 2: Concurrency Models — Asyncio, Multiprocessing & Threading
+Python offers three primary concurrency paradigms:
+1. Asyncio: Single-threaded cooperative multitasking ideal for high-concurrency I/O operations (HTTP APIs, WebSocket feeds).
+2. Threading: Useful for I/O-bound tasks with external libraries that release the Global Interpreter Lock (GIL).
+3. Multiprocessing: Spawns independent operating system processes with separate Python runtimes and memory spaces, achieving true parallel execution for CPU-intensive data transformations.
+
+## Chapter 3: High-Performance Data Processing with Polars & PyArrow
+For modern analytical processing, Pandas is frequently replaced by Arrow-native engines:
+- Apache Arrow provides zero-copy columnar in-memory data representation.
+- Polars utilizes Rust multithreading and lazy query optimization (SIMD, projection pushdown, predicate pushdown) to execute queries up to 20x faster than traditional DataFrame tools.
+
+## Chapter 4: Enterprise Pipeline Resiliency & Production Best Practices
+Building bulletproof Python pipelines demands:
+- Context Managers (`with` blocks) guaranteeing safe release of database connections and socket handles.
+- Exponential backoff retry decorators with jitter for external network dependencies.
+- Structured logging with correlation IDs for distributed tracing.
+- Type annotations and runtime validation with Pydantic.

@@ -1,0 +1,94 @@
+{
+  "scenario_1": {
+    "threads": 50,
+    "rounds_per_thread": 2,
+    "total_operations": 100,
+    "total_wall_time_ms": 6026.69,
+    "latency_stats_ms": {
+      "min": 1.1602,
+      "p50": 15.589,
+      "p90": 125.0644,
+      "p95": 309.3048,
+      "p99": 1719.6795,
+      "max": 1719.6795,
+      "avg": 68.4983,
+      "count": 100
+    },
+    "error_count": 0,
+    "errors": [],
+    "lock_errors_count": 0,
+    "malformed_errors_count": 0
+  },
+  "scenario_2": {
+    "readers": 30,
+    "writers": 10,
+    "invalidators": 5,
+    "total_reads": 3000,
+    "read_latency_stats_ms": {
+      "min": 0.0026,
+      "p50": 0.0108,
+      "p90": 0.0681,
+      "p95": 3.3205,
+      "p99": 8.9232,
+      "max": 141.7754,
+      "avg": 0.6776,
+      "count": 3000
+    },
+    "read_errors_count": 0,
+    "write_errors_count": 0,
+    "lock_errors_count": 0,
+    "duration_ms": 3619.99
+  },
+  "scenario_3": {
+    "vacuum_duration_ms": 3211.81,
+    "vacuum_result": {
+      "initial_size_bytes": 14508032,
+      "final_size_bytes": 14508032,
+      "final_size_mb": 13.84,
+      "page_count": 3536,
+      "page_size": 4096,
+      "integrity": "ok",
+      "is_optimized": true
+    },
+    "total_in_flight_writes": 575,
+    "writer_errors_count": 0,
+    "lock_errors_count": 0
+  },
+  "scenario_4": {
+    "total_health_calls": 500,
+    "telemetry_stats_ms": {
+      "min": 0.0023,
+      "p50": 0.0102,
+      "p90": 0.0239,
+      "p95": 0.0501,
+      "p99": 0.1019,
+      "max": 0.8354,
+      "avg": 0.0155,
+      "count": 500
+    },
+    "sla_threshold_ms": 5.0,
+    "sla_met": true,
+    "errors_count": 0
+  },
+  "scenario_5": {
+    "db_size_bytes": 14553088,
+    "db_size_mb": 13.88,
+    "max_size_mb_sla": 15.0,
+    "size_sla_passed": true,
+    "page_count": 3555,
+    "page_size": 4096,
+    "integrity_status": [
+      "ok"
+    ],
+    "integrity_passed": true,
+    "quick_status": [
+      "ok"
+    ],
+    "record_counts": {
+      "conversations": 8932,
+      "tasks": 1290,
+      "credentials": 57
+    }
+  },
+  "overall_verdict": "APPROVE"
+}

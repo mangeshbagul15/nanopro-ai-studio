@@ -1,0 +1,296 @@
+[
+  {
+    "id": "proj_aml",
+    "name": "AML (Anti-Money Laundering & Fraud Surveillance)",
+    "code": "AML_SURVEILLANCE",
+    "domain": "Regulatory & Financial Crime",
+    "description": "Daily ingestion of 16 SFTP files and 16 Oracle core tables into AWS S3 Landing, transformed through Snowflake L0 Bronze, L1 Silver (SCD Type 2), and L2 Gold Marts. Flags high-value cash transactions, suspicious structuring, and cross-border remittances for FIU-IND compliance.",
+    "sources": {
+      "sftp_files_count": 16,
+      "sftp_files": [
+        "swift_inward_messages.dat",
+        "swift_outward_messages.dat",
+        "neft_rtgs_logs.csv",
+        "atm_pos_switch_txns.txt",
+        "upi_settlement_log.csv",
+        "imps_transaction_feed.dat",
+        "branch_cash_deposit_slip.csv",
+        "forex_outward_remit.txt",
+        "high_risk_mcc_log.csv",
+        "pep_sanction_watchlist.dat",
+        "dormant_acct_activation.csv",
+        "card_chargeback_feed.dat",
+        "kyc_pan_verification.csv",
+        "bulk_salary_payout.dat",
+        "inward_cheque_clearing.txt",
+        "corporate_wire_transfers.csv"
+      ],
+      "oracle_tables_count": 16,
+      "oracle_tables": [
+        "ORCL_CUST_MASTER",
+        "ORCL_TXN_LOG",
+        "ORCL_ACCOUNTS",
+        "ORCL_BENEFICIARIES",
+        "ORCL_GL_SUBLEDGER",
+        "ORCL_KYC_DOCUMENT",
+        "ORCL_BRANCH_CODE",
+        "ORCL_LOAN_DISBURSE",
+        "ORCL_FD_RD_LEDGER",
+        "ORCL_CARD_ACCOUNTS",
+        "ORCL_STOP_PAYMENT",
+        "ORCL_OVERDRAFT_LIMIT",
+        "ORCL_USER_AUDIT",
+        "ORCL_EXCHANGE_RATES",
+        "ORCL_ALERT_HISTORY",
+        "ORCL_COLLATERAL_MASTER"
+      ]
+    },
+    "lakehouse_pipeline": {
+      "s3_landing": "s3://bank-lakehouse-prod/aml/landing/2026-10-12/",
+      "snowflake_l0": "BANK_DB.RAW_STAGING.L0_AML_RAW_FEED",
+      "snowflake_l1": "BANK_DB.SILVER_HARMONIZED.L1_AML_SCD2_TRANSACTIONS",
+      "snowflake_l2": "BANK_DB.GOLD_MARTS.L2_FACT_AML_ALERTS_DAILY",
+      "scd_type": "SCD Type 2 (Effective_Start_Date, Effective_End_Date, Is_Current_Flag)",
+      "dedup_rule": "SHA-256 (TXN_ID + ACCOUNT_ID + TXN_TIMESTAMP + AMOUNT)"
+    },
+    "reports": [
+      {
+        "name": "Daily AML High Value Cash Transaction Report (CTR)",
+        "cadence": "Daily (T-1)",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 6.8
+      },
+      {
+        "name": "Suspicious Transaction Alert Report (STR)",
+        "cadence": "Daily (T-1)",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 3.2
+      },
+      {
+        "name": "Monthly FIU-IND Cross-Border Aggregated XML",
+        "cadence": "Monthly",
+        "format": "XML / Excel",
+        "est_size_mb": 14.5
+      }
+    ],
+    "dispatch": {
+      "cadence": "Daily (T-1 at 06:30 AM IST)",
+      "email_to": "aml.compliance@bank.com",
+      "email_cc": "mangeshbagul15@gmail.com, principal.officer@bank.com",
+      "email_bcc": "audit.archive@bank.com",
+      "sftp_repo_path": "/var/sftp/data/reports/AML/2026-10-12/"
+    },
+    "status": "ACTIVE_RUNNING",
+    "last_run": "2026-10-13 10:47:58 IST",
+    "l0_arrival_time": "2026-10-12 04:15:00 IST",
+    "l1_scd2_completion": "2026-10-12 05:02:40 IST",
+    "l2_gold_completion": "2026-10-12 05:45:10 IST",
+    "records_processed": 143636,
+    "quarantine_count": 18
+  },
+  {
+    "id": "proj_alm",
+    "name": "ALM (Asset Liability Management & Liquidity)",
+    "code": "ALM_LIQUIDITY",
+    "domain": "Treasury & Market Risk",
+    "description": "Aggregates behavioral cashflows across CASA deposits, Term Deposits, Corporate Loans, and Sovereign G-Sec portfolios into structural liquidity time-buckets (1D, 7D, 14D, 30D, 1-3Y, 5Y+). Computes dynamic Liquidity Coverage Ratio (LCR) and Net Stable Funding Ratio (NSFR).",
+    "sources": {
+      "sftp_files_count": 8,
+      "oracle_tables_count": 12,
+      "sftp_files": [
+        "treasury_deal_slips.csv",
+        "fx_swap_cashflow.dat",
+        "money_market_borrowing.txt",
+        "call_put_option_schedule.csv"
+      ],
+      "oracle_tables": [
+        "ORCL_TREASURY_POS",
+        "ORCL_LOAN_REPAYMENT_SCHED",
+        "ORCL_DEPOSIT_MATURITY",
+        "ORCL_MIRS_RATES"
+      ]
+    },
+    "lakehouse_pipeline": {
+      "s3_landing": "s3://bank-lakehouse-prod/alm/landing/",
+      "snowflake_l0": "BANK_DB.RAW_STAGING.L0_ALM_CASHFLOWS",
+      "snowflake_l1": "BANK_DB.SILVER_HARMONIZED.L1_ALM_BUCKETED_FLOWS",
+      "snowflake_l2": "BANK_DB.GOLD_MARTS.L2_FACT_STRUCTURAL_LIQUIDITY",
+      "scd_type": "SCD Type 1 with Snapshot History",
+      "dedup_rule": "DEAL_ID + MATURITY_DATE"
+    },
+    "reports": [
+      {
+        "name": "Structural Liquidity Gap Statement",
+        "cadence": "Weekly / Fortnightly",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 4.1
+      },
+      {
+        "name": "Dynamic LCR & Stress Testing Workbook",
+        "cadence": "Daily (T-1)",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 7.4
+      }
+    ],
+    "dispatch": {
+      "cadence": "Daily (T-1 at 07:15 AM IST)",
+      "email_to": "treasury.risk@bank.com",
+      "email_cc": "alm.desk@bank.com, mangeshbagul15@gmail.com",
+      "email_bcc": "compliance.monitor@bank.com",
+      "sftp_repo_path": "/var/sftp/data/reports/ALM/2026-10-12/"
+    },
+    "status": "ACTIVE_RUNNING",
+    "last_run": "2026-10-12 07:15:20 IST",
+    "l0_arrival_time": "2026-10-12 05:20:00 IST",
+    "l1_scd2_completion": "2026-10-12 06:10:00 IST",
+    "l2_gold_completion": "2026-10-12 06:55:00 IST",
+    "records_processed": 842100,
+    "quarantine_count": 4
+  },
+  {
+    "id": "proj_jlg_collection",
+    "name": "JLG Collection (Joint Liability Group - Microfinance)",
+    "code": "JLG_RECOVERY_MART",
+    "domain": "Rural & Financial Inclusion",
+    "description": "Weekly center-meeting collection reconciliation, peer guarantee tracking, overdue EMI recovery, village center attendance, and field officer tablet collection sync. Generates Par 30/60/90 days delinquency indicators.",
+    "sources": {
+      "sftp_files_count": 12,
+      "oracle_tables_count": 8,
+      "sftp_files": [
+        "tab_collection_upload_daily.dat",
+        "center_meeting_attendance.csv",
+        "foreclosure_receipts.txt"
+      ],
+      "oracle_tables": [
+        "ORCL_JLG_GROUPS",
+        "ORCL_JLG_MEMBERS",
+        "ORCL_JLG_COLLECTIONS",
+        "ORCL_CENTER_MASTER"
+      ]
+    },
+    "lakehouse_pipeline": {
+      "s3_landing": "s3://bank-lakehouse-prod/jlg/landing/",
+      "snowflake_l0": "BANK_DB.RAW_STAGING.L0_JLG_COLLECTIONS_RAW",
+      "snowflake_l1": "BANK_DB.SILVER_HARMONIZED.L1_JLG_MEMBER_RECOVERY_SCD2",
+      "snowflake_l2": "BANK_DB.GOLD_MARTS.L2_FACT_JLG_PAR_DELINQUENCY",
+      "scd_type": "SCD Type 2",
+      "dedup_rule": "GROUP_ID + MEMBER_ID + COLLECTION_DATE"
+    },
+    "reports": [
+      {
+        "name": "Center-Wise Daily Collection & Shortfall Report",
+        "cadence": "Daily (T-1)",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 8.9
+      },
+      {
+        "name": "Weekly PAR 30/60 Overdue Roll-Forward",
+        "cadence": "Weekly",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 4.5
+      }
+    ],
+    "dispatch": {
+      "cadence": "Daily (T-1 at 05:45 AM IST)",
+      "email_to": "microfinance.ops@bank.com",
+      "email_cc": "collection.heads@bank.com, mangeshbagul15@gmail.com",
+      "email_bcc": "internal.audit@bank.com",
+      "sftp_repo_path": "/var/sftp/data/reports/JLG/2026-10-12/"
+    },
+    "status": "ACTIVE_RUNNING",
+    "last_run": "2026-10-12 05:45:00 IST",
+    "l0_arrival_time": "2026-10-12 03:30:00 IST",
+    "l1_scd2_completion": "2026-10-12 04:30:00 IST",
+    "l2_gold_completion": "2026-10-12 05:15:00 IST",
+    "records_processed": 2150340,
+    "quarantine_count": 22
+  },
+  {
+    "id": "proj_cbs_finacle",
+    "name": "CBS (Core Banking - Infosys Finacle Migration & Recon)",
+    "code": "CBS_FINACLE_RECON",
+    "domain": "Core Banking Technology",
+    "description": "High-volume data migration verification, table parity checks, General Ledger (GL) balance reconciliation between legacy CBS and Infosys Finacle 10.x. Validates customer UCIC dedup, schema drift, and transaction debit/credit totals.",
+    "sources": {
+      "sftp_files_count": 14,
+      "oracle_tables_count": 18
+    },
+    "lakehouse_pipeline": {
+      "s3_landing": "s3://bank-lakehouse-prod/cbs_finacle/landing/",
+      "snowflake_l0": "BANK_DB.RAW_STAGING.L0_CBS_RAW_DUMP",
+      "snowflake_l1": "BANK_DB.SILVER_HARMONIZED.L1_FINACLE_RECON_SCD2",
+      "snowflake_l2": "BANK_DB.GOLD_MARTS.L2_FACT_CBS_PARITY_AUDIT",
+      "scd_type": "SCD Type 2",
+      "dedup_rule": "GL_CODE + ACCOUNT_NUMBER + POSTING_DATE"
+    },
+    "reports": [
+      {
+        "name": "Finacle Migration Balance Parity Audit",
+        "cadence": "Daily / Migration Sprints",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 11.2
+      },
+      {
+        "name": "GL Trial Balance Difference Sheet",
+        "cadence": "Daily (EOD)",
+        "format": "Excel (.xlsx)",
+        "est_size_mb": 4.8
+      }
+    ],
+    "dispatch": {
+      "cadence": "Daily (EOD at 23:45 IST)",
+      "email_to": "cbs.project@bank.com",
+      "email_cc": "finacle.migration@bank.com, mangeshbagul15@gmail.com",
+      "email_bcc": "cio.office@bank.com",
+      "sftp_repo_path": "/var/sftp/data/reports/FINACLE/2026-10-12/"
+    },
+    "status": "ACTIVE_RUNNING",
+    "last_run": "2026-10-12 23:45:00 IST",
+    "records_processed": 3950100,
+    "quarantine_count": 12
+  },
+  {
+    "id": "proj_adf_cims",
+    "name": "ADF CIMS (RBI Automated Data Flow & Central Reporting)",
+    "code": "RBI_CIMS_ADF",
+    "domain": "Regulatory & Statutory Compliance",
+    "description": "Straight-Through Processing (STP) for RBI's Central Information Management System (CIMS). Extracts raw general ledger and contract data, executes RBI-mandated business rules without manual intervention, and generates XBRL/XML compliant returns.",
+    "sources": {
+      "sftp_files_count": 10,
+      "oracle_tables_count": 14
+    },
+    "lakehouse_pipeline": {
+      "s3_landing": "s3://bank-lakehouse-prod/cims/landing/",
+      "snowflake_l0": "BANK_DB.RAW_STAGING.L0_CIMS_STAGING",
+      "snowflake_l1": "BANK_DB.SILVER_HARMONIZED.L1_CIMS_STANDARDIZED",
+      "snowflake_l2": "BANK_DB.GOLD_MARTS.L2_FACT_RBI_CIMS_SUBMISSION",
+      "scd_type": "SCD Type 2",
+      "dedup_rule": "RETURN_CODE + LINE_ITEM_ID + VALUATION_DATE"
+    },
+    "reports": [
+      {
+        "name": "Form A (Statement of Assets & Liabilities)",
+        "cadence": "Fortnightly",
+        "format": "XML & Excel",
+        "est_size_mb": 5.8
+      },
+      {
+        "name": "Form VIII (SLR Compliance Return)",
+        "cadence": "Monthly",
+        "format": "XML & Excel",
+        "est_size_mb": 3.9
+      }
+    ],
+    "dispatch": {
+      "cadence": "Fortnightly / Monthly",
+      "email_to": "rbi.reporting@bank.com",
+      "email_cc": "cfo@bank.com, compliance@bank.com, mangeshbagul15@gmail.com",
+      "email_bcc": "",
+      "sftp_repo_path": "/var/sftp/data/reports/CIMS/2026-10-12/"
+    },
+    "status": "ACTIVE_RUNNING",
+    "last_run": "2026-10-12 02:00:00 IST",
+    "records_processed": 1120000,
+    "quarantine_count": 0
+  }
+]

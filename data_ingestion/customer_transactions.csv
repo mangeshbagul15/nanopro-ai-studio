@@ -1,0 +1,6 @@
+customer_id,customer_name,region,transaction_amount,status
+CUST_101,Mangesh Bagul,Mumbai,12500.5,Completed
+CUST_102,Aarav Sharma,Pune,4500.0,Completed
+CUST_103,Neha Patil,Navi Mumbai,8920.75,Pending
+CUST_104,Rohit Verma,Thane,15300.0,Completed
+CUST_101,Mangesh Bagul,Mumbai,12500.5,Completed
