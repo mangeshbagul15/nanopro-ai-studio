@@ -4558,7 +4558,49 @@ async def api_admin_space_prune():
     res = backup_manager.prune_and_vacuum()
     return JSONResponse(res)
 
+# --- FREE API & DEVELOPER RESOURCE FINDER ENDPOINTS ---
+from app.core.developer_resource_finder import developer_resource_finder
+
+@app.get("/api/developer-resources/list")
+async def api_developer_resources_list(tier: str = "all", q: str = ""):
+    """Returns all or filtered public developer APIs, PIP packages, and quickstart documentation."""
+    items = developer_resource_finder.list_resources(tier=tier, query=q)
+    return JSONResponse({
+        "status": "success",
+        "total": len(items),
+        "last_sync": developer_resource_finder.last_sync_time,
+        "resources": items
+    })
+
+@app.post("/api/developer-resources/refresh")
+async def api_developer_resources_refresh():
+    """Triggers autonomous 24-hr re-discovery, endpoint health check, and updates live catalog."""
+    res = developer_resource_finder.refresh_discovery()
+    return JSONResponse(res)
+
+@app.get("/api/developer-resources/download")
+async def api_developer_resources_download(format: str = "json"):
+    """Downloads complete developer API catalog in JSON or CSV format."""
+    from fastapi.responses import Response
+    content = developer_resource_finder.export_catalog(fmt=format)
+    media_type = "text/csv" if format == "csv" else "application/json"
+    filename = f"NanoPro_Developer_APIs_Catalog_{datetime.now().strftime('%Y%m%d')}.{format}"
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@app.get("/api/developer-resources/{resource_id}")
+async def api_developer_resource_detail(resource_id: str):
+    """Retrieves full details, documentation link, and copyable Python starter code."""
+    res = developer_resource_finder.get_resource(resource_id)
+    if not res:
+        return JSONResponse({"status": "error", "message": "Resource not found"}, status_code=404)
+    return JSONResponse({"status": "success", "resource": res})
+
 
 if __name__ == "__main__":
     run_server()
+
 

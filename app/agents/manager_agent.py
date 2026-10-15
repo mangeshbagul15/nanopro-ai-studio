@@ -1,4 +1,6 @@
-from app.agents.extended_intents import handle_extended_intents
+def handle_extended_intents(*args, **kwargs):
+    from app.agents.extended_intents import handle_extended_intents as _impl
+    return _impl(*args, **kwargs)
 from app.core.conversational_intelligence import conversational_intelligence
 """
 Mangesh Nano Pro AI Studio - Agent 6: Central AI Manager (JARVIS-Inspired Orchestrator)

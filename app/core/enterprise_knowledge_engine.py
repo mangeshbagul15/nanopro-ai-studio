@@ -53,7 +53,7 @@ class EnterpriseKnowledgeEngine:
             # 2. SNOWFLAKE REMOTE DISK SPILLING & FINOPS WAREHOUSE TUNING
             # -----------------------------------------------------------------
             "snowflake_spilling": {
-                "keys": ["snowflake", "spill", "spilling", "remote storage", "local storage", "bytes spilled", "warehouse spill"],
+                "keys": ["snowflake spill", "snowflake spilling", "remote storage spill", "bytes spilled to remote", "warehouse memory spill", "spill to remote storage", "warehouse spilling"],
                 "title": "Snowflake Data Cloud: Remote Storage Spilling & Warehouse Memory Starvation",
                 "domain": "Cloud Lakehouse / Data Warehouse",
                 "root_cause": "An intensive query (huge Hash Joins, unbounded `GROUP BY`, Cartesian Products, or large `ORDER BY`) exceeded the physical memory of the Snowflake virtual warehouse nodes. Snowflake spilled intermediate scratch buffers first to local SSD, then to high-latency AWS S3 / Azure Blob remote storage.",
@@ -203,6 +203,18 @@ class EnterpriseKnowledgeEngine:
     def evaluate(self, prompt: str) -> Optional[Dict[str, Any]]:
         p = prompt.lower()
 
+        # Safeguard: Never hijack standard conversational questions as incidents!
+        is_informational = any(w in p for w in [
+            "konte", "what is", "which", "list", "show", "kiti", "kuthe", "kasa", "ahet", 
+            "database", "db", "table", "connect", "where", "how to", "sang", "dakhva", "mahiti"
+        ])
+        has_incident_intent = any(err in p for err in [
+            "error", "troubleshoot", "crash", "incident", "failure", "issue", "bug", "broken",
+            "spill", "rebalance", "oom", "deadlock", "wraparound", "starvation"
+        ])
+        if is_informational and not has_incident_intent:
+            return None
+
         # Score all diagnostic modules
         best_match = None
         highest_score = 0
@@ -212,21 +224,12 @@ class EnterpriseKnowledgeEngine:
             for key in mod["keys"]:
                 if key in p:
                     score += len(key.split()) * 2
-            if score > highest_score and score >= 2:
+            if score > highest_score and score >= 4:
                 highest_score = score
                 best_match = mod
 
         if not best_match:
-            # Check for general enterprise failure keywords
-            is_infra_query = any(k in p for k in [
-                "infrastructure", "1000+ issue", "troubleshoot", "production issue",
-                "failure scenario", "deadlock", "crashloop", "kafka lag", "spill to remote",
-                "ora-", "wraparound", "oomkilled"
-            ])
-            if not is_infra_query:
-                return None
-            # Default to overarching enterprise diagnostic report
-            best_match = self.diagnostic_modules["snowflake_spilling"]
+            return None
 
         # Format diagnostic response
         title = best_match["title"]

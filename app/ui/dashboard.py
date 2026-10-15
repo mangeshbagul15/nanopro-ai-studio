@@ -2683,9 +2683,9 @@ def _get_raw_dashboard_html() -> str:
                         <span class="nav-item-icon">&#128188;</span>
                         <span class="nav-item-label">Career &amp; Job Search</span>
                     </li>
-                    <li class="nav-item" onclick="switchView('free_apis')" data-tooltip="Free API Finder">
-                        <span class="nav-item-icon">&#127873;</span>
-                        <span class="nav-item-label">Free API Finder</span>
+                    <li class="nav-item" onclick="switchView('free_apis')" data-tooltip="Free API & Developer Resource Finder (24/7 Live Discovery)">
+                        <span class="nav-item-icon">&#127760;</span>
+                        <span class="nav-item-label">Free API &amp; Resource Finder</span>
                     </li>
                     <li class="nav-item" onclick="switchView('github_explorer')" data-tooltip="GitHub AI Explorer">
                         <span class="nav-item-icon">&#128025;</span>
@@ -4231,41 +4231,79 @@ def _get_raw_dashboard_html() -> str:
 </div>
 
 
-        <!-- VIEW: FREE API & DEVELOPER RESOURCE FINDER -->
+        <!-- VIEW: FREE API & DEVELOPER RESOURCE FINDER (UNIFIED OMNI CATALOG) -->
         <div class="workspace-view" id="view-free_apis">
-            <div class="panel-card">
-                <h2>Free API &amp; Developer Resource Finder</h2>
-                <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
-                    Discover officially verified free developer tiers, permanent free quotas, open-source models, and zero-credit-card APIs.
-                </p>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-                    <input type="text" class="studio-input" id="freeApiSearchInput" placeholder="Search free APIs (e.g. 'speech recognition', 'marathi', 'llm', 'coding', 'weather')..." style="flex-grow:1; min-width:240px;">
-                    <select id="freeApiCategorySelect" class="studio-input" style="width:190px;">
-                        <option value="All">All Categories</option>
-                        <option value="AI Chat & Reasoning">AI Chat &amp; Reasoning</option>
-                        <option value="Coding">AI Coding</option>
-                        <option value="Text Generation">Text Generation</option>
-                        <option value="Speech-to-text">Speech-to-text (ASR)</option>
-                        <option value="Text-to-speech">Text-to-speech (TTS)</option>
-                        <option value="Embeddings">Embeddings &amp; Vector</option>
-                        <option value="Weather">Weather &amp; Climate</option>
-                        <option value="Web Search">Web Search &amp; Reader</option>
-                        <option value="Developer Tools">Developer Tools</option>
-                    </select>
-                    <label style="font-size:12px; color:var(--text-normal); display:flex; align-items:center; gap:5px; cursor:pointer;">
-                        <input type="checkbox" id="freeApiNoCardOnly"> No Credit Card Required
-                    </label>
-                    <label style="font-size:12px; color:var(--text-normal); display:flex; align-items:center; gap:5px; cursor:pointer;">
-                        <input type="checkbox" id="freeApiMarathiOnly"> Marathi / Indian Languages
-                    </label>
-                    <button type="button" class="btn btn-primary" onclick="searchFreeApis()">&#128269; Search APIs</button>
-                    <button type="button" class="btn btn-secondary" onclick="loadFreeApis()">Reset</button>
+            <div class="panel-card" style="border:1px solid rgba(56,189,248,0.25); background:linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(11,17,32,0.98) 100%);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+                    <div>
+                        <h2 style="font-size:18px; margin:0 0 4px 0; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
+                            <span>🌐</span> Free API &amp; Developer Resource Finder
+                            <span id="devApiCountBadge" style="font-size:11px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); padding:2px 10px; border-radius:12px;">Loading APIs...</span>
+                        </h2>
+                        <p style="font-size:12px; color:var(--text-muted); margin:0;">
+                            Live 24/7 internet-wide directory of developer APIs, Python PIP libraries, free tiers, and direct integration code. Zero category limits.
+                        </p>
+                    </div>
+                    <!-- 24-hr Live Refresh & Export Buttons -->
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button type="button" class="btn btn-secondary" onclick="exportDevApiCatalog('json')" style="font-size:11.5px; padding:6px 12px;" title="Download complete catalog as JSON">
+                            📥 Download JSON
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="exportDevApiCatalog('csv')" style="font-size:11.5px; padding:6px 12px;" title="Download complete catalog as CSV">
+                            📊 Download CSV
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnRefreshDevApis" onclick="refreshDevApisLive()" style="font-size:11.5px; padding:6px 14px; display:flex; align-items:center; gap:6px;">
+                            <span id="refreshIconSpan">🔄</span> Live Refresh (24hr Sync)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Simple Radio/Checkbox Filters -->
+                <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:280px; position:relative;">
+                            <input type="text" class="studio-input" id="devApiSearchInput" oninput="filterDevApis()" placeholder="🔍 Instant search any API, PIP package, or protocol (e.g., 'telegram', 'terabox', 'sms', 'torrent', 'apk', 'security', 'fastapi', 'tracking')..." style="width:100%; padding-left:12px; font-size:13px; height:38px; border-radius:6px;">
+                        </div>
+                        <div style="font-size:11.5px; color:#94A3B8;">
+                            Last Sync: <span id="devApiLastSyncTime" style="color:#10B981; font-weight:600;">24-hr Monitored Active</span>
+                        </div>
+                    </div>
+
+                    <!-- Filter Selection (All, Free, Freemium, Paid) - Exactly as requested! -->
+                    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:8px 12px; background:rgba(30,41,59,0.5); border-radius:6px; border:1px solid rgba(148,163,184,0.15);">
+                        <span style="font-size:12px; font-weight:700; color:#94A3B8;">FILTER BY TIER:</span>
+                        <label style="font-size:12px; color:#F8FAFC; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="devApiTierRadio" value="all" checked onchange="filterDevApis()"> 🌐 All APIs (No Filter)
+                        </label>
+                        <label style="font-size:12px; color:#10B981; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="devApiTierRadio" value="free" onchange="filterDevApis()"> 🟢 100% Free / Open
+                        </label>
+                        <label style="font-size:12px; color:#38BDF8; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="devApiTierRadio" value="no_key" onchange="filterDevApis()"> ⚡ No Key Needed (Instant Access)
+                        </label>
+                        <label style="font-size:12px; color:#F59E0B; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="devApiTierRadio" value="freemium" onchange="filterDevApis()"> 🟡 Freemium (Free Key Available)
+                        </label>
+                        <label style="font-size:12px; color:#EF4444; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="devApiTierRadio" value="paid" onchange="filterDevApis()"> 🔴 Commercial / Paid
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <!-- Free API Grid Container -->
-            <div id="freeApisContainer" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:12px; margin-top:14px;">
+            <!-- Free API Grid Wall (Infinite Scroll & Responsive Cards) -->
+            <div id="freeApisContainer" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:14px; margin-top:14px;">
                 <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- MODAL: API & DEVELOPER RESOURCE DETAILS + QUICKSTART CODE -->
+        <div id="devApiDetailModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:99999; justify-content:center; align-items:center; padding:16px;">
+            <div style="background:#0F172A; border:1px solid #38BDF8; border-radius:10px; width:100%; max-width:780px; max-height:90vh; overflow-y:auto; padding:22px; box-shadow:0 20px 40px rgba(0,0,0,0.8); position:relative;">
+                <button type="button" onclick="closeDevApiModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#94A3B8; font-size:20px; cursor:pointer; line-height:1;">&times;</button>
+                <div id="devApiModalBody">
+                    <!-- Populated dynamically -->
+                </div>
             </div>
         </div>
 
@@ -12957,84 +12995,269 @@ function navigateHistory(direction) {
         }
 
         /* ========================================================
-           CORE AI: FREE API FINDER JAVASCRIPT
+           CORE AI: FREE API & DEVELOPER RESOURCE FINDER (OMNI DISCOVERY)
            ======================================================== */
+        window.cachedDevApis = [];
+
         async function loadFreeApis() {
             const container = document.getElementById('freeApisContainer');
+            const badge = document.getElementById('devApiCountBadge');
+            const lastSync = document.getElementById('devApiLastSyncTime');
             if (!container) return;
-            container.innerHTML = '<div style="color:var(--text-muted); padding:20px;">Loading verified free APIs...</div>';
+            
+            container.innerHTML = '<div style="color:var(--text-muted); padding:30px; grid-column:1/-1; text-align:center;">🌐 Connecting to live 24/7 Developer Resource Hub...</div>';
 
             try {
-                const res = await fetch('/api/discovery/apis');
+                const res = await fetch('/api/developer-resources/list?tier=all');
                 const data = await res.json();
-                renderFreeApisList(data.apis || []);
+                window.cachedDevApis = data.resources || [];
+                if (badge) badge.innerText = `${window.cachedDevApis.length}+ APIs Active`;
+                if (lastSync && data.last_sync) lastSync.innerText = data.last_sync;
+                filterDevApis();
             } catch (e) {
-                container.innerHTML = '<div style="color:var(--accent-red);">Failed to load APIs: ' + e + '</div>';
+                container.innerHTML = '<div style="color:var(--accent-red); padding:20px; grid-column:1/-1;">Failed to load developer resources: ' + e + '</div>';
             }
         }
 
-        async function searchFreeApis() {
+        function filterDevApis() {
             const container = document.getElementById('freeApisContainer');
-            const query = document.getElementById('freeApiSearchInput').value;
-            const category = document.getElementById('freeApiCategorySelect').value;
-            const noCard = document.getElementById('freeApiNoCardOnly').checked;
-            const marathiOnly = document.getElementById('freeApiMarathiOnly').checked;
+            if (!container) return;
+            
+            const selectedRadio = document.querySelector('input[name="devApiTierRadio"]:checked');
+            const tierVal = selectedRadio ? selectedRadio.value : 'all';
+            const searchInput = document.getElementById('devApiSearchInput');
+            const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-            container.innerHTML = '<div style="color:var(--accent-blue); padding:20px;">Searching verified developer APIs...</div>';
+            let filtered = window.cachedDevApis || [];
 
-            try {
-                const res = await fetch('/api/discovery/apis/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: query,
-                        category: category,
-                        credit_card_free_only: noCard,
-                        marathi_only: marathiOnly
-                    })
+            if (tierVal === 'free') {
+                filtered = filtered.filter(a => a.tier === 'FREE');
+            } else if (tierVal === 'no_key') {
+                filtered = filtered.filter(a => a.auth_type === 'NO_KEY_REQUIRED');
+            } else if (tierVal === 'freemium') {
+                filtered = filtered.filter(a => a.tier === 'FREEMIUM');
+            } else if (tierVal === 'paid') {
+                filtered = filtered.filter(a => a.tier === 'PAID');
+            }
+
+            if (q) {
+                filtered = filtered.filter(a => {
+                    const text = `${a.name} ${a.provider} ${a.pip_package} ${a.description} ${(a.tags || []).join(' ')} ${a.endpoint_url}`.toLowerCase();
+                    return text.includes(q);
                 });
+            }
+
+            renderDevApisList(filtered);
+        }
+
+        async function refreshDevApisLive() {
+            const btn = document.getElementById('btnRefreshDevApis');
+            const icon = document.getElementById('refreshIconSpan');
+            if (icon) icon.style.animation = 'spin 1s infinite linear';
+            if (btn) btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/developer-resources/refresh', { method: 'POST' });
                 const data = await res.json();
-                renderFreeApisList(data.results || []);
+                if (typeof showStudioToast === 'function') {
+                    showStudioToast(data.message || '24-hour discovery completed!', 'success');
+                }
+                await loadFreeApis();
             } catch (e) {
-                container.innerHTML = '<div style="color:var(--accent-red);">Search failed: ' + e + '</div>';
+                console.error('Refresh error:', e);
+            } finally {
+                if (icon) icon.style.animation = 'none';
+                if (btn) btn.disabled = false;
             }
         }
 
-        function renderFreeApisList(apis) {
+        function renderDevApisList(apis) {
             const container = document.getElementById('freeApisContainer');
             if (!container) return;
+            
             if (!apis || apis.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-muted); padding:20px; grid-column:1/-1;">No free APIs matched your criteria. Background discovery will continue scanning.</div>';
+                container.innerHTML = `
+                    <div style="color:var(--text-muted); padding:35px; grid-column:1/-1; text-align:center; background:rgba(30,41,59,0.3); border-radius:8px; border:1px dashed rgba(148,163,184,0.2);">
+                        <div style="font-size:24px; margin-bottom:8px;">🔍</div>
+                        <div style="font-size:14px; color:#F8FAFC; font-weight:600;">No APIs matched your search criteria.</div>
+                        <div style="font-size:12px; margin-top:4px;">Try searching for generic terms like <code>sms</code>, <code>telegram</code>, <code>terabox</code>, <code>torrent</code>, <code>security</code>, or select <strong>All APIs</strong>.</div>
+                    </div>
+                `;
                 return;
             }
 
-            container.innerHTML = apis.map(a => `
-                <div class="api-card">
-                    <div>
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                            <span style="font-size:10px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 8px; border-radius:4px;">${a.category}</span>
-                            <span style="font-size:10px; font-weight:800; color:#10B981; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:4px;">${a.free_tier_type}</span>
+            container.innerHTML = apis.map(a => {
+                const isNoKey = a.auth_type === 'NO_KEY_REQUIRED';
+                const tierColor = a.tier === 'FREE' ? '#10B981' : (a.tier === 'FREEMIUM' ? '#F59E0B' : '#EF4444');
+                const tierBg = a.tier === 'FREE' ? 'rgba(16,185,129,0.12)' : (a.tier === 'FREEMIUM' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)');
+                
+                const authBadge = isNoKey 
+                    ? '<span style="font-size:10px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.25); padding:2px 8px; border-radius:12px;">⚡ NO KEY NEEDED</span>'
+                    : '<span style="font-size:10px; font-weight:700; color:#CBD5E1; background:rgba(148,163,184,0.12); border:1px solid rgba(148,163,184,0.25); padding:2px 8px; border-radius:12px;">🔑 FREE KEY AVAILABLE</span>';
+
+                return `
+                    <div class="api-card" style="background:#0F172A; border:1px solid rgba(148,163,184,0.18); border-radius:8px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.3);" onmouseover="this.style.borderColor='#38BDF8'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='rgba(148,163,184,0.18)'; this.style.transform='none';">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                                <span style="font-size:10px; font-weight:800; color:${tierColor}; background:${tierBg}; border:1px solid ${tierColor}40; padding:2px 8px; border-radius:12px;">
+                                    ${a.tier}
+                                </span>
+                                ${authBadge}
+                            </div>
+                            <h3 style="font-size:15px; color:#F8FAFC; margin:4px 0; font-weight:700; line-height:1.3;">${a.name}</h3>
+                            <div style="font-size:11.5px; color:#94A3B8; margin-bottom:8px;">Provider: <strong style="color:#CBD5E1;">${a.provider}</strong></div>
+                            <p style="font-size:12px; color:#94A3B8; line-height:1.45; margin:0 0 10px 0; height:48px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+                                ${a.description}
+                            </p>
+
+                            <!-- PIP Package command with 1-click copy -->
+                            <div style="background:#090D16; border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:6px 10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                                <code style="font-size:11.5px; color:#38BDF8; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:82%;">
+                                    ${a.pip_package}
+                                </code>
+                                <button type="button" onclick="copyDevApiPip('${a.pip_package}', this)" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:12px; padding:2px 6px;" title="Copy PIP install command">
+                                    📋 Copy
+                                </button>
+                            </div>
                         </div>
-                        <h3 style="font-size:14.5px; color:#F8FAFC; margin:8px 0 4px 0;">${a.service_name}</h3>
-                        <div style="font-size:11.5px; color:#94A3B8;">Provider: <strong>${a.provider_name}</strong></div>
-                        <p style="font-size:12px; color:#CBD5E1; margin:8px 0;">${a.research_summary || 'Officially verified free developer tier.'}</p>
-                        
-                        <div style="background:#1E293B; padding:8px; border-radius:4px; font-size:11.5px; color:#E2E8F0; margin-bottom:10px;">
-                            <div><strong>Free Quota:</strong> ${a.free_quota || 'Standard Quota'}</div>
-                            <div><strong>Rate Limit:</strong> ${a.rate_limit || 'N/A'}</div>
-                            <div><strong>Auth &amp; Card:</strong> ${a.authentication_type} | ${a.credit_card_required ? '⚠️ Card Required' : '✅ No Credit Card'}</div>
-                            <div><strong>Languages:</strong> ${a.languages_supported || 'Global'}</div>
+
+                        <!-- Card Action Buttons -->
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; border-top:1px solid rgba(148,163,184,0.12); padding-top:10px; margin-top:4px;">
+                            <button type="button" class="btn btn-primary" onclick="openDevApiModal('${a.id}')" style="font-size:11px; padding:5px 10px; flex:1; text-align:center;">
+                                🔍 More Details &amp; Code
+                            </button>
+                            <a href="${a.doc_url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11px; padding:5px 8px; text-decoration:none;" title="Official Documentation">
+                                📖 Docs ↗
+                            </a>
+                            <a href="${a.pip_link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11px; padding:5px 8px; text-decoration:none;" title="PyPI Package Registry">
+                                📦 PyPI ↗
+                            </a>
                         </div>
                     </div>
+                `;
+            }).join('');
+        }
 
-                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
-                        <a href="${a.official_url}" target="_blank" class="btn btn-secondary" style="font-size:10.5px; padding:4px 8px; text-decoration:none;">Website</a>
-                        <a href="${a.documentation_url || a.official_url}" target="_blank" class="btn btn-secondary" style="font-size:10.5px; padding:4px 8px; text-decoration:none;">Docs</a>
-                        <a href="${a.pricing_url || a.official_url}" target="_blank" class="btn btn-secondary" style="font-size:10.5px; padding:4px 8px; text-decoration:none;">Pricing</a>
-                        <a href="${a.registration_url || a.official_url}" target="_blank" class="btn btn-primary" style="font-size:10.5px; padding:4px 8px; text-decoration:none;">Get Key</a>
+        function openDevApiModal(apiId) {
+            const modal = document.getElementById('devApiDetailModal');
+            const body = document.getElementById('devApiModalBody');
+            if (!modal || !body) return;
+
+            const item = (window.cachedDevApis || []).find(a => a.id === apiId);
+            if (!item) return;
+
+            const tierColor = item.tier === 'FREE' ? '#10B981' : (item.tier === 'FREEMIUM' ? '#F59E0B' : '#EF4444');
+
+            body.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(148,163,184,0.15);">
+                    <div>
+                        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:11px; font-weight:800; color:${tierColor}; background:${tierColor}20; border:1px solid ${tierColor}50; padding:2px 10px; border-radius:12px;">${item.tier} TIER</span>
+                            <span style="font-size:11px; font-weight:700; color:#38BDF8; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); padding:2px 10px; border-radius:12px;">${item.auth_type}</span>
+                            <span style="font-size:11px; color:#94A3B8;">Verified: ${item.last_checked || 'Live 24h'}</span>
+                        </div>
+                        <h2 style="font-size:20px; color:#F8FAFC; margin:0 0 4px 0;">${item.name}</h2>
+                        <div style="font-size:12px; color:#94A3B8;">Provider / Project: <strong style="color:#CBD5E1;">${item.provider}</strong></div>
                     </div>
                 </div>
-            `).join('');
+
+                <div style="font-size:13px; color:#CBD5E1; line-height:1.55; margin-bottom:16px;">
+                    ${item.description}
+                </div>
+
+                <!-- API Key / Access Guide -->
+                <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:12px; margin-bottom:16px;">
+                    <div style="font-size:12px; font-weight:700; color:#38BDF8; margin-bottom:4px;">🔑 HOW TO GET KEY / ACCESS:</div>
+                    <div style="font-size:12px; color:#F8FAFC; line-height:1.4;">${item.key_instructions || 'Direct public access with no credentials needed.'}</div>
+                    <div style="margin-top:8px; font-size:11.5px; color:#94A3B8;">
+                        Endpoint: <code style="color:#F1F5F9; background:#1E293B; padding:2px 6px; border-radius:4px;">${item.endpoint_url}</code>
+                    </div>
+                </div>
+
+                <!-- Quickstart Python Code with One-Click Copy -->
+                <div style="margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:12px; font-weight:700; color:#CBD5E1;">🐍 READY-TO-RUN PYTHON QUICKSTART:</span>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn btn-secondary" onclick="copyDevApiCode('${item.id}', this)" style="font-size:11px; padding:4px 10px;">
+                                📋 Copy Code
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="downloadDevApiSnippet('${item.id}')" style="font-size:11px; padding:4px 10px;">
+                                💾 Download .py
+                            </button>
+                        </div>
+                    </div>
+                    <pre id="codeSnippet_${item.id}" style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:12px; font-size:12px; color:#38BDF8; font-family:Consolas, monospace; overflow-x:auto; max-height:220px; margin:0;">${item.code_snippet}</pre>
+                </div>
+
+                <!-- Quick cURL snippet -->
+                ${item.sample_curl ? `
+                <div style="margin-bottom:16px;">
+                    <div style="font-size:12px; font-weight:700; color:#CBD5E1; margin-bottom:4px;">💻 SAMPLE cURL TERMINAL COMMAND:</div>
+                    <pre style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:10px; font-size:11.5px; color:#F59E0B; font-family:Consolas, monospace; overflow-x:auto; margin:0;">${item.sample_curl}</pre>
+                </div>
+                ` : ''}
+
+                <!-- Modal Footer -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px solid rgba(148,163,184,0.15); padding-top:14px;">
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <a href="${item.doc_url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size:11.5px; padding:6px 14px; text-decoration:none;">
+                            Open Official Docs ↗
+                        </a>
+                        <a href="${item.pip_link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:11.5px; padding:6px 14px; text-decoration:none;">
+                            Open PyPI Registry ↗
+                        </a>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="closeDevApiModal()" style="font-size:11.5px; padding:6px 16px;">
+                        Close
+                    </button>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        function closeDevApiModal() {
+            const modal = document.getElementById('devApiDetailModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function copyDevApiPip(cmd, btn) {
+            navigator.clipboard.writeText(cmd).then(() => {
+                const orig = btn.innerText;
+                btn.innerText = 'Copied! ✅';
+                setTimeout(() => { btn.innerText = orig; }, 2000);
+            }).catch(e => {
+                console.error(e);
+            });
+        }
+
+        function copyDevApiCode(apiId, btn) {
+            const item = (window.cachedDevApis || []).find(a => a.id === apiId);
+            if (!item) return;
+            navigator.clipboard.writeText(item.code_snippet).then(() => {
+                const orig = btn.innerText;
+                btn.innerText = 'Copied! ✅';
+                setTimeout(() => { btn.innerText = orig; }, 2000);
+            }).catch(e => {
+                console.error(e);
+            });
+        }
+
+        function downloadDevApiSnippet(apiId) {
+            const item = (window.cachedDevApis || []).find(a => a.id === apiId);
+            if (!item) return;
+            const blob = new Blob([item.code_snippet], { type: 'text/x-python' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${item.id}_quickstart.py`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportDevApiCatalog(fmt) {
+            window.open(`/api/developer-resources/download?format=${fmt}`, '_blank');
         }
 
         /* ========================================================

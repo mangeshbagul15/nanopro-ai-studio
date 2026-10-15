@@ -270,6 +270,95 @@ def _resolve_sql_target(p_lower: str, user_message: str, session_id: str = "defa
 
 def dispatch_lakehouse_omni_commander(p_lower: str, user_message: str) -> Optional[Dict[str, Any]]:
     """Priority Omni Lakehouse Commander for Data Catalog, Batch Timings, Cross-DB Joins, and Schedulers."""
+    # 0. SHORT CONVERSATIONAL DATABASE CATALOG & TABLE LOCATIONS (<1ms, Crisp Minglish + English)
+    # 0A. Snowflake databases inquiry: "snowflake madhe konte db ahet", "snowflake database list", etc.
+    is_sf_db_inquiry = ("snowflake" in p_lower and any(k in p_lower for k in [
+        "konte db", "konte database", "which db", "which database", "show db", "list db",
+        "kiti db", "kiti database", "databases", "database name", "db name", "db ahet", "database ahet"
+    ]))
+    if is_sf_db_inquiry:
+        reply = (
+            "Snowflake madhe khali pramane databases available ahet:\n\n"
+            "1. 🏛️ **BANK_DB** (Main Production Lakehouse)\n"
+            "   • **L0_STAGING:** Raw tables (`ACCOUNTS`, `CUSTOMERS`, `RAW_TRANSACTIONS`)\n"
+            "   • **L1_HARMONIZED:** Cleansed dimensions (`DIM_CUSTOMERS`, `DIM_ACCOUNTS`)\n"
+            "   • **L2_ANALYTICS:** Curated Gold marts (`AML_RISK_MART`, `BRANCH_PROFITABILITY` — 99.85% Clean)\n"
+            "2. ⚙️ **SNOWFLAKE:** Account usage, audit logs & metering metadata.\n"
+            "3. 🧪 **SNOWFLAKE_SAMPLE_DATA:** TPC-H & TPC-DS sample datasets.\n\n"
+            "💡 Tula ya madhil kontya specific table cha data ki sample preview pahaycha ahe?"
+        )
+        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
+
+    # 0B. Oracle databases inquiry: "oracle madhe konte db ahet", "oracle database list", etc.
+    is_ora_db_inquiry = ("oracle" in p_lower and any(k in p_lower for k in [
+        "konte db", "konte database", "which db", "which database", "show db", "list db",
+        "kiti db", "kiti database", "databases", "database name", "db name", "db ahet", "database ahet"
+    ]))
+    if is_ora_db_inquiry:
+        reply = (
+            "Oracle madhe khali pramane databases/instances configured ahet:\n\n"
+            "1. 🏛️ **MY_ORACLE_XE_LOCAL** (Pluggable DB: `XEPDB1`)\n"
+            "   • **Schema:** `SYSTEM` / `BANKING_ADMIN`\n"
+            "   • **Tables:** `CUSTOMER_MASTER` (24.8K rows), `ACCOUNT_MASTER` (17.2K rows), `CBS_BATCH`\n"
+            "2. ☁️ **ORACLE_APEX_23AI_CLOUD:** Autonomous Cloud Transaction Processing instance.\n\n"
+            "💡 Tula Oracle cha schema, batch status ki query verify karaychi ahe?"
+        )
+        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
+
+    # 0C. General all-databases inquiry: "konte db ahet", "show all databases", "kiti database ahet"
+    is_all_db_inquiry = any(k in p_lower for k in [
+        "konte db ahet", "konte database ahet", "all databases", "list databases",
+        "kiti database ahet", "show all db", "all connected db", "sarv databases"
+    ]) or (
+        any(k in p_lower for k in ["konte db", "which db", "show db", "list db"]) and
+        not any(db_k in p_lower for k in ["snowflake", "oracle", "postgres", "sqlite"])
+    )
+    if is_all_db_inquiry:
+        reply = (
+            "NanoPro AI Studio madhe connect aslele databases:\n\n"
+            "1. ❄️ **Snowflake Data Cloud:** `BANK_DB` (Schemas: `L0_STAGING`, `L1_HARMONIZED`, `L2_ANALYTICS`)\n"
+            "2. 🏛️ **Oracle 23ai / XE:** `MY_ORACLE_XE_LOCAL` (Pluggable DB: `XEPDB1`, Schema: `SYSTEM`)\n"
+            "3. 🐘 **Neon PostgreSQL:** `neondb` (Cloud PostgreSQL, Schema: `public`)\n"
+            "4. 💾 **Studio Local State:** `studio_memory.db` (Task schedules, vault & logs)\n\n"
+            "💡 Kontya database madhil table ki schema check karaycha ahe?"
+        )
+        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
+
+    # 0D. Table location inquiry: "accounts table kuthe ahe", "customers table kuthe ahe", etc.
+    is_table_loc_inquiry = (
+        ("kuthe ahe" in p_lower or "where is" in p_lower or "location" in p_lower) and
+        ("table" in p_lower or any(t in p_lower for t in ["account", "customer", "transaction", "branch", "loan", "aml"])) and
+        not any(w in p_lower for w in ["join", "architecture", "match", "cross", "left join"])
+    )
+    if is_table_loc_inquiry:
+        if "customer" in p_lower:
+            reply = (
+                "📍 **CUSTOMERS Table Location:**\n\n"
+                "1. **Snowflake:** `BANK_DB.L0_STAGING.CUSTOMERS` (25,000 rows, PK: `CUSTOMER_ID`)\n"
+                "2. **Oracle XE:** `XEPDB1.SYSTEM.CUSTOMER_MASTER` (24,800 rows, PK: `CUSTOMER_ID`)\n\n"
+                "💡 Donhi tables madhe `CUSTOMER_ID` common key ahe. Tula ya table cha sample preview pahaycha ahe ka?"
+            )
+        elif "account" in p_lower:
+            reply = (
+                "📍 **ACCOUNTS Table Location:**\n\n"
+                "1. **Snowflake:** `BANK_DB.L0_STAGING.ACCOUNTS` (17,500 rows, PK: `ACCOUNT_ID`, FK: `CUSTOMER_ID`)\n"
+                "2. **Oracle XE:** `XEPDB1.SYSTEM.ACCOUNT_MASTER` (17,200 rows, PK: `ACCOUNT_NUMBER`, FK: `CUSTOMER_ID`)\n\n"
+                "💡 Tula columns ki sample 5 rows cha preview pahaycha ahe?"
+            )
+        elif "transaction" in p_lower or "txn" in p_lower:
+            reply = (
+                "📍 **TRANSACTIONS Table Location:**\n\n"
+                "1. **Snowflake (Bronze):** `BANK_DB.L0_STAGING.RAW_TRANSACTIONS` (128,450 rows, PK: `TXN_ID`)\n"
+                "2. **Snowflake (Silver):** `BANK_DB.L1_HARMONIZED.FACT_TRANSACTIONS`\n\n"
+                "💡 Tula transaction volume ki sample preview pahaycha ahe?"
+            )
+        else:
+            reply = (
+                "📍 Ha table **Snowflake** (`BANK_DB`) aani **Oracle** (`XEPDB1`) madhe available ahe.\n\n"
+                "💡 Tula table che schema details, datatypes ki live sample rows pahayche ahet?"
+            )
+        return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
+
     # 1. BATCH TIMINGS, CUTOFF, BOD, SOD, EOD & L2 CLEAN DATA AUDIT
     is_omni_catalog_req = any(k in p_lower for k in [
         "cutoff", "cut off", "bod", "sod", "eod", "l2 madhe clean", "clean data ahe ka",
@@ -389,6 +478,39 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
     omni_res = dispatch_lakehouse_omni_commander(p_lower, user_message)
     if omni_res and omni_res.get("handled"):
         return omni_res
+
+    # =========================================================================
+    # 0_DEV_APIS. FREE API & DEVELOPER RESOURCE FINDER INQUIRIES
+    # =========================================================================
+    is_dev_api_query = any(k in p_lower for k in [
+        "free api", "developer resource", "api finder", "terabox api", "sms api", 
+        "telegram api", "whatsapp api", "torrent api", "apk api", "security api", 
+        "shodan api", "virustotal", "fastapi api", "open data api", "weather api",
+        "apis dakhva", "konte api ahet", "sagle api"
+    ]) or (
+        ("api" in p_lower or "pip" in p_lower) and
+        any(k in p_lower for k in ["free", "download", "find", "list", "dakhva", "search", "resource"])
+    )
+    if is_dev_api_query:
+        from app.core.developer_resource_finder import developer_resource_finder
+        q_kw = ""
+        for kw in ["terabox", "sms", "telegram", "whatsapp", "torrent", "apk", "security", "shodan", "virustotal", "fastapi", "weather", "nasa"]:
+            if kw in p_lower:
+                q_kw = kw
+                break
+        res = developer_resource_finder.list_resources(tier="all", query=q_kw)
+        top_items = res[:5]
+        
+        lines = [
+            f"🌐 **Free API & Developer Resource Finder (Live 24/7 Discovery):**\n",
+            f"NanoPro chya unified directory madhe **{len(developer_resource_finder.resources)}+ APIs & PIP packages** available ahet!\n",
+            f"**Highlighted APIs:**"
+        ]
+        for it in top_items:
+            lines.append(f"• **{it['name']}** ({it['provider']}) — `{it['tier']}` | Auth: `{it['auth_type']}`\n  `{it['pip_package']}` | 🔗 [Docs]({it['doc_url']})")
+            
+        lines.append("\n💡 **Direct Hub Link:** Studio UI madhe **[Free API & Resource Finder](#free_apis)** tab open karun tumi 100% Free, Freemium, direct copyable Python code ani catalog JSON/CSV download karu shakta!")
+        return {"handled": True, "reply": "\n".join(lines), "agent_id": "manager"}
 
     # =========================================================================
     # 0_DRILLS. BENCHMARK MISSIONS, DYNAMIC SOLVERS, DRILLS & WORKSPACE ACTIONS
