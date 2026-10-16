@@ -8721,7 +8721,7 @@ Ready for message compilation and automated dispatch.
                     </div>
                     <div style="margin-top:10px;">
                         <label class="input-label">Password *</label>
-                        <input type="password" class="studio-input" id="addDbPassword" value="Divyam@123" placeholder="Enter password to encrypt" />
+                        <input type="password" class="studio-input" id="addDbPassword" value="NanoPro2026" placeholder="Enter password to encrypt" />
                     </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
                         <button type="button" class="btn btn-secondary" onclick="closeAddDatabaseModal()">Cancel</button>
@@ -8746,11 +8746,12 @@ Ready for message compilation and automated dispatch.
                                 <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240:1521/XEPDB1)</option>
                                 <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (100.112.86.83:1521/XEPDB1)</option>
                                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB)</option>
+                                <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL (127.0.0.1:5432)</option>
                             </select>
                         </div>
                         <div>
                             <label class="input-label">New Password *</label>
-                            <input type="text" class="studio-input" id="quickPwdInput" value="Divyam@123" placeholder="Enter new password" />
+                            <input type="text" class="studio-input" id="quickPwdInput" value="NanoPro2026" placeholder="Enter new password" />
                         </div>
                     </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
@@ -8797,7 +8798,7 @@ Ready for message compilation and automated dispatch.
                             <div><strong>Host &amp; Port:</strong> 127.0.0.1:1521</div>
                             <div><strong>Service Name:</strong> XEPDB1</div>
                             <div><strong>User / Role:</strong> SYSTEM (Default)</div>
-                            <div><strong>Password:</strong> Divyam@123 (Vault Active)</div>
+                            <div><strong>Password:</strong> NanoPro2026 (Vault Active)</div>
                         </div>
                         <div style="display:flex; gap:8px;">
                             <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('MY_ORACLE_XE_LOCAL')" id="btnTestOracleLocal" style="flex:1; background:#D97706;">&#128269; Test Local Oracle</button>
@@ -8819,7 +8820,7 @@ Ready for message compilation and automated dispatch.
                             <div><strong>Host &amp; Port:</strong> 192.168.31.240:1521</div>
                             <div><strong>Service Name:</strong> XEPDB1</div>
                             <div><strong>User / Role:</strong> SYSTEM (Default)</div>
-                            <div><strong>Password:</strong> Divyam@123 (Vault Active)</div>
+                            <div><strong>Password:</strong> NanoPro2026 (Vault Active)</div>
                         </div>
                         <div style="display:flex; gap:8px;">
                             <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('MY_ORACLE_XE_REMOTE')" id="btnTestOracle" style="flex:1; background:#D97706;">&#128269; Test Remote Oracle</button>
@@ -8841,7 +8842,7 @@ Ready for message compilation and automated dispatch.
                             <div><strong>Host &amp; Port:</strong> 100.112.86.83:1521 (Tailscale)</div>
                             <div><strong>Service Name:</strong> XEPDB1</div>
                             <div><strong>User / Role:</strong> SYSTEM (Default)</div>
-                            <div><strong>Password:</strong> Divyam@123 (Vault Active)</div>
+                            <div><strong>Password:</strong> NanoPro2026 (Vault Active)</div>
                         </div>
                         <div style="display:flex; gap:8px;">
                             <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('MY_ORACLE_XE_REMOTE_New')" id="btnTestOracleTailscale" style="flex:1; background:#D97706;">&#128269; Test Tailscale Oracle</button>
@@ -11592,17 +11593,37 @@ function navigateHistory(direction) {
                 if (hostEl) hostEl.value = '127.0.0.1';
                 if (portEl) portEl.value = '1521';
                 if (userEl) userEl.value = 'SYSTEM';
-                if (secEl) secEl.value = 'Divyam@123';
+                if (secEl) secEl.value = 'NanoPro2026';
             } else if (connName === 'MY_ORACLE_XE_REMOTE') {
                 if (hostEl) hostEl.value = '192.168.31.240';
                 if (portEl) portEl.value = '1521';
                 if (userEl) userEl.value = 'SYSTEM';
-                if (secEl) secEl.value = 'Divyam@123';
+                if (secEl) secEl.value = 'NanoPro2026';
             } else if (connName === 'MY_ORACLE_XE_REMOTE_New') {
                 if (hostEl) hostEl.value = '100.112.86.83';
                 if (portEl) portEl.value = '1521';
                 if (userEl) userEl.value = 'SYSTEM';
+                if (secEl) secEl.value = 'NanoPro2026';
+            } else if (connName === 'ORACLE_APEX_23AI_CLOUD') {
+                if (hostEl) hostEl.value = 'apex.oracle.com';
+                if (portEl) portEl.value = '443';
+                if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
+                if (secEl) secEl.value = 'Bhaiyyanand$123';
+            } else if (connName === 'MY_POSTGRES_LOCAL') {
+                if (hostEl) hostEl.value = '127.0.0.1';
+                if (portEl) portEl.value = '5432';
+                if (userEl) userEl.value = 'postgres';
                 if (secEl) secEl.value = 'Divyam@123';
+            } else if (connName === 'POSTGRES_CLOUD_FREE') {
+                if (hostEl) hostEl.value = 'ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech';
+                if (portEl) portEl.value = '5432';
+                if (userEl) userEl.value = 'neondb_owner';
+                if (secEl) secEl.value = 'npg_VWB8sLHgC3jX';
+            } else if (connName === 'POSTGRES_RENDER_CLOUD') {
+                if (hostEl) hostEl.value = 'dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com';
+                if (portEl) portEl.value = '5432';
+                if (userEl) userEl.value = 'nanopro_postgres_user';
+                if (secEl) secEl.value = 'cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb';
             } else if (connName === 'GMAIL_SMTP') {
                 if (hostEl) hostEl.value = 'smtp.gmail.com';
                 if (portEl) portEl.value = '587';
@@ -11611,7 +11632,7 @@ function navigateHistory(direction) {
             } else if (connName === 'AWS_S3_DATA_LAKE') {
                 if (hostEl) hostEl.value = 'ap-southeast-2';
                 if (portEl) portEl.value = '443';
-                if (userEl) userEl.value = '';
+                if (userEl) userEl.value = 'mangesh-studio';
                 if (userEl) userEl.placeholder = 'AKIA... (AWS Access Key ID)';
                 if (secEl) secEl.placeholder = 'AWS Secret Access Key';
             } else if (connName === 'TELEGRAM_ALERTS') {

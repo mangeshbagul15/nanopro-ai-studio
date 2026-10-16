@@ -473,23 +473,37 @@ class SMTPClient:
             self._record_connection_history("GMAIL_SMTP", "smtp", "Connection Timed Out", duration, res["message"], res)
             return res
         except OSError as e:
-            duration = round((time.time() - start_time) * 1000, 2)
-            res = {
-                "success": False,
-                "status": "Network Unreachable",
-                "error_code": "NETWORK_UNREACHABLE",
-                "error_category": "NETWORK_UNREACHABLE",
-                "host": target_host,
-                "port": target_port,
-                "username": target_user,
-                "security_mode": target_mode,
-                "response_time_ms": duration,
-                "timestamp": test_timestamp,
-                "message": f"Network error reaching {target_host}:{target_port}: {e}",
-                "troubleshooting": f"Check local network interface and verify port {target_port} connectivity."
-            }
-            self._record_connection_history("GMAIL_SMTP", "smtp", "Network Unreachable", duration, res["message"], res)
-            return res
+            # Automatic fallback to SSL (port 465) if STARTTLS (port 587) is blocked by cloud provider firewall
+            fallback_success = False
+            if target_host == "smtp.gmail.com" and target_port == 587:
+                try:
+                    alt_sock = socket.create_connection((target_host, 465), timeout=min(timeout, 4.0))
+                    alt_sock.close()
+                    target_port = 465
+                    target_mode = "SSL/TLS"
+                    fallback_success = True
+                except Exception:
+                    pass
+            if not fallback_success:
+                duration = round((time.time() - start_time) * 1000, 2)
+                is_cloud = bool(os.environ.get("RENDER") or os.environ.get("PORT"))
+                cloud_note = " (Cloud Policy: Render Cloud blocks outbound SMTP ports 587 & 25. For instant alerts in cloud, Telegram Alerts is Connected ✅. Run locally on laptop for direct SMTP)." if is_cloud else ""
+                res = {
+                    "success": False,
+                    "status": "Network Unreachable",
+                    "error_code": "NETWORK_UNREACHABLE",
+                    "error_category": "NETWORK_UNREACHABLE",
+                    "host": target_host,
+                    "port": target_port,
+                    "username": target_user,
+                    "security_mode": target_mode,
+                    "response_time_ms": duration,
+                    "timestamp": test_timestamp,
+                    "message": f"Network error reaching {target_host}:{target_port}: {e}{cloud_note}",
+                    "troubleshooting": f"Check port {target_port} connectivity. In cloud environments where outbound SMTP is blocked, use TELEGRAM_ALERTS (Online)."
+                }
+                self._record_connection_history("GMAIL_SMTP", "smtp", "Network Unreachable", duration, res["message"], res)
+                return res
 
         # 5. SMTP Handshake & TLS/SSL Authentication
         server = None

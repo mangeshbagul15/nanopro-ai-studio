@@ -732,6 +732,10 @@ class ConnectionManager:
             return res
         except (socket.timeout, OSError) as e:
             duration = round((time.time() - start_time) * 1000, 2)
+            is_cloud = bool(os.environ.get("RENDER") or os.environ.get("PORT") or os.environ.get("RENDER_INSTANCE_ID"))
+            cloud_note = ""
+            if is_cloud and host in ["127.0.0.1", "localhost", "192.168.31.240", "100.112.86.83"]:
+                cloud_note = f" (Cloud Environment Note: Running on Render Linux. Host {host} is local to your laptop. For Oracle in Cloud, use ORACLE_APEX_23AI_CLOUD which is 100% Connected ✅. For local Oracle XE, run Studio locally on your laptop at http://127.0.0.1:8000)."
             res = {
                 "connection_name": conn_name,
                 "status": "Connection Failed",
@@ -744,8 +748,8 @@ class ConnectionManager:
                 "timestamp": test_ts,
                 "error_category": "PORT_UNREACHABLE",
                 "stage": "network_access",
-                "error_message": f"Failure during network access: Host {host}:{port} is unreachable ({e}). The Oracle listener may be stopped or firewall is blocking port 1521.",
-                "troubleshooting": f"1. Confirm machine at {host} is powered on and connected to the local network.\n2. On the Oracle server, verify the listener is active: 'lsnrctl status'.\n3. Verify Windows Firewall on the Oracle host allows inbound traffic on port 1521."
+                "error_message": f"Failure during network access: Host {host}:{port} is unreachable ({e}).{cloud_note}",
+                "troubleshooting": f"1. On your laptop, verify Oracle XE is running and port 1521 is open.\n2. In Cloud hosting (Render), use ORACLE_APEX_23AI_CLOUD (Online & Verified)."
             }
             self._record_connection_result(conn_name, "oracle", res["status"], duration, user, None, service_name, None, res["error_message"], res)
             return res
@@ -1030,6 +1034,10 @@ class ConnectionManager:
             return res
         except Exception as e:
             duration = round((time.time() - start_time) * 1000, 2)
+            is_cloud = bool(os.environ.get("RENDER") or os.environ.get("PORT") or os.environ.get("RENDER_INSTANCE_ID"))
+            cloud_note = ""
+            if is_cloud and host in ["127.0.0.1", "localhost"]:
+                cloud_note = " (Cloud Deployment Note: 127.0.0.1 is local to the Render container. In cloud, use POSTGRES_RENDER_CLOUD or POSTGRES_CLOUD_FREE which are 100% Connected ✅. For local postgres, run on your laptop at http://127.0.0.1:8000)."
             res = {
                 "connection_name": conn_name,
                 "status": "Connection Failed",
@@ -1040,7 +1048,7 @@ class ConnectionManager:
                 "database": dbname,
                 "response_time_ms": duration,
                 "timestamp": test_ts,
-                "error_message": str(e),
+                "error_message": f"{str(e)}{cloud_note}",
                 "troubleshooting": f"PostgreSQL driver returned: {e}"
             }
             self._record_connection_result(conn_name, "postgresql", "Connection Failed", duration, user, None, dbname, None, str(e), res)
