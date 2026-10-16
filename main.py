@@ -2715,6 +2715,26 @@ async def api_communication_callmebot(req: WhatsAppCallMeBotRequest):
     res = communication_center.send_whatsapp_callmebot(req.phone_number, req.api_key, req.message)
     return JSONResponse(res)
 
+class WhatsAppCloudApiRequest(BaseModel):
+    phone_number: str = "+918433755448"
+    message: str
+    access_token: Optional[str] = None
+    phone_number_id: Optional[str] = None
+    template_name: Optional[str] = None
+
+@app.post('/api/communication/whatsapp/send_cloud_api')
+async def api_communication_whatsapp_cloud(req: WhatsAppCloudApiRequest):
+    from app.core.communication_center import communication_center
+    res = communication_center.send_whatsapp_cloud_api(
+        phone=req.phone_number,
+        message=req.message,
+        access_token=req.access_token,
+        phone_number_id=req.phone_number_id,
+        template_name=req.template_name
+    )
+    return JSONResponse(res)
+
+
 
 # ==========================================
 # 11. CAREER RADAR & MNC HR OUTREACH APIS
