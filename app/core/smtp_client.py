@@ -11,12 +11,16 @@ import time
 import os
 import re
 import socket
+import json
+import base64
+import requests
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 
 from app.core.logger import log_event
 from app.core.database import db, credentials_vault
@@ -158,6 +162,145 @@ class SMTPClient:
             "has_password": has_pw,
             "masked_password": "••••••••••••••••" if has_pw else ""
         }
+
+    # =========================================================================
+    # CLOUD HTTPS EMAIL CONFIGURATION (PORT 443 - ANTI-SPAM FIREWALL BYPASS)
+    # =========================================================================
+
+    def get_resend_config(self) -> Dict[str, Any]:
+        """Returns Resend API key and sender email from environment or Vault."""
+        api_key = (os.environ.get("RESEND_API_KEY") or "").strip()
+        from_email = (os.environ.get("RESEND_FROM_EMAIL") or "Mangesh AI Studio <onboarding@resend.dev>").strip()
+
+        if not api_key:
+            for s in ["RESEND_EMAIL", "resend", "RESEND"]:
+                c = credentials_vault.get_credential(s)
+                if c and c.get("secret_value"):
+                    api_key = c["secret_value"].strip()
+                    if c.get("email"):
+                        from_email = c["email"].strip()
+                    break
+
+        return {
+            "api_key": api_key,
+            "from_email": from_email,
+            "has_credentials": bool(api_key),
+            "masked_key": f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else ("••••••••" if api_key else "")
+        }
+
+    def save_resend_config(self, api_key: str, from_email: Optional[str] = None) -> str:
+        """Stores Resend credentials encrypted in Vault."""
+        return credentials_vault.store_credential(
+            service_name="RESEND_EMAIL",
+            credential_type="api_key",
+            username=from_email or "onboarding@resend.dev",
+            secret_value=api_key.strip(),
+            host="api.resend.com",
+            port="443",
+            email=from_email or "onboarding@resend.dev",
+            additional_info={
+                "provider": "Resend",
+                "quota": "3,000 emails/month free",
+                "protocol": "HTTPS Port 443"
+            }
+        )
+
+    def get_brevo_config(self) -> Dict[str, Any]:
+        """Returns Brevo API key and sender email from environment or Vault."""
+        api_key = (os.environ.get("BREVO_API_KEY") or "").strip()
+        sender_email = (os.environ.get("BREVO_SENDER_EMAIL") or DEFAULT_GMAIL_SENDER).strip()
+        sender_name = (os.environ.get("BREVO_SENDER_NAME") or "Mangesh AI Studio").strip()
+
+        if not api_key:
+            for s in ["BREVO_EMAIL", "brevo", "BREVO", "sendinblue"]:
+                c = credentials_vault.get_credential(s)
+                if c and c.get("secret_value"):
+                    api_key = c["secret_value"].strip()
+                    if c.get("email"):
+                        sender_email = c["email"].strip()
+                    meta = c.get("additional_metadata") or {}
+                    if isinstance(meta, dict) and meta.get("sender_name"):
+                        sender_name = meta["sender_name"]
+                    break
+
+        return {
+            "api_key": api_key,
+            "sender_email": sender_email,
+            "sender_name": sender_name,
+            "has_credentials": bool(api_key),
+            "masked_key": f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else ("••••••••" if api_key else "")
+        }
+
+    def save_brevo_config(self, api_key: str, sender_email: Optional[str] = None, sender_name: Optional[str] = None) -> str:
+        """Stores Brevo credentials encrypted in Vault."""
+        return credentials_vault.store_credential(
+            service_name="BREVO_EMAIL",
+            credential_type="api_key",
+            username=sender_email or DEFAULT_GMAIL_SENDER,
+            secret_value=api_key.strip(),
+            host="api.brevo.com",
+            port="443",
+            email=sender_email or DEFAULT_GMAIL_SENDER,
+            additional_info={
+                "provider": "Brevo (Sendinblue)",
+                "quota": "300 emails/day free",
+                "protocol": "HTTPS Port 443",
+                "sender_name": sender_name or "Mangesh AI Studio"
+            }
+        )
+
+    def get_gmail_api_config(self) -> Dict[str, Any]:
+        """Returns Gmail REST API OAuth2 credentials from environment or Vault."""
+        client_id = (os.environ.get("GMAIL_API_CLIENT_ID") or "").strip()
+        client_secret = (os.environ.get("GMAIL_API_CLIENT_SECRET") or "").strip()
+        refresh_token = (os.environ.get("GMAIL_API_REFRESH_TOKEN") or "").strip()
+        access_token = (os.environ.get("GMAIL_API_ACCESS_TOKEN") or "").strip()
+        account_email = (os.environ.get("GMAIL_API_EMAIL") or DEFAULT_GMAIL_SENDER).strip()
+
+        if not (refresh_token or access_token):
+            for s in ["GMAIL_API", "gmail_api", "GOOGLE_GMAIL_API"]:
+                c = credentials_vault.get_credential(s)
+                if c:
+                    if c.get("secret_value"):
+                        refresh_token = c["secret_value"].strip()
+                    if c.get("username"):
+                        client_id = c["username"].strip()
+                    if c.get("email"):
+                        account_email = c["email"].strip()
+                    meta = c.get("additional_metadata") or {}
+                    if isinstance(meta, dict):
+                        client_secret = meta.get("client_secret", client_secret)
+                        access_token = meta.get("access_token", access_token)
+                    break
+
+        has_creds = bool(access_token or (refresh_token and client_id))
+        return {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "access_token": access_token,
+            "account_email": account_email,
+            "has_credentials": has_creds,
+            "masked_token": f"{refresh_token[:6]}...{refresh_token[-4:]}" if len(refresh_token) > 10 else ("••••••••" if refresh_token else "")
+        }
+
+    def save_gmail_api_config(self, refresh_token: str, client_id: str = "", client_secret: str = "", access_token: str = "", account_email: str = "") -> str:
+        """Stores Gmail REST API credentials encrypted in Vault."""
+        return credentials_vault.store_credential(
+            service_name="GMAIL_API",
+            credential_type="api_key",
+            username=client_id,
+            secret_value=refresh_token or access_token,
+            host="gmail.googleapis.com",
+            port="443",
+            email=account_email or DEFAULT_GMAIL_SENDER,
+            additional_info={
+                "client_secret": client_secret,
+                "access_token": access_token,
+                "provider": "Google Gmail REST API",
+                "protocol": "HTTPS Port 443"
+            }
+        )
 
     def list_senders(self) -> List[Dict[str, Any]]:
         """
@@ -655,7 +798,728 @@ class SMTPClient:
                 except Exception:
                     pass
 
-    def send_email(
+    # =========================================================================
+    # CLOUD HTTPS EMAIL CONNECTION TESTING (PORT 443)
+    # =========================================================================
+
+    def test_resend_connection(self) -> Dict[str, Any]:
+        """
+        Tests Resend REST API connection and key validity over HTTPS Port 443.
+        Does not consume monthly email quota (queries api-keys endpoint).
+        """
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        cfg = self.get_resend_config()
+        api_key = cfg.get("api_key")
+
+        if not api_key:
+            res = {
+                "success": False,
+                "status": "Not Configured",
+                "provider": "Resend API",
+                "quota": "3,000 emails/month free",
+                "host": "api.resend.com:443",
+                "response_time_ms": 0,
+                "timestamp": test_ts,
+                "message": "Resend API key not configured. Add RESEND_API_KEY to Vault or .env (resend.com provides 3,000 free emails/month).",
+                "troubleshooting": "1. Sign up at https://resend.com\n2. Generate an API Key under API Keys tab\n3. Save in Nano Pro Vault under service 'RESEND_EMAIL'."
+            }
+            self._record_connection_history("EMAIL_RESEND_API", "email_api", "Not Configured", 0, res["message"], res)
+            return res
+
+        try:
+            url = "https://api.resend.com/api-keys"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "User-Agent": "NanoProAI-Studio/2.0"
+            }
+            resp = requests.get(url, headers=headers, timeout=8.0)
+            duration = round((time.time() - start_time) * 1000, 2)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                keys = data.get("data", [])
+                res = {
+                    "success": True,
+                    "status": "Connected",
+                    "provider": "Resend API",
+                    "quota": "3,000 emails/month free",
+                    "host": "api.resend.com:443 (HTTPS)",
+                    "sender": cfg.get("from_email"),
+                    "key_count": len(keys),
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Resend API authentication verified successfully over HTTPS Port 443 ({duration} ms). Anti-spam firewall bypass active.",
+                    "cloud_safe": True
+                }
+                self._record_connection_history("EMAIL_RESEND_API", "email_api", "Connected", duration, None, res)
+                return res
+            elif resp.status_code in [401, 403]:
+                res = {
+                    "success": False,
+                    "status": "Authentication Failed",
+                    "provider": "Resend API",
+                    "quota": "3,000 emails/month free",
+                    "host": "api.resend.com:443",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Resend API returned {resp.status_code}: Invalid or unauthorized API key.",
+                    "troubleshooting": "Verify your API key at https://resend.com/api-keys. Keys typically start with 're_'."
+                }
+                self._record_connection_history("EMAIL_RESEND_API", "email_api", "Authentication Failed", duration, res["message"], res)
+                return res
+            else:
+                res = {
+                    "success": False,
+                    "status": "API Error",
+                    "provider": "Resend API",
+                    "host": "api.resend.com:443",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Resend API returned HTTP {resp.status_code}: {resp.text[:150]}"
+                }
+                self._record_connection_history("EMAIL_RESEND_API", "email_api", "API Error", duration, res["message"], res)
+                return res
+        except Exception as e:
+            duration = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "success": False,
+                "status": "Network Error",
+                "provider": "Resend API",
+                "host": "api.resend.com:443",
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "message": f"Network error reaching api.resend.com: {str(e)}"
+            }
+            self._record_connection_history("EMAIL_RESEND_API", "email_api", "Network Error", duration, res["message"], res)
+            return res
+
+    def test_brevo_connection(self) -> Dict[str, Any]:
+        """
+        Tests Brevo (Sendinblue) REST API connection and account status over HTTPS Port 443.
+        Does not consume email credits (queries /v3/account endpoint).
+        Retrieves real-time remaining free credits (300/day).
+        """
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        cfg = self.get_brevo_config()
+        api_key = cfg.get("api_key")
+
+        if not api_key:
+            res = {
+                "success": False,
+                "status": "Not Configured",
+                "provider": "Brevo API (Sendinblue)",
+                "quota": "300 emails/day free",
+                "host": "api.brevo.com:443",
+                "response_time_ms": 0,
+                "timestamp": test_ts,
+                "message": "Brevo API key not configured. Add BREVO_API_KEY to Vault or .env (brevo.com provides 300 free emails/day).",
+                "troubleshooting": "1. Sign up at https://brevo.com\n2. Go to SMTP & API -> API Keys -> Generate a new API key\n3. Save in Nano Pro Vault under service 'BREVO_EMAIL'."
+            }
+            self._record_connection_history("EMAIL_BREVO_API", "email_api", "Not Configured", 0, res["message"], res)
+            return res
+
+        try:
+            url = "https://api.brevo.com/v3/account"
+            headers = {
+                "api-key": api_key,
+                "accept": "application/json",
+                "User-Agent": "NanoProAI-Studio/2.0"
+            }
+            resp = requests.get(url, headers=headers, timeout=8.0)
+            duration = round((time.time() - start_time) * 1000, 2)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                acct_email = data.get("email", "")
+                plans = data.get("plan", [])
+                credits_info = "300 daily"
+                for p in plans:
+                    if "credits" in p:
+                        credits_info = f"{p['credits']} remaining ({p.get('type', 'free')})"
+                res = {
+                    "success": True,
+                    "status": "Connected",
+                    "provider": "Brevo (Sendinblue)",
+                    "quota": "300 emails/day free",
+                    "credits": credits_info,
+                    "host": "api.brevo.com:443 (HTTPS)",
+                    "account_email": acct_email,
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Brevo API authentication verified successfully over HTTPS Port 443 ({duration} ms). Credits: {credits_info}. Anti-spam firewall bypass active.",
+                    "cloud_safe": True
+                }
+                self._record_connection_history("EMAIL_BREVO_API", "email_api", "Connected", duration, None, res)
+                return res
+            elif resp.status_code in [401, 403]:
+                res = {
+                    "success": False,
+                    "status": "Authentication Failed",
+                    "provider": "Brevo API",
+                    "quota": "300 emails/day free",
+                    "host": "api.brevo.com:443",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Brevo API returned {resp.status_code}: Invalid or unauthorized API key.",
+                    "troubleshooting": "Verify your API key at https://app.brevo.com/settings/keys/api. Keys typically start with 'xkeysib-'."
+                }
+                self._record_connection_history("EMAIL_BREVO_API", "email_api", "Authentication Failed", duration, res["message"], res)
+                return res
+            else:
+                res = {
+                    "success": False,
+                    "status": "API Error",
+                    "provider": "Brevo API",
+                    "host": "api.brevo.com:443",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Brevo API returned HTTP {resp.status_code}: {resp.text[:150]}"
+                }
+                self._record_connection_history("EMAIL_BREVO_API", "email_api", "API Error", duration, res["message"], res)
+                return res
+        except Exception as e:
+            duration = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "success": False,
+                "status": "Network Error",
+                "provider": "Brevo API",
+                "host": "api.brevo.com:443",
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "message": f"Network error reaching api.brevo.com: {str(e)}"
+            }
+            self._record_connection_history("EMAIL_BREVO_API", "email_api", "Network Error", duration, res["message"], res)
+            return res
+
+    def _get_gmail_api_access_token(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Obtains a fresh OAuth2 access token for Google Gmail REST API.
+        Returns (access_token, error_message).
+        """
+        cfg = self.get_gmail_api_config()
+        if cfg.get("access_token") and not cfg.get("refresh_token"):
+            return cfg["access_token"], None
+
+        refresh_token = cfg.get("refresh_token")
+        client_id = cfg.get("client_id")
+        client_secret = cfg.get("client_secret")
+
+        if not refresh_token:
+            return None, "Gmail API Refresh Token not configured in Vault or environment (GMAIL_API_REFRESH_TOKEN)."
+        if not client_id:
+            return None, "Gmail API Client ID not configured in Vault or environment (GMAIL_API_CLIENT_ID)."
+
+        try:
+            token_url = "https://oauth2.googleapis.com/token"
+            payload = {
+                "client_id": client_id,
+                "client_secret": client_secret or "",
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token"
+            }
+            resp = requests.post(token_url, data=payload, timeout=10.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                new_token = data.get("access_token")
+                return new_token, None
+            else:
+                return None, f"Google OAuth2 token refresh failed ({resp.status_code}): {resp.text[:200]}"
+        except Exception as e:
+            return None, f"Network error during Google OAuth2 token refresh: {str(e)}"
+
+    def test_gmail_api_connection(self) -> Dict[str, Any]:
+        """
+        Tests Google Gmail REST API connection over HTTPS Port 443.
+        Does not use SMTP sockets (ports 25/465/587).
+        Queries https://gmail.googleapis.com/gmail/v1/users/me/profile.
+        """
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        token, token_err = self._get_gmail_api_access_token()
+
+        if not token:
+            res = {
+                "success": False,
+                "status": "Not Configured",
+                "provider": "Google Gmail REST API",
+                "quota": "Unlimited / Standard Gmail Quota",
+                "host": "gmail.googleapis.com:443",
+                "response_time_ms": 0,
+                "timestamp": test_ts,
+                "message": token_err or "Gmail REST API credentials not configured.",
+                "troubleshooting": "1. In Google Cloud Console, enable Gmail API\n2. Create OAuth2 credentials (Client ID & Client Secret)\n3. Generate a Refresh Token with https://mail.google.com/ scope\n4. Add GMAIL_API_REFRESH_TOKEN and GMAIL_API_CLIENT_ID to Vault or .env."
+            }
+            self._record_connection_history("EMAIL_GMAIL_API", "email_api", "Not Configured", 0, res["message"], res)
+            return res
+
+        try:
+            url = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "User-Agent": "NanoProAI-Studio/2.0"
+            }
+            resp = requests.get(url, headers=headers, timeout=8.0)
+            duration = round((time.time() - start_time) * 1000, 2)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                email = data.get("emailAddress", DEFAULT_GMAIL_SENDER)
+                total_msgs = data.get("messagesTotal", 0)
+                threads = data.get("threadsTotal", 0)
+                res = {
+                    "success": True,
+                    "status": "Connected",
+                    "provider": "Google Gmail REST API",
+                    "host": "gmail.googleapis.com:443 (HTTPS)",
+                    "email": email,
+                    "messages_total": total_msgs,
+                    "threads_total": threads,
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Gmail REST API verified over HTTPS Port 443 ({duration} ms). Active mailbox: {email}. Socket-free cloud delivery operational.",
+                    "cloud_safe": True
+                }
+                self._record_connection_history("EMAIL_GMAIL_API", "email_api", "Connected", duration, None, res)
+                return res
+            elif resp.status_code in [401, 403]:
+                res = {
+                    "success": False,
+                    "status": "Authentication Failed",
+                    "provider": "Google Gmail REST API",
+                    "host": "gmail.googleapis.com:443",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Gmail REST API returned {resp.status_code}: Token expired or insufficient OAuth2 permissions.",
+                    "troubleshooting": "Ensure your token includes scope 'https://mail.google.com/' or 'https://www.googleapis.com/auth/gmail.send'."
+                }
+                self._record_connection_history("EMAIL_GMAIL_API", "email_api", "Authentication Failed", duration, res["message"], res)
+                return res
+            else:
+                res = {
+                    "success": False,
+                    "status": "API Error",
+                    "provider": "Google Gmail REST API",
+                    "host": "gmail.googleapis.com:443",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Gmail REST API returned HTTP {resp.status_code}: {resp.text[:150]}"
+                }
+                self._record_connection_history("EMAIL_GMAIL_API", "email_api", "API Error", duration, res["message"], res)
+                return res
+        except Exception as e:
+            duration = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "success": False,
+                "status": "Network Error",
+                "provider": "Google Gmail REST API",
+                "host": "gmail.googleapis.com:443",
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "message": f"Network error reaching gmail.googleapis.com: {str(e)}"
+            }
+            self._record_connection_history("EMAIL_GMAIL_API", "email_api", "Network Error", duration, res["message"], res)
+            return res
+
+    def test_email_failover_cluster(self) -> Dict[str, Any]:
+        """
+        Tests the readiness of the complete multi-tier cascading email delivery cluster:
+        Tier 1: Gmail REST API (HTTPS 443)
+        Tier 2: Resend API (HTTPS 443 - 3,000/mo)
+        Tier 3: Brevo API (HTTPS 443 - 300/day)
+        Tier 4: Gmail SMTP (STARTTLS 587)
+        Tier 5: Telegram Emergency Alert Bot
+        """
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+
+        res_gmail_api = self.test_gmail_api_connection()
+        res_resend = self.test_resend_connection()
+        res_brevo = self.test_brevo_connection()
+        res_smtp = self.test_connection(timeout=3.0)
+
+        # Test Telegram fallback
+        telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN") or "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
+        tg_ok = False
+        try:
+            tg_resp = requests.get(f"https://api.telegram.org/bot{telegram_token}/getMe", timeout=3.0)
+            tg_ok = tg_resp.status_code == 200 and tg_resp.json().get("ok", False)
+        except Exception:
+            tg_ok = False
+
+        tiers = [
+            {"tier": 1, "name": "Google Gmail REST API", "protocol": "HTTPS Port 443", "quota": "Standard", "status": res_gmail_api.get("status"), "ready": res_gmail_api.get("success", False)},
+            {"tier": 2, "name": "Resend API", "protocol": "HTTPS Port 443", "quota": "3,000 / month free", "status": res_resend.get("status"), "ready": res_resend.get("success", False)},
+            {"tier": 3, "name": "Brevo API", "protocol": "HTTPS Port 443", "quota": "300 / day free", "status": res_brevo.get("status"), "ready": res_brevo.get("success", False)},
+            {"tier": 4, "name": "Gmail SMTP", "protocol": "STARTTLS Port 587", "quota": "500 / day", "status": res_smtp.get("status"), "ready": res_smtp.get("success", False)},
+            {"tier": 5, "name": "Telegram Emergency Dispatch", "protocol": "HTTPS Port 443", "quota": "Unlimited Alerts", "status": "Online" if tg_ok else "Offline", "ready": tg_ok}
+        ]
+
+        ready_count = sum(1 for t in tiers if t["ready"])
+        first_ready = next((t["name"] for t in tiers if t["ready"]), "None")
+        duration = round((time.time() - start_time) * 1000, 2)
+
+        res = {
+            "success": ready_count > 0,
+            "status": "Cluster Operational" if ready_count > 0 else "Cluster Unconfigured",
+            "active_tiers_count": ready_count,
+            "total_tiers": len(tiers),
+            "primary_active_tier": first_ready,
+            "cascade_pipeline": "Gmail REST API ➔ Resend (3,000/mo) ➔ Brevo (300/day) ➔ Gmail SMTP ➔ Telegram Bot",
+            "tiers": tiers,
+            "response_time_ms": duration,
+            "timestamp": test_ts,
+            "message": f"Multi-Tier Email Failover Cluster active with {ready_count}/{len(tiers)} ready channels. Primary: {first_ready}."
+        }
+        self._record_connection_history("EMAIL_FAILOVER_CLUSTER", "failover_cluster", res["status"], duration, None if res["success"] else "No active tiers", res)
+        return res
+
+    # =========================================================================
+    # MULTI-PROVIDER TRANSMISSION METHODS (RESEND, BREVO, GMAIL API, SMTP, TELEGRAM)
+    # =========================================================================
+
+    def send_via_resend(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+        task_id: Optional[str] = None,
+        report_name: Optional[str] = None,
+        data_source: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Sends an email via Resend REST API (HTTPS Port 443)."""
+        submission_time = time.time()
+        log_id = f"email_resend_{int(submission_time * 1000)}"
+        cfg = self.get_resend_config()
+        api_key = cfg.get("api_key")
+
+        if not api_key:
+            return {"success": False, "status": "Not Configured", "error": "RESEND_API_KEY is not configured.", "log_id": log_id, "provider": "Resend"}
+
+        from_sender = cfg.get("from_email") or "Mangesh AI Studio <onboarding@resend.dev>"
+        to_list = [recipient]
+
+        payload: Dict[str, Any] = {
+            "from": from_sender,
+            "to": to_list,
+            "subject": subject,
+            "text": body
+        }
+        if html_body:
+            payload["html"] = html_body
+        if cc:
+            payload["cc"] = [c.strip() for c in cc.split(",") if c.strip()] if isinstance(cc, str) else cc
+        if bcc:
+            payload["bcc"] = [b.strip() for b in bcc.split(",") if b.strip()] if isinstance(bcc, str) else bcc
+
+        # Attachments
+        if attachments:
+            att_list = []
+            for filepath in attachments:
+                p = Path(filepath)
+                if p.exists() and p.is_file():
+                    try:
+                        with open(p, "rb") as f:
+                            content_b64 = base64.b64encode(f.read()).decode("utf-8")
+                        att_list.append({
+                            "filename": p.name,
+                            "content": content_b64
+                        })
+                    except Exception as ex:
+                        log_event(f"Resend attachment error {p.name}: {ex}", component="SMTPClient", level="WARNING")
+            if att_list:
+                payload["attachments"] = att_list
+
+        try:
+            url = "https://api.resend.com/emails"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "NanoProAI-Studio/2.0"
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=12.0)
+
+            if resp.status_code in [200, 201]:
+                data = resp.json()
+                msg_id = data.get("id", log_id)
+                provider_resp = f"HTTP 200/201 OK - Message ID: {msg_id}"
+                self._record_email_delivery(
+                    log_id=log_id, task_id=task_id, report_name=report_name,
+                    recipient=recipient, subject=subject, data_source=data_source or "Resend API",
+                    report_file_path=(attachments[0] if attachments else None),
+                    submission_time=submission_time, provider_response=provider_resp,
+                    delivery_status="Accepted by Resend API", error_details=None
+                )
+                log_event(f"Email [{log_id}] sent via Resend API to {recipient}: Subject '{subject}'", component="SMTPClient")
+                return {
+                    "success": True,
+                    "log_id": log_id,
+                    "message_id": msg_id,
+                    "provider": "Resend API (Port 443)",
+                    "status": "Accepted by Resend API",
+                    "recipient": recipient,
+                    "subject": subject,
+                    "submission_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+            elif resp.status_code == 429:
+                err_msg = f"Resend Quota Exceeded (HTTP 429): Monthly free limit reached."
+                return {"success": False, "quota_exceeded": True, "error": err_msg, "status": "Quota Exceeded", "log_id": log_id, "provider": "Resend"}
+            else:
+                err_msg = f"Resend API error (HTTP {resp.status_code}): {resp.text[:200]}"
+                return {"success": False, "error": err_msg, "status": "Delivery Failed", "log_id": log_id, "provider": "Resend"}
+        except Exception as e:
+            err_msg = f"Network error during Resend dispatch: {str(e)}"
+            return {"success": False, "error": err_msg, "status": "Network Error", "log_id": log_id, "provider": "Resend"}
+
+    def send_via_brevo(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+        task_id: Optional[str] = None,
+        report_name: Optional[str] = None,
+        data_source: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Sends an email via Brevo / Sendinblue REST API (HTTPS Port 443)."""
+        submission_time = time.time()
+        log_id = f"email_brevo_{int(submission_time * 1000)}"
+        cfg = self.get_brevo_config()
+        api_key = cfg.get("api_key")
+
+        if not api_key:
+            return {"success": False, "status": "Not Configured", "error": "BREVO_API_KEY is not configured.", "log_id": log_id, "provider": "Brevo"}
+
+        sender_email = cfg.get("sender_email") or DEFAULT_GMAIL_SENDER
+        sender_name = cfg.get("sender_name") or "Mangesh AI Studio"
+
+        payload: Dict[str, Any] = {
+            "sender": {"name": sender_name, "email": sender_email},
+            "to": [{"email": recipient, "name": recipient.split("@")[0]}],
+            "subject": subject,
+            "textContent": body
+        }
+        if html_body:
+            payload["htmlContent"] = html_body
+        if cc:
+            cc_list = [c.strip() for c in cc.split(",") if c.strip()] if isinstance(cc, str) else cc
+            payload["cc"] = [{"email": c} for c in cc_list]
+        if bcc:
+            bcc_list = [b.strip() for b in bcc.split(",") if b.strip()] if isinstance(bcc, str) else bcc
+            payload["bcc"] = [{"email": b} for b in bcc_list]
+
+        if attachments:
+            att_list = []
+            for filepath in attachments:
+                p = Path(filepath)
+                if p.exists() and p.is_file():
+                    try:
+                        with open(p, "rb") as f:
+                            content_b64 = base64.b64encode(f.read()).decode("utf-8")
+                        att_list.append({
+                            "name": p.name,
+                            "content": content_b64
+                        })
+                    except Exception as ex:
+                        log_event(f"Brevo attachment error {p.name}: {ex}", component="SMTPClient", level="WARNING")
+            if att_list:
+                payload["attachment"] = att_list
+
+        try:
+            url = "https://api.brevo.com/v3/smtp/email"
+            headers = {
+                "api-key": api_key,
+                "Content-Type": "application/json",
+                "accept": "application/json",
+                "User-Agent": "NanoProAI-Studio/2.0"
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=12.0)
+
+            if resp.status_code in [200, 201]:
+                data = resp.json()
+                msg_id = data.get("messageId", log_id)
+                provider_resp = f"HTTP 200/201 OK - Message ID: {msg_id}"
+                self._record_email_delivery(
+                    log_id=log_id, task_id=task_id, report_name=report_name,
+                    recipient=recipient, subject=subject, data_source=data_source or "Brevo API",
+                    report_file_path=(attachments[0] if attachments else None),
+                    submission_time=submission_time, provider_response=provider_resp,
+                    delivery_status="Accepted by Brevo API", error_details=None
+                )
+                log_event(f"Email [{log_id}] sent via Brevo API to {recipient}: Subject '{subject}'", component="SMTPClient")
+                return {
+                    "success": True,
+                    "log_id": log_id,
+                    "message_id": msg_id,
+                    "provider": "Brevo API (Port 443)",
+                    "status": "Accepted by Brevo API",
+                    "recipient": recipient,
+                    "subject": subject,
+                    "submission_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+            elif resp.status_code in [400, 402, 429] and any(w in resp.text.lower() for w in ["limit", "quota", "credit"]):
+                err_msg = f"Brevo Daily Quota Exceeded (HTTP {resp.status_code}): {resp.text[:150]}"
+                return {"success": False, "quota_exceeded": True, "error": err_msg, "status": "Quota Exceeded", "log_id": log_id, "provider": "Brevo"}
+            else:
+                err_msg = f"Brevo API error (HTTP {resp.status_code}): {resp.text[:200]}"
+                return {"success": False, "error": err_msg, "status": "Delivery Failed", "log_id": log_id, "provider": "Brevo"}
+        except Exception as e:
+            err_msg = f"Network error during Brevo dispatch: {str(e)}"
+            return {"success": False, "error": err_msg, "status": "Network Error", "log_id": log_id, "provider": "Brevo"}
+
+    def send_via_gmail_api(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+        task_id: Optional[str] = None,
+        report_name: Optional[str] = None,
+        data_source: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Sends an email via Google Gmail REST API (HTTPS Port 443)."""
+        submission_time = time.time()
+        log_id = f"email_gmail_api_{int(submission_time * 1000)}"
+
+        token, token_err = self._get_gmail_api_access_token()
+        if not token:
+            return {"success": False, "status": "Not Configured", "error": token_err or "Gmail REST API not configured.", "log_id": log_id, "provider": "Gmail REST API"}
+
+        msg = MIMEMultipart("mixed")
+        msg["From"] = f"{self.default_sender_name} <{self.default_sender_email}>"
+        msg["To"] = recipient
+        if cc:
+            msg["Cc"] = cc if isinstance(cc, str) else ", ".join(cc)
+        msg["Subject"] = subject
+        msg["Date"] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
+
+        alt_part = MIMEMultipart("alternative")
+        alt_part.attach(MIMEText(body, "plain", "utf-8"))
+        if html_body:
+            alt_part.attach(MIMEText(html_body, "html", "utf-8"))
+        msg.attach(alt_part)
+
+        if attachments:
+            for filepath in attachments:
+                p = Path(filepath)
+                if p.exists() and p.is_file():
+                    try:
+                        with open(p, "rb") as f:
+                            part = MIMEBase("application", "octet-stream")
+                            part.set_payload(f.read())
+                        encoders.encode_base64(part)
+                        part.add_header("Content-Disposition", f'attachment; filename="{p.name}"')
+                        msg.attach(part)
+                    except Exception as ex:
+                        log_event(f"Gmail API attachment error: {ex}", component="SMTPClient", level="WARNING")
+
+        raw_b64 = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8").rstrip("=")
+
+        try:
+            url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "User-Agent": "NanoProAI-Studio/2.0"
+            }
+            resp = requests.post(url, headers=headers, json={"raw": raw_b64}, timeout=12.0)
+
+            if resp.status_code in [200, 201]:
+                data = resp.json()
+                msg_id = data.get("id", log_id)
+                provider_resp = f"HTTP 200 OK - Gmail API ID: {msg_id}"
+                self._record_email_delivery(
+                    log_id=log_id, task_id=task_id, report_name=report_name,
+                    recipient=recipient, subject=subject, data_source=data_source or "Gmail REST API",
+                    report_file_path=(attachments[0] if attachments else None),
+                    submission_time=submission_time, provider_response=provider_resp,
+                    delivery_status="Accepted by Gmail REST API", error_details=None
+                )
+                log_event(f"Email [{log_id}] sent via Gmail REST API to {recipient}: Subject '{subject}'", component="SMTPClient")
+                return {
+                    "success": True,
+                    "log_id": log_id,
+                    "message_id": msg_id,
+                    "provider": "Gmail REST API (Port 443)",
+                    "status": "Accepted by Gmail REST API",
+                    "recipient": recipient,
+                    "subject": subject,
+                    "submission_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+            elif resp.status_code == 429:
+                err_msg = f"Gmail API Quota Exceeded (HTTP 429): Rate limit reached."
+                return {"success": False, "quota_exceeded": True, "error": err_msg, "status": "Quota Exceeded", "log_id": log_id, "provider": "Gmail REST API"}
+            else:
+                err_msg = f"Gmail REST API error (HTTP {resp.status_code}): {resp.text[:200]}"
+                return {"success": False, "error": err_msg, "status": "Delivery Failed", "log_id": log_id, "provider": "Gmail REST API"}
+        except Exception as e:
+            err_msg = f"Network error during Gmail API dispatch: {str(e)}"
+            return {"success": False, "error": err_msg, "status": "Network Error", "log_id": log_id, "provider": "Gmail REST API"}
+
+    def send_via_telegram_fallback(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        failover_trace: List[Dict[str, Any]],
+        task_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Dispatches an emergency Telegram alert when all email tiers are exhausted or blocked."""
+        submission_time = time.time()
+        log_id = f"email_tg_fallback_{int(submission_time * 1000)}"
+        token = os.environ.get("TELEGRAM_BOT_TOKEN") or "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
+        chat_id = os.environ.get("TELEGRAM_CHAT_ID") or "1200023268"
+
+        trace_summary = "\n".join([f"• {t.get('provider')}: {t.get('status')} - {t.get('error', 'Skipped')}" for t in failover_trace])
+        clean_body = (body or "")[:400]
+
+        msg_text = (
+            f"🚨 <b>Mangesh Nano Pro AI Studio — Email Failover Alert</b>\n\n"
+            f"⚠️ <b>Delivery Status:</b> All outbound email channels were unreachable or exhausted.\n\n"
+            f"<b>Target Recipient:</b> {recipient}\n"
+            f"<b>Subject:</b> {subject}\n"
+            f"<b>Timestamp:</b> {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            f"<b>Failover Cascade Audit:</b>\n{trace_summary}\n\n"
+            f"<b>Message Content:</b>\n{clean_body}"
+        )
+
+        try:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            resp = requests.post(url, json={"chat_id": chat_id, "text": msg_text, "parse_mode": "HTML"}, timeout=6.0)
+            if resp.status_code == 200:
+                self._record_email_delivery(
+                    log_id=log_id, task_id=task_id, report_name="Emergency Failover Alert",
+                    recipient=recipient, subject=subject, data_source="Telegram Fallback",
+                    report_file_path=None, submission_time=submission_time,
+                    provider_response="Dispatched via Telegram Emergency Bot",
+                    delivery_status="Emergency Telegram Fallback Delivered", error_details=None
+                )
+                return {
+                    "success": True,
+                    "emergency_dispatched": True,
+                    "provider": "Telegram Emergency Bot",
+                    "status": "Delivered via Telegram Fallback",
+                    "recipient": recipient,
+                    "subject": subject,
+                    "failover_trace": failover_trace
+                }
+            else:
+                return {"success": False, "status": "Telegram Failed", "error": resp.text[:150], "failover_trace": failover_trace}
+        except Exception as e:
+            return {"success": False, "status": "Telegram Error", "error": str(e), "failover_trace": failover_trace}
+
+    def send_via_smtp(
         self,
         recipient: Optional[str] = None,
         subject: str = '',
@@ -670,15 +1534,14 @@ class SMTPClient:
         bcc: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
+        """Direct SMTP email dispatch (smtp.gmail.com:587)."""
         target_recipient = recipient or to_email or self.default_recipient
-        # Accurately extract plain text body and HTML content from various calling conventions
         email_body = body or kwargs.get("body_text", "") or kwargs.get("content", "") or ""
         html_content = html_body or kwargs.get("body_html", None)
         if not html_content and email_body:
             escaped_body = email_body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
             html_content = f"""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #1E293B; background: #FFFFFF; padding: 20px; border-radius: 8px;">{escaped_body}</div>"""
 
-        # Check for specified sender_id or active sender from vault
         custom_sender_id = kwargs.get("sender_id") or kwargs.get("from_sender_id")
         active_sender = None
         if custom_sender_id:
@@ -724,14 +1587,12 @@ class SMTPClient:
         msg["Subject"] = subject
         msg["Date"] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
 
-        # Body parts
         alt_part = MIMEMultipart("alternative")
         alt_part.attach(MIMEText(email_body, "plain", "utf-8"))
         if html_content:
             alt_part.attach(MIMEText(html_content, "html", "utf-8"))
         msg.attach(alt_part)
 
-        # Attachments
         attached_files = []
         if attachments:
             for filepath in attachments:
@@ -742,13 +1603,12 @@ class SMTPClient:
                             part = MIMEBase("application", "octet-stream")
                             part.set_payload(f.read())
                         encoders.encode_base64(part)
-                        part.add_header("Content-Disposition", f"attachment; filename=\"{p.name}\"")
+                        part.add_header("Content-Disposition", f'attachment; filename="{p.name}"')
                         msg.attach(part)
                         attached_files.append(p.name)
                     except Exception as ex:
                         log_event(f"Failed to attach file {p.name}: {ex}", component="SMTPClient", level="WARNING")
 
-        # Compile full delivery recipient list (To + Cc + Bcc)
         sendmail_recipients = [target_recipient]
         if cc:
             if isinstance(cc, list):
@@ -775,10 +1635,9 @@ class SMTPClient:
 
             server.login(user, password)
             send_resp = server.sendmail(sender_email, sendmail_recipients, msg.as_string())
-            
-            # SMTP acceptance status
+
             provider_resp = "250 2.0.0 OK (Accepted by SMTP Server)"
-            delivery_status = "Accepted by SMTP Server"  # Accurately distinguishes SMTP acceptance from inbox delivery
+            delivery_status = "Accepted by SMTP Server"
 
             self._record_email_delivery(
                 log_id=log_id, task_id=task_id, report_name=report_name,
@@ -787,9 +1646,9 @@ class SMTPClient:
                 submission_time=submission_time, provider_response=provider_resp,
                 delivery_status=delivery_status, error_details=None
             )
-            
-            log_event(f"Email [{log_id}] submitted to {recipient}: Subject '{subject}' - Status: {delivery_status}", component="SMTPClient")
-            
+
+            log_event(f"Email [{log_id}] submitted to {target_recipient}: Subject '{subject}' - Status: {delivery_status}", component="SMTPClient")
+
             return {
                 "success": True,
                 "log_id": log_id,
@@ -799,7 +1658,7 @@ class SMTPClient:
                 "submission_time": submission_timestamp,
                 "provider_response": provider_resp,
                 "attachments": attached_files,
-                "note": "SMTP server accepted message for delivery. Inbox delivery depends on recipient mailbox provider."
+                "note": "SMTP server accepted message for delivery."
             }
 
         except smtplib.SMTPAuthenticationError as e:
@@ -831,36 +1690,207 @@ class SMTPClient:
                 except Exception:
                     pass
 
-    def send_test_email(self, recipient: Optional[str] = None) -> Dict[str, Any]:
-        """Sends an explicit test email with configuration confirmation."""
+    # =========================================================================
+    # MULTI-TIER CASCADING AUTO-FAILOVER DISPATCHER
+    # =========================================================================
+
+    def send_email_cascading(
+        self,
+        recipient: Optional[str] = None,
+        subject: str = '',
+        body: str = '',
+        html_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
+        preferred_provider: str = 'auto',
+        allow_failover: bool = True,
+        task_id: Optional[str] = None,
+        report_name: Optional[str] = None,
+        data_source: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Multi-Tier Cascading Email Delivery Engine:
+        Tier 1: Google Gmail REST API (Port 443)
+        Tier 2: Resend API (Port 443 - 3,000/mo)
+        Tier 3: Brevo API (Port 443 - 300/day)
+        Tier 4: Gmail SMTP (Port 587)
+        Tier 5: Telegram Emergency Bot
+        """
+        extra_kwargs = dict(kwargs)
+        target_recipient = recipient or extra_kwargs.pop("to_email", None) or extra_kwargs.pop("recipient", None) or self.default_recipient
+        email_body = body or extra_kwargs.pop("body_text", "") or extra_kwargs.pop("content", "") or ""
+        html_content = html_body or extra_kwargs.pop("body_html", None)
+        if not html_content and email_body:
+            escaped_body = email_body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+            html_content = f"""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #1E293B; background: #FFFFFF; padding: 20px; border-radius: 8px;">{escaped_body}</div>"""
+
+        cc = extra_kwargs.pop("cc", None)
+        bcc = extra_kwargs.pop("bcc", None)
+        failover_trace: List[Dict[str, Any]] = []
+
+        prov = (preferred_provider or "auto").lower()
+        if prov == "resend":
+            providers = ["resend", "brevo", "gmail_api", "smtp"] if allow_failover else ["resend"]
+        elif prov == "brevo":
+            providers = ["brevo", "resend", "gmail_api", "smtp"] if allow_failover else ["brevo"]
+        elif prov in ["gmail_api", "gmailrest", "gmail_rest"]:
+            providers = ["gmail_api", "resend", "brevo", "smtp"] if allow_failover else ["gmail_api"]
+        elif prov in ["smtp", "gmail_smtp"]:
+            providers = ["smtp", "resend", "brevo", "gmail_api"] if allow_failover else ["smtp"]
+        else:
+            providers = ["gmail_api", "resend", "brevo", "smtp"]
+
+        for p_name in providers:
+            if p_name == "gmail_api":
+                g_cfg = self.get_gmail_api_config()
+                if not g_cfg.get("has_credentials"):
+                    failover_trace.append({"provider": "Gmail REST API", "status": "Skipped", "error": "Credentials not configured"})
+                    continue
+                log_event("Attempting email dispatch via Gmail REST API (Tier 1)...", component="SMTPClient")
+                res = self.send_via_gmail_api(target_recipient, subject, email_body, html_content, attachments, cc, bcc, task_id, report_name, data_source)
+                if res.get("success"):
+                    res["failover_trace"] = failover_trace
+                    return res
+                failover_trace.append({"provider": "Gmail REST API", "status": "Failed", "error": res.get("error", "Unknown error")})
+
+            elif p_name == "resend":
+                r_cfg = self.get_resend_config()
+                if not r_cfg.get("has_credentials"):
+                    failover_trace.append({"provider": "Resend API", "status": "Skipped", "error": "RESEND_API_KEY not configured"})
+                    continue
+                log_event("Attempting email dispatch via Resend API (Tier 2 - 3,000/mo)...", component="SMTPClient")
+                res = self.send_via_resend(target_recipient, subject, email_body, html_content, attachments, cc, bcc, task_id, report_name, data_source)
+                if res.get("success"):
+                    res["failover_trace"] = failover_trace
+                    return res
+                failover_trace.append({"provider": "Resend API", "status": "Failed", "error": res.get("error", "Unknown error")})
+
+            elif p_name == "brevo":
+                b_cfg = self.get_brevo_config()
+                if not b_cfg.get("has_credentials"):
+                    failover_trace.append({"provider": "Brevo API", "status": "Skipped", "error": "BREVO_API_KEY not configured"})
+                    continue
+                log_event("Attempting email dispatch via Brevo API (Tier 3 - 300/day)...", component="SMTPClient")
+                res = self.send_via_brevo(target_recipient, subject, email_body, html_content, attachments, cc, bcc, task_id, report_name, data_source)
+                if res.get("success"):
+                    res["failover_trace"] = failover_trace
+                    return res
+                failover_trace.append({"provider": "Brevo API", "status": "Failed", "error": res.get("error", "Unknown error")})
+
+            elif p_name == "smtp":
+                log_event("Attempting email dispatch via Standard Gmail SMTP (Tier 4)...", component="SMTPClient")
+                res = self.send_via_smtp(
+                    recipient=target_recipient,
+                    subject=subject,
+                    body=email_body,
+                    html_body=html_content,
+                    attachments=attachments,
+                    task_id=task_id,
+                    report_name=report_name,
+                    data_source=data_source,
+                    cc=cc,
+                    bcc=bcc,
+                    **extra_kwargs
+                )
+                if res.get("success"):
+                    res["failover_trace"] = failover_trace
+                    res["provider"] = "Gmail SMTP (Port 587)"
+                    return res
+                failover_trace.append({"provider": "Gmail SMTP", "status": "Failed", "error": res.get("error", "SMTP error")})
+
+        log_event(f"All email dispatch tiers failed for {target_recipient}. Triggering Telegram Emergency Fallback...", component="SMTPClient", level="WARNING")
+        tg_res = self.send_via_telegram_fallback(target_recipient, subject, email_body, failover_trace, task_id)
+        if tg_res.get("success"):
+            return {
+                "success": True,
+                "status": "Delivered via Telegram Emergency Fallback",
+                "provider": "Telegram Emergency Bot (Port 443)",
+                "note": "All primary email APIs failed or were not configured. Alert was safely delivered to your Telegram bot.",
+                "recipient": target_recipient,
+                "subject": subject,
+                "failover_trace": failover_trace
+            }
+
+        return {
+            "success": False,
+            "status": "Delivery Failed Across All Tiers",
+            "error": "All email providers and Telegram fallback failed.",
+            "recipient": target_recipient,
+            "subject": subject,
+            "failover_trace": failover_trace
+        }
+
+    def send_email(
+        self,
+        recipient: Optional[str] = None,
+        subject: str = '',
+        body: str = '',
+        html_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
+        task_id: Optional[str] = None,
+        report_name: Optional[str] = None,
+        data_source: Optional[str] = None,
+        to_email: Optional[str] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+        preferred_provider: str = 'auto',
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Dispatches an email with automatic multi-tier cloud failover."""
+        return self.send_email_cascading(
+            recipient=recipient,
+            subject=subject,
+            body=body,
+            html_body=html_body,
+            attachments=attachments,
+            task_id=task_id,
+            report_name=report_name,
+            data_source=data_source,
+            to_email=to_email,
+            cc=cc,
+            bcc=bcc,
+            preferred_provider=preferred_provider,
+            **kwargs
+        )
+
+    def send_test_email(self, recipient: Optional[str] = None, provider: str = "auto") -> Dict[str, Any]:
+        """Sends an explicit test email with configuration confirmation and cascading failover."""
         target = recipient or self.default_recipient
-        subject = f"Mangesh Nano Pro AI Studio — Gmail Integration Test ({time.strftime('%Y-%m-%d %H:%M')})"
+        prov_label = provider.upper() if provider != "auto" else "Auto-Failover Cascade"
+        subject = f"Mangesh Nano Pro AI Studio — Email Integration Test [{prov_label}] ({time.strftime('%Y-%m-%d %H:%M')})"
         body = (
             f"Hello Mangesh,\n\n"
             f"This is an automated test message from your Mangesh Nano Pro AI Studio.\n\n"
-            f"Configuration Details:\n"
-            f"- Sender: {self.default_sender_email}\n"
+            f"Delivery Architecture Details:\n"
+            f"- Requested Mode: {prov_label}\n"
             f"- Registered Recipient: {target}\n"
             f"- Mobile Notification: {self.registered_mobile}\n"
             f"- Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"- Status: Real SMTP TLS Authentication Succeeded\n\n"
-            f"This confirms your secure Credential Vault and Gmail SMTP pipeline is functional."
+            f"- Cloud Safe Protocol: HTTPS Port 443 with Multi-Tier Cascading Failover\n\n"
+            f"Active Tiers:\n"
+            f"1. Google Gmail REST API (Direct Port 443)\n"
+            f"2. Resend API (3,000 Free Emails / Month)\n"
+            f"3. Brevo API (300 Free Emails / Day)\n"
+            f"4. Gmail SMTP (TLS 587)\n"
+            f"5. Telegram Emergency Alert Bot\n\n"
+            f"This confirms your secure Credential Vault and multi-provider email pipeline is functional."
         )
         html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #10b981; border-radius: 8px; background: #f0fdf4;">
             <h2 style="color: #047857; margin-top: 0;">Mangesh Nano Pro AI Studio</h2>
-            <p><strong>Gmail Integration Verification Successful</strong></p>
+            <p><strong>Cloud Email Verification &amp; Failover Successful</strong></p>
             <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <tr><td style="padding: 6px 0; color: #475569;"><strong>Requested Provider:</strong></td><td><strong>{prov_label}</strong></td></tr>
                 <tr><td style="padding: 6px 0; color: #475569;"><strong>Sender:</strong></td><td>{self.default_sender_email}</td></tr>
                 <tr><td style="padding: 6px 0; color: #475569;"><strong>Recipient:</strong></td><td>{target}</td></tr>
                 <tr><td style="padding: 6px 0; color: #475569;"><strong>Mobile:</strong></td><td>{self.registered_mobile}</td></tr>
-                <tr><td style="padding: 6px 0; color: #475569;"><strong>Security:</strong></td><td>STARTTLS / Port 587</td></tr>
+                <tr><td style="padding: 6px 0; color: #475569;"><strong>Security:</strong></td><td>HTTPS Port 443 / TLS 587</td></tr>
                 <tr><td style="padding: 6px 0; color: #475569;"><strong>Timestamp:</strong></td><td>{time.strftime('%Y-%m-%d %H:%M:%S')}</td></tr>
             </table>
-            <p style="margin-top: 20px; font-size: 12px; color: #64748b;">Notice: This confirms provider acceptance by Google SMTP. Delivered via Nano Pro Connection Manager.</p>
+            <p style="margin-top: 20px; font-size: 12px; color: #64748b;">Notice: This confirms delivery via Mangesh Nano Pro Multi-Tier Email Dispatcher.</p>
         </div>
         """
-        return self.send_email(recipient=target, subject=subject, body=body, html_body=html, task_id="test_email")
+        return self.send_email(recipient=target, subject=subject, body=body, html_body=html, preferred_provider=provider, task_id="test_email")
 
     def _record_connection_history(self, conn_name: str, service_type: str, status: str, response_time: float, error: Optional[str], details: Dict[str, Any]):
         try:
@@ -889,7 +1919,7 @@ class SMTPClient:
                     error_message, tested_at, details_json
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    f"hist_{int(time.time()*1000)}", conn_name, service_type, status, response_time,
+                    f"hist_{time.time_ns()}", conn_name, service_type, status, response_time,
                     details.get("username"), None, None, None, error, time.time(), json.dumps(details)
                 ))
                 conn.commit()

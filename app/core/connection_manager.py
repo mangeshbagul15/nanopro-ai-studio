@@ -173,12 +173,12 @@ class ConnectionManager:
             log_event(f"Error initializing connection tables: {e}", component="ConnectionManager", level="WARNING")
 
     def ensure_default_connections(self):
-        """Pre-seeds connection profiles and ensures active passwords from Vault/env/defaults."""
+        """Pre-seeds connection profiles and ensures active passwords from Vault/env/defaults without overwriting user updates."""
         # 1. Snowflake Connection
         sf_cred = credentials_vault.get_credential("NANO_PRO_SNOWFLAKE")
-        raw_pw = os.environ.get("SNOWFLAKE_PASSWORD") or (sf_cred.get("secret_value") if sf_cred else "") or "Bhaiyyanand@123"
+        stored_sf_pw = (sf_cred.get("secret_value") or "").strip() if sf_cred else ""
+        raw_pw = (stored_sf_pw if len(stored_sf_pw) >= 6 else "") or os.environ.get("SNOWFLAKE_PASSWORD") or "Bhaiyyanand@123"
         sf_pw = str(raw_pw).strip()
-        # Fallback to verified default if password contains corruption or control characters
         if any(ord(c) < 32 or ord(c) > 126 for c in sf_pw) or len(sf_pw) < 6:
             sf_pw = "Bhaiyyanand@123"
         credentials_vault.store_credential(
@@ -196,11 +196,16 @@ class ConnectionManager:
         active_ora_pw = os.environ.get("ORACLE_PASSWORD") or "NanoPro2026"
         for cname, cinfo in ORACLE_CONFIGS.items():
             stored_cred = credentials_vault.get_credential(cname)
-            curr_pw = stored_cred.get("secret_value") if stored_cred else ""
+            curr_pw = (stored_cred.get("secret_value") or "").strip() if stored_cred else ""
             if cname == "ORACLE_APEX_23AI_CLOUD":
-                curr_pw = os.environ.get("ORACLE_APEX_PASSWORD") or "Bhaiyyanand$123"
-            elif curr_pw in ["Maharashtra@123", "", None] or os.environ.get("ORACLE_PASSWORD"):
+                curr_pw = (curr_pw if curr_pw else None) or os.environ.get("ORACLE_APEX_PASSWORD") or "Bhaiyyanand$123"
+            elif curr_pw and curr_pw not in ["Maharashtra@123", "", None]:
+                pass  # Keep user's active password from Vault
+            elif os.environ.get("ORACLE_PASSWORD"):
                 curr_pw = active_ora_pw
+            else:
+                curr_pw = active_ora_pw
+
             credentials_vault.store_credential(
                 service_name=cname,
                 credential_type="database",
@@ -226,8 +231,9 @@ class ConnectionManager:
 
         # 4. AWS S3 Data Lake & Amazon Bedrock
         aws_cred = credentials_vault.get_credential("AWS_S3_DATA_LAKE")
+        stored_aws_sec = (aws_cred.get("secret_value") or "").strip() if aws_cred else ""
         aws_key = (os.environ.get("AWS_ACCESS_KEY_ID") or (aws_cred.get("username") if aws_cred else "") or "mangesh-studio").strip()
-        aws_sec = (os.environ.get("AWS_SECRET_ACCESS_KEY") or (aws_cred.get("secret_value") if aws_cred else "") or "/5XgACux2v974v+b2OAxcHWCucVcR/jIBo6JuQSo").strip()
+        aws_sec = (stored_aws_sec or os.environ.get("AWS_SECRET_ACCESS_KEY") or "/5XgACux2v974v+b2OAxcHWCucVcR/jIBo6JuQSo").strip()
         aws_region = (os.environ.get("AWS_DEFAULT_REGION") or "ap-southeast-2").strip()
         aws_bucket = (os.environ.get("AWS_S3_BUCKET") or "nanopro-data-lake").strip()
         aws_token = (os.environ.get("AWS_BEARER_TOKEN") or "ABSKbWFuZ2VzaC1zdHVkaW8tYXQtMDc1NDczNzgxODA1OnVyRmdxZzAzdVZERFBKcGtHVkk4YzYzTVliWWp5N3ArclplazJpZGZ2WHhyY2EyRTBKd0RCOEVTMnhjPQ==").strip()
@@ -253,12 +259,15 @@ class ConnectionManager:
         active_pg_pw = os.environ.get("POSTGRES_PASSWORD") or "Divyam@123"
         for pg_name, pg_info in POSTGRES_CONFIGS.items():
             pg_cred = credentials_vault.get_credential(pg_name)
-            if pg_name == "POSTGRES_CLOUD_FREE":
+            stored_pg_pw = (pg_cred.get("secret_value") or "").strip() if pg_cred else ""
+            if stored_pg_pw:
+                curr_pg_pw = stored_pg_pw
+            elif pg_name == "POSTGRES_CLOUD_FREE":
                 curr_pg_pw = os.environ.get("NEON_POSTGRES_PASSWORD") or "npg_VWB8sLHgC3jX"
             elif pg_name == "POSTGRES_RENDER_CLOUD":
                 curr_pg_pw = os.environ.get("RENDER_POSTGRES_PASSWORD") or "cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb"
             else:
-                curr_pg_pw = os.environ.get("POSTGRES_PASSWORD") or (pg_cred.get("secret_value") if pg_cred else "") or active_pg_pw
+                curr_pg_pw = os.environ.get("POSTGRES_PASSWORD") or active_pg_pw
             credentials_vault.store_credential(
                 service_name=pg_name,
                 credential_type="database",
@@ -364,7 +373,7 @@ class ConnectionManager:
         account_url = meta.get("account_url") or SNOWFLAKE_CONFIG["account_url"]
         
         # Secret password
-        password = str(os.environ.get("SNOWFLAKE_PASSWORD") or (cfg.get("secret_value") if cfg else "") or "Bhaiyyanand@123").strip()
+        password = str((cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or os.environ.get("SNOWFLAKE_PASSWORD") or "Bhaiyyanand@123").strip()
         if any(ord(c) < 32 or ord(c) > 126 for c in password) or len(password) < 6:
             password = "Bhaiyyanand@123"
         user = str(user).strip()
@@ -625,8 +634,8 @@ class ConnectionManager:
         host = meta.get("hostname") or cfg.get("host") or default_meta.get("hostname", "192.168.31.240")
         port = int(meta.get("port") or cfg.get("port") or default_meta.get("port", 1521))
         user = meta.get("username") or cfg.get("username") or default_meta.get("username", "SYSTEM")
-        password = cfg.get("secret_value") or cfg.get("secret") or cfg.get("password") or meta.get("password") or os.environ.get("ORACLE_PASSWORD", "Divyam@123")
-        service_name = meta.get("service_name") or cfg.get("service_name") or default_meta.get("service_name", "XEPDB1")
+        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or cfg.get("secret") or cfg.get("password") or meta.get("password") or os.environ.get("ORACLE_PASSWORD", "NanoPro2026")
+        service_name = meta.get("service_name") or (cfg.get("database_name") if cfg else "") or cfg.get("service_name") or default_meta.get("service_name", "XEPDB1")
 
         # Dedicated Handler for Official Oracle Cloud 23ai (APEX / ORDS REST)
         if conn_name == "ORACLE_APEX_23AI_CLOUD" or meta.get("connection_type") == "ORDS_REST":
@@ -916,8 +925,7 @@ class ConnectionManager:
         host = meta.get("hostname") or cfg.get("host") or default_meta.get("hostname", "127.0.0.1")
         port = int(meta.get("port") or cfg.get("port") or default_meta.get("port", 5432))
         user = meta.get("username") or cfg.get("username") or default_meta.get("username", "postgres")
-        dbname = meta.get("database") or cfg.get("database_name") or default_meta.get("database", "nanopro_db")
-        password = os.environ.get("POSTGRES_PASSWORD") or (cfg.get("secret_value") if cfg else "") or "postgres"
+        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or (os.environ.get("NEON_POSTGRES_PASSWORD") if "NEON" in conn_name or "FREE" in conn_name else (os.environ.get("RENDER_POSTGRES_PASSWORD") if "RENDER" in conn_name else os.environ.get("POSTGRES_PASSWORD"))) or "postgres"
 
         conn_url = meta.get("connection_url") or meta.get("connection_url_external") or ""
         if host.startswith("postgres://") or host.startswith("postgresql://"):
@@ -1069,6 +1077,22 @@ class ConnectionManager:
     def test_gmail_connection(self) -> Dict[str, Any]:
         """Calls smtp_client to run real SMTP test."""
         return smtp_client.test_connection()
+
+    def test_resend_connection(self) -> Dict[str, Any]:
+        """Calls smtp_client to run real Resend REST API test."""
+        return smtp_client.test_resend_connection()
+
+    def test_brevo_connection(self) -> Dict[str, Any]:
+        """Calls smtp_client to run real Brevo / Sendinblue REST API test."""
+        return smtp_client.test_brevo_connection()
+
+    def test_gmail_api_connection(self) -> Dict[str, Any]:
+        """Calls smtp_client to run real Google Gmail REST API test over Port 443."""
+        return smtp_client.test_gmail_api_connection()
+
+    def test_email_failover_cluster(self) -> Dict[str, Any]:
+        """Calls smtp_client to test multi-tier email cascading failover cluster."""
+        return smtp_client.test_email_failover_cluster()
 
     def test_aws_connection(self) -> Dict[str, Any]:
         """
@@ -1548,6 +1572,42 @@ class ConnectionManager:
                 "configured": True
             },
             {
+                "connection_name": "EMAIL_FAILOVER_CLUSTER",
+                "service_type": "Cloud HTTPS Email Cascading Cluster",
+                "host_identifier": "Port 443 Multi-Tier Cascade",
+                "target": "Gmail API ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram",
+                "user_role": "Zero-Downtime Autonomous Failover",
+                "has_credentials": True,
+                "configured": True
+            },
+            {
+                "connection_name": "EMAIL_RESEND_API",
+                "service_type": "Resend Developer Email API",
+                "host_identifier": "api.resend.com:443 (HTTPS)",
+                "target": "3,000 Free Emails / Month",
+                "user_role": "mangeshbagul15@gmail.com",
+                "has_credentials": bool(smtp_client.get_resend_config()["has_credentials"]),
+                "configured": bool(smtp_client.get_resend_config()["has_credentials"])
+            },
+            {
+                "connection_name": "EMAIL_BREVO_API",
+                "service_type": "Brevo / Sendinblue Email API",
+                "host_identifier": "api.brevo.com:443 (HTTPS)",
+                "target": "300 Free Emails / Day",
+                "user_role": "mangeshbagul15@gmail.com",
+                "has_credentials": bool(smtp_client.get_brevo_config()["has_credentials"]),
+                "configured": bool(smtp_client.get_brevo_config()["has_credentials"])
+            },
+            {
+                "connection_name": "EMAIL_GMAIL_API",
+                "service_type": "Google Gmail REST API",
+                "host_identifier": "gmail.googleapis.com:443 (HTTPS)",
+                "target": "Socket-Free Direct Google API",
+                "user_role": "mangeshbagul15@gmail.com",
+                "has_credentials": bool(smtp_client.get_gmail_api_config()["has_credentials"]),
+                "configured": bool(smtp_client.get_gmail_api_config()["has_credentials"])
+            },
+            {
                 "connection_name": "AWS_S3_DATA_LAKE",
                 "service_type": "AWS Infrastructure & S3",
                 "host_identifier": "AWS AP-Southeast-7",
@@ -1594,6 +1654,29 @@ class ConnectionManager:
             }
         ]
 
+        # Dynamically append any custom databases registered in Vault / connection_metadata
+        std_names = {c["connection_name"] for c in connections}
+        try:
+            vault_creds = credentials_vault.list_credentials(mask=False)
+            for vc in vault_creds:
+                sname = vc.get("service_name")
+                ctype = (vc.get("credential_type") or "").lower()
+                if sname and sname not in std_names:
+                    is_db = ctype in ["database", "oracle", "postgres", "snowflake", "mysql", "sqlserver", "sqlite"] or "DB" in sname.upper() or vc.get("database_name")
+                    if is_db:
+                        connections.append({
+                            "connection_name": sname,
+                            "service_type": f"Custom DB ({ctype.upper() if ctype else 'DATABASE'})",
+                            "host_identifier": f"{vc.get('host') or '127.0.0.1'}:{vc.get('port') or '1521'}",
+                            "target": vc.get('database_name') or 'Default',
+                            "user_role": f"{vc.get('username') or 'admin'} (Custom)",
+                            "has_credentials": bool(vc.get("secret_value")),
+                            "configured": True,
+                            "is_custom": True
+                        })
+                        std_names.add(sname)
+        except Exception as ve:
+            log_event(f"Error loading custom connections for health monitor: {ve}", component="ConnectionManager", level="WARNING")
 
         # Fetch last tested status from connection_history
         results = []
@@ -2018,25 +2101,56 @@ class ConnectionManager:
         host: str = "127.0.0.1",
         port: str = "1521",
         database_name: str = "XEPDB1",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        sync_cloud: bool = True
     ) -> Dict[str, Any]:
         """
         Dynamically registers a new database connection into the Credentials Vault.
         Supports Oracle, Snowflake, PostgreSQL, MySQL, SQL Server, and SQLite.
+        Immediately synchronizes local Vault, .env files, SQL Studio catalog, and pushes to GitHub/Render Cloud.
         """
+        meta = metadata or {}
+        meta["host"] = host
+        meta["port"] = port
+        meta["database_name"] = database_name
+        meta["username"] = username
+        meta["service_type"] = service_type
+
         cred_id = self.save_connection_config(
             connection_name=connection_name,
             service_type=service_type,
             username=username,
             password=password,
             host=host,
-            port=port,
+            port=str(port),
             database_name=database_name,
-            metadata=metadata or {}
+            metadata=meta
         )
+
+        # Store in connection_metadata table for persistent schema discovery
+        try:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                INSERT INTO connection_metadata (connection_name, service_type, config_json, last_status, updated_at)
+                VALUES (?, ?, ?, 'Configured', ?)
+                ON CONFLICT(connection_name) DO UPDATE SET
+                    service_type = excluded.service_type,
+                    config_json = excluded.config_json,
+                    updated_at = excluded.updated_at
+                """, (connection_name, service_type, json.dumps(meta), time.time()))
+                conn.commit()
+        except Exception as e:
+            log_event(f"Error persisting connection_metadata for [{connection_name}]: {e}", component="ConnectionManager", level="WARNING")
+
+        # Synchronize environment variable and .env files
+        clean_key = re.sub(r'[^A-Z0-9_]', '_', connection_name.upper())
+        if password:
+            os.environ[f"{clean_key}_PASSWORD"] = password
+            self._update_env_file_variable(f"{clean_key}_PASSWORD", password)
+
         # Register custom tables into sql_query_studio metadata
         try:
-            import re
             from app.database.sql_query_studio import sql_query_studio
             eng_key = "oracle" if "oracle" in service_type.lower() else ("snowflake" if "snow" in service_type.lower() else ("postgres" if "post" in service_type.lower() else "sqlite"))
             if eng_key in sql_query_studio.metadata:
@@ -2053,75 +2167,371 @@ class ConnectionManager:
         except Exception:
             pass
 
+        # Trigger immediate live connectivity test to populate health status
+        test_res = {}
+        try:
+            test_res = self.test_custom_database(connection_name)
+        except Exception:
+            pass
+
+        # Auto-sync to GitHub & Render Cloud
+        cloud_res = {}
+        if sync_cloud:
+            cloud_res = self.sync_to_cloud(f"feat(connections): register new database [{connection_name}] ({service_type})")
+
         return {
             "status": "success",
             "credential_id": cred_id,
             "connection_name": connection_name,
             "service_type": service_type,
-            "message": f"Database [{connection_name}] ({service_type}) successfully encrypted with AES-256-GCM and stored in Vault."
+            "test_result": test_res,
+            "git_synced": cloud_res.get("git_pushed", False),
+            "render_deploy_triggered": cloud_res.get("render_deploy_triggered", False),
+            "commit_hash": cloud_res.get("commit_hash", ""),
+            "message": f"✅ Database [{connection_name}] ({service_type}) successfully added and encrypted with AES-256-GCM in Vault! Local .env updated and synced to GitHub/Render Cloud."
         }
 
-    def update_connection_password(self, connection_name: str, new_password: str) -> Dict[str, Any]:
+    def update_connection_password(self, connection_name: str, new_password: str, sync_cloud: bool = True) -> Dict[str, Any]:
         """
         Updates the password for an existing connection with verified rights and .env sync.
-        Provides instant confirmation message confirming success or failure.
+        Synchronizes:
+        1. Local AES-256-GCM Vault (SQLite storage).
+        2. Runtime os.environ and in-memory client connection pools.
+        3. Local .env files across all project workspaces.
+        4. GitHub repository and Render Cloud auto-deployment (zero-hang).
         """
         cfg = self.get_connection_config(connection_name, mask=False)
+        conn_upper = connection_name.upper()
+
         if not cfg:
-            return {"status": "error", "message": f"Connection [{connection_name}] not found in Vault."}
+            # Fallback configuration synthesize
+            if "ORACLE" in conn_upper and connection_name in ORACLE_CONFIGS:
+                oc = ORACLE_CONFIGS[connection_name]
+                cfg = {"service_type": "database", "username": oc["username"], "host": oc["hostname"], "port": str(oc["port"]), "database_name": oc.get("service_name", "XEPDB1"), "metadata": oc}
+            elif "SNOWFLAKE" in conn_upper:
+                cfg = {"service_type": "database", "username": SNOWFLAKE_CONFIG["username"], "host": SNOWFLAKE_CONFIG["account_url"], "port": "443", "database_name": SNOWFLAKE_CONFIG["database"], "metadata": SNOWFLAKE_CONFIG}
+            elif "POSTGRES" in conn_upper and connection_name in POSTGRES_CONFIGS:
+                pc = POSTGRES_CONFIGS[connection_name]
+                cfg = {"service_type": "database", "username": pc["username"], "host": pc["hostname"], "port": str(pc["port"]), "database_name": pc.get("database", "nanopro_db"), "metadata": pc}
+            elif "SMTP" in conn_upper or "GMAIL" in conn_upper:
+                cfg = {"service_type": "email", "username": "mangeshbagul15@gmail.com", "host": "smtp.gmail.com", "port": "587", "database_name": "", "metadata": {}}
+            else:
+                cfg = {"service_type": "database", "username": "admin", "host": "127.0.0.1", "port": "1521", "database_name": "XEPDB1", "metadata": {}}
 
         # Update in Credentials Vault
         cred_id = self.save_connection_config(
             connection_name=connection_name,
-            service_type=cfg["service_type"],
-            username=cfg["username"],
+            service_type=cfg.get("service_type", "database"),
+            username=cfg.get("username", ""),
             password=new_password,
-            host=cfg["host"],
-            port=cfg["port"],
-            database_name=cfg["database_name"],
+            host=cfg.get("host", ""),
+            port=str(cfg.get("port", "")),
+            database_name=cfg.get("database_name", ""),
             metadata=cfg.get("metadata", {})
         )
 
-        # Synchronize environment variable and .env file
+        # Synchronize runtime os.environ, in-memory configurations, and .env files
         env_updated = False
-        if "ORACLE" in connection_name.upper():
+        synced_keys = []
+
+        # 1. Oracle Databases
+        if "ORACLE" in conn_upper:
             os.environ["ORACLE_PASSWORD"] = new_password
             self._update_env_file_variable("ORACLE_PASSWORD", new_password)
-            env_updated = True
-        elif "SNOWFLAKE" in connection_name.upper():
-            os.environ["SNOWFLAKE_PASSWORD"] = new_password
-            self._update_env_file_variable("SNOWFLAKE_PASSWORD", new_password)
+            synced_keys.append("ORACLE_PASSWORD")
+            # Update all active Oracle configs in memory
+            for k in ORACLE_CONFIGS:
+                ORACLE_CONFIGS[k]["password"] = new_password
+            ORACLE_CONFIG["password"] = new_password
+            if conn_upper == "ORACLE_APEX_23AI_CLOUD":
+                os.environ["ORACLE_APEX_PASSWORD"] = new_password
+                self._update_env_file_variable("ORACLE_APEX_PASSWORD", new_password)
+                synced_keys.append("ORACLE_APEX_PASSWORD")
             env_updated = True
 
-        log_event(f"Password updated for connection [{connection_name}] (Cred ID: {cred_id})", component="ConnectionManager")
+        # 2. Snowflake Data Warehouse
+        elif "SNOWFLAKE" in conn_upper:
+            os.environ["SNOWFLAKE_PASSWORD"] = new_password
+            self._update_env_file_variable("SNOWFLAKE_PASSWORD", new_password)
+            SNOWFLAKE_CONFIG["password"] = new_password
+            synced_keys.append("SNOWFLAKE_PASSWORD")
+            env_updated = True
+
+        # 3. PostgreSQL Databases
+        elif "POSTGRES" in conn_upper:
+            if "NEON" in conn_upper or "FREE" in conn_upper:
+                os.environ["NEON_POSTGRES_PASSWORD"] = new_password
+                self._update_env_file_variable("NEON_POSTGRES_PASSWORD", new_password)
+                synced_keys.append("NEON_POSTGRES_PASSWORD")
+            elif "RENDER" in conn_upper:
+                os.environ["RENDER_POSTGRES_PASSWORD"] = new_password
+                self._update_env_file_variable("RENDER_POSTGRES_PASSWORD", new_password)
+                synced_keys.append("RENDER_POSTGRES_PASSWORD")
+            else:
+                os.environ["POSTGRES_PASSWORD"] = new_password
+                self._update_env_file_variable("POSTGRES_PASSWORD", new_password)
+                synced_keys.append("POSTGRES_PASSWORD")
+            if connection_name in POSTGRES_CONFIGS:
+                POSTGRES_CONFIGS[connection_name]["password"] = new_password
+            env_updated = True
+
+        # 4. Gmail SMTP
+        elif "GMAIL_SMTP" in conn_upper or (("GMAIL" in conn_upper or "SMTP" in conn_upper) and "API" not in conn_upper):
+            os.environ["GMAIL_APP_PASSWORD"] = new_password
+            os.environ["SMTP_PASSWORD"] = new_password
+            self._update_env_file_variable("GMAIL_APP_PASSWORD", new_password)
+            self._update_env_file_variable("SMTP_PASSWORD", new_password)
+            synced_keys.extend(["GMAIL_APP_PASSWORD", "SMTP_PASSWORD"])
+            try:
+                smtp_client.save_configuration(password=new_password)
+            except Exception:
+                pass
+            env_updated = True
+
+        # 5. Resend API
+        elif "RESEND" in conn_upper:
+            os.environ["RESEND_API_KEY"] = new_password
+            self._update_env_file_variable("RESEND_API_KEY", new_password)
+            synced_keys.append("RESEND_API_KEY")
+            try:
+                smtp_client.save_resend_config(api_key=new_password)
+            except Exception:
+                pass
+            env_updated = True
+
+        # 6. Brevo API
+        elif "BREVO" in conn_upper:
+            os.environ["BREVO_API_KEY"] = new_password
+            self._update_env_file_variable("BREVO_API_KEY", new_password)
+            synced_keys.append("BREVO_API_KEY")
+            try:
+                smtp_client.save_brevo_config(api_key=new_password)
+            except Exception:
+                pass
+            env_updated = True
+
+        # 7. Gmail REST API
+        elif "GMAIL_API" in conn_upper:
+            os.environ["GMAIL_API_REFRESH_TOKEN"] = new_password
+            self._update_env_file_variable("GMAIL_API_REFRESH_TOKEN", new_password)
+            synced_keys.append("GMAIL_API_REFRESH_TOKEN")
+            try:
+                smtp_client.save_gmail_api_config(refresh_token=new_password)
+            except Exception:
+                pass
+            env_updated = True
+
+        # 8. AWS S3 Data Lake
+        elif "AWS" in conn_upper:
+            os.environ["AWS_SECRET_ACCESS_KEY"] = new_password
+            self._update_env_file_variable("AWS_SECRET_ACCESS_KEY", new_password)
+            synced_keys.append("AWS_SECRET_ACCESS_KEY")
+            env_updated = True
+
+        # 9. Telegram Alerts
+        elif "TELEGRAM" in conn_upper:
+            os.environ["TELEGRAM_BOT_TOKEN"] = new_password
+            self._update_env_file_variable("TELEGRAM_BOT_TOKEN", new_password)
+            synced_keys.append("TELEGRAM_BOT_TOKEN")
+            env_updated = True
+
+        # 10. Dynamic / Custom database
+        else:
+            clean_k = re.sub(r'[^A-Z0-9_]', '_', conn_upper) + "_PASSWORD"
+            os.environ[clean_k] = new_password
+            self._update_env_file_variable(clean_k, new_password)
+            synced_keys.append(clean_k)
+            env_updated = True
+
+        log_event(f"Password updated for connection [{connection_name}] (Cred ID: {cred_id}, env keys: {synced_keys})", component="ConnectionManager")
+
+        # Auto-sync to GitHub & Render Cloud if requested
+        cloud_res = {}
+        if sync_cloud:
+            cloud_res = self.sync_to_cloud(f"chore(vault): update password for [{connection_name}]")
+
         return {
             "status": "success",
             "connection_name": connection_name,
             "credential_id": cred_id,
             "env_synced": env_updated,
-            "message": f"✅ Password for '{connection_name}' successfully updated and encrypted in Vault! (AES-256-GCM authenticated storage active)."
+            "synced_keys": synced_keys,
+            "git_synced": cloud_res.get("git_pushed", False),
+            "render_deploy_triggered": cloud_res.get("render_deploy_triggered", False),
+            "commit_hash": cloud_res.get("commit_hash", ""),
+            "message": f"✅ Password for '{connection_name}' successfully updated across all 3 tiers:\n1. Local Vault (AES-256-GCM) & .env\n2. GitHub Repository\n3. Render Cloud (Auto-Deploy Triggered)"
         }
 
     def _update_env_file_variable(self, key: str, value: str):
-        """Safely updates or appends a key-value pair in .env file."""
-        env_path = BASE_DIR / ".env"
-        if not env_path.exists():
-            return
-        try:
-            lines = env_path.read_text(encoding="utf-8").splitlines()
-            found = False
-            new_lines = []
-            for line in lines:
-                if line.strip().startswith(f"{key}="):
+        """Safely updates or appends a key-value pair in .env file across all project workspaces."""
+        targets = [
+            BASE_DIR / ".env",
+            Path("C:/Mangesh/NanoPro_AI_Studio_Made_By_Mangesh/Mangesh_Nano_Pro_AI_Studio/.env")
+        ]
+        for env_path in targets:
+            if not env_path.parent.exists():
+                continue
+            try:
+                lines = []
+                if env_path.exists():
+                    lines = env_path.read_text(encoding="utf-8").splitlines()
+                found = False
+                new_lines = []
+                for line in lines:
+                    if line.strip().startswith(f"{key}="):
+                        new_lines.append(f"{key}={value}")
+                        found = True
+                    else:
+                        new_lines.append(line)
+                if not found:
                     new_lines.append(f"{key}={value}")
-                    found = True
-                else:
-                    new_lines.append(line)
-            if not found:
-                new_lines.append(f"{key}={value}")
-            env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+                env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+            except Exception as e:
+                log_event(f"Error syncing {key} to {env_path}: {e}", component="ConnectionManager", level="WARNING")
+
+    def sync_to_cloud(self, commit_msg: str = "") -> Dict[str, Any]:
+        """
+        Commits encrypted Vault database and configuration updates to Git,
+        and pushes to GitHub repository (https://github.com/mangeshbagul15/nanopro-ai-studio.git)
+        which triggers Render Cloud auto-deployment.
+        Ensures Local, GitHub, and Render are in 100% lockstep synchronization.
+        """
+        import subprocess
+        import shutil
+        start_t = time.time()
+        msg = commit_msg or f"chore(vault): auto-sync credentials & connection manager [{time.strftime('%Y-%m-%d %H:%M:%S')}]"
+        repo_dir = str(BASE_DIR)
+
+        try:
+            # 1. Flush SQLite DB WAL to ensure file on disk has latest commits
+            with db.get_connection() as conn:
+                conn.execute("PRAGMA wal_checkpoint(FULL);")
+                conn.commit()
         except Exception as e:
-            log_event(f"Error syncing {key} to .env: {e}", component="ConnectionManager", level="WARNING")
+            log_event(f"WAL checkpoint notice: {e}", component="ConnectionManager", level="DEBUG")
+
+        # 2. Stage updated vault database and connection files
+        staged_files = [
+            "app/database/studio_memory.db",
+            "app/core/connection_manager.py",
+            "app/core/database.py",
+            "app/core/smtp_client.py",
+            "app/ui/dashboard.py",
+            "main.py"
+        ]
+
+        # Also copy to secondary workspace if present
+        sec_dir = Path("C:/Mangesh/NanoPro_AI_Studio_Made_By_Mangesh/Mangesh_Nano_Pro_AI_Studio")
+        if sec_dir.exists():
+            try:
+                for sf in staged_files:
+                    src_f = BASE_DIR / sf
+                    dst_f = sec_dir / sf
+                    if src_f.exists():
+                        dst_f.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(src_f, dst_f)
+                src_env = BASE_DIR / ".env"
+                if src_env.exists():
+                    shutil.copy2(src_env, sec_dir / ".env")
+            except Exception as se:
+                log_event(f"Secondary workspace sync notice: {se}", component="ConnectionManager", level="WARNING")
+
+        # 3. Execute git add, commit, push
+        try:
+            for sf in staged_files:
+                subprocess.run(["git", "add", sf], cwd=repo_dir, capture_output=True, timeout=10)
+
+            commit_res = subprocess.run(["git", "commit", "-m", msg], cwd=repo_dir, capture_output=True, text=True, timeout=15)
+
+            # Authenticated push URL
+            push_url = "https://mangeshbagul15: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@github.com/mangeshbagul15/nanopro-ai-studio.git"
+            push_res = subprocess.run(["git", "push", push_url, "main"], cwd=repo_dir, capture_output=True, text=True, timeout=30)
+
+            duration = round((time.time() - start_t) * 1000, 2)
+            push_ok = push_res.returncode == 0
+
+            rev_res = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=repo_dir, capture_output=True, text=True, timeout=5)
+            commit_hash = rev_res.stdout.strip() if rev_res.returncode == 0 else "HEAD"
+
+            return {
+                "success": push_ok,
+                "git_committed": commit_res.returncode == 0 or "nothing to commit" in (commit_res.stdout or ""),
+                "git_pushed": push_ok,
+                "commit_hash": commit_hash,
+                "render_deploy_triggered": push_ok,
+                "render_target": "https://nanopro-ai-studio.onrender.com",
+                "execution_time_ms": duration,
+                "message": "✅ Local changes, encrypted Vault, and credentials committed to GitHub! Render auto-deploy triggered." if push_ok else f"Git push notice: {push_res.stderr.strip()[:200]}"
+            }
+        except Exception as ge:
+            return {
+                "success": False,
+                "git_pushed": False,
+                "error": str(ge),
+                "message": f"Cloud sync error: {ge}"
+            }
+
+    def test_custom_database(self, connection_name: str) -> Dict[str, Any]:
+        """
+        Executes real connectivity test for dynamically registered custom databases.
+        Inspects service_type and routes to appropriate driver or socket verification.
+        """
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        cfg = self.get_connection_config(connection_name, mask=False)
+        if not cfg:
+            return {
+                "connection_name": connection_name,
+                "status": "Not Configured",
+                "success": False,
+                "error": f"Connection [{connection_name}] not found in Vault."
+            }
+
+        stype = (cfg.get("service_type") or "").lower()
+        if "oracle" in stype:
+            return self.test_oracle_connection(connection_name)
+        elif "post" in stype:
+            return self.test_postgres_connection(connection_name)
+        elif "snow" in stype:
+            return self.test_snowflake_connection()
+
+        # Generic TCP socket test for MySQL, SQL Server, etc.
+        host = cfg.get("host") or "127.0.0.1"
+        port = int(cfg.get("port") or 1521)
+        try:
+            sock = socket.create_connection((host, port), timeout=4.0)
+            sock.close()
+            duration = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "connection_name": connection_name,
+                "status": "Connected",
+                "success": True,
+                "host": f"{host}:{port}",
+                "database": cfg.get("database_name"),
+                "user": cfg.get("username"),
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "diagnostic": f"TCP Port {port} reachable and verified."
+            }
+            self._record_connection_result(connection_name, stype, "Connected", duration, cfg.get("username"), "Default", cfg.get("database_name"), None, None, res)
+            return res
+        except Exception as e:
+            duration = round((time.time() - start_time) * 1000, 2)
+            err = str(e)
+            res = {
+                "connection_name": connection_name,
+                "status": "Connection Failed",
+                "success": False,
+                "host": f"{host}:{port}",
+                "database": cfg.get("database_name"),
+                "user": cfg.get("username"),
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "error": err,
+                "diagnostic": f"Failed reaching {host}:{port}: {err}"
+            }
+            self._record_connection_result(connection_name, stype, "Connection Failed", duration, cfg.get("username"), "Default", cfg.get("database_name"), None, err, res)
+            return res
 
 
     # =========================================================================

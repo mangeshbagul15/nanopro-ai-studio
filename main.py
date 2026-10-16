@@ -1917,15 +1917,61 @@ async def api_test_gmail_connection():
     res = connection_manager.test_gmail_connection()
     return JSONResponse(res)
 
+@app.post('/api/connections/test/resend')
+async def api_test_resend_connection():
+    """Executes real Resend API key & connection verification over HTTPS Port 443."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_resend_connection()
+    return JSONResponse(res)
+
+@app.post('/api/connections/test/brevo')
+async def api_test_brevo_connection():
+    """Executes real Brevo API key & credits verification over HTTPS Port 443."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_brevo_connection()
+    return JSONResponse(res)
+
+@app.post('/api/connections/test/gmail_api')
+async def api_test_gmail_api_connection():
+    """Executes real Google Gmail REST API verification over HTTPS Port 443."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_gmail_api_connection()
+    return JSONResponse(res)
+
+@app.post('/api/connections/test/email_failover')
+async def api_test_email_failover_cluster():
+    """Executes full multi-tier cascading email failover cluster readiness check."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_email_failover_cluster()
+    return JSONResponse(res)
+
+@app.post('/api/connections/send_email_failover')
+async def api_send_email_failover(payload: Dict[str, Any] = Body(...)):
+    """Sends email via cascading multi-tier failover engine."""
+    from app.core.smtp_client import smtp_client
+    recipient = payload.get("recipient") or "mangeshbagul15@gmail.com"
+    subject = payload.get("subject") or "Mangesh Nano Pro AI Studio Alert"
+    body = payload.get("body") or payload.get("message") or ""
+    provider = payload.get("provider") or "auto"
+    res = smtp_client.send_email_cascading(
+        recipient=recipient,
+        subject=subject,
+        body=body,
+        preferred_provider=provider
+    )
+    return JSONResponse(res)
+
 class TestEmailPayload(BaseModel):
     recipient: Optional[str] = "mangeshbagul15@gmail.com"
+    provider: Optional[str] = "auto"
 
 @app.post('/api/connections/send_test_email')
 async def api_send_test_email(req: Optional[TestEmailPayload] = None, recipient: Optional[str] = None):
-    """Sends an explicit test email with confirmation."""
+    """Sends an explicit test email with confirmation and multi-tier failover."""
     from app.core.smtp_client import smtp_client
     target = (req.recipient if req and req.recipient else None) or recipient or "mangeshbagul15@gmail.com"
-    res = smtp_client.send_test_email(recipient=target)
+    provider = (req.provider if req and req.provider else "auto")
+    res = smtp_client.send_test_email(recipient=target, provider=provider)
     return JSONResponse(res)
 
 @app.post('/api/connections/test/aws')
@@ -2435,6 +2481,7 @@ class AddDatabaseRequest(BaseModel):
     username: str = "SYSTEM"
     password: str
     metadata: Dict[str, Any] = {}
+    sync_cloud: bool = True
 
 @app.post('/api/connections/add')
 async def api_connections_add(req: AddDatabaseRequest):
@@ -2447,24 +2494,40 @@ async def api_connections_add(req: AddDatabaseRequest):
         database_name=req.database_name,
         username=req.username,
         password=req.password,
-        metadata=req.metadata
+        metadata=req.metadata,
+        sync_cloud=req.sync_cloud
     )
     return JSONResponse(res)
 
 class UpdatePasswordRequest(BaseModel):
     connection_name: str
     new_password: str
+    sync_cloud: bool = True
 
 @app.post('/api/connections/password')
 async def api_connections_password(req: UpdatePasswordRequest):
     from app.core.connection_manager import connection_manager
     from app.core.communication_center import communication_center
-    res = connection_manager.update_connection_password(req.connection_name, req.new_password)
+    res = connection_manager.update_connection_password(req.connection_name, req.new_password, sync_cloud=req.sync_cloud)
     communication_center.notify_config_change(
         component=f"Vault Connection [{req.connection_name}]",
         change_details=f"Password updated to '{req.new_password}'.",
         changed_by="Mangesh Bagul (NanoPro Vault API)"
     )
+    return JSONResponse(res)
+
+@app.post('/api/connections/sync_cloud')
+async def api_connections_sync_cloud():
+    """Manually triggers git commit and push to GitHub, triggering Render Cloud auto-deploy."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.sync_to_cloud("chore(vault): user-triggered 1-click cloud sync to GitHub & Render")
+    return JSONResponse(res)
+
+@app.post('/api/connections/test/custom')
+async def api_test_custom_connection(connection_name: str = Body(..., embed=True)):
+    """Executes verified live connectivity test for dynamically registered custom database."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_custom_database(connection_name)
     return JSONResponse(res)
 
 

@@ -2259,13 +2259,18 @@ def _resolve_vault_master_key() -> bytes:
     """
     Resolves the 256-bit AES-GCM master encryption key.
     Key priority:
-    1. Environment variable STUDIO_VAULT_KEY (hashed via SHA-256 to 32 bytes).
+    1. Environment variable STUDIO_VAULT_KEY (base64 32-byte or SHA-256 hashed).
     2. Secure key file ~/.nano_pro_studio/vault.key (stored outside repository with 0600 permissions).
-    3. Auto-generated 32-byte cryptographically secure key written to key file.
-    The key is NEVER stored inside the database or alongside encrypted records.
+    3. Deterministic NanoPro cluster 32-byte master key (ensures Local and Render Cloud decrypt seamlessly).
     """
     env_key = os.environ.get("STUDIO_VAULT_KEY")
     if env_key:
+        try:
+            raw_b64 = base64.b64decode(env_key.strip().encode("utf-8"))
+            if len(raw_b64) == 32:
+                return raw_b64
+        except Exception:
+            pass
         return hashlib.sha256(env_key.encode("utf-8")).digest()
 
     key_dir = Path.home() / ".nano_pro_studio"
@@ -2278,16 +2283,16 @@ def _resolve_vault_master_key() -> bytes:
             return hashlib.sha256(key_data).digest()
         else:
             key_dir.mkdir(parents=True, exist_ok=True)
-            new_key = os.urandom(32)
-            key_file.write_bytes(new_key)
+            # Universal cluster 32-byte key for seamless Local & Render Cloud interoperability
+            cluster_key = base64.b64decode(b"lAtCLQL91eKiorkzjKgv8c9yL9Oe4i0W7ANjfD3wvMs=")
+            key_file.write_bytes(cluster_key)
             try:
                 os.chmod(key_file, 0o600)
             except Exception:
                 pass
-            return new_key
+            return cluster_key
     except Exception:
-        host_seed = f"{os.environ.get('USER', 'mangesh')}_{socket.gethostname() if 'socket' in globals() else 'host'}_NanoPro_Vault_2026"
-        return hashlib.sha256(host_seed.encode("utf-8")).digest()
+        return base64.b64decode(b"lAtCLQL91eKiorkzjKgv8c9yL9Oe4i0W7ANjfD3wvMs=")
 
 def _legacy_xor_decrypt(enc_text: str) -> str:
     """Decrypts legacy XOR/SHA-256 format for backward compatibility and migration."""
@@ -2321,7 +2326,7 @@ def encrypt_value(raw_text: str) -> str:
 def decrypt_value(enc_text: str) -> str:
     """
     Decrypts credential secret using AES-256-GCM with resilient multi-key self-healing.
-    Supports seamless backward compatibility and migration for legacy XOR/SHA-256 records.
+    Supports seamless backward compatibility and cross-cloud migration (Local, Render, Docker).
     """
     if not enc_text:
         return ""
@@ -2333,27 +2338,21 @@ def decrypt_value(enc_text: str) -> str:
             nonce = raw_b64[:12]
             ct = raw_b64[12:]
             
-            # 1. Primary master key
-            key = _resolve_vault_master_key()
-            try:
-                return AESGCM(key).decrypt(nonce, ct, None).decode("utf-8", errors="replace")
-            except Exception:
-                pass
+            # Candidate keys to ensure 100% decryption across Local, Render, and Docker
+            candidate_keys = [
+                _resolve_vault_master_key(),
+                base64.b64decode(b"lAtCLQL91eKiorkzjKgv8c9yL9Oe4i0W7ANjfD3wvMs="),
+                hashlib.sha256(b"mangesh_host_NanoPro_Vault_2026").digest(),
+                hashlib.sha256(b"Mangesh_AI_Studio_Master_Secret_2026_SecureKey").digest()
+            ]
             
-            # 2. Host seed fallback key
-            host_seed = f"mangesh_host_NanoPro_Vault_2026"
-            alt_key = hashlib.sha256(host_seed.encode("utf-8")).digest()
-            try:
-                return AESGCM(alt_key).decrypt(nonce, ct, None).decode("utf-8", errors="replace")
-            except Exception:
-                pass
-
-            # 3. Legacy master secret key
-            sec_key = hashlib.sha256(b"Mangesh_AI_Studio_Master_Secret_2026_SecureKey").digest()
-            try:
-                return AESGCM(sec_key).decrypt(nonce, ct, None).decode("utf-8", errors="replace")
-            except Exception:
-                pass
+            for k in candidate_keys:
+                try:
+                    dec = AESGCM(k).decrypt(nonce, ct, None).decode("utf-8", errors="replace")
+                    if dec:
+                        return dec
+                except Exception:
+                    continue
 
             return _legacy_xor_decrypt(enc_text)
         else:

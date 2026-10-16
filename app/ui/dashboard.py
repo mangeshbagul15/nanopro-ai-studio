@@ -8675,9 +8675,10 @@ Ready for message compilation and automated dispatch.
                     <div style="font-size:12.5px; color:#10B981; font-weight:700; display:flex; align-items:center; gap:6px;">
                         <span>&#128737;</span> AES-256-GCM Vault Active &bull; Full Password Modification Rights &bull; Multi-Oracle Cluster Failover
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button type="button" class="btn btn-primary" onclick="openAddDatabaseModal()" style="background:#2563EB; font-size:11.5px; padding:6px 12px;">&#10010; Add Database Connection</button>
-                        <button type="button" class="btn btn-secondary" onclick="openQuickPasswordModal()" style="font-size:11.5px; padding:6px 12px;">&#128273; Change Password</button>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-primary" onclick="openAddDatabaseModal()" style="background:#2563EB; font-size:11.5px; padding:6px 12px; font-weight:700;">&#10010; Add Database Connection</button>
+                        <button type="button" class="btn btn-secondary" onclick="openQuickPasswordModal()" style="font-size:11.5px; padding:6px 12px; font-weight:700;">&#128273; Change Password</button>
+                        <button type="button" class="btn btn-primary" onclick="syncVaultToCloudAction()" id="btnSyncCloud" style="background:#4F46E5; border:1px solid #6366F1; font-size:11.5px; padding:6px 12px; font-weight:700;">🚀 Push to GitHub &amp; Render</button>
                     </div>
                 </div>
 
@@ -8723,6 +8724,12 @@ Ready for message compilation and automated dispatch.
                         <label class="input-label">Password *</label>
                         <input type="password" class="studio-input" id="addDbPassword" value="NanoPro2026" placeholder="Enter password to encrypt" />
                     </div>
+                    <div style="margin-top:10px;">
+                        <label style="font-size:12px; color:#BAE6FD; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" id="addDbSyncCloud" checked style="accent-color:#0284C7;" />
+                            <span>🚀 <strong>Auto-Sync Cloud:</strong> Automatically register in GitHub repository and deploy to Render Cloud</span>
+                        </label>
+                    </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
                         <button type="button" class="btn btn-secondary" onclick="closeAddDatabaseModal()">Cancel</button>
                         <button type="button" class="btn btn-primary" onclick="submitAddDatabaseForm()" style="background:#2563EB;">🔐 Save &amp; Encrypt in Vault</button>
@@ -8736,7 +8743,7 @@ Ready for message compilation and automated dispatch.
                         <button type="button" class="btn btn-secondary" onclick="closeQuickPasswordModal()" style="font-size:11px; padding:2px 8px;">✕ Close</button>
                     </div>
                     <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
-                        Update passwords anytime across all Oracle and Snowflake connection profiles. Changes take effect instantly and synchronize both the AES-256-GCM Vault and the <code>.env</code> file.
+                        Update passwords anytime across all Oracle, Snowflake, PostgreSQL, Gmail, Resend, Brevo, AWS, and Telegram profiles. Changes take effect instantly across the AES-256-GCM Vault, local <code>.env</code>, runtime memory, and push to GitHub/Render Cloud.
                     </p>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div>
@@ -8745,14 +8752,29 @@ Ready for message compilation and automated dispatch.
                                 <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (127.0.0.1:1521/XEPDB1)</option>
                                 <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240:1521/XEPDB1)</option>
                                 <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (100.112.86.83:1521/XEPDB1)</option>
+                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (apex.oracle.com:443)</option>
                                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB)</option>
                                 <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL (127.0.0.1:5432)</option>
+                                <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE (Neon Cloud Lifetime Free)</option>
+                                <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD (Render PostgreSQL Cloud)</option>
+                                <option value="GMAIL_SMTP">GMAIL_SMTP (smtp.gmail.com:587)</option>
+                                <option value="EMAIL_RESEND_API">EMAIL_RESEND_API (api.resend.com)</option>
+                                <option value="EMAIL_BREVO_API">EMAIL_BREVO_API (api.brevo.com)</option>
+                                <option value="EMAIL_GMAIL_API">EMAIL_GMAIL_API (gmail.googleapis.com)</option>
+                                <option value="AWS_S3_DATA_LAKE">AWS_S3_DATA_LAKE (s3://nanopro-data-lake)</option>
+                                <option value="TELEGRAM_ALERTS">TELEGRAM_ALERTS (@mangesh_technews_bot)</option>
                             </select>
                         </div>
                         <div>
                             <label class="input-label">New Password *</label>
                             <input type="text" class="studio-input" id="quickPwdInput" value="NanoPro2026" placeholder="Enter new password" />
                         </div>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <label style="font-size:12px; color:#A7F3D0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" id="quickPwdSyncCloud" checked style="accent-color:#10B981;" />
+                            <span>🚀 <strong>Auto-Sync Cloud:</strong> Automatically commit to GitHub repository and trigger Render Cloud auto-deployment</span>
+                        </label>
                     </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
                         <button type="button" class="btn btn-secondary" onclick="closeQuickPasswordModal()">Cancel</button>
@@ -8890,9 +8912,97 @@ Ready for message compilation and automated dispatch.
                         </div>
                         <div style="display:flex; gap:8px;">
                             <button type="button" class="btn btn-primary" onclick="testGmailConnectionAction()" id="btnTestGmail" style="flex:1; background:#059669;">&#128269; Test Email Connection</button>
-                            <button type="button" class="btn btn-secondary" onclick="sendTestEmailActionModal()">&#9993; Send Test Email</button>
+                            <button type="button" class="btn btn-secondary" onclick="sendTestEmailActionModal('smtp')">&#9993; Send Test Email</button>
                         </div>
                         <div id="gmailTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
+                    <!-- CLOUD HTTPS MULTI-TIER EMAIL FAILOVER CLUSTER -->
+                    <div style="background:rgba(15,23,42,0.92); border:1px solid #8B5CF6; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#A78BFA; letter-spacing:0.5px;">ZERO-DOWNTIME FAILOVER</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px; color:#DDD6FE;">EMAIL_FAILOVER_CLUSTER</h3>
+                            </div>
+                            <span id="badgeFailoverClusterStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Cascade Pipeline:</strong> Gmail API &#10142; Resend &#10142; Brevo &#10142; SMTP &#10142; Telegram</div>
+                            <div><strong>Protocol:</strong> HTTPS Port 443 (Cloud &amp; Render Firewall Bypass)</div>
+                            <div><strong>Ingestion Protection:</strong> Zero-drop delivery for BOD, EOD &amp; SOD reports</div>
+                            <div style="font-size:11px; color:#C4B5FD;">Cascades automatically to next provider if quota limits or blocks occur.</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testEmailFailoverAction()" id="btnTestFailover" style="flex:1; background:#7C3AED;">&#9889; Test Auto-Failover Cluster</button>
+                            <button type="button" class="btn btn-secondary" onclick="sendTestEmailActionModal('auto')">&#9993; Send (Failover Engine)</button>
+                        </div>
+                        <div id="failoverTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
+                    <!-- RESEND DEVELOPER EMAIL CARD (3,000 FREE/MO) -->
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #6366F1; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#818CF8; letter-spacing:0.5px;">RESEND EMAIL (3,000 / MO FREE)</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">EMAIL_RESEND_API</h3>
+                            </div>
+                            <span id="badgeResendStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Endpoint:</strong> api.resend.com:443 (HTTPS REST)</div>
+                            <div><strong>Quota:</strong> 3,000 Free Emails / Month (100 / day)</div>
+                            <div><strong>Default Sender:</strong> onboarding@resend.dev</div>
+                            <div style="font-size:11px; color:#A5B4FC;">Render Cloud Safe &bull; No SMTP ports needed</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testResendConnectionAction()" id="btnTestResend" style="flex:1; background:#4F46E5;">&#128269; Test Resend API</button>
+                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('RESEND_EMAIL', 'api_key')">&#9881; Config</button>
+                        </div>
+                        <div id="resendTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
+                    <!-- BREVO / SENDINBLUE CARD (300 FREE/DAY) -->
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #0284C7; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#38BDF8; letter-spacing:0.5px;">BREVO EMAIL (300 / DAY FREE)</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">EMAIL_BREVO_API</h3>
+                            </div>
+                            <span id="badgeBrevoStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Endpoint:</strong> api.brevo.com:443 (HTTPS REST)</div>
+                            <div><strong>Quota:</strong> 300 Free Emails / Day (9,000 / month)</div>
+                            <div><strong>Sender:</strong> mangeshbagul15@gmail.com</div>
+                            <div style="font-size:11px; color:#7DD3FC;">Render Cloud Safe &bull; No SMTP ports needed</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testBrevoConnectionAction()" id="btnTestBrevo" style="flex:1; background:#0284C7;">&#128269; Test Brevo API</button>
+                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('BREVO_EMAIL', 'api_key')">&#9881; Config</button>
+                        </div>
+                        <div id="brevoTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
+                    <!-- GOOGLE GMAIL REST API CARD (PORT 443) -->
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #DC2626; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#F87171; letter-spacing:0.5px;">GMAIL REST API (PORT 443)</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">EMAIL_GMAIL_API</h3>
+                            </div>
+                            <span id="badgeGmailApiStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Endpoint:</strong> gmail.googleapis.com:443</div>
+                            <div><strong>Protocol:</strong> Google OAuth2 REST (Direct HTTPS)</div>
+                            <div><strong>Active Sender:</strong> mangeshbagul15@gmail.com</div>
+                            <div style="font-size:11px; color:#FCA5A5;">Direct Google API &bull; Zero SMTP dependency</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testGmailApiConnectionAction()" id="btnTestGmailApi" style="flex:1; background:#DC2626;">&#128269; Test Gmail REST API</button>
+                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('GMAIL_API', 'api_key')">&#9881; Config</button>
+                        </div>
+                        <div id="gmailApiTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
                     </div>
 
                     <!-- AWS S3 DATA LAKE CARD -->
@@ -9087,10 +9197,11 @@ Ready for message compilation and automated dispatch.
                                     <th style="padding:8px 10px;">Active Context</th>
                                     <th style="padding:8px 10px;">Last Error</th>
                                     <th style="padding:8px 10px;">Next Check</th>
+                                    <th style="padding:8px 10px; text-align:center;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="vaultHealthTableBody">
-                                <tr><td colspan="8" style="padding:14px; text-align:center; color:var(--text-muted);">Loading live connection metrics...</td></tr>
+                                <tr><td colspan="9" style="padding:14px; text-align:center; color:var(--text-muted);">Loading live connection metrics...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -9104,6 +9215,9 @@ Ready for message compilation and automated dispatch.
                     <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('NANO_PRO_SNOWFLAKE', 'database')">&#9658; Pre-fill Snowflake</button>
                     <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('MY_ORACLE_XE_REMOTE', 'database')">&#9658; Pre-fill Oracle XE</button>
                     <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('GMAIL_SMTP', 'email')">&#9658; Pre-fill Gmail SMTP</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('RESEND_EMAIL', 'api_key')">&#9658; Pre-fill Resend API</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('BREVO_EMAIL', 'api_key')">&#9658; Pre-fill Brevo API</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('GMAIL_API', 'api_key')">&#9658; Pre-fill Gmail API</button>
                     <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('AWS_S3_DATA_LAKE', 'cloud')">&#9658; Pre-fill AWS S3</button>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
@@ -11629,6 +11743,21 @@ function navigateHistory(direction) {
                 if (portEl) portEl.value = '587';
                 if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
                 if (secEl) secEl.value = 'agunjgvexwcjudbx';
+            } else if (connName === 'RESEND_EMAIL') {
+                if (hostEl) hostEl.value = 'api.resend.com';
+                if (portEl) portEl.value = '443';
+                if (userEl) userEl.value = 'onboarding@resend.dev';
+                if (secEl) { secEl.value = ''; secEl.placeholder = 're_... (Resend API Key)'; }
+            } else if (connName === 'BREVO_EMAIL') {
+                if (hostEl) hostEl.value = 'api.brevo.com';
+                if (portEl) portEl.value = '443';
+                if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
+                if (secEl) { secEl.value = ''; secEl.placeholder = 'xkeysib-... (Brevo API Key)'; }
+            } else if (connName === 'GMAIL_API') {
+                if (hostEl) hostEl.value = 'gmail.googleapis.com';
+                if (portEl) portEl.value = '443';
+                if (userEl) userEl.value = 'Google OAuth2 Client ID';
+                if (secEl) { secEl.value = ''; secEl.placeholder = 'Refresh Token or Bearer Token'; }
             } else if (connName === 'AWS_S3_DATA_LAKE') {
                 if (hostEl) hostEl.value = 'ap-southeast-2';
                 if (portEl) portEl.value = '443';
@@ -11719,6 +11848,18 @@ function navigateHistory(direction) {
                     } else if (c.connection_name === 'GMAIL_SMTP') {
                         const b = document.getElementById('badgeGmailStatus');
                         if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
+                    } else if (c.connection_name === 'EMAIL_FAILOVER_CLUSTER') {
+                        const b = document.getElementById('badgeFailoverClusterStatus');
+                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
+                    } else if (c.connection_name === 'EMAIL_RESEND_API') {
+                        const b = document.getElementById('badgeResendStatus');
+                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
+                    } else if (c.connection_name === 'EMAIL_BREVO_API') {
+                        const b = document.getElementById('badgeBrevoStatus');
+                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
+                    } else if (c.connection_name === 'EMAIL_GMAIL_API') {
+                        const b = document.getElementById('badgeGmailApiStatus');
+                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
                     } else if (c.connection_name === 'AWS_S3_DATA_LAKE') {
                         const b = document.getElementById('badgeAwsStatus');
                         if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
@@ -11741,6 +11882,8 @@ function navigateHistory(direction) {
                     const activeCtx = c.target || c.user_role || '—';
                     const nextChk = c.next_health_check || 'On Demand';
 
+                    const testBtnHtml = `<button type="button" class="btn btn-sm btn-secondary" onclick="testSingleRowConnection('${c.connection_name}', '${c.service_type}')" style="padding:2px 8px; font-size:11px; border:1px solid #38BDF8; color:#38BDF8; font-weight:700; cursor:pointer;" title="Execute Live Connection Test">▶ Test</button>`;
+
                     return `
                         <tr style="border-bottom:1px solid #1E293B;">
                             <td style="padding:10px; font-weight:700; color:#E2E8F0;">${c.connection_name}</td>
@@ -11755,18 +11898,75 @@ function navigateHistory(direction) {
                             <td style="padding:10px; color:#94A3B8;">${activeCtx}</td>
                             <td style="padding:10px; font-size:11px;">${lastErr}</td>
                             <td style="padding:10px; color:#64748B; font-size:11px;">${nextChk}</td>
+                            <td style="padding:10px; text-align:center;">${testBtnHtml}</td>
                         </tr>
                     `;
                 }).join('');
 
             } catch (e) {
-                if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="padding:14px; text-align:center; color:#EF4444;">Failed to load health metrics: ${e.message || e}</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="padding:14px; text-align:center; color:#EF4444;">Failed to load health metrics: ${e.message || e}</td></tr>`;
             } finally {
                 isRefreshingHealth = false;
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = origHtml;
                 }
+            }
+        }
+
+        async function testSingleRowConnection(connName, serviceType) {
+            if (!connName) return;
+            const cUpper = connName.toUpperCase();
+            if (typeof showStudioToast === 'function') {
+                showStudioToast('Testing Connection', `Verifying live connectivity to [${connName}]...`, 'info');
+            }
+            try {
+                if (cUpper === 'NANO_PRO_SNOWFLAKE') {
+                    await testSnowflakeConnectionAction();
+                } else if (cUpper.includes('ORACLE')) {
+                    await testOracleConnectionAction(connName);
+                } else if (cUpper.includes('POSTGRES')) {
+                    await testPostgresConnectionAction(connName);
+                } else if (cUpper === 'GMAIL_SMTP') {
+                    await testGmailConnectionAction();
+                } else if (cUpper === 'EMAIL_FAILOVER_CLUSTER') {
+                    await testEmailFailoverAction();
+                } else if (cUpper === 'EMAIL_RESEND_API') {
+                    await testResendConnectionAction();
+                } else if (cUpper === 'EMAIL_BREVO_API') {
+                    await testBrevoConnectionAction();
+                } else if (cUpper === 'EMAIL_GMAIL_API') {
+                    await testGmailApiConnectionAction();
+                } else if (cUpper === 'AWS_S3_DATA_LAKE') {
+                    await testAwsConnectionAction();
+                } else if (cUpper === 'TELEGRAM_ALERTS') {
+                    await testTelegramConnectionActionVault();
+                } else if (cUpper === 'STUDIO_MEMORY_DB') {
+                    await testSqliteConnectionAction();
+                } else if (cUpper === 'ORACLE_AWS_SNOWFLAKE_PIPELINE') {
+                    await testInteroperabilityAction();
+                } else {
+                    const res = await fetch('/api/connections/test/custom', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ connection_name: connName })
+                    });
+                    const d = await res.json();
+                    if (d.success || d.status === 'Connected') {
+                        if (typeof showStudioToast === 'function') {
+                            showStudioToast('Connection Success', `✅ [${connName}] Connected (${d.response_time_ms} ms)`, 'success');
+                        }
+                        alert(`✅ Live Connection Verified: [${connName}]\nStatus: Connected (${d.response_time_ms} ms)\nHost: ${d.host || ''}\nDatabase: ${d.database || ''}`);
+                    } else {
+                        if (typeof showStudioToast === 'function') {
+                            showStudioToast('Connection Warning', `⚠️ [${connName}]: ${d.error || d.status}`, 'warning');
+                        }
+                        alert(`⚠️ Connection Result: [${connName}]\nStatus: ${d.status}\nDiagnostic: ${d.diagnostic || d.error || 'Failed reachability'}`);
+                    }
+                    refreshConnectionHealthTable();
+                }
+            } catch (err) {
+                alert('Test execution error: ' + err.message);
             }
         }
 
@@ -12256,23 +12456,290 @@ function navigateHistory(direction) {
             }
         }
 
-        let isSendingTestModal = false;
-        async function sendTestEmailActionModal() {
-            if (isSendingTestModal) return;
+        let isTestingFailover = false;
+        async function testEmailFailoverAction() {
+            if (isTestingFailover) return;
+            isTestingFailover = true;
 
-            const recipient = prompt("Enter recipient email address for test message:", "mangeshbagul15@gmail.com");
-            if (!recipient || !recipient.trim()) return;
+            const btn = document.getElementById('btnTestFailover');
+            const badge = document.getElementById('badgeFailoverClusterStatus');
+            const resultBox = document.getElementById('failoverTestResultBox');
+            const origHtml = btn ? btn.innerHTML : '⚡ Test Auto-Failover Cluster';
 
-            if (!confirm(`Send live test email to: ${recipient.trim()}?\n\nThis will initiate actual SMTP transmission using your saved credentials.`)) {
-                return;
-            }
-
-            const resultBox = document.getElementById('gmailTestResultBox');
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Probing Cluster...'; }
+            if (badge) { badge.innerText = 'Testing...'; badge.style.color = '#38BDF8'; badge.style.background = 'rgba(56,189,248,0.15)'; }
             if (resultBox) {
                 resultBox.style.display = 'block';
                 resultBox.style.background = '#0F172A';
                 resultBox.style.border = '1px solid #334155';
-                resultBox.innerHTML = `<span class="spinner-sm"></span> Submitting live test email to ${recipient.trim()} via SMTP server...`;
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Auditing 5-Tier Email Failover Cascade...<br>• Tier 1: Gmail REST API (Port 443)<br>• Tier 2: Resend API (3,000/mo)<br>• Tier 3: Brevo API (300/day)<br>• Tier 4: Gmail SMTP (587)<br>• Tier 5: Telegram Emergency Bot';
+            }
+
+            try {
+                const res = await fetch('/api/connections/test/email_failover', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                let d = await res.json();
+                const isSuccess = d && (d.success === true);
+                if (badge) {
+                    badge.innerText = d.status || (isSuccess ? 'Cluster Operational' : 'Offline');
+                    badge.style.color = isSuccess ? '#10B981' : '#F59E0B';
+                    badge.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)';
+                }
+
+                if (resultBox) {
+                    let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : '#F59E0B'}; margin-bottom:6px;">
+                        ${isSuccess ? '✅ Multi-Tier Email Failover Cluster Operational' : '⚠️ Cluster Status: ' + (d.status || 'Warning')}
+                    </div>`;
+                    html += `<div style="line-height:1.6; color:#CBD5E1;">
+                        <div><strong>Active Operational Channels:</strong> ${d.active_tiers_count || 0} of ${d.total_tiers || 5} Ready</div>
+                        <div><strong>Primary Active Route:</strong> <span style="color:#A78BFA; font-weight:700;">${d.primary_active_tier || 'None'}</span></div>
+                        <div><strong>Cascade Architecture:</strong> <code>${d.cascade_pipeline || 'Gmail API ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram'}</code></div>
+                        <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
+                    </div>`;
+
+                    if (d.tiers && d.tiers.length > 0) {
+                        html += `<div style="margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px;">`;
+                        d.tiers.forEach(t => {
+                            const tColor = t.ready ? '#10B981' : '#64748B';
+                            const tBg = t.ready ? 'rgba(16,185,129,0.15)' : 'rgba(100,116,139,0.15)';
+                            html += `<div style="background:${tBg}; border:1px solid ${tColor}; border-radius:6px; padding:6px; font-size:11px;">
+                                <div style="font-weight:700; color:${tColor};">Tier ${t.tier}: ${t.name.split(' ')[0]}</div>
+                                <div style="color:#CBD5E1; font-size:10px;">${t.status}</div>
+                                <div style="color:#94A3B8; font-size:9.5px;">${t.quota}</div>
+                            </div>`;
+                        });
+                        html += `</div>`;
+                    }
+                    resultBox.innerHTML = html;
+                }
+                await refreshConnectionHealthTable();
+            } catch (e) {
+                if (resultBox) {
+                    resultBox.innerHTML = `<div style="color:#EF4444;">❌ Failover Cluster Test Error: ${e.message || e}</div>`;
+                }
+            } finally {
+                isTestingFailover = false;
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+            }
+        }
+
+        let isTestingResend = false;
+        async function testResendConnectionAction() {
+            if (isTestingResend) return;
+            isTestingResend = true;
+
+            const btn = document.getElementById('btnTestResend');
+            const badge = document.getElementById('badgeResendStatus');
+            const resultBox = document.getElementById('resendTestResultBox');
+            const origHtml = btn ? btn.innerHTML : '🔍 Test Resend API';
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Testing Resend...'; }
+            if (badge) { badge.innerText = 'Testing...'; badge.style.color = '#38BDF8'; badge.style.background = 'rgba(56,189,248,0.15)'; }
+            if (resultBox) {
+                resultBox.style.display = 'block';
+                resultBox.style.background = '#0F172A';
+                resultBox.style.border = '1px solid #334155';
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Verifying Resend API key over HTTPS Port 443 (api.resend.com)...';
+            }
+
+            try {
+                const res = await fetch('/api/connections/test/resend', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                let d = await res.json();
+                const isSuccess = d && (d.success === true || d.status === 'Connected');
+                if (badge) {
+                    badge.innerText = d.status || (isSuccess ? 'Connected' : 'Offline');
+                    badge.style.color = isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444');
+                    badge.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                }
+
+                if (resultBox) {
+                    let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444')}; margin-bottom:6px;">
+                        ${isSuccess ? '✅ Resend API Active & Verified' : '⚠️ Resend Status: ' + (d.status || 'Not Configured')}
+                    </div>`;
+                    html += `<div style="line-height:1.5; color:#CBD5E1;">
+                        <div><strong>Endpoint:</strong> ${d.host || 'api.resend.com:443 (HTTPS)'}</div>
+                        <div><strong>Free Quota:</strong> ${d.quota || '3,000 Free Emails / Month'}</div>
+                        <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
+                        <div><strong>Diagnostic:</strong> ${d.message || ''}</div>
+                    </div>`;
+                    if (d.troubleshooting) {
+                        html += `<div style="margin-top:6px; color:#F59E0B; font-size:11px; background:rgba(245,158,11,0.1); padding:6px; border-radius:4px;">
+                            <strong>Setup:</strong> ${d.troubleshooting.replace(/\n/g, '<br>')}
+                        </div>`;
+                    }
+                    resultBox.innerHTML = html;
+                }
+                await refreshConnectionHealthTable();
+            } catch (e) {
+                if (resultBox) {
+                    resultBox.innerHTML = `<div style="color:#EF4444;">❌ Resend Test Error: ${e.message || e}</div>`;
+                }
+            } finally {
+                isTestingResend = false;
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+            }
+        }
+
+        let isTestingBrevo = false;
+        async function testBrevoConnectionAction() {
+            if (isTestingBrevo) return;
+            isTestingBrevo = true;
+
+            const btn = document.getElementById('btnTestBrevo');
+            const badge = document.getElementById('badgeBrevoStatus');
+            const resultBox = document.getElementById('brevoTestResultBox');
+            const origHtml = btn ? btn.innerHTML : '🔍 Test Brevo API';
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Testing Brevo...'; }
+            if (badge) { badge.innerText = 'Testing...'; badge.style.color = '#38BDF8'; badge.style.background = 'rgba(56,189,248,0.15)'; }
+            if (resultBox) {
+                resultBox.style.display = 'block';
+                resultBox.style.background = '#0F172A';
+                resultBox.style.border = '1px solid #334155';
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Querying Brevo API account & remaining credits (api.brevo.com:443)...';
+            }
+
+            try {
+                const res = await fetch('/api/connections/test/brevo', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                let d = await res.json();
+                const isSuccess = d && (d.success === true || d.status === 'Connected');
+                if (badge) {
+                    badge.innerText = d.status || (isSuccess ? 'Connected' : 'Offline');
+                    badge.style.color = isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444');
+                    badge.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                }
+
+                if (resultBox) {
+                    let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444')}; margin-bottom:6px;">
+                        ${isSuccess ? '✅ Brevo API Active & Verified' : '⚠️ Brevo Status: ' + (d.status || 'Not Configured')}
+                    </div>`;
+                    html += `<div style="line-height:1.5; color:#CBD5E1;">
+                        <div><strong>Endpoint:</strong> ${d.host || 'api.brevo.com:443 (HTTPS)'}</div>
+                        <div><strong>Free Quota:</strong> ${d.quota || '300 Free Emails / Day'}</div>
+                        ${d.credits ? `<div><strong>Credits Remaining:</strong> <span style="color:#10B981; font-weight:700;">${d.credits}</span></div>` : ''}
+                        <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
+                        <div><strong>Diagnostic:</strong> ${d.message || ''}</div>
+                    </div>`;
+                    if (d.troubleshooting) {
+                        html += `<div style="margin-top:6px; color:#F59E0B; font-size:11px; background:rgba(245,158,11,0.1); padding:6px; border-radius:4px;">
+                            <strong>Setup:</strong> ${d.troubleshooting.replace(/\n/g, '<br>')}
+                        </div>`;
+                    }
+                    resultBox.innerHTML = html;
+                }
+                await refreshConnectionHealthTable();
+            } catch (e) {
+                if (resultBox) {
+                    resultBox.innerHTML = `<div style="color:#EF4444;">❌ Brevo Test Error: ${e.message || e}</div>`;
+                }
+            } finally {
+                isTestingBrevo = false;
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+            }
+        }
+
+        let isTestingGmailApi = false;
+        async function testGmailApiConnectionAction() {
+            if (isTestingGmailApi) return;
+            isTestingGmailApi = true;
+
+            const btn = document.getElementById('btnTestGmailApi');
+            const badge = document.getElementById('badgeGmailApiStatus');
+            const resultBox = document.getElementById('gmailApiTestResultBox');
+            const origHtml = btn ? btn.innerHTML : '🔍 Test Gmail REST API';
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Testing Gmail API...'; }
+            if (badge) { badge.innerText = 'Testing...'; badge.style.color = '#38BDF8'; badge.style.background = 'rgba(56,189,248,0.15)'; }
+            if (resultBox) {
+                resultBox.style.display = 'block';
+                resultBox.style.background = '#0F172A';
+                resultBox.style.border = '1px solid #334155';
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Testing Google Gmail REST API over HTTPS Port 443 (Socket-free)...';
+            }
+
+            try {
+                const res = await fetch('/api/connections/test/gmail_api', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                let d = await res.json();
+                const isSuccess = d && (d.success === true || d.status === 'Connected');
+                if (badge) {
+                    badge.innerText = d.status || (isSuccess ? 'Connected' : 'Offline');
+                    badge.style.color = isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444');
+                    badge.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                }
+
+                if (resultBox) {
+                    let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444')}; margin-bottom:6px;">
+                        ${isSuccess ? '✅ Google Gmail REST API Active & Verified' : '⚠️ Gmail REST API Status: ' + (d.status || 'Not Configured')}
+                    </div>`;
+                    html += `<div style="line-height:1.5; color:#CBD5E1;">
+                        <div><strong>Endpoint:</strong> ${d.host || 'gmail.googleapis.com:443 (HTTPS)'}</div>
+                        <div><strong>Active Mailbox:</strong> ${d.email || 'mangeshbagul15@gmail.com'}</div>
+                        <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
+                        <div><strong>Diagnostic:</strong> ${d.message || ''}</div>
+                    </div>`;
+                    if (d.troubleshooting) {
+                        html += `<div style="margin-top:6px; color:#F59E0B; font-size:11px; background:rgba(245,158,11,0.1); padding:6px; border-radius:4px;">
+                            <strong>Setup:</strong> ${d.troubleshooting.replace(/\n/g, '<br>')}
+                        </div>`;
+                    }
+                    resultBox.innerHTML = html;
+                }
+                await refreshConnectionHealthTable();
+            } catch (e) {
+                if (resultBox) {
+                    resultBox.innerHTML = `<div style="color:#EF4444;">❌ Gmail API Test Error: ${e.message || e}</div>`;
+                }
+            } finally {
+                isTestingGmailApi = false;
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+            }
+        }
+
+        let isSendingTestModal = false;
+        async function sendTestEmailActionModal(preferredProvider = 'auto') {
+            if (isSendingTestModal) return;
+
+            const provChoice = preferredProvider || 'auto';
+            const recipient = prompt("Enter recipient email address for test message:", "mangeshbagul15@gmail.com");
+            if (!recipient || !recipient.trim()) return;
+
+            let provDesc = '⚡ Automatic Multi-Tier Cloud Failover (Gmail API ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram)';
+            if (provChoice === 'resend') provDesc = 'Resend API (HTTPS Port 443 - 3,000/mo)';
+            else if (provChoice === 'brevo') provDesc = 'Brevo API (HTTPS Port 443 - 300/day)';
+            else if (provChoice === 'gmail_api') provDesc = 'Google Gmail REST API (Port 443)';
+            else if (provChoice === 'smtp') provDesc = 'Direct Gmail SMTP (Port 587)';
+
+            if (!confirm(`Send live test email to: ${recipient.trim()}?\n\nTransport Engine: ${provDesc}`)) {
+                return;
+            }
+
+            let resultBoxId = 'failoverTestResultBox';
+            if (provChoice === 'smtp') resultBoxId = 'gmailTestResultBox';
+            else if (provChoice === 'resend') resultBoxId = 'resendTestResultBox';
+            else if (provChoice === 'brevo') resultBoxId = 'brevoTestResultBox';
+            else if (provChoice === 'gmail_api') resultBoxId = 'gmailApiTestResultBox';
+
+            const resultBox = document.getElementById(resultBoxId) || document.getElementById('failoverTestResultBox') || document.getElementById('gmailTestResultBox');
+            if (resultBox) {
+                resultBox.style.display = 'block';
+                resultBox.style.background = '#0F172A';
+                resultBox.style.border = '1px solid #334155';
+                resultBox.innerHTML = `<span class="spinner-sm"></span> Submitting live test email to ${recipient.trim()} via [${provDesc}]...`;
             }
 
             isSendingTestModal = true;
@@ -12280,32 +12747,34 @@ function navigateHistory(direction) {
                 const res = await fetch('/api/connections/send_test_email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ recipient: recipient.trim() })
+                    body: JSON.stringify({ recipient: recipient.trim(), provider: provChoice })
                 });
 
-                let d = null;
-                const ct = res.headers.get('content-type') || '';
-                if (ct.includes('application/json')) {
-                    d = await res.json();
-                } else {
-                    const raw = await res.text().catch(() => '');
-                    d = { success: false, status: 'Error', message: `Server error: ${raw.slice(0, 150)}` };
-                }
-
+                let d = await res.json();
                 if (resultBox) {
                     const isSuccess = d && (d.success === true);
                     let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : '#EF4444'}; margin-bottom:6px;">
-                        ${isSuccess ? '✅ Live Test Email Dispatched' : '❌ Email Dispatch Failed: ' + (d.status || 'Failed')}
+                        ${isSuccess ? '✅ Live Test Email Dispatched Successfully' : '❌ Email Dispatch Failed: ' + (d.status || 'Failed')}
                     </div>`;
                     html += `<div style="line-height:1.5; color:#CBD5E1;">
                         <div><strong>Recipient:</strong> ${d.recipient || recipient.trim()}</div>
-                        <div><strong>Subject:</strong> ${d.subject || 'Nano Pro SMTP Connection Test'}</div>
-                        <div><strong>Delivery Status:</strong> ${d.status || (isSuccess ? 'Accepted by SMTP Server' : 'Failed')}</div>
+                        <div><strong>Subject:</strong> ${d.subject || 'Nano Pro Connection Test'}</div>
+                        <div><strong>Provider Used:</strong> <span style="color:#A78BFA; font-weight:700;">${d.provider || d.provider_used || provChoice}</span></div>
+                        <div><strong>Delivery Status:</strong> ${d.status || (isSuccess ? 'Accepted' : 'Failed')}</div>
                         ${d.submission_time ? `<div><strong>Submission Time:</strong> ${d.submission_time}</div>` : ''}
-                        ${d.provider_response ? `<div><strong>Provider Response:</strong> <code>${d.provider_response}</code></div>` : ''}
+                        ${d.message_id ? `<div><strong>Message ID:</strong> <code>${d.message_id}</code></div>` : ''}
                         ${d.note ? `<div style="font-size:11px; color:#94A3B8; margin-top:4px;">${d.note}</div>` : ''}
                         ${d.error ? `<div style="color:#EF4444; font-size:11px; margin-top:4px;">${d.error}</div>` : ''}
                     </div>`;
+
+                    if (d.failover_trace && d.failover_trace.length > 0) {
+                        html += `<div style="margin-top:8px; font-size:10.5px; background:rgba(0,0,0,0.3); padding:6px; border-radius:4px;">
+                            <strong>Failover Cascade Audit:</strong><br>`;
+                        d.failover_trace.forEach(tr => {
+                            html += `• ${tr.provider}: <span style="color:${tr.status === 'Success' ? '#10B981' : '#94A3B8'}">${tr.status}</span> ${tr.error ? '(' + tr.error + ')' : ''}<br>`;
+                        });
+                        html += `</div>`;
+                    }
                     resultBox.innerHTML = html;
                 }
             } catch (e) {
@@ -14924,11 +15393,16 @@ async function submitAddDatabaseForm() {
     const dbName = (document.getElementById('addDbDatabase')?.value || 'XEPDB1').trim();
     const user = (document.getElementById('addDbUser')?.value || 'SYSTEM').trim();
     const pwd = (document.getElementById('addDbPassword')?.value || '').trim();
+    const syncCloud = document.getElementById('addDbSyncCloud')?.checked ?? true;
 
     if (!name || !host || !pwd) {
         alert('Connection Name, Host, and Password are required.');
         return;
     }
+
+    const btn = document.querySelector('#addDatabaseModal .btn-primary');
+    const origText = btn ? btn.innerHTML : '🔐 Save &amp; Encrypt in Vault';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Encrypting &amp; Syncing to Cloud...'; }
 
     try {
         const res = await fetch('/api/connections/add', {
@@ -14941,15 +15415,18 @@ async function submitAddDatabaseForm() {
                 port: port,
                 database_name: dbName,
                 username: user,
-                password: pwd
+                password: pwd,
+                sync_cloud: syncCloud
             })
         });
         const d = await res.json();
         if (d.status === 'success') {
+            const gitMsg = d.git_synced ? `✅ Pushed (Commit: ${d.commit_hash || 'HEAD'})` : '⚠️ Git Local Snapshot';
+            const renderMsg = d.render_deploy_triggered ? '✅ Auto-Deploy Triggered' : '—';
             if (typeof showStudioToast === 'function') {
-                showStudioToast('Database Added', `Database [${name}] encrypted and registered in Vault!`, 'success');
+                showStudioToast('Database Registered', `Database [${name}] encrypted and registered in Vault!`, 'success');
             }
-            alert(`✅ Database Connection [${name}] successfully added and encrypted with AES-256-GCM in Vault!`);
+            alert(`✅ Database Connection [${name}] (${type}) successfully registered across all 3 tiers:\n\n1. Local Vault (AES-256-GCM) & .env: Synchronized\n2. GitHub Repository: ${gitMsg}\n3. Render Cloud: ${renderMsg}\n\nLive Connection Test: ${d.test_result?.status || 'Configured'}`);
             closeAddDatabaseModal();
             loadVaultList();
             refreshConnectionHealthTable();
@@ -14977,12 +15454,31 @@ async function submitAddDatabaseForm() {
         }
     } catch(e) {
         alert('Network error adding database: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = origText; }
     }
 }
 
-function openQuickPasswordModal() {
+async function openQuickPasswordModal() {
     const m = document.getElementById('quickPasswordModal');
     if (m) m.style.display = 'block';
+    // Dynamically populate any custom databases into dropdown
+    try {
+        const sel = document.getElementById('quickPwdConn');
+        if (sel) {
+            const res = await fetch('/api/connections/list');
+            const d = await res.json();
+            const existingVals = new Set(Array.from(sel.options).map(o => o.value));
+            for (const c of (d.connections || [])) {
+                if (!existingVals.has(c.connection_name)) {
+                    const opt = document.createElement('option');
+                    opt.value = c.connection_name;
+                    opt.text = `${c.connection_name} (${c.service_type || 'Custom DB'})`;
+                    sel.appendChild(opt);
+                }
+            }
+        }
+    } catch(e) {}
 }
 
 function closeQuickPasswordModal() {
@@ -14993,20 +15489,27 @@ function closeQuickPasswordModal() {
 async function submitQuickPasswordForm() {
     const conn = document.getElementById('quickPwdConn')?.value || 'MY_ORACLE_XE_LOCAL';
     const pwd = (document.getElementById('quickPwdInput')?.value || '').trim();
+    const syncCloud = document.getElementById('quickPwdSyncCloud')?.checked ?? true;
     if (!pwd) { alert('Password cannot be empty.'); return; }
+
+    const btn = document.querySelector('#quickPasswordModal .btn-primary');
+    const origText = btn ? btn.innerHTML : '✅ Update Password Now';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Syncing across Vault, .env, Git &amp; Render...'; }
 
     try {
         const res = await fetch('/api/connections/password', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ connection_name: conn, new_password: pwd })
+            body: JSON.stringify({ connection_name: conn, new_password: pwd, sync_cloud: syncCloud })
         });
         const d = await res.json();
         if (d.status === 'success') {
+            const gitMsg = d.git_synced ? `✅ Pushed (Commit: ${d.commit_hash || 'HEAD'})` : '⚠️ Git Local Snapshot';
+            const renderMsg = d.render_deploy_triggered ? '✅ Auto-Deploy Triggered (Live in 1-2 min)' : '—';
             if (typeof showStudioToast === 'function') {
-                showStudioToast('Password Updated', `Password for [${conn}] updated in Vault & .env!`, 'success');
+                showStudioToast('Password Updated & Synced', `Password for [${conn}] updated across all 3 tiers!`, 'success');
             }
-            alert(`✅ Password for '${conn}' successfully updated in Vault and synchronized with .env!\nAES-256-GCM authenticated storage active.`);
+            alert(`✅ Password for '${conn}' successfully updated across all 3 tiers:\n\n1. Local Vault (AES-256-GCM) & .env: Synchronized\n2. GitHub Repository: ${gitMsg}\n3. Render Cloud: ${renderMsg}\n\nAll automated batch cycles (EOD/BOD/SOD) will use the new password immediately.`);
             closeQuickPasswordModal();
             loadVaultList();
             refreshConnectionHealthTable();
@@ -15015,6 +15518,39 @@ async function submitQuickPasswordForm() {
         }
     } catch(e) {
         alert('Network error updating password: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+    }
+}
+
+async function syncVaultToCloudAction() {
+    const btn = document.getElementById('btnSyncCloud');
+    const origHtml = btn ? btn.innerHTML : '🚀 Push to GitHub &amp; Render';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Committing &amp; Pushing...';
+    }
+    if (typeof showStudioToast === 'function') {
+        showStudioToast('Cloud Synchronization', 'Packaging encrypted Vault database and pushing to GitHub...', 'info');
+    }
+    try {
+        const res = await fetch('/api/connections/sync_cloud', { method: 'POST' });
+        const d = await res.json();
+        if (d.success || d.git_pushed) {
+            if (typeof showStudioToast === 'function') {
+                showStudioToast('Cloud Synchronized', `✅ Vault pushed to GitHub (Commit: ${d.commit_hash}). Render auto-deploying!`, 'success');
+            }
+            alert(`✅ Cloud Synchronization Successful!\n\n• Local Vault (AES-256-GCM) Flushed: OK\n• GitHub Main Branch: Pushed (Commit: ${d.commit_hash})\n• Render Cloud Deployment: Auto-Triggered 🚀\n\nTarget URL: ${d.render_target || 'https://nanopro-ai-studio.onrender.com'}\nRender will finish rebuilding and go live with all credentials in ~1-2 minutes.`);
+        } else {
+            alert('Cloud synchronization note: ' + (d.message || d.error || JSON.stringify(d)));
+        }
+    } catch (e) {
+        alert('Cloud sync network error: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
     }
 }
 
