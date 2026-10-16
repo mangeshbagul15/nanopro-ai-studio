@@ -394,6 +394,45 @@ def get_auth_injection() -> str:
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
 }
 
+/* Device Tabs in RBAC Permissions Modal */
+.perm-device-tabs {
+    display: flex;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.perm-device-tab {
+    flex: 1;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent;
+    color: #94A3B8;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.perm-device-tab:hover {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.perm-device-tab.active {
+    background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
+    color: #FFFFFF;
+    box-shadow: 0 0 14px rgba(2, 132, 199, 0.5);
+}
+
 .perm-actions-toolbar {
     display: flex;
     gap: 8px;
@@ -595,124 +634,229 @@ def get_auth_injection() -> str:
                 </label>
             </div>
 
-            <!-- 2. FEATURE SELECTION TOOLBAR -->
-            <div class="perm-section-title">
-                <span>2. Select Navigation Features (Left-Sidebar)</span>
-            </div>
-            <div class="perm-actions-toolbar">
-                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true)">✅ Select All (Sarva Nivada)</button>
-                <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false)">❌ Deselect All (Hatawa)</button>
-                <button type="button" class="perm-preset-btn" onclick="selectPermPreset('data_stack')">📊 Data Stack Only</button>
-                <button type="button" class="perm-preset-btn" onclick="selectPermPreset('ai_stack')">🤖 AI &amp; Automation Only</button>
-                <button type="button" class="perm-preset-btn" onclick="selectPermPreset('media_comm')">💬 Comm &amp; Media</button>
+            <!-- 2. DEVICE-SPECIFIC FEATURE ALLOCATION (DESKTOP VS MOBILE) -->
+            <div class="perm-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>2. Device-Specific Feature Allocation (साधन प्रकार)</span>
+                <span style="font-size:11px; color:#94A3B8; font-weight:normal; text-transform:none;">
+                    Desktop वर मोठे टूल्स, Mobile वर सुटसुटीत ॲप-लाईक फीचर्स द्या.
+                </span>
             </div>
 
-            <!-- 3. FEATURE CHECKBOXES (8 USER-ACCESSIBLE CATEGORIES) -->
-            <div class="perm-groups-container">
-                <!-- Group 1: AI Command Center -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>1. AI Command Center</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g1')">Toggle</span>
-                    </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="dashboard"> Studio Overview</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="ai_manager"> AI Manager</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="ai_office"> AI Agent Office</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="models_hub"> AI Model Hub</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g1" value="agent_control"> Agent Operations</label>
+            <!-- Device Switcher Tabs -->
+            <div class="perm-device-tabs">
+                <button type="button" class="perm-device-tab active" id="permTabDesktop" onclick="switchPermDeviceTab('desktop')">
+                    💻 Desktop / Laptop Features
+                </button>
+                <button type="button" class="perm-device-tab" id="permTabMobile" onclick="switchPermDeviceTab('mobile')">
+                    📱 Mobile Browser Features
+                </button>
+            </div>
+
+            <!-- ── DESKTOP FEATURES CONTAINER ── -->
+            <div id="permContainerDesktop">
+                <div class="perm-actions-toolbar">
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true, 'desktop')">✅ Select All Desktop</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false, 'desktop')">❌ Clear All</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('data_stack', 'desktop')">📊 Data Stack</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('ai_stack', 'desktop')">🤖 AI Stack</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('media_comm', 'desktop')">💬 Comm &amp; Media</button>
+                    <button type="button" class="perm-preset-btn" onclick="copyPermFeatures('desktop', 'mobile')" style="background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8;">📋 Copy to Mobile</button>
                 </div>
 
-                <!-- Group 2: Data & Analytics -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>2. Data &amp; Analytics</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g2')">Toggle</span>
+                <div class="perm-groups-container">
+                    <!-- Group 1: AI Command Center -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>1. AI Command Center</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g1', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g1" value="dashboard"> Studio Overview</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g1" value="ai_manager"> AI Manager</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g1" value="ai_office"> AI Agent Office</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g1" value="models_hub"> AI Model Hub</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g1" value="agent_control"> Agent Operations</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="data_engineer"> Data Engineering</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="data_analyst"> Data Analyst</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="data_science"> Data Science &amp; ML</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="learning_hub"> Learning SQL &amp; Drills</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g2" value="file_converter"> File Converter</label>
+
+                    <!-- Group 2: Data & Analytics -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>2. Data &amp; Analytics</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g2', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g2" value="data_engineer"> Data Engineering</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g2" value="data_analyst"> Data Analyst</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g2" value="data_science"> Data Science &amp; ML</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g2" value="learning_hub"> Learning SQL &amp; Drills</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g2" value="file_converter"> File Converter</label>
+                    </div>
+
+                    <!-- Group 3: Research & Security -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>3. Research &amp; Security</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g3', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g3" value="research_knowledge"> Research &amp; Knowledge</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g3" value="live_discovery"> Live Discovery</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g3" value="cyber_lab"> Cybersecurity Lab</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g3" value="book_reader"> Books &amp; Learning</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g3" value="research_library"> Research Library</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g3" value="research_agent"> Research Agent</label>
+                    </div>
+
+                    <!-- Group 4: Automation & Operations -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>4. Automation &amp; Operations</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g4', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g4" value="automation_scheduler"> Task Scheduler</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g4" value="task_history"> Task History</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g4" value="assistant"> Reminders &amp; Tasks</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g4" value="amazon_tracker"> Amazon Price Tracker</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g4" value="startup_recovery"> Startup Recovery</label>
+                    </div>
+
+                    <!-- Group 5: Data & Storage -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>5. Data &amp; Storage</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g5', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g5" value="storage_dashboard"> Storage Dashboard</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g5" value="vault"> Database Vault</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g5" value="cloud_trends"> Cloud Trends 2026</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g5" value="bitcoin_wallet"> Bitcoin Wallet &amp; Pay</label>
+                    </div>
+
+                    <!-- Group 6: Creation & Media -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>6. Creation &amp; Media</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g6', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="sql_video"> SQL Video Maker</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="python_video"> Python Video Maker</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="image_agent"> Image Maker</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="coding_agent"> Coding Agent</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="document_studio"> Document Studio</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="media_discovery"> Media Discovery</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="entertainment_center"> Entertainment Hub</label>
+                    </div>
+
+                    <!-- Group 7: Communication & Alerts -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>7. Communication &amp; Alerts</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g7', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g7" value="communication"> Communication Center</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g7" value="telegram_agent"> Telegram AI Agent</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g7" value="whatsapp_hub"> WhatsApp Hub</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g7" value="news_center"> News Center</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g7" value="approvals"> Action Approvals</label>
+                    </div>
+
+                    <!-- Group 8: Career & Developer -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>8. Career &amp; Developer</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g8', 'desktop')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g8" value="career_hub"> Career &amp; Job Search</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g8" value="free_apis"> Free API &amp; Resource Finder</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g8" value="github_explorer"> GitHub Explorer</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g8" value="app_launcher"> App Launcher</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g8" value="shopping_services"> Shopping Services</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── MOBILE FEATURES CONTAINER (DEFAULT COMPACT) ── -->
+            <div id="permContainerMobile" style="display:none;">
+                <div class="perm-actions-toolbar">
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('recommended_mobile', 'mobile')" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFFFFF; font-weight:700;">⚡ Recommended Mobile Setup</button>
+                    <button type="button" class="perm-preset-btn" onclick="copyPermFeatures('mobile', 'desktop')" style="background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8;">📋 Copy from Desktop</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true, 'mobile')">✅ Select All Mobile</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false, 'mobile')">❌ Clear All</button>
                 </div>
 
-                <!-- Group 3: Research & Security -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>3. Research &amp; Security</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g3')">Toggle</span>
+                <div class="perm-groups-container">
+                    <!-- Group 1: AI Command Center -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>1. AI Command Center (Mobile)</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g1', 'mobile')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="dashboard" checked> Studio Overview ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="ai_manager" checked> AI Manager Chat ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="ai_office"> AI Agent Office</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="models_hub"> AI Model Hub</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="agent_control"> Agent Operations</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="research_knowledge"> Research &amp; Knowledge</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="live_discovery"> Live Discovery</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="cyber_lab"> Cybersecurity Lab</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="book_reader"> Books &amp; Learning</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="research_library"> Research Library</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g3" value="research_agent"> Research Agent</label>
-                </div>
 
-                <!-- Group 4: Automation & Operations -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>4. Automation &amp; Operations</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g4')">Toggle</span>
+                    <!-- Group 2: Data & Analytics -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>2. Data &amp; Analytics (Mobile)</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g2', 'mobile')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g2" value="data_engineer"> Data Engineering</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g2" value="data_analyst"> Data Analyst</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g2" value="data_science"> Data Science &amp; ML</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g2" value="learning_hub"> Learning SQL &amp; Drills</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g2" value="file_converter"> File Converter</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="automation_scheduler"> Task Scheduler</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="task_history"> Task History</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="assistant"> Reminders &amp; Tasks</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="amazon_tracker"> Amazon Price Tracker</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g4" value="startup_recovery"> Startup Recovery</label>
-                </div>
 
-                <!-- Group 5: Data & Storage -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>5. Data &amp; Storage</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g5')">Toggle</span>
+                    <!-- Group 3: Research & Security -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>3. Research &amp; Security (Mobile)</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g3', 'mobile')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g3" value="research_knowledge"> Research &amp; Knowledge</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g3" value="live_discovery"> Live Discovery</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g3" value="cyber_lab"> Cybersecurity Lab</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g3" value="book_reader"> Books &amp; Learning</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g3" value="research_library"> Research Library</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="storage_dashboard"> Storage Dashboard</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="vault"> Database Vault</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="cloud_trends"> Cloud Trends 2026</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g5" value="bitcoin_wallet"> Bitcoin Wallet &amp; Pay</label>
-                </div>
 
-                <!-- Group 6: Creation & Media -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>6. Creation &amp; Media</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g6')">Toggle</span>
+                    <!-- Group 4: Automation & Operations -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>4. Automation &amp; Operations (Mobile)</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g4', 'mobile')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="amazon_tracker" checked> Amazon Price Tracker ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="assistant" checked> Reminders &amp; Tasks ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="automation_scheduler"> Task Scheduler</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="task_history"> Task History</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="sql_video"> SQL Video Maker</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="python_video"> Python Video Maker</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="image_agent"> Image Maker</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="coding_agent"> Coding Agent</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="document_studio"> Document Studio</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="media_discovery"> Media Discovery</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g6" value="entertainment_center"> Entertainment Hub</label>
-                </div>
 
-                <!-- Group 7: Communication & Alerts -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>7. Communication &amp; Alerts</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g7')">Toggle</span>
+                    <!-- Group 5: Communication & Alerts -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>5. Communication &amp; Alerts (Mobile)</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g5', 'mobile')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="communication" checked> WhatsApp / Telegram Hub ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="telegram_agent" checked> Telegram AI Agent ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="whatsapp_hub" checked> WhatsApp Two-Way AI ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="news_center" checked> News Center ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="approvals" checked> 1-Click Action Approvals ⭐</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="communication"> Communication Center</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="telegram_agent"> Telegram AI Agent</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="whatsapp_hub"> WhatsApp Hub</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="news_center"> News Center</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g7" value="approvals"> Action Approvals</label>
-                </div>
 
-                <!-- Group 8: Career & Developer -->
-                <div class="perm-group-box">
-                    <div class="perm-group-title">
-                        <span>8. Career &amp; Developer</span>
-                        <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g8')">Toggle</span>
+                    <!-- Group 6: Career & Developer -->
+                    <div class="perm-group-box">
+                        <div class="perm-group-title">
+                            <span>6. Career &amp; Utilities (Mobile)</span>
+                            <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g6', 'mobile')">Toggle</span>
+                        </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="career_hub" checked> Career &amp; Job Radar ⭐</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="shopping_services"> Shopping Services</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="free_apis"> Free API Finder</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="app_launcher"> App Launcher</label>
                     </div>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="career_hub"> Career &amp; Job Search</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="free_apis"> Free API &amp; Resource Finder</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="github_explorer"> GitHub Explorer</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="app_launcher"> App Launcher</label>
-                    <label class="perm-item-row"><input type="checkbox" class="perm-cb g8" value="shopping_services"> Shopping Services</label>
                 </div>
             </div>
         </div>
@@ -851,8 +995,69 @@ async function handleAuthRegister(e) {
     }
 }
 
+// Helper to resolve device-aware permissions (Desktop vs Mobile)
+function getUserDeviceAllowedViews(user) {
+    const u = user || window.currentUser || currentUser;
+    if (!u) return ['dashboard', 'ai_manager'];
+    const isSuperAdmin = (u.role === 'admin' || u.username === 'nanopro');
+    const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    
+    // For Admin: On mobile, check if Admin customized their own mobile view!
+    if (isSuperAdmin) {
+        if (isMob) {
+            const adminMob = localStorage.getItem('nanopro_admin_mobile_features') || localStorage.getItem('nanopro_mobile_allowed_features');
+            if (adminMob) {
+                try {
+                    const parsed = JSON.parse(adminMob);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                } catch(e) {}
+            }
+        }
+        return ['*'];
+    }
+
+    const av = u.allowed_views;
+    if (!av || av === '*' || (Array.isArray(av) && av.includes('*'))) {
+        return ['*'];
+    }
+
+    // Dict format: {"desktop": [...], "mobile": [...]}
+    if (typeof av === 'object' && !Array.isArray(av)) {
+        if (isMob) {
+            return av.mobile || ['dashboard', 'ai_manager'];
+        } else {
+            return av.desktop || ['*'];
+        }
+    }
+
+    return Array.isArray(av) ? av : ['dashboard', 'ai_manager'];
+}
+window.getUserDeviceAllowedViews = getUserDeviceAllowedViews;
+
 // Universal First Allowed Feature Calculator: Guarantees NO BLANK SCREEN for New/Existing Users
 function getUserFirstAllowedFeature(user) {
+    const allowed = getUserDeviceAllowedViews(user);
+    if (allowed.includes('*') || allowed.includes('dashboard')) return 'dashboard';
+    if (allowed.includes('ai_manager')) return 'ai_manager';
+    
+    for (const view of allowed) {
+        if (view && view !== '*' && document.getElementById('view-' + view)) {
+            return view;
+        }
+    }
+    
+    const firstVisible = document.querySelector('.sidebar .nav-item:not([style*="display: none"]), .app-sidebar .nav-item:not([style*="display: none"])');
+    if (firstVisible) {
+        const oc = firstVisible.getAttribute('onclick') || '';
+        const m = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
+        if (m && m[1]) return m[1];
+    }
+    
+    return (allowed && allowed[0] && allowed[0] !== '*') ? allowed[0] : 'dashboard';
+}
+window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
+
+
     const u = user || window.currentUser || currentUser;
     if (!u) return 'dashboard';
     const isSuperAdmin = (u.role === 'admin' || u.username === 'nanopro');
@@ -911,6 +1116,12 @@ function onAuthSuccess(user) {
 }
 
 function updateHeaderUserProfile(user) {
+    if (!user) return;
+    const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
+    const roleLabel = isSuperAdmin ? '<span style="color:#10B981; font-weight:bold;">[Admin]</span>' : '<span style="color:#38BDF8;">[User]</span>';
+    const modeBadge = (!isSuperAdmin && user.access_mode === 'READ_ONLY') ? '<span style="color:#F59E0B; font-size:10px; border:1px solid #F59E0B; padding:1px 5px; border-radius:10px; margin-left:4px;">👁️ Read-Only</span>' : '';
+
+    // 1. Desktop Header Badge
     let badge = document.getElementById('headerUserBadge');
     if (!badge) {
         const topHeader = document.querySelector('.header-right-group');
@@ -925,9 +1136,6 @@ function updateHeaderUserProfile(user) {
         }
     }
     if (badge) {
-        const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
-        const roleLabel = isSuperAdmin ? '<span style="color:#10B981; font-weight:bold;">[Admin]</span>' : '<span style="color:#38BDF8;">[User]</span>';
-        const modeBadge = (!isSuperAdmin && user.access_mode === 'READ_ONLY') ? '<span style="color:#F59E0B; font-size:10px; border:1px solid #F59E0B; padding:1px 5px; border-radius:10px; margin-left:4px;">👁️ Read-Only</span>' : '';
         badge.innerHTML = `
             <div style="font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.7); padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center;">
                 👤 <b style="margin-left:4px;">${user.username}</b> ${roleLabel} ${modeBadge}
@@ -936,7 +1144,17 @@ function updateHeaderUserProfile(user) {
                 Logout 🚪
             </button>
         `;
+        // On mobile, hide from topbar to keep it 100% clean
+        if (window.innerWidth <= 768) {
+            badge.style.display = 'none';
+        }
     }
+
+    // 2. Mobile & Drawer Sidebar Footer Profile
+    const footerUsername = document.getElementById('sidebarFooterUsername');
+    const footerRole = document.getElementById('sidebarFooterRole');
+    if (footerUsername) footerUsername.textContent = user.username;
+    if (footerRole) footerRole.innerHTML = roleLabel;
 }
 
 function startInactivityTracker(user) {
@@ -1013,20 +1231,51 @@ function setPermAccessMode(mode) {
     if (cardRO) cardRO.classList.toggle('active', mode === 'READ_ONLY');
 }
 
-function selectAllPermFeatures(checkVal) {
-    document.querySelectorAll('.perm-cb').forEach(cb => { cb.checked = checkVal; });
+// Device Switcher Tab in Permissions Modal
+function switchPermDeviceTab(device) {
+    const isDesktop = (device === 'desktop');
+    document.getElementById('permContainerDesktop').style.display = isDesktop ? 'block' : 'none';
+    document.getElementById('permContainerMobile').style.display = isDesktop ? 'none' : 'block';
+    document.getElementById('permTabDesktop').classList.toggle('active', isDesktop);
+    document.getElementById('permTabMobile').classList.toggle('active', !isDesktop);
 }
 
-function toggleGroupCheckboxes(groupClass) {
-    const cbs = document.querySelectorAll('.perm-cb.' + groupClass);
+function selectAllPermFeatures(checkVal, device='desktop') {
+    const cls = (device === 'desktop') ? '.perm-cb.desktop-cb' : '.perm-cb.mobile-cb';
+    document.querySelectorAll(cls).forEach(cb => { cb.checked = checkVal; });
+}
+
+function toggleGroupCheckboxes(groupClass, device='desktop') {
+    const cls = (device === 'desktop') ? `.perm-cb.desktop-cb.${groupClass}` : `.perm-cb.mobile-cb.${groupClass}`;
+    const cbs = document.querySelectorAll(cls);
     const anyUnchecked = Array.from(cbs).some(c => !c.checked);
     cbs.forEach(c => { c.checked = anyUnchecked; });
 }
 
-function selectPermPreset(preset) {
-    selectAllPermFeatures(false);
+function copyPermFeatures(fromDev, toDev) {
+    const fromCls = (fromDev === 'desktop') ? '.perm-cb.desktop-cb' : '.perm-cb.mobile-cb';
+    const toCls = (toDev === 'desktop') ? '.perm-cb.desktop-cb' : '.perm-cb.mobile-cb';
+    
+    // Uncheck all in target
+    document.querySelectorAll(toCls).forEach(cb => { cb.checked = false; });
+    
+    // Copy checked values
+    document.querySelectorAll(fromCls + ':checked').forEach(fromCb => {
+        const toCb = document.querySelector(`${toCls}[value="${fromCb.value}"]`);
+        if (toCb) toCb.checked = true;
+    });
+    
+    // Switch to target tab to show user
+    switchPermDeviceTab(toDev);
+}
+
+function selectPermPreset(preset, device='desktop') {
+    const targetCls = (device === 'desktop') ? '.perm-cb.desktop-cb' : '.perm-cb.mobile-cb';
+    document.querySelectorAll(targetCls).forEach(cb => { cb.checked = false; });
     let views = [];
-    if (preset === 'data_stack') {
+    if (preset === 'recommended_mobile') {
+        views = ['dashboard', 'ai_manager', 'amazon_tracker', 'assistant', 'communication', 'telegram_agent', 'whatsapp_hub', 'news_center', 'approvals', 'career_hub'];
+    } else if (preset === 'data_stack') {
         views = ['dashboard', 'data_engineer', 'data_analyst', 'data_science', 'learning_hub', 'file_converter', 'storage_dashboard', 'vault', 'cloud_trends'];
     } else if (preset === 'ai_stack') {
         views = ['dashboard', 'ai_manager', 'ai_office', 'models_hub', 'agent_control', 'automation_scheduler', 'task_history', 'assistant'];
@@ -1034,7 +1283,7 @@ function selectPermPreset(preset) {
         views = ['dashboard', 'sql_video', 'python_video', 'image_agent', 'coding_agent', 'document_studio', 'communication', 'telegram_agent', 'whatsapp_hub', 'news_center'];
     }
     views.forEach(v => {
-        const el = document.querySelector(`.perm-cb[value="${v}"]`);
+        const el = document.querySelector(`${targetCls}[value="${v}"]`);
         if (el) el.checked = true;
     });
 }
@@ -1050,13 +1299,38 @@ function openPermissionsModal(userId, username, email, actionType='update', allo
     if (emEl) emEl.innerText = email || '-';
     
     setPermAccessMode(accessMode || 'MODIFY');
+    switchPermDeviceTab('desktop');
 
-    if (!allowedViews || allowedViews.includes('*')) {
-        selectAllPermFeatures(true);
+    // Handle both dict {"desktop": [...], "mobile": [...]} and legacy list or ['*']
+    let desktopList = ['*'];
+    let mobileList = ['dashboard', 'ai_manager', 'amazon_tracker', 'assistant', 'communication', 'news_center', 'approvals', 'career_hub'];
+
+    if (allowedViews && typeof allowedViews === 'object' && !Array.isArray(allowedViews)) {
+        desktopList = allowedViews.desktop || ['*'];
+        mobileList = allowedViews.mobile || mobileList;
+    } else if (Array.isArray(allowedViews)) {
+        desktopList = allowedViews;
+        mobileList = (allowedViews.includes('*')) ? ['*'] : allowedViews;
+    }
+
+    // Populate Desktop Checkboxes
+    if (desktopList.includes('*')) {
+        selectAllPermFeatures(true, 'desktop');
     } else {
-        selectAllPermFeatures(false);
-        allowedViews.forEach(v => {
-            const el = document.querySelector(`.perm-cb[value="${v}"]`);
+        selectAllPermFeatures(false, 'desktop');
+        desktopList.forEach(v => {
+            const el = document.querySelector(`.perm-cb.desktop-cb[value="${v}"]`);
+            if (el) el.checked = true;
+        });
+    }
+
+    // Populate Mobile Checkboxes
+    if (mobileList.includes('*')) {
+        selectAllPermFeatures(true, 'mobile');
+    } else {
+        selectAllPermFeatures(false, 'mobile');
+        mobileList.forEach(v => {
+            const el = document.querySelector(`.perm-cb.mobile-cb[value="${v}"]`);
             if (el) el.checked = true;
         });
     }
@@ -1076,19 +1350,39 @@ async function submitUserPermissions() {
     const radioChecked = document.querySelector('input[name="accessModeRadio"]:checked');
     const accessMode = radioChecked ? radioChecked.value : 'MODIFY';
 
-    const allCheckboxes = document.querySelectorAll('.perm-cb');
-    const checkedCheckboxes = document.querySelectorAll('.perm-cb:checked');
+    const allDesktop = document.querySelectorAll('.perm-cb.desktop-cb');
+    const checkedDesktop = document.querySelectorAll('.perm-cb.desktop-cb:checked');
+    const allMobile = document.querySelectorAll('.perm-cb.mobile-cb');
+    const checkedMobile = document.querySelectorAll('.perm-cb.mobile-cb:checked');
 
-    let allowedViews = [];
-    if (checkedCheckboxes.length === allCheckboxes.length) {
-        allowedViews = ['*'];
+    let desktopViews = [];
+    if (checkedDesktop.length === allDesktop.length) {
+        desktopViews = ['*'];
     } else {
-        checkedCheckboxes.forEach(cb => allowedViews.push(cb.value));
+        checkedDesktop.forEach(cb => desktopViews.push(cb.value));
     }
 
-    if (allowedViews.length === 0) {
-        alert('Krupaya kiman ek tari feature select kara!');
+    let mobileViews = [];
+    if (checkedMobile.length === allMobile.length) {
+        mobileViews = ['*'];
+    } else {
+        checkedMobile.forEach(cb => mobileViews.push(cb.value));
+    }
+
+    if (desktopViews.length === 0 && mobileViews.length === 0) {
+        alert('Krupaya kiman ek tari feature (Desktop kiva Mobile) select kara!');
         return;
+    }
+
+    // Structured device allocation dict
+    let allowedViewsPayload;
+    if (desktopViews.includes('*') && mobileViews.includes('*')) {
+        allowedViewsPayload = ['*'];
+    } else {
+        allowedViewsPayload = {
+            desktop: desktopViews,
+            mobile: mobileViews
+        };
     }
 
     const btn = document.getElementById('permModalSaveBtn');
@@ -1105,7 +1399,7 @@ async function submitUserPermissions() {
             body: JSON.stringify({
                 user_id: userId,
                 admin_username: currentUser ? currentUser.username : 'nanopro',
-                allowed_views: allowedViews,
+                allowed_views: allowedViewsPayload,
                 access_mode: accessMode
             })
         });
@@ -1131,7 +1425,7 @@ async function submitUserPermissions() {
 function applyUserPermissions(user) {
     if (!user) return;
     const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
-    const allowed = user.allowed_views || ['*'];
+    const allowed = (typeof getUserDeviceAllowedViews === 'function') ? getUserDeviceAllowedViews(user) : (user.allowed_views || ['*']);
     const hasAll = isSuperAdmin || allowed.includes('*');
 
     // Filter sidebar navigation items

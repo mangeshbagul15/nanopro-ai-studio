@@ -447,13 +447,13 @@ class AuthValidateRequest(BaseModel):
 class AdminApproveUserRequest(BaseModel):
     user_id: str
     admin_username: Optional[str] = "nanopro"
-    allowed_views: Optional[List[str]] = None
+    allowed_views: Optional[Any] = None
     access_mode: Optional[str] = "MODIFY"
 
 class AdminUpdatePermissionsRequest(BaseModel):
     user_id: str
     admin_username: Optional[str] = "nanopro"
-    allowed_views: Optional[List[str]] = None
+    allowed_views: Optional[Any] = None
     access_mode: Optional[str] = "MODIFY"
 
 class AdminToggleUserRequest(BaseModel):

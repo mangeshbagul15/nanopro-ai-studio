@@ -27,8 +27,8 @@ class AuthManager:
         conn.row_factory = sqlite3.Row
         return conn
 
-    def _parse_allowed_views(self, views_val: Any, role: str) -> List[str]:
-        """Parses allowed view IDs into a clean list. Admin always gets ['*']."""
+    def _parse_allowed_views(self, views_val: Any, role: str) -> Any:
+        """Parses allowed view IDs into a clean list or device dict (desktop/mobile). Admin always gets ['*']."""
         if role == "admin":
             return ["*"]
         if not views_val or views_val == "*":
@@ -36,13 +36,15 @@ class AuthManager:
         try:
             if isinstance(views_val, str):
                 v_str = views_val.strip()
-                if v_str.startswith("[") and v_str.endswith("]"):
+                if v_str.startswith("{") and v_str.endswith("}"):
+                    return json.loads(v_str)
+                elif v_str.startswith("[") and v_str.endswith("]"):
                     return json.loads(v_str)
                 elif "," in v_str:
                     return [x.strip() for x in v_str.split(",") if x.strip()]
                 elif v_str:
                     return [v_str]
-            elif isinstance(views_val, list):
+            elif isinstance(views_val, (list, dict)):
                 return views_val
         except Exception:
             pass
@@ -446,8 +448,8 @@ class AuthManager:
             log_event(f"Error listing users: {e}", component="AuthManager", level="ERROR")
             return []
 
-    def approve_user(self, user_id: str, admin_username: str = "nanopro", allowed_views: Optional[List[str]] = None, access_mode: str = "MODIFY") -> Dict[str, Any]:
-        """Approves a pending user account with specific allowed features and access mode (Read-Only vs Modify)."""
+    def approve_user(self, user_id: str, admin_username: str = "nanopro", allowed_views: Any = None, access_mode: str = "MODIFY") -> Dict[str, Any]:
+        """Approves a pending user account with specific allowed features (desktop & mobile) and access mode (Read-Only vs Modify)."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -456,13 +458,23 @@ class AuthManager:
                 if not user:
                     return {"status": "error", "error": "User not found"}
 
-                views_json = "*" if (not allowed_views or "*" in allowed_views) else json.dumps(allowed_views)
+                if not allowed_views or allowed_views == "*" or (isinstance(allowed_views, list) and "*" in allowed_views):
+                    views_json = "*"
+                else:
+                    views_json = json.dumps(allowed_views)
                 mode_clean = access_mode.upper() if access_mode in ["READ_ONLY", "MODIFY"] else "MODIFY"
 
                 cursor.execute("UPDATE users SET status = 'ACTIVE', allowed_views = ?, access_mode = ? WHERE id = ?", (views_json, mode_clean, user_id))
                 conn.commit()
 
-            feature_summary = "All Features (सर्व फिचर्स)" if views_json == "*" else f"{len(allowed_views)} Features (विशिष्ट फिचर्स)"
+            if views_json == "*":
+                feature_summary = "All Features (सर्व फिचर्स)"
+            elif isinstance(allowed_views, dict):
+                d_c = len(allowed_views.get("desktop", []))
+                m_c = len(allowed_views.get("mobile", []))
+                feature_summary = f"Desktop: {d_c}, Mobile: {m_c} Features"
+            else:
+                feature_summary = f"{len(allowed_views)} Features (विशिष्ट फिचर्स)"
             mode_desc = "पूर्ण अधिकार (Modify/Edit)" if mode_clean == "MODIFY" else "फक्त वाचन (Read-Only)"
 
             self._record_audit_log(user_id, user["username"], "APPROVAL", f"Approved by {admin_username} (Mode: {mode_clean}, Features: {feature_summary})")
@@ -481,8 +493,8 @@ class AuthManager:
             log_event(f"Error approving user: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": str(e)}
 
-    def update_user_permissions(self, user_id: str, admin_username: str = "nanopro", allowed_views: Optional[List[str]] = None, access_mode: str = "MODIFY") -> Dict[str, Any]:
-        """Updates allowed features and access mode (Read-Only vs Modify) for an existing user."""
+    def update_user_permissions(self, user_id: str, admin_username: str = "nanopro", allowed_views: Any = None, access_mode: str = "MODIFY") -> Dict[str, Any]:
+        """Updates allowed features (desktop & mobile) and access mode (Read-Only vs Modify) for an existing user."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -493,13 +505,23 @@ class AuthManager:
                 if user["username"] == "nanopro":
                     return {"status": "error", "error": "Super Admin खात्याचे अधिकार बदलता येणार नाहीत!"}
 
-                views_json = "*" if (not allowed_views or "*" in allowed_views) else json.dumps(allowed_views)
+                if not allowed_views or allowed_views == "*" or (isinstance(allowed_views, list) and "*" in allowed_views):
+                    views_json = "*"
+                else:
+                    views_json = json.dumps(allowed_views)
                 mode_clean = access_mode.upper() if access_mode in ["READ_ONLY", "MODIFY"] else "MODIFY"
 
                 cursor.execute("UPDATE users SET allowed_views = ?, access_mode = ? WHERE id = ?", (views_json, mode_clean, user_id))
                 conn.commit()
 
-            feature_summary = "All Features" if views_json == "*" else f"{len(allowed_views)} Features"
+            if views_json == "*":
+                feature_summary = "All Features"
+            elif isinstance(allowed_views, dict):
+                d_c = len(allowed_views.get("desktop", []))
+                m_c = len(allowed_views.get("mobile", []))
+                feature_summary = f"Desktop: {d_c}, Mobile: {m_c} Features"
+            else:
+                feature_summary = f"{len(allowed_views)} Features"
             mode_desc = "पूर्ण अधिकार (Modify/Edit)" if mode_clean == "MODIFY" else "फक्त वाचन (Read-Only)"
 
             self._record_audit_log(user_id, user["username"], "PERMISSIONS_UPDATED", f"Updated by {admin_username} (Mode: {mode_clean}, Features: {feature_summary})")

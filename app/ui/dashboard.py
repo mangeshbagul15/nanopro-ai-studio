@@ -1099,7 +1099,7 @@ def _get_raw_dashboard_html() -> str:
             }
         }
 
-        @media (max-width: 1024px) {
+        @media (min-width: 769px) and (max-width: 1024px) {
             #sidebar {
                 width: var(--sidebar-collapsed-width) !important;
                 min-width: var(--sidebar-collapsed-width) !important;
@@ -1149,156 +1149,248 @@ def _get_raw_dashboard_html() -> str:
                 position: relative !important;
                 -webkit-overflow-scrolling: touch !important;
                 font-size: 13px !important;
-                overscroll-behavior: none !important;
+                overscroll-behavior-y: none !important;
+                -webkit-tap-highlight-color: transparent !important;
             }
             .app-shell {
                 width: 100% !important;
                 max-width: 100vw !important;
                 overflow-x: hidden !important;
                 position: relative !important;
+                display: flex !important;
             }
-            .app-main-panel {
+            /* Main panel is ALWAYS 100% full screen on mobile */
+            .app-main-panel, #main-panel {
                 width: 100% !important;
                 max-width: 100vw !important;
                 min-width: 0 !important;
+                flex: 1 1 100% !important;
                 overflow-x: hidden !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                left: 0 !important;
             }
 
-            /* OFF-CANVAS DRAWER SIDEBAR
-               DEFAULT: sidebar hidden (left: -320px). Main panel fills 100%.
-               OPEN: overlays on top (does NOT push/shrink main content).
+            /* ── OFF-CANVAS MOBILE DRAWER SIDEBAR ──
+               DEFAULT: Hidden off-screen (-320px). Zero width in layout.
+               OPEN: Slides in smoothly as an overlay on top of main page.
             */
-            #sidebar {
+            #sidebar, .app-sidebar {
                 position: fixed !important;
                 left: -320px !important;
                 top: 0 !important;
                 bottom: 0 !important;
                 width: min(85vw, 300px) !important;
-                min-width: min(85vw, 300px) !important;
+                min-width: 0 !important;
                 max-width: min(85vw, 300px) !important;
                 height: 100vh !important;
+                height: 100dvh !important;
                 z-index: 100000 !important;
                 background: #0E1528 !important;
-                border-right: 1px solid rgba(56, 189, 248, 0.3) !important;
-                box-shadow: 12px 0 40px rgba(0, 0, 0, 0.9) !important;
+                border-right: 1px solid rgba(56, 189, 248, 0.35) !important;
+                box-shadow: 14px 0 45px rgba(0, 0, 0, 0.95) !important;
                 display: flex !important;
                 flex-direction: column !important;
-                transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
             }
             .app-shell.mobile-sidebar-open #sidebar {
                 left: 0 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
             }
-            .app-shell #main-panel {
-                width: 100% !important;
-                min-width: 0 !important;
-                flex: 1 !important;
-            }
+
+            /* Drawer content styling */
             .brand-text { display: block !important; }
             .sidebar-search-box { display: block !important; padding: 8px 10px !important; }
             .nav-group-header { display: flex !important; padding: 10px 12px !important; font-size: 11px !important; }
             .nav-item {
                 justify-content: flex-start !important;
                 padding: 12px 14px !important;
-                min-height: 44px !important;
+                min-height: 46px !important;
                 border-radius: 8px !important;
                 margin: 2px 6px !important;
             }
-            .nav-item-icon { font-size: 16px !important; }
+            .nav-item-icon { font-size: 17px !important; }
             .nav-item-label { display: inline-block !important; font-size: 13px !important; }
-            .sidebar-footer { display: flex !important; padding: 10px 14px !important; font-size: 11px !important; }
+            
+            /* Sidebar footer is shown inside drawer at bottom with user profile and logout */
+            .sidebar-footer {
+                display: flex !important;
+                padding: 12px 14px !important;
+                font-size: 11.5px !important;
+                border-top: 1px solid rgba(56, 189, 248, 0.2) !important;
+                background: #090E1D !important;
+            }
+
+            /* Drawer close button */
             #sidebarCollapseBtn { display: none !important; }
             .mobile-sidebar-close-btn {
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                width: 32px !important;
-                height: 32px !important;
+                width: 34px !important;
+                height: 34px !important;
                 border-radius: 50% !important;
-                background: rgba(239, 68, 68, 0.15) !important;
-                border: 1px solid rgba(239, 68, 68, 0.4) !important;
+                background: rgba(239, 68, 68, 0.18) !important;
+                border: 1px solid rgba(239, 68, 68, 0.45) !important;
                 color: #EF4444 !important;
-                font-size: 18px !important;
+                font-size: 20px !important;
                 font-weight: bold !important;
                 cursor: pointer !important;
                 margin-left: auto !important;
             }
 
-            /* MOBILE HEADER: Show ONLY hamburger + brand + notification bell */
+            /* ── ULTRA-CLEAN MOBILE HEADER ──
+               STRICT REQUIREMENT: Show ONLY ☰ on Left and 🔔 on Right!
+               HIDE EVERYTHING ELSE to eliminate clutter!
+            */
             .global-header {
                 height: 52px !important;
                 min-height: 52px !important;
+                max-height: 52px !important;
                 padding: 0 12px !important;
-                gap: 6px !important;
+                gap: 8px !important;
                 background: rgba(11, 17, 32, 0.98) !important;
                 border-bottom: 1px solid rgba(56, 189, 248, 0.2) !important;
-                backdrop-filter: blur(10px) !important;
-                -webkit-backdrop-filter: blur(10px) !important;
+                backdrop-filter: blur(12px) !important;
+                -webkit-backdrop-filter: blur(12px) !important;
                 justify-content: space-between !important;
+                width: 100% !important;
             }
-            .header-left-group { gap: 8px !important; }
+
+            /* LEFT GROUP: ☰ Hamburger + NanoPro Brand ONLY */
+            .header-left-group {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+            }
             #sidebarToggleBtn {
                 display: inline-flex !important;
                 width: 40px !important;
                 height: 40px !important;
-                font-size: 20px !important;
+                font-size: 21px !important;
                 background: rgba(56, 189, 248, 0.1) !important;
                 border: 1px solid rgba(56, 189, 248, 0.35) !important;
                 color: #38BDF8 !important;
                 border-radius: 10px !important;
                 flex-shrink: 0 !important;
+                align-items: center !important;
+                justify-content: center !important;
+                cursor: pointer !important;
             }
             .header-mobile-brand {
                 display: inline-flex !important;
                 align-items: center !important;
-                gap: 5px !important;
+                gap: 6px !important;
+                cursor: pointer !important;
             }
             .header-breadcrumbs { display: none !important; }
             #btnNavBack, #btnNavForward { display: none !important; }
+            #topbarTitle, #topbarModeBadge { display: none !important; }
+
+            /* CENTER GROUP: Hide completely */
             .header-center-group { display: none !important; }
-            #aiManagerSymbolWrapper { padding: 2px 6px !important; gap: 4px !important; }
-            #aiManagerSymbolWrapper .symbol-name { display: none !important; }
-            #aiManagerSymbolWrapper .symbol-state { display: none !important; }
-            #aiManagerSymbolWrapper .manager-core-orb { width: 22px !important; height: 22px !important; }
-            #studioStatusPill { display: none !important; }
-            #telemetryToggleBtn { display: none !important; }
-            #themeToggleBtn { display: none !important; }
-            #topbarModeBadge { display: none !important; }
-            .header-right-group > button {
-                height: 38px !important;
-                padding: 0 10px !important;
-                font-size: 16px !important;
-                min-width: 38px !important;
+
+            /* RIGHT GROUP: SHOW ONLY NOTIFICATION BELL 🔔 */
+            .header-right-group {
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
             }
-            .header-badge { font-size: 9px !important; padding: 1px 4px !important; }
+            /* Hide EVERYTHING in right group by default */
+            .header-right-group > * {
+                display: none !important;
+            }
+            /* Explicitly hide the listed clutter items */
+            #aiManagerSymbolWrapper { display: none !important; }
+            #studioStatusPill { display: none !important; }
+            #themeToggleBtn { display: none !important; }
+            #telemetryToggleBtn { display: none !important; }
+            #headerUserBadge { display: none !important; }
+            .header-right-group > button[title*="Approvals"],
+            .header-right-group > button[onclick*="approvals"] { display: none !important; }
+            .header-right-group > button[title*="Refresh"],
+            .header-right-group > button[onclick*="reloadActiveView"] { display: none !important; }
+
+            /* EXCEPT the Notification Bell button! */
+            .header-right-group > button[onclick*="logs"],
+            .header-right-group > #topbarNotifBtn {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                padding: 0 !important;
+                font-size: 19px !important;
+                background: rgba(56, 189, 248, 0.1) !important;
+                border: 1px solid rgba(56, 189, 248, 0.35) !important;
+                border-radius: 10px !important;
+                color: #F8FAFC !important;
+                position: relative !important;
+                cursor: pointer !important;
+            }
+            .header-right-group > button[onclick*="logs"] .header-badge,
+            .header-right-group > #topbarNotifBtn .header-badge {
+                display: inline-block !important;
+                position: absolute !important;
+                top: -3px !important;
+                right: -3px !important;
+                font-size: 9px !important;
+                padding: 2px 5px !important;
+                border-radius: 10px !important;
+                background: #10B981 !important;
+                border: 1px solid #060A14 !important;
+                color: #FFFFFF !important;
+                font-weight: 700 !important;
+            }
+
+            /* ── TELEMETRY RIGHT PANEL: STRICTLY OFF ON MOBILE ── */
             #right-panel {
                 display: none !important;
                 width: 0 !important;
                 min-width: 0 !important;
                 max-width: 0 !important;
                 padding: 0 !important;
-                border-left: none !important;
+                border: none !important;
                 overflow: hidden !important;
             }
 
+            /* ── MAIN CONTENT VIEWPORT ── */
             .main-content-viewport {
-                padding: 10px 10px 70px 10px !important;
+                padding: 10px 10px 72px 10px !important;
                 width: 100% !important;
                 max-width: 100vw !important;
                 overflow-x: hidden !important;
                 -webkit-overflow-scrolling: touch !important;
             }
 
+            /* Desktop-only feature blocks hidden on mobile */
             .desktop-only-feature { display: none !important; }
 
-            .lavish-command-stage { padding: 10px !important; border-radius: 10px !important; margin-bottom: 10px !important; }
-            .lavish-stage-header { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+            /* ── MOBILE CARD LAYOUT & MEMORY BALANCING ── */
+            .lavish-command-stage {
+                padding: 10px !important;
+                border-radius: 10px !important;
+                margin-bottom: 10px !important;
+            }
+            .lavish-stage-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 6px !important;
+            }
             .lavish-core-badge { width: 30px !important; height: 30px !important; font-size: 15px !important; }
             .lavish-stage-title-wrap h1 { font-size: 14px !important; }
             .lavish-stage-metrics { width: 100% !important; justify-content: flex-start !important; gap: 5px !important; }
             .lavish-metric-chip { font-size: 9.5px !important; padding: 2px 7px !important; }
+            /* Pause/reduce canvas height on mobile to save GPU RAM */
+            .lavish-canvas-wrapper { height: 90px !important; margin-bottom: 8px !important; }
 
+            /* Single-column grid for phones */
             .dashboard-grid, .grid-4, .grid-3, .grid-2, .join-visualization-grid, .info-grid {
                 grid-template-columns: 1fr !important;
                 gap: 8px !important;
@@ -1325,7 +1417,7 @@ def _get_raw_dashboard_html() -> str:
             .chat-input-container, .command-input-container { padding: 6px 8px !important; gap: 6px !important; }
             .chat-input, .command-input { font-size: 12.5px !important; padding: 7px 10px !important; }
 
-            /* MOBILE BOTTOM NAV BAR */
+            /* ── NATIVE APP-LIKE BOTTOM BAR ── */
             .mobile-bottom-nav {
                 display: flex !important;
                 position: fixed !important;
@@ -1342,6 +1434,7 @@ def _get_raw_dashboard_html() -> str:
                 justify-content: space-around !important;
                 padding: 0 2px !important;
                 box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.75) !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
             }
             .mobile-bottom-nav-item {
                 display: flex !important;
@@ -1357,7 +1450,7 @@ def _get_raw_dashboard_html() -> str:
                 font-weight: 600 !important;
                 cursor: pointer !important;
                 transition: color 0.18s ease !important;
-                gap: 1px !important;
+                gap: 2px !important;
                 padding: 4px 0 !important;
                 user-select: none !important;
                 -webkit-tap-highlight-color: transparent !important;
@@ -1370,11 +1463,10 @@ def _get_raw_dashboard_html() -> str:
                 filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.9)) !important;
             }
 
-            /* Show admin device feature panel on mobile */
+            /* Device feature manager panel shown inside settings view */
             .device-perm-panel { display: block !important; }
         }
-
-        /* ADMIN DEVICE FEATURE MANAGER STYLES */
+\n        /* ADMIN DEVICE FEATURE MANAGER STYLES */
         .device-perm-panel {
             display: none;
             background: var(--bg-card);
@@ -2927,10 +3019,20 @@ def _get_raw_dashboard_html() -> str:
 
         </div>
 
-        <!-- Sidebar Footer -->
-        <div class="sidebar-footer">
-            <span>Windows 10/11</span>
-            <span style="color:var(--accent-green);">&#9679; Ready</span>
+        <!-- Sidebar Footer (Desktop & Mobile Drawer Profile) -->
+        <div class="sidebar-footer" id="sidebarFooter">
+            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:rgba(56,189,248,0.2); border:1px solid #38BDF8; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">👤</div>
+                    <div style="display:flex; flex-direction:column; overflow:hidden;">
+                        <span id="sidebarFooterUsername" style="font-size:12px; font-weight:700; color:#F8FAFC; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">nanopro</span>
+                        <span id="sidebarFooterRole" style="font-size:10px; color:#10B981; font-weight:700;">[Admin]</span>
+                    </div>
+                </div>
+                <button type="button" onclick="performLogout()" style="background:rgba(239,68,68,0.15); border:1px solid #EF4444; color:#FCA5A5; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:700; flex-shrink:0;" title="Sign Out">
+                    Logout 🚪
+                </button>
+            </div>
         </div>
     </aside>
 
@@ -10143,23 +10245,23 @@ Ready for message compilation and automated dispatch.
 
 </div> <!-- Close #app-shell -->
 
-    <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (MINGLISH & ENGLISH MIX) -->
+    <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (NATIVE APP-LIKE EXPERIENCE) -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
         <button type="button" class="mobile-bottom-nav-item active" id="mobTab-dashboard" onclick="switchView('dashboard')">
             <span class="nav-icon">💬</span>
-            <span>Chat AI</span>
+            <span>AI Chat</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-data_engineer" onclick="switchView('data_engineer')">
-            <span class="nav-icon">🏛️</span>
-            <span>Lakehouse</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-amazon_tracker" onclick="switchView('amazon_tracker')">
+            <span class="nav-icon">🏷️</span>
+            <span>Deals</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-automation_scheduler" onclick="switchView('automation_scheduler')">
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-assistant" onclick="switchView('assistant')">
             <span class="nav-icon">⚡</span>
-            <span>Automate</span>
+            <span>Tasks</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-data_analyst" onclick="switchView('data_analyst')">
-            <span class="nav-icon">📊</span>
-            <span>Reports</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-news_center" onclick="switchView('news_center')">
+            <span class="nav-icon">📰</span>
+            <span>News</span>
         </button>
         <button type="button" class="mobile-bottom-nav-item" id="mobTab-menu" onclick="toggleMobileSidebar(true)">
             <span class="nav-icon">☰</span>
@@ -10188,8 +10290,16 @@ Ready for message compilation and automated dispatch.
 
         /* --- 2. SIDEBAR COLLAPSE & EXPAND --- */
         function initSidebarState() {
-            const isCollapsed = localStorage.getItem('nanopro_sidebar_collapsed') === 'true';
             const shell = document.getElementById('app-shell');
+            if (window.innerWidth <= 768) {
+                // On mobile screens, NEVER add sidebar-collapsed! Main page is 100% full screen.
+                if (shell) {
+                    shell.classList.remove('sidebar-collapsed');
+                    shell.classList.remove('mobile-sidebar-open');
+                }
+                return;
+            }
+            const isCollapsed = localStorage.getItem('nanopro_sidebar_collapsed') === 'true';
             if (shell && isCollapsed) {
                 shell.classList.add('sidebar-collapsed');
             }
