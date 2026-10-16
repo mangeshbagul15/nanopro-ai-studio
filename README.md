@@ -68,3 +68,5 @@ The server will start at `http://127.0.0.1:8000` and automatically launch Google
 python -m unittest app/tests/test_suite.py
 ```
 All 10 unit tests pass 100%.
+
+Gemini CLI test
