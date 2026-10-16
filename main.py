@@ -2734,6 +2734,19 @@ async def api_communication_whatsapp_cloud(req: WhatsAppCloudApiRequest):
     )
     return JSONResponse(res)
 
+@app.post('/api/telegram/test_all_bots')
+async def api_telegram_test_all_bots(chat_id: Optional[str] = None):
+    from app.core.telegram_router import test_all_specialized_bots
+    res = test_all_specialized_bots(chat_id=chat_id)
+    return JSONResponse(res)
+
+@app.post('/api/telegram/send_routed')
+async def api_telegram_send_routed(category: str = "general", text: str = "Test", chat_id: Optional[str] = None):
+    from app.core.telegram_router import send_telegram_routed_message
+    res = send_telegram_routed_message(category=category, text=text, chat_id=chat_id)
+    return JSONResponse(res)
+
+
 
 
 # ==========================================

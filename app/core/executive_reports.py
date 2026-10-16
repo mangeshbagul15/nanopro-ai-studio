@@ -15,8 +15,13 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from app.core.connection_manager import connection_manager
 from app.core.logger import log_event
 
-TELEGRAM_BOT_TOKEN = "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
-TELEGRAM_CHAT_ID = "1200023268"
+from app.core.config import (
+    TELEGRAM_REPORTS_BOT_TOKEN,
+    TELEGRAM_NEWS_BOT_TOKEN,
+    TELEGRAM_CHAT_ID
+)
+
+TELEGRAM_BOT_TOKEN = TELEGRAM_REPORTS_BOT_TOKEN
 REPORTS_DIR = os.path.join("data", "reports")
 
 class ExecutiveReportManager:

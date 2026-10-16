@@ -15,9 +15,9 @@ from app.core.connection_manager import connection_manager
 from app.core.logger import log_event
 
 import sqlite3
+from app.core.config import TELEGRAM_HEALTH_BOT_TOKEN, TELEGRAM_CHAT_ID
 
-TELEGRAM_BOT_TOKEN = "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
-TELEGRAM_CHAT_ID = "1200023268"
+TELEGRAM_BOT_TOKEN = TELEGRAM_HEALTH_BOT_TOKEN
 STAGING_LEDGER_PATH = os.path.join("data", "banking", "snowflake_l0_staging_ledger.json")
 
 class CloudETLManager:

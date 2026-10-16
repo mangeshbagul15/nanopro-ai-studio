@@ -314,35 +314,34 @@ class CommunicationCenter:
         process_key: str = "general",
         parse_mode: str = "HTML"
     ) -> Dict[str, Any]:
-        """Broadcasts a message to all active Telegram targets mapped to this process."""
-        from app.agents.assistant_agent import personal_assistant_agent
+        """Broadcasts a message to its specialized Telegram bot mapped to this process."""
+        from app.core.telegram_router import send_telegram_routed_message
 
-        targets = self.list_targets(channel="telegram")
-        active_chat_ids = [t["target_identifier"] for t in targets if t.get("is_active")]
-        if not active_chat_ids:
-            active_chat_ids = ["1200023268"]
+        # Intelligently map process_key to specialized bot category
+        pk = (process_key or "").lower()
+        if any(w in pk for w in ["job", "career", "outreach", "study", "drill", "hr", "interview"]):
+            cat = "career"
+        elif any(w in pk for w in ["health", "db", "etl", "sync", "server", "system", "monitoring"]):
+            cat = "health"
+        elif any(w in pk for w in ["report", "finance", "financial", "bi", "bank", "ledger"]):
+            cat = "reports"
+        else:
+            cat = "news"
 
-        results = []
-        for chat_id in active_chat_ids:
-            try:
-                res = personal_assistant_agent.send_telegram_message(message, parse_mode=parse_mode, target_chat_id=chat_id)
-                status = "sent" if res.get("status") == "success" else "failed"
-                err = res.get("error") if status == "failed" else None
-                self.record_ledger_entry(
-                    channel="telegram",
-                    process_name=process_key,
-                    sender="@mangesh_technews_bot",
-                    recipient=chat_id,
-                    subject="Telegram Broadcast",
-                    status=status,
-                    error_message=err,
-                    summary_text=message[:150]
-                )
-                results.append({"chat_id": chat_id, "status": status, "error": err})
-            except Exception as e:
-                results.append({"chat_id": chat_id, "status": "failed", "error": str(e)})
-
-        return {"status": "success", "dispatched_count": len(results), "details": results}
+        res = send_telegram_routed_message(category=cat, text=message)
+        status = "sent" if res.get("success") else "failed"
+        bot_sender = res.get("bot_used", "@mangesh_technews_bot")
+        self.record_ledger_entry(
+            channel="telegram",
+            process_name=process_key,
+            sender=bot_sender,
+            recipient="1200023268",
+            subject=f"Telegram [{cat.upper()}] Broadcast",
+            status=status,
+            error_message=res.get("error") if status == "failed" else None,
+            summary_text=message[:150]
+        )
+        return {"status": "success", "category": cat, "bot_used": bot_sender, "details": res}
 
     # =========================================================================
     # Free WhatsApp Integration Engine

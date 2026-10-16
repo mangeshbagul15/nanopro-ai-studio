@@ -78,10 +78,28 @@ DEFAULT_METADATA_MODELS = [
     "qwen2.5-coder:7b",
 ]
 
-# Telegram Agent Configurations
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
+# Telegram Multi-Bot Configurations (Specialized Channels)
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
-TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "@mangesh_technews_bot")
+
+# Bot 1: News & AI Trends (Default Primary)
+TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
+TELEGRAM_NEWS_BOT_USERNAME = "@mangesh_technews_bot"
+
+# Bot 2: Health & System Monitoring
+TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4")
+TELEGRAM_HEALTH_BOT_USERNAME = "@mangesh_health_monitor_bot"
+
+# Bot 3: Career, Jobs & Interview Study
+TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN", "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA")
+TELEGRAM_CAREER_BOT_USERNAME = "@mangesh_career_study_bot"
+
+# Bot 4: Executive & Financial Reports
+TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN", "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4")
+TELEGRAM_REPORTS_BOT_USERNAME = "@mangesh_reports_bot"
+
+# Global Default Token
+TELEGRAM_BOT_TOKEN = TELEGRAM_NEWS_BOT_TOKEN
+TELEGRAM_BOT_USERNAME = TELEGRAM_NEWS_BOT_USERNAME
 REMINDERS_CHECK_INTERVAL = int(os.environ.get("REMINDERS_CHECK_INTERVAL", 60))
 
 # Audio fallback policy
