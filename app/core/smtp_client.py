@@ -1912,6 +1912,7 @@ class SMTPClient:
                     details_json TEXT
                 )""")
                 import json
+                import uuid
                 cursor.execute("""
                 INSERT INTO connection_history (
                     id, connection_name, service_type, status, response_time_ms,
@@ -1919,7 +1920,7 @@ class SMTPClient:
                     error_message, tested_at, details_json
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    f"hist_{time.time_ns()}", conn_name, service_type, status, response_time,
+                    f"hist_{int(time.time()*1000)}_{uuid.uuid4().hex[:8]}", conn_name, service_type, status, response_time,
                     details.get("username"), None, None, None, error, time.time(), json.dumps(details)
                 ))
                 conn.commit()

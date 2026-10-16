@@ -925,6 +925,7 @@ class ConnectionManager:
         host = meta.get("hostname") or cfg.get("host") or default_meta.get("hostname", "127.0.0.1")
         port = int(meta.get("port") or cfg.get("port") or default_meta.get("port", 5432))
         user = meta.get("username") or cfg.get("username") or default_meta.get("username", "postgres")
+        dbname = meta.get("database") or (cfg.get("database_name") if cfg else "") or default_meta.get("database", "nanopro_db")
         password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or (os.environ.get("NEON_POSTGRES_PASSWORD") if "NEON" in conn_name or "FREE" in conn_name else (os.environ.get("RENDER_POSTGRES_PASSWORD") if "RENDER" in conn_name else os.environ.get("POSTGRES_PASSWORD"))) or "postgres"
 
         conn_url = meta.get("connection_url") or meta.get("connection_url_external") or ""
