@@ -1899,6 +1899,17 @@ async def api_test_oracle_connection(req: Optional[OracleTestRequest] = None):
     res = connection_manager.test_oracle_connection(connection_name=conn_name)
     return JSONResponse(res)
 
+class PostgresTestRequest(BaseModel):
+    connection_name: Optional[str] = "MY_POSTGRES_LOCAL"
+
+@app.post('/api/connections/test/postgres')
+async def api_test_postgres_connection(req: Optional[PostgresTestRequest] = None):
+    """Executes real PostgreSQL connection verification for specified connection profile (Local, Neon Free Cloud, Render Cloud)."""
+    from app.core.connection_manager import connection_manager
+    conn_name = req.connection_name if req and req.connection_name else "MY_POSTGRES_LOCAL"
+    res = connection_manager.test_postgres_connection(connection_name=conn_name)
+    return JSONResponse(res)
+
 @app.post('/api/connections/test/gmail')
 async def api_test_gmail_connection():
     """Executes real Gmail SMTP TLS connection verification."""
@@ -3476,10 +3487,11 @@ async def api_training_record(req: TrainingRecordRequest):
 # ==========================================
 @app.post("/api/connections/postgres/test")
 @app.get("/api/connections/postgres/test")
-async def api_postgres_test_endpoint():
-    """Validates PostgreSQL live connection and tables."""
+async def api_postgres_test_endpoint(req: Optional[PostgresTestRequest] = None, connection_name: Optional[str] = None):
+    """Validates PostgreSQL live connection and tables for specified connection profile."""
     from app.core.connection_manager import connection_manager
-    res = connection_manager.test_postgres_connection("MY_POSTGRES_LOCAL")
+    target = connection_name or (req.connection_name if req and req.connection_name else "MY_POSTGRES_LOCAL")
+    res = connection_manager.test_postgres_connection(target)
     return JSONResponse(res)
 
 @app.get("/api/lakehouse/scd2_status")

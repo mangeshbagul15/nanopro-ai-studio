@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import json
+import uuid
 import urllib.parse
 import urllib.request
 from typing import Dict, Any, List, Optional
@@ -563,7 +564,7 @@ class CommunicationCenter:
         metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """Records an immutable delivery observation in communication_ledger."""
-        entry_id = f"comm_{int(time.time()*1000)}"
+        entry_id = f"comm_{int(time.time()*1000)}_{uuid.uuid4().hex[:6]}"
         now = time.time()
         try:
             with db.get_connection() as conn:

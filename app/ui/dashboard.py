@@ -8850,6 +8850,28 @@ Ready for message compilation and automated dispatch.
                         <div id="oracleTailscaleTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
                     </div>
 
+                    <!-- ORACLE APEX 23AI CLOUD CARD -->
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #EA580C; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#FB923C; letter-spacing:0.5px;">ORACLE 23ai CLOUD (APEX)</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">ORACLE_APEX_23AI_CLOUD</h3>
+                            </div>
+                            <span id="badgeOracleApexStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Host &amp; Endpoint:</strong> apex.oracle.com:443 (ORDS REST)</div>
+                            <div><strong>Workspace:</strong> nanoprostudio (Lifetime Free)</div>
+                            <div><strong>User / Role:</strong> mangeshbagul15@gmail.com (Cloud DBA)</div>
+                            <div style="font-size:11px; color:#F97316;">Oracle Database 23ai Enterprise Cloud Edition &bull; 24/7 Active</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('ORACLE_APEX_23AI_CLOUD')" id="btnTestOracleApex" style="flex:1; background:#EA580C;">&#128269; Test 23ai Cloud APEX</button>
+                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('ORACLE_APEX_23AI_CLOUD', 'database')">&#9881; Update</button>
+                        </div>
+                        <div id="oracleApexTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
                     <!-- GMAIL SMTP CARD -->
                     <div style="background:rgba(15,23,42,0.85); border:1px solid var(--border); border-radius:10px; padding:14px; position:relative;">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
@@ -8938,26 +8960,70 @@ Ready for message compilation and automated dispatch.
                         <div id="sqliteTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
                     </div>
 
-                    <!-- POSTGRESQL ENTERPRISE CARD -->
+                    <!-- POSTGRESQL LOCAL CARD -->
                     <div style="background:rgba(15,23,42,0.85); border:1px solid #3B82F6; border-radius:10px; padding:14px; position:relative;">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
                             <div>
-                                <div style="font-size:11px; font-weight:700; color:#60A5FA; letter-spacing:0.5px;">POSTGRESQL ENTERPRISE</div>
+                                <div style="font-size:11px; font-weight:700; color:#60A5FA; letter-spacing:0.5px;">POSTGRESQL LOCAL</div>
                                 <h3 style="font-size:15px; font-weight:700; margin-top:2px;">MY_POSTGRES_LOCAL</h3>
                             </div>
                             <span id="badgePostgresStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
                         </div>
                         <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
                             <div><strong>Host &amp; Port:</strong> 127.0.0.1:5432</div>
-                            <div><strong>Database:</strong> nanopro_db</div>
-                            <div><strong>User / Role:</strong> postgres</div>
+                            <div><strong>Database:</strong> nanopro_db / postgres</div>
+                            <div><strong>User / Role:</strong> postgres (Password: Divyam@123)</div>
                             <div style="font-size:11px; color:#64748B;">Customer profiles &amp; Lakehouse transactional CDC</div>
                         </div>
                         <div style="display:flex; gap:8px;">
-                            <button type="button" class="btn btn-primary" onclick="testPostgresConnectionAction('MY_POSTGRES_LOCAL')" id="btnTestPostgres" style="flex:1; background:#2563EB;">&#128269; Test PostgreSQL</button>
+                            <button type="button" class="btn btn-primary" onclick="testPostgresConnectionAction('MY_POSTGRES_LOCAL')" id="btnTestPostgres" style="flex:1; background:#2563EB;">&#128269; Test Local Postgres</button>
                             <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('MY_POSTGRES_LOCAL', 'database')">&#9881; Update</button>
                         </div>
                         <div id="postgresTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
+                    <!-- NEON POSTGRESQL CLOUD FREE CARD -->
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #06B6D4; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#22D3EE; letter-spacing:0.5px;">NEON POSTGRESQL CLOUD</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">POSTGRES_CLOUD_FREE</h3>
+                            </div>
+                            <span id="badgeNeonPostgresStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Host &amp; Port:</strong> ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech:5432</div>
+                            <div><strong>Database:</strong> neondb (AWS Singapore)</div>
+                            <div><strong>User / Role:</strong> neondb_owner (Serverless Pooler)</div>
+                            <div style="font-size:11px; color:#06B6D4;">Neon Serverless PostgreSQL 18 &bull; 100% Free Lifetime Forever</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testPostgresConnectionAction('POSTGRES_CLOUD_FREE')" id="btnTestNeonPostgres" style="flex:1; background:#0891B2;">&#128269; Test Neon Cloud</button>
+                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('POSTGRES_CLOUD_FREE', 'database')">&#9881; Update</button>
+                        </div>
+                        <div id="neonPostgresTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                    </div>
+
+                    <!-- RENDER POSTGRESQL CLOUD CARD -->
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #8B5CF6; border-radius:10px; padding:14px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#A78BFA; letter-spacing:0.5px;">RENDER POSTGRESQL CLOUD</div>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">POSTGRES_RENDER_CLOUD</h3>
+                            </div>
+                            <span id="badgeRenderPostgresStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                            <div><strong>Host &amp; Port:</strong> dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com:5432</div>
+                            <div><strong>Database:</strong> nanopro_postgres (Singapore)</div>
+                            <div><strong>User / Role:</strong> nanopro_postgres_user (SSL Enforced)</div>
+                            <div style="font-size:11px; color:#A78BFA;">Render Cloud PostgreSQL Enterprise Production Database</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" onclick="testPostgresConnectionAction('POSTGRES_RENDER_CLOUD')" id="btnTestRenderPostgres" style="flex:1; background:#7C3AED;">&#128269; Test Render Cloud</button>
+                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('POSTGRES_RENDER_CLOUD', 'database')">&#9881; Update</button>
+                        </div>
+                        <div id="renderPostgresTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
                     </div>
                 </div>
 
@@ -11781,6 +11847,11 @@ function navigateHistory(direction) {
                 badgeId = 'badgeOracleTailscaleStatus';
                 resultBoxId = 'oracleTailscaleTestResultBox';
                 targetHost = '100.112.86.83';
+            } else if (connectionName === 'ORACLE_APEX_23AI_CLOUD') {
+                btnId = 'btnTestOracleApex';
+                badgeId = 'badgeOracleApexStatus';
+                resultBoxId = 'oracleApexTestResultBox';
+                targetHost = 'apex.oracle.com';
             }
 
             const btn = document.getElementById(btnId);
@@ -11794,7 +11865,7 @@ function navigateHistory(direction) {
                 resultBox.style.display = 'block';
                 resultBox.style.background = '#0F172A';
                 resultBox.style.border = '1px solid #334155';
-                resultBox.innerHTML = `<span class="spinner-sm"></span> Probing TCP port 1521 at ${targetHost} (${connectionName})...<br>• Validating authenticated session for SYSTEM (Password: Divyam@123)...<br>• Checking service XEPDB1 with multi-DB failover resilience...`;
+                resultBox.innerHTML = `<span class="spinner-sm"></span> Probing TCP port ${connectionName === 'ORACLE_APEX_23AI_CLOUD' ? '443' : '1521'} at ${targetHost} (${connectionName})...<br>• Validating authenticated session for SYSTEM (Password: NanoPro2026)...<br>• Checking service XEPDB1 with multi-DB failover resilience...`;
             }
 
             try {
@@ -11855,9 +11926,29 @@ function navigateHistory(direction) {
             if (isTestingPostgres) return;
             isTestingPostgres = true;
 
-            const btn = document.getElementById('btnTestPostgres');
-            const badge = document.getElementById('badgePostgresStatus');
-            const resultBox = document.getElementById('postgresTestResultBox');
+            let btnId = 'btnTestPostgres';
+            let badgeId = 'badgePostgresStatus';
+            let resultBoxId = 'postgresTestResultBox';
+            let targetHost = '127.0.0.1';
+            let targetDb = 'nanopro_db';
+
+            if (connectionName === 'POSTGRES_CLOUD_FREE') {
+                btnId = 'btnTestNeonPostgres';
+                badgeId = 'badgeNeonPostgresStatus';
+                resultBoxId = 'neonPostgresTestResultBox';
+                targetHost = 'ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech';
+                targetDb = 'neondb';
+            } else if (connectionName === 'POSTGRES_RENDER_CLOUD') {
+                btnId = 'btnTestRenderPostgres';
+                badgeId = 'badgeRenderPostgresStatus';
+                resultBoxId = 'renderPostgresTestResultBox';
+                targetHost = 'dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com';
+                targetDb = 'nanopro_postgres';
+            }
+
+            const btn = document.getElementById(btnId);
+            const badge = document.getElementById(badgeId);
+            const resultBox = document.getElementById(resultBoxId);
             const origHtml = btn ? btn.innerHTML : '🔍 Test PostgreSQL';
 
             if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Testing PostgreSQL...'; }
@@ -11866,13 +11957,14 @@ function navigateHistory(direction) {
                 resultBox.style.display = 'block';
                 resultBox.style.background = '#0F172A';
                 resultBox.style.border = '1px solid #334155';
-                resultBox.innerHTML = '<span class="spinner-sm"></span> Probing PostgreSQL port 5432 at 127.0.0.1 (database: nanopro_db)...<br>• Validating database engine and active tables...<br>• Checking schema introspection catalog for Medallion ingestion...';
+                resultBox.innerHTML = `<span class="spinner-sm"></span> Probing PostgreSQL port 5432 at ${targetHost} (database: ${targetDb})...<br>• Validating database engine and active tables...<br>• Checking schema introspection catalog for Medallion ingestion...`;
             }
 
             try {
-                const res = await fetch('/api/connections/postgres/test', {
+                const res = await fetch('/api/connections/test/postgres', {
                     method: 'POST',
-                    headers: { 'Accept': 'application/json' }
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ connection_name: connectionName })
                 });
 
                 let d = null;
@@ -11896,11 +11988,10 @@ function navigateHistory(direction) {
                         ${isSuccess ? '✅ ' + connectionName + ' Verified & Online' : '⚠️ ' + connectionName + ': ' + (d.status || 'Offline / Standby')}
                     </div>`;
                     html += `<div style="line-height:1.5; color:#CBD5E1;">
-                        <div><strong>Target:</strong> ${d.host || '127.0.0.1'}:${d.port || 5432}/${d.database || 'nanopro_db'}</div>
-                        <div><strong>User:</strong> ${d.user || 'postgres'}</div>
-                        <div><strong>Engine / Version:</strong> ${d.version || 'PostgreSQL 16.x'}</div>
+                        <div><strong>Target:</strong> ${d.host || targetHost}:${d.port || 5432}/${d.active_database || d.database || targetDb}</div>
+                        <div><strong>User:</strong> ${d.active_user || d.user || d.username || 'postgres'}</div>
+                        <div><strong>Engine / Version:</strong> ${d.version || 'PostgreSQL'}</div>
                         <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
-                        <div><strong>Tables Accessible:</strong> ${(d.tables || ['CUSTOMER_PROFILES_PG', 'ACCOUNT_BALANCES_PG', 'AUDIT_TRANSACTIONS_PG']).join(', ')}</div>
                     </div>`;
 
                     if (d.message) {
