@@ -1149,6 +1149,7 @@ def _get_raw_dashboard_html() -> str:
                 position: relative !important;
                 -webkit-overflow-scrolling: touch !important;
                 font-size: 13px !important;
+                overscroll-behavior: none !important;
             }
             .app-shell {
                 width: 100% !important;
@@ -1163,7 +1164,10 @@ def _get_raw_dashboard_html() -> str:
                 overflow-x: hidden !important;
             }
 
-            /* --- MOBILE SLIDE-IN SIDEBAR DRAWER --- */
+            /* OFF-CANVAS DRAWER SIDEBAR
+               DEFAULT: sidebar hidden (left: -320px). Main panel fills 100%.
+               OPEN: overlays on top (does NOT push/shrink main content).
+            */
             #sidebar {
                 position: fixed !important;
                 left: -320px !important;
@@ -1186,6 +1190,11 @@ def _get_raw_dashboard_html() -> str:
             .app-shell.mobile-sidebar-open #sidebar {
                 left: 0 !important;
             }
+            .app-shell #main-panel {
+                width: 100% !important;
+                min-width: 0 !important;
+                flex: 1 !important;
+            }
             .brand-text { display: block !important; }
             .sidebar-search-box { display: block !important; padding: 8px 10px !important; }
             .nav-group-header { display: flex !important; padding: 10px 12px !important; font-size: 11px !important; }
@@ -1199,8 +1208,6 @@ def _get_raw_dashboard_html() -> str:
             .nav-item-icon { font-size: 16px !important; }
             .nav-item-label { display: inline-block !important; font-size: 13px !important; }
             .sidebar-footer { display: flex !important; padding: 10px 14px !important; font-size: 11px !important; }
-
-            /* Mobile Close Button in Sidebar Header */
             #sidebarCollapseBtn { display: none !important; }
             .mobile-sidebar-close-btn {
                 display: flex !important;
@@ -1218,81 +1225,80 @@ def _get_raw_dashboard_html() -> str:
                 margin-left: auto !important;
             }
 
-            /* --- MOBILE GLOBAL STICKY HEADER --- */
+            /* MOBILE HEADER: Show ONLY hamburger + brand + notification bell */
             .global-header {
-                height: 50px !important;
-                padding: 0 10px !important;
+                height: 52px !important;
+                min-height: 52px !important;
+                padding: 0 12px !important;
                 gap: 6px !important;
-                background: rgba(14, 21, 40, 0.98) !important;
-                border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
+                background: rgba(11, 17, 32, 0.98) !important;
+                border-bottom: 1px solid rgba(56, 189, 248, 0.2) !important;
+                backdrop-filter: blur(10px) !important;
+                -webkit-backdrop-filter: blur(10px) !important;
+                justify-content: space-between !important;
             }
-            .header-center-group { display: none !important; }
-            .header-breadcrumbs { display: none !important; }
-            #btnNavBack, #btnNavForward { display: none !important; }
+            .header-left-group { gap: 8px !important; }
             #sidebarToggleBtn {
                 display: inline-flex !important;
-                width: 36px !important;
-                height: 36px !important;
-                font-size: 19px !important;
-                background: rgba(56, 189, 248, 0.15) !important;
-                border: 1px solid rgba(56, 189, 248, 0.4) !important;
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 20px !important;
+                background: rgba(56, 189, 248, 0.1) !important;
+                border: 1px solid rgba(56, 189, 248, 0.35) !important;
                 color: #38BDF8 !important;
-                border-radius: 8px !important;
+                border-radius: 10px !important;
+                flex-shrink: 0 !important;
             }
             .header-mobile-brand {
                 display: inline-flex !important;
                 align-items: center !important;
                 gap: 5px !important;
             }
-            #aiManagerSymbolWrapper {
-                padding: 2px 6px !important;
-                gap: 4px !important;
+            .header-breadcrumbs { display: none !important; }
+            #btnNavBack, #btnNavForward { display: none !important; }
+            .header-center-group { display: none !important; }
+            #aiManagerSymbolWrapper { padding: 2px 6px !important; gap: 4px !important; }
+            #aiManagerSymbolWrapper .symbol-name { display: none !important; }
+            #aiManagerSymbolWrapper .symbol-state { display: none !important; }
+            #aiManagerSymbolWrapper .manager-core-orb { width: 22px !important; height: 22px !important; }
+            #studioStatusPill { display: none !important; }
+            #telemetryToggleBtn { display: none !important; }
+            #themeToggleBtn { display: none !important; }
+            #topbarModeBadge { display: none !important; }
+            .header-right-group > button {
+                height: 38px !important;
+                padding: 0 10px !important;
+                font-size: 16px !important;
+                min-width: 38px !important;
             }
-            #aiManagerSymbolWrapper .symbol-name { font-size: 8px !important; }
-            #aiManagerSymbolWrapper .symbol-state { font-size: 7px !important; }
-            #aiManagerSymbolWrapper .manager-core-orb { width: 18px !important; height: 18px !important; }
-            #studioStatusPill, #telemetryToggleBtn, #topbarNotifBadge, .header-badge {
+            .header-badge { font-size: 9px !important; padding: 1px 4px !important; }
+            #right-panel {
                 display: none !important;
+                width: 0 !important;
+                min-width: 0 !important;
+                max-width: 0 !important;
+                padding: 0 !important;
+                border-left: none !important;
+                overflow: hidden !important;
             }
 
-            /* --- MOBILE VIEWPORT & SCROLLING --- */
             .main-content-viewport {
-                padding: 10px 10px 75px 10px !important;
+                padding: 10px 10px 70px 10px !important;
                 width: 100% !important;
                 max-width: 100vw !important;
                 overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
             }
 
-            /* --- SCALING DOWN GIGANTIC STAGES & CARDS ("sagl moth distay" FIX) --- */
-            .lavish-command-stage {
-                padding: 10px !important;
-                border-radius: 10px !important;
-                margin-bottom: 10px !important;
-            }
-            .lavish-stage-header {
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                gap: 6px !important;
-            }
-            .lavish-core-badge {
-                width: 30px !important;
-                height: 30px !important;
-                font-size: 15px !important;
-            }
-            .lavish-stage-title-wrap h1 {
-                font-size: 14px !important;
-            }
-            .lavish-stage-metrics {
-                width: 100% !important;
-                justify-content: flex-start !important;
-                gap: 5px !important;
-            }
-            .lavish-metric-chip {
-                font-size: 9.5px !important;
-                padding: 2px 7px !important;
-            }
+            .desktop-only-feature { display: none !important; }
 
-            /* Stack all complex multi-column grids into clean 1-column cards */
+            .lavish-command-stage { padding: 10px !important; border-radius: 10px !important; margin-bottom: 10px !important; }
+            .lavish-stage-header { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+            .lavish-core-badge { width: 30px !important; height: 30px !important; font-size: 15px !important; }
+            .lavish-stage-title-wrap h1 { font-size: 14px !important; }
+            .lavish-stage-metrics { width: 100% !important; justify-content: flex-start !important; gap: 5px !important; }
+            .lavish-metric-chip { font-size: 9.5px !important; padding: 2px 7px !important; }
+
             .dashboard-grid, .grid-4, .grid-3, .grid-2, .join-visualization-grid, .info-grid {
                 grid-template-columns: 1fr !important;
                 gap: 8px !important;
@@ -1303,22 +1309,12 @@ def _get_raw_dashboard_html() -> str:
                 max-width: 100% !important;
                 box-sizing: border-box !important;
             }
-
-            /* Responsive Typography */
             h1 { font-size: 16px !important; line-height: 1.25 !important; }
             h2 { font-size: 14px !important; line-height: 1.25 !important; }
             h3 { font-size: 12.5px !important; line-height: 1.25 !important; }
             p, span, div, label { font-size: 12px !important; }
-
-            /* Touch-Friendly Tables with Horizontal Scroll */
-            table {
-                font-size: 11px !important;
-                width: 100% !important;
-            }
-            th, td {
-                padding: 6px 8px !important;
-                white-space: nowrap !important;
-            }
+            table { font-size: 11px !important; width: 100% !important; }
+            th, td { padding: 6px 8px !important; white-space: nowrap !important; }
             .table-container, .table-card, .table-responsive, .join-table-card {
                 width: 100% !important;
                 max-width: 100% !important;
@@ -1326,18 +1322,10 @@ def _get_raw_dashboard_html() -> str:
                 -webkit-overflow-scrolling: touch !important;
                 border-radius: 8px !important;
             }
+            .chat-input-container, .command-input-container { padding: 6px 8px !important; gap: 6px !important; }
+            .chat-input, .command-input { font-size: 12.5px !important; padding: 7px 10px !important; }
 
-            /* Chat Input Bar on Mobile */
-            .chat-input-container, .command-input-container {
-                padding: 6px 8px !important;
-                gap: 6px !important;
-            }
-            .chat-input, .command-input {
-                font-size: 12.5px !important;
-                padding: 7px 10px !important;
-            }
-
-            /* --- MOBILE BOTTOM QUICK NAVIGATION BAR --- */
+            /* MOBILE BOTTOM NAV BAR */
             .mobile-bottom-nav {
                 display: flex !important;
                 position: fixed !important;
@@ -1346,7 +1334,7 @@ def _get_raw_dashboard_html() -> str:
                 right: 0 !important;
                 height: 54px !important;
                 background: rgba(10, 16, 32, 0.98) !important;
-                border-top: 1px solid rgba(56, 189, 248, 0.35) !important;
+                border-top: 1px solid rgba(56, 189, 248, 0.3) !important;
                 backdrop-filter: blur(12px) !important;
                 -webkit-backdrop-filter: blur(12px) !important;
                 z-index: 99990 !important;
@@ -1368,23 +1356,220 @@ def _get_raw_dashboard_html() -> str:
                 font-size: 9.5px !important;
                 font-weight: 600 !important;
                 cursor: pointer !important;
-                transition: all 0.18s ease !important;
+                transition: color 0.18s ease !important;
                 gap: 1px !important;
-                padding: 2px 0 !important;
+                padding: 4px 0 !important;
                 user-select: none !important;
                 -webkit-tap-highlight-color: transparent !important;
+                min-width: 44px !important;
             }
-            .mobile-bottom-nav-item .nav-icon {
-                font-size: 16px !important;
-                line-height: 1 !important;
-            }
+            .mobile-bottom-nav-item .nav-icon { font-size: 18px !important; line-height: 1 !important; }
             .mobile-bottom-nav-item.active,
-            .mobile-bottom-nav-item:hover {
-                color: #38BDF8 !important;
-            }
+            .mobile-bottom-nav-item:active { color: #38BDF8 !important; }
             .mobile-bottom-nav-item.active .nav-icon {
                 filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.9)) !important;
             }
+
+            /* Show admin device feature panel on mobile */
+            .device-perm-panel { display: block !important; }
+        }
+
+        /* ADMIN DEVICE FEATURE MANAGER STYLES */
+        .device-perm-panel {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .device-perm-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .device-tab-strip {
+            display: flex;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .device-tab-btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .device-tab-btn.active {
+            background: var(--accent-blue);
+            color: #060A14;
+        }
+        .device-perm-info {
+            font-size: 10.5px;
+            color: var(--text-sub);
+            padding: 7px 10px;
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 6px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .device-feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        @media (max-width: 500px) {
+            .device-feature-grid { grid-template-columns: 1fr; }
+        }
+        .device-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .device-feature-item input[type=checkbox] {
+            accent-color: var(--accent-blue);
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+        .device-feature-item:hover { border-color: var(--border-highlight); color: var(--text-main); }
+        .device-feature-item.checked {
+            border-color: rgba(56, 189, 248, 0.4);
+            background: rgba(56, 189, 248, 0.06);
+            color: var(--accent-blue);
+        }
+        .device-perm-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+            /* Show device-perm panel on mobile (admin can modify) */
+            .device-perm-panel { display: block !important; }
+        }
+
+        /* ━━━ ADMIN DEVICE FEATURE MANAGER STYLES ━━━
+           These styles render the per-device feature gating UI
+           shown inside Settings for admin and on mobile for self-configuration.
+        */
+        .device-perm-panel {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .device-perm-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .device-tab-strip {
+            display: flex;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .device-tab-btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .device-tab-btn.active {
+            background: var(--accent-blue);
+            color: #060A14;
+        }
+        .device-perm-info {
+            font-size: 10.5px;
+            color: var(--text-sub);
+            padding: 7px 10px;
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 6px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .device-feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        @media (max-width: 500px) {
+            .device-feature-grid { grid-template-columns: 1fr; }
+        }
+        .device-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .device-feature-item input[type=checkbox] {
+            accent-color: var(--accent-blue);
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+        .device-feature-item:hover { border-color: var(--border-highlight); color: var(--text-main); }
+        .device-feature-item.checked {
+            border-color: rgba(56, 189, 248, 0.4);
+            background: rgba(56, 189, 248, 0.06);
+            color: var(--accent-blue);
+        }
+        .device-perm-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
         }
 
         @keyframes fadeIn {
@@ -3973,6 +4158,145 @@ def _get_raw_dashboard_html() -> str:
                         <button type="button" class="btn btn-secondary" onclick="sendTestTelegramNotification()">&#128276; Send Test Notification</button>
                         <button type="button" class="btn btn-accent" onclick="runDiscoveryCycleManual()">&#9658; Run Discovery Cycle Now</button>
                     </div>
+                </div>
+
+                
+                <!-- ====================================================
+                     ADMIN DEVICE FEATURE MANAGER
+                     Control which features appear on Mobile vs Desktop
+                     ==================================================== -->
+                <div style="background:#0F172A; border:1px solid #334155; border-radius:10px; padding:16px; margin-bottom:16px;" id="adminDeviceManagerCard">
+                    <h3 style="font-size:14px; color:#38BDF8; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        &#128241; Device Feature Manager &amp; Mobile/Desktop Access Control
+                    </h3>
+                    <p style="font-size:12px; color:#94A3B8; margin-bottom:14px;">
+                        Control which NanoPro features appear on <b style="color:#38BDF8">Mobile Browsers</b> vs <b style="color:#6366F1">Desktop / Laptop</b>.
+                        Mobile se connect karnare users sirf mobile-allowed features dekhnar. Admin swata sathi pn modify karu shakel.
+                    </p>
+
+                    <div class="device-perm-info">
+                        &#128161; <b>How it works:</b> Features marked as "Mobile Allowed" will appear in the bottom navigation and sidebar on mobile browsers.
+                        "Desktop Only" features are automatically hidden on screens &lt;768px unless explicitly enabled here.
+                        Settings are saved in localStorage and applied instantly — no server restart needed.
+                    </div>
+
+                    <div class="device-tab-strip" style="max-width:420px;">
+                        <button class="device-tab-btn active" onclick="switchDeviceTab('mobile', this)">&#128241; Mobile Features</button>
+                        <button class="device-tab-btn" onclick="switchDeviceTab('desktop', this)">&#128187; Desktop Features</button>
+                        <button class="device-tab-btn" onclick="switchDeviceTab('both', this)">&#127768; Both (All)</button>
+                    </div>
+
+                    <!-- Mobile Features Grid -->
+                    <div id="deviceTab-mobile" class="device-feature-grid">
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'ai_manager')">
+                            <input type="checkbox" checked> &#129302; AI Manager Chat
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'dashboard')">
+                            <input type="checkbox" checked> &#9672; Studio Overview
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'amazon_tracker')">
+                            <input type="checkbox" checked> &#127991; Amazon Price Tracker
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'communication')">
+                            <input type="checkbox" checked> &#128172; WhatsApp / Telegram
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'news_center')">
+                            <input type="checkbox" checked> &#128240; News Center
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'career_hub')">
+                            <input type="checkbox" checked> &#128188; Career &amp; Jobs
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'assistant')">
+                            <input type="checkbox" checked> &#9200; Reminders &amp; Tasks
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'approvals')">
+                            <input type="checkbox" checked> &#128737; Action Approvals
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'data_engineer')">
+                            <input type="checkbox"> &#127963; Data Engineering
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'data_analyst')">
+                            <input type="checkbox"> &#128202; Data Analyst
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'automation_scheduler')">
+                            <input type="checkbox"> &#9889; Task Scheduler
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'cyber_lab')">
+                            <input type="checkbox"> &#128737; Cybersecurity Lab
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'monitoring')">
+                            <input type="checkbox"> &#128154; System Monitoring
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'live_discovery')">
+                            <input type="checkbox"> &#128269; Live Discovery
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'ai_office')">
+                            <input type="checkbox"> &#127970; AI Agent Office
+                        </label>
+                        <label class="device-feature-item" onclick="toggleDeviceFeature(this, 'data_science')">
+                            <input type="checkbox"> &#129302; Data Science &amp; ML
+                        </label>
+                    </div>
+
+                    <!-- Desktop Features Grid (hidden until tab is switched) -->
+                    <div id="deviceTab-desktop" class="device-feature-grid" style="display:none;">
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'data_engineer', 'desktop')">
+                            <input type="checkbox" checked> &#127963; Data Engineering
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'ai_office', 'desktop')">
+                            <input type="checkbox" checked> &#127970; AI Agent Office
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'data_science', 'desktop')">
+                            <input type="checkbox" checked> &#129302; Data Science &amp; ML
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'cyber_lab', 'desktop')">
+                            <input type="checkbox" checked> &#128737; Cybersecurity Lab
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'monitoring', 'desktop')">
+                            <input type="checkbox" checked> &#128154; System Monitoring
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'live_discovery', 'desktop')">
+                            <input type="checkbox" checked> &#128269; Live Discovery
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'vault', 'desktop')">
+                            <input type="checkbox" checked> &#128220; Database Vault
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'storage_dashboard', 'desktop')">
+                            <input type="checkbox" checked> &#128190; Storage Dashboard
+                        </label>
+                    </div>
+
+                    <!-- Both Grid (hidden by default) -->
+                    <div id="deviceTab-both" class="device-feature-grid" style="display:none;" id="deviceTab-both">
+                        <div style="grid-column:1/-1; font-size:11px; color:#64748B; padding:8px; background:rgba(56,189,248,0.04); border-radius:6px;">
+                            All features below will appear on both Mobile AND Desktop browsers:
+                        </div>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'ai_manager', 'both')">
+                            <input type="checkbox" checked> &#129302; AI Manager Chat
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'approvals', 'both')">
+                            <input type="checkbox" checked> &#128737; Approvals Queue
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'news_center', 'both')">
+                            <input type="checkbox" checked> &#128240; News Center
+                        </label>
+                        <label class="device-feature-item checked" onclick="toggleDeviceFeature(this, 'settings', 'both')">
+                            <input type="checkbox" checked> &#9881; Settings
+                        </label>
+                    </div>
+
+                    <div class="device-perm-actions">
+                        <button type="button" class="btn btn-primary" onclick="saveDeviceFeatureConfig()" style="font-size:12px; padding:7px 16px;">
+                            &#128190; Save Device Feature Config
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetDeviceFeatureConfig()" style="font-size:12px; padding:7px 16px;">
+                            &#8635; Reset to Defaults
+                        </button>
+                        <button type="button" class="btn btn-accent" onclick="applyDeviceFeatureConfig()" style="font-size:12px; padding:7px 16px;">
+                            &#9889; Apply Now (No Reload)
+                        </button>
+                    </div>
+                    <div id="deviceFeatureSaveStatus" style="font-size:11px; color:#10B981; margin-top:8px; display:none;"></div>
                 </div>
 
                 <label class="input-label">Connected Model Status</label>
@@ -10090,7 +10414,147 @@ Ready for message compilation and automated dispatch.
         // Initialize Theme & Sidebar on Load
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initPixelOffice, 100);
-            initTheme();
+    
+        /* =====================================================================
+           DEVICE FEATURE MANAGER — ADMIN CONTROL
+           Controls which features appear on Mobile vs Desktop.
+           Persisted in localStorage. Applied on page load & view switch.
+           ===================================================================== */
+
+        // Default mobile-allowed feature list (conservative — fast & useful features only)
+        const DEFAULT_MOBILE_ALLOWED = [
+            'ai_manager', 'dashboard', 'amazon_tracker', 'communication',
+            'news_center', 'career_hub', 'assistant', 'approvals',
+            'telegram_agent', 'whatsapp_hub', 'settings'
+        ];
+
+        function getMobileAllowedFeatures() {
+            const saved = localStorage.getItem('nanopro_mobile_allowed_features');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e) {}
+            }
+            return DEFAULT_MOBILE_ALLOWED;
+        }
+
+        function saveMobileAllowedFeatures(list) {
+            localStorage.setItem('nanopro_mobile_allowed_features', JSON.stringify(list));
+        }
+
+        // Apply device feature gating on mobile:
+        // On mobile (<768px), hide sidebar nav items that are NOT in the allowed list
+        function applyMobileFeatureGating() {
+            if (window.innerWidth > 768) return; // Desktop: show everything allowed by RBAC
+
+            const allowed = getMobileAllowedFeatures();
+            const navItems = document.querySelectorAll('#sidebarNavContainer .nav-item[onclick]');
+            navItems.forEach(item => {
+                const onclick = item.getAttribute('onclick') || '';
+                const match = onclick.match(/switchView\(['"]([^'"]+)['"]\)/);
+                if (match) {
+                    const viewId = match[1];
+                    item.style.display = allowed.includes(viewId) ? '' : 'none';
+                }
+            });
+
+            // Also update mobile bottom nav tabs based on allowed features
+            updateMobileBottomNav(allowed);
+        }
+
+        // Dynamically show/hide bottom nav items
+        function updateMobileBottomNav(allowed) {
+            const bottomNavItems = document.querySelectorAll('.mobile-bottom-nav-item[id^="mobTab-"]');
+            bottomNavItems.forEach(btn => {
+                const tabId = btn.id.replace('mobTab-', '');
+                if (tabId === 'menu') return; // Always show menu button
+                btn.style.display = allowed.includes(tabId) ? '' : 'none';
+            });
+        }
+
+        // Admin: toggle a device feature checkbox
+        function toggleDeviceFeature(labelEl, featureId, device) {
+            const cb = labelEl.querySelector('input[type=checkbox]');
+            if (cb) cb.checked = !cb.checked;
+            labelEl.classList.toggle('checked', cb ? cb.checked : false);
+        }
+
+        // Admin: switch between Mobile / Desktop / Both tabs
+        function switchDeviceTab(tab, btnEl) {
+            ['mobile', 'desktop', 'both'].forEach(t => {
+                const grid = document.getElementById('deviceTab-' + t);
+                if (grid) grid.style.display = (t === tab) ? 'grid' : 'none';
+            });
+            document.querySelectorAll('.device-tab-btn').forEach(b => b.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+        }
+
+        // Admin: Save configuration to localStorage
+        function saveDeviceFeatureConfig() {
+            const mobileGrid = document.getElementById('deviceTab-mobile');
+            if (!mobileGrid) return;
+            const allowed = [];
+            mobileGrid.querySelectorAll('input[type=checkbox]:checked').forEach(cb => {
+                const label = cb.closest('.device-feature-item');
+                if (label) {
+                    const onclick = label.getAttribute('onclick') || '';
+                    const match = onclick.match(/toggleDeviceFeature\(this,\s*['"]([^'"]+)['"]/);
+                    if (match) allowed.push(match[1]);
+                }
+            });
+            saveMobileAllowedFeatures(allowed);
+            const status = document.getElementById('deviceFeatureSaveStatus');
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = 'Mobile feature config saved! (' + allowed.length + ' features enabled on mobile)';
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            }
+            applyMobileFeatureGating();
+        }
+
+        // Admin: Reset to defaults
+        function resetDeviceFeatureConfig() {
+            localStorage.removeItem('nanopro_mobile_allowed_features');
+            // Uncheck all and re-check defaults
+            const mobileGrid = document.getElementById('deviceTab-mobile');
+            if (mobileGrid) {
+                mobileGrid.querySelectorAll('.device-feature-item').forEach(item => {
+                    const onclick = item.getAttribute('onclick') || '';
+                    const match = onclick.match(/toggleDeviceFeature\(this,\s*['"]([^'"]+)['"]/);
+                    const isDefault = match && DEFAULT_MOBILE_ALLOWED.includes(match[1]);
+                    const cb = item.querySelector('input[type=checkbox]');
+                    if (cb) cb.checked = isDefault;
+                    item.classList.toggle('checked', isDefault);
+                });
+            }
+            applyMobileFeatureGating();
+            const status = document.getElementById('deviceFeatureSaveStatus');
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = 'Reset to defaults!';
+                setTimeout(() => { status.style.display = 'none'; }, 2500);
+            }
+        }
+
+        // Admin: Apply without reloading
+        function applyDeviceFeatureConfig() {
+            applyMobileFeatureGating();
+            const status = document.getElementById('deviceFeatureSaveStatus');
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = 'Applied! Mobile sidebar and bottom nav updated instantly.';
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            }
+        }
+
+        // Run on every page load and resize
+        document.addEventListener('DOMContentLoaded', function() {
+            applyMobileFeatureGating();
+        });
+        window.addEventListener('resize', function() {
+            applyMobileFeatureGating();
+        });
+
+
+                initTheme();
             initSidebarState();
             setTimeout(() => { if (typeof loadSmtpSenders === 'function') loadSmtpSenders(); }, 500);
             setTimeout(() => { if (typeof loadTrainingTelemetry === 'function') loadTrainingTelemetry(); }, 700);
