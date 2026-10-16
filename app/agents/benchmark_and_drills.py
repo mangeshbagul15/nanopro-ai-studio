@@ -133,11 +133,11 @@ def handle_benchmark_and_drills(p_lower: str, user_message: str, session_id: str
             pass
 
         # Action 4: SMTP Dispatch
-        email_status = "SUCCESS (Test email submitted to mangeshbagul15@gmail.com via GMAIL_SMTP Vault TLS)"
+        email_status = "SUCCESS (Test email submitted to nanoproaistudio@gmail.com via GMAIL_SMTP Vault TLS)"
         try:
             from app.core.smtp_client import smtp_client
             smtp_client.send_email(
-                recipient="mangeshbagul15@gmail.com",
+                recipient="nanoproaistudio@gmail.com",
                 subject="[TEST EXECUTION] NanoPro Autonomous Action Trigger",
                 body="Hello Mangesh, NanoPro has successfully executed real backend actions for Files, Database, and Telegram."
             )
@@ -151,7 +151,7 @@ def handle_benchmark_and_drills(p_lower: str, user_message: str, session_id: str
             db.add_scheduled_task(
                 task_name="DAILY_AUDIT_DISPATCH",
                 cron_expression="0 11 * * *",
-                action_payload={"task": "daily_audit_dispatch", "email": "mangeshbagul15@gmail.com"}
+                action_payload={"task": "daily_audit_dispatch", "email": "nanoproaistudio@gmail.com"}
             )
         except Exception:
             pass
@@ -755,7 +755,7 @@ def authenticate_user(cursor, username: str):
                     f"🗄 System Audit: Staged files verified | DB health active\n"
                     f"⚡ Lakehouse Pipeline: CDC & SCD Type 2 logic verified\n"
                     f"🔬 Multi-Domain Drill: Math, DS, Civil, BioMed, History & GK passed\n"
-                    f"📧 Email Dispatch: Successfully sent to mangeshbagul15@gmail.com\n"
+                    f"📧 Email Dispatch: Successfully sent to nanoproaistudio@gmail.com\n"
                     f"⏰ Recurring Cron: Scheduled Daily at 11:00 AM\n"
                     f"✅ Status: 100% Autonomous & Operational"
                 )
@@ -767,7 +767,7 @@ def authenticate_user(cursor, username: str):
         try:
             from app.core.smtp_client import smtp_client
             smtp_client.send_email(
-                recipient="mangeshbagul15@gmail.com",
+                recipient="nanoproaistudio@gmail.com",
                 subject=f"[AUTONOMOUS REPORT] NanoPro Multi-Domain Benchmark & Lakehouse System Audit - {datetime.now().strftime('%Y-%m-%d')}",
                 body=(
                     f"Namaskar Mangesh,\n\n"
@@ -788,7 +788,7 @@ def authenticate_user(cursor, username: str):
             db.add_scheduled_task(
                 task_name="DAILY_LAKEHOUSE_MULTI_AUDIT_REPORT",
                 cron_expression="0 11 * * *",
-                action_payload={"mission": "daily_lakehouse_multi_audit_report", "email": "mangeshbagul15@gmail.com"}
+                action_payload={"mission": "daily_lakehouse_multi_audit_report", "email": "nanoproaistudio@gmail.com"}
             )
         except Exception:
             pass
@@ -883,7 +883,7 @@ def authenticate_user(cursor, username: str):
             f"---\n\n"
             f"### 📧 MODULE 4: AUTOMATED EMAIL DISPATCH\n"
             f"• **Status:** 🟢 `DELIVERED`\n"
-            f"• **Recipient:** `mangeshbagul15@gmail.com`\n"
+            f"• **Recipient:** `nanoproaistudio@gmail.com`\n"
             f"• **Subject:** `[AUTONOMOUS REPORT] NanoPro Multi-Domain Benchmark & Lakehouse System Audit - {datetime.now().strftime('%Y-%m-%d')}`\n"
             f"• **Transport:** Verified Google SMTP Client via Credentials Vault.\n\n"
             f"---\n\n"

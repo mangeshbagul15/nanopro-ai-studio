@@ -1567,7 +1567,7 @@ class ConnectionManager:
                 "connection_name": "GMAIL_SMTP",
                 "service_type": "Gmail SMTP Integration",
                 "host_identifier": "smtp.gmail.com:587 (STARTTLS)",
-                "target": "mangeshbagul15@gmail.com",
+                "target": "nanoproaistudio@gmail.com",
                 "user_role": "mangeshbagul15@gmail.com",
                 "has_credentials": bool(smtp_client.get_secret_password()),
                 "configured": True

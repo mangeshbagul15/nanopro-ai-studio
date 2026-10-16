@@ -783,8 +783,8 @@ class ShapeCalculator:
 
     def test_e2e_pipeline_and_email_ledger(self):
         res_pipe = self.client.post('/api/operations/execute-workflow', json={
-            'prompt': 'Fetch data from Snowflake, generate an Excel report, and email it to mangeshbagul15@gmail.com',
-            'recipient': 'mangeshbagul15@gmail.com',
+            'prompt': 'Fetch data from Snowflake, generate an Excel report, and email it to nanoproaistudio@gmail.com',
+            'recipient': 'nanoproaistudio@gmail.com',
             'connection': 'NANO_PRO_SNOWFLAKE'
         })
         self.assertEqual(res_pipe.status_code, 200)

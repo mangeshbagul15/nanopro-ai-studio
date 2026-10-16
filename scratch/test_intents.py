@@ -9,7 +9,7 @@ tests = [
     {
         "name": "Cross-DB ETL Data Movement & Append with Email",
         "prompt": "Host: 127.0.0.1:1521 ha db ahe oracle cha CUSTOMERS ha table name ahe ha snowflake cha ahe Database: BANK_DB | Schema: L0 STAGING ahe tithe pn CUSTOMERS table ahe tithe data insert append kara and confirm kara . and report generate kara and mail pn jayla pahije",
-        "expected_in_reply": ["Cross-Database ETL Pipeline Executed", "CUSTOMERS", "MY_ORACLE_XE_LOCAL", "BANK_DB.L0_STAGING", "500 records", "Snowflake_L0_CUSTOMERS_Data_Append_Report.xlsx", "mangeshbagul15@gmail.com"],
+        "expected_in_reply": ["Cross-Database ETL Pipeline Executed", "CUSTOMERS", "MY_ORACLE_XE_LOCAL", "BANK_DB.L0_STAGING", "500 records", "Snowflake_L0_CUSTOMERS_Data_Append_Report.xlsx", "nanoproaistudio@gmail.com"],
         "forbidden_in_reply": ["As requested, here is the verified SQL query to fetch the first 5 records", "SELECT * FROM CUSTOMERS FETCH FIRST 5 ROWS ONLY"]
     },
     {

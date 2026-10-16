@@ -25,7 +25,7 @@
     "status": "ACTIVE",
     "last_run_status": "SUCCESS",
     "dispatch_rules": {
-      "to": "mangeshbagul15@gmail.com",
+      "to": "nanoproaistudio@gmail.com",
       "cc": "compliance.officer@bank.com",
       "bcc": "audit.archive@bank.com",
       "subject": "[CRITICAL] AML Daily Wire Recon & High-Velocity Threshold Audit",
@@ -56,9 +56,9 @@
     "status": "ACTIVE",
     "last_run_status": "SUCCESS",
     "dispatch_rules": {
-      "to": "mangeshbagul15@gmail.com",
+      "to": "nanoproaistudio@gmail.com",
       "cc": "corebanking.lead@bank.com",
-      "bcc": "mangeshbagul15@gmail.com",
+      "bcc": "nanoproaistudio@gmail.com",
       "subject": "[EOD AUDIT] CBS to Snowflake Medallion General Ledger Reconciliation",
       "enforce_5mb": true
     }
@@ -86,9 +86,9 @@
     "status": "RUNNING",
     "last_run_status": "SUCCESS",
     "dispatch_rules": {
-      "to": "mangeshbagul15@gmail.com",
+      "to": "nanoproaistudio@gmail.com",
       "cc": "fraud.monitoring@bank.com",
-      "bcc": "mangeshbagul15@gmail.com",
+      "bcc": "nanoproaistudio@gmail.com",
       "subject": "[ALERT] Credit Card Velocity Spike & High-Risk Cross-Border Declines",
       "enforce_5mb": true
     }
@@ -116,9 +116,9 @@
     "status": "ACTIVE",
     "last_run_status": "SUCCESS",
     "dispatch_rules": {
-      "to": "mangeshbagul15@gmail.com",
+      "to": "nanoproaistudio@gmail.com",
       "cc": "treasury.head@bank.com",
-      "bcc": "mangeshbagul15@gmail.com",
+      "bcc": "nanoproaistudio@gmail.com",
       "subject": "[TREASURY] Weekly ALM Liquidity Gap & Interest Rate Sensitivity Report",
       "enforce_5mb": true
     }
@@ -147,9 +147,9 @@
     "status": "ACTIVE",
     "last_run_status": "SUCCESS",
     "dispatch_rules": {
-      "to": "mangeshbagul15@gmail.com",
+      "to": "nanoproaistudio@gmail.com",
       "cc": "marketing.analytics@bank.com",
-      "bcc": "mangeshbagul15@gmail.com",
+      "bcc": "nanoproaistudio@gmail.com",
       "subject": "[C360] Customer 360 Churn Risk & High-Net-Worth Affinity Metrics",
       "enforce_5mb": true
     }

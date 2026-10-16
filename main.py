@@ -1286,6 +1286,70 @@ async def api_get_communication_logs(channel: Optional[str] = Query("all")):
     logs = db.list_communication_logs(channel=channel, limit=60)
     return JSONResponse({"status": "success", "count": len(logs), "logs": logs})
 
+# =========================================================================
+# SMS GATEWAY ROUTES (TEXTBEE & ANDROID LOCAL SIM GATEWAY)
+# =========================================================================
+
+class SMSConfigRequest(BaseModel):
+    active_provider: Optional[str] = "dual"
+    sender_phone: Optional[str] = "+918433755448"
+    recipient_phone: Optional[str] = "+918433755448"
+    textbee_api_key: Optional[str] = None
+    textbee_device_id: Optional[str] = None
+    android_local_url: Optional[str] = None
+    android_local_token: Optional[str] = None
+
+class SMSSendRequest(BaseModel):
+    recipient: str = "+918433755448"
+    message: str = "NanoPro AI Alert: SMS Gateway test message"
+    sender: Optional[str] = "+918433755448"
+    provider: Optional[str] = "dual"
+
+@app.get("/api/sms/config")
+async def api_get_sms_config():
+    from app.core.sms_gateway import sms_gateway_manager
+    return JSONResponse({"status": "success", "config": sms_gateway_manager.get_config()})
+
+@app.post("/api/sms/config")
+async def api_update_sms_config(req: SMSConfigRequest):
+    from app.core.sms_gateway import sms_gateway_manager
+    updated = sms_gateway_manager.update_config(
+        active_provider=req.active_provider,
+        sender_phone=req.sender_phone,
+        recipient_phone=req.recipient_phone,
+        textbee_api_key=req.textbee_api_key,
+        textbee_device_id=req.textbee_device_id,
+        android_local_url=req.android_local_url,
+        android_local_token=req.android_local_token
+    )
+    return JSONResponse({"status": "success", "config": updated})
+
+@app.post("/api/sms/send")
+async def api_send_sms(req: SMSSendRequest):
+    from app.core.sms_gateway import sms_gateway_manager
+    if req.provider == "textbee":
+        res = sms_gateway_manager.send_via_textbee(req.recipient, req.message, req.sender)
+    elif req.provider == "android_local":
+        res = sms_gateway_manager.send_via_android_local(req.recipient, req.message, req.sender)
+    else:
+        res = sms_gateway_manager.send_dual_test_sms(req.recipient, req.sender)
+    return JSONResponse(res)
+
+@app.post("/api/sms/send_test_dual")
+async def api_send_test_dual_sms(
+    recipient: Optional[str] = Body("+918433755448", embed=True),
+    sender: Optional[str] = Body("+918433755448", embed=True)
+):
+    from app.core.sms_gateway import sms_gateway_manager
+    res = sms_gateway_manager.send_dual_test_sms(recipient=recipient, sender=sender)
+    return JSONResponse(res)
+
+@app.get("/api/sms/history")
+async def api_get_sms_history(limit: int = Query(50)):
+    from app.core.sms_gateway import sms_gateway_manager
+    history = sms_gateway_manager.get_dispatch_history(limit=limit)
+    return JSONResponse({"status": "success", "count": len(history), "history": history})
+
 # --- AGENT LIFECYCLE & ORCHESTRATION ROUTES ---
 
 @app.post("/api/agents/cancel/{job_id}")
@@ -1434,7 +1498,7 @@ class CareerSendEmailRequest(BaseModel):
     recipient_email: str
     subject: str
     body: str
-    cc: Optional[str] = "mangeshbagul15@gmail.com"
+    cc: Optional[str] = "nanoproaistudio@gmail.com"
     bcc: Optional[str] = None
     is_followup: Optional[bool] = False
     cadence: Optional[str] = "initial"
@@ -1522,9 +1586,9 @@ async def api_career_send_email(req: CareerSendEmailRequest):
     from app.agents.career_agent import RESUME_FILE_PATH, career_agent
     attachments = [RESUME_FILE_PATH] if os.path.exists(RESUME_FILE_PATH) else None
     
-    # Strictly enforce candidate CC and BCC delivery (Candidate Mangesh Bagul receives exact copy)
-    candidate_cc = req.cc.strip() if req.cc and req.cc.strip() else "mangeshbagul15@gmail.com"
-    candidate_bcc = req.bcc.strip() if req.bcc and req.bcc.strip() else "mangeshbagul15@gmail.com"
+    # Strictly enforce candidate CC and BCC delivery (Candidate copy to nanoproaistudio@gmail.com)
+    candidate_cc = req.cc.strip() if req.cc and req.cc.strip() else "nanoproaistudio@gmail.com"
+    candidate_bcc = req.bcc.strip() if req.bcc and req.bcc.strip() else "nanoproaistudio@gmail.com"
     
     res = smtp_client.send_email(
         recipient=req.recipient_email,
@@ -1559,7 +1623,7 @@ async def api_career_send_email(req: CareerSendEmailRequest):
 async def api_career_dispatch_live_now(payload: Optional[Dict[str, Any]] = None):
     """
     Triggers an immediate live email dispatch via smtp.gmail.com to the next rotational company/HR.
-    Guarantees candidate CC & BCC delivery to mangeshbagul15@gmail.com and PDF resume attachment.
+    Guarantees candidate CC & BCC delivery to nanoproaistudio@gmail.com and PDF resume attachment.
     """
     from app.agents.career_agent import career_agent
     req_data = payload or {}
@@ -1949,7 +2013,7 @@ async def api_test_email_failover_cluster():
 async def api_send_email_failover(payload: Dict[str, Any] = Body(...)):
     """Sends email via cascading multi-tier failover engine."""
     from app.core.smtp_client import smtp_client
-    recipient = payload.get("recipient") or "mangeshbagul15@gmail.com"
+    recipient = payload.get("recipient") or "nanoproaistudio@gmail.com"
     subject = payload.get("subject") or "Mangesh Nano Pro AI Studio Alert"
     body = payload.get("body") or payload.get("message") or ""
     provider = payload.get("provider") or "auto"
@@ -1962,14 +2026,14 @@ async def api_send_email_failover(payload: Dict[str, Any] = Body(...)):
     return JSONResponse(res)
 
 class TestEmailPayload(BaseModel):
-    recipient: Optional[str] = "mangeshbagul15@gmail.com"
+    recipient: Optional[str] = "nanoproaistudio@gmail.com"
     provider: Optional[str] = "auto"
 
 @app.post('/api/connections/send_test_email')
 async def api_send_test_email(req: Optional[TestEmailPayload] = None, recipient: Optional[str] = None):
     """Sends an explicit test email with confirmation and multi-tier failover."""
     from app.core.smtp_client import smtp_client
-    target = (req.recipient if req and req.recipient else None) or recipient or "mangeshbagul15@gmail.com"
+    target = (req.recipient if req and req.recipient else None) or recipient or "nanoproaistudio@gmail.com"
     provider = (req.provider if req and req.provider else "auto")
     res = smtp_client.send_test_email(recipient=target, provider=provider)
     return JSONResponse(res)
@@ -2125,8 +2189,8 @@ async def api_restart_failed_tasks():
 
 @app.post('/api/operations/execute-workflow')
 async def api_execute_workflow(
-    prompt: str = Body('Fetch data from Snowflake, generate an Excel report, and email it to mangeshbagul15@gmail.com'),
-    recipient: str = Body('mangeshbagul15@gmail.com'),
+    prompt: str = Body('Fetch data from Snowflake, generate an Excel report, and email it to nanoproaistudio@gmail.com'),
+    recipient: str = Body('nanoproaistudio@gmail.com'),
     connection: str = Body('NANO_PRO_SNOWFLAKE')
 ):
     from app.core.autonomous_operations_manager import autonomous_ops_manager
@@ -2974,7 +3038,7 @@ class LakehouseDispatchRequest(BaseModel):
     job_name: str
     cadence: str = "daily"
     source_db: str = "MY_ORACLE_XE_LOCAL"
-    recipient_email: str = "mangeshbagul15@gmail.com"
+    recipient_email: str = "nanoproaistudio@gmail.com"
     report_data: Optional[Dict[str, Any]] = None
 
 @app.post("/api/lakehouse/dispatch_email")
@@ -3330,7 +3394,7 @@ class BankingProjectCreateRequest(BaseModel):
     snowflake_l1: Optional[str] = "BANK_DB.SILVER_HARMONIZED.L1_SCD2"
     snowflake_l2: Optional[str] = "BANK_DB.GOLD_MARTS.L2_MART"
     cadence: Optional[str] = "Daily (T-1)"
-    email_to: Optional[str] = "mangeshbagul15@gmail.com"
+    email_to: Optional[str] = "nanoproaistudio@gmail.com"
     email_cc: Optional[str] = ""
     email_bcc: Optional[str] = ""
     sftp_repo_path: Optional[str] = "/var/sftp/data/reports/"
@@ -3339,7 +3403,7 @@ class BankingReportDispatchRequest(BaseModel):
     project_id: str = "proj_aml"
     report_name: str = "Daily AML Reconciliation Report"
     cadence: str = "Daily (T-1)"
-    email_to: str = "mangeshbagul15@gmail.com"
+    email_to: str = "nanoproaistudio@gmail.com"
     email_cc: Optional[str] = ""
     email_bcc: Optional[str] = ""
     sftp_path: Optional[str] = "/var/sftp/data/reports/AML/2026-10-12/"
@@ -3419,9 +3483,9 @@ async def api_banking_project_output(project_id: str):
     return JSONResponse(res)
 
 @app.post("/api/banking/projects/{project_id}/email_report")
-async def api_banking_project_email(project_id: str, to_email: Optional[str] = Query("mangeshbagul15@gmail.com")):
+async def api_banking_project_email(project_id: str, to_email: Optional[str] = Query("nanoproaistudio@gmail.com")):
     """Emails the execution audit report for the selected project."""
-    res = sql_query_studio.email_banking_project_report(project_id, to_email or "mangeshbagul15@gmail.com")
+    res = sql_query_studio.email_banking_project_report(project_id, to_email or "nanoproaistudio@gmail.com")
     return JSONResponse(res)
 
 @app.post("/api/banking/stage3/quality_check")
@@ -3599,13 +3663,13 @@ async def api_lakehouse_users_roles():
     })
 
 class LakehouseReportDispatchRequest(BaseModel):
-    recipient_email: Optional[str] = "mangeshbagul15@gmail.com"
+    recipient_email: Optional[str] = "nanoproaistudio@gmail.com"
     report_subject: Optional[str] = "NanoPro Lakehouse Pipeline T-1 Status"
 
 @app.post("/api/lakehouse/dispatch_report")
 async def api_lakehouse_dispatch_report(req: Optional[LakehouseReportDispatchRequest] = None):
     """Dispatches Lakehouse status report email."""
-    recip = req.recipient_email if req and req.recipient_email else "mangeshbagul15@gmail.com"
+    recip = req.recipient_email if req and req.recipient_email else "nanoproaistudio@gmail.com"
     sub = req.report_subject if req and req.report_subject else "NanoPro Lakehouse Pipeline T-1 Status"
     from app.core.smtp_client import smtp_client
     res = smtp_client.send_email(

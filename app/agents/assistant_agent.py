@@ -429,7 +429,7 @@ Date: {time.strftime('%Y-%m-%d')}
         # 5. Recent Autonomous Dispatches & Email Deliveries
         sections.append(
             "📬 <b>5. RECENT AUTOMATIONS &amp; DISPATCH LEDGER:</b>\n"
-            "• <b>Email Dispatch:</b> Sample banking customer dataset generated in Excel and delivered to <code>mangeshbagul15@gmail.com</code> via Gmail SMTP.\n"
+            "• <b>Email Dispatch:</b> Sample banking customer dataset generated in Excel and delivered to <code>nanoproaistudio@gmail.com</code> via Gmail SMTP.\n"
             "• <b>Vault Security:</b> Oracle passwords synchronized with <code>Divyam@123</code>.\n"
             "• <b>Approvals Queue:</b> Redundant requests deduplicated; high-priority safeguards active.\n"
         )

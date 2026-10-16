@@ -76,7 +76,7 @@
     "dispatch": {
       "cadence": "Daily (T-1 at 06:30 AM IST)",
       "email_to": "aml.compliance@bank.com",
-      "email_cc": "mangeshbagul15@gmail.com, principal.officer@bank.com",
+      "email_cc": "nanoproaistudio@gmail.com, principal.officer@bank.com",
       "email_bcc": "audit.archive@bank.com",
       "sftp_repo_path": "/var/sftp/data/reports/AML/2026-10-12/"
     },
@@ -135,7 +135,7 @@
     "dispatch": {
       "cadence": "Daily (T-1 at 07:15 AM IST)",
       "email_to": "treasury.risk@bank.com",
-      "email_cc": "alm.desk@bank.com, mangeshbagul15@gmail.com",
+      "email_cc": "alm.desk@bank.com, nanoproaistudio@gmail.com",
       "email_bcc": "compliance.monitor@bank.com",
       "sftp_repo_path": "/var/sftp/data/reports/ALM/2026-10-12/"
     },
@@ -193,7 +193,7 @@
     "dispatch": {
       "cadence": "Daily (T-1 at 05:45 AM IST)",
       "email_to": "microfinance.ops@bank.com",
-      "email_cc": "collection.heads@bank.com, mangeshbagul15@gmail.com",
+      "email_cc": "collection.heads@bank.com, nanoproaistudio@gmail.com",
       "email_bcc": "internal.audit@bank.com",
       "sftp_repo_path": "/var/sftp/data/reports/JLG/2026-10-12/"
     },
@@ -240,7 +240,7 @@
     "dispatch": {
       "cadence": "Daily (EOD at 23:45 IST)",
       "email_to": "cbs.project@bank.com",
-      "email_cc": "finacle.migration@bank.com, mangeshbagul15@gmail.com",
+      "email_cc": "finacle.migration@bank.com, nanoproaistudio@gmail.com",
       "email_bcc": "cio.office@bank.com",
       "sftp_repo_path": "/var/sftp/data/reports/FINACLE/2026-10-12/"
     },
@@ -284,7 +284,7 @@
     "dispatch": {
       "cadence": "Fortnightly / Monthly",
       "email_to": "rbi.reporting@bank.com",
-      "email_cc": "cfo@bank.com, compliance@bank.com, mangeshbagul15@gmail.com",
+      "email_cc": "cfo@bank.com, compliance@bank.com, nanoproaistudio@gmail.com",
       "email_bcc": "",
       "sftp_repo_path": "/var/sftp/data/reports/CIMS/2026-10-12/"
     },

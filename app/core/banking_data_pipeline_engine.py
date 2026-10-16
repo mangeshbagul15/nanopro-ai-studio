@@ -112,7 +112,7 @@ class BankingDataPipelineEngine:
                 "dispatch": {
                     "cadence": "Daily (T-1 at 06:30 AM IST)",
                     "email_to": "aml.compliance@bank.com",
-                    "email_cc": "mangeshbagul15@gmail.com, principal.officer@bank.com",
+                    "email_cc": "nanoproaistudio@gmail.com, principal.officer@bank.com",
                     "email_bcc": "audit.archive@bank.com",
                     "sftp_repo_path": "/var/sftp/data/reports/AML/2026-10-12/"
                 },
@@ -151,7 +151,7 @@ class BankingDataPipelineEngine:
                 "dispatch": {
                     "cadence": "Daily (T-1 at 07:15 AM IST)",
                     "email_to": "treasury.risk@bank.com",
-                    "email_cc": "alm.desk@bank.com, mangeshbagul15@gmail.com",
+                    "email_cc": "alm.desk@bank.com, nanoproaistudio@gmail.com",
                     "email_bcc": "compliance.monitor@bank.com",
                     "sftp_repo_path": "/var/sftp/data/reports/ALM/2026-10-12/"
                 },
@@ -190,7 +190,7 @@ class BankingDataPipelineEngine:
                 "dispatch": {
                     "cadence": "Daily (T-1 at 05:45 AM IST)",
                     "email_to": "microfinance.ops@bank.com",
-                    "email_cc": "collection.heads@bank.com, mangeshbagul15@gmail.com",
+                    "email_cc": "collection.heads@bank.com, nanoproaistudio@gmail.com",
                     "email_bcc": "internal.audit@bank.com",
                     "sftp_repo_path": "/var/sftp/data/reports/JLG/2026-10-12/"
                 },
@@ -224,7 +224,7 @@ class BankingDataPipelineEngine:
                 "dispatch": {
                     "cadence": "Daily (EOD at 23:45 IST)",
                     "email_to": "cbs.project@bank.com",
-                    "email_cc": "finacle.migration@bank.com, mangeshbagul15@gmail.com",
+                    "email_cc": "finacle.migration@bank.com, nanoproaistudio@gmail.com",
                     "email_bcc": "cio.office@bank.com",
                     "sftp_repo_path": "/var/sftp/data/reports/FINACLE/2026-10-12/"
                 },
@@ -255,7 +255,7 @@ class BankingDataPipelineEngine:
                 "dispatch": {
                     "cadence": "Fortnightly / Monthly",
                     "email_to": "rbi.reporting@bank.com",
-                    "email_cc": "cfo@bank.com, compliance@bank.com, mangeshbagul15@gmail.com",
+                    "email_cc": "cfo@bank.com, compliance@bank.com, nanoproaistudio@gmail.com",
                     "email_bcc": "",
                     "sftp_repo_path": "/var/sftp/data/reports/CIMS/2026-10-12/"
                 },
@@ -378,7 +378,7 @@ class BankingDataPipelineEngine:
             project_id=target["id"],
             report_name=target.get("reports", [{}])[0].get("name", "Daily Operational Recon"),
             cadence="Daily (T-1)",
-            email_to=target.get("dispatch", {}).get("email_to", "mangeshbagul15@gmail.com"),
+            email_to=target.get("dispatch", {}).get("email_to", "nanoproaistudio@gmail.com"),
             email_cc=target.get("dispatch", {}).get("email_cc", ""),
             email_bcc=target.get("dispatch", {}).get("email_bcc", ""),
             sftp_path=target.get("dispatch", {}).get("sftp_repo_path", f"/var/sftp/data/reports/{target['code']}/2026-10-12/"),
@@ -468,7 +468,7 @@ class BankingDataPipelineEngine:
                 "sftp_repo_path": "/var/sftp/data/reports/AML/2026-10-12/AML_CTR_T1_20261012.xlsx",
                 "sftp_checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 "to_recipients": "aml.compliance@bank.com",
-                "cc_recipients": "mangeshbagul15@gmail.com, principal.officer@bank.com",
+                "cc_recipients": "nanoproaistudio@gmail.com, principal.officer@bank.com",
                 "bcc_recipients": "audit.archive@bank.com",
                 "records_count": 1425890,
                 "total_transaction_amount_inr": "₹ 4,812,490,200",
@@ -489,7 +489,7 @@ class BankingDataPipelineEngine:
                 "sftp_repo_path": "/var/sftp/data/reports/ALM/2026-10-12/ALM_GAP_STATEMENT.xlsx",
                 "sftp_checksum_sha256": "9b7a421c4298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8",
                 "to_recipients": "treasury.risk@bank.com",
-                "cc_recipients": "mangeshbagul15@gmail.com",
+                "cc_recipients": "nanoproaistudio@gmail.com",
                 "bcc_recipients": "",
                 "records_count": 842100,
                 "total_transaction_amount_inr": "₹ 18,940,250,000",
@@ -511,7 +511,7 @@ class BankingDataPipelineEngine:
         project_id: str,
         report_name: str,
         cadence: str = "Daily (T-1)",
-        email_to: str = "mangeshbagul15@gmail.com",
+        email_to: str = "nanoproaistudio@gmail.com",
         email_cc: str = "",
         email_bcc: str = "",
         sftp_path: str = "/var/sftp/data/reports/BANKING_RECON/",

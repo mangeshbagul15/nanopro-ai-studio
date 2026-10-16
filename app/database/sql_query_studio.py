@@ -2151,7 +2151,7 @@ class SqlQueryStudioEngine:
                     "snowflake_l2": "BANK_DB.GOLD_MARTS.L2_MART"
                 },
                 "dispatch": {
-                    "email_to": "mangeshbagul15@gmail.com",
+                    "email_to": "nanoproaistudio@gmail.com",
                     "sftp_repo_path": f"/var/sftp/data/reports/{project_id.upper()}/"
                 }
             }
@@ -2208,7 +2208,7 @@ class SqlQueryStudioEngine:
             {"stage": "STAGE_4_L1_SILVER", "name": "L1 Silver Harmonization & SCD Type 2 Tracking", "status": "COMPLETED", "scd2_inserts": scd2_inserts, "scd2_updates": scd2_updates, "target": target_project.get("lakehouse_pipeline", {}).get("snowflake_l1", "BANK_DB.SILVER_HARMONIZED.L1_SCD2"), "latency_ms": 184.2},
             {"stage": "STAGE_5_L2_GOLD", "name": "L2 Curated Gold Aggregation & Business Mart", "status": "COMPLETED", "records": valid_rows, "target": target_project.get("lakehouse_pipeline", {}).get("snowflake_l2", "BANK_DB.GOLD_MARTS.L2_MART"), "latency_ms": 112.5},
             {"stage": "STAGE_6_REPORT_GEN", "name": "Autonomous T-1 Regulatory & Management Report Generation", "status": "COMPLETED", "report_name": report_name, "est_size_mb": 4.8, "latency_ms": 45.0},
-            {"stage": "STAGE_7_DISPATCH", "name": "Email & SFTP Deposit Delivery", "status": "COMPLETED", "to": target_project.get("dispatch", {}).get("email_to", "mangeshbagul15@gmail.com"), "latency_ms": 22.0}
+            {"stage": "STAGE_7_DISPATCH", "name": "Email & SFTP Deposit Delivery", "status": "COMPLETED", "to": target_project.get("dispatch", {}).get("email_to", "nanoproaistudio@gmail.com"), "latency_ms": 22.0}
         ]
 
         duration_total = round((time.time() - t_start) * 1000 + 45.2, 2)
@@ -2257,7 +2257,7 @@ class SqlQueryStudioEngine:
     def email_banking_project_report(
         self,
         project_id: str,
-        to_email: str = "mangeshbagul15@gmail.com"
+        to_email: str = "nanoproaistudio@gmail.com"
     ) -> Dict[str, Any]:
         """Dispatches banking pipeline report summary and Excel artifact to the specified email."""
         data = self.get_banking_project_output(project_id)

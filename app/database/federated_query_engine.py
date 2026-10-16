@@ -514,7 +514,7 @@ class FederatedQueryEngine:
 
             email_sent = False
             if send_email or any(w in p_lower for w in ["mail", "email", "gmail", "send main", "send mail", "mail var", "pathav mail"]):
-                rcpt = recipient or "mangeshbagul15@gmail.com"
+                rcpt = recipient or "nanoproaistudio@gmail.com"
                 communication_center.send_process_email(
                     process_key="data_engineer_etl",
                     subject=f"Nano Pro Data Engineering Report - {eng.upper()} [{db_name}.{schema_name}.{tbl}] Query Extract",
@@ -596,7 +596,7 @@ class FederatedQueryEngine:
         # Email dispatch if requested
         email_sent = False
         if send_email or any(w in p_lower for w in ["mail", "email", "mail var", "pathav mail"]):
-            rcpt = recipient or "mangeshbagul15@gmail.com"
+            rcpt = recipient or "nanoproaistudio@gmail.com"
             mail_res = communication_center.send_process_email(
                 process_key="data_engineer_etl",
                 subject=f"Nano Pro Data Engineering Report - Cross-DB {group_col} Summary",

@@ -238,7 +238,7 @@ print(data[['customer_id', 'total_spend', 'z_score', 'is_outlier']])
         try:
             from app.core.smtp_client import smtp_client
             smtp_client.send_email(
-                recipient="mangeshbagul15@gmail.com",
+                recipient="nanoproaistudio@gmail.com",
                 subject="[AUTONOMOUS PIPELINE] Daily Lakehouse Gold Layer Reconciliation",
                 body=(
                     f"Namaskar Mangesh,\n\n"
@@ -274,7 +274,7 @@ print(data[['customer_id', 'total_spend', 'z_score', 'is_outlier']])
 ---
 
 ### 2. Autonomous Execution Dispatches:
-• **SMTP Email Dispatch:** 🟢 `SUCCESS` -> Sent to `mangeshbagul15@gmail.com` (Subject: *"[AUTONOMOUS PIPELINE] Daily Lakehouse Gold Layer Reconciliation"*)
+• **SMTP Email Dispatch:** 🟢 `SUCCESS` -> Sent to `nanoproaistudio@gmail.com` (Subject: *"[AUTONOMOUS PIPELINE] Daily Lakehouse Gold Layer Reconciliation"*)
 • **Telegram Broadcast:** 🟢 `SUCCESS` -> Broadcasted to Chat ID `1200023268`:
   `"🚀 Gold Layer Ready: Ingestion -> Cleaning -> Anomaly Flagging 100% complete."`
 • **Audit Status:** End-to-end Lakehouse pipeline successfully committed and verified."""
@@ -560,7 +560,7 @@ FROM LedgerMetrics;
         try:
             from app.core.smtp_client import smtp_client
             smtp_client.send_email(
-                recipient="mangeshbagul15@gmail.com",
+                recipient="nanoproaistudio@gmail.com",
                 subject="[AUTOMATED ALERT] EOD General Ledger & Lakehouse Audit Ready",
                 body=(
                     f"Namaskar Mangesh,\n\n"
@@ -588,7 +588,7 @@ FROM LedgerMetrics;
 ### Execution Audit Ledger:
 1. **Excel Query & Verification:** `data/daily_lakehouse_audit.xlsx` verified on disk (Sheets: *Summary, High_Value_Alerts*).
 2. **SMTP Email Notification:** 🟢 `DELIVERED`
-   • Recipient: `mangeshbagul15@gmail.com`
+   • Recipient: `nanoproaistudio@gmail.com`
    • Subject: *[AUTOMATED ALERT] EOD General Ledger & Lakehouse Audit Ready*
    • Timestamp: `""" + now_ts + r"""`
 3. **Telegram Broadcast:** 🟢 `DELIVERED`
@@ -944,7 +944,7 @@ SELECT SYSTEM$CLUSTERING_INFORMATION('ENTERPRISE_DW.LOGS.RAW_LOGS', '(TENANT_ID,
 [PHASE 2 - SILVER PYTHON]: COMPLETED (Cleaned Records: 4 unique rows in SILVER_CLEAN_BANKING)
 [PHASE 3 - GOLD STAR SCHEMA]: COMPLETED (DENSE_RANK applied; Amit Deshmukh & Sneha Patil flagged HNI)
 [PHASE 4 - EXCEL CREATION]: COMPLETED (File: `data/daily_master_lakehouse_audit.xlsx`)
-[PHASE 5 - EMAIL & TELEGRAM]: COMPLETED (Dispatched to mangeshbagul15@gmail.com & Chat ID 1200023268)
+[PHASE 5 - EMAIL & TELEGRAM]: COMPLETED (Dispatched to nanoproaistudio@gmail.com & Chat ID 1200023268)
 [DAILY SCHEDULER]: REGISTERED (Cadence: Daily 11:00 AM)
 
 ### 📊 Final Gold Analytics Preview:
@@ -991,7 +991,7 @@ SELECT SYSTEM$CLUSTERING_INFORMATION('ENTERPRISE_DW.LOGS.RAW_LOGS', '(TENANT_ID,
 ---
 
 ### 3. Phase 3: Emergency Incident Dispatch:
-• **Email Alert:** 🟢 `DISPATCHED` -> `mangeshbagul15@gmail.com` (*Subject: [SOC ALERT - SEV1] Database Brute-Force Intrusion Attempt Blocked*)
+• **Email Alert:** 🟢 `DISPATCHED` -> `nanoproaistudio@gmail.com` (*Subject: [SOC ALERT - SEV1] Database Brute-Force Intrusion Attempt Blocked*)
 • **Telegram Broadcast:** 🟢 `DISPATCHED` -> Chat ID `1200023268` (*"🚨 SECURITY SOC ALERT: Brute-force attack detected from 192.168.1.105"*).
 • **Automated Containment:** Firewall rule `iptables -A INPUT -s 192.168.1.105 -j DROP` staged."""
         return {"handled": True, "reply": reply, "agent_id": "security_agent"}
@@ -1021,7 +1021,7 @@ SELECT SYSTEM$CLUSTERING_INFORMATION('ENTERPRISE_DW.LOGS.RAW_LOGS', '(TENANT_ID,
 
 ### 2. Dispatches & Persisted Artifacts:
 • **Saved CSV Artifact:** `data/tata_steel_rsi_signals.csv` (100% Persisted)
-• **Email Dispatch:** 🟢 Delivered to `mangeshbagul15@gmail.com`
+• **Email Dispatch:** 🟢 Delivered to `nanoproaistudio@gmail.com`
 • **Telegram Broadcast:** 🟢 Delivered to Chat ID `1200023268`
 • **Scheduled Job:** Daily 09:30 AM Market Open execution registered."""
         return {"handled": True, "reply": reply, "agent_id": "data_science_agent"}
@@ -1049,7 +1049,7 @@ SELECT SYSTEM$CLUSTERING_INFORMATION('ENTERPRISE_DW.LOGS.RAW_LOGS', '(TENANT_ID,
 
 ### 3. Dispatches & Automated Storage:
 • Stored Customer A into SQLite table: `HIGH_RISK_RETENTION_LIST`.
-• Triggered automated Retention Alert email to `mangeshbagul15@gmail.com`.
+• Triggered automated Retention Alert email to `nanoproaistudio@gmail.com`.
 • Broadcasted confirmation to Telegram Chat ID `1200023268`."""
         return {"handled": True, "reply": reply, "agent_id": "data_science_agent"}
 
@@ -1083,7 +1083,7 @@ SELECT SYSTEM$CLUSTERING_INFORMATION('ENTERPRISE_DW.LOGS.RAW_LOGS', '(TENANT_ID,
 
 ### Dispatches & Schedule:
 • **CSV Report Generated:** `data/reconciliation_discrepancy_report.csv`
-• **Email Dispatch:** 🟢 Delivered to `mangeshbagul15@gmail.com`
+• **Email Dispatch:** 🟢 Delivered to `nanoproaistudio@gmail.com`
 • **Telegram Confirmation:** 🟢 Broadcasted to Chat ID `1200023268`
 • **Schedule Cadence:** Registered daily at 06:00 PM (`0 18 * * *`)."""
         return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
@@ -1348,7 +1348,7 @@ ORDER BY daily_credits DESC;
 ---
 
 ### 2. Dispatches & Hourly Schedule:
-• **Email Dispatch:** Delivered to `mangeshbagul15@gmail.com` with top expensive queries.
+• **Email Dispatch:** Delivered to `nanoproaistudio@gmail.com` with top expensive queries.
 • **Telegram Broadcast:** Delivered to Chat ID `1200023268` (*"🚨 Snowflake FinOps Alert: 2 long-running queries flagged (>15 min)"*).
 • **Cron Schedule:** Registered hourly cadence `0 * * * *`."""
         return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
@@ -1388,7 +1388,7 @@ WHERE d.customer_id IS NULL
 
 ### 2. Integrity Verification:
 • Zero customers with $>1$ active row (`is_current = TRUE`).
-• Dispatched confirmation to `mangeshbagul15@gmail.com` and Telegram Chat ID `1200023268`.
+• Dispatched confirmation to `nanoproaistudio@gmail.com` and Telegram Chat ID `1200023268`.
 • Scheduled daily at 09:00 AM (`0 9 * * *`)."""
         return {"handled": True, "reply": reply, "agent_id": "data_engineer"}
 

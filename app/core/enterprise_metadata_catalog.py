@@ -763,7 +763,7 @@ class EnterpriseMetadataCatalog:
             from app.core.smtp_client import smtp_client
             try:
                 smtp_client.send_email(
-                    recipient="mangeshbagul15@gmail.com",
+                    recipient="nanoproaistudio@gmail.com",
                     subject=f"📊 Cross-DB Reconciliation Report: Oracle XE ⟷ Snowflake [{tbl}]",
                     body=(
                         f"Namaskar Mangesh,\n\n"
@@ -779,7 +779,7 @@ class EnterpriseMetadataCatalog:
                 )
             except Exception:
                 pass
-            dispatch_notes.append("• 📧 **Email Delivery:** Dispatched reconciliation audit report to `mangeshbagul15@gmail.com`.")
+            dispatch_notes.append("• 📧 **Email Delivery:** Dispatched reconciliation audit report to `nanoproaistudio@gmail.com`.")
 
         if send_telegram:
             dispatch_notes.append("• 📱 **Telegram Delivery:** Dispatched reconciliation summary to `@mangesh_technews_bot`.")

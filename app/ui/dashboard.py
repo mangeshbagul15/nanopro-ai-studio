@@ -2661,6 +2661,10 @@ def _get_raw_dashboard_html() -> str:
                         <span class="nav-item-icon">&#128242;</span>
                         <span class="nav-item-label">WhatsApp Hub</span>
                     </li>
+                    <li class="nav-item" id="nav-sms-gateway" onclick="switchView('sms_gateway')" data-tooltip="SMS Gateway (TextBee & Android SIM Gateway - 0% Watermark)">
+                        <span class="nav-item-icon">&#128172;</span>
+                        <span class="nav-item-label">SMS Gateway Hub</span>
+                    </li>
                     <li class="nav-item" onclick="switchView('news_center')" data-tooltip="News Center (ABP Majha & Aaj Tak)">
                         <span class="nav-item-icon">&#128240;</span>
                         <span class="nav-item-label">News Center</span>
@@ -3573,7 +3577,7 @@ def _get_raw_dashboard_html() -> str:
                     <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Kiti agents kam kartat and kon break var ahe?')">👥 Agent Status</button>
                     <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Call all 207 agents back to work')">⚡ Call All 207 to Work</button>
                     <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Allow idle agents to take coffee break')">☕ Allow Coffee Break</button>
-                    <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Send email report to mangeshbagul15@gmail.com')">📧 Email Report</button>
+                    <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Send email report to nanoproaistudio@gmail.com')">📧 Email Report</button>
                 </div>
             </div>
 
@@ -3590,7 +3594,7 @@ def _get_raw_dashboard_html() -> str:
                 <button type="button" class="btn btn-primary" onclick="triggerOfficeDelegationDemo('summary_and_dispatch')" style="font-size:11px; padding:4px 10px; background:linear-gradient(135deg, #0284C7, #10B981); border:none; font-weight:700;" title="Generate executive summary and send to Telegram & Email">&#128227; Summary &rarr; Telegram &amp; Mail</button>
                 <button type="button" class="btn btn-secondary" onclick="triggerOfficeDelegationDemo('oracle_to_snowflake')" style="font-size:11px; padding:4px 10px; color:#38BDF8;" title="Trace live flow: Manager ➔ Data Engineer ➔ Snowflake">&#128640; Ingest Oracle to Snowflake</button>
                 <button type="button" class="btn btn-secondary" onclick="triggerOfficeDelegationDemo('telegram_interview')" style="font-size:11px; padding:4px 10px; color:#0EA5E9;" title="Trace live flow: Manager ➔ Comms Chief ➔ Telegram Bot">&#128227; Dispatch Telegram Drill</button>
-                <button type="button" class="btn btn-secondary" onclick="triggerOfficeDelegationDemo('smtp_email_report')" style="font-size:11px; padding:4px 10px; color:#A78BFA;" title="Send Real SMTP Email Report to mangeshbagul15@gmail.com">&#128231; Send SMTP Email Report</button>
+                <button type="button" class="btn btn-secondary" onclick="triggerOfficeDelegationDemo('smtp_email_report')" style="font-size:11px; padding:4px 10px; color:#A78BFA;" title="Send Real SMTP Email Report to nanoproaistudio@gmail.com">&#128231; Send SMTP Email Report</button>
                 <button type="button" class="btn btn-secondary" onclick="triggerOfficeCallToWork()" style="font-size:11px; padding:4px 10px; color:#10B981; border-color:#10B981; font-weight:700;" title="Recall all 207 wandering agents back to their workstations">&#9889; Call All 207 Back to Work</button>
                 <button type="button" class="btn btn-secondary" onclick="triggerOfficeAllowBreaks()" style="font-size:11px; padding:4px 10px; color:#F59E0B; border-color:#F59E0B;" title="Allow idle agents to roam to water cooler and lounge">&#9749; Allow Roaming / Break</button>
             </div>
@@ -4803,7 +4807,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                                 <td style="padding:10px 12px; font-weight:700; color:#F8FAFC;">Live Career Email Dispatcher</td>
                                 <td style="padding:10px 12px; color:#94A3B8;">Sends tailored applications to verified MNC HRs with attached resume via Gmail SMTP.</td>
                                 <td style="padding:10px 12px; color:#38BDF8;">Every 15 Mins</td>
-                                <td style="padding:10px 12px; color:#10B981;">Mandatory CC/BCC: mangeshbagul15@gmail.com</td>
+                                <td style="padding:10px 12px; color:#10B981;">Mandatory CC/BCC: nanoproaistudio@gmail.com</td>
                                 <td style="padding:10px 12px; text-align:center;"><span class="badge" style="background:#064E3B; color:#34D399;">GRANTED</span></td>
                                 <td style="padding:10px 12px; text-align:right;"><button type="button" class="btn btn-sm btn-secondary" onclick="toggleAuthoritySubsystem('career_dispatcher')">Toggle</button></td>
                             </tr>
@@ -5832,7 +5836,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                         <span>🛡️</span> IT SecOps, Emergency Alerts &amp; Core Banking Batch Cycles
                     </h3>
                     <p style="font-size:11.5px; color:var(--text-muted); margin:3px 0 0 0;">
-                        Infrastructure health &bull; Telnet/nslookup diagnostics &bull; Instant Emergency Alert to mangeshbagul15@gmail.com (To, CC, BCC) &bull; PAM Governance &bull; SOD/BOD/EOD
+                        Infrastructure health &bull; Telnet/nslookup diagnostics &bull; Instant Emergency Alert to nanoproaistudio@gmail.com (To, CC, BCC) &bull; PAM Governance &bull; SOD/BOD/EOD
                     </p>
                 </div>
                 <div style="display:flex; gap:8px;">
@@ -5857,8 +5861,8 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                 <span class="badge" style="background:#451A03; color:#FCD34D; font-size:10px;">TRIGGER: ANY SOCKET OR NETWORK DROP</span>
             </div>
             <div style="font-size:11.5px; color:#CBD5E1; line-height:1.6;">
-                <div><b>Primary Recipient:</b> <code>mangeshbagul15@gmail.com, itsecurity@bank.internal, dbmanagement@bank.internal</code></div>
-                <div><b>Mandatory CC:</b> <code>mangeshbagul15@gmail.com</code> &bull; <b>Mandatory BCC:</b> <code>mangeshbagul15@gmail.com</code></div>
+                <div><b>Primary Recipient:</b> <code>nanoproaistudio@gmail.com, itsecurity@bank.internal, dbmanagement@bank.internal</code></div>
+                <div><b>Mandatory CC:</b> <code>nanoproaistudio@gmail.com</code> &bull; <b>Mandatory BCC:</b> <code>nanoproaistudio@gmail.com</code></div>
                 <div style="margin-top:6px; color:#94A3B8;">When any database listener drops or ping times out, a high-priority incident telemetry alert is automatically dispatched with AI triage recommendations.</div>
             </div>
         </div>
@@ -7553,6 +7557,234 @@ Ready for message compilation and automated dispatch.
             </div>
         </div>
 
+        <!-- VIEW: SMS GATEWAY HUB (TEXTBEE & ANDROID LOCAL SIM GATEWAY) -->
+        <div class="workspace-view" id="view-sms_gateway">
+            <!-- Header Card -->
+            <div class="panel-card" style="border-left:4px solid #10B981; background:linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(15,23,42,0.95) 100%);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h2 style="display:flex; align-items:center; gap:8px; margin:0 0 4px 0; font-size:18px; color:#F8FAFC;">
+                            <span>💬</span> SMS Gateway Hub — 100% Pure Zero-Watermark SIM SMS
+                        </h2>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:0;">
+                            Direct physical SIM routing (Airtel &amp; Jio) via <b>TextBee.dev</b> Cloud Gateway &amp; <b>Android Local SIM Gateway</b>. Uses your SIM card's 100 free SMS/day quota with <b>0% service provider watermarks or ad text</b>. Universal inter-operator delivery across Airtel, Jio, Vi, and BSNL.
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span class="badge" style="background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#34D399; font-size:11px; padding:4px 10px;">
+                            🛡️ 0% Watermark Enforced
+                        </span>
+                        <span class="badge" style="background:rgba(56,189,248,0.15); border:1px solid #38BDF8; color:#38BDF8; font-size:11px; padding:4px 10px;">
+                            📱 Airtel +91 84337 55448
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Metric Counters -->
+            <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:12px; margin-bottom:12px;">
+                <div class="kpi-card">
+                    <div class="kpi-title">TEXTBEE.DEV GATEWAY</div>
+                    <div class="kpi-value" id="kpiTextBeeStatus" style="font-size:18px; color:#10B981;">CONNECTED</div>
+                    <div class="kpi-sub">Cloud-to-Android SIM Relay</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">ANDROID LOCAL GATEWAY</div>
+                    <div class="kpi-value" id="kpiAndroidLocalStatus" style="font-size:18px; color:#38BDF8;">READY</div>
+                    <div class="kpi-sub">Direct Wi-Fi / LAN GSM Telephony</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">DAILY SIM QUOTA</div>
+                    <div class="kpi-value" id="kpiDailyQuota" style="font-size:18px; color:#F59E0B;">2 / 100</div>
+                    <div class="kpi-sub">Free Carrier SMS / Day (No Cost)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">WATERMARK &amp; BRANDING</div>
+                    <div class="kpi-value" style="font-size:18px; color:#EC4899;">0% AD-FREE</div>
+                    <div class="kpi-sub">Direct NanoPro AI Studio SMS</div>
+                </div>
+            </div>
+
+            <!-- Instant Dual Test SMS Banner -->
+            <div class="panel-card" style="border:1px solid #38BDF8; background:rgba(56,189,248,0.05); margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h3 style="font-size:14px; color:#38BDF8; margin:0 0 4px 0; display:flex; align-items:center; gap:6px;">
+                            <span>🚀</span> Instant Dual-Gateway Test Verification (2 SMS)
+                        </h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin:0;">
+                            Dispatches exactly 2 test SMS in parallel (SMS #1 via TextBee.dev + SMS #2 via Android Local Gateway) directly from Sender Airtel <b>+918433755448</b> to Receiver <b>+918433755448</b>.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btnDualTestSms" onclick="sendDualTestSMS()" style="background:#10B981; border-color:#059669; padding:8px 18px; font-weight:700; font-size:12px; display:flex; align-items:center; gap:6px;">
+                        <span>⚡</span> Send Dual Test SMS Now (TextBee + Android) &rarr;
+                    </button>
+                </div>
+                <!-- Dual Test Status Box -->
+                <div id="smsDualTestResultBox" style="display:none; margin-top:12px; padding:10px; border-radius:6px; background:#0B132B; border:1px solid #263354; font-family:Consolas, monospace; font-size:11.5px; color:#34D399;"></div>
+            </div>
+
+            <!-- 2-Column Responsive Workspace Grid -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:12px; margin-bottom:12px;">
+                <!-- Column 1: Interactive SMS Composer -->
+                <div class="panel-card">
+                    <h3 style="font-size:13px; color:#10B981; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span>✉️</span> Compose &amp; Send Direct SMS (Zero Watermark)
+                    </h3>
+                    <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">
+                        Send pure personal or operational SMS without any external branding. Supports all operators across India (Airtel, Jio, Vodafone Idea, BSNL).
+                    </p>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                        <div>
+                            <label class="input-label">Routing Gateway Provider</label>
+                            <select class="studio-input" id="smsComposeProvider">
+                                <option value="dual">Dual Dispatch (Send from Both Gateways)</option>
+                                <option value="textbee" selected>TextBee.dev (Cloud-to-Android)</option>
+                                <option value="android_local">Android Local SIM Gateway (Direct IP)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-label">Sender SIM Phone</label>
+                            <input type="text" class="studio-input" id="smsComposeSender" value="+918433755448" placeholder="+918433755448" />
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:8px;">
+                        <label class="input-label">Recipient Mobile Number (Airtel / Jio / Vi / BSNL)</label>
+                        <input type="text" class="studio-input" id="smsComposeRecipient" value="+918433755448" placeholder="+918433755448" />
+                    </div>
+
+                    <div style="margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label class="input-label">SMS Message Content (0% Watermark Enforced)</label>
+                            <span id="smsCharCount" style="font-size:10.5px; color:#94A3B8;">0 / 160 chars (1 SMS)</span>
+                        </div>
+                        <textarea class="studio-input" id="smsComposeMessage" rows="4" oninput="updateSmsCharCounter()" placeholder="Type your clean SMS message here...">[NanoPro AI Studio] Direct SIM SMS Test. All systems operational. 0% watermark verified.</textarea>
+                    </div>
+
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+                        <button type="button" class="btn btn-secondary" style="font-size:10px; padding:3px 7px;" onclick="setSmsTemplate('status')">⚡ System Status</button>
+                        <button type="button" class="btn btn-secondary" style="font-size:10px; padding:3px 7px;" onclick="setSmsTemplate('otp')">🛡️ Security OTP</button>
+                        <button type="button" class="btn btn-secondary" style="font-size:10px; padding:3px 7px;" onclick="setSmsTemplate('etl')">📊 ETL Pipeline Success</button>
+                        <button type="button" class="btn btn-secondary" style="font-size:10px; padding:3px 7px;" onclick="setSmsTemplate('price')">🏷️ Amazon Price Drop</button>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" id="btnSendCustomSms" onclick="sendCustomSMS()" style="width:100%; justify-content:center; background:#10B981; border-color:#059669;">
+                        &#128172; Send Clean SIM SMS Now &rarr;
+                    </button>
+                </div>
+
+                <!-- Column 2: Gateway Configuration & Hardware Settings -->
+                <div class="panel-card">
+                    <h3 style="font-size:13px; color:#38BDF8; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span>⚙️</span> SMS Gateway Hardware &amp; API Configuration
+                    </h3>
+                    <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">
+                        Configure physical phone connection details. Credentials remain encrypted inside SQLite Vault and local storage.
+                    </p>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                        <div>
+                            <label class="input-label">Default Sender Mobile</label>
+                            <input type="text" class="studio-input" id="cfgSmsSender" value="+918433755448" />
+                        </div>
+                        <div>
+                            <label class="input-label">Default Receiver Mobile</label>
+                            <input type="text" class="studio-input" id="cfgSmsRecipient" value="+918433755448" />
+                        </div>
+                    </div>
+
+                    <div style="border-top:1px solid #1E293B; padding-top:8px; margin-top:8px;">
+                        <div style="font-size:11px; font-weight:700; color:#10B981; margin-bottom:6px;">1. TextBee.dev Cloud Gateway Settings</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                            <div>
+                                <label class="input-label">TextBee Device ID</label>
+                                <input type="text" class="studio-input" id="cfgTextBeeDeviceId" placeholder="e.g. 660f8d... or leave blank" />
+                            </div>
+                            <div>
+                                <label class="input-label">TextBee API Key</label>
+                                <input type="password" class="studio-input" id="cfgTextBeeApiKey" placeholder="API Key from app.textbee.dev" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border-top:1px solid #1E293B; padding-top:8px; margin-top:8px;">
+                        <div style="font-size:11px; font-weight:700; color:#38BDF8; margin-bottom:6px;">2. Android Local SMS Gateway Settings (Direct LAN / Tailscale)</div>
+                        <div style="display:grid; grid-template-columns:2fr 1fr; gap:8px; margin-bottom:8px;">
+                            <div>
+                                <label class="input-label">Android Local Gateway URL</label>
+                                <input type="text" class="studio-input" id="cfgAndroidLocalUrl" placeholder="http://192.168.1.100:8080/message" />
+                            </div>
+                            <div>
+                                <label class="input-label">Local Auth Token</label>
+                                <input type="password" class="studio-input" id="cfgAndroidLocalToken" placeholder="Optional token" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                        <div>
+                            <label class="input-label">Active Primary Gateway</label>
+                            <select class="studio-input" id="cfgActiveProvider">
+                                <option value="dual" selected>Dual Dispatch (Both Gateways)</option>
+                                <option value="textbee">TextBee.dev Cloud</option>
+                                <option value="android_local">Android Local SIM Gateway</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="saveSMSConfig()" style="width:100%; justify-content:center;">
+                                💾 Save SMS Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live SMS Dispatch History & Audit Trail -->
+            <div class="panel-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <h3 style="font-size:13px; color:#F8FAFC; margin:0; display:flex; align-items:center; gap:6px;">
+                            <span>📜</span> SMS Dispatch Ledger &amp; 0% Watermark Audit Trail
+                        </h3>
+                        <p style="font-size:11px; color:var(--text-muted); margin:2px 0 0 0;">
+                            Persistent SQLite dispatch ledger tracking timestamp, gateway provider, operator routing, clean payload verification, and transmission state.
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn btn-secondary" style="font-size:11px; padding:3px 10px;" onclick="loadSMSHistory()">
+                            🔄 Refresh Ledger
+                        </button>
+                        <button type="button" class="btn btn-secondary" style="font-size:11px; padding:3px 10px;" onclick="copySMSLedgerText()">
+                            📋 Copy Ledger Log
+                        </button>
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto; border:1px solid #1E293B; border-radius:8px;">
+                    <table class="studio-table" style="width:100%; font-size:11.5px; border-collapse:collapse;" id="smsHistoryTable">
+                        <thead>
+                            <tr style="background:#0B132B; color:#94A3B8; text-align:left; border-bottom:1px solid #1E293B;">
+                                <th style="padding:8px 10px;">Timestamp</th>
+                                <th style="padding:8px 10px;">Gateway Provider</th>
+                                <th style="padding:8px 10px;">Sender</th>
+                                <th style="padding:8px 10px;">Recipient</th>
+                                <th style="padding:8px 10px;">Clean Message Payload</th>
+                                <th style="padding:8px 10px;">Watermark Free</th>
+                                <th style="padding:8px 10px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="smsHistoryTableBody">
+                            <tr>
+                                <td colspan="7" style="padding:14px; text-align:center; color:#94A3B8;">Loading SMS dispatch history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- VIEW: 14. APPLICATION & WEBSITE LAUNCHER -->
         <div class="workspace-view" id="view-app_launcher">
             <div class="panel-card">
@@ -7867,7 +8099,7 @@ Ready for message compilation and automated dispatch.
                             <span class="badge" id="careerDispatcherBadge" style="background:#064E3B; color:#34D399; border:1px solid #10B981; font-size:10.5px; font-weight:700; padding:2px 8px;">🟢 ACTIVE (30-MIN CADENCE)</span>
                         </div>
                         <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;" id="careerDispatcherSubtitle">
-                            Rotates every 30 min across verified MNC HRs &amp; Career Pages &bull; Mandatory CC &amp; BCC: <code style="color:#38BDF8;">mangeshbagul15@gmail.com</code> &bull; Attached: <code style="color:#10B981;">Mangesh_Bagul_Data_Engineer.pdf</code>
+                            Rotates every 30 min across verified MNC HRs &amp; Career Pages &bull; Mandatory CC &amp; BCC: <code style="color:#38BDF8;">nanoproaistudio@gmail.com</code> &bull; Attached: <code style="color:#10B981;">Mangesh_Bagul_Data_Engineer.pdf</code>
                         </div>
                     </div>
                 </div>
@@ -8226,7 +8458,7 @@ Ready for message compilation and automated dispatch.
                         <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:10px; margin-bottom:10px;">
                             <div>
                                 <label class="input-label" style="margin-bottom:3px;">CC (Candidate Notification - Guaranteed Delivery)</label>
-                                <input type="text" class="studio-input" id="hrCcEmail" value="mangeshbagul15@gmail.com" style="padding:7px 10px; font-size:12px; color:#38BDF8; font-weight:700;" />
+                                <input type="text" class="studio-input" id="hrCcEmail" value="nanoproaistudio@gmail.com" style="padding:7px 10px; font-size:12px; color:#38BDF8; font-weight:700;" />
                             </div>
                             <div>
                                 <label class="input-label" style="margin-bottom:3px;">Outreach Cadence</label>
@@ -8250,7 +8482,7 @@ Ready for message compilation and automated dispatch.
 
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <div style="font-size:11.5px; color:#10B981; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                &#128206; Attached: Mangesh_Bagul_Data_Engineer.pdf &bull; <span style="color:#38BDF8;">CC: mangeshbagul15@gmail.com</span>
+                                &#128206; Attached: Mangesh_Bagul_Data_Engineer.pdf &bull; <span style="color:#38BDF8;">CC: nanoproaistudio@gmail.com</span>
                             </div>
                             <div style="display:flex; gap:8px;">
                                 <button type="button" class="btn btn-secondary" onclick="copyDraftedHrEmail()" style="font-size:11.5px; padding:6px 12px;">&#128203; Copy Email</button>
@@ -8267,7 +8499,7 @@ Ready for message compilation and automated dispatch.
                                     &#128203; Dispatched Applications &amp; Follow-Up Ledger
                                 </h3>
                                 <span style="font-size:11.5px; color:#94A3B8;">
-                                    Anti-duplication tracking &bull; Candidate CC confirmation to <code>mangeshbagul15@gmail.com</code> &bull; 1-Click follow-ups.
+                                    Anti-duplication tracking &bull; Candidate CC confirmation to <code>nanoproaistudio@gmail.com</code> &bull; 1-Click follow-ups.
                                 </span>
                             </div>
                             <button type="button" class="btn btn-secondary" onclick="loadApplicationsLedger()" style="font-size:11px; padding:4px 10px;">&#8635; Refresh Ledger</button>
@@ -8906,7 +9138,7 @@ Ready for message compilation and automated dispatch.
                         </div>
                         <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
                             <div><strong>Sender:</strong> mangeshbagul15@gmail.com</div>
-                            <div><strong>Recipient:</strong> mangeshbagul15@gmail.com</div>
+                            <div><strong>Recipient:</strong> nanoproaistudio@gmail.com</div>
                             <div><strong>Registered Mobile:</strong> 8433755448</div>
                             <div><strong>Host:</strong> smtp.gmail.com:587 (STARTTLS)</div>
                         </div>
@@ -9885,6 +10117,7 @@ Ready for message compilation and automated dispatch.
                 automation_scheduler: "Automation Scheduler & Persistent Cron",
                 communication: "Unified Communication Hub",
                 whatsapp_hub: "WhatsApp AI Hub & CallMeBot Broadcast Center (+91 84337 55448)",
+                sms_gateway: "SMS Gateway Hub (TextBee & Android Local SIM — 0% Watermark)",
                 app_launcher: "Application & Website Launcher",
                 shopping_services: "Shopping & E-Commerce Services",
                 media_discovery: "Legitimate Media Discovery",
@@ -9946,6 +10179,7 @@ Ready for message compilation and automated dispatch.
                 if (viewName === 'approvals') loadApprovals();
                 if (viewName === 'vault') { loadVaultList(); refreshConnectionHealthTable(); }
                 if (viewName === 'communication') { if (typeof loadSmtpSenders === 'function') loadSmtpSenders(); if (typeof loadCommunicationHistory === 'function') loadCommunicationHistory(); }
+                if (viewName === 'sms_gateway') { if (typeof loadSMSConfig === 'function') loadSMSConfig(); if (typeof loadSMSHistory === 'function') loadSMSHistory(); }
                 if (viewName === 'monitoring') loadSystemHealth();
                 if (viewName === 'task_history') loadTaskHistory();
                 if (viewName === 'amazon_tracker') loadAmazonProducts();
@@ -12715,7 +12949,7 @@ function navigateHistory(direction) {
             if (isSendingTestModal) return;
 
             const provChoice = preferredProvider || 'auto';
-            const recipient = prompt("Enter recipient email address for test message:", "mangeshbagul15@gmail.com");
+            const recipient = prompt("Enter recipient email address for test message:", "nanoproaistudio@gmail.com");
             if (!recipient || !recipient.trim()) return;
 
             let provDesc = '⚡ Automatic Multi-Tier Cloud Failover (Gmail API ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram)';
@@ -13146,8 +13380,8 @@ function navigateHistory(direction) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        prompt: 'Fetch the required data from Snowflake, generate an Excel report, and email it to mangeshbagul15@gmail.com',
-                        recipient: 'mangeshbagul15@gmail.com',
+                        prompt: 'Fetch the required data from Snowflake, generate an Excel report, and email it to nanoproaistudio@gmail.com',
+                        recipient: 'nanoproaistudio@gmail.com',
                         connection: 'NANO_PRO_SNOWFLAKE'
                     })
                 });
@@ -14430,7 +14664,7 @@ function navigateHistory(direction) {
         async function sendTestEmailAction() {
             if (isSendingTestEmail) return;
 
-            const recipient = prompt("Enter recipient email address for live test message:", "mangeshbagul15@gmail.com");
+            const recipient = prompt("Enter recipient email address for live test message:", "nanoproaistudio@gmail.com");
             if (!recipient || !recipient.trim()) return;
 
             if (!confirm(`Are you sure you want to send a live test email to: ${recipient.trim()}?\n\nThis will initiate actual SMTP transmission using your saved credentials.`)) {
@@ -17181,7 +17415,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('hrRecipientEmail').value = `careers.${cleanComp}@example.com`;
                 }
                 if (document.getElementById('hrCcEmail')) {
-                    document.getElementById('hrCcEmail').value = d.cc_email || 'mangeshbagul15@gmail.com';
+                    document.getElementById('hrCcEmail').value = d.cc_email || 'nanoproaistudio@gmail.com';
                 }
             } catch(e) {
                 logLocal('CareerHub', 'Error loading HR draft: ' + e);
@@ -17212,7 +17446,7 @@ window.addEventListener('DOMContentLoaded', () => {
         function copyDraftedHrEmail() {
             const sub = document.getElementById('hrEmailSubject').value;
             const body = document.getElementById('hrEmailBody').value;
-            const cc = document.getElementById('hrCcEmail') ? document.getElementById('hrCcEmail').value : 'mangeshbagul15@gmail.com';
+            const cc = document.getElementById('hrCcEmail') ? document.getElementById('hrCcEmail').value : 'nanoproaistudio@gmail.com';
             const fullText = `Subject: ${sub}\nCC: ${cc}\n\n${body}\n\n[Attachment: Mangesh_Bagul_Data_Engineer.pdf]`;
             navigator.clipboard.writeText(fullText).then(() => {
                 alert('HR Application Email (with candidate CC) copied to clipboard!');
@@ -17221,7 +17455,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         async function sendDraftedHrEmail() {
             const to = document.getElementById('hrRecipientEmail').value.trim();
-            const cc = document.getElementById('hrCcEmail') ? document.getElementById('hrCcEmail').value.trim() : 'mangeshbagul15@gmail.com';
+            const cc = document.getElementById('hrCcEmail') ? document.getElementById('hrCcEmail').value.trim() : 'nanoproaistudio@gmail.com';
             const cadence = document.getElementById('hrEmailCadence') ? document.getElementById('hrEmailCadence').value : 'initial';
             const sub = document.getElementById('hrEmailSubject').value.trim();
             const body = document.getElementById('hrEmailBody').value.trim();
@@ -17296,7 +17530,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             <td style="padding:8px 10px; font-weight:700; color:#64748B;">${idx + 1}</td>
                             <td style="padding:8px 10px; font-weight:700; color:#38BDF8;">${r.company || 'Enterprise'}</td>
                             <td style="padding:8px 10px; font-family:'Consolas', monospace;">${r.hr_email}</td>
-                            <td style="padding:8px 10px;"><span style="color:#10B981; font-weight:700;">✔ CC:</span> <code style="color:#7DD3FC; font-size:10.5px;">${r.cc_email || 'mangeshbagul15@gmail.com'}</code></td>
+                            <td style="padding:8px 10px;"><span style="color:#10B981; font-weight:700;">✔ CC:</span> <code style="color:#7DD3FC; font-size:10.5px;">${r.cc_email || 'nanoproaistudio@gmail.com'}</code></td>
                             <td style="padding:8px 10px;">${cadenceBadge}</td>
                             <td style="padding:8px 10px; color:#94A3B8;">${r.dispatched_at || 'Recent'}</td>
                             <td style="padding:8px 10px;">
@@ -20967,14 +21201,14 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
         }
 
         async function emailDeProjectReportAction(pid) {
-            const email = prompt('Confirm delivery recipient for project audit report:', 'mangeshbagul15@gmail.com');
+            const email = prompt('Confirm delivery recipient for project audit report:', 'nanoproaistudio@gmail.com');
             if (!email) return;
 
             try {
                 const res = await fetch(`/api/de_modern/projects/${pid}/email_dispatch`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({to: email, cc: 'mangeshbagul15@gmail.com', bcc: 'mangeshbagul15@gmail.com'})
+                    body: JSON.stringify({to: email, cc: 'nanoproaistudio@gmail.com', bcc: 'nanoproaistudio@gmail.com'})
                 });
                 const d = await res.json();
                 if (d.status === 'success') {
@@ -21276,7 +21510,7 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
         }
 
         async function triggerEmergencySecurityAlert() {
-            if (!confirm('Dispatch Emergency Security Alert to Primary (mangeshbagul15@gmail.com, itsecurity, dbmanagement) + CC + BCC?')) return;
+            if (!confirm('Dispatch Emergency Security Alert to Primary (nanoproaistudio@gmail.com, itsecurity, dbmanagement) + CC + BCC?')) return;
             try {
                 const res = await fetch('/api/de_modern/secops/emergency_alert', {
                     method: 'POST',
@@ -24524,7 +24758,7 @@ function triggerOfficeDelegationDemo(type) {
         .then(r => r.json())
         .then(d => {
             pushHudTickerLog("[Dispatch Complete] Executive report delivered to Telegram & Email!", "#10B981");
-            showStudioToast("Executive Summary Dispatched", "Report compiled and sent to mangeshbagul15@gmail.com and Telegram!", "success");
+            showStudioToast("Executive Summary Dispatched", "Report compiled and sent to nanoproaistudio@gmail.com and Telegram!", "success");
             if (typeof speakTextAloud === 'function') {
                 speakTextAloud(d.spoken_text || d.response_text, "mr-IN");
             }
@@ -24564,19 +24798,19 @@ function triggerOfficeDelegationDemo(type) {
     } else if (type === 'smtp_email_report') {
         const comms = PIXEL_WORKSTATIONS.find(w => w.id === "chief_k");
         triggerBeamAnimation(800, 71, comms.x + comms.w / 2, comms.y, "SMTP REPORT", "#A78BFA");
-        pushHudTickerLog("[Email Dispatch] Connecting to Google SMTP TLS -> mangeshbagul15@gmail.com...", "#A78BFA");
-        showStudioToast("Sending SMTP Email", "Transmitting real Lakehouse report to mangeshbagul15@gmail.com...", "info");
+        pushHudTickerLog("[Email Dispatch] Connecting to Google SMTP TLS -> nanoproaistudio@gmail.com...", "#A78BFA");
+        showStudioToast("Sending SMTP Email", "Transmitting real Lakehouse report to nanoproaistudio@gmail.com...", "info");
 
         fetch('/api/connections/send_test_email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ recipient: 'mangeshbagul15@gmail.com' })
+            body: JSON.stringify({ recipient: 'nanoproaistudio@gmail.com' })
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success' || data.success) {
-                pushHudTickerLog(`[Email Delivered] Real SMTP message sent to ${data.recipient || 'mangeshbagul15@gmail.com'}!`, "#10B981");
-                showStudioToast("Email Delivered!", `Real email sent to ${data.recipient || 'mangeshbagul15@gmail.com'}. Check your Gmail inbox!`, "success");
+                pushHudTickerLog(`[Email Delivered] Real SMTP message sent to ${data.recipient || 'nanoproaistudio@gmail.com'}!`, "#10B981");
+                showStudioToast("Email Delivered!", `Real email sent to ${data.recipient || 'nanoproaistudio@gmail.com'}. Check your Gmail inbox!`, "success");
             } else {
                 pushHudTickerLog(`[Email Warning] ${data.error || data.message || 'SMTP delivery notice'}`, "#EF4444");
                 showStudioToast("SMTP Notice", data.troubleshooting || data.message || "Failed to deliver email", "warning");
@@ -25032,6 +25266,235 @@ async function sendWhatsAppCallMeBotAction() {
         if (log) log.innerText = 'WhatsApp dispatch error: ' + e.message;
     }
 }
+
+/* --- SMS GATEWAY HUB (TEXTBEE & ANDROID LOCAL SIM GATEWAY) --- */
+
+function updateSmsCharCounter() {
+    const el = document.getElementById('smsComposeMessage');
+    const counter = document.getElementById('smsCharCount');
+    if (!el || !counter) return;
+    const len = el.value.length;
+    const parts = Math.ceil(len / 160) || 1;
+    counter.innerText = `${len} / 160 chars (${parts} SMS)`;
+    counter.style.color = len > 160 ? '#F59E0B' : '#94A3B8';
+}
+
+function setSmsTemplate(type) {
+    const el = document.getElementById('smsComposeMessage');
+    if (!el) return;
+    if (type === 'status') {
+        el.value = '[NanoPro AI Studio] All systems operational. 5 Databases active (Snowflake, Oracle XE, SQLite). AI Models ready.';
+    } else if (type === 'otp') {
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        el.value = `[NanoPro Security] Your 1-time verification OTP is ${otp}. Valid for 10 minutes. Do not share.`;
+    } else if (type === 'etl') {
+        el.value = '[NanoPro ETL Pipeline] Snowflake Medallion ETL pipeline finished successfully. 142,500 records verified.';
+    } else if (type === 'price') {
+        el.value = '[NanoPro Amazon Alert] Target tech item price dropped by 24% on Amazon India. Alert triggered.';
+    }
+    updateSmsCharCounter();
+}
+
+async function loadSMSConfig() {
+    try {
+        const res = await fetch('/api/sms/config');
+        const data = await res.json();
+        if (data.status === 'success' && data.config) {
+            const c = data.config;
+            const senderEl = document.getElementById('cfgSmsSender');
+            const recipEl = document.getElementById('cfgSmsRecipient');
+            const provEl = document.getElementById('cfgActiveProvider');
+            const tbDeviceEl = document.getElementById('cfgTextBeeDeviceId');
+            const tbKeyEl = document.getElementById('cfgTextBeeApiKey');
+            const localUrlEl = document.getElementById('cfgAndroidLocalUrl');
+            const localTokEl = document.getElementById('cfgAndroidLocalToken');
+
+            if (senderEl && c.sender_phone) senderEl.value = c.sender_phone;
+            if (recipEl && c.recipient_phone) recipEl.value = c.recipient_phone;
+            if (provEl && c.active_provider) provEl.value = c.active_provider;
+            if (tbDeviceEl && c.textbee_device_id) tbDeviceEl.value = c.textbee_device_id;
+            if (tbKeyEl && c.textbee_api_key) tbKeyEl.value = c.textbee_api_key;
+            if (localUrlEl && c.android_local_url) localUrlEl.value = c.android_local_url;
+            if (localTokEl && c.android_local_token) localTokEl.value = c.android_local_token;
+
+            // Also sync compose inputs
+            const compSender = document.getElementById('smsComposeSender');
+            const compRecip = document.getElementById('smsComposeRecipient');
+            if (compSender && c.sender_phone) compSender.value = c.sender_phone;
+            if (compRecip && c.recipient_phone) compRecip.value = c.recipient_phone;
+
+            // Update KPI Quota
+            const kpiQuota = document.getElementById('kpiDailyQuota');
+            if (kpiQuota && c.daily_sent_count !== undefined) {
+                kpiQuota.innerText = `${c.daily_sent_count} / ${c.daily_free_limit || 100}`;
+            }
+        }
+    } catch (e) {
+        console.warn('[loadSMSConfig error]', e);
+    }
+}
+
+async function saveSMSConfig() {
+    const payload = {
+        sender_phone: (document.getElementById('cfgSmsSender') || {}).value || '+918433755448',
+        recipient_phone: (document.getElementById('cfgSmsRecipient') || {}).value || '+918433755448',
+        active_provider: (document.getElementById('cfgActiveProvider') || {}).value || 'dual',
+        textbee_device_id: (document.getElementById('cfgTextBeeDeviceId') || {}).value || null,
+        textbee_api_key: (document.getElementById('cfgTextBeeApiKey') || {}).value || null,
+        android_local_url: (document.getElementById('cfgAndroidLocalUrl') || {}).value || null,
+        android_local_token: (document.getElementById('cfgAndroidLocalToken') || {}).value || null
+    };
+
+    try {
+        const res = await fetch('/api/sms/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert('SMS Gateway Configuration Saved Successfully!');
+            loadSMSConfig();
+        } else {
+            alert('Failed to save SMS config: ' + (data.message || JSON.stringify(data)));
+        }
+    } catch (e) {
+        alert('Error saving SMS config: ' + e.message);
+    }
+}
+
+async function sendDualTestSMS() {
+    const btn = document.getElementById('btnDualTestSms');
+    const resultBox = document.getElementById('smsDualTestResultBox');
+    const sender = (document.getElementById('cfgSmsSender') || {}).value || '+918433755448';
+    const recipient = (document.getElementById('cfgSmsRecipient') || {}).value || '+918433755448';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> Sending Dual Test SMS...';
+    }
+    if (resultBox) {
+        resultBox.style.display = 'block';
+        resultBox.innerText = `[SMS Gateway Hub] Triggering parallel dual dispatch...\n• Gateway 1: TextBee.dev Cloud Gateway -> ${recipient}\n• Gateway 2: Android Local SIM Gateway -> ${recipient}\nSender SIM: Airtel (${sender})\nWatermark: 0% Service Provider Watermark Enforced`;
+    }
+
+    try {
+        const res = await fetch('/api/sms/send_test_dual', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ recipient: recipient, sender: sender })
+        });
+        const data = await res.json();
+        if (resultBox) {
+            resultBox.innerText = JSON.stringify(data, null, 2);
+        }
+        loadSMSHistory();
+        loadSMSConfig();
+    } catch (e) {
+        if (resultBox) {
+            resultBox.innerText = 'Dual Test Dispatch Error: ' + e.message;
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>⚡</span> Send Dual Test SMS Now (TextBee + Android) &rarr;';
+        }
+    }
+}
+
+async function sendCustomSMS() {
+    const btn = document.getElementById('btnSendCustomSms');
+    const provider = (document.getElementById('smsComposeProvider') || {}).value || 'dual';
+    const sender = (document.getElementById('smsComposeSender') || {}).value || '+918433755448';
+    const recipient = (document.getElementById('smsComposeRecipient') || {}).value || '+918433755448';
+    const message = (document.getElementById('smsComposeMessage') || {}).value || '';
+
+    if (!message.trim()) {
+        alert('Please enter SMS message content.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Sending Clean SMS...';
+    }
+
+    try {
+        const res = await fetch('/api/sms/send', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                provider: provider,
+                sender: sender,
+                recipient: recipient,
+                message: message
+            })
+        });
+        const data = await res.json();
+        alert('SMS Dispatch Result: ' + (data.status || 'OK') + '\nDetails: ' + JSON.stringify(data));
+        loadSMSHistory();
+        loadSMSConfig();
+    } catch (e) {
+        alert('SMS Send Error: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '&#128172; Send Clean SIM SMS Now &rarr;';
+        }
+    }
+}
+
+let activeSmsHistoryList = [];
+
+async function loadSMSHistory() {
+    const tbody = document.getElementById('smsHistoryTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/sms/history?limit=50');
+        const data = await res.json();
+        if (data.status === 'success' && Array.isArray(data.history)) {
+            activeSmsHistoryList = data.history;
+            if (data.history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:14px; text-align:center; color:#94A3B8;">No SMS dispatches recorded yet. Use the dual test button above to send your first test SMS.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.history.map(row => {
+                const isWatermarkFree = row.zero_watermark ? '🛡️ 100% Free' : 'No';
+                const statusColor = (row.status === 'success' || row.status === 'queued') ? '#34D399' : '#EF4444';
+                const gwColor = row.provider === 'textbee' ? '#10B981' : '#38BDF8';
+                const gwName = row.provider === 'textbee' ? 'TextBee.dev Cloud' : (row.provider === 'android_local' ? 'Android Local Gateway' : row.provider);
+
+                return `
+                    <tr style="border-bottom:1px solid #1E293B; background:rgba(15,23,42,0.4);">
+                        <td style="padding:8px 10px; font-family:Consolas, monospace; color:#94A3B8;">${row.created_at || 'Just now'}</td>
+                        <td style="padding:8px 10px; font-weight:700; color:${gwColor};">${gwName}</td>
+                        <td style="padding:8px 10px; color:#F8FAFC;">${row.sender || '+918433755448'}</td>
+                        <td style="padding:8px 10px; color:#F8FAFC; font-weight:600;">${row.recipient || '+918433755448'}</td>
+                        <td style="padding:8px 10px; color:#E2E8F0; max-width:280px; word-break:break-word;">${row.message || ''}</td>
+                        <td style="padding:8px 10px; color:#34D399; font-weight:700;">${isWatermarkFree}</td>
+                        <td style="padding:8px 10px; font-weight:700; color:${statusColor};">${(row.status || '').toUpperCase()}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:14px; text-align:center; color:#EF4444;">Failed to load history: ${e.message}</td></tr>`;
+    }
+}
+
+function copySMSLedgerText() {
+    if (!activeSmsHistoryList || activeSmsHistoryList.length === 0) {
+        alert('No SMS history to copy.');
+        return;
+    }
+    const txt = JSON.stringify(activeSmsHistoryList, null, 2);
+    navigator.clipboard.writeText(txt);
+    alert('SMS Dispatch Ledger JSON copied to clipboard!');
+}
+
+
 
 
 /* --- 3. LAKEHOUSE CATALOG, SCD2 & PRE-EXECUTION QUERY VALIDATOR --- */
@@ -25668,7 +26131,7 @@ async function loadLakehouseUsersRoles() {
 }
 
 async function dispatchLakehouseReportEmail() {
-    const email = (document.getElementById('deDispatchEmailInput') || {}).value || 'mangeshbagul15@gmail.com';
+    const email = (document.getElementById('deDispatchEmailInput') || {}).value || 'nanoproaistudio@gmail.com';
     const box = document.getElementById('deDispatchHistoryBox');
     if (!email) { alert('Enter recipient email.'); return; }
 
@@ -25790,7 +26253,7 @@ async function dispatchNextLiveCareerEmailNow() {
         });
         const d = await res.json();
         if (d.status === 'success' || d.smtp_result?.status === 'Accepted by SMTP Server' || d.smtp_result?.success) {
-            alert(`✅ LIVE EMAIL DISPATCHED TO HR!\n\n• Target Company: ${d.company}\n• Recipient: ${d.target_email}\n• Candidate CC & BCC: mangeshbagul15@gmail.com\n• Attached: ${d.resume_file || 'Mangesh_Bagul_Data_Engineer.pdf'}\n• SMTP Server: smtp.gmail.com:587\n\nCheck your Gmail Sent folder (mangeshbagul15@gmail.com) to view the sent application!`);
+            alert(`✅ LIVE EMAIL DISPATCHED TO HR!\n\n• Target Company: ${d.company}\n• Recipient: ${d.target_email}\n• Candidate CC & BCC: nanoproaistudio@gmail.com\n• Attached: ${d.resume_file || 'Mangesh_Bagul_Data_Engineer.pdf'}\n• SMTP Server: smtp.gmail.com:587\n\nCheck your Gmail Sent folder (mangeshbagul15@gmail.com) to view the sent application!`);
         } else {
             alert(`⚠️ Dispatch notification: ${d.status || 'Status received'}. Company: ${d.company} (${d.target_email}). Error: ${d.smtp_result?.error || 'None'}`);
         }
@@ -25832,7 +26295,7 @@ async function updateCareerDispatcherUI() {
             countdown.textContent = `⏱️ In ${mins}m ${secs}s (Next Target)`;
         }
         if (subtitle && d.last_target_company) {
-            subtitle.innerHTML = `Last Dispatched: <strong style="color:#F8FAFC;">${d.last_target_company}</strong> (<code>${d.last_target_email}</code>) &bull; Total Sent: <strong style="color:#10B981;">${d.total_live_dispatched}</strong> &bull; CC: <code style="color:#38BDF8;">mangeshbagul15@gmail.com</code>`;
+            subtitle.innerHTML = `Last Dispatched: <strong style="color:#F8FAFC;">${d.last_target_company}</strong> (<code>${d.last_target_email}</code>) &bull; Total Sent: <strong style="color:#10B981;">${d.total_live_dispatched}</strong> &bull; CC: <code style="color:#38BDF8;">nanoproaistudio@gmail.com</code>`;
         }
     } catch (e) {}
 }

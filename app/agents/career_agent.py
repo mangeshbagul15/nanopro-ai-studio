@@ -1306,7 +1306,7 @@ class CareerHubAgent:
             "company": job["company"],
             "recipient_role": "Talent Acquisition / HR",
             "hr_email": target_hr_email,
-            "cc_email": "mangeshbagul15@gmail.com",
+            "cc_email": "nanoproaistudio@gmail.com",
             "subject": subject,
             "body": body,
             "html_body": html_body,
@@ -1320,7 +1320,7 @@ class CareerHubAgent:
         job_id: str,
         recipient_email: str,
         subject: str,
-        cc_email: str = "mangeshbagul15@gmail.com",
+        cc_email: str = "nanoproaistudio@gmail.com",
         is_followup: bool = False,
         cadence: str = "initial",
         status: str = "sent"
@@ -1432,7 +1432,7 @@ class CareerHubAgent:
             "company": job["company"],
             "recipient_role": "Talent Acquisition / HR",
             "hr_email": target_hr_email,
-            "cc_email": "mangeshbagul15@gmail.com",
+            "cc_email": "nanoproaistudio@gmail.com",
             "subject": subject,
             "body": body,
             "html_body": html_body,
@@ -1571,7 +1571,7 @@ class CareerHubAgent:
             body_html=draft.get("html_body"),
             attachment_path=resume_pdf,
             custom_recipient=target_hr_email,
-            cc="mangeshbagul15@gmail.com"
+            cc="nanoproaistudio@gmail.com"
         )
 
         # Send Telegram notification with receipt
@@ -1579,7 +1579,7 @@ class CareerHubAgent:
             f"📄 <b>6-HOUR MNC HR APPLICATION DISPATCHED</b> 🎯\n\n"
             f"• <b>Target MNC:</b> <i>{target_job['company']}</i>\n"
             f"• <b>Sent To (HR):</b> <code>{target_hr_email}</code>\n"
-            f"• <b>Candidate CC:</b> <code>mangeshbagul15@gmail.com</code>\n"
+            f"• <b>Candidate CC:</b> <code>nanoproaistudio@gmail.com</code>\n"
             f"• <b>Role:</b> <b>{target_job['title']}</b> ({target_job['location']})\n"
             f"• <b>Package:</b> <code>{target_job['salary_info']}</code>\n"
             f"• <b>Attached Resume:</b> <code>{os.path.basename(resume_pdf or 'Mangesh_Bagul_Data_Engineer.pdf')}</code>\n"
@@ -1596,7 +1596,7 @@ class CareerHubAgent:
             "company": target_job["company"],
             "role": target_job["title"],
             "sent_to_hr": target_hr_email,
-            "cc_candidate": "mangeshbagul15@gmail.com",
+            "cc_candidate": "nanoproaistudio@gmail.com",
             "email_dispatch": mail_res,
             "resume_attached": os.path.exists(resume_pdf) if resume_pdf else False,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
@@ -1848,8 +1848,8 @@ class CareerHubAgent:
                 "name": "Mangesh Vasant Bagul",
                 "email": "mangeshbagul15@gmail.com",
                 "phone": "+91 84337 55448",
-                "cc_destination": "mangeshbagul15@gmail.com",
-                "bcc_destination": "mangeshbagul15@gmail.com",
+                "cc_destination": "nanoproaistudio@gmail.com",
+                "bcc_destination": "nanoproaistudio@gmail.com",
                 "resume_attachment": os.path.basename(RESUME_FILE_PATH),
                 "resume_exists": os.path.exists(RESUME_FILE_PATH)
             }
@@ -1863,7 +1863,7 @@ class CareerHubAgent:
         """
         Executes an immediate live email dispatch via smtp.gmail.com to a distinct target company.
         - Rotates through verified companies/HRs/portal posters to ensure every 15-min cycle reaches a DIFFERENT recipient.
-        - Enforces candidate CC & BCC to mangeshbagul15@gmail.com so sent emails land in Gmail Sent box & Inbox.
+        - Enforces candidate CC & BCC to nanoproaistudio@gmail.com so sent emails land in Gmail Sent box & Inbox.
         - Attaches Mangesh_Bagul_Data_Engineer.pdf.
         - Logs delivery in SQLite job_applications_ledger.
         - Broadcasts delivery receipt to Telegram @mangesh_technews_bot (Chat 1200023268).
@@ -1919,7 +1919,7 @@ class CareerHubAgent:
 
         # 5. Execute LIVE Gmail SMTP transmission
         subject = f"Application: {job_title} - Mangesh Bagul (4 Yrs Exp | BFSI Data Engineer & Snowflake Specialist)"
-        log_event(f"Dispatching live email to {company_name} ({target_email}) with CC to mangeshbagul15@gmail.com...", component="CareerHubAgent")
+        log_event(f"Dispatching live email to {company_name} ({target_email}) with CC to nanoproaistudio@gmail.com...", component="CareerHubAgent")
 
         send_res = smtp_client.send_email(
             recipient=target_email,
@@ -1928,8 +1928,8 @@ class CareerHubAgent:
             body=draft["body"],
             html_body=draft.get("html_body"),
             attachments=attachments,
-            cc="mangeshbagul15@gmail.com",
-            bcc="mangeshbagul15@gmail.com",
+            cc="nanoproaistudio@gmail.com",
+            bcc="nanoproaistudio@gmail.com",
             report_name="Mangesh_Bagul_Live_HR_Dispatch"
         )
 
@@ -1946,7 +1946,7 @@ class CareerHubAgent:
             job_id=target_job["id"],
             recipient_email=target_email,
             subject=subject,
-            cc_email="mangeshbagul15@gmail.com",
+            cc_email="nanoproaistudio@gmail.com",
             is_followup=False,
             cadence="autonomous_15m",
             status=delivery_status
@@ -1959,8 +1959,8 @@ class CareerHubAgent:
                 f"• <b>Company:</b> <b>{company_name}</b>\n"
                 f"• <b>Role:</b> <b>{job_title}</b> ({location})\n"
                 f"• <b>Target Recipient:</b> <code>{target_email}</code>\n"
-                f"• <b>Candidate CC:</b> <code>mangeshbagul15@gmail.com</code>\n"
-                f"• <b>Candidate BCC:</b> <code>mangeshbagul15@gmail.com</code>\n"
+                f"• <b>Candidate CC:</b> <code>nanoproaistudio@gmail.com</code>\n"
+                f"• <b>Candidate BCC:</b> <code>nanoproaistudio@gmail.com</code>\n"
                 f"• <b>Attached Resume:</b> <code>{os.path.basename(resume_pdf)}</code>\n"
                 f"• <b>Package:</b> <code>{salary_info}</code>\n"
                 f"• <b>Delivery Status:</b> <b>{'✅ Delivered & Accepted by Gmail SMTP' if is_ok else '⚠️ ' + str(send_res.get('error', 'Pending'))}</b>\n"
@@ -1986,8 +1986,8 @@ class CareerHubAgent:
             "status": "success" if is_ok else "warning",
             "company": company_name,
             "target_email": target_email,
-            "candidate_cc": "mangeshbagul15@gmail.com",
-            "candidate_bcc": "mangeshbagul15@gmail.com",
+            "candidate_cc": "nanoproaistudio@gmail.com",
+            "candidate_bcc": "nanoproaistudio@gmail.com",
             "subject": subject,
             "resume_attached": os.path.exists(resume_pdf) if resume_pdf else False,
             "resume_file": os.path.basename(resume_pdf),

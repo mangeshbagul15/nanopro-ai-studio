@@ -1219,7 +1219,7 @@ DEFAULT_PROJECTS = [
         "status": "ACTIVE",
         "last_run_status": "SUCCESS",
         "dispatch_rules": {
-            "to": "mangeshbagul15@gmail.com",
+            "to": "nanoproaistudio@gmail.com",
             "cc": "compliance.officer@bank.com",
             "bcc": "audit.archive@bank.com",
             "subject": "[CRITICAL] AML Daily Wire Recon & High-Velocity Threshold Audit",
@@ -1240,9 +1240,9 @@ DEFAULT_PROJECTS = [
         "status": "ACTIVE",
         "last_run_status": "SUCCESS",
         "dispatch_rules": {
-            "to": "mangeshbagul15@gmail.com",
+            "to": "nanoproaistudio@gmail.com",
             "cc": "corebanking.lead@bank.com",
-            "bcc": "mangeshbagul15@gmail.com",
+            "bcc": "nanoproaistudio@gmail.com",
             "subject": "[EOD AUDIT] CBS to Snowflake Medallion General Ledger Reconciliation",
             "enforce_5mb": True
         }
@@ -1261,9 +1261,9 @@ DEFAULT_PROJECTS = [
         "status": "RUNNING",
         "last_run_status": "SUCCESS",
         "dispatch_rules": {
-            "to": "mangeshbagul15@gmail.com",
+            "to": "nanoproaistudio@gmail.com",
             "cc": "fraud.monitoring@bank.com",
-            "bcc": "mangeshbagul15@gmail.com",
+            "bcc": "nanoproaistudio@gmail.com",
             "subject": "[ALERT] Credit Card Velocity Spike & High-Risk Cross-Border Declines",
             "enforce_5mb": True
         }
@@ -1282,9 +1282,9 @@ DEFAULT_PROJECTS = [
         "status": "ACTIVE",
         "last_run_status": "SUCCESS",
         "dispatch_rules": {
-            "to": "mangeshbagul15@gmail.com",
+            "to": "nanoproaistudio@gmail.com",
             "cc": "treasury.head@bank.com",
-            "bcc": "mangeshbagul15@gmail.com",
+            "bcc": "nanoproaistudio@gmail.com",
             "subject": "[TREASURY] Weekly ALM Liquidity Gap & Interest Rate Sensitivity Report",
             "enforce_5mb": True
         }
@@ -1303,9 +1303,9 @@ DEFAULT_PROJECTS = [
         "status": "ACTIVE",
         "last_run_status": "SUCCESS",
         "dispatch_rules": {
-            "to": "mangeshbagul15@gmail.com",
+            "to": "nanoproaistudio@gmail.com",
             "cc": "marketing.analytics@bank.com",
-            "bcc": "mangeshbagul15@gmail.com",
+            "bcc": "nanoproaistudio@gmail.com",
             "subject": "[C360] Customer 360 Churn Risk & High-Net-Worth Affinity Metrics",
             "enforce_5mb": True
         }
@@ -1668,9 +1668,9 @@ def run_infra_network_diagnostics() -> Dict[str, Any]:
 def dispatch_emergency_security_alert(incident_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Automated Emergency Email Dispatcher.
-    Primary Recipient: mangeshbagul15@gmail.com, itsecurity, dbmanagement
-    Mandatory CC: mangeshbagul15@gmail.com
-    Mandatory BCC: mangeshbagul15@gmail.com
+    Primary Recipient: nanoproaistudio@gmail.com, itsecurity, dbmanagement
+    Mandatory CC: nanoproaistudio@gmail.com
+    Mandatory BCC: nanoproaistudio@gmail.com
     Content: High-priority incident telemetry, failed host/port, nslookup/telnet diagnostics, AI triage.
     """
     info = incident_info or {
@@ -1680,9 +1680,9 @@ def dispatch_emergency_security_alert(incident_info: Optional[Dict[str, Any]] = 
         "triage_recommendation": "Failover to Standby Replica 'MY_ORACLE_XE_REMOTE_New' via Tailscale tunnel. Check listener status via 'lsnrctl status'."
     }
     
-    primary_to = "mangeshbagul15@gmail.com"
-    cc = "mangeshbagul15@gmail.com"
-    bcc = "mangeshbagul15@gmail.com"
+    primary_to = "nanoproaistudio@gmail.com"
+    cc = "nanoproaistudio@gmail.com"
+    bcc = "nanoproaistudio@gmail.com"
     
     subject = f"[EMERGENCY ALERT] IT SecOps Infrastructure Incident: {info.get('incident_type', 'DATABASE_ALERT')}"
     html_body = f"""

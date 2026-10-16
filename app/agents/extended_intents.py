@@ -450,7 +450,7 @@ def dispatch_lakehouse_omni_commander(p_lower: str, user_message: str) -> Option
             md.append("|---|---|---|---|---|---|:---:|")
             for idx, t in enumerate(tasks, 1):
                 notif = t.get("notification_pref") or {}
-                recips = notif.get("recipients", ["Admin (mangeshbagul15@gmail.com)"])
+                recips = notif.get("recipients", ["Admin (nanoproaistudio@gmail.com)"])
                 recip_str = ", ".join(recips) if isinstance(recips, list) else str(recips)
                 md.append(f"| {idx} | `{t['name']}` | {t['schedule_type']} | `{t['recurrence_expr']}` | `{t.get('next_run_at') or 'Active'}` | 📧 {recip_str} | **{t['last_status']} ✅** |")
             md.append("\n### 📧 ऑटो-मेलर हेल्थ (AutoMailer Health):")
@@ -568,7 +568,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             "5. ☁️ **AWS S3 Data Lake:** `s3://nanopro-data-lake` — Iceberg Delta buffer online ✅\n\n"
             "⚡ **Quick Natural Language Actions You Can Run:**\n"
             "• *\"Design a lakehouse pipeline from Oracle to Snowflake\"*\n"
-            "• *\"Send sample banking data to email mangeshbagul15@gmail.com\"*\n"
+            "• *\"Send sample banking data to email nanoproaistudio@gmail.com\"*\n"
             "• *\"Send WhatsApp message to +91 84337 55448: Pipeline health check passed\"*\n"
             "• *\"Send Oracle tables inventory to Telegram\"*\n"
             "• *\"Run Wi-Fi security scan and password resistance audit\"*\n\n"
@@ -837,7 +837,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             md.append("|---|---|---|---|---|---|:---:|")
             for idx, t in enumerate(tasks, 1):
                 notif = t.get("notification_pref") or {}
-                recips = notif.get("recipients", ["Admin (mangeshbagul15@gmail.com)"])
+                recips = notif.get("recipients", ["Admin (nanoproaistudio@gmail.com)"])
                 recip_str = ", ".join(recips) if isinstance(recips, list) else str(recips)
                 md.append(f"| {idx} | `{t['name']}` | {t['schedule_type']} | `{t['recurrence_expr']}` | `{t.get('next_run_at') or 'Active'}` | 📧 {recip_str} | **{t['last_status']} ✅** |")
             md.append("\n### 📧 ऑटो-मेलर हेल्थ (AutoMailer Health):")
@@ -1143,7 +1143,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             from app.core.smtp_client import smtp_client
             try:
                 mail_res = smtp_client.send_email(
-                    recipient="mangeshbagul15@gmail.com",
+                    recipient="nanoproaistudio@gmail.com",
                     subject=f"Snowflake Lakehouse ETL Execution: L0_STAGING.{target_table} Appended",
                     body=(
                         f"Namaskar Mangesh,\n\n"
@@ -1159,7 +1159,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
                 )
             except Exception:
                 pass
-            dispatch_notes.append("• 📧 **Email Delivery:** Dispatched verification audit report and Excel attachment to `mangeshbagul15@gmail.com`.")
+            dispatch_notes.append("• 📧 **Email Delivery:** Dispatched verification audit report and Excel attachment to `nanoproaistudio@gmail.com`.")
 
         if deliver_tg:
             dispatch_notes.append("• 📱 **Telegram Delivery:** Dispatched ETL execution alert to `@mangesh_technews_bot`.")
@@ -1578,9 +1578,9 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
     )
 
     if has_sample_data_mail:
-        # Extract recipient email address if provided, default to mangeshbagul15@gmail.com
+        # Extract recipient email address if provided, default to nanoproaistudio@gmail.com
         found_email = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', user_message)
-        target_email = found_email.group(0) if found_email else "mangeshbagul15@gmail.com"
+        target_email = found_email.group(0) if found_email else "nanoproaistudio@gmail.com"
 
         # Generate realistic, high-quality banking dataset (BFSI / Finacle / Snowflake)
         sample_records = [
@@ -1992,7 +1992,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
     # 2.5 DIRECT SQL QUERY EXECUTION, ENGINE RESOLUTION & COMPLETE TABLE VIEW
     # User Request: Direct SQL queries in prompt, e.g. "SELECT * FROM BANK_DB.L0_STAGING.ACCOUNTS LIMIT 10;"
     # Followup request: "need complete table view"
-    # Autonomous Dispatch: "fetch data using the query and send main on mangeshbagul15@gmail.com"
+    # Autonomous Dispatch: "fetch data using the query and send main on nanoproaistudio@gmail.com"
     # =========================================================================
     extracted_query = _extract_sql_query(user_message)
     is_run_last_query = any(k in p_lower for k in [
@@ -2147,10 +2147,10 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
 
         # Email dispatch if requested
         email_sent = False
-        rcpt = "mangeshbagul15@gmail.com"
+        rcpt = "nanoproaistudio@gmail.com"
         if deliver_mail:
             m_em = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', user_message)
-            rcpt = m_em.group(0) if m_em else "mangeshbagul15@gmail.com"
+            rcpt = m_em.group(0) if m_em else "nanoproaistudio@gmail.com"
             subject = f"Nano Pro Data Engineering Report - {engine.upper()} [{db_name}.{schema_name}.{tbl_target}] Query Extract"
             body = (
                 f"Dear Mangesh,\n\n"
@@ -2266,7 +2266,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
 
         dispatch_notes = []
         if deliver_mail or res_pipeline.get("email_sent"):
-            dispatch_notes.append("• 📧 **Email Delivery:** Dispatched data report and Excel attachment to `mangeshbagul15@gmail.com`.")
+            dispatch_notes.append("• 📧 **Email Delivery:** Dispatched data report and Excel attachment to `nanoproaistudio@gmail.com`.")
         if deliver_tg or res_pipeline.get("telegram_sent"):
             dispatch_notes.append("• 📱 **Telegram Delivery:** Dispatched aggregated data summary to `@mangesh_technews_bot`.")
 
@@ -2343,7 +2343,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             f"• **Target Role:** *{res_outreach.get('role', 'Data Engineer')}*",
             f"• **Verified Resume Attached:** `app/resumes/Mangesh_Bagul_Data_Engineer.pdf` (Verified: {res_outreach.get('resume_attached', True)})",
             f"• **Telegram Broadcast:** Summary alert dispatched to `@mangesh_technews_bot`\n",
-            f"• **Email Delivery:** Direct submission sent via SMTP to HR and `mangeshbagul15@gmail.com`."
+            f"• **Email Delivery:** Direct submission sent via SMTP to HR and `nanoproaistudio@gmail.com`."
         ]
         return {"handled": True, "reply": "\n".join(lines_o), "agent_id": "career_agent"}
 

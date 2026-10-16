@@ -54,7 +54,7 @@ DEFAULT_COMMUNICATION_TARGETS = [
         "id": "target_mail_primary",
         "channel": "email",
         "name": "Mangesh Official Gmail",
-        "target_identifier": "mangeshbagul15@gmail.com",
+        "target_identifier": "nanoproaistudio@gmail.com",
         "description": "Formal audit reports, ETL spreadsheets & HR application logs",
         "is_active": True,
         "subscribed_processes": ["etl_pipeline", "mnc_hr_outreach", "daily_executive_report", "connection_failure"]
@@ -65,28 +65,28 @@ DEFAULT_COMMUNICATION_TARGETS = [
 DEFAULT_PROCESS_ROUTING = {
     "connection_failure": {
         "process_name": "Emergency Connection Health Monitor",
-        "email_recipients": ["mangeshbagul15@gmail.com"],
+        "email_recipients": ["nanoproaistudio@gmail.com"],
         "telegram_targets": ["1200023268"],
         "whatsapp_targets": ["+918433755448"],
         "priority": "CRITICAL"
     },
     "job_hunter": {
         "process_name": "4-Hour Job Filter & Radar Agent",
-        "email_recipients": ["mangeshbagul15@gmail.com"],
+        "email_recipients": ["nanoproaistudio@gmail.com"],
         "telegram_targets": ["1200023268", "@mangesh_technews_bot"],
         "whatsapp_targets": ["+918433755448"],
         "priority": "HIGH"
     },
     "mnc_hr_outreach": {
         "process_name": "6-Hour MNC HR Resume Dispatcher",
-        "email_recipients": ["mangeshbagul15@gmail.com"],
+        "email_recipients": ["nanoproaistudio@gmail.com"],
         "telegram_targets": ["1200023268"],
         "whatsapp_targets": [],
         "priority": "HIGH"
     },
     "data_engineer_etl": {
         "process_name": "Data Engineering Cross-DB Federated Pipeline",
-        "email_recipients": ["mangeshbagul15@gmail.com"],
+        "email_recipients": ["nanoproaistudio@gmail.com"],
         "telegram_targets": ["1200023268"],
         "whatsapp_targets": [],
         "priority": "MEDIUM"
@@ -100,7 +100,7 @@ DEFAULT_PROCESS_ROUTING = {
     },
     "dms_migration": {
         "process_name": "AWS DMS Replication Monitor",
-        "email_recipients": ["mangeshbagul15@gmail.com"],
+        "email_recipients": ["nanoproaistudio@gmail.com"],
         "telegram_targets": ["1200023268"],
         "whatsapp_targets": [],
         "priority": "HIGH"
@@ -449,12 +449,12 @@ class CommunicationCenter:
         """
         routing = self.get_process_routing_config()
         pcfg = routing.get(process_key, {})
-        recipients = [custom_recipient] if custom_recipient else pcfg.get("email_recipients", ["mangeshbagul15@gmail.com"])
+        recipients = [custom_recipient] if custom_recipient else pcfg.get("email_recipients", ["nanoproaistudio@gmail.com"])
         pname = pcfg.get("process_name", process_key)
 
         # Enforce candidate CC and BCC on all HR outreach
-        effective_cc = cc or ("mangeshbagul15@gmail.com" if "hr" in process_key.lower() or "job" in process_key.lower() else None)
-        effective_bcc = bcc or ("mangeshbagul15@gmail.com" if "hr" in process_key.lower() or "job" in process_key.lower() else None)
+        effective_cc = cc or ("nanoproaistudio@gmail.com" if "hr" in process_key.lower() or "job" in process_key.lower() else None)
+        effective_bcc = bcc or ("nanoproaistudio@gmail.com" if "hr" in process_key.lower() or "job" in process_key.lower() else None)
 
         # Ensure resume PDF attachment for career applications
         default_resume = "app/resumes/Mangesh_Bagul_Data_Engineer.pdf"

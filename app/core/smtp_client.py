@@ -26,16 +26,16 @@ from app.core.logger import log_event
 from app.core.database import db, credentials_vault
 
 DEFAULT_GMAIL_SENDER = "mangeshbagul15@gmail.com"
-DEFAULT_GMAIL_RECIPIENT = "mangeshbagul15@gmail.com"
+DEFAULT_GMAIL_RECIPIENT = "nanoproaistudio@gmail.com"
 DEFAULT_MOBILE = "8433755448"
 
 class SMTPClient:
     def __init__(self):
         self.default_host = "smtp.gmail.com"
         self.default_port = 587
-        self.default_sender_name = "Mangesh AI Studio"
+        self.default_sender_name = "NanoPro AI Studio"
         self.default_sender_email = DEFAULT_GMAIL_SENDER
-        self.default_recipient = DEFAULT_GMAIL_RECIPIENT
+        self.default_recipient = os.environ.get("GMAIL_RECIPIENT") or DEFAULT_GMAIL_RECIPIENT
         self.registered_mobile = DEFAULT_MOBILE
 
     def get_configured_identity(self) -> Dict[str, str]:
@@ -83,7 +83,7 @@ class SMTPClient:
         username: str = DEFAULT_GMAIL_SENDER,
         password: Optional[str] = None,
         sender_email: Optional[str] = None,
-        sender_name: str = "Mangesh AI Studio",
+        sender_name: str = "NanoPro AI Studio",
         security_mode: str = "STARTTLS"
     ) -> str:
         """
@@ -1401,6 +1401,8 @@ class SMTPClient:
         msg["To"] = recipient
         if cc:
             msg["Cc"] = cc if isinstance(cc, str) else ", ".join(cc)
+        if bcc:
+            msg["Bcc"] = bcc if isinstance(bcc, str) else ", ".join(bcc)
         msg["Subject"] = subject
         msg["Date"] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
 

@@ -50,7 +50,7 @@ TEST_CASES = [
     ("Silver Data Cleaning", "NanoPro, execute Phase 2: Python Silver data cleaning and validation pipeline.", ["SILVER", "cleaning", "deduplicate"]),
     ("Gold Star Schema", "NanoPro, execute Phase 3: Gold Star Schema transformation with DENSE_RANK and priority tagging.", ["GOLD", "DENSE_RANK", "HNI"]),
     ("Multi-Sheet Excel Audit", "NanoPro, generate the multi-sheet Excel audit report daily_lakehouse_audit.xlsx.", ["daily_lakehouse_audit.xlsx", "Summary", "High_Value_Alerts"]),
-    ("Final Deployment Sequence", "NanoPro, execute the final deployment and notification sequence for the Lakehouse EOD audit.", ["Final Deployment", "EOD", "mangeshbagul15@gmail.com"]),
+    ("Final Deployment Sequence", "NanoPro, execute the final deployment and notification sequence for the Lakehouse EOD audit.", ["Final Deployment", "EOD", "nanoproaistudio@gmail.com"]),
     ("Supreme Master Command", "NanoPro, SUPREME MASTER COMMAND: FULL-SPECTRUM END-TO-END EXECUTION DRILL.", ["PHASE 1", "PHASE 2", "PHASE 3", "PHASE 4", "PHASE 5"]),
     ("Supreme SOC Brute Force", "NanoPro, SUPREME COMMAND: CYBER-SECURITY SOC & BRUTE-FORCE INTRUSION SENTINEL.", ["SOC", "brute-force", "192.168.1.105"]),
     ("Supreme Algo Trading RSI", "NanoPro, SUPREME COMMAND: FINANCIAL DATA SCIENCE & ALGORITHMIC TRADING INDICATOR.", ["TATA_STEEL", "RSI", "SMA_5"]),

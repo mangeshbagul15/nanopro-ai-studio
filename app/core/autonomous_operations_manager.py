@@ -179,8 +179,8 @@ class AutonomousOperationsManager:
 
     def execute_end_to_end_pipeline(
         self,
-        request_prompt: str = "Fetch the required data from Snowflake, generate an Excel report, and email it to mangeshbagul15@gmail.com",
-        recipient_email: str = "mangeshbagul15@gmail.com",
+        request_prompt: str = "Fetch the required data from Snowflake, generate an Excel report, and email it to nanoproaistudio@gmail.com",
+        recipient_email: str = "nanoproaistudio@gmail.com",
         source_connection: str = "NANO_PRO_SNOWFLAKE"
     ) -> Dict[str, Any]:
         """

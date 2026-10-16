@@ -186,7 +186,7 @@ class ManagerAgent:
             {"name": "Quality Assurance Agent", "role": "Automated verification & test output validation"}
         ]
         if with_email:
-            agents.append({"name": "Email Agent", "role": "Automated Gmail SMTP report delivery (mangeshbagul15@gmail.com)"})
+            agents.append({"name": "Email Agent", "role": "Automated Gmail SMTP report delivery (nanoproaistudio@gmail.com)"})
             deliverables.append("5. Automated SMTP Email Notification with Excel attachment dispatched")
 
         return {
@@ -244,7 +244,7 @@ class ManagerAgent:
         if py_dev: py_dev.assign_task("Running Python schema validation and null integrity checks")
         if sql_dev: sql_dev.assign_task("Executing Snowflake Medallion transformation & SQL assertions")
         if qa: qa.assign_task("Executing 4 automated SQL test assertions")
-        if with_email and email_agent: email_agent.assign_task("Dispatching completion report to mangeshbagul15@gmail.com")
+        if with_email and email_agent: email_agent.assign_task("Dispatching completion report to nanoproaistudio@gmail.com")
 
         # Set running states
         if mgr: mgr.set_running(20)
@@ -465,7 +465,7 @@ SELECT
         if py_dev: py_dev.complete_task("Python schema validation completed: 142,500 records verified (0 errors)")
         if sql_dev: sql_dev.complete_task("Snowflake L1/L2 transformation executed in 142.5 ms")
         if qa: qa.complete_task("4 of 4 SQL test assertions verified with 100% pass rate")
-        if with_email and email_agent: email_agent.complete_task("Dispatched audit report to mangeshbagul15@gmail.com")
+        if with_email and email_agent: email_agent.complete_task("Dispatched audit report to nanoproaistudio@gmail.com")
 
         # 5. Format Operational Events
         t_now = time.strftime("%H:%M:%S")
@@ -513,7 +513,7 @@ SELECT
             f"app/reports/{report_filename}"
         ]
 
-        email_note = "\n• **Email Alert:** Dispatched executive audit summary to `mangeshbagul15@gmail.com`." if with_email else ""
+        email_note = "\n• **Email Alert:** Dispatched executive audit summary to `nanoproaistudio@gmail.com`." if with_email else ""
 
         response_msg = (
             f"🎉 **Snowflake ETL Pipeline Successfully Executed & Verified!**\n\n"
@@ -759,7 +759,7 @@ SELECT
             ai_reply = (
                 "I have updated the implementation plan to include **Automated Email Notifications**:\n\n"
                 "• **Assigned Agent:** `Email Agent (Gmail SMTP)` (`agent_28`)\n"
-                "• **Target Recipient:** `mangeshbagul15@gmail.com`\n"
+                "• **Target Recipient:** `nanoproaistudio@gmail.com`\n"
                 "• **Notification Details:** Automated dispatch of the pipeline summary, record counts, test pass rates, and the attached Excel audit ledger upon completion.\n\n"
                 "The proposal card has been updated accordingly."
             )

@@ -264,7 +264,7 @@ Status: Full High-Tech Production Mode
 
 ===================================================================
 Generated autonomously by NanoPro AI Executive Operations Center.
-Target Dispatch: mangeshbagul15@gmail.com | Telegram: @mangesh_technews_bot
+Target Dispatch: nanoproaistudio@gmail.com | Telegram: @mangesh_technews_bot
 ===================================================================
 """
 
@@ -284,7 +284,7 @@ Target Dispatch: mangeshbagul15@gmail.com | Telegram: @mangesh_technews_bot
                 <p style="margin:4px 0;">● <strong>Active Banking Projects</strong>: AML, ALM, Credit Card, Finacle Migration, CASA</p>
                 <p style="margin:4px 0;">● <strong>SCD Type-2 Gate</strong>: Clean & Deduplicated</p>
             </div>
-            <p style="color:#64748B; font-size:11px; margin-top:20px;">Automated executive notification dispatched to mangeshbagul15@gmail.com and Telegram.</p>
+            <p style="color:#64748B; font-size:11px; margin-top:20px;">Automated executive notification dispatched to nanoproaistudio@gmail.com and Telegram.</p>
         </div>
         """
 
@@ -292,7 +292,7 @@ Target Dispatch: mangeshbagul15@gmail.com | Telegram: @mangesh_technews_bot
         email_sent = False
         try:
             email_res = smtp_client.send_email(
-                recipient="mangeshbagul15@gmail.com",
+                recipient="nanoproaistudio@gmail.com",
                 subject="[NanoPro Live Operations Summary] 207 Agents & Lakehouse Hub Report",
                 body=summary_body_text,
                 html_body=summary_html,
@@ -312,11 +312,11 @@ Target Dispatch: mangeshbagul15@gmail.com | Telegram: @mangesh_technews_bot
             pass
 
         if detected_lang == "mr-IN":
-            spoken_reply = "नक्कीच! सध्याच्या सर्व १३ डिपार्टमेंट्स आणि २०७ स्पेशालिस्ट एजंट्सच्या कामांची लाईव्ह ऑपरेशन्स समरी तयार केली आहे. ती mangeshbagul15@gmail.com वर ई-मेल द्वारे तसेच टेलिग्रामवर पाठवली आहे. ओरेकल, स्नोफ्लेक आणि सर्व बँकिंग पाईपलाईन्स १०० टक्के सुरळीत चालू आहेत!"
+            spoken_reply = "नक्कीच! सध्याच्या सर्व १३ डिपार्टमेंट्स आणि २०७ स्पेशालिस्ट एजंट्सच्या कामांची लाईव्ह ऑपरेशन्स समरी तयार केली आहे. ती nanoproaistudio@gmail.com वर ई-मेल द्वारे तसेच टेलिग्रामवर पाठवली आहे. ओरेकल, स्नोफ्लेक आणि सर्व बँकिंग पाईपलाईन्स १०० टक्के सुरळीत चालू आहेत!"
         elif detected_lang == "hi-IN":
-            spoken_reply = "नैनोप्रो: सभी १३ डिपार्टमेंट्स और २०७ एजेंट्स की लाइव ऑपरेशंस समरी तैयार कर ली गई है, और इसे आपके ईमेल mangeshbagul15@gmail.com तथा टेलीग्राम पर भेज दिया गया है। सभी डाटा पाईपलाइन्स पूरी तरह सुरक्षित हैं।"
+            spoken_reply = "नैनोप्रो: सभी १३ डिपार्टमेंट्स और २०७ एजेंट्स की लाइव ऑपरेशंस समरी तैयार कर ली गई है, और इसे आपके ईमेल nanoproaistudio@gmail.com तथा टेलीग्राम पर भेज दिया गया है। सभी डाटा पाईपलाइन्स पूरी तरह सुरक्षित हैं।"
         else:
-            spoken_reply = "NanoPro: Operational summary of all 13 departments and 207 specialist agents has been compiled and dispatched to mangeshbagul15@gmail.com and Telegram. All lakehouse pipelines are healthy."
+            spoken_reply = "NanoPro: Operational summary of all 13 departments and 207 specialist agents has been compiled and dispatched to nanoproaistudio@gmail.com and Telegram. All lakehouse pipelines are healthy."
 
         return {
             "transcript": spoken_text,
@@ -326,7 +326,7 @@ Target Dispatch: mangeshbagul15@gmail.com | Telegram: @mangesh_technews_bot
             "action_taken": "office_summary_dispatch",
             "email_dispatched": email_sent,
             "telegram_dispatched": telegram_sent,
-            "recipient": "mangeshbagul15@gmail.com",
+            "recipient": "nanoproaistudio@gmail.com",
             "timestamp": timestamp_str
         }
 
