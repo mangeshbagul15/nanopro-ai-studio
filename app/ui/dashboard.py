@@ -7541,6 +7541,30 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                         &#9889; Send Background WhatsApp Alert
                     </button>
                 </div>
+
+                <!-- Card 3: Official Meta WhatsApp Business Cloud API -->
+                <div class="panel-card" style="border:1px solid #10B981; background:rgba(16,185,129,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <h3 style="font-size:13px; color:#10B981; margin:0; display:flex; align-items:center; gap:6px;">
+                            <span>🌟</span> Meta WhatsApp Business Cloud API (Official)
+                        </h3>
+                        <span class="badge" style="background:#0F172A; border:1px solid #10B981; color:#34D399; font-size:10px;">ONLINE &bull; 24/7 CLOUD</span>
+                    </div>
+                    <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">
+                        100% Official Meta Graph API (Port 443). 1,000 Free Conversations/Month. 0% Watermark. Delivers 24/7 even when your laptop is turned off!
+                    </p>
+                    <div style="margin-bottom:8px;">
+                        <label class="input-label">Target Mobile (Airtel / Jio / Universal)</label>
+                        <input type="text" class="studio-input" id="waMetaPhone" value="+918433755448" />
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <label class="input-label">Cloud Message Content</label>
+                        <textarea class="studio-input" id="waMetaMessage" rows="3" placeholder="Message content...">[NanoPro AI Alert] Official 24/7 Cloud autonomous execution verified on Render Cloud. All 5 databases connected.</textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btnSendMetaWa" onclick="sendMetaWhatsAppCloudAction()" style="width:100%; justify-content:center; background:#10B981; border-color:#059669; font-weight:700;">
+                        &#9889; Send Official Meta WhatsApp Message &rarr;
+                    </button>
+                </div>
             </div>
 
             <!-- WhatsApp Activity Log Output -->
@@ -25264,6 +25288,36 @@ async function sendWhatsAppCallMeBotAction() {
         if (log) log.innerText = JSON.stringify(d, null, 2);
     } catch (e) {
         if (log) log.innerText = 'WhatsApp dispatch error: ' + e.message;
+    }
+}
+
+async function sendMetaWhatsAppCloudAction() {
+    const phone = (document.getElementById('waMetaPhone') || {}).value || '+918433755448';
+    const msg = (document.getElementById('waMetaMessage') || {}).value || '[NanoPro AI Studio] Official Meta WhatsApp Cloud message';
+    const log = document.getElementById('waGatewayLog');
+    const btn = document.getElementById('btnSendMetaWa');
+
+    if (btn) { btn.disabled = true; btn.innerText = 'Sending via Meta Cloud...'; }
+    if (log) log.innerText = `[Meta WhatsApp Cloud] Dispatching official message via Graph API to ${phone}...`;
+
+    try {
+        const res = await fetch('/api/communication/whatsapp/send_cloud_api', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({phone_number: phone, message: msg})
+        });
+        const d = await res.json();
+        if (log) log.innerText = JSON.stringify(d, null, 2);
+        if (d.success) {
+            alert('WhatsApp Message Sent Successfully via Meta Cloud API!');
+        } else {
+            alert('Meta WhatsApp Error: ' + (d.error || JSON.stringify(d)));
+        }
+    } catch (e) {
+        if (log) log.innerText = 'Meta WhatsApp Error: ' + e.message;
+        alert('Meta WhatsApp Dispatch Error: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '⚡ Send Official Meta WhatsApp Message \u2192'; }
     }
 }
 
