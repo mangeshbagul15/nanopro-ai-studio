@@ -360,18 +360,67 @@ class SMSGatewayManager:
 
         clean_message = message.strip()
 
-        # Attempt local HTTP connection if host is configured
+        # Live Capcom6 Android SMS Gateway Dispatch (Cloud Server & Local Server)
+        cloud_url = "https://api.sms-gate.app/3rdparty/v1/message"
+        cloud_user = "FTGC-G"
+        cloud_pass = "yhhttmmlcbcxow"
+        
+        # Build Capcom6 compatible payload
+        capcom_payload = {
+            "message": clean_message,
+            "phoneNumbers": [target_recipient]
+        }
+        data_bytes = json.dumps(capcom_payload).encode("utf-8")
+
+        # 1. First attempt: Official Cloud Relay (works seamlessly from everywhere, even without same Wi-Fi)
+        try:
+            auth_str = base64.b64encode(f"{cloud_user}:{cloud_pass}".encode("utf-8")).decode("utf-8")
+            cloud_headers = {
+                "Authorization": f"Basic {auth_str}",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            req = urllib.request.Request(cloud_url, data=data_bytes, headers=cloud_headers, method="POST")
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
+                resp_code = resp.getcode()
+                resp_body = resp.read().decode("utf-8")
+                latency = round((time.time() - t0) * 1000, 2)
+                self._record_dispatch(
+                    provider="android_local",
+                    sender=target_sender,
+                    recipient=target_recipient,
+                    message=clean_message,
+                    status="DELIVERED_TO_PHONE",
+                    http_code=resp_code,
+                    response=resp_body,
+                    latency_ms=latency
+                )
+                self._increment_quota()
+                return {
+                    "status": "success",
+                    "provider": "Android SMS Gateway (Cloud Relay)",
+                    "delivery_mode": "Live Android Phone SIM Dispatch",
+                    "sender": target_sender,
+                    "recipient": target_recipient,
+                    "carrier": self.detect_carrier_info(target_recipient),
+                    "zero_watermark": True,
+                    "latency_ms": latency,
+                    "response": json.loads(resp_body) if resp_body.startswith("{") else resp_body
+                }
+        except Exception as ex_cloud:
+            log_event(f"Android SMS Gateway Cloud attempt notice: {ex_cloud}", level="INFO", component="SMSGateway")
+
+        # 2. Second attempt: Local HTTP IP / Wi-Fi Gateway
         if local_url and not "192.168.1.100" in local_url:
-            headers = {"Content-Type": "application/json"}
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-            payload = {
-                "to": target_recipient,
-                "message": clean_message
+            local_endpoint = local_url if local_url.endswith("/message") else f"{local_url.rstrip('/')}/message"
+            auth_local = base64.b64encode(b"sms:wTcmFTQe").decode("utf-8")
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_local}",
+                "User-Agent": "Mozilla/5.0"
             }
             try:
-                data_bytes = json.dumps(payload).encode("utf-8")
-                req = urllib.request.Request(local_url, data=data_bytes, headers=headers, method="POST")
+                req = urllib.request.Request(local_endpoint, data=data_bytes, headers=headers, method="POST")
                 with urllib.request.urlopen(req, timeout=4.0) as resp:
                     resp_code = resp.getcode()
                     resp_body = resp.read().decode("utf-8")

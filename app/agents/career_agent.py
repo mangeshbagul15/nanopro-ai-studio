@@ -1463,7 +1463,7 @@ class CareerHubAgent:
 
         lines.append("📄 <i>Resume attached in NanoPro Vault. Use 1-Click HR Email Drafter to apply!</i>")
         msg = "\n".join(lines)
-        res = personal_assistant_agent.send_telegram_message(msg, parse_mode="HTML")
+        res = personal_assistant_agent.send_telegram_message(msg, parse_mode="HTML", category="career")
         log_event("Broadcasted verified Data Engineer openings to Telegram", component="CareerHubAgent")
         return {
             "status": "success" if res.get("status") == "success" else "warning",
@@ -1967,7 +1967,7 @@ class CareerHubAgent:
                 f"• <b>Cadence:</b> Autonomous 30-Minute Cycle\n\n"
                 f"💡 <i>Sent copy is now recorded in your Gmail Sent mailbox (mangeshbagul15@gmail.com)!</i>"
             )
-            personal_assistant_agent.send_telegram_message(tg_msg, parse_mode="HTML")
+            personal_assistant_agent.send_telegram_message(tg_msg, parse_mode="HTML", category="career")
         except Exception as tg_err:
             log_event(f"Telegram alert notice: {tg_err}", level="WARNING", component="CareerHubAgent")
 

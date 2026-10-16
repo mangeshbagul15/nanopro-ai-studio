@@ -33,13 +33,40 @@ DEFAULT_COMMUNICATION_TARGETS = [
         "subscribed_processes": ["job_hunter", "connection_failure", "manager_notes", "approval_alerts", "daily_summary"]
     },
     {
-        "id": "target_tg_channel",
+        "id": "target_tg_news",
         "channel": "telegram",
-        "name": "Tech News & Job Radar Bot",
+        "name": "AI Tech News & Media Trends Bot",
         "target_identifier": "@mangesh_technews_bot",
-        "description": "Public/Channel broadcast for verified jobs and news",
+        "description": "Public/Channel broadcast strictly for AI Tech News, models, and trends",
         "is_active": True,
-        "subscribed_processes": ["job_hunter", "news_digest", "entertainment"]
+        "subscribed_processes": ["news_digest", "tech_trends", "deals", "entertainment"]
+    },
+    {
+        "id": "target_tg_career",
+        "channel": "telegram",
+        "name": "Career & Interview Study Bot",
+        "target_identifier": "@mangesh_career_study_bot",
+        "description": "Dedicated channel for verified jobs, HR outreach, and senior interview drills",
+        "is_active": True,
+        "subscribed_processes": ["job_hunter", "interview_drills", "mnc_hr_outreach", "tech_events_radar"]
+    },
+    {
+        "id": "target_tg_health",
+        "channel": "telegram",
+        "name": "Health & System Monitor Bot",
+        "target_identifier": "@mangesh_health_monitor_bot",
+        "description": "Dedicated channel for multi-DB lakehouse vitals and system telemetry",
+        "is_active": True,
+        "subscribed_processes": ["connection_failure", "system_health", "database_monitor", "data_engineer_etl", "dms_migration"]
+    },
+    {
+        "id": "target_tg_reports",
+        "channel": "telegram",
+        "name": "Executive & Financial Reports Bot",
+        "target_identifier": "@mangesh_reports_bot",
+        "description": "Dedicated channel for financial ledgers, BankDB reconciliation, and executive briefings",
+        "is_active": True,
+        "subscribed_processes": ["daily_executive_report", "financial_ledger", "reconciliation"]
     },
     {
         "id": "target_wa_primary",
@@ -48,7 +75,7 @@ DEFAULT_COMMUNICATION_TARGETS = [
         "target_identifier": "+918433755448",
         "description": "Instant free WhatsApp notifications & alerts",
         "is_active": True,
-        "subscribed_processes": ["connection_failure", "daily_summary", "job_hunter"]
+        "subscribed_processes": ["connection_failure", "daily_summary", "job_hunter", "price_drop_alerts"]
     },
     {
         "id": "target_mail_primary",
@@ -66,28 +93,28 @@ DEFAULT_PROCESS_ROUTING = {
     "connection_failure": {
         "process_name": "Emergency Connection Health Monitor",
         "email_recipients": ["nanoproaistudio@gmail.com"],
-        "telegram_targets": ["1200023268"],
+        "telegram_targets": ["1200023268", "@mangesh_health_monitor_bot"],
         "whatsapp_targets": ["+918433755448"],
         "priority": "CRITICAL"
     },
     "job_hunter": {
         "process_name": "4-Hour Job Filter & Radar Agent",
         "email_recipients": ["nanoproaistudio@gmail.com"],
-        "telegram_targets": ["1200023268", "@mangesh_technews_bot"],
+        "telegram_targets": ["1200023268", "@mangesh_career_study_bot"],
         "whatsapp_targets": ["+918433755448"],
         "priority": "HIGH"
     },
     "mnc_hr_outreach": {
         "process_name": "6-Hour MNC HR Resume Dispatcher",
         "email_recipients": ["nanoproaistudio@gmail.com"],
-        "telegram_targets": ["1200023268"],
+        "telegram_targets": ["1200023268", "@mangesh_career_study_bot"],
         "whatsapp_targets": [],
         "priority": "HIGH"
     },
     "data_engineer_etl": {
         "process_name": "Data Engineering Cross-DB Federated Pipeline",
         "email_recipients": ["nanoproaistudio@gmail.com"],
-        "telegram_targets": ["1200023268"],
+        "telegram_targets": ["1200023268", "@mangesh_health_monitor_bot"],
         "whatsapp_targets": [],
         "priority": "MEDIUM"
     },
@@ -101,9 +128,23 @@ DEFAULT_PROCESS_ROUTING = {
     "dms_migration": {
         "process_name": "AWS DMS Replication Monitor",
         "email_recipients": ["nanoproaistudio@gmail.com"],
-        "telegram_targets": ["1200023268"],
+        "telegram_targets": ["1200023268", "@mangesh_health_monitor_bot"],
         "whatsapp_targets": [],
         "priority": "HIGH"
+    },
+    "news_digest": {
+        "process_name": "Daily Tech & AI Trends Digest",
+        "email_recipients": [],
+        "telegram_targets": ["1200023268", "@mangesh_technews_bot"],
+        "whatsapp_targets": [],
+        "priority": "LOW"
+    },
+    "daily_executive_report": {
+        "process_name": "Executive & Financial Ledger Briefing",
+        "email_recipients": ["nanoproaistudio@gmail.com"],
+        "telegram_targets": ["1200023268", "@mangesh_reports_bot"],
+        "whatsapp_targets": [],
+        "priority": "MEDIUM"
     }
 }
 

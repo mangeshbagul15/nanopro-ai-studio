@@ -1480,7 +1480,6 @@ class SMTPClient:
         """Dispatches an emergency Telegram alert when all email tiers are exhausted or blocked."""
         submission_time = time.time()
         log_id = f"email_tg_fallback_{int(submission_time * 1000)}"
-        token = os.environ.get("TELEGRAM_BOT_TOKEN") or "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
         chat_id = os.environ.get("TELEGRAM_CHAT_ID") or "1200023268"
 
         trace_summary = "\n".join([f"• {t.get('provider')}: {t.get('status')} - {t.get('error', 'Skipped')}" for t in failover_trace])
@@ -1497,29 +1496,30 @@ class SMTPClient:
         )
 
         try:
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            resp = requests.post(url, json={"chat_id": chat_id, "text": msg_text, "parse_mode": "HTML"}, timeout=6.0)
-            if resp.status_code == 200:
+            from app.core.telegram_router import send_telegram_routed_message
+            res = send_telegram_routed_message(category="health", text=msg_text, chat_id=chat_id)
+            if res.get("success"):
                 self._record_email_delivery(
                     log_id=log_id, task_id=task_id, report_name="Emergency Failover Alert",
                     recipient=recipient, subject=subject, data_source="Telegram Fallback",
                     report_file_path=None, submission_time=submission_time,
-                    provider_response="Dispatched via Telegram Emergency Bot",
+                    provider_response=f"Dispatched via {res.get('bot_used')}",
                     delivery_status="Emergency Telegram Fallback Delivered", error_details=None
                 )
                 return {
                     "success": True,
                     "emergency_dispatched": True,
-                    "provider": "Telegram Emergency Bot",
+                    "provider": res.get("bot_used", "Telegram Health Bot"),
                     "status": "Delivered via Telegram Fallback",
                     "recipient": recipient,
                     "subject": subject,
-                    "failover_trace": failover_trace
+                    "timestamp": submission_time
                 }
+                return res_data
             else:
-                return {"success": False, "status": "Telegram Failed", "error": resp.text[:150], "failover_trace": failover_trace}
+                return {"success": False, "error": res.get("error")}
         except Exception as e:
-            return {"success": False, "status": "Telegram Error", "error": str(e), "failover_trace": failover_trace}
+            return {"success": False, "error": str(e)}
 
     def send_via_smtp(
         self,

@@ -4406,7 +4406,10 @@ def _get_raw_dashboard_html() -> str:
                 <div class="panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <h2>Background Discovery Schedules</h2>
-                        <button type="button" class="btn btn-secondary" style="font-size:11px;" onclick="loadDiscoveryMonitor()">&#8635; Refresh</button>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" style="font-size:11px;" onclick="runAllDiscoverySchedulesNow()">⚡ Run All Schedules Now</button>
+                            <button type="button" class="btn btn-secondary" style="font-size:11px;" onclick="loadDiscoveryMonitor()">&#8635; Refresh</button>
+                        </div>
                     </div>
                     <div id="schedulesListContainer" style="display:flex; flex-direction:column; gap:8px;">
                         <!-- Dynamically populated -->
@@ -6560,6 +6563,80 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
         </div>
         <div class="viewer-box" id="cyberScanOutput" style="max-height:280px; font-family:monospace; font-size:11.5px;">Click any defensive analysis tool above to run security evaluations.</div>
     </div>
+    <!-- 5-PILLAR CYBERSECURITY EDUCATIONAL LAB WORKBENCH (105+ MODULES)           -->
+    <!-- ========================================================================= -->
+    <div class="panel-card" style="margin-top:16px; background:linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.9) 100%); border:1px solid #38BDF8; border-radius:10px; padding:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1px solid #334155; padding-bottom:12px;">
+            <div>
+                <h3 style="margin:0; font-size:16px; color:#38BDF8; font-weight:700; display:flex; align-items:center; gap:8px;">
+                    <span>🛡️</span> Hands-On Cybersecurity Educational Lab &amp; Defensive Analysis Sandbox
+                    <span class="badge" style="background:#0F172A; border:1px solid #10B981; color:#10B981; font-size:10.5px;">105 PRACTICAL MODULES • 5 PILLARS</span>
+                </h3>
+                <p style="font-size:12px; color:#94A3B8; margin:4px 0 0 0;">
+                    Pedagogical security curriculum for students &amp; researchers: Vulnerable Code Snippet &bull; Attack Vector Mechanics &bull; Secure Remediation Code &bull; Live Defensive Audit Runner.
+                </p>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <span class="badge" id="cyberModulesCountBadge" style="background:#1E293B; color:#38BDF8; border:1px solid #38BDF8; font-size:11px; padding:4px 10px;">105 Modules Ready</span>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)) 2fr; gap:10px; margin-bottom:16px;">
+            <div>
+                <label class="input-label" style="font-size:11px;">Pillar / Domain</label>
+                <select class="studio-input" id="cyberFilterPillar" onchange="loadCyberModules()" style="font-size:12px;">
+                    <option value="all" selected>All 5 Pillars</option>
+                    <option value="OWASP Web Security">Pillar 1: OWASP Web Security</option>
+                    <option value="Network Security">Pillar 2: Network &amp; Wi-Fi Protocols</option>
+                    <option value="Applied Cryptography">Pillar 3: Applied Cryptography</option>
+                    <option value="DevSecOps &amp; Blue Team">Pillar 4: DevSecOps &amp; Threat Hunting</option>
+                    <option value="Cloud &amp; AI Security">Pillar 5: Cloud, API &amp; AI Security</option>
+                </select>
+            </div>
+            <div>
+                <label class="input-label" style="font-size:11px;">Difficulty Tier</label>
+                <select class="studio-input" id="cyberFilterTier" onchange="loadCyberModules()" style="font-size:12px;">
+                    <option value="all" selected>All Tiers</option>
+                    <option value="Beginner">Beginner / Fundamentals</option>
+                    <option value="Intermediate">Intermediate / Practical</option>
+                    <option value="Advanced">Advanced / Red-Blue Team</option>
+                </select>
+            </div>
+            <div>
+                <label class="input-label" style="font-size:11px;">Tooling &amp; Access</label>
+                <select class="studio-input" id="cyberFilterAccess" onchange="loadCyberModules()" style="font-size:12px;">
+                    <option value="all" selected>All Tools</option>
+                    <option value="Free / Open Source Tools">Free / Open Source Tools</option>
+                    <option value="Industry Standard Standards">Industry Standards</option>
+                </select>
+            </div>
+            <div>
+                <label class="input-label" style="font-size:11px;">Search CWE, CVE, or Attack Vector</label>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" class="studio-input" id="cyberFilterSearch" placeholder="e.g. SQLi, XSS, WPA3, JWT, Argon2id, Docker..." oninput="loadCyberModules()" style="font-size:12px;" />
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('cyberFilterSearch').value=''; loadCyberModules();" style="padding:4px 10px; font-size:11px;">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Split-Screen Interactive Matrix -->
+        <div style="display:grid; grid-template-columns:360px 1fr; gap:14px; min-height:560px;">
+            <!-- Left List: Scrollable Module Cards -->
+            <div id="cyberModulesList" style="max-height:680px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:6px;">
+                <!-- Dynamically loaded -->
+            </div>
+
+            <!-- Right Panel: Code Sandbox & Defensive Runner -->
+            <div class="panel-card" id="cyberDetailPanel" style="background:#0F172A; border:1px solid #334155; padding:16px; display:flex; flex-direction:column; gap:12px;">
+                <div id="cyberDetailHeader">
+                    <div style="color:var(--text-muted); font-size:13px; padding:20px; text-align:center;">
+                        Select any of the 105 practical security modules on the left to inspect vulnerability patterns, attack vectors, and defensive patch code.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
         <div class="workspace-view" id="view-research_knowledge">
@@ -8066,10 +8143,25 @@ Ready for message compilation and automated dispatch.
                         </select>
                     </div>
                 </div>
-                <div class="btn-row" style="margin-top:14px;">
+                <div class="btn-row" style="margin-top:14px; flex-wrap:wrap; gap:8px;">
                     <button type="button" class="btn btn-primary" onclick="trackAmazonProduct()">&#128269; Start Tracking Product</button>
                     <button type="button" class="btn btn-secondary" onclick="loadAmazonProducts()">&#128260; Refresh Product Catalog</button>
+                    <button type="button" class="btn btn-primary" onclick="checkAllAmazonPricesNow()" style="background:#10B981; font-weight:700;">&#9889; Check All Prices &amp; Send WhatsApp Alert</button>
                     <button type="button" class="btn btn-primary" onclick="loadAmazonVsFlipkartDeals()" style="background:#F59E0B; color:#0F172A; font-weight:700;">&#9889; Amazon vs Flipkart Price Match</button>
+                </div>
+
+                <!-- Batch Multi-Product Ingestion Accordion / Card -->
+                <div class="panel-card" style="margin-top:14px; background:#0F172A; border:1px solid #334155; padding:12px;">
+                    <div style="font-size:12.5px; font-weight:700; color:#38BDF8; margin-bottom:6px;">
+                        📥 Batch Multi-Product Ingestion (Add Multiple Products at Once)
+                    </div>
+                    <p style="font-size:11.5px; color:#94A3B8; margin:0 0 8px 0;">
+                        Paste multiple Amazon India product URLs or ASINs (one per line). NanoPro automatically scrapes live prices, extracts titles, and begins automated price drop tracking with instant WhatsApp alerts.
+                    </p>
+                    <textarea class="studio-input" id="amzMultiUrls" rows="3" placeholder="https://www.amazon.in/dp/B08N5WRWNW&#10;https://www.amazon.in/dp/B0CX255F3S&#10;https://www.amazon.in/dp/9352135245"></textarea>
+                    <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                        <button type="button" class="btn btn-primary" onclick="trackMultipleAmazonProducts()">📥 Ingest &amp; Track All Products</button>
+                    </div>
                 </div>
                 <!-- Amazon vs Flipkart Comparison Grid -->
                 <div id="amzVsFlipkartContainer" style="margin-top:16px; display:none;">
@@ -10207,6 +10299,7 @@ Ready for message compilation and automated dispatch.
                 if (viewName === 'monitoring') loadSystemHealth();
                 if (viewName === 'task_history') loadTaskHistory();
                 if (viewName === 'amazon_tracker') loadAmazonProducts();
+                if (viewName === 'cyber_lab') loadCyberModules();
                 if (viewName === 'career_hub') { 
                     if (typeof allCareerJobsList !== 'undefined' && allCareerJobsList.length > 0) {
                         renderCareerJobsGrid();
@@ -25240,6 +25333,212 @@ async function runPhoneLookup() {
         if (out) out.innerText = JSON.stringify(d, null, 2);
     } catch (e) {
         if (out) out.innerText = 'Phone lookup error: ' + e.message;
+    }
+}
+
+/* --- 5-PILLAR CYBERSECURITY LAB MODULES WORKBENCH --- */
+let cyberAllModules = [];
+let activeCyberModule = null;
+
+async function loadCyberModules() {
+    try {
+        const pillar = (document.getElementById('cyberFilterPillar') || {}).value || 'all';
+        const tier = (document.getElementById('cyberFilterTier') || {}).value || 'all';
+        const access = (document.getElementById('cyberFilterAccess') || {}).value || 'all';
+        const search = (document.getElementById('cyberFilterSearch') || {}).value || '';
+
+        const params = new URLSearchParams({ pillar, tier, access, search });
+        const res = await fetch('/api/cyber/modules?' + params.toString());
+        const data = await res.json();
+        cyberAllModules = data.modules || [];
+
+        const badge = document.getElementById('cyberModulesCountBadge');
+        if (badge) badge.innerText = `${cyberAllModules.length} Modules Filtered`;
+
+        renderCyberModulesList(cyberAllModules);
+        if (cyberAllModules.length > 0 && !activeCyberModule) {
+            selectCyberModule(cyberAllModules[0].id);
+        }
+    } catch (e) {
+        console.error('Failed to load cyber modules:', e);
+    }
+}
+
+function renderCyberModulesList(modules) {
+    const list = document.getElementById('cyberModulesList');
+    if (!list) return;
+    if (!modules || modules.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:15px; text-align:center;">No security modules match filters.</div>';
+        return;
+    }
+
+    list.innerHTML = modules.map(m => {
+        const isSel = activeCyberModule && activeCyberModule.id === m.id;
+        const tierColor = m.tier === 'Beginner' ? '#10B981' : (m.tier === 'Intermediate' ? '#F59E0B' : '#EC4899');
+        return `
+            <div onclick="selectCyberModule('${m.id}')" style="cursor:pointer; background:${isSel ? '#1E293B' : '#0F172A'}; border:1px solid ${isSel ? '#38BDF8' : '#334155'}; border-radius:8px; padding:10px 12px; transition:all 0.15s ease;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-size:10px; font-weight:700; color:#38BDF8; background:#0B132B; padding:2px 6px; border-radius:4px; border:1px solid #1E293B;">${m.cwe_cve}</span>
+                    <span style="font-size:10px; font-weight:700; color:${tierColor}; border:1px solid ${tierColor}40; background:${tierColor}15; padding:1px 6px; border-radius:4px;">${m.tier}</span>
+                </div>
+                <div style="font-size:12.5px; font-weight:700; color:#F8FAFC; margin-bottom:4px; line-height:1.3;">${m.title}</div>
+                <div style="font-size:11px; color:#94A3B8; margin-bottom:6px;">${m.pillar} &bull; ${m.category}</div>
+                <div style="font-size:10px; color:#64748B; display:flex; justify-content:space-between;">
+                    <span>Cert: ${m.cert_mapping}</span>
+                    <span style="color:#38BDF8;">Inspect &rarr;</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function selectCyberModule(modId) {
+    const mod = cyberAllModules.find(m => m.id === modId);
+    if (!mod) return;
+    activeCyberModule = mod;
+    renderCyberModulesList(cyberAllModules);
+
+    const panel = document.getElementById('cyberDetailPanel');
+    if (!panel) return;
+
+    panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; border-bottom:1px solid #334155; padding-bottom:12px;">
+            <div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                    <span class="badge" style="background:#1E293B; color:#38BDF8; border:1px solid #38BDF8; font-size:11px;">${mod.cwe_cve}</span>
+                    <span class="badge" style="background:#0F172A; color:#10B981; border:1px solid #10B981; font-size:11px;">${mod.tier}</span>
+                    <span class="badge" style="background:#0F172A; color:#F59E0B; border:1px solid #F59E0B; font-size:11px;">${mod.access}</span>
+                </div>
+                <h3 style="margin:4px 0; font-size:16px; color:#F8FAFC;">${mod.title}</h3>
+                <div style="font-size:11.5px; color:#94A3B8;">Pillar: <b>${mod.pillar}</b> | Track: <b>${mod.category}</b> | Cert: <b>${mod.cert_mapping}</b></div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-primary" onclick="runCyberModuleAudit('${mod.id}')" style="font-size:11.5px; padding:6px 14px; font-weight:700; background:linear-gradient(135deg, #0284C7, #10B981);">
+                    ⚡ Run Defensive Audit Simulation
+                </button>
+            </div>
+        </div>
+
+        <!-- Real-world Impact Notice -->
+        <div style="background:#1E1B4B; border:1px solid #4338CA; border-radius:6px; padding:10px 12px;">
+            <div style="font-size:11px; font-weight:700; color:#A5B4FC; margin-bottom:2px;">⚠️ REAL-WORLD THREAT IMPACT &amp; MECHANICS:</div>
+            <div style="font-size:11.5px; color:#E0E7FF; line-height:1.4;">${mod.impact}</div>
+        </div>
+
+        <!-- Attack Vector Callout -->
+        <div style="background:#18181B; border:1px solid #3F3F46; border-radius:6px; padding:10px 12px;">
+            <div style="font-size:11px; font-weight:700; color:#F43F5E; margin-bottom:2px;">⚡ CONCEPTUAL ATTACK VECTOR MECHANICS:</div>
+            <pre style="margin:0; font-size:11.5px; color:#FDA4AF; white-space:pre-wrap; font-family:monospace;">${escapeHtml(mod.attack_vector)}</pre>
+        </div>
+
+        <!-- Split Code Sandbox: Vulnerable vs Remediation -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+                <div style="font-size:11.5px; font-weight:700; color:#EF4444; margin-bottom:4px; display:flex; justify-content:space-between;">
+                    <span>🛑 Vulnerable Code Pattern</span>
+                </div>
+                <pre style="margin:0; background:#1C1917; border:1px solid #7F1D1D; border-radius:6px; padding:10px; color:#FCA5A5; font-size:11.5px; font-family:monospace; max-height:220px; overflow-y:auto; white-space:pre-wrap;">${escapeHtml(mod.vulnerable_snippet)}</pre>
+            </div>
+            <div>
+                <div style="font-size:11.5px; font-weight:700; color:#10B981; margin-bottom:4px; display:flex; justify-content:space-between;">
+                    <span>🛡️ Secure Remediation Patch</span>
+                    <button type="button" class="btn btn-secondary" onclick="navigator.clipboard.writeText(activeCyberModule.secure_remediation); alert('Defensive patch copied!');" style="font-size:9.5px; padding:1px 6px;">Copy Patch</button>
+                </div>
+                <pre style="margin:0; background:#064E3B20; border:1px solid #065F46; border-radius:6px; padding:10px; color:#86EFAC; font-size:11.5px; font-family:monospace; max-height:220px; overflow-y:auto; white-space:pre-wrap;">${escapeHtml(mod.secure_remediation)}</pre>
+            </div>
+        </div>
+
+        <!-- Live Defensive Audit Runner Terminal -->
+        <div style="background:#020617; border:1px solid #1E293B; border-radius:6px; padding:10px; margin-top:4px;">
+            <div style="font-size:10.5px; font-weight:700; color:#64748B; margin-bottom:6px; display:flex; justify-content:space-between;">
+                <span>⚡ DEFENSIVE AUDIT TERMINAL EXECUTION</span>
+                <span id="cyberAuditStatusBadge" style="color:#10B981;">SANDBOX READY</span>
+            </div>
+            <pre id="cyberAuditTerminalBox" style="margin:0; font-family:monospace; font-size:11.5px; color:#38BDF8; white-space:pre-wrap; min-height:80px;">Click 'Run Defensive Audit Simulation' above to evaluate remediation against active exploits.</pre>
+        </div>
+    `;
+}
+
+async function runCyberModuleAudit(modId) {
+    const box = document.getElementById('cyberAuditTerminalBox');
+    const badge = document.getElementById('cyberAuditStatusBadge');
+    if (box) box.innerText = `[AUDIT INITIATED] Connecting to isolated sandbox for module '${modId}'...\nSimulating exploit payload vs secure remediation patch...`;
+    if (badge) { badge.innerText = 'TESTING...'; badge.style.color = '#F59E0B'; }
+
+    try {
+        const res = await fetch('/api/cyber/run_audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ module_id: modId })
+        });
+        const d = await res.json();
+        if (box) box.innerText = d.audit_terminal_output || JSON.stringify(d, null, 2);
+        if (badge) { badge.innerText = 'HARDENED ✅'; badge.style.color = '#10B981'; }
+    } catch (e) {
+        if (box) box.innerText = 'Audit simulation error: ' + e.message;
+        if (badge) { badge.innerText = 'ERROR ⚠️'; badge.style.color = '#EF4444'; }
+    }
+}
+
+/* --- DISCOVERY SCHEDULE TRIGGER JAVASCRIPT --- */
+async function runAllDiscoverySchedulesNow() {
+    try {
+        const res = await fetch('/api/discovery/schedules/run_all', { method: 'POST' });
+        const d = await res.json();
+        alert('All 7 discovery schedules triggered successfully!');
+        loadDiscoveryMonitor();
+    } catch (e) {
+        alert('Error triggering schedules: ' + e.message);
+    }
+}
+
+async function runSingleDiscoveryScheduleNow(schedId) {
+    try {
+        const res = await fetch('/api/discovery/schedules/run_now', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ schedule_id: schedId })
+        });
+        const d = await res.json();
+        alert('Executed schedule: ' + (d.schedule_name || schedId));
+        loadDiscoveryMonitor();
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+/* --- AMAZON BATCH INGESTION & INSTANT ALERT --- */
+async function trackMultipleAmazonProducts() {
+    const raw = (document.getElementById('amzMultiUrls') || {}).value || '';
+    const urls = raw.split('\n').map(u => u.trim()).filter(u => u.length > 5);
+    if (urls.length === 0) {
+        alert('Please paste at least one Amazon URL or ASIN.');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/amazon/add_multiple', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: urls })
+        });
+        const d = await res.json();
+        alert(`Batch Ingestion Complete: ${d.added_count || 0} products added!`);
+        document.getElementById('amzMultiUrls').value = '';
+        if (typeof loadAmazonProducts === 'function') loadAmazonProducts();
+    } catch (e) {
+        alert('Batch tracking error: ' + e.message);
+    }
+}
+
+async function checkAllAmazonPricesNow() {
+    try {
+        const res = await fetch('/api/amazon/check_all_now?force_alert=true', { method: 'POST' });
+        const d = await res.json();
+        alert(`Price check complete: ${d.products_checked || 0} products checked. Alerts: ${d.alerts_sent || 0}`);
+        if (typeof loadAmazonProducts === 'function') loadAmazonProducts();
+    } catch (e) {
+        alert('Price check error: ' + e.message);
     }
 }
 

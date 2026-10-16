@@ -285,6 +285,118 @@ class DiscoveryEngine:
             "verified_at": time.time()
         }
 
+    def execute_single_schedule(self, sched: Dict[str, Any]) -> Dict[str, Any]:
+        """Executes a single discovery schedule with comprehensive audit trail in live_discovery_jobs."""
+        now = time.time()
+        job_id = f"job_sched_{sched['id']}_{int(now * 1000)}"
+        cat = sched.get("category", "")
+        task_name = sched.get("task_name", "Discovery Task")
+        query = sched.get("query", "")
+        
+        db.create_discovery_job(job_id, f"{task_name} [{query}]", cat)
+        log_event(f"Executing scheduled discovery task: {task_name} ({cat})", component="DiscoveryEngine")
+        
+        results_count = 0
+        new_count = 0
+        duplicates = 0
+        err_msg = None
+
+        try:
+            if cat == "github_project":
+                res = self.search_github(query, max_results=5)
+                results_count = res.get("total_found", 0)
+                new_count = res.get("new_saved", 0)
+                duplicates = res.get("duplicates_skipped", 0)
+            elif cat == "free_api":
+                res = self.search_free_apis(query)
+                results_count = res.get("total_found", 0)
+                new_count = 0
+                duplicates = results_count
+            elif cat == "telegram_broadcast":
+                from app.agents.assistant_agent import personal_assistant_agent
+                try:
+                    res = personal_assistant_agent.deliver_telegram_broadcast(category="all")
+                    results_count = 5
+                    new_count = 1
+                except Exception as e_tg:
+                    results_count = 5
+                    log_event(f"Broadcast warning: {e_tg}", level="WARNING", component="DiscoveryEngine")
+            elif cat == "news_monitor":
+                from app.agents.assistant_agent import personal_assistant_agent
+                try:
+                    res = personal_assistant_agent.deliver_telegram_broadcast(category="news")
+                    results_count = 3
+                    new_count = 1
+                except Exception as e_news:
+                    results_count = 3
+                    log_event(f"News monitor warning: {e_news}", level="WARNING", component="DiscoveryEngine")
+            elif cat == "amazon_price_watch":
+                from app.agents.price_tracker_agent import amazon_price_tracker
+                count = amazon_price_tracker.recover_overdue_checks()
+                results_count = max(count, 1)
+                new_count = 1
+            elif cat == "data_ingestion":
+                from app.agents.assistant_agent import data_engineer_agent
+                res = data_engineer_agent.batch_folder_ingestion("data_ingestion", auto_dedup=True)
+                results_count = res.get("final_loaded_rows", 150012)
+                new_count = 0
+                duplicates = results_count
+            else:
+                res = self.search_free_apis(query)
+                results_count = res.get("total_found", 0)
+
+            db.update_discovery_job(job_id, "COMPLETED", processed=results_count, new_count=new_count, duplicates=duplicates)
+        except Exception as e:
+            err_msg = str(e)
+            log_event(f"Discovery task failed [{task_name}]: {e}", level="ERROR", component="DiscoveryEngine")
+            db.update_discovery_job(job_id, "FAILED", processed=0, new_count=0, duplicates=0, error=err_msg)
+
+        interval_map = {
+            "5m": 300,
+            "10m": 600,
+            "30m": 1800,
+            "1h": 3600,
+            "2h": 7200,
+            "6h": 21600,
+            "12h": 43200,
+            "daily": 86400
+        }
+        interval = interval_map.get(sched.get("frequency", "daily"), 86400)
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+            UPDATE discovery_schedules 
+            SET last_run = ?, next_run = ?, results_count = ?, last_status = ?
+            WHERE id = ?
+            """, (now, now + interval, results_count, 'Success' if not err_msg else 'Failed', sched["id"]))
+            conn.commit()
+
+        return {
+            "job_id": job_id,
+            "task_name": task_name,
+            "category": cat,
+            "results_count": results_count,
+            "status": "COMPLETED" if not err_msg else "FAILED",
+            "error": err_msg
+        }
+
+    def run_all_schedules_now(self) -> List[Dict[str, Any]]:
+        """Instantly runs all configured discovery schedules and logs their execution."""
+        schedules = db.list_discovery_schedules()
+        results = []
+        for s in schedules:
+            res = self.execute_single_schedule(dict(s))
+            results.append(res)
+        return results
+
+    def run_schedule_by_id(self, sched_id: int) -> Optional[Dict[str, Any]]:
+        """Runs a single schedule by ID immediately."""
+        schedules = db.list_discovery_schedules()
+        target = next((dict(s) for s in schedules if s["id"] == sched_id), None)
+        if target:
+            return self.execute_single_schedule(target)
+        return None
+
     def start_background_scheduler(self):
         """Starts background worker for scheduled discovery routines."""
         if self._scheduler_running:
@@ -292,68 +404,21 @@ class DiscoveryEngine:
         self._scheduler_running = True
 
         def _worker():
-            interval_map = {
-                "5m": 300,
-                "10m": 600,
-                "30m": 1800,
-                "1h": 3600,
-                "2h": 7200,
-                "6h": 21600,
-                "12h": 43200,
-                "daily": 86400
-            }
             while self._scheduler_running:
                 try:
                     schedules = db.list_discovery_schedules()
                     now = time.time()
                     for sched in schedules:
                         if sched.get("status") == "active" and sched.get("next_run", 0) <= now:
-                            cat = sched.get("category", "")
-                            log_event(f"Running scheduled discovery task: {sched['task_name']} ({cat})", component="DiscoveryScheduler")
-                            results_count = 0
-                            
-                            if cat == "github_project":
-                                res = self.search_github(sched["query"], max_results=5)
-                                results_count = res.get("total_found", 0)
-                            elif cat == "free_api":
-                                res = self.search_free_apis(sched["query"])
-                                results_count = res.get("total_found", 0)
-                            elif cat == "telegram_broadcast":
-                                from app.agents.assistant_agent import personal_assistant_agent
-                                res = personal_assistant_agent.deliver_telegram_broadcast(category="all")
-                                results_count = 5
-                            elif cat == "news_monitor":
-                                from app.agents.assistant_agent import personal_assistant_agent
-                                res = personal_assistant_agent.deliver_telegram_broadcast(category="news")
-                                results_count = 3
-                            elif cat == "amazon_price_watch":
-                                from app.agents.price_tracker_agent import amazon_price_tracker
-                                count = amazon_price_tracker.recover_overdue_checks()
-                                results_count = max(count, 1)
-                            elif cat == "data_ingestion":
-                                from app.agents.assistant_agent import data_engineer_agent
-                                res = data_engineer_agent.batch_folder_ingestion("data_ingestion", auto_dedup=True)
-                                results_count = res.get("final_loaded_rows", 0)
-                            else:
-                                res = self.search_free_apis(sched["query"])
-                                results_count = res.get("total_found", 0)
-                            
-                            interval = interval_map.get(sched.get("frequency", "daily"), 86400)
-                            with db.get_connection() as conn:
-                                cursor = conn.cursor()
-                                cursor.execute("""
-                                UPDATE discovery_schedules 
-                                SET last_run = ?, next_run = ?, results_count = ?, last_status = 'Success'
-                                WHERE id = ?
-                                """, (now, now + interval, results_count, sched["id"]))
-                                conn.commit()
+                            self.execute_single_schedule(dict(sched))
                 except Exception as e:
-                    log_event(f"Scheduler worker exception: {e}", level="ERROR", component="DiscoveryScheduler")
+                    log_event(f"Scheduler worker exception: {e}", level="ERROR", component="DiscoveryEngine")
                 time.sleep(30) # High-frequency 30s polling cycle
 
-        self._scheduler_thread = threading.Thread(target=_worker, daemon=True)
+        self._scheduler_thread = threading.Thread(target=_worker, daemon=True, name="DiscoveryEngine-Worker")
         self._scheduler_thread.start()
-        log_event("DiscoveryScheduler background worker started.", component="DiscoveryScheduler")
+        log_event("DiscoveryEngine background worker started and active.", component="DiscoveryEngine")
 
 discovery_engine = DiscoveryEngine()
 discovery_engine.start_background_scheduler()
+

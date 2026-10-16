@@ -919,7 +919,45 @@ class DatabaseManager:
             ))
             conn.commit()
         log_event(f"Created approval request [{approval_id}]: {action_name} ({risk_level}) for {agent_id}", component="ApprovalQueue")
+        
+        # Dispatch 1-Click WhatsApp & Telegram Security Approval Alert
+        try:
+            self._notify_approval_requested(approval_id, action_name, target_system, risk_level, reason)
+        except Exception as e:
+            log_event(f"Approval dispatch notice: {e}", level="WARNING", component="ApprovalQueue")
+
         return approval_id
+
+    def _notify_approval_requested(self, approval_id: str, action_name: str, target_system: str, risk_level: str, reason: str):
+        """Sends WhatsApp and Telegram alert for pending security approval."""
+        msg = (
+            f"🛡️ [NanoPro Security & Approvals Queue]\n\n"
+            f"⚠️ New Action Requires Your 1-Click Approval!\n"
+            f"• Action: {action_name}\n"
+            f"• Target System: {target_system}\n"
+            f"• Risk Level: {risk_level.upper()}\n"
+            f"• Reason: {reason}\n"
+            f"• Approval ID: {approval_id}\n\n"
+            f"👉 1-Click Decisions:\n"
+            f"✅ Approve: https://mangesh-nanopro-studio.onrender.com/api/approvals/quick_decide?id={approval_id}&decision=approved\n\n"
+            f"🛑 Reject: https://mangesh-nanopro-studio.onrender.com/api/approvals/quick_decide?id={approval_id}&decision=rejected"
+        )
+        # 1. Dispatch to Meta WhatsApp Business Cloud API
+        try:
+            from app.core.communication_center import communication_center
+            communication_center.send_whatsapp_cloud_api(
+                phone="+918433755448",
+                message=msg
+            )
+        except Exception:
+            pass
+
+        # 2. Dispatch to Health & Security Monitor Bot on Telegram
+        try:
+            from app.core.telegram_router import send_telegram_routed_message
+            send_telegram_routed_message(category="health", text=msg)
+        except Exception:
+            pass
 
     def list_approvals(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:

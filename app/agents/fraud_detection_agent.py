@@ -131,7 +131,8 @@ class FraudDetectionAgent:
         return final_score, factors
 
     def _dispatch_fraud_alerts(self, alerts: List[Dict[str, Any]]):
-        """Sends immediate high-priority Telegram alert for detected fraud."""
+        """Sends immediate high-priority Telegram alert for detected fraud to the Health & Security Bot."""
+        from app.core.telegram_router import send_telegram_routed_message
         for a in alerts[:3]: # Send up to 3 critical alerts
             msg = (
                 f"🚨 <b>तातडीची सुरक्षा सूचना: संशयास्पद बँकिंग व्यवहार (Fraud Alert)</b> 🚨\n\n"
@@ -144,8 +145,7 @@ class FraudDetectionAgent:
                 f"🛡️ <i>शिफारस: खात्याचे पुढील संशयास्पद व्यवहार तात्काळ रोखा व ओटीपी पडताळणी करा.</i>"
             )
             try:
-                url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-                requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "HTML"}, timeout=5)
+                send_telegram_routed_message(category="health", text=msg, chat_id=TELEGRAM_CHAT_ID)
             except Exception as e:
                 log_event(f"Failed to send fraud Telegram alert: {e}", component="FraudDetection", level="ERROR")
 
