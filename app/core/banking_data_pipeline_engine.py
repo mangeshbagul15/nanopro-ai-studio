@@ -600,9 +600,9 @@ Timestamp: {now_str}
                 cc=email_cc or None,
                 bcc=email_bcc or None
             )
-            email_sent = (res.get("status") == "success")
+            email_sent = bool(res.get("success") or res.get("status") in ["success", "Accepted by SMTP Server", "Accepted by Resend API", "Accepted by Brevo API", "Accepted by Gmail REST API"] or "Accepted" in str(res.get("status", "")) or "Delivered" in str(res.get("status", "")))
             if not email_sent:
-                email_err = res.get("error")
+                email_err = res.get("error") or res.get("message")
         except Exception as e:
             email_err = str(e)
 
