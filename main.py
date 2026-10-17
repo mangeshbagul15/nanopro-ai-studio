@@ -3666,6 +3666,29 @@ async def api_crypto_markets(vs_currency: str = "usd", limit: int = 10):
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# SCRAPERAPI E-COMMERCE SCRAPING & PROXY ENGINE (API #18)
+# -------------------------------------------------------------
+@app.get("/api/scraper/account")
+async def api_scraper_account():
+    from app.core.scraper_api_engine import scraper_api_engine
+    try:
+        acc = scraper_api_engine.get_account_status()
+        report = scraper_api_engine.get_markdown_status()
+        return JSONResponse({"status": "success", "account": acc, "markdown_report": report})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/scraper/fetch")
+async def api_scraper_fetch(url: str, render: bool = False, country: Optional[str] = None):
+    from app.core.scraper_api_engine import scraper_api_engine
+    try:
+        data = scraper_api_engine.scrape_url(url, render_js=render, country_code=country)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================
