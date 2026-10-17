@@ -895,8 +895,12 @@ class SqlShortVideoEngine:
         q_m = re.search(r"(?:\*\*Question:\*\*\s*|##+\s*Question\s*\n+)(.*?)(?=\n+\*\*Sample Data|\n+##|\n+\*\*Expected|\Z)", text, re.IGNORECASE | re.DOTALL)
         question = q_m.group(1).strip() if q_m else text.split("\n")[0]
 
-        sql_m = re.search(r"```sql\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
-        solution_sql = sql_m.group(1).strip() if sql_m else ""
+        sql_m = re.search(r"```sql\s*([\s\S]*?)(?:```|\n##|\n\*\*Expected|\Z)", text, re.IGNORECASE)
+        if not sql_m or not sql_m.group(1).strip():
+            sql_m = re.search(r"(?:WITH\s+[A-Za-z0-9_]+\s+AS\s*\([\s\S]*?\)\s*SELECT[\s\S]*?;|SELECT\s+[\s\S]*?FROM[\s\S]*?;)", text, re.IGNORECASE)
+            solution_sql = sql_m.group(0).strip() if sql_m else ""
+        else:
+            solution_sql = sql_m.group(1).strip()
 
         output_m = re.search(r"(?:Expected Output:|\*\*Expected Output:\*\*|Output:)\s*(?:```(?:text)?\s*)?([^\n`]+)", text, re.IGNORECASE)
         output_val = "70000"
@@ -907,6 +911,39 @@ class SqlShortVideoEngine:
                 output_val = num_m.group(1)
             else:
                 output_val = raw_out
+
+        # Extract table name
+        tbl_m = re.search(r"(?:FROM|USING THE|IN THE)\s+([A-Za-z0-9_]+)\s+TABLE", text, re.IGNORECASE)
+        table_name = tbl_m.group(1).upper() if tbl_m else "TRANSACTIONS"
+
+        # Extract markdown table rows if present
+        sample_rows = []
+        col_headers = []
+        table_block_m = re.search(r"(?:\*\*Sample Data:\*\*|##\s*Sample Data)[\s\S]*?\n((?:\|[^\n]+\|\n?)+)", text, re.IGNORECASE)
+        if table_block_m:
+            lines = [l.strip() for l in table_block_m.group(1).strip().split("\n") if l.strip()]
+            if len(lines) >= 2:
+                headers = [c.strip() for c in lines[0].split("|") if c.strip()]
+                col_headers = headers[:4]
+                for dl in lines[1:]:
+                    if "---" in dl or not dl.strip():
+                        continue
+                    cols = [c.strip() for c in dl.split("|") if c.strip()]
+                    if cols:
+                        sample_rows.append({
+                            "account": cols[0] if len(cols) > 0 else "Row",
+                            "date": cols[1] if len(cols) > 1 else "",
+                            "amt": cols[2] if len(cols) > 2 else "",
+                            "balance": cols[3] if len(cols) > 3 else (cols[-1] if len(cols) > 1 else "Active")
+                        })
+
+        arrow_target = "OVER ()"
+        if "QUALIFY" in solution_sql:
+            arrow_target = "QUALIFY NTILE(10) OVER (ORDER BY TOTAL_AMOUNT DESC) = 1"
+        elif "DENSE_RANK" in solution_sql:
+            arrow_target = "DENSE_RANK() OVER (ORDER BY ...)"
+        elif "PARTITION BY" in solution_sql:
+            arrow_target = "PARTITION BY ... ORDER BY ..."
 
         # Extract scenes
         scenes = []
@@ -1024,20 +1061,23 @@ class SqlShortVideoEngine:
             "title": title,
             "difficulty": "Interview Standard",
             "question": question,
-            "table_name": "interview_data",
-            "col_headers": ["COL_1", "COL_2", "COL_3", "TARGET"],
-            "sample_rows": [
-                {"account": "101", "date": "Row 1", "amt": "Value A", "balance": "Status 1"},
-                {"account": "102", "date": "Row 2", "amt": "Value B", "balance": "Status 2"}
+            "table_name": table_name,
+            "col_headers": col_headers if col_headers else ["CUSTOMER_ID", "TXN_COUNT", "TOTAL_AMOUNT", "PERCENTILE"],
+            "sample_rows": sample_rows if sample_rows else [
+                {"account": "C-101", "date": "14 Txns", "amt": "₹1,45,000", "balance": "🎯 Top 10% (Bucket 1)"},
+                {"account": "C-102", "date": "8 Txns", "amt": "₹92,000", "balance": "Top 10% (Bucket 1)"},
+                {"account": "C-103", "date": "5 Txns", "amt": "₹45,000", "balance": "Bucket 2 (Top 20%)"},
+                {"account": "C-104", "date": "3 Txns", "amt": "₹18,000", "balance": "Bucket 5 (Median)"},
+                {"account": "C-105", "date": "1 Txn", "amt": "₹2,500", "balance": "Bucket 10"}
             ],
             "schema_sql": "",
             "solution_sql": solution_sql or "-- Built step-by-step from prompt",
-            "inner_query_sql": "",
-            "arrow_target": "OVER ()",
+            "inner_query_sql": f"SELECT CUSTOMER_ID, SUM(AMOUNT) AS TOTAL_AMOUNT FROM {table_name} GROUP BY CUSTOMER_ID;",
+            "arrow_target": arrow_target,
             "explanation_mr": "प्रॉम्प्टनुसार क्वेरी लॉजिक तयार केले आहे.",
             "explanation_hi": "प्रॉम्प्ट के अनुसार क्वेरी लॉजिक तैयार किया गया है.",
             "explanation_en": "Query logic constructed as instructed in prompt.",
-            "pro_tip": "💡 Interview Pro-Tip: Explain query execution plan step-by-step.",
+            "pro_tip": "💡 Interview Pro-Tip: In modern data warehouses (Snowflake, BigQuery), QUALIFY directly filters window functions without nested subqueries!",
             "output_value": output_val,
             "scenes": scenes if scenes else []
         }
@@ -1107,23 +1147,39 @@ class SqlShortVideoEngine:
         content_type = self._detect_content_type(text_input)
         if not matched and content_type == "theory":
             lower_q = text_input.lower()
-            for tp in TOP_MNC_THEORY_PRESETS:
-                if tp["id"] in lower_q or any(kw in lower_q for kw in tp["title"].lower().split() if len(kw) > 4):
-                    matched = tp
-                    break
-            if not matched:
-                if "where" in lower_q and "having" in lower_q:
-                    matched = TOP_MNC_THEORY_PRESETS[0]
-                elif "acid" in lower_q or "atomicity" in lower_q:
-                    matched = TOP_MNC_THEORY_PRESETS[1]
-                elif "primary" in lower_q and "unique" in lower_q:
-                    matched = TOP_MNC_THEORY_PRESETS[2]
+            if "where" in lower_q and "having" in lower_q:
+                matched = TOP_MNC_THEORY_PRESETS[0]
+            elif "acid" in lower_q or "atomicity" in lower_q:
+                matched = TOP_MNC_THEORY_PRESETS[1]
+            elif ("primary key" in lower_q or "primary" in lower_q) and "unique" in lower_q:
+                matched = TOP_MNC_THEORY_PRESETS[2]
+            else:
+                for tp in TOP_MNC_THEORY_PRESETS:
+                    if tp["id"] in lower_q:
+                        matched = tp
+                        break
 
-        # 3. Check if topic matches SQL query presets
+        # 3. Check if topic matches SQL query presets using strict distinctive terms
         if not matched and content_type == "sql_query":
             lower_q = text_input.lower()
+            distinctive_preset_map = {
+                "sql_q1_second_highest_salary": ["second-highest", "second highest", "2nd highest", "second_highest"],
+                "faang_dense_rank_ties": ["dense_rank", "rank() vs dense_rank", "highest salary with ties"],
+                "goldman_running_balance": ["running balance", "cumulative balance", "running ledger"],
+                "uber_consecutive_active_days": ["consecutive", "gaps and islands", "active days", "streak"],
+                "netflix_top_n_per_category": ["most streamed", "top n per category", "rank_in_genre"],
+                "meta_reciprocal_friends": ["reciprocal", "mutual connection", "mutual follow"],
+                "amazon_churn_zero_orders": ["never placed an order", "zero orders", "churned customer"],
+                "stripe_consecutive_fraud": ["consecutive fraud", "velocity fraud"],
+                "zomato_mom_growth": ["mom growth", "month over month", "mom revenue"]
+            }
             for qp in BANKING_SQL_PRESETS:
-                if qp["id"] in lower_q or any(kw in lower_q for kw in qp["title"].lower().split() if len(kw) > 4):
+                pid = qp["id"]
+                if pid in lower_q:
+                    matched = qp
+                    break
+                phrases = distinctive_preset_map.get(pid, [])
+                if any(p in lower_q for p in phrases):
                     matched = qp
                     break
 
