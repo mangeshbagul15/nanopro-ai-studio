@@ -4,8 +4,12 @@ Mangesh Nano Pro AI Studio - Central UI Dashboard Templates
 
 def get_dashboard_html() -> str:
     from app.ui.auth_components import get_auth_injection, get_user_management_view_html
+    from app.ui.admin_mobile_hub import get_admin_mobile_hub_html
     raw = _get_raw_dashboard_html()
-    return raw.replace("<!-- INSERT_USER_MANAGEMENT_VIEW_HERE -->", get_user_management_view_html()).replace("</body>", get_auth_injection() + "\n</body>")
+    return raw.replace(
+        "<!-- INSERT_USER_MANAGEMENT_VIEW_HERE -->", 
+        get_user_management_view_html() + "\n" + get_admin_mobile_hub_html()
+    ).replace("</body>", get_auth_injection() + "\n</body>")
 
 def _get_raw_dashboard_html() -> str:
     return r'''<!DOCTYPE html>
@@ -3009,6 +3013,10 @@ def _get_raw_dashboard_html() -> str:
                     <li class="nav-item" onclick="switchView('discovery_dashboard')" data-tooltip="Autonomous Discovery Governance">
                         <span class="nav-item-icon">&#128269;</span>
                         <span class="nav-item-label">Discovery Dashboard</span>
+                    </li>
+                    <li class="nav-item" id="nav_admin_mobile_hub" style="display:none;" onclick="switchView('admin_mobile_hub')" data-tooltip="NanoPro Admin Mobile Command Hub">
+                        <span class="nav-item-icon">&#9889;</span>
+                        <span class="nav-item-label">Admin Mobile Hub ⚡</span>
                     </li>
                     <li class="nav-item" id="nav_user_management" style="display:none;" onclick="switchView('user_management')" data-tooltip="User Management (Admin Only)">
                         <span class="nav-item-icon">&#128737;</span>
@@ -10247,6 +10255,10 @@ Ready for message compilation and automated dispatch.
 
     <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (NATIVE APP-LIKE EXPERIENCE) -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-admin_mobile_hub" onclick="switchView('admin_mobile_hub')" style="display:none;">
+            <span class="nav-icon">⚡</span>
+            <span>Admin</span>
+        </button>
         <button type="button" class="mobile-bottom-nav-item active" id="mobTab-dashboard" onclick="switchView('dashboard')">
             <span class="nav-icon">💬</span>
             <span>AI Chat</span>
@@ -10769,6 +10781,9 @@ Ready for message compilation and automated dispatch.
             if (targetView) {
                 targetView.classList.add('active');
                 targetView.style.display = 'flex';
+                if (viewName === 'admin_mobile_hub' && typeof refreshHubData === 'function') {
+                    refreshHubData();
+                }
             }
 
             // Update Browser History and In-App Navigation Stack

@@ -1036,6 +1036,15 @@ window.getUserDeviceAllowedViews = getUserDeviceAllowedViews;
 
 // Universal First Allowed Feature Calculator: Guarantees NO BLANK SCREEN for New/Existing Users
 function getUserFirstAllowedFeature(user) {
+    const u = user || window.currentUser || currentUser;
+    const isSuperAdmin = u && (u.role === 'admin' || u.username === 'nanopro');
+    const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    
+    // Dedicated NanoPro Mobile Admin Command Center:
+    if (isSuperAdmin && isMob && document.getElementById('view-admin_mobile_hub')) {
+        return 'admin_mobile_hub';
+    }
+
     const allowed = getUserDeviceAllowedViews(user);
     if (allowed.includes('*') || allowed.includes('dashboard')) return 'dashboard';
     if (allowed.includes('ai_manager')) return 'ai_manager';
@@ -1070,11 +1079,14 @@ function onAuthSuccess(user) {
     // Apply granular RBAC feature permissions & sidebar pruning
     applyUserPermissions(user);
 
-    // Show User Management menu item if Admin
+    // Show User Management & Admin Mobile Hub menu items if Admin
+    const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
+    const navHub = document.getElementById('nav_admin_mobile_hub');
+    if (navHub) navHub.style.display = isSuperAdmin ? 'flex' : 'none';
     const navMgmt = document.getElementById('nav_user_management');
-    if (navMgmt) {
-        navMgmt.style.display = (user.role === 'admin' || user.username === 'nanopro') ? 'flex' : 'none';
-    }
+    if (navMgmt) navMgmt.style.display = isSuperAdmin ? 'flex' : 'none';
+    const mobTabHub = document.getElementById('mobTab-admin_mobile_hub');
+    if (mobTabHub) mobTabHub.style.display = isSuperAdmin ? 'flex' : 'none';
 
     // AUTOMATIC FIRST-FEATURE HOME PAGE: Immediately open user's first permitted feature so no blank screen is shown!
     const homeView = getUserFirstAllowedFeature(user);
@@ -1409,7 +1421,7 @@ function applyUserPermissions(user) {
             const match = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
             if (match) {
                 const v = match[1];
-                if (v === 'user_management') {
+                if (v === 'user_management' || v === 'admin_mobile_hub') {
                     item.style.display = isSuperAdmin ? 'flex' : 'none';
                     if (isSuperAdmin) visibleCount++;
                     return;
