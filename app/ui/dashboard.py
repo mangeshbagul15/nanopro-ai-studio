@@ -10255,11 +10255,11 @@ Ready for message compilation and automated dispatch.
 
     <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (NATIVE APP-LIKE EXPERIENCE) -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-admin_mobile_hub" onclick="switchView('admin_mobile_hub')" style="display:none;">
-            <span class="nav-icon">⚡</span>
-            <span>Admin</span>
+        <button type="button" class="mobile-bottom-nav-item active" id="mobTab-admin_mobile_hub" onclick="switchView('admin_mobile_hub')">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 6px #38BDF8);">⚡</span>
+            <span style="font-weight:800; color:#38BDF8;">Hub</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item active" id="mobTab-dashboard" onclick="switchView('dashboard')">
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-dashboard" onclick="switchView('dashboard')">
             <span class="nav-icon">💬</span>
             <span>AI Chat</span>
         </button>
@@ -17383,9 +17383,13 @@ function formatMarkdown(text) {
 
 window.addEventListener('DOMContentLoaded', () => {
             try { 
-                const initTarget = (typeof getUserFirstAllowedFeature === 'function') 
-                    ? getUserFirstAllowedFeature(window.currentUser) 
-                    : 'ai_manager';
+                const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+                let initTarget = 'ai_manager';
+                if (isMob && document.getElementById('view-admin_mobile_hub')) {
+                    initTarget = 'admin_mobile_hub';
+                } else if (typeof getUserFirstAllowedFeature === 'function') {
+                    initTarget = getUserFirstAllowedFeature(window.currentUser);
+                }
                 switchView(initTarget); 
             } catch(e) { console.error('switchView error:', e); }
             try { renderOfficeStations('dashOfficeFloor'); } catch(e) {}

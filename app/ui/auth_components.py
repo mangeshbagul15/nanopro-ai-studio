@@ -1037,7 +1037,7 @@ window.getUserDeviceAllowedViews = getUserDeviceAllowedViews;
 // Universal First Allowed Feature Calculator: Guarantees NO BLANK SCREEN for New/Existing Users
 function getUserFirstAllowedFeature(user) {
     const u = user || window.currentUser || currentUser;
-    const isSuperAdmin = u && (u.role === 'admin' || u.username === 'nanopro');
+    const isSuperAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
     const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
     
     // Dedicated NanoPro Mobile Admin Command Center:
