@@ -1169,6 +1169,40 @@ async def api_search_products(q: str = Query(...), domain: str = Query("amazon.i
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# --- ELEVENLABS VOICE AI ROUTES ---
+class VoiceTTSRequest(BaseModel):
+    text: str
+    voice_id: Optional[str] = None
+    model_id: Optional[str] = "eleven_multilingual_v2"
+    output_filename: Optional[str] = None
+
+@app.post("/api/voice/tts")
+async def api_voice_tts(req: VoiceTTSRequest):
+    """Synthesizes high-fidelity voiceover using ElevenLabs Voice AI."""
+    from app.core.elevenlabs_voice import elevenlabs_voice_engine
+    try:
+        res = elevenlabs_voice_engine.generate_speech(
+            text=req.text,
+            voice_id=req.voice_id,
+            model_id=req.model_id or "eleven_multilingual_v2",
+            output_filename=req.output_filename
+        )
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/voice/voices")
+async def api_voice_list():
+    """Lists available ElevenLabs voices with category and ID."""
+    from app.core.elevenlabs_voice import elevenlabs_voice_engine
+    try:
+        voices = elevenlabs_voice_engine.get_voices()
+        return JSONResponse({"status": "success", "count": len(voices), "voices": voices})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+
 @app.post("/api/telegram/dispatch")
 async def api_telegram_dispatch():
     """Manually or automatically triggers daily tech digest delivery to Telegram."""
