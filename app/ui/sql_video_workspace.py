@@ -6,6 +6,49 @@ Zero Server Load: Client-Side Canvas & MediaRecorder Video Generation.
 
 def get_sql_video_workspace_html() -> str:
     return r'''
+    <style>
+    .sql-studio-grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 1.15fr) 340px minmax(340px, 1.25fr);
+        gap: 20px;
+        align-items: start;
+    }
+    @media (max-width: 1240px) {
+        .sql-studio-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    @media (max-width: 820px) {
+        .sql-studio-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .stage-pill {
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid #1E2D4A;
+        background: #0B1120;
+        color: #64748B;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .stage-pill.active {
+        background: rgba(56, 189, 248, 0.15);
+        border-color: #38BDF8;
+        color: #38BDF8;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+    .stage-pill.done {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: #10B981;
+        color: #10B981;
+    }
+    </style>
+
     <!-- 9:16 SQL SHORT & REEL STUDIO UPGRADE -->
     <div class="sql-shorts-container" style="margin-bottom: 24px;">
         <!-- Header Banner -->
@@ -29,7 +72,7 @@ def get_sql_video_workspace_html() -> str:
         </div>
 
         <!-- Main Studio Grid (Controls + Phone Preview + Sandbox) -->
-        <div style="display: grid; grid-template-columns: minmax(360px, 1.2fr) minmax(340px, 0.9fr) minmax(340px, 1.1fr); gap: 20px; align-items: start;">
+        <div class="sql-studio-grid" id="sqlStudioMainGrid">
             
             <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
             <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
@@ -41,8 +84,11 @@ def get_sql_video_workspace_html() -> str:
                 <!-- Rural & Banking Presets Dropdown -->
                 <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Scenario Preset (ZP School / Kirana / Bank)</label>
                 <select class="studio-input" id="sqlShortPresetSelect" onchange="handleSqlPresetChange(this.value)" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px;">
-                    <option value="zp_school_ranking" selected>🏫 ZP शाळा निकाल: समान गुण असताना २ रा क्रमांक (DENSE_RANK)</option>
+                    <option value="zp_school_ranking" selected>🏫 जिल्हा परिषद शाळा निकाल: समान गुण असताना २ रा क्रमांक (DENSE_RANK)</option>
                     <option value="kirana_dukan_hisob">🛒 गावचे किराणा दुकान: चालू उधारी व शिल्लक हिशोब (PARTITION BY)</option>
+                    <option value="ration_card_dedup">🌾 गावचे रेशन वाटप: कुटुंबातील डुप्लिकेट नावे शोधणे (ROW_NUMBER)</option>
+                    <option value="cricket_match_runs">🏏 गल्ली क्रिकेट / IPL: फलंदाजाची चालू धावसंख्या (SUM OVER)</option>
+                    <option value="st_bus_income">🚌 लालपरी एसटी बस: मार्गाचे तिकीट उत्पन्न (PARTITION BY)</option>
                     <option value="bank_running_total">🏦 HDFC / SBI: Cumulative Running Balance (SUM OVER PARTITION BY)</option>
                     <option value="bank_consecutive_fraud">💳 ICICI / Axis: Fraud Detection - Consecutive Withdrawals (LAG OVER)</option>
                     <option value="bank_salary_rank">📈 Goldman / Morgan: 2nd Highest Salary No Ties (DENSE_RANK)</option>
@@ -171,48 +217,109 @@ def get_sql_video_workspace_html() -> str:
                 </div>
             </div>
 
-            <!-- COLUMN 3: In-Memory SQL Sandbox & Direct Video Download -->
-            <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                    <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">3. LIVE SANDBOX &amp; 1-CLICK EXPORT</h3>
-                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.1); padding: 2px 8px; border-radius: 6px;">SQLite &lt; 2ms</span>
-                </div>
-
-                <!-- SQL Query Editor Preview -->
-                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">SQL Code In Video (Animated Neon Typing)</label>
-                <textarea class="studio-input code-editor" id="sqlShortCodePreview" rows="7" style="width: 100%; font-family: monospace; font-size: 11px; background: #070B16; border: 1px solid #283C62; color: #38BDF8; margin-bottom: 10px; border-radius: 6px; padding: 8px;"></textarea>
-
-                <!-- Sandbox Run Button -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <button type="button" class="btn btn-secondary" onclick="runInMemorySqlSandbox()" style="flex: 1; padding: 8px; font-size: 12px; font-weight: 600; border-color: #38BDF8; color: #38BDF8;">
-                        ▶ Test Query in SQLite (&lt; 2ms)
-                    </button>
-                    <span id="sandboxLatency" style="font-size: 11px; color: #10B981; align-self: center; font-family: monospace;"></span>
-                </div>
-
-                <!-- Sandbox Output Table -->
-                <div id="sandboxOutputTable" style="max-height: 140px; overflow-y: auto; background: #070B16; border: 1px solid #1E2D4A; border-radius: 6px; padding: 6px; font-size: 10px; font-family: monospace; color: #E2E8F0; margin-bottom: 16px;">
-                    <div style="color: #64748B; text-align: center; padding: 12px;">Click [Test Query] to verify output on real bank rows...</div>
-                </div>
-
-                <!-- Direct Download Box (0 Server Load & 100% Zero-Watermark) -->
-                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 12px; font-weight: 700; color: #10B981;">🎬 1-CLICK 9:16 VIDEO EXPORT</span>
-                        <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(236,72,153,0.4);">🛡️ 100% Zero-Watermark</span>
+            <!-- COLUMN 3: 1-CLICK EXPORT, LIVE STAGE MONITOR & SQL SANDBOX -->
+            <div id="exportCardContainer" style="display: flex; flex-direction: column; gap: 16px;">
+                
+                <!-- 1. PRIMARY EXPORT & LIVE STAGE MONITOR CARD (Placed at TOP for Zero Scrolling) -->
+                <div class="panel-card" style="margin: 0; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12)); border: 1.5px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 13px; font-weight: 800; color: #10B981; display: flex; align-items: center; gap: 6px;">
+                            <span>🎬</span> <span>1-CLICK 9:16 VIDEO EXPORT</span>
+                        </span>
+                        <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 700;">🛡️ 100% Zero-Watermark</span>
                     </div>
-                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 12px;">Exports crisp 9:16 (1080x1920) WebM/MP4 directly from browser with <b>anti-watermark circular crop</b> and Tiranga educational banner. <b>Server CPU load: 0%</b>.</div>
+                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 12px;">
+                        ब्राउझर GPU द्वारे 1080x1920 फुल-एचडी रेंडरिंग. <b>सर्व्हर लोड: 0%</b>. कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात!
+                    </div>
 
-                    <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 6px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span style="font-size: 16px;">📥</span>
+                    <!-- Direct Download Button (Big, Prominent, Instant) -->
+                    <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
+                        <span style="font-size: 18px;">📥</span>
                         <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (CLEAN &amp; NO WATERMARK)</span>
                     </button>
-                    
-                    <div id="exportProgressBar" style="display:none; margin-top: 10px;">
-                        <div style="height: 6px; width: 100%; background: #1E2D4A; border-radius: 3px; overflow: hidden;">
-                            <div id="exportProgressFill" style="height: 100%; width: 0%; background: #10B981; transition: width 0.1s linear;"></div>
+
+                    <!-- Live 5-Stage Tracker & Real-Time Countdown Monitor -->
+                    <div id="exportLiveStageBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 11px; font-weight: 700; color: #38BDF8; text-transform: uppercase;">📊 लाईव्ह निर्मिती पायऱ्या (Live Stages):</span>
+                            <span id="exportLiveBadge" style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px; font-weight: 700;">तयार आहे (Ready)</span>
                         </div>
-                        <div id="exportProgressText" style="font-size: 10px; color: #94A3B8; text-align: center; margin-top: 4px;">Rendering frames in high fidelity...</div>
+                        
+                        <!-- 5 Stages Grid -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;" id="exportStagePills">
+                            <div class="stage-pill" id="stagePill1"><span>1️⃣</span> <span>हुक व आकर्षण (0-5s)</span></div>
+                            <div class="stage-pill" id="stagePill2"><span>2️⃣</span> <span>डेटा स्कीमा (5-18s)</span></div>
+                            <div class="stage-pill" id="stagePill3"><span>3️⃣</span> <span>SQL कोड टाईपिंग (18-42s)</span></div>
+                            <div class="stage-pill" id="stagePill4"><span>4️⃣</span> <span>निकाल कॅल्क्युलेशन (42-54s)</span></div>
+                            <div class="stage-pill" id="stagePill5" style="grid-column: span 2;"><span>5️⃣</span> <span>🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (54-60s)</span></div>
+                        </div>
+                        
+                        <!-- Progress Bar & Remaining Time Stats -->
+                        <div id="exportProgressBarContainer" style="display:none; background: #0B1120; border: 1px solid #1E2D4A; border-radius: 6px; padding: 10px; margin-top: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #38BDF8; font-weight: 700; margin-bottom: 6px;">
+                                <span id="exportStageDesc">⏳ व्हिडिओ रेंडर होत आहे...</span>
+                                <span id="exportPercentNum" style="font-family: monospace; font-size: 13px; color: #10B981;">0%</span>
+                            </div>
+                            <div style="height: 12px; width: 100%; background: #1E2D4A; border-radius: 6px; overflow: hidden; margin-bottom: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);">
+                                <div id="exportProgressFill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #0284C7, #38BDF8, #10B981); transition: width 0.1s linear; border-radius: 6px;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94A3B8; font-family: monospace;">
+                                <span id="exportEstTime" style="color: #F59E0B; font-weight: 700;">⏱️ अंदाजे वेळ: मोजत आहे...</span>
+                                <span id="exportFrameStats">🎞️ फ्रेम: 0 / 1800</span>
+                            </div>
+                        </div>
+
+                        <!-- Celebration & Video Ready Card -->
+                        <div id="videoReadyCelebration" style="display:none; background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25)); border: 2px solid #10B981; border-radius: 8px; padding: 14px; text-align: center; margin-top: 10px; animation: popIn 0.3s ease-out;">
+                            <div style="font-size: 26px;">🎉 🏆 🎬</div>
+                            <div style="font-size: 14px; font-weight: 800; color: #10B981; margin-top: 4px;">व्हिडिओ यशस्वीरित्या तयार झाला!</div>
+                            <div style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">100% वॉटरमार्क-फ्री • 1080x1920 (9:16) डाऊनलोड पूर्ण झाले!</div>
+                            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                <a id="btnDownloadAgain" href="#" class="btn btn-primary" style="font-size: 11px; padding: 7px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #000; font-weight: 800; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                                    <span>📥 पुन्हा सेव्ह करा (Save File)</span>
+                                </a>
+                                <button type="button" class="btn btn-secondary" onclick="restartSqlShortPlay()" style="font-size: 11px; padding: 7px 14px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;">
+                                    <span>▶ फोनवर पाहा (Preview)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. IN-MEMORY SQLITE SANDBOX (< 2ms) -->
+                <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <h3 style="margin: 0; font-size: 13px; color: #F8FAFC; font-weight: 700;">2. LIVE SQLITE SANDBOX &amp; CODE</h3>
+                        <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">SQLite &lt; 2ms</span>
+                    </div>
+
+                    <!-- SQL Query Editor Preview -->
+                    <label class="input-label" style="font-size: 11px; color: #94A3B8; font-weight: 600;">व्हिडिओमधील SQL कोड (Live Code Preview):</label>
+                    <textarea class="studio-input code-editor" id="sqlShortCodePreview" rows="5" style="width: 100%; font-family: monospace; font-size: 11px; background: #070B16; border: 1px solid #283C62; color: #38BDF8; margin-bottom: 8px; border-radius: 6px; padding: 8px;"></textarea>
+
+                    <!-- Sandbox Run Button -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="runInMemorySqlSandbox()" style="flex: 1; padding: 7px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;">
+                            ▶ Test Query in SQLite (&lt; 2ms)
+                        </button>
+                        <span id="sandboxLatency" style="font-size: 11px; color: #10B981; align-self: center; font-family: monospace;"></span>
+                    </div>
+
+                    <!-- Sandbox Output Table -->
+                    <div id="sandboxOutputTable" style="max-height: 120px; overflow-y: auto; background: #070B16; border: 1px solid #1E2D4A; border-radius: 6px; padding: 6px; font-size: 10px; font-family: monospace; color: #E2E8F0;">
+                        <div style="color: #64748B; text-align: center; padding: 8px;">[Test Query] दाबा आणि रिअल डेटाबेस निकाल पाहा...</div>
+                    </div>
+                </div>
+
+                <!-- 3. विद्यार्थी संकल्पना मार्गदर्शन (Student Concept Breakdown Card) -->
+                <div class="panel-card" style="margin: 0; background: rgba(15, 23, 42, 0.6); border: 1px solid #1E2D4A; border-radius: 12px; padding: 14px; font-size: 11px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #F59E0B; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span>🎓</span> <span>विद्यार्थी मार्गदर्शन: ही संकल्पना सोप्या भाषेत</span>
+                    </div>
+                    <div id="studentConceptHelp" style="color: #CBD5E1; line-height: 1.6;">
+                        • <b>समान गुण असताना DENSE_RANK():</b> २ मुलांना समान ९२% गुण असतील तर दोघांना १ ला नंबर मिळतो आणि पुढच्या ८८% वाल्याला अचूक २ रा नंबर मिळतो!<br>
+                        • <b>हिशोब स्वतंत्र ठेवण्यासाठी PARTITION BY:</b> प्रत्येक व्यक्ती किंवा खात्याचा हिशोब न मिसळता वेगळा ठेवतो.<br>
+                        • <b>चालू बेरीजसाठी SUM() OVER:</b> सुरुवातीपासून आजपर्यंतचा जमा-खर्च आपोआप मोजतो.
                     </div>
                 </div>
             </div>

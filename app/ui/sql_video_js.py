@@ -105,6 +105,141 @@ FROM kirana_transactions;`,
                 {account: "तात्या पाटील", date: "१०-०२", amt: "+₹३,०००", balance: "₹३,००० उधारी"}
             ]
         },
+        "ration_card_dedup": {
+            id: "ration_card_dedup",
+            title: "🌾 गावचे रेशन वाटप: कुटुंबातील डुप्लिकेट नावे शोधणे व वगळणे (ROW_NUMBER)",
+            difficulty: "Medium",
+            hook_mr: "🚨 रेशन कार्ड यादीत एकाच व्यक्तीचे नाव दोनदा आले तर? SQL ने डुप्लिकेट कसे काढायचे?",
+            hook_hi: "🚨 राशन कार्ड लिस्ट में डुप्लिकेट नाम कैसे हटाएं? ROW_NUMBER() का जादुई तरीका!",
+            hook_en: "🚨 Deduplicate Village Ration Records using ROW_NUMBER() Window Function!",
+            hook_minglish: "🚨 Ration card list madhe duplicate naav ale tar ROW_NUMBER ne kase remove karayche?",
+            hook_hinglish: "🚨 Ration card list me duplicate records ko ROW_NUMBER se kaise hataye?",
+            question: "गावातील रेशन दुकानाच्या यादीत एकाच रेशन कार्डवर काही नावे दोनदा नोंदवली गेली आहेत. ROW_NUMBER() वापरून फक्त पहिली मूळ नोंद ठेवा.",
+            table_name: "ration_beneficiaries",
+            col_headers: ["सभासद नाव", "रेशन नं", "वय", "निकाल (STATUS)"],
+            schema_sql: `CREATE TABLE ration_beneficiaries (
+    entry_id INTEGER PRIMARY KEY,
+    ration_no TEXT,
+    member_name TEXT,
+    age INTEGER
+);
+INSERT INTO ration_beneficiaries VALUES 
+(1, 'RC-7701', 'आनंदराव पाटील', 52),
+(2, 'RC-7701', 'सुषमा पाटील', 48),
+(3, 'RC-7701', 'सुषमा पाटील', 48),
+(4, 'RC-7702', 'विठ्ठल जाधव', 61);`,
+            solution_sql: `WITH UniqueMembers AS (
+    SELECT entry_id, ration_no, member_name, age,
+        ROW_NUMBER() OVER (
+            PARTITION BY ration_no, member_name 
+            ORDER BY entry_id
+        ) AS row_num
+    FROM ration_beneficiaries
+)
+SELECT entry_id, ration_no, member_name, age
+FROM UniqueMembers
+WHERE row_num = 1;`,
+            arrow_target: "ROW_NUMBER() OVER (PARTITION BY",
+            arrow_line_idx: 2,
+            explanation_mr: "इथे 'ROW_NUMBER()' मुळे प्रत्येक नावासाठी १, २ असे नंबर मिळतात. 'WHERE row_num = 1' मुळे डुप्लिकेट नावे गळून पडतात आणि रेशनचा गैरवापर टळतो!",
+            explanation_hi: "यहाँ 'ROW_NUMBER()' डुप्लिकेट नामों को 1, 2 नंबर देता है। 'row_num = 1' से केवल ओरिजिनल नाम बचता है!",
+            explanation_en: "ROW_NUMBER() assigns sequential numbers within each partition. Filtering row_num = 1 cleanly removes duplicate entries!",
+            explanation_minglish: "ROW_NUMBER mule pratyek duplicates la 1, 2 numbering bhetate. row_num = 1 kelyane duplicate delete hotat!",
+            explanation_hinglish: "ROW_NUMBER se har duplicate ko 1, 2 assign hota hai aur row_num = 1 se unique records bachte hai!",
+            pro_tip: "💡 Pro Tip: डेटा क्लीनिंग आणि सरकारी याद्यांमधील बोगस नावे काढण्यासाठी ROW_NUMBER() हा उद्योग जगतातील मानक नियम आहे!",
+            sample_rows: [
+                {account: "आनंदराव पाटील", date: "RC-7701", amt: "वय ५२", balance: "✅ वैध सभासद"},
+                {account: "सुषमा पाटील", date: "RC-7701", amt: "वय ४८", balance: "✅ पहिली नोंद (Keep)"},
+                {account: "सुषमा पाटील", date: "RC-7701", amt: "वय ४८", balance: "❌ बोगस डुप्लिकेट (Drop)"},
+                {account: "विठ्ठल जाधव", date: "RC-7702", amt: "वय ६१", balance: "✅ वैध सभासद"}
+            ]
+        },
+        "cricket_match_runs": {
+            id: "cricket_match_runs",
+            title: "🏏 गल्ली क्रिकेट / IPL: फलंदाजाची चालू धावसंख्या व ओव्हर स्कोअर (SUM OVER)",
+            difficulty: "Easy",
+            hook_mr: "🚨 क्रिकेट मॅचमध्ये प्रत्येक ओव्हरनंतर खेळाडूचा एकूण स्कोअर SQL ने कसा मोजायचा?",
+            hook_hi: "🚨 क्रिकेट मैच में हर ओवर के बाद बैट्समैन का कुल स्कोर SQL से कैसे निकालें?",
+            hook_en: "🚨 Track Cricket Batsman Cumulative Runs Over-by-Over using SUM() OVER!",
+            hook_minglish: "🚨 Cricket match madhe pratyek over nantar batsman cha total score kasa calculate karaycha?",
+            hook_hinglish: "🚨 Cricket match me batsman ka cumulative score SUM() OVER se kaise track kare?",
+            question: "गावातील क्रिकेट सामन्यात फलंदाजाने प्रत्येक ओव्हरमध्ये काढलेल्या धावांवरून त्याची एकूण चालू धावसंख्या (Cumulative Runs) काढा.",
+            table_name: "batsman_overs",
+            col_headers: ["खेळाडू नाव", "ओव्हर", "ओव्हर धावा", "चालू स्कोअर"],
+            schema_sql: `CREATE TABLE batsman_overs (
+    over_no INTEGER PRIMARY KEY,
+    player_name TEXT,
+    runs_in_over INTEGER
+);
+INSERT INTO batsman_overs VALUES 
+(1, 'सचिन कदम', 12),
+(2, 'सचिन कदम', 8),
+(3, 'सचिन कदम', 16),
+(4, 'सचिन कदम', 22);`,
+            solution_sql: `SELECT over_no, player_name, runs_in_over,
+    SUM(runs_in_over) OVER (
+        PARTITION BY player_name 
+        ORDER BY over_no
+    ) AS total_runs
+FROM batsman_overs;`,
+            arrow_target: "SUM(runs_in_over) OVER (ORDER BY over_no)",
+            arrow_line_idx: 1,
+            explanation_mr: "इथे 'SUM(runs_in_over) OVER' मुळे प्रत्येक ओव्हरनंतर धावा जुळत जातात: १२ ➔ २० ➔ ३६ ➔ ५८ धावा! फलंदाजाचे अर्धशतक केव्हा झाले ते लगेच समजते!",
+            explanation_hi: "यहाँ 'SUM() OVER' हर ओवर के बाद रन जोड़ता जाता है: 12 ➔ 20 ➔ 36 ➔ 58! हाफ-सेंचुरी कब बनी तुरंत पता चलता है!",
+            explanation_en: "SUM() OVER accumulates runs after every single over sequentially, making live strike analysis effortless!",
+            explanation_minglish: "SUM() OVER mule pratyek over nantar runs add hot jatat ani 58 runs cha running total disto!",
+            explanation_hinglish: "SUM() OVER se har over ke runs sequentially add hote hai aur batsman ka total runs calculate hota hai!",
+            pro_tip: "💡 Pro Tip: क्रीडा समालोचन (Sports Commentary) व लाइव्ह स्कोअरबोर्ड ॲप्स अशाच Window Functions वर चालतात!",
+            sample_rows: [
+                {account: "सचिन कदम", date: "Over 1", amt: "+१२ धावा", balance: "१२ धावा"},
+                {account: "सचिन कदम", date: "Over 2", amt: "+८ धावा", balance: "२० धावा"},
+                {account: "सचिन कदम", date: "Over 3", amt: "+१६ धावा", balance: "३६ धावा"},
+                {account: "सचिन कदम", date: "Over 4", amt: "+२२ धावा", balance: "🎯 ५८ धावा (५० पूर्ण!)"}
+            ]
+        },
+        "st_bus_income": {
+            id: "st_bus_income",
+            title: "🚌 लालपरी एसटी बस: गावाकडून शहराकडे जाणारे तिकीट उत्पन्न (PARTITION BY)",
+            difficulty: "Medium",
+            hook_mr: "🚨 लालपरी एसटी बसचे कोणत्या मार्गावर किती उत्पन्न झाले? कंडक्टरचा हिशोब SQL ने कसा करायचा?",
+            hook_hi: "🚨 रोडवेज बस के अलग-अलग रूट्स का कुल किराया कलेक्शन SQL से कैसे निकालें?",
+            hook_en: "🚨 MSRTC State Transport Bus Ticket Revenue Tracking per Route with PARTITION BY!",
+            hook_minglish: "🚨 ST bus cha route-wise ticket collection SQL ne kasa hisob karaycha?",
+            hook_hinglish: "🚨 ST bus ka route-wise collection PARTITION BY se kaise separate kare?",
+            question: "महाराष्ट्र राज्य परिवहन (ST) बसच्या वेगवेगळ्या मार्गांवरील प्रवाशांच्या तिकिटांवरून प्रत्येक मार्गाचे एकूण उत्पन्न (Route Revenue) काढा.",
+            table_name: "st_bus_tickets",
+            col_headers: ["प्रवासी नाव", "बस मार्ग", "तिकीट दर", "मार्गाचे एकूण उत्पन्न"],
+            schema_sql: `CREATE TABLE st_bus_tickets (
+    ticket_id INTEGER PRIMARY KEY,
+    route_name TEXT,
+    passenger_name TEXT,
+    fare REAL
+);
+INSERT INTO st_bus_tickets VALUES 
+(1, 'पुणे ते सासवड', 'तानाजी जगताप', 45.0),
+(2, 'पुणे ते सासवड', 'आशाताई मोरे', 45.0),
+(3, 'पुणे ते बारामती', 'बाळासाहेब शिंदे', 120.0),
+(4, 'पुणे ते बारामती', 'अमोल देशमुख', 120.0);`,
+            solution_sql: `SELECT ticket_id, route_name, passenger_name, fare,
+    SUM(fare) OVER (
+        PARTITION BY route_name
+    ) AS route_total_revenue
+FROM st_bus_tickets;`,
+            arrow_target: "SUM(fare) OVER (PARTITION BY route_name)",
+            arrow_line_idx: 2,
+            explanation_mr: "इथे 'PARTITION BY route_name' मुळे 'पुणे ते सासवड' (₹९०) आणि 'पुणे ते बारामती' (₹२४०) यांचा महसूल आपोआप विभागला जातो!",
+            explanation_hi: "यहाँ 'PARTITION BY route_name' हर बस रूट का कुल रेवेन्यू अलग-अलग ग्रुप में कैलकुलेट करता है!",
+            explanation_en: "PARTITION BY route_name aggregates revenue separately for each bus route without collapsing individual passenger rows!",
+            explanation_minglish: "PARTITION BY mule route-wise collection divide hoto ani route profit accurate disto!",
+            explanation_hinglish: "PARTITION BY se route-wise revenue instantly calculate hota hai bina data lose kiye!",
+            pro_tip: "💡 Pro Tip: GROUP BY मुळे वैयक्तिक रो गहाळ होतात, पण Window Functions मुळे प्रवाशांचे नाव आणि एकूण उत्पन्न दोन्ही दिसते!",
+            sample_rows: [
+                {account: "तानाजी जगताप", date: "सासवड", amt: "₹४५", balance: "₹९० मार्ग उत्पन्न"},
+                {account: "आशाताई मोरे", date: "सासवड", amt: "₹४५", balance: "₹९० मार्ग उत्पन्न"},
+                {account: "बाळासाहेब शिंदे", date: "बारामती", amt: "₹१२०", balance: "₹२४० मार्ग उत्पन्न"},
+                {account: "अमोल देशमुख", date: "बारामती", amt: "₹१२०", balance: "₹२४० मार्ग उत्पन्न"}
+            ]
+        },
         "bank_running_total": {
             id: "bank_running_total",
             title: "HDFC / SBI: Cumulative Running Balance",
@@ -318,6 +453,24 @@ WHERE rnk = 2;`,
         if (hookEl) hookEl.innerText = hookText;
         const arrowEl = document.getElementById("bpArrowTarget");
         if (arrowEl) arrowEl.innerText = p.arrow_target || "OVER ()";
+
+        // Update Student Concept Breakdown Box
+        const conceptEl = document.getElementById("studentConceptHelp");
+        if (conceptEl) {
+            if (p.id === "zp_school_ranking") {
+                conceptEl.innerHTML = `• <b>समान गुण असताना DENSE_RANK():</b> २ मुलांना समान ९२% गुण असतील तर दोघांना १ ला नंबर मिळतो आणि पुढच्या ८८% वाल्याला अचूक २ रा नंबर मिळतो! सामान्य RANK() मुळे २ रा नंबर गायब होऊन थेट ३ रा नंबर मिळतो, ज्यामुळे निकाल चुकतो.<br>• <b>ORDER BY marks DESC:</b> सर्वात जास्त गुणांपासून उतरत्या क्रमाने अचूक रँकिंग लावते.`;
+            } else if (p.id === "kirana_dukan_hisob") {
+                conceptEl.innerHTML = `• <b>हिशोब स्वतंत्र ठेवण्यासाठी PARTITION BY:</b> मारुती काका आणि तात्या पाटील यांचा उधारीचा हिशोब न मिसळता स्वतंत्र राहतो.<br>• <b>चालू बेरीजसाठी SUM() OVER:</b> सुरुवातीपासून आजपर्यंत किती उधारी बाकी आहे ते आपोआप जोडत जाते.`;
+            } else if (p.id === "ration_card_dedup") {
+                conceptEl.innerHTML = `• <b>डुप्लिकेट शोधण्यासाठी ROW_NUMBER():</b> एकाच रेशन कार्डवर नाव दोनदा आल्यास १, २ असे नंबर मिळतात.<br>• <b>WHERE row_num = 1:</b> मूळ नाव सुरक्षित ठेवून बोगस डुप्लिकेट नाव कायमचे वगळते.`;
+            } else if (p.id === "cricket_match_runs") {
+                conceptEl.innerHTML = `• <b>चालू धावसंख्या SUM() OVER:</b> प्रत्येक ओव्हर संपल्यावर धावा जुळत जातात: १२ ➔ २० ➔ ३६ ➔ ५८!<br>• <b>स्ट्राइक रेट व अर्धशतक:</b> खेळाडूचे अर्धशतक केव्हा झाले ते ओव्हरनुसार त्वरित समजते.`;
+            } else if (p.id === "st_bus_income") {
+                conceptEl.innerHTML = `• <b>मार्गाचे उत्पन्न PARTITION BY:</b> 'पुणे ते सासवड' आणि 'पुणे ते बारामती' यांचे तिकीट उत्पन्न स्वतंत्रपणे मोजते.<br>• <b>GROUP BY पेक्षा श्रेष्ठ:</b> प्रवाशांचे नाव आणि एकूण महसूल दोन्ही एकाच टेबलमध्ये राहते.`;
+            } else {
+                conceptEl.innerHTML = `• <b>Window Functions ची ताकद:</b> सब-क्वेरी न वापरता संपूर्ण डेटा एकाच स्कॅनमध्ये O(N) लिनिअर वेळेत प्रोसेस होतो!<br>• <b>${p.arrow_target || 'OVER ()'}:</b> ही क्लॉज या क्वेरीमधील सर्वात महत्त्वाची क्लॉज आहे.`;
+            }
+        }
     }
 
     async function generateSqlShortBlueprint() {
@@ -1148,20 +1301,45 @@ WHERE rnk = 2;`,
         const canvas = document.getElementById("sqlShortCanvas");
         const btn = document.getElementById("btnDownloadShortVideo");
         const btnLabel = document.getElementById("exportBtnLabel");
-        const pBar = document.getElementById("exportProgressBar");
+        const pContainer = document.getElementById("exportProgressBarContainer");
         const pFill = document.getElementById("exportProgressFill");
-        const pText = document.getElementById("exportProgressText");
+        const pDesc = document.getElementById("exportStageDesc");
+        const pPctText = document.getElementById("exportPercentNum");
+        const pEstTime = document.getElementById("exportEstTime");
+        const pFrameStats = document.getElementById("exportFrameStats");
+        const badgeEl = document.getElementById("exportLiveBadge");
+        const celebrationBox = document.getElementById("videoReadyCelebration");
 
         if (!canvas.captureStream) {
-            alert("Your browser does not support Canvas.captureStream. Please use Chrome/Edge.");
+            alert("Your browser does not support Canvas.captureStream. Please use Chrome or Edge.");
             return;
+        }
+
+        // Smoothly scroll export box into view so user never has to scroll down
+        const exportContainer = document.getElementById("exportCardContainer");
+        if (exportContainer) {
+            exportContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         pauseSqlShortPlay();
         sqlShortState.currentTime = 0.0;
-        pBar.style.display = "block";
+        
+        // Reset UI states
+        if (celebrationBox) celebrationBox.style.display = "none";
+        if (pContainer) pContainer.style.display = "block";
+        if (badgeEl) {
+            badgeEl.innerText = "रेंडरिंग चालू (Rendering...)";
+            badgeEl.style.color = "#38BDF8";
+            badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
+        }
         btn.disabled = true;
-        btnLabel.innerText = "RECORDING 9:16 VIDEO...";
+        btnLabel.innerText = "⏳ व्हिडिओ रेंडर होत आहे (RENDERING 9:16)...";
+
+        // Reset Stage Pills
+        for (let i = 1; i <= 5; i++) {
+            const pill = document.getElementById("stagePill" + i);
+            if (pill) { pill.className = "stage-pill"; }
+        }
 
         const stream = canvas.captureStream(30); // 30 FPS high-definition stream
         let mimeType = "video/webm;codecs=vp9";
@@ -1179,9 +1357,27 @@ WHERE rnk = 2;`,
             if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
+        const totalFrames = 60 * 30; // 1800 frames
+        let frameCount = 0;
+        const dt = 1.0 / 30.0;
+        const startTime = performance.now();
+
         recorder.onstop = () => {
-            pFill.style.width = "100%";
-            pText.innerText = "Encoding finished! Downloading video file...";
+            if (pFill) pFill.style.width = "100%";
+            if (pPctText) pPctText.innerText = "100%";
+            if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ सेव्ह होत आहे...";
+            if (badgeEl) {
+                badgeEl.innerText = "पूर्ण झाले (Completed)";
+                badgeEl.style.color = "#10B981";
+                badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
+            }
+
+            // Set all stage pills to done
+            for (let i = 1; i <= 5; i++) {
+                const pill = document.getElementById("stagePill" + i);
+                if (pill) pill.className = "stage-pill done";
+            }
+
             const blob = new Blob(chunks, { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -1192,26 +1388,60 @@ WHERE rnk = 2;`,
             a.click();
             document.body.removeChild(a);
 
+            // Show Celebration Card
             setTimeout(() => {
-                pBar.style.display = "none";
-                pFill.style.width = "0%";
+                if (celebrationBox) {
+                    celebrationBox.style.display = "block";
+                    const btnAgain = document.getElementById("btnDownloadAgain");
+                    if (btnAgain) {
+                        btnAgain.href = url;
+                        btnAgain.download = filename;
+                    }
+                }
                 btn.disabled = false;
                 btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (CLEAN & NO WATERMARK)";
-                alert(`🎉 100% Clean Zero-Watermark 9:16 Video Ready!\nFile: ${filename}\n🛡️ Zero third-party watermarks • Perfect for Instagram Reels & YouTube Shorts!`);
-            }, 1000);
+            }, 600);
         };
 
         recorder.start();
 
-        // High-speed 60-second frame render
-        const totalFrames = 60 * 30; // 1800 frames
-        let frameCount = 0;
-        const dt = 1.0 / 30.0;
+        function updateStagePill(stageNum) {
+            for (let i = 1; i <= 5; i++) {
+                const pill = document.getElementById("stagePill" + i);
+                if (!pill) continue;
+                if (i < stageNum) pill.className = "stage-pill done";
+                else if (i === stageNum) pill.className = "stage-pill active";
+                else pill.className = "stage-pill";
+            }
+        }
 
         function recordStep() {
             if (frameCount < totalFrames) {
                 sqlShortState.currentTime = frameCount * dt;
-                
+                const t = sqlShortState.currentTime;
+
+                // Live Stage Detection & Pill highlight
+                let currentStage = 1;
+                let stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी अलर्ट (0-5s)";
+                if (t < 5.0) {
+                    currentStage = 1;
+                    stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी प्रश्न (0-5s)";
+                } else if (t < 18.0) {
+                    currentStage = 2;
+                    stageText = "पायरी २/५: 📋 शाळा/बँक डेटा स्कीमा व रेकॉर्ड्स (5-18s)";
+                } else if (t < 42.0) {
+                    currentStage = 3;
+                    stageText = "पायरी ३/५: ⚡ टाईपरायटर SQL कोड व लेझर ॲरो (18-42s)";
+                } else if (t < 54.0) {
+                    currentStage = 4;
+                    stageText = "पायरी ४/५: 🧮 रिअल इन-मेमरी निकाल कॅल्क्युलेशन (42-54s)";
+                } else {
+                    currentStage = 5;
+                    stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ एन्कोडिंग (54-60s)";
+                }
+
+                updateStagePill(currentStage);
+
                 // Synchronize live avatar video frame if active
                 if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
                     sqlShortState.avatarVideoElement.currentTime = (frameCount * dt) % sqlShortState.avatarVideoElement.duration;
@@ -1221,11 +1451,22 @@ WHERE rnk = 2;`,
                 updatePlayerScrubberUI(sqlShortState.currentTime);
                 frameCount++;
 
-                if (frameCount % 30 === 0) {
+                // Update Progress & Time Remaining every 15 frames for ultra-smooth UI
+                if (frameCount % 15 === 0 || frameCount === totalFrames) {
                     const pct = Math.floor((frameCount / totalFrames) * 100);
-                    pFill.style.width = `${pct}%`;
-                    pText.innerText = `Recording clean frame ${frameCount}/${totalFrames} (${pct}%)...`;
+                    if (pFill) pFill.style.width = pct + "%";
+                    if (pPctText) pPctText.innerText = pct + "%";
+                    if (pDesc) pDesc.innerText = stageText;
+
+                    const elapsedSec = (performance.now() - startTime) / 1000.0;
+                    if (elapsedSec > 0.3) {
+                        const framesPerSec = frameCount / elapsedSec;
+                        const remainingSec = Math.max(1, Math.ceil((totalFrames - frameCount) / framesPerSec));
+                        if (pEstTime) pEstTime.innerText = `⏱️ अंदाजे वेळ: ${remainingSec} सेकंद बाकी (${remainingSec}s left)`;
+                    }
+                    if (pFrameStats) pFrameStats.innerText = `🎞️ फ्रेम: ${frameCount} / ${totalFrames}`;
                 }
+
                 requestAnimationFrame(recordStep);
             } else {
                 recorder.stop();

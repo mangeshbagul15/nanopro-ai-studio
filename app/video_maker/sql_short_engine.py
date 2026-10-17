@@ -238,6 +238,121 @@ FROM kirana_transactions;""",
         "explanation_minglish": "PARTITION BY mule Maruti Kaka ani Tatya Patil yaancha hisob vegla rahto ani current udhari clear diste!",
         "explanation_hinglish": "PARTITION BY se har customer ka hisab alag rehta hai aur running balance step by step calculate hota hai!",
         "pro_tip": "💡 Pro Tip: प्रत्येक गावातील किंवा छोट्या उद्योगातील हिशोबासाठी PARTITION BY हा सर्वात सोपा आणि शक्तिशाली नियम आहे!"
+    },
+    {
+        "id": "ration_card_dedup",
+        "title": "🌾 गावचे रेशन वाटप: कुटुंबातील डुप्लिकेट नावे शोधणे व वगळणे (ROW_NUMBER)",
+        "difficulty": "Medium",
+        "hook_mr": "🚨 रेशन कार्ड यादीत एकाच व्यक्तीचे नाव दोनदा आले तर? SQL ने डुप्लिकेट कसे काढायचे?",
+        "hook_hi": "🚨 राशन कार्ड लिस्ट में डुप्लिकेट नाम कैसे हटाएं? ROW_NUMBER() का जादुई तरीका!",
+        "hook_en": "🚨 Deduplicate Village Ration Records using ROW_NUMBER() Window Function!",
+        "hook_minglish": "🚨 Ration card list madhe duplicate naav ale tar ROW_NUMBER ne kase remove karayche?",
+        "hook_hinglish": "🚨 Ration card list me duplicate records ko ROW_NUMBER se kaise hataye?",
+        "question": "गावातील रेशन दुकानाच्या यादीत एकाच रेशन कार्डवर काही नावे दोनदा नोंदवली गेली आहेत. ROW_NUMBER() वापरून फक्त पहिली मूळ नोंद ठेवा.",
+        "table_name": "ration_beneficiaries",
+        "schema_sql": """CREATE TABLE IF NOT EXISTS ration_beneficiaries (
+    entry_id INTEGER PRIMARY KEY,
+    ration_no TEXT,
+    member_name TEXT,
+    age INTEGER
+);
+INSERT OR REPLACE INTO ration_beneficiaries VALUES 
+(1, 'RC-7701', 'आनंदराव पाटील', 52),
+(2, 'RC-7701', 'सुषमा पाटील', 48),
+(3, 'RC-7701', 'सुषमा पाटील', 48),
+(4, 'RC-7702', 'विठ्ठल जाधव', 61),
+(5, 'RC-7702', 'विठ्ठल जाधव', 61);""",
+        "solution_sql": """WITH UniqueMembers AS (
+    SELECT 
+        entry_id, ration_no, member_name, age,
+        ROW_NUMBER() OVER (
+            PARTITION BY ration_no, member_name 
+            ORDER BY entry_id
+        ) AS row_num
+    FROM ration_beneficiaries
+)
+SELECT entry_id, ration_no, member_name, age
+FROM UniqueMembers
+WHERE row_num = 1;""",
+        "arrow_target": "ROW_NUMBER() OVER (PARTITION BY",
+        "explanation_mr": "इथे 'ROW_NUMBER()' मुळे प्रत्येक नावासाठी १, २ असे नंबर मिळतात. 'WHERE row_num = 1' मुळे डुप्लिकेट नावे गळून पडतात आणि रेशनचा गैरवापर टळतो!",
+        "explanation_hi": "यहाँ 'ROW_NUMBER()' डुप्लिकेट नामों को 1, 2 नंबर देता है। 'row_num = 1' से केवल ओरिजिनल नाम बचता है!",
+        "explanation_en": "ROW_NUMBER() assigns sequential numbers within each partition. Filtering row_num = 1 cleanly removes duplicate entries!",
+        "explanation_minglish": "ROW_NUMBER mule pratyek duplicates la 1, 2 numbering bhetate. row_num = 1 kelyane duplicate delete hotat!",
+        "explanation_hinglish": "ROW_NUMBER se har duplicate ko 1, 2 assign hota hai aur row_num = 1 se unique records bachte hai!",
+        "pro_tip": "💡 Pro Tip: डेटा क्लीनिंग आणि सरकारी याद्यांमधील बोगस नावे काढण्यासाठी ROW_NUMBER() हा उद्योग जगतातील मानक नियम आहे!"
+    },
+    {
+        "id": "cricket_match_runs",
+        "title": "🏏 गल्ली क्रिकेट / IPL: फलंदाजाची चालू धावसंख्या व ओव्हर स्कोअर (SUM OVER)",
+        "difficulty": "Easy",
+        "hook_mr": "🚨 क्रिकेट मॅचमध्ये प्रत्येक ओव्हरनंतर खेळाडूचा एकूण स्कोअर SQL ने कसा मोजायचा?",
+        "hook_hi": "🚨 क्रिकेट मैच में हर ओवर के बाद बैट्समैन का कुल स्कोर SQL से कैसे निकालें?",
+        "hook_en": "🚨 Track Cricket Batsman Cumulative Runs Over-by-Over using SUM() OVER!",
+        "hook_minglish": "🚨 Cricket match madhe pratyek over nantar batsman cha total score kasa calculate karaycha?",
+        "hook_hinglish": "🚨 Cricket match me batsman ka cumulative score SUM() OVER se kaise track kare?",
+        "question": "गावातील क्रिकेट सामन्यात फलंदाजाने प्रत्येक ओव्हरमध्ये काढलेल्या धावांवरून त्याची एकूण चालू धावसंख्या (Cumulative Runs) काढा.",
+        "table_name": "batsman_overs",
+        "schema_sql": """CREATE TABLE IF NOT EXISTS batsman_overs (
+    over_no INTEGER PRIMARY KEY,
+    player_name TEXT,
+    runs_in_over INTEGER
+);
+INSERT OR REPLACE INTO batsman_overs VALUES 
+(1, 'सचिन कदम', 12),
+(2, 'सचिन कदम', 8),
+(3, 'सचिन कदम', 16),
+(4, 'सचिन कदम', 22);""",
+        "solution_sql": """SELECT 
+    over_no, player_name, runs_in_over,
+    SUM(runs_in_over) OVER (
+        PARTITION BY player_name 
+        ORDER BY over_no
+    ) AS total_runs
+FROM batsman_overs;""",
+        "arrow_target": "SUM(runs_in_over) OVER (ORDER BY over_no)",
+        "explanation_mr": "इथे 'SUM(runs_in_over) OVER' मुळे प्रत्येक ओव्हरनंतर धावा जुळत जातात: १२ ➔ २० ➔ ३६ ➔ ५८ धावा! फलंदाजाचे अर्धशतक केव्हा झाले ते लगेच समजते!",
+        "explanation_hi": "यहाँ 'SUM() OVER' हर ओवर के बाद रन जोड़ता जाता है: 12 ➔ 20 ➔ 36 ➔ 58! हाफ-सेंचुरी कब बनी तुरंत पता चलता है!",
+        "explanation_en": "SUM() OVER accumulates runs after every single over sequentially, making live strike analysis effortless!",
+        "explanation_minglish": "SUM() OVER mule pratyek over nantar runs add hot jatat ani 58 runs cha running total disto!",
+        "explanation_hinglish": "SUM() OVER se har over ke runs sequentially add hote hai aur batsman ka total runs calculate hota hai!",
+        "pro_tip": "💡 Pro Tip: क्रीडा समालोचन (Sports Commentary) व लाइव्ह स्कोअरबोर्ड ॲप्स अशाच Window Functions वर चालतात!"
+    },
+    {
+        "id": "st_bus_income",
+        "title": "🚌 लालपरी एसटी बस: गावाकडून शहराकडे जाणारे तिकीट उत्पन्न (PARTITION BY)",
+        "difficulty": "Medium",
+        "hook_mr": "🚨 लालपरी एसटी बसचे कोणत्या मार्गावर किती उत्पन्न झाले? कंडक्टरचा हिशोब SQL ने कसा करायचा?",
+        "hook_hi": "🚨 रोडवेज बस के अलग-अलग रूट्स का कुल किराया कलेक्शन SQL से कैसे निकालें?",
+        "hook_en": "🚨 MSRTC State Transport Bus Ticket Revenue Tracking per Route with PARTITION BY!",
+        "hook_minglish": "🚨 ST bus cha route-wise ticket collection SQL ne kasa hisob karaycha?",
+        "hook_hinglish": "🚨 ST bus ka route-wise collection PARTITION BY se kaise separate kare?",
+        "question": "महाराष्ट्र राज्य परिवहन (ST) बसच्या वेगवेगळ्या मार्गांवरील प्रवाशांच्या तिकिटांवरून प्रत्येक मार्गाचे एकूण उत्पन्न (Route Revenue) काढा.",
+        "table_name": "st_bus_tickets",
+        "schema_sql": """CREATE TABLE IF NOT EXISTS st_bus_tickets (
+    ticket_id INTEGER PRIMARY KEY,
+    route_name TEXT,
+    passenger_name TEXT,
+    fare REAL
+);
+INSERT OR REPLACE INTO st_bus_tickets VALUES 
+(1, 'पुणे ते सासवड', 'तानाजी जगताप', 45.0),
+(2, 'पुणे ते सासवड', 'आशाताई मोरे', 45.0),
+(3, 'पुणे ते बारामती', 'बाळासाहेब शिंदे', 120.0),
+(4, 'पुणे ते बारामती', 'अमोल देशमुख', 120.0);""",
+        "solution_sql": """SELECT 
+    ticket_id, route_name, passenger_name, fare,
+    SUM(fare) OVER (
+        PARTITION BY route_name
+    ) AS route_total_revenue
+FROM st_bus_tickets;""",
+        "arrow_target": "SUM(fare) OVER (PARTITION BY route_name)",
+        "explanation_mr": "इथे 'PARTITION BY route_name' मुळे 'पुणे ते सासवड' (₹९०) आणि 'पुणे ते बारामती' (₹२४०) यांचा महसूल आपोआप विभागला जातो!",
+        "explanation_hi": "यहाँ 'PARTITION BY route_name' हर बस रूट का कुल रेवेन्यू अलग-अलग ग्रुप में कैलकुलेट करता है!",
+        "explanation_en": "PARTITION BY route_name aggregates revenue separately for each bus route without collapsing individual passenger rows!",
+        "explanation_minglish": "PARTITION BY mule route-wise collection divide hoto ani route profit accurate disto!",
+        "explanation_hinglish": "PARTITION BY se route-wise revenue instantly calculate hota hai bina data lose kiye!",
+        "pro_tip": "💡 Pro Tip: GROUP BY मुळे वैयक्तिक रो गहाळ होतात, पण Window Functions मुळे प्रवाशांचे नाव आणि एकूण उत्पन्न दोन्ही दिसते!"
     }
 ]
 
