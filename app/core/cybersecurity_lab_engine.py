@@ -751,6 +751,29 @@ class CybersecurityLabEngine:
         from app.core.virustotal_engine import virustotal_engine
         return virustotal_engine.get_markdown_threat_report(target_type, target)
 
+    # -------------------------------------------------------------
+    # 11. SHODAN INTERNET INTELLIGENCE & OPEN PORT SCANNING
+    # -------------------------------------------------------------
+    def audit_shodan_host(self, ip: str) -> Dict[str, Any]:
+        """
+        Queries Shodan.io API for internet-facing host exposure, open ports, and vulnerabilities.
+        """
+        from app.core.shodan_engine import shodan_engine
+        return shodan_engine.host_lookup(ip)
+
+    def get_shodan_host_markdown(self, ip: str) -> str:
+        """
+        Returns Markdown formatted host exposure report from Shodan.io.
+        """
+        from app.core.shodan_engine import shodan_engine
+        return shodan_engine.get_markdown_host_report(ip)
+
+    def get_shodan_info(self) -> Dict[str, Any]:
+        """Returns Shodan API account status and credits."""
+        from app.core.shodan_engine import shodan_engine
+        return shodan_engine.get_api_info()
+
 cybersecurity_engine = CybersecurityLabEngine()
 cyber_lab_engine = cybersecurity_engine
+
 

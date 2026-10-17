@@ -3484,6 +3484,29 @@ async def api_cyber_threat_hash(file_hash: str = "275a021bbfb6489e54d471899f7db9
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# SHODAN INTERNET INTELLIGENCE & PORT SCANNING (API #12)
+# -------------------------------------------------------------
+@app.get("/api/cyber/shodan/host")
+async def api_cyber_shodan_host(ip: str = "8.8.8.8"):
+    from app.core.shodan_engine import shodan_engine
+    try:
+        data = shodan_engine.host_lookup(ip)
+        data["markdown_report"] = shodan_engine.get_markdown_host_report(ip)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/cyber/shodan/info")
+async def api_cyber_shodan_info():
+    from app.core.shodan_engine import shodan_engine
+    try:
+        data = shodan_engine.get_api_info()
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================
