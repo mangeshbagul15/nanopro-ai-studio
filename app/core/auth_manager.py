@@ -267,6 +267,11 @@ class AuthManager:
                         "status": "error",
                         "error": "तुमचे अकाऊंट ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval). मंजुरी मिळाल्यावरच लॉगिन करता येईल."
                     }
+                elif user["status"] == "REJECTED":
+                    return {
+                        "status": "error",
+                        "error": "तुमची नोंदणी ॲडमिन (nanopro) कडून नाकारण्यात (Rejected) आली आहे. प्रवेश बंदी आहे."
+                    }
                 elif user["status"] == "DISABLED":
                     return {
                         "status": "error",
@@ -621,6 +626,53 @@ class AuthManager:
             return {"status": "success", "message": f"युझर '{user['username']}' यशस्वीरीत्या हटवण्यात (delete) आला आहे."}
         except Exception as e:
             log_event(f"Error deleting user: {e}", component="AuthManager", level="ERROR")
+            return {"status": "error", "error": str(e)}
+
+    def reject_user(self, user_id: str, admin_username: str = "nanopro", reason: str = "") -> Dict[str, Any]:
+        """Rejects a user registration. Terminates active sessions, updates status to REJECTED, and records audit log."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, username, full_name, email, role, status FROM users WHERE id = ?", (user_id,))
+                user = cursor.fetchone()
+                if not user:
+                    return {"status": "error", "error": "युझर सापडला नाही (User not found)."}
+
+                if user["username"] == "nanopro" or user["role"] == "admin":
+                    return {"status": "error", "error": "सुपर ॲडमिन 'nanopro' खातं नाकारता (reject) येणार नाही!"}
+
+                # Update status to REJECTED
+                cursor.execute("UPDATE users SET status = 'REJECTED' WHERE id = ?", (user_id,))
+                # Terminate any active sessions immediately
+                cursor.execute("UPDATE user_sessions SET is_active = 0 WHERE user_id = ?", (user_id,))
+                conn.commit()
+
+            # Record audit log
+            details = f"User '{user['username']}' ({user['email']}) rejected by {admin_username}"
+            if reason:
+                details += f" (Reason: {reason})"
+            self._record_audit_log(
+                user_id,
+                user["username"],
+                "USER_REJECTED",
+                details
+            )
+
+            # Send Telegram security notification
+            time_str = time.strftime('%d-%m-%Y %I:%M:%S %p', time.localtime())
+            reason_txt = f"\n📝 <b>Reason:</b> {reason}" if reason else ""
+            self._notify_telegram(
+                f"🚫 <b>युझर नोंदणी नाकारली (User Registration Rejected)</b>\n"
+                f"👤 <b>Username:</b> {user['username']} ({user['full_name']})\n"
+                f"📧 <b>Email:</b> {user['email']}\n"
+                f"👑 <b>Rejected By:</b> {admin_username}{reason_txt}\n"
+                f"🕒 <b>Time:</b> {time_str}\n"
+                f"<i>या युझरचा लॉगिन प्रवेश कायमचा ब्लॉक करण्यात आला आहे.</i>"
+            )
+
+            return {"status": "success", "message": f"युझर '{user['username']}' ची नोंदणी नाकारण्यात (reject) आली आहे."}
+        except Exception as e:
+            log_event(f"Error rejecting user: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": str(e)}
 
 

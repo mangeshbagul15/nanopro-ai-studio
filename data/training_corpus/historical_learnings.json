@@ -1,5 +1,23 @@
 [
   {
+    "task_id": "task_1792214809760_21db0c",
+    "domain": "Manager_Agent_Orchestration",
+    "learned_on": "2026-10-17 10:56:49 IST",
+    "prompt": "Hi, check DB status",
+    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Hi, check DB status...'",
+    "output_preview": "{'response': 'All 5 DBs are green and ready:\\n*   **Snowflake:** Online (~142.5k recs)\\n*   **Oracle XE (Local/LAN/Tailscale):** All online\\n*   **SQLite:** Online & encrypted\\n\\nNeed a quick query or specific check?', '...",
+    "latency_ms": 95.0
+  },
+  {
+    "task_id": "task_1792214801887_21db0c",
+    "domain": "Manager_Agent_Orchestration",
+    "learned_on": "2026-10-17 10:56:41 IST",
+    "prompt": "Hi, check DB status",
+    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Hi, check DB status...'",
+    "output_preview": "{'response': '- Snowflake (BANK_DB, L0_STAGING) – online, ~142.5\\u202fk records.  \\n- Oracle XE Local – online, ready for queries.  \\n- Oracle XE Remote LAN – online, ~50\\u202fk records.  \\n- Oracle XE Remote (Tailscale)...",
+    "latency_ms": 95.0
+  },
+  {
     "task_id": "task_1792063898610_49f68a",
     "domain": "Manager_Agent_Orchestration",
     "learned_on": "2026-10-15 17:01:38 IST",
@@ -249,24 +267,6 @@
     "prompt": "Find open-source AI agents on GitHub.",
     "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Find open-source AI agents on GitHub....'",
     "output_preview": "{'response': \"🐙 **GitHub AI Project Explorer — 'ai agents' (4 repositories):**\\n\\n• **[obra/superpowers](https://github.com/obra/superpowers)** — ⭐ 299,071 stars | 🍴 26,716 forks\\n  - **Language & License:** `Shell` | Li...",
-    "latency_ms": 95.0
-  },
-  {
-    "task_id": "task_1792002579205_fdb99a",
-    "domain": "Manager_Agent_Orchestration",
-    "learned_on": "2026-10-14 23:59:39 IST",
-    "prompt": "Find a free API for document summarization.",
-    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Find a free API for document summarization....'",
-    "output_preview": "{'response': \"🎁 **Verified Free APIs Discovered for 'document summarization' (1 verified):**\\n\\n• **[Gemini 2.0 & 1.5 Flash API](https://ai.google.dev)** by *Google Cloud*\\n  - **Category:** Document Summarization, Text ...",
-    "latency_ms": 95.0
-  },
-  {
-    "task_id": "task_1792002514391_17f1f4",
-    "domain": "Manager_Agent_Orchestration",
-    "learned_on": "2026-10-14 23:58:34 IST",
-    "prompt": "DROP TABLE customer_records",
-    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'DROP TABLE customer_records...'",
-    "output_preview": "{'response': '⚠️ **High-Risk Action Identified**: Your request involves sensitive operations.\\n\\n• Target Agent: **MANAGER**\\n• Risk Level: **HIGH**\\n• Approval Request ID: `appr_1792002514371`\\n\\nPlease review and click...",
     "latency_ms": 95.0
   }
 ]

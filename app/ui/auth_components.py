@@ -326,43 +326,242 @@ def get_auth_injection() -> str:
     color: #E2E8F0;
 }
 
-.status-badge-active { background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid #10B981; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-.status-badge-pending { background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid #F59E0B; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-.status-badge-disabled { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid #EF4444; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-
-.btn-action-sm {
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11.5px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
+/* Modern Cyber-Luxe Badges & Indicators */
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.dot-emerald {
+    background: #10B981;
+    box-shadow: 0 0 7px #10B981;
+}
+.dot-amber-pulse {
+    background: #F59E0B;
+    box-shadow: 0 0 8px #F59E0B;
+    animation: amberDotPulse 1.8s infinite ease-in-out;
+}
+.dot-cyan {
+    background: #38BDF8;
+    box-shadow: 0 0 7px #38BDF8;
+}
+.dot-purple {
+    background: #C084FC;
+    box-shadow: 0 0 7px #C084FC;
+}
+.dot-red {
+    background: #EF4444;
+    box-shadow: 0 0 7px #EF4444;
+}
+.dot-slate {
+    background: #94A3B8;
 }
 
-.btn-approve { background: #10B981; color: #FFFFFF; }
-.btn-approve:hover { background: #059669; }
-.btn-disable { background: #EF4444; color: #FFFFFF; }
-.btn-disable:hover { background: #DC2626; }
-.btn-enable { background: #0284C7; color: #FFFFFF; }
-.btn-enable:hover { background: #0369A1; }
-.btn-delete { background: rgba(239, 68, 68, 0.18); color: #EF4444; border: 1px solid #EF4444; }
-.btn-delete:hover { background: #DC2626 !important; color: #FFFFFF !important; box-shadow: 0 0 10px rgba(220, 38, 38, 0.4); }
+@keyframes amberDotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.8); }
+}
 
-.badge-btn {
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
+.modern-badge {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    line-height: 1.3;
-    text-decoration: none;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.25px;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    user-select: none;
 }
-.badge-btn:hover {
-    transform: translateY(-1px) scale(1.03);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+.modern-badge-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.25px;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    text-decoration: none;
+    line-height: 1.25;
+}
+.modern-badge-btn:hover {
+    transform: translateY(-1.5px) scale(1.02);
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.4);
     filter: brightness(1.2);
+}
+.modern-badge-btn:active {
+    transform: translateY(0) scale(0.99);
+}
+
+/* Master Exclusive Badges */
+.badge-master-active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(245, 158, 11, 0.16) 100%);
+    color: #34D399;
+    border: 1px solid rgba(16, 185, 129, 0.55);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.22);
+}
+.badge-master-mode {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(99, 102, 241, 0.16) 100%);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.55);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.22);
+}
+.badge-master-features {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(56, 189, 248, 0.16) 100%);
+    color: #E879F9;
+    border: 1px solid rgba(168, 85, 247, 0.55);
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.22);
+}
+
+/* Standard Status Variants */
+.badge-status-pending {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.14) 100%);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+}
+.badge-status-active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.14) 100%);
+    color: #34D399;
+    border: 1px solid rgba(16, 185, 129, 0.45);
+}
+.badge-status-rejected {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(185, 28, 28, 0.14) 100%);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+.badge-status-disabled {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.18) 0%, rgba(71, 85, 105, 0.16) 100%);
+    color: #CBD5E1;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+/* Access Mode Variants */
+.badge-mode-modify {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.14) 100%);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.45);
+}
+.badge-mode-readonly {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.12) 100%);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* Allowed Features Variants */
+.badge-feat-all {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 182, 212, 0.14) 100%);
+    color: #34D399;
+    border: 1px solid rgba(16, 185, 129, 0.45);
+}
+.badge-feat-custom {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(139, 92, 246, 0.14) 100%);
+    color: #C084FC;
+    border: 1px solid rgba(168, 85, 247, 0.45);
+}
+
+.badge-hint-tag {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 6px;
+    margin-left: 2px;
+    background: rgba(255, 255, 255, 0.14);
+    letter-spacing: 0.2px;
+}
+
+/* Action Buttons */
+.btn-action-sm {
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.2;
+}
+
+.btn-approve {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: #FFFFFF;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.btn-approve:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+.btn-reject-luxe {
+    background: rgba(239, 68, 68, 0.16);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+.btn-reject-luxe:hover {
+    background: #EF4444 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+.btn-disable {
+    background: rgba(245, 158, 11, 0.16);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+}
+.btn-disable:hover {
+    background: #F59E0B;
+    color: #0F172A;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    transform: translateY(-1px);
+}
+.btn-enable {
+    background: rgba(56, 189, 248, 0.16);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.5);
+}
+.btn-enable:hover {
+    background: #0284C7;
+    color: #FFFFFF;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+}
+.btn-delete {
+    background: rgba(239, 68, 68, 0.12);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+.btn-delete:hover {
+    background: #DC2626 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+    transform: translateY(-1px);
+}
+.btn-permissions-luxe {
+    background: rgba(99, 102, 241, 0.16);
+    color: #A5B4FC;
+    border: 1px solid rgba(99, 102, 241, 0.4);
+}
+.btn-permissions-luxe:hover {
+    background: #6366F1;
+    color: #FFFFFF;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
 }
 
 /* Permissions Modal Overlay */
@@ -2002,57 +2201,64 @@ async function loadAdminUsers() {
             if (u.status === 'PENDING_APPROVAL') pending++;
             if (u.status === 'ACTIVE') active++;
 
-            // 1. Status Badge (Interactive Button)
+            // 1. Status Badge (Modernized Cyber-Luxe Pill)
             let statusBadge = '';
             if (u.status === 'PENDING_APPROVAL') {
-                statusBadge = `<button type="button" class="status-badge-pending badge-btn" onclick="openUserPermissionsById('${u.id}', 'approve')" title="क्लिक करा: युझरला मंजूर करा आणि फिचर्स द्या (Click to Approve)">⏳ PENDING_APPROVAL ⚡</button>`;
+                statusBadge = `<button type="button" class="modern-badge-btn badge-status-pending" onclick="openUserPermissionsById('${u.id}', 'approve')" title="क्लिक करा: युझरला मंजूर करा आणि फिचर्स द्या (Click to Approve)"><span class="badge-dot dot-amber-pulse"></span>⏳ Pending <span class="badge-hint-tag">Review ⚡</span></button>`;
             } else if (u.status === 'ACTIVE') {
                 if (u.username === 'nanopro') {
-                    statusBadge = `<span class="status-badge-active" style="padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">👑 ACTIVE (Master)</span>`;
+                    statusBadge = `<span class="modern-badge badge-master-active"><span class="badge-dot dot-emerald"></span>👑 Active <span class="badge-hint-tag">Master</span></span>`;
                 } else {
-                    statusBadge = `<button type="button" class="status-badge-active badge-btn" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="क्लिक करा: खाते तात्पुरते डिसेबल करा (Click to Disable)">✅ ACTIVE</button>`;
+                    statusBadge = `<button type="button" class="modern-badge-btn badge-status-active" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="क्लिक करा: खाते तात्पुरते डिसेबल करा (Click to Disable)"><span class="badge-dot dot-emerald"></span>✅ Active <span class="badge-hint-tag">⇄</span></button>`;
                 }
+            } else if (u.status === 'REJECTED') {
+                statusBadge = `<span class="modern-badge badge-status-rejected" title="या युझरची नोंदणी नाकारण्यात आली आहे (Rejected)"><span class="badge-dot dot-red"></span>🚫 Rejected</span>`;
             } else {
-                statusBadge = `<button type="button" class="status-badge-disabled badge-btn" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="क्लिक करा: खाते पुन्हा सक्रिय करा (Click to Enable)">🚫 DISABLED</button>`;
+                statusBadge = `<button type="button" class="modern-badge-btn badge-status-disabled" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="क्लिक करा: खाते पुन्हा सक्रिय करा (Click to Enable)"><span class="badge-dot dot-slate"></span>🔒 Disabled <span class="badge-hint-tag">⇄</span></button>`;
             }
 
-            // 2. Access Mode Badge (Interactive Quick-Toggle Button)
+            // 2. Access Mode Badge (Modernized Quick-Toggle Pill)
             const mode = u.access_mode || 'MODIFY';
             let modeBadge = '';
             if (u.username === 'nanopro') {
-                modeBadge = `<span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">✏️ MODIFY (Master)</span>`;
+                modeBadge = `<span class="modern-badge badge-master-mode"><span class="badge-dot dot-cyan"></span>✏️ Full Modify <span class="badge-hint-tag">Unrestricted</span></span>`;
             } else if (mode === 'READ_ONLY') {
-                modeBadge = `<button type="button" class="badge-btn" style="background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid #F59E0B; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: ✏️ MODIFY मोडमध्ये बदला (Click to switch to MODIFY)">👁️ READ-ONLY ⇄</button>`;
+                modeBadge = `<button type="button" class="modern-badge-btn badge-mode-readonly" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: ✏️ MODIFY मोडमध्ये बदला (Click to switch to MODIFY)"><span class="badge-dot dot-amber-pulse"></span>👁️ Read-Only <span class="badge-hint-tag">⇄</span></button>`;
             } else {
-                modeBadge = `<button type="button" class="badge-btn" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid #38BDF8; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: 👁️ READ-ONLY मोडमध्ये बदला (Click to switch to READ-ONLY)">✏️ MODIFY ⇄</button>`;
+                modeBadge = `<button type="button" class="modern-badge-btn badge-mode-modify" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: 👁️ READ-ONLY मोडमध्ये बदला (Click to switch to READ-ONLY)"><span class="badge-dot dot-cyan"></span>✏️ Modify <span class="badge-hint-tag">⇄</span></button>`;
             }
 
-            // 3. Allowed Features Badge (Interactive Feature Picker Button)
+            // 3. Allowed Features Badge (Modernized Feature Picker Pill)
             const views = u.allowed_views || ['*'];
             let featuresBadge = '';
             const actionType = (u.status === 'PENDING_APPROVAL') ? 'approve' : 'update';
-            if (views && typeof views === 'object' && !Array.isArray(views)) {
+            if (u.username === 'nanopro') {
+                featuresBadge = `
+                    <button type="button" class="modern-badge-btn badge-master-features" onclick="openUserPermissionsById('${u.id}', 'update')" title="Super Admin: सर्व 42 फिचर्स उपलब्ध आहेत (Click to customize)">
+                        <span class="badge-dot dot-purple"></span>⚡ All (42/42) <span class="badge-hint-tag">Full Suite ✎</span>
+                    </button>
+                `;
+            } else if (views && typeof views === 'object' && !Array.isArray(views)) {
                 const dIsAll = views.desktop && Array.isArray(views.desktop) && views.desktop.includes('*');
                 const mIsAll = views.mobile && Array.isArray(views.mobile) && views.mobile.includes('*');
                 const dCount = dIsAll ? 'All (42)' : (views.desktop ? views.desktop.length : 0);
                 const mCount = mIsAll ? 'All (42)' : (views.mobile ? views.mobile.length : 0);
                 featuresBadge = `
-                    <button type="button" class="badge-btn" style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:4px 8px; border-radius:10px; font-size:10px; font-weight:bold; text-align:left; display:flex; flex-direction:column; gap:2px;" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: Desktop आणि Mobile फिचर्स निवडा/बदला (Click to customize features)">
-                        <span style="color:#38BDF8;">💻 Desktop: ${dCount}</span>
-                        <span style="color:#C084FC;">📱 Mobile: ${mCount} ⚙️</span>
+                    <button type="button" class="modern-badge-btn badge-feat-custom" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: Desktop आणि Mobile फिचर्स निवडा/बदला (Click to customize features)">
+                        <span class="badge-dot dot-purple"></span>💻 ${dCount} <span style="opacity:0.4;">|</span> 📱 ${mCount} <span class="badge-hint-tag">✎</span>
                     </button>
                 `;
             } else if (Array.isArray(views) && views.includes('*')) {
                 featuresBadge = `
-                    <button type="button" class="badge-btn" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
-                        ⚙️ All (Sarva 42) ✎
+                    <button type="button" class="modern-badge-btn badge-feat-all" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
+                        <span class="badge-dot dot-emerald"></span>⚙️ All (Sarva 42) <span class="badge-hint-tag">✎</span>
                     </button>
                 `;
             } else {
                 const count = Array.isArray(views) ? views.length : 0;
                 featuresBadge = `
-                    <button type="button" class="badge-btn" style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
-                        ⚙️ ${count} Features ✎
+                    <button type="button" class="modern-badge-btn badge-feat-custom" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
+                        <span class="badge-dot dot-purple"></span>⚙️ ${count} Features <span class="badge-hint-tag">✎</span>
                     </button>
                 `;
             }
@@ -2062,27 +2268,41 @@ async function loadAdminUsers() {
             if (u.status === 'PENDING_APPROVAL') {
                 actionsHtml = `
                     <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="Approve with custom features">🛡️ Approve</button>
-                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="Reject registration">Reject 🚫</button>
-                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="Permanently delete user account">🗑️ Delete</button>
+                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="मंजूर करा आणि फिचर्स द्या (Approve with custom features)">🛡️ Approve</button>
+                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="नोंदणी नाकारा (Reject registration)">🚫 Reject</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा (Permanently delete)">🗑️ Delete</button>
                     </div>
                 `;
             } else if (u.username === 'nanopro') {
                 actionsHtml = `
                     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                        <button type="button" class="btn-action-sm" style="background:linear-gradient(135deg, #0284C7, #0369A1); color:#FFFFFF; font-weight:700; border:1px solid #38BDF8; padding:5px 10px;" onclick="openUserPermissionsById('${u.id}', 'update')">⚙️ Admin Views</button>
-                        <span style="font-size:10.5px; color:#10B981; font-weight:800; background:rgba(16,185,129,0.12); border:1px solid #10B981; padding:2px 6px; border-radius:8px;">👑 Master</span>
+                        <button type="button" class="btn-action-sm" style="background:linear-gradient(135deg, #0284C7, #0369A1); color:#FFFFFF; font-weight:700; border:1px solid #38BDF8; padding:5px 10px; border-radius:6px;" onclick="openUserPermissionsById('${u.id}', 'update')">⚙️ Admin Views</button>
+                        <span class="modern-badge badge-master-active" style="padding:3px 8px; font-size:10px;">👑 Master</span>
+                    </div>
+                `;
+            } else if (u.status === 'REJECTED') {
+                actionsHtml = `
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="पुन्हा विचार करून मंजूर करा (Re-approve user)">🛡️ Re-Approve</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा (Permanently delete)">🗑️ Delete</button>
+                    </div>
+                `;
+            } else if (u.status === 'ACTIVE') {
+                actionsHtml = `
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+                        <button type="button" class="btn-action-sm btn-permissions-luxe" onclick="openUserPermissionsById('${u.id}', 'update')" title="परवानग्या बदला (Permissions &amp; feature access)">⚙️ Permissions</button>
+                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="खाते तात्पुरते डिसेबल करा">🔒 Disable</button>
+                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="ॲक्सेस नाकारा (Revoke &amp; Reject)">🚫 Reject</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा (Delete)">🗑️ Delete</button>
                     </div>
                 `;
             } else {
-                const nextSt = (u.status === 'ACTIVE') ? 'DISABLED' : 'ACTIVE';
-                const btnLabel = (u.status === 'ACTIVE') ? 'Disable 🚫' : 'Enable ✅';
-                const btnClass = (u.status === 'ACTIVE') ? 'btn-disable' : 'btn-enable';
                 actionsHtml = `
                     <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-                        <button type="button" class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; padding:5px 8px;" onclick="openUserPermissionsById('${u.id}', 'update')" title="Permissions &amp; feature access">⚙️ Permissions</button>
-                        <button type="button" class="btn-action-sm ${btnClass}" style="padding:5px 8px;" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>
-                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="Permanently delete user account">🗑️ Delete</button>
+                        <button type="button" class="btn-action-sm btn-permissions-luxe" onclick="openUserPermissionsById('${u.id}', 'update')" title="परवानग्या बदला">⚙️ Permissions</button>
+                        <button type="button" class="btn-action-sm btn-enable" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="खाते पुन्हा सुरू करा">✅ Enable</button>
+                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="नोंदणी नाकारा">🚫 Reject</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा">🗑️ Delete</button>
                     </div>
                 `;
             }
@@ -2197,6 +2417,39 @@ async function deleteUserAccount(userId, username) {
     }
 }
 
+async function rejectUserAccount(userId, username) {
+    if (username === 'nanopro') {
+        alert('🚫 Super Admin "nanopro" चे खाते नाकारता (Reject) येणार नाही!');
+        return;
+    }
+    const reason = prompt(
+        `युझर '${username}' ची नोंदणी/खाते नाकारायचे (Reject) आहे का?\n\nनाकारण्याचे कारण प्रविष्ट करा (किंवा तसेच OK करा):`,
+        'प्रवेश परवाणगी नाकारली (Access Denied by Admin)'
+    );
+    if (reason === null) return;
+
+    try {
+        const resp = await fetch('/api/admin/users/reject', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                admin_username: (window.currentUser && window.currentUser.username) ? window.currentUser.username : 'nanopro',
+                reason: reason.trim() || 'Access denied by super admin'
+            })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            alert('✅ ' + (data.message || `युझर '${username}' ची नोंदणी नाकारण्यात आली आहे.`));
+            loadAdminUsers();
+        } else {
+            alert('Truti: ' + (data.error || 'युझर नाकारता आला नाही.'));
+        }
+    } catch(err) {
+        alert('Server Truti: ' + err.message);
+    }
+}
+
 async function triggerTelegramDiagnosticsNow() {
     const btn = document.getElementById('btnTriggerTelegramDiag');
     if (btn) { btn.disabled = true; btn.innerText = 'Telegram var pathavat ahe...'; }
@@ -2248,6 +2501,7 @@ window.loadAdminUsers = loadAdminUsers;
 window.toggleUserStatus = toggleUserStatus;
 window.quickToggleUserAccessMode = quickToggleUserAccessMode;
 window.deleteUserAccount = deleteUserAccount;
+window.rejectUserAccount = rejectUserAccount;
 window.triggerTelegramDiagnosticsNow = triggerTelegramDiagnosticsNow;
 window.loadAdminAuditLogs = loadAdminAuditLogs;
 </script>

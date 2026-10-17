@@ -480,6 +480,11 @@ class AdminDeleteUserRequest(BaseModel):
     user_id: str
     admin_username: Optional[str] = "nanopro"
 
+class AdminRejectUserRequest(BaseModel):
+    user_id: str
+    admin_username: Optional[str] = "nanopro"
+    reason: Optional[str] = "Admin rejected access"
+
 class TextToSQLRequest(BaseModel):
     prompt: str
     target_db: Optional[str] = "POSTGRES_CLOUD_FREE"
@@ -5015,6 +5020,13 @@ async def api_admin_users_delete(req: AdminDeleteUserRequest):
     """Permanently deletes a user account (executable only by nanopro / superadmin)."""
     from app.core.auth_manager import auth_manager
     res = auth_manager.delete_user(req.user_id, admin_username=req.admin_username)
+    return JSONResponse(res)
+
+@app.post("/api/admin/users/reject")
+async def api_admin_users_reject(req: AdminRejectUserRequest):
+    """Rejects a user registration (executable by nanopro / superadmin)."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.reject_user(req.user_id, admin_username=req.admin_username, reason=req.reason or "Admin rejected access")
     return JSONResponse(res)
 
 @app.get("/api/admin/audit_logs")
