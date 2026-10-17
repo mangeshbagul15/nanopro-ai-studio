@@ -59,6 +59,8 @@ class ProviderCircuitBreaker:
             return "groq"
         if "gemini" in p:
             return "gemini"
+        if "deepseek" in p:
+            return "deepseek"
         if "ollama" in p:
             return "ollama"
         if "remote" in p:
@@ -647,6 +649,97 @@ class OllamaAdapter(ModelProviderAdapter):
                 self.circuit_breaker.record_failure("ollama", e)
             raise RuntimeError(f"Ollama execution error: {str(e)}")
 
+class DeepSeekAdapter(ModelProviderAdapter):
+    """
+    Adapter for DeepSeek Super-Intelligence & Reasoning API.
+    Provides OpenAI-compatible inference with:
+    - deepseek-chat: DeepSeek-V3 ultra-fast flagship reasoning, code & multilingual (Marathi/Hindi/English)
+    - deepseek-reasoner: DeepSeek-R1 state-of-the-art chain-of-thought reasoning, mathematics, logic & debugging
+    """
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        self.base_url = (base_url or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip("/")
+        self.circuit_breaker = circuit_breaker
+
+    def is_available(self) -> bool:
+        k = self.api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        return bool(k and k.startswith("sk-"))
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self.api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        if not k:
+            raise ValueError("DeepSeek API Key is not configured. Set DEEPSEEK_API_KEY environment variable.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("deepseek"):
+            raise ConnectionError("DeepSeek API circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_clean = model if model in ["deepseek-chat", "deepseek-reasoner"] else "deepseek-chat"
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload = {
+            "model": m_clean,
+            "messages": messages,
+            "stream": False
+        }
+        if m_clean != "deepseek-reasoner":
+            payload["temperature"] = 0.3
+        if schema:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {k}"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                choice = data["choices"][0]
+                content = choice.get("message", {}).get("content", "") or ""
+                content = content.strip()
+                reasoning = choice.get("message", {}).get("reasoning_content", "") or ""
+                if reasoning and not content:
+                    content = reasoning.strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                token_count = data.get("usage", {}).get("completion_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+                tps = round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("deepseek")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "deepseek",
+                    "mode": "deepseek-cloud"
+                })
+                return content, telemetry
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("deepseek", e)
+            raise e
+
 
 class RemoteAPIAdapter(ModelProviderAdapter):
     """Adapter for standard OpenAI / Anthropic compatible remote endpoints."""
@@ -734,22 +827,25 @@ class ModelManager:
         self.circuit_breaker = ProviderCircuitBreaker()
         self.groq = GroqAdapter(circuit_breaker=self.circuit_breaker)
         self.gemini = GeminiAdapter(circuit_breaker=self.circuit_breaker)
+        self.deepseek = DeepSeekAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
         self.remote = RemoteAPIAdapter(circuit_breaker=self.circuit_breaker)
 
         # Task-specific capability routing hierarchy
         self.task_routing: Dict[str, List[str]] = {
-            "coding": ["qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
-            "dialogue": ["openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
-            "research": ["gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
+            "coding": ["deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
+            "dialogue": ["deepseek-chat", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
+            "data_analyst": ["deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
+            "research": ["deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
             "price_tracking": ["openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
-            "learning": ["gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
-            "general": ["openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
+            "learning": ["deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
+            "general": ["deepseek-chat", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
         }
 
         # Model metadata registry
         self.model_metadata: Dict[str, Dict[str, Any]] = {
+            "deepseek-chat": {"role": "DeepSeek-V3 Flagship Coding & Intelligence", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Multi-language Code (~1.1s)"},
+            "deepseek-reasoner": {"role": "DeepSeek-R1 Chain-of-Thought Reasoning Engine", "vram_mb": 0, "strength": "State-of-the-Art Deep Logic & Math (~2.2s)"},
             "openai/gpt-oss-120b": {"role": "Flagship 120B Reasoning & Multilingual (Groq LPU)", "vram_mb": 0, "strength": "State-of-the-Art Reasoning (Sub-2s)"},
             "qwen/qwen3.8-27b": {"role": "LPU Ultra-Fast Code & SQL Engine (Groq LPU)", "vram_mb": 0, "strength": "Sub-Second Code Generation (~500ms)"},
             "openai/gpt-oss-20b": {"role": "Lightning Conversational Dialogue (Groq LPU)", "vram_mb": 0, "strength": "Sub-Second Natural Chat (~700ms)"},
@@ -819,7 +915,12 @@ class ModelManager:
         if "gemini" in m_lower:
             return self.gemini, "gemini-cloud"
 
-        # 3. Deterministic Local Ollama models
+        # 3. Deterministic DeepSeek Cloud models (deepseek-chat, deepseek-reasoner)
+        if ("deepseek-chat" in m_lower or "deepseek-reasoner" in m_lower or m_lower.startswith("deepseek/")):
+            if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+                return self.deepseek, "deepseek-cloud"
+
+        # 4. Deterministic Local Ollama models
         is_local = (
             ":" in model
             or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "mistral", "codellama"])
@@ -828,7 +929,9 @@ class ModelManager:
         if is_local:
             return self.ollama, "ollama"
 
-        # 4. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 5. Fallback based on availability & circuit breaker for unknown/custom model names
+        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+            return self.deepseek, "deepseek-cloud"
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             return self.groq, "groq-lpu"
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
@@ -841,6 +944,8 @@ class ModelManager:
         return self.ollama, "ollama-offline"
 
     def get_preferred_adapter(self) -> Tuple[ModelProviderAdapter, str]:
+        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+            return self.deepseek, "deepseek-cloud"
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             return self.groq, "groq-lpu"
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
@@ -860,13 +965,19 @@ class ModelManager:
         base_list = requested_models or self.task_routing.get(task_type, self.task_routing["general"])
         effective = []
 
-        # 1. Include Groq models if available and circuit not OPEN
+        # 1. Include DeepSeek models if available and circuit not OPEN
+        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+            for m in base_list:
+                if "deepseek" in m and m not in effective:
+                    effective.append(m)
+
+        # 2. Include Groq models if available and circuit not OPEN
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             for m in base_list:
                 if ("gpt-oss" in m or "qwen3.8" in m) and m not in effective:
                     effective.append(m)
 
-        # 2. Include Gemini models if available and circuit not OPEN
+        # 3. Include Gemini models if available and circuit not OPEN
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
             for m in base_list:
                 if "gemini" in m and m not in effective:
@@ -951,6 +1062,9 @@ class ModelManager:
         Cascades Groq -> Gemini -> Ollama in < 500ms without uncaught exceptions.
         Returns: (content, model_used, provider_mode_or_telemetry, latency_ms)
         """
+        if not models and "model" in kwargs:
+            models = [kwargs["model"]]
+
         model_list = self.get_effective_model_list(requested_models=models, task_type=task_type)
         last_error = ""
         failed_providers_this_call = set()
@@ -979,6 +1093,8 @@ class ModelManager:
             t_start = time.time()
             try:
                 log_event(f"ModelRouter: Routing [{task_type}] task to [{model}] via [{provider_type}]...", component="ModelRouter")
+                chat_kwargs = dict(kwargs)
+                chat_kwargs.pop("model", None)
                 content, mode = adapter.chat(
                     model,
                     prompt,
@@ -986,7 +1102,7 @@ class ModelManager:
                     system_prompt=system_prompt,
                     timeout=timeout,
                     task_type=task_type,
-                    **kwargs
+                    **chat_kwargs
                 )
                 t_dur_ms = max(0.1, round((time.time() - t_start) * 1000, 1))
 
