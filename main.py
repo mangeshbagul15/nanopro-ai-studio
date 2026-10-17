@@ -3576,6 +3576,30 @@ async def api_cache_delete(key: str):
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# SUPABASE CLOUD POSTGRESQL & VECTOR DATABASE (API #15)
+# -------------------------------------------------------------
+@app.get("/api/database/supabase/status")
+async def api_supabase_status():
+    from app.core.supabase_engine import supabase_engine
+    try:
+        alive = supabase_engine.ping()
+        markdown = supabase_engine.get_markdown_status()
+        meta = supabase_engine.get_project_metadata()
+        return JSONResponse({"status": "online" if alive else "offline", "ping": alive, "metadata": meta, "markdown_report": markdown})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/database/supabase/buckets")
+async def api_supabase_buckets():
+    from app.core.supabase_engine import supabase_engine
+    try:
+        buckets = supabase_engine.list_buckets()
+        return JSONResponse({"status": "success", "total_buckets": len(buckets), "buckets": buckets})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================
