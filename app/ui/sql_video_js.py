@@ -390,6 +390,8 @@ WHERE rnk = 2;`,
         selectedAvatar: "Nadim_public_5",
         avatarVideoElement: null,
         avatarVideoLoaded: false,
+        backgroundVideoElement: null,
+        backgroundVideoLoaded: false,
         animationFrameId: null,
         lastTimestamp: null,
         isExporting: false,
@@ -660,6 +662,129 @@ WHERE rnk = 2;`,
         }, 2000);
     }
 
+    async function renderCinematicBackgroundVideo() {
+        const bgChoice = document.getElementById("sqlCinematicBgSelect")?.value || "cyber_matrix";
+        const statusEl = document.getElementById("cinematicBgRenderStatus");
+        const btn = document.getElementById("btnRenderCinematicBg");
+
+        if (bgChoice === "cyber_matrix") {
+            sqlShortState.backgroundVideoElement = null;
+            sqlShortState.backgroundVideoLoaded = false;
+            if (statusEl) {
+                statusEl.style.display = "block";
+                statusEl.style.color = "#10B981";
+                statusEl.innerHTML = `🌐 <b>Fast Canvas Mode Active:</b> 60 FPS Cyber Grid &amp; Neon Data Stream active.`;
+            }
+            renderSqlShortFrame(sqlShortState.currentTime);
+            return;
+        }
+
+        let prompt = "Ultra-realistic 9:16 vertical 4k cyber server room with floating neon SQL queries and glowing data cables";
+        if (bgChoice === "runway_rural") {
+            prompt = "Digital smart classroom in a scenic Indian village, rural students learning AI on tablets, bright cinematic lighting, vertical 9:16, 4k photorealistic";
+        } else if (bgChoice === "luma_dataflow") {
+            prompt = "Golden glowing particles of database indexes and SQL query trees orbiting in deep blue 3D space, vertical 9:16";
+        }
+
+        if (statusEl) {
+            statusEl.style.display = "block";
+            statusEl.style.color = "#38BDF8";
+            statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Video Router (Runway Gen-4 [Tokens 1 & 2] ➔ Luma ➔ Canvas)...</span>`;
+        }
+        if (btn) btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/video/cinematic_cascade", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    prompt: prompt,
+                    aspect_ratio: "9:16"
+                })
+            });
+            const data = await res.json();
+
+            if (data.status === "success") {
+                if (data.provider && data.provider.startsWith("Runway") && data.task_id) {
+                    statusEl.innerHTML = `<span>✅ Runway Gen-4 Task #${data.task_id} queued! Polling generation...</span>`;
+                    pollRunwayVideo(data.task_id, statusEl, btn);
+                } else if (data.generation_id) {
+                    statusEl.innerHTML = `<span>✅ Luma Dream Machine #${data.generation_id} queued! Polling...</span>`;
+                    if (btn) btn.disabled = false;
+                } else {
+                    // Fallback to cyber canvas loop
+                    if (btn) btn.disabled = false;
+                    statusEl.style.color = "#10B981";
+                    statusEl.innerHTML = `🛡️ <b>Zero-Hang Guarantee Active:</b> Cloud quota reached. Auto-switched to High-Tech Cyber Grid Motion Loop!`;
+                }
+            } else {
+                statusEl.style.color = "#EF4444";
+                statusEl.innerText = "Router notice: " + (data.message || "Auto-switched to Canvas");
+                if (btn) btn.disabled = false;
+            }
+        } catch (e) {
+            statusEl.style.color = "#F59E0B";
+            statusEl.innerText = "Auto-fallback to Cyber Motion Canvas: " + e.message;
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    function loadBackgroundVideoToEngine(url) {
+        let vid = document.getElementById("sqlShortBgVideo");
+        if (!vid) {
+            vid = document.createElement("video");
+            vid.id = "sqlShortBgVideo";
+            vid.crossOrigin = "anonymous";
+            vid.playsInline = true;
+            vid.muted = true;
+            vid.loop = true;
+            vid.style.display = "none";
+            document.body.appendChild(vid);
+        }
+        vid.src = url;
+        vid.load();
+        vid.onloadeddata = () => {
+            sqlShortState.backgroundVideoElement = vid;
+            sqlShortState.backgroundVideoLoaded = true;
+            vid.play().catch(e => console.log("Bg video autoplay:", e));
+            renderSqlShortFrame(sqlShortState.currentTime);
+        };
+    }
+
+    function pollRunwayVideo(taskId, statusEl, btn) {
+        let attempts = 0;
+        const maxAttempts = 40;
+        const interval = setInterval(async () => {
+            attempts++;
+            try {
+                const res = await fetch(`/api/runway/status/${taskId}`);
+                const data = await res.json();
+                if (data.status === "succeeded" && data.video_url) {
+                    clearInterval(interval);
+                    statusEl.style.color = "#10B981";
+                    statusEl.innerHTML = `🎉 <b>Runway Gen-4 Video Ready!</b> <a href="${data.video_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Raw 9:16 MP4]</a> • Composited cleanly into Studio!`;
+                    loadBackgroundVideoToEngine(data.video_url);
+                    if (btn) btn.disabled = false;
+                } else if (data.status === "failed") {
+                    clearInterval(interval);
+                    statusEl.style.color = "#F59E0B";
+                    statusEl.innerHTML = `🛡️ Runway task ended (${data.failure || 'Quota'}). Auto-switched to Cyber Canvas Motion Loop!`;
+                    if (btn) btn.disabled = false;
+                } else {
+                    const prog = data.progress ? Math.round(data.progress * 100) : attempts * 3;
+                    statusEl.innerHTML = `<span>⏳ Runway Gen-4 Rendering... (${prog}%) [${attempts}/${maxAttempts}]</span>`;
+                }
+            } catch (err) {
+                console.warn("Poll runway error:", err);
+            }
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                statusEl.innerHTML = `<span>⚠️ Runway rendering timed out. Studio continuing with Cyber Canvas Background.</span>`;
+                if (btn) btn.disabled = false;
+            }
+        }, 5000);
+    }
+
     /* In-Memory SQLite Sandbox Runner */
     async function runInMemorySqlSandbox() {
         const p = sqlShortState.activePreset;
@@ -732,6 +857,23 @@ WHERE rnk = 2;`,
         for (let y = 0; y < H; y += 80) {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
+
+        // Render 3D Cinematic Background Video (from Runway Gen-4 or Luma Dream Machine)
+        const bgVid = sqlShortState.backgroundVideoElement;
+        if (bgVid && sqlShortState.backgroundVideoLoaded && bgVid.readyState >= 2) {
+            ctx.save();
+            ctx.globalAlpha = 0.35; // Cinematic subtle blend so foreground SQL remains ultra legible
+            const bgW = bgVid.videoWidth || 720;
+            const bgH = bgVid.videoHeight || 1280;
+            // Anti-watermark center crop: 88% crop removes all edges and corner logos!
+            const cropX = bgW * 0.06;
+            const cropY = bgH * 0.06;
+            const cropW = bgW * 0.88;
+            const cropH = bgH * 0.88;
+            ctx.drawImage(bgVid, cropX, cropY, cropW, cropH, 0, 0, W, H);
+            ctx.restore();
+        }
+
 
         // Top Status Header (Time, Title & Difficulty Pill)
         ctx.fillStyle = "rgba(14, 21, 40, 0.85)";

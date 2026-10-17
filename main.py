@@ -417,11 +417,25 @@ class LumaGenerateRequest(BaseModel):
     aspect_ratio: Optional[str] = "9:16"
     loop: Optional[bool] = True
 
+class RunwayGenerateRequest(BaseModel):
+    prompt: Optional[str] = None
+    image_url: Optional[str] = None
+    mode: Optional[str] = "text_to_video"  # "text_to_video" or "image_to_video"
+    ratio: Optional[str] = "720:1280"
+    duration: Optional[int] = 5
+    model: Optional[str] = None
+
+class CinematicCascadeRequest(BaseModel):
+    prompt: str
+    image_url: Optional[str] = None
+    aspect_ratio: Optional[str] = "9:16"
+
 class AvatarCascadeRequest(BaseModel):
     script: str
     preferred_provider: Optional[str] = "auto"
     avatar_id: Optional[str] = "Nadim_public_5"
     language: Optional[str] = "mr"
+
 
 class ImageGenRequest(BaseModel):
     prompt: str
@@ -1242,6 +1256,64 @@ async def api_video_luma_cascade(req: LumaGenerateRequest):
         aspect_ratio=req.aspect_ratio or "9:16"
     )
     return JSONResponse(res)
+
+# --- RUNWAY GEN-4 VIDEO ENDPOINTS (API #22) ---
+from app.core.runway_video import runway_video
+
+@app.get("/api/runway/organization")
+async def api_runway_organization():
+    """Returns Runway account status, active models, and credit balance across all pooled tokens."""
+    return JSONResponse({
+        "status": "success",
+        "tokens": runway_video.get_all_tokens_status(),
+        "primary": runway_video.get_organization_info()
+    })
+
+@app.post("/api/runway/generate")
+async def api_runway_generate(req: RunwayGenerateRequest):
+    """Submits 9:16 vertical video generation to Runway Gen-4 with multi-token failover."""
+    try:
+        if req.mode == "image_to_video" and req.image_url:
+            res = runway_video.create_image_to_video(
+                image_url=req.image_url,
+                prompt_text=req.prompt,
+                ratio=req.ratio or "720:1280",
+                duration=req.duration or 5,
+                model=req.model or "gen4_turbo"
+            )
+        else:
+            if not req.prompt:
+                return JSONResponse({"status": "error", "message": "Prompt is required for text-to-video"}, status_code=400)
+            res = runway_video.create_text_to_video(
+                prompt=req.prompt,
+                ratio=req.ratio or "720:1280",
+                duration=req.duration or 5,
+                model=req.model or "gen4.5"
+            )
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/runway/status/{task_id}")
+async def api_runway_status(task_id: str):
+    """Checks rendering status of Runway Gen-4 task."""
+    res = runway_video.get_task_status(task_id)
+    return JSONResponse(res)
+
+@app.post("/api/video/cinematic_cascade")
+async def api_video_cinematic_cascade(req: CinematicCascadeRequest):
+    """
+    Zero-hang autonomous failover for 9:16 Cinematic Background Videos:
+    Runway Gen-4 (Tokens 1 & 2) -> Luma Dream Machine (Tokens 1 & 2) -> Cyber Motion Loop.
+    Never hangs, never fails on quota limits!
+    """
+    res = video_cascade_router.generate_cinematic_background_with_failover(
+        prompt=req.prompt,
+        image_url=req.image_url,
+        aspect_ratio=req.aspect_ratio or "9:16"
+    )
+    return JSONResponse(res)
+
 
 @app.post("/api/coding/execute")
 async def api_coding_execute(req: CodingRequest):

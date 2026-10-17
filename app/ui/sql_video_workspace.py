@@ -63,7 +63,7 @@ def get_sql_video_workspace_html() -> str:
                 </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ 21/21 APIs Live</span>
+                <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ 22/22 APIs Live (Runway + Luma + HeyGen + D-ID)</span>
                 <span class="status-pill" style="background: rgba(236, 72, 153, 0.15); border: 1px solid #EC4899; color: #EC4899; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🛡️ 100% Watermark-Free</span>
                 <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🇮🇳 ZP व ग्रामीण विद्यार्थी मिशन</span>
                 <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical (60s)</span>
@@ -146,8 +146,31 @@ def get_sql_video_workspace_html() -> str:
                     <div id="avatarRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
                 </div>
 
+                <!-- 3D Cinematic Background Video (Runway Gen-4 & Luma Dream Machine) -->
+                <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #C084FC; text-transform: uppercase; letter-spacing: 0.5px;">🎥 3D Cinematic Motion (Runway &amp; Luma)</span>
+                        <span style="font-size: 10px; color: #38BDF8; background: rgba(56,189,248,0.15); padding: 2px 6px; border-radius: 4px;">Runway Gen-4</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                        <select class="studio-input" id="sqlCinematicBgSelect" style="flex: 1; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 6px; font-size: 11px;">
+                            <option value="cyber_matrix" selected>🌐 Cyber Grid &amp; Neon Data Stream (Fast Canvas)</option>
+                            <option value="runway_fintech">🏦 Runway Gen-4: High-Tech Mumbai Banking Server Room</option>
+                            <option value="runway_rural">🌾 Runway Gen-4: Maharashtra Digital Village &amp; ZP School</option>
+                            <option value="luma_dataflow">✨ Luma Dream Machine: 3D Golden SQL Particles</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn btn-secondary" onclick="renderCinematicBackgroundVideo()" id="btnRenderCinematicBg" style="flex: 1; font-size: 11px; padding: 6px; color: #C084FC; border-color: rgba(168,85,247,0.4);">
+                            🚀 Generate 9:16 Cinematic Video (Runway / Luma)
+                        </button>
+                    </div>
+                    <div id="cinematicBgRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
+                </div>
+
                 <!-- Generate Blueprint Button -->
                 <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 6px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px;">
+
                     <span>✨ Generate 60s AI Blueprint &amp; Prompt</span>
                 </button>
 

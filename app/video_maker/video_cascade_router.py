@@ -2,7 +2,7 @@
 Mangesh Nano Pro AI Studio - Autonomous Video Cascade Router & Token Failover Engine
 Guarantees Zero-Hang, Zero-Drop execution across all Video AI Providers:
 - Avatar Cascade: HeyGen (1,254 4K Avatars) -> D-ID (Creative Reality) -> Cyber Canvas
-- 3D Cinematic Video: Luma Token 1 -> Luma Token 2 -> Replicate -> Canvas Loop
+- Cinematic Background: Runway Gen-4 (Tokens 1 & 2) -> Luma Dream Machine (Tokens 1 & 2) -> Cyber Motion Loop
 - Voiceover: ElevenLabs -> D-ID Microsoft Neural -> Browser Web Speech
 """
 
@@ -14,6 +14,7 @@ from app.core.database import credentials_vault
 from app.core.heygen_avatar import heygen_avatar_engine
 from app.core.did_avatar import did_avatar_engine
 from app.core.luma_video import luma_video_engine
+from app.core.runway_video import runway_video
 from app.core.elevenlabs_voice import elevenlabs_voice_engine
 
 
@@ -134,6 +135,73 @@ class VideoCascadeRouter:
             "status": "fallback",
             "provider": "Cyber_Grid_Motion",
             "message": "Luma API tokens require billing activation. Falling back to high-fps cyber motion canvas."
+        }
+
+    def generate_cinematic_background_with_failover(
+        self,
+        prompt: str,
+        image_url: Optional[str] = None,
+        aspect_ratio: str = "9:16"
+    ) -> Dict[str, Any]:
+        """
+        Ultra-Resilient Cinematic 9:16 Background Video Pipeline:
+        1. Runway Gen-4 (Gen-4.5 Text-to-Video / Gen-4 Turbo Image-to-Video across Token 1 & Token 2)
+        2. Luma Dream Machine (Rotating across Token 1 & Token 2)
+        3. Zero-Drop Guaranteed Fallback: High-Tech Cyber Canvas Motion Loop
+        Never hangs, never crashes!
+        """
+        logs = []
+
+        # -------------------------------------------------------------
+        # 1. RUNWAY GEN-4 ATTEMPT (Tokens 1 & 2)
+        # -------------------------------------------------------------
+        if runway_video.is_available():
+            try:
+                log_event("Attempting Cinematic Video via primary: Runway Gen-4...", component="CascadeRouter")
+                if image_url:
+                    res = runway_video.create_image_to_video(
+                        image_url=image_url,
+                        prompt_text=prompt,
+                        ratio="720:1280"
+                    )
+                else:
+                    res = runway_video.create_text_to_video(
+                        prompt=prompt,
+                        ratio="720:1280"
+                    )
+                if res.get("status") == "success":
+                    res["failover_used"] = False
+                    return res
+            except Exception as e:
+                err = str(e)
+                log_event(f"Runway Gen-4 hit limit ({err}). Auto-cascading to Luma Dream Machine...", level="WARNING", component="CascadeRouter")
+                logs.append(f"Runway notice: {err}")
+
+        # -------------------------------------------------------------
+        # 2. LUMA DREAM MACHINE ATTEMPT (Tokens 1 & 2)
+        # -------------------------------------------------------------
+        try:
+            log_event("Auto-cascading to secondary: Luma Dream Machine...", component="CascadeRouter")
+            luma_res = self.generate_luma_video_with_token_rotation(prompt=prompt, aspect_ratio=aspect_ratio)
+            if luma_res.get("status") == "success":
+                luma_res["failover_used"] = True
+                luma_res["fallback_reason"] = "Auto-switched from Runway to Luma"
+                return luma_res
+            logs.append(luma_res.get("message", "Luma tokens require billing activation"))
+        except Exception as e:
+            logs.append(f"Luma error: {str(e)}")
+
+        # -------------------------------------------------------------
+        # 3. ZERO-DROP GUARANTEED FALLBACK: CYBER MOTION CANVAS LOOP
+        # -------------------------------------------------------------
+        log_event("Activated Zero-Drop Guaranteed Fallback: High-Tech Cyber Grid Motion Loop.", component="CascadeRouter")
+        return {
+            "status": "success",
+            "provider": "Cyber_Grid_Motion",
+            "failover_used": True,
+            "mode": "client_rendered",
+            "message": "Cloud token quota reached. Seamlessly rendered via client-side 60s 9:16 Canvas with zero server load!",
+            "logs": logs
         }
 
 
