@@ -20,33 +20,27 @@ from app.core.elevenlabs_voice import elevenlabs_voice
 # Pre-defined step-by-step educational teacher scripts for FAANG & MNC SQL Interviews
 PRESET_SCRIPTS = {
     "sql_q1_second_highest_salary": {
-        "mr": """नमस्कार मित्रांनो! टेक्निकल इंटरव्ह्यूमधील सर्वात जास्त विचारला जाणारा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा?
-टेबलमध्ये पहा: अमित ६० हजार, राहुल ५० हजार, प्रिया ८० हजार, नेहा ७० हजार, आणि किरण ८० हजार!
-इथे प्रिया आणि किरण दोघांनाही समान ८० हजार पगार आहे.
-आता दुसरा सर्वाधिक पगार काढण्यासाठी सर्वात सोपी आणि अचूक पद्धत कोणती?
-पायरी १: आतील सबक्वेरी बघा: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज! यामुळे सर्वात मोठा पगार म्हणजे ८० हजार मिळतो.
-पायरी २: बाहेरील क्वेरी: व्हेअर सॅलरी लहान ८० हजार! यामुळे ८० हजार असणाऱ्या प्रिया आणि किरण या दोन्ही नोंदी आपोआप वगळल्या जातात!
-पायरी ३: आता शिल्लक राहिलेल्या ६० हजार, ५० हजार आणि ७० हजार पैकी सिलेक्ट मॅक्स सॅलरी!
-निकाल बघा: अचूक उत्तर आले सत्तर हजार रुपये!
-नेहमी लक्षात ठेवा: सबक्वेरी मधील 'WHERE SALARY < MAX(SALARY)' ही क्लॉज सर्वाधिक पगार वगळून दुसरा पगार अचूक शोधून काढते!""",
-        "hi": """नमस्ते दोस्तों! एसक्यूएल इंटरव्यू का सबसे क्लासिक सवाल: EMPLOYEES टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें?
-टेबल देखिए: अमित ६०,०००, राहुल ५०,०००, प्रिया ८०,०००, नेहा ७०,०००, और किरण ८०,०००।
-यहाँ प्रिया और किरण दोनों की टॉप सैलरी ८०,००० है।
-अब सेकंड हाईएस्ट सैलरी निकालने की सबसे बेहतरीन अप्रोच देखिए:
-स्टेप १: इनर सबक्वेरी (SELECT MAX(SALARY) FROM EMPLOYEES) टॉप सैलरी ८०,००० निकालती है।
-स्टेप २: आउटर क्वेरी WHERE SALARY < 80000 से दोनों ८०,००० वाले रिकॉर्ड्स बाहर हो जाते हैं।
-स्टेप ३: अब बचे हुए ६०,०००, ५०,००० और ७०,००० में से MAX(SALARY) चुना जाता है।
-रिजल्ट देखिए: सटीक उत्तर आया ७०,०००!
-याद रखें: यह सबक्वेरी मेथड सभी डेटाबेस में बिना एरर के काम करता है!""",
-        "en": """Hello students! Here is the classic SQL interview question asked at top tech companies: How to find the second-highest salary from an EMPLOYEES table?
-Look at the data: Amit earns 60,000, Rahul 50,000, Priya 80,000, Neha 70,000, and Kiran 80,000.
-Notice that both Priya and Kiran share the top salary of 80,000!
-Here is the recommended 3-step approach:
-Step 1: The inner subquery SELECT MAX(SALARY) finds the highest salary, which is 80,000.
-Step 2: The outer WHERE SALARY < 80,000 filters out all top earners.
-Step 3: The outer SELECT MAX(SALARY) picks the maximum of the remaining salaries: 70,000!
-Result: 70,000!
-Always remember: Filtering WHERE SALARY < MAX(SALARY) safely eliminates duplicates and returns the true second highest salary!"""
+        "mr": """एसक्यूएल इंटरव्ह्यूमधील सर्वात महत्त्वाचा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा? चला लॉजिक समजून घेऊन स्टेप-बाय-स्टेप क्वेरी लिहूया!
+पहिले प्रश्न नीट समजून घ्या. आपल्याला दुसरा डिस्टिंक्ट पगार हवा आहे, दुसरा कर्मचारी नाही. इथे ऐंशी हजार पगार दोनदा आला आहे. तो आपल्याला एकदाच मोजायचा आहे.
+आता हे कसे सोडवायचे? प्रथम सर्वात मोठा पगार शोधा. मग तो पगार वगळा. आणि उरलेल्या पगारांमधून सर्वात मोठा पगार निवडा. तोच आपला दुसरा सर्वाधिक पगार!
+चला आधी आतील क्वेरी लिहूया: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज. ही क्वेरी आपल्याला ऐंशी हजार, म्हणजेच सर्वात मोठा पगार देते.
+आता व्हेअर सॅलरी लहान सबक्वेरी ही अट लावून ऐंशी हजार वगळूया. यामुळे ऐंशी हजार असणाऱ्या दोन्ही नोंदी वगळल्या जाऊन सत्तर, साठ आणि पन्नास हजार उरतात.
+आता बाहेरील मॅक्स फंक्शन उरलेल्या पगारांमधून सर्वात मोठा पगार शोधते. उरलेल्यांमध्ये सर्वात मोठी रक्कम आहे सत्तर हजार! सबक्वेरीमुळे हे उत्तर १०० टक्के अचूक येते!
+इंटरव्ह्यू टिप! जर सर्वाधिक पगार अनेक लोकांचा समान असेल तरीही ही सबक्वेरी अचूक काम करते. पुढील एसक्यूएल प्रश्नांसाठी फॉलो करा कोड विथ मंगेश!""",
+        "hi": """एसक्यूएल इंटरव्यू का एक बेहद पॉपुलर सवाल: एम्प्लॉईज टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें? आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं!
+पहले सवाल को समझिए. हमें सेकंड हाईएस्ट डिस्टिंक्ट सैलरी चाहिए. ध्यान दीजिए कि अस्सी हजार दो बार आया है. हमें इसे केवल एक बार ही गिनना है.
+अब इसे कैसे सॉल्व करें? पहले मैक्सिमम सैलरी निकालिए. फिर उसे बाहर कीजिए. और बाकी बची वैल्यूज में से मैक्सिमम निकालिए. वही है हमारी सेकंड हाईएस्ट सैलरी!
+आइए पहले इनर क्वेरी लिखते हैं: सिलेक्ट मैक्स सैलरी फ्रॉम एम्प्लॉईज. यह हमें अस्सी हजार यानी सबसे बड़ी सैलरी देती है.
+अब व्हेअर सैलरी लेस दैन सबक्वेरी लगाकर अस्सी हजार को फिल्टर करते हैं. इससे दोनों अस्सी हजार वाले रिकॉर्ड्स हट जाते हैं और सत्तर, साठ और पचास हजार बचते हैं.
+अब आउटर मैक्स फंक्शन बचे हुए रिकॉर्ड्स को चेक करता है. सबसे बड़ी बची हुई वैल्यू है सत्तर हजार! यही हमारा सही जवाब है!
+इंटरव्यू टिप! अगर हाईएस्ट सैलरी डुप्लीकेट भी हो, तब भी यह सबक्वेरी मेथड हमेशा सही उत्तर देता है. ऐसे ही एसक्यूएल सवालों के लिए फॉलो कीजिए कोड विथ मंगेश!""",
+        "en": """Here's a popular SQL interview question. How do you find the second-highest salary from an Employees table? Let's understand the logic and build the query step by step.
+First, understand the requirement. We need the second-highest distinct salary, not the second employee. Notice that eighty thousand appears twice. We must count it only once.
+Now, how should we solve it? First, find the maximum salary. Then exclude that salary. Finally, find the maximum from the remaining values. That's our second-highest salary.
+Let's write the inner query first. SELECT MAX salary FROM Employees. This returns eighty thousand, the highest salary in our table.
+Next, we exclude the highest salary using WHERE salary is less than the result of our inner query. This removes both eighty-thousand values, leaving seventy, sixty, and fifty thousand.
+Now the outer MAX function checks the remaining salaries. The highest remaining value is seventy thousand. That's our answer! The key is using a subquery to exclude the original maximum.
+Interview tip! Always clarify whether they want the second-highest distinct salary. If the highest salary appears multiple times, this query still returns the correct second-highest value. Follow Code with Mangesh for more SQL interview questions!"""
     },
     "faang_dense_rank_ties": {
         "mr": """नमस्कार मित्रांनो! गुगल आणि ॲमेझॉनच्या एसक्यूएल इंटरव्ह्यूमध्ये ९५ टक्के मुलं या प्रश्नात फेल होतात!

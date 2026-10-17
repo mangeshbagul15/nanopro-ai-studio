@@ -520,13 +520,22 @@ class SqlShortVideoEngine:
             try:
                 from app.core.model_adapter import model_manager
                 ai_prompt = (
-                    f"You are an expert SQL video instructor. Generate a 60-second viral Short/Reel lesson plan for this SQL interview question:\n"
+                    f"You are an expert SQL teacher. Generate an 85-second step-by-step educational lesson plan for YouTube Shorts/Reels:\n"
                     f"Question: {topic_or_question}\n"
                     f"Target Language: {lang_key}\n\n"
-                    f"Return ONLY a valid JSON object with these exact keys:\n"
-                    f'{{"title": "...", "hook": "Viral 3s hook with emoji", "schema_sql": "SQLite CREATE & INSERT", '
-                    f'"solution_sql": "SQL Query", "arrow_target": "Exact clause to point arrow at", '
-                    f'"explanation": "Clear 2-sentence explanation", "pro_tip": "Interview pro-tip"}}\n'
+                    f"Return ONLY valid raw JSON with:\n"
+                    f'{{"title": "...", "hook": "Viral hook with emoji", "schema_sql": "SQLite CREATE & INSERT", '
+                    f'"inner_query_sql": "Inner SQL", "solution_sql": "Full SQL Query", "arrow_target": "Clause", '
+                    f'"explanation": "2-sentence explanation", "pro_tip": "Interviewer pro-tip", '
+                    f'"scenes": ['
+                    f'{{"id": 1, "start": 0.0, "end": 8.0, "speech": "Question Intro & Schema"}}, '
+                    f'{{"id": 2, "start": 8.0, "end": 20.0, "speech": "Understand Question & Ties"}}, '
+                    f'{{"id": 3, "start": 20.0, "end": 32.0, "speech": "Strategy Flowchart"}}, '
+                    f'{{"id": 4, "start": 32.0, "end": 44.0, "speech": "Build Inner Query"}}, '
+                    f'{{"id": 5, "start": 44.0, "end": 58.0, "speech": "Apply Filter & Evaluate Rows"}}, '
+                    f'{{"id": 6, "start": 58.0, "end": 72.0, "speech": "Final Execution & Output"}}, '
+                    f'{{"id": 7, "start": 72.0, "end": 85.0, "speech": "Interview Tip & @Code_With_Mangesh"}}'
+                    f']}}\n'
                 )
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
@@ -548,13 +557,15 @@ class SqlShortVideoEngine:
                         "table_name": "custom_data",
                         "schema_sql": parsed.get("schema_sql", BANKING_SQL_PRESETS[0]["schema_sql"]),
                         "solution_sql": parsed.get("solution_sql", BANKING_SQL_PRESETS[0]["solution_sql"]),
+                        "inner_query_sql": parsed.get("inner_query_sql", ""),
                         "arrow_target": parsed.get("arrow_target", "OVER ()"),
                         "explanation_mr": parsed.get("explanation", "ही क्वेरी अचूक निकाल देते."),
                         "explanation_hi": parsed.get("explanation", "यह क्वेरी सटीक रिजल्ट देती है."),
                         "explanation_en": parsed.get("explanation", "This query calculates the exact outcome."),
                         "explanation_minglish": parsed.get("explanation", "Hi query accurate result dete."),
                         "explanation_hinglish": parsed.get("explanation", "Ye query exact result deti hai."),
-                        "pro_tip": parsed.get("pro_tip", "💡 Pro Tip: Optimize using appropriate indexes.")
+                        "pro_tip": parsed.get("pro_tip", "💡 Pro Tip: Optimize using appropriate indexes."),
+                        "scenes": parsed.get("scenes", [])
                     }
             except Exception as e:
                 log_event(f"AI Prompt generation fallback: {e}", level="DEBUG", component="SqlShortEngine")
@@ -565,13 +576,15 @@ class SqlShortVideoEngine:
         hook = matched.get(f"hook_{lang_key}", matched.get("hook_mr", matched["hook_en"]))
         explanation = matched.get(f"explanation_{lang_key}", matched.get("explanation_mr", matched["explanation_en"]))
 
-        # Timeline duration allocation (Total: 60s)
+        # 85-Second Master Storyboard Timeline (7 Educational Scenes)
         timeline = [
-            {"time": "0:00 - 0:05", "phase": "HOOK", "title": "Viral Question Hook", "action": "Zoom on red badge + sound effect", "text": hook},
-            {"time": "0:05 - 0:18", "phase": "PROBLEM", "title": "Real Bank Data Schema", "action": "Display glowing customer transaction cards", "text": matched["question"]},
-            {"time": "0:18 - 0:42", "phase": "SQL_LOGIC", "title": "Clause-by-Clause SQL Build", "action": "Typewriter code animation + Arrow pointing to key logic", "text": matched["solution_sql"], "arrow_target": matched["arrow_target"]},
-            {"time": "0:42 - 0:54", "phase": "RESULT", "title": "Simulated Output Table", "action": "Highlight matching fraudulent / calculated rows in Neon Cyan", "text": explanation},
-            {"time": "0:54 - 1:00", "phase": "OUTRO", "title": "Pro Takeaway & Follow", "action": "Like & Subscribe CTA + Interview Pro Tip", "text": matched["pro_tip"]}
+            {"time": "0:00 - 0:08", "phase": "INTRO", "title": "1. Question Intro & Schema", "action": "Display question, highlight requirement, EMPLOYEES table, empty SQL editor", "text": hook},
+            {"time": "0:08 - 0:20", "phase": "UNDERSTAND", "title": "2. Inspect Values & Tie Trap", "action": "Highlight duplicate 80k values, demonstrate why LIMIT 1 OFFSET 1 fails", "text": matched["question"]},
+            {"time": "0:20 - 0:32", "phase": "LOGIC", "title": "3. 4-Step Strategy Flowchart", "action": "Max ➔ Exclude ➔ Remaining Pool ➔ Final Max logic algorithm", "text": "Step-by-step logic before writing code"},
+            {"time": "0:32 - 0:44", "phase": "INNER_SQL", "title": "4. Build Inner Query", "action": "Typewriter builds SELECT MAX(SALARY), points arrow from table, outputs 80,000", "text": matched.get("inner_query_sql", "SELECT MAX(SALARY) FROM EMPLOYEES;")},
+            {"time": "0:44 - 0:58", "phase": "FILTER", "title": "5. Row-by-Row Simulation", "action": "Apply WHERE SALARY < (MAX), evaluate each employee row, eliminate 80k ties", "text": "Row evaluation: Amit/Rahul/Neha KEEP, Priya/Kiran EXCLUDE"},
+            {"time": "0:58 - 1:12", "phase": "RESULT", "title": "6. Outer MAX & Final Output", "action": "Execute complete query, outer MAX selects 70,000, glowing neon output card", "text": explanation},
+            {"time": "1:12 - 1:25", "phase": "OUTRO", "title": "7. Interviewer Pro-Tip & Outro", "action": "Explain ANSI SQL standard, DENSE_RANK() for Nth salary, branding @Code_With_Mangesh", "text": matched["pro_tip"]}
         ]
 
         return {
@@ -584,12 +597,15 @@ class SqlShortVideoEngine:
             "table_name": matched["table_name"],
             "schema_sql": matched["schema_sql"],
             "solution_sql": matched["solution_sql"],
+            "inner_query_sql": matched.get("inner_query_sql", ""),
             "arrow_target": matched["arrow_target"],
             "explanation": explanation,
             "pro_tip": matched["pro_tip"],
             "timeline": timeline,
-            "max_duration_seconds": 60,
-            "aspect_ratio": "9:16"
+            "scenes": matched.get("scenes", []),
+            "max_duration_seconds": 85,
+            "aspect_ratio": "9:16",
+            "branding": "@Code_With_Mangesh"
         }
 
     def synthesize_voiceover(self, text: str, language: str = "mr") -> Optional[str]:

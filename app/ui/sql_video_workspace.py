@@ -340,17 +340,19 @@ def get_sql_video_workspace_html() -> str:
 
                 <!-- Generate AI Blueprint Button -->
                 <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 6px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span>✨ Generate 60s AI Blueprint &amp; Prompt</span>
+                    <span>✨ Generate 85s AI Teacher Blueprint &amp; Prompt</span>
                 </button>
 
-                <!-- 60-Second Timed Blueprint Breakdown Accordion -->
-                <div id="sqlShortBlueprintBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; font-size: 11px; max-height: 240px; overflow-y: auto;">
-                    <div style="color: #38BDF8; font-weight: 700; margin-bottom: 6px;">⏱️ 60-SECOND REEL TIMELINE:</div>
-                    <div style="color: #EF4444; margin-bottom: 4px;"><b>0:00 - 0:05 [HOOK]:</b> <span id="bpTimelineHook">🚨 ९५% मुलं या गुगल एसक्यूएल प्रश्नात फेल होतात! समान पगार असताना २ रा नंबर कसा काढायचा?</span></div>
-                    <div style="color: #F59E0B; margin-bottom: 4px;"><b>0:05 - 0:18 [SCHEMA]:</b> <span id="bpTimelineSchema">Real company employee records</span></div>
-                    <div style="color: #10B981; margin-bottom: 4px;"><b>0:18 - 0:42 [SQL &amp; ARROW]:</b> Animated Typing + Arrow pointing to <code id="bpArrowTarget" style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">DENSE_RANK() OVER (ORDER BY salary DESC)</code></div>
-                    <div style="color: #06B6D4; margin-bottom: 4px;"><b>0:42 - 0:54 [SIMULATION]:</b> Real-time output calculation rows highlight</div>
-                    <div style="color: #8B5CF6; margin-bottom: 4px;"><b>0:54 - 1:00 [PRO TIP]:</b> DENSE_RANK never skips ranks after duplicate ties!</div>
+                <!-- 85-Second Master Storyboard Breakdown Accordion -->
+                <div id="sqlShortBlueprintBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; font-size: 11px; max-height: 250px; overflow-y: auto;">
+                    <div style="color: #38BDF8; font-weight: 700; margin-bottom: 6px;">⏱️ 85-SECOND AI TEACHER STORYBOARD (7 SCENES):</div>
+                    <div style="color: #38BDF8; margin-bottom: 4px;"><b>0:00 - 0:08 [1. INTRO]:</b> <span id="bpTimelineHook">Question Intro &amp; EMPLOYEES Table (Empty SQL Editor)</span></div>
+                    <div style="color: #F59E0B; margin-bottom: 4px;"><b>0:08 - 0:20 [2. UNDERSTAND]:</b> <span id="bpTimelineSchema">Salary Inspection &amp; Duplicate 80k Tie Trap</span></div>
+                    <div style="color: #A855F7; margin-bottom: 4px;"><b>0:20 - 0:32 [3. LOGIC]:</b> Strategy Flowchart (Max ➔ Exclude ➔ Max Remaining ➔ 70k)</div>
+                    <div style="color: #10B981; margin-bottom: 4px;"><b>0:32 - 0:44 [4. INNER SQL]:</b> Typewriter Inner Query: <code style="color:#38BDF8;">SELECT MAX(SALARY)</code> (80k)</div>
+                    <div style="color: #EC4899; margin-bottom: 4px;"><b>0:44 - 0:58 [5. FILTER]:</b> <code style="color:#F59E0B;">WHERE SALARY &lt; (...)</code> + Row Evaluation Table</div>
+                    <div style="color: #06B6D4; margin-bottom: 4px;"><b>0:58 - 1:12 [6. RESULT]:</b> Outer MAX Execution ➔ Output = 70000 (Neha)</div>
+                    <div style="color: #F43F5E; margin-bottom: 4px;"><b>1:12 - 1:25 [7. TIP &amp; BRAND]:</b> FAANG Interview Tip &amp; @Code_With_Mangesh</div>
                 </div>
             </div>
 
@@ -358,7 +360,7 @@ def get_sql_video_workspace_html() -> str:
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <div style="margin-bottom: 10px; display: flex; justify-content: space-between; width: 100%; max-width: 340px; align-items: center;">
                     <span style="font-size: 12px; font-weight: 700; color: #38BDF8;">2. 9:16 SMARTPHONE PREVIEW</span>
-                    <span id="playerTimer" style="font-size: 12px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 1:00</span>
+                    <span id="playerTimer" style="font-size: 12px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 1:25</span>
                 </div>
 
                 <!-- Smartphone Bezel Mockup -->
@@ -376,7 +378,7 @@ def get_sql_video_workspace_html() -> str:
 
                     <!-- Bottom Audio Wave Indicator -->
                     <div id="canvasAudioWave" style="position: absolute; bottom: 8px; left: 16px; right: 16px; height: 18px; display: flex; align-items: center; justify-content: space-between; z-index: 10; pointer-events: none;">
-                        <div style="font-size: 10px; color: #38BDF8; font-weight: 700; text-shadow: 0 1px 3px #000;">FAANG SQL 9:16 SHORT</div>
+                        <div style="font-size: 10px; color: #38BDF8; font-weight: 700; text-shadow: 0 1px 3px #000;">@Code_With_Mangesh</div>
                         <div style="display: flex; gap: 3px; align-items: center;">
                             <span class="wave-bar" style="width: 3px; height: 8px; background: #10B981; border-radius: 2px;"></span>
                             <span class="wave-bar" style="width: 3px; height: 14px; background: #38BDF8; border-radius: 2px;"></span>
@@ -389,7 +391,7 @@ def get_sql_video_workspace_html() -> str:
                 <!-- Player Transport Controls -->
                 <div style="width: 100%; max-width: 340px; margin-top: 12px; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 10px; padding: 10px;">
                     <!-- Timeline Scrubber -->
-                    <input type="range" id="sqlShortScrubber" min="0" max="60" value="0" step="0.5" oninput="seekSqlShortPlayer(this.value)" style="width: 100%; accent-color: #38BDF8; cursor: pointer; margin-bottom: 8px;" />
+                    <input type="range" id="sqlShortScrubber" min="0" max="85" value="0" step="0.5" oninput="seekSqlShortPlayer(this.value)" style="width: 100%; accent-color: #38BDF8; cursor: pointer; margin-bottom: 8px;" />
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; gap: 6px;">
@@ -421,22 +423,22 @@ def get_sql_video_workspace_html() -> str:
                         <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 700;">🛡️ 100% Zero-Watermark</span>
                     </div>
                     <div style="font-size: 11px; color: #94A3B8; margin-bottom: 12px;">
-                        1080x1920 फुल-एचडी रेंडरिंग सोबत <b>नॅचरल ह्युमन व्हॉईस ऑडिओ</b> इंटिग्रेटेड! कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात.
+                        1080x1920 फुल-एचडी रेंडरिंग सोबत <b>८५-सेकंद नॅचरल AI शिक्षक ऑडिओ</b> इंटिग्रेटेड! कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात.
                     </div>
 
                     <!-- Direct Download Button Group -->
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo(60)" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
+                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo(85)" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
                             <span style="font-size: 18px;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (WITH NATURAL VOICE AUDIO)</span>
+                            <span id="exportBtnLabel">DOWNLOAD 85s AI TEACHER VIDEO (WITH SYNCHRONIZED VOICE)</span>
                         </button>
 
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(10)" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="10-sec quick reel export with audio">
-                                ⚡ Quick 10s Test Video
+                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(15)" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="15-sec quick test video with audio">
+                                ⚡ Quick 15s Test
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #10B981; color: #10B981;" title="Download Teacher Audio (MP3)">
-                                🎵 Save Voice Audio (MP3)
+                                🎵 Save Voice (MP3)
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;" title="Save current frame as HD PNG">
                                 📸 Save Frame (PNG)
@@ -444,20 +446,22 @@ def get_sql_video_workspace_html() -> str:
                         </div>
                     </div>
 
-                    <!-- Live 5-Stage Tracker & Real-Time Countdown Monitor -->
+                    <!-- Live 7-Stage Tracker & Real-Time Countdown Monitor -->
                     <div id="exportLiveStageBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 11px; font-weight: 700; color: #38BDF8; text-transform: uppercase;">📊 लाईव्ह निर्मिती पायऱ्या (Live Stages):</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #38BDF8; text-transform: uppercase;">📊 7-SCENE MASTER TRACKER:</span>
                             <span id="exportLiveBadge" style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px; font-weight: 700;">तयार आहे (Ready)</span>
                         </div>
                         
-                        <!-- 5 Stages Grid -->
+                        <!-- 7 Stages Grid -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;" id="exportStagePills">
-                            <div class="stage-pill" id="stagePill1"><span>1️⃣</span> <span>हुक व प्रश्न (0-5s)</span></div>
-                            <div class="stage-pill" id="stagePill2"><span>2️⃣</span> <span>डेटा स्कीमा (5-18s)</span></div>
-                            <div class="stage-pill" id="stagePill3"><span>3️⃣</span> <span>SQL कोड व ॲरो (18-42s)</span></div>
-                            <div class="stage-pill" id="stagePill4"><span>4️⃣</span> <span>निकाल कॅल्क्युलेशन (42-54s)</span></div>
-                            <div class="stage-pill" id="stagePill5" style="grid-column: span 2;"><span>5️⃣</span> <span>🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ + ऑडिओ</span></div>
+                            <div class="stage-pill" id="stagePill1"><span>1️⃣</span> <span>प्रश्न ओळख (0-8s)</span></div>
+                            <div class="stage-pill" id="stagePill2"><span>2️⃣</span> <span>डुप्लिकेट समज (8-20s)</span></div>
+                            <div class="stage-pill" id="stagePill3"><span>3️⃣</span> <span>लॉजिक फ्लो (20-32s)</span></div>
+                            <div class="stage-pill" id="stagePill4"><span>4️⃣</span> <span>इनर सबक्वेरी (32-44s)</span></div>
+                            <div class="stage-pill" id="stagePill5"><span>5️⃣</span> <span>रो फिल्टर (44-58s)</span></div>
+                            <div class="stage-pill" id="stagePill6"><span>6️⃣</span> <span>निकाल 70,000 (58-72s)</span></div>
+                            <div class="stage-pill" id="stagePill7" style="grid-column: span 2;"><span>7️⃣</span> <span>💡 प्रो-टिप व @Code_With_Mangesh (72-85s)</span></div>
                         </div>
                         
                         <!-- Progress Bar & Remaining Time Stats -->

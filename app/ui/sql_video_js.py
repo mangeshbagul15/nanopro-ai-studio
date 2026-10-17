@@ -13,16 +13,12 @@ def get_sql_video_js() -> str:
     const SQL_CLIENT_PRESETS = {
         "sql_q1_second_highest_salary": {
             id: "sql_q1_second_highest_salary",
-            title: "Top MNC / FAANG: 2nd Highest Salary with Duplicate Check (Subquery Method)",
-            difficulty: "Core Question",
-            hook_mr: "🚨 Top IT कंपन्यांच्या SQL इंटरव्ह्यूमध्ये ९०% मुलं या प्रश्नात चूक करतात! एकापेक्षा जास्त लोकांचा पगार समान असताना २ रा सर्वाधिक पगार कसा शोधायचा?",
-            hook_hi: "🚨 Top IT कंपनियों के SQL इंटरव्यू में 90% लोग इस सवाल में गलती करते हैं! जब कई लोगों की सेम सैलरी हो तो 2nd हाईएस्ट सैलरी कैसे निकालें?",
-            hook_en: "🚨 90% of candidates make a mistake on this top SQL interview question: Finding the 2nd Highest Salary with Ties!",
-            hook_minglish: "🚨 Top MNC interview madhe 90% loka fasatat! Priya & Kiran doghanchi salary same 80k aslyavar 2nd highest salary kashi kadhaychi?",
-            hook_hinglish: "🚨 Top MNC interview me 90% log fas jate hai! Priya & Kiran dono ki salary same 80k hone par 2nd highest salary kaise nikale?",
-            question: "You have an EMPLOYEES table (EMP_ID, EMP_NAME, DEPARTMENT, SALARY) with records: Amit (60k), Rahul (50k), Priya (80k), Neha (70k), Kiran (80k). How would you find the second-highest salary?",
+            title: "SQL Interview Question #1 — Find the Second-Highest Salary",
+            difficulty: "FAANG / MNC Standard",
+            duration: 85.0,
+            question: "Using the EMPLOYEES table, write a SQL query to find the second-highest distinct salary.",
             table_name: "EMPLOYEES",
-            col_headers: ["EMP_ID", "EMP_NAME", "DEPT", "SALARY"],
+            col_headers: ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"],
             schema_sql: `CREATE TABLE EMPLOYEES (
     EMP_ID INTEGER PRIMARY KEY,
     EMP_NAME TEXT,
@@ -35,6 +31,8 @@ INSERT INTO EMPLOYEES VALUES
 (103, 'Priya', 'IT', 80000),
 (104, 'Neha', 'Finance', 70000),
 (105, 'Kiran', 'IT', 80000);`,
+            inner_query_sql: `SELECT MAX(SALARY)
+FROM EMPLOYEES;`,
             solution_sql: `SELECT MAX(SALARY) AS SECOND_HIGHEST_SALARY
 FROM EMPLOYEES
 WHERE SALARY < (
@@ -43,19 +41,78 @@ WHERE SALARY < (
 );`,
             arrow_target: "WHERE SALARY < (SELECT MAX(SALARY))",
             arrow_line_idx: 2,
-            explanation_mr: "इथे आतील सबक्वेरी आधी पूर्ण टेबलमधून कमाल पगार ८०,००० शोधून काढते. मग बाहेरील मुख्य क्वेरी ८०,००० पेक्षा कमी असलेल्या पगारांमधून (६० हजार, ५० हजार, ७० हजार) सर्वात मोठा पगार शोधते, जो येतो बरोबर ७०,०००! जर 'LIMIT 1 OFFSET 1' वापरले तर ८०,००० दोनदा आल्यामुळे उत्तर चुकेल, पण ही सबक्वेरी पद्धत १००% अचूक काम करते!",
-            explanation_hi: "यहाँ अंदर वाली सबक्वेरी पहले पूरे टेबल से मैक्सिमम सैलरी 80,000 निकालती है। फिर बाहर वाली मेन क्वेरी 80,000 से कम वाली सैलरीज में से सबसे बड़ी सैलरी चुनती है, जो आती है 70,000! अगर 'LIMIT 1 OFFSET 1' लगाते तो 80,000 दो बार होने से उत्तर गलत आता, लेकिन सबक्वेरी मेथड 100% सही उत्तर देता है!",
-            explanation_en: "The inner subquery first finds the maximum salary (80,000). The outer query then filters out all salaries equal to or greater than 80,000, and selects the MAX of the remaining salaries (60k, 50k, 70k), which is 70,000! 'LIMIT 1 OFFSET 1' fails on duplicate ties, whereas this subquery method is 100% reliable!",
-            explanation_minglish: "Inner query adhi MAX salary 80,000 kadhte. Mag outer query 80,000 peksha lahan aslelya salaries madhun MAX ghete, ji 70,000 ahe! Duplicates aslyamule LIMIT 1 OFFSET 1 fail hote, pan he subquery solution 100% correct ahe!",
-            explanation_hinglish: "Inner query pehle MAX salary 80,000 nikalegi. Fir outer query 80,000 se kam me se MAX legi, jo 70,000 hai! Duplicates me LIMIT 1 OFFSET 1 fail hota hai, but ye subquery solution 100% sahi hai!",
-            pro_tip: "💡 Interviewer Pro-Tip: 'LIMIT 1 OFFSET 1' breaks when the top salary has duplicates (Priya & Kiran both 80,000). The Subquery or DENSE_RANK() approach is mandatory in FAANG interviews!",
+            distinct_salaries: [60000, 50000, 80000, 70000, 80000],
+            highest_salary: 80000,
+            second_highest_salary: 70000,
             sample_rows: [
-                {account: "101 Amit", date: "IT", amt: "₹60,000", balance: "Filtered (< 80k)"},
-                {account: "102 Rahul", date: "HR", amt: "₹50,000", balance: "Filtered (< 80k)"},
-                {account: "103 Priya", date: "IT", amt: "₹80,000", balance: "❌ MAX (Excluded)"},
-                {account: "104 Neha", date: "Finance", amt: "₹70,000", balance: "🎯 2nd Highest MAX!"},
-                {account: "105 Kiran", date: "IT", amt: "₹80,000", balance: "❌ MAX (Excluded)"}
-            ]
+                {account: "101 Amit", date: "IT", amt: "₹60,000", balance: "60k (< 80k)", status: "keep"},
+                {account: "102 Rahul", date: "HR", amt: "₹50,000", balance: "50k (< 80k)", status: "keep"},
+                {account: "103 Priya", date: "IT", amt: "₹80,000", balance: "80k (Top Tie)", status: "tie"},
+                {account: "104 Neha", date: "Finance", amt: "₹70,000", balance: "70k (🎯 2nd)", status: "target"},
+                {account: "105 Kiran", date: "IT", amt: "₹80,000", balance: "80k (Top Tie)", status: "tie"}
+            ],
+            filter_evaluations: [
+                {name: "Amit", salary: "60,000", cond: "60000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
+                {name: "Rahul", salary: "50,000", cond: "50000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
+                {name: "Priya", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"},
+                {name: "Neha", salary: "70,000", cond: "70000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
+                {name: "Kiran", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"}
+            ],
+            scenes: [
+                {
+                    id: 1, start: 0.0, end: 8.0,
+                    speech_en: "Here's a popular SQL interview question. How do you find the second-highest salary from an Employees table? Let's understand the logic and build the query step by step.",
+                    speech_mr: "एसक्यूएल इंटरव्ह्यूमधील सर्वात महत्त्वाचा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा? चला लॉजिक समजून घेऊन स्टेप-बाय-स्टेप क्वेरी लिहूया!",
+                    speech_hi: "एसक्यूएल इंटरव्यू का एक बेहद पॉपुलर सवाल: एम्प्लॉईज टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें? आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं!"
+                },
+                {
+                    id: 2, start: 8.0, end: 20.0,
+                    speech_en: "First, understand the requirement. We need the second-highest distinct salary, not the second employee. Notice that eighty thousand appears twice. We must count it only once.",
+                    speech_mr: "पहिले प्रश्न नीट समजून घ्या. आपल्याला दुसरा डिस्टिंक्ट पगार हवा आहे, दुसरा कर्मचारी नाही. इथे ऐंशी हजार पगार दोनदा आला आहे. तो आपल्याला एकदाच मोजायचा आहे.",
+                    speech_hi: "पहले सवाल को समझिए. हमें सेकंड हाईएस्ट डिस्टिंक्ट सैलरी चाहिए. ध्यान दीजिए कि अस्सी हजार दो बार आया है. हमें इसे केवल एक बार ही गिनना है."
+                },
+                {
+                    id: 3, start: 20.0, end: 32.0,
+                    speech_en: "Now, how should we solve it? First, find the maximum salary. Then exclude that salary. Finally, find the maximum from the remaining values. That's our second-highest salary.",
+                    speech_mr: "आता हे कसे सोडवायचे? प्रथम सर्वात मोठा पगार शोधा. मग तो पगार वगळा. आणि उरलेल्या पगारांमधून सर्वात मोठा पगार निवडा. तोच आपला दुसरा सर्वाधिक पगार!",
+                    speech_hi: "अब इसे कैसे सॉल्व करें? पहले मैक्सिमम सैलरी निकालिए. फिर उसे बाहर कीजिए. और बाकी बची वैल्यूज में से मैक्सिमम निकालिए. वही है हमारी सेकंड हाईएस्ट सैलरी!"
+                },
+                {
+                    id: 4, start: 32.0, end: 44.0,
+                    speech_en: "Let's write the inner query first. SELECT MAX salary FROM Employees. This returns eighty thousand, the highest salary in our table.",
+                    speech_mr: "चला आधी आतील क्वेरी लिहूया: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज. ही क्वेरी आपल्याला ऐंशी हजार, म्हणजेच सर्वात मोठा पगार देते.",
+                    speech_hi: "आइए पहले इनर क्वेरी लिखते हैं: सिलेक्ट मैक्स सैलरी फ्रॉम एम्प्लॉईज. यह हमें अस्सी हजार यानी सबसे बड़ी सैलरी देती है."
+                },
+                {
+                    id: 5, start: 44.0, end: 58.0,
+                    speech_en: "Next, we exclude the highest salary using WHERE salary is less than the result of our inner query. This removes both eighty-thousand values, leaving seventy, sixty, and fifty thousand.",
+                    speech_mr: "आता व्हेअर सॅलरी लहान सबक्वेरी ही अट लावून ऐंशी हजार वगळूया. यामुळे ऐंशी हजार असणाऱ्या दोन्ही नोंदी वगळल्या जाऊन सत्तर, साठ आणि पन्नास हजार उरतात.",
+                    speech_hi: "अब व्हेअर सैलरी लेस दैन सबक्वेरी लगाकर अस्सी हजार को फिल्टर करते हैं. इससे दोनों अस्सी हजार वाले रिकॉर्ड्स हट जाते हैं और सत्तर, साठ और पचास हजार बचते हैं."
+                },
+                {
+                    id: 6, start: 58.0, end: 72.0,
+                    speech_en: "Now the outer MAX function checks the remaining salaries. The highest remaining value is seventy thousand. That's our answer! The key is using a subquery to exclude the original maximum.",
+                    speech_mr: "आता बाहेरील मॅक्स फंक्शन उरलेल्या पगारांमधून सर्वात मोठा पगार शोधते. उरलेल्यांमध्ये सर्वात मोठी रक्कम आहे सत्तर हजार! सबक्वेरीमुळे हे उत्तर १०० टक्के अचूक येते!",
+                    speech_hi: "अब आउटर मैक्स फंक्शन बचे हुए रिकॉर्ड्स को चेक करता है. सबसे बड़ी बची हुई वैल्यू है सत्तर हजार! यही हमारा सही जवाब है!"
+                },
+                {
+                    id: 7, start: 72.0, end: 85.0,
+                    speech_en: "Interview tip! Always clarify whether they want the second-highest distinct salary. If the highest salary appears multiple times, this query still returns the correct second-highest value. Follow Code with Mangesh for more SQL interview questions!",
+                    speech_mr: "इंटरव्ह्यू टिप! जर सर्वाधिक पगार अनेक लोकांचा समान असेल तरीही ही सबक्वेरी अचूक काम करते. पुढील एसक्यूएल प्रश्नांसाठी फॉलो करा कोड विथ मंगेश!",
+                    speech_hi: "इंटरव्यू टिप! अगर हाईएस्ट सैलरी डुप्लीकेट भी हो, तब भी यह सबक्वेरी मेथड हमेशा सही उत्तर देता है. ऐसे ही एसक्यूएल सवालों के लिए फॉलो कीजिए कोड विथ मंगेश!"
+                }
+            ],
+            hook_mr: "🚨 Top IT कंपन्यांच्या SQL इंटरव्ह्यूमध्ये ९०% मुलं या प्रश्नात चूक करतात! एकापेक्षा जास्त लोकांचा पगार समान असताना २ रा सर्वाधिक पगार कसा शोधायचा?",
+            hook_hi: "🚨 Top IT कंपनियों के SQL इंटरव्यू में 90% लोग इस सवाल में गलती करते हैं! जब कई लोगों की सेम सैलरी हो तो 2nd हाईएस्ट सैलरी कैसे निकालें?",
+            hook_en: "🚨 90% of candidates make a mistake on this top SQL interview question: Finding the 2nd Highest Salary with Ties!",
+            hook_minglish: "🚨 Top MNC interview madhe 90% loka fasatat! Priya & Kiran doghanchi salary same 80k aslyavar 2nd highest salary kashi kadhaychi?",
+            hook_hinglish: "🚨 Top MNC interview me 90% log fas jate hai! Priya & Kiran dono ki salary same 80k hone par 2nd highest salary kaise nikale?",
+            explanation_mr: "इथे आतील सबक्वेरी आधी पूर्ण टेबलमधून कमाल पगार ८०,००० शोधून काढते. मग बाहेरील मुख्य क्वेरी ८०,००० पेक्षा कमी असलेल्या पगारांमधून (६० हजार, ५० हजार, ७० हजार) सर्वात मोठा पगार शोधते, जो येतो बरोबर ७०,०००!",
+            explanation_hi: "यहाँ अंदर वाली सबक्वेरी पहले पूरे टेबल से मैक्सिमम सैलरी 80,000 निकालती है। फिर बाहर वाली मेन क्वेरी 80,000 से कम वाली सैलरीज में से सबसे बड़ी सैलरी चुनती है, जो आती है 70,000!",
+            explanation_en: "The inner subquery finds MAX = 80,000. The outer query filters WHERE SALARY < 80,000 excluding ties, and selects the MAX of remaining (60k, 50k, 70k) which is 70,000!",
+            explanation_minglish: "Inner query adhi MAX salary 80,000 kadhte. Mag outer query 80,000 peksha lahan aslelya salaries madhun MAX ghete, ji 70,000 ahe!",
+            explanation_hinglish: "Inner query pehle MAX salary 80,000 nikalegi. Fir outer query 80,000 se kam me se MAX legi, jo 70,000 hai!",
+            pro_tip: "💡 Interviewer Pro-Tip: 'LIMIT 1 OFFSET 1' breaks when top salaries tie (Priya & Kiran 80k). Subquery or DENSE_RANK() is mandatory in FAANG interviews!"
         },
         "faang_dense_rank_ties": {
             id: "faang_dense_rank_ties",
@@ -432,11 +489,11 @@ FROM MonthlyTotals;`,
 
     let sqlShortState = {
         currentTime: 0.0,
-        maxDuration: 60.0,
+        maxDuration: 85.0,
         isPlaying: false,
         playbackSpeed: 1.0,
-        audioLang: 'mr',
-        textStyle: 'minglish',
+        audioLang: 'en',
+        textStyle: 'english',
         showAvatar: true,
         activePreset: SQL_CLIENT_PRESETS["sql_q1_second_highest_salary"],
         selectedAvatar: "Nadim_public_5",
@@ -449,7 +506,7 @@ FROM MonthlyTotals;`,
         isExporting: false,
         mediaRecorder: null,
         recordedChunks: [],
-        audioUrl: "/audio/preset_sql_q1_second_highest_salary_mr.mp3"
+        audioUrl: "/audio/preset_sql_q1_second_highest_salary_en.mp3"
     };
 
     // Initialize Workspace on Page Load
@@ -620,6 +677,8 @@ FROM MonthlyTotals;`,
                     explanation_minglish: data.explanation,
                     explanation_hinglish: data.explanation,
                     pro_tip: data.pro_tip,
+                    scenes: data.scenes || [],
+                    inner_query_sql: data.inner_query_sql || "",
                     sample_rows: [
                         {account: "REC-101", date: "T1", amt: "₹5,000", balance: "Step 1"},
                         {account: "REC-102", date: "T2", amt: "₹12,000", balance: "Step 2"}
@@ -635,7 +694,7 @@ FROM MonthlyTotals;`,
         } catch (e) {
             console.warn("Using local generator fallback:", e);
         } finally {
-            btn.innerHTML = `<span>✨ Generate 60s AI Blueprint &amp; Prompt</span>`;
+            btn.innerHTML = `<span>✨ Generate 85s AI Teacher Blueprint &amp; Prompt</span>`;
             btn.disabled = false;
         }
     }
@@ -940,8 +999,8 @@ FROM MonthlyTotals;`,
         ctx.fillText(p.difficulty.toUpperCase(), W - 165, 124);
         ctx.textAlign = "left";
 
-        // Progress Bar (0:00 to 1:00)
-        const progress = Math.min(1.0, t / 60.0);
+        // Progress Bar (0:00 to 1:25)
+        const progress = Math.min(1.0, t / (sqlShortState.maxDuration || 85.0));
         ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
         ctx.fillRect(40, 185, W - 80, 10);
         const grad = ctx.createLinearGradient(40, 0, W - 40, 0);
@@ -1005,424 +1064,856 @@ FROM MonthlyTotals;`,
         }
 
         // =========================================================================
-        // TIMELINE PHASES (0 to 60 Seconds)
+        // 7-SCENE MASTER STORYBOARD (0 to 85 Seconds)
         // =========================================================================
 
-        // PHASE 1 (0 to 5.5s): VIRAL PEAK POINT / HOOK
-        if (t < 5.5) {
-            const hookAlpha = t < 5.0 ? 1.0 : (5.5 - t) / 0.5;
+        // SCENE 1 (0 to 8.0s): INTERVIEW QUESTION INTRODUCTION
+        if (t < 8.0) {
             ctx.save();
-            ctx.globalAlpha = Math.max(0, hookAlpha);
+            const s1Alpha = t < 0.5 ? t / 0.5 : (t > 7.5 ? (8.0 - t) / 0.5 : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s1Alpha));
 
-            // Flashing Red Alert Badge
-            const pulse = 1.0 + Math.sin(t * 8) * 0.04;
-            ctx.translate(W / 2, 420);
-            ctx.scale(pulse, pulse);
-
-            ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
+            // Question Header Card
+            ctx.fillStyle = "rgba(16, 25, 46, 0.95)";
             ctx.beginPath();
-            ctx.roundRect(-460, -90, 920, 180, 30);
+            ctx.roundRect(60, 220, W - 120, 200, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("📋 SQL INTERVIEW QUESTION #1:", 90, 275);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            const qLines = wrapCanvasText(ctx, p.question, W - 180);
+            qLines.slice(0, 2).forEach((l, i) => {
+                ctx.fillText(l, 90, 325 + i * 38);
+            });
+
+            // Target Highlight Badge
+            const pulse = 1.0 + Math.sin(t * 6) * 0.05;
+            ctx.save();
+            ctx.translate(W / 2, 385);
+            ctx.scale(pulse, pulse);
+            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+            ctx.beginPath();
+            ctx.roundRect(-260, -22, 520, 44, 12);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🎯 TARGET: SECOND-HIGHEST DISTINCT SALARY", 0, 7);
+            ctx.restore();
+
+            // EMPLOYEES Table View
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 24px monospace";
+            ctx.fillText(`INPUT TABLE: ${p.table_name || "EMPLOYEES"} (5 RECORDS)`, 60, 470);
+
+            const headers = p.col_headers || ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"];
+            ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
+            ctx.fillRect(60, 490, W - 120, 56);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText(headers[0], 90, 526);
+            ctx.fillText(headers[1], 310, 526);
+            ctx.fillText(headers[2], 560, 526);
+            ctx.fillText(headers[3], 800, 526);
+
+            // SALARY Column Vertical Highlight Band
+            ctx.fillStyle = "rgba(56, 189, 248, 0.10)";
+            ctx.fillRect(770, 490, 220, 480);
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+            ctx.setLineDash([6, 6]);
+            ctx.strokeRect(770, 490, 220, 480);
+            ctx.setLineDash([]);
+
+            // 5 Employee Rows
+            const sampleRows = p.sample_rows || [];
+            sampleRows.forEach((r, idx) => {
+                const rowY = 555 + idx * 78;
+                ctx.fillStyle = idx % 2 === 0 ? "rgba(15, 23, 42, 0.9)" : "rgba(30, 41, 59, 0.8)";
+                ctx.fillRect(60, rowY, W - 120, 70);
+                ctx.strokeStyle = "#1E2D4A";
+                ctx.strokeRect(60, rowY, W - 120, 70);
+
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "22px monospace";
+                ctx.fillText(r.account, 90, rowY + 44);
+                ctx.fillText(r.date, 310, rowY + 44);
+                ctx.fillText(r.amt, 560, rowY + 44);
+
+                // Highlighted Salary Column Value
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText(r.amt, 800, rowY + 44);
+            });
+
+            // SQL Editor Preview (Empty with Step-by-Step Guidance)
+            ctx.fillStyle = "#0B1120";
+            ctx.beginPath();
+            ctx.roundRect(60, 990, W - 120, 510, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#1E2D4A";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Window Header
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 990, W - 120, 50);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1015, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1015, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1015, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("query_builder.sql (Empty Editor)", 180, 1022);
+
+            ctx.fillStyle = "#64748B";
+            ctx.font = "italic 24px monospace";
+            ctx.fillText("/* Step 1: Understand question before writing code */", 90, 1100);
+            ctx.fillText("/* Requirement: Find 2nd highest DISTINCT salary */", 90, 1150);
+            ctx.fillText("/* Notice: Priya & Kiran BOTH earn ₹80,000! */", 90, 1200);
+            ctx.fillText("/* SQL Query will be built logically step-by-step! */", 90, 1250);
+
+            // Phase Badge
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(90, 1370, W - 180, 80, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("🧠 LEARNING GOAL: Identify what the interviewer is asking!", 120, 1420);
+
+            ctx.restore();
+        }
+
+        // SCENE 2 (8.0 to 20.0s): UNDERSTAND THE QUESTION & DUPLICATE TIE TRAP
+        if (t >= 7.5 && t < 20.5) {
+            ctx.save();
+            const s2Alpha = t < 8.5 ? (t - 7.5) : (t > 19.5 ? (20.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s2Alpha));
+
+            // Table EMPLOYEES with Pulsing Tie Alerts
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 24px monospace";
+            ctx.fillText("EMPLOYEES TABLE — NOTICE DUPLICATE TOP SALARIES:", 60, 255);
+
+            const sampleRows = p.sample_rows || [];
+            sampleRows.forEach((r, idx) => {
+                const rowY = 275 + idx * 72;
+                const isTie = idx === 2 || idx === 4; // Priya & Kiran (80,000)
+
+                ctx.fillStyle = isTie ? "rgba(239, 68, 68, 0.22)" : "rgba(15, 23, 42, 0.85)";
+                ctx.fillRect(60, rowY, W - 120, 64);
+
+                if (isTie) {
+                    const glowW = 2.5 + Math.sin(t * 8) * 1.5;
+                    ctx.strokeStyle = "#EF4444";
+                    ctx.lineWidth = glowW;
+                    ctx.strokeRect(60, rowY, W - 120, 64);
+                } else {
+                    ctx.strokeStyle = "#1E2D4A";
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(60, rowY, W - 120, 64);
+                }
+
+                ctx.fillStyle = isTie ? "#FCA5A5" : "#F8FAFC";
+                ctx.font = "22px monospace";
+                ctx.fillText(r.account, 90, rowY + 40);
+                ctx.fillText(r.date, 310, rowY + 40);
+                ctx.fillText(r.amt, 560, rowY + 40);
+
+                if (isTie) {
+                    ctx.fillStyle = "#EF4444";
+                    ctx.font = "bold 22px monospace";
+                    ctx.fillText("⚠️ TOP TIE (₹80,000)", 780, rowY + 40);
+                } else if (idx === 3) {
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 22px monospace";
+                    ctx.fillText("🎯 2ND HIGHEST", 780, rowY + 40);
+                } else {
+                    ctx.fillStyle = "#64748B";
+                    ctx.font = "20px monospace";
+                    ctx.fillText(r.amt, 800, rowY + 40);
+                }
+            });
+
+            // Distinct Salaries Inspection Container
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(60, 660, W - 120, 320, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("🔍 SALARY VALUES INSPECTION:", 90, 705);
+
+            // Salary Pills
+            const pills = ["60,000", "50,000", "80,000 🔥", "70,000 ⭐", "80,000 🔥"];
+            pills.forEach((pill, i) => {
+                const px = 90 + i * 180;
+                const is80 = pill.includes("80,000");
+                const is70 = pill.includes("70,000");
+                ctx.fillStyle = is80 ? "rgba(239, 68, 68, 0.25)" : (is70 ? "rgba(16, 185, 129, 0.25)" : "rgba(30, 41, 59, 0.9)");
+                ctx.fillRect(px, 730, 165, 48);
+                ctx.strokeStyle = is80 ? "#EF4444" : (is70 ? "#10B981" : "#475569");
+                ctx.strokeRect(px, 730, 165, 48);
+                ctx.fillStyle = is80 ? "#EF4444" : (is70 ? "#10B981" : "#E2E8F0");
+                ctx.font = "bold 20px monospace";
+                ctx.fillText(pill, px + 12, 762);
+            });
+
+            // Distinction Summary Cards
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 23px 'Segoe UI', sans-serif";
+            ctx.fillText("🥇 Highest Salary: ₹80,000 (Priya & Kiran — appears twice!)", 90, 835);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 25px 'Segoe UI', sans-serif";
+            ctx.fillText("🥈 Second-Highest Distinct Salary: ₹70,000 (Neha — Target Answer)", 90, 890);
+
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "italic 20px 'Segoe UI', sans-serif";
+            ctx.fillText("Important: Multiple employees sharing the top salary must NOT distort the answer!", 90, 940);
+
+            // The Fatal Interview Trap Card
+            ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1020, W - 120, 480, 20);
             ctx.fill();
             ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 6;
+            ctx.lineWidth = 3.5;
             ctx.stroke();
 
             ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 42px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("🚨 95% CANDIDATES FAIL THIS QUESTION!", 0, -20);
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("❌ THE FATAL INTERVIEW TRAP: WHY 'LIMIT 1 OFFSET 1' FAILS!", 90, 1075);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            const hookText = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr;
-            ctx.fillText(wrapCanvasText(ctx, hookText, 860)[0] || hookText, 0, 45);
+            ctx.font = "22px monospace";
+            ctx.fillText("SELECT SALARY FROM EMPLOYEES ORDER BY SALARY DESC LIMIT 1 OFFSET 1;", 90, 1130);
+
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• Row 1 = ₹80,000 (Priya - Highest)", 90, 1190);
+            ctx.fillText("• Row 2 = ₹80,000 (Kiran - Duplicate Highest)", 90, 1240);
+            
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 25px 'Segoe UI', sans-serif";
+            ctx.fillText("➔ Returns ₹80,000! (FAILS TEST CASES IN AN INTERVIEW ❌)", 90, 1300);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ Solution: Use Subquery to exclude top salary before selecting MAX!", 90, 1370);
 
             ctx.restore();
         }
 
-        // PHASE 2 (5 to 18s): PROBLEM & REAL DATA SCHEMA
-        if (t >= 4.5 && t < 19.0) {
+        // SCENE 3 (20.0 to 32.0s): DECIDE THE SQL LOGIC (4-STEP STRATEGY FLOWCHART)
+        if (t >= 19.5 && t < 32.5) {
             ctx.save();
-            const pAlpha = t < 5.5 ? (t - 4.5) : (t > 18.0 ? (19.0 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, pAlpha));
+            const s3Alpha = t < 20.5 ? (t - 19.5) : (t > 31.5 ? (32.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s3Alpha));
 
-            // Problem Box
-            ctx.fillStyle = "rgba(16, 25, 46, 0.95)";
+            // Header Banner
+            ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
             ctx.beginPath();
-            ctx.roundRect(60, 260, W - 120, 200, 20);
+            ctx.roundRect(60, 220, W - 120, 95, 16);
             ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#818CF8";
+            ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 30px 'Segoe UI', sans-serif";
-            ctx.fillText("📋 INTERVIEW QUESTION & UNDERSTANDING:", 90, 315);
+            ctx.fillStyle = "#818CF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 4-STEP LOGICAL STRATEGY (BEFORE WRITING SQL)", 90, 265);
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Deconstructing the subquery algorithm so you can explain it in an interview:", 90, 296);
 
-            ctx.fillStyle = "#E2E8F0";
-            ctx.font = "26px 'Segoe UI', sans-serif";
-            const qLines = wrapCanvasText(ctx, p.question, W - 180);
-            qLines.slice(0, 2).forEach((l, i) => {
-                ctx.fillText(l, 90, 370 + i * 42);
-            });
+            // Flowchart 4 Steps
+            const steps = [
+                {
+                    num: "1️⃣",
+                    title: "FIND HIGHEST SALARY IN TABLE",
+                    query: "SELECT MAX(SALARY) FROM EMPLOYEES ➔ ₹80,000",
+                    activeRange: [20.0, 23.0],
+                    color: "#38BDF8"
+                },
+                {
+                    num: "2️⃣",
+                    title: "EXCLUDE HIGHEST SALARY (FILTER)",
+                    query: "WHERE SALARY < 80,000 (Removes BOTH Priya & Kiran)",
+                    activeRange: [23.0, 26.0],
+                    color: "#F59E0B"
+                },
+                {
+                    num: "3️⃣",
+                    title: "COLLECT REMAINING DISTINCT SALARIES",
+                    query: "Remaining Pool: { ₹70,000, ₹60,000, ₹50,000 }",
+                    activeRange: [26.0, 29.0],
+                    color: "#EC4899"
+                },
+                {
+                    num: "4️⃣",
+                    title: "FIND MAXIMUM FROM REMAINING POOL",
+                    query: "MAX({ 70k, 60k, 50k }) ➔ ₹70,000 (🎯 TARGET ANSWER!)",
+                    activeRange: [29.0, 32.5],
+                    color: "#10B981"
+                }
+            ];
 
-            // Animated Input Table Cards
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 26px monospace";
-            ctx.fillText(`INPUT TABLE: ${p.table_name}`, 60, 510);
+            steps.forEach((st, idx) => {
+                const boxY = 335 + idx * 195;
+                const isActive = t >= st.activeRange[0] && t < st.activeRange[1];
 
-            const headers = p.col_headers || ["COL_1", "COL_2", "COL_3", "STATUS"];
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(60, 530, W - 120, 60);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px monospace";
-            ctx.fillText(headers[0], 90, 570);
-            ctx.fillText(headers[1], 350, 570);
-            ctx.fillText(headers[2], 610, 570);
-            ctx.fillText(headers[3], 830, 570);
-
-            // Row cards
-            const sampleRows = p.sample_rows || [];
-            sampleRows.forEach((r, idx) => {
-                const rowY = 610 + idx * 85;
-                ctx.fillStyle = idx % 2 === 0 ? "rgba(15, 23, 42, 0.9)" : "rgba(30, 41, 59, 0.8)";
-                ctx.fillRect(60, rowY, W - 120, 75);
-                ctx.strokeStyle = "#1E2D4A";
-                ctx.strokeRect(60, rowY, W - 120, 75);
-
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "24px monospace";
-                ctx.fillText(r.account, 90, rowY + 46);
-                ctx.fillText(r.date, 350, rowY + 46);
-                ctx.fillText(r.amt, 610, rowY + 46);
-
-                const isWarning = r.balance && (r.balance.includes("Tie") || r.balance.includes("MAX"));
-                ctx.fillStyle = isWarning ? "#F59E0B" : "#38BDF8";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText(r.balance, 830, rowY + 46);
-            });
-
-            // Problem Nuance & Tie Alert Badge
-            if (p.id === "sql_q1_second_highest_salary" || p.id === "faang_dense_rank_ties") {
-                ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.8)";
                 ctx.beginPath();
-                ctx.roundRect(60, 1050, W - 120, 80, 16);
+                ctx.roundRect(60, boxY, W - 120, 130, 16);
                 ctx.fill();
-                ctx.strokeStyle = "#F59E0B";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
 
-                ctx.fillStyle = "#F59E0B";
+                ctx.strokeStyle = isActive ? st.color : "#1E2D4A";
+                ctx.lineWidth = isActive ? 3.5 : 2;
+                if (isActive) {
+                    ctx.shadowColor = st.color;
+                    ctx.shadowBlur = 18;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = st.color;
                 ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText("⚠️ INTERVIEW TRAP: Priya & Kiran both earn ₹80,000! 'LIMIT 1 OFFSET 1' will FAIL!", 90, 1100);
-            }
+                ctx.fillText(`${st.num} ${st.title}`, 90, boxY + 45);
 
-            ctx.restore();
-        }
+                ctx.fillStyle = isActive ? "#F8FAFC" : "#94A3B8";
+                ctx.font = "bold 23px monospace";
+                ctx.fillText(st.query, 90, boxY + 95);
 
-        // PHASE 3 (18 to 42s): TYPEWRITER SQL CODE & GLOWING LASER ARROW WITH 3D CALLOUT POPUP
-        if (t >= 17.5 && t < 43.0) {
-            ctx.save();
-            const cAlpha = t < 18.5 ? (t - 17.5) : (t > 42.0 ? (43.0 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, cAlpha));
-
-            // Code Editor Window (IDE style)
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(50, 240, W - 100, 840, 24);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            // Window Header with Mac dots
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(50, 240, W - 100, 60);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(85, 270, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(115, 270, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 270, 10, 0, Math.PI * 2); ctx.fill();
-
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText("query_solution.sql", 185, 278);
-
-            // Typewriter Code Lines
-            const codeLines = p.solution_sql.split("\n");
-            const typingSpeed = (t - 18.0) * 1.5;
-            const linesToShow = Math.min(codeLines.length, Math.floor(typingSpeed));
-
-            let arrowTargetY = 460;
-            let arrowTargetX = 640;
-
-            for (let i = 0; i < linesToShow; i++) {
-                const lineY = 340 + i * 50;
-                const lineText = codeLines[i];
-
-                const isTarget = p.arrow_target && (lineText.includes(p.arrow_target.split(" ")[0]) || (p.arrow_line_idx !== undefined && i === p.arrow_line_idx));
-                if (isTarget) {
-                    arrowTargetY = lineY;
-                    arrowTargetX = 80 + ctx.measureText(lineText).width + 30;
+                // Down Arrow (except last step)
+                if (idx < 3) {
+                    ctx.fillStyle = "#818CF8";
+                    ctx.font = "bold 32px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("↓", W / 2, boxY + 168);
+                    ctx.textAlign = "left";
                 }
+            });
 
-                ctx.fillStyle = "#475569";
-                ctx.font = "26px monospace";
-                ctx.fillText((i + 1).toString().padStart(2, "0"), 80, lineY);
-
-                renderSqlSyntaxLine(ctx, lineText, 140, lineY);
-            }
-
-            // DYNAMIC GLOWING ARROW MOTION
-            if (t >= 21.0) {
-                const arrowBounce = Math.sin((t - 21.0) * 6) * 16;
-                const arrowX = Math.min(W - 140, arrowTargetX + 70 + arrowBounce);
-                const arrowY = arrowTargetY - 8;
-
-                ctx.shadowColor = "#38BDF8";
-                ctx.shadowBlur = 22;
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.beginPath();
-                ctx.moveTo(arrowX, arrowY);
-                ctx.lineTo(arrowX + 45, arrowY - 22);
-                ctx.lineTo(arrowX + 45, arrowY - 10);
-                ctx.lineTo(arrowX + 130, arrowY - 10);
-                ctx.lineTo(arrowX + 130, arrowY + 10);
-                ctx.lineTo(arrowX + 45, arrowY + 10);
-                ctx.lineTo(arrowX + 45, arrowY + 22);
-                ctx.closePath();
-                ctx.fill();
-
-                // Arrow Label Badge
-                ctx.fillStyle = "#F59E0B";
-                ctx.fillRect(arrowX + 140, arrowY - 20, 210, 42);
-                ctx.fillStyle = "#000";
-                ctx.font = "bold 20px 'Segoe UI', sans-serif";
-                ctx.fillText("⚡ CRITICAL CLAUSE", arrowX + 150, arrowY + 8);
-
-                ctx.shadowBlur = 0;
-            }
-
-            // ANIMATED 3D POPUP CALLOUT BOX (Explaining why query works)
-            if (t >= 22.5) {
-                const popAlpha = Math.min(1.0, (t - 22.5) * 1.5);
-                ctx.save();
-                ctx.globalAlpha = ctx.globalAlpha * popAlpha;
-
-                // Subtle floating bounce
-                const floatY = Math.sin((t - 22.5) * 3) * 6;
-
-                ctx.fillStyle = "rgba(11, 17, 32, 0.96)";
-                ctx.beginPath();
-                ctx.roundRect(80, 690 + floatY, W - 160, 360, 20);
-                ctx.fill();
-                ctx.strokeStyle = "#38BDF8";
-                ctx.lineWidth = 3;
-                ctx.shadowColor = "rgba(56, 189, 248, 0.4)";
-                ctx.shadowBlur = 18;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                // Popup Header with badge
-                ctx.fillStyle = "#38BDF8";
-                ctx.fillRect(80, 690 + floatY, W - 160, 52);
-                ctx.fillStyle = "#070B16";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                ctx.fillText("💡 HOW THE AI QUERY SOLVES THIS STEP-BY-STEP", 110, 725 + floatY);
-
-                if (p.id === "sql_q1_second_highest_salary") {
-                    ctx.fillStyle = "#F8FAFC";
-                    ctx.font = "bold 23px 'Segoe UI', sans-serif";
-                    ctx.fillText("1️⃣ Inner Subquery: (SELECT MAX(SALARY)) ➔ ₹80,000", 110, 780 + floatY);
-
-                    ctx.fillStyle = "#EF4444";
-                    ctx.fillText("2️⃣ Filter: WHERE SALARY < 80,000 excludes Priya & Kiran duplicates!", 110, 830 + floatY);
-
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.fillText("3️⃣ Remaining Pool: Amit (60k), Rahul (50k), Neha (70k)", 110, 880 + floatY);
-
-                    ctx.fillStyle = "#10B981";
-                    ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                    ctx.fillText("🎯 Outer Query: SELECT MAX() from remaining ➔ 70,000 (Neha)!", 110, 940 + floatY);
-
-                    ctx.fillStyle = "#F59E0B";
-                    ctx.font = "italic 21px 'Segoe UI', sans-serif";
-                    ctx.fillText("✨ Solves duplicate tie gracefully without hardcoded offsets", 110, 995 + floatY);
-                } else {
-                    ctx.fillStyle = "#F8FAFC";
-                    ctx.font = "bold 23px 'Segoe UI', sans-serif";
-                    ctx.fillText(`1️⃣ Target Clause: ${p.arrow_target}`, 110, 780 + floatY);
-
-                    ctx.fillStyle = "#38BDF8";
-                    const expSnippet = wrapCanvasText(ctx, p.explanation_en || p.explanation_mr, W - 220);
-                    expSnippet.slice(0, 3).forEach((line, idx) => {
-                        ctx.fillText(line, 110, 835 + idx * 45 + floatY);
-                    });
-
-                    ctx.fillStyle = "#10B981";
-                    ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                    ctx.fillText("🎯 Guarantees O(N) performance without table locks!", 110, 995 + floatY);
-                }
-
-                ctx.restore();
-            }
-
-            ctx.restore();
-        }
-
-        // PHASE 4 (42 to 54s): REAL SIMULATED OUTPUT CALCULATION
-        if (t >= 41.5 && t < 55.0) {
-            ctx.save();
-            const rAlpha = t < 42.5 ? (t - 41.5) : (t > 54.0 ? (55.0 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, rAlpha));
-
-            ctx.fillStyle = "#10192E";
+            // Strategy Takeaway Card
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
             ctx.beginPath();
-            ctx.roundRect(50, 240, W - 100, 840, 24);
+            ctx.roundRect(60, 1140, W - 120, 360, 18);
             ctx.fill();
             ctx.strokeStyle = "#10B981";
             ctx.lineWidth = 3;
             ctx.stroke();
 
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 34px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ REAL QUERY EXECUTION OUTPUT:", 90, 310);
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 STRATEGY VALIDATED BY SENIOR INTERVIEWERS:", 90, 1195);
 
-            // Table Header
-            const headers = p.col_headers || ["COL_1", "COL_2", "COL_3", "RESULT"];
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(80, 350, W - 160, 60);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px monospace";
-            ctx.fillText(headers[0], 110, 390);
-            ctx.fillText(headers[1], 350, 390);
-            ctx.fillText(headers[2], 560, 390);
-            ctx.fillText(headers[3], 780, 390);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• By excluding the global maximum, the next maximum IS the 2nd highest!", 90, 1255);
+            ctx.fillText("• Handles duplicate ties naturally across all database engines.", 90, 1315);
+            ctx.fillText("• Next step: Let's write the inner query first in our SQL editor!", 90, 1375);
 
-            // Render Output Rows
+            ctx.restore();
+        }
+
+        // SCENE 4 (32.0 to 44.0s): BUILD THE INNER QUERY (TYPEWRITER BUILD)
+        if (t >= 31.5 && t < 44.5) {
+            ctx.save();
+            const s4Alpha = t < 32.5 ? (t - 31.5) : (t > 43.5 ? (44.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s4Alpha));
+
+            // Top: Compact EMPLOYEES Table showing MAX highlight
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText("STEP 1: INSPECT EMPLOYEES TABLE TO EXTRACT MAX(SALARY):", 60, 255);
+
             const sampleRows = p.sample_rows || [];
             sampleRows.forEach((r, idx) => {
-                const rowY = 440 + idx * 75;
-                ctx.fillStyle = idx % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent";
-                ctx.fillRect(80, rowY - 26, W - 160, 68);
+                const rowY = 275 + idx * 60;
+                const isMax = idx === 2 || idx === 4;
 
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "24px monospace";
-                ctx.fillText(r.account, 110, rowY + 14);
-                ctx.fillText(r.date, 350, rowY + 14);
-                ctx.fillText(r.amt, 560, rowY + 14);
+                ctx.fillStyle = isMax ? "rgba(56, 189, 248, 0.2)" : "rgba(15, 23, 42, 0.85)";
+                ctx.fillRect(60, rowY, W - 120, 54);
+                ctx.strokeStyle = isMax ? "#38BDF8" : "#1E2D4A";
+                ctx.lineWidth = isMax ? 2.5 : 1;
+                ctx.strokeRect(60, rowY, W - 120, 54);
 
-                const isExcluded = r.balance && r.balance.includes("Excluded");
-                const isSelected = r.balance && (r.balance.includes("2nd Highest") || r.balance.includes("अचूक"));
-                
-                if (isSelected) {
-                    ctx.shadowColor = "#10B981";
-                    ctx.shadowBlur = 15;
-                    ctx.fillStyle = "#10B981";
-                } else if (isExcluded) {
-                    ctx.fillStyle = "#EF4444";
-                } else {
-                    ctx.fillStyle = "#38BDF8";
-                }
-                ctx.font = "bold 24px monospace";
-                ctx.fillText(r.balance, 780, rowY + 14);
-                ctx.shadowBlur = 0;
+                ctx.fillStyle = isMax ? "#38BDF8" : "#94A3B8";
+                ctx.font = isMax ? "bold 20px monospace" : "19px monospace";
+                ctx.fillText(r.account, 85, rowY + 34);
+                ctx.fillText(r.date, 310, rowY + 34);
+                ctx.fillText(r.amt, 560, rowY + 34);
+                ctx.fillText(isMax ? "🔥 MAX VALUE = ₹80,000" : r.balance, 780, rowY + 34);
             });
 
-            // BIG GLOWING RESULT BADGE (Highlighted Final Answer)
-            ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+            // SQL IDE Window (Typewriter Animation for Inner Query)
+            ctx.fillStyle = "#0B1120";
             ctx.beginPath();
-            ctx.roundRect(80, 830, W - 160, 210, 18);
+            ctx.roundRect(60, 600, W - 120, 470, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Window Header
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 600, W - 120, 50);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 625, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 625, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 625, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("query_solution.sql — Step 1: Write Inner Query First", 180, 632);
+
+            // Typewriter Inner Query
+            const innerLines = [
+                "SELECT MAX(SALARY)",
+                "FROM EMPLOYEES;"
+            ];
+            const typingProgress = (t - 32.0) * 1.8;
+            const linesToShow = Math.min(innerLines.length, Math.max(1, Math.floor(typingProgress)));
+
+            for (let i = 0; i < linesToShow; i++) {
+                const lineY = 710 + i * 65;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 26px monospace";
+                ctx.fillText((i + 1).toString().padStart(2, "0"), 90, lineY);
+                renderSqlSyntaxLine(ctx, innerLines[i], 160, lineY);
+            }
+
+            // Laser Focus Box around MAX(SALARY)
+            if (t >= 34.0) {
+                ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+                ctx.beginPath();
+                ctx.roundRect(260, 670, 270, 55, 8);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Arrow from Table
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 20px 'Segoe UI', sans-serif";
+                ctx.fillText("⚡ AGGREGATES TOP VALUE", 550, 705);
+            }
+
+            // Subquery Execution Output Card
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1100, W - 120, 400, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("⚡ INNER SUBQUERY EXECUTION RESULT:", 90, 1155);
+
+            // Output Grid
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(90, 1190, 440, 140);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(90, 1190, 440, 140);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText("MAX(SALARY)", 120, 1230);
+            ctx.fillStyle = "#475569";
+            ctx.fillText("--------------------", 120, 1255);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 44px monospace";
+            ctx.fillText("80000", 120, 1305);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• Returns a single scalar value: ₹80,000", 90, 1375);
+            ctx.fillText("• This 80,000 will now be passed to our outer WHERE condition!", 90, 1425);
+
+            ctx.restore();
+        }
+
+        // SCENE 5 (44.0 to 58.0s): APPLY THE FILTER (ROW-BY-ROW SIMULATION)
+        if (t >= 43.5 && t < 58.5) {
+            ctx.save();
+            const s5Alpha = t < 44.5 ? (t - 43.5) : (t > 57.5 ? (58.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s5Alpha));
+
+            // Expanded SQL IDE showing WHERE Filter
+            ctx.fillStyle = "#0B1120";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 390, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Window Header
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 220, W - 120, 48);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("query_solution.sql — Step 2: Apply Exclusion Filter", 180, 252);
+
+            const filterLines = [
+                "SELECT *",
+                "FROM EMPLOYEES",
+                "WHERE SALARY < (",
+                "    SELECT MAX(SALARY)",
+                "    FROM EMPLOYEES",
+                ");"
+            ];
+
+            filterLines.forEach((ln, idx) => {
+                const lineY = 305 + idx * 46;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+
+                if (idx === 2) {
+                    ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+                    ctx.fillRect(150, lineY - 26, 420, 34);
+                }
+                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+            });
+
+            // Dynamic Laser Arrow on WHERE Line
+            const arrowBounce = Math.sin(t * 6) * 12;
+            const arrowX = 640 + arrowBounce;
+            const arrowY = 390;
+            ctx.fillStyle = "#F59E0B";
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + 35, arrowY - 16);
+            ctx.lineTo(arrowX + 35, arrowY - 8);
+            ctx.lineTo(arrowX + 90, arrowY - 8);
+            ctx.lineTo(arrowX + 90, arrowY + 8);
+            ctx.lineTo(arrowX + 35, arrowY + 8);
+            ctx.lineTo(arrowX + 35, arrowY + 16);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = "#F59E0B";
+            ctx.fillRect(arrowX + 100, arrowY - 18, 230, 36);
+            ctx.fillStyle = "#000";
+            ctx.font = "bold 18px 'Segoe UI', sans-serif";
+            ctx.fillText("⚡ EXCLUSION FILTER (< 80k)", arrowX + 110, arrowY + 6);
+
+            // Row-by-Row Simulation Table
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(60, 635, W - 120, 560, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("🔍 DATABASE ENGINE: ROW-BY-ROW FILTER SIMULATION:", 90, 675);
+
+            // Table Header
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.fillRect(80, 695, W - 160, 48);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("EMPLOYEE", 100, 726);
+            ctx.fillText("SALARY", 320, 726);
+            ctx.fillText("CONDITION (< 80k)", 540, 726);
+            ctx.fillText("ACTION", 820, 726);
+
+            // Progressive Row Reveals
+            const evals = p.filter_evaluations || [
+                {name: "Amit", salary: "60,000", cond: "60000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
+                {name: "Rahul", salary: "50,000", cond: "50000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
+                {name: "Priya", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"},
+                {name: "Neha", salary: "70,000", cond: "70000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
+                {name: "Kiran", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"}
+            ];
+
+            const rowsToShow = Math.min(evals.length, Math.floor((t - 44.0) * 0.5) + 1);
+
+            evals.slice(0, rowsToShow).forEach((ev, i) => {
+                const rY = 755 + i * 80;
+                const isExclude = ev.status === "exclude";
+
+                ctx.fillStyle = isExclude ? "rgba(239, 68, 68, 0.22)" : "rgba(16, 185, 129, 0.15)";
+                ctx.fillRect(80, rY, W - 160, 68);
+                ctx.strokeStyle = isExclude ? "#EF4444" : "#10B981";
+                ctx.strokeRect(80, rY, W - 160, 68);
+
+                ctx.fillStyle = isExclude ? "#FCA5A5" : "#F8FAFC";
+                ctx.font = "22px monospace";
+                ctx.fillText(ev.name, 100, rY + 42);
+                ctx.fillText(`₹${ev.salary}`, 320, rY + 42);
+                ctx.fillText(ev.cond, 540, rY + 42);
+
+                ctx.fillStyle = isExclude ? "#EF4444" : "#10B981";
+                ctx.font = "bold 22px monospace";
+                ctx.fillText(isExclude ? "❌ EXCLUDE" : "✅ KEEP", 820, rY + 42);
+            });
+
+            // Filtered Pool Outcome Card
+            ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1220, W - 120, 280, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 FILTERED REMAINING CANDIDATES POOL:", 90, 1270);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px monospace";
+            ctx.fillText("REMAINING SALARIES: { Amit (60k), Rahul (50k), Neha (70k) }", 90, 1330);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("Both ₹80,000 duplicate entries have been cleanly eliminated!", 90, 1385);
+            ctx.fillText("Next: Apply outer SELECT MAX() to get the 2nd highest salary!", 90, 1435);
+
+            ctx.restore();
+        }
+
+        // SCENE 6 (58.0 to 72.0s): BUILD FINAL QUERY & CALCULATE OUTPUT
+        if (t >= 57.5 && t < 72.5) {
+            ctx.save();
+            const s6Alpha = t < 58.5 ? (t - 57.5) : (t > 71.5 ? (72.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s6Alpha));
+
+            // Complete Production SQL IDE Window
+            ctx.fillStyle = "#0B1120";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 480, 20);
             ctx.fill();
             ctx.strokeStyle = "#10B981";
             ctx.lineWidth = 3.5;
-            ctx.shadowColor = "rgba(16, 185, 129, 0.4)";
+            ctx.stroke();
+
+            // Window Header
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 220, W - 120, 48);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("final_query_solution.sql — Step 3: Complete Execution", 180, 252);
+
+            const finalLines = p.solution_sql.split("\n");
+            finalLines.forEach((ln, idx) => {
+                const lineY = 310 + idx * 52;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+
+                if (idx === 0) {
+                    ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+                    ctx.fillRect(150, lineY - 30, W - 260, 42);
+                    ctx.strokeStyle = "#10B981";
+                    ctx.strokeRect(150, lineY - 30, W - 260, 42);
+                }
+                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+            });
+
+            // Evaluation Summary Box
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(60, 725, W - 120, 290, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("🧮 OUTER QUERY EXECUTION CALCULATION:", 90, 770);
+
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "24px monospace";
+            ctx.fillText("REMAINING SALARIES : [ 60000, 50000, 70000 ]", 90, 830);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px monospace";
+            ctx.fillText("MAX([ 60000, 50000, 70000 ]) ➔ 70000", 90, 890);
+
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 Matched Employee: Neha • Finance Department (₹70,000)", 90, 950);
+
+            // Big Glowing Neon Output Card
+            ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1040, W - 120, 460, 22);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "#10B981";
+            ctx.shadowBlur = 24;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.fillText("🏆 VERIFIED FINAL QUERY OUTPUT:", 90, 1105);
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(90, 1140, W - 180, 230);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(90, 1140, W - 180, 230);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 26px monospace";
+            ctx.fillText("SECOND_HIGHEST_SALARY", 130, 1200);
+            ctx.fillStyle = "#475569";
+            ctx.fillText("-------------------------------------", 130, 1235);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 72px monospace";
+            ctx.fillText("70000", 130, 1320);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ 100% Accurate & Duplicate-Safe • Solved in O(N) Linear Time!", 90, 1430);
+
+            ctx.restore();
+        }
+
+        // SCENE 7 (72.0 to 85.0s): SENIOR INTERVIEWER PRO-TIP & OUTRO BRANDING
+        if (t >= 71.5) {
+            ctx.save();
+            const s7Alpha = t < 72.5 ? (t - 71.5) : 1.0;
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s7Alpha));
+
+            // Senior Interviewer Pro-Tip Card
+            ctx.fillStyle = "rgba(139, 92, 246, 0.16)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 620, 22);
+            ctx.fill();
+            ctx.strokeStyle = "#8B5CF6";
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = "rgba(139, 92, 246, 0.35)";
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#8B5CF6";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 SENIOR FAANG INTERVIEWER PRO-TIP:", 90, 280);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("1️⃣ Always ask the interviewer:", 90, 340);
+            ctx.fillStyle = "#C7D2FE";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   \"Can multiple employees share the top salary?\"", 90, 380);
+            ctx.fillText("   Explaining why 'LIMIT 1 OFFSET 1' fails scores huge bonus points!", 90, 420);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("2️⃣ Universal ANSI SQL Compatibility:", 90, 480);
+            ctx.fillStyle = "#C7D2FE";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   This subquery solution works natively across Oracle, PostgreSQL,", 90, 520);
+            ctx.fillText("   MySQL, SQLite, Snowflake, and Microsoft SQL Server.", 90, 560);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("3️⃣ If asked for N-th Highest Salary (3rd, 5th, 10th):", 90, 620);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText("   Use DENSE_RANK() OVER (ORDER BY SALARY DESC) AS rnk", 90, 665);
+            ctx.fillText("   WHERE rnk = N; (Prevents rank skips!)", 90, 705);
+
+            // Outro Branding Card (@Code_With_Mangesh)
+            ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 870, W - 120, 630, 24);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "rgba(245, 158, 11, 0.35)";
             ctx.shadowBlur = 20;
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 VERIFIED FINAL QUERY OUTPUT:", 110, 875);
-
-            if (p.id === "sql_q1_second_highest_salary") {
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "22px monospace";
-                ctx.fillText("OUTPUT COLUMN: SECOND_HIGHEST_SALARY", 110, 925);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 48px monospace";
-                ctx.fillText("VALUE: 70000", 110, 985);
-
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 20px 'Segoe UI', sans-serif";
-                ctx.fillText("✅ Verified Match: Neha (Finance Department)", 110, 1022);
-            } else {
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 40px monospace";
-                ctx.fillText("QUERY EXECUTED CLEANLY IN O(N)", 110, 940);
-
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "22px 'Segoe UI', sans-serif";
-                ctx.fillText("Zero duplicate errors, ready for interview submission!", 110, 995);
-            }
-
-            ctx.restore();
-        }
-
-        // PHASE 5 (54 to 60s): PRO TIP & VIRAL RETENTION OUTRO
-        if (t >= 53.5) {
-            ctx.save();
-            const oAlpha = t < 54.5 ? (t - 53.5) : 1.0;
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, oAlpha));
-
-            ctx.fillStyle = "rgba(139, 92, 246, 0.2)";
-            ctx.beginPath();
-            ctx.roundRect(60, 300, W - 120, 360, 24);
-            ctx.fill();
-            ctx.strokeStyle = "#8B5CF6";
-            ctx.lineWidth = 4;
-            ctx.stroke();
-
-            ctx.fillStyle = "#8B5CF6";
-            ctx.font = "bold 38px 'Segoe UI', sans-serif";
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 44px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("💡 SENIOR INTERVIEWER PRO-TIP", W / 2, 380);
+            ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("FAANG & Top MNC SQL Interview Preparation Studio", W / 2, 1005);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "28px 'Segoe UI', sans-serif";
-            const tipLines = wrapCanvasText(ctx, p.pro_tip, W - 200);
-            tipLines.forEach((l, i) => {
-                ctx.fillText(l, W / 2, 450 + i * 46);
-            });
+            ctx.fillText("⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W / 2, 1100);
+            ctx.fillText("🔔 Follow @Code_With_Mangesh for daily SQL questions", W / 2, 1160);
 
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("⭐ SAVE THIS REEL FOR YOUR NEXT INTERVIEW!", W / 2, 600);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🚀 100% Free AI High-Tech Education for Every Student!", W / 2, 1260);
+
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "italic 22px 'Segoe UI', sans-serif";
+            ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
+
             ctx.textAlign = "left";
-
             ctx.restore();
         }
 
         // =========================================================================
-        // BOTTOM SUBTITLE / TEXT OVERLAY BANNER (Multilingual)
+        // BOTTOM SUBTITLE / TEXT OVERLAY BANNER (Multilingual & Synchronized)
         // =========================================================================
-        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
         ctx.fillRect(40, H - 360, W - 80, 220);
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.3)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+        ctx.lineWidth = 2.5;
         ctx.strokeRect(40, H - 360, W - 80, 220);
 
         ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        const langBadge = sqlShortState.textStyle.toUpperCase() + " EXPLANATION";
-        ctx.fillText(`💬 ${langBadge}:`, 70, H - 315);
+        const langBadge = (sqlShortState.audioLang === "mr" ? "मराठी" : (sqlShortState.audioLang === "hi" ? "हिन्दी" : "ENGLISH")) + " AI TEACHER";
+        ctx.fillText(`🎙️ ${langBadge} • 👑 @Code_With_Mangesh`, 70, H - 315);
+
+        // Dynamic Active Scene Speech Subtitles
+        let subtitleText = "";
+        if (p.scenes && p.scenes.length > 0) {
+            const sc = p.scenes.find(s => t >= s.start && t < s.end) || p.scenes[p.scenes.length - 1];
+            subtitleText = sc['speech_' + sqlShortState.audioLang] || sc['speech_en'] || "";
+        } else {
+            subtitleText = p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_en;
+        }
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "30px 'Segoe UI', sans-serif";
-        const explanationText = p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr;
-        const subLines = wrapCanvasText(ctx, explanationText, W - 140);
+        ctx.font = "bold 28px 'Segoe UI', sans-serif";
+        const subLines = wrapCanvasText(ctx, subtitleText, W - 140);
         subLines.slice(0, 3).forEach((line, idx) => {
-            ctx.fillText(line, 70, H - 260 + idx * 42);
+            ctx.fillText(line, 70, H - 262 + idx * 42);
         });
 
         // =========================================================================
@@ -1442,7 +1933,7 @@ FROM MonthlyTotals;`,
         ctx.fillStyle = "#F8FAFC";
         ctx.font = "bold 26px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🚀 TOP MNC & FAANG SQL INTERVIEW PREPARATION STUDIO", W / 2, H - 70);
+        ctx.fillText("👑 @Code_With_Mangesh • TOP MNC & FAANG SQL STUDIO", W / 2, H - 70);
 
         ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
@@ -1586,7 +2077,10 @@ FROM MonthlyTotals;`,
         if (tm) {
             const mins = Math.floor(t / 60);
             const secs = Math.floor(t % 60).toString().padStart(2, "0");
-            tm.innerText = `${mins}:${secs} / 1:00`;
+            const maxT = sqlShortState.maxDuration || 85.0;
+            const maxMins = Math.floor(maxT / 60);
+            const maxSecs = Math.floor(maxT % 60).toString().padStart(2, "0");
+            tm.innerText = `${mins}:${secs} / ${maxMins}:${maxSecs}`;
         }
     }
 
@@ -1608,7 +2102,7 @@ FROM MonthlyTotals;`,
     /* ==========================================================================
        MEDIARECORDER AUDIO-MULTIPLEXED EXPORT & DOWNLOAD
        ========================================================================== */
-    async function exportSqlShortVideo(durationSec = 60) {
+    async function exportSqlShortVideo(durationSec = 85) {
         const canvas = document.getElementById("sqlShortCanvas");
         const audioEl = document.getElementById("sqlVoiceAudio");
         const btn = document.getElementById("btnDownloadShortVideo");
@@ -1678,7 +2172,7 @@ FROM MonthlyTotals;`,
             if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        const totalDuration = durationSec || 60;
+        const totalDuration = durationSec || 85;
         const totalFrames = totalDuration * 30;
         let frameCount = 0;
         const dt = 1.0 / 30.0;
@@ -1695,7 +2189,7 @@ FROM MonthlyTotals;`,
                 badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
             }
 
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 7; i++) {
                 const pill = document.getElementById("stagePill" + i);
                 if (pill) pill.className = "stage-pill done";
             }
@@ -1721,7 +2215,7 @@ FROM MonthlyTotals;`,
                     }
                 }
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (WITH NATURAL VOICE AUDIO)";
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD 85s AI TEACHER VIDEO (WITH SYNCHRONIZED VOICE)";
             }, 300);
         };
 
@@ -1732,7 +2226,7 @@ FROM MonthlyTotals;`,
         }
 
         function updateStagePill(stageNum) {
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 7; i++) {
                 const pill = document.getElementById("stagePill" + i);
                 if (!pill) continue;
                 if (i < stageNum) pill.className = "stage-pill done";
@@ -1743,28 +2237,33 @@ FROM MonthlyTotals;`,
 
         function recordStep() {
             if (frameCount < totalFrames) {
-                const stepBatch = totalDuration <= 10 ? 1 : 2;
+                const stepBatch = totalDuration <= 15 ? 1 : 2;
                 for (let b = 0; b < stepBatch && frameCount < totalFrames; b++) {
                     sqlShortState.currentTime = (frameCount * dt);
                     const t = sqlShortState.currentTime;
 
                     let currentStage = 1;
-                    let stageText = "पायरी १/५: 🚨 व्हायरल हुक व प्रश्न";
-                    if (totalDuration <= 10) {
-                        if (t < 2.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक (0-2s)"; }
-                        else if (t < 4.0) { currentStage = 2; stageText = "पायरी २/५: 📋 डेटा स्कीमा (2-4s)"; }
-                        else if (t < 7.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ SQL कोड व ॲरो (4-7s)"; }
-                        else if (t < 9.0) { currentStage = 4; stageText = "पायरी ४/५: 🧮 निकाल कॅल्क्युलेशन (7-9s)"; }
-                        else { currentStage = 5; stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (9-10s)"; }
+                    let stageText = "पायरी १/७: 📋 प्रश्न ओळख (0-8s)";
+                    if (totalDuration <= 15) {
+                        if (t < 2.0) { currentStage = 1; stageText = "पायरी १/७: 📋 प्रश्न ओळख"; }
+                        else if (t < 4.0) { currentStage = 2; stageText = "पायरी २/७: ⚠️ डुप्लिकेट समज"; }
+                        else if (t < 6.0) { currentStage = 3; stageText = "पायरी ३/७: 🔄 लॉजिक फ्लो"; }
+                        else if (t < 8.5) { currentStage = 4; stageText = "पायरी ४/७: ⚡ इनर सबक्वेरी"; }
+                        else if (t < 11.0) { currentStage = 5; stageText = "पायरी ५/७: 🔍 रो फिल्टर"; }
+                        else if (t < 13.0) { currentStage = 6; stageText = "पायरी ६/७: 🎯 निकाल ७०,०००"; }
+                        else { currentStage = 7; stageText = "पायरी ७/७: 💡 प्रो-टिप व @Code_With_Mangesh"; }
                     } else {
-                        if (t < 5.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक व प्रश्न (0-5s)"; }
-                        else if (t < 18.0) { currentStage = 2; stageText = "पायरी २/५: 📋 डेटा स्कीमा व रेकॉर्ड्स (5-18s)"; }
-                        else if (t < 42.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ टाईपरायटर SQL कोड व लेझर ॲरो (18-42s)"; }
-                        else if (t < 54.0) { currentStage = 4; stageText = "पायरी ४/५: 🧮 निकाल कॅल्क्युलेशन (42-54s)"; }
-                        else { currentStage = 5; stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (54-60s)"; }
+                        if (t < 8.0) { currentStage = 1; stageText = "पायरी १/७: 📋 प्रश्न ओळख व EMPLOYEES स्कीमा (0-8s)"; }
+                        else if (t < 20.0) { currentStage = 2; stageText = "पायरी २/७: ⚠️ ८०,००० डुप्लिकेट समज व ट्रॅप (8-20s)"; }
+                        else if (t < 32.0) { currentStage = 3; stageText = "पायरी ३/७: 🔄 ४-स्टेप लॉजिक फ्लोचार्ट (20-32s)"; }
+                        else if (t < 44.0) { currentStage = 4; stageText = "पायरी ४/७: ⚡ इनर सबक्वेरी SELECT MAX(SALARY) (32-44s)"; }
+                        else if (t < 58.0) { currentStage = 5; stageText = "पायरी ५/७: 🔍 रो-बाय-रो फिल्टर मूल्यांकन (44-58s)"; }
+                        else if (t < 72.0) { currentStage = 6; stageText = "पायरी ६/७: 🎯 अंतिम क्वेरी व निकाल ७०,००० (58-72s)"; }
+                        else { currentStage = 7; stageText = "पायरी ७/७: 💡 सीनियर इंटरव्ह्यूअर प्रो-टिप व @Code_With_Mangesh (72-85s)"; }
                     }
 
                     updateStagePill(currentStage);
+                    if (pDesc) pDesc.innerText = stageText;
 
                     if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
                         sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
