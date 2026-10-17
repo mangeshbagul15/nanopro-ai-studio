@@ -3423,6 +3423,67 @@ async def api_cyber_phone_lookup(req: Optional[PhoneAuditRequest] = None, phone_
     return JSONResponse(cybersecurity_engine.audit_phone_telecom(num))
 
 
+# -------------------------------------------------------------
+# VIRUSTOTAL THREAT INTELLIGENCE & MALWARE ANALYSIS (API #11)
+# -------------------------------------------------------------
+class ThreatAuditRequest(BaseModel):
+    target: str = "google.com"
+    target_type: str = "domain"
+
+@app.get("/api/cyber/threat")
+@app.post("/api/cyber/threat")
+async def api_cyber_threat_audit(
+    req: Optional[ThreatAuditRequest] = None,
+    target: Optional[str] = None,
+    target_type: Optional[str] = None
+):
+    from app.core.virustotal_engine import virustotal_engine
+    t_val = target or (req.target if req else "google.com")
+    t_type = target_type or (req.target_type if req else "domain")
+    try:
+        report = virustotal_engine.get_markdown_threat_report(t_type, t_val)
+        data = virustotal_engine.check_domain(t_val) if t_type == "domain" else (
+            virustotal_engine.check_ip(t_val) if t_type in ["ip", "ip_address"] else (
+                virustotal_engine.check_file_hash(t_val) if t_type in ["hash", "file_hash", "file"] else
+                virustotal_engine.scan_url(t_val)
+            )
+        )
+        data["markdown_report"] = report
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/cyber/threat/domain")
+async def api_cyber_threat_domain(domain: str = "google.com"):
+    from app.core.virustotal_engine import virustotal_engine
+    try:
+        data = virustotal_engine.check_domain(domain)
+        data["markdown_report"] = virustotal_engine.get_markdown_threat_report("domain", domain)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/cyber/threat/ip")
+async def api_cyber_threat_ip(ip: str = "8.8.8.8"):
+    from app.core.virustotal_engine import virustotal_engine
+    try:
+        data = virustotal_engine.check_ip(ip)
+        data["markdown_report"] = virustotal_engine.get_markdown_threat_report("ip", ip)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/cyber/threat/hash")
+async def api_cyber_threat_hash(file_hash: str = "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f"):
+    from app.core.virustotal_engine import virustotal_engine
+    try:
+        data = virustotal_engine.check_file_hash(file_hash)
+        data["markdown_report"] = virustotal_engine.get_markdown_threat_report("hash", file_hash)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================

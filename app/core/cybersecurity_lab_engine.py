@@ -724,5 +724,33 @@ class CybersecurityLabEngine:
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
+    # -------------------------------------------------------------
+    # 10. VIRUSTOTAL THREAT INTELLIGENCE & MALWARE AUDITING
+    # -------------------------------------------------------------
+    def audit_threat_intelligence(self, target: str, target_type: str = "domain") -> Dict[str, Any]:
+        """
+        Queries VirusTotal API v3 for threat analysis on domain, IP, hash, or URL.
+        """
+        from app.core.virustotal_engine import virustotal_engine
+        t = target_type.lower()
+        if t == "domain":
+            return virustotal_engine.check_domain(target)
+        elif t in ["ip", "ip_address"]:
+            return virustotal_engine.check_ip(target)
+        elif t in ["hash", "file", "file_hash"]:
+            return virustotal_engine.check_file_hash(target)
+        elif t == "url":
+            return virustotal_engine.scan_url(target)
+        else:
+            raise ValueError(f"Unsupported target_type '{target_type}'. Valid: domain, ip, hash, url")
+
+    def get_threat_intelligence_markdown(self, target: str, target_type: str = "domain") -> str:
+        """
+        Returns Markdown formatted threat intelligence audit report from VirusTotal.
+        """
+        from app.core.virustotal_engine import virustotal_engine
+        return virustotal_engine.get_markdown_threat_report(target_type, target)
+
 cybersecurity_engine = CybersecurityLabEngine()
 cyber_lab_engine = cybersecurity_engine
+
