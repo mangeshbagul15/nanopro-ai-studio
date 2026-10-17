@@ -545,6 +545,15 @@ def _execute_staged_boot_phases_2_and_3():
     except Exception as e:
         log_event(f"Phase 3F notice: {e}", level="WARNING", component="BootSequence")
 
+    # T + 23s: Cloud 24/7 Keep-Alive Engine (Zero-Sleep on Render / Cloud)
+    time.sleep(3.0)
+    try:
+        log_event("=== [PHASE 3G] Starting Cloud 24/7 Keep-Alive Engine (T + 23s) ===", component="BootSequence")
+        from app.core.cloud_keepalive import cloud_keepalive
+        cloud_keepalive.start()
+    except Exception as e:
+        log_event(f"Phase 3G notice: {e}", level="WARNING", component="BootSequence")
+
     log_event("=== Staged Boot Sequence Complete: All NanoPro Systems Synchronized & Healthy ===", component="BootSequence")
 
 @app.on_event("startup")
@@ -824,6 +833,25 @@ async def api_converter_convert(req: FileConvertRequest):
 async def api_monitoring_health():
     """Returns system resources, disk space, and agent health status."""
     res = monitoring_agent.get_system_health()
+    return JSONResponse(res)
+
+@app.get("/api/health")
+async def api_health_alias():
+    """Universal standard health alias for external uptime monitors & keep-alive bots."""
+    res = monitoring_agent.get_system_health()
+    return JSONResponse(res)
+
+@app.get("/api/monitoring/keepalive")
+async def api_monitoring_keepalive():
+    """Returns 24/7 cloud keep-alive status and health heartbeat stats."""
+    from app.core.cloud_keepalive import cloud_keepalive
+    return JSONResponse(cloud_keepalive.get_status())
+
+@app.post("/api/monitoring/keepalive/ping")
+async def api_monitoring_keepalive_ping():
+    """Triggers an immediate keep-alive ping."""
+    from app.core.cloud_keepalive import cloud_keepalive
+    res = cloud_keepalive.ping_now()
     return JSONResponse(res)
 
 # --- PROMPT DISPATCH ---

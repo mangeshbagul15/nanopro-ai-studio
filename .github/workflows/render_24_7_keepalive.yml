@@ -1,0 +1,23 @@
+name: NanoPro 24/7 Cloud Keep-Alive
+
+on:
+  schedule:
+    # Runs every 10 minutes around the clock (24/7)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    name: Ping NanoPro AI Studio Cloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Heartbeat Request
+        run: |
+          echo "Pinging NanoPro AI Studio on Render to ensure 24/7 uptime..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 35 "https://mangesh-nanopro-studio.onrender.com/api/health")
+          echo "Keep-Alive Ping Result: HTTP $STATUS"
+          if [ "$STATUS" -eq "200" ]; then
+            echo "SUCCESS: NanoPro AI Studio is fully live and running in the cloud 24/7!"
+          else
+            echo "Notice: Non-200 code ($STATUS). Server may be cold-booting, retry in next interval."
+          fi
