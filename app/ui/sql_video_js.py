@@ -531,6 +531,8 @@ WHERE rnk = 2;`,
             btn.innerHTML = `<span>✨ Generate 60s AI Blueprint &amp; Prompt</span>`;
             btn.disabled = false;
         }
+    }
+
     function setSqlAvatarPresenter(val) {
         sqlShortState.selectedAvatar = val;
         renderSqlShortFrame(sqlShortState.currentTime);
@@ -1439,7 +1441,7 @@ WHERE rnk = 2;`,
     /* ==========================================================================
        ZERO-SERVER-LOAD CLIENT-SIDE VIDEO RECORDER & DOWNLOAD
        ========================================================================== */
-    async function exportSqlShortVideo() {
+    async function exportSqlShortVideo(durationSec = 60) {
         const canvas = document.getElementById("sqlShortCanvas");
         const btn = document.getElementById("btnDownloadShortVideo");
         const btnLabel = document.getElementById("exportBtnLabel");
@@ -1452,7 +1454,7 @@ WHERE rnk = 2;`,
         const badgeEl = document.getElementById("exportLiveBadge");
         const celebrationBox = document.getElementById("videoReadyCelebration");
 
-        if (!canvas.captureStream) {
+        if (!canvas || !canvas.captureStream) {
             alert("Your browser does not support Canvas.captureStream. Please use Chrome or Edge.");
             return;
         }
@@ -1474,8 +1476,8 @@ WHERE rnk = 2;`,
             badgeEl.style.color = "#38BDF8";
             badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
         }
-        btn.disabled = true;
-        btnLabel.innerText = "⏳ व्हिडिओ रेंडर होत आहे (RENDERING 9:16)...";
+        if (btn) btn.disabled = true;
+        if (btnLabel) btnLabel.innerText = `⏳ व्हिडिओ रेंडर होत आहे (RENDERING ${durationSec}s)...`;
 
         // Reset Stage Pills
         for (let i = 1; i <= 5; i++) {
@@ -1483,7 +1485,7 @@ WHERE rnk = 2;`,
             if (pill) { pill.className = "stage-pill"; }
         }
 
-        const stream = canvas.captureStream(30); // 30 FPS high-definition stream
+        const stream = canvas.captureStream(30); // 30 FPS stream
         let mimeType = "video/webm;codecs=vp9";
         if (!MediaRecorder.isTypeSupported(mimeType)) {
             mimeType = "video/webm";
@@ -1499,7 +1501,8 @@ WHERE rnk = 2;`,
             if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        const totalFrames = 60 * 30; // 1800 frames
+        const totalDuration = durationSec || 60;
+        const totalFrames = totalDuration * 30;
         let frameCount = 0;
         const dt = 1.0 / 30.0;
         const startTime = performance.now();
@@ -1507,7 +1510,7 @@ WHERE rnk = 2;`,
         recorder.onstop = () => {
             if (pFill) pFill.style.width = "100%";
             if (pPctText) pPctText.innerText = "100%";
-            if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ सेव्ह होत आहे...";
+            if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ डाऊनलोड होत आहे...";
             if (badgeEl) {
                 badgeEl.innerText = "पूर्ण झाले (Completed)";
                 badgeEl.style.color = "#10B981";
@@ -1524,25 +1527,26 @@ WHERE rnk = 2;`,
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            const filename = `Clean_ZeroWatermark_9x16_${sqlShortState.activePreset.id}.webm`;
+            const filename = `Clean_ZeroWatermark_9x16_${sqlShortState.activePreset.id}_${totalDuration}s.webm`;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
 
-            // Show Celebration Card
+            // Show Celebration Card and smoothly scroll into view
             setTimeout(() => {
                 if (celebrationBox) {
                     celebrationBox.style.display = "block";
+                    celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     const btnAgain = document.getElementById("btnDownloadAgain");
                     if (btnAgain) {
                         btnAgain.href = url;
                         btnAgain.download = filename;
                     }
                 }
-                btn.disabled = false;
-                btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (CLEAN & NO WATERMARK)";
-            }, 600);
+                if (btn) btn.disabled = false;
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (CLEAN & NO WATERMARK)";
+            }, 300);
         };
 
         recorder.start();
@@ -1559,49 +1563,48 @@ WHERE rnk = 2;`,
 
         function recordStep() {
             if (frameCount < totalFrames) {
-                sqlShortState.currentTime = frameCount * dt;
-                const t = sqlShortState.currentTime;
+                const stepBatch = totalDuration <= 10 ? 1 : 2; // Accelerated export
+                for (let b = 0; b < stepBatch && frameCount < totalFrames; b++) {
+                    sqlShortState.currentTime = (frameCount * dt);
+                    const t = sqlShortState.currentTime;
 
-                // Live Stage Detection & Pill highlight
-                let currentStage = 1;
-                let stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी अलर्ट (0-5s)";
-                if (t < 5.0) {
-                    currentStage = 1;
-                    stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी प्रश्न (0-5s)";
-                } else if (t < 18.0) {
-                    currentStage = 2;
-                    stageText = "पायरी २/५: 📋 शाळा/बँक डेटा स्कीमा व रेकॉर्ड्स (5-18s)";
-                } else if (t < 42.0) {
-                    currentStage = 3;
-                    stageText = "पायरी ३/५: ⚡ टाईपरायटर SQL कोड व लेझर ॲरो (18-42s)";
-                } else if (t < 54.0) {
-                    currentStage = 4;
-                    stageText = "पायरी ४/५: 🧮 रिअल इन-मेमरी निकाल कॅल्क्युलेशन (42-54s)";
-                } else {
-                    currentStage = 5;
-                    stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ एन्कोडिंग (54-60s)";
+                    // Live Stage Detection & Pill highlight
+                    let currentStage = 1;
+                    let stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी अलर्ट";
+                    if (totalDuration <= 10) {
+                        if (t < 2.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक (0-2s)"; }
+                        else if (t < 4.0) { currentStage = 2; stageText = "पायरी २/५: 📋 डेटा स्कीमा (2-4s)"; }
+                        else if (t < 7.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ SQL कोड टाईपिंग (4-7s)"; }
+                        else if (t < 9.0) { currentStage = 4; stageText = "पायरी ४/५: 🧮 निकाल कॅल्क्युलेशन (7-9s)"; }
+                        else { currentStage = 5; stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (9-10s)"; }
+                    } else {
+                        if (t < 5.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी अलर्ट (0-5s)"; }
+                        else if (t < 18.0) { currentStage = 2; stageText = "पायरी २/५: 📋 डेटा स्कीमा व रेकॉर्ड्स (5-18s)"; }
+                        else if (t < 42.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ टाईपरायटर SQL कोड व लेझर ॲरो (18-42s)"; }
+                        else if (t < 54.0) { currentStage = 4; stageText = "पायरी ४/५: 🧮 निकाल कॅल्क्युलेशन (42-54s)"; }
+                        else { currentStage = 5; stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (54-60s)"; }
+                    }
+
+                    updateStagePill(currentStage);
+
+                    // Synchronize live avatar video frame if active
+                    if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
+                        sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
+                    }
+
+                    renderSqlShortFrame(t);
+                    updatePlayerScrubberUI(t);
+                    frameCount++;
                 }
-
-                updateStagePill(currentStage);
-
-                // Synchronize live avatar video frame if active
-                if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
-                    sqlShortState.avatarVideoElement.currentTime = (frameCount * dt) % sqlShortState.avatarVideoElement.duration;
-                }
-
-                renderSqlShortFrame(sqlShortState.currentTime);
-                updatePlayerScrubberUI(sqlShortState.currentTime);
-                frameCount++;
 
                 // Update Progress & Time Remaining every 15 frames for ultra-smooth UI
-                if (frameCount % 15 === 0 || frameCount === totalFrames) {
-                    const pct = Math.floor((frameCount / totalFrames) * 100);
+                if (frameCount % 15 === 0 || frameCount >= totalFrames) {
+                    const pct = Math.min(100, Math.floor((frameCount / totalFrames) * 100));
                     if (pFill) pFill.style.width = pct + "%";
                     if (pPctText) pPctText.innerText = pct + "%";
-                    if (pDesc) pDesc.innerText = stageText;
 
                     const elapsedSec = (performance.now() - startTime) / 1000.0;
-                    if (elapsedSec > 0.3) {
+                    if (elapsedSec > 0.2) {
                         const framesPerSec = frameCount / elapsedSec;
                         const remainingSec = Math.max(1, Math.ceil((totalFrames - frameCount) / framesPerSec));
                         if (pEstTime) pEstTime.innerText = `⏱️ अंदाजे वेळ: ${remainingSec} सेकंद बाकी (${remainingSec}s left)`;
@@ -1616,5 +1619,46 @@ WHERE rnk = 2;`,
         }
         requestAnimationFrame(recordStep);
     }
+
+    function downloadCurrentFrameAsPng() {
+        const canvas = document.getElementById("sqlShortCanvas");
+        if (!canvas) return;
+        const a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        const filename = `Clean_ZeroWatermark_Frame_${sqlShortState.activePreset.id}_${Math.floor(sqlShortState.currentTime)}s.png`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Also show confirmation in celebration box
+        const celebrationBox = document.getElementById("videoReadyCelebration");
+        if (celebrationBox) {
+            celebrationBox.style.display = "block";
+            celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const btnAgain = document.getElementById("btnDownloadAgain");
+            if (btnAgain) {
+                btnAgain.href = a.href;
+                btnAgain.download = filename;
+            }
+        }
+    }
+
+    // Expose all functions to global window scope so HTML buttons & selects never fail
+    window.handleSqlPresetChange = handleSqlPresetChange;
+    window.setSqlAudioLang = setSqlAudioLang;
+    window.setSqlTextStyle = setSqlTextStyle;
+    window.setSqlAvatarPresenter = setSqlAvatarPresenter;
+    window.generateSqlShortBlueprint = generateSqlShortBlueprint;
+    window.renderAiAvatarVideo = renderAiAvatarVideo;
+    window.renderCinematicBackgroundVideo = renderCinematicBackgroundVideo;
+    window.seekSqlShortPlayer = seekSqlShortPlayer;
+    window.toggleSqlShortPlay = toggleSqlShortPlay;
+    window.restartSqlShortPlay = restartSqlShortPlay;
+    window.setSqlShortSpeed = setSqlShortSpeed;
+    window.runInMemorySqlSandbox = runInMemorySqlSandbox;
+    window.exportSqlShortVideo = exportSqlShortVideo;
+    window.downloadCurrentFrameAsPng = downloadCurrentFrameAsPng;
+    window.initSqlShortWorkspace = initSqlShortWorkspace;
     </script>
     '''

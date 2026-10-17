@@ -7,21 +7,37 @@ Zero Server Load: Client-Side Canvas & MediaRecorder Video Generation.
 def get_sql_video_workspace_html() -> str:
     return r'''
     <style>
+    .sql-shorts-container {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding-bottom: 20px;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Highly Visible Custom Glowing Horizontal Scrollbar */
+    .sql-shorts-container::-webkit-scrollbar {
+        height: 12px;
+    }
+    .sql-shorts-container::-webkit-scrollbar-track {
+        background: #070B16;
+        border-radius: 6px;
+        border: 1px solid #1E2D4A;
+    }
+    .sql-shorts-container::-webkit-scrollbar-thumb {
+        background: linear-gradient(90deg, #0284C7, #38BDF8, #10B981);
+        border-radius: 6px;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+        border: 2px solid #070B16;
+    }
+    .sql-shorts-container::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(90deg, #38BDF8, #10B981);
+    }
     .sql-studio-grid {
         display: grid;
-        grid-template-columns: minmax(320px, 1.15fr) 340px minmax(340px, 1.25fr);
+        grid-template-columns: 360px 340px 480px;
+        min-width: 1200px;
         gap: 20px;
         align-items: start;
-    }
-    @media (max-width: 1240px) {
-        .sql-studio-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-    }
-    @media (max-width: 820px) {
-        .sql-studio-grid {
-            grid-template-columns: 1fr;
-        }
     }
     .stage-pill {
         padding: 6px 8px;
@@ -68,6 +84,25 @@ def get_sql_video_workspace_html() -> str:
                 <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🇮🇳 ZP व ग्रामीण विद्यार्थी मिशन</span>
                 <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical (60s)</span>
                 <span class="status-pill" style="background: rgba(139, 92, 246, 0.15); border: 1px solid #8B5CF6; color: #8B5CF6; font-size: 11px; padding: 4px 10px; border-radius: 20px;">💻 0% Server Load</span>
+            </div>
+        </div>
+
+        <!-- Horizontal Scroll Guide & Fast Jump Bar -->
+        <div style="background: rgba(14, 21, 40, 0.95); border: 1.5px solid #1E2D4A; border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <div style="font-size: 12px; color: #38BDF8; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">↔️</span>
+                <span><b>HORIZONTAL SCROLL BAR ACTIVE:</b> तिन्ही स्तंभ (Columns) एका रेषेत पाहण्यासाठी खालील आडवा बार वापरा किंवा थेट जा:</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="document.querySelector('.sql-shorts-container').scrollTo({left: 0, behavior: 'smooth'});" style="font-size: 11px; padding: 5px 12px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;">
+                    ⬅️ 1. Scenario (डावे)
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="document.querySelector('.sql-shorts-container').scrollTo({left: 360, behavior: 'smooth'});" style="font-size: 11px; padding: 5px 12px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;">
+                    📱 2. Preview (मध्यम)
+                </button>
+                <button type="button" class="btn btn-primary" onclick="document.querySelector('.sql-shorts-container').scrollTo({left: 780, behavior: 'smooth'});" style="font-size: 11px; padding: 5px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #000; font-weight: 900; box-shadow: 0 0 12px rgba(16,185,129,0.35);">
+                    ➡️ 3. 1-Click Export (उजवे)
+                </button>
             </div>
         </div>
 
@@ -255,11 +290,22 @@ def get_sql_video_workspace_html() -> str:
                         ब्राउझर GPU द्वारे 1080x1920 फुल-एचडी रेंडरिंग. <b>सर्व्हर लोड: 0%</b>. कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात!
                     </div>
 
-                    <!-- Direct Download Button (Big, Prominent, Instant) -->
-                    <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
-                        <span style="font-size: 18px;">📥</span>
-                        <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (CLEAN &amp; NO WATERMARK)</span>
-                    </button>
+                    <!-- Direct Download Button Group -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo(60)" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
+                            <span style="font-size: 18px;">📥</span>
+                            <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (CLEAN &amp; NO WATERMARK)</span>
+                        </button>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(10)" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="10-sec quick reel export in 2 seconds">
+                                ⚡ Quick 10s Test Video
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;" title="Save current frame as HD PNG">
+                                📸 Save HD Frame (PNG)
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Live 5-Stage Tracker & Real-Time Countdown Monitor -->
                     <div id="exportLiveStageBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px;">
