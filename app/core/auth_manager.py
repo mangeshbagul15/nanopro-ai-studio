@@ -581,6 +581,49 @@ class AuthManager:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
+    def delete_user(self, user_id: str, admin_username: str = "nanopro") -> Dict[str, Any]:
+        """Permanently deletes a user account and terminates all active sessions. Super admin cannot be deleted."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, username, full_name, email, role FROM users WHERE id = ?", (user_id,))
+                user = cursor.fetchone()
+                if not user:
+                    return {"status": "error", "error": "युझर सापडला नाही (User not found)."}
+
+                if user["username"] == "nanopro" or user["role"] == "admin":
+                    return {"status": "error", "error": "सुपर ॲडमिन 'nanopro' खातं हटवता (delete) येणार नाही!"}
+
+                # Terminate and delete sessions
+                cursor.execute("DELETE FROM user_sessions WHERE user_id = ?", (user_id,))
+                # Delete user row
+                cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+                conn.commit()
+
+            # Record audit log
+            self._record_audit_log(
+                user_id,
+                user["username"],
+                "USER_DELETED",
+                f"User '{user['username']}' ({user['email']}) permanently deleted by {admin_username}"
+            )
+
+            # Send Telegram security notification
+            self._notify_telegram(
+                f"🗑️ <b>युझर खातं हटवले (User Deleted)</b>\n"
+                f"👤 <b>Username:</b> {user['username']} ({user['full_name']})\n"
+                f"📧 <b>Email:</b> {user['email']}\n"
+                f"👑 <b>Deleted By:</b> {admin_username}\n"
+                f"🕒 <b>Time:</b> {time.strftime('%I:%M:%S %p', time.localtime())}\n"
+                f"<i>या युझरचे सर्व सत्र आणि परवानग्या त्वरित रद्द करण्यात आल्या आहेत.</i>"
+            )
+
+            return {"status": "success", "message": f"युझर '{user['username']}' यशस्वीरीत्या हटवण्यात (delete) आला आहे."}
+        except Exception as e:
+            log_event(f"Error deleting user: {e}", component="AuthManager", level="ERROR")
+            return {"status": "error", "error": str(e)}
+
+
     def get_audit_logs(self, limit: int = 40) -> List[Dict[str, Any]]:
         """Returns recent security and session audit logs."""
         try:

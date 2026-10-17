@@ -476,6 +476,10 @@ class AdminResetPasswordRequest(BaseModel):
     user_id: str
     new_password: str
 
+class AdminDeleteUserRequest(BaseModel):
+    user_id: str
+    admin_username: Optional[str] = "nanopro"
+
 class TextToSQLRequest(BaseModel):
     prompt: str
     target_db: Optional[str] = "POSTGRES_CLOUD_FREE"
@@ -5004,6 +5008,13 @@ async def api_admin_users_reset_password(req: AdminResetPasswordRequest):
     """Admin-initiated password reset."""
     from app.core.auth_manager import auth_manager
     res = auth_manager.reset_user_password(req.user_id, req.new_password)
+    return JSONResponse(res)
+
+@app.post("/api/admin/users/delete")
+async def api_admin_users_delete(req: AdminDeleteUserRequest):
+    """Permanently deletes a user account (executable only by nanopro / superadmin)."""
+    from app.core.auth_manager import auth_manager
+    res = auth_manager.delete_user(req.user_id, admin_username=req.admin_username)
     return JSONResponse(res)
 
 @app.get("/api/admin/audit_logs")

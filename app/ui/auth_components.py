@@ -346,6 +346,24 @@ def get_auth_injection() -> str:
 .btn-disable:hover { background: #DC2626; }
 .btn-enable { background: #0284C7; color: #FFFFFF; }
 .btn-enable:hover { background: #0369A1; }
+.btn-delete { background: rgba(239, 68, 68, 0.18); color: #EF4444; border: 1px solid #EF4444; }
+.btn-delete:hover { background: #DC2626 !important; color: #FFFFFF !important; box-shadow: 0 0 10px rgba(220, 38, 38, 0.4); }
+
+.badge-btn {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.3;
+    text-decoration: none;
+}
+.badge-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    filter: brightness(1.2);
+}
 
 /* Permissions Modal Overlay */
 #nanoProPermissionsModal {
@@ -556,6 +574,39 @@ def get_auth_injection() -> str:
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .perm-modal-card {
+        width: 96vw !important;
+        max-height: 94vh !important;
+        border-radius: 12px;
+    }
+    .perm-modal-header {
+        padding: 12px 16px;
+    }
+    .perm-modal-body {
+        padding: 14px 16px;
+    }
+    .perm-mode-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .perm-groups-container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .perm-actions-toolbar {
+        gap: 5px;
+        padding: 8px 10px;
+    }
+    .perm-preset-btn {
+        padding: 5px 8px;
+        font-size: 10.5px;
+    }
+    .perm-modal-footer {
+        padding: 10px 16px;
+    }
 }
 </style>
 
@@ -1951,39 +2002,69 @@ async function loadAdminUsers() {
             if (u.status === 'PENDING_APPROVAL') pending++;
             if (u.status === 'ACTIVE') active++;
 
-            const statusClass = (u.status === 'ACTIVE') ? 'status-badge-active' : (u.status === 'PENDING_APPROVAL' ? 'status-badge-pending' : 'status-badge-disabled');
-            
-            const mode = u.access_mode || 'MODIFY';
-            const modeBadge = (mode === 'READ_ONLY') 
-                ? '<span style="background:rgba(245,158,11,0.15); color:#F59E0B; border:1px solid #F59E0B; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">👁️ READ-ONLY</span>' 
-                : '<span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">✏️ MODIFY</span>';
+            // 1. Status Badge (Interactive Button)
+            let statusBadge = '';
+            if (u.status === 'PENDING_APPROVAL') {
+                statusBadge = `<button type="button" class="status-badge-pending badge-btn" onclick="openUserPermissionsById('${u.id}', 'approve')" title="क्लिक करा: युझरला मंजूर करा आणि फिचर्स द्या (Click to Approve)">⏳ PENDING_APPROVAL ⚡</button>`;
+            } else if (u.status === 'ACTIVE') {
+                if (u.username === 'nanopro') {
+                    statusBadge = `<span class="status-badge-active" style="padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">👑 ACTIVE (Master)</span>`;
+                } else {
+                    statusBadge = `<button type="button" class="status-badge-active badge-btn" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="क्लिक करा: खाते तात्पुरते डिसेबल करा (Click to Disable)">✅ ACTIVE</button>`;
+                }
+            } else {
+                statusBadge = `<button type="button" class="status-badge-disabled badge-btn" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="क्लिक करा: खाते पुन्हा सक्रिय करा (Click to Enable)">🚫 DISABLED</button>`;
+            }
 
+            // 2. Access Mode Badge (Interactive Quick-Toggle Button)
+            const mode = u.access_mode || 'MODIFY';
+            let modeBadge = '';
+            if (u.username === 'nanopro') {
+                modeBadge = `<span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">✏️ MODIFY (Master)</span>`;
+            } else if (mode === 'READ_ONLY') {
+                modeBadge = `<button type="button" class="badge-btn" style="background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid #F59E0B; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: ✏️ MODIFY मोडमध्ये बदला (Click to switch to MODIFY)">👁️ READ-ONLY ⇄</button>`;
+            } else {
+                modeBadge = `<button type="button" class="badge-btn" style="background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid #38BDF8; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: 👁️ READ-ONLY मोडमध्ये बदला (Click to switch to READ-ONLY)">✏️ MODIFY ⇄</button>`;
+            }
+
+            // 3. Allowed Features Badge (Interactive Feature Picker Button)
             const views = u.allowed_views || ['*'];
             let featuresBadge = '';
+            const actionType = (u.status === 'PENDING_APPROVAL') ? 'approve' : 'update';
             if (views && typeof views === 'object' && !Array.isArray(views)) {
                 const dIsAll = views.desktop && Array.isArray(views.desktop) && views.desktop.includes('*');
                 const mIsAll = views.mobile && Array.isArray(views.mobile) && views.mobile.includes('*');
                 const dCount = dIsAll ? 'All (42)' : (views.desktop ? views.desktop.length : 0);
                 const mCount = mIsAll ? 'All (42)' : (views.mobile ? views.mobile.length : 0);
                 featuresBadge = `
-                    <div style="display:flex; flex-direction:column; gap:3px;">
-                        <span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:bold;">💻 Desktop: ${dCount}</span>
-                        <span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:bold;">📱 Mobile: ${mCount}</span>
-                    </div>
+                    <button type="button" class="badge-btn" style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:4px 8px; border-radius:10px; font-size:10px; font-weight:bold; text-align:left; display:flex; flex-direction:column; gap:2px;" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: Desktop आणि Mobile फिचर्स निवडा/बदला (Click to customize features)">
+                        <span style="color:#38BDF8;">💻 Desktop: ${dCount}</span>
+                        <span style="color:#C084FC;">📱 Mobile: ${mCount} ⚙️</span>
+                    </button>
                 `;
             } else if (Array.isArray(views) && views.includes('*')) {
-                featuresBadge = '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">All (Sarva 42)</span>';
+                featuresBadge = `
+                    <button type="button" class="badge-btn" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
+                        ⚙️ All (Sarva 42) ✎
+                    </button>
+                `;
             } else {
                 const count = Array.isArray(views) ? views.length : 0;
-                featuresBadge = `<span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">${count} Features</span>`;
+                featuresBadge = `
+                    <button type="button" class="badge-btn" style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
+                        ⚙️ ${count} Features ✎
+                    </button>
+                `;
             }
 
+            // 4. Actions HTML (Approve, Reject, Permissions, Toggle Status, AND Delete)
             let actionsHtml = '';
             if (u.status === 'PENDING_APPROVAL') {
                 actionsHtml = `
-                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')">🛡️ Approve</button>
-                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')">Reject 🚫</button>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="Approve with custom features">🛡️ Approve</button>
+                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="Reject registration">Reject 🚫</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="Permanently delete user account">🗑️ Delete</button>
                     </div>
                 `;
             } else if (u.username === 'nanopro') {
@@ -1998,9 +2079,10 @@ async function loadAdminUsers() {
                 const btnLabel = (u.status === 'ACTIVE') ? 'Disable 🚫' : 'Enable ✅';
                 const btnClass = (u.status === 'ACTIVE') ? 'btn-disable' : 'btn-enable';
                 actionsHtml = `
-                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                        <button type="button" class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; padding:5px 8px;" onclick="openUserPermissionsById('${u.id}', 'update')">⚙️ Permissions</button>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+                        <button type="button" class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; padding:5px 8px;" onclick="openUserPermissionsById('${u.id}', 'update')" title="Permissions &amp; feature access">⚙️ Permissions</button>
                         <button type="button" class="btn-action-sm ${btnClass}" style="padding:5px 8px;" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="Permanently delete user account">🗑️ Delete</button>
                     </div>
                 `;
             }
@@ -2011,7 +2093,7 @@ async function loadAdminUsers() {
                 <td>${u.full_name}</td>
                 <td>${u.email}</td>
                 <td><span style="text-transform:uppercase; font-size:11px; font-weight:bold;">${u.role}</span></td>
-                <td><span class="${statusClass}">${u.status}</span></td>
+                <td>${statusBadge}</td>
                 <td>${modeBadge}</td>
                 <td>${featuresBadge}</td>
                 <td>${u.last_login_fmt}</td>
@@ -2045,6 +2127,74 @@ async function toggleUserStatus(userId, newStatus) {
         alert(data.message);
         loadAdminUsers();
     } catch(e) { alert('Truti: ' + e.message); }
+}
+
+async function quickToggleUserAccessMode(userId, currentMode) {
+    const u = (window.allAdminUsersMap && window.allAdminUsersMap[userId]);
+    if (!u) return;
+    if (u.username === 'nanopro') {
+        alert('Super Admin खाते कायम MODIFY मोडमध्ये राहते!');
+        return;
+    }
+    const newMode = (currentMode === 'READ_ONLY') ? 'MODIFY' : 'READ_ONLY';
+    const confirmMsg = (newMode === 'READ_ONLY')
+        ? `युझर '${u.username}' चे एक्सेस मोड बदलून '👁️ READ-ONLY' करायचे आहे का? (डेटा एडिट बंद होईल)`
+        : `युझर '${u.username}' चे एक्सेस मोड बदलून '✏️ MODIFY' करायचे आहे का? (पूर्ण अधिकार मिळतील)`;
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const resp = await fetch('/api/admin/users/permissions', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                admin_username: currentUser ? currentUser.username : 'nanopro',
+                allowed_views: u.allowed_views || ['*'],
+                access_mode: newMode
+            })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            alert('✅ ' + (data.message || 'Access mode यशस्वीरीत्या बदलला!'));
+            loadAdminUsers();
+        } else {
+            alert('Truti: ' + (data.error || 'Access mode update karta aale nahi!'));
+        }
+    } catch(e) {
+        alert('Server Truti: ' + e.message);
+    }
+}
+
+async function deleteUserAccount(userId, username) {
+    if (username === 'nanopro') {
+        alert('🚫 Super Admin "nanopro" चे खाते हटवता (Delete) येणार नाही!');
+        return;
+    }
+    const confirmed = confirm(
+        `⚠️ सावधान!\n\nनक्की युझर '${username}' कायमस्वरूपी हटवायचा (Delete) आहे का?\n\nयामुळे युझरचे सर्व सत्र, परवानग्या आणि ॲक्सेस त्वरित कायमचे नष्ट होतील.`
+    );
+    if (!confirmed) return;
+
+    try {
+        const resp = await fetch('/api/admin/users/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                admin_username: currentUser ? currentUser.username : 'nanopro'
+            })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            alert('✅ ' + (data.message || `युझर '${username}' यशस्वीरीत्या हटवण्यात आला आहे.`));
+            loadAdminUsers();
+        } else {
+            alert('Truti: ' + (data.error || 'युझर हटवता आला नाही.'));
+        }
+    } catch(err) {
+        alert('Server Truti: ' + err.message);
+    }
 }
 
 async function triggerTelegramDiagnosticsNow() {
@@ -2082,6 +2232,24 @@ async function loadAdminAuditLogs() {
         });
     } catch(e){}
 }
+
+// Explicit Global Window Bindings for Inline onclick handlers
+window.setPermAccessMode = setPermAccessMode;
+window.switchPermDeviceTab = switchPermDeviceTab;
+window.selectAllPermFeatures = selectAllPermFeatures;
+window.toggleGroupCheckboxes = toggleGroupCheckboxes;
+window.copyPermFeatures = copyPermFeatures;
+window.selectPermPreset = selectPermPreset;
+window.openPermissionsModal = openPermissionsModal;
+window.closePermissionsModal = closePermissionsModal;
+window.submitUserPermissions = submitUserPermissions;
+window.openUserPermissionsById = openUserPermissionsById;
+window.loadAdminUsers = loadAdminUsers;
+window.toggleUserStatus = toggleUserStatus;
+window.quickToggleUserAccessMode = quickToggleUserAccessMode;
+window.deleteUserAccount = deleteUserAccount;
+window.triggerTelegramDiagnosticsNow = triggerTelegramDiagnosticsNow;
+window.loadAdminAuditLogs = loadAdminAuditLogs;
 </script>
 """
 
