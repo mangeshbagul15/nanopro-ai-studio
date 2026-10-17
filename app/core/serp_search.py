@@ -65,7 +65,7 @@ class SerpApiEngine:
             "hl": hl,
             "gl": gl,
         }
-        if location:
+        if location and engine != "google_maps":
             params["location"] = location
 
         if engine == "amazon":
@@ -218,24 +218,79 @@ class SerpApiEngine:
             log_event(f"Failed to download image from {image_url[:60]}: {e}", level="WARNING", component="SerpAPI")
             return False
 
-    def get_markdown_image_gallery(self, query: str, num: int = 6) -> str:
+    def search_places(
+        self,
+        query: str,
+        location: Optional[str] = None,
+        ll: Optional[str] = None,
+        num: int = 10
+    ) -> List[Dict[str, Any]]:
         """
-        Returns an inline visual Markdown gallery of images found via Google Images.
+        Executes Google Maps Local Places search via SerpAPI (engine=google_maps).
+        Returns business listings with ratings, reviews, address, phone, GPS coordinates,
+        opening hours, and direct links.
         """
-        images = self.search_images(query=query, num=num)
-        if not images:
-            return f"No images found for *{query}*."
+        search_query = f"{query} in {location}" if location and not query.lower().endswith(location.lower()) else query
+        extra = {"type": "search"}
+        if ll:
+            extra["ll"] = ll
 
-        lines = [f"### 🖼️ Image Search Gallery: *{query}*\n"]
-        for idx, img in enumerate(images, start=1):
-            title = img.get("title") or f"Image {idx}"
-            orig = img.get("original") or img.get("thumbnail")
-            thumb = img.get("thumbnail") or orig
-            source = img.get("source") or "Web"
-            lines.append(f"{idx}. **[{title}]({orig})** *(Source: {source})*")
-            if thumb:
-                lines.append(f"   ![{title}]({thumb})\n")
+        data = self.search(
+            query=search_query,
+            engine="google_maps",
+            num=num,
+            extra_params=extra
+        )
+        raw_places = data.get("local_results", [])
+        places = []
+        for p in raw_places[:num]:
+            places.append({
+                "position": p.get("position"),
+                "title": p.get("title", ""),
+                "place_id": p.get("place_id", ""),
+                "rating": p.get("rating"),
+                "reviews": p.get("reviews"),
+                "price": p.get("price"),
+                "type": p.get("type", ""),
+                "address": p.get("address", ""),
+                "phone": p.get("phone", ""),
+                "open_state": p.get("open_state", ""),
+                "website": p.get("website", ""),
+                "order_online": p.get("order_online", ""),
+                "thumbnail": p.get("thumbnail", ""),
+                "gps": p.get("gps_coordinates", {}),
+                "user_review": p.get("user_review", "")
+            })
+        return places
+
+    def get_markdown_places(self, query: str, location: Optional[str] = None, num: int = 5) -> str:
+        """
+        Formats Google Maps place results into a clean, structured Markdown table.
+        """
+        places = self.search_places(query=query, location=location, num=num)
+        if not places:
+            return f"No local places found for *{query}*."
+
+        loc_str = f" in {location}" if location else ""
+        lines = [f"### 📍 Google Maps Local Places: *{query}{loc_str}*\n"]
+        for p in places:
+            title = p.get("title")
+            rating = f"⭐ {p.get('rating')} ({p.get('reviews')} reviews)" if p.get('rating') else ""
+            price = f" | {p.get('price')}" if p.get('price') else ""
+            b_type = f" | {p.get('type')}" if p.get('type') else ""
+            lines.append(f"**{p.get('position', 1)}. {title}** {rating}{price}{b_type}")
+            lines.append(f"> 🏠 **Address:** {p.get('address') or 'N/A'}")
+            if p.get('phone'):
+                lines.append(f"> 📞 **Phone:** {p.get('phone')}")
+            if p.get('open_state'):
+                lines.append(f"> 🕒 **Status:** {p.get('open_state')}")
+            if p.get('website'):
+                lines.append(f"> 🌐 **Website:** [{title}]({p.get('website')})")
+            if p.get('user_review'):
+                lines.append(f"> 💬 *{p.get('user_review')}*")
+            lines.append("")
         return "\n".join(lines)
+
 
     def get_markdown_summary(self, query: str, num: int = 5) -> str:
         """

@@ -1168,6 +1168,17 @@ async def api_search_products(q: str = Query(...), domain: str = Query("amazon.i
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
+@app.get("/api/search/places")
+async def api_search_places(q: str = Query(...), location: Optional[str] = Query(None), num: int = Query(10)):
+    """Executes live Google Maps Local Places search using SerpAPI."""
+    from app.core.serp_search import serp_api_engine
+    try:
+        places = serp_api_engine.search_places(query=q, location=location, num=num)
+        return JSONResponse({"status": "success", "query": q, "location": location, "count": len(places), "places": places})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 
 # --- ELEVENLABS VOICE AI ROUTES ---
 class VoiceTTSRequest(BaseModel):

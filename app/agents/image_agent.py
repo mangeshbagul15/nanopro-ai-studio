@@ -31,28 +31,54 @@ class ImageCreationAgent:
         filename = f"gen_img_{timestamp}.png"
         filepath = self.output_dir / filename
 
-        # 1. Try Generative AI via Pollinations.ai (Zero-Config, Free Lifetime, FLUX/SD)
-        pollinations_success = False
+        # 1. Try Replicate Flux.1 / SDXL if configured and credit active
+        image_generated = False
+        provider_used = "local-canvas"
         try:
-            enhanced_prompt = f"{prompt}, style {style}, professional 8k sharp, cinematic lighting, trending on artstation"
-            encoded_prompt = urllib.parse.quote(enhanced_prompt)
-            # Use 512x512 or scaled dimensions for fast generation
-            target_w = min(width, 1024)
-            target_h = min(height, 1024)
-            poll_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={target_w}&height={target_h}&model=flux&nologo=true&seed={timestamp%100000}"
-            req = urllib.request.Request(poll_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NanoProAI/1.0"})
-            with urllib.request.urlopen(req, timeout=18) as resp:
-                img_data = resp.read()
-                if len(img_data) > 1000:
-                    with open(filepath, "wb") as f:
-                        f.write(img_data)
-                    pollinations_success = True
-                    log_event(f"Pollinations.ai generated real AI image ({len(img_data)} bytes) for: {prompt[:40]}", component="ImageAgent")
-        except Exception as pe:
-            log_event(f"Pollinations.ai skipped or offline ({pe}), using local graphics canvas fallback.", component="ImageAgent")
+            from app.core.replicate_engine import replicate_engine
+            if replicate_engine.is_available():
+                rep_res = replicate_engine.generate_image(
+                    prompt=f"{prompt}, style {style}, 8k sharp, cinematic lighting",
+                    model="black-forest-labs/flux-schnell"
+                )
+                img_url = rep_res.get("image_url")
+                if img_url:
+                    # Download Replicate image to output directory
+                    req_rep = urllib.request.Request(img_url, headers={"User-Agent": "NanoProAI/2.0"})
+                    with urllib.request.urlopen(req_rep, timeout=15) as r_resp:
+                        r_bytes = r_resp.read()
+                        if len(r_bytes) > 1000:
+                            with open(filepath, "wb") as f:
+                                f.write(r_bytes)
+                            image_generated = True
+                            provider_used = "replicate-flux"
+                            log_event(f"Replicate generated AI image ({len(r_bytes)} bytes) for: {prompt[:40]}", component="ImageAgent")
+        except Exception as re_err:
+            log_event(f"Replicate skipped/cascading ({re_err}), falling back to Pollinations Flux.", component="ImageAgent")
 
-        # 2. Fallback to local Pillow or FFmpeg canvas if offline
-        if not pollinations_success:
+        # 2. Try Generative AI via Pollinations.ai (Flux.1 / SDXL - Zero-Config, Free Lifetime)
+        if not image_generated:
+            try:
+                enhanced_prompt = f"{prompt}, style {style}, professional 8k sharp, cinematic lighting, trending on artstation"
+                encoded_prompt = urllib.parse.quote(enhanced_prompt)
+                # Use scaled dimensions for fast generation
+                target_w = min(width, 1024)
+                target_h = min(height, 1024)
+                poll_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={target_w}&height={target_h}&model=flux&nologo=true&seed={timestamp%100000}"
+                req = urllib.request.Request(poll_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NanoProAI/1.0"})
+                with urllib.request.urlopen(req, timeout=18) as resp:
+                    img_data = resp.read()
+                    if len(img_data) > 1000:
+                        with open(filepath, "wb") as f:
+                            f.write(img_data)
+                        image_generated = True
+                        provider_used = "pollinations-flux"
+                        log_event(f"Pollinations.ai generated real AI image ({len(img_data)} bytes) for: {prompt[:40]}", component="ImageAgent")
+            except Exception as pe:
+                log_event(f"Pollinations.ai skipped or offline ({pe}), using local graphics canvas fallback.", component="ImageAgent")
+
+        # 3. Fallback to local Pillow or FFmpeg canvas if offline
+        if not image_generated:
             try:
                 from PIL import Image, ImageDraw, ImageFont
                 img = Image.new("RGB", (width, height), color="#170D2E")
@@ -83,6 +109,7 @@ class ImageCreationAgent:
             "dimensions": f"{width}x{height}",
             "file_path": str(filepath),
             "filename": filename,
+            "provider": provider_used,
             "created_at": time.time()
         }
         
