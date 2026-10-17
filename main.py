@@ -3530,6 +3530,52 @@ async def api_cyber_abuseip_blacklist(confidence: int = 100, limit: int = 25):
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# UPSTASH SERVERLESS REDIS CLOUD CACHE (API #14)
+# -------------------------------------------------------------
+class CacheSetRequest(BaseModel):
+    key: str
+    value: Any
+    ttl_seconds: Optional[int] = None
+
+@app.get("/api/cache/status")
+async def api_cache_status():
+    from app.core.upstash_cache import upstash_cache
+    try:
+        alive = upstash_cache.ping()
+        markdown = upstash_cache.get_markdown_status()
+        return JSONResponse({"status": "online" if alive else "offline", "ping": alive, "markdown_report": markdown})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/cache/get")
+async def api_cache_get(key: str):
+    from app.core.upstash_cache import upstash_cache
+    try:
+        val = upstash_cache.get(key)
+        return JSONResponse({"status": "success", "key": key, "value": val, "found": val is not None})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.post("/api/cache/set")
+async def api_cache_set(req: CacheSetRequest):
+    from app.core.upstash_cache import upstash_cache
+    try:
+        ok = upstash_cache.set(req.key, req.value, ex=req.ttl_seconds)
+        return JSONResponse({"status": "success", "key": req.key, "stored": ok})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.delete("/api/cache/del")
+async def api_cache_delete(key: str):
+    from app.core.upstash_cache import upstash_cache
+    try:
+        ok = upstash_cache.delete(key)
+        return JSONResponse({"status": "success", "key": key, "deleted": ok})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================
