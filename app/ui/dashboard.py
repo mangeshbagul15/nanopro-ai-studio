@@ -4427,6 +4427,28 @@ def _get_raw_dashboard_html() -> str:
         <!-- VIEW: 1. AI MANAGER (NATURAL LANGUAGE COMMAND & DIALOGUE CENTER) -->
 
 <div class="workspace-view active" id="view-ai_manager">
+        <!-- DUAL AI CHAT SWITCHER (STRICTLY 2 CHATS ON MOBILE & DESKTOP) -->
+        <div class="dual-ai-chat-switcher" style="display:flex; gap:10px; margin-bottom:12px; background:rgba(15,23,42,0.92); padding:6px; border-radius:14px; border:1px solid rgba(56,189,248,0.25); box-shadow:0 4px 20px rgba(0,0,0,0.35);">
+            <!-- Tab 1: NanoPro AI Manager -->
+            <button type="button" id="tabBtnNanoProManager" onclick="switchAiChatMode('manager')" class="dual-ai-tab active" style="flex:1; padding:9px 12px; border-radius:10px; background:linear-gradient(135deg, rgba(30,58,138,0.7) 0%, rgba(15,23,42,0.95) 100%); border:1.5px solid #38BDF8; color:#FFFFFF; cursor:pointer; display:flex; align-items:center; gap:9px; box-shadow:0 0 12px rgba(56,189,248,0.3); transition:all 0.2s ease;">
+                <span style="font-size:20px; filter:drop-shadow(0 0 6px #38BDF8);">🤖</span>
+                <div style="text-align:left;">
+                    <div style="font-size:12.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">NanoPro AI Manager</div>
+                    <div style="font-size:9.5px; color:#94A3B8;">Conversational Command Center &amp; 305 Swarm</div>
+                </div>
+            </button>
+            <!-- Tab 2: Antigravity AI -->
+            <button type="button" id="tabBtnAntigravity" onclick="switchAiChatMode('antigravity')" class="dual-ai-tab" style="flex:1; padding:9px 12px; border-radius:10px; background:rgba(15,23,42,0.6); border:1.5px solid rgba(255,255,255,0.08); color:#94A3B8; cursor:pointer; display:flex; align-items:center; gap:9px; transition:all 0.2s ease;">
+                <span style="font-size:20px; filter:drop-shadow(0 0 6px #A78BFA);">⚡</span>
+                <div style="text-align:left;">
+                    <div style="font-size:12.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">Antigravity AI</div>
+                    <div style="font-size:9.5px; color:#38BDF8;">Agentic Coding &amp; Cloud-Laptop Sync</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- CONTAINER 1: NANOPRO AI MANAGER (COMMAND CENTER) -->
+        <div id="containerNanoProManager" class="ai-chat-mode-container">
             <div class="panel-card unified-manager-card">
                 <!-- Modern Compact Chat Topbar (Maximized Chat Window Space) -->
                 <div class="manager-chat-topbar">
@@ -4530,6 +4552,94 @@ def _get_raw_dashboard_html() -> str:
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- CONTAINER 2: ANTIGRAVITY AI AGENTIC CODING & CLOUD-LAPTOP SYNC -->
+        <div id="containerAntigravity" class="ai-chat-mode-container" style="display:none;">
+            <div class="panel-card unified-manager-card" style="border:1px solid rgba(167,139,250,0.35); box-shadow:0 0 25px rgba(139,92,246,0.12);">
+                <!-- Antigravity Compact Topbar -->
+                <div class="manager-chat-topbar" style="background:linear-gradient(90deg, rgba(30,27,75,0.85) 0%, rgba(15,23,42,0.95) 100%); border-bottom:1px solid rgba(167,139,250,0.25);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #38BDF8); display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 0 10px rgba(167,139,250,0.4); flex-shrink:0;">⚡</div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span style="font-size:13.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">Antigravity AI — Agentic Coding Assistant</span>
+                            <!-- Live Sync Pill -->
+                            <span id="antigravitySyncPill" class="badge" style="background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#10B981; font-size:10px; padding:2px 8px; border-radius:12px; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+                                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981;"></span>
+                                <span id="antigravitySyncStatusText">GitHub &amp; Cloud Synced</span>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Antigravity Actions (Sync, Commit, Clear, Export) -->
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" class="btn btn-secondary" onclick="triggerAntigravitySync(this)" style="font-size:10.5px; padding:4px 9px; background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8; font-weight:700;" title="Pull and push changes between Mobile, GitHub, and Laptop">
+                            <span id="antigravitySyncIcon">🔄</span> Sync with Laptop
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="promptAntigravityCommit()" style="font-size:10.5px; padding:4px 9px; background:rgba(139,92,246,0.15); border-color:#8B5CF6; color:#C4B5FD; font-weight:700;" title="Commit and push changes to GitHub">
+                            🚀 Commit &amp; Push
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearAntigravityChat()" style="font-size:10px; padding:3px 8px;" title="Reset Antigravity chat session">↺ New Chat</button>
+                        <button type="button" class="btn btn-secondary" onclick="copyViewer('antigravityChatStream')" style="font-size:10px; padding:3px 8px;" title="Copy transcript">📋 Copy</button>
+                    </div>
+                </div>
+
+                <!-- Antigravity Scrollable Timeline Container -->
+                <div class="manager-timeline-container" id="antigravityChatStream" style="min-height:360px; max-height:550px; overflow-y:auto; padding:14px;">
+                    <!-- Initial Welcome Message from Antigravity -->
+                    <div class="chat-msg manager" id="welcomeAntigravityMsg">
+                        <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8); box-shadow:0 0 10px rgba(167,139,248,0.4);">⚡</div>
+                        <div class="msg-bubble" style="border:1px solid rgba(167,139,250,0.3); background:rgba(15,23,42,0.95);">
+                            <div class="msg-sender" style="color:#C4B5FD;">Antigravity AI <span class="msg-tag" style="background:rgba(139,92,246,0.25); color:#C4B5FD; border-color:#8B5CF6;">Autonomous Coding Assistant</span></div>
+                            <div class="msg-text">
+                                नमस्कार मंगेश! मी तुमचा <strong>Google DeepMind Antigravity AI Assistant</strong> आहे.<br><br>
+                                जसे आपण Antigravity IDE मध्ये काम करतो, तसेच तुम्ही आता थेट मोबाईल किंवा लॅपटॉपवरून माझ्याशी कोड, सिस्टीम आर्किटेक्चर, डीबगिंग आणि ऑटोमेशनवर काम करू शकता.<br><br>
+                                <div style="padding:8px 12px; background:rgba(30,27,75,0.7); border-radius:8px; border-left:3px solid #38BDF8; margin:8px 0; font-size:11.5px;">
+                                    📱 <b>Ubiquitous Cloud &amp; Laptop Sync:</b><br>
+                                    लॅपटॉप बंद असला तरी तुम्ही मोबाईलवरून दिलेले सर्व आदेश व कोड थेट <b>GitHub</b> वर सेव्ह होतात. नंतर जेव्हा तुम्ही लॅपटॉप सुरू कराल किंवा वर दिलेल्या <b>'🔄 Sync with Laptop'</b> बटनावर क्लिक कराल, तेव्हा सर्व फाइल्स आपोआप लॅपटॉपवर १ सेकंदात सिंक (Sync) होतील!
+                                </div>
+                                तुम्हाला आज कोणत्या कोड किंवा सिस्टीमवर काम करायचे आहे?
+                            </div>
+                            <div class="msg-meta">
+                                <span>Just now</span> &bull; <span>Engine: Gemini / Groq LPU</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Antigravity Contextual Suggestion Chips -->
+                <div class="manager-chips-bar" id="antigravityChipsBar">
+                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Analyze workspace code and show git sync status.')">🔍 "Git sync &amp; branch status"</button>
+                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Sync everything between mobile, GitHub, and laptop.')">🔄 "Sync with laptop &amp; GitHub"</button>
+                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Write a clean Python script to test SQLite WAL concurrent queries.')">🐍 "Test SQLite WAL concurrency"</button>
+                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Show active database connections and memory telemetry.')">📊 "Database &amp; memory telemetry"</button>
+                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('How does Antigravity mobile-to-laptop sync work without conflict?')">💡 "Explain mobile-to-laptop sync"</button>
+                </div>
+
+                <!-- Antigravity Composer -->
+                <div class="manager-composer-container">
+                    <div style="display:flex; gap:10px; align-items:flex-end;">
+                        <div style="flex:1; position:relative;">
+                            <textarea class="studio-input" id="antigravityChatInput" rows="2" style="width:100%; resize:vertical; max-height:140px; min-height:46px; font-size:13px; line-height:1.45; padding:10px 14px; background:#060A14; border:1px solid #4338CA; border-radius:8px; color:#F8FAFC;" placeholder="Ask Antigravity to write code, edit files, or sync: e.g. 'Sync with laptop', 'Write FastAPI endpoint' (Enter to send, Shift+Enter for newline)..." onkeydown="handleAntigravityKeydown(event)"></textarea>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" id="antigravitySendBtn" class="btn btn-primary" onclick="sendAntigravityMessage()" style="height:46px; padding:0 18px; font-size:12.5px; font-weight:700; background:linear-gradient(135deg, #7C3AED, #2563EB); border-color:#6366F1; display:flex; align-items:center; gap:6px;">
+                                <span>⚡</span> Send
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11.5px; color:#94A3B8;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="color:#A78BFA; font-weight:700;">Antigravity Engine:</span>
+                            <span style="color:#38BDF8;">DeepMind Agentic Thinking + GitHub Sync</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="color:#64748B;">Enter to send &bull; Shift+Enter for new line</span>
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('antigravityChatInput').value=''" style="padding:2px 8px; font-size:10.5px;">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
             <!-- NANOPRO CONTINUOUS SELF-TRAINING & ADAPTATION MODAL -->
             <div id="selfTrainingModal" class="pixel-agent-deep-modal" style="display:none;">
@@ -10263,7 +10373,7 @@ Ready for message compilation and automated dispatch.
             <span class="nav-icon" style="filter:drop-shadow(0 0 6px #38BDF8);">⚡</span>
             <span style="font-weight:800; color:#38BDF8;">Hub</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-dashboard" onclick="switchView('dashboard')">
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-ai_manager" onclick="switchView('ai_manager')">
             <span class="nav-icon">💬</span>
             <span>AI Chat</span>
         </button>
@@ -12248,6 +12358,306 @@ function navigateHistory(direction) {
             if (stateIndicator) stateIndicator.innerText = 'Ready';
             logLocal('AIManager', 'Response generation stopped by user.');
         }
+
+        /* --- ANTIGRAVITY AGENTIC AI & LAPTOP-MOBILE SYNC CLIENT --- */
+        let activeAiChatMode = 'manager';
+
+        function switchAiChatMode(mode) {
+            activeAiChatMode = mode;
+            const tabMgr = document.getElementById('tabBtnNanoProManager');
+            const tabAg = document.getElementById('tabBtnAntigravity');
+            const contMgr = document.getElementById('containerNanoProManager');
+            const contAg = document.getElementById('containerAntigravity');
+
+            if (mode === 'manager') {
+                if (contMgr) contMgr.style.display = 'block';
+                if (contAg) contAg.style.display = 'none';
+                if (tabMgr) {
+                    tabMgr.classList.add('active');
+                    tabMgr.style.background = 'linear-gradient(135deg, rgba(30,58,138,0.7) 0%, rgba(15,23,42,0.95) 100%)';
+                    tabMgr.style.borderColor = '#38BDF8';
+                    tabMgr.style.boxShadow = '0 0 12px rgba(56,189,248,0.3)';
+                }
+                if (tabAg) {
+                    tabAg.classList.remove('active');
+                    tabAg.style.background = 'rgba(15,23,42,0.6)';
+                    tabAg.style.borderColor = 'rgba(255,255,255,0.08)';
+                    tabAg.style.boxShadow = 'none';
+                }
+            } else {
+                if (contMgr) contMgr.style.display = 'none';
+                if (contAg) contAg.style.display = 'block';
+                if (tabAg) {
+                    tabAg.classList.add('active');
+                    tabAg.style.background = 'linear-gradient(135deg, rgba(88,28,135,0.7) 0%, rgba(15,23,42,0.95) 100%)';
+                    tabAg.style.borderColor = '#A78BFA';
+                    tabAg.style.boxShadow = '0 0 12px rgba(167,139,250,0.35)';
+                }
+                if (tabMgr) {
+                    tabMgr.classList.remove('active');
+                    tabMgr.style.background = 'rgba(15,23,42,0.6)';
+                    tabMgr.style.borderColor = 'rgba(255,255,255,0.08)';
+                    tabMgr.style.boxShadow = 'none';
+                }
+                fetchAntigravityStatus();
+            }
+        }
+        window.switchAiChatMode = switchAiChatMode;
+
+        function quickFillAntigravityPrompt(text) {
+            const input = document.getElementById('antigravityChatInput');
+            if (input) {
+                input.value = text;
+                input.focus();
+            }
+        }
+        window.quickFillAntigravityPrompt = quickFillAntigravityPrompt;
+
+        function handleAntigravityKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendAntigravityMessage();
+            }
+        }
+        window.handleAntigravityKeydown = handleAntigravityKeydown;
+
+        async function fetchAntigravityStatus() {
+            try {
+                const res = await fetch('/api/antigravity/status');
+                const data = await res.json();
+                if (data.success) {
+                    const statusText = document.getElementById('antigravitySyncStatusText');
+                    if (statusText) {
+                        const cleanTag = data.is_clean ? 'Clean' : `${data.uncommitted_files_count} modified`;
+                        const shortCommit = (data.latest_commit || '').split(' ')[0] || 'main';
+                        statusText.innerText = `${data.branch} (${shortCommit}) • ${cleanTag}`;
+                    }
+                }
+            } catch (e) {
+                console.warn('Antigravity status fetch error:', e);
+            }
+        }
+        window.fetchAntigravityStatus = fetchAntigravityStatus;
+
+        async function triggerAntigravitySync(btn) {
+            const icon = document.getElementById('antigravitySyncIcon');
+            const origIcon = icon ? icon.innerText : '🔄';
+            if (icon) icon.innerText = '⏳';
+            if (btn) btn.disabled = true;
+
+            const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent));
+            try {
+                const res = await fetch('/api/antigravity/sync', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ device: isMob ? 'mobile' : 'laptop' })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    alert(d.message || '✅ Mobile आणि Laptop चे सर्व फाइल्स GitHub द्वारे १००% सिंक झाले!');
+                    appendAntigravitySystemNotice(d.message);
+                    fetchAntigravityStatus();
+                } else {
+                    alert('Sync त्रुटी: ' + (d.error || 'अज्ञात त्रुटी'));
+                }
+            } catch (err) {
+                alert('Sync नेटवर्क त्रुटी: ' + err.message);
+            } finally {
+                if (icon) icon.innerText = origIcon;
+                if (btn) btn.disabled = false;
+            }
+        }
+        window.triggerAntigravitySync = triggerAntigravitySync;
+
+        async function promptAntigravityCommit() {
+            const msg = prompt('Enter semantic commit message for GitHub & Laptop sync:', 'feat(antigravity): remote workspace update from mobile');
+            if (!msg) return;
+            const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent));
+            try {
+                const res = await fetch('/api/antigravity/sync', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ commit_message: msg, device: isMob ? 'mobile' : 'laptop' })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    alert(d.message);
+                    appendAntigravitySystemNotice(`🚀 Pushed to GitHub: <code>${escapeHtml(d.commit_hash)}</code>`);
+                    fetchAntigravityStatus();
+                } else {
+                    alert('Commit error: ' + (d.error || 'Failed'));
+                }
+            } catch (err) {
+                alert('Commit error: ' + err.message);
+            }
+        }
+        window.promptAntigravityCommit = promptAntigravityCommit;
+
+        function appendAntigravitySystemNotice(noticeText) {
+            const stream = document.getElementById('antigravityChatStream');
+            if (!stream) return;
+            const div = document.createElement('div');
+            div.className = 'chat-msg manager';
+            div.innerHTML = `
+                <div class="msg-avatar" style="background:#10B981;">🔄</div>
+                <div class="msg-bubble" style="border:1px solid rgba(16,185,129,0.35); background:rgba(6,78,59,0.25); color:#A7F3D0; font-size:12px;">
+                    ${noticeText}
+                </div>
+            `;
+            stream.appendChild(div);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        async function sendAntigravityMessage(overrideMsg) {
+            const input = document.getElementById('antigravityChatInput');
+            const msg = (typeof overrideMsg === 'string' && overrideMsg.trim()) ? overrideMsg.trim() : (input ? input.value.trim() : '');
+            if (!msg) {
+                alert('Please enter a question or coding instruction for Antigravity.');
+                return;
+            }
+            if (input) {
+                input.value = '';
+                input.style.height = '46px';
+            }
+
+            // Append user message
+            const stream = document.getElementById('antigravityChatStream');
+            if (stream) {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'chat-msg user';
+                userDiv.innerHTML = `
+                    <div class="msg-avatar" style="background:linear-gradient(135deg, #1E3A8A, #38BDF8);">👤</div>
+                    <div class="msg-bubble" style="background:linear-gradient(135deg, rgba(30,58,138,0.7) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(56,189,248,0.35);">
+                        <div class="msg-sender" style="color:#38BDF8;">You (Mobile / Laptop)</div>
+                        <div class="msg-text">${escapeHtml(msg)}</div>
+                        <div class="msg-meta">Just now</div>
+                    </div>
+                `;
+                stream.appendChild(userDiv);
+                stream.scrollTop = stream.scrollHeight;
+            }
+
+            // Thinking Indicator Bubble
+            const thinkingId = 'ag_thinking_' + Date.now();
+            if (stream) {
+                const thinkingDiv = document.createElement('div');
+                thinkingDiv.className = 'chat-msg manager';
+                thinkingDiv.id = thinkingId;
+                thinkingDiv.innerHTML = `
+                    <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8);">⚡</div>
+                    <div class="msg-bubble" style="color:#C4B5FD; font-style:italic; border:1px solid rgba(167,139,250,0.3);">
+                        <span style="display:inline-block; animation:pulseListen 1s infinite;">⚡</span> Antigravity is reasoning, evaluating code tree, and checking cloud sync...
+                    </div>
+                `;
+                stream.appendChild(thinkingDiv);
+                stream.scrollTop = stream.scrollHeight;
+            }
+
+            const sendBtn = document.getElementById('antigravitySendBtn');
+            if (sendBtn) sendBtn.disabled = true;
+
+            const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent));
+
+            try {
+                const res = await fetch('/api/antigravity/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: msg, device: isMob ? 'mobile' : 'laptop', session_id: 'antigravity_default' })
+                });
+                const d = await res.json();
+
+                // Remove thinking indicator
+                const thEl = document.getElementById(thinkingId);
+                if (thEl) thEl.remove();
+
+                appendAntigravityAssistantResponse(d);
+            } catch (err) {
+                const thEl = document.getElementById(thinkingId);
+                if (thEl) thEl.remove();
+                if (stream) {
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'chat-msg manager';
+                    errDiv.innerHTML = `
+                        <div class="msg-avatar" style="background:#EF4444;">!</div>
+                        <div class="msg-bubble" style="border-color:#EF4444; color:#FCA5A5;">
+                            <strong>Antigravity Error:</strong> ${escapeHtml(err.message)}
+                        </div>
+                    `;
+                    stream.appendChild(errDiv);
+                }
+            } finally {
+                if (sendBtn) sendBtn.disabled = false;
+            }
+        }
+        window.sendAntigravityMessage = sendAntigravityMessage;
+
+        function appendAntigravityAssistantResponse(data) {
+            const stream = document.getElementById('antigravityChatStream');
+            if (!stream) return;
+
+            const div = document.createElement('div');
+            div.className = 'chat-msg manager';
+
+            let thoughtHtml = '';
+            if (data.thinking) {
+                thoughtHtml = `
+                    <details class="antigravity-thought-box" style="margin-bottom:10px; padding:8px 12px; background:rgba(30,27,75,0.5); border:1px solid rgba(139,92,246,0.3); border-radius:8px;">
+                        <summary style="cursor:pointer; font-weight:700; color:#C4B5FD; font-size:11.5px; outline:none;">
+                            🧠 Antigravity Strategic Reasoning (Click to expand)
+                        </summary>
+                        <div style="margin-top:6px; font-family:monospace; font-size:11px; color:#A78BFA; white-space:pre-wrap; line-height:1.45;">
+                            ${escapeHtml(data.thinking)}
+                        </div>
+                    </details>
+                `;
+            }
+
+            // Simple markdown formatting helper for code blocks
+            let formattedReply = escapeHtml(data.reply || '');
+            formattedReply = formattedReply.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+                return `<pre style="background:#090D1A; padding:10px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.3); overflow-x:auto; color:#E2E8F0; font-family:monospace; font-size:12px; margin:8px 0;"><div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:10px; color:#38BDF8; font-weight:bold;"><span>${lang || 'code'}</span><span style="cursor:pointer;" onclick="navigator.clipboard.writeText(this.parentNode.nextSibling.textContent); alert('Code copied!');">📋 Copy Code</span></div><code>${code}</code></pre>`;
+            });
+            formattedReply = formattedReply.replace(/\n/g, '<br/>');
+
+            div.innerHTML = `
+                <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8); box-shadow:0 0 10px rgba(167,139,248,0.4);">⚡</div>
+                <div class="msg-bubble" style="border:1px solid rgba(167,139,250,0.35); background:rgba(15,23,42,0.95); max-width:92%;">
+                    <div class="msg-sender" style="color:#C4B5FD; display:flex; align-items:center; justify-content:space-between;">
+                        <span>Antigravity AI <span class="msg-tag" style="background:rgba(139,92,246,0.25); color:#C4B5FD; border-color:#8B5CF6;">Agentic Assistant</span></span>
+                        <span style="font-size:10px; color:#94A3B8;">${data.latency_ms || 320} ms • ${data.model_used || 'Gemini'}</span>
+                    </div>
+                    ${thoughtHtml}
+                    <div class="msg-text" style="color:#F1F5F9; font-size:13px; line-height:1.5;">
+                        ${formattedReply}
+                    </div>
+                    <div class="msg-meta" style="margin-top:8px;">
+                        <span>${data.timestamp || 'Just now'}</span> &bull; <span>Device: ${data.device || 'mobile'}</span>
+                    </div>
+                </div>
+            `;
+
+            stream.appendChild(div);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        function clearAntigravityChat() {
+            if (!confirm('Are you sure you want to start a new Antigravity session?')) return;
+            const stream = document.getElementById('antigravityChatStream');
+            if (stream) {
+                stream.innerHTML = `
+                    <div class="chat-msg manager" id="welcomeAntigravityMsg">
+                        <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8);">⚡</div>
+                        <div class="msg-bubble" style="border:1px solid rgba(167,139,250,0.3); background:rgba(15,23,42,0.95);">
+                            <div class="msg-sender" style="color:#C4B5FD;">Antigravity AI <span class="msg-tag">Autonomous Coding Assistant</span></div>
+                            <div class="msg-text">
+                                नवीन Antigravity सत्र सुरू झाले आहे. मी तुमच्या प्रोजेक्टचा कोड, फाइल्स व GitHub सिंकवर काम करण्यास तयार आहे!
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        window.clearAntigravityChat = clearAntigravityChat;
 
         function quickFillPrompt(txt) {
             const input = document.getElementById('managerChatInput');

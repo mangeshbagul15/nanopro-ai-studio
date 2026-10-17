@@ -903,13 +903,13 @@ def get_admin_mobile_hub_html() -> str:
             </div>
 
             <!-- Central AI Manager Live Banner -->
-            <div class="hub-tile" onclick="openHubSheet('ai_manager')" style="background:radial-gradient(circle at 10% 50%, rgba(99,102,241,0.35) 0%, rgba(15,23,42,0.92) 100%); border:1.5px solid #818CF8; padding:10px 12px; margin-bottom:8px;">
+            <div class="hub-tile" onclick="switchView('ai_manager'); switchAiChatMode('manager');" style="background:radial-gradient(circle at 10% 50%, rgba(99,102,241,0.35) 0%, rgba(15,23,42,0.92) 100%); border:1.5px solid #818CF8; padding:10px 12px; margin-bottom:8px; cursor:pointer;">
                 <div style="display:flex; align-items:center; justify-content:space-between;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="font-size:24px; filter:drop-shadow(0 0 8px #818CF8);">🧠</span>
                         <div>
                             <div style="font-weight:800; color:#FFFFFF; font-size:13px; display:flex; align-items:center; gap:5px;">
-                                Central AI Orchestrator
+                                NanoPro AI Manager
                                 <span class="hub-tile-badge badge-active-run" style="font-size:8px;">COGNITION LIVE</span>
                             </div>
                             <div id="hubManagerTaskDesc" style="font-size:10px; color:#C7D2FE; margin-top:2px;">
@@ -923,6 +923,31 @@ def get_admin_mobile_hub_html() -> str:
                 <div style="margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; font-size:9.5px; color:#94A3B8;">
                     <span>Active Delegation: <b id="hubManagerDelegation" style="color:#38BDF8;">Agent 02 (Data Eng) + Groq LPU</b></span>
                     <span id="hubManagerSpeed" style="color:#10B981; font-weight:800;">420ms Latency</span>
+                </div>
+            </div>
+
+            <!-- Antigravity AI Agentic Coding & Laptop Sync Live Banner -->
+            <div class="hub-tile" onclick="switchView('ai_manager'); switchAiChatMode('antigravity');" style="background:radial-gradient(circle at 10% 50%, rgba(124,58,237,0.35) 0%, rgba(15,23,42,0.92) 100%); border:1.5px solid #A78BFA; padding:10px 12px; margin-bottom:8px; cursor:pointer;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:24px; filter:drop-shadow(0 0 8px #A78BFA);">⚡</span>
+                        <div>
+                            <div style="font-weight:800; color:#FFFFFF; font-size:13px; display:flex; align-items:center; gap:5px;">
+                                Antigravity AI
+                                <span class="hub-tile-badge badge-active-run" style="font-size:8px; background:rgba(16,185,129,0.2); border-color:#10B981; color:#10B981;">GITHUB SYNC ACTIVE</span>
+                            </div>
+                            <div style="font-size:10px; color:#DDD6FE; margin-top:2px;">
+                                Agentic Coding &amp; Continuous Laptop Lockstep Bridge
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="hub-btn" style="padding:4px 8px; font-size:10px; background:rgba(167,139,250,0.2); border-color:#A78BFA; color:#DDD6FE;" onclick="event.stopPropagation(); triggerAntigravitySync(this);">
+                        🔄 Sync
+                    </button>
+                </div>
+                <div style="margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; font-size:9.5px; color:#94A3B8;">
+                    <span>Bridge: <b style="color:#A78BFA;">Mobile ↔ GitHub ↔ Laptop</b></span>
+                    <span style="color:#10B981; font-weight:800;">Tap to Open Antigravity ↗</span>
                 </div>
             </div>
         </div>

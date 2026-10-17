@@ -42,6 +42,7 @@ from app.core.audio_processor import audio_processor
 from app.core.database import credentials_vault
 
 from app.agents.manager_agent import manager_agent
+from app.agents.antigravity_agent import antigravity_agent
 try:
     from app.core.smtp_client import smtp_client
 except ModuleNotFoundError:
@@ -327,6 +328,16 @@ class ChatRequest(BaseModel):
     session_id: str = "default"
     action: Optional[str] = None
     plan_id: Optional[str] = None
+
+class AntigravityChatRequest(BaseModel):
+    message: str = ""
+    session_id: str = "antigravity_default"
+    device: str = "mobile"
+    trigger_sync: bool = False
+
+class AntigravitySyncRequest(BaseModel):
+    commit_message: Optional[str] = None
+    device: str = "mobile"
 
 class ApprovalDecisionRequest(BaseModel):
     approval_id: str
@@ -617,6 +628,46 @@ async def api_manager_execute_plan(req: Optional[ChatRequest] = None):
 @app.get("/api/manager/history")
 async def api_manager_history(session_id: str = "default"):
     """Returns persistent chat conversation history."""
+    history = db.get_chat_history(session_id=session_id, limit=50)
+    return JSONResponse({"history": history})
+
+# --- ANTIGRAVITY AGENTIC AI & LAPTOP-MOBILE SYNC ENDPOINTS ---
+@app.post("/api/antigravity/chat")
+async def api_antigravity_chat(req: AntigravityChatRequest):
+    """
+    Antigravity AI Agentic Assistant Chat Endpoint:
+    Provides deep reasoning, code generation, and automatic GitHub-Laptop sync.
+    """
+    res = antigravity_agent.chat_interact(
+        message=req.message,
+        session_id=req.session_id,
+        device=req.device,
+        trigger_sync=req.trigger_sync
+    )
+    return JSONResponse(res)
+
+@app.post("/api/antigravity/sync")
+async def api_antigravity_sync(req: Optional[AntigravitySyncRequest] = None):
+    """
+    Bidirectional synchronization between Mobile, GitHub, and Local Laptop.
+    """
+    c_msg = req.commit_message if req else None
+    dev = req.device if req else "mobile"
+    res = antigravity_agent.sync_workspace(
+        commit_message=c_msg,
+        device=dev
+    )
+    return JSONResponse(res)
+
+@app.get("/api/antigravity/status")
+async def api_antigravity_status():
+    """Returns Antigravity git repository status, latest commit, and sync state."""
+    res = antigravity_agent.get_sync_status()
+    return JSONResponse(res)
+
+@app.get("/api/antigravity/history")
+async def api_antigravity_history(session_id: str = "antigravity_default"):
+    """Returns Antigravity persistent chat conversation history."""
     history = db.get_chat_history(session_id=session_id, limit=50)
     return JSONResponse({"history": history})
 
