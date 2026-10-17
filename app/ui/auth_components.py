@@ -1058,35 +1058,6 @@ function getUserFirstAllowedFeature(user) {
 window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
 
 
-    const u = user || window.currentUser || currentUser;
-    if (!u) return 'dashboard';
-    const isSuperAdmin = (u.role === 'admin' || u.username === 'nanopro');
-    const allowed = u.allowed_views || ['*'];
-    if (isSuperAdmin || allowed.includes('*')) {
-        return 'dashboard';
-    }
-    
-    // Check user's assigned allowed_views list in order
-    if (Array.isArray(allowed)) {
-        for (const view of allowed) {
-            if (view && view !== '*' && document.getElementById('view-' + view)) {
-                return view;
-            }
-        }
-    }
-    
-    // Fallback to first visible sidebar navigation item in the DOM
-    const firstVisible = document.querySelector('.sidebar .nav-item:not([style*="display: none"]), .app-sidebar .nav-item:not([style*="display: none"])');
-    if (firstVisible) {
-        const oc = firstVisible.getAttribute('onclick') || '';
-        const m = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
-        if (m && m[1]) return m[1];
-    }
-    
-    return (allowed && allowed[0] && allowed[0] !== '*') ? allowed[0] : 'dashboard';
-}
-window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
-
 function onAuthSuccess(user) {
     currentUser = user;
     window.currentUser = user;
