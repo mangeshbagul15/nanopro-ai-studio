@@ -65,6 +65,8 @@ class ProviderCircuitBreaker:
             return "openrouter"
         if "mistral" in p or "codestral" in p:
             return "mistral"
+        if "openai" in p:
+            return "openai"
         if "ollama" in p:
             return "ollama"
         if "remote" in p:
@@ -745,6 +747,111 @@ class DeepSeekAdapter(ModelProviderAdapter):
             raise e
 
 
+class OpenAIAdapter(ModelProviderAdapter):
+    """
+    Adapter for Official OpenAI Cloud Intelligence API.
+    Provides direct access to GPT-4o, GPT-4o-mini, GPT-4.1, Whisper, and DALL-E 3 models.
+    """
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        self.base_url = "https://api.openai.com/v1"
+        self.circuit_breaker = circuit_breaker
+
+    def is_available(self) -> bool:
+        k = self.api_key or os.environ.get("OPENAI_API_KEY", "")
+        return bool(k and k.startswith("sk-"))
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self.api_key or os.environ.get("OPENAI_API_KEY", "")
+        if not k:
+            raise ValueError("OpenAI API Key is not configured. Set OPENAI_API_KEY environment variable.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("openai"):
+            raise ConnectionError("OpenAI API circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_lower = (model or "").lower()
+        if "gpt-4o-mini" in m_lower or "4o-mini" in m_lower:
+            m_clean = "gpt-4o-mini"
+        elif "gpt-4o" in m_lower or "4o" in m_lower:
+            m_clean = "gpt-4o"
+        elif model and not (":" in model or "/" in model):
+            m_clean = model
+        else:
+            m_clean = "gpt-4o-mini"
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: Dict[str, Any] = {
+            "model": m_clean,
+            "messages": messages,
+            "temperature": kwargs.get("temperature", 0.7)
+        }
+        if schema:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {k}",
+                    "Accept": "application/json"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content = data["choices"][0]["message"]["content"] or ""
+                content = content.strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                token_count = data.get("usage", {}).get("completion_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+                tps = round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("openai")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "openai",
+                    "mode": "openai-cloud"
+                })
+                return content, telemetry
+        except urllib.error.HTTPError as e:
+            err_msg = str(e)
+            try:
+                err_body = e.read().decode("utf-8")
+                err_json = json.loads(err_body)
+                err_msg = err_json.get("error", {}).get("message", err_body)
+            except Exception:
+                pass
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("openai", e)
+            raise RuntimeError(f"OpenAI API Error ({e.code}): {err_msg}")
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("openai", e)
+            raise e
+
+
 class RemoteAPIAdapter(ModelProviderAdapter):
     """Adapter for standard OpenAI / Anthropic compatible remote endpoints."""
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
@@ -1014,22 +1121,25 @@ class ModelManager:
         self.deepseek = DeepSeekAdapter(circuit_breaker=self.circuit_breaker)
         self.openrouter = OpenRouterAdapter(circuit_breaker=self.circuit_breaker)
         self.mistral = MistralAdapter(circuit_breaker=self.circuit_breaker)
+        self.openai = OpenAIAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
         self.remote = RemoteAPIAdapter(circuit_breaker=self.circuit_breaker)
 
         # Task-specific capability routing hierarchy
         self.task_routing: Dict[str, List[str]] = {
-            "coding": ["codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
-            "dialogue": ["deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["codestral-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
-            "research": ["mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
-            "price_tracking": ["openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
-            "learning": ["codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
-            "general": ["codestral-latest", "deepseek-chat", "mistral-large-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
+            "coding": ["gpt-4o", "codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
+            "dialogue": ["gpt-4o-mini", "deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
+            "data_analyst": ["gpt-4o", "codestral-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
+            "research": ["gpt-4o", "mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
+            "price_tracking": ["gpt-4o-mini", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
+            "learning": ["gpt-4o", "codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
+            "general": ["gpt-4o-mini", "gpt-4o", "codestral-latest", "deepseek-chat", "mistral-large-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
         }
 
         # Model metadata registry
         self.model_metadata: Dict[str, Dict[str, Any]] = {
+            "gpt-4o": {"role": "OpenAI GPT-4o Omnimodal Flagship Intelligence", "vram_mb": 0, "strength": "State-of-the-Art Vision, Code & Multilingual (~1.4s)"},
+            "gpt-4o-mini": {"role": "OpenAI GPT-4o-mini High-Speed Intelligence", "vram_mb": 0, "strength": "Sub-Second Ultra-Fast Multimodal Intelligence (~650ms)"},
             "codestral-latest": {"role": "Mistral Codestral Flagship Code & SQL Intelligence", "vram_mb": 0, "strength": "European State-of-the-Art Code & Logic (~1.2s)"},
             "mistral-large-latest": {"role": "Mistral Large Multilingual Reasoning Flagship", "vram_mb": 0, "strength": "Frontier Multilingual Reasoning & Math (~1.5s)"},
             "mistral-small-latest": {"role": "Mistral Small Lightning Assistant", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Efficiency (~700ms)"},
@@ -1120,7 +1230,12 @@ class ModelManager:
             if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
                 return self.mistral, "mistral-cloud"
 
-        # 6. Deterministic Local Ollama models
+        # 6. Deterministic Official OpenAI Cloud models
+        if ("gpt-4" in m_lower or "4o-mini" in m_lower or "o1-" in m_lower or "o3-" in m_lower or (m_lower.startswith("openai/") and "oss" not in m_lower)):
+            if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
+                return self.openai, "openai-cloud"
+
+        # 7. Deterministic Local Ollama models
         is_local = (
             ":" in model
             or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "codellama"])
@@ -1129,7 +1244,9 @@ class ModelManager:
         if is_local:
             return self.ollama, "ollama"
 
-        # 7. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 8. Fallback based on availability & circuit breaker for unknown/custom model names
+        if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
+            return self.openai, "openai-cloud"
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             return self.deepseek, "deepseek-cloud"
         if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
@@ -1148,6 +1265,8 @@ class ModelManager:
         return self.ollama, "ollama-offline"
 
     def get_preferred_adapter(self) -> Tuple[ModelProviderAdapter, str]:
+        if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
+            return self.openai, "openai-cloud"
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             return self.deepseek, "deepseek-cloud"
         if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
@@ -1173,37 +1292,43 @@ class ModelManager:
         base_list = requested_models or self.task_routing.get(task_type, self.task_routing["general"])
         effective = []
 
-        # 1. Include DeepSeek models if available and circuit not OPEN
+        # 1. Include OpenAI models if available and circuit not OPEN
+        if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
+            for m in base_list:
+                if ("gpt-4" in m or "4o" in m) and "oss" not in m and m not in effective:
+                    effective.append(m)
+
+        # 2. Include DeepSeek models if available and circuit not OPEN
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             for m in base_list:
                 if "deepseek" in m and m not in effective:
                     effective.append(m)
 
-        # 2. Include Mistral & Codestral models if available and circuit not OPEN
+        # 3. Include Mistral & Codestral models if available and circuit not OPEN
         if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
             for m in base_list:
                 if ("codestral" in m or "mistral" in m) and m not in effective:
                     effective.append(m)
 
-        # 3. Include Groq models if available and circuit not OPEN
+        # 4. Include Groq models if available and circuit not OPEN
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             for m in base_list:
                 if ("gpt-oss" in m or "qwen3.8" in m) and m not in effective:
                     effective.append(m)
 
-        # 4. Include Gemini models if available and circuit not OPEN
+        # 5. Include Gemini models if available and circuit not OPEN
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
             for m in base_list:
                 if "gemini" in m and m not in effective:
                     effective.append(m)
 
-        # 5. Include OpenRouter models if available and circuit not OPEN
+        # 6. Include OpenRouter models if available and circuit not OPEN
         if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
             for m in base_list:
                 if ("openrouter" in m or ":free" in m) and m not in effective:
                     effective.append(m)
 
-        # 6. Include installed Ollama models from cache without blocking failover cascade
+        # 7. Include installed Ollama models from cache without blocking failover cascade
         installed = self.ollama._cached_models[1] if (self.ollama._cached_models and (time.time() - self.ollama._cached_models[0] < 60.0)) else []
         if installed:
             matched_installed = []
@@ -1259,6 +1384,13 @@ class ModelManager:
         # Fallback to base list if empty
         if not effective:
             effective = list(base_list)
+
+        if requested_models:
+            # Append general task candidates after explicitly requested models so failover cascades gracefully
+            full_task_candidates = self.task_routing.get(task_type, self.task_routing["general"])
+            for cand in full_task_candidates:
+                if cand not in effective:
+                    effective.append(cand)
 
         if self.selected_model and not requested_models:
             res_copy = [m for m in effective if m != self.selected_model]
