@@ -554,6 +554,15 @@ def _execute_staged_boot_phases_2_and_3():
     except Exception as e:
         log_event(f"Phase 3G notice: {e}", level="WARNING", component="BootSequence")
 
+    # T + 26s: RCA Incident Sentinel & Autonomous Probes (WhatsApp, Email, Telegram Alerts)
+    time.sleep(3.0)
+    try:
+        log_event("=== [PHASE 3H] Starting Autonomous RCA Incident Sentinel & Probes (T + 26s) ===", component="BootSequence")
+        from app.core.rca_incident_sentinel import rca_incident_sentinel
+        rca_incident_sentinel.start()
+    except Exception as e:
+        log_event(f"Phase 3H notice: {e}", level="WARNING", component="BootSequence")
+
     log_event("=== Staged Boot Sequence Complete: All NanoPro Systems Synchronized & Healthy ===", component="BootSequence")
 
 @app.on_event("startup")
@@ -852,6 +861,19 @@ async def api_monitoring_keepalive_ping():
     """Triggers an immediate keep-alive ping."""
     from app.core.cloud_keepalive import cloud_keepalive
     res = cloud_keepalive.ping_now()
+    return JSONResponse(res)
+
+@app.get("/api/rca/incidents")
+async def api_rca_incidents():
+    """Returns recent RCA incident history and probe diagnostics."""
+    from app.core.rca_incident_sentinel import rca_incident_sentinel
+    return JSONResponse(rca_incident_sentinel.get_status())
+
+@app.post("/api/rca/sample")
+async def api_rca_sample():
+    """Triggers an immediate sample RCA incident dispatch across WhatsApp, Email, and Telegram."""
+    from app.core.rca_incident_sentinel import rca_incident_sentinel
+    res = rca_incident_sentinel.trigger_sample_rca()
     return JSONResponse(res)
 
 # --- PROMPT DISPATCH ---

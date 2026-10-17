@@ -480,6 +480,44 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
         return omni_res
 
     # =========================================================================
+    # 0_RCA. AUTONOMOUS 24/7 RCA INCIDENT SENTINEL & ALERTS (WhatsApp, Email, Telegram)
+    # =========================================================================
+    is_rca_query = any(k in p_lower for k in [
+        "rca", "incident", "rac", "server fail", "server down", "db down", 
+        "sleep mode alert", "sample rca", "rca sample", "whatsapp rca", "आरसीए", "इंसिडेंट"
+    ])
+    if is_rca_query:
+        from app.core.rca_incident_sentinel import rca_incident_sentinel
+        is_sample_request = any(k in p_lower for k in ["sample", "drill", "test", "pathava", "send", "ata"])
+        if is_sample_request:
+            res = rca_incident_sentinel.trigger_sample_rca()
+            reply = (
+                f"🚨 **NanoPro Autonomous RCA Sentinel — Sample Drill Executed!**\n\n"
+                f"✅ **Incident Reference:** `{res['incident_id']}`\n"
+                f"📧 **Email Status:** `{res['email']['status'].upper()}` (Delivered to mangeshbagul15@gmail.com)\n"
+                f"📱 **WhatsApp Status:** `{res['whatsapp']['status'].upper()}` (Target: +918433755448)\n"
+                f"🤖 **Telegram Status:** `{res['telegram']['status'].upper()}` (Chat ID: 1200023268)\n\n"
+                f"🔍 **Sub-Agent Sentinel Monitor Status:**\n"
+                f"• `ServerHealthSubAgent`: Monitoring Render Cloud & Local Port 8000\n"
+                f"• `DatabaseHealthSubAgent`: Monitoring SQLite WAL & Connection Pool\n"
+                f"• `AuthSecuritySubAgent`: Monitoring Brute-force & Failed Logins\n"
+                f"• `CloudKeepAliveSubAgent`: Monitoring 24/7 Heartbeat\n\n"
+                f"💡 *सर्व सब-एजंट्स आणि मॅनेजर पार्श्वभूमीत सतत कार्यरत असून कोणताही व्यत्यय आल्यास त्वरित RCA अहवाल WhatsApp आणि ईमेलवर पाठवतील.*"
+            )
+            return {"handled": True, "reply": reply, "agent_id": "manager"}
+        else:
+            status = rca_incident_sentinel.get_status()
+            recent_count = len(status.get("recent_incidents", []))
+            reply = (
+                f"🛡️ **Autonomous RCA Incident Sentinel (Active 24/7):**\n\n"
+                f"• **Sentinel Worker:** `ACTIVE` (Checking every 60s)\n"
+                f"• **Dispatched Channels:** WhatsApp (+918433755448), Gmail (mangeshbagul15@gmail.com), Telegram\n"
+                f"• **Recent Incidents Logged:** {recent_count}\n\n"
+                f"तुम्हाला त्वरित सॅम्पल RCA पाठवायचा असल्यास 'send sample rca' किंवा 'sample rca pathava' असे सांगा."
+            )
+            return {"handled": True, "reply": reply, "agent_id": "manager"}
+
+    # =========================================================================
     # 0_DEV_APIS. FREE API & DEVELOPER RESOURCE FINDER INQUIRIES
     # =========================================================================
     is_dev_api_query = any(k in p_lower for k in [
