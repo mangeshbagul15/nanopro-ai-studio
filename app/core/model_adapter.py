@@ -67,6 +67,8 @@ class ProviderCircuitBreaker:
             return "mistral"
         if "openai" in p:
             return "openai"
+        if "claude" in p or "anthropic" in p:
+            return "claude"
         if "ollama" in p:
             return "ollama"
         if "remote" in p:
@@ -852,6 +854,108 @@ class OpenAIAdapter(ModelProviderAdapter):
             raise e
 
 
+class ClaudeAdapter(ModelProviderAdapter):
+    """
+    Adapter for Anthropic Claude Cloud Intelligence API (Claude 3.5 Sonnet, Claude 3 Haiku).
+    World's leading code architecture, reasoning, and context window model.
+    """
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        self.base_url = "https://api.anthropic.com/v1"
+        self.circuit_breaker = circuit_breaker
+
+    def is_available(self) -> bool:
+        k = self.api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        return bool(k and (k.startswith("sk-ant-") or k.startswith("sk-")))
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self.api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        if not k:
+            raise ValueError("Anthropic API Key is not configured. Set ANTHROPIC_API_KEY environment variable.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("claude"):
+            raise ConnectionError("Anthropic Claude circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_lower = (model or "").lower()
+        if "sonnet" in m_lower or "3-5" in m_lower or "3.5" in m_lower:
+            m_clean = "claude-3-5-sonnet-20241022"
+        elif "haiku" in m_lower:
+            m_clean = "claude-3-haiku-20240307"
+        elif "opus" in m_lower:
+            m_clean = "claude-3-opus-20240229"
+        elif model and "claude" in m_lower:
+            m_clean = model
+        else:
+            m_clean = "claude-3-5-sonnet-20241022"
+
+        payload: Dict[str, Any] = {
+            "model": m_clean,
+            "max_tokens": kwargs.get("max_tokens", 4096),
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        if system_prompt:
+            payload["system"] = system_prompt
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/messages",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": k,
+                    "anthropic-version": "2023-06-01"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content_blocks = data.get("content", [])
+                content = "".join(b.get("text", "") for b in content_blocks if b.get("type") == "text").strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                token_count = data.get("usage", {}).get("output_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+                tps = round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("claude")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "anthropic",
+                    "mode": "claude-cloud"
+                })
+                return content, telemetry
+        except urllib.error.HTTPError as e:
+            err_msg = str(e)
+            try:
+                err_body = e.read().decode("utf-8")
+                err_json = json.loads(err_body)
+                err_msg = err_json.get("error", {}).get("message", err_body)
+            except Exception:
+                pass
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("claude", e)
+            raise RuntimeError(f"Anthropic API Error ({e.code}): {err_msg}")
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("claude", e)
+            raise e
+
+
 class RemoteAPIAdapter(ModelProviderAdapter):
     """Adapter for standard OpenAI / Anthropic compatible remote endpoints."""
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
@@ -1122,22 +1226,25 @@ class ModelManager:
         self.openrouter = OpenRouterAdapter(circuit_breaker=self.circuit_breaker)
         self.mistral = MistralAdapter(circuit_breaker=self.circuit_breaker)
         self.openai = OpenAIAdapter(circuit_breaker=self.circuit_breaker)
+        self.claude = ClaudeAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
         self.remote = RemoteAPIAdapter(circuit_breaker=self.circuit_breaker)
 
         # Task-specific capability routing hierarchy
         self.task_routing: Dict[str, List[str]] = {
-            "coding": ["gpt-4o", "codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
-            "dialogue": ["gpt-4o-mini", "deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["gpt-4o", "codestral-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
-            "research": ["gpt-4o", "mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
+            "coding": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
+            "dialogue": ["gpt-4o-mini", "claude-3-haiku-20240307", "deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
+            "data_analyst": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
+            "research": ["claude-3-5-sonnet-20241022", "gpt-4o", "mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
             "price_tracking": ["gpt-4o-mini", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
-            "learning": ["gpt-4o", "codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
-            "general": ["gpt-4o-mini", "gpt-4o", "codestral-latest", "deepseek-chat", "mistral-large-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
+            "learning": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
+            "general": ["claude-3-5-sonnet-20241022", "gpt-4o-mini", "gpt-4o", "codestral-latest", "deepseek-chat", "mistral-large-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
         }
 
         # Model metadata registry
         self.model_metadata: Dict[str, Dict[str, Any]] = {
+            "claude-3-5-sonnet-20241022": {"role": "Anthropic Claude 3.5 Sonnet Flagship Intelligence", "vram_mb": 0, "strength": "State-of-the-Art Code Architecture & Reasoning (~1.5s)"},
+            "claude-3-haiku-20240307": {"role": "Anthropic Claude 3 Haiku High-Speed Assistant", "vram_mb": 0, "strength": "Ultra-Fast Light Dialogue (~600ms)"},
             "gpt-4o": {"role": "OpenAI GPT-4o Omnimodal Flagship Intelligence", "vram_mb": 0, "strength": "State-of-the-Art Vision, Code & Multilingual (~1.4s)"},
             "gpt-4o-mini": {"role": "OpenAI GPT-4o-mini High-Speed Intelligence", "vram_mb": 0, "strength": "Sub-Second Ultra-Fast Multimodal Intelligence (~650ms)"},
             "codestral-latest": {"role": "Mistral Codestral Flagship Code & SQL Intelligence", "vram_mb": 0, "strength": "European State-of-the-Art Code & Logic (~1.2s)"},
@@ -1235,7 +1342,12 @@ class ModelManager:
             if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
                 return self.openai, "openai-cloud"
 
-        # 7. Deterministic Local Ollama models
+        # 7. Deterministic Anthropic Claude Cloud models
+        if ("claude" in m_lower or "sonnet" in m_lower or "haiku" in m_lower or "opus" in m_lower or m_lower.startswith("anthropic/")):
+            if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
+                return self.claude, "claude-cloud"
+
+        # 8. Deterministic Local Ollama models
         is_local = (
             ":" in model
             or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "codellama"])
@@ -1244,7 +1356,9 @@ class ModelManager:
         if is_local:
             return self.ollama, "ollama"
 
-        # 8. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 9. Fallback based on availability & circuit breaker for unknown/custom model names
+        if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
+            return self.claude, "claude-cloud"
         if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
             return self.openai, "openai-cloud"
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
@@ -1265,6 +1379,8 @@ class ModelManager:
         return self.ollama, "ollama-offline"
 
     def get_preferred_adapter(self) -> Tuple[ModelProviderAdapter, str]:
+        if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
+            return self.claude, "claude-cloud"
         if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
             return self.openai, "openai-cloud"
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
@@ -1292,7 +1408,13 @@ class ModelManager:
         base_list = requested_models or self.task_routing.get(task_type, self.task_routing["general"])
         effective = []
 
-        # 1. Include OpenAI models if available and circuit not OPEN
+        # 1. Include Claude models if available and circuit not OPEN
+        if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
+            for m in base_list:
+                if ("claude" in m or "sonnet" in m or "haiku" in m) and m not in effective:
+                    effective.append(m)
+
+        # 2. Include OpenAI models if available and circuit not OPEN
         if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
             for m in base_list:
                 if ("gpt-4" in m or "4o" in m) and "oss" not in m and m not in effective:
