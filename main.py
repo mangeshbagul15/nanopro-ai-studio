@@ -3600,6 +3600,30 @@ async def api_supabase_buckets():
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# PINECONE VECTOR DATABASE & SEMANTIC MEMORY (API #16)
+# -------------------------------------------------------------
+@app.get("/api/vector/pinecone/status")
+async def api_pinecone_status():
+    from app.core.pinecone_engine import pinecone_engine
+    try:
+        alive = pinecone_engine.ping()
+        markdown = pinecone_engine.get_markdown_status()
+        meta = pinecone_engine.get_metadata()
+        return JSONResponse({"status": "online" if alive else "offline", "ping": alive, "metadata": meta, "markdown_report": markdown})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/vector/pinecone/indexes")
+async def api_pinecone_indexes():
+    from app.core.pinecone_engine import pinecone_engine
+    try:
+        indexes = pinecone_engine.list_indexes()
+        return JSONResponse({"status": "success", "total_indexes": len(indexes), "indexes": indexes})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================
