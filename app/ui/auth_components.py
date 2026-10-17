@@ -1488,6 +1488,18 @@ window.checkViewAllowed = function(viewName, showAlert = false) {
 };
 
 /* --- ADMIN USER MANAGEMENT APIS --- */
+window.allAdminUsersMap = {};
+
+function openUserPermissionsById(userId, actionType='update') {
+    const u = (window.allAdminUsersMap && window.allAdminUsersMap[userId]) || null;
+    if (!u) {
+        console.error('User not found:', userId);
+        return;
+    }
+    openPermissionsModal(u.id, u.username, u.email, actionType, u.allowed_views, u.access_mode);
+}
+window.openUserPermissionsById = openUserPermissionsById;
+
 async function loadAdminUsers() {
     try {
         const resp = await fetch('/api/admin/users/list');
@@ -1496,10 +1508,12 @@ async function loadAdminUsers() {
         if (!tbody) return;
 
         tbody.innerHTML = '';
+        window.allAdminUsersMap = {};
         let total = 0, pending = 0, active = 0;
 
         (data.users || []).forEach(u => {
             total++;
+            window.allAdminUsersMap[u.id] = u;
             if (u.status === 'PENDING_APPROVAL') pending++;
             if (u.status === 'ACTIVE') active++;
 
@@ -1511,21 +1525,49 @@ async function loadAdminUsers() {
                 : '<span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">✏️ MODIFY</span>';
 
             const views = u.allowed_views || ['*'];
-            const featuresBadge = (views.includes('*'))
-                ? '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">All (Sarva 42)</span>'
-                : `<span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">${views.length} Features</span>`;
+            let featuresBadge = '';
+            if (views && typeof views === 'object' && !Array.isArray(views)) {
+                const dIsAll = views.desktop && Array.isArray(views.desktop) && views.desktop.includes('*');
+                const mIsAll = views.mobile && Array.isArray(views.mobile) && views.mobile.includes('*');
+                const dCount = dIsAll ? 'All (42)' : (views.desktop ? views.desktop.length : 0);
+                const mCount = mIsAll ? 'All (42)' : (views.mobile ? views.mobile.length : 0);
+                featuresBadge = `
+                    <div style="display:flex; flex-direction:column; gap:3px;">
+                        <span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:bold;">💻 Desktop: ${dCount}</span>
+                        <span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:bold;">📱 Mobile: ${mCount}</span>
+                    </div>
+                `;
+            } else if (Array.isArray(views) && views.includes('*')) {
+                featuresBadge = '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">All (Sarva 42)</span>';
+            } else {
+                const count = Array.isArray(views) ? views.length : 0;
+                featuresBadge = `<span style="background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid #A855F7; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold;">${count} Features</span>`;
+            }
 
             let actionsHtml = '';
-            const viewsJson = JSON.stringify(views).replace(/"/g, '&quot;');
             if (u.status === 'PENDING_APPROVAL') {
-                actionsHtml = `<button class="btn-action-sm btn-approve" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'approve', ${viewsJson}, '${mode}')">🛡️ Approve (Manjur Kara)</button>`;
-            } else if (u.username !== 'nanopro') {
+                actionsHtml = `
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')">🛡️ Approve</button>
+                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')">Reject 🚫</button>
+                    </div>
+                `;
+            } else if (u.username === 'nanopro') {
+                actionsHtml = `
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="background:linear-gradient(135deg, #0284C7, #0369A1); color:#FFFFFF; font-weight:700; border:1px solid #38BDF8; padding:5px 10px;" onclick="openUserPermissionsById('${u.id}', 'update')">⚙️ Admin Views</button>
+                        <span style="font-size:10.5px; color:#10B981; font-weight:800; background:rgba(16,185,129,0.12); border:1px solid #10B981; padding:2px 6px; border-radius:8px;">👑 Master</span>
+                    </div>
+                `;
+            } else {
                 const nextSt = (u.status === 'ACTIVE') ? 'DISABLED' : 'ACTIVE';
                 const btnLabel = (u.status === 'ACTIVE') ? 'Disable 🚫' : 'Enable ✅';
                 const btnClass = (u.status === 'ACTIVE') ? 'btn-disable' : 'btn-enable';
                 actionsHtml = `
-                    <button class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; margin-right:4px;" onclick="openPermissionsModal('${u.id}', '${u.username}', '${u.email}', 'update', ${viewsJson}, '${mode}')">⚙️ Permissions</button>
-                    <button class="btn-action-sm ${btnClass}" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action-sm" style="background:#6366F1; color:#FFFFFF; padding:5px 8px;" onclick="openUserPermissionsById('${u.id}', 'update')">⚙️ Permissions</button>
+                        <button type="button" class="btn-action-sm ${btnClass}" style="padding:5px 8px;" onclick="toggleUserStatus('${u.id}', '${nextSt}')">${btnLabel}</button>
+                    </div>
                 `;
             }
 
@@ -1545,9 +1587,12 @@ async function loadAdminUsers() {
             tbody.appendChild(tr);
         });
 
-        document.getElementById('statTotalUsers').innerText = total;
-        document.getElementById('statPendingUsers').innerText = pending;
-        document.getElementById('statActiveUsers').innerText = active;
+        const stTotal = document.getElementById('statTotalUsers');
+        if (stTotal) stTotal.innerText = total;
+        const stPending = document.getElementById('statPendingUsers');
+        if (stPending) stPending.innerText = pending;
+        const stActive = document.getElementById('statActiveUsers');
+        if (stActive) stActive.innerText = active;
 
         loadAdminAuditLogs();
     } catch (err) {

@@ -510,14 +510,12 @@ class AuthManager:
                 user = cursor.fetchone()
                 if not user:
                     return {"status": "error", "error": "User not found"}
-                if user["username"] == "nanopro":
-                    return {"status": "error", "error": "Super Admin खात्याचे अधिकार बदलता येणार नाहीत!"}
-
+                is_admin = (user["username"] == "nanopro")
                 if not allowed_views or allowed_views == "*" or (isinstance(allowed_views, list) and "*" in allowed_views):
                     views_json = "*"
                 else:
                     views_json = json.dumps(allowed_views)
-                mode_clean = access_mode.upper() if access_mode in ["READ_ONLY", "MODIFY"] else "MODIFY"
+                mode_clean = "MODIFY" if is_admin else (access_mode.upper() if access_mode in ["READ_ONLY", "MODIFY"] else "MODIFY")
 
                 cursor.execute("UPDATE users SET allowed_views = ?, access_mode = ? WHERE id = ?", (views_json, mode_clean, user_id))
                 conn.commit()

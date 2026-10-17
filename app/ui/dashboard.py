@@ -10545,7 +10545,7 @@ Ready for message compilation and automated dispatch.
 
         // Default mobile-allowed feature list (conservative — fast & useful features only)
         const DEFAULT_MOBILE_ALLOWED = [
-            'ai_manager', 'dashboard', 'amazon_tracker', 'communication',
+            'admin_mobile_hub', 'ai_manager', 'dashboard', 'amazon_tracker', 'communication',
             'news_center', 'career_hub', 'assistant', 'approvals',
             'telegram_agent', 'whatsapp_hub', 'settings'
         ];
@@ -10553,7 +10553,13 @@ Ready for message compilation and automated dispatch.
         function getMobileAllowedFeatures() {
             const saved = localStorage.getItem('nanopro_mobile_allowed_features');
             if (saved) {
-                try { return JSON.parse(saved); } catch(e) {}
+                try { 
+                    const parsed = JSON.parse(saved); 
+                    if (Array.isArray(parsed) && !parsed.includes('admin_mobile_hub')) {
+                        parsed.unshift('admin_mobile_hub');
+                    }
+                    return parsed;
+                } catch(e) {}
             }
             return DEFAULT_MOBILE_ALLOWED;
         }
@@ -10574,7 +10580,8 @@ Ready for message compilation and automated dispatch.
                 const match = onclick.match(/switchView\(['"]([^'"]+)['"]\)/);
                 if (match) {
                     const viewId = match[1];
-                    item.style.display = allowed.includes(viewId) ? '' : 'none';
+                    const isAllowed = allowed.includes('*') || allowed.includes(viewId);
+                    item.style.display = isAllowed ? '' : 'none';
                 }
             });
 
@@ -10585,10 +10592,18 @@ Ready for message compilation and automated dispatch.
         // Dynamically show/hide bottom nav items
         function updateMobileBottomNav(allowed) {
             const bottomNavItems = document.querySelectorAll('.mobile-bottom-nav-item[id^="mobTab-"]');
+            const u = window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null);
+            const isSuperAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
+            
             bottomNavItems.forEach(btn => {
                 const tabId = btn.id.replace('mobTab-', '');
                 if (tabId === 'menu') return; // Always show menu button
-                btn.style.display = allowed.includes(tabId) ? '' : 'none';
+                if (tabId === 'admin_mobile_hub') {
+                    btn.style.display = isSuperAdmin ? '' : 'none';
+                    return;
+                }
+                const isAllowed = (allowed && (allowed.includes('*') || allowed.includes(tabId)));
+                btn.style.display = isAllowed ? '' : 'none';
             });
         }
 
@@ -10798,6 +10813,7 @@ Ready for message compilation and automated dispatch.
             updateHistoryButtons();
 
             const titleMap = {
+                admin_mobile_hub: "NanoPro Command Hub (Admin)",
                 news_center: "News Center — ABP Majha & Aaj Tak",
                 entertainment_center: "Entertainment & Modern Lifestyle Center",
                 book_reader: "Book Reader & Intelligent Learning Assistant",
