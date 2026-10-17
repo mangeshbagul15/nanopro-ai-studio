@@ -521,12 +521,66 @@ FROM MonthlyTotals;`,
         }
     }, 150);
 
+    const DEMO_MASTER_PROMPT = `# MASTER PROMPT — AI SQL TEACHER: INTERACTIVE SQL INTERVIEW SHORTS
+
+## 1. VIDEO CONFIGURATION
+* Aspect Ratio: 9:16
+* Target Duration: 85 seconds
+* Voice: Natural Indian AI teacher
+* Branding: @Code_With_Mangesh
+
+## 2. SQL INTERVIEW QUESTION
+**Video Title:**
+SQL Interview Question #1 — Find the Second-Highest Salary
+
+**Question:**
+Using the EMPLOYEES table, write a SQL query to find the second-highest distinct salary.
+
+**Sample Data:**
+| EMP_ID | EMP_NAME | DEPARTMENT | SALARY |
+| 101 | Amit | IT | 60000 |
+| 102 | Rahul | HR | 50000 |
+| 103 | Priya | IT | 80000 |
+| 104 | Neha | Finance | 70000 |
+| 105 | Kiran | IT | 80000 |
+
+**Expected SQL Query:**
+\`\`\`sql
+SELECT MAX(SALARY) AS SECOND_HIGHEST_SALARY
+FROM EMPLOYEES
+WHERE SALARY < (
+    SELECT MAX(SALARY)
+    FROM EMPLOYEES
+);
+\`\`\`
+
+**Expected Output:**
+SECOND_HIGHEST_SALARY: 70000`;
+
+    function loadDemoMasterPrompt() {
+        const qEl = document.getElementById("sqlShortQuestion");
+        if (qEl) {
+            qEl.value = DEMO_MASTER_PROMPT;
+            qEl.focus();
+        }
+    }
+
+    function clearMasterPrompt() {
+        const qEl = document.getElementById("sqlShortQuestion");
+        if (qEl) {
+            qEl.value = "";
+            qEl.focus();
+        }
+    }
+
     function initSqlShortWorkspace() {
         const preset = sqlShortState.activePreset;
         const qEl = document.getElementById("sqlShortQuestion");
         const cEl = document.getElementById("sqlShortCodePreview");
-        if (qEl) qEl.value = preset.question;
-        if (cEl) cEl.value = preset.solution_sql;
+        if (qEl && !qEl.value.trim()) {
+            qEl.value = DEMO_MASTER_PROMPT;
+        }
+        if (cEl) cEl.value = preset.solution_sql || "";
 
         updateSqlBlueprintUI(preset);
         loadPresetVoiceAudio();
@@ -619,30 +673,39 @@ FROM MonthlyTotals;`,
     }
 
     function updateSqlBlueprintUI(p) {
-        const hookText = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr;
+        const hookText = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr || p.hook || "";
         const hookEl = document.getElementById("bpTimelineHook");
         if (hookEl) hookEl.innerText = hookText;
         const arrowEl = document.getElementById("bpArrowTarget");
-        if (arrowEl) arrowEl.innerText = p.arrow_target || "OVER ()";
+        if (arrowEl) arrowEl.innerText = p.arrow_target || p.golden_rule || "OVER ()";
 
         // Update Technical Concept Breakdown Box
         const conceptEl = document.getElementById("studentConceptHelp");
         if (conceptEl) {
-            conceptEl.innerHTML = `
-                • <b>प्रश्न समजून घ्या (Question Understanding):</b> ${p.question}<br>
-                • <b>महत्त्वाची क्लॉज व ॲरो (Critical Clause):</b> <code style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">${p.arrow_target}</code><br>
-                • <b>स्पष्टीकरण:</b> ${p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr}<br>
-                • <b>${p.pro_tip}</b>
-            `;
+            if (p.content_type === "theory") {
+                conceptEl.innerHTML = `
+                    • <b>प्रश्न व संकल्पना (Concept Understanding):</b> ${p.question}<br>
+                    • <b>महत्त्वाचा सुवर्ण नियम (Golden Rule):</b> <code style="color:#10B981; background:rgba(16,185,129,0.1); padding:2px 4px; border-radius:4px;">${p.golden_rule || p.concept_summary || "Row filter with WHERE, Group filter with HAVING"}</code><br>
+                    • <b>कम्पॅरिझन मॅट्रिक्स:</b> ${p.comparison_title || 'Side-by-Side Breakdown'}<br>
+                    • <b>${p.pro_tip || ''}</b>
+                `;
+            } else {
+                conceptEl.innerHTML = `
+                    • <b>प्रश्न समजून घ्या (Question Understanding):</b> ${p.question}<br>
+                    • <b>महत्त्वाची क्लॉज व ॲरो (Critical Clause):</b> <code style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">${p.arrow_target || 'OVER ()'}</code><br>
+                    • <b>स्पष्टीकरण:</b> ${p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.explanation || ''}<br>
+                    • <b>${p.pro_tip || ''}</b>
+                `;
+            }
         }
     }
 
     async function generateSqlShortBlueprint() {
         const q = document.getElementById("sqlShortQuestion").value.trim();
         const btn = document.getElementById("btnGenerateSqlBlueprint");
-        if (!q) { alert("Please enter an SQL question or banking scenario!"); return; }
+        if (!q) { alert("तुमचा मास्टर प्रॉम्प्ट किंवा प्रश्न प्रविष्ट करा (Please enter your master prompt or SQL question)!"); return; }
 
-        btn.innerHTML = `<span>⏳ Synthesizing 60s AI Blueprint...</span>`;
+        btn.innerHTML = `<span>⏳ Synthesizing AI Video & Voice Blueprint...</span>`;
         btn.disabled = true;
 
         try {
@@ -651,50 +714,46 @@ FROM MonthlyTotals;`,
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     question: q,
-                    language: sqlShortState.textStyle || sqlShortState.audioLang
+                    language: sqlShortState.audioLang || "mr"
                 })
             });
             const data = await res.json();
             if (data.status === "success") {
-                sqlShortState.activePreset = {
-                    id: "custom_ai",
-                    title: data.title,
-                    difficulty: data.difficulty || "Medium",
-                    hook_mr: data.hook,
-                    hook_hi: data.hook,
-                    hook_en: data.hook,
-                    hook_minglish: data.hook,
-                    hook_hinglish: data.hook,
-                    question: data.question,
-                    table_name: data.table_name || "interview_data",
-                    col_headers: ["COL_1", "COL_2", "COL_3", "OUTPUT_VAL"],
-                    schema_sql: data.schema_sql,
-                    solution_sql: data.solution_sql,
-                    arrow_target: data.arrow_target,
-                    explanation_mr: data.explanation,
-                    explanation_hi: data.explanation,
-                    explanation_en: data.explanation,
-                    explanation_minglish: data.explanation,
-                    explanation_hinglish: data.explanation,
-                    pro_tip: data.pro_tip,
+                sqlShortState.activePreset = Object.assign({
+                    id: data.id || "custom_ai",
+                    content_type: data.content_type || "sql_query",
+                    title: data.title || "SQL Interview Preparation",
+                    difficulty: data.difficulty || "Core Interview",
+                    question: data.question || q,
                     scenes: data.scenes || [],
-                    inner_query_sql: data.inner_query_sql || "",
-                    sample_rows: [
-                        {account: "REC-101", date: "T1", amt: "₹5,000", balance: "Step 1"},
-                        {account: "REC-102", date: "T2", amt: "₹12,000", balance: "Step 2"}
-                    ]
-                };
-                document.getElementById("sqlShortCodePreview").value = data.solution_sql;
+                    pro_tip: data.pro_tip || "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."
+                }, data);
+
+                // Update Code Preview
+                const codePreviewEl = document.getElementById("sqlShortCodePreview");
+                if (codePreviewEl) {
+                    codePreviewEl.value = data.solution_sql || data.syntax_a_code || "-- Query solution";
+                }
+
+                // Load and play synthesized audio
+                if (data.audio_url) {
+                    sqlShortState.audioUrl = data.audio_url;
+                    const audioEl = document.getElementById("sqlVoiceAudio");
+                    if (audioEl) {
+                        audioEl.src = data.audio_url;
+                        audioEl.load();
+                    }
+                }
+
                 updateSqlBlueprintUI(sqlShortState.activePreset);
-                loadPresetVoiceAudio();
                 restartSqlShortPlay();
             } else {
-                alert("Blueprint generation: " + (data.message || "Failed"));
+                alert("Blueprint generation error: " + (data.message || "Failed"));
             }
         } catch (e) {
             console.warn("Using local generator fallback:", e);
         } finally {
-            btn.innerHTML = `<span>✨ Generate 85s AI Teacher Blueprint &amp; Prompt</span>`;
+            btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
             btn.disabled = false;
         }
     }
@@ -941,6 +1000,696 @@ FROM MonthlyTotals;`,
     }
 
     /* ==========================================================================
+       THEORY & CONCEPTUAL 7-SCENE MASTER STORYBOARD (1080 x 1920 9:16)
+       ========================================================================== */
+    function renderTheoryShortStoryboard(ctx, W, H, p, t) {
+        // SCENE 1 (0 to 8.0s): THEORY TOPIC & CONCEPT INTRODUCTION
+        if (t < 8.0) {
+            ctx.save();
+            const s1Alpha = t < 0.5 ? t / 0.5 : (t > 7.5 ? (8.0 - t) / 0.5 : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s1Alpha));
+
+            // Question Header Card
+            ctx.fillStyle = "rgba(16, 25, 46, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 230, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("📋 SQL THEORY INTERVIEW TOPIC:", 90, 275);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            const qLines = wrapCanvasText(ctx, p.question, W - 180);
+            qLines.slice(0, 3).forEach((l, i) => {
+                ctx.fillText(l, 90, 325 + i * 38);
+            });
+
+            // Target Highlight Badge
+            const pulse = 1.0 + Math.sin(t * 6) * 0.05;
+            ctx.save();
+            ctx.translate(W / 2, 490);
+            ctx.scale(pulse, pulse);
+            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+            ctx.beginPath();
+            ctx.roundRect(-300, -24, 600, 48, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🎯 TARGET: QUERY EXECUTION LIFECYCLE & CORE MECHANISM", 0, 7);
+            ctx.restore();
+
+            // Architectural Overview Container
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(60, 540, W - 120, 410, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🧠 CORE ARCHITECTURAL DEFINITION:", 90, 590);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            const defLines = wrapCanvasText(ctx, p.concept_summary || "WHERE filters individual rows before grouping; HAVING filters aggregated groups after GROUP BY.", W - 180);
+            defLines.forEach((l, i) => {
+                ctx.fillText(l, 90, 645 + i * 38);
+            });
+
+            // Fast Comparison Pills
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.fillRect(90, 780, 420, 50);
+            ctx.strokeStyle = "#38BDF8";
+            ctx.strokeRect(90, 780, 420, 50);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("1. WHERE: ROW-LEVEL FILTER", 110, 812);
+
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.fillRect(530, 780, 420, 50);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(530, 780, 420, 50);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("2. HAVING: GROUP-LEVEL FILTER", 550, 812);
+
+            // Learning Goal Guidance Card
+            ctx.fillStyle = "#0B1120";
+            ctx.beginPath();
+            ctx.roundRect(60, 980, W - 120, 500, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#1E2D4A";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 980, W - 120, 50);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1005, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1005, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1005, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("theory_roadmap.sql — Step-by-Step Understanding", 180, 1012);
+
+            ctx.fillStyle = "#64748B";
+            ctx.font = "italic 24px monospace";
+            ctx.fillText("/* Step 1: Understand why interviewers ask this question */", 90, 1080);
+            ctx.fillText("/* Step 2: Grasp database query execution order (ANSI SQL) */", 90, 1140);
+            ctx.fillText("/* Step 3: Compare code syntax & aggregate functions */", 90, 1200);
+            ctx.fillText("/* Step 4: Avoid the fatal interview traps & score bonus points! */", 90, 1260);
+
+            // Phase Badge
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(90, 1370, W - 180, 80, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("🧠 LEARNING GOAL: Master the difference & explain with confidence!", 120, 1420);
+
+            ctx.restore();
+        }
+
+        // SCENE 2 (8.0 to 20.0s): CANDIDATE CONFUSION & WHY INTERVIEWERS TEST THIS
+        if (t >= 7.5 && t < 20.5) {
+            ctx.save();
+            const s2Alpha = t < 8.5 ? (t - 7.5) : (t > 19.5 ? (20.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s2Alpha));
+
+            // Banner
+            ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 100, 16);
+            ctx.fill();
+            ctx.strokeStyle = "#EF4444";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("⚠️ THE COMMON CONFUSION: WHY 90% OF CANDIDATES STUMBLE", 90, 268);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Both WHERE and HAVING filter data — but WHEN and WHAT do they filter?", 90, 302);
+
+            // Contrast Card 1: The Mistake
+            ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
+            ctx.beginPath();
+            ctx.roundRect(60, 345, W - 120, 320, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#EF4444";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("❌ WHY CANDIDATES GET CONFUSED:", 90, 390);
+
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "23px 'Segoe UI', sans-serif";
+            ctx.fillText("• Candidates see boolean conditions in both and assume they are interchangeable.", 90, 440);
+            ctx.fillText("• Writing 'WHERE COUNT(*) > 2' causes an instant SQL syntax error!", 90, 490);
+            ctx.fillText("• Writing 'HAVING salary > 50000' without GROUP BY wastes CPU memory!", 90, 540);
+
+            // Contrast Card 2: The Core Difference
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 690, W - 120, 420, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ THE CORE DISTINCTION SENIOR INTERVIEWERS TEST:", 90, 740);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("1️⃣ WHERE CLAUSE — PRE-FILTER (ROW LEVEL)", 90, 800);
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   Filters individual rows BEFORE the database groups or aggregates them.", 90, 840);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("2️⃣ HAVING CLAUSE — POST-FILTER (GROUP LEVEL)", 90, 910);
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   Filters aggregated buckets AFTER GROUP BY has assembled the groups.", 90, 950);
+
+            // Memory Benefit Box
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1140, W - 120, 340, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 PERFORMANCE BENEFIT IN PRODUCTION:", 90, 1195);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• Filtering rows with WHERE reduces the row count BEFORE grouping.", 90, 1255);
+            ctx.fillText("• In large tables with 10M rows, this slashes RAM usage by over 90%!", 90, 1315);
+            ctx.fillText("• Next: Let's see the step-by-step query execution lifecycle!", 90, 1375);
+
+            ctx.restore();
+        }
+
+        // SCENE 3 (20.0 to 32.0s): QUERY EXECUTION LIFECYCLE FLOWCHART
+        if (t >= 19.5 && t < 32.5) {
+            ctx.save();
+            const s3Alpha = t < 20.5 ? (t - 19.5) : (t > 31.5 ? (32.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s3Alpha));
+
+            ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 95, 16);
+            ctx.fill();
+            ctx.strokeStyle = "#818CF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#818CF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("⚙️ DATABASE ENGINE QUERY EXECUTION LIFECYCLE (ANSI SQL)", 90, 265);
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("How the database engine executes clauses in strict logical sequence:", 90, 296);
+
+            const pipeline = [
+                {
+                    num: "1️⃣",
+                    stage: "FROM & JOIN",
+                    desc: "Loads target tables & resolves joins into memory buffer",
+                    activeRange: [20.0, 23.0],
+                    color: "#38BDF8"
+                },
+                {
+                    num: "2️⃣",
+                    stage: "WHERE (ROW-LEVEL FILTER)",
+                    desc: "⚡ Prunes rows BEFORE grouping (Indexes are used!)",
+                    activeRange: [23.0, 26.0],
+                    color: "#F59E0B"
+                },
+                {
+                    num: "3️⃣",
+                    stage: "GROUP BY & AGGREGATION",
+                    desc: "Clusters remaining rows & computes SUM, COUNT, AVG",
+                    activeRange: [26.0, 29.0],
+                    color: "#EC4899"
+                },
+                {
+                    num: "4️⃣",
+                    stage: "HAVING (GROUP-LEVEL FILTER)",
+                    desc: "🎯 Filters entire groups failing aggregate conditions",
+                    activeRange: [29.0, 32.5],
+                    color: "#10B981"
+                }
+            ];
+
+            pipeline.forEach((st, idx) => {
+                const boxY = 335 + idx * 195;
+                const isActive = t >= st.activeRange[0] && t < st.activeRange[1];
+
+                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.8)";
+                ctx.beginPath();
+                ctx.roundRect(60, boxY, W - 120, 130, 16);
+                ctx.fill();
+
+                ctx.strokeStyle = isActive ? st.color : "#1E2D4A";
+                ctx.lineWidth = isActive ? 3.5 : 2;
+                if (isActive) {
+                    ctx.shadowColor = st.color;
+                    ctx.shadowBlur = 18;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = st.color;
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText(`${st.num} ${st.stage}`, 90, boxY + 45);
+
+                ctx.fillStyle = isActive ? "#F8FAFC" : "#94A3B8";
+                ctx.font = "bold 22px monospace";
+                ctx.fillText(st.desc, 90, boxY + 95);
+
+                if (idx < 3) {
+                    ctx.fillStyle = "#818CF8";
+                    ctx.font = "bold 32px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("↓", W / 2, boxY + 168);
+                    ctx.textAlign = "left";
+                }
+            });
+
+            // Summary Takeaway
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1140, W - 120, 360, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 THE KEY TAKEAWAY FOR INTERVIEWS:", 90, 1195);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• WHERE executes at Step 2; HAVING executes at Step 4!", 90, 1255);
+            ctx.fillText("• Because WHERE runs before GROUP BY, it CANNOT evaluate aggregates.", 90, 1315);
+            ctx.fillText("• Next: Let's see the code syntax comparison side by side!", 90, 1375);
+
+            ctx.restore();
+        }
+
+        // SCENE 4 (32.0 to 44.0s): SIDE-BY-SIDE SQL SYNTAX COMPARISON
+        if (t >= 31.5 && t < 44.5) {
+            ctx.save();
+            const s4Alpha = t < 32.5 ? (t - 31.5) : (t > 43.5 ? (44.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s4Alpha));
+
+            // Window 1: Syntax A (WHERE)
+            ctx.fillStyle = "#0B1120";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 520, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 220, W - 120, 48);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText(p.syntax_a_title || "WHERE CLAUSE SYNTAX (ROW FILTER)", 180, 252);
+
+            const codeALines = (p.syntax_a_code || "SELECT name, department, salary\nFROM employees\nWHERE salary > 50000;").split("\n");
+            codeALines.forEach((ln, idx) => {
+                const lineY = 320 + idx * 56;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+            });
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.fillRect(90, 580, W - 180, 130);
+            ctx.strokeStyle = "#38BDF8";
+            ctx.strokeRect(90, 580, W - 180, 130);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("⚡ ROW-LEVEL ATTRIBUTE: 'salary > 50000'", 120, 625);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Evaluated row by row directly from table or index scan.", 120, 670);
+
+            // Window 2: Syntax B (HAVING)
+            ctx.fillStyle = "#0B1120";
+            ctx.beginPath();
+            ctx.roundRect(60, 770, W - 120, 580, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 770, W - 120, 48);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText(p.syntax_b_title || "HAVING CLAUSE SYNTAX (GROUP FILTER)", 180, 802);
+
+            const codeBLines = (p.syntax_b_code || "SELECT department, COUNT(*)\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 5;").split("\n");
+            codeBLines.forEach((ln, idx) => {
+                const lineY = 870 + idx * 56;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+            });
+
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.fillRect(90, 1150, W - 180, 160);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(90, 1150, W - 180, 160);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("⚡ AGGREGATE FUNCTION: 'HAVING COUNT(*) > 5'", 120, 1200);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Evaluates only after rows are clustered into departments.", 120, 1245);
+            ctx.fillText("Discarding entire department groups with fewer than 5 people.", 120, 1285);
+
+            // Bouncing Arrow pointing to difference
+            const arrowBounce = Math.sin(t * 6) * 10;
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("👉 Notice: HAVING requires GROUP BY & Aggregate functions!", 90 + arrowBounce, 1420);
+
+            ctx.restore();
+        }
+
+        // SCENE 5 (44.0 to 58.0s): COMPREHENSIVE COMPARISON MATRIX TABLE
+        if (t >= 43.5 && t < 58.5) {
+            ctx.save();
+            const s5Alpha = t < 44.5 ? (t - 43.5) : (t > 57.5 ? (58.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s5Alpha));
+
+            // Header Banner
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 95, 16);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText(`🔍 ${p.comparison_title || 'WHERE vs HAVING COMPARISON MATRIX'}`, 90, 265);
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Memorize these 4 pillars for immediate high marks in your interview:", 90, 296);
+
+            // Table Header
+            const headers = p.comparison_headers || ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"];
+            ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+            ctx.fillRect(60, 340, W - 120, 60);
+            ctx.strokeStyle = "#38BDF8";
+            ctx.strokeRect(60, 340, W - 120, 60);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText(headers[0], 90, 378);
+            ctx.fillText(headers[1], 420, 378);
+            ctx.fillText(headers[2], 740, 378);
+
+            const matrixRows = p.comparison_rows || [
+                {feature: "Execution Stage", col_a: "Pre-Filter (Before GROUP BY)", col_b: "Post-Filter (After GROUP BY)"},
+                {feature: "Aggregate Functions", col_a: "❌ CANNOT use (SUM, COUNT)", col_b: "✅ CAN use (e.g. COUNT > 5)"},
+                {feature: "Target Scope", col_a: "Individual table rows", col_b: "Aggregated groups"},
+                {feature: "Index Optimization", col_a: "Uses Table Indexes fast", col_b: "Cannot use B-Tree indexes"}
+            ];
+
+            const rowsToShow = Math.min(matrixRows.length, Math.floor((t - 44.0) * 0.4) + 1);
+
+            matrixRows.slice(0, rowsToShow).forEach((r, idx) => {
+                const rowY = 415 + idx * 175;
+                const isLatest = idx === rowsToShow - 1;
+
+                ctx.fillStyle = isLatest ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.85)";
+                ctx.beginPath();
+                ctx.roundRect(60, rowY, W - 120, 155, 14);
+                ctx.fill();
+
+                ctx.strokeStyle = isLatest ? "#10B981" : "#1E2D4A";
+                ctx.lineWidth = isLatest ? 3 : 1.5;
+                if (isLatest) {
+                    ctx.shadowColor = "#10B981";
+                    ctx.shadowBlur = 15;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText(r.feature, 90, rowY + 45);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText(`WHERE: ${r.col_a}`, 90, rowY + 90);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText(`HAVING: ${r.col_b}`, 90, rowY + 130);
+            });
+
+            // Summary Card at Bottom
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1180, W - 120, 320, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 INTERVIEW CHECKLIST SUMMARY:", 90, 1235);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• Need to filter individual rows? ➔ Use WHERE.", 90, 1295);
+            ctx.fillText("• Need to filter COUNT, SUM, AVG of groups? ➔ Use HAVING.", 90, 1355);
+            ctx.fillText("• You can combine both in the same query for maximum speed!", 90, 1415);
+
+            ctx.restore();
+        }
+
+        // SCENE 6 (58.0 to 72.0s): FATAL INTERVIEW TRAPS & GOLDEN TAKEAWAY
+        if (t >= 57.5 && t < 72.5) {
+            ctx.save();
+            const s6Alpha = t < 58.5 ? (t - 57.5) : (t > 71.5 ? (72.5 - t) : 1.0);
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s6Alpha));
+
+            // Traps Container
+            ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 480, 20);
+            ctx.fill();
+            ctx.strokeStyle = "#EF4444";
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText(`❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, 90, 275);
+
+            const trapsList = p.traps && p.traps.length > 0 ? p.traps : [
+                "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
+                "✅ Rule: Always filter non-aggregated rows with WHERE first to cut group memory by 90%!"
+            ];
+
+            trapsList.forEach((trp, idx) => {
+                const trapY = 330 + idx * 160;
+                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+                ctx.fillRect(90, trapY, W - 180, 130);
+                ctx.strokeStyle = trp.startsWith("❌") ? "#EF4444" : "#10B981";
+                ctx.strokeRect(90, trapY, W - 180, 130);
+
+                ctx.fillStyle = trp.startsWith("❌") ? "#FCA5A5" : "#A7F3D0";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                const tLines = wrapCanvasText(ctx, trp, W - 220);
+                tLines.forEach((tl, ti) => {
+                    ctx.fillText(tl, 115, trapY + 45 + ti * 36);
+                });
+            });
+
+            // Big Glowing Neon Golden Takeaway Card
+            ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+            ctx.beginPath();
+            ctx.roundRect(60, 740, W - 120, 440, 22);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "#10B981";
+            ctx.shadowBlur = 24;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.fillText("🏆 THE UNIVERSAL GOLDEN RULE:", 90, 805);
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(90, 840, W - 180, 220);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(90, 840, W - 180, 220);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            const ruleText = p.golden_rule || "Golden Rule: Filter individual rows with WHERE; filter aggregated groups with HAVING.";
+            const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220);
+            rLines.forEach((rl, ri) => {
+                ctx.fillText(rl, 120, 920 + ri * 46);
+            });
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ Saying this one sentence guarantees full points in an interview!", 90, 1130);
+
+            // Verified Badge
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1220, W - 120, 260, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("🚀 HOW TO SAY THIS TO AN INTERVIEWER:", 90, 1270);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("\"I use WHERE to prune individual rows before grouping,", 90, 1320);
+            ctx.fillText("and HAVING to filter post-aggregation group metrics.\"", 90, 1365);
+            ctx.fillText("Next: Senior Interviewer Pro-Tip & Outro!", 90, 1415);
+
+            ctx.restore();
+        }
+
+        // SCENE 7 (72.0 to 85.0s): SENIOR INTERVIEWER PRO-TIP & OUTRO BRANDING
+        if (t >= 71.5) {
+            ctx.save();
+            const s7Alpha = t < 72.5 ? (t - 71.5) : 1.0;
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, s7Alpha));
+
+            // Senior Interviewer Pro-Tip Card
+            ctx.fillStyle = "rgba(139, 92, 246, 0.16)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 620, 22);
+            ctx.fill();
+            ctx.strokeStyle = "#8B5CF6";
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = "rgba(139, 92, 246, 0.35)";
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#8B5CF6";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 SENIOR FAANG INTERVIEWER PRO-TIP:", 90, 280);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("1️⃣ Production Query Optimization:", 90, 340);
+            ctx.fillStyle = "#C7D2FE";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   Never put a non-aggregated filter in HAVING!", 90, 380);
+            ctx.fillText("   Putting it in WHERE allows the optimizer to use B-Tree indexes.", 90, 420);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("2️⃣ Universal ANSI SQL Portability:", 90, 480);
+            ctx.fillStyle = "#C7D2FE";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   This execution model is identical across Snowflake, PostgreSQL,", 90, 520);
+            ctx.fillText("   Oracle, MySQL, and Microsoft SQL Server.", 90, 560);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("3️⃣ Key Interviewer Impress Point:", 90, 620);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText(`   ${p.pro_tip || "Filter early with WHERE to minimize memory footprint!"}`, 90, 665);
+
+            // Outro Branding Card (@Code_With_Mangesh)
+            ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 870, W - 120, 630, 24);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "rgba(245, 158, 11, 0.35)";
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 44px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("FAANG & Top MNC SQL Interview Preparation Studio", W / 2, 1005);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "28px 'Segoe UI', sans-serif";
+            ctx.fillText("⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W / 2, 1100);
+            ctx.fillText("🔔 Follow @Code_With_Mangesh for daily SQL questions", W / 2, 1160);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🚀 100% Free AI High-Tech Education for Every Student!", W / 2, 1260);
+
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "italic 22px 'Segoe UI', sans-serif";
+            ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
+
+            ctx.textAlign = "left";
+            ctx.restore();
+        }
+    }
+
+    /* ==========================================================================
        CANVAS RENDERING ENGINE (1080 x 1920 9:16 VERTICAL REEL FORMAT)
        ========================================================================== */
     function renderSqlShortFrame(t) {
@@ -1066,6 +1815,9 @@ FROM MonthlyTotals;`,
         // =========================================================================
         // 7-SCENE MASTER STORYBOARD (0 to 85 Seconds)
         // =========================================================================
+        if (p.content_type === "theory") {
+            renderTheoryShortStoryboard(ctx, W, H, p, t);
+        } else {
 
         // SCENE 1 (0 to 8.0s): INTERVIEW QUESTION INTRODUCTION
         if (t < 8.0) {
@@ -1793,7 +2545,8 @@ FROM MonthlyTotals;`,
 
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 72px monospace";
-            ctx.fillText("70000", 130, 1320);
+            const displayOutput = (p.output_value || p.second_highest_salary || "70000").toString();
+            ctx.fillText(displayOutput, 130, 1320);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
@@ -1885,6 +2638,7 @@ FROM MonthlyTotals;`,
             ctx.textAlign = "left";
             ctx.restore();
         }
+        } // Close else block for sql_query storyboard
 
         // =========================================================================
         // BOTTOM SUBTITLE / TEXT OVERLAY BANNER (Multilingual & Synchronized)
@@ -2326,5 +3080,7 @@ FROM MonthlyTotals;`,
     window.handleSqlPresetChange = handleSqlPresetChange;
     window.downloadVoiceoverMp3 = downloadVoiceoverMp3;
     window.loadPresetVoiceAudio = loadPresetVoiceAudio;
+    window.loadDemoMasterPrompt = loadDemoMasterPrompt;
+    window.clearMasterPrompt = clearMasterPrompt;
     </script>
     '''

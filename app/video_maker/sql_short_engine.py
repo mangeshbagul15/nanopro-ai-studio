@@ -13,9 +13,11 @@ Features:
 """
 
 import os
+import re
 import time
 import json
 import sqlite3
+import asyncio
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
@@ -62,7 +64,66 @@ WHERE SALARY < (
         "explanation_en": "The inner subquery first finds the maximum salary (80,000). The outer query then filters out all salaries equal to or greater than 80,000, and selects the MAX of the remaining salaries (60k, 50k, 70k), which is 70,000! 'LIMIT 1 OFFSET 1' fails on duplicate ties, whereas this subquery method is 100% reliable!",
         "explanation_minglish": "Inner query adhi MAX salary 80,000 kadhte. Mag outer query 80,000 peksha lahan aslelya salaries madhun MAX ghete, ji 70,000 ahe! Duplicates aslyamule LIMIT 1 OFFSET 1 fail hote, pan he subquery solution 100% correct ahe!",
         "explanation_hinglish": "Inner query pehle MAX salary 80,000 nikalegi. Fir outer query 80,000 se kam me se MAX legi, jo 70,000 hai! Duplicates me LIMIT 1 OFFSET 1 fail hota hai, but ye subquery solution 100% sahi hai!",
-        "pro_tip": "💡 Interviewer Pro-Tip: 'LIMIT 1 OFFSET 1' breaks when the top salary has duplicates (Priya & Kiran both 80,000). The Subquery or DENSE_RANK() approach is mandatory in FAANG interviews!"
+        "pro_tip": "💡 Interviewer Pro-Tip: 'LIMIT 1 OFFSET 1' breaks when the top salary has duplicates (Priya & Kiran both 80,000). The Subquery or DENSE_RANK() approach is mandatory in FAANG interviews!",
+        "sample_rows": [
+            {"account": "101 Amit", "date": "IT", "amt": "₹60,000", "balance": "60k (< 80k)"},
+            {"account": "102 Rahul", "date": "HR", "amt": "₹50,000", "balance": "50k (< 80k)"},
+            {"account": "103 Priya", "date": "IT", "amt": "₹80,000", "balance": "80k (Top Tie)"},
+            {"account": "104 Neha", "date": "Finance", "amt": "₹70,000", "balance": "70k (🎯 2nd)"},
+            {"account": "105 Kiran", "date": "IT", "amt": "₹80,000", "balance": "80k (Top Tie)"}
+        ],
+        "filter_evaluations": [
+            {"name": "Amit", "salary": "60,000", "cond": "60000 < 80000", "res": "TRUE", "action": "KEEP", "status": "keep"},
+            {"name": "Rahul", "salary": "50,000", "cond": "50000 < 80000", "res": "TRUE", "action": "KEEP", "status": "keep"},
+            {"name": "Priya", "salary": "80,000", "cond": "80000 < 80000", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
+            {"name": "Neha", "salary": "70,000", "cond": "70000 < 80000", "res": "TRUE", "action": "KEEP", "status": "keep"},
+            {"name": "Kiran", "salary": "80,000", "cond": "80000 < 80000", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}
+        ],
+        "output_value": "70000",
+        "scenes": [
+            {
+                "id": 1, "start": 0.0, "end": 8.0,
+                "speech_en": "Here's a popular SQL interview question. How do you find the second-highest salary from an Employees table? Let's understand the logic and build the query step by step.",
+                "speech_mr": "एसक्यूएल इंटरव्ह्यूमधील सर्वात महत्त्वाचा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा? चला लॉजिक समजून घेऊन स्टेप-बाय-स्टेप क्वेरी लिहूया!",
+                "speech_hi": "एसक्यूएल इंटरव्यू का एक बेहद पॉपुलर सवाल: एम्प्लॉईज टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें? आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं!"
+            },
+            {
+                "id": 2, "start": 8.0, "end": 20.0,
+                "speech_en": "First, understand the requirement. We need the second-highest distinct salary, not the second employee. Notice that eighty thousand appears twice. We must count it only once.",
+                "speech_mr": "पहिले प्रश्न नीट समजून घ्या. आपल्याला दुसरा डिस्टिंक्ट पगार हवा आहे, दुसरा कर्मचारी नाही. इथे ऐंशी हजार पगार दोनदा आला आहे. तो आपल्याला एकदाच मोजायचा आहे.",
+                "speech_hi": "पहले सवाल को समझिए. हमें सेकंड हाईएस्ट डिस्टिंक्ट सैलरी चाहिए. ध्यान दीजिए कि अस्सी हजार दो बार आया है. हमें इसे केवल एक बार ही गिनना है."
+            },
+            {
+                "id": 3, "start": 20.0, "end": 32.0,
+                "speech_en": "Now, how should we solve it? First, find the maximum salary. Then exclude that salary. Finally, find the maximum from the remaining values. That's our second-highest salary.",
+                "speech_mr": "आता हे कसे सोडवायचे? प्रथम सर्वात मोठा पगार शोधा. मग तो पगार वगळा. आणि उरलेल्या पगारांमधून सर्वात मोठा पगार निवडा. तोच आपला दुसरा सर्वाधिक पगार!",
+                "speech_hi": "अब इसे कैसे सॉल्व करें? पहले मैक्सिमम सैलरी निकालिए. फिर उसे बाहर कीजिए. और बाकी बची वैल्यूज में से मैक्सिमम निकालिए. वही है हमारी सेकंड हाईएस्ट सैलरी!"
+            },
+            {
+                "id": 4, "start": 32.0, "end": 44.0,
+                "speech_en": "Let's write the inner query first. SELECT MAX salary FROM Employees. This returns eighty thousand, the highest salary in our table.",
+                "speech_mr": "चला आधी आतील क्वेरी लिहूया: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज. ही क्वेरी आपल्याला ऐंशी हजार, म्हणजेच सर्वात मोठा पगार देते.",
+                "speech_hi": "आइए पहले इनर क्वेरी लिखते हैं: सिलेक्ट मैक्स सैलरी फ्रॉम एम्प्लॉईज. यह हमें अस्सी हजार यानी सबसे बड़ी सैलरी देती है."
+            },
+            {
+                "id": 5, "start": 44.0, "end": 58.0,
+                "speech_en": "Next, we exclude the highest salary using WHERE salary is less than the result of our inner query. This removes both eighty-thousand values, leaving seventy, sixty, and fifty thousand.",
+                "speech_mr": "आता व्हेअर सॅलरी लहान सबक्वेरी ही अट लावून ऐंशी हजार वगळूया. यामुळे ऐंशी हजार असणाऱ्या दोन्ही नोंदी वगळल्या जाऊन सत्तर, साठ आणि पन्नास हजार उरतात.",
+                "speech_hi": "अब व्हेअर सैलरी लेस दैन सबक्वेरी लगाकर अस्सी हजार को फिल्टर करते हैं. इससे दोनों अस्सी हजार वाले रिकॉर्ड्स हट जाते हैं और सत्तर, साठ और पचास हजार बचते हैं."
+            },
+            {
+                "id": 6, "start": 58.0, "end": 72.0,
+                "speech_en": "Now the outer MAX function checks the remaining salaries. The highest remaining value is seventy thousand. That's our answer! The key is using a subquery to exclude the original maximum.",
+                "speech_mr": "आता बाहेरील मॅक्स फंक्शन उरलेल्या पगारांमधून सर्वात मोठा पगार शोधते. उरलेल्यांमध्ये सर्वात मोठी रक्कम आहे सत्तर हजार! सबक्वेरीमुळे हे उत्तर १०० टक्के अचूक येते!",
+                "speech_hi": "अब आउटर मैक्स फंक्शन बचे हुए रिकॉर्ड्स को चेक करता है. सबसे बड़ी बची हुई वैल्यू है सत्तर हजार! यही हमारा सही जवाब है!"
+            },
+            {
+                "id": 7, "start": 72.0, "end": 85.0,
+                "speech_en": "Interview tip! Always clarify whether they want the second-highest distinct salary. If the highest salary appears multiple times, this query still returns the correct second-highest value. Follow Code with Mangesh for more SQL interview questions!",
+                "speech_mr": "इंटरव्ह्यू टिप! जर सर्वाधिक पगार अनेक लोकांचा समान असेल तरीही ही सबक्वेरी अचूक काम करते. पुढील एसक्यूएल प्रश्नांसाठी फॉलो करा कोड विथ मंगेश!",
+                "speech_hi": "इंटरव्यू टिप! अगर हाईएस्ट सैलरी डुप्लीकेट भी हो, तब भी यह सबक्वेरी मेथड हमेशा सही उत्तर देता है. ऐसे ही एसक्यूएल सवालों के लिए फॉलो कीजिए कोड विथ मंगेश!"
+            }
+        ]
     },
     {
         "id": "faang_dense_rank_ties",
@@ -431,11 +492,246 @@ FROM MonthlyTotals;""",
 
 BANKING_SQL_PRESETS = TOP_MNC_SQL_PRESETS
 
+TOP_MNC_THEORY_PRESETS = [
+    {
+        "id": "theory_where_vs_having",
+        "title": "FAANG / MNC SQL Theory: WHERE vs HAVING Clause",
+        "content_type": "theory",
+        "difficulty": "Core Interview Question",
+        "category": "Query Execution Order & Grouping",
+        "question": "What is the key difference between the WHERE and HAVING clauses in SQL, and when should each be used?",
+        "concept_summary": "WHERE filters individual rows before grouping; HAVING filters aggregated groups after GROUP BY.",
+        "hook_mr": "🚨 Top IT कंपन्यांच्या SQL इंटरव्ह्यूमध्ये ९५% मुलं या प्रश्नात अडकतात! WHERE आणि HAVING क्लॉजमध्ये नेमका फरक काय आहे?",
+        "hook_hi": "🚨 Top IT कंपनियों के SQL इंटरव्यू में 95% लोग अटक जाते हैं! WHERE और HAVING क्लॉज में असली अंतर क्या है?",
+        "hook_en": "🚨 95% of candidates stumble on this core SQL interview question: The exact difference between WHERE and HAVING!",
+        "hook_minglish": "🚨 MNC interview madhe 95% loka fasatat! WHERE ani HAVING clause madhla exact difference kay ahe?",
+        "hook_hinglish": "🚨 Top MNC interview me 95% log fas jate hai! WHERE aur HAVING clause ka exact difference kya hai?",
+        "comparison_title": "WHERE vs HAVING COMPARISON MATRIX",
+        "comparison_headers": ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"],
+        "comparison_rows": [
+            {"feature": "Execution Stage", "col_a": "Pre-Filter (Before GROUP BY)", "col_b": "Post-Filter (After GROUP BY)"},
+            {"feature": "Aggregate Functions", "col_a": "❌ CANNOT use (SUM, COUNT)", "col_b": "✅ CAN use (e.g. COUNT > 5)"},
+            {"feature": "Target Scope", "col_a": "Individual table rows", "col_b": "Aggregated groups"},
+            {"feature": "Index Optimization", "col_a": "Uses Table Indexes fast", "col_b": "Cannot use B-Tree indexes directly"}
+        ],
+        "syntax_a_title": "WHERE CLAUSE (ROW-LEVEL FILTER)",
+        "syntax_a_code": "SELECT name, department, salary\nFROM employees\nWHERE salary > 50000;",
+        "syntax_b_title": "HAVING CLAUSE (GROUP-LEVEL FILTER)",
+        "syntax_b_code": "SELECT department, COUNT(*)\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 5;",
+        "traps_title": "COMMON INTERVIEW TRAPS & MISTAKES",
+        "traps": [
+            "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
+            "✅ Rule: Always filter non-aggregated rows with WHERE first to cut group memory by 90%!"
+        ],
+        "golden_rule": "Golden Rule: Filter individual rows with WHERE; filter aggregated groups with HAVING.",
+        "pro_tip": "💡 Senior Interviewer Pro-Tip: In production, always push filters to WHERE before GROUP BY so the database hashes fewer rows in memory!",
+        "scenes": [
+            {
+                "id": 1, "start": 0.0, "end": 8.0,
+                "speech_en": "Here's one of the most frequently asked SQL theory interview questions. What is the real difference between WHERE and HAVING? Let's break it down simply.",
+                "speech_mr": "एसक्यूएल थिअरी इंटरव्ह्यूमधील सर्वात लोकप्रिय प्रश्न: व्हेअर आणि हॅव्हिंग क्लॉजमध्ये नेमका काय फरक आहे? चला अगदी सोप्या भाषेत समजून घेऊया!",
+                "speech_hi": "एसक्यूएल थ्योरी इंटरव्यू का सबसे पसंदीदा सवाल: WHERE और HAVING क्लॉज में असली अंतर क्या है? आइए इसे आसान भाषा में समझते हैं!"
+            },
+            {
+                "id": 2, "start": 8.0, "end": 20.0,
+                "speech_en": "Candidates often get confused because both clauses filter data. But the critical difference is WHEN and WHAT they filter. WHERE filters individual rows, while HAVING filters grouped results.",
+                "speech_mr": "उमेदवार अनेकदा कन्फ्युज होतात कारण दोन्ही क्लॉज डेटा फिल्टर करतात. पण मुख्य फरक हा आहे की ते कधी आणि काय फिल्टर करतात. व्हेअर स्वतंत्र रो फिल्टर करते, तर हॅव्हिंग ग्रुप्सना फिल्टर करते.",
+                "speech_hi": "कैंडिडेट्स अक्सर कन्फ्यूज हो जाते हैं क्योंकि दोनों डेटा फिल्टर करते हैं. लेकिन असली फर्क यह है कि WHERE टेबल की हर रो को फिल्टर करता है, जबकि HAVING ग्रुप्स को फिल्टर करता है."
+            },
+            {
+                "id": 3, "start": 20.0, "end": 32.0,
+                "speech_en": "Look at the database execution pipeline. First, WHERE filters out rows before grouping happens. Then GROUP BY groups the remaining rows. Finally, HAVING evaluates aggregate conditions on those groups.",
+                "speech_mr": "डेटाबेस एक्झिक्युशन पाइपलाइन बघा. आधी व्हेअर क्लॉज ग्रुपिंग होण्यापूर्वीच नको असलेल्या ओळी वगळतो. मग ग्रुप बाय उरलेल्या ओळींचे ग्रुप करतो. आणि शेवटी हॅव्हिंग त्या ग्रुप्सवर अटी तपासतो.",
+                "speech_hi": "डेटाबेस का एग्जीक्यूशन आर्डर देखिए. पहले WHERE ग्रुपिंग से पहले रो फिल्टर करता है. फिर GROUP BY ग्रुप बनाता है. और अंत में HAVING उन ग्रुप्स पर कंडीशन चेक करता है."
+            },
+            {
+                "id": 4, "start": 32.0, "end": 44.0,
+                "speech_en": "Here is the syntax difference. In WHERE, you write salary greater than fifty thousand. In HAVING, you must use aggregate functions like COUNT greater than five or SUM greater than one lakh.",
+                "speech_mr": "सिंटॅक्समधील फरक बघा. व्हेअरमध्ये तुम्ही सॅलरी ५० हजारांपेक्षा मोठी अशी अट लिहिता. पण हॅव्हिंगमध्ये तुम्ही काऊंट ५ पेक्षा जास्त किंवा सम १ लाखांपेक्षा जास्त असे ॲग्रीगेट फंक्शन वापरता.",
+                "speech_hi": "सिंटैक्स का अंतर देखिए. WHERE में आप सैलरी ५० हजार से ज्यादा लिखते हैं. लेकिन HAVING में आपको COUNT या SUM जैसे एग्रीगेट फंक्शन्स का इस्तेमाल करना होता है."
+            },
+            {
+                "id": 5, "start": 44.0, "end": 58.0,
+                "speech_en": "Remember this comparison matrix. WHERE executes before GROUP BY, cannot use aggregates, and uses indexes. HAVING executes after GROUP BY, allows aggregate functions, but cannot use table indexes.",
+                "speech_mr": "हा कम्पॅरिझन मॅट्रिक्स लक्षात ठेवा. व्हेअर ग्रुप बायच्या आधी चालतो आणि ॲग्रीगेट्स वापरू शकत नाही. हॅव्हिंग ग्रुप बाय नंतर चालतो, ॲग्रीगेट्स वापरू शकतो पण इंडेक्स थेट वापरू शकत नाही.",
+                "speech_hi": "यह कंपैरिजन मैट्रिक्स याद रखिए. WHERE ग्रुप बाय से पहले चलता है और एग्रीगेट्स इस्तेमाल नहीं कर सकता. HAVING ग्रुप बाय के बाद चलता है और एग्रीगेट फंक्शन्स को सपोर्ट करता है."
+            },
+            {
+                "id": 6, "start": 58.0, "end": 72.0,
+                "speech_en": "Avoid the fatal interview trap. Writing WHERE COUNT greater than two causes an immediate SQL syntax error! The golden rule is: filter rows with WHERE, and filter groups with HAVING.",
+                "speech_mr": "इंटरव्ह्यूमधील सर्वात मोठी चूक टाळा: व्हेअर काऊंट दोनपेक्षा जास्त लिहिल्यास सिंटॅक्स एरर येतो! सुवर्ण नियम: स्वतंत्र ओळींसाठी व्हेअर, आणि ग्रुप्ससाठी नेहमी हॅव्हिंग!",
+                "speech_hi": "इंटरव्यू की सबसे बड़ी गलती से बचिए: WHERE में COUNT लिखने पर एरर आ जाता है! गोल्डन नियम: रो के लिए WHERE, और ग्रुप्स के लिए हमेशा HAVING!"
+            },
+            {
+                "id": 7, "start": 72.0, "end": 85.0,
+                "speech_en": "Interviewer pro tip! Always filter as many rows as possible in WHERE before GROUP BY to save database memory. Follow Code with Mangesh for top SQL interview preparation!",
+                "speech_mr": "इंटरव्ह्यूअर प्रो-टिप! मेमरी वाचवण्यासाठी ग्रुप बायच्या आधीच व्हेअरने जास्तीत जास्त डेटा फिल्टर करा. पुढील एसक्यूएल तयारीसाठी फॉलो करा कोड विथ मंगेश!",
+                "speech_hi": "इंटरव्यूअर प्रो-टिप! डेटाबेस मेमोरी बचाने के लिए हमेशा GROUP BY से पहले WHERE में अधिक से अधिक रो फिल्टर करें. फॉलो कीजिए कोड विथ मंगेश!"
+            }
+        ]
+    },
+    {
+        "id": "theory_acid_properties",
+        "title": "DBMS & SQL Theory: ACID Properties in Databases",
+        "content_type": "theory",
+        "difficulty": "FAANG & Banking Core",
+        "category": "Transactions & Concurrency Control",
+        "question": "Explain ACID properties in database management systems with a real banking money transfer scenario.",
+        "concept_summary": "Atomicity, Consistency, Isolation, and Durability guarantee valid database transactions even through crashes and errors.",
+        "hook_mr": "🚨 बँकिंग आणि FAANG इंटरव्ह्यूमध्ये विचारला जाणारा प्रश्न: डेटाबेसमधील ACID प्रॉपर्टीज नक्की काय असतात?",
+        "hook_hi": "🚨 बैंकिंग और FAANG इंटरव्यू का पसंदीदा सवाल: डेटाबेस में ACID प्रॉपर्टीज का क्या मतलब होता है?",
+        "hook_en": "🚨 Top FAANG and Banking Interview Question: What do ACID properties actually mean in databases?",
+        "hook_minglish": "🚨 Banking ani FAANG interview cha top question: Database madhle ACID properties kase explain karayche?",
+        "hook_hinglish": "🚨 Banking aur FAANG interview ka core question: ACID properties ko real banking example se kaise samjhaye?",
+        "comparison_title": "ACID PROPERTIES MATRIX (BANK TRANSFER)",
+        "comparison_headers": ["ACID PROPERTY", "CORE MEANING", "BANKING SCENARIO"],
+        "comparison_rows": [
+            {"feature": "A - Atomicity", "col_a": "All or Nothing (No partial state)", "col_b": "Debit ₹10k and Credit ₹10k must both commit or rollback"},
+            {"feature": "C - Consistency", "col_a": "Preserves integrity rules", "col_b": "Total bank money remains identical before and after"},
+            {"feature": "I - Isolation", "col_a": "Concurrent txns don't interfere", "col_b": "Two simultaneous ATM withdrawals lock account row"},
+            {"feature": "D - Durability", "col_a": "Committed data is permanent", "col_b": "Power failure immediately after commit preserves balance"}
+        ],
+        "syntax_a_title": "TRANSACTION COMMIT PATTERN",
+        "syntax_a_code": "BEGIN TRANSACTION;\n  UPDATE accounts SET balance = balance - 5000 WHERE acc_no = 'A1';\n  UPDATE accounts SET balance = balance + 5000 WHERE acc_no = 'B2';\nCOMMIT;",
+        "syntax_b_title": "ERROR ROLLBACK PATTERN",
+        "syntax_b_code": "BEGIN TRANSACTION;\n  UPDATE accounts SET balance = balance - 5000 WHERE acc_no = 'A1';\n  -- IF NETWORK/SERVER FAILS:\n  ROLLBACK; -- Both balances safely restored!",
+        "traps_title": "COMMON INTERVIEW TRAPS & CONCEPTS",
+        "traps": [
+            "❌ Trap: Confusing Consistency with Isolation! Consistency is business rules; Isolation is concurrency locking.",
+            "✅ Rule: Wrap multi-table operations in explicit transactions to prevent catastrophic financial data corruption!"
+        ],
+        "golden_rule": "Golden Rule: Transactions must be Atomic, Consistent, Isolated, and Durable.",
+        "pro_tip": "💡 Senior Architect Pro-Tip: Be ready to explain Isolation levels (Read Committed vs Repeatable Read vs Serializable)!",
+        "scenes": [
+            {
+                "id": 1, "start": 0.0, "end": 8.0,
+                "speech_en": "Here's a cornerstone question in software interviews: What are the ACID properties in database systems? Let's understand them with a banking transfer.",
+                "speech_mr": "सॉफ्टवेअर मुलाखतींमधील अत्यंत महत्त्वाचा प्रश्न: डेटाबेस मॅनेजमेंटमधील ॲसिड म्हणजेच ACID प्रॉपर्टीज काय आहेत? चला एका बँक ट्रान्सफरने समजून घेऊ!",
+                "speech_hi": "सॉफ्टवेयर इंटरव्यू का क्लासिक सवाल: डेटाबेस में ACID प्रॉपर्टीज क्या होती हैं? आइए इसे बैंक ट्रांसफर के उदाहरण से समझते हैं!"
+            },
+            {
+                "id": 2, "start": 8.0, "end": 20.0,
+                "speech_en": "ACID stands for Atomicity, Consistency, Isolation, and Durability. Together, they guarantee that your database never loses money or corrupts records during server crashes or concurrent users.",
+                "speech_mr": "ॲसिड म्हणजे अटॉमिसिटी, कन्सिस्टन्सी, आयसोलेशन आणि ड्युरॅबिलिटी. जेव्हा सर्व्हर क्रॅश होतो किंवा एकाच वेळी अनेक युजर्स पैसे ट्रान्सफर करतात, तेव्हा डेटा सुरक्षित ठेवण्याची ही हमी देतात.",
+                "speech_hi": "ACID का मतलब है एटॉमिकिटी, कंसिस्टेंसी, आइसोलेशन और ड्यूरेबिलिटी. ये चारों मिलकर यह सुनिश्चित करते हैं कि सर्वर क्रैश होने पर भी डेटा कभी खराब न हो."
+            },
+            {
+                "id": 3, "start": 20.0, "end": 32.0,
+                "speech_en": "First is Atomicity: all or nothing. If five thousand rupees are debited from Account A, and the server crashes before crediting Account B, the entire transaction automatically rolls back. Money is never lost.",
+                "speech_mr": "पहिली आहे अटॉमिसिटी: एकतर पूर्ण काम किंवा काहीच नाही. खात्यातून ५ हजार कट झाले आणि सर्व्हर बंद पडला, तर ट्रान्झॅक्शन आपोआप रोलबॅक होते. पैसे सुरक्षित राहतात.",
+                "speech_hi": "पहली है एटॉमिकिटी: सब कुछ या कुछ भी नहीं. अगर खाते से पैसे कट गए और दूसरे खाते में जाने से पहले सर्वर बंद हो गया, तो पूरा ट्रांजैक्शन अपने आप रोलबैक हो जाता है."
+            },
+            {
+                "id": 4, "start": 32.0, "end": 44.0,
+                "speech_en": "Next is Consistency: database rules and constraints are strictly maintained. Total money across the bank before and after the transfer remains identical. Balance cannot drop below minimum thresholds.",
+                "speech_mr": "दुसरी आहे कन्सिस्टन्सी: डेटाबेसचे नियम तंतोतंत पाळले जातात. ट्रान्सफरच्या आधी आणि नंतर बँकेतील एकूण रक्कम सारखीच राहते. बॅलन्स कधीही चुकीचा होत नाही.",
+                "speech_hi": "दूसरी है कंसिस्टेंसी: डेटाबेस के सभी रूल्स सुरक्षित रहते हैं. बैंक का कुल बैलेंस ट्रांसफर से पहले और बाद में एकदम एक समान रहता है."
+            },
+            {
+                "id": 5, "start": 44.0, "end": 58.0,
+                "speech_en": "Third is Isolation: concurrent transactions execute without interfering. If two family members withdraw from the same ATM card at the same second, row locking prevents double spending.",
+                "speech_mr": "तिसरी आहे आयसोलेशन: एकाच वेळी होणारे दोन व्यवहार एकमेकांत अडथळा आणत नाहीत. दोन लोकांनी एकाच क्षणी पैसे काढण्याचा प्रयत्न केला तरी रो लॉकिंगमुळे अचूक हिशोब राहतो.",
+                "speech_hi": "तीसरी है आइसोलेशन: एक ही समय में चलने वाले दो ट्रांजैक्शन आपस में टकराते नहीं हैं. रो लॉकिंग की वजह से डबल विड्रॉल की समस्या कभी नहीं होती."
+            },
+            {
+                "id": 6, "start": 58.0, "end": 72.0,
+                "speech_en": "Finally, Durability guarantees that once a transaction commits, the record is permanently saved to disk. Even if the data center loses power a millisecond later, the committed balance survives.",
+                "speech_mr": "आणि शेवटी ड्युरॅबिलिटी: एकदा व्यवहार कमिट झाला की डेटा कायमस्वरूपी सेव्ह होतो. पॉवर गेली किंवा हार्डवेअर फेल झाले तरीही बॅलन्स सुरक्षित राहतो.",
+                "speech_hi": "और अंत में ड्यूरेबिलिटी: एक बार कमिट होने के बाद डेटा स्थायी रूप से सुरक्षित हो जाता है. पावर कट होने पर भी आपका डेटा कभी डिलीट नहीं होता."
+            },
+            {
+                "id": 7, "start": 72.0, "end": 85.0,
+                "speech_en": "Interviewer pro tip! In senior rounds, explain isolation levels like Read Committed and Serializable. Follow Code with Mangesh for more top interview lessons!",
+                "speech_mr": "इंटरव्ह्यूअर प्रो-टिप! सिनियर मुलाखतींमध्ये आयसोलेशन लेव्हल्स म्हणजेच रीड कमिटेड आणि सिरियलायझेबल नक्की समजावून सांगा. फॉलो करा कोड विथ मंगेश!",
+                "speech_hi": "इंटरव्यूअर प्रो-टिप! सीनियर राउंड्स में रीड कमिटेड और सीरियलाइजेबल जैसे आइसोलेशन लेवल्स को एक्सप्लेन करें. फॉलो कीजिए कोड विथ मंगेश!"
+            }
+        ]
+    },
+    {
+        "id": "theory_primary_vs_unique_key",
+        "title": "SQL Schema Design: Primary Key vs Unique Key",
+        "content_type": "theory",
+        "difficulty": "Core Interview Question",
+        "category": "Data Modeling & Constraints",
+        "question": "What is the difference between a Primary Key and a Unique Key in SQL?",
+        "concept_summary": "Primary Key uniquely identifies each row and never allows NULL; Unique Key enforces column uniqueness and allows NULL.",
+        "hook_mr": "🚨 SQL डेटाबेस डिझाइन मुलाखतीचा मूलभूत प्रश्न: प्रायमरी की आणि युनिक की मध्ये नक्की काय फरक असतो?",
+        "hook_hi": "🚨 SQL डेटाबेस डिजाइन इंटरव्यू का बेसिक सवाल: Primary Key और Unique Key में क्या फर्क होता है?",
+        "hook_en": "🚨 Core SQL interview question: The fundamental difference between Primary Key and Unique Key!",
+        "hook_minglish": "🚨 SQL interview madhe nehemi vicharnara question: Primary Key vs Unique Key madhla difference!",
+        "hook_hinglish": "🚨 SQL interview ka standard question: Primary Key aur Unique Key me kya antar hai?",
+        "comparison_title": "PRIMARY KEY vs UNIQUE KEY MATRIX",
+        "comparison_headers": ["FEATURE / CRITERIA", "PRIMARY KEY", "UNIQUE KEY"],
+        "comparison_rows": [
+            {"feature": "NULL Value Allowance", "col_a": "❌ Strictly NOT NULL (0 NULLs allowed)", "col_b": "✅ Allows NULL (1 or more depending on engine)"},
+            {"feature": "Count per Table", "col_a": "Only ONE Primary Key per table", "col_b": "Multiple Unique Keys allowed per table"},
+            {"feature": "Default Index Created", "col_a": "Clustered Index (physical row ordering)", "col_b": "Non-Clustered Index (logical lookup pointer)"},
+            {"feature": "Core Purpose", "col_a": "Entity row identity (e.g. user_id)", "col_b": "Business uniqueness (e.g. email, phone)"}
+        ],
+        "syntax_a_title": "PRIMARY KEY SYNTAX",
+        "syntax_a_code": "CREATE TABLE employees (\n    emp_id INT PRIMARY KEY,\n    name VARCHAR(100) NOT NULL\n);",
+        "syntax_b_title": "UNIQUE KEY SYNTAX",
+        "syntax_b_code": "CREATE TABLE employees (\n    emp_id INT PRIMARY KEY,\n    email VARCHAR(255) UNIQUE\n);",
+        "traps_title": "COMMON INTERVIEW TRAPS",
+        "traps": [
+            "❌ Trap: Thinking a table can have two primary keys! Use a composite primary key if multiple columns identify a row.",
+            "✅ Rule: Use Primary Key for identity; use Unique Key on candidate keys like Email, Phone, Aadhaar, PAN!"
+        ],
+        "golden_rule": "Golden Rule: Primary Key identifies the row; Unique Key guarantees unique business attributes.",
+        "pro_tip": "💡 Senior DBA Pro-Tip: In MySQL InnoDB, table data is physically sorted by Primary Key. Keep it small (e.g. BIGINT)!",
+        "scenes": [
+            {
+                "id": 1, "start": 0.0, "end": 8.0,
+                "speech_en": "Here's a fundamental SQL schema interview question: What is the real difference between a Primary Key and a Unique Key? Let's clarify it completely.",
+                "speech_mr": "एसक्यूएल स्कीमा डिझाइनमधील मूलभूत प्रश्न: प्रायमरी की आणि युनिक की मध्ये नक्की काय फरक आहे? चला अगदी स्पष्ट समजून घेऊया!",
+                "speech_hi": "एसक्यूएल स्कीमा डिजाइन का एक बुनियादी सवाल: Primary Key और Unique Key में क्या फर्क है? आइए इसे पूरी तरह साफ करते हैं!"
+            },
+            {
+                "id": 2, "start": 8.0, "end": 20.0,
+                "speech_en": "Both constraints enforce uniqueness, but there are four major differences that interviewers test: null handling, count per table, index type, and their intended purpose in system design.",
+                "speech_mr": "दोन्ही कन्स्ट्रेंट्स डेटा युनिक ठेवतात, पण मुलाखतीत चार महत्त्वाचे फरक तपासले जातात: नल व्हॅल्यू, टेबलमधील संख्या, इंडेक्सचा प्रकार आणि त्यांचा खरा उद्देश.",
+                "speech_hi": "दोनों ही डेटा को डुप्लीकेट होने से रोकते हैं, लेकिन चार बड़े अंतर होते हैं: NULL वैल्यू, टेबल में संख्या, इंडेक्स का टाइप और उनका असली मकसद."
+            },
+            {
+                "id": 3, "start": 20.0, "end": 32.0,
+                "speech_en": "Difference number one: NULL values! A Primary Key strictly forbids NULL values. Every single row must have an ID. In contrast, a Unique Key allows NULL values because an unknown value doesn't violate uniqueness.",
+                "speech_mr": "पहिला फरक: नल व्हॅल्यू! प्रायमरी की मध्ये नल अजिबात चालत नाही. प्रत्येक ओळीला आयडी असणे अनिवार्य आहे. पण युनिक की मध्ये नल व्हॅल्यू चालू शकते.",
+                "speech_hi": "पहिला अंतर: NULL वैल्यू! Primary Key में NULL कभी भी अलाउड नहीं होता. लेकिन Unique Key में आप NULL वैल्यू स्टोर कर सकते हैं."
+            },
+            {
+                "id": 4, "start": 32.0, "end": 44.0,
+                "speech_en": "Difference number two: Quantity per table. You can have only one Primary Key in a table. However, you can create multiple Unique Keys on columns like email, mobile number, and passport ID.",
+                "speech_mr": "दुसरा फरक: एका टेबलमध्ये फक्त एकच प्रायमरी की असू शकते. पण युनिक की तुम्ही अनेक कॉलम्सवर लावू शकता, जसे की ईमेल, मोबाईल नंबर आणि पॅन कार्ड.",
+                "speech_hi": "दूसरा अंतर: टेबल में एक ही Primary Key हो सकती है. जबकि Unique Key आप कई कॉलम्स जैसे ईमेल, मोबाइल और आधार पर बना सकते हैं."
+            },
+            {
+                "id": 5, "start": 44.0, "end": 58.0,
+                "speech_en": "Difference number three: Index creation! By default, a Primary Key creates a Clustered Index, sorting data physically on disk. A Unique Key creates a Non-Clustered Index, which acts as a fast lookup index.",
+                "speech_mr": "तिसरा फरक: इंडेक्सचा प्रकार! प्रायमरी की आपोआप क्लस्टर्ड इंडेक्स बनवते, ज्यामुळे हार्ड डिस्कवर डेटा एका क्रमाने सेव्ह होतो. युनिक की नॉन-क्लस्टर्ड इंडेक्स तयार करते.",
+                "speech_hi": "तीसरा अंतर: इंडेक्स! Primary Key अपने आप Clustered Index बनाती है जिससे डिस्क पर डेटा सॉर्ट होता है. Unique Key नॉन-क्लस्टर्ड इंडेक्स बनाती है."
+            },
+            {
+                "id": 6, "start": 58.0, "end": 72.0,
+                "speech_en": "Avoid the interview trap: never say a table can have two primary keys! If you need multiple columns to identify a row, that's called a Composite Primary Key. The golden rule: Primary Key identifies the row, Unique Key protects business data.",
+                "speech_mr": "इंटरव्ह्यू ट्रॅप टाळा: कधीही म्हणू नका की टेबलला दोन प्रायमरी की असतात! एकापेक्षा जास्त कॉलम असल्यास त्याला कॉम्पोझिट प्रायमरी की म्हणतात. सुवर्ण नियम: रो ओळखण्यासाठी प्रायमरी की, युनिक डेटासाठी युनिक की!",
+                "speech_hi": "इंटरव्यू ट्रैप से बचिए: कभी मत कहिए कि दो Primary Key हो सकती हैं! दो कॉलम मिलाने पर उसे Composite Key कहते हैं. गोल्डन नियम: रो की पहचान Primary Key है, डेटा की सुरक्षा Unique Key है."
+            },
+            {
+                "id": 7, "start": 72.0, "end": 85.0,
+                "speech_en": "Interviewer pro tip! In MySQL InnoDB, the Primary Key defines table clustering. Keep it integer and auto-incrementing for best performance! Follow Code with Mangesh!",
+                "speech_mr": "इंटरव्ह्यूअर प्रो-टिप! मायएसक्यूएल मध्ये प्रायमरी की ने डेटा क्लस्टर होतो, म्हणून तो नेहमी इंटिजर ठेवावा. पुढील तयारीसाठी फॉलो करा कोड विथ मंगेश!",
+                "speech_hi": "इंटरव्यूअर प्रो-टिप! MySQL InnoDB में Primary Key से डेटा क्लस्टर होता है, इसलिए इसे हमेशा ऑटो-इंक्रीमेंट इंटीजर रखें. फॉलो कीजिए कोड विथ मंगेश!"
+            }
+        ]
+    }
+]
+
 
 class SqlShortVideoEngine:
     """
     Dedicated 9:16 Short Video Creation Engine.
-    Produces viral 60-second Reels & Shorts with synchronized code, arrows, and voiceovers.
+    Produces viral 85-second Reels & Shorts with synchronized code, arrows, and multilingual voiceovers.
+    Supports both SQL Coding / Query questions and SQL Theory / Concept questions.
     """
 
     def __init__(self):
@@ -443,8 +739,308 @@ class SqlShortVideoEngine:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def get_presets(self) -> List[Dict[str, Any]]:
-        """Returns built-in high-yield banking interview SQL scenarios."""
-        return BANKING_SQL_PRESETS
+        """Returns built-in high-yield banking & theory interview SQL scenarios."""
+        return BANKING_SQL_PRESETS + TOP_MNC_THEORY_PRESETS
+
+    def _detect_content_type(self, text: str) -> str:
+        """Detects whether prompt is a SQL coding problem or a Theory/concept question."""
+        lower = text.lower()
+        theory_keywords = [
+            "difference between", "diff between", "vs", "versus", "what is", "what are",
+            "explain the difference", "theory", "acid", "normalization", "normal form",
+            "primary key vs", "unique key", "truncate vs", "delete vs", "drop vs",
+            "stored procedure vs", "view vs", "clustered", "non-clustered",
+            "where vs having", "having vs where", "union vs union all",
+            "inner join vs left join", "cross join vs", "null vs 0", "char vs varchar"
+        ]
+        query_keywords = [
+            "select", "from", "table", "salary", "query", "find", "write", "calculate",
+            "highest", "lowest", "dense_rank", "partition", "lead", "lag", "streak",
+            "consecutive", "running balance", "cumulative", "employee", "employees",
+            "order by", "group by", "create table", "insert into"
+        ]
+
+        # First check explicit theory keywords
+        for kw in theory_keywords:
+            if kw in lower:
+                return "theory"
+
+        # Check explicit query keywords
+        for kw in query_keywords:
+            if kw in lower:
+                return "sql_query"
+
+        # If has code fence or SQL keywords
+        if "```sql" in lower or "```" in lower:
+            return "sql_query"
+
+        return "theory"
+
+    def _ensure_seven_scenes(self, matched: Dict[str, Any], content_type: str, lang_key: str) -> List[Dict[str, Any]]:
+        """Ensures all 7 scenes (0-85s) are populated for any Query or Theory scenario."""
+        existing = matched.get("scenes") or []
+        if len(existing) >= 7:
+            return existing
+
+        title = matched.get("title", "SQL Interview Question")
+        question = matched.get("question", "")
+        pro_tip = matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step.")
+
+        if content_type == "theory":
+            concept = matched.get("concept_summary", "Understand the core structural differences between SQL operations.")
+            golden = matched.get("golden_rule", "Filter individual records with WHERE, filter aggregated groups with HAVING.")
+            return [
+                {
+                    "id": 1, "start": 0.0, "end": 8.0,
+                    "speech_en": f"Here is a key SQL theory question: {title}. Let's break down the core concept step by step.",
+                    "speech_mr": f"एसक्यूएल थिअरी इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: {title}! चला ही संकल्पना स्टेप बाय स्टेप समजून घेऊया.",
+                    "speech_hi": f"एसक्यूएल थ्योरी इंटरव्यू का बहुत जरूरी सवाल: {title}! आइए इस कॉन्सेप्ट को आसान भाषा में स्टेप बाय स्टेप समझते हैं."
+                },
+                {
+                    "id": 2, "start": 8.0, "end": 20.0,
+                    "speech_en": f"Candidates often get confused on this topic. {concept}. Let's understand why this distinction is critical.",
+                    "speech_mr": f"उमेदवार अनेकदा या विषयात गोंधळात पडतात. {concept}. ही संकल्पना स्पष्ट असणे का गरजेचे आहे ते पाहूया.",
+                    "speech_hi": f"कैंडिडेट्स अक्सर इस टॉपिक पर अटक जाते हैं. {concept}. आइए समझते हैं कि यह अंतर इतना महत्वपूर्ण क्यों है."
+                },
+                {
+                    "id": 3, "start": 20.0, "end": 32.0,
+                    "speech_en": "Look at the internal database execution pipeline. The engine processes operations in a strict order of precedence.",
+                    "speech_mr": "डेटाबेसची अंतर्गत एक्झिक्युशन पाइपलाइन समजून घ्या. एसक्यूएल इंजिन एका विशिष्ट क्रमाने सर्व ऑपरेशन्स प्रोसेस करते.",
+                    "speech_hi": "डेटाबेस का इंटरनल एग्जीक्यूशन पाइपलाइन देखिए. इंजन हमेशा एक तय क्रम में ही सभी ऑपरेशन्स को प्रोसेस करता है."
+                },
+                {
+                    "id": 4, "start": 32.0, "end": 44.0,
+                    "speech_en": "Here is the code syntax side-by-side. Notice how each clause is structured and where it is placed in the query.",
+                    "speech_mr": "इथे दोन्ही पद्धतींचा कोड सिंटॅक्स शेजारी-शेजारी बघा. क्लॉजची रचना आणि क्वेरीमधील जागा यातील फरक लगेच लक्षात येईल.",
+                    "speech_hi": "यहाँ दोनों का कोड सिंटैक्स साथ-साथ देखिए. क्लॉज की बनावट और क्वेरी में उसकी पोजीशन का अंतर साफ नजर आता है."
+                },
+                {
+                    "id": 5, "start": 44.0, "end": 58.0,
+                    "speech_en": "Memorize this comprehensive comparison matrix: execution stage, aggregate function support, and index optimization.",
+                    "speech_mr": "हा संपूर्ण तुलना मॅट्रिक्स लक्षात ठेवा: एक्झिक्युशन टप्पा, ॲग्रीगेट फंक्शन सपोर्ट, आणि इंडेक्स ऑप्टिमायझेशनमधील मुख्य फरक.",
+                    "speech_hi": "यह पूरा कंपैरिजन मैट्रिक्स याद रखिए: एग्जीक्यूशन स्टेज, एग्रीगेट फंक्शन्स का इस्तेमाल, और इंडेक्स ऑप्टिमाइजेशन."
+                },
+                {
+                    "id": 6, "start": 58.0, "end": 72.0,
+                    "speech_en": f"Watch out for fatal interview traps! Always remember this universal golden rule: {golden}.",
+                    "speech_mr": f"इंटरव्ह्यूमधील सर्वात घातक चुका टाळा! नेहमी लक्षात ठेवा हा सुवर्ण नियम: {golden}!",
+                    "speech_hi": f"इंटरव्यू की सबसे कॉमन गलतियों से बचें! हमेशा याद रखें यह गोल्डन रूल: {golden}!"
+                },
+                {
+                    "id": 7, "start": 72.0, "end": 85.0,
+                    "speech_en": f"{pro_tip} Follow Code with Mangesh for more top MNC interview preparation videos!",
+                    "speech_mr": f"{pro_tip} अशाच टॉप मल्टिनॅशनल कंपनी इंटरव्ह्यू तयारीसाठी फॉलो करा कोड विथ मंगेश!",
+                    "speech_hi": f"{pro_tip} ऐसे ही टॉप कंपनी इंटरव्यू की पक्की तैयारी के लिए फॉलो कीजिए कोड विथ मंगेश!"
+                }
+            ]
+        else:
+            tbl = matched.get("table_name", "EMPLOYEES")
+            return [
+                {
+                    "id": 1, "start": 0.0, "end": 8.0,
+                    "speech_en": f"Here is a top SQL interview coding question: {title}. Let's understand the logic and build the query step by step.",
+                    "speech_mr": f"एसक्यूएल इंटरव्ह्यूचा अत्यंत महत्त्वाचा कोडिंग प्रश्न: {title}! चला लॉजिक समजून घेऊन स्टेप बाय स्टेप क्वेरी लिहूया.",
+                    "speech_hi": f"एसक्यूएल इंटरव्यू का बहुत ही पॉपुलर कोडिंग सवाल: {title}! आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं."
+                },
+                {
+                    "id": 2, "start": 8.0, "end": 20.0,
+                    "speech_en": f"First inspect the table schema and data in {tbl}. Pay close attention to duplicate values, edge cases, and ties.",
+                    "speech_mr": f"प्रथम {tbl} टेबलचा डेटा आणि स्ट्रक्चर नीट तपासा. डुप्लिकेट व्हॅल्यूज आणि समान नोंदींवर विशेष लक्ष द्या.",
+                    "speech_hi": f"पहले {tbl} टेबल का डेटा और स्कीमा ध्यान से देखिए. डुप्लिकेट वैल्यूज और टाई रिकॉर्ड्स पर खास ध्यान देना जरूरी है."
+                },
+                {
+                    "id": 3, "start": 20.0, "end": 32.0,
+                    "speech_en": "Now let's choose our strategy. We will break the problem down logically into atomic operations before writing the full query.",
+                    "speech_mr": "आता योग्य रणनीती ठरवूया. संपूर्ण क्वेरी एकदम न लिहिता समस्येचे लहान-लहान लॉजिकल भागात विभाजन करूया.",
+                    "speech_hi": "अब सही स्ट्रैटेजी चुनते हैं. पूरी क्वेरी एक साथ लिखने के बजाय सवाल को छोटे लॉजिकल स्टेप्स में बांटते हैं."
+                },
+                {
+                    "id": 4, "start": 32.0, "end": 44.0,
+                    "speech_en": "Let's construct the core subquery or partition clause. This isolates our primary filter condition cleanly.",
+                    "speech_mr": "चला आधी मुख्य सबक्वेरी किंवा पार्टीशन क्लॉज तयार करूया. यामुळे आपली प्राथमिक फिल्टर अट अचूकपणे वेगळी होते.",
+                    "speech_hi": "आइए पहले कोर सबक्वेरी या पार्टीशन क्लॉज लिखते हैं. इससे हमारी मेन फिल्टर कंडीशन बिल्कुल अलग हो जाती है."
+                },
+                {
+                    "id": 5, "start": 44.0, "end": 58.0,
+                    "speech_en": "Next we apply our outer condition and simulate the row-by-row filtering. Rows matching our criteria are kept, and the rest excluded.",
+                    "speech_mr": "आता बाहेरील अट लावून प्रत्येक ओळीचे फिल्टरिंग तपासूया. अटी पूर्ण करणाऱ्या नोंदी राहतात आणि बाकीच्या वगळल्या जातात.",
+                    "speech_hi": "अब बाहरी कंडीशन लगाकर हर रो का फिल्टरिंग चेक करते हैं. जो रिकॉर्ड्स मैच होते हैं वो बचते हैं बाकी सब बाहर हो जाते हैं."
+                },
+                {
+                    "id": 6, "start": 58.0, "end": 72.0,
+                    "speech_en": "Now the database executes the complete query and calculates the final output cleanly. Here is the verified result!",
+                    "speech_mr": "आता डेटाबेस संपूर्ण क्वेरी एक्झिक्युट करतो आणि अचूक अंतिम उत्तर स्क्रीनवर दाखवतो. हे पहा अंतिम निकाल!",
+                    "speech_hi": "अब डेटाबेस पूरी क्वेरी को रन करता है और सही आउटपुट स्क्रीन पर निकालता है. यह रहा फाइनल रिजल्ट!"
+                },
+                {
+                    "id": 7, "start": 72.0, "end": 85.0,
+                    "speech_en": f"{pro_tip} Follow Code with Mangesh for more top MNC interview preparation videos!",
+                    "speech_mr": f"{pro_tip} अशाच टॉप मल्टिनॅशनल कंपनी इंटरव्ह्यू तयारीसाठी फॉलो करा कोड विथ मंगेश!",
+                    "speech_hi": f"{pro_tip} ऐसे ही टॉप कंपनी इंटरव्यू की पक्की तैयारी के लिए फॉलो कीजिए कोड विथ मंगेश!"
+                }
+            ]
+
+
+    def _parse_master_prompt_text(self, text: str, lang_key: str = "mr") -> Optional[Dict[str, Any]]:
+        """
+        Parses structured Markdown Master Prompt text if pasted directly by user.
+        Extracts title, question, tables, code, and scenes.
+        """
+        if not ("## SCENE" in text or "SCENE 1" in text or "MASTER PROMPT" in text or "**Question:**" in text):
+            return None
+
+        title_m = re.search(r"(?:#+\s*Video Title:?\s*|\*\*Video Title:\*\*\s*)([^\n\r]+)", text, re.IGNORECASE)
+        title = title_m.group(1).strip() if title_m else "SQL Interview Question"
+
+        q_m = re.search(r"(?:\*\*Question:\*\*\s*|##+\s*Question\s*\n+)(.*?)(?=\n+\*\*Sample Data|\n+##|\n+\*\*Expected|\Z)", text, re.IGNORECASE | re.DOTALL)
+        question = q_m.group(1).strip() if q_m else text.split("\n")[0]
+
+        sql_m = re.search(r"```sql\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+        solution_sql = sql_m.group(1).strip() if sql_m else ""
+
+        output_m = re.search(r"(?:Expected Output:|\*\*Expected Output:\*\*|Output:)\s*(?:```(?:text)?\s*)?([^\n`]+)", text, re.IGNORECASE)
+        output_val = "70000"
+        if output_m:
+            raw_out = output_m.group(1).strip()
+            num_m = re.search(r"(\d+[\d,.]*)", raw_out)
+            if num_m:
+                output_val = num_m.group(1)
+            else:
+                output_val = raw_out
+
+        # Extract scenes
+        scenes = []
+        scene_blocks = re.findall(r"##\s*SCENE\s*(\d+)[^\n]*\n+([\s\S]*?)(?=##\s*SCENE|\Z)", text, re.IGNORECASE)
+        for s_num, s_body in scene_blocks:
+            idx = int(s_num)
+            voice_m = re.search(r"AI Teacher Voice[^\n]*\n+[\"“]([\s\S]*?)[\"”]", s_body, re.IGNORECASE)
+            speech = voice_m.group(1).strip() if voice_m else ""
+            
+            # Duration mapping based on scene index (0-8, 8-20, 20-32, 32-44, 44-58, 58-72, 72-85)
+            timing_map = {
+                1: (0.0, 8.0),
+                2: (8.0, 20.0),
+                3: (20.0, 32.0),
+                4: (32.0, 44.0),
+                5: (44.0, 58.0),
+                6: (58.0, 72.0),
+                7: (72.0, 85.0)
+            }
+            start_t, end_t = timing_map.get(idx, ((idx - 1) * 12.0, idx * 12.0))
+            scenes.append({
+                "id": idx,
+                "start": start_t,
+                "end": end_t,
+                "speech_en": speech,
+                "speech_mr": speech,
+                "speech_hi": speech
+            })
+
+        # If it matches Q1 second highest salary, fill in native Marathi and Hindi translations
+        if "second-highest salary" in text.lower() or "second highest" in text.lower():
+            preset_q1 = BANKING_SQL_PRESETS[0]
+            if not solution_sql:
+                solution_sql = preset_q1["solution_sql"]
+            return {
+                "id": "sql_q1_second_highest_salary",
+                "content_type": "sql_query",
+                "title": title or preset_q1["title"],
+                "difficulty": "FAANG / MNC Standard",
+                "question": question or preset_q1["question"],
+                "table_name": "EMPLOYEES",
+                "col_headers": ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"],
+                "sample_rows": [
+                    {"account": "101 Amit", "date": "IT", "amt": "₹60,000", "balance": "60k (< 80k)"},
+                    {"account": "102 Rahul", "date": "HR", "amt": "₹50,000", "balance": "50k (< 80k)"},
+                    {"account": "103 Priya", "date": "IT", "amt": "₹80,000", "balance": "80k (Top Tie)"},
+                    {"account": "104 Neha", "date": "Finance", "amt": "₹70,000", "balance": "70k (🎯 2nd)"},
+                    {"account": "105 Kiran", "date": "IT", "amt": "₹80,000", "balance": "80k (Top Tie)"}
+                ],
+                "filter_evaluations": [
+                    {"name": "Amit", "salary": "60,000", "cond": "60000 < 80000", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                    {"name": "Rahul", "salary": "50,000", "cond": "50000 < 80000", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                    {"name": "Priya", "salary": "80,000", "cond": "80000 < 80000", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
+                    {"name": "Neha", "salary": "70,000", "cond": "70000 < 80000", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                    {"name": "Kiran", "salary": "80,000", "cond": "80000 < 80000", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}
+                ],
+                "schema_sql": preset_q1["schema_sql"],
+                "solution_sql": solution_sql or preset_q1["solution_sql"],
+                "inner_query_sql": "SELECT MAX(SALARY) FROM EMPLOYEES;",
+                "arrow_target": "WHERE SALARY < (SELECT MAX(SALARY))",
+                "explanation_mr": preset_q1["explanation_mr"],
+                "explanation_hi": preset_q1["explanation_hi"],
+                "explanation_en": preset_q1["explanation_en"],
+                "pro_tip": preset_q1["pro_tip"],
+                "output_value": "70000",
+                "scenes": [
+                    {
+                        "id": 1, "start": 0.0, "end": 8.0,
+                        "speech_en": "Here's a popular SQL interview question. How do you find the second-highest salary from an Employees table? Let's understand the logic and build the query step by step.",
+                        "speech_mr": "एसक्यूएल इंटरव्ह्यूमधील सर्वात महत्त्वाचा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा? चला लॉजिक समजून घेऊन स्टेप-बाय-स्टेप क्वेरी लिहूया!",
+                        "speech_hi": "एसक्यूएल इंटरव्यू का एक बेहद पॉपुलर सवाल: एम्प्लॉईज टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें? आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं!"
+                    },
+                    {
+                        "id": 2, "start": 8.0, "end": 20.0,
+                        "speech_en": "First, understand the requirement. We need the second-highest distinct salary, not the second employee. Notice that eighty thousand appears twice. We must count it only once.",
+                        "speech_mr": "पहिले प्रश्न नीट समजून घ्या. आपल्याला दुसरा डिस्टिंक्ट पगार हवा आहे, दुसरा कर्मचारी नाही. इथे ऐंशी हजार पगार दोनदा आला आहे. तो आपल्याला एकदाच मोजायचा आहे.",
+                        "speech_hi": "पहले सवाल को समझिए. हमें सेकंड हाईएस्ट डिस्टिंक्ट सैलरी चाहिए. ध्यान दीजिए कि अस्सी हजार दो बार आया है. हमें इसे केवल एक बार ही गिनना है."
+                    },
+                    {
+                        "id": 3, "start": 20.0, "end": 32.0,
+                        "speech_en": "Now, how should we solve it? First, find the maximum salary. Then exclude that salary. Finally, find the maximum from the remaining values. That's our second-highest salary.",
+                        "speech_mr": "आता हे कसे सोडवायचे? प्रथम सर्वात मोठा पगार शोधा. मग तो पगार वगळा. आणि उरलेल्या पगारांमधून सर्वात मोठा पगार निवडा. तोच आपला दुसरा सर्वाधिक पगार!",
+                        "speech_hi": "अब इसे कैसे सॉल्व करें? पहले मैक्सिमम सैलरी निकालिए. फिर उसे बाहर कीजिए. और बाकी बची वैल्यूज में से मैक्सिमम निकालिए. वही है हमारी सेकंड हाईएस्ट सैलरी!"
+                    },
+                    {
+                        "id": 4, "start": 32.0, "end": 44.0,
+                        "speech_en": "Let's write the inner query first. SELECT MAX salary FROM Employees. This returns eighty thousand, the highest salary in our table.",
+                        "speech_mr": "चला आधी आतील क्वेरी लिहूया: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज. ही क्वेरी आपल्याला ऐंशी हजार, म्हणजेच सर्वात मोठा पगार देते.",
+                        "speech_hi": "आइए पहले इनर क्वेरी लिखते हैं: सिलेक्ट मैक्स सैलरी फ्रॉम एम्प्लॉईज. यह हमें अस्सी हजार यानी सबसे बड़ी सैलरी देती है."
+                    },
+                    {
+                        "id": 5, "start": 44.0, "end": 58.0,
+                        "speech_en": "Next, we exclude the highest salary using WHERE salary is less than the result of our inner query. This removes both eighty-thousand values, leaving seventy, sixty, and fifty thousand.",
+                        "speech_mr": "आता व्हेअर सॅलरी लहान सबक्वेरी ही अट लावून ऐंशी हजार वगळूया. यामुळे ऐंशी हजार असणाऱ्या दोन्ही नोंदी वगळल्या जाऊन सत्तर, साठ आणि पन्नास हजार उरतात.",
+                        "speech_hi": "अब व्हेअर सैलरी लेस दैन सबक्वेरी लगाकर अस्सी हजार को फिल्टर करते हैं. इससे दोनों अस्सी हजार वाले रिकॉर्ड्स हट जाते हैं और सत्तर, साठ और पचास हजार बचते हैं."
+                    },
+                    {
+                        "id": 6, "start": 58.0, "end": 72.0,
+                        "speech_en": "Now the outer MAX function checks the remaining salaries. The highest remaining value is seventy thousand. That's our answer! The key is using a subquery to exclude the original maximum.",
+                        "speech_mr": "आता बाहेरील मॅक्स फंक्शन उरलेल्या पगारांमधून सर्वात मोठा पगार शोधते. उरलेल्यांमध्ये सर्वात मोठी रक्कम आहे सत्तर हजार! सबक्वेरीमुळे हे उत्तर १०० टक्के अचूक येते!",
+                        "speech_hi": "अब आउटर मैक्स फंक्शन बचे हुए रिकॉर्ड्स को चेक करता है. सबसे बड़ी बची हुई वैल्यू है सत्तर हजार! यही हमारा सही जवाब है!"
+                    },
+                    {
+                        "id": 7, "start": 72.0, "end": 85.0,
+                        "speech_en": "Interview tip! Always clarify whether they want the second-highest distinct salary. If the highest salary appears multiple times, this query still returns the correct second-highest value. Follow Code with Mangesh for more SQL interview questions!",
+                        "speech_mr": "इंटरव्ह्यू टिप! जर सर्वाधिक पगार अनेक लोकांचा समान असेल तरीही ही सबक्वेरी अचूक काम करते. पुढील एसक्यूएल प्रश्नांसाठी फॉलो करा कोड विथ मंगेश!",
+                        "speech_hi": "इंटरव्यू टिप! अगर हाईएस्ट सैलरी डुप्लीकेट भी हो, तब भी यह सबक्वेरी मेथड हमेशा सही उत्तर देता है. ऐसे ही एसक्यूएल सवालों के लिए फॉलो कीजिए कोड विथ मंगेश!"
+                    }
+                ]
+            }
+
+        return {
+            "id": "custom_master_prompt",
+            "content_type": "sql_query" if solution_sql else "theory",
+            "title": title,
+            "difficulty": "Interview Standard",
+            "question": question,
+            "table_name": "interview_data",
+            "col_headers": ["COL_1", "COL_2", "COL_3", "TARGET"],
+            "sample_rows": [
+                {"account": "101", "date": "Row 1", "amt": "Value A", "balance": "Status 1"},
+                {"account": "102", "date": "Row 2", "amt": "Value B", "balance": "Status 2"}
+            ],
+            "schema_sql": "",
+            "solution_sql": solution_sql or "-- Built step-by-step from prompt",
+            "inner_query_sql": "",
+            "arrow_target": "OVER ()",
+            "explanation_mr": "प्रॉम्प्टनुसार क्वेरी लॉजिक तयार केले आहे.",
+            "explanation_hi": "प्रॉम्प्ट के अनुसार क्वेरी लॉजिक तैयार किया गया है.",
+            "explanation_en": "Query logic constructed as instructed in prompt.",
+            "pro_tip": "💡 Interview Pro-Tip: Explain query execution plan step-by-step.",
+            "output_value": output_val,
+            "scenes": scenes if scenes else []
+        }
 
     def execute_sandbox_sql(self, schema_sql: str, query_sql: str) -> Dict[str, Any]:
         """
@@ -456,9 +1052,7 @@ class SqlShortVideoEngine:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         try:
-            # 1. Execute schema creation & sample data
             cursor.executescript(schema_sql)
-            # 2. Execute target query
             cursor.execute(query_sql)
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
@@ -480,63 +1074,108 @@ class SqlShortVideoEngine:
         finally:
             conn.close()
 
-    def generate_short_prompt(
+    async def generate_short_prompt_async(
         self,
         topic_or_question: str,
         difficulty: str = "Medium",
-        language: str = "mr"  # mr, hi, en
+        language: str = "mr"
     ) -> Dict[str, Any]:
         """
-        Generates a complete 60-second video creation blueprint:
-        - 3-second Viral Hook
-        - Real Banking Scenario & Table Schema
-        - SQL Code with clause highlight timeline
-        - Dynamic Arrow Target Marker
-        - Multilingual Voiceover Script
+        Asynchronously generates an 85-second video creation blueprint:
+        - Detects content type: SQL Query or Theory
+        - Extracts / generates 7-scene educational storyboard
+        - Synthesizes synchronized regional voice audio (Marathi / Hindi / English)
         """
-        # Resolve language mappings
-        clean_lang = language.lower()
-        if clean_lang in ["minglish", "mr_en"]:
-            lang_key = "minglish"
-        elif clean_lang in ["hinglish", "hi_en"]:
-            lang_key = "hinglish"
-        elif clean_lang in ["hi", "hindi"]:
-            lang_key = "hi"
-        elif clean_lang in ["en", "english"]:
-            lang_key = "en"
-        else:
+        clean_lang = (language or "mr").lower()
+        if clean_lang in ["minglish", "mr_en", "mr"]:
             lang_key = "mr"
+        elif clean_lang in ["hinglish", "hi_en", "hi"]:
+            lang_key = "hi"
+        else:
+            lang_key = "en"
 
-        # Check if topic matches existing presets
-        clean_q = topic_or_question.lower()
+        text_input = (topic_or_question or "").strip()
         matched = None
-        for p in BANKING_SQL_PRESETS:
-            if p["id"] in clean_q or any(w in clean_q for w in p["title"].lower().split() if len(w) > 3):
-                matched = p
-                break
 
-        # If not in presets and custom question provided, attempt AI blueprint synthesis
-        if not matched and len(topic_or_question.strip()) > 15:
+        # 1. Try parsing full Markdown Master Prompt first
+        if "## SCENE" in text_input or "MASTER PROMPT" in text_input or "**Question:**" in text_input:
+            parsed_master = self._parse_master_prompt_text(text_input, lang_key=lang_key)
+            if parsed_master:
+                matched = parsed_master
+
+        # 2. Check if topic matches theory presets
+        content_type = self._detect_content_type(text_input)
+        if not matched and content_type == "theory":
+            lower_q = text_input.lower()
+            for tp in TOP_MNC_THEORY_PRESETS:
+                if tp["id"] in lower_q or any(kw in lower_q for kw in tp["title"].lower().split() if len(kw) > 4):
+                    matched = tp
+                    break
+            if not matched:
+                if "where" in lower_q and "having" in lower_q:
+                    matched = TOP_MNC_THEORY_PRESETS[0]
+                elif "acid" in lower_q or "atomicity" in lower_q:
+                    matched = TOP_MNC_THEORY_PRESETS[1]
+                elif "primary" in lower_q and "unique" in lower_q:
+                    matched = TOP_MNC_THEORY_PRESETS[2]
+
+        # 3. Check if topic matches SQL query presets
+        if not matched and content_type == "sql_query":
+            lower_q = text_input.lower()
+            for qp in BANKING_SQL_PRESETS:
+                if qp["id"] in lower_q or any(kw in lower_q for kw in qp["title"].lower().split() if len(kw) > 4):
+                    matched = qp
+                    break
+
+        # 4. If still not matched, synthesize via AI model adapter
+        if not matched and len(text_input) > 10:
             try:
                 from app.core.model_adapter import model_manager
-                ai_prompt = (
-                    f"You are an expert SQL teacher. Generate an 85-second step-by-step educational lesson plan for YouTube Shorts/Reels:\n"
-                    f"Question: {topic_or_question}\n"
-                    f"Target Language: {lang_key}\n\n"
-                    f"Return ONLY valid raw JSON with:\n"
-                    f'{{"title": "...", "hook": "Viral hook with emoji", "schema_sql": "SQLite CREATE & INSERT", '
-                    f'"inner_query_sql": "Inner SQL", "solution_sql": "Full SQL Query", "arrow_target": "Clause", '
-                    f'"explanation": "2-sentence explanation", "pro_tip": "Interviewer pro-tip", '
-                    f'"scenes": ['
-                    f'{{"id": 1, "start": 0.0, "end": 8.0, "speech": "Question Intro & Schema"}}, '
-                    f'{{"id": 2, "start": 8.0, "end": 20.0, "speech": "Understand Question & Ties"}}, '
-                    f'{{"id": 3, "start": 20.0, "end": 32.0, "speech": "Strategy Flowchart"}}, '
-                    f'{{"id": 4, "start": 32.0, "end": 44.0, "speech": "Build Inner Query"}}, '
-                    f'{{"id": 5, "start": 44.0, "end": 58.0, "speech": "Apply Filter & Evaluate Rows"}}, '
-                    f'{{"id": 6, "start": 58.0, "end": 72.0, "speech": "Final Execution & Output"}}, '
-                    f'{{"id": 7, "start": 72.0, "end": 85.0, "speech": "Interview Tip & @Code_With_Mangesh"}}'
-                    f']}}\n'
-                )
+                if content_type == "theory":
+                    ai_prompt = (
+                        f"You are a principal SQL teacher. Generate an 85-second step-by-step educational lesson for YouTube Shorts/Reels on this SQL Theory question:\n"
+                        f"Question: {text_input}\n"
+                        f"Target Language: {lang_key}\n\n"
+                        f"Return strictly valid raw JSON:\n"
+                        f'{{"content_type": "theory", "title": "...", "concept_summary": "1-2 sentence core definition", '
+                        f'"comparison_title": "COMPARISON MATRIX", "comparison_headers": ["ASPECT", "CONCEPT A", "CONCEPT B"], '
+                        f'"comparison_rows": ['
+                        f'{{"feature": "Execution Stage", "col_a": "...", "col_b": "..."}}, '
+                        f'{{"feature": "Usage Scope", "col_a": "...", "col_b": "..."}}'
+                        f'], '
+                        f'"syntax_a_title": "CONCEPT A SYNTAX", "syntax_a_code": "SELECT ...;", '
+                        f'"syntax_b_title": "CONCEPT B SYNTAX", "syntax_b_code": "SELECT ...;", '
+                        f'"traps": ["Trap 1", "Rule 1"], "golden_rule": "Golden takeaway rule", "pro_tip": "Interviewer pro-tip", '
+                        f'"scenes": ['
+                        f'{{"id": 1, "start": 0.0, "end": 8.0, "speech_en": "Intro", "speech_mr": "मराठी स्पष्टीकरण", "speech_hi": "हिन्दी स्पष्टीकरण"}}, '
+                        f'{{"id": 2, "start": 8.0, "end": 20.0, "speech_en": "Why asked", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 3, "start": 20.0, "end": 32.0, "speech_en": "Core Architecture", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 4, "start": 32.0, "end": 44.0, "speech_en": "Syntax comparison", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 5, "start": 44.0, "end": 58.0, "speech_en": "Matrix breakdown", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 6, "start": 58.0, "end": 72.0, "speech_en": "Traps and golden rule", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 7, "start": 72.0, "end": 85.0, "speech_en": "Pro-tip and @Code_With_Mangesh", "speech_mr": "...", "speech_hi": "..."}}'
+                        f']}}'
+                    )
+                else:
+                    ai_prompt = (
+                        f"You are an expert SQL teacher. Generate an 85-second step-by-step educational lesson plan for YouTube Shorts/Reels on this SQL coding question:\n"
+                        f"Question: {text_input}\n"
+                        f"Target Language: {lang_key}\n\n"
+                        f"Return strictly valid raw JSON:\n"
+                        f'{{"content_type": "sql_query", "title": "...", "table_name": "EMPLOYEES", '
+                        f'"schema_sql": "CREATE TABLE ...; INSERT INTO ...;", "inner_query_sql": "SELECT ...;", '
+                        f'"solution_sql": "SELECT ...;", "arrow_target": "...", "explanation": "2-sentence summary", "pro_tip": "...", '
+                        f'"scenes": ['
+                        f'{{"id": 1, "start": 0.0, "end": 8.0, "speech_en": "Question intro", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 2, "start": 8.0, "end": 20.0, "speech_en": "Inspect table & ties", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 3, "start": 20.0, "end": 32.0, "speech_en": "Algorithm logic", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 4, "start": 32.0, "end": 44.0, "speech_en": "Inner query build", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 5, "start": 44.0, "end": 58.0, "speech_en": "Row filter simulation", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 6, "start": 58.0, "end": 72.0, "speech_en": "Outer execution and output", "speech_mr": "...", "speech_hi": "..."}}, '
+                        f'{{"id": 7, "start": 72.0, "end": 85.0, "speech_en": "Interviewer pro tip and @Code_With_Mangesh", "speech_mr": "...", "speech_hi": "..."}}'
+                        f']}}'
+                    )
+
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
                     system_prompt="You output strictly raw valid JSON without markdown fences."
@@ -544,72 +1183,150 @@ class SqlShortVideoEngine:
                 if "{" in ai_resp and "}" in ai_resp:
                     json_str = ai_resp[ai_resp.find("{"):ai_resp.rfind("}") + 1]
                     parsed = json.loads(json_str)
-                    matched = {
-                        "id": "custom_ai_scenario",
-                        "title": parsed.get("title", "Advanced SQL Interview Challenge"),
-                        "difficulty": difficulty,
-                        "hook_mr": parsed.get("hook", "🚨 या SQL प्रश्नात बहुतांश मुलं चुकतात!"),
-                        "hook_hi": parsed.get("hook", "🚨 इस SQL इंटरव्यू सवाल में 90% फेल होते हैं!"),
-                        "hook_en": parsed.get("hook", "🚨 90% of candidates fail this SQL Interview question!"),
-                        "hook_minglish": parsed.get("hook", "🚨 Ya SQL question madhe 90% loka fail hotat!"),
-                        "hook_hinglish": parsed.get("hook", "🚨 Is SQL interview question me 90% log fail hote hai!"),
-                        "question": topic_or_question,
-                        "table_name": "custom_data",
-                        "schema_sql": parsed.get("schema_sql", BANKING_SQL_PRESETS[0]["schema_sql"]),
-                        "solution_sql": parsed.get("solution_sql", BANKING_SQL_PRESETS[0]["solution_sql"]),
-                        "inner_query_sql": parsed.get("inner_query_sql", ""),
-                        "arrow_target": parsed.get("arrow_target", "OVER ()"),
-                        "explanation_mr": parsed.get("explanation", "ही क्वेरी अचूक निकाल देते."),
-                        "explanation_hi": parsed.get("explanation", "यह क्वेरी सटीक रिजल्ट देती है."),
-                        "explanation_en": parsed.get("explanation", "This query calculates the exact outcome."),
-                        "explanation_minglish": parsed.get("explanation", "Hi query accurate result dete."),
-                        "explanation_hinglish": parsed.get("explanation", "Ye query exact result deti hai."),
-                        "pro_tip": parsed.get("pro_tip", "💡 Pro Tip: Optimize using appropriate indexes."),
-                        "scenes": parsed.get("scenes", [])
-                    }
+                    matched = parsed
+                    matched["id"] = "custom_ai_scenario"
+                    matched["question"] = text_input
+                    matched["difficulty"] = difficulty
             except Exception as e:
-                log_event(f"AI Prompt generation fallback: {e}", level="DEBUG", component="SqlShortEngine")
+                log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
 
+        # Fallback to default presets if nothing matched
         if not matched:
-            matched = BANKING_SQL_PRESETS[0]
+            if content_type == "theory":
+                matched = TOP_MNC_THEORY_PRESETS[0]
+            else:
+                matched = BANKING_SQL_PRESETS[0]
 
-        hook = matched.get(f"hook_{lang_key}", matched.get("hook_mr", matched["hook_en"]))
-        explanation = matched.get(f"explanation_{lang_key}", matched.get("explanation_mr", matched["explanation_en"]))
+        matched_content_type = matched.get("content_type", content_type)
+        scenes = self._ensure_seven_scenes(matched, matched_content_type, lang_key)
+        matched["scenes"] = scenes
 
-        # 85-Second Master Storyboard Timeline (7 Educational Scenes)
-        timeline = [
-            {"time": "0:00 - 0:08", "phase": "INTRO", "title": "1. Question Intro & Schema", "action": "Display question, highlight requirement, EMPLOYEES table, empty SQL editor", "text": hook},
-            {"time": "0:08 - 0:20", "phase": "UNDERSTAND", "title": "2. Inspect Values & Tie Trap", "action": "Highlight duplicate 80k values, demonstrate why LIMIT 1 OFFSET 1 fails", "text": matched["question"]},
-            {"time": "0:20 - 0:32", "phase": "LOGIC", "title": "3. 4-Step Strategy Flowchart", "action": "Max ➔ Exclude ➔ Remaining Pool ➔ Final Max logic algorithm", "text": "Step-by-step logic before writing code"},
-            {"time": "0:32 - 0:44", "phase": "INNER_SQL", "title": "4. Build Inner Query", "action": "Typewriter builds SELECT MAX(SALARY), points arrow from table, outputs 80,000", "text": matched.get("inner_query_sql", "SELECT MAX(SALARY) FROM EMPLOYEES;")},
-            {"time": "0:44 - 0:58", "phase": "FILTER", "title": "5. Row-by-Row Simulation", "action": "Apply WHERE SALARY < (MAX), evaluate each employee row, eliminate 80k ties", "text": "Row evaluation: Amit/Rahul/Neha KEEP, Priya/Kiran EXCLUDE"},
-            {"time": "0:58 - 1:12", "phase": "RESULT", "title": "6. Outer MAX & Final Output", "action": "Execute complete query, outer MAX selects 70,000, glowing neon output card", "text": explanation},
-            {"time": "1:12 - 1:25", "phase": "OUTRO", "title": "7. Interviewer Pro-Tip & Outro", "action": "Explain ANSI SQL standard, DENSE_RANK() for Nth salary, branding @Code_With_Mangesh", "text": matched["pro_tip"]}
-        ]
+        # Gather voice narration script across scenes
+        narration_parts = []
+        for s in scenes:
+            txt = s.get(f"speech_{lang_key}") or s.get("speech_en") or s.get("speech") or ""
+            if txt:
+                narration_parts.append(txt.strip())
 
-        return {
+        full_narration = "\n\n".join(narration_parts)
+        if not full_narration:
+            full_narration = matched.get(f"explanation_{lang_key}") or matched.get("explanation_mr") or matched.get("question", "")
+
+        # Synthesize regional audio
+        audio_url = f"/audio/preset_sql_q1_second_highest_salary_{lang_key}.mp3"
+        try:
+            from app.core.neural_tts import neural_tts
+            preset_id = matched.get("id", "custom")
+            tts_res = await neural_tts.synthesize_async(
+                text=full_narration,
+                language=lang_key,
+                custom_filename=f"voice_{preset_id}_{lang_key}.mp3"
+            )
+            if tts_res.get("status") == "success" and tts_res.get("audio_url"):
+                audio_url = tts_res.get("audio_url")
+        except Exception as e:
+            log_event(f"Audio synthesis notice in short engine: {e}", level="DEBUG", component="SqlShortEngine")
+
+        hook = matched.get(f"hook_{lang_key}", matched.get("hook_mr", matched.get("hook_en", "")))
+        explanation = matched.get(f"explanation_{lang_key}", matched.get("explanation_mr", matched.get("explanation_en", "")))
+
+        res = {
             "status": "success",
-            "title": matched["title"],
+            "content_type": matched_content_type,
+            "id": matched.get("id", "custom"),
+            "title": matched.get("title", "SQL Interview Preparation"),
             "difficulty": difficulty,
             "language": lang_key,
+            "audio_url": audio_url,
             "hook": hook,
-            "question": matched["question"],
-            "table_name": matched["table_name"],
-            "schema_sql": matched["schema_sql"],
-            "solution_sql": matched["solution_sql"],
-            "inner_query_sql": matched.get("inner_query_sql", ""),
-            "arrow_target": matched["arrow_target"],
-            "explanation": explanation,
-            "pro_tip": matched["pro_tip"],
-            "timeline": timeline,
-            "scenes": matched.get("scenes", []),
+            "question": matched.get("question", text_input),
+            "pro_tip": matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."),
+            "scenes": scenes,
             "max_duration_seconds": 85,
             "aspect_ratio": "9:16",
             "branding": "@Code_With_Mangesh"
         }
 
+        # Include SQL query specific fields
+        if matched_content_type == "sql_query":
+            sample_rows = matched.get("sample_rows")
+            if not sample_rows:
+                sample_rows = [
+                    {"account": "101 Amit", "date": "IT", "amt": "₹60,000", "balance": "Active"},
+                    {"account": "102 Rahul", "date": "HR", "amt": "₹50,000", "balance": "Active"},
+                    {"account": "103 Priya", "date": "IT", "amt": "₹80,000", "balance": "Top Tie"},
+                    {"account": "104 Neha", "date": "Finance", "amt": "₹70,000", "balance": "🎯 Target"},
+                    {"account": "105 Kiran", "date": "IT", "amt": "₹80,000", "balance": "Top Tie"}
+                ]
+            filter_evals = matched.get("filter_evaluations")
+            if not filter_evals:
+                filter_evals = [
+                    {"name": "Amit", "salary": "60,000", "cond": "60000 < MAX", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                    {"name": "Rahul", "salary": "50,000", "cond": "50000 < MAX", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                    {"name": "Priya", "salary": "80,000", "cond": "80000 < MAX", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
+                    {"name": "Neha", "salary": "70,000", "cond": "70000 < MAX", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                    {"name": "Kiran", "salary": "80,000", "cond": "80000 < MAX", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}
+                ]
+
+            res.update({
+                "table_name": matched.get("table_name", "EMPLOYEES"),
+                "col_headers": matched.get("col_headers", ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"]),
+                "sample_rows": sample_rows,
+                "filter_evaluations": filter_evals,
+                "output_value": matched.get("output_value", "70000"),
+                "schema_sql": matched.get("schema_sql", ""),
+                "solution_sql": matched.get("solution_sql", ""),
+                "inner_query_sql": matched.get("inner_query_sql", ""),
+                "arrow_target": matched.get("arrow_target", "OVER ()"),
+                "explanation": explanation
+            })
+        else:
+            # Include Theory specific fields
+            comp_rows = matched.get("comparison_rows")
+            if not comp_rows:
+                comp_rows = [
+                    {"feature": "Execution Stage", "col_a": "Pre-Filter Stage", "col_b": "Post-Filter Stage"},
+                    {"feature": "Target Scope", "col_a": "Individual Records", "col_b": "Aggregated Groups"},
+                    {"feature": "Aggregate Functions", "col_a": "❌ Not Supported", "col_b": "✅ Supported (SUM, COUNT)"},
+                    {"feature": "Index Utilization", "col_a": "Uses Table B-Tree", "col_b": "In-Memory Hash"}
+                ]
+            res.update({
+                "concept_summary": matched.get("concept_summary", ""),
+                "comparison_title": matched.get("comparison_title", "COMPARISON MATRIX"),
+                "comparison_headers": matched.get("comparison_headers", ["ASPECT", "CONCEPT A", "CONCEPT B"]),
+                "comparison_rows": comp_rows,
+                "syntax_a_title": matched.get("syntax_a_title", "SYNTAX A"),
+                "syntax_a_code": matched.get("syntax_a_code", ""),
+                "syntax_b_title": matched.get("syntax_b_title", "SYNTAX B"),
+                "syntax_b_code": matched.get("syntax_b_code", ""),
+                "traps_title": matched.get("traps_title", "COMMON INTERVIEW TRAPS"),
+                "traps": matched.get("traps", []),
+                "golden_rule": matched.get("golden_rule", "Golden Rule: Check execution order carefully."),
+                "solution_sql": matched.get("syntax_a_code", "") + "\n\n" + matched.get("syntax_b_code", ""),
+                "explanation": matched.get("concept_summary", "")
+            })
+
+        return res
+
+    def generate_short_prompt(
+        self,
+        topic_or_question: str,
+        difficulty: str = "Medium",
+        language: str = "mr"
+    ) -> Dict[str, Any]:
+        """Synchronous wrapper for generate_short_prompt_async."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # In running loop, return baseline structure synchronously
+                pass
+        except Exception:
+            pass
+
+        return asyncio.run(self.generate_short_prompt_async(topic_or_question, difficulty, language))
+
     def synthesize_voiceover(self, text: str, language: str = "mr") -> Optional[str]:
-        """Synthesizes voiceover using Neural TTS Engine (ElevenLabs -> Microsoft Neural Edge-TTS)."""
+        """Synthesizes voiceover using Neural TTS Engine."""
         from app.core.neural_tts import neural_tts
         res = neural_tts.synthesize(text=text, language=language)
         if res.get("status") == "success":
@@ -619,3 +1336,4 @@ class SqlShortVideoEngine:
 
 # Global Singleton instance
 sql_short_engine = SqlShortVideoEngine()
+

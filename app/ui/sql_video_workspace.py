@@ -216,28 +216,33 @@ def get_sql_video_workspace_html() -> str:
             <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
             <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                    <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. TOP MNC INTERVIEW SCENARIOS</h3>
-                    <span style="font-size: 11px; color: #38BDF8; background: rgba(56,189,248,0.1); padding: 2px 8px; border-radius: 6px;">FAANG &amp; MNC Standard</span>
+                    <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. MASTER PROMPT &amp; SCENARIO INPUT</h3>
+                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ Prompt-Driven AI Studio</span>
                 </div>
 
-                <!-- Standard SQL Interview Presets Dropdown -->
-                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Technical Interview Drill (Select Question)</label>
-                <select class="studio-input" id="sqlShortPresetSelect" onchange="handleSqlPresetChange(this.value)" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px; font-size: 12px;">
-                    <option value="sql_q1_second_highest_salary" selected>⭐ Q1: EMPLOYEES — 2nd Highest Salary (Subquery Method)</option>
-                    <option value="faang_dense_rank_ties">🏢 Amazon / Google: 2nd Highest Salary With Ties (DENSE_RANK)</option>
-                    <option value="goldman_running_balance">🏦 Goldman Sachs / HDFC: Cumulative Running Balance (SUM OVER)</option>
-                    <option value="uber_consecutive_active_days">🚗 Uber / Swiggy: Consecutive Active Days (Gaps &amp; Islands)</option>
-                    <option value="netflix_top_n_per_category">🎬 Netflix / Spotify: Top 2 Titles Per Category (PARTITION BY)</option>
-                    <option value="meta_reciprocal_friends">🌐 Meta / LinkedIn: Mutual Reciprocal Connections (Self-Join)</option>
-                    <option value="amazon_churn_zero_orders">📦 Amazon / Flipkart: Customers with ZERO Orders (Anti-Join)</option>
-                    <option value="stripe_consecutive_fraud">💳 Stripe / PayPal: Consecutive High-Value Withdrawals (LAG)</option>
-                    <option value="zomato_mom_growth">📈 Swiggy / Zomato: Month-over-Month Growth % (LAG Window)</option>
-                    <option value="custom">⚡ Custom Interview Scenario / Live Question...</option>
-                </select>
+                <!-- Master Prompt Input Textarea -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label class="input-label" style="font-size: 12px; color: #38BDF8; font-weight: 700; margin: 0;">
+                        📝 Question Understanding &amp; Master Prompt Input:
+                    </label>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn btn-secondary" onclick="loadDemoMasterPrompt()" style="font-size: 10px; padding: 4px 8px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;" title="Load Q1 Second Highest Salary Master Prompt Template">
+                            📋 Demo Prompt
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearMasterPrompt()" style="font-size: 10px; padding: 4px 8px; border-color: #EF4444; color: #EF4444; font-weight: 700;" title="Clear textarea to enter new scenario">
+                            🧹 Clear
+                        </button>
+                    </div>
+                </div>
 
-                <!-- Interview Question Textarea -->
-                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Question Understanding &amp; Problem Statement</label>
-                <textarea class="studio-input" id="sqlShortQuestion" rows="3" placeholder="Enter standard SQL interview question..." style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; font-size: 12px; border-radius: 6px; padding: 8px;"></textarea>
+                <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा पूर्ण मास्टर प्रॉम्प्ट (Master Prompt) किंवा कोणताही SQL मुलाखत प्रश्न इथे पेस्ट करा...
+
+उदा.
+- फक्त प्रश्न (उदा. Find 3rd highest salary from EMPLOYEES table)
+- किंवा प्रश्न + सॅम्पल डेटा टेबल (EMP_ID, EMP_NAME, SALARY...)
+- किंवा संपूर्ण 7-Scene Master Prompt!
+
+AI शिक्षक स्वतः हा प्रॉम्प्ट वाचून ऑडिओ, ॲनिमेशन आणि निकाल सिंक करून देईल!" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; font-family: monospace; border-radius: 8px; padding: 10px; line-height: 1.5; resize: vertical;"></textarea>
 
                 <!-- Multilingual Controls: Audio Voice & Text Overlays -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
@@ -339,8 +344,8 @@ def get_sql_video_workspace_html() -> str:
                 </div>
 
                 <!-- Generate AI Blueprint Button -->
-                <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 6px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span>✨ Generate 85s AI Teacher Blueprint &amp; Prompt</span>
+                <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 12px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2,132,199,0.35);">
+                    <span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>
                 </button>
 
                 <!-- 85-Second Master Storyboard Breakdown Accordion -->

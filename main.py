@@ -1124,8 +1124,8 @@ async def api_sql_video_presets():
 
 @app.post("/api/sql_video/generate_prompt")
 async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
-    """Generates 60-second viral Short/Reel creation blueprint with 3s hook, syntax timeline, and arrow target."""
-    res = sql_short_engine.generate_short_prompt(
+    """Generates 85-second viral Short/Reel creation blueprint with synchronized 7 scenes and regional voice."""
+    res = await sql_short_engine.generate_short_prompt_async(
         topic_or_question=req.question,
         difficulty=req.difficulty or "Medium",
         language=req.language or "mr"
