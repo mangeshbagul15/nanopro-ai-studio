@@ -1,6 +1,6 @@
 """
 Mangesh Nano Pro AI Studio - 9:16 SQL Short Video Creation Workspace
-Dedicated Mobile, Instagram Reels & YouTube Shorts Studio (Max 60 Seconds).
+FAANG & Top MNC Technical Interview Preparation Studio (Max 60 Seconds).
 Zero Server Load: Client-Side Canvas & MediaRecorder Video Generation.
 """
 
@@ -34,8 +34,8 @@ def get_sql_video_workspace_html() -> str:
     }
     .sql-studio-grid {
         display: grid;
-        grid-template-columns: 360px 340px 480px;
-        min-width: 1200px;
+        grid-template-columns: 370px 340px 480px;
+        min-width: 1210px;
         gap: 20px;
         align-items: start;
     }
@@ -63,7 +63,111 @@ def get_sql_video_workspace_html() -> str:
         border-color: #10B981;
         color: #10B981;
     }
+
+    /* High-Visibility Selected States for Voice Language Buttons */
+    .sql-lang-btn {
+        flex: 1;
+        font-size: 11px;
+        padding: 8px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1.5px solid #1E2D4A !important;
+        background: #0B1120 !important;
+        color: #94A3B8 !important;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-weight: 600;
+    }
+    .sql-lang-btn:hover {
+        border-color: #38BDF8 !important;
+        color: #F8FAFC !important;
+    }
+    .sql-lang-btn.active {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25)) !important;
+        border: 2px solid #38BDF8 !important;
+        color: #38BDF8 !important;
+        font-weight: 800 !important;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.45) !important;
+    }
+    .sql-lang-btn.active .btn-check {
+        display: inline-block;
+    }
+
+    /* High-Visibility Selected States for Subtitle Buttons */
+    .sql-text-btn {
+        flex: 1;
+        font-size: 11px;
+        padding: 8px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1.5px solid #1E2D4A !important;
+        background: #0B1120 !important;
+        color: #94A3B8 !important;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-weight: 600;
+    }
+    .sql-text-btn:hover {
+        border-color: #F59E0B !important;
+        color: #F8FAFC !important;
+    }
+    .sql-text-btn.active {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(236, 72, 153, 0.25)) !important;
+        border: 2px solid #F59E0B !important;
+        color: #F59E0B !important;
+        font-weight: 800 !important;
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.45) !important;
+    }
+    .sql-text-btn.active .btn-check {
+        display: inline-block;
+    }
+
+    /* High-Visibility Selected States for Avatar Toggle Buttons */
+    .sql-avatar-btn {
+        flex: 1;
+        font-size: 11px;
+        padding: 8px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1.5px solid #1E2D4A !important;
+        background: #0B1120 !important;
+        color: #94A3B8 !important;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-weight: 600;
+    }
+    .sql-avatar-btn:hover {
+        border-color: #818CF8 !important;
+        color: #F8FAFC !important;
+    }
+    .sql-avatar-btn.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25)) !important;
+        border: 2px solid #818CF8 !important;
+        color: #C7D2FE !important;
+        font-weight: 800 !important;
+        box-shadow: 0 0 14px rgba(99, 102, 241, 0.45) !important;
+    }
+    .sql-avatar-btn.active .btn-check {
+        display: inline-block;
+    }
+
+    .btn-check {
+        display: none;
+        font-weight: 900;
+    }
     </style>
+
+    <!-- Hidden Native Audio Player for Voiceover Sync & Multiplexing -->
+    <audio id="sqlVoiceAudio" preload="auto" crossorigin="anonymous" style="display:none;"></audio>
 
     <!-- 9:16 SQL SHORT & REEL STUDIO UPGRADE -->
     <div class="sql-shorts-container" style="margin-bottom: 24px;">
@@ -71,19 +175,19 @@ def get_sql_video_workspace_html() -> str:
         <div style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(99, 102, 241, 0.15)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
             <div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 24px;">📱</span>
+                    <span style="font-size: 26px;">🚀</span>
                     <div>
-                        <h2 style="margin: 0; font-size: 18px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">9:16 SQL SHORT VIDEO CREATION WORKSPACE</h2>
-                        <div style="font-size: 12px; color: #94A3B8; margin-top: 2px;">Trending Mobile Reels & Shorts (Max 60s) • Peak Point Viral Hooks • Real Banking Scenarios • Arrow Motion • Zero Server CPU Load</div>
+                        <h2 style="margin: 0; font-size: 18px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">FAANG &amp; TOP MNC SQL INTERVIEW PREPARATION STUDIO</h2>
+                        <div style="font-size: 12px; color: #94A3B8; margin-top: 2px;">Standard Interview Questions • Step-by-Step Code Typing • Dynamic Arrow Motion • 100% Zero-Watermark • Natural Human Regional Voice</div>
                     </div>
                 </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ 22/22 APIs Live (Runway + Luma + HeyGen + D-ID)</span>
                 <span class="status-pill" style="background: rgba(236, 72, 153, 0.15); border: 1px solid #EC4899; color: #EC4899; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🛡️ 100% Watermark-Free</span>
-                <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🇮🇳 ZP व ग्रामीण विद्यार्थी मिशन</span>
-                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical (60s)</span>
-                <span class="status-pill" style="background: rgba(139, 92, 246, 0.15); border: 1px solid #8B5CF6; color: #8B5CF6; font-size: 11px; padding: 4px 10px; border-radius: 20px;">💻 0% Server Load</span>
+                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical Reel (60s)</span>
+                <span class="status-pill" style="background: rgba(139, 92, 246, 0.15); border: 1px solid #8B5CF6; color: #8B5CF6; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🔊 Natural Human Audio Live</span>
+                <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">💻 0% Server CPU Load</span>
             </div>
         </div>
 
@@ -112,60 +216,89 @@ def get_sql_video_workspace_html() -> str:
             <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
             <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                    <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. SCENARIO &amp; AI PROMPT BLUEPRINT</h3>
-                    <span style="font-size: 11px; color: #38BDF8; background: rgba(56,189,248,0.1); padding: 2px 8px; border-radius: 6px;">AI Prompt Engine</span>
+                    <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. TOP MNC INTERVIEW SCENARIOS</h3>
+                    <span style="font-size: 11px; color: #38BDF8; background: rgba(56,189,248,0.1); padding: 2px 8px; border-radius: 6px;">FAANG &amp; MNC Standard</span>
                 </div>
 
-                <!-- Rural & Banking Presets Dropdown -->
-                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Scenario Preset (ZP School / Kirana / Bank)</label>
-                <select class="studio-input" id="sqlShortPresetSelect" onchange="handleSqlPresetChange(this.value)" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px;">
-                    <option value="zp_school_ranking" selected>🏫 जिल्हा परिषद शाळा निकाल: समान गुण असताना २ रा क्रमांक (DENSE_RANK)</option>
-                    <option value="kirana_dukan_hisob">🛒 गावचे किराणा दुकान: चालू उधारी व शिल्लक हिशोब (PARTITION BY)</option>
-                    <option value="ration_card_dedup">🌾 गावचे रेशन वाटप: कुटुंबातील डुप्लिकेट नावे शोधणे (ROW_NUMBER)</option>
-                    <option value="cricket_match_runs">🏏 गल्ली क्रिकेट / IPL: फलंदाजाची चालू धावसंख्या (SUM OVER)</option>
-                    <option value="st_bus_income">🚌 लालपरी एसटी बस: मार्गाचे तिकीट उत्पन्न (PARTITION BY)</option>
-                    <option value="bank_running_total">🏦 HDFC / SBI: Cumulative Running Balance (SUM OVER PARTITION BY)</option>
-                    <option value="bank_consecutive_fraud">💳 ICICI / Axis: Fraud Detection - Consecutive Withdrawals (LAG OVER)</option>
-                    <option value="bank_salary_rank">📈 Goldman / Morgan: 2nd Highest Salary No Ties (DENSE_RANK)</option>
-                    <option value="custom">⚡ Custom Question / Interview Scenario...</option>
+                <!-- Standard SQL Interview Presets Dropdown -->
+                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Technical Interview Drill (Select Question)</label>
+                <select class="studio-input" id="sqlShortPresetSelect" onchange="handleSqlPresetChange(this.value)" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px; font-size: 12px;">
+                    <option value="sql_q1_second_highest_salary" selected>⭐ Q1: EMPLOYEES — 2nd Highest Salary (Subquery Method)</option>
+                    <option value="faang_dense_rank_ties">🏢 Amazon / Google: 2nd Highest Salary With Ties (DENSE_RANK)</option>
+                    <option value="goldman_running_balance">🏦 Goldman Sachs / HDFC: Cumulative Running Balance (SUM OVER)</option>
+                    <option value="uber_consecutive_active_days">🚗 Uber / Swiggy: Consecutive Active Days (Gaps &amp; Islands)</option>
+                    <option value="netflix_top_n_per_category">🎬 Netflix / Spotify: Top 2 Titles Per Category (PARTITION BY)</option>
+                    <option value="meta_reciprocal_friends">🌐 Meta / LinkedIn: Mutual Reciprocal Connections (Self-Join)</option>
+                    <option value="amazon_churn_zero_orders">📦 Amazon / Flipkart: Customers with ZERO Orders (Anti-Join)</option>
+                    <option value="stripe_consecutive_fraud">💳 Stripe / PayPal: Consecutive High-Value Withdrawals (LAG)</option>
+                    <option value="zomato_mom_growth">📈 Swiggy / Zomato: Month-over-Month Growth % (LAG Window)</option>
+                    <option value="custom">⚡ Custom Interview Scenario / Live Question...</option>
                 </select>
 
-                <!-- Custom Question Textarea -->
-                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Interview Question / Business Scenario</label>
-                <textarea class="studio-input" id="sqlShortQuestion" rows="3" placeholder="Enter bank level interview question..." style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; font-size: 12px; border-radius: 6px; padding: 8px;"></textarea>
+                <!-- Interview Question Textarea -->
+                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Question Understanding &amp; Problem Statement</label>
+                <textarea class="studio-input" id="sqlShortQuestion" rows="3" placeholder="Enter standard SQL interview question..." style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; font-size: 12px; border-radius: 6px; padding: 8px;"></textarea>
 
                 <!-- Multilingual Controls: Audio Voice & Text Overlays -->
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Multilingual Audio &amp; Text Settings</div>
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display:flex; justify-content:space-between;">
+                        <span>🎙️ Voiceover Audio &amp; Subtitle Controls</span>
+                        <span id="activeVoiceBadge" style="color:#10B981; font-weight:700;">मराठी शिक्षक</span>
+                    </div>
                     
-                    <div style="margin-bottom: 10px;">
-                        <span style="font-size: 11px; color: #94A3B8; display: block; margin-bottom: 4px;">🎙️ Voiceover Audio Language:</span>
+                    <!-- Voiceover Language Selector Buttons -->
+                    <div style="margin-bottom: 12px;">
+                        <span style="font-size: 11px; color: #94A3B8; display: block; margin-bottom: 6px;">🗣️ Natural Teacher Voice Language:</span>
                         <div style="display: flex; gap: 6px;">
-                            <button type="button" class="btn btn-secondary sql-lang-btn active" id="btnAudioMr" onclick="setSqlAudioLang('mr')" style="flex:1; font-size:11px; padding: 6px 2px;">🇮🇳 मराठी</button>
-                            <button type="button" class="btn btn-secondary sql-lang-btn" id="btnAudioHi" onclick="setSqlAudioLang('hi')" style="flex:1; font-size:11px; padding: 6px 2px;">🇮🇳 हिन्दी</button>
-                            <button type="button" class="btn btn-secondary sql-lang-btn" id="btnAudioEn" onclick="setSqlAudioLang('en')" style="flex:1; font-size:11px; padding: 6px 2px;">🇬🇧 English</button>
+                            <button type="button" class="sql-lang-btn active" id="btnAudioMr" onclick="setSqlAudioLang('mr')">
+                                <span class="btn-check">✓</span> <span>🇮🇳 मराठी</span>
+                            </button>
+                            <button type="button" class="sql-lang-btn" id="btnAudioHi" onclick="setSqlAudioLang('hi')">
+                                <span class="btn-check">✓</span> <span>🇮🇳 हिन्दी</span>
+                            </button>
+                            <button type="button" class="sql-lang-btn" id="btnAudioEn" onclick="setSqlAudioLang('en')">
+                                <span class="btn-check">✓</span> <span>🇬🇧 English</span>
+                            </button>
                         </div>
                     </div>
 
+                    <!-- Subtitle / Overlay Text Style Selector Buttons -->
                     <div>
-                        <span style="font-size: 11px; color: #94A3B8; display: block; margin-bottom: 4px;">📝 Subtitle / Overlay Text Style:</span>
+                        <span style="font-size: 11px; color: #94A3B8; display: block; margin-bottom: 6px;">📝 Subtitle / Code Explanation Style:</span>
                         <div style="display: flex; gap: 6px;">
-                            <button type="button" class="btn btn-secondary sql-text-btn" id="btnTextEn" onclick="setSqlTextStyle('en')" style="flex:1; font-size:11px; padding: 6px 2px;">English</button>
-                            <button type="button" class="btn btn-secondary sql-text-btn active" id="btnTextMinglish" onclick="setSqlTextStyle('minglish')" style="flex:1; font-size:11px; padding: 6px 2px;">Minglish (मराठी)</button>
-                            <button type="button" class="btn btn-secondary sql-text-btn" id="btnTextHinglish" onclick="setSqlTextStyle('hinglish')" style="flex:1; font-size:11px; padding: 6px 2px;">Hinglish</button>
+                            <button type="button" class="sql-text-btn" id="btnTextEn" onclick="setSqlTextStyle('en')">
+                                <span class="btn-check">✓</span> <span>English</span>
+                            </button>
+                            <button type="button" class="sql-text-btn active" id="btnTextMinglish" onclick="setSqlTextStyle('minglish')">
+                                <span class="btn-check">✓</span> <span>Minglish (मराठी)</span>
+                            </button>
+                            <button type="button" class="sql-text-btn" id="btnTextHinglish" onclick="setSqlTextStyle('hinglish')">
+                                <span class="btn-check">✓</span> <span>Hinglish</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- AI Avatar Presenter Selector (HeyGen & D-ID Integration) -->
+                <!-- AI Talking Avatar Presenter Controls (HeyGen & D-ID Integration) -->
                 <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #818CF8; text-transform: uppercase; letter-spacing: 0.5px;">🧑‍💼 AI Talking Avatar Presenter (HeyGen &amp; D-ID)</span>
-                        <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">20/20 APIs</span>
+                        <span style="font-size: 11px; font-weight: 700; color: #818CF8; text-transform: uppercase; letter-spacing: 0.5px;">🧑‍💼 AI Talking Avatar Presenter</span>
+                        <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">Auto-Failover Live</span>
                     </div>
+
+                    <!-- Toggle Avatar ON / OFF -->
+                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                        <button type="button" class="sql-avatar-btn active" id="btnAvatarToggleOn" onclick="toggleSqlAvatar(true)">
+                            <span class="btn-check">✓</span> <span>🧑‍💼 AI Avatar ON</span>
+                        </button>
+                        <button type="button" class="sql-avatar-btn" id="btnAvatarToggleOff" onclick="toggleSqlAvatar(false)">
+                            <span class="btn-check">✓</span> <span>🚫 Code Only (Full Screen)</span>
+                        </button>
+                    </div>
+
+                    <!-- Avatar Presenter Dropdown -->
                     <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                         <select class="studio-input" id="sqlAvatarSelect" onchange="setSqlAvatarPresenter(this.value)" style="flex: 1; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 6px; font-size: 11px;">
-                            <option value="none">🚫 No Avatar (Cyber Code Only)</option>
                             <option value="Nadim_public_5" selected>🧑‍💼 Nadim (HeyGen Banker Lead - 4K)</option>
                             <option value="Wayne_20240711">👨‍💼 Wayne (HeyGen Wall St Exec)</option>
                             <option value="Daisy-inskirt-20220818">👩‍💼 Daisy (HeyGen Tech Lead)</option>
@@ -173,25 +306,27 @@ def get_sql_video_workspace_html() -> str:
                             <option value="did_emma">👩‍💼 Emma (D-ID Fintech Anchor)</option>
                         </select>
                     </div>
+
+                    <!-- Generate Avatar Button -->
                     <div style="display: flex; gap: 6px;">
-                        <button type="button" class="btn btn-secondary" onclick="renderAiAvatarVideo()" id="btnRenderAvatar" style="flex: 1; font-size: 11px; padding: 6px; color: #818CF8; border-color: rgba(99,102,241,0.4);">
+                        <button type="button" class="btn btn-secondary" onclick="renderAiAvatarVideo()" id="btnRenderAvatar" style="flex: 1; font-size: 11px; padding: 8px; color: #C7D2FE; border-color: rgba(99,102,241,0.5); font-weight:700;">
                             🎬 Generate AI Avatar Hook Video (HeyGen / D-ID)
                         </button>
                     </div>
                     <div id="avatarRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
                 </div>
 
-                <!-- 3D Cinematic Background Video (Runway Gen-4 & Luma Dream Machine) -->
+                <!-- 3D Cinematic Motion Background (Runway Gen-4 & Luma Dream Machine) -->
                 <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #C084FC; text-transform: uppercase; letter-spacing: 0.5px;">🎥 3D Cinematic Motion (Runway &amp; Luma)</span>
+                        <span style="font-size: 11px; font-weight: 700; color: #C084FC; text-transform: uppercase; letter-spacing: 0.5px;">🎥 3D Motion Background (Runway &amp; Luma)</span>
                         <span style="font-size: 10px; color: #38BDF8; background: rgba(56,189,248,0.15); padding: 2px 6px; border-radius: 4px;">Runway Gen-4</span>
                     </div>
                     <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                         <select class="studio-input" id="sqlCinematicBgSelect" style="flex: 1; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 6px; font-size: 11px;">
                             <option value="cyber_matrix" selected>🌐 Cyber Grid &amp; Neon Data Stream (Fast Canvas)</option>
-                            <option value="runway_fintech">🏦 Runway Gen-4: High-Tech Mumbai Banking Server Room</option>
-                            <option value="runway_rural">🌾 Runway Gen-4: Maharashtra Digital Village &amp; ZP School</option>
+                            <option value="runway_fintech">🏦 Runway Gen-4: High-Tech Global Banking Server Room</option>
+                            <option value="runway_cloud">☁️ Runway Gen-4: Modern Cloud Data Warehouse &amp; Analytics</option>
                             <option value="luma_dataflow">✨ Luma Dream Machine: 3D Golden SQL Particles</option>
                         </select>
                     </div>
@@ -203,20 +338,19 @@ def get_sql_video_workspace_html() -> str:
                     <div id="cinematicBgRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
                 </div>
 
-                <!-- Generate Blueprint Button -->
+                <!-- Generate AI Blueprint Button -->
                 <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 6px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px;">
-
                     <span>✨ Generate 60s AI Blueprint &amp; Prompt</span>
                 </button>
 
                 <!-- 60-Second Timed Blueprint Breakdown Accordion -->
-                <div id="sqlShortBlueprintBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; font-size: 11px; max-height: 260px; overflow-y: auto;">
+                <div id="sqlShortBlueprintBox" style="margin-top: 14px; background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; font-size: 11px; max-height: 240px; overflow-y: auto;">
                     <div style="color: #38BDF8; font-weight: 700; margin-bottom: 6px;">⏱️ 60-SECOND REEL TIMELINE:</div>
-                    <div style="color: #EF4444; margin-bottom: 4px;"><b>0:00 - 0:05 [HOOK]:</b> <span id="bpTimelineHook">🚨 ९०% मुलं या HDFC बँक SQL प्रश्नात फेल होतात! क्युम्युलेटिव्ह बॅलन्स कसा काढायचा?</span></div>
-                    <div style="color: #F59E0B; margin-bottom: 4px;"><b>0:05 - 0:18 [SCHEMA]:</b> <span id="bpTimelineSchema">Real bank customer transaction records</span></div>
-                    <div style="color: #10B981; margin-bottom: 4px;"><b>0:18 - 0:42 [SQL &amp; ARROW]:</b> Animated Typing + Arrow pointing to <code id="bpArrowTarget" style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">PARTITION BY account_no</code></div>
+                    <div style="color: #EF4444; margin-bottom: 4px;"><b>0:00 - 0:05 [HOOK]:</b> <span id="bpTimelineHook">🚨 ९५% मुलं या गुगल एसक्यूएल प्रश्नात फेल होतात! समान पगार असताना २ रा नंबर कसा काढायचा?</span></div>
+                    <div style="color: #F59E0B; margin-bottom: 4px;"><b>0:05 - 0:18 [SCHEMA]:</b> <span id="bpTimelineSchema">Real company employee records</span></div>
+                    <div style="color: #10B981; margin-bottom: 4px;"><b>0:18 - 0:42 [SQL &amp; ARROW]:</b> Animated Typing + Arrow pointing to <code id="bpArrowTarget" style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">DENSE_RANK() OVER (ORDER BY salary DESC)</code></div>
                     <div style="color: #06B6D4; margin-bottom: 4px;"><b>0:42 - 0:54 [SIMULATION]:</b> Real-time output calculation rows highlight</div>
-                    <div style="color: #8B5CF6; margin-bottom: 4px;"><b>0:54 - 1:00 [PRO TIP]:</b> Window functions avoid O(N²) subqueries!</div>
+                    <div style="color: #8B5CF6; margin-bottom: 4px;"><b>0:54 - 1:00 [PRO TIP]:</b> DENSE_RANK never skips ranks after duplicate ties!</div>
                 </div>
             </div>
 
@@ -242,7 +376,7 @@ def get_sql_video_workspace_html() -> str:
 
                     <!-- Bottom Audio Wave Indicator -->
                     <div id="canvasAudioWave" style="position: absolute; bottom: 8px; left: 16px; right: 16px; height: 18px; display: flex; align-items: center; justify-content: space-between; z-index: 10; pointer-events: none;">
-                        <div style="font-size: 10px; color: #38BDF8; font-weight: 700; text-shadow: 0 1px 3px #000;">SQL 9:16 SHORT</div>
+                        <div style="font-size: 10px; color: #38BDF8; font-weight: 700; text-shadow: 0 1px 3px #000;">FAANG SQL 9:16 SHORT</div>
                         <div style="display: flex; gap: 3px; align-items: center;">
                             <span class="wave-bar" style="width: 3px; height: 8px; background: #10B981; border-radius: 2px;"></span>
                             <span class="wave-bar" style="width: 3px; height: 14px; background: #38BDF8; border-radius: 2px;"></span>
@@ -278,7 +412,7 @@ def get_sql_video_workspace_html() -> str:
             <!-- COLUMN 3: 1-CLICK EXPORT, LIVE STAGE MONITOR & SQL SANDBOX -->
             <div id="exportCardContainer" style="display: flex; flex-direction: column; gap: 16px;">
                 
-                <!-- 1. PRIMARY EXPORT & LIVE STAGE MONITOR CARD (Placed at TOP for Zero Scrolling) -->
+                <!-- 1. PRIMARY EXPORT & LIVE STAGE MONITOR CARD -->
                 <div class="panel-card" style="margin: 0; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12)); border: 1.5px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <span style="font-size: 13px; font-weight: 800; color: #10B981; display: flex; align-items: center; gap: 6px;">
@@ -287,22 +421,25 @@ def get_sql_video_workspace_html() -> str:
                         <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 700;">🛡️ 100% Zero-Watermark</span>
                     </div>
                     <div style="font-size: 11px; color: #94A3B8; margin-bottom: 12px;">
-                        ब्राउझर GPU द्वारे 1080x1920 फुल-एचडी रेंडरिंग. <b>सर्व्हर लोड: 0%</b>. कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात!
+                        1080x1920 फुल-एचडी रेंडरिंग सोबत <b>नॅचरल ह्युमन व्हॉईस ऑडिओ</b> इंटिग्रेटेड! कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात.
                     </div>
 
                     <!-- Direct Download Button Group -->
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo(60)" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
                             <span style="font-size: 18px;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (CLEAN &amp; NO WATERMARK)</span>
+                            <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (WITH NATURAL VOICE AUDIO)</span>
                         </button>
 
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(10)" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="10-sec quick reel export in 2 seconds">
+                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(10)" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="10-sec quick reel export with audio">
                                 ⚡ Quick 10s Test Video
                             </button>
+                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #10B981; color: #10B981;" title="Download Teacher Audio (MP3)">
+                                🎵 Save Voice Audio (MP3)
+                            </button>
                             <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;" title="Save current frame as HD PNG">
-                                📸 Save HD Frame (PNG)
+                                📸 Save Frame (PNG)
                             </button>
                         </div>
                     </div>
@@ -316,17 +453,17 @@ def get_sql_video_workspace_html() -> str:
                         
                         <!-- 5 Stages Grid -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;" id="exportStagePills">
-                            <div class="stage-pill" id="stagePill1"><span>1️⃣</span> <span>हुक व आकर्षण (0-5s)</span></div>
+                            <div class="stage-pill" id="stagePill1"><span>1️⃣</span> <span>हुक व प्रश्न (0-5s)</span></div>
                             <div class="stage-pill" id="stagePill2"><span>2️⃣</span> <span>डेटा स्कीमा (5-18s)</span></div>
-                            <div class="stage-pill" id="stagePill3"><span>3️⃣</span> <span>SQL कोड टाईपिंग (18-42s)</span></div>
+                            <div class="stage-pill" id="stagePill3"><span>3️⃣</span> <span>SQL कोड व ॲरो (18-42s)</span></div>
                             <div class="stage-pill" id="stagePill4"><span>4️⃣</span> <span>निकाल कॅल्क्युलेशन (42-54s)</span></div>
-                            <div class="stage-pill" id="stagePill5" style="grid-column: span 2;"><span>5️⃣</span> <span>🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (54-60s)</span></div>
+                            <div class="stage-pill" id="stagePill5" style="grid-column: span 2;"><span>5️⃣</span> <span>🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ + ऑडिओ</span></div>
                         </div>
                         
                         <!-- Progress Bar & Remaining Time Stats -->
                         <div id="exportProgressBarContainer" style="display:none; background: #0B1120; border: 1px solid #1E2D4A; border-radius: 6px; padding: 10px; margin-top: 8px;">
                             <div style="display: flex; justify-content: space-between; font-size: 11px; color: #38BDF8; font-weight: 700; margin-bottom: 6px;">
-                                <span id="exportStageDesc">⏳ व्हिडिओ रेंडर होत आहे...</span>
+                                <span id="exportStageDesc">⏳ व्हिडिओ व ऑडिओ एकत्र रेंडर होत आहे...</span>
                                 <span id="exportPercentNum" style="font-family: monospace; font-size: 13px; color: #10B981;">0%</span>
                             </div>
                             <div style="height: 12px; width: 100%; background: #1E2D4A; border-radius: 6px; overflow: hidden; margin-bottom: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);">
@@ -342,7 +479,7 @@ def get_sql_video_workspace_html() -> str:
                         <div id="videoReadyCelebration" style="display:none; background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25)); border: 2px solid #10B981; border-radius: 8px; padding: 14px; text-align: center; margin-top: 10px; animation: popIn 0.3s ease-out;">
                             <div style="font-size: 26px;">🎉 🏆 🎬</div>
                             <div style="font-size: 14px; font-weight: 800; color: #10B981; margin-top: 4px;">व्हिडिओ यशस्वीरित्या तयार झाला!</div>
-                            <div style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">100% वॉटरमार्क-फ्री • 1080x1920 (9:16) डाऊनलोड पूर्ण झाले!</div>
+                            <div style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">100% वॉटरमार्क-फ्री • ऑडिओ इंटिग्रेटेड • 1080x1920 (9:16) डाऊनलोड पूर्ण झाले!</div>
                             <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                                 <a id="btnDownloadAgain" href="#" class="btn btn-primary" style="font-size: 11px; padding: 7px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #000; font-weight: 800; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
                                     <span>📥 पुन्हा सेव्ह करा (Save File)</span>
@@ -380,15 +517,16 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <!-- 3. विद्यार्थी संकल्पना मार्गदर्शन (Student Concept Breakdown Card) -->
+                <!-- 3. टेक्निकल इंटरव्ह्यू संकल्पना व मार्गदर्शन (Technical Concept Breakdown Card) -->
                 <div class="panel-card" style="margin: 0; background: rgba(15, 23, 42, 0.6); border: 1px solid #1E2D4A; border-radius: 12px; padding: 14px; font-size: 11px;">
                     <div style="font-size: 12px; font-weight: 700; color: #F59E0B; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                        <span>🎓</span> <span>विद्यार्थी मार्गदर्शन: ही संकल्पना सोप्या भाषेत</span>
+                        <span>🎓</span> <span>टेक्निकल इंटरव्ह्यू मार्गदर्शन (Step-by-Step Concept Mastery)</span>
                     </div>
                     <div id="studentConceptHelp" style="color: #CBD5E1; line-height: 1.6;">
-                        • <b>समान गुण असताना DENSE_RANK():</b> २ मुलांना समान ९२% गुण असतील तर दोघांना १ ला नंबर मिळतो आणि पुढच्या ८८% वाल्याला अचूक २ रा नंबर मिळतो!<br>
-                        • <b>हिशोब स्वतंत्र ठेवण्यासाठी PARTITION BY:</b> प्रत्येक व्यक्ती किंवा खात्याचा हिशोब न मिसळता वेगळा ठेवतो.<br>
-                        • <b>चालू बेरीजसाठी SUM() OVER:</b> सुरुवातीपासून आजपर्यंतचा जमा-खर्च आपोआप मोजतो.
+                        • <b>प्रश्न समजून घ्या (Question Understanding):</b> समान पगार असताना २ रा सर्वाधिक पगार कसा काढायचा? सामान्य RANK() मुळे २ रा नंबर गाळला जातो, पण DENSE_RANK() अचूक २ रा नंबर देते.<br>
+                        • <b>कस कोड लिहायचा (How to Write):</b> WITH RankedSalaries AS (SELECT ..., DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk) SELECT * WHERE rnk = 2;<br>
+                        • <b>महत्त्वाची क्लॉज (Critical Clause):</b> DENSE_RANK() OVER (ORDER BY salary DESC)<br>
+                        • <b>इंटरव्ह्यूअर प्रो-टिप:</b> प्रॉडक्शन डेटाबेसमध्ये LIMIT 1 OFFSET 1 कधीही वापरू नका!
                     </div>
                 </div>
             </div>

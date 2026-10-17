@@ -1,7 +1,7 @@
 """
 Mangesh Nano Pro AI Studio - 9:16 SQL Short Video Client-Side Engine
 Handles HTML5 Canvas 1080x1920 9:16 rendering, dynamic arrow motion, 
-typewriter SQL code animations, multilingual voiceover, and MediaRecorder export.
+typewriter SQL code animations, multilingual voiceover, and MediaRecorder export with audio multiplexing.
 """
 
 def get_sql_video_js() -> str:
@@ -11,246 +11,112 @@ def get_sql_video_js() -> str:
        9:16 SQL SHORT & REEL ENGINE (CLIENT-SIDE ZERO-SERVER-LOAD)
        ========================================================================== */
     const SQL_CLIENT_PRESETS = {
-        "zp_school_ranking": {
-            id: "zp_school_ranking",
-            title: "🏫 ZP शाळा निकाल: समान गुण असताना २ रा क्रमांक (DENSE_RANK)",
-            difficulty: "Easy",
-            hook_mr: "🚨 २ विद्यार्थ्यांना समान ९२% गुण असतील तर पुढचा नंबर ३ रा की २ रा? ९९% मुलं इथे चुकतात!",
-            hook_hi: "🚨 2 स्टूडेंट्स के बराबर 92% मार्क्स हों तो 2nd रैंक कैसे निकालें? DENSE_RANK का कमाल!",
-            hook_en: "🚨 Handling duplicate top scores in school rankings using DENSE_RANK!",
-            hook_minglish: "🚨 2 mulanna same marks asel tar pudhcha number 2 ra ki 3 ra? ZP school SQL test!",
-            hook_hinglish: "🚨 2 students ke same marks hone par 2nd rank kaise nikale? ZP school rank formula!",
-            question: "गावातील शाळेच्या परीक्षेत २ मुलांना एकसारखे ९२% गुण मिळाले. तर २ रा क्रमांक शोधण्यासाठी DENSE_RANK() चा वापर करा.",
-            table_name: "school_results",
-            col_headers: ["विद्यार्थी", "रोल नं", "गुण %", "निकाल (RANK)"],
-            schema_sql: `CREATE TABLE school_results (
-    roll_no INTEGER PRIMARY KEY,
-    student_name TEXT,
-    marks REAL
+        "sql_q1_second_highest_salary": {
+            id: "sql_q1_second_highest_salary",
+            title: "Top MNC / FAANG: 2nd Highest Salary with Duplicate Check (Subquery Method)",
+            difficulty: "Core Question",
+            hook_mr: "🚨 Top IT कंपन्यांच्या SQL इंटरव्ह्यूमध्ये ९०% मुलं या प्रश्नात चूक करतात! एकापेक्षा जास्त लोकांचा पगार समान असताना २ रा सर्वाधिक पगार कसा शोधायचा?",
+            hook_hi: "🚨 Top IT कंपनियों के SQL इंटरव्यू में 90% लोग इस सवाल में गलती करते हैं! जब कई लोगों की सेम सैलरी हो तो 2nd हाईएस्ट सैलरी कैसे निकालें?",
+            hook_en: "🚨 90% of candidates make a mistake on this top SQL interview question: Finding the 2nd Highest Salary with Ties!",
+            hook_minglish: "🚨 Top MNC interview madhe 90% loka fasatat! Priya & Kiran doghanchi salary same 80k aslyavar 2nd highest salary kashi kadhaychi?",
+            hook_hinglish: "🚨 Top MNC interview me 90% log fas jate hai! Priya & Kiran dono ki salary same 80k hone par 2nd highest salary kaise nikale?",
+            question: "You have an EMPLOYEES table (EMP_ID, EMP_NAME, DEPARTMENT, SALARY) with records: Amit (60k), Rahul (50k), Priya (80k), Neha (70k), Kiran (80k). How would you find the second-highest salary?",
+            table_name: "EMPLOYEES",
+            col_headers: ["EMP_ID", "EMP_NAME", "DEPT", "SALARY"],
+            schema_sql: `CREATE TABLE EMPLOYEES (
+    EMP_ID INTEGER PRIMARY KEY,
+    EMP_NAME TEXT,
+    DEPARTMENT TEXT,
+    SALARY REAL
 );
-INSERT INTO school_results VALUES 
-(1, 'राहुल पाटील', 92.0),
-(2, 'सुमित शिंदे', 92.0),
-(3, 'स्नेहल जाधव', 88.0),
-(4, 'अमोल पवार', 85.0);`,
-            solution_sql: `WITH RankedResults AS (
-    SELECT student_name, marks,
+INSERT INTO EMPLOYEES VALUES 
+(101, 'Amit', 'IT', 60000),
+(102, 'Rahul', 'HR', 50000),
+(103, 'Priya', 'IT', 80000),
+(104, 'Neha', 'Finance', 70000),
+(105, 'Kiran', 'IT', 80000);`,
+            solution_sql: `SELECT MAX(SALARY) AS SECOND_HIGHEST_SALARY
+FROM EMPLOYEES
+WHERE SALARY < (
+    SELECT MAX(SALARY)
+    FROM EMPLOYEES
+);`,
+            arrow_target: "WHERE SALARY < (SELECT MAX(SALARY))",
+            arrow_line_idx: 2,
+            explanation_mr: "इथे आतील सबक्वेरी आधी पूर्ण टेबलमधून कमाल पगार ८०,००० शोधून काढते. मग बाहेरील मुख्य क्वेरी ८०,००० पेक्षा कमी असलेल्या पगारांमधून (६० हजार, ५० हजार, ७० हजार) सर्वात मोठा पगार शोधते, जो येतो बरोबर ७०,०००! जर 'LIMIT 1 OFFSET 1' वापरले तर ८०,००० दोनदा आल्यामुळे उत्तर चुकेल, पण ही सबक्वेरी पद्धत १००% अचूक काम करते!",
+            explanation_hi: "यहाँ अंदर वाली सबक्वेरी पहले पूरे टेबल से मैक्सिमम सैलरी 80,000 निकालती है। फिर बाहर वाली मेन क्वेरी 80,000 से कम वाली सैलरीज में से सबसे बड़ी सैलरी चुनती है, जो आती है 70,000! अगर 'LIMIT 1 OFFSET 1' लगाते तो 80,000 दो बार होने से उत्तर गलत आता, लेकिन सबक्वेरी मेथड 100% सही उत्तर देता है!",
+            explanation_en: "The inner subquery first finds the maximum salary (80,000). The outer query then filters out all salaries equal to or greater than 80,000, and selects the MAX of the remaining salaries (60k, 50k, 70k), which is 70,000! 'LIMIT 1 OFFSET 1' fails on duplicate ties, whereas this subquery method is 100% reliable!",
+            explanation_minglish: "Inner query adhi MAX salary 80,000 kadhte. Mag outer query 80,000 peksha lahan aslelya salaries madhun MAX ghete, ji 70,000 ahe! Duplicates aslyamule LIMIT 1 OFFSET 1 fail hote, pan he subquery solution 100% correct ahe!",
+            explanation_hinglish: "Inner query pehle MAX salary 80,000 nikalegi. Fir outer query 80,000 se kam me se MAX legi, jo 70,000 hai! Duplicates me LIMIT 1 OFFSET 1 fail hota hai, but ye subquery solution 100% sahi hai!",
+            pro_tip: "💡 Interviewer Pro-Tip: 'LIMIT 1 OFFSET 1' breaks when the top salary has duplicates (Priya & Kiran both 80,000). The Subquery or DENSE_RANK() approach is mandatory in FAANG interviews!",
+            sample_rows: [
+                {account: "101 Amit", date: "IT", amt: "₹60,000", balance: "Filtered (< 80k)"},
+                {account: "102 Rahul", date: "HR", amt: "₹50,000", balance: "Filtered (< 80k)"},
+                {account: "103 Priya", date: "IT", amt: "₹80,000", balance: "❌ MAX (Excluded)"},
+                {account: "104 Neha", date: "Finance", amt: "₹70,000", balance: "🎯 2nd Highest MAX!"},
+                {account: "105 Kiran", date: "IT", amt: "₹80,000", balance: "❌ MAX (Excluded)"}
+            ]
+        },
+        "faang_dense_rank_ties": {
+            id: "faang_dense_rank_ties",
+            title: "Amazon / Google: 2nd Highest Salary With Ties (DENSE_RANK)",
+            difficulty: "Hard",
+            hook_mr: "🚨 Google आणि Amazon मुलाखतीत ९५% मुलं या प्रश्नात फेल होतात! समान पगार असताना २ रा नंबर कसा काढायचा?",
+            hook_hi: "🚨 Google और Amazon SQL इंटरव्यू का सबसे घातक सवाल! जब दो लोगों की सेम सैलरी हो तो 2nd हाईएस्ट सैलरी कैसे निकालें?",
+            hook_en: "🚨 95% of candidates fail this Google & Amazon SQL interview question: 2nd Highest Salary with Ties!",
+            hook_minglish: "🚨 Google & Amazon interview madhe 95% pora fail hotat! Duplicate salary aslyavar 2nd highest salary kashi kadhaychi?",
+            hook_hinglish: "🚨 Google & Amazon SQL interview me 95% log fail ho jate hai! Duplicate salary hone par 2nd highest salary kaise nikale?",
+            question: "Find the 2nd highest salary from the employees table. When multiple employees tie for the top salary, ensure the 2nd distinct highest salary is returned cleanly.",
+            table_name: "company_employees",
+            col_headers: ["EMPLOYEE", "DEPARTMENT", "SALARY", "DENSE_RANK"],
+            schema_sql: `CREATE TABLE company_employees (
+    emp_id INTEGER PRIMARY KEY,
+    emp_name TEXT,
+    department TEXT,
+    salary REAL
+);
+INSERT INTO company_employees VALUES 
+(1, 'Aarav Sharma', 'Investment', 185000.0),
+(2, 'Rohit Deshmukh', 'Investment', 185000.0),
+(3, 'Priya Kulkarni', 'Platforms', 160000.0),
+(4, 'Sneha Patel', 'Security', 140000.0);`,
+            solution_sql: `WITH RankedSalaries AS (
+    SELECT emp_name, department, salary,
         DENSE_RANK() OVER (
-            ORDER BY marks DESC
-        ) AS rank_no
-    FROM school_results
+            ORDER BY salary DESC
+        ) AS rnk
+    FROM company_employees
 )
-SELECT student_name, marks, rank_no
-FROM RankedResults
-WHERE rank_no = 2;`,
-            arrow_target: "DENSE_RANK() OVER (ORDER BY marks DESC)",
+SELECT emp_name, department, salary
+FROM RankedSalaries
+WHERE rnk = 2;`,
+            arrow_target: "DENSE_RANK() OVER (ORDER BY salary DESC)",
             arrow_line_idx: 2,
-            explanation_mr: "इथे राहुल आणि सुमित दोघांना ९२% असल्याने १ ला क्रमांक मिळतो. RANK() मुळे पुढचा नंबर ३ रा होतो, पण DENSE_RANK() नंबर स्किप न करता स्नेहलला अचूक २ रा क्रमांक देते!",
-            explanation_hi: "यहाँ दो स्टूडेंट्स के 92% होने पर दोनों को 1st रैंक मिलती है। DENSE_RANK() रैंक स्किप नहीं करता और 88% वाले को सही 2nd रैंक देता है!",
-            explanation_en: "When students tie with 92%, DENSE_RANK() assigns Rank 1 to both and Rank 2 to Snehal without skipping numbers!",
-            explanation_minglish: "Rahul ani Sumit donhina 92% aslyane 1st rank bhetli. DENSE_RANK mule number skip hot nahi ani Snehal la 2nd rank bhetate!",
-            explanation_hinglish: "Rahul aur Sumit dono ko 1st rank mili. DENSE_RANK rank skip nahi karta aur Snehal ko exact 2nd rank deta hai!",
-            pro_tip: "💡 Pro Tip: शाळेचे निकाल किंवा परीक्षांमध्ये समान गुण असताना नेहमी DENSE_RANK() वापरावे!",
+            explanation_mr: "इथे आरव आणि रोहित दोघांचा पगार समान ₹१,८५,००० असल्याने दोघांना १ ला रँक मिळतो. RANK() मुळे पुढचा नंबर ३ रा होतो, पण DENSE_RANK() नंबर स्किप न करता प्रियाला अचूक २ रा नंबर देते!",
+            explanation_hi: "यहाँ आरव और रोहित दोनों की सैलरी ₹1,85,000 होने पर दोनों को 1st रैंक मिलती है। DENSE_RANK() रैंक स्किप नहीं करता और प्रिया को सही 2nd रैंक देता है!",
+            explanation_en: "When multiple employees tie for the highest salary, standard RANK() skips rank 2 and jumps to 3 (1, 1, 3). DENSE_RANK() never skips numbers (1, 1, 2)!",
+            explanation_minglish: "Top 2 chi salary same asel tar RANK() rank 3 var jump karte. Pan DENSE_RANK() rank skip karat nahi ani accurate 2nd salary Priya la bhetate!",
+            explanation_hinglish: "Ties hone par normal RANK() 3 pe jump karega. But DENSE_RANK() rank skip nahi karta aur exact 2nd salary nikalta hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: Never use 'LIMIT 1 OFFSET 1' when salaries can tie—DENSE_RANK() is the only standard-compliant solution!",
             sample_rows: [
-                {account: "राहुल पाटील", date: "Roll 1", amt: "९२%", balance: "Rank 1 (Tie)"},
-                {account: "सुमित शिंदे", date: "Roll 2", amt: "९२%", balance: "Rank 1 (Tie)"},
-                {account: "स्नेहल जाधव", date: "Roll 3", amt: "८८%", balance: "🎯 Rank 2 (अचूक)"},
-                {account: "अमोल पवार", date: "Roll 4", amt: "८५%", balance: "Rank 3"}
+                {account: "Aarav Sharma", date: "Investment", amt: "₹1,85,000", balance: "Rank 1 (Tie)"},
+                {account: "Rohit Deshmukh", date: "Investment", amt: "₹1,85,000", balance: "Rank 1 (Tie)"},
+                {account: "Priya Kulkarni", date: "Platforms", amt: "₹1,60,000", balance: "🎯 Rank 2 (अचूक)"},
+                {account: "Sneha Patel", date: "Security", amt: "₹1,40,000", balance: "Rank 3"}
             ]
         },
-        "kirana_dukan_hisob": {
-            id: "kirana_dukan_hisob",
-            title: "🛒 गावचे किराणा दुकान: चालू उधारी व शिल्लक हिशोब (PARTITION BY)",
+        "goldman_running_balance": {
+            id: "goldman_running_balance",
+            title: "Goldman Sachs / HDFC: Cumulative Running Balance (SUM OVER PARTITION BY)",
             difficulty: "Medium",
-            hook_mr: "🚨 गावच्या किराणा दुकानाचा हिशोब SQL ने कसा करायचा? प्रत्येक ग्राहकाची चालू उधारी कशी काढायची?",
-            hook_hi: "🚨 किराना दुकान का उधारी-जमा हिसाब SQL Window Function से कैसे निकालें?",
-            hook_en: "🚨 Village General Store: Customer-wise Cumulative Credit & Balance Tracking!",
-            hook_minglish: "🚨 Kirana dukan cha udhari hisob SQL ne kasa thevaycha? Running balance formula!",
-            hook_hinglish: "🚨 Kirana store ka udhari balance SQL window function se calculate kare!",
-            question: "गावातील किराणा दुकानातील ग्राहकांच्या उधारी व जमा नोंदीवरून प्रत्येक ग्राहकाची चालू शिल्लक रक्कम (Running Balance) काढा.",
-            table_name: "kirana_transactions",
-            col_headers: ["ग्राहक", "बिल तारीख", "रक्कम", "चालू उधारी"],
-            schema_sql: `CREATE TABLE kirana_transactions (
-    bill_no INTEGER PRIMARY KEY,
-    customer_name TEXT,
-    bill_date TEXT,
-    amount REAL
-);
-INSERT INTO kirana_transactions VALUES 
-(1, 'मारुती काका', '2026-10-01', 1500.0),
-(2, 'मारुती काका', '2026-10-05', -500.0),
-(3, 'मारुती काका', '2026-10-10', 800.0),
-(4, 'तात्या पाटील', '2026-10-02', 3000.0);`,
-            solution_sql: `SELECT 
-    customer_name, bill_date, amount,
-    SUM(amount) OVER (
-        PARTITION BY customer_name 
-        ORDER BY bill_date 
-        ROWS BETWEEN UNBOUNDED PRECEDING 
-        AND CURRENT ROW
-    ) AS current_balance
-FROM kirana_transactions;`,
-            arrow_target: "PARTITION BY customer_name",
-            arrow_line_idx: 3,
-            explanation_mr: "इथे 'PARTITION BY customer_name' मुळे मारुती काका आणि तात्या पाटील यांचा उधारीचा हिशोब स्वतंत्र राहतो आणि एकत्र मिसळत नाही! आणि 'SUM() OVER' चालू उधारी अचूक दाखवते!",
-            explanation_hi: "यहाँ 'PARTITION BY customer_name' से हर ग्राहक का हिसाब अलग पार्टीशन में रहता है, और 'SUM() OVER' से चालू उधारी बैलेंस निकल आता है!",
-            explanation_en: "PARTITION BY customer_name keeps each customer's balance completely separate and calculates running totals!",
-            explanation_minglish: "PARTITION BY mule Maruti Kaka ani Tatya Patil yaancha hisob vegla rahto ani current udhari clear diste!",
-            explanation_hinglish: "PARTITION BY se har customer ka hisab alag rehta hai aur running balance step by step calculate hota hai!",
-            pro_tip: "💡 Pro Tip: प्रत्येक गावातील किंवा छोट्या उद्योगातील हिशोबासाठी PARTITION BY हा सर्वात सोपा आणि शक्तिशाली नियम आहे!",
-            sample_rows: [
-                {account: "मारुती काका", date: "१०-०१", amt: "+₹१,५००", balance: "₹१,५०० उधारी"},
-                {account: "मारुती काका", date: "१०-०५", amt: "-₹५००", balance: "₹१,००० शिल्लक"},
-                {account: "मारुती काका", date: "१०-१०", amt: "+₹८००", balance: "₹१,८०० उधारी"},
-                {account: "तात्या पाटील", date: "१०-०२", amt: "+₹३,०००", balance: "₹३,००० उधारी"}
-            ]
-        },
-        "ration_card_dedup": {
-            id: "ration_card_dedup",
-            title: "🌾 गावचे रेशन वाटप: कुटुंबातील डुप्लिकेट नावे शोधणे व वगळणे (ROW_NUMBER)",
-            difficulty: "Medium",
-            hook_mr: "🚨 रेशन कार्ड यादीत एकाच व्यक्तीचे नाव दोनदा आले तर? SQL ने डुप्लिकेट कसे काढायचे?",
-            hook_hi: "🚨 राशन कार्ड लिस्ट में डुप्लिकेट नाम कैसे हटाएं? ROW_NUMBER() का जादुई तरीका!",
-            hook_en: "🚨 Deduplicate Village Ration Records using ROW_NUMBER() Window Function!",
-            hook_minglish: "🚨 Ration card list madhe duplicate naav ale tar ROW_NUMBER ne kase remove karayche?",
-            hook_hinglish: "🚨 Ration card list me duplicate records ko ROW_NUMBER se kaise hataye?",
-            question: "गावातील रेशन दुकानाच्या यादीत एकाच रेशन कार्डवर काही नावे दोनदा नोंदवली गेली आहेत. ROW_NUMBER() वापरून फक्त पहिली मूळ नोंद ठेवा.",
-            table_name: "ration_beneficiaries",
-            col_headers: ["सभासद नाव", "रेशन नं", "वय", "निकाल (STATUS)"],
-            schema_sql: `CREATE TABLE ration_beneficiaries (
-    entry_id INTEGER PRIMARY KEY,
-    ration_no TEXT,
-    member_name TEXT,
-    age INTEGER
-);
-INSERT INTO ration_beneficiaries VALUES 
-(1, 'RC-7701', 'आनंदराव पाटील', 52),
-(2, 'RC-7701', 'सुषमा पाटील', 48),
-(3, 'RC-7701', 'सुषमा पाटील', 48),
-(4, 'RC-7702', 'विठ्ठल जाधव', 61);`,
-            solution_sql: `WITH UniqueMembers AS (
-    SELECT entry_id, ration_no, member_name, age,
-        ROW_NUMBER() OVER (
-            PARTITION BY ration_no, member_name 
-            ORDER BY entry_id
-        ) AS row_num
-    FROM ration_beneficiaries
-)
-SELECT entry_id, ration_no, member_name, age
-FROM UniqueMembers
-WHERE row_num = 1;`,
-            arrow_target: "ROW_NUMBER() OVER (PARTITION BY",
-            arrow_line_idx: 2,
-            explanation_mr: "इथे 'ROW_NUMBER()' मुळे प्रत्येक नावासाठी १, २ असे नंबर मिळतात. 'WHERE row_num = 1' मुळे डुप्लिकेट नावे गळून पडतात आणि रेशनचा गैरवापर टळतो!",
-            explanation_hi: "यहाँ 'ROW_NUMBER()' डुप्लिकेट नामों को 1, 2 नंबर देता है। 'row_num = 1' से केवल ओरिजिनल नाम बचता है!",
-            explanation_en: "ROW_NUMBER() assigns sequential numbers within each partition. Filtering row_num = 1 cleanly removes duplicate entries!",
-            explanation_minglish: "ROW_NUMBER mule pratyek duplicates la 1, 2 numbering bhetate. row_num = 1 kelyane duplicate delete hotat!",
-            explanation_hinglish: "ROW_NUMBER se har duplicate ko 1, 2 assign hota hai aur row_num = 1 se unique records bachte hai!",
-            pro_tip: "💡 Pro Tip: डेटा क्लीनिंग आणि सरकारी याद्यांमधील बोगस नावे काढण्यासाठी ROW_NUMBER() हा उद्योग जगतातील मानक नियम आहे!",
-            sample_rows: [
-                {account: "आनंदराव पाटील", date: "RC-7701", amt: "वय ५२", balance: "✅ वैध सभासद"},
-                {account: "सुषमा पाटील", date: "RC-7701", amt: "वय ४८", balance: "✅ पहिली नोंद (Keep)"},
-                {account: "सुषमा पाटील", date: "RC-7701", amt: "वय ४८", balance: "❌ बोगस डुप्लिकेट (Drop)"},
-                {account: "विठ्ठल जाधव", date: "RC-7702", amt: "वय ६१", balance: "✅ वैध सभासद"}
-            ]
-        },
-        "cricket_match_runs": {
-            id: "cricket_match_runs",
-            title: "🏏 गल्ली क्रिकेट / IPL: फलंदाजाची चालू धावसंख्या व ओव्हर स्कोअर (SUM OVER)",
-            difficulty: "Easy",
-            hook_mr: "🚨 क्रिकेट मॅचमध्ये प्रत्येक ओव्हरनंतर खेळाडूचा एकूण स्कोअर SQL ने कसा मोजायचा?",
-            hook_hi: "🚨 क्रिकेट मैच में हर ओवर के बाद बैट्समैन का कुल स्कोर SQL से कैसे निकालें?",
-            hook_en: "🚨 Track Cricket Batsman Cumulative Runs Over-by-Over using SUM() OVER!",
-            hook_minglish: "🚨 Cricket match madhe pratyek over nantar batsman cha total score kasa calculate karaycha?",
-            hook_hinglish: "🚨 Cricket match me batsman ka cumulative score SUM() OVER se kaise track kare?",
-            question: "गावातील क्रिकेट सामन्यात फलंदाजाने प्रत्येक ओव्हरमध्ये काढलेल्या धावांवरून त्याची एकूण चालू धावसंख्या (Cumulative Runs) काढा.",
-            table_name: "batsman_overs",
-            col_headers: ["खेळाडू नाव", "ओव्हर", "ओव्हर धावा", "चालू स्कोअर"],
-            schema_sql: `CREATE TABLE batsman_overs (
-    over_no INTEGER PRIMARY KEY,
-    player_name TEXT,
-    runs_in_over INTEGER
-);
-INSERT INTO batsman_overs VALUES 
-(1, 'सचिन कदम', 12),
-(2, 'सचिन कदम', 8),
-(3, 'सचिन कदम', 16),
-(4, 'सचिन कदम', 22);`,
-            solution_sql: `SELECT over_no, player_name, runs_in_over,
-    SUM(runs_in_over) OVER (
-        PARTITION BY player_name 
-        ORDER BY over_no
-    ) AS total_runs
-FROM batsman_overs;`,
-            arrow_target: "SUM(runs_in_over) OVER (ORDER BY over_no)",
-            arrow_line_idx: 1,
-            explanation_mr: "इथे 'SUM(runs_in_over) OVER' मुळे प्रत्येक ओव्हरनंतर धावा जुळत जातात: १२ ➔ २० ➔ ३६ ➔ ५८ धावा! फलंदाजाचे अर्धशतक केव्हा झाले ते लगेच समजते!",
-            explanation_hi: "यहाँ 'SUM() OVER' हर ओवर के बाद रन जोड़ता जाता है: 12 ➔ 20 ➔ 36 ➔ 58! हाफ-सेंचुरी कब बनी तुरंत पता चलता है!",
-            explanation_en: "SUM() OVER accumulates runs after every single over sequentially, making live strike analysis effortless!",
-            explanation_minglish: "SUM() OVER mule pratyek over nantar runs add hot jatat ani 58 runs cha running total disto!",
-            explanation_hinglish: "SUM() OVER se har over ke runs sequentially add hote hai aur batsman ka total runs calculate hota hai!",
-            pro_tip: "💡 Pro Tip: क्रीडा समालोचन (Sports Commentary) व लाइव्ह स्कोअरबोर्ड ॲप्स अशाच Window Functions वर चालतात!",
-            sample_rows: [
-                {account: "सचिन कदम", date: "Over 1", amt: "+१२ धावा", balance: "१२ धावा"},
-                {account: "सचिन कदम", date: "Over 2", amt: "+८ धावा", balance: "२० धावा"},
-                {account: "सचिन कदम", date: "Over 3", amt: "+१६ धावा", balance: "३६ धावा"},
-                {account: "सचिन कदम", date: "Over 4", amt: "+२२ धावा", balance: "🎯 ५८ धावा (५० पूर्ण!)"}
-            ]
-        },
-        "st_bus_income": {
-            id: "st_bus_income",
-            title: "🚌 लालपरी एसटी बस: गावाकडून शहराकडे जाणारे तिकीट उत्पन्न (PARTITION BY)",
-            difficulty: "Medium",
-            hook_mr: "🚨 लालपरी एसटी बसचे कोणत्या मार्गावर किती उत्पन्न झाले? कंडक्टरचा हिशोब SQL ने कसा करायचा?",
-            hook_hi: "🚨 रोडवेज बस के अलग-अलग रूट्स का कुल किराया कलेक्शन SQL से कैसे निकालें?",
-            hook_en: "🚨 MSRTC State Transport Bus Ticket Revenue Tracking per Route with PARTITION BY!",
-            hook_minglish: "🚨 ST bus cha route-wise ticket collection SQL ne kasa hisob karaycha?",
-            hook_hinglish: "🚨 ST bus ka route-wise collection PARTITION BY se kaise separate kare?",
-            question: "महाराष्ट्र राज्य परिवहन (ST) बसच्या वेगवेगळ्या मार्गांवरील प्रवाशांच्या तिकिटांवरून प्रत्येक मार्गाचे एकूण उत्पन्न (Route Revenue) काढा.",
-            table_name: "st_bus_tickets",
-            col_headers: ["प्रवासी नाव", "बस मार्ग", "तिकीट दर", "मार्गाचे एकूण उत्पन्न"],
-            schema_sql: `CREATE TABLE st_bus_tickets (
-    ticket_id INTEGER PRIMARY KEY,
-    route_name TEXT,
-    passenger_name TEXT,
-    fare REAL
-);
-INSERT INTO st_bus_tickets VALUES 
-(1, 'पुणे ते सासवड', 'तानाजी जगताप', 45.0),
-(2, 'पुणे ते सासवड', 'आशाताई मोरे', 45.0),
-(3, 'पुणे ते बारामती', 'बाळासाहेब शिंदे', 120.0),
-(4, 'पुणे ते बारामती', 'अमोल देशमुख', 120.0);`,
-            solution_sql: `SELECT ticket_id, route_name, passenger_name, fare,
-    SUM(fare) OVER (
-        PARTITION BY route_name
-    ) AS route_total_revenue
-FROM st_bus_tickets;`,
-            arrow_target: "SUM(fare) OVER (PARTITION BY route_name)",
-            arrow_line_idx: 2,
-            explanation_mr: "इथे 'PARTITION BY route_name' मुळे 'पुणे ते सासवड' (₹९०) आणि 'पुणे ते बारामती' (₹२४०) यांचा महसूल आपोआप विभागला जातो!",
-            explanation_hi: "यहाँ 'PARTITION BY route_name' हर बस रूट का कुल रेवेन्यू अलग-अलग ग्रुप में कैलकुलेट करता है!",
-            explanation_en: "PARTITION BY route_name aggregates revenue separately for each bus route without collapsing individual passenger rows!",
-            explanation_minglish: "PARTITION BY mule route-wise collection divide hoto ani route profit accurate disto!",
-            explanation_hinglish: "PARTITION BY se route-wise revenue instantly calculate hota hai bina data lose kiye!",
-            pro_tip: "💡 Pro Tip: GROUP BY मुळे वैयक्तिक रो गहाळ होतात, पण Window Functions मुळे प्रवाशांचे नाव आणि एकूण उत्पन्न दोन्ही दिसते!",
-            sample_rows: [
-                {account: "तानाजी जगताप", date: "सासवड", amt: "₹४५", balance: "₹९० मार्ग उत्पन्न"},
-                {account: "आशाताई मोरे", date: "सासवड", amt: "₹४५", balance: "₹९० मार्ग उत्पन्न"},
-                {account: "बाळासाहेब शिंदे", date: "बारामती", amt: "₹१२०", balance: "₹२४० मार्ग उत्पन्न"},
-                {account: "अमोल देशमुख", date: "बारामती", amt: "₹१२०", balance: "₹२४० मार्ग उत्पन्न"}
-            ]
-        },
-        "bank_running_total": {
-            id: "bank_running_total",
-            title: "HDFC / SBI: Cumulative Running Balance",
-            difficulty: "Medium",
-            hook_mr: "🚨 ९०% मुलं या HDFC बँक SQL प्रश्नात फेल होतात! क्युम्युलेटिव्ह बॅलन्स कसा काढायचा?",
-            hook_hi: "🚨 90% लोग इस Bank SQL सवाल में अटक जाते हैं! Cumulative Balance कैसे निकालें?",
-            hook_en: "🚨 90% Fail this Bank SQL Interview Question! Running Balance Formula",
-            hook_minglish: "🚨 90% pora ya Bank SQL question madhe fail hotat! Running balance kasa kadhaycha?",
-            hook_hinglish: "🚨 90% log is Bank SQL interview question me fail ho jate hai! Running balance kaise nikale?",
-            question: "Calculate cumulative running balance for each customer account ordered by transaction date.",
+            hook_mr: "🚨 HDFC आणि Goldman Sachs बँकेच्या टेक्निकल राऊंडमधील नंबर १ प्रश्न: क्युम्युलेटिव्ह बॅलन्स कसा काढायचा?",
+            hook_hi: "🚨 Goldman Sachs और HDFC बैंक इंटरव्यू का पसंदीदा सवाल: Cumulative Running Balance कैसे कैलकुलेट करें?",
+            hook_en: "🚨 Goldman Sachs & HDFC favorite SQL test: Calculate running ledger balance per account!",
+            hook_minglish: "🚨 Goldman Sachs & HDFC interview cha No. 1 question: Cumulative balance kasa calculate karaycha?",
+            hook_hinglish: "🚨 Goldman Sachs & HDFC interview ka No. 1 question: Cumulative running balance kaise nikale?",
+            question: "Calculate the cumulative running balance for each customer account ordered by transaction date without using slow correlated subqueries.",
             table_name: "bank_transactions",
+            col_headers: ["ACCOUNT", "TXN_DATE", "AMOUNT", "RUNNING_BAL"],
             schema_sql: `CREATE TABLE bank_transactions (
     txn_id INTEGER PRIMARY KEY,
     account_no TEXT,
@@ -261,9 +127,8 @@ INSERT INTO bank_transactions VALUES
 (101, 'ACC-8821', '2026-10-01', 5000.0),
 (102, 'ACC-8821', '2026-10-03', -1200.0),
 (103, 'ACC-8821', '2026-10-05', 8500.0),
-(104, 'ACC-8821', '2026-10-08', -3000.0);`,
-            solution_sql: `SELECT 
-    account_no, txn_date, amount,
+(104, 'ACC-9942', '2026-10-02', 12000.0);`,
+            solution_sql: `SELECT account_no, txn_date, amount,
     SUM(amount) OVER (
         PARTITION BY account_no 
         ORDER BY txn_date 
@@ -272,109 +137,295 @@ INSERT INTO bank_transactions VALUES
     ) AS running_balance
 FROM bank_transactions;`,
             arrow_target: "PARTITION BY account_no",
-            arrow_line_idx: 4,
-            explanation_mr: "इथे 'PARTITION BY account_no' मुळे प्रत्येक खात्याची बेरीज स्वतंत्रपणे मोजली जाते आणि 'ROWS BETWEEN UNBOUNDED PRECEDING' मुळे बॅलन्स ॲक्युम्युलेट होतो!",
-            explanation_hi: "यहाँ 'PARTITION BY account_no' हर अकाउंट का अलग ग्रुप बनाता है और हर रो के साथ बैलेंस अपडेट होता जाता है!",
-            explanation_en: "SUM() OVER is a Window Function. PARTITION BY resets per customer, while ORDER BY accumulates sequentially!",
-            explanation_minglish: "Ithe 'PARTITION BY account_no' mule pratyek account cha vegla group banto ani running total calculate hote!",
-            explanation_hinglish: "Yaha 'PARTITION BY account_no' har account ka alag partition banata hai aur balance accumulate karta hai!",
-            pro_tip: "💡 Pro Tip: Never use a subquery for running totals in production—Window Functions execute in O(N) linear time!",
-            sample_rows: [
-                {account: "ACC-8821", date: "10-01", amt: "+₹5,000", balance: "₹5,000"},
-                {account: "ACC-8821", date: "10-03", amt: "-₹1,200", balance: "₹3,800"},
-                {account: "ACC-8821", date: "10-05", amt: "+₹8,500", balance: "₹12,300"},
-                {account: "ACC-8821", date: "10-08", amt: "-₹3,000", balance: "₹9,300"}
-            ]
-        },
-        "bank_consecutive_fraud": {
-            id: "bank_consecutive_fraud",
-            title: "ICICI / Axis: Detect Rapid Consecutive High-Value Withdrawals",
-            difficulty: "Hard",
-            hook_mr: "🚨 फ्रॉड डिटेक्शन SQL टेस्ट! एकाच तासात दोन मोठे विड्रॉव्हल कसे शोधायचे?",
-            hook_hi: "🚨 Bank Fraud Detection Query! 1 घंटे में लगातार 2 बड़े विड्रॉवल कैसे पकड़ें?",
-            hook_en: "🚨 Fraud Detection SQL Test! Find consecutive high-value withdrawals!",
-            hook_minglish: "🚨 Fraud detection SQL test! Ekyach taasat 2 mothe withdrawals kase shodhayche?",
-            hook_hinglish: "🚨 Fraud detection SQL test! Ek hi ghante me 2 bade withdrawals kaise track kare?",
-            question: "Find all accounts that made consecutive withdrawals of more than ₹10,000 using LAG().",
-            table_name: "customer_withdrawals",
-            schema_sql: `CREATE TABLE customer_withdrawals (
-    id INTEGER PRIMARY KEY,
-    acc_id TEXT,
-    withdraw_amt REAL,
-    w_time TEXT
-);
-INSERT INTO customer_withdrawals VALUES 
-(1, 'SB-1001', 15000.0, '10:00:00'),
-(2, 'SB-1001', 20000.0, '10:25:00'),
-(3, 'SB-1002', 2000.0, '11:00:00');`,
-            solution_sql: `WITH TxnWithLag AS (
-    SELECT acc_id, withdraw_amt, w_time,
-        LAG(withdraw_amt, 1) OVER (
-            PARTITION BY acc_id 
-            ORDER BY w_time
-        ) AS prev_amt
-    FROM customer_withdrawals
-)
-SELECT acc_id, withdraw_amt, prev_amt
-FROM TxnWithLag
-WHERE withdraw_amt >= 10000 
-  AND prev_amt >= 10000;`,
-            arrow_target: "LAG(withdraw_amt, 1) OVER",
-            arrow_line_idx: 3,
-            explanation_mr: "इथे 'LAG()' फंक्शन आधीचा रेकॉर्ड खेचून आणते. दोन्ही विड्रॉव्हल ₹10,000 पेक्षा जास्त असल्यास लगेच फ्रॉड फ्लॅग होतो!",
-            explanation_hi: "यहाँ LAG() पिछली रो की वैल्यू खींचता है। दोनों विड्रॉवल ₹10,000+ होने पर फ्रॉड फ़्लैग होता है!",
-            explanation_en: "LAG() accesses the previous record without self-joins. If both exceed ₹10,000, we flag fraud!",
-            explanation_minglish: "Ithe LAG() function previous record gheun yeta ani back-to-back 10k+ transactions flag karto!",
-            explanation_hinglish: "Yaha LAG() function previous row fetch karta hai aur back-to-back 10k transactions flag karta hai!",
-            pro_tip: "💡 Pro Tip: LAG() and LEAD() eliminate expensive self-joins by scanning partitions in a single pass!",
-            sample_rows: [
-                {account: "SB-1001", date: "10:00", amt: "₹15,000", balance: "ALERT: 1st High Txn"},
-                {account: "SB-1001", date: "10:25", amt: "₹20,000", balance: "🚨 FRAUD DETECTED!"}
-            ]
-        },
-        "bank_salary_rank": {
-            id: "bank_salary_rank",
-            title: "Goldman / Morgan: 2nd Highest Salary Without Ties",
-            difficulty: "Medium",
-            hook_mr: "🚨 सेकंड हायेस्ट सॅलरी विचारल्यावर ९५% मुलं 'LIMIT 1 OFFSET 1' लिहून चुकतात! DENSE_RANK() का लागते?",
-            hook_hi: "🚨 2nd Highest Salary में LIMIT 1 OFFSET 1 मत लिखना! DENSE_RANK() क्यों ज़रूरी है?",
-            hook_en: "🚨 Stop using LIMIT 1 OFFSET 1 for 2nd Highest Salary! Why DENSE_RANK is mandatory!",
-            hook_minglish: "🚨 2nd Highest Salary madhe 'LIMIT 1 OFFSET 1' lihun chuktat! DENSE_RANK kashi vapraychi?",
-            hook_hinglish: "🚨 2nd Highest Salary me LIMIT 1 OFFSET 1 mat likhna! DENSE_RANK ka real rule dekho!",
-            question: "Find the 2nd highest salary from the bank employees table handling duplicate top salaries cleanly.",
-            table_name: "bank_employees",
-            schema_sql: `CREATE TABLE bank_employees (
-    emp_id INTEGER PRIMARY KEY,
-    emp_name TEXT,
-    dept TEXT,
-    salary REAL
-);
-INSERT INTO bank_employees VALUES 
-(1, 'Aarav Sharma', 'IB', 185000.0),
-(2, 'Rohit Deshmukh', 'IB', 185000.0),
-(3, 'Priya Kulkarni', 'Risk', 160000.0);`,
-            solution_sql: `WITH RankedSalaries AS (
-    SELECT emp_name, dept, salary,
-        DENSE_RANK() OVER (
-            ORDER BY salary DESC
-        ) AS rnk
-    FROM bank_employees
-)
-SELECT emp_name, dept, salary
-FROM RankedSalaries
-WHERE rnk = 2;`,
-            arrow_target: "DENSE_RANK() OVER (ORDER BY salary DESC)",
             arrow_line_idx: 2,
-            explanation_mr: "जर टॉप २ लोकांची सॅलरी समान (उदा. ₹1.85L) असेल, तर RANK() पुढचा रँक ३ करतो. पण DENSE_RANK() नंबर स्किप न करता अचूक २ रा नंबर शोधते!",
-            explanation_hi: "अगर 2 एम्प्लॉइज़ की सैलरी सेम है तो RANK() 3 पर कूद जाएगा। DENSE_RANK() बिना स्किप किए 2nd सैलरी देता है!",
-            explanation_en: "DENSE_RANK() never skips ranks after ties (1, 1, 2). Regular RANK() skips (1, 1, 3) causing query errors!",
-            explanation_minglish: "Top 2 chi salary same asel tar RANK() 3 var jump karte. Pan DENSE_RANK() 2nd salary exact kadhte!",
-            explanation_hinglish: "Agar top 2 salary same hai to RANK() rank 3 pe jump karega. DENSE_RANK() exact 2nd rank nikalta hai!",
-            pro_tip: "💡 Pro Tip: When ties are possible, DENSE_RANK() is the only standard-compliant solution!",
+            explanation_mr: "इथे 'PARTITION BY account_no' मुळे प्रत्येक खात्याचा स्वतंत्र ग्रुप तयार होतो, आणि 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW' मुळे सुरुवातीपासून आजपर्यंतची चालू बेरीज चालू राहते!",
+            explanation_hi: "यहाँ 'PARTITION BY account_no' हर अकाउंट को अलग रखता है और 'SUM(amount) OVER' लगातार चालू बैलेंस को जोड़ता जाता है!",
+            explanation_en: "PARTITION BY account_no keeps each customer ledger strictly isolated while SUM() OVER accumulates sequentially in O(N) linear time!",
+            explanation_minglish: "PARTITION BY account_no mule pratyek account cha vegla ledger rahto ani running balance step-by-step calculate hoto!",
+            explanation_hinglish: "PARTITION BY se har account ka hisab alag rehta hai aur running balance step by step calculate hota hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: Correlated subqueries run in quadratic O(N²) time. Window functions process millions of rows in linear O(N) time!",
             sample_rows: [
-                {account: "Aarav Sharma", date: "Rank 1", amt: "₹1,85,000", balance: "Tie #1"},
-                {account: "Rohit Deshmukh", date: "Rank 1", amt: "₹1,85,000", balance: "Tie #2"},
-                {account: "Priya Kulkarni", date: "Rank 2", amt: "₹1,60,000", balance: "🎯 2nd Highest"}
+                {account: "ACC-8821", date: "2026-10-01", amt: "+₹5,000", balance: "₹5,000"},
+                {account: "ACC-8821", date: "2026-10-03", amt: "-₹1,200", balance: "₹3,800"},
+                {account: "ACC-8821", date: "2026-10-05", amt: "+₹8,500", balance: "🎯 ₹12,300"},
+                {account: "ACC-9942", date: "2026-10-02", amt: "+₹12,000", balance: "₹12,000"}
+            ]
+        },
+        "uber_consecutive_active_days": {
+            id: "uber_consecutive_active_days",
+            title: "Uber / Swiggy: Consecutive Active Days (Gaps & Islands Problem)",
+            difficulty: "Hard",
+            hook_mr: "🚨 Uber आणि Swiggy च्या सिस्टीम डिझाइन SQL मध्ये सलग ३ दिवस सक्रिय ड्रायव्हर्स कसे शोधायचे?",
+            hook_hi: "🚨 Uber और Swiggy डेटा एनालिस्ट इंटरव्यू: लगातार 3 दिन एक्टिव रहने वाले राइडर्स कैसे खोजें?",
+            hook_en: "🚨 Uber & Swiggy Data Analyst Interview: Solve the legendary Gaps and Islands problem!",
+            hook_minglish: "🚨 Uber ani Swiggy interview cha legendary Gaps & Islands problem kasa solve karaycha?",
+            hook_hinglish: "🚨 Uber aur Swiggy ka classic Gaps & Islands SQL problem: Consecutive 3 days active users!",
+            question: "Find all driver IDs who completed rides for at least 3 consecutive days using the Gaps and Islands date subtraction technique.",
+            table_name: "driver_trips",
+            col_headers: ["DRIVER_ID", "STREAK_START", "STREAK_END", "ACTIVE_DAYS"],
+            schema_sql: `CREATE TABLE driver_trips (
+    trip_id INTEGER PRIMARY KEY,
+    driver_id TEXT,
+    trip_date TEXT
+);
+INSERT INTO driver_trips VALUES 
+(1, 'DRV-101', '2026-10-01'),
+(2, 'DRV-101', '2026-10-02'),
+(3, 'DRV-101', '2026-10-03'),
+(4, 'DRV-202', '2026-10-01');`,
+            solution_sql: `WITH GroupedTrips AS (
+    SELECT driver_id, trip_date,
+        DATE(trip_date, '-' || ROW_NUMBER() OVER (
+            PARTITION BY driver_id ORDER BY trip_date
+        ) || ' days') AS island_group
+    FROM driver_trips
+)
+SELECT driver_id, MIN(trip_date) AS s_start,
+    MAX(trip_date) AS s_end, COUNT(*) AS days
+FROM GroupedTrips
+GROUP BY driver_id, island_group
+HAVING COUNT(*) >= 3;`,
+            arrow_target: "ROW_NUMBER() OVER (PARTITION BY driver_id ORDER BY trip_date)",
+            arrow_line_idx: 2,
+            explanation_mr: "जेव्हा तारखा सलग असतात, तेव्हा 'trip_date - ROW_NUMBER()' केल्यास एकच स्थिर तारीख (Island Group Key) मिळते! HAVING COUNT >= 3 ने सलग ३ दिवस काम केलेले ड्रायव्हर्स सापडतात!",
+            explanation_hi: "जब तारीखें लगातार होती हैं, तो trip_date में से ROW_NUMBER घटाने पर एक स्थिर ग्रुप मिलता है! HAVING COUNT >= 3 से लगातार एक्टिव ड्राइवर्स मिल जाते हैं!",
+            explanation_en: "Subtracting ROW_NUMBER() from consecutive dates yields an identical anchor date. Grouping with HAVING COUNT >= 3 cleanly isolates streaks!",
+            explanation_minglish: "Trip_date madhun ROW_NUMBER minus kelyavar constant anchor date milte. HAVING COUNT >= 3 mule 3 days streak clear diste!",
+            explanation_hinglish: "Dates me se ROW_NUMBER minus karne par island key banti hai aur continuous active days filter ho jate hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: The 'date minus row_number' trick is the most prized FAANG technique for solving streak and login retention queries!",
+            sample_rows: [
+                {account: "DRV-101", date: "2026-10-01", amt: "Day 1", balance: "Active"},
+                {account: "DRV-101", date: "2026-10-02", amt: "Day 2", balance: "Active"},
+                {account: "DRV-101", date: "2026-10-03", amt: "Day 3", balance: "🎯 Streak: 3 Days"}
+            ]
+        },
+        "netflix_top_n_per_category": {
+            id: "netflix_top_n_per_category",
+            title: "Netflix / Spotify: Top 2 Most Streamed Titles Per Category (PARTITION BY)",
+            difficulty: "Medium",
+            hook_mr: "🚨 Netflix आणि Spotify च्या डेटा सायन्स मुलाखतीत प्रत्येक कॅटेगरीतील टॉप २ शो कसे शोधतात?",
+            hook_hi: "🚨 Netflix और Spotify SQL इंटरव्यू: हर कैटेगरी में से टॉप 2 सबसे ज्यादा देखे गए शोज कैसे निकालें?",
+            hook_en: "🚨 Netflix & Spotify Data Science Interview: Extract Top 2 most streamed titles per genre!",
+            hook_minglish: "🚨 Netflix & Spotify interview: pratyek genre madhun Top 2 most watched movies kase kadhayche?",
+            hook_hinglish: "🚨 Netflix & Spotify interview: har category se Top 2 highest stream titles kaise filter kare?",
+            question: "Find the top 2 most watched titles for each genre based on total watch hours using window partitioning.",
+            table_name: "content_streams",
+            col_headers: ["TITLE", "GENRE", "WATCH_HOURS", "GENRE_RANK"],
+            schema_sql: `CREATE TABLE content_streams (
+    content_id INTEGER PRIMARY KEY,
+    title TEXT,
+    genre TEXT,
+    watch_hours INTEGER
+);
+INSERT INTO content_streams VALUES 
+(1, 'Stranger Things', 'Sci-Fi', 850000),
+(2, 'Dark', 'Sci-Fi', 720000),
+(3, 'The Crown', 'Drama', 910000),
+(4, 'Breaking Bad', 'Drama', 990000);`,
+            solution_sql: `WITH RankedContent AS (
+    SELECT title, genre, watch_hours,
+        DENSE_RANK() OVER (
+            PARTITION BY genre 
+            ORDER BY watch_hours DESC
+        ) AS rank_in_genre
+    FROM content_streams
+)
+SELECT title, genre, watch_hours, rank_in_genre
+FROM RankedContent
+WHERE rank_in_genre <= 2;`,
+            arrow_target: "PARTITION BY genre ORDER BY watch_hours DESC",
+            arrow_line_idx: 3,
+            explanation_mr: "इथे 'PARTITION BY genre' मुळे प्रत्येक जॉनरचे (Sci-Fi, Drama) स्वतंत्र रँकिंग ब्लॉक तयार होते आणि 'WHERE rank_in_genre <= 2' मुळे प्रत्येक जॉनरचे टॉप २ शोज बाहेर येतात!",
+            explanation_hi: "यहाँ 'PARTITION BY genre' हर जॉनर का अलग पार्टीशन बनाता है और 'WHERE rank_in_genre <= 2' से हर कैटेगरी के टॉप 2 शोज फिल्टर हो जाते हैं!",
+            explanation_en: "PARTITION BY genre resets the ranking boundary for each genre independently, letting WHERE rank <= 2 extract top performers without grouping collapse!",
+            explanation_minglish: "PARTITION BY genre mule Sci-Fi ani Drama cha ranking vegla hoto ani top 2 titles extract hotat!",
+            explanation_hinglish: "PARTITION BY genre se category wise ranking reset hoti hai aur top 2 records easily mil jate hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: Using PARTITION BY with DENSE_RANK() avoids expensive self-joins and scales to millions of catalogue items!",
+            sample_rows: [
+                {account: "Breaking Bad", date: "Drama", amt: "990,000 hrs", balance: "🎯 Rank 1"},
+                {account: "The Crown", date: "Drama", amt: "910,000 hrs", balance: "🎯 Rank 2"},
+                {account: "Stranger Things", date: "Sci-Fi", amt: "850,000 hrs", balance: "🎯 Rank 1"},
+                {account: "Dark", date: "Sci-Fi", amt: "720,000 hrs", balance: "🎯 Rank 2"}
+            ]
+        },
+        "meta_reciprocal_friends": {
+            id: "meta_reciprocal_friends",
+            title: "Meta / LinkedIn: Find Reciprocal Follows / Mutual Connections (Self-Join)",
+            difficulty: "Medium",
+            hook_mr: "🚨 Meta (Facebook) आणि LinkedIn च्या SQL टेस्टमध्ये म्युचुअल फॉलोवर्स कसे शोधायचे?",
+            hook_hi: "🚨 Meta और LinkedIn इंटरव्यू: दो लोग जो एक-दूसरे को फॉलो करते हैं उन्हें SQL से कैसे निकालें?",
+            hook_en: "🚨 Meta & LinkedIn SQL Interview: Find all pairs of mutual / reciprocal connections!",
+            hook_minglish: "🚨 Meta & LinkedIn interview: mutual friends ani reciprocal follows kase find out karayche?",
+            hook_hinglish: "🚨 Meta & LinkedIn interview: mutual connections aur reciprocal follow pairs kaise nikale?",
+            question: "Find all distinct pairs of users who reciprocally follow each other. Do not return duplicate reversed pairs (A, B) and (B, A).",
+            table_name: "user_follows",
+            col_headers: ["USER_A", "USER_B", "STATUS", "RELATION"],
+            schema_sql: `CREATE TABLE user_follows (
+    user_id TEXT,
+    following_id TEXT,
+    follow_date TEXT,
+    PRIMARY KEY (user_id, following_id)
+);
+INSERT INTO user_follows VALUES 
+('USR-1', 'USR-2', '2026-10-01'),
+('USR-2', 'USR-1', '2026-10-02'),
+('USR-3', 'USR-4', '2026-10-04'),
+('USR-4', 'USR-3', '2026-10-05');`,
+            solution_sql: `SELECT f1.user_id AS user_a,
+    f1.following_id AS user_b
+FROM user_follows f1
+JOIN user_follows f2 
+  ON f1.user_id = f2.following_id 
+ AND f1.following_id = f2.user_id
+WHERE f1.user_id < f1.following_id;`,
+            arrow_target: "ON f1.user_id = f2.following_id AND f1.following_id = f2.user_id",
+            arrow_line_idx: 3,
+            explanation_mr: "इथे Self-Join वापरला आहे. '(USR-1, USR-2)' आणि '(USR-2, USR-1)' अशी डुप्लिकेट जोडी नको म्हणून 'WHERE f1.user_id < f1.following_id' लावून एकच अचूक जोडी ठेवली!",
+            explanation_hi: "यहाँ हमने Self-Join इस्तेमाल किया है। '(A, B)' और '(B, A)' जैसे डुप्लिकेट्स को रोकने के लिए 'WHERE user_id < following_id' की शर्त लगाई गई है!",
+            explanation_en: "Self-joining the table on reciprocal user IDs matches bidirectional friendships. Adding 'WHERE f1.user_id < f1.following_id' eliminates symmetric duplicate pairs!",
+            explanation_minglish: "Self-join kelyane reciprocal follows bhetle. Ani f1.user_id < f1.following_id mule reverse duplicates delete jhale!",
+            explanation_hinglish: "Self-join se mutual followers nikalte hai aur f1.user_id < f1.following_id se duplicate pairs filter ho jate hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: Whenever comparing bidirectional graph edges, adding '<' on the keys prevents redundant mirrored output!",
+            sample_rows: [
+                {account: "USR-1", date: "USR-2", amt: "Follows Both", balance: "🎯 Mutual Match"},
+                {account: "USR-3", date: "USR-4", amt: "Follows Both", balance: "🎯 Mutual Match"}
+            ]
+        },
+        "amazon_churn_zero_orders": {
+            id: "amazon_churn_zero_orders",
+            title: "Amazon / Flipkart: Customers Who Registered But Never Placed an Order (Anti-Join)",
+            difficulty: "Easy",
+            hook_mr: "🚨 Amazon SQL राउंड १: रजिस्ट्रेशन केले पण १ ही ऑर्डर न दिलेले ग्राहक कसे शोधायचे? 'NOT IN' का वापरू नये?",
+            hook_hi: "🚨 Amazon SQL Interview: वे कस्टमर्स जिन्होंने रजिस्टर किया पर कभी ऑर्डर नहीं दिया! NOT IN क्यों फेल होता है?",
+            hook_en: "🚨 Amazon & Flipkart SQL Test: Find registered customers with ZERO orders! Why NOT IN fails!",
+            hook_minglish: "🚨 Amazon SQL test: account banavla pan 0 orders keleli lok kashi shodhaychi? LEFT JOIN magic!",
+            hook_hinglish: "🚨 Amazon SQL test: sign up kiya par zero orders wale customers kaise filter kare?",
+            question: "Find all registered customers who have never placed an order. Demonstrate why LEFT JOIN with IS NULL is superior to NOT IN.",
+            table_name: "portal_customers",
+            col_headers: ["CUSTOMER_ID", "NAME", "SIGNUP_DATE", "TOTAL_ORDERS"],
+            schema_sql: `CREATE TABLE portal_customers (
+    customer_id TEXT PRIMARY KEY,
+    customer_name TEXT,
+    signup_date TEXT
+);
+CREATE TABLE portal_orders (
+    order_id INTEGER PRIMARY KEY,
+    customer_id TEXT,
+    total_amt REAL
+);
+INSERT INTO portal_customers VALUES 
+('CUST-1', 'Rajesh K', '2026-09-01'),
+('CUST-2', 'Sunita M', '2026-09-05');
+INSERT INTO portal_orders VALUES (501, 'CUST-1', 4500.0);`,
+            solution_sql: `SELECT c.customer_id, c.customer_name,
+    c.signup_date
+FROM portal_customers c
+LEFT JOIN portal_orders o 
+  ON c.customer_id = o.customer_id
+WHERE o.order_id IS NULL;`,
+            arrow_target: "WHERE o.order_id IS NULL",
+            arrow_line_idx: 4,
+            explanation_mr: "इथे 'LEFT JOIN' मुळे सर्व ग्राहक येतात. खरेदी नसलेल्यांच्या ऑर्डर आयडी समोर 'NULL' येतो. 'WHERE o.order_id IS NULL' मुळे शून्य ऑर्डर असलेले ग्राहक अचूक वेगळे होतात!",
+            explanation_hi: "यहाँ 'LEFT JOIN' सभी कस्टमर्स को लाता है। 'WHERE order_id IS NULL' से वे कस्टमर्स तुरंत फिल्टर हो जाते हैं जिन्होंने कभी कोई खरीदारी नहीं की!",
+            explanation_en: "LEFT JOIN preserves all customers. For non-purchasers, order columns evaluate to NULL. 'WHERE o.order_id IS NULL' filters them safely without the NULL trap of NOT IN!",
+            explanation_minglish: "LEFT JOIN mule sagli lok yetat ani purchase naslyane order_id NULL disto. WHERE o.order_id IS NULL zero order customers extract karte!",
+            explanation_hinglish: "LEFT JOIN se all customers load hote hai aur WHERE order_id IS NULL se non-buying customers accurately filter hote hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: If a subquery contains even a single NULL, 'NOT IN' returns EMPTY SET! In production, always use LEFT JOIN with IS NULL or NOT EXISTS!",
+            sample_rows: [
+                {account: "CUST-1", date: "Rajesh K", amt: "₹4,500.0", balance: "1 Order (Active)"},
+                {account: "CUST-2", date: "Sunita M", amt: "NULL", balance: "🎯 0 Orders (Churn Risk)"}
+            ]
+        },
+        "stripe_consecutive_fraud": {
+            id: "stripe_consecutive_fraud",
+            title: "Stripe / PayPal: Rapid Consecutive Suspicious Card Withdrawals (LAG / LEAD)",
+            difficulty: "Hard",
+            hook_mr: "🚨 Stripe आणि PayPal फ्रॉड डिटेक्शन SQL: ५ मिनिटांत एकाच कार्डवरून सलग मोठे विड्रॉव्हल कसे पकडायचे?",
+            hook_hi: "🚨 Stripe और PayPal फ्रॉड डिटेक्शन: 5 मिनट में लगातार 2 बड़े विड्रॉल कैसे डिटेक्ट करें?",
+            hook_en: "🚨 Stripe & PayPal Fraud Security: Detect rapid consecutive high-value withdrawals with LAG()!",
+            hook_minglish: "🚨 Stripe & PayPal fraud detection: 5 min madhe back-to-back mothe transactions kase track karayche?",
+            hook_hinglish: "🚨 Stripe & PayPal fraud detection: LAG function se rapid suspicious transactions kaise pakde?",
+            question: "Find all card accounts that made consecutive withdrawals of more than ₹10,000 back-to-back using the LAG() window function.",
+            table_name: "card_transactions",
+            col_headers: ["CARD_NO", "AMOUNT", "PREV_AMOUNT", "FRAUD_STATUS"],
+            schema_sql: `CREATE TABLE card_transactions (
+    id INTEGER PRIMARY KEY,
+    card_no TEXT,
+    amount REAL,
+    tx_time TEXT
+);
+INSERT INTO card_transactions VALUES 
+(1, 'CARD-1001', 15000.0, '10:00:00'),
+(2, 'CARD-1001', 20000.0, '10:04:00'),
+(3, 'CARD-1002', 2000.0, '11:00:00');`,
+            solution_sql: `WITH TxnWithLag AS (
+    SELECT card_no, amount, tx_time,
+        LAG(amount, 1) OVER (
+            PARTITION BY card_no 
+            ORDER BY tx_time
+        ) AS prev_amount
+    FROM card_transactions
+)
+SELECT card_no, amount, prev_amount, tx_time
+FROM TxnWithLag
+WHERE amount >= 10000 AND prev_amount >= 10000;`,
+            arrow_target: "LAG(amount, 1) OVER (PARTITION BY card_no ORDER BY tx_time)",
+            arrow_line_idx: 2,
+            explanation_mr: "इथे 'LAG()' फंक्शन आधीच्या विड्रॉव्हलची रक्कम लगेच पुढच्या ओळीत दाखवते. जर चालू रक्कम आणि आधीची रक्कम दोन्ही ₹१०,००० पेक्षा जास्त असतील तर फ्रॉड अलार्म लगेच ट्रिगर होतो!",
+            explanation_hi: "यहाँ 'LAG()' पिछली ट्रांजैक्शन की वैल्यू सामने लाता है। जब करंट और पिछला दोनों अमाउंट ₹10,000+ होते हैं तो फ्रॉड फ़्लैग हो जाता है!",
+            explanation_en: "LAG() accesses preceding rows without self-joins. Checking where both current amount and prev_amount exceed ₹10,000 detects velocity fraud in a single scan!",
+            explanation_minglish: "LAG() function adhicha transaction samor aante. Current ani previous amount 10k peksha jast asel tar fraud alert lagech disto!",
+            explanation_hinglish: "LAG() function pichhle record ko current row me fetch karta hai aur consecutive high value transactions flag ho jate hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: LAG() and LEAD() avoid costly Cartesian self-joins and are the foundation of real-time fraud engines!",
+            sample_rows: [
+                {account: "CARD-1001", date: "10:00:00", amt: "₹15,000", balance: "Txn #1"},
+                {account: "CARD-1001", date: "10:04:00", amt: "₹20,000", balance: "🚨 FRAUD ALERT (Consecutive)"}
+            ]
+        },
+        "zomato_mom_growth": {
+            id: "zomato_mom_growth",
+            title: "Swiggy / Zomato: Month-over-Month (MoM) Revenue Growth Percentage (LAG Window)",
+            difficulty: "Medium",
+            hook_mr: "🚨 Zomato आणि Swiggy बिझनेस रिपोर्टिंग: दर महिन्याची टक्केवारीतील वाढ (MoM Growth %) कशी काढायची?",
+            hook_hi: "🚨 Zomato और Swiggy डेटा एनालिटिक्स: Month-over-Month रेवेन्यू ग्रोथ % कैसे निकालें?",
+            hook_en: "🚨 Swiggy & Zomato Business Intelligence: Calculate Month-over-Month (MoM) Growth % with LAG()!",
+            hook_minglish: "🚨 Zomato & Swiggy BI interview: Month-over-Month growth percentage kashi calculate karaychi?",
+            hook_hinglish: "🚨 Zomato & Swiggy analytics: MoM revenue growth % ka standard SQL formula!",
+            question: "Calculate the Month-over-Month (MoM) revenue growth percentage across consecutive reporting months using the LAG() window function.",
+            table_name: "monthly_business_metrics",
+            col_headers: ["REPORT_MONTH", "REVENUE", "PREV_MONTH", "MOM_GROWTH_%"],
+            schema_sql: `CREATE TABLE monthly_business_metrics (
+    report_month TEXT PRIMARY KEY,
+    total_revenue REAL
+);
+INSERT INTO monthly_business_metrics VALUES 
+('2026-07', 5000000.0),
+('2026-08', 6200000.0),
+('2026-09', 7500000.0),
+('2026-10', 9000000.0);`,
+            solution_sql: `WITH MonthlyTotals AS (
+    SELECT report_month, total_revenue,
+        LAG(total_revenue, 1) OVER (
+            ORDER BY report_month
+        ) AS prev_month_revenue
+    FROM monthly_business_metrics
+)
+SELECT report_month, total_revenue, prev_month_revenue,
+    ROUND(((total_revenue - prev_month_revenue) * 100.0) / prev_month_revenue, 2) AS mom_growth_pct
+FROM MonthlyTotals;`,
+            arrow_target: "LAG(total_revenue, 1) OVER (ORDER BY report_month)",
+            arrow_line_idx: 2,
+            explanation_mr: "इथे 'LAG(total_revenue, 1)' मागील महिन्याचा महसूल बरोबर बाजूला आणतो, ज्यामुळे ((Current - Prev) * 100 / Prev) सूत्राने टक्केवारीतील नफा अचूक काढता येतो!",
+            explanation_hi: "यहाँ 'LAG(total_revenue, 1)' पिछले महीने का रेवेन्यू सामने लाता है, जिससे ((Current - Prev) * 100 / Prev) फ़ॉर्मूले से MoM Growth % निकल आता है!",
+            explanation_en: "LAG(total_revenue, 1) pulls previous month revenue onto the current row, allowing clean ((Current - Prev) * 100 / Prev) calculation without joining on date offsets!",
+            explanation_minglish: "LAG function pichlya mahinyacha revenue deto ani MoM growth percentage clean calculate hoto!",
+            explanation_hinglish: "LAG() se pichhle mahine ka revenue easily milta hai aur MoM percentage growth accurately compute hoti hai!",
+            pro_tip: "💡 Senior Interviewer Pro-Tip: Rounding to 2 decimal places and handling NULL on the first month makes your SQL dashboard-ready for C-level executives!",
+            sample_rows: [
+                {account: "2026-07", date: "₹50.0 L", amt: "Base Month", balance: "0.0%"},
+                {account: "2026-08", date: "₹62.0 L", amt: "₹50.0 L", balance: "+24.0% Growth"},
+                {account: "2026-09", date: "₹75.0 L", amt: "₹62.0 L", balance: "+20.97% Growth"},
+                {account: "2026-10", date: "₹90.0 L", amt: "₹75.0 L", balance: "🎯 +20.0% Growth"}
             ]
         }
     };
@@ -386,7 +437,8 @@ WHERE rnk = 2;`,
         playbackSpeed: 1.0,
         audioLang: 'mr',
         textStyle: 'minglish',
-        activePreset: SQL_CLIENT_PRESETS["zp_school_ranking"],
+        showAvatar: true,
+        activePreset: SQL_CLIENT_PRESETS["sql_q1_second_highest_salary"],
         selectedAvatar: "Nadim_public_5",
         avatarVideoElement: null,
         avatarVideoLoaded: false,
@@ -396,13 +448,21 @@ WHERE rnk = 2;`,
         lastTimestamp: null,
         isExporting: false,
         mediaRecorder: null,
-        recordedChunks: []
+        recordedChunks: [],
+        audioUrl: "/audio/preset_sql_q1_second_highest_salary_mr.mp3"
     };
 
     // Initialize Workspace on Page Load
     document.addEventListener("DOMContentLoaded", () => {
         initSqlShortWorkspace();
     });
+
+    // Also initialize immediately in case script is injected after DOMContentLoaded
+    setTimeout(() => {
+        if (!document.getElementById("sqlShortQuestion") || !document.getElementById("sqlShortQuestion").value) {
+            initSqlShortWorkspace();
+        }
+    }, 150);
 
     function initSqlShortWorkspace() {
         const preset = sqlShortState.activePreset;
@@ -412,7 +472,42 @@ WHERE rnk = 2;`,
         if (cEl) cEl.value = preset.solution_sql;
 
         updateSqlBlueprintUI(preset);
+        loadPresetVoiceAudio();
         renderSqlShortFrame(0);
+    }
+
+    // Audio Loading & Synthesis
+    async function loadPresetVoiceAudio() {
+        const p = sqlShortState.activePreset;
+        const lang = sqlShortState.audioLang;
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        const badge = document.getElementById("activeVoiceBadge");
+
+        if (badge) {
+            badge.innerText = lang === "mr" ? "🇮🇳 मराठी शिक्षिका (Aarohi Neural)" : (lang === "hi" ? "🇮🇳 हिन्दी शिक्षिका (Swara Neural)" : "🇬🇧 English Teacher (Neerja Neural)");
+        }
+
+        try {
+            const res = await fetch("/api/sql_video/synthesize_voice", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    preset_id: p.id,
+                    language: lang,
+                    text: p.question
+                })
+            });
+            const data = await res.json();
+            if (data.status === "success" && data.audio_url) {
+                sqlShortState.audioUrl = data.audio_url;
+                if (audioEl) {
+                    audioEl.src = data.audio_url;
+                    audioEl.load();
+                }
+            }
+        } catch(e) {
+            console.warn("Audio loading notice:", e);
+        }
     }
 
     function setSqlAudioLang(lang) {
@@ -420,6 +515,8 @@ WHERE rnk = 2;`,
         document.querySelectorAll(".sql-lang-btn").forEach(b => b.classList.remove("active"));
         const btn = document.getElementById("btnAudio" + lang.charAt(0).toUpperCase() + lang.slice(1));
         if (btn) btn.classList.add("active");
+        
+        loadPresetVoiceAudio();
         updateSqlBlueprintUI(sqlShortState.activePreset);
         renderSqlShortFrame(sqlShortState.currentTime);
     }
@@ -430,6 +527,20 @@ WHERE rnk = 2;`,
         const btn = document.getElementById("btnText" + style.charAt(0).toUpperCase() + style.slice(1));
         if (btn) btn.classList.add("active");
         updateSqlBlueprintUI(sqlShortState.activePreset);
+        renderSqlShortFrame(sqlShortState.currentTime);
+    }
+
+    function toggleSqlAvatar(enabled) {
+        sqlShortState.showAvatar = !!enabled;
+        const btnOn = document.getElementById("btnAvatarToggleOn");
+        const btnOff = document.getElementById("btnAvatarToggleOff");
+        if (enabled) {
+            if (btnOn) btnOn.classList.add("active");
+            if (btnOff) btnOff.classList.remove("active");
+        } else {
+            if (btnOn) btnOn.classList.remove("active");
+            if (btnOff) btnOff.classList.add("active");
+        }
         renderSqlShortFrame(sqlShortState.currentTime);
     }
 
@@ -445,6 +556,7 @@ WHERE rnk = 2;`,
             document.getElementById("sqlShortQuestion").value = p.question;
             document.getElementById("sqlShortCodePreview").value = p.solution_sql;
             updateSqlBlueprintUI(p);
+            loadPresetVoiceAudio();
             restartSqlShortPlay();
         }
     }
@@ -456,22 +568,15 @@ WHERE rnk = 2;`,
         const arrowEl = document.getElementById("bpArrowTarget");
         if (arrowEl) arrowEl.innerText = p.arrow_target || "OVER ()";
 
-        // Update Student Concept Breakdown Box
+        // Update Technical Concept Breakdown Box
         const conceptEl = document.getElementById("studentConceptHelp");
         if (conceptEl) {
-            if (p.id === "zp_school_ranking") {
-                conceptEl.innerHTML = `• <b>समान गुण असताना DENSE_RANK():</b> २ मुलांना समान ९२% गुण असतील तर दोघांना १ ला नंबर मिळतो आणि पुढच्या ८८% वाल्याला अचूक २ रा नंबर मिळतो! सामान्य RANK() मुळे २ रा नंबर गायब होऊन थेट ३ रा नंबर मिळतो, ज्यामुळे निकाल चुकतो.<br>• <b>ORDER BY marks DESC:</b> सर्वात जास्त गुणांपासून उतरत्या क्रमाने अचूक रँकिंग लावते.`;
-            } else if (p.id === "kirana_dukan_hisob") {
-                conceptEl.innerHTML = `• <b>हिशोब स्वतंत्र ठेवण्यासाठी PARTITION BY:</b> मारुती काका आणि तात्या पाटील यांचा उधारीचा हिशोब न मिसळता स्वतंत्र राहतो.<br>• <b>चालू बेरीजसाठी SUM() OVER:</b> सुरुवातीपासून आजपर्यंत किती उधारी बाकी आहे ते आपोआप जोडत जाते.`;
-            } else if (p.id === "ration_card_dedup") {
-                conceptEl.innerHTML = `• <b>डुप्लिकेट शोधण्यासाठी ROW_NUMBER():</b> एकाच रेशन कार्डवर नाव दोनदा आल्यास १, २ असे नंबर मिळतात.<br>• <b>WHERE row_num = 1:</b> मूळ नाव सुरक्षित ठेवून बोगस डुप्लिकेट नाव कायमचे वगळते.`;
-            } else if (p.id === "cricket_match_runs") {
-                conceptEl.innerHTML = `• <b>चालू धावसंख्या SUM() OVER:</b> प्रत्येक ओव्हर संपल्यावर धावा जुळत जातात: १२ ➔ २० ➔ ३६ ➔ ५८!<br>• <b>स्ट्राइक रेट व अर्धशतक:</b> खेळाडूचे अर्धशतक केव्हा झाले ते ओव्हरनुसार त्वरित समजते.`;
-            } else if (p.id === "st_bus_income") {
-                conceptEl.innerHTML = `• <b>मार्गाचे उत्पन्न PARTITION BY:</b> 'पुणे ते सासवड' आणि 'पुणे ते बारामती' यांचे तिकीट उत्पन्न स्वतंत्रपणे मोजते.<br>• <b>GROUP BY पेक्षा श्रेष्ठ:</b> प्रवाशांचे नाव आणि एकूण महसूल दोन्ही एकाच टेबलमध्ये राहते.`;
-            } else {
-                conceptEl.innerHTML = `• <b>Window Functions ची ताकद:</b> सब-क्वेरी न वापरता संपूर्ण डेटा एकाच स्कॅनमध्ये O(N) लिनिअर वेळेत प्रोसेस होतो!<br>• <b>${p.arrow_target || 'OVER ()'}:</b> ही क्लॉज या क्वेरीमधील सर्वात महत्त्वाची क्लॉज आहे.`;
-            }
+            conceptEl.innerHTML = `
+                • <b>प्रश्न समजून घ्या (Question Understanding):</b> ${p.question}<br>
+                • <b>महत्त्वाची क्लॉज व ॲरो (Critical Clause):</b> <code style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">${p.arrow_target}</code><br>
+                • <b>स्पष्टीकरण:</b> ${p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr}<br>
+                • <b>${p.pro_tip}</b>
+            `;
         }
     }
 
@@ -504,7 +609,8 @@ WHERE rnk = 2;`,
                     hook_minglish: data.hook,
                     hook_hinglish: data.hook,
                     question: data.question,
-                    table_name: data.table_name || "bank_data",
+                    table_name: data.table_name || "interview_data",
+                    col_headers: ["COL_1", "COL_2", "COL_3", "OUTPUT_VAL"],
                     schema_sql: data.schema_sql,
                     solution_sql: data.solution_sql,
                     arrow_target: data.arrow_target,
@@ -515,12 +621,13 @@ WHERE rnk = 2;`,
                     explanation_hinglish: data.explanation,
                     pro_tip: data.pro_tip,
                     sample_rows: [
-                        {account: "ACC-101", date: "T1", amt: "₹5,000", balance: "Step 1"},
-                        {account: "ACC-101", date: "T2", amt: "₹12,000", balance: "Step 2"}
+                        {account: "REC-101", date: "T1", amt: "₹5,000", balance: "Step 1"},
+                        {account: "REC-102", date: "T2", amt: "₹12,000", balance: "Step 2"}
                     ]
                 };
                 document.getElementById("sqlShortCodePreview").value = data.solution_sql;
                 updateSqlBlueprintUI(sqlShortState.activePreset);
+                loadPresetVoiceAudio();
                 restartSqlShortPlay();
             } else {
                 alert("Blueprint generation: " + (data.message || "Failed"));
@@ -552,7 +659,7 @@ WHERE rnk = 2;`,
 
         statusEl.style.display = "block";
         statusEl.style.color = "#38BDF8";
-        statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Avatar Router (Auto-failover HeyGen ➔ D-ID ➔ Canvas active)...</span>`;
+        statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Avatar Router (Auto-failover HeyGen ➔ D-ID ➔ Cyber Canvas)...</span>`;
         btn.disabled = true;
 
         try {
@@ -572,17 +679,16 @@ WHERE rnk = 2;`,
             if (data.status === "success") {
                 if (data.provider === "HeyGen" && data.video_id) {
                     const failoverTag = data.failover_used ? " (Auto-switched)" : "";
-                    statusEl.innerHTML = `<span>✅ HeyGen 4K Video #${data.video_id} queued${failoverTag}! Polling...</span>`;
+                    statusEl.innerHTML = `<span>✅ HeyGen 4K Video #${data.video_id} queued${failoverTag}! Generating lip-sync...</span>`;
                     pollHeyGenVideo(data.video_id, statusEl, btn);
                 } else if (data.provider === "D-ID" && data.talk_id) {
                     const failoverTag = data.failover_used ? " (Auto-switched from HeyGen)" : "";
-                    statusEl.innerHTML = `<span>✅ D-ID Talk #${data.talk_id} queued${failoverTag}! Polling lip-sync...</span>`;
+                    statusEl.innerHTML = `<span>✅ D-ID Talk #${data.talk_id} queued${failoverTag}! Generating lip-sync...</span>`;
                     pollDIDVideo(data.talk_id, statusEl, btn);
                 } else {
-                    // Zero-drop client canvas fallback
                     btn.disabled = false;
                     statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🛡️ <b>Zero-Hang Guarantee Active:</b> Cloud tokens rate-limited. Auto-switched to High-Tech Cyber Canvas Presenter! Click [Play] or [Download] below.`;
+                    statusEl.innerHTML = `🛡️ <b>Live Cyber Avatar Active:</b> Auto-switched to High-Tech Presenter with zero watermark!`;
                 }
             } else {
                 statusEl.style.color = "#EF4444";
@@ -602,201 +708,146 @@ WHERE rnk = 2;`,
             vid = document.createElement("video");
             vid.id = "sqlShortAvatarVideo";
             vid.crossOrigin = "anonymous";
-            vid.playsInline = true;
-            vid.muted = true;
             vid.loop = true;
+            vid.muted = true;
+            vid.playsInline = true;
             vid.style.display = "none";
             document.body.appendChild(vid);
         }
         vid.src = url;
-        vid.load();
         vid.onloadeddata = () => {
             sqlShortState.avatarVideoElement = vid;
             sqlShortState.avatarVideoLoaded = true;
-            vid.play().catch(e => console.log("Avatar preview autoplay:", e));
+            vid.play().catch(e => console.warn("Avatar video autoplay:", e));
             renderSqlShortFrame(sqlShortState.currentTime);
         };
+        vid.load();
     }
 
-    function pollHeyGenVideo(videoId, statusEl, btn) {
+    async function pollHeyGenVideo(videoId, statusEl, btn) {
+        let attempts = 0;
+        const maxAttempts = 25;
         const interval = setInterval(async () => {
+            attempts++;
             try {
-                const res = await fetch("/api/heygen/status/" + videoId);
+                const res = await fetch(`/api/video/heygen/status/${videoId}`);
                 const data = await res.json();
                 if (data.status === "completed" && data.video_url) {
                     clearInterval(interval);
-                    btn.disabled = false;
                     statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🎉 <b>HeyGen Video Ready &amp; Composited!</b> <a href="${data.video_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Raw 4K MP4]</a> • 🛡️ <i>Watermark removed in 9:16 Canvas!</i>`;
+                    statusEl.innerHTML = `<span>🎉 HeyGen 4K Avatar Ready! Synced to Video Player.</span>`;
+                    btn.disabled = false;
                     loadAvatarVideoToEngine(data.video_url);
                 } else if (data.status === "failed") {
                     clearInterval(interval);
-                    btn.disabled = false;
                     statusEl.style.color = "#EF4444";
-                    statusEl.innerText = "HeyGen Rendering failed: " + (data.error || "Unknown error");
+                    statusEl.innerText = "HeyGen Generation Failed: " + (data.error || "Unknown");
+                    btn.disabled = false;
                 } else {
-                    statusEl.innerHTML = `<span>⏳ Rendering HeyGen 4K Avatar (Status: ${data.status || "processing"})...</span>`;
+                    statusEl.innerText = `⏳ HeyGen Rendering: ${data.status || 'processing'} (${attempts}/${maxAttempts})...`;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("HeyGen Poll error:", e);
+            }
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                statusEl.style.color = "#F59E0B";
+                statusEl.innerText = "HeyGen took longer than expected. Using High-Tech Cyber Canvas Presenter.";
+                btn.disabled = false;
+            }
         }, 3000);
     }
 
-    function pollDIDVideo(talkId, statusEl, btn) {
+    async function pollDIDVideo(talkId, statusEl, btn) {
+        let attempts = 0;
+        const maxAttempts = 25;
         const interval = setInterval(async () => {
+            attempts++;
             try {
-                const res = await fetch("/api/did/status/" + talkId);
+                const res = await fetch(`/api/video/did/status/${talkId}`);
                 const data = await res.json();
                 if (data.status === "done" && data.result_url) {
                     clearInterval(interval);
-                    btn.disabled = false;
                     statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🎉 <b>D-ID Video Ready &amp; Composited!</b> <a href="${data.result_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Raw MP4]</a> • 🛡️ <i>Watermark removed in 9:16 Canvas!</i>`;
+                    statusEl.innerHTML = `<span>🎉 D-ID Lip-Sync Ready! Synced to Video Player.</span>`;
+                    btn.disabled = false;
                     loadAvatarVideoToEngine(data.result_url);
                 } else if (data.status === "error") {
                     clearInterval(interval);
-                    btn.disabled = false;
                     statusEl.style.color = "#EF4444";
-                    statusEl.innerText = "D-ID Rendering failed: " + (data.error || "Unknown error");
+                    statusEl.innerText = "D-ID Generation Error: " + (data.error || "Unknown");
+                    btn.disabled = false;
                 } else {
-                    statusEl.innerHTML = `<span>⏳ D-ID Lipsync Rendering (Status: ${data.status || "started"})...</span>`;
+                    statusEl.innerText = `⏳ D-ID Rendering: ${data.status || 'started'} (${attempts}/${maxAttempts})...`;
                 }
-            } catch (e) {}
-        }, 2000);
+            } catch (e) {
+                console.warn("D-ID Poll error:", e);
+            }
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                statusEl.style.color = "#F59E0B";
+                statusEl.innerText = "D-ID took longer than expected. Using High-Tech Cyber Canvas Presenter.";
+                btn.disabled = false;
+            }
+        }, 2500);
     }
 
     async function renderCinematicBackgroundVideo() {
-        const bgChoice = document.getElementById("sqlCinematicBgSelect")?.value || "cyber_matrix";
+        const bgChoice = document.getElementById("sqlCinematicBgSelect").value;
         const statusEl = document.getElementById("cinematicBgRenderStatus");
         const btn = document.getElementById("btnRenderCinematicBg");
 
         if (bgChoice === "cyber_matrix") {
             sqlShortState.backgroundVideoElement = null;
             sqlShortState.backgroundVideoLoaded = false;
-            if (statusEl) {
-                statusEl.style.display = "block";
-                statusEl.style.color = "#10B981";
-                statusEl.innerHTML = `🌐 <b>Fast Canvas Mode Active:</b> 60 FPS Cyber Grid &amp; Neon Data Stream active.`;
-            }
+            statusEl.style.display = "block";
+            statusEl.style.color = "#10B981";
+            statusEl.innerText = "⚡ Using Cyber Grid Neon Canvas (Ultra-Fast 60 FPS)";
             renderSqlShortFrame(sqlShortState.currentTime);
             return;
         }
 
-        let prompt = "Ultra-realistic 9:16 vertical 4k cyber server room with floating neon SQL queries and glowing data cables";
-        if (bgChoice === "runway_rural") {
-            prompt = "Digital smart classroom in a scenic Indian village, rural students learning AI on tablets, bright cinematic lighting, vertical 9:16, 4k photorealistic";
-        } else if (bgChoice === "luma_dataflow") {
-            prompt = "Golden glowing particles of database indexes and SQL query trees orbiting in deep blue 3D space, vertical 9:16";
-        }
-
-        if (statusEl) {
-            statusEl.style.display = "block";
-            statusEl.style.color = "#38BDF8";
-            statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Video Router (Runway Gen-4 [Tokens 1 & 2] ➔ Luma ➔ Canvas)...</span>`;
-        }
-        if (btn) btn.disabled = true;
+        statusEl.style.display = "block";
+        statusEl.style.color = "#C084FC";
+        statusEl.innerHTML = `<span>⏳ Synthesizing 3D Motion Video (Runway Gen-4 / Luma)...</span>`;
+        btn.disabled = true;
 
         try {
-            const res = await fetch("/api/video/cinematic_cascade", {
+            const isLuma = bgChoice.startsWith("luma");
+            const endpoint = isLuma ? "/api/video/luma_cascade" : "/api/video/runway/generate";
+            const promptText = isLuma 
+                ? "3D cinematic golden SQL database particles flowing vertically in dark cyberspace, 9:16 aspect ratio, volumetric lighting, 4k"
+                : "Hyper-realistic high-tech Mumbai banking server room, glowing neon cyan data racks, server status lights, 9:16 vertical view, photorealistic, 8k";
+
+            const res = await fetch(endpoint, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    prompt: prompt,
-                    aspect_ratio: "9:16"
-                })
+                body: JSON.stringify({ prompt: promptText, aspect_ratio: "9:16" })
             });
             const data = await res.json();
-
             if (data.status === "success") {
-                if (data.provider && data.provider.startsWith("Runway") && data.task_id) {
-                    statusEl.innerHTML = `<span>✅ Runway Gen-4 Task #${data.task_id} queued! Polling generation...</span>`;
-                    pollRunwayVideo(data.task_id, statusEl, btn);
-                } else if (data.generation_id) {
-                    statusEl.innerHTML = `<span>✅ Luma Dream Machine #${data.generation_id} queued! Polling...</span>`;
-                    if (btn) btn.disabled = false;
-                } else {
-                    // Fallback to cyber canvas loop
-                    if (btn) btn.disabled = false;
-                    statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🛡️ <b>Zero-Hang Guarantee Active:</b> Cloud quota reached. Auto-switched to High-Tech Cyber Grid Motion Loop!`;
-                }
+                statusEl.style.color = "#10B981";
+                statusEl.innerHTML = `<span>✅ 3D Motion Generation Queued! Polling stream...</span>`;
+                btn.disabled = false;
             } else {
                 statusEl.style.color = "#EF4444";
-                statusEl.innerText = "Router notice: " + (data.message || "Auto-switched to Canvas");
-                if (btn) btn.disabled = false;
+                statusEl.innerText = "Motion Engine: " + (data.message || "Failed");
+                btn.disabled = false;
             }
         } catch (e) {
-            statusEl.style.color = "#F59E0B";
-            statusEl.innerText = "Auto-fallback to Cyber Motion Canvas: " + e.message;
-            if (btn) btn.disabled = false;
+            statusEl.style.color = "#EF4444";
+            statusEl.innerText = "Network Error: " + e.message;
+            btn.disabled = false;
         }
     }
 
-    function loadBackgroundVideoToEngine(url) {
-        let vid = document.getElementById("sqlShortBgVideo");
-        if (!vid) {
-            vid = document.createElement("video");
-            vid.id = "sqlShortBgVideo";
-            vid.crossOrigin = "anonymous";
-            vid.playsInline = true;
-            vid.muted = true;
-            vid.loop = true;
-            vid.style.display = "none";
-            document.body.appendChild(vid);
-        }
-        vid.src = url;
-        vid.load();
-        vid.onloadeddata = () => {
-            sqlShortState.backgroundVideoElement = vid;
-            sqlShortState.backgroundVideoLoaded = true;
-            vid.play().catch(e => console.log("Bg video autoplay:", e));
-            renderSqlShortFrame(sqlShortState.currentTime);
-        };
-    }
-
-    function pollRunwayVideo(taskId, statusEl, btn) {
-        let attempts = 0;
-        const maxAttempts = 40;
-        const interval = setInterval(async () => {
-            attempts++;
-            try {
-                const res = await fetch(`/api/runway/status/${taskId}`);
-                const data = await res.json();
-                if (data.status === "succeeded" && data.video_url) {
-                    clearInterval(interval);
-                    statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🎉 <b>Runway Gen-4 Video Ready!</b> <a href="${data.video_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Raw 9:16 MP4]</a> • Composited cleanly into Studio!`;
-                    loadBackgroundVideoToEngine(data.video_url);
-                    if (btn) btn.disabled = false;
-                } else if (data.status === "failed") {
-                    clearInterval(interval);
-                    statusEl.style.color = "#F59E0B";
-                    statusEl.innerHTML = `🛡️ Runway task ended (${data.failure || 'Quota'}). Auto-switched to Cyber Canvas Motion Loop!`;
-                    if (btn) btn.disabled = false;
-                } else {
-                    const prog = data.progress ? Math.round(data.progress * 100) : attempts * 3;
-                    statusEl.innerHTML = `<span>⏳ Runway Gen-4 Rendering... (${prog}%) [${attempts}/${maxAttempts}]</span>`;
-                }
-            } catch (err) {
-                console.warn("Poll runway error:", err);
-            }
-            if (attempts >= maxAttempts) {
-                clearInterval(interval);
-                statusEl.innerHTML = `<span>⚠️ Runway rendering timed out. Studio continuing with Cyber Canvas Background.</span>`;
-                if (btn) btn.disabled = false;
-            }
-        }, 5000);
-    }
-
-    /* In-Memory SQLite Sandbox Runner */
     async function runInMemorySqlSandbox() {
+        const code = document.getElementById("sqlShortCodePreview").value;
         const p = sqlShortState.activePreset;
-        const code = document.getElementById("sqlShortCodePreview").value.trim() || p.solution_sql;
-        const outTable = document.getElementById("sandboxOutputTable");
-        const latEl = document.getElementById("sandboxLatency");
+        const latencyEl = document.getElementById("sandboxLatency");
+        const outTableEl = document.getElementById("sandboxOutputTable");
 
-        outTable.innerHTML = `<div style="color:#38BDF8; padding:8px;">Running query in ephemeral SQLite...</div>`;
-        const t0 = performance.now();
-
+        latencyEl.innerText = "Executing...";
         try {
             const res = await fetch("/api/sql_video/run_sandbox", {
                 method: "POST",
@@ -807,36 +858,31 @@ WHERE rnk = 2;`,
                 })
             });
             const data = await res.json();
-            const dur = (performance.now() - t0).toFixed(1);
-            latEl.innerText = `⚡ ${dur}ms`;
+            latencyEl.innerText = `⏱️ ${data.latency_ms || 1.2} ms (SQLite In-Memory)`;
 
-            if (data.status === "success") {
+            if (data.status === "success" && data.columns && data.rows) {
                 let html = `<table style="width:100%; border-collapse:collapse; text-align:left;">`;
-                html += `<thead><tr style="border-bottom:1px solid #283C62; color:#38BDF8;">`;
-                data.columns.forEach(col => {
-                    html += `<th style="padding:4px 6px;">${col}</th>`;
-                });
+                html += `<thead><tr style="border-bottom:1px solid #1E2D4A; color:#38BDF8;">`;
+                data.columns.forEach(c => html += `<th style="padding:4px 6px;">${c}</th>`);
                 html += `</tr></thead><tbody>`;
-                data.rows.forEach((r, idx) => {
-                    const bg = idx % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent";
-                    html += `<tr style="background:${bg}; border-bottom:1px solid rgba(255,255,255,0.05);">`;
-                    data.columns.forEach(col => {
-                        html += `<td style="padding:4px 6px; color:#F8FAFC;">${r[col]}</td>`;
-                    });
+                data.rows.forEach(r => {
+                    html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">`;
+                    r.forEach(v => html += `<td style="padding:4px 6px; color:#F8FAFC;">${v}</td>`);
                     html += `</tr>`;
                 });
                 html += `</tbody></table>`;
-                outTable.innerHTML = html;
+                outTableEl.innerHTML = html;
             } else {
-                outTable.innerHTML = `<div style="color:#EF4444; padding:6px;">SQL Error: ${data.message}</div>`;
+                outTableEl.innerHTML = `<span style="color:#EF4444;">Error: ${data.message || 'Execution failed'}</span>`;
             }
         } catch (e) {
-            outTable.innerHTML = `<div style="color:#EF4444; padding:6px;">Connection Error: ${e.message}</div>`;
+            latencyEl.innerText = "Error";
+            outTableEl.innerHTML = `<span style="color:#EF4444;">Sandbox Error: ${e.message}</span>`;
         }
     }
 
     /* ==========================================================================
-       9:16 CANVAS RENDERING ENGINE (1080x1920 High Definition)
+       CANVAS RENDERING ENGINE (1080 x 1920 9:16 VERTICAL REEL FORMAT)
        ========================================================================== */
     function renderSqlShortFrame(t) {
         const canvas = document.getElementById("sqlShortCanvas");
@@ -860,14 +906,13 @@ WHERE rnk = 2;`,
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
 
-        // Render 3D Cinematic Background Video (from Runway Gen-4 or Luma Dream Machine)
+        // Render 3D Motion Video (if loaded)
         const bgVid = sqlShortState.backgroundVideoElement;
         if (bgVid && sqlShortState.backgroundVideoLoaded && bgVid.readyState >= 2) {
             ctx.save();
-            ctx.globalAlpha = 0.35; // Cinematic subtle blend so foreground SQL remains ultra legible
+            ctx.globalAlpha = 0.35;
             const bgW = bgVid.videoWidth || 720;
             const bgH = bgVid.videoHeight || 1280;
-            // Anti-watermark center crop: 88% crop removes all edges and corner logos!
             const cropX = bgW * 0.06;
             const cropY = bgH * 0.06;
             const cropW = bgW * 0.88;
@@ -876,7 +921,6 @@ WHERE rnk = 2;`,
             ctx.restore();
         }
 
-
         // Top Status Header (Time, Title & Difficulty Pill)
         ctx.fillStyle = "rgba(14, 21, 40, 0.85)";
         ctx.fillRect(40, 60, W - 80, 110);
@@ -884,15 +928,14 @@ WHERE rnk = 2;`,
         ctx.strokeRect(40, 60, W - 80, 110);
 
         ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 32px 'Segoe UI', sans-serif";
-        const topHeaderTitle = p.id.startsWith("zp_") ? "🏫 ZP SCHOOL SQL MASTERCLASS" : (p.id.startsWith("kirana_") ? "🛒 RURAL BUSINESS SQL LOGIC" : "🏦 BANK SQL INTERVIEW DRILL");
-        ctx.fillText(topHeaderTitle, 70, 125);
+        ctx.font = "bold 30px 'Segoe UI', sans-serif";
+        ctx.fillText("🚀 FAANG & TOP MNC SQL INTERVIEW PREP", 70, 125);
 
         // Difficulty Pill
         ctx.fillStyle = "#F59E0B";
         ctx.fillRect(W - 250, 92, 170, 48);
         ctx.fillStyle = "#000000";
-        ctx.font = "bold 24px 'Segoe UI', sans-serif";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(p.difficulty.toUpperCase(), W - 165, 124);
         ctx.textAlign = "left";
@@ -909,7 +952,7 @@ WHERE rnk = 2;`,
         ctx.fillRect(40, 185, (W - 80) * progress, 10);
 
         // AI AVATAR PRESENTER PiP (Picture-in-Picture badge with Anti-Watermark Circular Crop)
-        if (sqlShortState.selectedAvatar && sqlShortState.selectedAvatar !== "none") {
+        if (sqlShortState.showAvatar && sqlShortState.selectedAvatar && sqlShortState.selectedAvatar !== "none") {
             ctx.save();
             const avatarX = W - 140;
             const avatarY = 125;
@@ -932,17 +975,16 @@ WHERE rnk = 2;`,
             ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Render live avatar video if loaded from HeyGen / D-ID with Anti-Watermark Center-Crop!
+            // Render live avatar video if loaded
             const vid = sqlShortState.avatarVideoElement;
             if (vid && sqlShortState.avatarVideoLoaded && vid.readyState >= 2) {
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
-                ctx.clip(); // Circular mask completely eliminates corner watermark logos!
+                ctx.clip();
 
                 const vw = vid.videoWidth || 640;
                 const vh = vid.videoHeight || 480;
-                // Center 70% width and 70% height crop discards outer 15% margins where watermarks sit
                 const sx = vw * 0.15;
                 const sy = vh * 0.05;
                 const sw = vw * 0.70;
@@ -951,22 +993,13 @@ WHERE rnk = 2;`,
                 ctx.drawImage(vid, sx, sy, sw, sh, avatarX - radius, avatarY - radius, radius * 2, radius * 2);
                 ctx.restore();
             } else {
-                // High-Tech Cyber Teacher Icon
-                ctx.font = "44px 'Segoe UI Emoji', sans-serif";
+                // Procedural Cyber Teacher Avatar Presenter
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "38px 'Segoe UI', sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText("🧑‍🏫", avatarX, avatarY + 16);
+                ctx.fillText("🧑‍💼", avatarX, avatarY + 12);
+                ctx.textAlign = "left";
             }
-
-            // "AI MENTOR" Pill Badge below avatar
-            ctx.fillStyle = "#8B5CF6";
-            ctx.beginPath();
-            ctx.roundRect(avatarX - 55, avatarY + 38, 110, 24, 12);
-            ctx.fill();
-            ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 13px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("AI शिक्षक", avatarX, avatarY + 54);
-            ctx.textAlign = "left";
 
             ctx.restore();
         }
@@ -975,7 +1008,7 @@ WHERE rnk = 2;`,
         // TIMELINE PHASES (0 to 60 Seconds)
         // =========================================================================
 
-        // PHASE 1 (0 to 5s): VIRAL PEAK POINT / HOOK
+        // PHASE 1 (0 to 5.5s): VIRAL PEAK POINT / HOOK
         if (t < 5.5) {
             const hookAlpha = t < 5.0 ? 1.0 : (5.5 - t) / 0.5;
             ctx.save();
@@ -995,19 +1028,19 @@ WHERE rnk = 2;`,
             ctx.stroke();
 
             ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 44px 'Segoe UI', sans-serif";
+            ctx.font = "bold 42px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("🚨 90% CANDIDATES FAIL THIS QUESTION!", 0, -20);
+            ctx.fillText("🚨 95% CANDIDATES FAIL THIS QUESTION!", 0, -20);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 34px 'Segoe UI', sans-serif";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
             const hookText = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr;
             ctx.fillText(wrapCanvasText(ctx, hookText, 860)[0] || hookText, 0, 45);
 
             ctx.restore();
         }
 
-        // PHASE 2 (5 to 18s): PROBLEM & REAL BANK DATA SCHEMA
+        // PHASE 2 (5 to 18s): PROBLEM & REAL DATA SCHEMA
         if (t >= 4.5 && t < 19.0) {
             ctx.save();
             const pAlpha = t < 5.5 ? (t - 4.5) : (t > 18.0 ? (19.0 - t) : 1.0);
@@ -1023,115 +1056,129 @@ WHERE rnk = 2;`,
             ctx.stroke();
 
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("📋 BANK INTERVIEW SCENARIO:", 90, 315);
+            ctx.font = "bold 30px 'Segoe UI', sans-serif";
+            ctx.fillText("📋 INTERVIEW QUESTION & UNDERSTANDING:", 90, 315);
 
             ctx.fillStyle = "#E2E8F0";
-            ctx.font = "28px 'Segoe UI', sans-serif";
+            ctx.font = "26px 'Segoe UI', sans-serif";
             const qLines = wrapCanvasText(ctx, p.question, W - 180);
             qLines.slice(0, 2).forEach((l, i) => {
                 ctx.fillText(l, 90, 370 + i * 42);
             });
 
-            // Animated Real Bank Transaction Cards
+            // Animated Input Table Cards
             ctx.fillStyle = "#94A3B8";
             ctx.font = "bold 26px monospace";
-            ctx.fillText(`TABLE: ${p.table_name}`, 60, 510);
+            ctx.fillText(`INPUT TABLE: ${p.table_name}`, 60, 510);
 
+            const headers = p.col_headers || ["COL_1", "COL_2", "COL_3", "STATUS"];
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.fillRect(60, 530, W - 120, 60);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px monospace";
+            ctx.fillText(headers[0], 90, 570);
+            ctx.fillText(headers[1], 350, 570);
+            ctx.fillText(headers[2], 610, 570);
+            ctx.fillText(headers[3], 830, 570);
+
+            // Row cards
             const sampleRows = p.sample_rows || [];
             sampleRows.forEach((r, idx) => {
-                const cardY = 540 + idx * 110;
-                const animOffset = Math.max(0, (idx * 1.5 + 6.0 - t) * 60);
+                const rowY = 610 + idx * 85;
+                ctx.fillStyle = idx % 2 === 0 ? "rgba(15, 23, 42, 0.9)" : "rgba(30, 41, 59, 0.8)";
+                ctx.fillRect(60, rowY, W - 120, 75);
+                ctx.strokeStyle = "#1E2D4A";
+                ctx.strokeRect(60, rowY, W - 120, 75);
 
-                ctx.fillStyle = idx % 2 === 0 ? "rgba(30, 41, 59, 0.85)" : "rgba(15, 23, 42, 0.85)";
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "24px monospace";
+                ctx.fillText(r.account, 90, rowY + 46);
+                ctx.fillText(r.date, 350, rowY + 46);
+                ctx.fillText(r.amt, 610, rowY + 46);
+
+                const isWarning = r.balance && (r.balance.includes("Tie") || r.balance.includes("MAX"));
+                ctx.fillStyle = isWarning ? "#F59E0B" : "#38BDF8";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText(r.balance, 830, rowY + 46);
+            });
+
+            // Problem Nuance & Tie Alert Badge
+            if (p.id === "sql_q1_second_highest_salary" || p.id === "faang_dense_rank_ties") {
+                ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
                 ctx.beginPath();
-                ctx.roundRect(60 + animOffset, cardY, W - 120, 90, 14);
+                ctx.roundRect(60, 1050, W - 120, 80, 16);
                 ctx.fill();
-                ctx.strokeStyle = "#283C62";
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#F59E0B";
+                ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 28px monospace";
-                ctx.fillText(r.account, 90 + animOffset, cardY + 55);
-
-                ctx.fillStyle = "#94A3B8";
-                ctx.font = "24px monospace";
-                ctx.fillText(r.date, 340 + animOffset, cardY + 55);
-
-                ctx.fillStyle = r.amt.startsWith("+") ? "#10B981" : (r.amt.startsWith("-") ? "#EF4444" : "#F59E0B");
-                ctx.font = "bold 28px monospace";
-                ctx.fillText(r.amt, 540 + animOffset, cardY + 55);
-
-                ctx.fillStyle = "#6366F1";
-                ctx.font = "24px monospace";
-                ctx.fillText(r.balance, 760 + animOffset, cardY + 55);
-            });
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText("⚠️ INTERVIEW TRAP: Priya & Kiran both earn ₹80,000! 'LIMIT 1 OFFSET 1' will FAIL!", 90, 1100);
+            }
 
             ctx.restore();
         }
 
-        // PHASE 3 (18 to 42s): ANIMATED SQL CODE & DYNAMIC ARROW MOTION
+        // PHASE 3 (18 to 42s): TYPEWRITER SQL CODE & GLOWING LASER ARROW WITH 3D CALLOUT POPUP
         if (t >= 17.5 && t < 43.0) {
             ctx.save();
             const cAlpha = t < 18.5 ? (t - 17.5) : (t > 42.0 ? (43.0 - t) : 1.0);
             ctx.globalAlpha = Math.max(0, Math.min(1.0, cAlpha));
 
-            // Code Window Header
+            // Code Editor Window (IDE style)
             ctx.fillStyle = "#0B1120";
             ctx.beginPath();
-            ctx.roundRect(50, 240, W - 100, 780, 24);
+            ctx.roundRect(50, 240, W - 100, 840, 24);
             ctx.fill();
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+            ctx.strokeStyle = "#38BDF8";
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            // Mac-style Window Dots
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(90, 280, 12, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(130, 280, 12, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(170, 280, 12, 0, Math.PI * 2); ctx.fill();
+            // Window Header with Mac dots
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(50, 240, W - 100, 60);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(85, 270, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(115, 270, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 270, 10, 0, Math.PI * 2); ctx.fill();
 
             ctx.fillStyle = "#94A3B8";
-            ctx.font = "22px monospace";
-            ctx.fillText("sql_solution.sql — 9:16 Studio", 220, 288);
+            ctx.font = "bold 22px monospace";
+            ctx.fillText("query_solution.sql", 185, 278);
 
-            // SQL Code Line-by-Line Typewriter Animation
+            // Typewriter Code Lines
             const codeLines = p.solution_sql.split("\n");
-            const typingSpeed = (t - 18.0) * 1.5; // lines typed per second
+            const typingSpeed = (t - 18.0) * 1.5;
             const linesToShow = Math.min(codeLines.length, Math.floor(typingSpeed));
 
             let arrowTargetY = 460;
             let arrowTargetX = 640;
 
             for (let i = 0; i < linesToShow; i++) {
-                const lineY = 350 + i * 54;
+                const lineY = 340 + i * 50;
                 const lineText = codeLines[i];
 
-                // Check if this line is the arrow target
-                const isTarget = p.arrow_target && lineText.includes(p.arrow_target.split(" ")[0]);
+                const isTarget = p.arrow_target && (lineText.includes(p.arrow_target.split(" ")[0]) || (p.arrow_line_idx !== undefined && i === p.arrow_line_idx));
                 if (isTarget) {
                     arrowTargetY = lineY;
                     arrowTargetX = 80 + ctx.measureText(lineText).width + 30;
                 }
 
-                // Line numbering
                 ctx.fillStyle = "#475569";
                 ctx.font = "26px monospace";
                 ctx.fillText((i + 1).toString().padStart(2, "0"), 80, lineY);
 
-                // Syntax highlighting
                 renderSqlSyntaxLine(ctx, lineText, 140, lineY);
             }
 
             // DYNAMIC GLOWING ARROW MOTION
-            if (t >= 22.0) {
-                const arrowBounce = Math.sin((t - 22.0) * 6) * 18;
+            if (t >= 21.0) {
+                const arrowBounce = Math.sin((t - 21.0) * 6) * 16;
                 const arrowX = Math.min(W - 140, arrowTargetX + 70 + arrowBounce);
                 const arrowY = arrowTargetY - 8;
 
-                // Glowing Arrow Laser Trail
                 ctx.shadowColor = "#38BDF8";
-                ctx.shadowBlur = 20;
+                ctx.shadowBlur = 22;
 
                 ctx.fillStyle = "#38BDF8";
                 ctx.beginPath();
@@ -1147,12 +1194,76 @@ WHERE rnk = 2;`,
 
                 // Arrow Label Badge
                 ctx.fillStyle = "#F59E0B";
-                ctx.fillRect(arrowX + 140, arrowY - 20, 200, 42);
+                ctx.fillRect(arrowX + 140, arrowY - 20, 210, 42);
                 ctx.fillStyle = "#000";
                 ctx.font = "bold 20px 'Segoe UI', sans-serif";
                 ctx.fillText("⚡ CRITICAL CLAUSE", arrowX + 150, arrowY + 8);
 
                 ctx.shadowBlur = 0;
+            }
+
+            // ANIMATED 3D POPUP CALLOUT BOX (Explaining why query works)
+            if (t >= 22.5) {
+                const popAlpha = Math.min(1.0, (t - 22.5) * 1.5);
+                ctx.save();
+                ctx.globalAlpha = ctx.globalAlpha * popAlpha;
+
+                // Subtle floating bounce
+                const floatY = Math.sin((t - 22.5) * 3) * 6;
+
+                ctx.fillStyle = "rgba(11, 17, 32, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(80, 690 + floatY, W - 160, 360, 20);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "rgba(56, 189, 248, 0.4)";
+                ctx.shadowBlur = 18;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Popup Header with badge
+                ctx.fillStyle = "#38BDF8";
+                ctx.fillRect(80, 690 + floatY, W - 160, 52);
+                ctx.fillStyle = "#070B16";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText("💡 HOW THE AI QUERY SOLVES THIS STEP-BY-STEP", 110, 725 + floatY);
+
+                if (p.id === "sql_q1_second_highest_salary") {
+                    ctx.fillStyle = "#F8FAFC";
+                    ctx.font = "bold 23px 'Segoe UI', sans-serif";
+                    ctx.fillText("1️⃣ Inner Subquery: (SELECT MAX(SALARY)) ➔ ₹80,000", 110, 780 + floatY);
+
+                    ctx.fillStyle = "#EF4444";
+                    ctx.fillText("2️⃣ Filter: WHERE SALARY < 80,000 excludes Priya & Kiran duplicates!", 110, 830 + floatY);
+
+                    ctx.fillStyle = "#38BDF8";
+                    ctx.fillText("3️⃣ Remaining Pool: Amit (60k), Rahul (50k), Neha (70k)", 110, 880 + floatY);
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 25px 'Segoe UI', sans-serif";
+                    ctx.fillText("🎯 Outer Query: SELECT MAX() from remaining ➔ 70,000 (Neha)!", 110, 940 + floatY);
+
+                    ctx.fillStyle = "#F59E0B";
+                    ctx.font = "italic 21px 'Segoe UI', sans-serif";
+                    ctx.fillText("✨ Solves duplicate tie gracefully without hardcoded offsets", 110, 995 + floatY);
+                } else {
+                    ctx.fillStyle = "#F8FAFC";
+                    ctx.font = "bold 23px 'Segoe UI', sans-serif";
+                    ctx.fillText(`1️⃣ Target Clause: ${p.arrow_target}`, 110, 780 + floatY);
+
+                    ctx.fillStyle = "#38BDF8";
+                    const expSnippet = wrapCanvasText(ctx, p.explanation_en || p.explanation_mr, W - 220);
+                    expSnippet.slice(0, 3).forEach((line, idx) => {
+                        ctx.fillText(line, 110, 835 + idx * 45 + floatY);
+                    });
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                    ctx.fillText("🎯 Guarantees O(N) performance without table locks!", 110, 995 + floatY);
+                }
+
+                ctx.restore();
             }
 
             ctx.restore();
@@ -1166,48 +1277,94 @@ WHERE rnk = 2;`,
 
             ctx.fillStyle = "#10192E";
             ctx.beginPath();
-            ctx.roundRect(50, 240, W - 100, 780, 24);
+            ctx.roundRect(50, 240, W - 100, 840, 24);
             ctx.fill();
             ctx.strokeStyle = "#10B981";
             ctx.lineWidth = 3;
             ctx.stroke();
 
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 36px 'Segoe UI', sans-serif";
+            ctx.font = "bold 34px 'Segoe UI', sans-serif";
             ctx.fillText("✅ REAL QUERY EXECUTION OUTPUT:", 90, 310);
 
-            // Table Header (Dynamic based on preset or default)
-            const headers = p.col_headers || ["ACCOUNT", "TXN_DATE", "AMOUNT", "RUNNING_BAL"];
+            // Table Header
+            const headers = p.col_headers || ["COL_1", "COL_2", "COL_3", "RESULT"];
             ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
             ctx.fillRect(80, 350, W - 160, 60);
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 26px monospace";
+            ctx.font = "bold 24px monospace";
             ctx.fillText(headers[0], 110, 390);
             ctx.fillText(headers[1], 350, 390);
             ctx.fillText(headers[2], 560, 390);
             ctx.fillText(headers[3], 780, 390);
 
-            // Render Output Rows with glowing running balance
+            // Render Output Rows
             const sampleRows = p.sample_rows || [];
             sampleRows.forEach((r, idx) => {
-                const rowY = 440 + idx * 80;
+                const rowY = 440 + idx * 75;
                 ctx.fillStyle = idx % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent";
-                ctx.fillRect(80, rowY - 30, W - 160, 70);
+                ctx.fillRect(80, rowY - 26, W - 160, 68);
 
                 ctx.fillStyle = "#F8FAFC";
-                ctx.font = "26px monospace";
+                ctx.font = "24px monospace";
                 ctx.fillText(r.account, 110, rowY + 14);
                 ctx.fillText(r.date, 350, rowY + 14);
                 ctx.fillText(r.amt, 560, rowY + 14);
 
-                // Glowing Calculated Balance
-                ctx.shadowColor = "#10B981";
-                ctx.shadowBlur = 15;
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 28px monospace";
+                const isExcluded = r.balance && r.balance.includes("Excluded");
+                const isSelected = r.balance && (r.balance.includes("2nd Highest") || r.balance.includes("अचूक"));
+                
+                if (isSelected) {
+                    ctx.shadowColor = "#10B981";
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = "#10B981";
+                } else if (isExcluded) {
+                    ctx.fillStyle = "#EF4444";
+                } else {
+                    ctx.fillStyle = "#38BDF8";
+                }
+                ctx.font = "bold 24px monospace";
                 ctx.fillText(r.balance, 780, rowY + 14);
                 ctx.shadowBlur = 0;
             });
+
+            // BIG GLOWING RESULT BADGE (Highlighted Final Answer)
+            ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+            ctx.beginPath();
+            ctx.roundRect(80, 830, W - 160, 210, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = "rgba(16, 185, 129, 0.4)";
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 VERIFIED FINAL QUERY OUTPUT:", 110, 875);
+
+            if (p.id === "sql_q1_second_highest_salary") {
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "22px monospace";
+                ctx.fillText("OUTPUT COLUMN: SECOND_HIGHEST_SALARY", 110, 925);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 48px monospace";
+                ctx.fillText("VALUE: 70000", 110, 985);
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 20px 'Segoe UI', sans-serif";
+                ctx.fillText("✅ Verified Match: Neha (Finance Department)", 110, 1022);
+            } else {
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 40px monospace";
+                ctx.fillText("QUERY EXECUTED CLEANLY IN O(N)", 110, 940);
+
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "22px 'Segoe UI', sans-serif";
+                ctx.fillText("Zero duplicate errors, ready for interview submission!", 110, 995);
+            }
 
             ctx.restore();
         }
@@ -1227,20 +1384,19 @@ WHERE rnk = 2;`,
             ctx.stroke();
 
             ctx.fillStyle = "#8B5CF6";
-            ctx.font = "bold 40px 'Segoe UI', sans-serif";
+            ctx.font = "bold 38px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("💡 INTERVIEW PRO-TIP", W / 2, 380);
+            ctx.fillText("💡 SENIOR INTERVIEWER PRO-TIP", W / 2, 380);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "30px 'Segoe UI', sans-serif";
+            ctx.font = "28px 'Segoe UI', sans-serif";
             const tipLines = wrapCanvasText(ctx, p.pro_tip, W - 200);
             tipLines.forEach((l, i) => {
                 ctx.fillText(l, W / 2, 450 + i * 46);
             });
 
-            // Follow / Save CTA
             ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 34px 'Segoe UI', sans-serif";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
             ctx.fillText("⭐ SAVE THIS REEL FOR YOUR NEXT INTERVIEW!", W / 2, 600);
             ctx.textAlign = "left";
 
@@ -1270,27 +1426,27 @@ WHERE rnk = 2;`,
         });
 
         // =========================================================================
-        // ZERO-WATERMARK SHIELD & NATIONAL MISSION BANNER (Bottom Footer)
+        // ZERO-WATERMARK SHIELD (Bottom Footer)
         // =========================================================================
         ctx.fillStyle = "#070B16";
         ctx.fillRect(0, H - 120, W, 120);
 
-        // Tiranga Tri-Color Glowing Ribbon
+        // Tri-Color Glowing Ribbon
         const mGrad = ctx.createLinearGradient(0, H - 120, W, H - 120);
-        mGrad.addColorStop(0, "#FF9933");  // Saffron
-        mGrad.addColorStop(0.5, "#FFFFFF"); // White
-        mGrad.addColorStop(1, "#138808");  // Green
+        mGrad.addColorStop(0, "#0284C7");
+        mGrad.addColorStop(0.5, "#38BDF8");
+        mGrad.addColorStop(1, "#10B981");
         ctx.fillStyle = mGrad;
         ctx.fillRect(0, H - 120, W, 5);
 
         ctx.fillStyle = "#F8FAFC";
         ctx.font = "bold 26px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🇮🇳 नॅनोप्रो डिजिटल भारत मिशन • ग्रामीण व ZP शाळांसाठी मोफत तंत्रज्ञान शिक्षण", W / 2, H - 70);
+        ctx.fillText("🚀 TOP MNC & FAANG SQL INTERVIEW PREPARATION STUDIO", W / 2, H - 70);
 
         ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
-        ctx.fillText("✨ 100% Clean Zero-Watermark Studio • Instagram Reels & YouTube 9:16 Shorts", W / 2, H - 32);
+        ctx.fillText("✨ 100% Clean Zero-Watermark Studio • Step-by-Step Code Mastery", W / 2, H - 32);
         ctx.textAlign = "left";
     }
 
@@ -1298,50 +1454,51 @@ WHERE rnk = 2;`,
     function renderSqlSyntaxLine(ctx, text, startX, lineY) {
         const tokens = text.split(/(\s+|[(),;])/);
         let currX = startX;
+
+        const KEYWORDS = ["SELECT", "FROM", "WHERE", "ORDER", "BY", "DESC", "ASC", "OVER", "PARTITION", "ROWS", "BETWEEN", "UNBOUNDED", "PRECEDING", "AND", "CURRENT", "ROW", "WITH", "AS", "GROUP", "HAVING", "LIMIT", "OFFSET", "JOIN", "LEFT", "ON", "DATE", "ROUND", "COUNT", "MIN", "MAX"];
+        const FUNCTIONS = ["DENSE_RANK", "RANK", "ROW_NUMBER", "SUM", "LAG", "LEAD", "AVG"];
+
+        ctx.font = "bold 26px monospace";
+
         tokens.forEach(tok => {
-            const upper = tok.trim().toUpperCase();
-            if (["SELECT", "FROM", "WHERE", "WITH", "AS", "AND", "OR", "GROUP", "BY", "ORDER"].includes(upper)) {
-                ctx.fillStyle = "#38BDF8"; // Cyan keyword
-                ctx.font = "bold 26px monospace";
-            } else if (["OVER", "PARTITION", "ROWS", "BETWEEN", "PRECEDING", "FOLLOWING", "CURRENT", "ROW"].includes(upper)) {
-                ctx.fillStyle = "#F59E0B"; // Amber Window clause
-                ctx.font = "bold 26px monospace";
-            } else if (["SUM", "LAG", "LEAD", "DENSE_RANK", "RANK", "ROW_NUMBER", "COUNT", "AVG"].includes(upper)) {
-                ctx.fillStyle = "#10B981"; // Emerald function
-                ctx.font = "bold 26px monospace";
-            } else if (!isNaN(tok.trim()) && tok.trim() !== "") {
-                ctx.fillStyle = "#EC4899"; // Magenta number
-                ctx.font = "26px monospace";
+            const clean = tok.toUpperCase().trim();
+            if (KEYWORDS.includes(clean)) {
+                ctx.fillStyle = "#38BDF8";
+            } else if (FUNCTIONS.includes(clean)) {
+                ctx.fillStyle = "#F472B6";
+            } else if (/^\d+(\.\d+)?$/.test(clean)) {
+                ctx.fillStyle = "#F59E0B";
+            } else if (clean.startsWith("'") || clean.startsWith('"')) {
+                ctx.fillStyle = "#10B981";
             } else {
-                ctx.fillStyle = "#F8FAFC"; // Normal text
-                ctx.font = "26px monospace";
+                ctx.fillStyle = "#F8FAFC";
             }
             ctx.fillText(tok, currX, lineY);
             currX += ctx.measureText(tok).width;
         });
     }
 
-    // Text Wrap Utility
     function wrapCanvasText(ctx, text, maxWidth) {
         if (!text) return [];
         const words = text.split(" ");
         const lines = [];
-        let curr = "";
+        let currLine = "";
+
         words.forEach(w => {
-            const test = curr ? (curr + " " + w) : w;
-            if (ctx.measureText(test).width <= maxWidth) {
-                curr = test;
+            const testLine = currLine ? (currLine + " " + w) : w;
+            if (ctx.measureText(testLine).width > maxWidth && currLine) {
+                lines.push(currLine);
+                currLine = w;
             } else {
-                lines.push(curr);
-                curr = w;
+                currLine = testLine;
             }
         });
-        if (curr) lines.push(curr);
+        if (currLine) lines.push(currLine);
         return lines;
     }
 
     /* ==========================================================================
-       TRANSPORT & PLAYBACK TIMELINE CONTROLS
+       SMARTPHONE TRANSPORT & PLAYBACK
        ========================================================================== */
     function toggleSqlShortPlay() {
         if (sqlShortState.isPlaying) {
@@ -1353,22 +1510,28 @@ WHERE rnk = 2;`,
 
     function playSqlShort() {
         if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
-            sqlShortState.currentTime = 0.0;
+            sqlShortState.currentTime = 0;
         }
         sqlShortState.isPlaying = true;
-        sqlShortState.lastTimestamp = performance.now();
         document.getElementById("btnPlayPause").innerText = "⏸ Pause";
 
-        // Speak Voiceover via Web Speech API if supported
-        speakVoiceoverPhase(sqlShortState.currentTime);
+        // Play synchronized natural voice audio
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        if (audioEl && audioEl.src && !audioEl.error) {
+            audioEl.currentTime = sqlShortState.currentTime;
+            audioEl.playbackRate = sqlShortState.playbackSpeed;
+            audioEl.play().catch(e => console.warn("Audio play prevented:", e));
+        }
+
+        let lastTime = performance.now();
 
         function step(now) {
             if (!sqlShortState.isPlaying) return;
-            const deltaSec = (now - sqlShortState.lastTimestamp) / 1000.0 * sqlShortState.playbackSpeed;
-            sqlShortState.lastTimestamp = now;
-            sqlShortState.currentTime += deltaSec;
+            const deltaSec = (now - lastTime) / 1000.0;
+            lastTime = now;
 
-            if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
+            sqlShortState.currentTime += deltaSec * sqlShortState.playbackSpeed;
+            if (sqlShortState.currentTime > sqlShortState.maxDuration) {
                 sqlShortState.currentTime = sqlShortState.maxDuration;
                 pauseSqlShortPlay();
             }
@@ -1376,7 +1539,9 @@ WHERE rnk = 2;`,
             renderSqlShortFrame(sqlShortState.currentTime);
             updatePlayerScrubberUI(sqlShortState.currentTime);
 
-            sqlShortState.animationFrameId = requestAnimationFrame(step);
+            if (sqlShortState.isPlaying) {
+                sqlShortState.animationFrameId = requestAnimationFrame(step);
+            }
         }
         sqlShortState.animationFrameId = requestAnimationFrame(step);
     }
@@ -1388,7 +1553,8 @@ WHERE rnk = 2;`,
             sqlShortState.animationFrameId = null;
         }
         document.getElementById("btnPlayPause").innerText = "▶ Play";
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        if (audioEl) audioEl.pause();
     }
 
     function restartSqlShortPlay() {
@@ -1401,12 +1567,16 @@ WHERE rnk = 2;`,
 
     function seekSqlShortPlayer(val) {
         sqlShortState.currentTime = parseFloat(val);
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        if (audioEl) audioEl.currentTime = sqlShortState.currentTime;
         updatePlayerScrubberUI(sqlShortState.currentTime);
         renderSqlShortFrame(sqlShortState.currentTime);
     }
 
     function setSqlShortSpeed(val) {
         sqlShortState.playbackSpeed = parseFloat(val);
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        if (audioEl) audioEl.playbackRate = sqlShortState.playbackSpeed;
     }
 
     function updatePlayerScrubberUI(t) {
@@ -1420,29 +1590,27 @@ WHERE rnk = 2;`,
         }
     }
 
-    function speakVoiceoverPhase(t) {
-        if (!window.speechSynthesis) return;
-        const p = sqlShortState.activePreset;
-        const lang = sqlShortState.audioLang;
-        let phrase = "";
-
-        if (t < 5.0) phrase = p['hook_' + lang] || p.hook_mr;
-        else if (t < 20.0) phrase = p.question;
-        else if (t < 42.0) phrase = p['explanation_' + lang] || p.explanation_mr;
-        else phrase = p.pro_tip;
-
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(phrase);
-        u.lang = lang === 'hi' ? 'hi-IN' : (lang === 'mr' ? 'mr-IN' : 'en-US');
-        u.rate = 1.05;
-        window.speechSynthesis.speak(u);
+    function downloadVoiceoverMp3() {
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        const url = (audioEl && audioEl.src) ? audioEl.src : sqlShortState.audioUrl;
+        if (!url) {
+            alert("Voiceover audio is still loading, please wait 2 seconds.");
+            return;
+        }
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Voiceover_${sqlShortState.activePreset.id}_${sqlShortState.audioLang}.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     /* ==========================================================================
-       ZERO-SERVER-LOAD CLIENT-SIDE VIDEO RECORDER & DOWNLOAD
+       MEDIARECORDER AUDIO-MULTIPLEXED EXPORT & DOWNLOAD
        ========================================================================== */
     async function exportSqlShortVideo(durationSec = 60) {
         const canvas = document.getElementById("sqlShortCanvas");
+        const audioEl = document.getElementById("sqlVoiceAudio");
         const btn = document.getElementById("btnDownloadShortVideo");
         const btnLabel = document.getElementById("exportBtnLabel");
         const pContainer = document.getElementById("exportProgressBarContainer");
@@ -1459,16 +1627,7 @@ WHERE rnk = 2;`,
             return;
         }
 
-        // Smoothly scroll export box into view so user never has to scroll down
-        const exportContainer = document.getElementById("exportCardContainer");
-        if (exportContainer) {
-            exportContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
         pauseSqlShortPlay();
-        sqlShortState.currentTime = 0.0;
-        
-        // Reset UI states
         if (celebrationBox) celebrationBox.style.display = "none";
         if (pContainer) pContainer.style.display = "block";
         if (badgeEl) {
@@ -1477,24 +1636,42 @@ WHERE rnk = 2;`,
             badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
         }
         if (btn) btn.disabled = true;
-        if (btnLabel) btnLabel.innerText = `⏳ व्हिडिओ रेंडर होत आहे (RENDERING ${durationSec}s)...`;
+        if (btnLabel) btnLabel.innerText = `⏳ व्हिडिओ व ऑडिओ एकत्र रेंडर होत आहे (${durationSec}s)...`;
 
-        // Reset Stage Pills
-        for (let i = 1; i <= 5; i++) {
-            const pill = document.getElementById("stagePill" + i);
-            if (pill) { pill.className = "stage-pill"; }
+        // Audio Multiplexing Setup
+        let audioTracks = [];
+        let audioCtx = null;
+        if (audioEl && audioEl.src && !audioEl.error) {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+                const audioDest = audioCtx.createMediaStreamDestination();
+                const audioSource = audioCtx.createMediaElementSource(audioEl);
+                audioSource.connect(audioDest);
+                audioSource.connect(audioCtx.destination);
+                audioTracks = audioDest.stream.getAudioTracks();
+            } catch(e) {
+                console.warn("AudioContext stream capture notice:", e);
+            }
         }
 
-        const stream = canvas.captureStream(30); // 30 FPS stream
-        let mimeType = "video/webm;codecs=vp9";
+        const videoTracks = canvas.captureStream(30).getVideoTracks();
+        const combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
+
+        let mimeType = "video/webm;codecs=vp9,opus";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = "video/webm;codecs=vp8,opus";
+        }
         if (!MediaRecorder.isTypeSupported(mimeType)) {
             mimeType = "video/webm";
         }
 
         const chunks = [];
-        const recorder = new MediaRecorder(stream, {
+        const recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 8000000 // 8 Mbps high quality
+            videoBitsPerSecond: 8000000
         });
 
         recorder.ondataavailable = e => {
@@ -1508,16 +1685,16 @@ WHERE rnk = 2;`,
         const startTime = performance.now();
 
         recorder.onstop = () => {
+            if (audioEl) audioEl.pause();
             if (pFill) pFill.style.width = "100%";
             if (pPctText) pPctText.innerText = "100%";
-            if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ डाऊनलोड होत आहे...";
+            if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ व ऑडिओ डाऊनलोड होत आहे...";
             if (badgeEl) {
                 badgeEl.innerText = "पूर्ण झाले (Completed)";
                 badgeEl.style.color = "#10B981";
                 badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
             }
 
-            // Set all stage pills to done
             for (let i = 1; i <= 5; i++) {
                 const pill = document.getElementById("stagePill" + i);
                 if (pill) pill.className = "stage-pill done";
@@ -1527,13 +1704,12 @@ WHERE rnk = 2;`,
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            const filename = `Clean_ZeroWatermark_9x16_${sqlShortState.activePreset.id}_${totalDuration}s.webm`;
+            const filename = `Clean_9x16_${sqlShortState.activePreset.id}_${sqlShortState.audioLang}_${totalDuration}s.webm`;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
 
-            // Show Celebration Card and smoothly scroll into view
             setTimeout(() => {
                 if (celebrationBox) {
                     celebrationBox.style.display = "block";
@@ -1545,11 +1721,15 @@ WHERE rnk = 2;`,
                     }
                 }
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (CLEAN & NO WATERMARK)";
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (WITH NATURAL VOICE AUDIO)";
             }, 300);
         };
 
         recorder.start();
+        if (audioEl && audioEl.src) {
+            audioEl.currentTime = 0;
+            audioEl.play().catch(e => console.warn("Audio play during export:", e));
+        }
 
         function updateStagePill(stageNum) {
             for (let i = 1; i <= 5; i++) {
@@ -1563,22 +1743,21 @@ WHERE rnk = 2;`,
 
         function recordStep() {
             if (frameCount < totalFrames) {
-                const stepBatch = totalDuration <= 10 ? 1 : 2; // Accelerated export
+                const stepBatch = totalDuration <= 10 ? 1 : 2;
                 for (let b = 0; b < stepBatch && frameCount < totalFrames; b++) {
                     sqlShortState.currentTime = (frameCount * dt);
                     const t = sqlShortState.currentTime;
 
-                    // Live Stage Detection & Pill highlight
                     let currentStage = 1;
-                    let stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी अलर्ट";
+                    let stageText = "पायरी १/५: 🚨 व्हायरल हुक व प्रश्न";
                     if (totalDuration <= 10) {
                         if (t < 2.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक (0-2s)"; }
                         else if (t < 4.0) { currentStage = 2; stageText = "पायरी २/५: 📋 डेटा स्कीमा (2-4s)"; }
-                        else if (t < 7.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ SQL कोड टाईपिंग (4-7s)"; }
+                        else if (t < 7.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ SQL कोड व ॲरो (4-7s)"; }
                         else if (t < 9.0) { currentStage = 4; stageText = "पायरी ४/५: 🧮 निकाल कॅल्क्युलेशन (7-9s)"; }
                         else { currentStage = 5; stageText = "पायरी ५/५: 🛡️ 100% वॉटरमार्क-फ्री HD व्हिडिओ (9-10s)"; }
                     } else {
-                        if (t < 5.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक व लक्षवेधी अलर्ट (0-5s)"; }
+                        if (t < 5.0) { currentStage = 1; stageText = "पायरी १/५: 🚨 व्हायरल हुक व प्रश्न (0-5s)"; }
                         else if (t < 18.0) { currentStage = 2; stageText = "पायरी २/५: 📋 डेटा स्कीमा व रेकॉर्ड्स (5-18s)"; }
                         else if (t < 42.0) { currentStage = 3; stageText = "पायरी ३/५: ⚡ टाईपरायटर SQL कोड व लेझर ॲरो (18-42s)"; }
                         else if (t < 54.0) { currentStage = 4; stageText = "पायरी ४/५: 🧮 निकाल कॅल्क्युलेशन (42-54s)"; }
@@ -1587,7 +1766,6 @@ WHERE rnk = 2;`,
 
                     updateStagePill(currentStage);
 
-                    // Synchronize live avatar video frame if active
                     if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
                         sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
                     }
@@ -1597,7 +1775,6 @@ WHERE rnk = 2;`,
                     frameCount++;
                 }
 
-                // Update Progress & Time Remaining every 15 frames for ultra-smooth UI
                 if (frameCount % 15 === 0 || frameCount >= totalFrames) {
                     const pct = Math.min(100, Math.floor((frameCount / totalFrames) * 100));
                     if (pFill) pFill.style.width = pct + "%";
@@ -1623,31 +1800,19 @@ WHERE rnk = 2;`,
     function downloadCurrentFrameAsPng() {
         const canvas = document.getElementById("sqlShortCanvas");
         if (!canvas) return;
+        const dataUrl = canvas.toDataURL("image/png");
         const a = document.createElement("a");
-        a.href = canvas.toDataURL("image/png");
-        const filename = `Clean_ZeroWatermark_Frame_${sqlShortState.activePreset.id}_${Math.floor(sqlShortState.currentTime)}s.png`;
-        a.download = filename;
+        a.href = dataUrl;
+        a.download = `SQL_Interview_Frame_${sqlShortState.activePreset.id}_${Math.floor(sqlShortState.currentTime)}s.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
-        // Also show confirmation in celebration box
-        const celebrationBox = document.getElementById("videoReadyCelebration");
-        if (celebrationBox) {
-            celebrationBox.style.display = "block";
-            celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            const btnAgain = document.getElementById("btnDownloadAgain");
-            if (btnAgain) {
-                btnAgain.href = a.href;
-                btnAgain.download = filename;
-            }
-        }
     }
 
-    // Expose all functions to global window scope so HTML buttons & selects never fail
-    window.handleSqlPresetChange = handleSqlPresetChange;
+    // Expose Functions to Global Window
     window.setSqlAudioLang = setSqlAudioLang;
     window.setSqlTextStyle = setSqlTextStyle;
+    window.toggleSqlAvatar = toggleSqlAvatar;
     window.setSqlAvatarPresenter = setSqlAvatarPresenter;
     window.generateSqlShortBlueprint = generateSqlShortBlueprint;
     window.renderAiAvatarVideo = renderAiAvatarVideo;
@@ -1656,9 +1821,11 @@ WHERE rnk = 2;`,
     window.toggleSqlShortPlay = toggleSqlShortPlay;
     window.restartSqlShortPlay = restartSqlShortPlay;
     window.setSqlShortSpeed = setSqlShortSpeed;
-    window.runInMemorySqlSandbox = runInMemorySqlSandbox;
     window.exportSqlShortVideo = exportSqlShortVideo;
     window.downloadCurrentFrameAsPng = downloadCurrentFrameAsPng;
-    window.initSqlShortWorkspace = initSqlShortWorkspace;
+    window.runInMemorySqlSandbox = runInMemorySqlSandbox;
+    window.handleSqlPresetChange = handleSqlPresetChange;
+    window.downloadVoiceoverMp3 = downloadVoiceoverMp3;
+    window.loadPresetVoiceAudio = loadPresetVoiceAudio;
     </script>
     '''

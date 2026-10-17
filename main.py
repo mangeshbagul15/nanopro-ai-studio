@@ -190,6 +190,11 @@ from app.ui.dashboard import get_dashboard_html
 
 app = FastAPI(title="Mangesh Nano Pro AI Studio")
 
+from fastapi.staticfiles import StaticFiles
+_audio_mount_dir = BASE_DIR / "data" / "audio"
+_audio_mount_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/audio", StaticFiles(directory=str(_audio_mount_dir)), name="audio")
+
 # Pydantic Request Models
 class VoiceInteractRequest(BaseModel):
     transcript: Optional[str] = None
@@ -398,8 +403,10 @@ class SqlShortSandboxRequest(BaseModel):
     query_sql: str
 
 class SqlShortVoiceRequest(BaseModel):
-    text: str
+    text: Optional[str] = ""
     language: Optional[str] = "mr"
+    preset_id: Optional[str] = None
+    voice_gender: Optional[str] = "female"
 
 class HeyGenGenerateRequest(BaseModel):
     script: str
@@ -1136,14 +1143,19 @@ async def api_sql_video_run_sandbox(req: SqlShortSandboxRequest):
 
 @app.post("/api/sql_video/synthesize_voice")
 async def api_sql_video_synthesize_voice(req: SqlShortVoiceRequest):
-    """Synthesizes high-fidelity voiceover using ElevenLabs Voice AI."""
-    audio_path = sql_short_engine.synthesize_voiceover(
-        text=req.text,
-        language=req.language or "mr"
-    )
-    if audio_path:
-        return JSONResponse({"status": "success", "audio_path": audio_path})
-    return JSONResponse({"status": "fallback", "message": "Voiceover ready via browser Web Speech API"})
+    """Synthesizes high-fidelity voiceover using ElevenLabs / Microsoft Neural Edge-TTS."""
+    from app.core.neural_tts import neural_tts
+    if req.preset_id:
+        res = await neural_tts.get_preset_audio_async(preset_id=req.preset_id, language=req.language or "mr")
+        return JSONResponse(res)
+
+    text = (req.text or "").strip()
+    if not text:
+        res = await neural_tts.get_preset_audio_async(preset_id="faang_dense_rank_ties", language=req.language or "mr")
+        return JSONResponse(res)
+
+    res = await neural_tts.synthesize_async(text=text, language=req.language or "mr", voice_gender=req.voice_gender or "female")
+    return JSONResponse(res)
 
 @app.get("/workspace/sql-video", response_class=HTMLResponse)
 async def api_sql_video_direct_workspace():

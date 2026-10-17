@@ -1,0 +1,297 @@
+"""
+Mangesh Nano Pro AI Studio - Natural Human Neural TTS Engine
+Produces high-fidelity, natural human voices for educational videos in Marathi, Hindi, and English.
+Architecture:
+- Primary: ElevenLabs Multilingual Voice AI (if API key available)
+- Fast Resilient Secondary: Microsoft Neural Edge-TTS (100% Free, Zero-Quota, Unlimited, Natural Human Accent)
+  - Marathi: mr-IN-AarohiNeural (Female Teacher), mr-IN-ManoharNeural (Male Teacher)
+  - Hindi: hi-IN-SwaraNeural (Female), hi-IN-MadhurNeural (Male)
+  - English (India): en-IN-NeerjaNeural (Female), en-IN-PrabhatNeural (Male)
+- Tertiary: Fallback Browser Web Speech API
+"""
+
+import os
+import asyncio
+from pathlib import Path
+from typing import Dict, Any, Optional
+from app.core.logger import log_event
+from app.core.elevenlabs_voice import elevenlabs_voice
+
+# Pre-defined step-by-step educational teacher scripts for FAANG & MNC SQL Interviews
+PRESET_SCRIPTS = {
+    "sql_q1_second_highest_salary": {
+        "mr": """नमस्कार मित्रांनो! टेक्निकल इंटरव्ह्यूमधील सर्वात जास्त विचारला जाणारा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा?
+टेबलमध्ये पहा: अमित ६० हजार, राहुल ५० हजार, प्रिया ८० हजार, नेहा ७० हजार, आणि किरण ८० हजार!
+इथे प्रिया आणि किरण दोघांनाही समान ८० हजार पगार आहे.
+आता दुसरा सर्वाधिक पगार काढण्यासाठी सर्वात सोपी आणि अचूक पद्धत कोणती?
+पायरी १: आतील सबक्वेरी बघा: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज! यामुळे सर्वात मोठा पगार म्हणजे ८० हजार मिळतो.
+पायरी २: बाहेरील क्वेरी: व्हेअर सॅलरी लहान ८० हजार! यामुळे ८० हजार असणाऱ्या प्रिया आणि किरण या दोन्ही नोंदी आपोआप वगळल्या जातात!
+पायरी ३: आता शिल्लक राहिलेल्या ६० हजार, ५० हजार आणि ७० हजार पैकी सिलेक्ट मॅक्स सॅलरी!
+निकाल बघा: अचूक उत्तर आले सत्तर हजार रुपये!
+नेहमी लक्षात ठेवा: सबक्वेरी मधील 'WHERE SALARY < MAX(SALARY)' ही क्लॉज सर्वाधिक पगार वगळून दुसरा पगार अचूक शोधून काढते!""",
+        "hi": """नमस्ते दोस्तों! एसक्यूएल इंटरव्यू का सबसे क्लासिक सवाल: EMPLOYEES टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें?
+टेबल देखिए: अमित ६०,०००, राहुल ५०,०००, प्रिया ८०,०००, नेहा ७०,०००, और किरण ८०,०००।
+यहाँ प्रिया और किरण दोनों की टॉप सैलरी ८०,००० है।
+अब सेकंड हाईएस्ट सैलरी निकालने की सबसे बेहतरीन अप्रोच देखिए:
+स्टेप १: इनर सबक्वेरी (SELECT MAX(SALARY) FROM EMPLOYEES) टॉप सैलरी ८०,००० निकालती है।
+स्टेप २: आउटर क्वेरी WHERE SALARY < 80000 से दोनों ८०,००० वाले रिकॉर्ड्स बाहर हो जाते हैं।
+स्टेप ३: अब बचे हुए ६०,०००, ५०,००० और ७०,००० में से MAX(SALARY) चुना जाता है।
+रिजल्ट देखिए: सटीक उत्तर आया ७०,०००!
+याद रखें: यह सबक्वेरी मेथड सभी डेटाबेस में बिना एरर के काम करता है!""",
+        "en": """Hello students! Here is the classic SQL interview question asked at top tech companies: How to find the second-highest salary from an EMPLOYEES table?
+Look at the data: Amit earns 60,000, Rahul 50,000, Priya 80,000, Neha 70,000, and Kiran 80,000.
+Notice that both Priya and Kiran share the top salary of 80,000!
+Here is the recommended 3-step approach:
+Step 1: The inner subquery SELECT MAX(SALARY) finds the highest salary, which is 80,000.
+Step 2: The outer WHERE SALARY < 80,000 filters out all top earners.
+Step 3: The outer SELECT MAX(SALARY) picks the maximum of the remaining salaries: 70,000!
+Result: 70,000!
+Always remember: Filtering WHERE SALARY < MAX(SALARY) safely eliminates duplicates and returns the true second highest salary!"""
+    },
+    "faang_dense_rank_ties": {
+        "mr": """नमस्कार मित्रांनो! गुगल आणि ॲमेझॉनच्या एसक्यूएल इंटरव्ह्यूमध्ये ९५ टक्के मुलं या प्रश्नात फेल होतात!
+प्रश्न असा आहे: कंपनीतील कर्मचाऱ्यांमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार मिळवणारे कर्मचारी कसे शोधायचे?
+टेबलमध्ये पहा: आरव आणि रोहित या दोघांचाही पगार समान एक लाख पंच्याऐंशी हजार रुपये आहे!
+जर आपण लिमिट १ ऑफसेट १ किंवा सामान्य रँक फंक्शन वापरले, तर ते दुसरा नंबर गाळून थेट तिसरा नंबर देते, ज्यामुळे निकाल १०० टक्के चुकतो!
+इथे कस कोड लिहायचा ते नीट समजून घ्या: आपण वापरणार आहोत डेन्स रँक ओव्हर ऑर्डर बाय सॅलरी डीसेंडिंग!
+डेन्स रँक समान पगार असतानाही पुढचा रँक नंबर अजिबात गाळत नाही!
+निकाल बघा: आरव आणि रोहित दोघांना पहिला नंबर, आणि प्रिया कुलकर्णीला मिळाला अचूक दुसरा क्रमांक!
+नेहमी लक्षात ठेवा: जेव्हा समान व्हॅल्यूज असतात, तेव्हा इंटरव्ह्यूमध्ये नेहमी डेन्स रँक चाच वापर करावा!""",
+        "hi": """नमस्ते दोस्तों! गूगल और अमेज़ॉन के एसक्यूएल इंटरव्यू में ९५% कैंडिडेट्स इस सवाल में फेल हो जाते हैं!
+सवाल है: कंपनी में सेकंड हाईएस्ट सैलरी पाने वाले एम्प्लॉई को कैसे निकालें?
+टेबल देखिए: आरव और रोहित दोनों की सैलरी बराबर १ लाख ८५ हजार रुपये है!
+अगर नॉर्मल RANK या LIMIT 1 OFFSET 1 लगाया, तो वह सेकंड रैंक स्किप करके सीधे थर्ड रैंक दे देगा, और जवाब गलत हो जाएगा!
+यहाँ कोड कैसे लिखना है ध्यान से देखिए: हम इस्तेमाल करेंगे DENSE_RANK() OVER (ORDER BY salary DESC)।
+DENSE_RANK कभी भी रैंक नंबर स्किप नहीं करता!
+फाइनल रिजल्ट देखिए: आरव और रोहित को रैंक १, और प्रिया कुलकर्णी को मिली सटीक सेकंड रैंक!
+हमेशा याद रखें: टाई होने पर सही रैंक निकालने के लिए हमेशा DENSE_RANK का ही उपयोग करें!""",
+        "en": """Hello everyone! Over 95% of candidates fail this classic Google and Amazon SQL interview problem: Finding the second highest salary when ties exist!
+Look at the table: Both Aarav and Rohit earn an identical top salary of 185,000!
+If you use LIMIT 1 OFFSET 1 or standard RANK, it skips Rank 2 and jumps straight to Rank 3, causing a critical failure!
+Here is how to write the code: We use DENSE_RANK() OVER (ORDER BY salary DESC).
+DENSE_RANK never skips ranking numbers after ties!
+Look at the output: Aarav and Rohit get Rank 1, and Priya Kulkarni correctly receives the exact Second Highest Salary!
+Remember: whenever ties are possible, DENSE_RANK is mandatory!"""
+    },
+    "goldman_running_balance": {
+        "mr": """गोल्डमन सॅक्स आणि एचडीएफसी बँकेच्या टेक्निकल राऊंडमधील नंबर १ प्रश्न: खात्याचा क्युम्युलेटिव्ह चालू बॅलन्स कसा काढायचा?
+टेबलमध्ये पहा: खाते क्रमांक ८८२१ मध्ये आधी ५००० जमा झाले, नंतर १२०० काढले, आणि पुन्हा ८५०० जमा झाले.
+जुनी को-रिलेटेड सब-क्वेरी वापरल्यास लाखो नोंदींवर बँक सर्व्हर हँग होतो!
+इथे कोड कसा लिहायचा: सम अमाऊंट ओव्हर पार्टिशन बाय अकाउंट नंबर, ऑर्डर बाय ट्रॅन्झॅक्शन डेट!
+पार्टिशन बाय मुळे प्रत्येक खात्याचा हिशोब स्वतंत्र राहतो आणि सम ओव्हर मुळे सुरुवातीपासून आजपर्यंतची चालू शिल्लक अचूक मोजली जाते!
+निकाल बघा: ५००० मधून १२०० गेले ३८०० राहिले, त्यात ८५०० जोडले १२३०० झाले!
+लक्षात ठेवा: रनिंग टोटल्ससाठी नेहमी विंडो ॲग्रीगेट्स वापरा, यामुळे क्वेरी लिनिअर वेळेत धावते!""",
+        "hi": """गोल्डमैन सैक्स और एचडीएफसी बैंक इंटरव्यू का सबसे पसंदीदा सवाल: क्युमुलेटिव रनिंग बैलेंस कैसे निकालें?
+ट्रांजैक्शन टेबल देखिए: अकाउंट ८८२१ में पहले ५००० जमा हुए, फिर १२०० डेबिट, और फिर ८५०० क्रेडिट हुए।
+पुराने सब-क्वेरी तरीके से डेटाबेस धीमा हो जाता है।
+कोड कैसे लिखना है: SUM(amount) OVER (PARTITION BY account_no ORDER BY txn_date)।
+PARTITION BY हर बैंक खाते का हिसाब अलग रखता है, और SUM OVER चालू बैलेंस जोड़ता जाता है!
+रिजल्ट देखिए: ५००० से घटकर ३८०० और फिर बढ़कर १२,३०० बैलेंस एकदम सटीक निकला!
+याद रखें: रनिंग टोटल के लिए हमेशा Window Functions का ही उपयोग करें!""",
+        "en": """Goldman Sachs and HDFC Bank top interview drill: Cumulative Running Account Balance!
+Look at the ledger: Account 8821 has 5000 credit, 1200 debit, then 8500 credit.
+Using correlated subqueries causes catastrophic O(N squared) performance!
+Here is how to write the code: SUM(amount) OVER (PARTITION BY account_no ORDER BY txn_date).
+PARTITION BY keeps each customer ledger strictly isolated while SUM OVER accumulates sequentially!
+The running balance updates seamlessly: 5000 to 3800 to 12300!
+Always remember: Window Functions compute running balances in linear O(N) time!"""
+    },
+    "uber_consecutive_active_days": {
+        "mr": """उबर आणि स्विगीच्या डेटा सायन्स इंटरव्ह्यूमधील लीजेंडरी प्रश्न: सलग ३ दिवस सक्रिय असणारे ड्रायव्हर्स कसे शोधायचे?
+याला एसक्यूएल मध्ये गॅप्स अँड आयलँड्स प्रॉब्लेम म्हणतात!
+इथे युक्ती काय आहे? जेव्हा तारखा सलग असतात, तेव्हा ट्रिप डेट वजा रो नंबर केल्यास एकच स्थिर तारीख मिळते!
+त्यानंतर ग्रुप बाय आयलँड ग्रुप आणि हॅव्हिंग काऊंट ३ पेक्षा जास्त दिल्यास सलग ट्रिप्स पूर्ण केलेले ड्रायव्हर्स अचूक सापडतात!
+अल्गोरिदम डिझाइनच्या दृष्टीने हा एसक्यूएल मधील अत्यंत महत्त्वाचा प्रश्न आहे!""",
+        "hi": """उबर और स्विगी डेटा एनालिस्ट इंटरव्यू का क्लासिक सवाल: लगातार ३ दिन एक्टिव रहने वाले राइडर्स कैसे खोजें?
+इसे SQL में Gaps and Islands समस्या कहते हैं।
+यहाँ लॉजिक समझिए: जब तारीखें लगातार होती हैं, तो trip_date में से ROW_NUMBER घटाने पर एक स्थिर ग्रुप की मिलती है!
+फिर GROUP BY और HAVING COUNT >= 3 लगाने पर लगातार काम करने वाले ड्राइवर्स तुरंत सामने आ जाते हैं!""",
+        "en": """Uber and Swiggy Data Analyst interview drill: Solving the famous Gaps and Islands problem to find drivers active for 3 consecutive days!
+The trick: subtracting ROW_NUMBER() from consecutive dates yields an identical anchor date!
+Grouping by this island key with HAVING COUNT >= 3 isolates consecutive streaks effortlessly!"""
+    },
+    "netflix_top_n_per_category": {
+        "mr": """नेटफ्लिक्स आणि स्पॉटिफायच्या मुलाखतीत सर्वात जास्त विचारला जाणारा प्रश्न: प्रत्येक कॅटेगरीतील टॉप २ शो कसे शोधायचे?
+टेबलमध्ये ॲक्शन, ड्रामा, आणि कॉमेडी अशा विविध कॅटेगरीज आहेत.
+इथे संपूर्ण टेबलवर रँक न लावता आपण वापरणार आहोत: डेन्स रँक ओव्हर पार्टिशन बाय जॉनर, ऑर्डर बाय वॉच अवर्स डीसेंडिंग!
+पार्टिशन बाय मुळे प्रत्येक जॉनरचे स्वतंत्र रँकिंग तयार होते आणि व्हेअर रँक लहान किंवा बरोबर २ दिल्यावर टॉप २ चित्रपट अलगद बाहेर येतात!""",
+        "hi": """नेटफ्लिक्स और स्पॉटिफाय का हाई-यील्ड इंटरव्यू सवाल: हर कैटेगरी में से टॉप २ सबसे ज्यादा देखे गए टाइटल्स कैसे निकालें?
+यहाँ हम DENSE_RANK() OVER (PARTITION BY genre ORDER BY watch_hours DESC) का इस्तेमाल करेंगे।
+PARTITION BY हर जॉनर को अलग पार्टीशन में बांटता है, और WHERE rank <= 2 हर कैटेगरी के टॉप २ टाइटल्स फिल्टर कर देता है!""",
+        "en": """Netflix and Spotify technical interview drill: Finding the Top 2 most streamed titles within every genre!
+We use DENSE_RANK() OVER (PARTITION BY genre ORDER BY watch_hours DESC).
+PARTITION BY segments the ranking per genre without collapsing individual movie rows!"""
+    },
+    "meta_reciprocal_friends": {
+        "mr": """मेटा म्हणजेच फेसबुक आणि लिंक्डइनच्या एसक्यूएल टेस्टमध्ये म्युचुअल फॉलोवर्सच्या जोड्या कशा शोधायच्या?
+जर युजर ए युजर बी ला फॉलो करतो आणि बी देखील ए ला फॉलो करतो, तर ही म्युचुअल फ्रेंडशिप झाली!
+इथे आपण सेल्फ जॉइन वापरणार आहोत. पण एक गोष्ट लक्षात ठेवा: निकालात ए बी आणि बी ए अशा दोनदा नोंदी नकोत!
+म्हणून व्हेअर क्लॉजमध्ये युजर ए लहान युजर बी अशी अट लावल्यास एकच अचूक युनिक जोडी मिळते!""",
+        "hi": """मेटा और लिंक्डइन इंटरव्यू: दो लोग जो एक-दूसरे को फॉलो करते हैं उनकी म्यूचुअल जोड़ी कैसे निकालें?
+यहाँ हम सेल्फ-जॉइन इस्तेमाल करेंगे। डुप्लिकेट रिवर्स जोड़ी रोकने के लिए WHERE user_a < user_b की शर्त लगाई जाती है!""",
+        "en": """Meta and LinkedIn graph interview problem: Finding reciprocal follow connections using a Self-Join!
+Joining user_follows on itself with condition f1.user_id < f1.following_id eliminates redundant mirrored pairs!"""
+    },
+    "amazon_churn_zero_orders": {
+        "mr": """ॲमेझॉनच्या एसक्यूएल राऊंड १ मधील ट्रॅप प्रश्न: ज्या ग्राहकांनी खाते उघडले पण आजपर्यंत एकही खरेदी केली नाही ते कसे शोधायचे?
+९० टक्के मुलं नॉट इन सब-क्वेरी लिहून फसतात! कारण ऑर्डर्स टेबलमध्ये एकही नल व्हॅल्यू असेल तर नॉट इन पूर्ण निकाल रिकामा दाखवते!
+योग्य उत्तर: कस्टमर्स टेबलला ऑर्डर्स टेबलसोबत लेफ्ट जॉइन करा आणि व्हेअर ऑर्डर आयडी इज नल लावा! हा इंटरव्ह्यूअरचा आवडता नियम आहे!""",
+        "hi": """अमेज़ॉन एसक्यूएल इंटरव्यू: वे कस्टमर्स जिन्होंने रजिस्टर किया पर कभी ऑर्डर नहीं दिया!
+यहाँ NOT IN मत लिखिए क्योंकि NULL वैल्यू होने पर NOT IN खाली रिजल्ट देता है।
+हमेशा LEFT JOIN लगाकर WHERE orders.order_id IS NULL का इस्तेमाल करें!""",
+        "en": """Amazon and Flipkart classic trap question: Finding registered customers who never placed an order!
+Why does NOT IN fail? If the orders table contains even a single NULL, NOT IN evaluates to UNKNOWN and returns zero rows!
+The industry standard solution is LEFT JOIN with WHERE order_id IS NULL!"""
+    },
+    "stripe_consecutive_fraud": {
+        "mr": """स्ट्राइप आणि पेपालच्या फ्रॉड डिटेक्शनमधील प्रश्न: एकाच कार्डवरून ५ मिनिटांत सलग दोन मोठे विड्रॉव्हल्स कसे पकडायचे?
+इथे महागडा सेल्फ-जॉइन न वापरता आपण लॅग फंक्शन वापरणार आहोत: लॅग अमाऊंट ओव्हर पार्टिशन बाय कार्ड नंबर!
+लॅग फंक्शन मागील व्यवहाराची रक्कम थेट पुढच्या ओळीत आणून ठेवते, ज्यामुळे फ्रॉड एका सेकंदात पकडला जातो!""",
+        "hi": """स्ट्राइप और पेपाल फ्रॉड डिटेक्शन: एक ही कार्ड से लगातार दो बड़े विड्रॉल कैसे पकड़ें?
+यहाँ हम LAG(amount, 1) OVER (PARTITION BY card_no ORDER BY tx_time) का इस्तेमाल करेंगे। पिछली रकम तुरंत सामने आ जाती है!""",
+        "en": """Stripe and PayPal fraud detection: Detecting consecutive rapid high-value transactions!
+Using LAG(amount, 1) OVER (PARTITION BY card_no ORDER BY tx_time), we pull the previous withdrawal onto the current row to flag anomalies instantly!"""
+    },
+    "zomato_mom_growth": {
+        "mr": """स्विगी आणि झोमॅटोच्या बिझनेस इंटेलिजन्स रिपोर्टिंगमध्ये दर महिन्याची टक्केवारीतील वाढ म्हणजेच मंथ ओव्हर मंथ ग्रोथ कशी काढायची?
+सूत्राप्रमाणे: चालू महिन्याचा रेव्हेन्यू वजा मागील महिन्याचा रेव्हेन्यू, भागिले मागील महिन्याचा रेव्हेन्यू, गुणिले १००!
+इथे मागील महिन्याचा रेव्हेन्यू काढण्यासाठी लॅग टोटल रेव्हेन्यू ओव्हर ऑर्डर बाय मंथ वापरले जाते!""",
+        "hi": """ज़ोमैटो और स्विगी बिज़नेस एनालिटिक्स: Month-over-Month रेवेन्यू ग्रोथ % कैसे निकालें?
+चालू महीने का रेवेन्यू माइनस पिछला रेवेन्यू, डिवाइडेड बाय पिछला रेवेन्यू, गुणा १००। पिछले महीने का रेवेन्यू LAG() से आसानी से निकल आता है!""",
+        "en": """Swiggy and Zomato analytics: Calculating Month-over-Month (MoM) revenue growth percentage!
+We use LAG(total_revenue, 1) OVER (ORDER BY report_month) to access the preceding month's revenue and compute percentage growth!"""
+    }
+}
+
+
+class NeuralTTSEngine:
+    """
+    Enterprise Multilingual Neural TTS Engine with Edge-TTS and ElevenLabs.
+    """
+
+    def __init__(self):
+        self.output_dir = Path("data/audio")
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.voice_map = {
+            "mr": "mr-IN-AarohiNeural",     # Female Marathi Teacher
+            "mr_male": "mr-IN-ManoharNeural", # Male Marathi Teacher
+            "hi": "hi-IN-SwaraNeural",      # Female Hindi
+            "hi_male": "hi-IN-MadhurNeural",  # Male Hindi
+            "en": "en-IN-NeerjaNeural",     # Female Indian English
+            "en_male": "en-IN-PrabhatNeural" # Male Indian English
+        }
+
+    async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
+        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS."""
+        import edge_tts
+        communicate = edge_tts.Communicate(text, voice=voice, rate="+0%", pitch="+0Hz")
+        await communicate.save(str(output_path))
+
+    async def synthesize_async(self, text: str, language: str = "mr", voice_gender: str = "female", custom_filename: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Asynchronously synthesizes text into natural human speech.
+        Tries ElevenLabs first if available, otherwise falls back to Microsoft Edge Neural TTS.
+        """
+        lang = language.lower() if language else "mr"
+        if lang not in ["mr", "hi", "en"]:
+            lang = "mr"
+
+        voice_key = f"{lang}_male" if voice_gender == "male" else lang
+        edge_voice = self.voice_map.get(voice_key, "mr-IN-AarohiNeural")
+
+        fname = custom_filename if custom_filename else f"voice_{lang}_{int(abs(hash(text)) % 10000000)}.mp3"
+        out_path = self.output_dir / fname
+
+        # If already cached, return immediately
+        if out_path.exists() and out_path.stat().st_size > 1000:
+            return {
+                "status": "success",
+                "audio_url": f"/audio/{fname}",
+                "file_path": str(out_path),
+                "provider": "Cache",
+                "language": lang
+            }
+
+        # 1. ElevenLabs Attempt (if available)
+        if elevenlabs_voice.is_available():
+            try:
+                log_event(f"Attempting ElevenLabs synthesis for {lang} ({len(text)} chars)...", component="NeuralTTS")
+                res = elevenlabs_voice.generate_speech(
+                    text=text,
+                    output_filename=fname,
+                    model_id="eleven_multilingual_v2"
+                )
+                if res.get("status") == "success":
+                    return {
+                        "status": "success",
+                        "audio_url": f"/audio/{fname}",
+                        "file_path": res.get("file_path"),
+                        "provider": "ElevenLabs Voice AI",
+                        "language": lang
+                    }
+            except Exception as e:
+                log_event(f"ElevenLabs TTS quota/error ({e}). Falling back to Microsoft Neural TTS...", level="WARNING", component="NeuralTTS")
+
+        # 2. Microsoft Edge Neural TTS (Guaranteed, Free, Unlimited, Human Accents)
+        try:
+            log_event(f"Synthesizing via Microsoft Neural TTS [{edge_voice}]...", component="NeuralTTS")
+            await self._synthesize_edge_tts(text, edge_voice, out_path)
+            if out_path.exists() and out_path.stat().st_size > 1000:
+                log_event(f"Microsoft Neural TTS synthesized successfully: {out_path.name} ({out_path.stat().st_size} bytes)", component="NeuralTTS")
+                return {
+                    "status": "success",
+                    "audio_url": f"/audio/{fname}",
+                    "file_path": str(out_path),
+                    "provider": f"Microsoft Neural TTS ({edge_voice})",
+                    "language": lang
+                }
+        except Exception as e:
+            log_event(f"Microsoft Neural TTS error: {e}", level="ERROR", component="NeuralTTS")
+
+        return {
+            "status": "fallback",
+            "message": "Cloud voice synthesis unavailable. Falling back to browser speech.",
+            "language": lang
+        }
+
+    def synthesize(self, text: str, language: str = "mr", voice_gender: str = "female") -> Dict[str, Any]:
+        """Synchronous wrapper for synthesize_async."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    return pool.submit(asyncio.run, self.synthesize_async(text, language, voice_gender)).result()
+            else:
+                return loop.run_until_complete(self.synthesize_async(text, language, voice_gender))
+        except Exception:
+            return asyncio.run(self.synthesize_async(text, language, voice_gender))
+
+    async def get_preset_audio_async(self, preset_id: str, language: str = "mr") -> Dict[str, Any]:
+        """Returns or synthesizes step-by-step teacher audio for a preset asynchronously."""
+        lang = language.lower() if language in ["mr", "hi", "en"] else "mr"
+        preset = PRESET_SCRIPTS.get(preset_id, PRESET_SCRIPTS["faang_dense_rank_ties"])
+        script = preset.get(lang, preset["mr"])
+
+        fname = f"preset_{preset_id}_{lang}.mp3"
+        out_path = self.output_dir / fname
+
+        if out_path.exists() and out_path.stat().st_size > 1000:
+            return {
+                "status": "success",
+                "audio_url": f"/audio/{fname}",
+                "file_path": str(out_path),
+                "script": script,
+                "provider": "Pre-Rendered Neural Audio"
+            }
+
+        # Synthesize via Neural TTS
+        return await self.synthesize_async(text=script, language=lang, voice_gender="female", custom_filename=fname)
+
+    def get_preset_audio(self, preset_id: str, language: str = "mr") -> Dict[str, Any]:
+        """Synchronous wrapper for get_preset_audio_async."""
+        return asyncio.run(self.get_preset_audio_async(preset_id, language))
+
+
+# Global Singleton instance
+neural_tts = NeuralTTSEngine()
