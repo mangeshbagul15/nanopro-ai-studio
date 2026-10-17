@@ -2213,13 +2213,14 @@ def _get_raw_dashboard_html() -> str:
             border: none !important;
             outline: none !important;
             color: #F8FAFC !important;
-            font-size: 13px !important;
-            line-height: 1.4 !important;
+            font-size: 13.5px !important;
+            line-height: 1.45 !important;
             resize: none !important;
             min-height: 34px !important;
-            max-height: 80px !important;
-            padding: 6px 2px !important;
+            max-height: 130px !important;
+            padding: 6px 4px !important;
             font-family: inherit !important;
+            overflow-y: auto !important;
         }
         .composer-action-btn {
             width: 34px;
@@ -4593,7 +4594,7 @@ def _get_raw_dashboard_html() -> str:
                         <button type="button" id="managerVoiceMicBtn" class="composer-action-btn composer-mic-btn" onclick="toggleManagerVoiceRecording()" title="Speak in Marathi, Hindi, or English">
                             🎙️
                         </button>
-                        <textarea class="composer-textarea" id="managerChatInput" rows="1" placeholder="Type a message or command..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendManagerMessage();}"></textarea>
+                        <textarea class="composer-textarea" id="managerChatInput" rows="1" placeholder="Type a message or command..." onkeydown="handleManagerChatKeydown(event)" oninput="autoResizeTextarea(this)"></textarea>
                         <button type="button" id="managerSendBtn" class="composer-action-btn composer-send-btn" onclick="sendManagerMessage()" title="Send Message">
                             ➤
                         </button>
@@ -4667,14 +4668,14 @@ def _get_raw_dashboard_html() -> str:
                 <!-- Modern Capsule Composer -->
                 <div style="padding:7px 10px; background:rgba(20,16,45,0.98); border-top:1px solid rgba(255,255,255,0.06);">
                     <div class="modern-composer-capsule antigravity-capsule">
-                        <textarea class="composer-textarea" id="antigravityChatInput" rows="1" placeholder="Ask Antigravity to write code, edit files, or sync..." onkeydown="handleAntigravityKeydown(event)"></textarea>
+                        <textarea class="composer-textarea" id="antigravityChatInput" rows="1" placeholder="Ask Antigravity to write code, edit files, or sync..." onkeydown="handleAntigravityKeydown(event)" oninput="autoResizeTextarea(this)"></textarea>
                         <button type="button" id="antigravitySendBtn" class="composer-action-btn composer-send-btn antigravity-send" onclick="sendAntigravityMessage()" title="Send Message">
                             ⚡
                         </button>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:9.5px; color:#A78BFA; padding:0 6px;">
                         <span>DeepMind Reasoning + GitHub Bridge</span>
-                        <span style="color:#64748B;">Enter to send</span>
+                        <span style="color:#64748B;">Enter to send • Shift+Enter newline (Mobile: Tap ⚡)</span>
                     </div>
                 </div>
             </div>
@@ -11818,19 +11819,39 @@ function navigateHistory(direction) {
         // Initialize on load
         
         /* --- AI MANAGER CHAT INTERACTION --- */
-        
-        // Enter key to send in managerChatInput (Shift+Enter for newline)
-        document.addEventListener('DOMContentLoaded', () => {
-            const mInput = document.getElementById('managerChatInput');
-            if (mInput) {
-                mInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendManagerMessage();
-                    }
-                });
+        function isMobileClient() {
+            return (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1024));
+        }
+        window.isMobileClient = isMobileClient;
+
+        function autoResizeTextarea(textareaEl, maxH = 130) {
+            if (!textareaEl) return;
+            textareaEl.style.height = 'auto';
+            const scrollH = textareaEl.scrollHeight;
+            const targetH = Math.min(Math.max(scrollH, 36), maxH);
+            textareaEl.style.height = targetH + 'px';
+        }
+        window.autoResizeTextarea = autoResizeTextarea;
+
+        function handleManagerChatKeydown(event) {
+            const isMob = isMobileClient();
+            // On Mobile: Enter key creates a new line for multi-line messages, does NOT send!
+            if (isMob) {
+                if (event.key === 'Enter') {
+                    setTimeout(() => autoResizeTextarea(document.getElementById('managerChatInput')), 10);
+                    return;
+                }
+            } else {
+                // On Desktop/Laptop: Enter (without Shift) sends; Shift+Enter creates a new line
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendManagerMessage();
+                    return;
+                }
             }
-        });
+            setTimeout(() => autoResizeTextarea(document.getElementById('managerChatInput')), 10);
+        }
+        window.handleManagerChatKeydown = handleManagerChatKeydown;
 
         let isManagerGenerating = false;
         let managerChatHistory = [];
@@ -12231,7 +12252,8 @@ function navigateHistory(direction) {
             const input = document.getElementById('managerChatInput');
             const msg = (typeof overrideMsg === 'string' && overrideMsg.trim()) ? overrideMsg.trim() : (input ? input.value.trim() : '');
             if (!msg) {
-                alert('Please enter a message for the AI Manager.');
+                // Return silently without any intrusive popup
+                if (input) input.focus();
                 return;
             }
 
@@ -12240,7 +12262,7 @@ function navigateHistory(direction) {
 
             if (input) {
                 input.value = '';
-                input.style.height = '46px';
+                input.style.height = '36px';
             }
 
             appendUserMessage(msg);
@@ -12503,10 +12525,22 @@ function navigateHistory(direction) {
         window.quickFillAntigravityPrompt = quickFillAntigravityPrompt;
 
         function handleAntigravityKeydown(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                sendAntigravityMessage();
+            const isMob = (typeof isMobileClient === 'function') ? isMobileClient() : (window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent));
+            // On Mobile: Enter key creates a new line for multi-line messages, does NOT send!
+            if (isMob) {
+                if (event.key === 'Enter') {
+                    setTimeout(() => autoResizeTextarea(document.getElementById('antigravityChatInput')), 10);
+                    return;
+                }
+            } else {
+                // On Desktop/Laptop: Enter (without Shift) sends; Shift+Enter creates a new line
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendAntigravityMessage();
+                    return;
+                }
             }
+            setTimeout(() => autoResizeTextarea(document.getElementById('antigravityChatInput')), 10);
         }
         window.handleAntigravityKeydown = handleAntigravityKeydown;
 
@@ -12601,7 +12635,8 @@ function navigateHistory(direction) {
             const input = document.getElementById('antigravityChatInput');
             const msg = (typeof overrideMsg === 'string' && overrideMsg.trim()) ? overrideMsg.trim() : (input ? input.value.trim() : '');
             if (!msg) {
-                alert('Please enter a question or coding instruction for Antigravity.');
+                // Return silently without any intrusive popup
+                if (input) input.focus();
                 return;
             }
 
@@ -12610,7 +12645,7 @@ function navigateHistory(direction) {
 
             if (input) {
                 input.value = '';
-                input.style.height = '46px';
+                input.style.height = '36px';
             }
 
             // Append user message

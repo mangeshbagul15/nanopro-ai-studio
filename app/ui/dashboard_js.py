@@ -313,9 +313,16 @@ function quickFillPrompt(txt) {
 }
 
 function handleChatKeydown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendManagerMessage();
+    const isMobile = (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1024));
+    if (isMobile) {
+        if (e.key === 'Enter') {
+            return; // Allow newline on mobile
+        }
+    } else {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendManagerMessage();
+        }
     }
 }
 
