@@ -20,9 +20,10 @@ def get_sql_video_workspace_html() -> str:
                 </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ 18/18 APIs Live</span>
-                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical</span>
-                <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⏱️ Max 60 Sec</span>
+                <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ 21/21 APIs Live</span>
+                <span class="status-pill" style="background: rgba(236, 72, 153, 0.15); border: 1px solid #EC4899; color: #EC4899; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🛡️ 100% Watermark-Free</span>
+                <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🇮🇳 ZP व ग्रामीण विद्यार्थी मिशन</span>
+                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical (60s)</span>
                 <span class="status-pill" style="background: rgba(139, 92, 246, 0.15); border: 1px solid #8B5CF6; color: #8B5CF6; font-size: 11px; padding: 4px 10px; border-radius: 20px;">💻 0% Server Load</span>
             </div>
         </div>
@@ -37,9 +38,11 @@ def get_sql_video_workspace_html() -> str:
                     <span style="font-size: 11px; color: #38BDF8; background: rgba(56,189,248,0.1); padding: 2px 8px; border-radius: 6px;">AI Prompt Engine</span>
                 </div>
 
-                <!-- Banking Presets Dropdown -->
-                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Bank / Enterprise Interview Preset</label>
+                <!-- Rural & Banking Presets Dropdown -->
+                <label class="input-label" style="font-size: 12px; color: #94A3B8; font-weight: 600;">Scenario Preset (ZP School / Kirana / Bank)</label>
                 <select class="studio-input" id="sqlShortPresetSelect" onchange="handleSqlPresetChange(this.value)" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px;">
+                    <option value="zp_school_ranking" selected>🏫 ZP शाळा निकाल: समान गुण असताना २ रा क्रमांक (DENSE_RANK)</option>
+                    <option value="kirana_dukan_hisob">🛒 गावचे किराणा दुकान: चालू उधारी व शिल्लक हिशोब (PARTITION BY)</option>
                     <option value="bank_running_total">🏦 HDFC / SBI: Cumulative Running Balance (SUM OVER PARTITION BY)</option>
                     <option value="bank_consecutive_fraud">💳 ICICI / Axis: Fraud Detection - Consecutive Withdrawals (LAG OVER)</option>
                     <option value="bank_salary_rank">📈 Goldman / Morgan: 2nd Highest Salary No Ties (DENSE_RANK)</option>
@@ -192,14 +195,17 @@ def get_sql_video_workspace_html() -> str:
                     <div style="color: #64748B; text-align: center; padding: 12px;">Click [Test Query] to verify output on real bank rows...</div>
                 </div>
 
-                <!-- Direct Download Box (0 Server Load) -->
+                <!-- Direct Download Box (0 Server Load & 100% Zero-Watermark) -->
                 <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #10B981; margin-bottom: 4px;">🎬 1-CLICK 9:16 VIDEO EXPORT</div>
-                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 12px;">Exports standard 9:16 (1080x1920) MP4 / WebM directly from your browser. <b>Server CPU load: 0%</b>.</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #10B981;">🎬 1-CLICK 9:16 VIDEO EXPORT</span>
+                        <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(236,72,153,0.4);">🛡️ 100% Zero-Watermark</span>
+                    </div>
+                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 12px;">Exports crisp 9:16 (1080x1920) WebM/MP4 directly from browser with <b>anti-watermark circular crop</b> and Tiranga educational banner. <b>Server CPU load: 0%</b>.</div>
 
                     <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px; font-weight: 800; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 6px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <span style="font-size: 16px;">📥</span>
-                        <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (MP4/WebM)</span>
+                        <span id="exportBtnLabel">DOWNLOAD 9:16 VIDEO (CLEAN &amp; NO WATERMARK)</span>
                     </button>
                     
                     <div id="exportProgressBar" style="display:none; margin-top: 10px;">

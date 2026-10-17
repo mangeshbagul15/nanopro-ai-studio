@@ -156,6 +156,88 @@ WHERE rnk = 2;""",
         "explanation_minglish": "Top 2 chi salary same asel tar RANK() rank 3 var jump karte. Pan DENSE_RANK() rank skip karat nahi ani accurate 2nd salary bhetate!",
         "explanation_hinglish": "Agar top 2 salary same hai to RANK() rank 3 pe jump karega. But DENSE_RANK() rank skip nahi karta aur exact 2nd salary nikalta hai!",
         "pro_tip": "💡 Pro Tip: When ties are possible, DENSE_RANK() is the only standard-compliant solution!"
+    },
+    {
+        "id": "zp_school_ranking",
+        "title": "🏫 ZP शाळा निकाल: समान गुण असताना २ रा क्रमांक कसा काढायचा? (DENSE_RANK)",
+        "difficulty": "Easy",
+        "hook_mr": "🚨 २ विद्यार्थ्यांना समान ९२% गुण असतील तर पुढचा नंबर ३ रा की २ रा? ९९% मुलं इथे चुकतात!",
+        "hook_hi": "🚨 2 स्टूडेंट्स के बराबर 92% मार्क्स हों तो 2nd रैंक कैसे निकालें? DENSE_RANK का कमाल!",
+        "hook_en": "🚨 Handling duplicate top scores in school rankings using DENSE_RANK!",
+        "hook_minglish": "🚨 2 mulanna same marks asel tar pudhcha number 2 ra ki 3 ra? ZP school SQL test!",
+        "hook_hinglish": "🚨 2 students ke same marks hone par 2nd rank kaise nikale? ZP school rank formula!",
+        "question": "गावातील शाळेच्या परीक्षेत २ मुलांना एकसारखे ९२% गुण मिळाले. तर २ रा क्रमांक शोधण्यासाठी DENSE_RANK() चा वापर करा.",
+        "table_name": "school_results",
+        "schema_sql": """CREATE TABLE IF NOT EXISTS school_results (
+    roll_no INTEGER PRIMARY KEY,
+    student_name TEXT,
+    marks REAL
+);
+INSERT OR REPLACE INTO school_results VALUES 
+(1, 'राहुल पाटील', 92.0),
+(2, 'सुमित शिंदे', 92.0),
+(3, 'स्नेहल जाधव', 88.0),
+(4, 'अमोल पवार', 85.0),
+(5, 'प्रिया मोरे', 81.0);""",
+        "solution_sql": """WITH RankedResults AS (
+    SELECT 
+        student_name,
+        marks,
+        DENSE_RANK() OVER (ORDER BY marks DESC) AS rank_no
+    FROM school_results
+)
+SELECT student_name, marks, rank_no
+FROM RankedResults
+WHERE rank_no = 2;""",
+        "arrow_target": "DENSE_RANK() OVER (ORDER BY marks DESC)",
+        "explanation_mr": "इथे राहुल आणि सुमित दोघांना ९२% असल्याने दोघांना १ ला क्रमांक मिळतो. जर आपण RANK() वापरले तर पुढचा नंबर ३ रा होतो, ज्यामुळे २ रा क्रमांक कोणालाच मिळत नाही! पण DENSE_RANK() नंबरिंग न तोडता स्नेहलला अचूक २ रा क्रमांक देते!",
+        "explanation_hi": "यहाँ दो स्टूडेंट्स के 92% होने पर दोनों को 1st रैंक मिलती है। DENSE_RANK() रैंक स्किप नहीं करता और 88% वाले को सही 2nd रैंक देता है!",
+        "explanation_en": "When multiple students share the highest score, DENSE_RANK() assigns rank 1 to both and correctly assigns rank 2 to the next student without skipping numbers!",
+        "explanation_minglish": "Rahul ani Sumit donhina 92% aslyane 1st rank bhetli. DENSE_RANK mule number skip hot nahi ani 88% valya Snehal la 2nd rank bhetate!",
+        "explanation_hinglish": "Rahul aur Sumit dono ko 1st rank mili. DENSE_RANK rank skip nahi karta aur Snehal ko exact 2nd rank deta hai!",
+        "pro_tip": "💡 Pro Tip: शाळेचे निकाल किंवा क्रीडा स्पर्धांमध्ये समान गुण असताना नेहमी DENSE_RANK() वापरावे!"
+    },
+    {
+        "id": "kirana_dukan_hisob",
+        "title": "🛒 गावचे किराणा दुकान: ग्राहकाची चालू उधारी व शिल्लक हिशोब (Running Balance)",
+        "difficulty": "Medium",
+        "hook_mr": "🚨 गावच्या किराणा दुकानाचा हिशोब SQL ने कसा करायचा? प्रत्येक ग्राहकाची चालू उधारी कशी काढायची?",
+        "hook_hi": "🚨 किराना दुकान का उधारी-जमा हिसाब SQL Window Function से कैसे निकालें?",
+        "hook_en": "🚨 Village General Store: Customer-wise Cumulative Credit & Balance Tracking!",
+        "hook_minglish": "🚨 Kirana dukan cha udhari hisob SQL ne kasa thevaycha? Running balance formula!",
+        "hook_hinglish": "🚨 Kirana store ka udhari balance SQL window function se calculate kare!",
+        "question": "गावातील किराणा दुकानातील ग्राहकांच्या उधारी व जमा नोंदीवरून प्रत्येक ग्राहकाची चालू शिल्लक रक्कम (Running Balance) काढा.",
+        "table_name": "kirana_transactions",
+        "schema_sql": """CREATE TABLE IF NOT EXISTS kirana_transactions (
+    bill_no INTEGER PRIMARY KEY,
+    customer_name TEXT,
+    bill_date TEXT,
+    amount REAL,
+    txn_type TEXT
+);
+INSERT OR REPLACE INTO kirana_transactions VALUES 
+(1, 'मारुती काका', '2026-10-01', 1500.0, 'उधारी'),
+(2, 'मारुती काका', '2026-10-05', -500.0, 'जमा'),
+(3, 'मारुती काका', '2026-10-10', 800.0, 'उधारी'),
+(4, 'तात्या पाटील', '2026-10-02', 3000.0, 'उधारी'),
+(5, 'तात्या पाटील', '2026-10-08', -1500.0, 'जमा');""",
+        "solution_sql": """SELECT 
+    customer_name,
+    bill_date,
+    amount,
+    SUM(amount) OVER (
+        PARTITION BY customer_name 
+        ORDER BY bill_date 
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS current_balance
+FROM kirana_transactions;""",
+        "arrow_target": "PARTITION BY customer_name",
+        "explanation_mr": "इथे 'PARTITION BY customer_name' मुळे मारुती काका आणि तात्या पाटील यांचा उधारीचा हिशोब वेगवेगळा राहतो आणि एकत्र मिसळत नाही! आणि 'SUM(amount) OVER' मुळे सुरुवातीपासून आजपर्यंत किती उधारी बाकी आहे ते अचूक समजते!",
+        "explanation_hi": "यहाँ 'PARTITION BY customer_name' से हर ग्राहक का हिसाब अलग पार्टीशन में रहता है, और 'SUM() OVER' से चालू उधारी बैलेंस निकल आता है!",
+        "explanation_en": "PARTITION BY customer_name keeps each customer's account separate, while SUM() OVER sequentially accumulates the net balance!",
+        "explanation_minglish": "PARTITION BY mule Maruti Kaka ani Tatya Patil yaancha hisob vegla rahto ani current udhari clear diste!",
+        "explanation_hinglish": "PARTITION BY se har customer ka hisab alag rehta hai aur running balance step by step calculate hota hai!",
+        "pro_tip": "💡 Pro Tip: प्रत्येक गावातील किंवा छोट्या उद्योगातील हिशोबासाठी PARTITION BY हा सर्वात सोपा आणि शक्तिशाली नियम आहे!"
     }
 ]
 

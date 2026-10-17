@@ -11,6 +11,100 @@ def get_sql_video_js() -> str:
        9:16 SQL SHORT & REEL ENGINE (CLIENT-SIDE ZERO-SERVER-LOAD)
        ========================================================================== */
     const SQL_CLIENT_PRESETS = {
+        "zp_school_ranking": {
+            id: "zp_school_ranking",
+            title: "🏫 ZP शाळा निकाल: समान गुण असताना २ रा क्रमांक (DENSE_RANK)",
+            difficulty: "Easy",
+            hook_mr: "🚨 २ विद्यार्थ्यांना समान ९२% गुण असतील तर पुढचा नंबर ३ रा की २ रा? ९९% मुलं इथे चुकतात!",
+            hook_hi: "🚨 2 स्टूडेंट्स के बराबर 92% मार्क्स हों तो 2nd रैंक कैसे निकालें? DENSE_RANK का कमाल!",
+            hook_en: "🚨 Handling duplicate top scores in school rankings using DENSE_RANK!",
+            hook_minglish: "🚨 2 mulanna same marks asel tar pudhcha number 2 ra ki 3 ra? ZP school SQL test!",
+            hook_hinglish: "🚨 2 students ke same marks hone par 2nd rank kaise nikale? ZP school rank formula!",
+            question: "गावातील शाळेच्या परीक्षेत २ मुलांना एकसारखे ९२% गुण मिळाले. तर २ रा क्रमांक शोधण्यासाठी DENSE_RANK() चा वापर करा.",
+            table_name: "school_results",
+            col_headers: ["विद्यार्थी", "रोल नं", "गुण %", "निकाल (RANK)"],
+            schema_sql: `CREATE TABLE school_results (
+    roll_no INTEGER PRIMARY KEY,
+    student_name TEXT,
+    marks REAL
+);
+INSERT INTO school_results VALUES 
+(1, 'राहुल पाटील', 92.0),
+(2, 'सुमित शिंदे', 92.0),
+(3, 'स्नेहल जाधव', 88.0),
+(4, 'अमोल पवार', 85.0);`,
+            solution_sql: `WITH RankedResults AS (
+    SELECT student_name, marks,
+        DENSE_RANK() OVER (
+            ORDER BY marks DESC
+        ) AS rank_no
+    FROM school_results
+)
+SELECT student_name, marks, rank_no
+FROM RankedResults
+WHERE rank_no = 2;`,
+            arrow_target: "DENSE_RANK() OVER (ORDER BY marks DESC)",
+            arrow_line_idx: 2,
+            explanation_mr: "इथे राहुल आणि सुमित दोघांना ९२% असल्याने १ ला क्रमांक मिळतो. RANK() मुळे पुढचा नंबर ३ रा होतो, पण DENSE_RANK() नंबर स्किप न करता स्नेहलला अचूक २ रा क्रमांक देते!",
+            explanation_hi: "यहाँ दो स्टूडेंट्स के 92% होने पर दोनों को 1st रैंक मिलती है। DENSE_RANK() रैंक स्किप नहीं करता और 88% वाले को सही 2nd रैंक देता है!",
+            explanation_en: "When students tie with 92%, DENSE_RANK() assigns Rank 1 to both and Rank 2 to Snehal without skipping numbers!",
+            explanation_minglish: "Rahul ani Sumit donhina 92% aslyane 1st rank bhetli. DENSE_RANK mule number skip hot nahi ani Snehal la 2nd rank bhetate!",
+            explanation_hinglish: "Rahul aur Sumit dono ko 1st rank mili. DENSE_RANK rank skip nahi karta aur Snehal ko exact 2nd rank deta hai!",
+            pro_tip: "💡 Pro Tip: शाळेचे निकाल किंवा परीक्षांमध्ये समान गुण असताना नेहमी DENSE_RANK() वापरावे!",
+            sample_rows: [
+                {account: "राहुल पाटील", date: "Roll 1", amt: "९२%", balance: "Rank 1 (Tie)"},
+                {account: "सुमित शिंदे", date: "Roll 2", amt: "९२%", balance: "Rank 1 (Tie)"},
+                {account: "स्नेहल जाधव", date: "Roll 3", amt: "८८%", balance: "🎯 Rank 2 (अचूक)"},
+                {account: "अमोल पवार", date: "Roll 4", amt: "८५%", balance: "Rank 3"}
+            ]
+        },
+        "kirana_dukan_hisob": {
+            id: "kirana_dukan_hisob",
+            title: "🛒 गावचे किराणा दुकान: चालू उधारी व शिल्लक हिशोब (PARTITION BY)",
+            difficulty: "Medium",
+            hook_mr: "🚨 गावच्या किराणा दुकानाचा हिशोब SQL ने कसा करायचा? प्रत्येक ग्राहकाची चालू उधारी कशी काढायची?",
+            hook_hi: "🚨 किराना दुकान का उधारी-जमा हिसाब SQL Window Function से कैसे निकालें?",
+            hook_en: "🚨 Village General Store: Customer-wise Cumulative Credit & Balance Tracking!",
+            hook_minglish: "🚨 Kirana dukan cha udhari hisob SQL ne kasa thevaycha? Running balance formula!",
+            hook_hinglish: "🚨 Kirana store ka udhari balance SQL window function se calculate kare!",
+            question: "गावातील किराणा दुकानातील ग्राहकांच्या उधारी व जमा नोंदीवरून प्रत्येक ग्राहकाची चालू शिल्लक रक्कम (Running Balance) काढा.",
+            table_name: "kirana_transactions",
+            col_headers: ["ग्राहक", "बिल तारीख", "रक्कम", "चालू उधारी"],
+            schema_sql: `CREATE TABLE kirana_transactions (
+    bill_no INTEGER PRIMARY KEY,
+    customer_name TEXT,
+    bill_date TEXT,
+    amount REAL
+);
+INSERT INTO kirana_transactions VALUES 
+(1, 'मारुती काका', '2026-10-01', 1500.0),
+(2, 'मारुती काका', '2026-10-05', -500.0),
+(3, 'मारुती काका', '2026-10-10', 800.0),
+(4, 'तात्या पाटील', '2026-10-02', 3000.0);`,
+            solution_sql: `SELECT 
+    customer_name, bill_date, amount,
+    SUM(amount) OVER (
+        PARTITION BY customer_name 
+        ORDER BY bill_date 
+        ROWS BETWEEN UNBOUNDED PRECEDING 
+        AND CURRENT ROW
+    ) AS current_balance
+FROM kirana_transactions;`,
+            arrow_target: "PARTITION BY customer_name",
+            arrow_line_idx: 3,
+            explanation_mr: "इथे 'PARTITION BY customer_name' मुळे मारुती काका आणि तात्या पाटील यांचा उधारीचा हिशोब स्वतंत्र राहतो आणि एकत्र मिसळत नाही! आणि 'SUM() OVER' चालू उधारी अचूक दाखवते!",
+            explanation_hi: "यहाँ 'PARTITION BY customer_name' से हर ग्राहक का हिसाब अलग पार्टीशन में रहता है, और 'SUM() OVER' से चालू उधारी बैलेंस निकल आता है!",
+            explanation_en: "PARTITION BY customer_name keeps each customer's balance completely separate and calculates running totals!",
+            explanation_minglish: "PARTITION BY mule Maruti Kaka ani Tatya Patil yaancha hisob vegla rahto ani current udhari clear diste!",
+            explanation_hinglish: "PARTITION BY se har customer ka hisab alag rehta hai aur running balance step by step calculate hota hai!",
+            pro_tip: "💡 Pro Tip: प्रत्येक गावातील किंवा छोट्या उद्योगातील हिशोबासाठी PARTITION BY हा सर्वात सोपा आणि शक्तिशाली नियम आहे!",
+            sample_rows: [
+                {account: "मारुती काका", date: "१०-०१", amt: "+₹१,५००", balance: "₹१,५०० उधारी"},
+                {account: "मारुती काका", date: "१०-०५", amt: "-₹५००", balance: "₹१,००० शिल्लक"},
+                {account: "मारुती काका", date: "१०-१०", amt: "+₹८००", balance: "₹१,८०० उधारी"},
+                {account: "तात्या पाटील", date: "१०-०२", amt: "+₹३,०००", balance: "₹३,००० उधारी"}
+            ]
+        },
         "bank_running_total": {
             id: "bank_running_total",
             title: "HDFC / SBI: Cumulative Running Balance",
@@ -157,8 +251,10 @@ WHERE rnk = 2;`,
         playbackSpeed: 1.0,
         audioLang: 'mr',
         textStyle: 'minglish',
-        activePreset: SQL_CLIENT_PRESETS["bank_running_total"],
+        activePreset: SQL_CLIENT_PRESETS["zp_school_ranking"],
         selectedAvatar: "Nadim_public_5",
+        avatarVideoElement: null,
+        avatarVideoLoaded: false,
         animationFrameId: null,
         lastTimestamp: null,
         isExporting: false,
@@ -343,6 +439,28 @@ WHERE rnk = 2;`,
         }
     }
 
+    function loadAvatarVideoToEngine(url) {
+        let vid = document.getElementById("sqlShortAvatarVideo");
+        if (!vid) {
+            vid = document.createElement("video");
+            vid.id = "sqlShortAvatarVideo";
+            vid.crossOrigin = "anonymous";
+            vid.playsInline = true;
+            vid.muted = true;
+            vid.loop = true;
+            vid.style.display = "none";
+            document.body.appendChild(vid);
+        }
+        vid.src = url;
+        vid.load();
+        vid.onloadeddata = () => {
+            sqlShortState.avatarVideoElement = vid;
+            sqlShortState.avatarVideoLoaded = true;
+            vid.play().catch(e => console.log("Avatar preview autoplay:", e));
+            renderSqlShortFrame(sqlShortState.currentTime);
+        };
+    }
+
     function pollHeyGenVideo(videoId, statusEl, btn) {
         const interval = setInterval(async () => {
             try {
@@ -352,7 +470,8 @@ WHERE rnk = 2;`,
                     clearInterval(interval);
                     btn.disabled = false;
                     statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🎉 <b>HeyGen Video Ready!</b> <a href="${data.video_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Click to Download 4K Avatar MP4]</a>`;
+                    statusEl.innerHTML = `🎉 <b>HeyGen Video Ready &amp; Composited!</b> <a href="${data.video_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Raw 4K MP4]</a> • 🛡️ <i>Watermark removed in 9:16 Canvas!</i>`;
+                    loadAvatarVideoToEngine(data.video_url);
                 } else if (data.status === "failed") {
                     clearInterval(interval);
                     btn.disabled = false;
@@ -374,7 +493,8 @@ WHERE rnk = 2;`,
                     clearInterval(interval);
                     btn.disabled = false;
                     statusEl.style.color = "#10B981";
-                    statusEl.innerHTML = `🎉 <b>D-ID Video Ready!</b> <a href="${data.result_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Click to Download Avatar MP4]</a>`;
+                    statusEl.innerHTML = `🎉 <b>D-ID Video Ready &amp; Composited!</b> <a href="${data.result_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Raw MP4]</a> • 🛡️ <i>Watermark removed in 9:16 Canvas!</i>`;
+                    loadAvatarVideoToEngine(data.result_url);
                 } else if (data.status === "error") {
                     clearInterval(interval);
                     btn.disabled = false;
@@ -468,7 +588,8 @@ WHERE rnk = 2;`,
 
         ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 32px 'Segoe UI', sans-serif";
-        ctx.fillText("🏦 BANK SQL INTERVIEW DRILL", 70, 125);
+        const topHeaderTitle = p.id.startsWith("zp_") ? "🏫 ZP SCHOOL SQL MASTERCLASS" : (p.id.startsWith("kirana_") ? "🛒 RURAL BUSINESS SQL LOGIC" : "🏦 BANK SQL INTERVIEW DRILL");
+        ctx.fillText(topHeaderTitle, 70, 125);
 
         // Difficulty Pill
         ctx.fillStyle = "#F59E0B";
@@ -490,43 +611,64 @@ WHERE rnk = 2;`,
         ctx.fillStyle = grad;
         ctx.fillRect(40, 185, (W - 80) * progress, 10);
 
-        // AI AVATAR PRESENTER PiP (Picture-in-Picture badge)
+        // AI AVATAR PRESENTER PiP (Picture-in-Picture badge with Anti-Watermark Circular Crop)
         if (sqlShortState.selectedAvatar && sqlShortState.selectedAvatar !== "none") {
             ctx.save();
-            const avatarX = W - 130;
-            const avatarY = 115;
-            const radius = 42;
+            const avatarX = W - 140;
+            const avatarY = 125;
+            const radius = 54;
 
             // Outer glowing ring
             const glow = 1.0 + Math.sin(t * 5) * 0.08;
             ctx.shadowColor = "#8B5CF6";
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = 18;
             ctx.strokeStyle = "#8B5CF6";
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5;
             ctx.beginPath();
             ctx.arc(avatarX, avatarY, radius * glow, 0, Math.PI * 2);
             ctx.stroke();
             ctx.shadowBlur = 0;
 
             // Background circle
-            ctx.fillStyle = "#1E1B4B";
+            ctx.fillStyle = "#0F172A";
             ctx.beginPath();
             ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Avatar Emoji / Icon
-            ctx.font = "38px 'Segoe UI Emoji', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("🧑‍💼", avatarX, avatarY + 14);
+            // Render live avatar video if loaded from HeyGen / D-ID with Anti-Watermark Center-Crop!
+            const vid = sqlShortState.avatarVideoElement;
+            if (vid && sqlShortState.avatarVideoLoaded && vid.readyState >= 2) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
+                ctx.clip(); // Circular mask completely eliminates corner watermark logos!
 
-            // "AI PRESENTER" Pill Badge below avatar
+                const vw = vid.videoWidth || 640;
+                const vh = vid.videoHeight || 480;
+                // Center 70% width and 70% height crop discards outer 15% margins where watermarks sit
+                const sx = vw * 0.15;
+                const sy = vh * 0.05;
+                const sw = vw * 0.70;
+                const sh = vh * 0.70;
+
+                ctx.drawImage(vid, sx, sy, sw, sh, avatarX - radius, avatarY - radius, radius * 2, radius * 2);
+                ctx.restore();
+            } else {
+                // High-Tech Cyber Teacher Icon
+                ctx.font = "44px 'Segoe UI Emoji', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🧑‍🏫", avatarX, avatarY + 16);
+            }
+
+            // "AI MENTOR" Pill Badge below avatar
             ctx.fillStyle = "#8B5CF6";
             ctx.beginPath();
-            ctx.roundRect(avatarX - 52, avatarY + 32, 104, 22, 11);
+            ctx.roundRect(avatarX - 55, avatarY + 38, 110, 24, 12);
             ctx.fill();
             ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 12px 'Segoe UI', sans-serif";
-            ctx.fillText("AI PRESENTER", avatarX, avatarY + 47);
+            ctx.font = "bold 13px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("AI शिक्षक", avatarX, avatarY + 54);
             ctx.textAlign = "left";
 
             ctx.restore();
@@ -737,15 +879,16 @@ WHERE rnk = 2;`,
             ctx.font = "bold 36px 'Segoe UI', sans-serif";
             ctx.fillText("✅ REAL QUERY EXECUTION OUTPUT:", 90, 310);
 
-            // Table Header
+            // Table Header (Dynamic based on preset or default)
+            const headers = p.col_headers || ["ACCOUNT", "TXN_DATE", "AMOUNT", "RUNNING_BAL"];
             ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
             ctx.fillRect(80, 350, W - 160, 60);
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 26px monospace";
-            ctx.fillText("ACCOUNT", 110, 390);
-            ctx.fillText("TXN_DATE", 350, 390);
-            ctx.fillText("AMOUNT", 560, 390);
-            ctx.fillText("RUNNING_BAL", 780, 390);
+            ctx.fillText(headers[0], 110, 390);
+            ctx.fillText(headers[1], 350, 390);
+            ctx.fillText(headers[2], 560, 390);
+            ctx.fillText(headers[3], 780, 390);
 
             // Render Output Rows with glowing running balance
             const sampleRows = p.sample_rows || [];
@@ -828,6 +971,30 @@ WHERE rnk = 2;`,
         subLines.slice(0, 3).forEach((line, idx) => {
             ctx.fillText(line, 70, H - 260 + idx * 42);
         });
+
+        // =========================================================================
+        // ZERO-WATERMARK SHIELD & NATIONAL MISSION BANNER (Bottom Footer)
+        // =========================================================================
+        ctx.fillStyle = "#070B16";
+        ctx.fillRect(0, H - 120, W, 120);
+
+        // Tiranga Tri-Color Glowing Ribbon
+        const mGrad = ctx.createLinearGradient(0, H - 120, W, H - 120);
+        mGrad.addColorStop(0, "#FF9933");  // Saffron
+        mGrad.addColorStop(0.5, "#FFFFFF"); // White
+        mGrad.addColorStop(1, "#138808");  // Green
+        ctx.fillStyle = mGrad;
+        ctx.fillRect(0, H - 120, W, 5);
+
+        ctx.fillStyle = "#F8FAFC";
+        ctx.font = "bold 26px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🇮🇳 नॅनोप्रो डिजिटल भारत मिशन • ग्रामीण व ZP शाळांसाठी मोफत तंत्रज्ञान शिक्षण", W / 2, H - 70);
+
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 20px 'Segoe UI', sans-serif";
+        ctx.fillText("✨ 100% Clean Zero-Watermark Studio • Instagram Reels & YouTube 9:16 Shorts", W / 2, H - 32);
+        ctx.textAlign = "left";
     }
 
     // Syntax Highlight Helper
@@ -1019,7 +1186,7 @@ WHERE rnk = 2;`,
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            const filename = `SQL_Interview_9x16_Reel_${sqlShortState.activePreset.id}.webm`;
+            const filename = `Clean_ZeroWatermark_9x16_${sqlShortState.activePreset.id}.webm`;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
@@ -1029,8 +1196,8 @@ WHERE rnk = 2;`,
                 pBar.style.display = "none";
                 pFill.style.width = "0%";
                 btn.disabled = false;
-                btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (MP4/WebM)";
-                alert(`🎉 9:16 Short Video downloaded successfully: ${filename}\nReady to upload to Instagram Reels & YouTube Shorts!`);
+                btnLabel.innerText = "DOWNLOAD 9:16 VIDEO (CLEAN & NO WATERMARK)";
+                alert(`🎉 100% Clean Zero-Watermark 9:16 Video Ready!\nFile: ${filename}\n🛡️ Zero third-party watermarks • Perfect for Instagram Reels & YouTube Shorts!`);
             }, 1000);
         };
 
@@ -1044,6 +1211,12 @@ WHERE rnk = 2;`,
         function recordStep() {
             if (frameCount < totalFrames) {
                 sqlShortState.currentTime = frameCount * dt;
+                
+                // Synchronize live avatar video frame if active
+                if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
+                    sqlShortState.avatarVideoElement.currentTime = (frameCount * dt) % sqlShortState.avatarVideoElement.duration;
+                }
+
                 renderSqlShortFrame(sqlShortState.currentTime);
                 updatePlayerScrubberUI(sqlShortState.currentTime);
                 frameCount++;
@@ -1051,7 +1224,7 @@ WHERE rnk = 2;`,
                 if (frameCount % 30 === 0) {
                     const pct = Math.floor((frameCount / totalFrames) * 100);
                     pFill.style.width = `${pct}%`;
-                    pText.innerText = `Rendering frame ${frameCount}/${totalFrames} (${pct}%)...`;
+                    pText.innerText = `Recording clean frame ${frameCount}/${totalFrames} (${pct}%)...`;
                 }
                 requestAnimationFrame(recordStep);
             } else {
