@@ -1137,6 +1137,38 @@ async def api_research_query(req: ResearchRequest):
     res = research_agent.research_topic(req.query, context_details=f"Scope: {req.scope}")
     return JSONResponse(res)
 
+# --- SERPAPI SEARCH ROUTES (GOOGLE, IMAGES, PRODUCTS) ---
+@app.get("/api/search/google")
+async def api_search_google(q: str = Query(...), num: int = Query(5)):
+    """Executes live Google Search using SerpAPI with Knowledge Graph."""
+    from app.core.serp_search import serp_api_engine
+    try:
+        data = serp_api_engine.search(query=q, num=num)
+        return JSONResponse({"status": "success", "query": q, "data": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/search/images")
+async def api_search_images(q: str = Query(...), num: int = Query(10)):
+    """Executes live Google Images Search using SerpAPI."""
+    from app.core.serp_search import serp_api_engine
+    try:
+        images = serp_api_engine.search_images(query=q, num=num)
+        return JSONResponse({"status": "success", "query": q, "count": len(images), "images": images})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/search/products")
+async def api_search_products(q: str = Query(...), domain: str = Query("amazon.in"), num: int = Query(10)):
+    """Executes live Amazon Product Search using SerpAPI."""
+    from app.core.serp_search import serp_api_engine
+    try:
+        products = serp_api_engine.search_products(query=q, amazon_domain=domain, num=num)
+        return JSONResponse({"status": "success", "query": q, "domain": domain, "count": len(products), "products": products})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 @app.post("/api/telegram/dispatch")
 async def api_telegram_dispatch():
     """Manually or automatically triggers daily tech digest delivery to Telegram."""
