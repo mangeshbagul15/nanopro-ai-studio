@@ -3507,6 +3507,29 @@ async def api_cyber_shodan_info():
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# ABUSEIPDB IP THREAT INTELLIGENCE & BLACKLIST (API #13)
+# -------------------------------------------------------------
+@app.get("/api/cyber/abuseip/check")
+async def api_cyber_abuseip_check(ip: str = "8.8.8.8", max_age: int = 90):
+    from app.core.abuseipdb_engine import abuseipdb_engine
+    try:
+        data = abuseipdb_engine.check_ip(ip, max_age_in_days=max_age)
+        data["markdown_report"] = abuseipdb_engine.get_markdown_report(ip)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/cyber/abuseip/blacklist")
+async def api_cyber_abuseip_blacklist(confidence: int = 100, limit: int = 25):
+    from app.core.abuseipdb_engine import abuseipdb_engine
+    try:
+        data = abuseipdb_engine.get_blacklist(confidence_minimum=confidence, limit=limit)
+        return JSONResponse({"status": "success", "total_returned": len(data), "blacklist": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================

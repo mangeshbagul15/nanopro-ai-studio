@@ -773,7 +773,32 @@ class CybersecurityLabEngine:
         from app.core.shodan_engine import shodan_engine
         return shodan_engine.get_api_info()
 
+    # -------------------------------------------------------------
+    # 12. ABUSEIPDB IP THREAT INTELLIGENCE & BLACKLIST AUDITING
+    # -------------------------------------------------------------
+    def check_abuse_ip(self, ip: str, max_age_in_days: int = 90, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Queries AbuseIPDB API v2 for IP reputation, attack history, and confidence score.
+        """
+        from app.core.abuseipdb_engine import abuseipdb_engine
+        return abuseipdb_engine.check_ip(ip, max_age_in_days=max_age_in_days, verbose=verbose)
+
+    def get_abuse_ip_markdown(self, ip: str) -> str:
+        """
+        Returns Markdown formatted IP reputation report from AbuseIPDB.
+        """
+        from app.core.abuseipdb_engine import abuseipdb_engine
+        return abuseipdb_engine.get_markdown_report(ip)
+
+    def get_abuse_ip_blacklist(self, confidence_minimum: int = 100, limit: int = 25) -> List[Dict[str, Any]]:
+        """
+        Retrieves global malicious IP blacklist from AbuseIPDB.
+        """
+        from app.core.abuseipdb_engine import abuseipdb_engine
+        return abuseipdb_engine.get_blacklist(confidence_minimum=confidence_minimum, limit=limit)
+
 cybersecurity_engine = CybersecurityLabEngine()
 cyber_lab_engine = cybersecurity_engine
+
 
 
