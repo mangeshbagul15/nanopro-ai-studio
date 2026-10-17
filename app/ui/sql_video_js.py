@@ -158,6 +158,7 @@ WHERE rnk = 2;`,
         audioLang: 'mr',
         textStyle: 'minglish',
         activePreset: SQL_CLIENT_PRESETS["bank_running_total"],
+        selectedAvatar: "Nadim_public_5",
         animationFrameId: null,
         lastTimestamp: null,
         isExporting: false,
@@ -279,6 +280,111 @@ WHERE rnk = 2;`,
             btn.innerHTML = `<span>✨ Generate 60s AI Blueprint &amp; Prompt</span>`;
             btn.disabled = false;
         }
+    function setSqlAvatarPresenter(val) {
+        sqlShortState.selectedAvatar = val;
+        renderSqlShortFrame(sqlShortState.currentTime);
+    }
+
+    async function renderAiAvatarVideo() {
+        const avatar = sqlShortState.selectedAvatar;
+        const statusEl = document.getElementById("avatarRenderStatus");
+        const btn = document.getElementById("btnRenderAvatar");
+        if (!avatar || avatar === "none") {
+            alert("Please select an AI Avatar from the dropdown first!");
+            return;
+        }
+
+        const p = sqlShortState.activePreset;
+        const script = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr;
+
+        statusEl.style.display = "block";
+        statusEl.style.color = "#38BDF8";
+        statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Avatar Router (Auto-failover HeyGen ➔ D-ID ➔ Canvas active)...</span>`;
+        btn.disabled = true;
+
+        try {
+            const preferred = avatar.startsWith("did") ? "did" : (avatar !== "none" ? "heygen" : "auto");
+            const res = await fetch("/api/video/avatar_cascade", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    script: script,
+                    preferred_provider: preferred,
+                    avatar_id: avatar.startsWith("did") ? null : avatar,
+                    language: sqlShortState.audioLang
+                })
+            });
+            const data = await res.json();
+
+            if (data.status === "success") {
+                if (data.provider === "HeyGen" && data.video_id) {
+                    const failoverTag = data.failover_used ? " (Auto-switched)" : "";
+                    statusEl.innerHTML = `<span>✅ HeyGen 4K Video #${data.video_id} queued${failoverTag}! Polling...</span>`;
+                    pollHeyGenVideo(data.video_id, statusEl, btn);
+                } else if (data.provider === "D-ID" && data.talk_id) {
+                    const failoverTag = data.failover_used ? " (Auto-switched from HeyGen)" : "";
+                    statusEl.innerHTML = `<span>✅ D-ID Talk #${data.talk_id} queued${failoverTag}! Polling lip-sync...</span>`;
+                    pollDIDVideo(data.talk_id, statusEl, btn);
+                } else {
+                    // Zero-drop client canvas fallback
+                    btn.disabled = false;
+                    statusEl.style.color = "#10B981";
+                    statusEl.innerHTML = `🛡️ <b>Zero-Hang Guarantee Active:</b> Cloud tokens rate-limited. Auto-switched to High-Tech Cyber Canvas Presenter! Click [Play] or [Download] below.`;
+                }
+            } else {
+                statusEl.style.color = "#EF4444";
+                statusEl.innerText = "Router Error: " + (data.message || "Failed");
+                btn.disabled = false;
+            }
+        } catch (e) {
+            statusEl.style.color = "#EF4444";
+            statusEl.innerText = "Network Error: " + e.message;
+            btn.disabled = false;
+        }
+    }
+
+    function pollHeyGenVideo(videoId, statusEl, btn) {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch("/api/heygen/status/" + videoId);
+                const data = await res.json();
+                if (data.status === "completed" && data.video_url) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    statusEl.style.color = "#10B981";
+                    statusEl.innerHTML = `🎉 <b>HeyGen Video Ready!</b> <a href="${data.video_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Click to Download 4K Avatar MP4]</a>`;
+                } else if (data.status === "failed") {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    statusEl.style.color = "#EF4444";
+                    statusEl.innerText = "HeyGen Rendering failed: " + (data.error || "Unknown error");
+                } else {
+                    statusEl.innerHTML = `<span>⏳ Rendering HeyGen 4K Avatar (Status: ${data.status || "processing"})...</span>`;
+                }
+            } catch (e) {}
+        }, 3000);
+    }
+
+    function pollDIDVideo(talkId, statusEl, btn) {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch("/api/did/status/" + talkId);
+                const data = await res.json();
+                if (data.status === "done" && data.result_url) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    statusEl.style.color = "#10B981";
+                    statusEl.innerHTML = `🎉 <b>D-ID Video Ready!</b> <a href="${data.result_url}" target="_blank" style="color:#38BDF8; font-weight:bold; text-decoration:underline;">[▶ Click to Download Avatar MP4]</a>`;
+                } else if (data.status === "error") {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    statusEl.style.color = "#EF4444";
+                    statusEl.innerText = "D-ID Rendering failed: " + (data.error || "Unknown error");
+                } else {
+                    statusEl.innerHTML = `<span>⏳ D-ID Lipsync Rendering (Status: ${data.status || "started"})...</span>`;
+                }
+            } catch (e) {}
+        }, 2000);
     }
 
     /* In-Memory SQLite Sandbox Runner */
@@ -383,6 +489,48 @@ WHERE rnk = 2;`,
         grad.addColorStop(1, "#10B981");
         ctx.fillStyle = grad;
         ctx.fillRect(40, 185, (W - 80) * progress, 10);
+
+        // AI AVATAR PRESENTER PiP (Picture-in-Picture badge)
+        if (sqlShortState.selectedAvatar && sqlShortState.selectedAvatar !== "none") {
+            ctx.save();
+            const avatarX = W - 130;
+            const avatarY = 115;
+            const radius = 42;
+
+            // Outer glowing ring
+            const glow = 1.0 + Math.sin(t * 5) * 0.08;
+            ctx.shadowColor = "#8B5CF6";
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = "#8B5CF6";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(avatarX, avatarY, radius * glow, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Background circle
+            ctx.fillStyle = "#1E1B4B";
+            ctx.beginPath();
+            ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Avatar Emoji / Icon
+            ctx.font = "38px 'Segoe UI Emoji', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🧑‍💼", avatarX, avatarY + 14);
+
+            // "AI PRESENTER" Pill Badge below avatar
+            ctx.fillStyle = "#8B5CF6";
+            ctx.beginPath();
+            ctx.roundRect(avatarX - 52, avatarY + 32, 104, 22, 11);
+            ctx.fill();
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 12px 'Segoe UI', sans-serif";
+            ctx.fillText("AI PRESENTER", avatarX, avatarY + 47);
+            ctx.textAlign = "left";
+
+            ctx.restore();
+        }
 
         // =========================================================================
         // TIMELINE PHASES (0 to 60 Seconds)

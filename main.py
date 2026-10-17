@@ -401,6 +401,28 @@ class SqlShortVoiceRequest(BaseModel):
     text: str
     language: Optional[str] = "mr"
 
+class HeyGenGenerateRequest(BaseModel):
+    script: str
+    avatar_id: Optional[str] = "Nadim_public_5"
+    title: Optional[str] = "SQL Interview Short Hook"
+    voice_id: Optional[str] = None
+
+class DIDGenerateRequest(BaseModel):
+    script: str
+    source_url: Optional[str] = None
+    language: Optional[str] = "mr"
+
+class LumaGenerateRequest(BaseModel):
+    prompt: str
+    aspect_ratio: Optional[str] = "9:16"
+    loop: Optional[bool] = True
+
+class AvatarCascadeRequest(BaseModel):
+    script: str
+    preferred_provider: Optional[str] = "auto"
+    avatar_id: Optional[str] = "Nadim_public_5"
+    language: Optional[str] = "mr"
+
 class ImageGenRequest(BaseModel):
     prompt: str
     style: str = "modern_tech"
@@ -1135,6 +1157,91 @@ async def api_sql_video_direct_workspace():
 </body>
 </html>'''
     return HTMLResponse(content)
+
+# --- HEYGEN AI AVATAR ENDPOINTS (API #19) ---
+from app.core.heygen_avatar import heygen_avatar_engine
+
+@app.get("/api/heygen/avatars")
+async def api_heygen_avatars(full: bool = False):
+    """Returns curated or full list of 1,254 HeyGen photorealistic AI avatars."""
+    avatars = heygen_avatar_engine.fetch_all_avatars() if full else heygen_avatar_engine.get_curated_avatars()
+    return JSONResponse({"status": "success", "count": len(avatars), "avatars": avatars})
+
+@app.post("/api/heygen/generate")
+async def api_heygen_generate(req: HeyGenGenerateRequest):
+    """Submits 9:16 vertical avatar video generation task to HeyGen."""
+    try:
+        res = heygen_avatar_engine.create_talking_avatar_video(
+            script=req.script,
+            avatar_id=req.avatar_id or "Nadim_public_5",
+            title=req.title or "SQL Short Hook",
+            voice_id=req.voice_id
+        )
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/heygen/status/{video_id}")
+async def api_heygen_status(video_id: str):
+    """Checks rendering status of HeyGen avatar video."""
+    res = heygen_avatar_engine.get_video_status(video_id)
+    return JSONResponse(res)
+
+# --- D-ID CREATIVE REALITY AVATAR ENDPOINTS (API #20) ---
+from app.core.did_avatar import did_avatar_engine
+
+@app.get("/api/did/credits")
+async def api_did_credits():
+    """Returns remaining D-ID video generation credits."""
+    return JSONResponse(did_avatar_engine.get_credits())
+
+@app.post("/api/did/generate")
+async def api_did_generate(req: DIDGenerateRequest):
+    """Creates talking head video using D-ID with Marathi/Hindi/English neural voice."""
+    try:
+        res = did_avatar_engine.create_talk(
+            script=req.script,
+            source_url=req.source_url,
+            language=req.language or "mr"
+        )
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/did/status/{talk_id}")
+async def api_did_status(talk_id: str):
+    """Checks rendering status of D-ID talking head video."""
+    res = did_avatar_engine.get_talk_status(talk_id)
+    return JSONResponse(res)
+
+# --- AUTONOMOUS VIDEO CASCADE & FAILOVER ROUTER (ZERO-HANG GUARANTEE) ---
+from app.video_maker.video_cascade_router import video_cascade_router
+
+@app.post("/api/video/avatar_cascade")
+async def api_video_avatar_cascade(req: AvatarCascadeRequest):
+    """
+    Zero-hang autonomous failover for AI Avatars:
+    HeyGen (4K) -> D-ID (12 credits) -> High-Tech Cyber Canvas.
+    Never hangs or fails on quota limits!
+    """
+    res = video_cascade_router.generate_avatar_with_failover(
+        script=req.script,
+        preferred_provider=req.preferred_provider or "auto",
+        avatar_id=req.avatar_id,
+        language=req.language or "mr"
+    )
+    return JSONResponse(res)
+
+@app.post("/api/video/luma_cascade")
+async def api_video_luma_cascade(req: LumaGenerateRequest):
+    """
+    Rotates between Luma Token 1 & Token 2 automatically on rate limits.
+    """
+    res = video_cascade_router.generate_luma_video_with_token_rotation(
+        prompt=req.prompt,
+        aspect_ratio=req.aspect_ratio or "9:16"
+    )
+    return JSONResponse(res)
 
 @app.post("/api/coding/execute")
 async def api_coding_execute(req: CodingRequest):

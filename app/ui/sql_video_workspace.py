@@ -73,6 +73,30 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
+                <!-- AI Avatar Presenter Selector (HeyGen & D-ID Integration) -->
+                <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #818CF8; text-transform: uppercase; letter-spacing: 0.5px;">🧑‍💼 AI Talking Avatar Presenter (HeyGen &amp; D-ID)</span>
+                        <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">20/20 APIs</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                        <select class="studio-input" id="sqlAvatarSelect" onchange="setSqlAvatarPresenter(this.value)" style="flex: 1; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 6px; font-size: 11px;">
+                            <option value="none">🚫 No Avatar (Cyber Code Only)</option>
+                            <option value="Nadim_public_5" selected>🧑‍💼 Nadim (HeyGen Banker Lead - 4K)</option>
+                            <option value="Wayne_20240711">👨‍💼 Wayne (HeyGen Wall St Exec)</option>
+                            <option value="Daisy-inskirt-20220818">👩‍💼 Daisy (HeyGen Tech Lead)</option>
+                            <option value="did_adam">🧑‍💻 Adam (D-ID Creative Reality)</option>
+                            <option value="did_emma">👩‍💼 Emma (D-ID Fintech Anchor)</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn btn-secondary" onclick="renderAiAvatarVideo()" id="btnRenderAvatar" style="flex: 1; font-size: 11px; padding: 6px; color: #818CF8; border-color: rgba(99,102,241,0.4);">
+                            🎬 Generate AI Avatar Hook Video (HeyGen / D-ID)
+                        </button>
+                    </div>
+                    <div id="avatarRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
+                </div>
+
                 <!-- Generate Blueprint Button -->
                 <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 6px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span>✨ Generate 60s AI Blueprint &amp; Prompt</span>
