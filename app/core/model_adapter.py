@@ -61,6 +61,8 @@ class ProviderCircuitBreaker:
             return "gemini"
         if "deepseek" in p:
             return "deepseek"
+        if "openrouter" in p:
+            return "openrouter"
         if "ollama" in p:
             return "ollama"
         if "remote" in p:
@@ -817,6 +819,91 @@ class RemoteAPIAdapter(ModelProviderAdapter):
             raise e
 
 
+class OpenRouterAdapter(ModelProviderAdapter):
+    """
+    Adapter for OpenRouter Multi-Model Cloud API (Aggregates 400+ frontier & open-source AI models).
+    Provides access to Llama 3.3, Qwen 2.5, Nemotron, Mistral, and Claude/GPT fallback models.
+    """
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.circuit_breaker = circuit_breaker
+
+    def is_available(self) -> bool:
+        k = self.api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        return bool(k and k.startswith("sk-or-"))
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self.api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        if not k:
+            raise ValueError("OpenRouter API Key is not configured. Set OPENROUTER_API_KEY environment variable.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("openrouter"):
+            raise ConnectionError("OpenRouter API circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_clean = model if model and ("/" in model or ":free" in model) else "liquid/lfm-2.5-2.6b:free"
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload = {
+            "model": m_clean,
+            "messages": messages
+        }
+        if schema:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {k}",
+                    "HTTP-Referer": "https://nanopro-ai-studio.onrender.com",
+                    "X-Title": "NanoPro AI Studio"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content = data["choices"][0]["message"]["content"] or ""
+                content = content.strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                token_count = data.get("usage", {}).get("completion_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+                tps = round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("openrouter")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "openrouter",
+                    "mode": "openrouter-cloud"
+                })
+                return content, telemetry
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("openrouter", e)
+            raise e
+
+
 class ModelManager:
     """
     Centralized Multi-Model Intelligent Router for Mangesh Nano Pro AI Studio.
@@ -828,6 +915,7 @@ class ModelManager:
         self.groq = GroqAdapter(circuit_breaker=self.circuit_breaker)
         self.gemini = GeminiAdapter(circuit_breaker=self.circuit_breaker)
         self.deepseek = DeepSeekAdapter(circuit_breaker=self.circuit_breaker)
+        self.openrouter = OpenRouterAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
         self.remote = RemoteAPIAdapter(circuit_breaker=self.circuit_breaker)
 
@@ -846,6 +934,7 @@ class ModelManager:
         self.model_metadata: Dict[str, Dict[str, Any]] = {
             "deepseek-chat": {"role": "DeepSeek-V3 Flagship Coding & Intelligence", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Multi-language Code (~1.1s)"},
             "deepseek-reasoner": {"role": "DeepSeek-R1 Chain-of-Thought Reasoning Engine", "vram_mb": 0, "strength": "State-of-the-Art Deep Logic & Math (~2.2s)"},
+            "openrouter/free": {"role": "OpenRouter 400+ Multi-Model Cloud Aggregator", "vram_mb": 0, "strength": "Instant Access to 400+ Frontier Models (~1.5s)"},
             "openai/gpt-oss-120b": {"role": "Flagship 120B Reasoning & Multilingual (Groq LPU)", "vram_mb": 0, "strength": "State-of-the-Art Reasoning (Sub-2s)"},
             "qwen/qwen3.8-27b": {"role": "LPU Ultra-Fast Code & SQL Engine (Groq LPU)", "vram_mb": 0, "strength": "Sub-Second Code Generation (~500ms)"},
             "openai/gpt-oss-20b": {"role": "Lightning Conversational Dialogue (Groq LPU)", "vram_mb": 0, "strength": "Sub-Second Natural Chat (~700ms)"},
@@ -920,7 +1009,12 @@ class ModelManager:
             if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
                 return self.deepseek, "deepseek-cloud"
 
-        # 4. Deterministic Local Ollama models
+        # 4. OpenRouter Cloud models (or explicit models with :free tag, or openrouter prefix)
+        if "openrouter" in m_lower or (self.openrouter.is_available() and ":free" in m_lower):
+            if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
+                return self.openrouter, "openrouter-cloud"
+
+        # 5. Deterministic Local Ollama models
         is_local = (
             ":" in model
             or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "mistral", "codellama"])
@@ -929,9 +1023,11 @@ class ModelManager:
         if is_local:
             return self.ollama, "ollama"
 
-        # 5. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 6. Fallback based on availability & circuit breaker for unknown/custom model names
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             return self.deepseek, "deepseek-cloud"
+        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
+            return self.openrouter, "openrouter-cloud"
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             return self.groq, "groq-lpu"
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
@@ -946,6 +1042,8 @@ class ModelManager:
     def get_preferred_adapter(self) -> Tuple[ModelProviderAdapter, str]:
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             return self.deepseek, "deepseek-cloud"
+        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
+            return self.openrouter, "openrouter-cloud"
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             return self.groq, "groq-lpu"
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
@@ -981,6 +1079,12 @@ class ModelManager:
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
             for m in base_list:
                 if "gemini" in m and m not in effective:
+                    effective.append(m)
+
+        # 4. Include OpenRouter models if available and circuit not OPEN
+        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
+            for m in base_list:
+                if ("openrouter" in m or ":free" in m) and m not in effective:
                     effective.append(m)
 
         # 3. Include installed Ollama models from cache without blocking failover cascade
