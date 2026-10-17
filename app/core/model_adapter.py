@@ -63,6 +63,8 @@ class ProviderCircuitBreaker:
             return "deepseek"
         if "openrouter" in p:
             return "openrouter"
+        if "mistral" in p or "codestral" in p:
+            return "mistral"
         if "ollama" in p:
             return "ollama"
         if "remote" in p:
@@ -904,6 +906,101 @@ class OpenRouterAdapter(ModelProviderAdapter):
             raise e
 
 
+class MistralAdapter(ModelProviderAdapter):
+    """
+    Adapter for Mistral AI & Codestral API (Flagship European AI, Reasoning, and Code Generation).
+    Features specialized software engineering models: codestral-latest, mistral-large-latest, and mistral-small-latest.
+    """
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("MISTRAL_API_KEY", "")
+        self.base_url = "https://api.mistral.ai/v1"
+        self.circuit_breaker = circuit_breaker
+
+    def is_available(self) -> bool:
+        k = self.api_key or os.environ.get("MISTRAL_API_KEY", "")
+        return bool(k and k.startswith("mstrl_"))
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self.api_key or os.environ.get("MISTRAL_API_KEY", "")
+        if not k:
+            raise ValueError("Mistral API Key is not configured. Set MISTRAL_API_KEY environment variable.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("mistral"):
+            raise ConnectionError("Mistral API circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_lower = (model or "").lower()
+        if "codestral" in m_lower or "code" in m_lower:
+            m_clean = "codestral-latest"
+        elif "large" in m_lower:
+            m_clean = "mistral-large-latest"
+        elif "small" in m_lower or "nemo" in m_lower:
+            m_clean = "mistral-small-latest"
+        elif model and not (":" in model or "/" in model):
+            m_clean = model
+        else:
+            m_clean = "codestral-latest"
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: Dict[str, Any] = {
+            "model": m_clean,
+            "messages": messages
+        }
+        if schema:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {k}",
+                    "Accept": "application/json"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content = data["choices"][0]["message"]["content"] or ""
+                content = content.strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                token_count = data.get("usage", {}).get("completion_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+                tps = round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("mistral")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "mistral",
+                    "mode": "mistral-cloud"
+                })
+                return content, telemetry
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("mistral", e)
+            raise e
+
+
 class ModelManager:
     """
     Centralized Multi-Model Intelligent Router for Mangesh Nano Pro AI Studio.
@@ -916,22 +1013,26 @@ class ModelManager:
         self.gemini = GeminiAdapter(circuit_breaker=self.circuit_breaker)
         self.deepseek = DeepSeekAdapter(circuit_breaker=self.circuit_breaker)
         self.openrouter = OpenRouterAdapter(circuit_breaker=self.circuit_breaker)
+        self.mistral = MistralAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
         self.remote = RemoteAPIAdapter(circuit_breaker=self.circuit_breaker)
 
         # Task-specific capability routing hierarchy
         self.task_routing: Dict[str, List[str]] = {
-            "coding": ["deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
-            "dialogue": ["deepseek-chat", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
-            "research": ["deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
+            "coding": ["codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
+            "dialogue": ["deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
+            "data_analyst": ["codestral-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
+            "research": ["mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
             "price_tracking": ["openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
-            "learning": ["deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
-            "general": ["deepseek-chat", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
+            "learning": ["codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
+            "general": ["codestral-latest", "deepseek-chat", "mistral-large-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
         }
 
         # Model metadata registry
         self.model_metadata: Dict[str, Dict[str, Any]] = {
+            "codestral-latest": {"role": "Mistral Codestral Flagship Code & SQL Intelligence", "vram_mb": 0, "strength": "European State-of-the-Art Code & Logic (~1.2s)"},
+            "mistral-large-latest": {"role": "Mistral Large Multilingual Reasoning Flagship", "vram_mb": 0, "strength": "Frontier Multilingual Reasoning & Math (~1.5s)"},
+            "mistral-small-latest": {"role": "Mistral Small Lightning Assistant", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Efficiency (~700ms)"},
             "deepseek-chat": {"role": "DeepSeek-V3 Flagship Coding & Intelligence", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Multi-language Code (~1.1s)"},
             "deepseek-reasoner": {"role": "DeepSeek-R1 Chain-of-Thought Reasoning Engine", "vram_mb": 0, "strength": "State-of-the-Art Deep Logic & Math (~2.2s)"},
             "openrouter/free": {"role": "OpenRouter 400+ Multi-Model Cloud Aggregator", "vram_mb": 0, "strength": "Instant Access to 400+ Frontier Models (~1.5s)"},
@@ -1014,18 +1115,25 @@ class ModelManager:
             if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
                 return self.openrouter, "openrouter-cloud"
 
-        # 5. Deterministic Local Ollama models
+        # 5. Deterministic Mistral & Codestral Cloud models
+        if ("codestral" in m_lower or "mistral-large" in m_lower or "mistral-small" in m_lower or "mistral-medium" in m_lower or "open-mistral" in m_lower or m_lower.startswith("mistral/")):
+            if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+                return self.mistral, "mistral-cloud"
+
+        # 6. Deterministic Local Ollama models
         is_local = (
             ":" in model
-            or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "mistral", "codellama"])
+            or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "codellama"])
             or any(k in m_lower for k in ["llama3.2", "qwen2.5", "phi4-mini", "gemma3", "sqlcoder"])
         )
         if is_local:
             return self.ollama, "ollama"
 
-        # 6. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 7. Fallback based on availability & circuit breaker for unknown/custom model names
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             return self.deepseek, "deepseek-cloud"
+        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+            return self.mistral, "mistral-cloud"
         if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
             return self.openrouter, "openrouter-cloud"
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
@@ -1042,6 +1150,8 @@ class ModelManager:
     def get_preferred_adapter(self) -> Tuple[ModelProviderAdapter, str]:
         if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
             return self.deepseek, "deepseek-cloud"
+        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+            return self.mistral, "mistral-cloud"
         if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
             return self.openrouter, "openrouter-cloud"
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
@@ -1069,25 +1179,31 @@ class ModelManager:
                 if "deepseek" in m and m not in effective:
                     effective.append(m)
 
-        # 2. Include Groq models if available and circuit not OPEN
+        # 2. Include Mistral & Codestral models if available and circuit not OPEN
+        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+            for m in base_list:
+                if ("codestral" in m or "mistral" in m) and m not in effective:
+                    effective.append(m)
+
+        # 3. Include Groq models if available and circuit not OPEN
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             for m in base_list:
                 if ("gpt-oss" in m or "qwen3.8" in m) and m not in effective:
                     effective.append(m)
 
-        # 3. Include Gemini models if available and circuit not OPEN
+        # 4. Include Gemini models if available and circuit not OPEN
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
             for m in base_list:
                 if "gemini" in m and m not in effective:
                     effective.append(m)
 
-        # 4. Include OpenRouter models if available and circuit not OPEN
+        # 5. Include OpenRouter models if available and circuit not OPEN
         if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
             for m in base_list:
                 if ("openrouter" in m or ":free" in m) and m not in effective:
                     effective.append(m)
 
-        # 3. Include installed Ollama models from cache without blocking failover cascade
+        # 6. Include installed Ollama models from cache without blocking failover cascade
         installed = self.ollama._cached_models[1] if (self.ollama._cached_models and (time.time() - self.ollama._cached_models[0] < 60.0)) else []
         if installed:
             matched_installed = []
