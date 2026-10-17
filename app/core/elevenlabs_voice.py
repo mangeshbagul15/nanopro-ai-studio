@@ -150,3 +150,4 @@ class ElevenLabsVoiceEngine:
 
 # Global Singleton instance
 elevenlabs_voice_engine = ElevenLabsVoiceEngine()
+elevenlabs_voice = elevenlabs_voice_engine

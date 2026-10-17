@@ -5,6 +5,9 @@ Mangesh Nano Pro AI Studio - Central UI Dashboard Templates
 def get_dashboard_html() -> str:
     from app.ui.auth_components import get_auth_injection, get_user_management_view_html, get_anti_fouc_head_injection
     from app.ui.admin_mobile_hub import get_admin_mobile_hub_html
+    from app.ui.sql_video_workspace import get_sql_video_workspace_html
+    from app.ui.sql_video_js import get_sql_video_js
+
     raw = _get_raw_dashboard_html()
     head_shield = get_anti_fouc_head_injection()
     processed = raw.replace("</head>", head_shield + "\n</head>")
@@ -13,6 +16,19 @@ def get_dashboard_html() -> str:
         get_user_management_view_html() + "\n" + get_admin_mobile_hub_html()
     )
     processed = processed.replace("<body>", "<body>\n" + get_auth_injection() + "\n")
+
+    # Inject 9:16 SQL Short Video Studio directly inside the SQL Video Workspace
+    # while preserving existing components below it
+    sql_workspace_html = get_sql_video_workspace_html()
+    processed = processed.replace(
+        '<div class="workspace-view" id="view-sql_video">',
+        '<div class="workspace-view" id="view-sql_video">\n' + sql_workspace_html
+    )
+
+    # Inject SQL Short Video Client-Side JavaScript Engine
+    sql_js = get_sql_video_js()
+    processed = processed.replace("</body>", sql_js + "\n</body>")
+
     return processed
 
 def _get_raw_dashboard_html() -> str:

@@ -388,6 +388,19 @@ class MetadataRequest(BaseModel):
 class AudioProbeRequest(BaseModel):
     path: str
 
+class SqlShortPromptRequest(BaseModel):
+    question: str
+    difficulty: Optional[str] = "Medium"
+    language: Optional[str] = "mr"
+
+class SqlShortSandboxRequest(BaseModel):
+    schema_sql: str
+    query_sql: str
+
+class SqlShortVoiceRequest(BaseModel):
+    text: str
+    language: Optional[str] = "mr"
+
 class ImageGenRequest(BaseModel):
     prompt: str
     style: str = "modern_tech"
@@ -1057,6 +1070,71 @@ async def api_generate_image(req: ImageGenRequest):
     """Generates an image/thumbnail card via ImageCreationAgent."""
     res = image_creation_agent.generate_image(req.prompt, style=req.style, width=req.width, height=req.height)
     return JSONResponse(res)
+
+# --- 9:16 SQL SHORT VIDEO WORKSPACE ENDPOINTS ---
+from app.video_maker.sql_short_engine import sql_short_engine
+
+@app.get("/api/sql_video/presets")
+async def api_sql_video_presets():
+    """Returns high-yield banking SQL interview presets."""
+    return JSONResponse({"status": "success", "presets": sql_short_engine.get_presets()})
+
+@app.post("/api/sql_video/generate_prompt")
+async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
+    """Generates 60-second viral Short/Reel creation blueprint with 3s hook, syntax timeline, and arrow target."""
+    res = sql_short_engine.generate_short_prompt(
+        topic_or_question=req.question,
+        difficulty=req.difficulty or "Medium",
+        language=req.language or "mr"
+    )
+    return JSONResponse(res)
+
+@app.post("/api/sql_video/run_sandbox")
+async def api_sql_video_run_sandbox(req: SqlShortSandboxRequest):
+    """Executes SQL in an ephemeral in-memory SQLite sandbox with zero server load (<2ms)."""
+    res = sql_short_engine.execute_sandbox_sql(
+        schema_sql=req.schema_sql,
+        query_sql=req.query_sql
+    )
+    return JSONResponse(res)
+
+@app.post("/api/sql_video/synthesize_voice")
+async def api_sql_video_synthesize_voice(req: SqlShortVoiceRequest):
+    """Synthesizes high-fidelity voiceover using ElevenLabs Voice AI."""
+    audio_path = sql_short_engine.synthesize_voiceover(
+        text=req.text,
+        language=req.language or "mr"
+    )
+    if audio_path:
+        return JSONResponse({"status": "success", "audio_path": audio_path})
+    return JSONResponse({"status": "fallback", "message": "Voiceover ready via browser Web Speech API"})
+
+@app.get("/workspace/sql-video", response_class=HTMLResponse)
+async def api_sql_video_direct_workspace():
+    """Serves direct standalone view for the 9:16 SQL Short Video Studio."""
+    from app.ui.sql_video_workspace import get_sql_video_workspace_html
+    from app.ui.sql_video_js import get_sql_video_js
+    content = f'''<!DOCTYPE html>
+<html>
+<head>
+    <title>9:16 SQL Short Video Studio — Mangesh Nano Pro AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{ margin:0; padding:20px; background:#060A14; color:#F8FAFC; font-family:'Segoe UI',system-ui,sans-serif; }}
+        .btn {{ padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; }}
+        .btn-primary {{ background:#38BDF8; color:#000; border:none; }}
+        .btn-secondary {{ background:#1E2D4A; color:#F8FAFC; border:1px solid #283C62; }}
+        .btn-secondary.active {{ background:#38BDF8; color:#000; }}
+        .studio-input {{ background:#070B16; border:1px solid #283C62; color:#F8FAFC; border-radius:6px; padding:6px; }}
+        .code-editor {{ font-family:monospace; }}
+    </style>
+</head>
+<body>
+    {get_sql_video_workspace_html()}
+    {get_sql_video_js()}
+</body>
+</html>'''
+    return HTMLResponse(content)
 
 @app.post("/api/coding/execute")
 async def api_coding_execute(req: CodingRequest):
