@@ -561,7 +561,7 @@ SELECT
             **res_meta
         }
 
-    def chat_interact(self, user_message: str, session_id: str = "default", action: Optional[str] = None, plan_id: Optional[str] = None) -> Dict[str, Any]:
+    def chat_interact(self, user_message: str, session_id: str = "default", action: Optional[str] = None, plan_id: Optional[str] = None, device: str = "mobile") -> Dict[str, Any]:
         """
         Continuous JARVIS-style conversation workflow:
         1. Store user message in history
@@ -1984,9 +1984,10 @@ Data Engineering करिअर आणि आधुनिक लेकहाऊ
                 context_clean.append(f"{h['sender'].upper()}: {msg_txt}")
             context_str = "\n".join(context_clean[-4:])
 
+            mob_instruction = "\n- IMPORTANT: User is on a compact MOBILE phone. Keep the answer SHORT, concise, and bite-sized (2-4 bullet points max). Avoid large text blocks. Keep it interactive like a real chat conversation.\n" if device == "mobile" else ""
             try:
                 ai_reply, model_used, _ = model_manager.execute_with_fallback(
-                    prompt=f"Recent Conversation:\n{context_str}\n\nUSER'S LATEST MESSAGE:\n{user_message}",
+                    prompt=f"Recent Conversation:\n{context_str}\n{mob_instruction}\nUSER'S LATEST MESSAGE:\n{user_message}",
                     system_prompt=system_prompt,
                     timeout=10.0
                 )

@@ -1949,41 +1949,113 @@ def _get_raw_dashboard_html() -> str:
         /* ==========================================================================
            UPGRADED AI MANAGER CONVERSATIONAL CENTER & PIXEL-ART AI AGENT OFFICE (v15)
            ========================================================================== */
+        /* ==========================================================================
+           UPGRADED MODERN DUAL AI CHAT (NANOPRO MANAGER & ANTIGRAVITY AI)
+           ========================================================================== */
+        .modern-ai-switcher-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 5px;
+            border-radius: 24px;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+        .modern-ai-pill {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 7px 12px;
+            border-radius: 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #94A3B8;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modern-ai-pill:hover {
+            color: #E2E8F0;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .modern-ai-pill.active {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid #38BDF8;
+            color: #FFFFFF;
+            box-shadow: 0 2px 10px rgba(56, 189, 248, 0.35);
+        }
+        .modern-ai-pill.active.antigravity-active {
+            background: linear-gradient(135deg, rgba(88, 28, 135, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid #A78BFA;
+            box-shadow: 0 2px 10px rgba(167, 139, 250, 0.35);
+        }
+        .pill-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10B981;
+            box-shadow: 0 0 6px #10B981;
+        }
+
         .unified-manager-card {
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 90px);
-            min-height: 680px;
+            height: calc(100vh - 135px);
+            min-height: 480px;
             padding: 0 !important;
             overflow: hidden;
-            border: 1px solid #1E2D4A;
+            border: 1px solid rgba(56, 189, 248, 0.22);
             background: #0B1120;
-            border-radius: 10px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        }
+        @media (max-width: 768px) {
+            .unified-manager-card {
+                height: calc(100dvh - 175px) !important;
+                min-height: 0 !important;
+                max-height: calc(100dvh - 175px) !important;
+                border-radius: 14px !important;
+                margin-bottom: 2px !important;
+            }
         }
         .manager-chat-topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 14px;
-            background: #10192E;
-            border-bottom: 1px solid #1E2D4A;
+            padding: 7px 12px;
+            background: rgba(16, 25, 46, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             flex-shrink: 0;
-            min-height: 38px;
+            min-height: 40px;
         }
         .manager-timeline-container {
             flex: 1;
             overflow-y: auto;
-            padding: 14px 18px;
+            padding: 12px 14px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            background: #060A14;
+            gap: 10px;
+            background: radial-gradient(circle at 50% 10%, rgba(15, 23, 42, 0.6) 0%, rgba(6, 10, 20, 0.98) 100%);
+            -webkit-overflow-scrolling: touch;
         }
         .chat-msg {
             display: flex;
-            gap: 12px;
-            max-width: 88%;
-            animation: fadeInMsg 0.25s ease-out;
+            gap: 9px;
+            max-width: 86%;
+            animation: fadeInMsg 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @media (max-width: 768px) {
+            .chat-msg {
+                max-width: 94% !important;
+                gap: 7px !important;
+            }
         }
         @keyframes fadeInMsg {
             from { opacity: 0; transform: translateY(6px); }
@@ -1997,14 +2069,15 @@ def _get_raw_dashboard_html() -> str:
             align-self: flex-start;
         }
         .msg-avatar {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
+            font-size: 13px;
             flex-shrink: 0;
+            margin-top: 2px;
         }
         .chat-msg.user .msg-avatar {
             background: linear-gradient(135deg, #1E3A8A, #3B82F6);
@@ -2017,54 +2090,57 @@ def _get_raw_dashboard_html() -> str:
             box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
         }
         .msg-bubble {
-            background: #10192E;
-            border: 1px solid #1E2D4A;
-            border-radius: 10px;
-            padding: 12px 16px;
+            border-radius: 16px;
+            padding: 9px 13px;
             color: #F8FAFC;
             font-size: 13px;
-            line-height: 1.55;
+            line-height: 1.48;
             word-break: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
         }
         .chat-msg.user .msg-bubble {
-            background: #1E293B;
-            border-color: #334155;
-            border-top-right-radius: 2px;
+            background: linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%);
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            border-bottom-right-radius: 4px;
+            color: #FFFFFF;
         }
         .chat-msg.manager .msg-bubble {
-            background: #0F172A;
-            border-color: #1E2D4A;
-            border-top-left-radius: 2px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-bottom-left-radius: 4px;
         }
         .msg-sender {
             font-weight: 700;
-            font-size: 11.5px;
+            font-size: 11px;
             color: #38BDF8;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         .msg-tag {
             background: rgba(56,189,248,0.12);
             color: #38BDF8;
             border: 1px solid rgba(56,189,248,0.3);
-            font-size: 10px;
-            padding: 1px 6px;
+            font-size: 9.5px;
+            padding: 1px 5px;
             border-radius: 4px;
             font-family: monospace;
         }
         .msg-meta {
-            font-size: 11px;
+            font-size: 9.5px;
             color: #64748B;
-            margin-top: 8px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .solution-card {
             background: #0B1120;
             border: 1px solid #38BDF8;
             border-radius: 8px;
-            padding: 14px;
-            margin-top: 10px;
+            padding: 12px;
+            margin-top: 8px;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
         .solution-header {
@@ -2072,119 +2148,144 @@ def _get_raw_dashboard_html() -> str:
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #1E2D4A;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
         }
         .solution-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            margin-bottom: 8px;
         }
         .solution-item {
             background: rgba(15,23,42,0.85);
             border: 1px solid #1E293B;
             border-radius: 6px;
-            padding: 8px 10px;
+            padding: 6px 8px;
         }
         .solution-item h4 {
-            font-size: 10.5px;
+            font-size: 10px;
             color: #38BDF8;
             text-transform: uppercase;
-            margin: 0 0 4px 0;
-            letter-spacing: 0.5px;
+            margin: 0 0 3px 0;
             font-weight: 700;
         }
         .solution-item p {
-            font-size: 11.5px;
+            font-size: 11px;
             color: #CBD5E1;
             margin: 0;
-        }
-        .solution-item ul {
-            font-size: 11.5px;
-            color: #CBD5E1;
-            margin: 0;
-            padding-left: 16px;
         }
         .solution-actions-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
-            border-top: 1px solid #1E2D4A;
-            padding-top: 10px;
-        }
-        .events-timeline {
-            background: #060A14;
-            border: 1px solid #1E2D4A;
-            border-radius: 6px;
-            padding: 10px 12px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 11.5px;
-        }
-        .event-line {
-            color: #38BDF8;
-            padding: 3px 0;
-            display: flex;
-            align-items: center;
             gap: 6px;
-            border-bottom: 1px solid #0F172A;
+            margin-top: 8px;
+            border-top: 1px solid #1E2D4A;
+            padding-top: 8px;
         }
-        .event-line:last-child {
-            border-bottom: none;
-        }
-        .code-block-wrapper {
-            background: #0B1120;
-            border: 1px solid #1E2D4A;
-            border-radius: 6px;
-            margin: 8px 0;
-            overflow: hidden;
-        }
-        .code-header {
+
+        /* Modern Floating Capsule Composer */
+        .modern-composer-capsule {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: #15223E;
-            padding: 4px 10px;
-            font-size: 11px;
-            color: #94A3B8;
+            gap: 7px;
+            background: rgba(15, 23, 42, 0.96);
+            border: 1.5px solid rgba(56, 189, 248, 0.3);
+            border-radius: 24px;
+            padding: 4px 6px 4px 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .code-content {
-            padding: 10px;
-            overflow-x: auto;
-            font-family: monospace;
-            font-size: 11.5px;
-            color: #E2E8F0;
-            margin: 0;
-            line-height: 1.45;
-        }
-        .copy-btn {
-            background: transparent;
-            border: 1px solid #334155;
-            color: #94A3B8;
-            border-radius: 4px;
-            padding: 2px 8px;
-            font-size: 10.5px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .copy-btn:hover {
-            color: #FFF;
+        .modern-composer-capsule:focus-within {
             border-color: #38BDF8;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
         }
-        .manager-chips-bar {
+        .modern-composer-capsule.antigravity-capsule {
+            border-color: rgba(167, 139, 250, 0.35);
+        }
+        .modern-composer-capsule.antigravity-capsule:focus-within {
+            border-color: #A78BFA;
+            box-shadow: 0 0 16px rgba(167, 139, 250, 0.4);
+        }
+        .composer-textarea {
+            flex: 1;
+            background: transparent !important;
+            border: none !important;
+            outline: none !important;
+            color: #F8FAFC !important;
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+            resize: none !important;
+            min-height: 34px !important;
+            max-height: 80px !important;
+            padding: 6px 2px !important;
+            font-family: inherit !important;
+        }
+        .composer-action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.12s ease, filter 0.15s ease;
+            flex-shrink: 0;
+        }
+        .composer-action-btn:active {
+            transform: scale(0.92);
+        }
+        .composer-send-btn {
+            background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
+            color: #FFFFFF;
+            font-size: 13px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+        .composer-send-btn.antigravity-send {
+            background: linear-gradient(135deg, #7C3AED 0%, #2563EB 100%);
+            box-shadow: 0 0 10px rgba(167, 139, 250, 0.45);
+        }
+        .composer-mic-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: #94A3B8;
+            font-size: 14px;
+        }
+        .composer-mic-btn:hover {
+            color: #38BDF8;
+            background: rgba(56, 189, 248, 0.12);
+        }
+
+        /* Clean Horizontal Chips Bar */
+        .modern-quick-chips {
+            display: flex;
+            align-items: center;
             gap: 6px;
             overflow-x: auto;
-            padding: 4px 14px;
-            background: #0B1120;
-            border-top: 1px solid #1E2D4A;
+            padding: 5px 10px;
+            background: rgba(11, 17, 32, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
-        .manager-composer-container {
-            padding: 8px 14px;
-            background: #10192E;
-            border-top: 1px solid #1E2D4A;
+        .modern-quick-chips::-webkit-scrollbar { display: none; }
+        .modern-chip-pill {
+            flex-shrink: 0;
+            padding: 3px 9px;
+            border-radius: 14px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            color: #CBD5E1;
+            font-size: 10.5px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+        .modern-chip-pill:hover, .modern-chip-pill:active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38BDF8;
+            color: #FFFFFF;
         }
         .mic-recording {
             animation: pulseMicRecording 1s infinite alternate !important;
@@ -4427,127 +4528,87 @@ def _get_raw_dashboard_html() -> str:
         <!-- VIEW: 1. AI MANAGER (NATURAL LANGUAGE COMMAND & DIALOGUE CENTER) -->
 
 <div class="workspace-view active" id="view-ai_manager">
-        <!-- DUAL AI CHAT SWITCHER (STRICTLY 2 CHATS ON MOBILE & DESKTOP) -->
-        <div class="dual-ai-chat-switcher" style="display:flex; gap:10px; margin-bottom:12px; background:rgba(15,23,42,0.92); padding:6px; border-radius:14px; border:1px solid rgba(56,189,248,0.25); box-shadow:0 4px 20px rgba(0,0,0,0.35);">
-            <!-- Tab 1: NanoPro AI Manager -->
-            <button type="button" id="tabBtnNanoProManager" onclick="switchAiChatMode('manager')" class="dual-ai-tab active" style="flex:1; padding:9px 12px; border-radius:10px; background:linear-gradient(135deg, rgba(30,58,138,0.7) 0%, rgba(15,23,42,0.95) 100%); border:1.5px solid #38BDF8; color:#FFFFFF; cursor:pointer; display:flex; align-items:center; gap:9px; box-shadow:0 0 12px rgba(56,189,248,0.3); transition:all 0.2s ease;">
-                <span style="font-size:20px; filter:drop-shadow(0 0 6px #38BDF8);">🤖</span>
-                <div style="text-align:left;">
-                    <div style="font-size:12.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">NanoPro AI Manager</div>
-                    <div style="font-size:9.5px; color:#94A3B8;">Conversational Command Center &amp; 305 Swarm</div>
-                </div>
+        <!-- MODERN DUAL AI SWITCHER PILL BAR -->
+        <div class="modern-ai-switcher-bar">
+            <!-- Tab 1: NanoPro Manager -->
+            <button type="button" id="tabBtnNanoProManager" onclick="switchAiChatMode('manager')" class="modern-ai-pill active">
+                <span>🤖</span>
+                <span>NanoPro Manager</span>
+                <span class="pill-dot"></span>
             </button>
             <!-- Tab 2: Antigravity AI -->
-            <button type="button" id="tabBtnAntigravity" onclick="switchAiChatMode('antigravity')" class="dual-ai-tab" style="flex:1; padding:9px 12px; border-radius:10px; background:rgba(15,23,42,0.6); border:1.5px solid rgba(255,255,255,0.08); color:#94A3B8; cursor:pointer; display:flex; align-items:center; gap:9px; transition:all 0.2s ease;">
-                <span style="font-size:20px; filter:drop-shadow(0 0 6px #A78BFA);">⚡</span>
-                <div style="text-align:left;">
-                    <div style="font-size:12.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">Antigravity AI</div>
-                    <div style="font-size:9.5px; color:#38BDF8;">Agentic Coding &amp; Cloud-Laptop Sync</div>
-                </div>
+            <button type="button" id="tabBtnAntigravity" onclick="switchAiChatMode('antigravity')" class="modern-ai-pill">
+                <span>⚡</span>
+                <span>Antigravity AI</span>
+                <span class="pill-dot" style="background:#A78BFA; box-shadow:0 0 6px #A78BFA;"></span>
             </button>
         </div>
 
         <!-- CONTAINER 1: NANOPRO AI MANAGER (COMMAND CENTER) -->
         <div id="containerNanoProManager" class="ai-chat-mode-container">
             <div class="panel-card unified-manager-card">
-                <!-- Modern Compact Chat Topbar (Maximized Chat Window Space) -->
+                <!-- Sleek Single-Row Topbar -->
                 <div class="manager-chat-topbar">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg, #1E3A8A, #38BDF8); display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 0 8px rgba(56,189,248,0.25); flex-shrink:0;">&#129302;</div>
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <span style="font-size:13.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">AI Manager — Conversational Command Center</span>
-                            <span class="badge" style="background:#0F172A; border:1px solid #10B981; color:#10B981; font-size:10px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-                                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981;"></span> Agents Connected
-                            </span>
-                            <!-- Hidden DOM elements to maintain background JS/telemetry compatibility -->
-                            <span id="topbarManagerModel" style="display:none;">qwen2.5-coder:7b (Ollama)</span>
-                            <span id="managerStateIndicator" style="display:none;">Ready</span>
+                        <div class="msg-avatar" style="background:linear-gradient(135deg, #1E3A8A, #38BDF8); width:26px; height:26px; font-size:13px; margin:0;">🤖</div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:13px; font-weight:800; color:#F8FAFC;">NanoPro Manager</span>
+                            <span style="font-size:9.5px; color:#10B981; font-weight:700; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:1px 6px; border-radius:10px;">● 305 Swarm</span>
                         </div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <button type="button" class="btn btn-secondary" onclick="openSelfTrainingModal()" style="font-size:10px; padding:3px 8px; border-color:#8B5CF6; color:#A78BFA;" title="Autonomous Self-Training Telemetry">&#129504; Self-Training</button>
-                        <button type="button" class="btn btn-secondary" onclick="clearManagerConversation()" style="font-size:10px; padding:3px 8px;" title="Reset chat session">&#x21BB; New Chat</button>
-                        <button type="button" class="btn btn-secondary" onclick="copyViewer('managerChatStream')" style="font-size:10px; padding:3px 8px;" title="Copy transcript">&#128203; Copy</button>
-                        <button type="button" class="btn btn-secondary" onclick="exportChatTranscript()" style="font-size:10px; padding:3px 8px;" title="Export transcript">&#128190; Export</button>
-                        <button type="button" class="btn btn-accent" onclick="switchView('approvals')" style="font-size:10px; padding:3px 8px;">Approvals</button>
-                        <button type="button" class="btn btn-accent" onclick="switchView('vault')" style="font-size:10px; padding:3px 8px;">Vault</button>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button type="button" class="btn btn-secondary" onclick="clearManagerConversation()" style="font-size:10px; padding:3px 7px; border-radius:7px;" title="Reset chat">🧹 Clear</button>
+                        <button type="button" class="btn btn-secondary" onclick="switchView('approvals')" style="font-size:10px; padding:3px 7px; border-radius:7px;" title="Approvals queue">🛡️ Queue</button>
+                        <button type="button" class="btn btn-secondary" onclick="switchView('vault')" style="font-size:10px; padding:3px 7px; border-radius:7px;" title="Credentials Vault">🔐 Vault</button>
                     </div>
                 </div>
 
-                <!-- Main Scrollable Conversation Timeline (Holds #managerChatStream) -->
+                <!-- Main Scrollable Conversation Timeline -->
                 <div class="manager-timeline-container" id="managerChatStream">
-                    <!-- Initial Welcome Message from AI Manager -->
                     <div class="chat-msg manager" id="welcomeManagerMsg">
-                        <div class="msg-avatar">&#129302;</div>
+                        <div class="msg-avatar">🤖</div>
                         <div class="msg-bubble">
-                            <div class="msg-sender">AI Manager <span class="msg-tag">Central Orchestrator</span></div>
+                            <div class="msg-sender">NanoPro AI Manager <span class="msg-tag">Central Hub</span></div>
                             <div class="msg-text">
-                                AI Manager Ready. How can I assist you with your models, data pipelines, coding, or automation today?
-                                <br><br>
-                                I discuss requirements, formulate multi-agent architecture plans, secure credentials into the Vault, and orchestrate our 205 specialized agents across 13 Pods with verified test executions. Speak or type in <strong>English</strong>, <strong>मराठी (Marathi)</strong>, or <strong>हिंदी (Hindi)</strong>.
+                                नमस्कार मंगेश! मी तुमचा <strong>NanoPro AI Manager</strong> आहे.<br>
+                                डेटाबेस, कोडिंग, स्नोफ्लेक किंवा दैनंदिन टास्क — आज आपण कशावर काम करायचं?
                             </div>
-                            <div class="msg-meta">
-                                <span>Just now</span> &bull; <span>Status: Ready</span>
-                            </div>
+                            <div class="msg-meta">Just now • 305 Agents Ready</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Contextual Follow-up Suggestion Chips Bar -->
-                <div class="manager-chips-bar" id="managerSuggestionsBar">
-                    <button type="button" class="action-chip" onclick="quickFillPrompt('Build a Snowflake ETL pipeline with Python validation and SQL testing.')">&#128736; "Build Snowflake ETL pipeline"</button>
-                    <button type="button" class="action-chip" onclick="quickFillPrompt('Connect these two tables and show me customer balances.')">&#128452; "Customer balances"</button>
-                    <button type="button" class="action-chip" onclick="quickFillPrompt('Explain this in simple language.')">&#128161; "Explain in simple language"</button>
-                    <button type="button" class="action-chip" onclick="quickFillPrompt('Make a graph.')">&#128202; "Make a graph"</button>
-                    <button type="button" class="action-chip" onclick="quickFillPrompt('Top 10 upcoming / latest trends: Snowflake vs AWS for data engineering in 2026')">&#9729; "Snowflake vs AWS 2026 trends"</button>
-                    <button type="button" class="action-chip" onclick="quickFillPrompt('Check database table inventory and records count.')">&#128451; "Table inventory"</button>
+                <!-- Compact Quick Chips Bar -->
+                <div class="modern-quick-chips" id="managerSuggestionsBar">
+                    <button type="button" class="modern-chip-pill" onclick="quickFillPrompt('Connect tables and show me customer balances.')">📊 Balances</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillPrompt('Build Snowflake ETL pipeline with Python validation.')">⚡ Snowflake ETL</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillPrompt('Make a data chart.')">📈 Graph</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillPrompt('Check live news from ABP Majha and Aaj Tak.')">📰 News</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillPrompt('Check database table inventory and records count.')">🛡️ DB Health</button>
                 </div>
 
-                <!-- Modern Message Composer (Docked at Bottom) -->
-                <div class="manager-composer-container">
-                    <!-- Composer Input Row -->
-                    <div style="display:flex; gap:10px; align-items:flex-end;">
-                        <div style="flex:1; position:relative;">
-                            <textarea class="studio-input" id="managerChatInput" rows="2" style="width:100%; resize:vertical; max-height:140px; min-height:46px; font-size:13px; line-height:1.45; padding:10px 14px; background:#060A14; border:1px solid #283C62; border-radius:8px; color:#F8FAFC;" placeholder="Ask, discuss solutions, or command: e.g. 'Build a Snowflake ETL pipeline with Python validation and SQL testing' (Enter to send, Shift+Enter for newline)..."></textarea>
-                        </div>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <!-- Voice Mic Button -->
-                            <button type="button" id="managerVoiceMicBtn" class="btn btn-secondary" onclick="toggleManagerVoiceRecording()" style="height:46px; min-width:46px; padding:0 12px; font-size:16px; display:flex; align-items:center; justify-content:center; gap:6px;" title="Speak in Marathi, Hindi, or English">
-                                <span>&#127908;</span>
-                                <span id="managerMicStatusText" style="font-size:11px; font-weight:600; display:none;">Listening...</span>
-                            </button>
-                            <!-- Send Button -->
-                            <button type="button" id="managerSendBtn" class="btn btn-primary" onclick="sendManagerMessage()" style="height:46px; padding:0 18px; font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                <span>&#9658;</span> Send
-                            </button>
-                            <!-- Stop Button (Hidden by default) -->
-                            <button type="button" id="managerStopBtn" class="btn btn-secondary" onclick="stopManagerGeneration()" style="display:none; height:46px; padding:0 14px; background:#EF4444; color:#FFF; font-size:12px; font-weight:700;">
-                                &#9209; Stop
-                            </button>
-                        </div>
+                <!-- Modern Capsule Composer -->
+                <div style="padding:7px 10px; background:rgba(16,25,46,0.98); border-top:1px solid rgba(255,255,255,0.06);">
+                    <div class="modern-composer-capsule">
+                        <button type="button" id="managerVoiceMicBtn" class="composer-action-btn composer-mic-btn" onclick="toggleManagerVoiceRecording()" title="Speak in Marathi, Hindi, or English">
+                            🎙️
+                        </button>
+                        <textarea class="composer-textarea" id="managerChatInput" rows="1" placeholder="Type a message or command..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendManagerMessage();}"></textarea>
+                        <button type="button" id="managerSendBtn" class="composer-action-btn composer-send-btn" onclick="sendManagerMessage()" title="Send Message">
+                            ➤
+                        </button>
+                        <button type="button" id="managerStopBtn" class="composer-action-btn" onclick="stopManagerGeneration()" style="display:none; background:#EF4444; color:#FFF; font-size:12px;" title="Stop">
+                            ⏹
+                        </button>
                     </div>
-
-                    <!-- Composer Sub-toolbar -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11.5px; color:#94A3B8;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <label style="color:#64748B;">Voice Language:</label>
-                                <select id="managerVoiceLangSelect" class="studio-input" style="padding:2px 8px; font-size:11px; height:24px; background:#0B1120;" onchange="onManagerVoiceLanguageChanged()">
-                                    <option value="mr-IN">मराठी (mr-IN)</option>
-                                    <option value="hi-IN">हिंदी (hi-IN)</option>
-                                    <option value="en-IN" selected>Indian English (en-IN)</option>
-                                    <option value="en-US">US English (en-US)</option>
-                                </select>
-                            </div>
-                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
-                                <input type="checkbox" id="managerTtsCheckbox" checked style="cursor:pointer;">
-                                <span>Spoken Voice Response</span>
-                            </label>
-                            <span id="managerVoiceStatePill" style="display:none; color:#38BDF8; font-weight:600;">&#9679; Listening</span>
-                        </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:9.5px; color:#64748B; padding:0 6px;">
+                        <span id="topbarManagerModel" style="color:#38BDF8;">qwen3.8-27b (Groq LPU)</span>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="color:#64748B;">Tip: Enter to send &bull; Shift+Enter for new line</span>
-                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('managerChatInput').value=''" style="padding:2px 8px; font-size:10.5px;">Clear</button>
+                            <label style="display:flex; align-items:center; gap:3px; cursor:pointer; color:#94A3B8;">
+                                <input type="checkbox" id="managerTtsCheckbox" style="cursor:pointer; width:11px; height:11px;">
+                                <span>Voice</span>
+                            </label>
+                            <span id="managerStateIndicator" style="color:#10B981;">● Ready</span>
                         </div>
                     </div>
                 </div>
@@ -4556,86 +4617,64 @@ def _get_raw_dashboard_html() -> str:
 
         <!-- CONTAINER 2: ANTIGRAVITY AI AGENTIC CODING & CLOUD-LAPTOP SYNC -->
         <div id="containerAntigravity" class="ai-chat-mode-container" style="display:none;">
-            <div class="panel-card unified-manager-card" style="border:1px solid rgba(167,139,250,0.35); box-shadow:0 0 25px rgba(139,92,246,0.12);">
-                <!-- Antigravity Compact Topbar -->
-                <div class="manager-chat-topbar" style="background:linear-gradient(90deg, rgba(30,27,75,0.85) 0%, rgba(15,23,42,0.95) 100%); border-bottom:1px solid rgba(167,139,250,0.25);">
+            <div class="panel-card unified-manager-card" style="border:1px solid rgba(167,139,250,0.35);">
+                <!-- Sleek Single-Row Topbar -->
+                <div class="manager-chat-topbar" style="background:linear-gradient(90deg, rgba(30,27,75,0.92) 0%, rgba(15,23,42,0.95) 100%);">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #38BDF8); display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 0 10px rgba(167,139,250,0.4); flex-shrink:0;">⚡</div>
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <span style="font-size:13.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.2px;">Antigravity AI — Agentic Coding Assistant</span>
-                            <!-- Live Sync Pill -->
-                            <span id="antigravitySyncPill" class="badge" style="background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#10B981; font-size:10px; padding:2px 8px; border-radius:12px; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
-                                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981;"></span>
-                                <span id="antigravitySyncStatusText">GitHub &amp; Cloud Synced</span>
+                        <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8); width:26px; height:26px; font-size:13px; margin:0;">⚡</div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:13px; font-weight:800; color:#F8FAFC;">Antigravity AI</span>
+                            <span id="antigravitySyncPill" style="font-size:9.5px; color:#A78BFA; font-weight:700; background:rgba(139,92,246,0.18); border:1px solid rgba(167,139,250,0.35); padding:1px 6px; border-radius:10px;">
+                                ● <span id="antigravitySyncStatusText">GitHub Synced</span>
                             </span>
                         </div>
                     </div>
-                    <!-- Antigravity Actions (Sync, Commit, Clear, Export) -->
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <button type="button" class="btn btn-secondary" onclick="triggerAntigravitySync(this)" style="font-size:10.5px; padding:4px 9px; background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8; font-weight:700;" title="Pull and push changes between Mobile, GitHub, and Laptop">
-                            <span id="antigravitySyncIcon">🔄</span> Sync with Laptop
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button type="button" class="btn btn-secondary" onclick="triggerAntigravitySync(this)" style="font-size:10px; padding:3px 7px; border-radius:7px; background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8; font-weight:700;" title="Pull and push changes between Mobile, GitHub, and Laptop">
+                            <span id="antigravitySyncIcon">🔄</span> Sync
                         </button>
-                        <button type="button" class="btn btn-secondary" onclick="promptAntigravityCommit()" style="font-size:10.5px; padding:4px 9px; background:rgba(139,92,246,0.15); border-color:#8B5CF6; color:#C4B5FD; font-weight:700;" title="Commit and push changes to GitHub">
-                            🚀 Commit &amp; Push
+                        <button type="button" class="btn btn-secondary" onclick="promptAntigravityCommit()" style="font-size:10px; padding:3px 7px; border-radius:7px; background:rgba(139,92,246,0.15); border-color:#8B5CF6; color:#C4B5FD; font-weight:700;" title="Commit changes to GitHub">
+                            🚀 Commit
                         </button>
-                        <button type="button" class="btn btn-secondary" onclick="clearAntigravityChat()" style="font-size:10px; padding:3px 8px;" title="Reset Antigravity chat session">↺ New Chat</button>
-                        <button type="button" class="btn btn-secondary" onclick="copyViewer('antigravityChatStream')" style="font-size:10px; padding:3px 8px;" title="Copy transcript">📋 Copy</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearAntigravityChat()" style="font-size:10px; padding:3px 7px; border-radius:7px;" title="New Chat">🧹 Clear</button>
                     </div>
                 </div>
 
                 <!-- Antigravity Scrollable Timeline Container -->
-                <div class="manager-timeline-container" id="antigravityChatStream" style="min-height:360px; max-height:550px; overflow-y:auto; padding:14px;">
-                    <!-- Initial Welcome Message from Antigravity -->
-                    <div class="chat-msg manager" id="welcomeAntigravityMsg">
-                        <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8); box-shadow:0 0 10px rgba(167,139,248,0.4);">⚡</div>
-                        <div class="msg-bubble" style="border:1px solid rgba(167,139,250,0.3); background:rgba(15,23,42,0.95);">
-                            <div class="msg-sender" style="color:#C4B5FD;">Antigravity AI <span class="msg-tag" style="background:rgba(139,92,246,0.25); color:#C4B5FD; border-color:#8B5CF6;">Autonomous Coding Assistant</span></div>
+                <div class="manager-timeline-container" id="antigravityChatStream">
+                    <div class="chat-msg manager antigravity-msg" id="welcomeAntigravityMsg">
+                        <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8);">⚡</div>
+                        <div class="msg-bubble">
+                            <div class="msg-sender" style="color:#C4B5FD;">Antigravity AI <span class="msg-tag" style="background:rgba(139,92,246,0.25); color:#C4B5FD; border-color:#8B5CF6;">GitHub Synced</span></div>
                             <div class="msg-text">
-                                नमस्कार मंगेश! मी तुमचा <strong>Google DeepMind Antigravity AI Assistant</strong> आहे.<br><br>
-                                जसे आपण Antigravity IDE मध्ये काम करतो, तसेच तुम्ही आता थेट मोबाईल किंवा लॅपटॉपवरून माझ्याशी कोड, सिस्टीम आर्किटेक्चर, डीबगिंग आणि ऑटोमेशनवर काम करू शकता.<br><br>
-                                <div style="padding:8px 12px; background:rgba(30,27,75,0.7); border-radius:8px; border-left:3px solid #38BDF8; margin:8px 0; font-size:11.5px;">
-                                    📱 <b>Ubiquitous Cloud &amp; Laptop Sync:</b><br>
-                                    लॅपटॉप बंद असला तरी तुम्ही मोबाईलवरून दिलेले सर्व आदेश व कोड थेट <b>GitHub</b> वर सेव्ह होतात. नंतर जेव्हा तुम्ही लॅपटॉप सुरू कराल किंवा वर दिलेल्या <b>'🔄 Sync with Laptop'</b> बटनावर क्लिक कराल, तेव्हा सर्व फाइल्स आपोआप लॅपटॉपवर १ सेकंदात सिंक (Sync) होतील!
-                                </div>
-                                तुम्हाला आज कोणत्या कोड किंवा सिस्टीमवर काम करायचे आहे?
+                                नमस्कार मंगेश! मी तुमचा <strong>Antigravity AI Assistant</strong> आहे.<br>
+                                📱 <b>Continuous Sync:</b> लॅपटॉप बंद असतानाही तुम्ही मोबाईलवरून केलेला सर्व कोड आपोआप <b>GitHub</b> वर सेव्ह होतो. लॅपटॉप सुरू केल्यावर <b>'🔄 Sync'</b> ने सर्व फाइल्स थेट लॅपटॉपवर १ सेकंदात अपडेट होतात!
                             </div>
-                            <div class="msg-meta">
-                                <span>Just now</span> &bull; <span>Engine: Gemini / Groq LPU</span>
-                            </div>
+                            <div class="msg-meta">Just now • Gemini &amp; Groq LPU</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Antigravity Contextual Suggestion Chips -->
-                <div class="manager-chips-bar" id="antigravityChipsBar">
-                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Analyze workspace code and show git sync status.')">🔍 "Git sync &amp; branch status"</button>
-                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Sync everything between mobile, GitHub, and laptop.')">🔄 "Sync with laptop &amp; GitHub"</button>
-                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Write a clean Python script to test SQLite WAL concurrent queries.')">🐍 "Test SQLite WAL concurrency"</button>
-                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('Show active database connections and memory telemetry.')">📊 "Database &amp; memory telemetry"</button>
-                    <button type="button" class="action-chip" onclick="quickFillAntigravityPrompt('How does Antigravity mobile-to-laptop sync work without conflict?')">💡 "Explain mobile-to-laptop sync"</button>
+                <!-- Antigravity Compact Quick Chips -->
+                <div class="modern-quick-chips" id="antigravityChipsBar">
+                    <button type="button" class="modern-chip-pill" onclick="quickFillAntigravityPrompt('Sync everything between mobile, GitHub, and laptop.')">🔄 Sync Laptop</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillAntigravityPrompt('Analyze workspace code and show git sync status.')">🔍 Git Status</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillAntigravityPrompt('Write a clean Python script to test SQLite WAL concurrent queries.')">🐍 Python Test</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillAntigravityPrompt('Show active database connections and memory telemetry.')">📊 DB Health</button>
+                    <button type="button" class="modern-chip-pill" onclick="quickFillAntigravityPrompt('How does Antigravity mobile-to-laptop sync work without conflict?')">💡 Sync Info</button>
                 </div>
 
-                <!-- Antigravity Composer -->
-                <div class="manager-composer-container">
-                    <div style="display:flex; gap:10px; align-items:flex-end;">
-                        <div style="flex:1; position:relative;">
-                            <textarea class="studio-input" id="antigravityChatInput" rows="2" style="width:100%; resize:vertical; max-height:140px; min-height:46px; font-size:13px; line-height:1.45; padding:10px 14px; background:#060A14; border:1px solid #4338CA; border-radius:8px; color:#F8FAFC;" placeholder="Ask Antigravity to write code, edit files, or sync: e.g. 'Sync with laptop', 'Write FastAPI endpoint' (Enter to send, Shift+Enter for newline)..." onkeydown="handleAntigravityKeydown(event)"></textarea>
-                        </div>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <button type="button" id="antigravitySendBtn" class="btn btn-primary" onclick="sendAntigravityMessage()" style="height:46px; padding:0 18px; font-size:12.5px; font-weight:700; background:linear-gradient(135deg, #7C3AED, #2563EB); border-color:#6366F1; display:flex; align-items:center; gap:6px;">
-                                <span>⚡</span> Send
-                            </button>
-                        </div>
+                <!-- Modern Capsule Composer -->
+                <div style="padding:7px 10px; background:rgba(20,16,45,0.98); border-top:1px solid rgba(255,255,255,0.06);">
+                    <div class="modern-composer-capsule antigravity-capsule">
+                        <textarea class="composer-textarea" id="antigravityChatInput" rows="1" placeholder="Ask Antigravity to write code, edit files, or sync..." onkeydown="handleAntigravityKeydown(event)"></textarea>
+                        <button type="button" id="antigravitySendBtn" class="composer-action-btn composer-send-btn antigravity-send" onclick="sendAntigravityMessage()" title="Send Message">
+                            ⚡
+                        </button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11.5px; color:#94A3B8;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="color:#A78BFA; font-weight:700;">Antigravity Engine:</span>
-                            <span style="color:#38BDF8;">DeepMind Agentic Thinking + GitHub Sync</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="color:#64748B;">Enter to send &bull; Shift+Enter for new line</span>
-                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('antigravityChatInput').value=''" style="padding:2px 8px; font-size:10.5px;">Clear</button>
-                        </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:9.5px; color:#A78BFA; padding:0 6px;">
+                        <span>DeepMind Reasoning + GitHub Bridge</span>
+                        <span style="color:#64748B;">Enter to send</span>
                     </div>
                 </div>
             </div>
@@ -12138,11 +12177,53 @@ function navigateHistory(direction) {
             }
         }
 
+        function playChatBeep(type) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!window._nanoAudioCtx) {
+                    window._nanoAudioCtx = new AudioCtx();
+                }
+                const ctx = window._nanoAudioCtx;
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'send') {
+                    // Futuristic clean subtle pop/bip on send (duration 45ms, 600Hz -> 1180Hz)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(1180, now + 0.04);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+                    osc.start(now);
+                    osc.stop(now + 0.045);
+                } else {
+                    // Pleasant receiving double-tone chime (duration 110ms)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(740, now);
+                    osc.frequency.setValueAtTime(1080, now + 0.05);
+                    gain.gain.setValueAtTime(0.14, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+                    osc.start(now);
+                    osc.stop(now + 0.11);
+                }
+            } catch(e) {
+                console.debug('Audio blip suppressed:', e);
+            }
+        }
+        window.playChatBeep = playChatBeep;
+
         function updateSuggestionsChips(actions) {
             const bar = document.getElementById('managerSuggestionsBar');
             if (!bar) return;
             bar.innerHTML = actions.map(act => `
-                <button type="button" class="action-chip" onclick="quickFillPrompt('${escapeHtml(act)}')">${escapeHtml(act)}</button>
+                <button type="button" class="modern-chip-pill" onclick="quickFillPrompt('${escapeHtml(act)}')">${escapeHtml(act)}</button>
             `).join('');
         }
 
@@ -12153,6 +12234,9 @@ function navigateHistory(direction) {
                 alert('Please enter a message for the AI Manager.');
                 return;
             }
+
+            // Play instant send beep blip
+            playChatBeep('send');
 
             if (input) {
                 input.value = '';
@@ -12187,17 +12271,22 @@ function navigateHistory(direction) {
             if (stopBtn) stopBtn.style.display = 'inline-flex';
             isManagerGenerating = true;
 
+            const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent));
+
             try {
                 const res = await fetch('/api/manager/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: msg, session_id: 'default' })
+                    body: JSON.stringify({ message: msg, session_id: 'default', device: isMob ? 'mobile' : 'laptop' })
                 });
                 const d = await res.json();
 
                 // Remove thinking indicator
                 const thEl = document.getElementById(thinkingId);
                 if (thEl) thEl.remove();
+
+                // Play receiving double-chime blip
+                playChatBeep('receive');
 
                 appendManagerMessage(d);
 
@@ -12373,31 +12462,31 @@ function navigateHistory(direction) {
                 if (contMgr) contMgr.style.display = 'block';
                 if (contAg) contAg.style.display = 'none';
                 if (tabMgr) {
-                    tabMgr.classList.add('active');
-                    tabMgr.style.background = 'linear-gradient(135deg, rgba(30,58,138,0.7) 0%, rgba(15,23,42,0.95) 100%)';
-                    tabMgr.style.borderColor = '#38BDF8';
-                    tabMgr.style.boxShadow = '0 0 12px rgba(56,189,248,0.3)';
+                    tabMgr.className = 'modern-ai-pill active';
+                    tabMgr.style.background = '';
+                    tabMgr.style.borderColor = '';
+                    tabMgr.style.boxShadow = '';
                 }
                 if (tabAg) {
-                    tabAg.classList.remove('active');
-                    tabAg.style.background = 'rgba(15,23,42,0.6)';
-                    tabAg.style.borderColor = 'rgba(255,255,255,0.08)';
-                    tabAg.style.boxShadow = 'none';
+                    tabAg.className = 'modern-ai-pill';
+                    tabAg.style.background = '';
+                    tabAg.style.borderColor = '';
+                    tabAg.style.boxShadow = '';
                 }
             } else {
                 if (contMgr) contMgr.style.display = 'none';
                 if (contAg) contAg.style.display = 'block';
                 if (tabAg) {
-                    tabAg.classList.add('active');
-                    tabAg.style.background = 'linear-gradient(135deg, rgba(88,28,135,0.7) 0%, rgba(15,23,42,0.95) 100%)';
-                    tabAg.style.borderColor = '#A78BFA';
-                    tabAg.style.boxShadow = '0 0 12px rgba(167,139,250,0.35)';
+                    tabAg.className = 'modern-ai-pill active antigravity-active';
+                    tabAg.style.background = '';
+                    tabAg.style.borderColor = '';
+                    tabAg.style.boxShadow = '';
                 }
                 if (tabMgr) {
-                    tabMgr.classList.remove('active');
-                    tabMgr.style.background = 'rgba(15,23,42,0.6)';
-                    tabMgr.style.borderColor = 'rgba(255,255,255,0.08)';
-                    tabMgr.style.boxShadow = 'none';
+                    tabMgr.className = 'modern-ai-pill';
+                    tabMgr.style.background = '';
+                    tabMgr.style.borderColor = '';
+                    tabMgr.style.boxShadow = '';
                 }
                 fetchAntigravityStatus();
             }
@@ -12515,6 +12604,10 @@ function navigateHistory(direction) {
                 alert('Please enter a question or coding instruction for Antigravity.');
                 return;
             }
+
+            // Play instant send beep blip
+            playChatBeep('send');
+
             if (input) {
                 input.value = '';
                 input.style.height = '46px';
@@ -12526,11 +12619,11 @@ function navigateHistory(direction) {
                 const userDiv = document.createElement('div');
                 userDiv.className = 'chat-msg user';
                 userDiv.innerHTML = `
-                    <div class="msg-avatar" style="background:linear-gradient(135deg, #1E3A8A, #38BDF8);">👤</div>
-                    <div class="msg-bubble" style="background:linear-gradient(135deg, rgba(30,58,138,0.7) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(56,189,248,0.35);">
-                        <div class="msg-sender" style="color:#38BDF8;">You (Mobile / Laptop)</div>
-                        <div class="msg-text">${escapeHtml(msg)}</div>
-                        <div class="msg-meta">Just now</div>
+                    <div class="msg-avatar">👤</div>
+                    <div class="msg-bubble">
+                        <div class="msg-sender" style="color:#38BDF8; justify-content:flex-end;">You</div>
+                        <div class="msg-text">${escapeHtml(msg).replace(/\n/g, '<br>')}</div>
+                        <div class="msg-meta" style="text-align:right;">Just now</div>
                     </div>
                 `;
                 stream.appendChild(userDiv);
@@ -12569,6 +12662,9 @@ function navigateHistory(direction) {
                 // Remove thinking indicator
                 const thEl = document.getElementById(thinkingId);
                 if (thEl) thEl.remove();
+
+                // Play receiving double-chime blip
+                playChatBeep('receive');
 
                 appendAntigravityAssistantResponse(d);
             } catch (err) {
@@ -12621,7 +12717,7 @@ function navigateHistory(direction) {
 
             div.innerHTML = `
                 <div class="msg-avatar" style="background:linear-gradient(135deg, #7C3AED, #38BDF8); box-shadow:0 0 10px rgba(167,139,248,0.4);">⚡</div>
-                <div class="msg-bubble" style="border:1px solid rgba(167,139,250,0.35); background:rgba(15,23,42,0.95); max-width:92%;">
+                <div class="msg-bubble" style="border:1px solid rgba(167,139,250,0.35); background:rgba(15,23,42,0.95); width:100%;">
                     <div class="msg-sender" style="color:#C4B5FD; display:flex; align-items:center; justify-content:space-between;">
                         <span>Antigravity AI <span class="msg-tag" style="background:rgba(139,92,246,0.25); color:#C4B5FD; border-color:#8B5CF6;">Agentic Assistant</span></span>
                         <span style="font-size:10px; color:#94A3B8;">${data.latency_ms || 320} ms • ${data.model_used || 'Gemini'}</span>

@@ -328,6 +328,7 @@ class ChatRequest(BaseModel):
     session_id: str = "default"
     action: Optional[str] = None
     plan_id: Optional[str] = None
+    device: str = "mobile"
 
 class AntigravityChatRequest(BaseModel):
     message: str = ""
@@ -601,7 +602,7 @@ async def api_manager_chat(req: ChatRequest):
     Processes messages, identifies intent, automatically saves credentials,
     enforces approvals, and guides the user.
     """
-    res = manager_agent.chat_interact(req.message, session_id=req.session_id, action=req.action, plan_id=req.plan_id)
+    res = manager_agent.chat_interact(req.message, session_id=req.session_id, action=req.action, plan_id=req.plan_id, device=req.device)
     def _bg_record():
         try:
             from app.core.nanopro_training_engine import nanopro_training_engine

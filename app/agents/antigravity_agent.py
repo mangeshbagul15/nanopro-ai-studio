@@ -247,13 +247,26 @@ class AntigravityAgent:
 
         # 3. Formulate Prompt with Live Antigravity Context
         status_info = self.get_sync_status()
+        mobile_rule = ""
+        if device == "mobile":
+            mobile_rule = (
+                "\n[CRITICAL MOBILE SCREEN FORMATTING RULE]\n"
+                "- The user is reading on a compact MOBILE smartphone screen.\n"
+                "- DO NOT write long academic essays or huge walls of text.\n"
+                "- Keep the response SHORT, conversational, and bite-sized (just like chatting on messaging apps).\n"
+                "- Use crisp bullet points, bold key terms, and concise explanations (max 2-4 short bullet points or 2 short paragraphs).\n"
+                "- Keep code snippets ultra-focused and minimal.\n"
+                "- End with 1-2 interactive, tap-ready next steps.\n"
+            )
+
         context_block = (
             f"[Antigravity System State]\n"
             f"- Device: {device.capitalize()}\n"
             f"- Environment: {status_info.get('environment')}\n"
             f"- Active Git Branch: {status_info.get('branch')} (Latest: {status_info.get('latest_commit')})\n"
             f"- Uncommitted Changes: {status_info.get('uncommitted_files_count')} files\n"
-            f"- Last Sync: {status_info.get('last_sync_time')}\n\n"
+            f"- Last Sync: {status_info.get('last_sync_time')}\n"
+            f"{mobile_rule}\n"
             f"[Recent Conversation]\n{history_context}\n\n"
             f"User Prompt: {p}"
         )
