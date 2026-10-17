@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "coingecko": {
+      "source": "coingecko/skills",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "c8f4331c04981d33368513e317a524899aaf48bfa4b7a051941a95400cf4d113"
+    },
     "upstash": {
       "source": "upstash/skills",
       "sourceType": "github",

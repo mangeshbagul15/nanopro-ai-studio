@@ -3624,6 +3624,48 @@ async def api_pinecone_indexes():
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# -------------------------------------------------------------
+# COINGECKO CRYPTO & FINANCIAL MARKET INTELLIGENCE (API #17)
+# -------------------------------------------------------------
+@app.get("/api/crypto/report")
+async def api_crypto_report():
+    from app.core.coingecko_engine import coingecko_engine
+    try:
+        report = coingecko_engine.get_markdown_crypto_report()
+        return JSONResponse({"status": "success", "markdown_report": report})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/crypto/price")
+async def api_crypto_price(coins: str = "bitcoin,ethereum,solana", currencies: str = "usd,inr"):
+    from app.core.coingecko_engine import coingecko_engine
+    try:
+        coin_list = [c.strip().lower() for c in coins.split(",") if c.strip()]
+        curr_list = [c.strip().lower() for c in currencies.split(",") if c.strip()]
+        data = coingecko_engine.get_prices(coin_list, curr_list)
+        return JSONResponse({"status": "success", "prices": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/crypto/trending")
+async def api_crypto_trending():
+    from app.core.coingecko_engine import coingecko_engine
+    try:
+        data = coingecko_engine.get_trending()
+        return JSONResponse({"status": "success", "trending": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/crypto/markets")
+async def api_crypto_markets(vs_currency: str = "usd", limit: int = 10):
+    from app.core.coingecko_engine import coingecko_engine
+    try:
+        data = coingecko_engine.get_top_markets(vs_currency=vs_currency, limit=limit)
+        return JSONResponse({"status": "success", "total": len(data), "markets": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ==========================================
 # 12. LAKEHOUSE CATALOG & METADATA INSPECTOR
 # ==========================================
