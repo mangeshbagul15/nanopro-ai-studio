@@ -3,6 +3,47 @@ Mangesh Nano Pro AI Studio - Enterprise Authentication Gateway & User Management
 Provides cyber-dark login/registration modal, user approval interface, inactivity timers, and audit trail.
 """
 
+def get_anti_fouc_head_injection() -> str:
+    return """
+    <!-- ========================================================================= -->
+    <!-- ZERO-FLASH CRITICAL ANTI-FOUC AUTH SHIELD                                 -->
+    <!-- ========================================================================= -->
+    <style>
+        /* Anti-FOUC: Hide unauthenticated app shell before DOM rendering */
+        html:not(.auth-verified) #app-shell,
+        body:not(.auth-verified) #app-shell {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        body.auth-verified #app-shell {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        /* Auth Gateway sits permanently on top with maximum z-index */
+        #nanoProAuthGateway {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 999999999 !important;
+            background: radial-gradient(circle at 50% 30%, #0F172A 0%, #030712 100%) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        body.auth-verified #nanoProAuthGateway:not(.force-show) {
+            display: none !important;
+        }
+        body.auth-verified #nanoProAuthGateway.force-show {
+            display: flex !important;
+        }
+    </style>
+    """
+
 def get_auth_injection() -> str:
     return """
 <!-- ========================================================================= -->
@@ -520,7 +561,8 @@ def get_auth_injection() -> str:
 
 <!-- AUTHENTICATION GATEWAY MODAL OVERLAY -->
 <div id="nanoProAuthGateway">
-    <div class="auth-card">
+    <div class="auth-card" style="position:relative;">
+        <button type="button" id="authGatewayCloseBtn" onclick="closeAuthGatewayModal()" style="display:none; position:absolute; top:18px; right:18px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#CBD5E1; border-radius:50%; width:32px; height:32px; align-items:center; justify-content:center; font-size:20px; cursor:pointer; z-index:10;" title="Close Gateway">&times;</button>
         <div class="auth-header">
             <div class="auth-logo-badge">🛡️ Enterprise Security Gateway</div>
             <h1 class="auth-title">MANGESH NANO PRO</h1>
@@ -536,6 +578,15 @@ def get_auth_injection() -> str:
             <!-- Alert message box -->
             <div id="authAlertBox" class="auth-alert-box"></div>
 
+            <!-- Saved Accounts Quick Chooser (Google/Slack style) -->
+            <div id="authSavedAccountsChooser" style="display:none; margin-bottom:14px; padding:10px 12px; background:rgba(30,41,59,0.5); border:1px solid rgba(56,189,248,0.25); border-radius:12px;">
+                <div style="font-size:11px; color:#94A3B8; margin-bottom:8px; font-weight:600; display:flex; justify-content:space-between; align-items:center;">
+                    <span>👥 Saved Accounts on this Device:</span>
+                    <span style="color:#38BDF8; font-size:10px; cursor:pointer;" onclick="openAccountSwitcherModal()">Manage All ↗</span>
+                </div>
+                <div id="authSavedAccountsChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
+
             <!-- LOGIN FORM -->
             <form id="authLoginForm" onsubmit="handleAuthLogin(event)">
                 <div class="auth-form-group">
@@ -545,6 +596,12 @@ def get_auth_injection() -> str:
                 <div class="auth-form-group">
                     <label>Password (पासवर्ड)</label>
                     <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••••••" required autocomplete="current-password" />
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px; margin-bottom:14px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:#CBD5E1; text-transform:none; margin:0;">
+                        <input type="checkbox" id="rememberCredentialsCheckbox" checked style="accent-color:#38BDF8; width:16px; height:16px; cursor:pointer;" />
+                        <span>Save Credentials on this device (क्रेडेंशियल्स सेव्ह ठेवा)</span>
+                    </label>
                 </div>
                 <button type="submit" id="loginSubmitBtn" class="auth-btn-primary">🔐 Sign In (Surakshit Login)</button>
                 <div class="auth-footer-hint" style="color: #64748b; font-size: 11px; margin-top: 10px;">
@@ -584,6 +641,50 @@ def get_auth_injection() -> str:
                     Security Policy: Admin (nanopro) kadun manjur zalya nantar account active hoil.
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MULTI-ACCOUNT SWITCHER MODAL                                              -->
+<!-- ========================================================================= -->
+<div id="nanoProAccountSwitcherModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(3,7,18,0.85); backdrop-filter:blur(16px); z-index:999999999; align-items:center; justify-content:center; font-family:'Inter',sans-serif;">
+    <div style="width:480px; max-width:92vw; background:rgba(15,23,42,0.95); border:1px solid rgba(56,189,248,0.3); border-radius:18px; box-shadow:0 25px 60px rgba(0,0,0,0.8), 0 0 35px rgba(56,189,248,0.2); overflow:hidden; animation:authFadeIn 0.25s ease;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.08); background:linear-gradient(180deg, rgba(30,41,59,0.5), rgba(15,23,42,0));">
+            <div>
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#38BDF8; display:flex; align-items:center; gap:8px;">
+                    👥 Switch Account / खाते बदला
+                </h3>
+                <div style="font-size:11.5px; color:#94A3B8; margin-top:3px;">
+                    Saved accounts on this device (या डिव्हाइसवरील खाती)
+                </div>
+            </div>
+            <button type="button" onclick="closeAccountSwitcherModal()" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#FCA5A5; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;" title="Close">&times;</button>
+        </div>
+
+        <div style="padding:20px 24px; max-height:60vh; overflow-y:auto;" id="accountSwitcherBody">
+            <div id="accountSwitcherList" style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Dynamically injected account cards -->
+            </div>
+        </div>
+
+        <div style="padding:16px 24px; background:rgba(10,15,29,0.8); border-top:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+                <button type="button" onclick="openAuthGatewayModal('login', true)" style="flex:1; padding:9px; background:linear-gradient(135deg, #0284C7, #2563EB); border:none; border-radius:8px; color:#FFFFFF; font-weight:700; font-size:12px; cursor:pointer;">
+                    ➕ Add Another Account
+                </button>
+                <button type="button" onclick="openAuthGatewayModal('register', true)" style="flex:1; padding:9px; background:rgba(16,185,129,0.15); border:1px solid #10B981; border-radius:8px; color:#6EE7B7; font-weight:700; font-size:12px; cursor:pointer;">
+                    📝 New User Sign Up
+                </button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                <button type="button" onclick="performLogout()" style="background:none; border:none; color:#EF4444; font-size:11px; cursor:pointer; text-decoration:underline;">
+                    Sign Out Current Account
+                </button>
+                <button type="button" onclick="signOutAllAccounts()" style="background:none; border:none; color:#94A3B8; font-size:11px; cursor:pointer; text-decoration:underline;">
+                    Sign Out All Accounts
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -871,13 +972,277 @@ def get_auth_injection() -> str:
 </div>
 
 <!-- ========================================================================= -->
-<!-- JAVASCRIPT: AUTHENTICATION, IDLE TIMEOUT & USER MANAGEMENT CONTROLLER     -->
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT: AUTHENTICATION, MULTI-ACCOUNT & USER MANAGEMENT CONTROLLER    -->
 <!-- ========================================================================= -->
 <script>
 let currentUser = null;
 let currentSessionToken = localStorage.getItem('nanopro_session_token');
 let idleLogoutTimer = null;
 const IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 Minutes for regular users
+
+// -------------------------------------------------------------------------
+// 1. MULTI-ACCOUNT STORAGE & PERSISTENT CREDENTIALS MANAGER
+// -------------------------------------------------------------------------
+function getSavedAccounts() {
+    try {
+        const raw = localStorage.getItem('nanopro_saved_accounts');
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+    } catch(e) { return []; }
+}
+
+function saveAccountToStore(user, sessionToken, password = '', rememberCreds = true) {
+    if (!user || !user.username) return;
+    let accounts = getSavedAccounts();
+    accounts = accounts.filter(a => a.username.toLowerCase() !== user.username.toLowerCase());
+    
+    let encPwd = '';
+    if (rememberCreds && password) {
+        try { encPwd = btoa(unescape(encodeURIComponent(password))); } catch(e){ encPwd = password; }
+    }
+
+    accounts.unshift({
+        username: user.username,
+        full_name: user.full_name || user.username,
+        email: user.email || '',
+        role: user.role || 'user',
+        access_mode: user.access_mode || 'MODIFY',
+        session_token: sessionToken,
+        saved_password: encPwd,
+        remember_creds: !!rememberCreds,
+        last_active: Date.now()
+    });
+
+    localStorage.setItem('nanopro_saved_accounts', JSON.stringify(accounts));
+    localStorage.setItem('nanopro_active_account', user.username);
+    localStorage.setItem('nanopro_session_token', sessionToken);
+    if (rememberCreds) {
+        localStorage.setItem('nanopro_remember_credentials', 'true');
+    }
+}
+
+function decodeSavedPassword(enc) {
+    if (!enc) return '';
+    try { return decodeURIComponent(escape(atob(enc))); } catch(e){ return enc; }
+}
+
+function removeSavedAccount(username) {
+    let accounts = getSavedAccounts();
+    accounts = accounts.filter(a => a.username.toLowerCase() !== username.toLowerCase());
+    localStorage.setItem('nanopro_saved_accounts', JSON.stringify(accounts));
+    
+    if ((localStorage.getItem('nanopro_active_account') || '').toLowerCase() === username.toLowerCase()) {
+        localStorage.removeItem('nanopro_active_account');
+        if (accounts.length > 0) {
+            switchToAccount(accounts[0].username);
+        } else {
+            performLogout();
+        }
+    } else {
+        renderAccountSwitcherModal();
+        renderAuthSavedAccountsChooser();
+    }
+}
+
+function signOutAllAccounts() {
+    localStorage.removeItem('nanopro_saved_accounts');
+    localStorage.removeItem('nanopro_active_account');
+    localStorage.removeItem('nanopro_session_token');
+    localStorage.removeItem('nanopro_remember_credentials');
+    location.reload();
+}
+
+// -------------------------------------------------------------------------
+// 2. MULTI-ACCOUNT SWITCHER MODAL & CHOOSER CONTROLLERS
+// -------------------------------------------------------------------------
+function openAccountSwitcherModal() {
+    const modal = document.getElementById('nanoProAccountSwitcherModal');
+    if (!modal) return;
+    renderAccountSwitcherModal();
+    modal.style.display = 'flex';
+}
+
+function closeAccountSwitcherModal() {
+    const modal = document.getElementById('nanoProAccountSwitcherModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderAccountSwitcherModal() {
+    const list = document.getElementById('accountSwitcherList');
+    if (!list) return;
+    const accounts = getSavedAccounts();
+    const activeUsername = (currentUser?.username || localStorage.getItem('nanopro_active_account') || '').toLowerCase();
+
+    if (accounts.length === 0) {
+        list.innerHTML = `
+            <div style="text-align:center; padding:20px; color:#94A3B8; font-size:12px; background:rgba(30,41,59,0.4); border-radius:12px; border:1px dashed rgba(255,255,255,0.1);">
+                या डिव्हाइसवर कोणतेही सेव्ह केलेले खाते नाही.<br>
+                नवीन खाते लॉगिन किंवा साइन-अप करण्यासाठी खालील बटण वापरा.
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = accounts.map(acc => {
+        const isActive = (acc.username.toLowerCase() === activeUsername);
+        const isAdmin = (acc.role === 'admin' || acc.username.toLowerCase() === 'nanopro');
+        const roleBadge = isAdmin 
+            ? `<span style="background:rgba(16,185,129,0.2); color:#10B981; border:1px solid #10B981; font-size:9px; padding:1px 6px; border-radius:10px; font-weight:800;">ADMIN</span>`
+            : `<span style="background:rgba(56,189,248,0.2); color:#38BDF8; border:1px solid #38BDF8; font-size:9px; padding:1px 6px; border-radius:10px; font-weight:700;">USER</span>`;
+        
+        return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:${isActive ? 'rgba(56,189,248,0.1)' : 'rgba(30,41,59,0.6)'}; border:1px solid ${isActive ? '#38BDF8' : 'rgba(255,255,255,0.08)'}; border-radius:12px; transition:all 0.2s;">
+                <div style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1;" onclick="${isActive ? '' : `switchToAccount('${acc.username}')`}">
+                    <div style="width:36px; height:36px; border-radius:50%; background:radial-gradient(circle, ${isAdmin ? '#10B981' : '#38BDF8'}, #0F172A); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; color:#FFF; box-shadow:0 0 10px rgba(0,0,0,0.5);">
+                        ${isAdmin ? '👑' : '👤'}
+                    </div>
+                    <div>
+                        <div style="font-weight:700; color:#FFFFFF; font-size:13px; display:flex; align-items:center; gap:6px;">
+                            ${acc.full_name || acc.username}
+                            ${roleBadge}
+                        </div>
+                        <div style="font-size:10.5px; color:#94A3B8;">@${acc.username}</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    ${isActive ? `
+                        <span style="font-size:10px; font-weight:800; color:#10B981; background:rgba(16,185,129,0.15); border:1px solid #10B981; padding:3px 8px; border-radius:12px;">
+                            🟢 Active
+                        </span>
+                    ` : `
+                        <button type="button" onclick="switchToAccount('${acc.username}')" style="background:linear-gradient(135deg, #0284C7, #2563EB); border:none; color:#FFF; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">
+                            Switch 🔄
+                        </button>
+                    `}
+                    <button type="button" onclick="removeSavedAccount('${acc.username}')" style="background:none; border:none; color:#64748B; font-size:16px; cursor:pointer; padding:2px;" title="Remove this account">&times;</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderAuthSavedAccountsChooser() {
+    const box = document.getElementById('authSavedAccountsChooser');
+    const chips = document.getElementById('authSavedAccountsChips');
+    if (!box || !chips) return;
+    const accounts = getSavedAccounts();
+    if (accounts.length === 0) {
+        box.style.display = 'none';
+        return;
+    }
+    box.style.display = 'block';
+    chips.innerHTML = accounts.map(a => {
+        const isAdmin = (a.role === 'admin' || a.username.toLowerCase() === 'nanopro');
+        return `
+            <button type="button" onclick="switchToAccount('${a.username}')" style="display:flex; align-items:center; gap:5px; background:rgba(15,23,42,0.8); border:1px solid ${isAdmin ? '#10B981' : '#38BDF8'}; color:#FFFFFF; padding:4px 10px; border-radius:14px; font-size:11px; font-weight:700; cursor:pointer;">
+                <span>${isAdmin ? '👑' : '👤'}</span>
+                <span>${a.username}</span>
+                <span style="color:#94A3B8; font-size:9px;">(${isAdmin ? 'Admin' : 'User'})</span>
+            </button>
+        `;
+    }).join('');
+}
+
+async function switchToAccount(targetUsername) {
+    const accounts = getSavedAccounts();
+    const acc = accounts.find(a => a.username.toLowerCase() === targetUsername.toLowerCase());
+    if (!acc) {
+        openAuthGatewayModal('login');
+        return;
+    }
+
+    closeAccountSwitcherModal();
+
+    // 1. Check if existing session token is still valid
+    if (acc.session_token) {
+        try {
+            const resp = await fetch('/api/auth/validate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ session_token: acc.session_token })
+            });
+            const data = await resp.json();
+            if (data.is_valid && data.user) {
+                localStorage.setItem('nanopro_session_token', acc.session_token);
+                localStorage.setItem('nanopro_active_account', acc.username);
+                currentSessionToken = acc.session_token;
+                onAuthSuccess(data.user);
+                if (typeof showHubToast === 'function') showHubToast(`Switched to: ${acc.username}`, 'success', '👤');
+                return;
+            }
+        } catch(e) {}
+    }
+
+    // 2. If token expired, attempt auto-login using saved password on this device
+    const rawPwd = decodeSavedPassword(acc.saved_password);
+    if (rawPwd) {
+        try {
+            const resp = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: acc.username, password: rawPwd })
+            });
+            const data = await resp.json();
+            if (data.status === 'success') {
+                saveAccountToStore(data.user, data.session_token, rawPwd, true);
+                currentSessionToken = data.session_token;
+                onAuthSuccess(data.user);
+                if (typeof showHubToast === 'function') showHubToast(`Switched to: ${acc.username}`, 'success', '👤');
+                return;
+            }
+        } catch(e) {}
+    }
+
+    // 3. Fallback: Open login form with username pre-filled
+    openAuthGatewayModal('login');
+    const uInput = document.getElementById('loginUsername');
+    if (uInput) uInput.value = acc.username;
+    const pInput = document.getElementById('loginPassword');
+    if (pInput) { pInput.value = ''; pInput.focus(); }
+    showAuthAlert(`Krupaya '${acc.username}' साठी पासवर्ड टाका.`, 'warning');
+}
+
+function openAuthGatewayModal(tab = 'login', isAddAnother = false) {
+    closeAccountSwitcherModal();
+    const gateway = document.getElementById('nanoProAuthGateway');
+    if (!gateway) return;
+
+    if (isAddAnother) {
+        const uInput = document.getElementById('loginUsername');
+        const pInput = document.getElementById('loginPassword');
+        if (uInput) uInput.value = '';
+        if (pInput) pInput.value = '';
+    }
+
+    switchAuthTab(tab);
+    gateway.classList.add('force-show');
+    gateway.style.display = 'flex';
+
+    // Show close button if user is already authenticated
+    const closeBtn = document.getElementById('authGatewayCloseBtn');
+    if (closeBtn) {
+        closeBtn.style.display = document.body.classList.contains('auth-verified') ? 'flex' : 'none';
+    }
+}
+
+function closeAuthGatewayModal() {
+    // Only allow closing if already authenticated
+    if (document.body.classList.contains('auth-verified')) {
+        const gateway = document.getElementById('nanoProAuthGateway');
+        if (gateway) {
+            gateway.classList.remove('force-show');
+            gateway.style.display = 'none';
+        }
+    }
+}
+
+window.openAccountSwitcherModal = openAccountSwitcherModal;
+window.closeAccountSwitcherModal = closeAccountSwitcherModal;
+window.openAuthGatewayModal = openAuthGatewayModal;
+window.closeAuthGatewayModal = closeAuthGatewayModal;
+window.switchToAccount = switchToAccount;
+window.signOutAllAccounts = signOutAllAccounts;
 
 function switchAuthTab(tab) {
     const alertBox = document.getElementById('authAlertBox');
@@ -927,6 +1292,7 @@ async function handleAuthLogin(e) {
 
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
+    const remember = document.getElementById('rememberCredentialsCheckbox')?.checked ?? true;
 
     try {
         const resp = await fetch('/api/auth/login', {
@@ -937,7 +1303,7 @@ async function handleAuthLogin(e) {
         const data = await resp.json();
 
         if (data.status === 'success') {
-            localStorage.setItem('nanopro_session_token', data.session_token);
+            saveAccountToStore(data.user, data.session_token, password, remember);
             currentSessionToken = data.session_token;
             currentUser = data.user;
             window.currentUser = data.user;
@@ -1070,10 +1436,26 @@ window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
 function onAuthSuccess(user) {
     currentUser = user;
     window.currentUser = user;
-    const gateway = document.getElementById('nanoProAuthGateway');
-    if (gateway) gateway.style.display = 'none';
 
-    // Show User info in top header
+    // Zero-Flash Auth Unlock: Reveal app shell seamlessly
+    document.body.classList.add('auth-verified');
+    document.documentElement.classList.add('auth-verified');
+
+    const gateway = document.getElementById('nanoProAuthGateway');
+    if (gateway) {
+        gateway.classList.remove('force-show');
+        gateway.style.display = 'none';
+    }
+
+    // Enable close button on gateway for future modal openings
+    const closeBtn = document.getElementById('authGatewayCloseBtn');
+    if (closeBtn) closeBtn.style.display = 'flex';
+
+    // Update active username in mobile hub
+    const hubUser = document.getElementById('hubActiveUsername');
+    if (hubUser) hubUser.textContent = user.username;
+
+    // Show User info in top header (with Switch Account & Login/Signup actions)
     updateHeaderUserProfile(user);
 
     // Apply granular RBAC feature permissions & sidebar pruning
@@ -1101,10 +1483,10 @@ function onAuthSuccess(user) {
 function updateHeaderUserProfile(user) {
     if (!user) return;
     const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
-    const roleLabel = isSuperAdmin ? '<span style="color:#10B981; font-weight:bold;">[Admin]</span>' : '<span style="color:#38BDF8;">[User]</span>';
-    const modeBadge = (!isSuperAdmin && user.access_mode === 'READ_ONLY') ? '<span style="color:#F59E0B; font-size:10px; border:1px solid #F59E0B; padding:1px 5px; border-radius:10px; margin-left:4px;">👁️ Read-Only</span>' : '';
+    const roleLabel = isSuperAdmin ? '<span style="color:#10B981; font-weight:800; font-size:10px;">[ADMIN]</span>' : '<span style="color:#38BDF8; font-weight:700; font-size:10px;">[USER]</span>';
+    const modeBadge = (!isSuperAdmin && user.access_mode === 'READ_ONLY') ? '<span style="color:#F59E0B; font-size:9.5px; border:1px solid #F59E0B; padding:1px 5px; border-radius:10px; margin-left:4px;">👁️ Read-Only</span>' : '';
 
-    // 1. Desktop Header Badge
+    // 1. Desktop Header Badge & Account Actions
     let badge = document.getElementById('headerUserBadge');
     if (!badge) {
         const topHeader = document.querySelector('.header-right-group');
@@ -1120,14 +1502,24 @@ function updateHeaderUserProfile(user) {
     }
     if (badge) {
         badge.innerHTML = `
-            <div style="font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.7); padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center;">
-                👤 <b style="margin-left:4px;">${user.username}</b> ${roleLabel} ${modeBadge}
+            <div onclick="openAccountSwitcherModal()" style="font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.85); padding:4px 10px; border-radius:20px; border:1px solid rgba(56,189,248,0.35); display:flex; align-items:center; gap:6px; cursor:pointer;" title="Click to switch accounts / खाते बदला">
+                <span>👤</span>
+                <b>${user.username}</b>
+                ${roleLabel}
+                ${modeBadge}
+                <span style="font-size:9.5px; color:#38BDF8; font-weight:800; background:rgba(56,189,248,0.2); border-radius:8px; padding:1px 6px; margin-left:2px;">🔄 Switch</span>
             </div>
+            <button type="button" onclick="openAuthGatewayModal('login', true)" style="background:rgba(56,189,248,0.15); border:1px solid #38BDF8; color:#38BDF8; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:11.5px; font-weight:bold;" title="Login with existing account">
+                🔐 Login
+            </button>
+            <button type="button" onclick="openAuthGatewayModal('register', true)" style="background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#10B981; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:11.5px; font-weight:bold;" title="Create new account">
+                📝 Sign Up
+            </button>
             <button type="button" onclick="performLogout()" style="background:rgba(239,68,68,0.15); border:1px solid #EF4444; color:#FCA5A5; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:11.5px; font-weight:bold;" title="Sign Out">
                 Logout 🚪
             </button>
         `;
-        // On mobile, hide from topbar to keep it 100% clean
+        // On mobile topbar, keep it clean (Mobile Hub has its own dedicated card)
         if (window.innerWidth <= 768) {
             badge.style.display = 'none';
         }
@@ -1176,11 +1568,22 @@ async function performLogout(isAuto=false) {
     currentSessionToken = null;
     currentUser = null;
     window.currentUser = null;
-    location.reload();
+    document.body.classList.remove('auth-verified');
+    document.documentElement.classList.remove('auth-verified');
+    
+    // Check if other saved accounts exist on this device
+    const accounts = getSavedAccounts();
+    if (accounts.length > 0) {
+        renderAuthSavedAccountsChooser();
+        openAuthGatewayModal('login');
+    } else {
+        location.reload();
+    }
 }
 
-// Initial Session Verification on Page Load
-document.addEventListener('DOMContentLoaded', async () => {
+// Initial Session & Credential Verification on Page Load (Zero-FOUC Auto-Login)
+async function verifySessionOnStartup() {
+    // 1. Check existing session token
     if (currentSessionToken) {
         try {
             const resp = await fetch('/api/auth/validate', {
@@ -1195,10 +1598,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch(e){}
     }
-    // If not authenticated, ensure gateway is visible
+
+    // 2. Check if auto-login with saved credentials is enabled on this device
+    const accounts = getSavedAccounts();
+    const activeUsername = localStorage.getItem('nanopro_active_account');
+    const targetAcc = accounts.find(a => a.username.toLowerCase() === (activeUsername || '').toLowerCase()) || accounts[0];
+
+    if (targetAcc && targetAcc.saved_password && localStorage.getItem('nanopro_remember_credentials') === 'true') {
+        try {
+            const rawPwd = decodeSavedPassword(targetAcc.saved_password);
+            if (rawPwd) {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username: targetAcc.username, password: rawPwd })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    saveAccountToStore(data.user, data.session_token, rawPwd, true);
+                    currentSessionToken = data.session_token;
+                    onAuthSuccess(data.user);
+                    return;
+                }
+            }
+        } catch(e) {}
+    }
+
+    // 3. Not authenticated -> strictly keep app shell hidden, reveal login gateway!
+    document.body.classList.remove('auth-verified');
+    document.documentElement.classList.remove('auth-verified');
     const gateway = document.getElementById('nanoProAuthGateway');
     if (gateway) gateway.style.display = 'flex';
-});
+    renderAuthSavedAccountsChooser();
+}
+
+document.addEventListener('DOMContentLoaded', verifySessionOnStartup);
 
 /* ========================================================================= */
 /* RBAC PERMISSION CONTROLLERS & GRANULAR ACCESS FUNCTIONS                   */

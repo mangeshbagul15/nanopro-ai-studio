@@ -3,13 +3,17 @@ Mangesh Nano Pro AI Studio - Central UI Dashboard Templates
 """
 
 def get_dashboard_html() -> str:
-    from app.ui.auth_components import get_auth_injection, get_user_management_view_html
+    from app.ui.auth_components import get_auth_injection, get_user_management_view_html, get_anti_fouc_head_injection
     from app.ui.admin_mobile_hub import get_admin_mobile_hub_html
     raw = _get_raw_dashboard_html()
-    return raw.replace(
+    head_shield = get_anti_fouc_head_injection()
+    processed = raw.replace("</head>", head_shield + "\n</head>")
+    processed = processed.replace(
         "<!-- INSERT_USER_MANAGEMENT_VIEW_HERE -->", 
         get_user_management_view_html() + "\n" + get_admin_mobile_hub_html()
-    ).replace("</body>", get_auth_injection() + "\n</body>")
+    )
+    processed = processed.replace("<body>", "<body>\n" + get_auth_injection() + "\n")
+    return processed
 
 def _get_raw_dashboard_html() -> str:
     return r'''<!DOCTYPE html>
