@@ -1334,6 +1334,112 @@ def get_admin_mobile_hub_html() -> str:
             </div>
         </div>
 
+        <!-- 10. ALL 51 STUDIO WORKSPACES & CREATORS (DIRECT 1-TAP ACCESS) -->
+        <div class="hub-card" style="border-color: rgba(244, 63, 94, 0.35);">
+            <div class="hub-sec-header">
+                <span class="hub-sec-title" style="color:#F43F5E;">🚀 Studio Workspaces &amp; Creators</span>
+                <span class="hub-sec-action" onclick="toggleMobileSidebar(true)">All 51 Views ☰</span>
+            </div>
+
+            <div class="hub-grid-2x">
+                <div class="hub-tile" onclick="switchView('universal_tech_video')" style="border-left:3px solid #F43F5E; background:rgba(244,63,94,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🎬</span>
+                        <span class="hub-tile-name">Universal Video</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#FDA4AF;">Tech Video Maker</div>
+                        <div class="hub-tile-sub">9:16 Shorts &amp; Reels</div>
+                    </div>
+                    <span class="hub-tile-badge badge-active-run" style="font-size:8px; border-color:#F43F5E; color:#FDA4AF;">LAUNCH ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('dashboard')" style="border-left:3px solid #38BDF8; background:rgba(56,189,248,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🏠</span>
+                        <span class="hub-tile-name">Studio Cockpit</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#38BDF8;">Main Dashboard</div>
+                        <div class="hub-tile-sub">Agent Overview</div>
+                    </div>
+                    <span class="hub-tile-badge badge-cyan" style="font-size:8px;">OPEN ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('sql_video')" style="border-left:3px solid #10B981; background:rgba(16,185,129,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🗄️</span>
+                        <span class="hub-tile-name">SQL Video</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#34D399;">SQL Interview Reels</div>
+                        <div class="hub-tile-sub">Queries &amp; Tables</div>
+                    </div>
+                    <span class="hub-tile-badge badge-live" style="font-size:8px;">OPEN ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('python_video')" style="border-left:3px solid #F59E0B; background:rgba(245,158,11,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🐍</span>
+                        <span class="hub-tile-name">Python Video</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#FBBF24;">Python Code Video</div>
+                        <div class="hub-tile-sub">Tutorial Animations</div>
+                    </div>
+                    <span class="hub-tile-badge badge-warn" style="font-size:8px;">OPEN ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('data_engineer')" style="border-left:3px solid #06B6D4; background:rgba(6,182,212,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">❄️</span>
+                        <span class="hub-tile-name">Data Engineering</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#67E8F9;">Pipelines &amp; ETL</div>
+                        <div class="hub-tile-sub">Snowflake &amp; AWS</div>
+                    </div>
+                    <span class="hub-tile-badge badge-cyan" style="font-size:8px;">OPEN ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('ai_office')" style="border-left:3px solid #A855F7; background:rgba(168,85,247,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🏢</span>
+                        <span class="hub-tile-name">AI Office</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#C084FC;">305 Live Agents</div>
+                        <div class="hub-tile-sub">Interactive Floor</div>
+                    </div>
+                    <span class="hub-tile-badge badge-purple" style="font-size:8px;">OPEN ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('cyber_lab')" style="border-left:3px solid #EF4444; background:rgba(239,68,68,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🛡️</span>
+                        <span class="hub-tile-name">Cyber Lab</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#F87171;">Security Defense</div>
+                        <div class="hub-tile-sub">Threat Scans &amp; Drills</div>
+                    </div>
+                    <span class="hub-tile-badge badge-warn" style="font-size:8px;">OPEN ↗</span>
+                </div>
+
+                <div class="hub-tile" onclick="toggleMobileSidebar(true)" style="border-left:3px solid #EC4899; background:rgba(236,72,153,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">☰</span>
+                        <span class="hub-tile-name">All 51 Features</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#F472B6;">Open Full Menu</div>
+                        <div class="hub-tile-sub">9 Categories</div>
+                    </div>
+                    <span class="hub-tile-badge badge-purple" style="font-size:8px;">BROWSE ☰</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- ========================================================================= -->

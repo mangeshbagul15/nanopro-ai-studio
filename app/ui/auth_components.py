@@ -55,12 +55,15 @@ def get_auth_injection() -> str:
     height: 100vh;
     background: radial-gradient(circle at 50% 30%, #0F172A 0%, #030712 100%);
     z-index: 9999999;
-    display: flex;
+    display: none !important;
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(16px);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     color: #F8FAFC;
+}
+#nanoProAuthGateway.force-show {
+    display: flex !important;
 }
 
 .auth-card {
@@ -806,7 +809,7 @@ def get_auth_injection() -> str:
 </style>
 
 <!-- AUTHENTICATION GATEWAY MODAL OVERLAY -->
-<div id="nanoProAuthGateway">
+<div id="nanoProAuthGateway" style="display:none;">
     <div class="auth-card" style="position:relative;">
         <button type="button" id="authGatewayCloseBtn" onclick="closeAuthGatewayModal()" style="display:none; position:absolute; top:18px; right:18px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#CBD5E1; border-radius:50%; width:32px; height:32px; align-items:center; justify-content:center; font-size:20px; cursor:pointer; z-index:10;" title="Close Gateway">&times;</button>
         <div class="auth-header">
@@ -1621,32 +1624,6 @@ function getUserFirstAllowedFeature(user) {
     if (hash && document.getElementById('view-' + hash)) {
         return hash;
     }
-    const u = user || window.currentUser || currentUser;
-    const isSuperAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
-    const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    
-    // Dedicated NanoPro Mobile Admin Command Center:
-    if (isSuperAdmin && isMob && document.getElementById('view-admin_mobile_hub')) {
-        return 'admin_mobile_hub';
-    }
-
-    const allowed = getUserDeviceAllowedViews(user);
-    if (allowed.includes('*') || allowed.includes('dashboard')) return 'dashboard';
-    if (allowed.includes('ai_manager')) return 'ai_manager';
-    
-    for (const view of allowed) {
-        if (view && view !== '*' && document.getElementById('view-' + view)) {
-            return view;
-        }
-    }
-    
-    const firstVisible = document.querySelector('.sidebar .nav-item:not([style*="display: none"]), .app-sidebar .nav-item:not([style*="display: none"])');
-    if (firstVisible) {
-        const oc = firstVisible.getAttribute('onclick') || '';
-        const m = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
-        if (m && m[1]) return m[1];
-    }
-    
     return 'dashboard';
 }
 window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;

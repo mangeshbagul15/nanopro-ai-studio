@@ -10432,29 +10432,29 @@ Ready for message compilation and automated dispatch.
 
     <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (NATIVE APP-LIKE EXPERIENCE) -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
-        <button type="button" class="mobile-bottom-nav-item active" id="mobTab-admin_mobile_hub" onclick="switchView('admin_mobile_hub')">
-            <span class="nav-icon" style="filter:drop-shadow(0 0 6px #38BDF8);">⚡</span>
-            <span style="font-weight:800; color:#38BDF8;">Hub</span>
+        <button type="button" class="mobile-bottom-nav-item active" id="mobTab-universal_tech_video" onclick="switchView('universal_tech_video')">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 6px #F43F5E);">🎬</span>
+            <span style="font-weight:800; color:#F43F5E;">Video</span>
+        </button>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-dashboard" onclick="switchView('dashboard')">
+            <span class="nav-icon">🏠</span>
+            <span>Studio</span>
         </button>
         <button type="button" class="mobile-bottom-nav-item" id="mobTab-ai_manager" onclick="switchView('ai_manager')">
-            <span class="nav-icon">💬</span>
+            <span class="nav-icon">🤖</span>
             <span>AI Chat</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-amazon_tracker" onclick="switchView('amazon_tracker')">
-            <span class="nav-icon">🏷️</span>
-            <span>Deals</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-data_engineer" onclick="switchView('data_engineer')">
+            <span class="nav-icon">🗄️</span>
+            <span>Data</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-assistant" onclick="switchView('assistant')">
-            <span class="nav-icon">⚡</span>
-            <span>Tasks</span>
-        </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-news_center" onclick="switchView('news_center')">
-            <span class="nav-icon">📰</span>
-            <span>News</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-admin_mobile_hub" onclick="switchView('admin_mobile_hub')">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 6px #38BDF8);">⚡</span>
+            <span style="font-weight:700; color:#38BDF8;">Hub</span>
         </button>
         <button type="button" class="mobile-bottom-nav-item" id="mobTab-menu" onclick="toggleMobileSidebar(true)">
             <span class="nav-icon">☰</span>
-            <span>Menu</span>
+            <span>Menu (51)</span>
         </button>
     </nav>
 
@@ -11055,6 +11055,7 @@ Ready for message compilation and automated dispatch.
                 }
             }
         }
+        window.switchView = switchView;
 
         function runViewContextualLoader(viewName) {
             try {
@@ -18155,14 +18156,14 @@ document.addEventListener('visibilitychange', () => {
 
 window.addEventListener('DOMContentLoaded', () => {
             try { 
-                const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-                let initTarget = 'ai_manager';
-                if (isMob && document.getElementById('view-admin_mobile_hub')) {
-                    initTarget = 'admin_mobile_hub';
+                const hashTarget = (window.location.hash || '').replace('#', '').trim();
+                let initTarget = 'dashboard';
+                if (hashTarget && document.getElementById('view-' + hashTarget)) {
+                    initTarget = hashTarget;
                 } else if (typeof getUserFirstAllowedFeature === 'function') {
-                    initTarget = getUserFirstAllowedFeature(window.currentUser);
+                    initTarget = getUserFirstAllowedFeature(window.currentUser) || 'dashboard';
                 }
-                switchView(initTarget); 
+                switchView(initTarget, true); 
             } catch(e) { console.error('switchView error:', e); }
             try { renderOfficeStations('dashOfficeFloor'); } catch(e) {}
             try { renderOfficeStations('officeFloorFull'); } catch(e) {}
