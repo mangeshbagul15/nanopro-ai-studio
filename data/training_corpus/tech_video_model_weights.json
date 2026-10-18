@@ -2,13 +2,13 @@
   "model_name": "NanoPro-TechVid-v1",
   "version": "1.5.2-continuous-learn",
   "repo_url": "https://github.com/mangesh-nanopro-studio/tech-video-neural-engine",
-  "total_epochs": 53,
-  "current_loss": 0.0372,
+  "total_epochs": 54,
+  "current_loss": 0.0363,
   "initial_loss": 0.45,
   "learning_rate": 0.0005,
-  "knowledge_vectors_count": 190,
+  "knowledge_vectors_count": 196,
   "status": "active_learning",
-  "last_updated": "2026-10-18 09:11:14",
+  "last_updated": "2026-10-18 09:35:27",
   "domains": {
     "sql": {
       "epochs": 16,
@@ -23,14 +23,20 @@
       ]
     },
     "python": {
-      "epochs": 9,
+      "epochs": 10,
       "concepts": [
         "AST",
-        "GENERATORS",
-        "ASYNCIO",
-        "DECORATORS",
+        "BUILD",
+        "DOCKER",
         "TYPE HINTS",
-        "PANDAS VECTORIZATION"
+        "FASTAPI",
+        "GENERATORS",
+        "PANDAS VECTORIZATION",
+        "DECORATORS",
+        "EXPLAIN",
+        "STAGE",
+        "MULTI",
+        "ASYNCIO"
       ]
     },
     "snowflake": {
@@ -98,6 +104,25 @@
     }
   },
   "recent_training_steps": [
+    {
+      "step_id": "step_54",
+      "epoch": 54,
+      "timestamp": "2026-10-18 09:35:27",
+      "domain": "python",
+      "prompt_sample": "Explain Docker Multi-Stage build for FastAPI reducing image size from 1GB to 120...",
+      "loss": 0.0363,
+      "delta_loss": -0.0009,
+      "learned_concepts": [
+        "EXPLAIN",
+        "DOCKER",
+        "MULTI",
+        "STAGE",
+        "BUILD",
+        "FASTAPI"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 43.0
+    },
     {
       "step_id": "step_53",
       "epoch": 53,

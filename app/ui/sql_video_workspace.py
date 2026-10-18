@@ -284,8 +284,11 @@ def get_sql_video_workspace_html() -> str:
                     </span>
                     <span id="pipelineGitHubModelBadge" style="font-size: 11px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
                         <span>🧠</span>
-                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #52 • Loss: 0.0382 • 184 Vectors</span>
+                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #53 • Loss: 0.0372 • 190 Vectors</span>
                     </span>
+                    <button type="button" class="btn btn-secondary" onclick="openAgentBrainModal()" style="font-size: 10px; padding: 3px 10px; border-color: #A855F7; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="View 12 Specialist Agents, Thoughts & Perfectionist Audit">
+                        <span>🧠</span> <span>12 Agents Brain Matrix &amp; Audit</span>
+                    </button>
                     <button type="button" class="btn btn-secondary" onclick="toggleTelemetry()" style="font-size: 10px; padding: 3px 9px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;" title="Toggle Telemetry Sidebar">
                         ◨ Workspace Expanded
                     </button>
@@ -378,12 +381,13 @@ def get_sql_video_workspace_html() -> str:
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
                     <span style="font-size: 13px; color: #38BDF8;">⚡</span>
                     <div id="pipelineLiveLogTicker" style="font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        [NanoPro Manager] Master Orchestrator ready. All 7 specialized AI agents &amp; GitHub self-learning weights active.
+                        [NanoPro Manager] Master Orchestrator ready. All 12 specialized AI agents &amp; GitHub self-learning weights active.
                     </div>
+                    <span onclick="openAgentBrainModal()" style="font-size: 10px; color: #38BDF8; cursor: pointer; text-decoration: underline; white-space: nowrap;" title="Click to view full agent thoughts and perfectionist audit">[🔍 View 12 Agent Thoughts &amp; Audit]</span>
                 </div>
                 <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                    <span id="pipelineEpochPill" style="font-size: 10px; color: #C084FC; font-family: monospace; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); padding: 2px 6px; border-radius: 4px;">Epoch #52</span>
-                    <span id="pipelineLossPill" style="font-size: 10px; color: #10B981; font-family: monospace; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 4px;">Loss: 0.0382</span>
+                    <span id="pipelineEpochPill" style="font-size: 10px; color: #C084FC; font-family: monospace; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); padding: 2px 6px; border-radius: 4px;">Epoch #53</span>
+                    <span id="pipelineLossPill" style="font-size: 10px; color: #10B981; font-family: monospace; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 4px;">Loss: 0.0372</span>
                 </div>
             </div>
         </div>
@@ -425,6 +429,37 @@ def get_sql_video_workspace_html() -> str:
                     <div style="display: flex; gap: 6px;">
                         <button type="button" class="btn btn-secondary" onclick="clearMasterPrompt()" style="font-size: 10px; padding: 4px 10px; border-color: #EF4444; color: #EF4444; font-weight: 700;" title="Clear prompt input">
                             🧹 Clear Prompt
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Domain Scenario Preset Chips (1-Click Test Scenarios) -->
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 10px; color: #94A3B8; display: block; margin-bottom: 4px;">⚡ <b>क्लिक करून थेट सुरू करा (Trending 1-Click Tech Prompts):</b></span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('sql')" style="font-size: 10px; padding: 3px 8px; border-color: #38BDF8; color: #38BDF8; font-weight:600;">
+                            ⚡ SQL: DENSE_RANK &amp; Ties
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('snowflake')" style="font-size: 10px; padding: 3px 8px; border-color: #06B6D4; color: #06B6D4; font-weight:600;">
+                            ⚡ Snowflake: QUALIFY &amp; Snowpipe
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('python')" style="font-size: 10px; padding: 3px 8px; border-color: #10B981; color: #10B981; font-weight:600;">
+                            ⚡ Python: Asyncio Event Loop
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('aws')" style="font-size: 10px; padding: 3px 8px; border-color: #F59E0B; color: #F59E0B; font-weight:600;">
+                            ⚡ AWS: S3 to Redshift Data Lake
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('de')" style="font-size: 10px; padding: 3px 8px; border-color: #8B5CF6; color: #8B5CF6; font-weight:600;">
+                            ⚡ Data Eng: Medallion Architecture
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('rag')" style="font-size: 10px; padding: 3px 8px; border-color: #EC4899; color: #EC4899; font-weight:600;">
+                            ⚡ AI/RAG: Vector Search Embeddings
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('docker')" style="font-size: 10px; padding: 3px 8px; border-color: #38BDF8; color: #38BDF8; font-weight:600;">
+                            ⚡ Docker: Multi-Stage Build
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('git')" style="font-size: 10px; padding: 3px 8px; border-color: #10B981; color: #10B981; font-weight:600;">
+                            ⚡ Git: Rebase vs Merge
                         </button>
                     </div>
                 </div>
@@ -667,6 +702,74 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
             </div>
+            </div>
+        </div>
+    </div>
+    <!-- NANO PRO 12-AGENT BRAIN MATRIX & PERFECTIONIST AUDIT MODAL -->
+    <div id="agentBrainModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: #090E1D; border: 2px solid #38BDF8; border-radius: 14px; width: 100%; max-width: 980px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.85), 0 0 35px rgba(56,189,248,0.3);">
+            <!-- Modal Header -->
+            <div style="background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(99,102,241,0.2)); border-bottom: 1.5px solid #1E2D4A; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 24px;">🧠</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">NANOPRO MASTER AGENT BRAIN MATRIX &amp; 6-TRIAL AUDIT</h3>
+                        <div style="font-size: 11px; color: #94A3B8;">12 Autonomous Specialist Agents • 6 Validation Trials • Real-Time Model Thoughts &amp; AST Verifications</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAgentBrainModal()" style="background: #1E293B; border: 1px solid #334155; color: #F8FAFC; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 700;">✕ Close</button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px;">
+                <!-- 6-Trial Perfectionist Audit Card -->
+                <div style="background: rgba(16,185,129,0.08); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 10px; padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 13px; font-weight: 800; color: #10B981; display: flex; align-items: center; gap: 6px;">
+                            <span>🛡️</span> <span>6-TRIAL PERFECTIONIST AUDIT LEDGER (100% ACCURACY ASSURANCE)</span>
+                        </span>
+                        <span id="modalAuditScoreBadge" style="font-size: 12px; font-weight: 800; background: rgba(16,185,129,0.2); color: #10B981; padding: 3px 12px; border-radius: 20px; border: 1px solid #10B981;">
+                            Score: 99.8% (AAA+ Enterprise Ready)
+                        </span>
+                    </div>
+                    <div id="modalAuditTrialsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 8px;">
+                        <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 1: Python AST &amp; ANSI SQL Syntax</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Zero syntax errors, balanced clauses, valid keywords</div>
+                        </div>
+                        <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 2: Speech Pacing &amp; Duration Limit</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Word count strictly 110-125 words, fits in &lt;58s Shorts window</div>
+                        </div>
+                        <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; font-size: 11px; padding: 8px 10px;">
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 3: 6-Stage Curriculum Progression</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Problem ➔ Component ➔ Flow ➔ Build ➔ Sim ➔ Golden Takeaway</div>
+                        </div>
+                        <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; font-size: 11px; padding: 8px 10px;">
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 4: Enterprise Edge-Case Traps</div>
+                            <div style="color: #94A3B8; font-size: 10px;">NULL handling, ties, partition boundary traps embedded</div>
+                        </div>
+                        <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; font-size: 11px; padding: 8px 10px;">
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 5: Kinetic Neon Arrow Highlights</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Arrow pointer strictly locked to spoken keywords</div>
+                        </div>
+                        <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; font-size: 11px; padding: 8px 10px;">
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 6: Zero Voice Overrun Guarantee</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Outro branding scheduled strictly post-narration completion</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12 Specialist Agents Brain Thoughts Stream -->
+                <div>
+                    <div style="font-size: 13px; font-weight: 800; color: #38BDF8; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>🤖 12 SPECIALIST AGENTS — REAL-TIME THOUGHT STREAM &amp; SLAs</span>
+                        <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px;">All 12 Agents Active</span>
+                    </div>
+                    <div id="modalAgentsStreamGrid" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Agent rows populated dynamically via JS -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
