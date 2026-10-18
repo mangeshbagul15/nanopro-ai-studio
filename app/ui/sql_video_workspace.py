@@ -81,6 +81,22 @@ def get_sql_video_workspace_html() -> str:
         overflow-x: auto;
         padding: 8px 0;
     }
+    @keyframes activeNodePulse {
+        0%, 100% {
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4), inset 0 0 8px rgba(56, 189, 248, 0.2);
+            border-color: #38BDF8;
+            transform: translateY(-2px);
+        }
+        50% {
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.95), inset 0 0 14px rgba(56, 189, 248, 0.4);
+            border-color: #7DD3FC;
+            transform: translateY(-4px) scale(1.02);
+        }
+    }
+    @keyframes badgeBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.55; }
+    }
     .agent-node {
         background: #0B132B;
         border: 1.5px solid #1E293B;
@@ -91,10 +107,17 @@ def get_sql_video_workspace_html() -> str:
         flex: 1;
         text-align: center;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: default;
+        cursor: pointer;
         overflow: hidden;
         word-break: break-word;
         box-sizing: border-box;
+        position: relative;
+    }
+    .agent-node:hover {
+        border-color: #38BDF8;
+        background: #0f1c3d;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
     }
     .agent-node .agent-badge {
         display: inline-block;
@@ -103,24 +126,42 @@ def get_sql_video_workspace_html() -> str:
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 8px;
-        padding: 1px 4px;
+        padding: 2px 5px;
         border-radius: 3px;
         box-sizing: border-box;
+        transition: all 0.25s ease;
     }
     .agent-node.active {
         border-color: #38BDF8 !important;
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.2)) !important;
-        box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(99, 102, 241, 0.22)) !important;
+        animation: activeNodePulse 1.5s ease-in-out infinite;
     }
     .agent-node.completed {
         border-color: #10B981 !important;
         background: rgba(16, 185, 129, 0.12) !important;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.25) !important;
     }
     .agent-node.training {
         border-color: #A855F7 !important;
-        background: rgba(168, 85, 247, 0.15) !important;
+        background: rgba(168, 85, 247, 0.18) !important;
         animation: learnPulse 1.4s infinite;
+    }
+    .agent-badge.badge-running {
+        color: #000 !important;
+        background: #38BDF8 !important;
+        font-weight: 800 !important;
+        animation: badgeBlink 1s infinite ease-in-out !important;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.8) !important;
+    }
+    .agent-badge.badge-done {
+        color: #10B981 !important;
+        background: rgba(16, 185, 129, 0.2) !important;
+        font-weight: 700 !important;
+        border: 1px solid rgba(16, 185, 129, 0.4) !important;
+    }
+    .agent-badge.badge-pending {
+        color: #64748B !important;
+        background: rgba(100, 116, 139, 0.15) !important;
     }
     .agent-connector {
         height: 3px;
@@ -280,6 +321,40 @@ def get_sql_video_workspace_html() -> str:
         font-weight: 800 !important;
         box-shadow: 0 0 14px rgba(99, 102, 241, 0.45) !important;
     }
+    /* High-Visibility Selected States for 3D Motion Background Chips */
+    .sql-motion-bg-chip {
+        font-size: 10px;
+        line-height: 1.25;
+        padding: 7px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1.5px solid #1E2D4A !important;
+        background: #0B1120 !important;
+        color: #94A3B8 !important;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 600;
+        white-space: normal;
+        word-break: break-word;
+        box-sizing: border-box;
+        text-align: left;
+    }
+    .sql-motion-bg-chip:hover {
+        border-color: #C084FC !important;
+        color: #F8FAFC !important;
+    }
+    .sql-motion-bg-chip.active {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(56, 189, 248, 0.25)) !important;
+        border: 2px solid #C084FC !important;
+        color: #E9D5FF !important;
+        font-weight: 800 !important;
+        box-shadow: 0 0 14px rgba(168, 85, 247, 0.45) !important;
+    }
+    .sql-motion-bg-chip.active .btn-check {
+        display: inline-block;
+    }
     /* High-Visibility Selected States for Creation Mode Buttons */
     .sql-mode-btn {
         font-size: 10px;
@@ -428,84 +503,106 @@ def get_sql_video_workspace_html() -> str:
                 </div>
             </div>
 
+            <!-- Live Stage Status Strip & Progress Bar -->
+            <div style="margin-bottom: 12px; background: rgba(11, 19, 43, 0.85); border: 1.5px solid #1E2D4A; border-radius: 8px; padding: 10px 14px; box-shadow: inset 0 0 15px rgba(0,0,0,0.4);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="pipelineProgressStageIcon" style="font-size: 14px; animation: badgeBlink 1.2s infinite;">⚡</span>
+                        <span id="pipelineProgressLabel" style="font-size: 12px; font-weight: 800; color: #38BDF8; letter-spacing: 0.3px;">
+                            Stage 1 of 8: Prompt Scenario Ingestion (Standby / Ready)
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11px; color: #94A3B8;">Click any stage below to inspect or run:</span>
+                        <span id="pipelineProgressPercent" style="font-weight: 800; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #10B981; background: rgba(16,185,129,0.18); border: 1px solid rgba(16,185,129,0.35); padding: 2px 8px; border-radius: 4px;">
+                            12.5% READY
+                        </span>
+                    </div>
+                </div>
+                <!-- Dynamic Progress Track & Animated Fill -->
+                <div style="width: 100%; height: 7px; background: #070B16; border-radius: 4px; overflow: hidden; border: 1px solid #1E293B; position: relative;">
+                    <div id="pipelineProgressBarFill" style="width: 12.5%; height: 100%; background: linear-gradient(90deg, #38BDF8, #6366F1, #10B981); border-radius: 4px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(56,189,248,0.7);"></div>
+                </div>
+            </div>
+
             <!-- 8 Interactive Pipeline Nodes & Laser Connectors -->
             <div class="agent-nodes-wrapper">
                 <!-- Node 1: Prompt Box -->
-                <div class="agent-node active" id="pnode-1" data-step="prompt">
+                <div class="agent-node active" id="pnode-1" data-step="prompt" onclick="selectPipelineStage(1)" title="Stage 1: Focus Scenario & Question Prompt Box">
                     <div style="font-size: 16px; margin-bottom: 2px;">📝</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">1. Prompt Box</div>
                     <div style="font-size: 9px; color: #94A3B8;">User Scenario</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #38BDF8; background: rgba(56,189,248,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Input Domain</div>
+                    <div class="agent-badge badge-running" id="pbadge-1">⚡ RUNNING</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-1"></div>
 
                 <!-- Node 2: NanoPro Manager -->
-                <div class="agent-node" id="pnode-2" data-step="manager">
+                <div class="agent-node" id="pnode-2" data-step="manager" onclick="selectPipelineStage(2)" title="Stage 2: Open 12 Agent Brain Matrix & Master Orchestrator">
                     <div style="font-size: 16px; margin-bottom: 2px;">🤖</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">2. NanoPro Agent</div>
                     <div style="font-size: 9px; color: #94A3B8;">Orchestration</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #10B981; background: rgba(16,185,129,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Master Controller</div>
+                    <div class="agent-badge badge-pending" id="pbadge-2">⏳ Pending</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-2"></div>
 
                 <!-- Node 3: Developing (Coding & Architecture) -->
-                <div class="agent-node" id="pnode-3" data-step="coding">
+                <div class="agent-node" id="pnode-3" data-step="coding" onclick="selectPipelineStage(3)" title="Stage 3: Inspect Code & Schema Generator (Groq / Gemini)">
                     <div style="font-size: 16px; margin-bottom: 2px;">💻</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">3. Developing</div>
                     <div style="font-size: 9px; color: #94A3B8;">Code &amp; Schema</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #F59E0B; background: rgba(245,158,11,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Groq / Gemini</div>
+                    <div class="agent-badge badge-pending" id="pbadge-3">⏳ Pending</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-3"></div>
 
                 <!-- Node 4: Modification & Verification Sandbox -->
-                <div class="agent-node" id="pnode-4" data-step="verification">
+                <div class="agent-node" id="pnode-4" data-step="verification" onclick="selectPipelineStage(4)" title="Stage 4: Execute AST Sandbox & Logic Verification Check">
                     <div style="font-size: 16px; margin-bottom: 2px;">🧪</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">4. Modification</div>
                     <div style="font-size: 9px; color: #94A3B8;">AST &amp; Logic Check</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #06B6D4; background: rgba(6,182,212,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">SQLite AST Sandbox</div>
+                    <div class="agent-badge badge-pending" id="pbadge-4">⏳ Pending</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-4"></div>
 
                 <!-- Node 5: Retouch (Visual Motion & Layout) -->
-                <div class="agent-node" id="pnode-5" data-step="retouch">
+                <div class="agent-node" id="pnode-5" data-step="retouch" onclick="selectPipelineStage(5)" title="Stage 5: Select 3D Motion Shaders & Cyber Visual Layout">
                     <div style="font-size: 16px; margin-bottom: 2px;">🎨</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">5. Retouch</div>
                     <div style="font-size: 9px; color: #94A3B8;">9:16 Canvas &amp; Neon</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #EC4899; background: rgba(236,72,153,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Runway / Cyber Glass</div>
+                    <div class="agent-badge badge-pending" id="pbadge-5">⏳ Pending</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-5"></div>
 
                 <!-- Node 6: Final Audio & Subtitle -->
-                <div class="agent-node" id="pnode-6" data-step="voice" onclick="openElevenLabsModal()" style="cursor: pointer;" title="Configure ElevenLabs Voice AI, Indian Male Tech YouTuber & Regional Voice Models">
+                <div class="agent-node" id="pnode-6" data-step="voice" onclick="selectPipelineStage(6)" title="Stage 6: Configure ElevenLabs & Regional Neural Voice Studio">
                     <div style="font-size: 16px; margin-bottom: 2px;">🎙️</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">6. Voice &amp; Subtitle</div>
                     <div style="font-size: 9px; color: #94A3B8;">Synced Voiceover</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #8B5CF6; background: rgba(139,92,246,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">ElevenLabs / Edge</div>
+                    <div class="agent-badge badge-pending" id="pbadge-6">⏳ Pending</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-6"></div>
 
                 <!-- Node 7: GitHub Self-Learning Model -->
-                <div class="agent-node" id="pnode-7" data-step="learning" onclick="openWeightsOptimizerModal()" style="cursor: pointer;" title="Open GitHub Continuous Learning & Synaptic Weights Optimizer">
+                <div class="agent-node" id="pnode-7" data-step="learning" onclick="selectPipelineStage(7)" title="Stage 7: Open GitHub Continuous Learning & Synaptic Weights Optimizer">
                     <div style="font-size: 16px; margin-bottom: 2px;">🧠</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">7. GitHub Model</div>
                     <div style="font-size: 9px; color: #94A3B8;">Continuous Learning</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #A855F7; background: rgba(168,85,247,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Weights Optimizer</div>
+                    <div class="agent-badge badge-pending" id="pbadge-7">⏳ Pending</div>
                 </div>
 
                 <div class="agent-connector" id="pconn-7"></div>
 
                 <!-- Node 8: Final Result Deliverable -->
-                <div class="agent-node" id="pnode-8" data-step="result">
+                <div class="agent-node" id="pnode-8" data-step="result" onclick="selectPipelineStage(8)" title="Stage 8: Preview 9:16 Mobile Deliverable & 1-Click Export">
                     <div style="font-size: 16px; margin-bottom: 2px;">🎬</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">8. Final Result</div>
                     <div style="font-size: 9px; color: #94A3B8;">1-Click 9:16 Video</div>
-                    <div class="agent-badge" style="font-size: 8px; color: #10B981; background: rgba(16,185,129,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">1080x1920 (&lt;60s)</div>
+                    <div class="agent-badge badge-pending" id="pbadge-8">⏳ Pending</div>
                 </div>
             </div>
 
@@ -637,6 +734,28 @@ def get_sql_video_workspace_html() -> str:
 
 ✨ कोडिंग मॉडेल्स (Groq LPU / Gemini Flash) आणि व्हिडिओ इंजिन स्वतः हा प्रॉम्प्ट वाचून व्हिडिओची रचना, ॲनिमेशन आणि ऑडिओ 100% डायनॅमिकली तयार करेल!" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; font-family: monospace; border-radius: 8px; padding: 10px; line-height: 1.5; resize: vertical;"></textarea>
 
+                <!-- 3. CODE & ARCHITECTURE BLUEPRINT (SYNTAX & AST SANDBOX) -->
+                <div id="codeBlueprintContainer" style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.85); border: 1.5px solid #1E2D4A; border-radius: 8px; padding: 12px; transition: all 0.3s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleCodeBlueprintViewer()">
+                        <span style="font-size: 11px; font-weight: 700; color: #F59E0B; display: flex; align-items: center; gap: 6px;">
+                            <span>💻</span> <span>3. CODE &amp; ARCHITECTURE BLUEPRINT (STAGE 3 &amp; 4)</span>
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span id="astSandboxBadge" style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 1px 6px; border-radius: 4px; font-weight: 700;">✓ AST Valid</span>
+                            <span id="toggleCodeBlueprintArrow" style="font-size: 10px; color: #94A3B8;">▼</span>
+                        </div>
+                    </div>
+                    <div id="codeBlueprintBody" style="margin-top: 8px;">
+                        <textarea id="sqlShortCodePreview" rows="5" style="width: 100%; background: #070B16; border: 1px solid #283C62; color: #38BDF8; font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; border-radius: 6px; padding: 8px; line-height: 1.4; resize: vertical;" placeholder="-- Production SQL / Python / Cloud Architecture code will appear here after generation..."></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 6px;">
+                            <span style="font-size: 10px; color: #94A3B8;">Groq LPU (qwen2.5-coder) / Gemini AST Verified</span>
+                            <button type="button" class="btn btn-secondary" onclick="runPipelineSandboxVerification()" style="font-size: 10px; padding: 3px 10px; border-color: #06B6D4; color: #06B6D4; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                                <span>🧪</span> <span>Run In-Memory AST Sandbox Check</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Multilingual Controls: Audio Voice & Text Overlays -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
                     <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
@@ -714,25 +833,42 @@ def get_sql_video_workspace_html() -> str:
                     <div id="avatarRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
                 </div>
 
-                <!-- 3D Cinematic Motion Background (Runway Gen-4 & Luma Dream Machine) -->
+                <!-- 3D Cinematic Motion Background (Modern & Trending 60 FPS Native Shaders + Cloud AI) -->
                 <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #C084FC; text-transform: uppercase; letter-spacing: 0.5px;">🎥 3D Motion Background (Runway &amp; Luma)</span>
-                        <span style="font-size: 10px; color: #38BDF8; background: rgba(56,189,248,0.15); padding: 2px 6px; border-radius: 4px;">Dynamic Motion</span>
+                        <span style="font-size: 11px; font-weight: 700; color: #C084FC; text-transform: uppercase; letter-spacing: 0.5px;">🎥 3D Motion Background (Modern &amp; Trending)</span>
+                        <span style="font-size: 10px; color: #38BDF8; background: rgba(56,189,248,0.15); padding: 2px 6px; border-radius: 4px;">60 FPS Native</span>
                     </div>
-                    <!-- Dynamic Background Selector Buttons (Zero Dropdowns) -->
+                    <!-- Dynamic Background Selector Hidden Input -->
                     <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
-                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                        <button type="button" class="sql-avatar-btn active" id="btnBgCyber" onclick="setSqlMotionEngine(false); document.getElementById('sqlCinematicBgSelect').value='cyber_matrix'; this.classList.add('active'); document.getElementById('btnBg3D').classList.remove('active');">
-                            <span class="btn-check">✓</span> <span>🌐 Transparent Cyber Glass</span>
+                    
+                    <!-- Trending 3D Motion Background Chip Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+                        <button type="button" class="sql-motion-bg-chip active" data-bg="cyber_matrix" onclick="select3DMotionBg('cyber_matrix')">
+                            <span class="btn-check">✓</span> <span>🌐 Cyber Matrix Grid</span>
                         </button>
-                        <button type="button" class="sql-avatar-btn" id="btnBg3D" onclick="setSqlMotionEngine(true); document.getElementById('sqlCinematicBgSelect').value='runway_cloud'; this.classList.add('active'); document.getElementById('btnBgCyber').classList.remove('active');">
-                            <span class="btn-check">✓</span> <span>🎥 3D AI Motion Engine</span>
+                        <button type="button" class="sql-motion-bg-chip" data-bg="quantum_nebula" onclick="select3DMotionBg('quantum_nebula')">
+                            <span class="btn-check" style="display:none;">✓</span> <span>🌌 Quantum Nebula</span>
+                        </button>
+                        <button type="button" class="sql-motion-bg-chip" data-bg="silicon_laser" onclick="select3DMotionBg('silicon_laser')">
+                            <span class="btn-check" style="display:none;">✓</span> <span>⚡ Silicon Circuit Laser</span>
+                        </button>
+                        <button type="button" class="sql-motion-bg-chip" data-bg="warp_tunnel" onclick="select3DMotionBg('warp_tunnel')">
+                            <span class="btn-check" style="display:none;">✓</span> <span>🚀 Warp Data Tunnel</span>
+                        </button>
+                        <button type="button" class="sql-motion-bg-chip" data-bg="fintech_ledger" onclick="select3DMotionBg('fintech_ledger')">
+                            <span class="btn-check" style="display:none;">✓</span> <span>🏦 FinTech 3D Ledger</span>
+                        </button>
+                        <button type="button" class="sql-motion-bg-chip" data-bg="neural_synapse" onclick="select3DMotionBg('neural_synapse')">
+                            <span class="btn-check" style="display:none;">✓</span> <span>🧬 Neural AI Synapse</span>
+                        </button>
+                        <button type="button" class="sql-motion-bg-chip" data-bg="runway_cloud" onclick="select3DMotionBg('runway_cloud')" style="grid-column: span 2;">
+                            <span class="btn-check" style="display:none;">✓</span> <span>☁️ Runway &amp; Luma Cloud AI (with Instant Failover)</span>
                         </button>
                     </div>
                     <div style="display: flex; gap: 6px;">
                         <button type="button" class="btn btn-secondary" onclick="renderCinematicBackgroundVideo()" id="btnRenderCinematicBg" style="flex: 1; font-size: 11px; padding: 6px; color: #C084FC; border-color: rgba(168,85,247,0.4);">
-                            🚀 Generate 9:16 Cinematic Video (Runway / Luma)
+                            🚀 Render / Queue Cloud Cinematic Video (Runway / Luma)
                         </button>
                     </div>
                     <div id="cinematicBgRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>

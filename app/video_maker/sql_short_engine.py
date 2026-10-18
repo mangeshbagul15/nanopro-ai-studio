@@ -1033,7 +1033,8 @@ class SqlShortVideoEngine:
             "select", "from", "table", "salary", "query", "find", "write", "calculate",
             "highest", "lowest", "dense_rank", "partition", "lead", "lag", "streak",
             "consecutive", "running balance", "cumulative", "employee", "employees",
-            "order by", "group by", "create table", "insert into"
+            "order by", "group by", "create table", "insert into", "bank", "banking",
+            "ledger", "balance", "account", "transaction", "sql", "second highest"
         ]
 
         # First check explicit theory keywords
@@ -1054,8 +1055,22 @@ class SqlShortVideoEngine:
 
     def _build_default_pipeline_stages(self, content_type: str, query_sql: str, table_name: str) -> List[Dict[str, str]]:
         q_up = (query_sql or "").upper()
-        tbl = table_name or "TRANSACTIONS"
-        if "PYTHON" in tbl or "ASYNC" in q_up or "DEF " in q_up:
+        tbl = (table_name or "TRANSACTIONS").upper()
+        if "BANK" in tbl or "LEDGER" in q_up or "RUNNING" in q_up or "BALANCE" in q_up:
+            return [
+                {"icon": "🏦", "name": "BANK_LEDGER", "sub": "Transaction Feed"},
+                {"icon": "🪟", "name": "PARTITION BY", "sub": "account_no Groups"},
+                {"icon": "📈", "name": "SUM() OVER", "sub": "Window Accumulator"},
+                {"icon": "🎯", "name": "RUNNING BALANCE", "sub": "Real-Time Balance"}
+            ]
+        elif "SERVER" in tbl or "LOCAL" in tbl or "CLOUD" in tbl or "CLAUDE" in tbl or "HOST" in tbl:
+            return [
+                {"icon": "🖥️", "name": "Compute Node", "sub": "Bare Metal / VM"},
+                {"icon": "🌐", "name": "Network & SLA", "sub": "LAN vs Public IP"},
+                {"icon": "⚖️", "name": "Cost & Scale", "sub": "CapEx vs OpEx"},
+                {"icon": "🎯", "name": "Production Target", "sub": "Optimal Architecture"}
+            ]
+        elif "PYTHON" in tbl or "ASYNC" in q_up or "DEF " in q_up:
             return [
                 {"icon": "🐍", "name": "Event Loop", "sub": "AsyncIO Core"},
                 {"icon": "⚡", "name": "Coroutine Task", "sub": "Non-Blocking I/O"},
@@ -1127,10 +1142,10 @@ class SqlShortVideoEngine:
             ]
         elif content_type == "theory":
             return [
-                {"icon": "📁", "name": "FROM & JOIN", "sub": "Load Buffer"},
-                {"icon": "⚡", "name": "WHERE FILTER", "sub": "Row Level"},
-                {"icon": "🪟", "name": "GROUP BY", "sub": "Aggregate Groups"},
-                {"icon": "🎯", "name": "HAVING FILTER", "sub": "Group Level"}
+                {"icon": "📋", "name": "Concept Analysis", "sub": "Architectural Scope"},
+                {"icon": "⚖️", "name": "Core Distinction", "sub": "Mechanism Contrast"},
+                {"icon": "⚙️", "name": "Engine Execution", "sub": "Runtime Lifecycle"},
+                {"icon": "🎯", "name": "Production Target", "sub": "Optimal Architecture"}
             ]
         else:
             return [
@@ -1230,7 +1245,9 @@ class SqlShortVideoEngine:
 
         if content_type == "theory":
             concept = matched.get("concept_summary", "Understand the core structural differences between system operations.")
-            golden = matched.get("golden_rule", "Filter individual records with WHERE, filter aggregated groups with HAVING.")
+            term_a = matched.get("term_a") or "Concept A"
+            term_b = matched.get("term_b") or "Concept B"
+            golden = matched.get("golden_rule") or f"Choose {term_a} for localized control, choose {term_b} for scalable operations."
             return [
                 {
                     "id": 1, "action_type": "problem_intro", "title": "Theory Question & Core Objective",
@@ -1240,33 +1257,33 @@ class SqlShortVideoEngine:
                 },
                 {
                     "id": 2, "action_type": "data_inspection", "title": "Core Distinction & Misconception",
-                    "speech_en": f"Why do candidates stumble? {concept}. Let's examine the internal difference.",
+                    "speech_en": f"Why do candidates stumble? {concept}. Let's examine the internal architectural difference.",
                     "speech_mr": f"उमेदवार इथे का अडखळतात? {concept}. चला यातील तांत्रिक फरक नीट समजून घेऊया.",
                     "speech_hi": f"कैंडिडेट्स अक्सर यहाँ क्यों गलती करते हैं? {concept}. आइए इसका इंटरनल अंतर देखते हैं."
                 },
                 {
-                    "id": 3, "action_type": "logic_flowchart", "title": "Database Engine Execution Order",
-                    "speech_en": "Look at the database engine lifecycle: FROM and JOIN load rows, WHERE filters rows, then GROUP BY and HAVING evaluate.",
-                    "speech_mr": "डेटाबेस एक्झिक्युशन क्रम पाहा: आधी FROM आणि WHERE ने रोज फिल्टर होतात, मग GROUP BY आणि शेवटी HAVING ग्रुप्स तपासते.",
-                    "speech_hi": "डेटाबेस एग्जीक्यूशन आर्डर देखिए: पहले FROM और WHERE से रोज फिल्टर होते हैं, फिर GROUP BY और आखिर में HAVING ग्रुप्स चेक करता है."
+                    "id": 3, "action_type": "logic_flowchart", "title": "System & Lifecycle Architecture",
+                    "speech_en": f"Look at the system lifecycle: {term_a} operates at the baseline hardware level, while {term_b} manages elastic distribution.",
+                    "speech_mr": f"सिस्टिम लाइफसायकल पाहा: {term_a} बेसलाइन स्तरावर काम करते, तर {term_b} लवचिक डिस्ट्रीब्यूशन हाताळते.",
+                    "speech_hi": f"सिस्टम लाइफसाइकिल देखिए: {term_a} बेसलाइन लेवल पर काम करता है, जबकि {term_b} इलास्टिक डिस्ट्रीब्यूशन संभालता है."
                 },
                 {
                     "id": 4, "action_type": "code_build", "title": "Syntax & Implementation Placement",
-                    "speech_en": "Here is the code syntax side-by-side. WHERE filters before aggregation, while HAVING filters aggregate functions like COUNT.",
-                    "speech_mr": "इथे कोड सिंटॅक्स शेजारी-शेजारी बघा. WHERE ॲग्रीगेशनच्या आधी लागते, तर HAVING मध्ये COUNT, SUM सारखी फंक्शन्स वापरता येतात.",
-                    "speech_hi": "यहाँ कोड सिंटैक्स साथ-साथ देखिए. WHERE एग्रीगेशन से पहले लगता है, जबकि HAVING में COUNT, SUM जैसे फंक्शन्स चेक होते हैं."
+                    "speech_en": f"Here is the configuration and syntax side-by-side. Notice how {term_a} and {term_b} solve the problem differently.",
+                    "speech_mr": f"इथे दोन्हीचे कॉन्फिगरेशन आणि सिंटॅक्स शेजारी-शेजारी बघा. {term_a} आणि {term_b} यातील स्पष्ट फरक लक्षात येतो.",
+                    "speech_hi": f"यहाँ दोनों का कॉन्फिगरेशन और सिंटैक्स साथ-साथ देखिए. {term_a} और {term_b} की कार्यशैली का अंतर समझिए."
                 },
                 {
                     "id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix & Traps",
-                    "speech_en": "Memorize this matrix: WHERE leverages B-Tree indexes; HAVING evaluates in memory. Never put row filters in HAVING!",
-                    "speech_mr": "हा मॅट्रिक्स लक्षात ठेवा: WHERE इंडेक्स वापरून रॅम वाचवते, तर HAVING मेमरीमध्ये चालते. नॉन-ॲग्रीगेट फिल्टर नेहमी WHERE मध्ये लावा!",
-                    "speech_hi": "यह मैट्रिक्स याद रखें: WHERE इंडेक्स इस्तेमाल करके रैम बचाता है, जबकि HAVING मेमोरी में चेक होता है. नॉन-एग्रीगेट फिल्टर हमेशा WHERE में लगाएं!"
+                    "speech_en": f"Memorize this comparison matrix: Compare latency, cost, and maintenance before making production choices.",
+                    "speech_mr": "हा तुलना मॅट्रिक्स लक्षात ठेवा: प्रोडक्शनमध्ये निर्णय घेताना लेटन्सी, खर्च आणि मेंटेनन्सचा नीट विचार करा!",
+                    "speech_hi": "यह कंपैरिजन मैट्रिक्स याद रखें: प्रोडक्शन डिप्लॉयमेंट से पहले लेटेंसी, लागत और मेंटेनेंस को जरूर जांचें!"
                 },
                 {
                     "id": 6, "action_type": "final_result", "title": "Interview Golden Takeaway",
                     "speech_en": f"Remember this golden interview rule: {golden}. Explain this clearly to impress senior hiring managers!",
-                    "speech_mr": f"नेहमी लक्षात ठेवा हा सुवर्ण नियम: {golden}. हे एका वाक्यात समजावून सांगितल्यास इंटरव्ह्यूमध्ये पूर्ण गुण मिळतात!",
-                    "speech_hi": f"हमेशा याद रखें यह गोल्डन रूल: {golden}. इंटरव्यूअर को यह समझाते ही आपका सिलेक्शन पक्का!"
+                    "speech_mr": f"नेहमी लक्षात ठेवा हा सुवर्ण नियम: {golden}. हे स्पष्टपणे समजावून सांगितल्यास इंटरव्ह्यूमध्ये पूर्ण गुण मिळतात!",
+                    "speech_hi": f"हमेशा याद रखें यह गोल्डन रूल: {golden}. इंटरव्यूअर को यह समझाते ही आपका उत्तर सबसे प्रभावी बनेगा!"
                 }
             ]
         else:
@@ -1317,200 +1334,535 @@ class SqlShortVideoEngine:
         """
         text_clean = text.strip()
         is_theory = self._detect_content_type(text_clean) == "theory"
+        q_up = text_clean.upper()
+        low = text_clean.lower()
+        first_line = text_clean.split("\n")[0].strip()
 
-        # Check if SQL query is present in the prompt
+        # =====================================================================
+        # 1. THEORY & SYSTEM ARCHITECTURE TOPICS (Zero Hardcoded Presets)
+        # =====================================================================
+        if is_theory:
+            # Topic A: Server Architecture / Local Server vs Cloud Server / Claude Server
+            if ("SERVER" in q_up or "LOCAL" in q_up) and ("CLOUD" in q_up or "CLAUDE" in q_up or "ON-PREM" in q_up or "HOST" in q_up or "AWS" in q_up):
+                suggested_motion_bg = "silicon_laser"
+                title = "Local Server vs Cloud Server: Architecture & Deployment"
+                concept_summary = "Local (On-Premises) servers provide full hardware control and ultra-low LAN latency, while Cloud servers deliver instant auto-scaling, global disaster recovery, and zero hardware maintenance."
+                term_a = "LOCAL SERVER (ON-PREMISES)"
+                term_b = "CLOUD SERVER (AWS / CLOUD)"
+                comp_title = "LOCAL SERVER vs CLOUD SERVER ARCHITECTURE MATRIX"
+                comp_headers = ["CRITERIA", "LOCAL SERVER (ON-PREM)", "CLOUD SERVER (AWS/AZURE)"]
+                comp_rows = [
+                    {"feature": "Capital & Cost Model", "col_a": "High initial CapEx (Hardware & Facilities)", "col_b": "Pay-as-you-go OpEx (Usage-based)"},
+                    {"feature": "Elasticity & Scalability", "col_a": "Slow (Requires procurement & racking)", "col_b": "Instant Auto-Scaling in seconds"},
+                    {"feature": "Maintenance Overhead", "col_a": "In-house IT team for disks, cooling, OS", "col_b": "100% managed by cloud provider"},
+                    {"feature": "Data Sovereignty & Security", "col_a": "Physical data isolation within firewall", "col_b": "Shared responsibility & compliance"}
+                ]
+                syntax_a_title = "LOCAL SERVER HOSTING (SYSTEMD / BARE-METAL)"
+                syntax_a_code = "[Unit]\nDescription=Production API on Bare Metal\nAfter=network.target\n\n[Service]\nExecStart=/usr/local/bin/server_app\nRestart=always\nUser=sysadmin\nMemoryMax=64G"
+                syntax_a_note = "Direct hardware access, zero virtualization overhead, deterministic LAN latency."
+                syntax_b_title = "CLOUD SERVER HOSTING (TERRAFORM / AWS EC2)"
+                syntax_b_code = "resource \"aws_instance\" \"cloud_cluster\" {\n  ami           = \"ami-0c55b159cbfafe1f0\"\n  instance_type = \"t4g.xlarge\"\n  monitoring    = true\n  tags = { Tier = \"Elastic-Cloud-Prod\" }\n}"
+                syntax_b_note = "Elastic cloud provisioning, managed hypervisor, dynamic multi-AZ redundancy."
+                traps_title = "FATAL ARCHITECTURAL MISTAKES TO AVOID"
+                traps = [
+                    "❌ Trap: Assuming Cloud is always cheaper — unmonitored idle cloud instances cause massive bill shock!",
+                    "✅ Rule: Use Local for constant predictable loads & strict compliance; use Cloud for elastic traffic & rapid scaling!"
+                ]
+                golden_rule = "Choose Local Servers for complete physical ownership, zero third-party dependency, and constant baseline workloads. Choose Cloud Servers for elastic scaling, zero hardware overhead, and worldwide high availability."
+                pitch_to_interviewer = "In interviews: State that Local On-Premises is optimal for strict compliance and steady-state compute, while Cloud provides unmatched elasticity and geographic disaster recovery."
+                pro_tip = "💡 Senior Architect Pro-Tip: Evaluate CapEx vs OpEx, SLA latency requirements, and compliance before committing to an architecture!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "title": "Architecture Overview",
+                        "speech_mr": "सिस्टिम आर्किटेक्चर आणि क्लाउड इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: लोकल सर्व्हर विरुद्ध क्लाउड सर्व्हर! यात नेमका फरक काय आहे?",
+                        "speech_hi": "सिस्टम आर्किटेक्चर और क्लाउड इंटरव्यू का पसंदीदा सवाल: लोकल सर्वर बनाम क्लाउड सर्वर! आइए समझते हैं कि प्रोडक्शन में किसे कब चुनना चाहिए.",
+                        "speech_en": "Top system architecture interview question: Local Server vs Cloud Server! When should you deploy on-prem, and when should you scale to the cloud?"
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "title": "Physical Control vs Elasticity",
+                        "speech_mr": "लोकल सर्व्हर म्हणजे ऑन-प्रिमिसेस हार्डवेअर, जिथे पूर्ण फिजिकल कंट्रोल असतो. तर क्लाउड सर्व्हर म्हणजे ॲमेझॉन एडब्ल्यूएस किंवा अझ्युरवरील ऑन-डिमांड व्हर्च्युअल इन्स्टन्स.",
+                        "speech_hi": "लोकल सर्वर मतलब ऑन-प्रिमाइसेस हार्डवेयर, जहाँ पूरा फिजिकल कंट्रोल आपके पास होता है. जबकि क्लाउड सर्वर ऑन-डिमांड रिसोर्सेस हैं जिन्हें कभी भी बढ़ाया जा सकता है.",
+                        "speech_en": "Local server means physical on-premises hardware with complete control. Cloud server provides elastic virtual instances on AWS or Azure managed entirely by the vendor."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "title": "Cost Model: CapEx vs OpEx",
+                        "speech_mr": "कॅपिटल कॉस्ट आणि मेंटेनन्स: लोकल सर्व्हरमध्ये आधी मोठा खर्च आणि आयटी टीम लागते, तर क्लाउडमध्ये पे-ॲज-यू-गो मॉडेल असते.",
+                        "speech_hi": "कैपेक्स बनाम ऑपेक्स: लोकल सर्वर में भारी इनिशियल हार्डवेयर इनवेस्टमेंट लगती है, जबकि क्लाउड में केवल यूज किए गए रिसोर्स का मंथली बिल आता है.",
+                        "speech_en": "Look at the cost model: Local requires heavy upfront capital expenditure for hardware and cooling, whereas Cloud operates on a flexible pay-as-you-go operational expense."
+                    },
+                    {
+                        "id": 4, "action_type": "code_build", "title": "Deployment & Scale Speed",
+                        "speech_mr": "डिप्लॉयमेंट आणि स्केलेबिलिटी: लोकल सर्व्हर वाढवायला आठवडे लागतात, तर क्लाउडवर ऑटो-स्केलिंगने ट्रॅफिकनुसार सेकंदात नवीन सर्व्हर्स सुरू होतात.",
+                        "speech_hi": "स्केलिंग स्पीड: लोकल सर्वर को स्केल करने में हफ्ते लग सकते हैं, जबकि क्लाउड ऑटो-स्केलिंग सेकंड्स में नए सर्वर स्पिन अप कर देती है.",
+                        "speech_en": "Comparing deployment speed: Bare-metal local servers require physical racking and setup, while Cloud Terraform templates spin up multi-region clusters in seconds."
+                    },
+                    {
+                        "id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix & Traps",
+                        "speech_mr": "हा तुलना मॅट्रिक्स लक्षात ठेवा: डेटा सिक्युरिटी व स्थिर ट्रॅफिकसाठी लोकल सर्व्हर उत्तम; तर हाय स्केलेबिलिटी व ग्लोबल रिचसाठी क्लाउड सर्व्हर!",
+                        "speech_hi": "यह कंपैरिजन मैट्रिक्स याद रखें: प्रेडिक्टेबल वर्कलोड और डेटा सॉवरेन्टी के लिए लोकल; इलास्टिक स्केलिंग और जीरो हार्डवेयर हेडेक के लिए क्लाउड!",
+                        "speech_en": "Memorize this matrix: Local excels for constant workloads and data isolation. Cloud dominates for sudden traffic spikes and global fault tolerance."
+                    },
+                    {
+                        "id": 6, "action_type": "final_result", "title": "Golden Rule & Takeaway",
+                        "speech_mr": "गोल्डन रुल: इंटरव्ह्यूमध्ये सांगा, कॉस्ट, लेटन्सी आणि कम्प्लायन्स या तीन घटकांवरून आर्किटेक्चर निवडले जाते!",
+                        "speech_hi": "गोल्डन रूल: इंटरव्यू में समझाएं कि कॉस्ट, लेटेंसी और स्केलेबिलिटी के ट्रेड-ऑफ पर ही सही सर्वर आर्किटेक्चर चुना जाता है!",
+                        "speech_en": "Universal Golden Rule: Choose Local for data sovereignty and baseline loads; choose Cloud for rapid innovation, elastic scale, and high availability!"
+                    }
+                ]
+            # Topic B: WHERE vs HAVING
+            elif "WHERE" in q_up and "HAVING" in q_up:
+                suggested_motion_bg = "quantum_nebula"
+                title = "SQL Theory: WHERE vs HAVING Clause"
+                concept_summary = "WHERE prunes individual rows before grouping (leveraging B-Tree indexes); HAVING evaluates aggregated metrics after GROUP BY has assembled row clusters."
+                term_a = "WHERE CLAUSE (ROW FILTER)"
+                term_b = "HAVING CLAUSE (GROUP FILTER)"
+                comp_title = "WHERE vs HAVING COMPARISON MATRIX"
+                comp_headers = ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"]
+                comp_rows = [
+                    {"feature": "Execution Order", "col_a": "Step 2: Pre-Filter (Before GROUP BY)", "col_b": "Step 4: Post-Filter (After GROUP BY)"},
+                    {"feature": "Aggregate Functions", "col_a": "❌ CANNOT use (SUM, COUNT, AVG)", "col_b": "✅ CAN use (e.g. COUNT(*) > 5)"},
+                    {"feature": "Target Scope", "col_a": "Individual table rows", "col_b": "Aggregated bucket groups"},
+                    {"feature": "Index Optimization", "col_a": "⚡ Uses Table Indexes fast", "col_b": "Evaluates in RAM memory"}
+                ]
+                syntax_a_title = "WHERE CLAUSE SYNTAX (ROW FILTER)"
+                syntax_a_code = "SELECT emp_name, department, salary\nFROM employees\nWHERE salary > 50000;"
+                syntax_a_note = "Row-level filter evaluated directly during initial table or index scan."
+                syntax_b_title = "HAVING CLAUSE SYNTAX (GROUP FILTER)"
+                syntax_b_code = "SELECT department, COUNT(*)\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 5;"
+                syntax_b_note = "Group-level filter evaluated only after rows are clustered into departments."
+                traps_title = "FATAL INTERVIEW TRAPS TO AVOID"
+                traps = [
+                    "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
+                    "✅ Rule: Always filter non-aggregated rows with WHERE first to cut group memory by 90%!"
+                ]
+                golden_rule = "Filter individual rows with WHERE before grouping; filter aggregated group calculations with HAVING."
+                pitch_to_interviewer = "I use WHERE to prune individual records before clustering, and HAVING to evaluate aggregate metrics on grouped records."
+                pro_tip = "💡 Senior Interviewer Pro-Tip: State that combining WHERE and HAVING maximizes index utilization and slashes RAM usage!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "title": "Theory Question & Core Objective",
+                        "speech_mr": "एसक्यूएल इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: WHERE आणि HAVING क्लॉजमध्ये नेमका फरक काय आहे? चला समजून घेऊया.",
+                        "speech_hi": "एसक्यूएल इंटरव्यू का सबसे पसंदीदा सवाल: WHERE और HAVING क्लॉज में क्या अंतर है? आइए इसे गहराई से समझते हैं.",
+                        "speech_en": "Here is a classic SQL interview question: What is the core difference between WHERE and HAVING? Let's master the distinction."
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "title": "Core Distinction & Misconception",
+                        "speech_mr": "उमेदवार इथे का अडखळतात? दोन्ही क्लॉज डेटा फिल्टर करतात, पण WHERE ग्रुपिंगच्या आधी आणि HAVING ग्रुपिंगच्या नंतर चालते.",
+                        "speech_hi": "कैंडिडेट्स अक्सर यहाँ क्यों गलती करते हैं? दोनों डेटा फिल्टर करते हैं, लेकिन WHERE ग्रुपिंग से पहले और HAVING ग्रुपिंग के बाद लगता है.",
+                        "speech_en": "Why do candidates stumble? Both clauses filter data, but WHERE filters rows before grouping, while HAVING filters aggregated buckets."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "title": "Database Engine Execution Order",
+                        "speech_mr": "डेटाबेस एक्झिक्युशन क्रम पाहा: आधी FROM आणि WHERE ने रोज फिल्टर होतात, मग GROUP BY आणि शेवटी HAVING ग्रुप्स तपासते.",
+                        "speech_hi": "डेटाबेस एग्जीक्यूशन आर्डर देखिए: पहले FROM और WHERE से रोज फिल्टर होते हैं, फिर GROUP BY और आखिर में HAVING ग्रुप्स चेक करता है.",
+                        "speech_en": "Look at the database engine lifecycle: FROM loads data, WHERE filters rows, then GROUP BY clusters rows, and HAVING evaluates aggregate conditions."
+                    },
+                    {
+                        "id": 4, "action_type": "code_build", "title": "Syntax & Implementation Placement",
+                        "speech_mr": "इथे कोड सिंटॅक्स शेजारी-शेजारी बघा. WHERE ॲग्रीगेशनच्या आधी लागते, तर HAVING मध्ये COUNT, SUM सारखी फंक्शन्स वापरता येतात.",
+                        "speech_hi": "यहाँ कोड सिंटैक्स साथ-साथ देखिए. WHERE एग्रीगेशन से पहले लगता है, जबकि HAVING में COUNT, SUM जैसे फंक्शन्स चेक होते हैं.",
+                        "speech_en": "Here is the code syntax side-by-side: WHERE cannot take aggregate functions, while HAVING is specifically designed for COUNT, SUM, and AVG."
+                    },
+                    {
+                        "id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix & Traps",
+                        "speech_mr": "हा मॅट्रिक्स लक्षात ठेवा: WHERE इंडेक्स वापरून रॅम वाचवते, तर HAVING मेमरीमध्ये चालते. नॉन-ॲग्रीगेट फिल्टर नेहमी WHERE मध्ये लावा!",
+                        "speech_hi": "यह मैट्रिक्स याद रखें: WHERE इंडेक्स इस्तेमाल करके रैम बचाता है, जबकि HAVING मेमोरी में चेक होता है. नॉन-एग्रीगेट फिल्टर हमेशा WHERE में लगाएं!",
+                        "speech_en": "Memorize this matrix: WHERE leverages B-Tree indexes fast, while HAVING evaluates in memory. Always place row filters in WHERE to save RAM!"
+                    },
+                    {
+                        "id": 6, "action_type": "final_result", "title": "Interview Golden Takeaway",
+                        "speech_mr": "नेहमी लक्षात ठेवा हा सुवर्ण नियम: ओळी फिल्टर करायला WHERE वापरा आणि ग्रुप्स फिल्टर करायला HAVING वापरा!",
+                        "speech_hi": "हमेशा याद रखें यह गोल्डन रूल: रो-लेवल फिल्टर के लिए WHERE लगाएं और एग्रीगेट ग्रुप्स के लिए HAVING लगाएं!",
+                        "speech_en": "Golden Rule: Filter individual records with WHERE, filter aggregated groups with HAVING. Explain this clearly to impress senior hiring managers!"
+                    }
+                ]
+            # Topic C: Generic / Arbitrary Theory Topic (Dynamic Term Extraction)
+            else:
+                suggested_motion_bg = "warp_tunnel"
+                vs_match = re.search(r"(.*?)\s+(?:vs\.?|versus|and)\s+(.*)", text_clean, re.IGNORECASE)
+                if vs_match:
+                    raw_a = vs_match.group(1).replace("difference between", "").replace("diff between", "").strip()
+                    raw_b = vs_match.group(2).replace("thory quesion", "").replace("theory question", "").strip()
+                    term_a = raw_a.upper()[:28] if raw_a else "CONCEPT A"
+                    term_b = raw_b.upper()[:28] if raw_b else "CONCEPT B"
+                else:
+                    term_a = first_line[:24].upper()
+                    term_b = "STANDARD ALTERNATIVE"
+
+                title = first_line[:60] if len(first_line) > 10 else f"{term_a} vs {term_b} Explained"
+                concept_summary = f"Understanding the core operational and architectural trade-offs between {term_a} and {term_b} in production systems."
+                comp_title = f"{term_a} vs {term_b} COMPARISON MATRIX"
+                comp_headers = ["CRITERIA", term_a, term_b]
+                comp_rows = [
+                    {"feature": "Primary Architecture", "col_a": f"Optimized for {term_a.lower()} scope", "col_b": f"Optimized for {term_b.lower()} scope"},
+                    {"feature": "Performance & Scale", "col_a": "Low-latency localized execution", "col_b": "High-throughput distributed model"},
+                    {"feature": "Resource Overhead", "col_a": "Predictable dedicated allocation", "col_b": "Elastic on-demand utilization"},
+                    {"feature": "Production Best Practice", "col_a": "Use for core specialized workloads", "col_b": "Use for scalable decoupled systems"}
+                ]
+                syntax_a_title = f"{term_a} IMPLEMENTATION / CONFIG"
+                syntax_a_code = f"# {term_a} Production Pattern\ndef handle_{term_a.lower().replace(' ', '_')}():\n    # Specialized localized logic\n    return {{'status': 'processed', 'mode': '{term_a}'}}"
+                syntax_a_note = f"Standard implementation pattern for {term_a} in modern systems."
+                syntax_b_title = f"{term_b} IMPLEMENTATION / CONFIG"
+                syntax_b_code = f"# {term_b} Production Pattern\ndef handle_{term_b.lower().replace(' ', '_')}():\n    # Scalable decoupled logic\n    return {{'status': 'distributed', 'mode': '{term_b}'}}"
+                syntax_b_note = f"Standard implementation pattern for {term_b} in modern systems."
+                traps_title = "COMMON PITFALLS & INTERVIEW MISTAKES"
+                traps = [
+                    f"❌ Trap: Applying {term_a} when decoupled scaling is required leads to resource bottlenecks!",
+                    f"✅ Rule: Clearly state the latency, cost, and maintenance trade-offs between {term_a} and {term_b}!"
+                ]
+                golden_rule = f"Choose {term_a} when latency and localized control dominate; choose {term_b} for distributed elasticity and horizontal scaling."
+                pitch_to_interviewer = f"In interviews: Articulate how {term_a} and {term_b} balance trade-offs across speed, cost, and maintainability."
+                pro_tip = f"💡 Senior Lead Pro-Tip: Explain when to use {term_a} vs {term_b} based on real-world engineering constraints!"
+                stages = self._build_dynamic_stages({
+                    "title": title, "concept_summary": concept_summary,
+                    "term_a": term_a, "term_b": term_b, "golden_rule": golden_rule
+                }, "theory", lang_key)
+
+            return {
+                "id": "custom_theory_scenario",
+                "content_type": "theory",
+                "title": title,
+                "difficulty": "FAANG & MNC Standard",
+                "question": text_clean,
+                "concept_summary": concept_summary,
+                "term_a": term_a,
+                "term_b": term_b,
+                "comparison_title": comp_title,
+                "comparison_headers": comp_headers,
+                "comparison_rows": comp_rows,
+                "syntax_a_title": syntax_a_title,
+                "syntax_a_code": syntax_a_code,
+                "syntax_a_note": syntax_a_note,
+                "syntax_b_title": syntax_b_title,
+                "syntax_b_code": syntax_b_code,
+                "syntax_b_note": syntax_b_note,
+                "traps_title": traps_title,
+                "traps": traps,
+                "golden_rule": golden_rule,
+                "pitch_to_interviewer": pitch_to_interviewer,
+                "pro_tip": pro_tip,
+                "suggested_motion_bg": suggested_motion_bg,
+                "stages": stages
+            }
+
+        # =====================================================================
+        # 2. SQL CODING SCENARIOS (Banking, Second Highest, Window, E-Comm)
+        # =====================================================================
+        # Extract SQL query if present in prompt
         sql_match = re.search(r"(?:WITH\s+[A-Za-z0-9_]+\s+AS\s*\([\s\S]*?\)\s*SELECT[\s\S]*?;|SELECT\s+[\s\S]*?FROM[\s\S]*?;)", text_clean, re.IGNORECASE)
         if not sql_match:
             sql_match = re.search(r"(?:WITH\s+[A-Za-z0-9_]+\s+AS\s*\([\s\S]*?\)\s*SELECT[\s\S]*|SELECT\s+[\s\S]*?FROM\s+[\s\S]*?(?:WHERE|QUALIFY|GROUP BY|ORDER BY|HAVING|\Z))", text_clean, re.IGNORECASE)
-        
         solution_sql = sql_match.group(0).strip() if sql_match else ""
         if solution_sql and not solution_sql.endswith(";"):
             solution_sql += ";"
 
-        # Extract table name from SQL or question
-        tbl_match = re.search(r"FROM\s+([A-Za-z0-9_]+)", solution_sql or text_clean, re.IGNORECASE)
-        table_name = tbl_match.group(1).upper() if tbl_match else "TRANSACTIONS"
+        # Scenario 1: BANKING / LEDGER / RUNNING BALANCE / ACCOUNT TRANSACTIONS
+        if "BANK" in q_up or "LEDGER" in q_up or "RUNNING" in q_up or "CUMULATIVE" in q_up or "ACCOUNT" in q_up or "TXN" in q_up:
+            suggested_motion_bg = "fintech_ledger"
+            table_name = "BANK_TRANSACTIONS"
+            title = "Banking SQL: Calculate Cumulative Running Balance per Account"
+            target_badge = "🎯 TARGET: RUNNING BALANCE (SUM OVER PARTITION)"
+            col_headers = ["ACCOUNT_NO", "TXN_DATE", "TXN_AMOUNT", "RUNNING_BALANCE"]
+            sample_rows = [
+                {"account": "ACC-8821", "date": "2026-03-01", "amt": "+₹50,000 (DEP)", "balance": "₹50,000", "is_target": True, "status": "keep"},
+                {"account": "ACC-8821", "date": "2026-03-05", "amt": "-₹12,500 (WDL)", "balance": "₹37,500", "is_target": True, "status": "keep"},
+                {"account": "ACC-8821", "date": "2026-03-10", "amt": "+₹25,000 (DEP)", "balance": "₹62,500", "is_target": True, "status": "keep"},
+                {"account": "ACC-9042", "date": "2026-03-02", "amt": "+₹80,000 (DEP)", "balance": "₹80,000", "is_target": True, "status": "keep"}
+            ]
+            if not solution_sql:
+                solution_sql = (
+                    "SELECT\n"
+                    "    account_no,\n"
+                    "    txn_date,\n"
+                    "    txn_amount,\n"
+                    "    SUM(txn_amount) OVER (\n"
+                    "        PARTITION BY account_no\n"
+                    "        ORDER BY txn_date\n"
+                    "        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n"
+                    "    ) AS running_balance\n"
+                    "FROM bank_transactions;"
+                )
+            arrow_target = "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW"
+            trap_code = "SELECT account_no, SUM(txn_amount) FROM bank_transactions GROUP BY account_no; -- LOSES DAILY LEDGER TIMELINE!"
+            traps = [
+                "• Trap: Simple GROUP BY collapses individual transaction history into a single total!",
+                "• Trap: Missing ROWS BETWEEN UNBOUNDED PRECEDING causes duplicate date values to lump together!",
+                "• Rule: Always PARTITION BY account_no and ORDER BY txn_date for an accurate audit trail!"
+            ]
+            pipeline_stages = [
+                {"icon": "🏦", "name": "BANK_TRANSACTIONS", "sub": "Raw Ledger Feed"},
+                {"icon": "🪟", "name": "PARTITION BY", "sub": "account_no Groups"},
+                {"icon": "📈", "name": "SUM() OVER", "sub": "Window Accumulator"},
+                {"icon": "🎯", "name": "RUNNING BALANCE", "sub": "Real-Time Balance"}
+            ]
+            filter_evals = [
+                {"name": "ACC-8821 (01-Mar)", "salary": "+₹50,000", "cond": "Cumulative Balance", "res": "₹50,000", "action": "RUNNING TOTAL", "status": "keep"},
+                {"name": "ACC-8821 (05-Mar)", "salary": "-₹12,500", "cond": "Cumulative Balance", "res": "₹37,500", "action": "RUNNING TOTAL", "status": "keep"},
+                {"name": "ACC-8821 (10-Mar)", "salary": "+₹25,000", "cond": "Cumulative Balance", "res": "₹62,500", "action": "RUNNING TOTAL", "status": "keep"},
+                {"name": "ACC-9042 (02-Mar)", "salary": "+₹80,000", "cond": "New Partition", "res": "₹80,000", "action": "RESET RUNNING", "status": "keep"}
+            ]
+            output_title = "VERIFIED BANK LEDGER AUDIT OUTPUT"
+            output_headers = ["ACCOUNT_NO", "TXN_DATE", "TXN_AMOUNT", "RUNNING_BALANCE"]
+            output_rows = [
+                ["ACC-8821", "2026-03-01", "+₹50,000", "₹50,000"],
+                ["ACC-8821", "2026-03-05", "-₹12,500", "₹37,500"],
+                ["ACC-8821", "2026-03-10", "+₹25,000", "₹62,500"],
+                ["ACC-9042", "2026-03-02", "+₹80,000", "₹80,000"]
+            ]
+            pro_tip = "💡 Banking Lead Pro-Tip: Specify ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW explicitly to prevent RANGE frame defaults!"
+            stages = [
+                {
+                    "id": 1, "action_type": "problem_intro", "title": "Banking Requirement & Challenge",
+                    "speech_mr": "बँकिंग आणि फिनटेक इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: बँक ट्रान्झॅक्शन लेजरमधून प्रत्येक खात्याचे रनिंग बॅलन्स कसे काढायचे?",
+                    "speech_hi": "बैंकिंग और फिनटेक इंटरव्यू का सबसे जरूरी सवाल: बैंक ट्रांजेक्शन लेजर से हर खाते का रनिंग बैलेंस यानी क्युमुलेटिव सम कैसे निकालेंगे?",
+                    "speech_en": "Here is a top banking and fintech SQL interview question: How to compute account-level running balance from transaction ledgers?"
+                },
+                {
+                    "id": 2, "action_type": "data_inspection", "title": "Ledger Inspection & Deposits",
+                    "speech_mr": "आपला BANK_TRANSACTIONS टेबल तपासा. एकाच खात्यावर जमा (+₹) आणि खर्च (-₹) अशा अनेक नोंदी आहेत. आपल्याला प्रत्येक व्यवहारानंतर शिल्लक हवी आहे.",
+                    "speech_hi": "हमारे BANK_TRANSACTIONS टेबल को देखिए. एक ही अकाउंट में क्रेडिट और डेबिट के कई ट्रांजैक्शन्स हैं. हमें हर ट्रांजैक्शन के बाद अपडेटेड बैलेंस चाहिए.",
+                    "speech_en": "Inspect our BANK_TRANSACTIONS table. Each customer account has multiple deposits and withdrawals, requiring an updated balance after every transaction."
+                },
+                {
+                    "id": 3, "action_type": "logic_flowchart", "title": "Partition & Chronological Logic",
+                    "speech_mr": "आपले लॉजिक: PARTITION BY ने प्रत्येक खाते वेगळे होईल आणि ORDER BY txn_date ने तारखेनुसार व्यवहार क्रमाने लागतील.",
+                    "speech_hi": "हमारा लॉजिक: PARTITION BY से हर अकाउंट का अलग ग्रुप बनेगा और ORDER BY txn_date से टाइमलाइन क्रोनोलॉजिकल आर्डर में सेट होगी.",
+                    "speech_en": "Our logic: PARTITION BY account_no isolates each bank customer, while ORDER BY txn_date arranges records in strict chronological sequence."
+                },
+                {
+                    "id": 4, "action_type": "code_build", "title": "SUM() Window Frame Construction",
+                    "speech_mr": "आता आपण SUM() विंडो फंक्शन वापरू! ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW ने मागील सर्व रकमांची अचूक बेरीज होत राहते.",
+                    "speech_hi": "अब हम SUM() विंडो फंक्शन लगाएंगे! ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW से पहले से लेकर मौजूदा रिकॉर्ड तक का रनिंग टोटल जुड़ता जाएगा.",
+                    "speech_en": "Now we build the query: SUM(txn_amount) OVER with ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW continuously accumulates account balances."
+                },
+                {
+                    "id": 5, "action_type": "simulation_execution", "title": "Row-by-Row Balance Accumulation",
+                    "speech_mr": "डेटाबेस इंजिन प्रत्येक व्यवहार जोडते: सुरुवातीचे ₹५०,०००, मग ₹१२,५०० वजा होऊन ₹३७,५००, आणि पुढे ₹२५,००० जमा होऊन ₹६२,५००!",
+                    "speech_hi": "डेटाबेस इंजन हर रो को कैलकुलेट करता है: पहले ₹50,000, फिर ₹12,500 डेबिट होकर ₹37,500, और फिर ₹25,000 क्रेडिट होकर ₹62,500!",
+                    "speech_en": "The database engine calculates: Starting at ₹50,000, subtracting ₹12,500 yields ₹37,500, and adding ₹25,000 brings the running balance to ₹62,500."
+                },
+                {
+                    "id": 6, "action_type": "final_result", "title": "Verified Banking Output",
+                    "speech_mr": "फायनल लेजर आऊटपुट पाहा! प्रत्येक खात्याचा अचूक रिअल-टाइम रनिंग बॅलन्स तयार झाला आहे. १०० टक्के बँक-ग्रेड क्वेरी!",
+                    "speech_hi": "फाइनल लेजर आउटपुट देखिए! हर बैंक खाते का एकदम सही रियल-टाइम रनिंग बैलेंस आ चुका है. 100% प्रोडक्शन रेडी फिनटेक क्वेरी!",
+                    "speech_en": "Look at the verified final output! Clean, audit-ready, and 100% compliant with senior financial data engineering interview standards."
+                }
+            ]
 
-        # Determine topic title
-        first_line = text_clean.split("\n")[0].strip()
-        title = first_line[:60] if len(first_line) > 10 else f"Mastering {table_name} in SQL"
+        # Scenario 2: SECOND / NTH HIGHEST SALARY / DENSE_RANK
+        elif "SALARY" in q_up or "SECOND" in q_up or "HIGHEST" in q_up or "DENSE_RANK" in q_up:
+            suggested_motion_bg = "cyber_matrix"
+            table_name = "EMPLOYEES"
+            title = "SQL: Find the Second Highest Salary (Handling Duplicate Ties)"
+            target_badge = "🎯 TARGET: DENSE_RANK() OVER (ORDER BY SALARY DESC)"
+            col_headers = ["EMP_ID", "EMP_NAME", "SALARY", "RANK (RNK)"]
+            sample_rows = [
+                {"account": "Aarav Sharma", "date": "Engineering", "amt": "₹1,85,000", "balance": "Rank 1 (Tie)", "is_target": False, "status": "exclude"},
+                {"account": "Rohit Deshmukh", "date": "Engineering", "amt": "₹1,85,000", "balance": "Rank 1 (Tie)", "is_target": False, "status": "exclude"},
+                {"account": "Priya Kulkarni", "date": "Analytics", "amt": "₹1,60,000", "balance": "🎯 Rank 2 (Target)", "is_target": True, "status": "keep"},
+                {"account": "Sneha Patel", "date": "DevOps", "amt": "₹1,40,000", "balance": "Rank 3", "is_target": False, "status": "exclude"}
+            ]
+            if not solution_sql:
+                solution_sql = (
+                    "WITH Salary_Rank AS (\n"
+                    "    SELECT\n"
+                    "        emp_id,\n"
+                    "        emp_name,\n"
+                    "        salary,\n"
+                    "        DENSE_RANK() OVER (\n"
+                    "            ORDER BY salary DESC\n"
+                    "        ) AS rnk\n"
+                    "    FROM employees\n"
+                    ")\n"
+                    "SELECT\n"
+                    "    emp_id,\n"
+                    "    emp_name,\n"
+                    "    salary\n"
+                    "FROM Salary_Rank\n"
+                    "WHERE rnk = 2;"
+                )
+            arrow_target = "DENSE_RANK() OVER (ORDER BY salary DESC)"
+            trap_code = "SELECT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1; -- CRASHES ON SALARY TIES!"
+            traps = [
+                "• Trap: Using LIMIT 1 OFFSET 1 returns the same top salary if two people share 1st place!",
+                "• Trap: Standard RANK() skips rank numbers (1, 1, 3), completely missing rank 2!",
+                "• Rule: Always use DENSE_RANK() to guarantee continuous consecutive ranks (1, 1, 2)!"
+            ]
+            pipeline_stages = [
+                {"icon": "📁", "name": "EMPLOYEES", "sub": "Raw Salaries"},
+                {"icon": "🔢", "name": "DENSE_RANK()", "sub": "Order DESC"},
+                {"icon": "🛡️", "name": "TIE PRESERVED", "sub": "Zero Rank Gap"},
+                {"icon": "🎯", "name": "WHERE RNK = 2", "sub": "Target Salary"}
+            ]
+            filter_evals = [
+                {"name": "Aarav Sharma", "salary": "₹1,85,000", "cond": "RNK = 1 (Tie)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
+                {"name": "Rohit Deshmukh", "salary": "₹1,85,000", "cond": "RNK = 1 (Tie)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
+                {"name": "Priya Kulkarni", "salary": "₹1,60,000", "cond": "RNK = 2 (Target)", "res": "TRUE", "action": "KEEP", "status": "keep"},
+                {"name": "Sneha Patel", "salary": "₹1,40,000", "cond": "RNK = 3 (Lower)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}
+            ]
+            output_title = "VERIFIED SECOND HIGHEST SALARY"
+            output_headers = ["EMP_ID", "EMP_NAME", "SALARY", "RNK"]
+            output_rows = [["EMP-103", "Priya Kulkarni", "₹1,60,000", "2"]]
+            pro_tip = "💡 Senior Interviewer Pro-Tip: Always explain why DENSE_RANK() handles duplicate ties correctly whereas LIMIT 1 OFFSET 1 fails!"
+            stages = [
+                {
+                    "id": 1, "action_type": "problem_intro", "title": "SQL Interview Challenge",
+                    "speech_mr": "एसक्यूएल इंटरव्ह्यूमध्ये नेहमी विचारला जाणारा प्रश्न: टेबलमधून सेकंड हायेस्ट सॅलरी कशी काढायची? चला सर्वात अचूक पद्धत पाहूया.",
+                    "speech_hi": "एसक्यूएल इंटरव्यू का सबसे कॉमन सवाल: टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालेंगे? आइए इसकी सही और टाई-सेफ टेक्नीक समझते हैं.",
+                    "speech_en": "Here is a must-know SQL interview question: How to find the second highest salary handling duplicate ties cleanly with DENSE_RANK?"
+                },
+                {
+                    "id": 2, "action_type": "data_inspection", "title": "Salary Inspection & Duplicate Ties",
+                    "speech_mr": "आपला टेबल तपासा. जर दोन एम्प्लॉईजची सॅलरी सारखीच १ लाख ८५ हजार असेल, तर LIMIT १ OFFSET १ वापरल्यास उत्तर चुकते!",
+                    "speech_hi": "हमारे टेबल को देखिए. अगर दो लोगों की सैलरी बराबर एक लाख 85 हजार है, तो LIMIT 1 OFFSET 1 लगाने पर गलत जवाब आ जाएगा!",
+                    "speech_en": "Inspect our table. If multiple employees share the top salary of ₹1,85,000, naive LIMIT 1 OFFSET 1 returns the first place salary again!"
+                },
+                {
+                    "id": 3, "action_type": "logic_flowchart", "title": "Dense Rank Logic Pipeline",
+                    "speech_mr": "आपले लॉजिक: सॅलरी डिसेंडिंग ऑर्डरमध्ये लावून DENSE_RANK फंक्शन वापरू. यामुळे दोघांना रँक १ मिळून पुढील वेगळ्या सॅलरीला रँक २ मिळतो.",
+                    "speech_hi": "हमारा लॉजिक: सैलरी को डिसेंडिंग आर्डर में करके DENSE_RANK लगाएंगे. इससे टाई होने पर भी अगला अलग नंबर रैंक 2 पर ही आएगा.",
+                    "speech_en": "Our logic: DENSE_RANK orders salaries descending. Tied top earners both get rank 1, and the next distinct salary receives rank 2 without skipping."
+                },
+                {
+                    "id": 4, "action_type": "code_build", "title": "CTE & Window Query Construction",
+                    "speech_mr": "आता आपण CTE तयार करू: WITH Salary_Rank मध्ये DENSE_RANK काढू आणि बाहेरील मेन क्वेरीमध्ये WHERE rnk = २ चा फिल्टर लावू.",
+                    "speech_hi": "अब हम CTE बनाएंगे: WITH Salary_Rank के अंदर DENSE_RANK निकालेंगे और आउटर क्वेरी में WHERE rnk = 2 का सटीक फिल्टर लगाएंगे.",
+                    "speech_en": "Now we construct the production CTE: Wrap DENSE_RANK inside a clean subquery and filter for rnk equals 2 in the outer query."
+                },
+                {
+                    "id": 5, "action_type": "simulation_execution", "title": "Row-by-Row Filter Evaluation",
+                    "speech_mr": "डेटाबेस इंजिन प्रत्येक ओळ तपासते: रँक १ वगळले जातात, आणि अचूक रँक २ असणारी प्रिया कुलकर्णीची ₹१,६०,००० सॅलरी निवडली जाते.",
+                    "speech_hi": "डेटाबेस इंजन हर रो चेक करता है: रैंक 1 वाले दोनों रिकॉर्ड हटते हैं, और रैंक 2 पर मौजूद प्रिया कुलकर्णी की ₹1,60,000 सैलरी चुनी जाती है.",
+                    "speech_en": "The database engine evaluates rows: Rank 1 ties are eliminated, and Priya Kulkarni's distinct second highest salary of ₹1,60,000 is isolated."
+                },
+                {
+                    "id": 6, "action_type": "final_result", "title": "Verified Production Result",
+                    "speech_mr": "फायनल रिझल्ट पाहा! डुप्लिकेट टाय असतानाही अचूक सेकंड हायेस्ट सॅलरी मिळाली आहे. १०० टक्के इंटरव्ह्यू-रेडी क्वेरी!",
+                    "speech_hi": "फाइनल रिजल्ट देखिए! डुप्लिकेट सैलरी होने पर भी एकदम सही सेकंड हाईएस्ट सैलरी आ चुकी है. 100% इंटरव्यू-रेडी क्वेरी!",
+                    "speech_en": "Here is our verified final result! Fast, tie-safe, and 100% production ready for top tech company coding rounds."
+                }
+            ]
 
-        # Determine columns
-        col_headers = ["ID / KEY", "DATE / REF", "AMOUNT / VAL", "STATUS / RANK"]
-        if solution_sql:
-            select_cols_m = re.search(r"SELECT\s+([\s\S]*?)\s+FROM", solution_sql, re.IGNORECASE)
-            if select_cols_m:
-                raw_cols = [c.strip().split()[-1].replace(",", "").upper() for c in select_cols_m.group(1).split(",") if c.strip()]
-                if len(raw_cols) >= 2:
-                    col_headers = [c for c in raw_cols if c not in ["AS", "DISTINCT", "*"]][:4]
-                    while len(col_headers) < 4:
-                        col_headers.append(f"COL_{len(col_headers)+1}")
-
-        # Generate contextual sample rows matching table & query
-        q_up = (solution_sql or text_clean).upper()
-        low = text_clean.lower()
-        if "PYTHON" in q_up or "FASTAPI" in q_up or "DEF " in q_up or "pandas" in low:
-            table_name = "PYTHON_ASYNC_PIPELINE"
-            title = first_line[:60] if len(first_line) > 10 else "Python: Advanced AsyncIO Pipeline"
-            col_headers = ["COROUTINE", "WORKER", "TASK_STATE", "OUTPUT"]
-            sample_rows = [
-                {"account": "fetch_user()", "date": "Worker 1", "amt": "2ms", "balance": "🎯 Done (200 OK)", "status": "keep"},
-                {"account": "sync_blocking()", "date": "Worker 2", "amt": "Timeout", "balance": "⚠️ Non-Async Block", "status": "exclude"},
-                {"account": "process_event()", "date": "Worker 1", "amt": "1.5ms", "balance": "🎯 Done (200 OK)", "status": "keep"},
-                {"account": "idle_poll()", "date": "Worker 3", "amt": "Sleeping", "balance": "Awaiting I/O", "status": "exclude"}
-            ]
-            arrow_target = "await asyncio.gather(*tasks)"
-            if not solution_sql:
-                solution_sql = "async def process_batch(stream):\n    tasks = [asyncio.create_task(handle(item)) for item in stream]\n    return await asyncio.gather(*tasks)"
-        elif "DOCKER" in q_up or "CONTAINER" in q_up or "kubernetes" in low:
-            table_name = "DOCKER_CONTAINER_ENGINE"
-            title = first_line[:60] if len(first_line) > 10 else "Docker: Multi-Stage Production Build"
-            col_headers = ["LAYER_ID", "STAGE", "IMAGE_SIZE", "SECURITY"]
-            sample_rows = [
-                {"account": "Stage 1 (Builder)", "date": "Golang / Python", "amt": "1.2 GB", "balance": "Discarded Artifacts", "status": "exclude"},
-                {"account": "Stage 2 (Runtime)", "date": "Distroless", "amt": "28 MB", "balance": "🎯 Final Image (Minimal)", "status": "keep"},
-                {"account": "Cache Layer", "date": "Dependencies", "amt": "Cached", "balance": "🎯 10x Faster Rebuild", "status": "keep"},
-                {"account": "Root User Layer", "date": "Legacy Base", "amt": "850 MB", "balance": "⚠️ Root Privileges", "status": "exclude"}
-            ]
-            arrow_target = "FROM gcr.io/distroless/static AS runtime"
-            if not solution_sql:
-                solution_sql = "FROM python:3.11-slim AS builder\nRUN pip install -r requirements.txt\nFROM gcr.io/distroless/python3\nCOPY --from=builder /app /app\nCMD [\"main.py\"]"
-        elif "GIT" in q_up or "REBASE" in q_up or "merge" in low:
-            table_name = "GIT_VERSION_CONTROL"
-            title = first_line[:60] if len(first_line) > 10 else "Git: Interactive Rebase vs Merge"
-            col_headers = ["COMMIT_HASH", "BRANCH", "AUTHOR", "STATUS"]
-            sample_rows = [
-                {"account": "a1b2c3d (Squash)", "date": "feat/login", "amt": "Linear", "balance": "🎯 Clean History", "status": "keep"},
-                {"account": "e5f6g7h (WIP)", "date": "feat/login", "amt": "Temp", "balance": "Eliminated by Rebase", "status": "exclude"},
-                {"account": "i9j0k1l (Fix typo)", "date": "feat/login", "amt": "Temp", "balance": "Squashed into Feature", "status": "exclude"},
-                {"account": "m2n3o4p (Main Head)", "date": "main", "amt": "Release", "balance": "🎯 Fast-Forwarded", "status": "keep"}
-            ]
-            arrow_target = "git rebase -i HEAD~3 --autosquash"
-            if not solution_sql:
-                solution_sql = "git checkout feature-branch\ngit rebase -i origin/main\ngit push origin feature-branch --force-with-lease"
-        elif "RAG" in q_up or "VECTOR" in q_up or "embedding" in low or "langchain" in low:
-            table_name = "RAG_VECTOR_PIPELINE"
-            title = first_line[:60] if len(first_line) > 10 else "AI & RAG: Vector Chunking & Semantic Search"
-            col_headers = ["CHUNK_ID", "TOKEN_LEN", "SIMILARITY", "CONTEXT_STATUS"]
-            sample_rows = [
-                {"account": "Chunk #101 (Doc)", "date": "512 tokens", "amt": "0.92 Cosine", "balance": "🎯 Top-K Kept Context", "status": "keep"},
-                {"account": "Chunk #102 (Boiler)", "date": "120 tokens", "amt": "0.41 Cosine", "balance": "Filtered (Irrelevant)", "status": "exclude"},
-                {"account": "Chunk #103 (Data)", "date": "480 tokens", "amt": "0.88 Cosine", "balance": "🎯 Top-K Kept Context", "status": "keep"},
-                {"account": "Chunk #104 (Footer)", "date": "85 tokens", "amt": "0.25 Cosine", "balance": "Filtered (Irrelevant)", "status": "exclude"}
-            ]
-            arrow_target = "similarity_search(query, k=2, score_threshold=0.85)"
-            if not solution_sql:
-                solution_sql = "chunks = splitter.split_text(raw_doc)\nvectors = embedding_model.embed(chunks)\ncontext = vector_store.similarity_search(query, k=2)"
-        elif "AWS" in q_up or "S3" in q_up or "SNOWPIPE" in q_up or "data engineering" in low or "spark" in low:
-            table_name = "CLOUD_DATA_ENGINEERING"
-            title = first_line[:60] if len(first_line) > 10 else "Data Engineering: S3 to Snowflake Pipeline"
-            col_headers = ["STAGE_FILE", "PIPELINE", "LATENCY", "VALIDATION"]
-            sample_rows = [
-                {"account": "s3://raw/txn_2026.parquet", "date": "Snowpipe Auto", "amt": "1.2s", "balance": "🎯 Loaded to Staging", "status": "keep"},
-                {"account": "s3://raw/corrupt.csv", "date": "Snowpipe Auto", "amt": "Schema Err", "balance": "⚠️ Sent to DLQ", "status": "exclude"},
-                {"account": "s3://raw/orders_03.parquet", "date": "Snowpipe Auto", "amt": "0.9s", "balance": "🎯 Loaded to Staging", "status": "keep"},
-                {"account": "s3://raw/dup_batch.parquet", "date": "Snowpipe Auto", "amt": "Dup Hash", "balance": "Deduplicated", "status": "exclude"}
-            ]
-            arrow_target = "COPY INTO ANALYTICS.ORDERS FROM @S3_STAGE"
-            if not solution_sql:
-                solution_sql = "CREATE OR REPLACE PIPE SNOWPIPE_ORDERS AUTO_INGEST = TRUE AS\nCOPY INTO RAW_DB.PUBLIC.ORDERS\nFROM @AWS_S3_STAGE\nFILE_FORMAT = (TYPE = 'PARQUET');"
+        # Scenario 3: QUALIFY & ROW_NUMBER (Latest Record per Customer)
         elif "QUALIFY" in q_up and "ROW_NUMBER" in q_up:
+            suggested_motion_bg = "silicon_laser"
+            table_name = "TRANSACTIONS"
+            title = "SQL: Latest Record per Customer with QUALIFY & ROW_NUMBER"
+            target_badge = "🎯 TARGET: QUALIFY ROW_NUMBER() = 1"
+            col_headers = ["CUSTOMER_ID", "TXN_DATE", "AMOUNT", "ROW_NUM"]
             sample_rows = [
                 {"account": "C101 (TXN-101)", "date": "2026-03-01", "amt": "₹45,000", "balance": "Older (Rank 2)", "status": "exclude"},
                 {"account": "C101 (TXN-104)", "date": "2026-03-15", "amt": "₹12,000", "balance": "🎯 Latest (Rank 1)", "status": "keep"},
                 {"account": "C102 (TXN-102)", "date": "2026-02-10", "amt": "₹8,500", "balance": "Older (Rank 2)", "status": "exclude"},
                 {"account": "C102 (TXN-105)", "date": "2026-03-12", "amt": "₹95,000", "balance": "🎯 Latest (Rank 1)", "status": "keep"}
             ]
-            arrow_target = "QUALIFY ROW_NUMBER() OVER (PARTITION BY ... ORDER BY ... DESC) = 1"
-        elif "DENSE_RANK" in q_up or "RANK" in q_up:
-            sample_rows = [
-                {"account": "Aarav Sharma", "date": "Rank 1", "amt": "₹1,85,000", "balance": "Top Value (Tie)", "status": "exclude"},
-                {"account": "Rohit Deshmukh", "date": "Rank 1", "amt": "₹1,85,000", "balance": "Top Value (Tie)", "status": "exclude"},
-                {"account": "Priya Kulkarni", "date": "Rank 2", "amt": "₹1,60,000", "balance": "🎯 Target Rank", "status": "keep"},
-                {"account": "Sneha Patel", "date": "Rank 3", "amt": "₹1,40,000", "balance": "Rank 3", "status": "exclude"}
+            if not solution_sql:
+                solution_sql = (
+                    "SELECT\n"
+                    "    customer_id,\n"
+                    "    txn_date,\n"
+                    "    amount\n"
+                    "FROM transactions\n"
+                    "QUALIFY ROW_NUMBER() OVER (\n"
+                    "    PARTITION BY customer_id\n"
+                    "    ORDER BY txn_date DESC\n"
+                    ") = 1;"
+                )
+            arrow_target = "QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY txn_date DESC) = 1"
+            trap_code = "SELECT customer_id, MAX(txn_date) FROM transactions GROUP BY customer_id; -- CANNOT RETRIEVE TRANSACTION AMOUNT!"
+            traps = [
+                "• Trap: Simple GROUP BY with MAX(date) loses other row attributes like amount and txn_id!",
+                "• Trap: Writing a subquery and self-joining back to the table doubles query execution cost!",
+                "• Rule: Modern QUALIFY filters window functions directly with zero CTE or join overhead!"
             ]
-            arrow_target = "DENSE_RANK() OVER (ORDER BY ... DESC)"
-        elif "JOIN" in q_up:
-            sample_rows = [
-                {"account": "Entity 101", "date": "Table A", "amt": "Matched", "balance": "🎯 Joined Pair", "status": "keep"},
-                {"account": "Entity 102", "date": "Table A", "amt": "NULL Match", "balance": "⚠️ Unmatched", "status": "exclude"},
-                {"account": "Entity 103", "date": "Table A", "amt": "Matched", "balance": "🎯 Joined Pair", "status": "keep"},
-                {"account": "Entity 104", "date": "Table A", "amt": "NULL Match", "balance": "⚠️ Unmatched", "status": "exclude"}
+            pipeline_stages = [
+                {"icon": "📁", "name": "TRANSACTIONS", "sub": "Raw Rows"},
+                {"icon": "🪟", "name": "PARTITION BY", "sub": "Customer ID"},
+                {"icon": "🔢", "name": "ROW_NUMBER()", "sub": "Date DESC"},
+                {"icon": "🎯", "name": "QUALIFY = 1", "sub": "Latest Record"}
             ]
-            arrow_target = "ON a.ID = b.ID"
-        elif "WHERE" in q_up and "HAVING" in q_up:
-            sample_rows = [
-                {"account": "Dept: IT", "date": "COUNT = 5", "amt": "AVG > 60k", "balance": "🎯 Qualified Group", "status": "keep"},
-                {"account": "Dept: HR", "date": "COUNT = 1", "amt": "AVG < 40k", "balance": "Filtered by HAVING", "status": "exclude"},
-                {"account": "Dept: Sales", "date": "COUNT = 8", "amt": "AVG > 70k", "balance": "🎯 Qualified Group", "status": "keep"}
-            ]
-            arrow_target = "HAVING COUNT(*) > 1"
-        else:
-            sample_rows = [
-                {"account": f"{table_name} #1", "date": "2026-03-15", "amt": "Val A", "balance": "🎯 Target Row", "status": "keep"},
-                {"account": f"{table_name} #2", "date": "2026-03-12", "amt": "Val B", "balance": "Evaluated", "status": "exclude"},
-                {"account": f"{table_name} #3", "date": "2026-03-10", "amt": "Val C", "balance": "🎯 Target Row", "status": "keep"},
-                {"account": f"{table_name} #4", "date": "2026-03-01", "amt": "Val D", "balance": "Evaluated", "status": "exclude"}
-            ]
-            arrow_target = "WHERE ... IS NOT NULL"
-
-        pipeline_stages = self._build_default_pipeline_stages("theory" if is_theory else "sql_query", solution_sql, table_name)
-        filter_evals = self._build_default_filter_evals(sample_rows, solution_sql)
-
-        # Dynamic Speech Stages tailored to question
-        if "QUALIFY" in q_up and "ROW_NUMBER" in q_up:
+            filter_evals = self._build_default_filter_evals(sample_rows, solution_sql)
+            output_title = "VERIFIED LATEST CUSTOMER TRANSACTIONS"
+            output_headers = ["CUSTOMER_ID", "TXN_DATE", "AMOUNT"]
+            output_rows = [["C101", "2026-03-15", "₹12,000"], ["C102", "2026-03-12", "₹95,000"]]
+            pro_tip = "💡 Snowflake & Databricks Pro-Tip: QUALIFY eliminates redundant self-joins and slashes query execution time!"
             stages = [
                 {
                     "id": 1, "action_type": "problem_intro", "title": "Requirement & Challenge",
-                    "speech_en": f"Here is a high-yield SQL interview question: {first_line}! Let's solve it cleanly with ROW_NUMBER and QUALIFY.",
-                    "speech_mr": f"एसक्यूएल इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: {first_line}! चला ROW_NUMBER आणि QUALIFY वापरून सोडूया.",
-                    "speech_hi": f"एसक्यूएल इंटरव्यू का पसंदीदा सवाल: {first_line}! आइए ROW_NUMBER और QUALIFY से इसे स्टेप बाय स्टेप समझते हैं."
+                    "speech_mr": "एसक्यूएल इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: प्रत्येक कस्टमरचा सर्वात लेटेस्ट रेकॉर्ड कसा शोधायचा? चला QUALIFY वापरून सोडूया.",
+                    "speech_hi": "एसक्यूएल इंटरव्यू का पसंदीदा सवाल: हर कस्टमर का सबसे लेटेस्ट रिकॉर्ड कैसे निकालेंगे? आइए QUALIFY और ROW_NUMBER से समझते हैं.",
+                    "speech_en": "Here is a high-yield SQL interview question: Finding the latest transaction per customer using ROW_NUMBER and QUALIFY."
                 },
                 {
                     "id": 2, "action_type": "data_inspection", "title": "Data Inspection & Grouping",
-                    "speech_en": f"Inspect our {table_name} table. Each customer has multiple dates, but we only need the latest transaction.",
-                    "speech_mr": f"आपला {table_name} टेबल तपासा. एका ग्राहकाच्या अनेक नोंदी आहेत, पण आपल्याला फक्त सर्वात नवीन व्यवहार हवा आहे.",
-                    "speech_hi": f"हमारे {table_name} टेबल को देखिए. हर कस्टमर के कई रिकॉर्ड्स हैं, लेकिन हमें केवल लेटेस्ट रिकॉर्ड चाहिए."
+                    "speech_mr": "आपला TRANSACTIONS टेबल तपासा. एका ग्राहकाच्या अनेक नोंदी आहेत, पण आपल्याला फक्त सर्वात नवीन व्यवहार हवा आहे.",
+                    "speech_hi": "हमारे TRANSACTIONS टेबल को देखिए. हर कस्टमर के कई रिकॉर्ड्स हैं, लेकिन हमें केवल लेटेस्ट रिकॉर्ड चाहिए.",
+                    "speech_en": "Inspect our table. Each customer has multiple dates, but production requirements dictate retrieving only the most recent transaction."
                 },
                 {
                     "id": 3, "action_type": "logic_flowchart", "title": "Partition & Sorting Logic",
-                    "speech_en": "Our logic: PARTITION BY groups each customer, ORDER BY DESC places the newest record first, giving it row number one.",
                     "speech_mr": "आपले लॉजिक: PARTITION BY ने प्रत्येक ग्राहकाचा ग्रुप होतो आणि ORDER BY DESC ने नवीन तारीख पहिल्या क्रमांकावर येते.",
-                    "speech_hi": "हमारा लॉजिक: PARTITION BY कस्टमर अनुसार ग्रुप बनाएगा और ORDER BY DESC से सबसे नई तारीख रैंक 1 पर आएगी."
+                    "speech_hi": "हमारा लॉजिक: PARTITION BY कस्टमर अनुसार ग्रुप बनाएगा और ORDER BY DESC से सबसे नई तारीख रैंक 1 पर आएगी.",
+                    "speech_en": "Our logic: PARTITION BY groups each customer, and ORDER BY date DESC orders events so the newest record gets row number 1."
                 },
                 {
                     "id": 4, "action_type": "code_build", "title": "Writing Query with QUALIFY",
-                    "speech_en": "Now we use the modern QUALIFY clause! QUALIFY filters window functions directly without requiring any nested CTE wrapper.",
                     "speech_mr": "मोठी सबक्वेरी लिहिण्याऐवजी आपण मॉडर्न QUALIFY क्लॉज वापरू! हे थेट विंडो फंक्शन फिल्टर करून रो नंबर १ निवडते.",
-                    "speech_hi": "नेस्टेड सबक्वेरी के बजाय हम मॉडर्न QUALIFY क्लॉज लगाएंगे, जो सीधे विंडो फंक्शन से रो नंबर 1 फिल्टर करता है."
+                    "speech_hi": "नेस्टेड सबक्वेरी के बजाय हम मॉडर्न QUALIFY क्लॉज लगाएंगे, जो सीधे विंडो फंक्शन से रो नंबर 1 फिल्टर करता है.",
+                    "speech_en": "Now we use the modern QUALIFY clause! QUALIFY filters window functions directly without requiring any nested CTE wrapper."
                 },
                 {
                     "id": 5, "action_type": "simulation_execution", "title": "Row-by-Row Filter Evaluation",
-                    "speech_en": "The database engine evaluates every record. Rank one records are kept, while older transactions are cleanly eliminated.",
                     "speech_mr": "डेटाबेस प्रत्येक ओळ तपासतो. रँक १ असणाऱ्या नवीन नोंदी ठेवल्या जातात आणि जुने व्यवहार आपोआप वगळले जातात.",
-                    "speech_hi": "डेटाबेस इंजन हर रिकॉर्ड चेक करता है. रैंक 1 वाले लेटेस्ट रिकॉर्ड रखे जाते हैं और बाकी हटा दिए जाते हैं."
+                    "speech_hi": "डेटाबेस इंजन हर रिकॉर्ड चेक करता है. रैंक 1 वाले लेटेस्ट रिकॉर्ड रखे जाते हैं और बाकी हटा दिए जाते हैं.",
+                    "speech_en": "The database engine evaluates every record. Rank 1 newest records are kept, while older transactions are cleanly eliminated."
                 },
                 {
                     "id": 6, "action_type": "final_result", "title": "Verified Final Output",
-                    "speech_en": "Here is the verified final output! Fast, elegant, and 100% production ready for senior data engineering rounds.",
                     "speech_mr": "फायनल आऊटपुट पाहा! प्रत्येक ग्राहकाचा अचूक लेटेस्ट रेकॉर्ड आला आहे. अत्यंत वेगवान आणि इंटरव्ह्यू-रेडी क्वेरी!",
-                    "speech_hi": "फाइनल आउटपुट देखिए! हर कस्टमर का सही लेटेस्ट रिकॉर्ड आ गया है. एकदम फास्ट और प्रोडक्शन रेडी क्वेरी!"
+                    "speech_hi": "फाइनल आउटपुट देखिए! हर कस्टमर का सही लेटेस्ट रिकॉर्ड आ गया है. एकदम फास्ट और प्रोडक्शन रेडी क्वेरी!",
+                    "speech_en": "Here is the verified final output! Fast, elegant, and 100% production ready for senior data engineering rounds."
                 }
             ]
+
+        # Scenario 4: GENERAL / ARBITRARY SQL SCENARIO
         else:
+            suggested_motion_bg = "neural_synapse"
+            tbl_match = re.search(r"FROM\s+([A-Za-z0-9_]+)", solution_sql or text_clean, re.IGNORECASE)
+            table_name = tbl_match.group(1).upper() if tbl_match else "TRANSACTIONS"
+            title = first_line[:60] if len(first_line) > 10 else f"Mastering {table_name} Query Logic"
+            target_badge = f"🎯 TARGET: OPTIMAL {table_name} QUERY"
+            col_headers = ["ID / KEY", "DATE / REF", "AMOUNT / VAL", "STATUS / RANK"]
+            sample_rows = [
+                {"account": f"{table_name} #1", "date": "2026-03-15", "amt": "Val A", "balance": "🎯 Target Row", "is_target": True, "status": "keep"},
+                {"account": f"{table_name} #2", "date": "2026-03-12", "amt": "Val B", "balance": "Evaluated", "is_target": False, "status": "exclude"},
+                {"account": f"{table_name} #3", "date": "2026-03-10", "amt": "Val C", "balance": "🎯 Target Row", "is_target": True, "status": "keep"},
+                {"account": f"{table_name} #4", "date": "2026-03-01", "amt": "Val D", "balance": "Evaluated", "is_target": False, "status": "exclude"}
+            ]
+            arrow_target = "OPTIMAL FILTER CLAUSE"
+            trap_code = f"SELECT * FROM {table_name} WHERE id IS NOT NULL; -- UNOPTIMIZED TABLE SCAN!"
+            traps = [
+                f"• Trap: Full table scan on {table_name} without partitioning causes high latency!",
+                "• Rule: Leverage targeted filtering and indexing for maximum query performance!"
+            ]
+            pipeline_stages = self._build_default_pipeline_stages("sql_query", solution_sql, table_name)
+            filter_evals = self._build_default_filter_evals(sample_rows, solution_sql)
+            output_title = f"VERIFIED OUTPUT: {table_name}"
+            output_headers = col_headers[:2]
+            output_rows = [[sample_rows[0]["account"], sample_rows[0]["balance"]]]
+            pro_tip = "💡 Senior Interviewer Pro-Tip: State query time complexity and partition pruning strategies!"
             stages = self._build_dynamic_stages({
-                "title": title,
-                "table_name": table_name,
-                "arrow_target": arrow_target,
-                "solution_sql": solution_sql
-            }, "theory" if is_theory else "sql_query", lang_key)
+                "title": title, "table_name": table_name,
+                "arrow_target": arrow_target, "solution_sql": solution_sql
+            }, "sql_query", lang_key)
 
         return {
             "id": "custom_ai_scenario",
-            "content_type": "theory" if is_theory else "sql_query",
+            "content_type": "sql_query",
             "title": title,
             "difficulty": "FAANG & MNC Standard",
             "question": text_clean,
+            "target_badge": target_badge,
             "table_name": table_name,
             "col_headers": col_headers,
             "sample_rows": sample_rows,
@@ -1518,8 +1870,14 @@ class SqlShortVideoEngine:
             "filter_evaluations": filter_evals,
             "solution_sql": solution_sql or f"SELECT * FROM {table_name};",
             "arrow_target": arrow_target,
+            "trap_code": trap_code,
+            "traps": traps,
+            "output_title": output_title,
+            "output_headers": output_headers,
+            "output_rows": output_rows,
             "output_value": f"Verified Output for {table_name}",
-            "pro_tip": "💡 Senior Interviewer Pro-Tip: State query time complexity and partition pruning strategies!",
+            "pro_tip": pro_tip,
+            "suggested_motion_bg": suggested_motion_bg,
             "stages": stages
         }
 
