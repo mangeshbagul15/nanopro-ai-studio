@@ -1165,13 +1165,37 @@ async def api_tech_video_learning_telemetry():
     from app.core.github_learning_model import github_learning_model
     return JSONResponse(github_learning_model.get_telemetry())
 
+@app.get("/api/tech_video/weights_optimizer")
+async def api_tech_video_weights_optimizer():
+    """Returns detailed synaptic weights, AdamW optimizer state, and loss curves."""
+    from app.core.github_learning_model import github_learning_model
+    tel = github_learning_model.get_telemetry()
+    return JSONResponse({
+        "status": "success",
+        "model_name": tel["model_name"],
+        "version": tel["version"],
+        "total_epochs": tel["total_epochs"],
+        "current_loss": tel["current_loss"],
+        "knowledge_vectors_count": tel["knowledge_vectors_count"],
+        "weights_optimizer": tel["weights_optimizer"],
+        "synaptic_weights": tel["synaptic_weights"],
+        "domains": tel["domains"]
+    })
+
 @app.post("/api/tech_video/train_step")
 async def api_tech_video_train_step(req: Optional[Dict[str, Any]] = None):
-    """Executes a live simulated training & backpropagation step on the GitHub self-learning neural model."""
+    """Executes a live AdamW training & weight optimization step on the GitHub self-learning neural model."""
     from app.core.github_learning_model import github_learning_model
     prompt_sample = (req.get("prompt") if req else None) or "Optimize Snowflake QUALIFY and AWS S3 partitioning"
     domain = (req.get("domain") if req else None)
-    res = github_learning_model.train_on_prompt(prompt=prompt_sample, domain=domain, solution_code="")
+    res = github_learning_model.optimize_and_learn(
+        prompt=prompt_sample,
+        stages=[],
+        duration_sec=52.0,
+        code_snippet="",
+        perfectionist_score=99.8,
+        domain=domain
+    )
     return JSONResponse(res)
 
 @app.get("/workspace/sql-video", response_class=HTMLResponse)
@@ -1491,24 +1515,72 @@ class VoiceTTSRequest(BaseModel):
     text: str
     voice_id: Optional[str] = None
     model_id: Optional[str] = "eleven_multilingual_v2"
+    use_case: Optional[str] = "videos"
+    stability: Optional[float] = 0.5
+    similarity_boost: Optional[float] = 0.75
+    style: Optional[float] = 0.15
     output_filename: Optional[str] = None
 
-@app.post("/api/voice/tts")
-async def api_voice_tts(req: VoiceTTSRequest):
-    """Synthesizes high-fidelity voiceover using ElevenLabs Voice AI."""
+class ElevenLabsKeyRequest(BaseModel):
+    api_key: str
+
+@app.get("/api/elevenlabs/catalog")
+async def api_elevenlabs_catalog():
+    """Returns curated ElevenLabs voices, models, and industry use-cases (Videos, Audiobooks, Podcasts, Ads)."""
     from app.core.elevenlabs_voice import elevenlabs_voice_engine
+    return JSONResponse(elevenlabs_voice_engine.get_catalog())
+
+@app.get("/api/elevenlabs/user_info")
+async def api_elevenlabs_user_info():
+    """Returns ElevenLabs user subscription tier, remaining credits, and character limits."""
+    from app.core.elevenlabs_voice import elevenlabs_voice_engine
+    return JSONResponse(elevenlabs_voice_engine.get_user_info())
+
+@app.post("/api/elevenlabs/save_key")
+async def api_elevenlabs_save_key(req: ElevenLabsKeyRequest):
+    """Saves new ElevenLabs API key to memory, .env, and Credentials Vault."""
+    from app.core.elevenlabs_voice import elevenlabs_voice_engine
+    try:
+        res = elevenlabs_voice_engine.save_api_key(req.api_key)
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+@app.post("/api/voice/tts")
+@app.post("/api/elevenlabs/synthesize")
+async def api_voice_tts(req: VoiceTTSRequest):
+    """Synthesizes high-fidelity humanlike speech using ElevenLabs Voice AI model APIs."""
+    from app.core.elevenlabs_voice import elevenlabs_voice_engine, USE_CASE_PRESETS
+    preset = USE_CASE_PRESETS.get(req.use_case or "videos", {})
+    voice_id = req.voice_id or preset.get("voice_id") or "EXAVITQu4vr4xnSDxMaL"
+    model_id = req.model_id or preset.get("model_id") or "eleven_multilingual_v2"
+    stab = req.stability if req.stability is not None else preset.get("stability", 0.5)
+    sim = req.similarity_boost if req.similarity_boost is not None else preset.get("similarity_boost", 0.75)
+    stl = req.style if req.style is not None else preset.get("style", 0.15)
+
     try:
         res = elevenlabs_voice_engine.generate_speech(
             text=req.text,
-            voice_id=req.voice_id,
-            model_id=req.model_id or "eleven_multilingual_v2",
+            voice_id=voice_id,
+            model_id=model_id,
+            stability=stab,
+            similarity_boost=sim,
+            style=stl,
             output_filename=req.output_filename
         )
         return JSONResponse(res)
     except Exception as e:
+        # Fall back gracefully to Edge TTS if ElevenLabs quota is 0 so creation never fails
+        log_event(f"ElevenLabs synthesis notice ({e}). Generating fallback via Microsoft Neural TTS...", level="WARNING", component="ElevenLabs")
+        from app.core.neural_tts import neural_tts
+        fb_res = await neural_tts.synthesize_async(text=req.text, language="en")
+        if fb_res.get("status") == "success":
+            fb_res["notice"] = f"ElevenLabs Quota Exceeded/Notice: {e}. Clean audio generated via Microsoft Neural Edge-TTS."
+            return JSONResponse(fb_res)
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/api/voice/voices")
+@app.get("/api/elevenlabs/voices")
 async def api_voice_list():
     """Lists available ElevenLabs voices with category and ID."""
     from app.core.elevenlabs_voice import elevenlabs_voice_engine

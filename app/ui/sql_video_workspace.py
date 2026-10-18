@@ -262,6 +262,26 @@ def get_sql_video_workspace_html() -> str:
         display: none;
         font-weight: 900;
     }
+
+    /* Complete Text Overflow & Responsive Clamping Protection */
+    .text-truncate-safe {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        max-width: 100% !important;
+    }
+    .text-break-word {
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        hyphens: auto !important;
+    }
+    .panel-card, .agent-node, .agent-pipeline-container {
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+    .sql-shorts-container * {
+        box-sizing: border-box;
+    }
     </style>
 
     <!-- Hidden Native Audio Player for Voiceover Sync & Multiplexing -->
@@ -309,14 +329,20 @@ def get_sql_video_workspace_html() -> str:
                         <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; box-shadow: 0 0 8px #10B981; display: inline-block;"></span>
                         <span id="pipelineMasterStatusText">NanoPro Manager Active</span>
                     </span>
-                    <span id="pipelineGitHubModelBadge" style="font-size: 11px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                    <span id="pipelineGitHubModelBadge" onclick="openWeightsOptimizerModal()" style="cursor: pointer; font-size: 11px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;" title="View Live Synaptic Weights & AdamW Loss Convergence">
                         <span>🧠</span>
                         <span id="pipelineGitHubModelText">GitHub Model: Epoch #54 • Loss: 0.0363 • 196 Vectors</span>
                     </span>
                     <button type="button" class="btn btn-secondary" onclick="triggerModelTraining()" id="btnTrainModelNow" style="font-size: 10px; padding: 3px 10px; border-color: #10B981; color: #10B981; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Execute Live Backpropagation & Weight Tuning on GitHub Model">
                         <span>🚀</span> <span>Train Model Now</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="openAgentBrainModal()" style="font-size: 10px; padding: 3px 10px; border-color: #A855F7; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="View 12 Specialist Agents, Thoughts & Perfectionist Audit">
+                    <button type="button" class="btn btn-secondary" onclick="openWeightsOptimizerModal()" style="font-size: 10px; padding: 3px 10px; border-color: #C084FC; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open Weights Optimizer & AdamW Tuning Studio">
+                        <span>⚡</span> <span>Weights Optimizer</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="openElevenLabsModal()" style="font-size: 10px; padding: 3px 10px; border-color: #8B5CF6; color: #C4B5FD; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open ElevenLabs Humanlike AI Voice Studio">
+                        <span>🎙️</span> <span>ElevenLabs Voice AI</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="openAgentBrainModal()" style="font-size: 10px; padding: 3px 10px; border-color: #38BDF8; color: #38BDF8; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="View 12 Specialist Agents, Thoughts & Perfectionist Audit">
                         <span>🧠</span> <span>12 Agents Brain Matrix &amp; Audit</span>
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="toggleTelemetry()" style="font-size: 10px; padding: 3px 9px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;" title="Toggle Telemetry Sidebar">
@@ -378,7 +404,7 @@ def get_sql_video_workspace_html() -> str:
                 <div class="agent-connector" id="pconn-5"></div>
 
                 <!-- Node 6: Final Audio & Subtitle -->
-                <div class="agent-node" id="pnode-6" data-step="voice">
+                <div class="agent-node" id="pnode-6" data-step="voice" onclick="openElevenLabsModal()" style="cursor: pointer;" title="Configure ElevenLabs Voice AI, Indian Male Tech YouTuber & Regional Voice Models">
                     <div style="font-size: 16px; margin-bottom: 2px;">🎙️</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">6. Voice &amp; Subtitle</div>
                     <div style="font-size: 9px; color: #94A3B8;">Synced Voiceover</div>
@@ -388,7 +414,7 @@ def get_sql_video_workspace_html() -> str:
                 <div class="agent-connector" id="pconn-6"></div>
 
                 <!-- Node 7: GitHub Self-Learning Model -->
-                <div class="agent-node" id="pnode-7" data-step="learning">
+                <div class="agent-node" id="pnode-7" data-step="learning" onclick="openWeightsOptimizerModal()" style="cursor: pointer;" title="Open GitHub Continuous Learning & Synaptic Weights Optimizer">
                     <div style="font-size: 16px; margin-bottom: 2px;">🧠</div>
                     <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">7. GitHub Model</div>
                     <div style="font-size: 9px; color: #94A3B8;">Continuous Learning</div>
@@ -536,9 +562,14 @@ def get_sql_video_workspace_html() -> str:
 
                 <!-- Multilingual Controls: Audio Voice & Text Overlays -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display:flex; justify-content:space-between;">
+                    <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
                         <span>🎙️ Voiceover Audio &amp; Subtitle Controls</span>
-                        <span id="activeVoiceBadge" style="color:#10B981; font-weight:700;">मराठी शिक्षक</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span id="activeVoiceBadge" style="color:#10B981; font-weight:700;">मराठी शिक्षक</span>
+                            <button type="button" class="btn btn-secondary" id="btnOpenElevenLabs" onclick="openElevenLabsModal()" style="font-size: 10px; padding: 2px 8px; border-color: #8B5CF6; color: #C4B5FD; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="ElevenLabs AI Voice Studio">
+                                <span>⚡ ElevenLabs AI Studio</span>
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Voiceover Language Selector Buttons -->
@@ -825,6 +856,190 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                     <div id="modalAgentsStreamGrid" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Agent rows populated dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GITHUB MODEL CONTINUOUS LEARNING & SYNAPTIC WEIGHTS OPTIMIZER MODAL -->
+    <div id="weightsOptimizerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: #090E1D; border: 2px solid #A855F7; border-radius: 14px; width: 100%; max-width: 920px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.85), 0 0 35px rgba(168,85,247,0.35);">
+            <!-- Modal Header -->
+            <div style="background: linear-gradient(135deg, rgba(168,85,247,0.25), rgba(99,102,241,0.25)); border-bottom: 1.5px solid #1E2D4A; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 26px;">🧠</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; color: #C084FC; font-weight: 800; letter-spacing: 0.5px;">GITHUB MODEL: CONTINUOUS LEARNING &amp; SYNAPTIC WEIGHTS OPTIMIZER</h3>
+                        <div style="font-size: 11px; color: #94A3B8;">AdamW Neural Optimization • Active Reinforcement Tuning • Prompt-Guided Domain Calibration</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeWeightsOptimizerModal()" style="background: #1E293B; border: 1px solid #334155; color: #F8FAFC; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 700;">✕ Close</button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+                <!-- Live Telemetry Stats Bar -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
+                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Current Epoch</div>
+                        <div id="modalOptimizerEpoch" style="font-size: 18px; font-weight: 800; color: #C084FC; font-family: monospace;">Epoch #54</div>
+                    </div>
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
+                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Convergence Loss</div>
+                        <div id="modalOptimizerLoss" style="font-size: 18px; font-weight: 800; color: #10B981; font-family: monospace;">0.0363</div>
+                    </div>
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
+                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Knowledge Vectors</div>
+                        <div id="modalOptimizerVectors" style="font-size: 18px; font-weight: 800; color: #38BDF8; font-family: monospace;">196 Vectors</div>
+                    </div>
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
+                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Optimizer Engine</div>
+                        <div style="font-size: 15px; font-weight: 800; color: #F59E0B;">AdamW (lr=5e-4)</div>
+                    </div>
+                </div>
+
+                <!-- 6 Dynamic Synaptic Weights Breakdown -->
+                <div style="background: rgba(168,85,247,0.06); border: 1.5px solid rgba(168,85,247,0.3); border-radius: 10px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 13px; font-weight: 800; color: #C084FC;">⚡ 6 ACTIVE SYNAPTIC WEIGHTS (DYNAMIC PROMPT STEERING)</span>
+                        <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px;">Live Model Injected</span>
+                    </div>
+                    <div id="modalSynapticWeightsList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Weights rows populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Multi-Objective Loss Function Ledger -->
+                <div style="background: #070B16; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #38BDF8; margin-bottom: 8px;">
+                        📐 Multi-Objective Loss Backpropagation: L = w_time · L_time + w_pace · L_pace + w_syntax · L_syntax + w_density · L_density
+                    </div>
+                    <div style="font-size: 11px; color: #94A3B8; line-height: 1.5;">
+                        Whenever you type a prompt or generate a video, this neural model automatically evaluates the output duration, pacing variance from &lt;60s standard, AST syntax validity, and scene density. Gradients are computed with weight decay and momentum vectors (m, v) to guarantee each next video is smarter, tighter, and more engaging than the last.
+                    </div>
+                </div>
+
+                <!-- Interactive Train Step Action Button -->
+                <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; border-top: 1px solid #1E2D4A; padding-top: 12px;">
+                    <span id="modalTrainStepStatus" style="font-size: 11px; color: #94A3B8; font-family: monospace;"></span>
+                    <button type="button" class="btn btn-primary" onclick="runWeightsOptimizationStep()" id="btnModalTrainStep" style="padding: 10px 20px; font-weight: 800; font-size: 12px; background: linear-gradient(135deg, #A855F7, #6366F1); color: #FFF; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(168,85,247,0.4);">
+                        <span>⚡ Run AdamW Weight Optimization Step Now</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ELEVENLABS VOICE AI STUDIO & 28-32Y INDIAN MALE TECH YOUTUBER PERSONA MODAL -->
+    <div id="elevenLabsVoiceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: #090E1D; border: 2px solid #8B5CF6; border-radius: 14px; width: 100%; max-width: 940px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.85), 0 0 35px rgba(139,92,246,0.35);">
+            <!-- Modal Header -->
+            <div style="background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(6,182,212,0.25)); border-bottom: 1.5px solid #1E2D4A; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 26px;">🎙️</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; color: #C4B5FD; font-weight: 800; letter-spacing: 0.5px;">ELEVENLABS HUMANLIKE VOICE AI STUDIO &amp; REGIONAL VOICE ENGINE</h3>
+                        <div style="font-size: 11px; color: #94A3B8;">Natural Human Delivery • Videos/Shorts, Audiobooks, Podcasts, Ads • Infallible Edge-TTS Cascade</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeElevenLabsModal()" style="background: #1E293B; border: 1px solid #334155; color: #F8FAFC; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 700;">✕ Close</button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+                <!-- Highlighted Persona Card: 28-32y Indian Male Tech Educator -->
+                <div style="background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(16,185,129,0.12)); border: 2px solid #10B981; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">🇮🇳</span>
+                            <div>
+                                <div style="font-size: 14px; font-weight: 800; color: #10B981;">INDIAN MALE TECH EDUCATOR &amp; YOUTUBER (28–32 Years Old)</div>
+                                <div style="font-size: 11px; color: #94A3B8;">Native Hindi / Hinglish • Fluent Technical English Terminology • Engaging Shorts Delivery</div>
+                            </div>
+                        </div>
+                        <span style="font-size: 11px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid #10B981; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
+                            ✨ Default Primary Persona
+                        </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; font-size: 11px; color: #CBD5E1; margin-top: 8px;">
+                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">🗣️ <b>Tone:</b> Warm, clear, confident, energetic</div>
+                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">⚡ <b>Pacing:</b> Moderate-fast (+8%), natural pauses</div>
+                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">💡 <b>Pronunciation:</b> Accurate SQL, Python, AWS terms</div>
+                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">🎙️ <b>Clarity:</b> Studio mic quality, 0% robotic rush</div>
+                    </div>
+                </div>
+
+                <!-- Model & Category Grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <!-- Model Selector -->
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #38BDF8; display: block; margin-bottom: 8px;">
+                            🤖 ElevenLabs Model Architecture:
+                        </label>
+                        <select id="modalElevenLabsModelSelect" style="width: 100%; background: #070B16; color: #F8FAFC; border: 1px solid #283C62; border-radius: 6px; padding: 8px; font-size: 12px;">
+                            <option value="eleven_multilingual_v2" selected>eleven_multilingual_v2 (Most Natural Humanlike • 29+ Langs)</option>
+                            <option value="eleven_turbo_v2_5">eleven_turbo_v2_5 (Low Latency ~250ms • High Quality)</option>
+                            <option value="eleven_flash_v2_5">eleven_flash_v2_5 (Super Fast ~75ms • Realtime)</option>
+                        </select>
+                        <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
+                            Multi-model cascade automatically applies if quota or network requires.
+                        </div>
+                    </div>
+
+                    <!-- Category / Use Case -->
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #38BDF8; display: block; margin-bottom: 8px;">
+                            🎯 Audio Production Category:
+                        </label>
+                        <select id="modalElevenLabsCategorySelect" style="width: 100%; background: #070B16; color: #F8FAFC; border: 1px solid #283C62; border-radius: 6px; padding: 8px; font-size: 12px;">
+                            <option value="indian_tech_youtuber" selected>📱 Indian Tech Educator (Reels &amp; YouTube Shorts)</option>
+                            <option value="videos">🎬 General Videos &amp; Explainer Content</option>
+                            <option value="audiobooks">📚 Audiobooks &amp; Deep Educational Narration</option>
+                            <option value="podcasts">🎙️ Technical Podcasts &amp; Discussions</option>
+                            <option value="ads">📢 Commercial Ads &amp; High Energy Promos</option>
+                        </select>
+                        <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
+                            Optimizes stability, similarity boost, and style cadence for the format.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Voice Synthesis & Preview Box -->
+                <div style="background: #070B16; border: 1px solid #1E2D4A; border-radius: 10px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #C4B5FD;">
+                            🔊 Live Voice Synthesis Preview:
+                        </label>
+                        <span id="modalElevenLabsQuotaStatus" style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 4px;">
+                            Checking Quota...
+                        </span>
+                    </div>
+                    <textarea id="modalElevenLabsSampleText" rows="3" style="width: 100%; background: #0B132B; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; border-radius: 6px; padding: 8px; resize: vertical;" placeholder="Enter text to synthesize...">हेलो दोस्तों! क्या आप जानते हैं कि SQL में DENSE_RANK और ROW_NUMBER में क्या फर्क होता है? चलिए 60 सेकंड में समझते हैं!</textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px;">
+                        <audio id="modalElevenLabsAudioPlayer" controls style="height: 34px; max-width: 320px; display: none;"></audio>
+                        <div style="display: flex; gap: 8px; margin-left: auto;">
+                            <button type="button" class="btn btn-secondary" onclick="synthesizeElevenLabsSample()" id="btnSynthesizeSample" style="font-size: 11px; padding: 6px 14px; font-weight: 700; border-color: #8B5CF6; color: #C4B5FD; display: flex; align-items: center; gap: 6px;">
+                                <span>▶ Synthesize &amp; Listen Now</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Key Vault 1-Click Update Card -->
+                <div style="background: rgba(245,158,11,0.06); border: 1.5px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #F59E0B;">🔑 ElevenLabs API Key (Stored Securely in Credentials Vault):</span>
+                        <span id="modalKeySavedBadge" style="font-size: 10px; color: #10B981; display: none;">✓ Key Saved!</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        <input type="password" id="modalElevenLabsApiKeyInput" placeholder="sk_... (Paste your ElevenLabs API Key here)" style="flex: 1; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: monospace;" />
+                        <button type="button" class="btn btn-primary" onclick="saveElevenLabsKeyFromModal()" style="font-size: 11px; padding: 8px 16px; background: linear-gradient(135deg, #F59E0B, #10B981); color: #000; font-weight: 800; border: none; border-radius: 6px; cursor: pointer;">
+                            💾 Save Key
+                        </button>
+                    </div>
+                    <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
+                        Shield Guarantee: If your ElevenLabs quota runs out, the studio automatically cascades to <b>hi-IN-MadhurNeural</b> with zero interruption or crashes.
                     </div>
                 </div>
             </div>

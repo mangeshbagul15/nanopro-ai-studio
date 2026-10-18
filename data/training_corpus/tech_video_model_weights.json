@@ -2,33 +2,34 @@
   "model_name": "NanoPro-TechVid-v1",
   "version": "1.5.2-continuous-learn",
   "repo_url": "https://github.com/mangesh-nanopro-studio/tech-video-neural-engine",
-  "total_epochs": 63,
-  "current_loss": 0.0289,
+  "total_epochs": 64,
+  "current_loss": 0.0284,
   "initial_loss": 0.45,
   "learning_rate": 0.0005,
-  "knowledge_vectors_count": 249,
+  "knowledge_vectors_count": 255,
   "status": "active_learning",
-  "last_updated": "2026-10-18 10:35:16",
+  "last_updated": "2026-10-18 11:09:14",
   "domains": {
     "sql": {
-      "epochs": 22,
+      "epochs": 23,
       "concepts": [
-        "COPY",
-        "CREATE",
         "HIGHEST",
         "MICRO",
-        "ORDER_ID",
         "HAVING CLAUSE",
-        "ZERO",
-        "INDEX OPTIMIZATION",
+        "CREATE",
+        "SQL",
         "CLONING",
-        "SNOWFLAKE",
-        "CUSTOMER_ID",
-        "FIND",
+        "INDEX OPTIMIZATION",
         "TABLE",
+        "PREVENT",
+        "FIND",
+        "CUSTOMER_ID",
         "PARTITION BY",
-        "PREVENT"
-      ]
+        "SALARY",
+        "COPY",
+        "USING"
+      ],
+      "loss": 0.0284
     },
     "python": {
       "epochs": 11,
@@ -124,6 +125,33 @@
     }
   },
   "recent_training_steps": [
+    {
+      "step_id": "step_64",
+      "epoch": 64,
+      "timestamp": "2026-10-18 11:09:14",
+      "domain": "sql",
+      "prompt_sample": "Find second highest salary in SQL using DENSE_RANK without ties",
+      "loss": 0.0284,
+      "delta_loss": -0.0005,
+      "learned_concepts": [
+        "FIND",
+        "SECOND",
+        "HIGHEST",
+        "SALARY",
+        "SQL",
+        "USING"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 52.0,
+      "synaptic_weights": {
+        "w_retention_hook": 0.942,
+        "w_pacing_constraint": 0.985,
+        "w_ast_precision": 0.994,
+        "w_trap_depth": 0.956,
+        "w_visual_density": 0.978,
+        "w_audio_sync": 0.989
+      }
+    },
     {
       "step_id": "step_63",
       "epoch": 63,
@@ -293,25 +321,41 @@
       ],
       "vectors_added": 5,
       "duration_calibrated": 50.0
-    },
-    {
-      "step_id": "step_54",
-      "epoch": 54,
-      "timestamp": "2026-10-18 09:35:27",
-      "domain": "python",
-      "prompt_sample": "Explain Docker Multi-Stage build for FastAPI reducing image size from 1GB to 120...",
-      "loss": 0.0363,
-      "delta_loss": -0.0009,
-      "learned_concepts": [
-        "EXPLAIN",
-        "DOCKER",
-        "MULTI",
-        "STAGE",
-        "BUILD",
-        "FASTAPI"
-      ],
-      "vectors_added": 6,
-      "duration_calibrated": 43.0
     }
-  ]
+  ],
+  "weights_optimizer": {
+    "algorithm": "AdamW-Autonomous",
+    "learning_rate": 0.0005,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-08,
+    "weight_decay": 0.01,
+    "convergence_score": "99.88%",
+    "synaptic_weights": {
+      "w_retention_hook": 0.942,
+      "w_pacing_constraint": 0.985,
+      "w_ast_precision": 0.994,
+      "w_trap_depth": 0.956,
+      "w_visual_density": 0.978,
+      "w_audio_sync": 0.989
+    },
+    "momentum_m": {
+      "w_retention_hook": 0.00075,
+      "w_pacing_constraint": 0.0016,
+      "w_ast_precision": 0.0008,
+      "w_trap_depth": 0.00123,
+      "w_visual_density": 0.00144,
+      "w_audio_sync": 0.00094
+    },
+    "momentum_v": {
+      "w_retention_hook": 9.99e-06,
+      "w_pacing_constraint": 1.998e-05,
+      "w_ast_precision": 9.99e-06,
+      "w_trap_depth": 1.499e-05,
+      "w_visual_density": 1.799e-05,
+      "w_audio_sync": 1.199e-05
+    },
+    "total_optimization_steps": 65,
+    "last_step_time": "2026-10-18 11:08:58"
+  }
 }

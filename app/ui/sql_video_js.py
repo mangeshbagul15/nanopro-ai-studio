@@ -1403,23 +1403,27 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillText("1️⃣ Production Query Optimization:", 90, 340);
             ctx.fillStyle = "#C7D2FE";
             ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   Never put a non-aggregated filter in HAVING!", 90, 380);
-            ctx.fillText("   Putting it in WHERE allows the optimizer to use B-Tree indexes.", 90, 420);
+            ctx.fillText(fitTextToWidth(ctx, "   Never put a non-aggregated filter in HAVING!", W - 180), 90, 380);
+            ctx.fillText(fitTextToWidth(ctx, "   Putting it in WHERE allows the optimizer to use B-Tree indexes.", W - 180), 90, 420);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
             ctx.fillText("2️⃣ Universal ANSI SQL Portability:", 90, 480);
             ctx.fillStyle = "#C7D2FE";
             ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   This execution model is identical across Snowflake, PostgreSQL,", 90, 520);
-            ctx.fillText("   Oracle, MySQL, and Microsoft SQL Server.", 90, 560);
+            ctx.fillText(fitTextToWidth(ctx, "   This execution model is identical across Snowflake, PostgreSQL,", W - 180), 90, 520);
+            ctx.fillText(fitTextToWidth(ctx, "   Oracle, MySQL, and Microsoft SQL Server.", W - 180), 90, 560);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
             ctx.fillText("3️⃣ Key Interviewer Impress Point:", 90, 620);
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText(`   ${p.pro_tip || "Filter early with WHERE to minimize memory footprint!"}`, 90, 665);
+            ctx.font = "bold 21px monospace";
+            const tipStr = p.pro_tip || "Filter early with WHERE to minimize memory footprint!";
+            const tipWrapped = wrapCanvasText(ctx, tipStr, W - 190, 3);
+            tipWrapped.forEach((tl, ti) => {
+                ctx.fillText(`   ${tl}`, 90, 665 + ti * 32);
+            });
 
             // Outro Branding Card (@Code_With_Mangesh)
             drawGlassTile(ctx, 60, 870, W - 120, 630, 24, "#F59E0B", true, true, 1.0);
@@ -1430,21 +1434,21 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
 
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("FAANG & Top MNC SQL Interview Preparation Studio", W / 2, 1005);
+            ctx.font = "bold 25px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, "FAANG & Top MNC Tech Interview Preparation Studio", W - 180), W / 2, 1005);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "28px 'Segoe UI', sans-serif";
-            ctx.fillText("⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W / 2, 1100);
-            ctx.fillText("🔔 Follow @Code_With_Mangesh for daily SQL questions", W / 2, 1160);
+            ctx.font = "26px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, "⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W - 180), W / 2, 1100);
+            ctx.fillText(fitTextToWidth(ctx, "🔔 Follow @Code_With_Mangesh for daily tech questions", W - 180), W / 2, 1160);
 
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🚀 100% Free AI High-Tech Education for Every Student!", W / 2, 1260);
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, "🚀 100% Free AI High-Tech Education for Every Student!", W - 180), W / 2, 1260);
 
             ctx.fillStyle = "#94A3B8";
             ctx.font = "italic 22px 'Segoe UI', sans-serif";
-            ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
+            ctx.fillText(fitTextToWidth(ctx, "Empowering students from rural to global tech careers", W - 180), W / 2, 1320);
 
             drawPhotonSparks(ctx, W / 2 - 280, 950, "#F59E0B", t);
             drawPhotonSparks(ctx, W / 2 + 280, 950, "#F59E0B", t);
@@ -1463,12 +1467,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("📋 SQL THEORY INTERVIEW TOPIC:", 90, 275);
+            ctx.fillText(fitTextToWidth(ctx, "📋 SQL THEORY INTERVIEW TOPIC:", W - 180), 90, 275);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            const qLines = wrapCanvasText(ctx, p.question, W - 180);
-            qLines.slice(0, 3).forEach((l, i) => {
+            const qLines = wrapCanvasText(ctx, p.question, W - 180, 3);
+            qLines.forEach((l, i) => {
                 ctx.fillText(l, 90, 325 + i * 38);
             });
 
@@ -1487,7 +1491,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillStyle = "#F59E0B";
             ctx.font = "bold 20px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("🎯 TARGET: QUERY EXECUTION LIFECYCLE & CORE MECHANISM", 0, 7);
+            const tgtLabel = "🎯 TARGET: " + (p.title || "QUERY EXECUTION LIFECYCLE").toUpperCase();
+            ctx.fillText(fitTextToWidth(ctx, tgtLabel, 560), 0, 7);
             ctx.restore();
 
             // Architectural Overview Glass Container
@@ -1495,11 +1500,11 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🧠 CORE ARCHITECTURAL DEFINITION:", 90, 590);
+            ctx.fillText(fitTextToWidth(ctx, "🧠 CORE ARCHITECTURAL DEFINITION:", W - 180), 90, 590);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            const defLines = wrapCanvasText(ctx, p.concept_summary || "WHERE filters individual rows before grouping; HAVING filters aggregated groups after GROUP BY.", W - 180);
+            const defLines = wrapCanvasText(ctx, p.concept_summary || "WHERE filters individual rows before grouping; HAVING filters aggregated groups after GROUP BY.", W - 180, 3);
             defLines.forEach((l, i) => {
                 ctx.fillText(l, 90, 645 + i * 38);
             });
@@ -1507,12 +1512,12 @@ SECOND_HIGHEST_SALARY: 70000`;
             drawGlassTile(ctx, 90, 780, 420, 50, 10, "#38BDF8", false, true, 0.85);
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 20px monospace";
-            ctx.fillText("1. WHERE: ROW-LEVEL FILTER", 110, 812);
+            ctx.fillText(fitTextToWidth(ctx, "1. WHERE: ROW-LEVEL FILTER", 400), 110, 812);
 
             drawGlassTile(ctx, 530, 780, 420, 50, 10, "#10B981", false, true, 0.85);
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 20px monospace";
-            ctx.fillText("2. HAVING: GROUP-LEVEL FILTER", 550, 812);
+            ctx.fillText(fitTextToWidth(ctx, "2. HAVING: GROUP-LEVEL FILTER", 400), 550, 812);
 
             drawGlassTile(ctx, 60, 980, W - 120, 500, 20, "rgba(255, 255, 255, 0.15)", false, false, 0.9);
 
@@ -1523,14 +1528,14 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1005, 8, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#94A3B8";
             ctx.font = "bold 20px monospace";
-            ctx.fillText("theory_roadmap.sql — Step-by-Step Understanding", 180, 1012);
+            ctx.fillText(fitTextToWidth(ctx, "theory_roadmap.sql — Step-by-Step Understanding", W - 240), 180, 1012);
 
             ctx.fillStyle = "#64748B";
-            ctx.font = "italic 24px monospace";
-            ctx.fillText("/* Step 1: Understand why interviewers ask this question */", 90, 1080);
-            ctx.fillText("/* Step 2: Grasp database query execution order (ANSI SQL) */", 90, 1140);
-            ctx.fillText("/* Step 3: Compare code syntax & aggregate functions */", 90, 1200);
-            ctx.fillText("/* Step 4: Avoid the fatal interview traps & score bonus points! */", 90, 1260);
+            ctx.font = "italic 23px monospace";
+            ctx.fillText(fitTextToWidth(ctx, "/* Step 1: Understand why interviewers ask this question */", W - 180), 90, 1080);
+            ctx.fillText(fitTextToWidth(ctx, "/* Step 2: Grasp database query execution order (ANSI SQL) */", W - 180), 90, 1140);
+            ctx.fillText(fitTextToWidth(ctx, "/* Step 3: Compare code syntax & aggregate functions */", W - 180), 90, 1200);
+            ctx.fillText(fitTextToWidth(ctx, "/* Step 4: Avoid the fatal interview traps & score bonus points! */", W - 180), 90, 1260);
 
             ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
             ctx.beginPath();
@@ -1541,7 +1546,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.stroke();
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("🧠 LEARNING GOAL: Master the difference & explain with confidence!", 120, 1420);
+            const goalLines = wrapCanvasText(ctx, "🧠 LEARNING GOAL: " + (p.title || "Master this core concept & explain with confidence!"), W - 220, 2);
+            goalLines.forEach((gl, gi) => {
+                ctx.fillText(gl, 115, 1405 + gi * 30);
+            });
 
             ctx.restore();
         }
@@ -1561,10 +1569,10 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#EF4444";
             ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("⚠️ THE COMMON CONFUSION: WHY 90% OF CANDIDATES STUMBLE", 90, 268);
+            ctx.fillText(fitTextToWidth(ctx, "⚠️ THE COMMON CONFUSION: WHY 90% OF CANDIDATES STUMBLE", W - 180), 90, 268);
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Both WHERE and HAVING filter data — but WHEN and WHAT do they filter?", 90, 302);
+            ctx.fillText(fitTextToWidth(ctx, "Both WHERE and HAVING filter data — but WHEN and WHAT do they filter?", W - 180), 90, 302);
 
             ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
             ctx.beginPath();
@@ -1579,10 +1587,21 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillText("❌ WHY CANDIDATES GET CONFUSED:", 90, 390);
 
             ctx.fillStyle = "#CBD5E1";
-            ctx.font = "23px 'Segoe UI', sans-serif";
-            ctx.fillText("• Candidates see boolean conditions in both and assume they are interchangeable.", 90, 440);
-            ctx.fillText("• Writing 'WHERE COUNT(*) > 2' causes an instant SQL syntax error!", 90, 490);
-            ctx.fillText("• Writing 'HAVING salary > 50000' without GROUP BY wastes CPU memory!", 90, 540);
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            const confusionBullets = [
+                "• Candidates see boolean conditions in both and assume they are interchangeable.",
+                "• Writing 'WHERE COUNT(*) > 2' causes an instant SQL syntax error!",
+                "• Writing 'HAVING salary > 50000' without GROUP BY wastes CPU memory!"
+            ];
+            let bY = 435;
+            confusionBullets.forEach(b => {
+                const blines = wrapCanvasText(ctx, b, W - 180, 2);
+                blines.forEach(bl => {
+                    ctx.fillText(bl, 90, bY);
+                    bY += 34;
+                });
+                bY += 6;
+            });
 
             ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
             ctx.beginPath();
@@ -1594,21 +1613,21 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ THE CORE DISTINCTION SENIOR INTERVIEWERS TEST:", 90, 740);
+            ctx.fillText(fitTextToWidth(ctx, "✅ THE CORE DISTINCTION SENIOR INTERVIEWERS TEST:", W - 180), 90, 740);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
             ctx.fillText("1️⃣ WHERE CLAUSE — PRE-FILTER (ROW LEVEL)", 90, 800);
             ctx.fillStyle = "#94A3B8";
             ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   Filters individual rows BEFORE the database groups or aggregates them.", 90, 840);
+            ctx.fillText(fitTextToWidth(ctx, "   Filters individual rows BEFORE the database groups or aggregates them.", W - 180), 90, 840);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
             ctx.fillText("2️⃣ HAVING CLAUSE — POST-FILTER (GROUP LEVEL)", 90, 910);
             ctx.fillStyle = "#94A3B8";
             ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   Filters aggregated buckets AFTER GROUP BY has assembled the groups.", 90, 950);
+            ctx.fillText(fitTextToWidth(ctx, "   Filters aggregated buckets AFTER GROUP BY has assembled the groups.", W - 180), 90, 950);
 
             ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
             ctx.beginPath();
@@ -1623,10 +1642,21 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillText("💡 PERFORMANCE BENEFIT IN PRODUCTION:", 90, 1195);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• Filtering rows with WHERE reduces the row count BEFORE grouping.", 90, 1255);
-            ctx.fillText("• In large tables with 10M rows, this slashes RAM usage by over 90%!", 90, 1315);
-            ctx.fillText("• Next: Let's see the step-by-step query execution lifecycle!", 90, 1375);
+            ctx.font = "23px 'Segoe UI', sans-serif";
+            const perfBullets = [
+                "• Filtering rows with WHERE reduces row count BEFORE grouping.",
+                "• In large tables with 10M rows, this slashes RAM usage by over 90%!",
+                "• Next: Let's see the step-by-step query execution lifecycle!"
+            ];
+            let pY = 1250;
+            perfBullets.forEach(pb => {
+                const pbl = wrapCanvasText(ctx, pb, W - 180, 2);
+                pbl.forEach(pl => {
+                    ctx.fillText(pl, 90, pY);
+                    pY += 36;
+                });
+                pY += 6;
+            });
 
             ctx.restore();
         }
@@ -1801,10 +1831,10 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(`🔍 ${p.comparison_title || 'WHERE vs HAVING COMPARISON MATRIX'}`, 90, 265);
+            ctx.fillText(fitTextToWidth(ctx, `🔍 ${p.comparison_title || 'WHERE vs HAVING COMPARISON MATRIX'}`, W - 180), 90, 265);
             ctx.fillStyle = "#CBD5E1";
             ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Memorize these 4 pillars for immediate high marks in your interview:", 90, 296);
+            ctx.fillText(fitTextToWidth(ctx, "Memorize these 4 pillars for immediate high marks in your interview:", W - 180), 90, 296);
 
             const headers = p.comparison_headers || ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"];
             ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
@@ -1813,10 +1843,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.strokeRect(60, 340, W - 120, 60);
 
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText(headers[0], 90, 378);
-            ctx.fillText(headers[1], 420, 378);
-            ctx.fillText(headers[2], 740, 378);
+            ctx.font = "bold 21px monospace";
+            ctx.fillText(fitTextToWidth(ctx, headers[0], 290), 90, 378);
+            ctx.fillText(fitTextToWidth(ctx, headers[1], 290), 420, 378);
+            ctx.fillText(fitTextToWidth(ctx, headers[2], 260), 740, 378);
 
             const matrixRows = p.comparison_rows || [
                 {feature: "Execution Stage", col_a: "Pre-Filter (Before GROUP BY)", col_b: "Post-Filter (After GROUP BY)"},
@@ -1835,28 +1865,28 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#F59E0B";
                 ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                ctx.fillText(r.feature, 90, rowY + 45);
+                ctx.fillText(fitTextToWidth(ctx, r.feature, W - 180), 90, rowY + 45);
 
                 ctx.fillStyle = "#38BDF8";
                 ctx.font = "bold 20px monospace";
-                ctx.fillText(`WHERE: ${r.col_a}`, 90, rowY + 90);
+                ctx.fillText(fitTextToWidth(ctx, `WHERE: ${r.col_a}`, W - 180), 90, rowY + 90);
 
                 ctx.fillStyle = "#10B981";
                 ctx.font = "bold 20px monospace";
-                ctx.fillText(`HAVING: ${r.col_b}`, 90, rowY + 130);
+                ctx.fillText(fitTextToWidth(ctx, `HAVING: ${r.col_b}`, W - 180), 90, rowY + 130);
             });
 
             drawGlassTile(ctx, 60, 1180, W - 120, 320, 18, "#10B981", false, true, 1.0);
 
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 INTERVIEW CHECKLIST SUMMARY:", 90, 1235);
+            ctx.fillText(fitTextToWidth(ctx, "💡 INTERVIEW CHECKLIST SUMMARY:", W - 180), 90, 1235);
 
             ctx.fillStyle = "#F8FAFC";
             ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• Need to filter individual rows? ➔ Use WHERE.", 90, 1295);
-            ctx.fillText("• Need to filter COUNT, SUM, AVG of groups? ➔ Use HAVING.", 90, 1355);
-            ctx.fillText("• You can combine both in the same query for maximum speed!", 90, 1415);
+            ctx.fillText(fitTextToWidth(ctx, "• Need to filter individual rows? ➔ Use WHERE.", W - 180), 90, 1295);
+            ctx.fillText(fitTextToWidth(ctx, "• Need to filter COUNT, SUM, AVG of groups? ➔ Use HAVING.", W - 180), 90, 1355);
+            ctx.fillText(fitTextToWidth(ctx, "• You can combine both in the same query for maximum speed!", W - 180), 90, 1415);
 
             ctx.restore();
         }
@@ -1870,7 +1900,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#EF4444";
             ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(`❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, 90, 275);
+            ctx.fillText(fitTextToWidth(ctx, `❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, W - 180), 90, 275);
 
             const trapsList = p.traps && p.traps.length > 0 ? p.traps : [
                 "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
@@ -1886,7 +1916,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = trp.startsWith("❌") ? "#FCA5A5" : "#A7F3D0";
                 ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                const tLines = wrapCanvasText(ctx, trp, W - 220);
+                const tLines = wrapCanvasText(ctx, trp, W - 220, 2);
                 tLines.forEach((tl, ti) => {
                     ctx.fillText(tl, 115, trapY + 45 + ti * 36);
                 });
@@ -1896,7 +1926,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("🏆 THE UNIVERSAL GOLDEN RULE:", 90, 805);
+            ctx.fillText(fitTextToWidth(ctx, "🏆 THE UNIVERSAL GOLDEN RULE:", W - 180), 90, 805);
 
             ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
             ctx.fillRect(90, 840, W - 180, 220);
@@ -1904,16 +1934,16 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.strokeRect(90, 840, W - 180, 220);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
             const ruleText = p.golden_rule || "Golden Rule: Filter individual rows with WHERE; filter aggregated groups with HAVING.";
-            const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220);
+            const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220, 3);
             rLines.forEach((rl, ri) => {
                 ctx.fillText(rl, 120, 920 + ri * 46);
             });
 
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ Saying this one sentence guarantees full points in an interview!", 90, 1130);
+            ctx.fillText(fitTextToWidth(ctx, "✅ Saying this one sentence guarantees full points in an interview!", W - 180), 90, 1130);
 
             drawGlassTile(ctx, 60, 1220, W - 120, 260, 18, "#38BDF8", false, true, 1.0);
 
@@ -2143,8 +2173,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         ctx.fillStyle = "#94A3B8";
         ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        const subtitleBar = p.title ? p.title.slice(0, 46) : "Universal Tech Architecture Masterclass";
-        ctx.fillText(`⚡ ${subtitleBar}`, 60, 125);
+        const subtitleBar = p.title || "Universal Tech Architecture Masterclass";
+        ctx.fillText(fitTextToWidth(ctx, `⚡ ${subtitleBar}`, W - 360), 60, 125);
 
         // Visual Audio Waveform Equalizer Bars
         if (sqlShortState.isPlaying) {
@@ -2286,22 +2316,26 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.fillText("1️⃣ Why Interviewers Value This Approach:", 90, 340);
                 ctx.fillStyle = "#C7D2FE";
                 ctx.font = "22px 'Segoe UI', sans-serif";
-                ctx.fillText("   " + (p.pro_tip || "Explaining query mechanics before writing code demonstrates senior-level clarity!"), 90, 380);
+                const sqlTipStr = p.pro_tip || "Explaining query mechanics before writing code demonstrates senior-level clarity!";
+                const sqlTipWrapped = wrapCanvasText(ctx, "   " + sqlTipStr, W - 180, 3);
+                sqlTipWrapped.forEach((stl, sti) => {
+                    ctx.fillText(stl, 90, 380 + sti * 32);
+                });
 
                 ctx.fillStyle = "#FFFFFF";
                 ctx.font = "bold 24px 'Segoe UI', sans-serif";
                 ctx.fillText("2️⃣ Universal SQL Compatibility & Performance:", 90, 480);
                 ctx.fillStyle = "#C7D2FE";
                 ctx.font = "22px 'Segoe UI', sans-serif";
-                ctx.fillText("   Optimizers use B-Tree indexes & partition pruning for low latency.", 90, 520);
-                ctx.fillText("   Handles edge cases, nulls, and duplicate values gracefully.", 90, 560);
+                ctx.fillText(fitTextToWidth(ctx, "   Optimizers use B-Tree indexes & partition pruning for low latency.", W - 180), 90, 520);
+                ctx.fillText(fitTextToWidth(ctx, "   Handles edge cases, nulls, and duplicate values gracefully.", W - 180), 90, 560);
 
                 ctx.fillStyle = "#FFFFFF";
                 ctx.font = "bold 24px 'Segoe UI', sans-serif";
                 ctx.fillText("3️⃣ FAANG Best Practice:", 90, 640);
                 ctx.fillStyle = "#10B981";
                 ctx.font = "bold 22px monospace";
-                ctx.fillText("   Always state time complexity O(N log K) and memory footprint!", 90, 685);
+                ctx.fillText(fitTextToWidth(ctx, "   Always state time complexity O(N log K) and memory footprint!", W - 180), 90, 685);
 
                 // 2. Outro Branding Card (@Code_With_Mangesh) on Glowing Amber Glass
                 drawGlassTile(ctx, 60, 870, W - 120, 630, 24, "#F59E0B", true, true, 1.0);
@@ -2312,21 +2346,21 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
 
                 ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText("FAANG & Top MNC SQL Interview Preparation Studio", W / 2, 1005);
+                ctx.font = "bold 25px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, "FAANG & Top MNC SQL Interview Preparation Studio", W - 180), W / 2, 1005);
 
                 ctx.fillStyle = "#F8FAFC";
-                ctx.font = "28px 'Segoe UI', sans-serif";
-                ctx.fillText("⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W / 2, 1100);
-                ctx.fillText("🔔 Follow @Code_With_Mangesh for daily SQL questions", W / 2, 1160);
+                ctx.font = "26px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, "⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W - 180), W / 2, 1100);
+                ctx.fillText(fitTextToWidth(ctx, "🔔 Follow @Code_With_Mangesh for daily SQL questions", W - 180), W / 2, 1160);
 
                 ctx.fillStyle = "#10B981";
-                ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText("🚀 100% Free AI High-Tech Education for Every Student!", W / 2, 1260);
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, "🚀 100% Free AI High-Tech Education for Every Student!", W - 180), W / 2, 1260);
 
                 ctx.fillStyle = "#94A3B8";
                 ctx.font = "italic 22px 'Segoe UI', sans-serif";
-                ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
+                ctx.fillText(fitTextToWidth(ctx, "Empowering students from rural to global tech careers", W - 180), W / 2, 1320);
 
                 drawPhotonSparks(ctx, W / 2 - 280, 950, "#F59E0B", t);
                 drawPhotonSparks(ctx, W / 2 + 280, 950, "#F59E0B", t);
@@ -2407,13 +2441,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                     ctx.fillStyle = "#FFFFFF";
                     ctx.font = "21px monospace";
-                    ctx.fillText(r.account || "", 105, rowY + 42);
-                    ctx.fillText(r.date || "", 315, rowY + 42);
-                    ctx.fillText(r.amt || "", 560, rowY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.account || ""), 190), 105, rowY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.date || ""), 220), 315, rowY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.amt || ""), 220), 560, rowY + 42);
 
                     ctx.fillStyle = "#38BDF8";
                     ctx.font = "bold 22px monospace";
-                    ctx.fillText(r.balance || "", 810, rowY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.balance || ""), 170), 810, rowY + 42);
                 });
 
                 // 4. Dynamic Laser Connector linking Table to Pipeline Stage 1
@@ -2479,18 +2513,18 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                     ctx.fillStyle = "#FFFFFF";
                     ctx.font = "21px monospace";
-                    ctx.fillText(r.account || "", 110, rowY + 40);
-                    ctx.fillText(r.date || "", 320, rowY + 40);
-                    ctx.fillText(r.amt || "", 560, rowY + 40);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.account || ""), 190), 110, rowY + 40);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.date || ""), 220), 320, rowY + 40);
+                    ctx.fillText(fitTextToWidth(ctx, String(r.amt || ""), 180), 560, rowY + 40);
 
                     if (isTarget) {
                         ctx.fillStyle = "#10B981";
                         ctx.font = "bold 21px monospace";
-                        ctx.fillText("🎯 CANDIDATE (Rank 1)", 760, rowY + 40);
+                        ctx.fillText(fitTextToWidth(ctx, "🎯 CANDIDATE (Rank 1)", 210), 760, rowY + 40);
                     } else {
                         ctx.fillStyle = "#94A3B8";
                         ctx.font = "20px monospace";
-                        ctx.fillText(r.balance || "PASS", 760, rowY + 40);
+                        ctx.fillText(fitTextToWidth(ctx, String(r.balance || "PASS"), 210), 760, rowY + 40);
                     }
                 });
 
@@ -2499,7 +2533,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#38BDF8";
                 ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(`🪟 ${pipelineStages[1] ? pipelineStages[1].name.toUpperCase() : 'DATA PARTITION'} & CANDIDATE BREAKDOWN:`, 90, 695);
+                ctx.fillText(fitTextToWidth(ctx, `🪟 ${pipelineStages[1] ? pipelineStages[1].name.toUpperCase() : 'DATA PARTITION'} & CANDIDATE BREAKDOWN:`, W - 180), 90, 695);
 
                 const sampleKeys = sampleRows.slice(0, 3);
                 sampleKeys.forEach((r, i) => {
@@ -2512,11 +2546,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                     ctx.fillStyle = i === 0 ? "#10B981" : (i === 1 ? "#38BDF8" : "#F59E0B");
                     ctx.font = "bold 20px monospace";
-                    ctx.fillText(`👥 ${r.account || 'Group ' + (i + 1)}:`, 110, by + 37);
+                    ctx.fillText(fitTextToWidth(ctx, `👥 ${r.account || 'Group ' + (i + 1)}:`, 210), 110, by + 37);
 
                     ctx.fillStyle = "#FFFFFF";
                     ctx.font = "20px monospace";
-                    ctx.fillText(`${r.date || ''} • ${r.amt || ''} ➔ ${r.is_target ? '🎯 Selected' : 'Evaluated'}`, 340, by + 37);
+                    const detailStr = `${r.date || ''} • ${r.amt || ''} ➔ ${r.is_target ? '🎯 Selected' : 'Evaluated'}`;
+                    ctx.fillText(fitTextToWidth(ctx, detailStr, W - 180 - 270), 340, by + 37);
                 });
 
                 // 3. The Fatal Interview Trap Card (Bottom Tile)
@@ -2524,12 +2559,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#EF4444";
                 ctx.font = "bold 28px 'Segoe UI', sans-serif";
-                ctx.fillText("❌ THE FATAL INTERVIEW TRAP: COMMON PITFALLS TO AVOID!", 90, 1045);
+                ctx.fillText(fitTextToWidth(ctx, "❌ THE FATAL INTERVIEW TRAP: COMMON PITFALLS TO AVOID!", W - 180), 90, 1045);
 
                 ctx.fillStyle = "#F8FAFC";
                 ctx.font = "22px monospace";
                 const trapCode = p.trap_code || "SELECT * FROM ... ORDER BY ... LIMIT 1 OFFSET 1; -- FAILS ON TIES / GROUPS!";
-                ctx.fillText(trapCode, 90, 1100);
+                ctx.fillText(fitTextToWidth(ctx, trapCode, W - 180), 90, 1100);
 
                 ctx.fillStyle = "#CBD5E1";
                 ctx.font = "24px 'Segoe UI', sans-serif";
@@ -2539,12 +2574,13 @@ SECOND_HIGHEST_SALARY: 70000`;
                     "• In FAANG interviews, failing to handle duplicate ties costs 50% points!"
                 ];
                 trapsList.slice(0, 3).forEach((tr, ti) => {
-                    ctx.fillText(tr.startsWith("•") ? tr : ("• " + tr), 90, 1160 + ti * 55);
+                    const prefix = tr.startsWith("•") ? tr : ("• " + tr);
+                    ctx.fillText(fitTextToWidth(ctx, prefix, W - 180), 90, 1160 + ti * 55);
                 });
 
                 ctx.fillStyle = "#10B981";
                 ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                ctx.fillText("✅ Solution: Build dynamic multi-stage query logic with zero data loss!", 90, 1345);
+                ctx.fillText(fitTextToWidth(ctx, "✅ Solution: Build dynamic multi-stage query logic with zero data loss!", W - 180), 90, 1345);
 
                 // Dynamic Connector Line between Middle Diagram and Trap Tile
                 drawDynamicConnector(ctx, 300, 970, 300, 1030, "#EF4444", t, "⚠️ TRAP DETECTED");
@@ -2590,16 +2626,16 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                     ctx.fillStyle = st.color;
                     ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                    ctx.fillText(`${st.num} ${st.icon} ${st.title}`, 95, boxY + 45);
+                    ctx.fillText(fitTextToWidth(ctx, `${st.num} ${st.icon} ${st.title}`, W - 190), 95, boxY + 45);
 
                     ctx.fillStyle = isActive ? "#FFFFFF" : "#94A3B8";
                     ctx.font = "bold 24px monospace";
-                    ctx.fillText(st.query, 95, boxY + 95);
+                    ctx.fillText(fitTextToWidth(ctx, st.query, W - 190), 95, boxY + 95);
 
                     if (st.sub && steps.length <= 3) {
                         ctx.fillStyle = isActive ? "#38BDF8" : "#64748B";
                         ctx.font = "20px 'Segoe UI', sans-serif";
-                        ctx.fillText(st.sub, 95, boxY + 140);
+                        ctx.fillText(fitTextToWidth(ctx, st.sub, W - 190), 95, boxY + 140);
                     }
 
                     if (isActive) {
@@ -2786,13 +2822,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                     ctx.fillStyle = isExclude ? "#FCA5A5" : "#FFFFFF";
                     ctx.font = "22px monospace";
-                    ctx.fillText(ev.name, 105, rY + 42);
-                    ctx.fillText(ev.salary || "", 350, rY + 42);
-                    ctx.fillText(ev.cond, 560, rY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(ev.name || ""), 220), 105, rY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(ev.salary || ""), 190), 350, rY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, String(ev.cond || ""), 250), 560, rY + 42);
 
                     ctx.fillStyle = isExclude ? "#EF4444" : "#10B981";
                     ctx.font = "bold 22px monospace";
-                    ctx.fillText(isExclude ? "❌ EXCLUDE" : "✅ KEEP", 830, rY + 42);
+                    ctx.fillText(fitTextToWidth(ctx, isExclude ? "❌ EXCLUDE" : "✅ KEEP", 160), 830, rY + 42);
                 });
 
                 // 3. Filtered Candidates Outcome Glass Card
@@ -2800,12 +2836,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#10B981";
                 ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText("🎯 FILTERED CANDIDATE DATA POOL:", 90, 1275);
+                ctx.fillText(fitTextToWidth(ctx, "🎯 FILTERED CANDIDATE DATA POOL:", W - 180), 90, 1275);
 
                 ctx.fillStyle = "#FFFFFF";
                 ctx.font = "bold 23px monospace";
                 const keptRows = filterEvals.filter(e => e.status === "keep").map(e => e.name).slice(0, 3).join(", ");
-                ctx.fillText(`KEPT RECORDS: { ${keptRows || 'Evaluated Top Candidates'} }`, 90, 1330);
+                ctx.fillText(fitTextToWidth(ctx, `KEPT RECORDS: { ${keptRows || 'Evaluated Top Candidates'} }`, W - 180), 90, 1330);
 
                 ctx.fillStyle = "#38BDF8";
                 ctx.font = "22px 'Segoe UI', sans-serif";
@@ -3021,22 +3057,69 @@ SECOND_HIGHEST_SALARY: 70000`;
         });
     }
 
-    function wrapCanvasText(ctx, text, maxWidth) {
-        if (!text) return [];
-        const words = text.split(" ");
-        const lines = [];
-        let currLine = "";
+    function fitTextToWidth(ctx, text, maxWidth) {
+        if (!text) return "";
+        let str = String(text);
+        if (ctx.measureText(str).width <= maxWidth) return str;
+        while (str.length > 3 && ctx.measureText(str + "...").width > maxWidth) {
+            str = str.slice(0, -1);
+        }
+        return str + "...";
+    }
 
-        words.forEach(w => {
-            const testLine = currLine ? (currLine + " " + w) : w;
-            if (ctx.measureText(testLine).width > maxWidth && currLine) {
-                lines.push(currLine);
-                currLine = w;
-            } else {
-                currLine = testLine;
+    function wrapCanvasText(ctx, text, maxWidth, maxLines = 12) {
+        if (!text) return [];
+        const str = String(text);
+        // First split by explicit line breaks
+        const paragraphs = str.split("\n");
+        const lines = [];
+
+        paragraphs.forEach(para => {
+            const trimmed = para.trim();
+            if (!trimmed) {
+                lines.push("");
+                return;
             }
+            const words = trimmed.split(/\s+/);
+            let currLine = "";
+
+            words.forEach(w => {
+                if (!w) return;
+                // If a single word or identifier is wider than maxWidth, break it character by character
+                if (ctx.measureText(w).width > maxWidth) {
+                    if (currLine) {
+                        lines.push(currLine);
+                        currLine = "";
+                    }
+                    let subWord = "";
+                    for (let c of w) {
+                        if (ctx.measureText(subWord + c).width > maxWidth - 10) {
+                            if (subWord) lines.push(subWord);
+                            subWord = c;
+                        } else {
+                            subWord += c;
+                        }
+                    }
+                    currLine = subWord;
+                    return;
+                }
+
+                const testLine = currLine ? (currLine + " " + w) : w;
+                if (ctx.measureText(testLine).width > maxWidth && currLine) {
+                    lines.push(currLine);
+                    currLine = w;
+                } else {
+                    currLine = testLine;
+                }
+            });
+            if (currLine) lines.push(currLine);
         });
-        if (currLine) lines.push(currLine);
+
+        if (maxLines && lines.length > maxLines) {
+            const trimmed = lines.slice(0, maxLines);
+            trimmed[maxLines - 1] = fitTextToWidth(ctx, trimmed[maxLines - 1], maxWidth);
+            return trimmed;
+        }
         return lines;
     }
 
@@ -3377,6 +3460,228 @@ SECOND_HIGHEST_SALARY: 70000`;
         document.body.removeChild(a);
     }
 
+    /* ==========================================================================
+       GITHUB MODEL WEIGHTS OPTIMIZER MODAL & ADAMW TRAINING STUDIO
+       ========================================================================== */
+    async function openWeightsOptimizerModal() {
+        const modal = document.getElementById("weightsOptimizerModal");
+        if (!modal) return;
+        modal.style.display = "flex";
+        await loadWeightsOptimizerData();
+    }
+
+    function closeWeightsOptimizerModal() {
+        const modal = document.getElementById("weightsOptimizerModal");
+        if (modal) modal.style.display = "none";
+    }
+
+    async function loadWeightsOptimizerData() {
+        try {
+            const res = await fetch("/api/tech_video/weights_optimizer");
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            const epEl = document.getElementById("modalOptimizerEpoch");
+            if (epEl) epEl.innerText = `Epoch #${data.total_epochs || data.epoch || 54}`;
+
+            const lossEl = document.getElementById("modalOptimizerLoss");
+            if (lossEl) lossEl.innerText = (data.current_loss !== undefined ? data.current_loss : 0.0363).toFixed(4);
+
+            const vecEl = document.getElementById("modalOptimizerVectors");
+            if (vecEl) vecEl.innerText = `${data.knowledge_vectors_count || 196} Vectors`;
+
+            const weights = data.synaptic_weights || data.weights;
+            const listEl = document.getElementById("modalSynapticWeightsList");
+            if (listEl && weights) {
+                const weightLabels = {
+                    w_retention_hook: { title: "Hook Impact & Retention Weight", desc: "First 3s intrigue & question formulation", color: "#EC4899" },
+                    w_pacing_constraint: { title: "Pacing & Strict <60s Duration Constraint", desc: "Clamps narration strictly within 45s-58s window", color: "#38BDF8" },
+                    w_ast_precision: { title: "AST & ANSI Syntax Precision Weight", desc: "Zero runtime syntax or clause order mistakes", color: "#10B981" },
+                    w_trap_depth: { title: "Edge-Case & Interview Trap Depth", desc: "Injects duplicate ties, NULL traps, and boundary cases", color: "#EF4444" },
+                    w_visual_density: { title: "Visual Density & Cyber Glass Layering", desc: "Neon photons, connector arrows, and diagram fidelity", color: "#C084FC" },
+                    w_audio_sync: { title: "Teacher Voiceover Audio-Visual Synchronizer", desc: "Synchronizes scene transitions with real spoken speech duration", color: "#F59E0B" }
+                };
+
+                let html = "";
+                for (const [k, v] of Object.entries(weights)) {
+                    const meta = weightLabels[k] || { title: k, desc: "Learned neural weight parameter", color: "#38BDF8" };
+                    const pct = Math.min(100, Math.max(10, Math.round(v * 100)));
+                    html += `
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <div>
+                                <span style="font-size: 12px; font-weight: 700; color: ${meta.color};">${meta.title}</span>
+                                <span style="font-size: 10px; color: #64748B; margin-left: 8px;">(${k})</span>
+                                <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">${meta.desc}</div>
+                            </div>
+                            <span style="font-family: monospace; font-size: 13px; font-weight: 800; color: #F8FAFC;">${Number(v).toFixed(4)}</span>
+                        </div>
+                        <div style="height: 6px; width: 100%; background: #1E293B; border-radius: 3px; overflow: hidden;">
+                            <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, ${meta.color}, #38BDF8); border-radius: 3px;"></div>
+                        </div>
+                    </div>`;
+                }
+                listEl.innerHTML = html;
+            }
+        } catch (e) {
+            console.warn("Failed to load weights optimizer data:", e);
+        }
+    }
+
+    async function runWeightsOptimizationStep() {
+        const btn = document.getElementById("btnModalTrainStep");
+        const statusEl = document.getElementById("modalTrainStepStatus");
+        if (btn) {
+            btn.innerHTML = `<span>⏳ Computing AdamW Gradients...</span>`;
+            btn.disabled = true;
+        }
+        if (statusEl) statusEl.innerText = "Backpropagating multi-objective loss...";
+
+        const promptVal = (document.getElementById("sqlShortQuestion")?.value || "").trim() || "Dynamic Tech Video Architecture Training";
+        try {
+            const res = await fetch("/api/tech_video/train_step", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ prompt: promptVal })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (statusEl) statusEl.innerText = `✓ Epoch #${data.epoch} complete! Loss: ${data.current_loss} (Δ ${data.delta_loss})`;
+                await loadWeightsOptimizerData();
+
+                // Also update workspace banner badge
+                const epPill = document.getElementById("pipelineEpochPill");
+                if (epPill) epPill.innerText = `Epoch #${data.epoch}`;
+                const lossPill = document.getElementById("pipelineLossPill");
+                if (lossPill) lossPill.innerText = `Loss: ${data.current_loss}`;
+                const badge = document.getElementById("pipelineGitHubModelText");
+                if (badge) badge.innerText = `GitHub Model: Epoch #${data.epoch} • Loss: ${data.current_loss} • ${data.knowledge_vectors_count} Vectors`;
+
+                logPipelineStep("AdamW Optimization Step", `Epoch #${data.epoch} converged with loss ${data.current_loss}. Dynamic synaptic weights updated.`);
+            } else {
+                if (statusEl) statusEl.innerText = "Training step completed with fallback.";
+            }
+        } catch (e) {
+            if (statusEl) statusEl.innerText = "Error running training step.";
+        } finally {
+            if (btn) {
+                btn.innerHTML = `<span>⚡ Run AdamW Weight Optimization Step Now</span>`;
+                btn.disabled = false;
+            }
+        }
+    }
+
+    /* ==========================================================================
+       ELEVENLABS VOICE AI STUDIO & 28-32Y INDIAN MALE TECH YOUTUBER PERSONA
+       ========================================================================== */
+    async function openElevenLabsModal() {
+        const modal = document.getElementById("elevenLabsVoiceModal");
+        if (!modal) return;
+        modal.style.display = "flex";
+        await loadElevenLabsData();
+    }
+
+    function closeElevenLabsModal() {
+        const modal = document.getElementById("elevenLabsVoiceModal");
+        if (modal) modal.style.display = "none";
+    }
+
+    async function loadElevenLabsData() {
+        try {
+            const quotaEl = document.getElementById("modalElevenLabsQuotaStatus");
+            const res = await fetch("/api/elevenlabs/user_info");
+            if (res.ok) {
+                const info = await res.json();
+                if (quotaEl) {
+                    if (info.authenticated) {
+                        const rem = Math.max(0, (info.character_limit || 10000) - (info.character_count || 0));
+                        quotaEl.innerText = `Tier: ${info.tier || 'Free'} • Used: ${info.character_count || 0}/${info.character_limit || 10000} chars (${rem} remaining)`;
+                        quotaEl.style.color = rem > 0 ? "#10B981" : "#F59E0B";
+                    } else {
+                        quotaEl.innerText = "Shield Safe: Using hi-IN-MadhurNeural & Edge-TTS Cascade";
+                        quotaEl.style.color = "#38BDF8";
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("ElevenLabs user_info error:", e);
+        }
+    }
+
+    async function saveElevenLabsKeyFromModal() {
+        const input = document.getElementById("modalElevenLabsApiKeyInput");
+        const badge = document.getElementById("modalKeySavedBadge");
+        if (!input || !input.value.trim()) return;
+        const key = input.value.trim();
+
+        try {
+            const res = await fetch("/api/elevenlabs/save_key", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ api_key: key })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (badge) {
+                    badge.innerText = `✓ Key saved! (Verified: ${data.authenticated ? 'Active' : 'Saved to Vault'})`;
+                    badge.style.display = "inline-block";
+                    setTimeout(() => { badge.style.display = "none"; }, 4000);
+                }
+                input.value = "";
+                await loadElevenLabsData();
+                logPipelineStep("ElevenLabs Key Updated", "New ElevenLabs API key saved to Credentials Vault and activated.");
+            }
+        } catch (e) {
+            alert("Failed to save key: " + e);
+        }
+    }
+
+    async function synthesizeElevenLabsSample() {
+        const btn = document.getElementById("btnSynthesizeSample");
+        const textEl = document.getElementById("modalElevenLabsSampleText");
+        const modelEl = document.getElementById("modalElevenLabsModelSelect");
+        const catEl = document.getElementById("modalElevenLabsCategorySelect");
+        const player = document.getElementById("modalElevenLabsAudioPlayer");
+
+        const text = (textEl?.value || "").trim() || "हेलो दोस्तों! क्या आप जानते हैं कि SQL में DENSE_RANK और ROW_NUMBER में क्या फर्क होता है? चलिए 60 सेकंड में समझते हैं!";
+        const model = modelEl?.value || "eleven_multilingual_v2";
+        const cat = catEl?.value || "indian_tech_youtuber";
+
+        if (btn) {
+            btn.innerHTML = `<span>⏳ Synthesizing Voice AI...</span>`;
+            btn.disabled = true;
+        }
+
+        try {
+            const res = await fetch("/api/elevenlabs/synthesize", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    text: text,
+                    category: cat,
+                    model_id: model,
+                    voice_gender: "male"
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.audio_url && player) {
+                    player.src = data.audio_url;
+                    player.style.display = "block";
+                    player.play();
+                }
+                logPipelineStep("Speech Synthesized", `Synthesized voice using ${data.model_used || 'ElevenLabs / MadhurNeural'} in ${data.duration ? data.duration.toFixed(1) + 's' : ''}`);
+            }
+        } catch (e) {
+            alert("Synthesis error: " + e);
+        } finally {
+            if (btn) {
+                btn.innerHTML = `<span>▶ Synthesize & Listen Now</span>`;
+                btn.disabled = false;
+            }
+        }
+    }
+
     // Expose Functions to Global Window
     window.setSqlAudioLang = setSqlAudioLang;
     window.setSqlTextStyle = setSqlTextStyle;
@@ -3405,6 +3710,13 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.closeAgentBrainModal = closeAgentBrainModal;
     window.setSqlCreationMode = setSqlCreationMode;
     window.triggerModelTraining = triggerModelTraining;
+    window.openWeightsOptimizerModal = openWeightsOptimizerModal;
+    window.closeWeightsOptimizerModal = closeWeightsOptimizerModal;
+    window.runWeightsOptimizationStep = runWeightsOptimizationStep;
+    window.openElevenLabsModal = openElevenLabsModal;
+    window.closeElevenLabsModal = closeElevenLabsModal;
+    window.saveElevenLabsKeyFromModal = saveElevenLabsKeyFromModal;
+    window.synthesizeElevenLabsSample = synthesizeElevenLabsSample;
 
     // Auto-initialize telemetry on load
     if (typeof document !== 'undefined') {

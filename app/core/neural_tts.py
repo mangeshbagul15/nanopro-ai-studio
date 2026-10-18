@@ -11,6 +11,7 @@ Architecture:
 """
 
 import os
+import re
 import asyncio
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -161,37 +162,65 @@ We use LAG(total_revenue, 1) OVER (ORDER BY report_month) to access the precedin
 class NeuralTTSEngine:
     """
     Enterprise Multilingual Neural TTS Engine with Edge-TTS and ElevenLabs.
+    Features: Premium Indian Male Tech Educator persona (28-32y, natural conversational delivery,
+    fluent Hindi-English code switching, crystal-clear database and code terminology).
     """
 
     def __init__(self):
         self.output_dir = Path("data/audio")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.voice_map = {
-            "mr": "mr-IN-AarohiNeural",     # Female Marathi Teacher
-            "mr_male": "mr-IN-ManoharNeural", # Male Marathi Teacher
-            "hi": "hi-IN-SwaraNeural",      # Female Hindi
-            "hi_male": "hi-IN-MadhurNeural",  # Male Hindi
-            "en": "en-IN-NeerjaNeural",     # Female Indian English
-            "en_male": "en-IN-PrabhatNeural" # Male Indian English
+            "hi": "hi-IN-MadhurNeural",       # 28-32y Indian Male Hindi Tech Educator (Default)
+            "hi_male": "hi-IN-MadhurNeural",  # 28-32y Indian Male Hindi Tech Educator
+            "hi_female": "hi-IN-SwaraNeural", # Indian Female Hindi
+            "en": "en-IN-PrabhatNeural",      # 28-32y Indian Male English Tech Educator
+            "en_male": "en-IN-PrabhatNeural", # 28-32y Indian Male English Tech Educator
+            "en_female": "en-IN-NeerjaNeural",# Indian Female English
+            "mr": "mr-IN-ManoharNeural",      # 28-32y Indian Male Marathi Tech Educator
+            "mr_male": "mr-IN-ManoharNeural", # 28-32y Indian Male Marathi Tech Educator
+            "mr_female": "mr-IN-AarohiNeural" # Indian Female Marathi
         }
 
+    def _prepare_conversational_text(self, text: str) -> str:
+        """
+        Enhances text with natural conversational pauses:
+        - Natural breath after questions (slight curiosity when introducing a problem)
+        - Confident pauses before explaining solutions
+        - Clean pronunciation for technical keywords
+        """
+        if not text:
+            return ""
+        t = text.strip()
+        # Ensure punctuation has a brief natural breathing gap
+        t = re.sub(r'\?\s*', '? ... ', t)
+        t = re.sub(r'!\s*', '! ', t)
+        t = re.sub(r'\.\s+', '. ', t)
+        return t
+
     async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
-        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS at lively Shorts/Reels speed (<60s)."""
+        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS with natural Indian male pacing (+8%)."""
         import edge_tts
-        communicate = edge_tts.Communicate(text, voice=voice, rate="+15%", pitch="+0Hz")
+        formatted = self._prepare_conversational_text(text)
+        # +8% rate is optimal for lively, engaging YouTube Shorts while maintaining warm conversational human clarity
+        communicate = edge_tts.Communicate(formatted, voice=voice, rate="+8%", pitch="+0Hz")
         await communicate.save(str(output_path))
 
-    async def synthesize_async(self, text: str, language: str = "mr", voice_gender: str = "female", custom_filename: Optional[str] = None) -> Dict[str, Any]:
+    async def synthesize_async(self, text: str, language: str = "hi", voice_gender: str = "male", custom_filename: Optional[str] = None) -> Dict[str, Any]:
         """
         Asynchronously synthesizes text into natural human speech.
-        Tries ElevenLabs first if available, otherwise falls back to Microsoft Edge Neural TTS.
+        Implements the 28-32y Indian Male Tech Educator Persona across ElevenLabs & Microsoft Neural TTS.
         """
-        lang = language.lower() if language else "mr"
+        lang = language.lower() if language else "hi"
         if lang not in ["mr", "hi", "en"]:
-            lang = "mr"
+            lang = "hi"
 
-        voice_key = f"{lang}_male" if voice_gender == "male" else lang
-        edge_voice = self.voice_map.get(voice_key, "mr-IN-AarohiNeural")
+        # Resolve voice: Default to Indian Male Educator
+        if voice_gender == "female":
+            voice_key = f"{lang}_female"
+        else:
+            voice_key = f"{lang}_male" if f"{lang}_male" in self.voice_map else lang
+
+        edge_voice = self.voice_map.get(voice_key, "hi-IN-MadhurNeural")
 
         fname = custom_filename if custom_filename else f"voice_{lang}_{int(abs(hash(text)) % 10000000)}.mp3"
         out_path = self.output_dir / fname
@@ -203,40 +232,47 @@ class NeuralTTSEngine:
                 "audio_url": f"/audio/{fname}",
                 "file_path": str(out_path),
                 "provider": "Cache",
+                "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
                 "language": lang
             }
 
-        # 1. ElevenLabs Attempt (if available)
+        # 1. ElevenLabs Attempt (Liam / Social Media Creator with eleven_multilingual_v2)
         if elevenlabs_voice.is_available():
             try:
-                log_event(f"Attempting ElevenLabs synthesis for {lang} ({len(text)} chars)...", component="NeuralTTS")
+                log_event(f"Attempting ElevenLabs Indian Male synthesis for {lang} ({len(text)} chars)...", component="NeuralTTS")
                 res = elevenlabs_voice.generate_speech(
-                    text=text,
+                    text=self._prepare_conversational_text(text),
                     output_filename=fname,
-                    model_id="eleven_multilingual_v2"
+                    voice_id="TX3LPaxmHKxFdv7VOQHJ", # Liam - Energetic, Confident Social Media Creator
+                    model_id="eleven_multilingual_v2",
+                    stability=0.50,
+                    similarity_boost=0.85,
+                    style=0.20
                 )
                 if res.get("status") == "success":
                     return {
                         "status": "success",
                         "audio_url": f"/audio/{fname}",
                         "file_path": res.get("file_path"),
-                        "provider": "ElevenLabs Voice AI",
+                        "provider": "ElevenLabs Voice AI (Liam / Multilingual v2)",
+                        "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
                         "language": lang
                     }
             except Exception as e:
-                log_event(f"ElevenLabs TTS quota/error ({e}). Falling back to Microsoft Neural TTS...", level="WARNING", component="NeuralTTS")
+                log_event(f"ElevenLabs TTS quota/notice ({e}). Cascading to Microsoft Neural TTS [{edge_voice}]...", level="INFO", component="NeuralTTS")
 
-        # 2. Microsoft Edge Neural TTS (Guaranteed, Free, Unlimited, Human Accents)
+        # 2. Microsoft Edge Neural TTS (hi-IN-MadhurNeural / en-IN-PrabhatNeural / mr-IN-ManoharNeural)
         try:
-            log_event(f"Synthesizing via Microsoft Neural TTS [{edge_voice}]...", component="NeuralTTS")
+            log_event(f"Synthesizing via Indian Male Neural TTS [{edge_voice}]...", component="NeuralTTS")
             await self._synthesize_edge_tts(text, edge_voice, out_path)
             if out_path.exists() and out_path.stat().st_size > 1000:
-                log_event(f"Microsoft Neural TTS synthesized successfully: {out_path.name} ({out_path.stat().st_size} bytes)", component="NeuralTTS")
+                log_event(f"Indian Male Neural TTS synthesized successfully: {out_path.name} ({out_path.stat().st_size} bytes)", component="NeuralTTS")
                 return {
                     "status": "success",
                     "audio_url": f"/audio/{fname}",
                     "file_path": str(out_path),
                     "provider": f"Microsoft Neural TTS ({edge_voice})",
+                    "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
                     "language": lang
                 }
         except Exception as e:
@@ -245,6 +281,7 @@ class NeuralTTSEngine:
         return {
             "status": "fallback",
             "message": "Cloud voice synthesis unavailable. Falling back to browser speech.",
+            "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
             "language": lang
         }
 
