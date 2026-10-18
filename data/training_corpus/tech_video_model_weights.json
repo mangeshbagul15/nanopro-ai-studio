@@ -2,49 +2,52 @@
   "model_name": "NanoPro-TechVid-v1",
   "version": "1.5.2-continuous-learn",
   "repo_url": "https://github.com/mangesh-nanopro-studio/tech-video-neural-engine",
-  "total_epochs": 60,
-  "current_loss": 0.0312,
+  "total_epochs": 63,
+  "current_loss": 0.0289,
   "initial_loss": 0.45,
   "learning_rate": 0.0005,
-  "knowledge_vectors_count": 231,
+  "knowledge_vectors_count": 249,
   "status": "active_learning",
-  "last_updated": "2026-10-18 10:11:36",
+  "last_updated": "2026-10-18 10:35:16",
   "domains": {
     "sql": {
-      "epochs": 20,
+      "epochs": 22,
       "concepts": [
-        "FIND",
-        "ORDER_ID",
+        "COPY",
+        "CREATE",
         "HIGHEST",
-        "USING",
-        "STOP",
-        "SNOWFLAKE",
-        "INDEX OPTIMIZATION",
-        "CUSTOMER_ID",
-        "DISTINCT",
-        "HAVING CLAUSE",
-        "PARTITION BY",
-        "EMPLOYEE",
-        "PREVENT",
         "MICRO",
-        "TABLE"
+        "ORDER_ID",
+        "HAVING CLAUSE",
+        "ZERO",
+        "INDEX OPTIMIZATION",
+        "CLONING",
+        "SNOWFLAKE",
+        "CUSTOMER_ID",
+        "FIND",
+        "TABLE",
+        "PARTITION BY",
+        "PREVENT"
       ]
     },
     "python": {
-      "epochs": 10,
+      "epochs": 11,
       "concepts": [
-        "AST",
-        "BUILD",
-        "DOCKER",
-        "TYPE HINTS",
-        "FASTAPI",
-        "GENERATORS",
-        "PANDAS VECTORIZATION",
-        "DECORATORS",
-        "EXPLAIN",
         "STAGE",
+        "PYTHON",
         "MULTI",
-        "ASYNCIO"
+        "BUILD",
+        "AST",
+        "CONCURRENT",
+        "DOCKER",
+        "DECORATORS",
+        "GATHER",
+        "OPTIMIZE",
+        "SEMAPHORE",
+        "TYPE HINTS",
+        "ASYNCIO",
+        "GENERATORS",
+        "FASTAPI"
       ]
     },
     "snowflake": {
@@ -121,6 +124,63 @@
     }
   },
   "recent_training_steps": [
+    {
+      "step_id": "step_63",
+      "epoch": 63,
+      "timestamp": "2026-10-18 10:35:16",
+      "domain": "sql",
+      "prompt_sample": "Snowflake मधील Zero-Copy Cloning कसे काम करते आणि स्टोरेज खर्च कसा वाचतो?",
+      "loss": 0.0289,
+      "delta_loss": -0.0007,
+      "learned_concepts": [
+        "SNOWFLAKE",
+        "ZERO",
+        "COPY",
+        "CLONING",
+        "CREATE",
+        "TABLE"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 46.0
+    },
+    {
+      "step_id": "step_62",
+      "epoch": 62,
+      "timestamp": "2026-10-18 10:34:54",
+      "domain": "sql",
+      "prompt_sample": "Snowflake मधील Zero-Copy Cloning कसे काम करते आणि स्टोरेज खर्च कसा वाचतो?",
+      "loss": 0.0296,
+      "delta_loss": -0.0008,
+      "learned_concepts": [
+        "SNOWFLAKE",
+        "ZERO",
+        "COPY",
+        "CLONING",
+        "CREATE",
+        "TABLE"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 46.0
+    },
+    {
+      "step_id": "step_61",
+      "epoch": 61,
+      "timestamp": "2026-10-18 10:34:21",
+      "domain": "python",
+      "prompt_sample": "Optimize Python asyncio gather and semaphore for concurrent API calls",
+      "loss": 0.0304,
+      "delta_loss": -0.0008,
+      "learned_concepts": [
+        "OPTIMIZE",
+        "PYTHON",
+        "ASYNCIO",
+        "GATHER",
+        "SEMAPHORE",
+        "CONCURRENT"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 44.6
+    },
     {
       "step_id": "step_60",
       "epoch": 60,
@@ -252,39 +312,6 @@
       ],
       "vectors_added": 6,
       "duration_calibrated": 43.0
-    },
-    {
-      "step_id": "step_53",
-      "epoch": 53,
-      "timestamp": "2026-10-18 09:11:14",
-      "domain": "snowflake",
-      "prompt_sample": "Explain AWS S3 vs Snowflake Data Lake with Python code",
-      "loss": 0.0372,
-      "delta_loss": -0.001,
-      "learned_concepts": [
-        "EXPLAIN",
-        "AWS",
-        "SNOWFLAKE",
-        "DATA",
-        "LAKE",
-        "PYTHON"
-      ],
-      "vectors_added": 6,
-      "duration_calibrated": 43.0
-    },
-    {
-      "step_id": "step_52",
-      "epoch": 52,
-      "timestamp": "2026-10-18 09:10:51",
-      "domain": "sql",
-      "loss": 0.0382,
-      "delta_loss": -0.0012,
-      "learned_concepts": [
-        "DENSE_RANK",
-        "PARTITION BY",
-        "NULL HANDLING"
-      ],
-      "vectors_added": 3
     }
   ]
 }

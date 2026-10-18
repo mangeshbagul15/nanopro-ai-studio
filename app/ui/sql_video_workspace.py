@@ -642,7 +642,7 @@ def get_sql_video_workspace_html() -> str:
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <div style="margin-bottom: 10px; display: flex; justify-content: space-between; width: 100%; max-width: 340px; align-items: center;">
                     <span style="font-size: 12px; font-weight: 700; color: #38BDF8;">2. 9:16 SMARTPHONE PREVIEW (PROMPT-DRIVEN)</span>
-                    <span id="playerTimer" style="font-size: 12px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 0:58</span>
+                    <span id="playerTimer" style="font-size: 12px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 0:00</span>
                 </div>
 
                 <!-- Smartphone Bezel Mockup -->
@@ -673,7 +673,7 @@ def get_sql_video_workspace_html() -> str:
                 <!-- Player Transport Controls -->
                 <div style="width: 100%; max-width: 340px; margin-top: 12px; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 10px; padding: 10px;">
                     <!-- Timeline Scrubber -->
-                    <input type="range" id="sqlShortScrubber" min="0" max="58" value="0" step="0.5" oninput="seekSqlShortPlayer(this.value)" style="width: 100%; accent-color: #38BDF8; cursor: pointer; margin-bottom: 8px;" />
+                    <input type="range" id="sqlShortScrubber" min="0" max="60" value="0" step="0.1" oninput="seekSqlShortPlayer(this.value)" style="width: 100%; accent-color: #38BDF8; cursor: pointer; margin-bottom: 8px;" />
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; gap: 6px;">
@@ -796,7 +796,7 @@ def get_sql_video_workspace_html() -> str:
                         </div>
                         <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
                             <div style="color: #10B981; font-weight: 700;">✓ Trial 2: Speech Pacing &amp; Duration Limit</div>
-                            <div style="color: #94A3B8; font-size: 10px;">Word count strictly 110-125 words, fits in &lt;58s Shorts window</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Word count dynamically calibrated (100-120 words), strictly within &lt;60s Shorts window</div>
                         </div>
                         <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; font-size: 11px; padding: 8px 10px;">
                             <div style="color: #10B981; font-weight: 700;">✓ Trial 3: 6-Stage Curriculum Progression</div>

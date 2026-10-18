@@ -117,17 +117,25 @@ def compute_audio_synchronized_stages(
 ) -> Tuple[List[Dict[str, Any]], float, float]:
     """
     Dynamically aligns each stage's start and end boundaries to real spoken audio duration.
-    - Spoken educational narration spans 0.0 to (audio_duration - 3.5s).
-    - Final 3.5 seconds strictly reserved for the VIP Outro Branding (@Code_With_Mangesh).
-    - Subtitles and animations are 100% frame-locked to spoken word counts.
-    - Total duration capped at 58.0 seconds for strict YouTube Shorts / Reels compliance (<60s).
+    - Zero hardcoded timings: every timestamp is derived from speech word counts and real audio duration.
+    - Spoken educational narration spans 0.0 to audio_duration.
+    - Dynamic outro duration calculated strictly from audio length (typically 6-8% of video, 2.0-3.8s).
+    - Total duration strictly stays under 60.0s (<60s YouTube Shorts / Reels standard).
+    - Subtitles and animations are 100% frame-locked to spoken word counts from prompt.
     """
-    # audio_duration is the real measured duration of the spoken educational narration (stages 1-6)
-    outro_dur = 3.5
-    # Bound spoken narration so that total duration (narration + outro) never exceeds 58.0s (Shorts/Reels <60s standard)
-    narration_dur = max(15.0, min(54.5, float(audio_duration)))
+    raw_audio_dur = float(audio_duration) if audio_duration and float(audio_duration) > 0 else 30.0
+
+    # Dynamically compute outro duration based on spoken duration (e.g. 6-8% of total narration, clamped between 2.0s and 3.8s)
+    outro_dur = round(max(2.0, min(3.8, raw_audio_dur * 0.07)), 2)
+
+    # Strictly guarantee that total video duration (narration + outro) stays within 60.0s (<60s Shorts/Reels standard)
+    if raw_audio_dur + outro_dur > 59.5:
+        narration_dur = round(59.5 - outro_dur, 2)
+    else:
+        narration_dur = round(raw_audio_dur, 2)
+
     edu_dur = narration_dur
-    outro_start = round(narration_dur, 2)
+    outro_start = narration_dur
     total_dur = round(narration_dur + outro_dur, 2)
 
     # Filter out any pre-existing branding stage
@@ -141,12 +149,12 @@ def compute_audio_synchronized_stages(
     if not edu_stages:
         edu_stages = raw_stages
 
-    # Compute word count per stage
+    # Compute word count per stage directly from prompt speech
     word_counts = []
     for s in edu_stages:
         text = s.get(f"speech_{lang_key}") or s.get("speech") or s.get("speech_en") or s.get("title") or ""
         words = len(text.strip().split())
-        word_counts.append(max(4, words))
+        word_counts.append(max(3, words))
 
     total_words = sum(word_counts)
     if total_words == 0:
@@ -175,21 +183,21 @@ def compute_audio_synchronized_stages(
             "duration": round(end_t - start_t, 2)
         })
 
-    # Append strictly isolated Outro Branding Stage (only final 3.5s, strictly after narration completes)
+    # Append strictly isolated Outro Branding Stage (only dynamic outro_dur, strictly after narration completes)
     calibrated.append({
         "id": len(calibrated) + 1,
         "action_type": "branding_outro",
-        "title": "Senior Interviewer Pro-Tip & Outro",
+        "title": "Interviewer Pro-Tip & Outro",
         "speech": pro_tip or "Follow @Code_With_Mangesh for daily tech mastery!",
         "speech_mr": pro_tip or "पुढील टेक व्हिडिओंसाठी फॉलो करा कोड विथ मंगेश!",
         "speech_hi": pro_tip or "टेक मास्टरी के लिए फॉलो कीजिए कोड विथ मंगेश!",
         "speech_en": pro_tip or "Follow @Code_With_Mangesh for daily tech mastery!",
         "start": outro_start,
-        "end": round(total_dur, 2),
+        "end": total_dur,
         "duration": round(total_dur - outro_start, 2)
     })
 
-    return calibrated, round(total_dur, 2), outro_start
+    return calibrated, total_dur, outro_start
 
 
 TOP_MNC_SQL_PRESETS = [
@@ -247,43 +255,43 @@ WHERE SALARY < (
         "output_value": "70000",
         "scenes": [
             {
-                "id": 1, "start": 0.0, "end": 5.0,
+                "id": 1,
                 "speech_en": "Here's a popular SQL interview question. How do you find the second-highest salary from an Employees table? Let's understand the logic and build the query step by step.",
                 "speech_mr": "एसक्यूएल इंटरव्ह्यूमधील सर्वात महत्त्वाचा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा? चला लॉजिक समजून घेऊन स्टेप-बाय-स्टेप क्वेरी लिहूया!",
                 "speech_hi": "एसक्यूएल इंटरव्यू का एक बेहद पॉपुलर सवाल: एम्प्लॉईज टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें? आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं!"
             },
             {
-                "id": 2, "start": 5.0, "end": 13.0,
+                "id": 2,
                 "speech_en": "First, understand the requirement. We need the second-highest distinct salary, not the second employee. Notice that eighty thousand appears twice. We must count it only once.",
                 "speech_mr": "पहिले प्रश्न नीट समजून घ्या. आपल्याला दुसरा डिस्टिंक्ट पगार हवा आहे, दुसरा कर्मचारी नाही. इथे ऐंशी हजार पगार दोनदा आला आहे. तो आपल्याला एकदाच मोजायचा आहे.",
                 "speech_hi": "पहले सवाल को समझिए. हमें सेकंड हाईएस्ट डिस्टिंक्ट सैलरी चाहिए. ध्यान दीजिए कि अस्सी हजार दो बार आया है. हमें इसे केवल एक बार ही गिनना है."
             },
             {
-                "id": 3, "start": 13.0, "end": 21.0,
+                "id": 3,
                 "speech_en": "Now, how should we solve it? First, find the maximum salary. Then exclude that salary. Finally, find the maximum from the remaining values. That's our second-highest salary.",
                 "speech_mr": "आता हे कसे सोडवायचे? प्रथम सर्वात मोठा पगार शोधा. मग तो पगार वगळा. आणि उरलेल्या पगारांमधून सर्वात मोठा पगार निवडा. तोच आपला दुसरा सर्वाधिक पगार!",
                 "speech_hi": "अब इसे कैसे सॉल्व करें? पहले मैक्सिमम सैलरी निकालिए. फिर उसे बाहर कीजिए. और बाकी बची वैल्यूज में से मैक्सिमम निकालिए. वही है हमारी सेकंड हाईएस्ट सैलरी!"
             },
             {
-                "id": 4, "start": 21.0, "end": 29.0,
+                "id": 4,
                 "speech_en": "Let's write the inner query first. SELECT MAX salary FROM Employees. This returns eighty thousand, the highest salary in our table.",
                 "speech_mr": "चला आधी आतील क्वेरी लिहूया: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज. ही क्वेरी आपल्याला ऐंशी हजार, म्हणजेच सर्वात मोठा पगार देते.",
                 "speech_hi": "आइए पहले इनर क्वेरी लिखते हैं: सिलेक्ट मैक्स सैलरी फ्रॉम एम्प्लॉईज. यह हमें अस्सी हजार यानी सबसे बड़ी सैलरी देती है."
             },
             {
-                "id": 5, "start": 29.0, "end": 38.0,
+                "id": 5,
                 "speech_en": "Next, we exclude the highest salary using WHERE salary is less than the result of our inner query. This removes both eighty-thousand values, leaving seventy, sixty, and fifty thousand.",
                 "speech_mr": "आता व्हेअर सॅलरी लहान सबक्वेरी ही अट लावून ऐंशी हजार वगळूया. यामुळे ऐंशी हजार असणाऱ्या दोन्ही नोंदी वगळल्या जाऊन सत्तर, साठ आणि पन्नास हजार उरतात.",
                 "speech_hi": "अब व्हेअर सैलरी लेस दैन सबक्वेरी लगाकर अस्सी हजार को फिल्टर करते हैं. इससे दोनों अस्सी हजार वाले रिकॉर्ड्स हट जाते हैं और सत्तर, साठ और पचास हजार बचते हैं."
             },
             {
-                "id": 6, "start": 38.0, "end": 47.0,
+                "id": 6,
                 "speech_en": "Now the outer MAX function checks the remaining salaries. The highest remaining value is seventy thousand. That's our answer! The key is using a subquery to exclude the original maximum.",
                 "speech_mr": "आता बाहेरील मॅक्स फंक्शन उरलेल्या पगारांमधून सर्वात मोठा पगार शोधते. उरलेल्यांमध्ये सर्वात मोठी रक्कम आहे सत्तर हजार! सबक्वेरीमुळे हे उत्तर १०० टक्के अचूक येते!",
                 "speech_hi": "अब आउटर मैक्स फंक्शन बचे हुए रिकॉर्ड्स को चेक करता है. सबसे बड़ी बची हुई वैल्यू है सत्तर हजार! यही हमारा सही जवाब है!"
             },
             {
-                "id": 7, "start": 47.0, "end": 56.0,
+                "id": 7,
                 "speech_en": "Interview tip! Always clarify whether they want the second-highest distinct salary. If the highest salary appears multiple times, this query still returns the correct second-highest value. Follow Code with Mangesh for more SQL interview questions!",
                 "speech_mr": "इंटरव्ह्यू टिप! जर सर्वाधिक पगार अनेक लोकांचा समान असेल तरीही ही सबक्वेरी अचूक काम करते. पुढील एसक्यूएल प्रश्नांसाठी फॉलो करा कोड विथ मंगेश!",
                 "speech_hi": "इंटरव्यू टिप! अगर हाईएस्ट सैलरी डुप्लीकेट भी हो, तब भी यह सबक्वेरी मेथड हमेशा सही उत्तर देता है. ऐसे ही एसक्यूएल सवालों के लिए फॉलो कीजिए कोड विथ मंगेश!"
@@ -348,43 +356,43 @@ QUALIFY ROW_NUMBER() OVER (
         "output_value": "3 Latest Records (C101, C102, C103)",
         "scenes": [
             {
-                "id": 1, "start": 0.0, "end": 5.0,
+                "id": 1,
                 "speech_en": "Here's a high-frequency SQL interview question: How do you find the latest transaction for each customer? Let's solve it cleanly using ROW_NUMBER and QUALIFY!",
                 "speech_mr": "एसक्यूएल इंटरव्ह्यूमधील महत्त्वाचा प्रश्न: प्रत्येक ग्राहकाचा सर्वात नवीन व्यवहार कसा शोधायचा? चला ROW_NUMBER आणि QUALIFY वापरून स्टेप बाय स्टेप समजूया!",
                 "speech_hi": "एसक्यूएल इंटरव्यू का एक क्लासिक सवाल: हर कस्टमर का लेटेस्ट ट्रांजैक्शन कैसे निकालें? आइए ROW_NUMBER और QUALIFY से इसे स्टेप बाय स्टेप समझते हैं!"
             },
             {
-                "id": 2, "start": 5.0, "end": 13.0,
+                "id": 2,
                 "speech_en": "Inspect our TRANSACTIONS table. Notice that Customer C101 has two transactions, on March first and March fifteenth. We need only the latest record for each customer.",
                 "speech_mr": "आपला ट्रान्झॅक्शन टेबल पाहा. ग्राहक C101 चे दोन व्यवहार आहेत: १ मार्च आणि १५ मार्च. आपल्याला प्रत्येक ग्राहकाचा केवळ सर्वात शेवटचा लेटेस्ट व्यवहार हवा आहे.",
                 "speech_hi": "ट्रांजैक्शंस टेबल देखिए. कस्टमर C101 के दो रिकॉर्ड्स हैं: 1 मार्च और 15 मार्च. हमें प्रत्येक कस्टमर का केवल सबसे नया यानी लेटेस्ट रिकॉर्ड चाहिए."
             },
             {
-                "id": 3, "start": 13.0, "end": 21.0,
+                "id": 3,
                 "speech_en": "Here is our 3-step logic: First, partition rows by Customer ID. Next, sort each customer's dates in descending order. Then pick the top row where row number equals one.",
                 "speech_mr": "आपले ३-स्टेप लॉजिक: प्रथम PARTITION BY वापरून ग्राहकानुसार ग्रुप करा. नंतर तारखा उतरत्या क्रमाने लावा. आणि ROW_NUMBER बरोबर १ निवडून लेटेस्ट रो मिळवा!",
                 "speech_hi": "हमारा 3-स्टेप लॉजिक: पहले PARTITION BY से कस्टमर अनुसार ग्रुप बनाइए. फिर तारीखों को DESC आर्डर में रखिए. और ROW_NUMBER बराबर 1 लेकर लेटेस्ट रो चुनिए!"
             },
             {
-                "id": 4, "start": 21.0, "end": 29.0,
+                "id": 4,
                 "speech_en": "Let's write the window specification: ROW_NUMBER OVER PARTITION BY Customer ID ORDER BY Transaction Date DESC. This assigns rank one to the newest transaction in every partition.",
                 "speech_mr": "चला विंडो फंक्शन लिहूया: ROW_NUMBER OVER PARTITION BY कस्टमर आयडी, ORDER BY ट्रान्झॅक्शन डेट DESC. यामुळे प्रत्येक ग्रुपमधील सर्वात नवीन व्यवहाराला १ नंबर मिळतो.",
                 "speech_hi": "विंडो फंक्शन लिखते हैं: ROW_NUMBER OVER PARTITION BY कस्टमर आईडी ORDER BY ट्रांजैक्शन डेट DESC. यह हर ग्रुप के सबसे नए रिकॉर्ड को 1 रैंक देता है."
             },
             {
-                "id": 5, "start": 29.0, "end": 38.0,
+                "id": 5,
                 "speech_en": "Instead of creating a nested CTE, we use the modern QUALIFY clause! QUALIFY filters window results directly, keeping only rows where row number equals one.",
                 "speech_mr": "मोठी सबक्वेरी लिहिण्याऐवजी आपण मॉडर्न QUALIFY क्लॉज वापरू! QUALIFY थेट विंडो रिझल्ट फिल्टर करून फक्त ROW_NUMBER १ असणाऱ्या नोंदी ठेवते आणि जुन्या नोंदी वगळते.",
                 "speech_hi": "लंबी सबक्वेरी लिखने के बजाय हम मॉडर्न QUALIFY क्लॉज इस्तेमाल करेंगे! QUALIFY विंडो रिजल्ट को डायरेक्ट फ़िल्टर करके केवल ROW_NUMBER 1 वाले रिकॉर्ड रखता है."
             },
             {
-                "id": 6, "start": 38.0, "end": 47.0,
+                "id": 6,
                 "speech_en": "Look at the final output! C101 returns the March fifteenth transaction, and C102 returns the March twelfth transaction. Clean, fast, and highly optimized!",
                 "speech_mr": "फायनल आऊटपुट पाहा! ग्राहक C101 चा १५ मार्चचा आणि C102 चा १२ मार्चचा व्यवहार अचूक आला आहे. अत्यंत वेगवान आणि स्वच्छ क्वेरी!",
                 "speech_hi": "फाइनल आउटपुट देखिए! C101 का 15 मार्च और C102 का 12 मार्च का रिकॉर्ड आया है. बिल्कुल क्लीन, फास्ट और इंटरव्यू रेडी!"
             },
             {
-                "id": 7, "start": 47.0, "end": 56.0,
+                "id": 7,
                 "speech_en": "Pro-tip! Mentioning the QUALIFY clause in Snowflake, BigQuery, or Databricks interviews shows senior data engineering expertise. Follow Code with Mangesh for daily SQL mastery!",
                 "speech_mr": "इंटरव्ह्यू टिप! स्नोफ्लेक आणि बिगक्वेरीमध्ये सबक्वेरीऐवजी QUALIFY वापरल्याने मुलाखतकारावर उत्तम प्रभाव पडतो. पुढील एसक्यूएल व्हिडिओंसाठी फॉलो करा कोड विथ मंगेश!",
                 "speech_hi": "इंटरव्यू टिप! स्नोफ्लेक और बिगक्वेरी में सबक्वेरी की जगह QUALIFY क्लॉज का उल्लेख करना सीनियर लेवल नॉलेज दिखाता है. फॉलो कीजिए कोड विथ मंगेश!"
@@ -793,43 +801,43 @@ TOP_MNC_THEORY_PRESETS = [
         "pro_tip": "💡 Senior Interviewer Pro-Tip: In production, always push filters to WHERE before GROUP BY so the database hashes fewer rows in memory!",
         "scenes": [
             {
-                "id": 1, "start": 0.0, "end": 5.0,
+                "id": 1,
                 "speech_en": "Here's one of the most frequently asked SQL theory interview questions. What is the real difference between WHERE and HAVING? Let's break it down simply.",
                 "speech_mr": "एसक्यूएल थिअरी इंटरव्ह्यूमधील सर्वात लोकप्रिय प्रश्न: व्हेअर आणि हॅव्हिंग क्लॉजमध्ये नेमका काय फरक आहे? चला अगदी सोप्या भाषेत समजून घेऊया!",
                 "speech_hi": "एसक्यूएल थ्योरी इंटरव्यू का सबसे पसंदीदा सवाल: WHERE और HAVING क्लॉज में असली अंतर क्या है? आइए इसे आसान भाषा में समझते हैं!"
             },
             {
-                "id": 2, "start": 5.0, "end": 13.0,
+                "id": 2,
                 "speech_en": "Candidates often get confused because both clauses filter data. But the critical difference is WHEN and WHAT they filter. WHERE filters individual rows, while HAVING filters grouped results.",
                 "speech_mr": "उमेदवार अनेकदा कन्फ्युज होतात कारण दोन्ही क्लॉज डेटा फिल्टर करतात. पण मुख्य फरक हा आहे की ते कधी आणि काय फिल्टर करतात. व्हेअर स्वतंत्र रो फिल्टर करते, तर हॅव्हिंग ग्रुप्सना फिल्टर करते.",
                 "speech_hi": "कैंडिडेट्स अक्सर कन्फ्यूज हो जाते हैं क्योंकि दोनों डेटा फिल्टर करते हैं. लेकिन असली फर्क यह है कि WHERE टेबल की हर रो को फिल्टर करता है, जबकि HAVING ग्रुप्स को फिल्टर करता है."
             },
             {
-                "id": 3, "start": 13.0, "end": 21.0,
+                "id": 3,
                 "speech_en": "Look at the database execution pipeline. First, WHERE filters out rows before grouping happens. Then GROUP BY groups the remaining rows. Finally, HAVING evaluates aggregate conditions on those groups.",
                 "speech_mr": "डेटाबेस एक्झिक्युशन पाइपलाइन बघा. आधी व्हेअर क्लॉज ग्रुपिंग होण्यापूर्वीच नको असलेल्या ओळी वगळतो. मग ग्रुप बाय उरलेल्या ओळींचे ग्रुप करतो. आणि शेवटी हॅव्हिंग त्या ग्रुप्सवर अटी तपासतो.",
                 "speech_hi": "डेटाबेस का एग्जीक्यूशन आर्डर देखिए. पहले WHERE ग्रुपिंग से पहले रो फिल्टर करता है. फिर GROUP BY ग्रुप बनाता है. और अंत में HAVING उन ग्रुप्स पर कंडीशन चेक करता है."
             },
             {
-                "id": 4, "start": 21.0, "end": 29.0,
+                "id": 4,
                 "speech_en": "Here is the syntax difference. In WHERE, you write salary greater than fifty thousand. In HAVING, you must use aggregate functions like COUNT greater than five or SUM greater than one lakh.",
                 "speech_mr": "सिंटॅक्समधील फरक बघा. व्हेअरमध्ये तुम्ही सॅलरी ५० हजारांपेक्षा मोठी अशी अट लिहिता. पण हॅव्हिंगमध्ये तुम्ही काऊंट ५ पेक्षा जास्त किंवा सम १ लाखांपेक्षा जास्त असे ॲग्रीगेट फंक्शन वापरता.",
                 "speech_hi": "सिंटैक्स का अंतर देखिए. WHERE में आप सैलरी ५० हजार से ज्यादा लिखते हैं. लेकिन HAVING में आपको COUNT या SUM जैसे एग्रीगेट फंक्शन्स का इस्तेमाल करना होता है."
             },
             {
-                "id": 5, "start": 29.0, "end": 38.0,
+                "id": 5,
                 "speech_en": "Remember this comparison matrix. WHERE executes before GROUP BY, cannot use aggregates, and uses indexes. HAVING executes after GROUP BY, allows aggregate functions, but cannot use table indexes.",
                 "speech_mr": "हा कम्पॅरिझन मॅट्रिक्स लक्षात ठेवा. व्हेअर ग्रुप बायच्या आधी चालतो आणि ॲग्रीगेट्स वापरू शकत नाही. हॅव्हिंग ग्रुप बाय नंतर चालतो, ॲग्रीगेट्स वापरू शकतो पण इंडेक्स थेट वापरू शकत नाही.",
                 "speech_hi": "यह कंपैरिजन मैट्रिक्स याद रखिए. WHERE ग्रुप बाय से पहले चलता है और एग्रीगेट्स इस्तेमाल नहीं कर सकता. HAVING ग्रुप बाय के बाद चलता है और एग्रीगेट फंक्शन्स को सपोर्ट करता है."
             },
             {
-                "id": 6, "start": 38.0, "end": 47.0,
+                "id": 6,
                 "speech_en": "Avoid the fatal interview trap. Writing WHERE COUNT greater than two causes an immediate SQL syntax error! The golden rule is: filter rows with WHERE, and filter groups with HAVING.",
                 "speech_mr": "इंटरव्ह्यूमधील सर्वात मोठी चूक टाळा: व्हेअर काऊंट दोनपेक्षा जास्त लिहिल्यास सिंटॅक्स एरर येतो! सुवर्ण नियम: स्वतंत्र ओळींसाठी व्हेअर, आणि ग्रुप्ससाठी नेहमी हॅव्हिंग!",
                 "speech_hi": "इंटरव्यू की सबसे बड़ी गलती से बचिए: WHERE में COUNT लिखने पर एरर आ जाता है! गोल्डन नियम: रो के लिए WHERE, और ग्रुप्स के लिए हमेशा HAVING!"
             },
             {
-                "id": 7, "start": 47.0, "end": 56.0,
+                "id": 7,
                 "speech_en": "Interviewer pro tip! Always filter as many rows as possible in WHERE before GROUP BY to save database memory. Follow Code with Mangesh for top SQL interview preparation!",
                 "speech_mr": "इंटरव्ह्यूअर प्रो-टिप! मेमरी वाचवण्यासाठी ग्रुप बायच्या आधीच व्हेअरने जास्तीत जास्त डेटा फिल्टर करा. पुढील एसक्यूएल तयारीसाठी फॉलो करा कोड विथ मंगेश!",
                 "speech_hi": "इंटरव्यूअर प्रो-टिप! डेटाबेस मेमोरी बचाने के लिए हमेशा GROUP BY से पहले WHERE में अधिक से अधिक रो फिल्टर करें. फॉलो कीजिए कोड विथ मंगेश!"
@@ -870,43 +878,43 @@ TOP_MNC_THEORY_PRESETS = [
         "pro_tip": "💡 Senior Architect Pro-Tip: Be ready to explain Isolation levels (Read Committed vs Repeatable Read vs Serializable)!",
         "scenes": [
             {
-                "id": 1, "start": 0.0, "end": 5.0,
+                "id": 1,
                 "speech_en": "Here's a cornerstone question in software interviews: What are the ACID properties in database systems? Let's understand them with a banking transfer.",
                 "speech_mr": "सॉफ्टवेअर मुलाखतींमधील अत्यंत महत्त्वाचा प्रश्न: डेटाबेस मॅनेजमेंटमधील ॲसिड म्हणजेच ACID प्रॉपर्टीज काय आहेत? चला एका बँक ट्रान्सफरने समजून घेऊ!",
                 "speech_hi": "सॉफ्टवेयर इंटरव्यू का क्लासिक सवाल: डेटाबेस में ACID प्रॉपर्टीज क्या होती हैं? आइए इसे बैंक ट्रांसफर के उदाहरण से समझते हैं!"
             },
             {
-                "id": 2, "start": 5.0, "end": 13.0,
+                "id": 2,
                 "speech_en": "ACID stands for Atomicity, Consistency, Isolation, and Durability. Together, they guarantee that your database never loses money or corrupts records during server crashes or concurrent users.",
                 "speech_mr": "ॲसिड म्हणजे अटॉमिसिटी, कन्सिस्टन्सी, आयसोलेशन आणि ड्युरॅबिलिटी. जेव्हा सर्व्हर क्रॅश होतो किंवा एकाच वेळी अनेक युजर्स पैसे ट्रान्सफर करतात, तेव्हा डेटा सुरक्षित ठेवण्याची ही हमी देतात.",
                 "speech_hi": "ACID का मतलब है एटॉमिकिटी, कंसिस्टेंसी, आइसोलेशन और ड्यूरेबिलिटी. ये चारों मिलकर यह सुनिश्चित करते हैं कि सर्वर क्रैश होने पर भी डेटा कभी खराब न हो."
             },
             {
-                "id": 3, "start": 13.0, "end": 21.0,
+                "id": 3,
                 "speech_en": "First is Atomicity: all or nothing. If five thousand rupees are debited from Account A, and the server crashes before crediting Account B, the entire transaction automatically rolls back. Money is never lost.",
                 "speech_mr": "पहिली आहे अटॉमिसिटी: एकतर पूर्ण काम किंवा काहीच नाही. खात्यातून ५ हजार कट झाले आणि सर्व्हर बंद पडला, तर ट्रान्झॅक्शन आपोआप रोलबॅक होते. पैसे सुरक्षित राहतात.",
                 "speech_hi": "पहली है एटॉमिकिटी: सब कुछ या कुछ भी नहीं. अगर खाते से पैसे कट गए और दूसरे खाते में जाने से पहले सर्वर बंद हो गया, तो पूरा ट्रांजैक्शन अपने आप रोलबैक हो जाता है."
             },
             {
-                "id": 4, "start": 21.0, "end": 29.0,
+                "id": 4,
                 "speech_en": "Next is Consistency: database rules and constraints are strictly maintained. Total money across the bank before and after the transfer remains identical. Balance cannot drop below minimum thresholds.",
                 "speech_mr": "दुसरी आहे कन्सिस्टन्सी: डेटाबेसचे नियम तंतोतंत पाळले जातात. ट्रान्सफरच्या आधी आणि नंतर बँकेतील एकूण रक्कम सारखीच राहते. बॅलन्स कधीही चुकीचा होत नाही.",
                 "speech_hi": "दूसरी है कंसिस्टेंसी: डेटाबेस के सभी रूल्स सुरक्षित रहते हैं. बैंक का कुल बैलेंस ट्रांसफर से पहले और बाद में एकदम एक समान रहता है."
             },
             {
-                "id": 5, "start": 29.0, "end": 38.0,
+                "id": 5,
                 "speech_en": "Third is Isolation: concurrent transactions execute without interfering. If two family members withdraw from the same ATM card at the same second, row locking prevents double spending.",
                 "speech_mr": "तिसरी आहे आयसोलेशन: एकाच वेळी होणारे दोन व्यवहार एकमेकांत अडथळा आणत नाहीत. दोन लोकांनी एकाच क्षणी पैसे काढण्याचा प्रयत्न केला तरी रो लॉकिंगमुळे अचूक हिशोब राहतो.",
                 "speech_hi": "तीसरी है आइसोलेशन: एक ही समय में चलने वाले दो ट्रांजैक्शन आपस में टकराते नहीं हैं. रो लॉकिंग की वजह से डबल विड्रॉल की समस्या कभी नहीं होती."
             },
             {
-                "id": 6, "start": 38.0, "end": 47.0,
+                "id": 6,
                 "speech_en": "Finally, Durability guarantees that once a transaction commits, the record is permanently saved to disk. Even if the data center loses power a millisecond later, the committed balance survives.",
                 "speech_mr": "आणि शेवटी ड्युरॅबिलिटी: एकदा व्यवहार कमिट झाला की डेटा कायमस्वरूपी सेव्ह होतो. पॉवर गेली किंवा हार्डवेअर फेल झाले तरीही बॅलन्स सुरक्षित राहतो.",
                 "speech_hi": "और अंत में ड्यूरेबिलिटी: एक बार कमिट होने के बाद डेटा स्थायी रूप से सुरक्षित हो जाता है. पावर कट होने पर भी आपका डेटा कभी डिलीट नहीं होता."
             },
             {
-                "id": 7, "start": 47.0, "end": 56.0,
+                "id": 7,
                 "speech_en": "Interviewer pro tip! In senior rounds, explain isolation levels like Read Committed and Serializable. Follow Code with Mangesh for more top interview lessons!",
                 "speech_mr": "इंटरव्ह्यूअर प्रो-टिप! सिनियर मुलाखतींमध्ये आयसोलेशन लेव्हल्स म्हणजेच रीड कमिटेड आणि सिरियलायझेबल नक्की समजावून सांगा. फॉलो करा कोड विथ मंगेश!",
                 "speech_hi": "इंटरव्यूअर प्रो-टिप! सीनियर राउंड्स में रीड कमिटेड और सीरियलाइजेबल जैसे आइसोलेशन लेवल्स को एक्सप्लेन करें. फॉलो कीजिए कोड विथ मंगेश!"
@@ -947,43 +955,43 @@ TOP_MNC_THEORY_PRESETS = [
         "pro_tip": "💡 Senior DBA Pro-Tip: In MySQL InnoDB, table data is physically sorted by Primary Key. Keep it small (e.g. BIGINT)!",
         "scenes": [
             {
-                "id": 1, "start": 0.0, "end": 5.0,
+                "id": 1,
                 "speech_en": "Here's a fundamental SQL schema interview question: What is the real difference between a Primary Key and a Unique Key? Let's clarify it completely.",
                 "speech_mr": "एसक्यूएल स्कीमा डिझाइनमधील मूलभूत प्रश्न: प्रायमरी की आणि युनिक की मध्ये नक्की काय फरक आहे? चला अगदी स्पष्ट समजून घेऊया!",
                 "speech_hi": "एसक्यूएल स्कीमा डिजाइन का एक बुनियादी सवाल: Primary Key और Unique Key में क्या फर्क है? आइए इसे पूरी तरह साफ करते हैं!"
             },
             {
-                "id": 2, "start": 5.0, "end": 13.0,
+                "id": 2,
                 "speech_en": "Both constraints enforce uniqueness, but there are four major differences that interviewers test: null handling, count per table, index type, and their intended purpose in system design.",
                 "speech_mr": "दोन्ही कन्स्ट्रेंट्स डेटा युनिक ठेवतात, पण मुलाखतीत चार महत्त्वाचे फरक तपासले जातात: नल व्हॅल्यू, टेबलमधील संख्या, इंडेक्सचा प्रकार आणि त्यांचा खरा उद्देश.",
                 "speech_hi": "दोनों ही डेटा को डुप्लीकेट होने से रोकते हैं, लेकिन चार बड़े अंतर होते हैं: NULL वैल्यू, टेबल में संख्या, इंडेक्स का टाइप और उनका असली मकसद."
             },
             {
-                "id": 3, "start": 13.0, "end": 21.0,
+                "id": 3,
                 "speech_en": "Difference number one: NULL values! A Primary Key strictly forbids NULL values. Every single row must have an ID. In contrast, a Unique Key allows NULL values because an unknown value doesn't violate uniqueness.",
                 "speech_mr": "पहिला फरक: नल व्हॅल्यू! प्रायमरी की मध्ये नल अजिबात चालत नाही. प्रत्येक ओळीला आयडी असणे अनिवार्य आहे. पण युनिक की मध्ये नल व्हॅल्यू चालू शकते.",
                 "speech_hi": "पहिला अंतर: NULL वैल्यू! Primary Key में NULL कभी भी अलाउड नहीं होता. लेकिन Unique Key में आप NULL वैल्यू स्टोर कर सकते हैं."
             },
             {
-                "id": 4, "start": 21.0, "end": 29.0,
+                "id": 4,
                 "speech_en": "Difference number two: Quantity per table. You can have only one Primary Key in a table. However, you can create multiple Unique Keys on columns like email, mobile number, and passport ID.",
                 "speech_mr": "दुसरा फरक: एका टेबलमध्ये फक्त एकच प्रायमरी की असू शकते. पण युनिक की तुम्ही अनेक कॉलम्सवर लावू शकता, जसे की ईमेल, मोबाईल नंबर आणि पॅन कार्ड.",
                 "speech_hi": "दूसरा अंतर: टेबल में एक ही Primary Key हो सकती है. जबकि Unique Key आप कई कॉलम्स जैसे ईमेल, मोबाइल और आधार पर बना सकते हैं."
             },
             {
-                "id": 5, "start": 29.0, "end": 38.0,
+                "id": 5,
                 "speech_en": "Difference number three: Index creation! By default, a Primary Key creates a Clustered Index, sorting data physically on disk. A Unique Key creates a Non-Clustered Index, which acts as a fast lookup index.",
                 "speech_mr": "तिसरा फरक: इंडेक्सचा प्रकार! प्रायमरी की आपोआप क्लस्टर्ड इंडेक्स बनवते, ज्यामुळे हार्ड डिस्कवर डेटा एका क्रमाने सेव्ह होतो. युनिक की नॉन-क्लस्टर्ड इंडेक्स तयार करते.",
                 "speech_hi": "तीसरा अंतर: इंडेक्स! Primary Key अपने आप Clustered Index बनाती है जिससे डिस्क पर डेटा सॉर्ट होता है. Unique Key नॉन-क्लस्टर्ड इंडेक्स बनाती है."
             },
             {
-                "id": 6, "start": 38.0, "end": 47.0,
+                "id": 6,
                 "speech_en": "Avoid the interview trap: never say a table can have two primary keys! If you need multiple columns to identify a row, that's called a Composite Primary Key. The golden rule: Primary Key identifies the row, Unique Key protects business data.",
                 "speech_mr": "इंटरव्ह्यू ट्रॅप टाळा: कधीही म्हणू नका की टेबलला दोन प्रायमरी की असतात! एकापेक्षा जास्त कॉलम असल्यास त्याला कॉम्पोझिट प्रायमरी की म्हणतात. सुवर्ण नियम: रो ओळखण्यासाठी प्रायमरी की, युनिक डेटासाठी युनिक की!",
                 "speech_hi": "इंटरव्यू ट्रैप से बचिए: कभी मत कहिए कि दो Primary Key हो सकती हैं! दो कॉलम मिलाने पर उसे Composite Key कहते हैं. गोल्डन नियम: रो की पहचान Primary Key है, डेटा की सुरक्षा Unique Key है."
             },
             {
-                "id": 7, "start": 47.0, "end": 56.0,
+                "id": 7,
                 "speech_en": "Interviewer pro tip! In MySQL InnoDB, the Primary Key defines table clustering. Keep it integer and auto-incrementing for best performance! Follow Code with Mangesh!",
                 "speech_mr": "इंटरव्ह्यूअर प्रो-टिप! मायएसक्यूएल मध्ये प्रायमरी की ने डेटा क्लस्टर होतो, म्हणून तो नेहमी इंटिजर ठेवावा. पुढील तयारीसाठी फॉलो करा कोड विथ मंगेश!",
                 "speech_hi": "इंटरव्यूअर प्रो-टिप! MySQL InnoDB में Primary Key से डेटा क्लस्टर होता है, इसलिए इसे हमेशा ऑटो-इंक्रीमेंट इंटीजर रखें. फॉलो कीजिए कोड विथ मंगेश!"
@@ -1005,8 +1013,29 @@ class SqlShortVideoEngine:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def get_presets(self) -> List[Dict[str, Any]]:
-        """Returns built-in high-yield banking & theory interview SQL scenarios."""
-        return BANKING_SQL_PRESETS + TOP_MNC_THEORY_PRESETS
+        """Returns built-in high-yield banking & theory interview SQL scenarios with dynamically calibrated timings (<60s)."""
+        raw_presets = BANKING_SQL_PRESETS + TOP_MNC_THEORY_PRESETS
+        calibrated = []
+        for p in raw_presets:
+            p_copy = dict(p)
+            raw_scenes = p_copy.get("scenes", [])
+            if raw_scenes:
+                all_speech = " ".join([s.get("speech_en", "") for s in raw_scenes])
+                words_count = len(all_speech.split())
+                est_dur = round(words_count / 2.5, 2)
+                cal_stages, total_dur, outro_start = compute_audio_synchronized_stages(
+                    raw_stages=raw_scenes,
+                    audio_duration=est_dur,
+                    pro_tip=p_copy.get("pro_tip", ""),
+                    lang_key="mr"
+                )
+                p_copy["scenes"] = cal_stages
+                p_copy["stages"] = cal_stages
+                p_copy["duration"] = total_dur
+                p_copy["max_duration_seconds"] = total_dur
+                p_copy["outro_start"] = outro_start
+            calibrated.append(p_copy)
+        return calibrated
 
     def _detect_content_type(self, text: str) -> str:
         """Detects whether prompt is a SQL coding problem or a Theory/concept question."""
@@ -1837,15 +1866,14 @@ class SqlShortVideoEngine:
         if audio_file_path:
             actual_dur = get_mp3_duration(audio_file_path)
         if actual_dur <= 0.0:
-            actual_dur = round(len(full_narration.split()) / 2.6, 2)
+            words_count = len(full_narration.split())
+            rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
+            actual_dur = round(words_count / rate, 2)
 
-        # Strictly cap spoken narration at 54.5s so total video (narration + 3.5s outro) is <= 58.0s
-        narration_dur = min(54.5, max(15.0, actual_dur))
-
-        # Synchronize stage boundaries based on word counts and real audio duration
+        # Synchronize stage boundaries dynamically based on word counts and real audio duration (<60s Shorts standard)
         calibrated_stages, final_dur, outro_start = compute_audio_synchronized_stages(
             raw_stages=stages,
-            audio_duration=narration_dur,
+            audio_duration=actual_dur,
             pro_tip=matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."),
             lang_key=lang_key
         )
@@ -1870,7 +1898,7 @@ class SqlShortVideoEngine:
             "duration": final_dur,
             "max_duration_seconds": final_dur,
             "outro_start": outro_start,
-            "narration_duration": narration_dur,
+            "narration_duration": outro_start,
             "aspect_ratio": "9:16",
             "branding": "@Code_With_Mangesh"
         }

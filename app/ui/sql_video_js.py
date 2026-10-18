@@ -14,7 +14,8 @@ def get_sql_video_js() -> str:
 
     let sqlShortState = {
         currentTime: 0.0,
-        maxDuration: 56.0,
+        maxDuration: 0.0,
+        narrationDuration: 0.0,
         isPlaying: false,
         playbackSpeed: 1.0,
         audioLang: 'mr',
@@ -35,60 +36,70 @@ def get_sql_video_js() -> str:
         audioUrl: "/audio/preset_sql_q1_second_highest_salary_en.mp3"
     };
 
-    // Dynamic duration calibration & proportional stage scaling (<58s Shorts & Reels standard)
+    // Dynamic duration calibration & proportional stage scaling (<60s Shorts & Reels standard)
     function calibrateAudioDuration() {
         const audioEl = document.getElementById("sqlVoiceAudio");
         if (!audioEl) return;
         const realDur = audioEl.duration;
-        if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 5.0) {
-            // realDur is the measured spoken teacher narration length.
-            // Outro branding card strictly displays for 3.5s AFTER spoken speech completes.
-            const narrationDur = Math.min(54.5, realDur);
-            const totalDur = Math.min(58.0, Number((narrationDur + 3.5).toFixed(2)));
+        if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 2.0) {
+            // Dynamic outro duration based on spoken length (typically 6-8%, clamped between 2.0s and 3.8s)
+            const dynamicOutro = Math.max(2.0, Math.min(3.8, Number((realDur * 0.07).toFixed(2))));
+            let narrationDur = realDur;
+            if (narrationDur + dynamicOutro > 59.5) {
+                narrationDur = 59.5 - dynamicOutro;
+            }
+            narrationDur = Number(narrationDur.toFixed(2));
+            const totalDur = Number((narrationDur + dynamicOutro).toFixed(2));
             sqlShortState.narrationDuration = narrationDur;
             sqlShortState.maxDuration = totalDur;
             const sc = document.getElementById("sqlShortScrubber");
             if (sc) {
-                sc.max = totalDur;
+                sc.max = totalDur.toString();
                 sc.step = "0.1";
             }
-            scaleScenesToRealDuration(narrationDur, totalDur);
+            scaleScenesToRealDuration(narrationDur, totalDur, dynamicOutro);
             updatePlayerScrubberUI(sqlShortState.currentTime);
         }
     }
 
-    function scaleScenesToRealDuration(narrationDur, totalDur) {
+    function scaleScenesToRealDuration(narrationDur, totalDur, dynamicOutro) {
         const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
         if (!p) return;
         const stagesList = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : null);
         if (!stagesList || stagesList.length === 0) return;
 
-        // Separate educational stages (1 to 6) from outro branding stage (7)
+        // Separate educational stages (1 to N-1) from outro branding stage
         const eduStages = stagesList.filter(s => s.action_type !== "branding_outro" && s.id !== 7 && !s.title?.includes("Outro"));
         const outroStage = stagesList.find(s => s.action_type === "branding_outro" || s.id === 7 || s.title?.includes("Outro"));
 
-        // Scale educational stages across 0.0 to narrationDur
-        const origEduMax = eduStages.length > 0 ? (eduStages[eduStages.length - 1].orig_end || eduStages[eduStages.length - 1].end || 50.0) : 50.0;
-        const eduRatio = narrationDur / Math.max(1.0, origEduMax);
+        // Compute word counts per stage dynamically from speech text
+        const langKey = sqlShortState.audioLang || "mr";
+        const wordCounts = eduStages.map(s => {
+            const txt = s[`speech_${langKey}`] || s.speech || s.speech_en || s.title || "";
+            return Math.max(3, txt.trim().split(/\s+/).filter(Boolean).length);
+        });
+        const totalWords = wordCounts.reduce((a, b) => a + b, 0) || (eduStages.length * 10);
 
         let currT = 0.0;
         eduStages.forEach((s, idx) => {
-            if (s.orig_start === undefined) s.orig_start = s.start;
-            if (s.orig_end === undefined) s.orig_end = s.end;
+            const frac = wordCounts[idx] / totalWords;
+            const dur = frac * narrationDur;
             s.start = Number(currT.toFixed(2));
-            const dur = (s.orig_end - s.orig_start) * eduRatio;
             const endT = (idx === eduStages.length - 1) ? narrationDur : (currT + dur);
             s.end = Number(endT.toFixed(2));
+            s.duration = Number((s.end - s.start).toFixed(2));
             currT = s.end;
         });
 
         // Outro starts EXACTLY when narration finishes (narrationDur)
         p.outro_start = Number(narrationDur.toFixed(2));
         p.max_duration_seconds = totalDur;
+        p.duration = totalDur;
 
         if (outroStage) {
             outroStage.start = p.outro_start;
             outroStage.end = totalDur;
+            outroStage.duration = Number((totalDur - p.outro_start).toFixed(2));
         }
     }
 
@@ -585,17 +596,20 @@ SECOND_HIGHEST_SALARY: 70000`;
                     logPipelineStep("GitHub Model", `Trained Epoch #${lt.epoch}. Synaptic loss reduced to ${lt.current_loss}. Added ${lt.learned_concepts?.length || 3} concepts to repo.`);
                 }
 
-                const targetDur = data.max_duration_seconds || 56.0;
+                const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
                 sqlShortState.maxDuration = targetDur;
+                const dynamicOutroDur = Math.max(2.0, Math.min(3.8, Number((targetDur * 0.07).toFixed(2))));
                 const dynamicSpec = Object.assign({
                     id: data.id || "custom_ai",
                     content_type: data.content_type || "sql_query",
-                    title: data.title || "SQL Interview Preparation",
+                    title: data.title || "Tech Interview Preparation",
                     difficulty: data.difficulty || "Core Interview",
                     question: data.question || q,
                     stages: data.stages || data.scenes || [],
                     scenes: data.stages || data.scenes || [],
-                    outro_start: (data.outro_start !== undefined) ? data.outro_start : Math.max(0, targetDur - 3.5),
+                    outro_start: (data.outro_start !== undefined) ? data.outro_start : Math.max(0, targetDur - dynamicOutroDur),
+                    duration: targetDur,
+                    max_duration_seconds: targetDur,
                     pipeline_stages: data.pipeline_stages || [],
                     sample_rows: data.sample_rows || [],
                     col_headers: data.col_headers || ["ID", "ATTRIBUTE", "AMOUNT", "STATUS"],
@@ -606,6 +620,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }, data);
                 sqlShortState.activeVideoSpec = dynamicSpec;
                 sqlShortState.activePreset = dynamicSpec;
+                const sc = document.getElementById("sqlShortScrubber");
+                if (sc) {
+                    sc.max = targetDur.toString();
+                    sc.step = "0.1";
+                }
+                updatePlayerScrubberUI(0);
 
                 // Update Code Preview
                 const codePreviewEl = document.getElementById("sqlShortCodePreview");
@@ -2184,9 +2204,11 @@ SECOND_HIGHEST_SALARY: 70000`;
         // =========================================================================
         // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (<60s Shorts & Reels Standard)
         // =========================================================================
-        const maxDur = sqlShortState.maxDuration || 56.0;
+        const maxDur = sqlShortState.maxDuration || (p.duration || p.max_duration_seconds || 45.0);
         const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
-        const outroStart = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, maxDur - 3.5);
+        const outroStage = stages.find(s => s.action_type === "branding_outro" || s.id === stages.length);
+        const dynamicOutro = Math.max(2.0, Math.min(3.8, Number((maxDur * 0.07).toFixed(2))));
+        const outroStart = (p.outro_start !== undefined) ? p.outro_start : (outroStage ? outroStage.start : Math.max(0, maxDur - dynamicOutro));
         const isOutro = (t >= outroStart);
 
         let currentStageIdx = 0;
@@ -2233,8 +2255,9 @@ SECOND_HIGHEST_SALARY: 70000`;
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
         } else if (isOutro) {
             const oElapsed = Math.max(0, t - outroStart);
+            const outroDur = Math.max(1.0, maxDur - outroStart);
             stageAlpha = Math.min(1.0, oElapsed / 0.4);
-            stageProg = Math.min(1.0, oElapsed / 3.5);
+            stageProg = Math.min(1.0, oElapsed / outroDur);
         }
 
         if (p.content_type === "theory") {
@@ -3109,12 +3132,15 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function updatePlayerScrubberUI(t) {
         const sc = document.getElementById("sqlShortScrubber");
-        if (sc) sc.value = t;
+        const maxT = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 45.0);
+        if (sc) {
+            sc.value = t;
+            if (sc.max != maxT) sc.max = maxT.toString();
+        }
         const tm = document.getElementById("playerTimer");
         if (tm) {
             const mins = Math.floor(t / 60);
             const secs = Math.floor(t % 60).toString().padStart(2, "0");
-            const maxT = sqlShortState.maxDuration || 58.0;
             const maxMins = Math.floor(maxT / 60);
             const maxSecs = Math.floor(maxT % 60).toString().padStart(2, "0");
             tm.innerText = `${mins}:${secs} / ${maxMins}:${maxSecs}`;
@@ -3160,12 +3186,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         pauseSqlShortPlay();
 
-        // Enforce strictly <= 58.0s for YouTube Shorts / Reels compliance (<60s)
+        // Enforce strictly < 60.0s for YouTube Shorts / Reels compliance (<60s)
         let totalDuration = durationSec;
         if (!totalDuration || totalDuration > 60) {
-            totalDuration = sqlShortState.maxDuration || 56.0;
+            totalDuration = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 45.0);
         }
-        totalDuration = Math.min(58.0, totalDuration);
+        totalDuration = Math.min(59.5, totalDuration);
 
         if (celebrationBox) celebrationBox.style.display = "none";
         if (pContainer) pContainer.style.display = "block";
@@ -3276,7 +3302,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                     const t = sqlShortState.currentTime;
                     const p = sqlShortState.activePreset;
                     const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
-                    const outroStart = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, totalDuration - 3.5);
+                    const dynamicOutro = Math.max(2.0, Math.min(3.8, Number((totalDuration * 0.07).toFixed(2))));
+                    const outroStart = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, totalDuration - dynamicOutro);
                     const isOutro = (t >= outroStart);
 
                     let currentStage = 1;

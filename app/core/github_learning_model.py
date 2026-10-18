@@ -279,18 +279,18 @@ class GitHubLearningModel:
                 corrections.append("Normalized unbalanced parentheses in SQL query block")
                 audit_results.append({"trial": 1, "check": "SQL ANSI Syntax & Balanced Parentheses", "status": "CORRECTED", "badge": "⚠️ Balanced on Fly"})
 
-        # Trial 2: Speech Word Count & Pacing (<58s Shorts)
+        # Trial 2: Dynamic Speech Word Count & Shorts Pacing (<60s)
         total_words = 0
         for s in stages:
             txt = s.get("speech_mr") or s.get("speech") or s.get("speech_en") or ""
             total_words += len(txt.split())
 
-        if total_words <= 130 and duration_sec <= 58.0:
-            audit_results.append({"trial": 2, "check": "Shorts Pacing & Word-Count (<58s Limit)", "status": "PASSED", "badge": f"⏱️ {total_words} Words ({duration_sec}s Duration)"})
+        if total_words <= 135 and duration_sec < 60.0:
+            audit_results.append({"trial": 2, "check": "Shorts Pacing & Word-Count (<60s Limit)", "status": "PASSED", "badge": f"⏱️ {total_words} Words ({duration_sec}s Duration <60s)"})
         else:
             score -= 0.8
-            corrections.append(f"Calibrated stage boundaries to enforce strict <58.0s Shorts limit (measured {duration_sec}s)")
-            audit_results.append({"trial": 2, "check": "Shorts Pacing & Word-Count (<58s Limit)", "status": "OPTIMIZED", "badge": f"⏱️ Calibrated ({duration_sec}s)"})
+            corrections.append(f"Calibrated stage boundaries to enforce strict <60s Shorts limit (measured {duration_sec}s)")
+            audit_results.append({"trial": 2, "check": "Shorts Pacing & Word-Count (<60s Limit)", "status": "OPTIMIZED", "badge": f"⏱️ Calibrated ({duration_sec}s <60s)"})
 
         # Trial 3: 6-Stage Deep Pedagogical Progression
         if len(stages) >= 6:
