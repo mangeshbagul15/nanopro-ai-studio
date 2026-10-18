@@ -397,6 +397,7 @@ class SqlShortPromptRequest(BaseModel):
     question: str
     difficulty: Optional[str] = "Medium"
     language: Optional[str] = "mr"
+    mode: Optional[str] = "faang_drill"
 
 class SqlShortSandboxRequest(BaseModel):
     schema_sql: str
@@ -1124,11 +1125,12 @@ async def api_sql_video_presets():
 
 @app.post("/api/sql_video/generate_prompt")
 async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
-    """Generates 85-second viral Short/Reel creation blueprint with synchronized 7 scenes and regional voice."""
+    """Generates viral 9:16 Short/Reel creation blueprint (<58s) with synchronized stages and regional voice."""
     res = await sql_short_engine.generate_short_prompt_async(
         topic_or_question=req.question,
         difficulty=req.difficulty or "Medium",
-        language=req.language or "mr"
+        language=req.language or "mr",
+        mode=req.mode or "faang_drill"
     )
     return JSONResponse(res)
 
@@ -1162,6 +1164,15 @@ async def api_tech_video_learning_telemetry():
     """Returns real-time telemetry from the GitHub self-learning model."""
     from app.core.github_learning_model import github_learning_model
     return JSONResponse(github_learning_model.get_telemetry())
+
+@app.post("/api/tech_video/train_step")
+async def api_tech_video_train_step(req: Optional[Dict[str, Any]] = None):
+    """Executes a live simulated training & backpropagation step on the GitHub self-learning neural model."""
+    from app.core.github_learning_model import github_learning_model
+    prompt_sample = (req.get("prompt") if req else None) or "Optimize Snowflake QUALIFY and AWS S3 partitioning"
+    domain = (req.get("domain") if req else None)
+    res = github_learning_model.train_on_prompt(prompt=prompt_sample, domain=domain, solution_code="")
+    return JSONResponse(res)
 
 @app.get("/workspace/sql-video", response_class=HTMLResponse)
 async def api_sql_video_direct_workspace():

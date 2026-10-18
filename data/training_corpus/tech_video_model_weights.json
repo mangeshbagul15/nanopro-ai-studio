@@ -2,24 +2,32 @@
   "model_name": "NanoPro-TechVid-v1",
   "version": "1.5.2-continuous-learn",
   "repo_url": "https://github.com/mangesh-nanopro-studio/tech-video-neural-engine",
-  "total_epochs": 54,
-  "current_loss": 0.0363,
+  "total_epochs": 60,
+  "current_loss": 0.0312,
   "initial_loss": 0.45,
   "learning_rate": 0.0005,
-  "knowledge_vectors_count": 196,
+  "knowledge_vectors_count": 231,
   "status": "active_learning",
-  "last_updated": "2026-10-18 09:35:27",
+  "last_updated": "2026-10-18 10:11:36",
   "domains": {
     "sql": {
-      "epochs": 16,
+      "epochs": 20,
       "concepts": [
-        "CTE",
-        "DENSE_RANK",
-        "PARTITION BY",
-        "LEAD/LAG",
-        "SELF JOIN",
+        "FIND",
+        "ORDER_ID",
+        "HIGHEST",
+        "USING",
+        "STOP",
+        "SNOWFLAKE",
         "INDEX OPTIMIZATION",
-        "HAVING CLAUSE"
+        "CUSTOMER_ID",
+        "DISTINCT",
+        "HAVING CLAUSE",
+        "PARTITION BY",
+        "EMPLOYEE",
+        "PREVENT",
+        "MICRO",
+        "TABLE"
       ]
     },
     "python": {
@@ -40,19 +48,22 @@
       ]
     },
     "snowflake": {
-      "epochs": 8,
+      "epochs": 9,
       "concepts": [
-        "STREAM & TASK",
-        "CLUSTERING KEYS",
-        "LAKE",
-        "EXPLAIN",
-        "SNOWFLAKE",
-        "ZERO COPY CLONING",
-        "AWS",
         "PYTHON",
-        "DATA",
+        "QUALIFY",
+        "AWS",
+        "OPTIMIZE",
         "TIME TRAVEL",
-        "SNOWPARK"
+        "EXPLAIN",
+        "LAKE",
+        "CLUSTERING KEYS",
+        "STREAM & TASK",
+        "DATA",
+        "PARTITIONING",
+        "SNOWPARK",
+        "ZERO COPY CLONING",
+        "SNOWFLAKE"
       ]
     },
     "aws": {
@@ -66,12 +77,18 @@
       ]
     },
     "data_engineering": {
-      "epochs": 5,
+      "epochs": 6,
       "concepts": [
-        "MEDALLION ARCHITECTURE",
-        "DELTA LAKE",
+        "MENTAL",
+        "JOB",
         "DBT TRANSFORMATIONS",
-        "AIRFLOW DAGS"
+        "SPARK",
+        "AIRFLOW DAGS",
+        "SHUFFLING",
+        "MEDALLION ARCHITECTURE",
+        "MAPREDUCE",
+        "MODEL",
+        "DELTA LAKE"
       ]
     },
     "ai_rag": {
@@ -104,6 +121,119 @@
     }
   },
   "recent_training_steps": [
+    {
+      "step_id": "step_60",
+      "epoch": 60,
+      "timestamp": "2026-10-18 10:11:36",
+      "domain": "data_engineering",
+      "prompt_sample": "Mental model of MapReduce and Spark shuffling",
+      "loss": 0.0312,
+      "delta_loss": -0.0008,
+      "learned_concepts": [
+        "MENTAL",
+        "MODEL",
+        "MAPREDUCE",
+        "SPARK",
+        "SHUFFLING",
+        "JOB"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 45.2
+    },
+    {
+      "step_id": "step_59",
+      "epoch": 59,
+      "timestamp": "2026-10-18 10:11:25",
+      "domain": "sql",
+      "prompt_sample": "Stop using SELECT * in production",
+      "loss": 0.032,
+      "delta_loss": -0.0008,
+      "learned_concepts": [
+        "STOP",
+        "USING",
+        "PRODUCTION",
+        "ORDER_ID",
+        "CUSTOMER_ID",
+        "STATUS"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 45.2
+    },
+    {
+      "step_id": "step_58",
+      "epoch": 58,
+      "timestamp": "2026-10-18 10:11:14",
+      "domain": "sql",
+      "prompt_sample": "How Snowflake micro-partitions prevent table scans in AWS S3",
+      "loss": 0.0328,
+      "delta_loss": -0.0008,
+      "learned_concepts": [
+        "HOW",
+        "SNOWFLAKE",
+        "MICRO",
+        "PARTITIONS",
+        "PREVENT",
+        "TABLE"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 45.2
+    },
+    {
+      "step_id": "step_57",
+      "epoch": 57,
+      "timestamp": "2026-10-18 10:11:01",
+      "domain": "sql",
+      "prompt_sample": "Find 2nd highest salary in employee table",
+      "loss": 0.0336,
+      "delta_loss": -0.0009,
+      "learned_concepts": [
+        "FIND",
+        "HIGHEST",
+        "SALARY",
+        "EMPLOYEE",
+        "TABLE",
+        "DISTINCT"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 45.2
+    },
+    {
+      "step_id": "step_56",
+      "epoch": 56,
+      "timestamp": "2026-10-18 10:10:47",
+      "domain": "sql",
+      "prompt_sample": "Find 2nd highest salary in employee table",
+      "loss": 0.0345,
+      "delta_loss": -0.0009,
+      "learned_concepts": [
+        "FIND",
+        "HIGHEST",
+        "SALARY",
+        "EMPLOYEE",
+        "TABLE",
+        "DISTINCT"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 45.2
+    },
+    {
+      "step_id": "step_55",
+      "epoch": 55,
+      "timestamp": "2026-10-18 10:09:35",
+      "domain": "snowflake",
+      "prompt_sample": "Optimize Snowflake QUALIFY and AWS S3 partitioning",
+      "loss": 0.0354,
+      "delta_loss": -0.0009,
+      "learned_concepts": [
+        "OPTIMIZE",
+        "SNOWFLAKE",
+        "QUALIFY",
+        "AWS",
+        "PARTITIONING"
+      ],
+      "vectors_added": 5,
+      "duration_calibrated": 50.0
+    },
     {
       "step_id": "step_54",
       "epoch": 54,

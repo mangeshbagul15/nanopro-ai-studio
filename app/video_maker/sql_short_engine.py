@@ -122,11 +122,13 @@ def compute_audio_synchronized_stages(
     - Subtitles and animations are 100% frame-locked to spoken word counts.
     - Total duration capped at 58.0 seconds for strict YouTube Shorts / Reels compliance (<60s).
     """
-    total_dur = max(20.0, float(audio_duration))
-    total_dur = min(58.0, total_dur)
+    # audio_duration is the real measured duration of the spoken educational narration (stages 1-6)
     outro_dur = 3.5
-    edu_dur = max(10.0, total_dur - outro_dur)
-    outro_start = round(total_dur - outro_dur, 2)
+    # Bound spoken narration so that total duration (narration + outro) never exceeds 58.0s (Shorts/Reels <60s standard)
+    narration_dur = max(15.0, min(54.5, float(audio_duration)))
+    edu_dur = narration_dur
+    outro_start = round(narration_dur, 2)
+    total_dur = round(narration_dur + outro_dur, 2)
 
     # Filter out any pre-existing branding stage
     edu_stages = [
@@ -173,15 +175,15 @@ def compute_audio_synchronized_stages(
             "duration": round(end_t - start_t, 2)
         })
 
-    # Append strictly isolated Outro Branding Stage (only final 3.5s)
+    # Append strictly isolated Outro Branding Stage (only final 3.5s, strictly after narration completes)
     calibrated.append({
         "id": len(calibrated) + 1,
         "action_type": "branding_outro",
         "title": "Senior Interviewer Pro-Tip & Outro",
-        "speech": pro_tip or "Follow @Code_With_Mangesh for daily SQL mastery!",
-        "speech_mr": pro_tip or "पुढील एसक्यूएल व्हिडिओंसाठी फॉलो करा कोड विथ मंगेश!",
-        "speech_hi": pro_tip or "एसक्यूएल मास्टरी के लिए फॉलो कीजिए कोड विथ मंगेश!",
-        "speech_en": pro_tip or "Follow @Code_With_Mangesh for daily SQL mastery!",
+        "speech": pro_tip or "Follow @Code_With_Mangesh for daily tech mastery!",
+        "speech_mr": pro_tip or "पुढील टेक व्हिडिओंसाठी फॉलो करा कोड विथ मंगेश!",
+        "speech_hi": pro_tip or "टेक मास्टरी के लिए फॉलो कीजिए कोड विथ मंगेश!",
+        "speech_en": pro_tip or "Follow @Code_With_Mangesh for daily tech mastery!",
         "start": outro_start,
         "end": round(total_dur, 2),
         "duration": round(total_dur - outro_start, 2)
@@ -1169,10 +1171,15 @@ class SqlShortVideoEngine:
                 })
         return evals
 
-    def _build_dynamic_stages(self, matched: Dict[str, Any], content_type: str, lang_key: str) -> List[Dict[str, Any]]:
+    def _build_dynamic_stages(self, matched: Dict[str, Any], content_type: str, lang_key: str, mode: str = "faang_drill") -> List[Dict[str, Any]]:
         """
-        Constructs crisp educational teaching stages tailored to the question.
+        Constructs crisp educational teaching stages tailored to the question, domain, and creation mode.
         Total script is concise (~110-125 words) for Shorts/Reels compliance (<60s).
+        Modes supported:
+        - faang_drill: Edge cases, ties, NULL handling, execution plans
+        - architecture_3d: Cloud data lake, pipelines, Medallion, microservices, containerization
+        - viral_reel: High-energy 3s hook, kinetic neon punchiness, viral meme rhythm
+        - deep_mentor: First-principles cognitive scaffolding, real-world human analogies
         """
         existing = matched.get("stages") or matched.get("scenes") or []
         if existing and len(existing) >= 4 and any("speech" in s or f"speech_{lang_key}" in s for s in existing):
@@ -1189,22 +1196,40 @@ class SqlShortVideoEngine:
                 })
             return clean_existing
 
-        title = matched.get("title", "SQL Interview Question")
+        title = matched.get("title", "Tech Architecture & Coding")
         tbl = matched.get("table_name", "TRANSACTIONS")
-        pro_tip = matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step.")
+        pro_tip = matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain system logic step-by-step.")
+
+        # Human Cognitive Anchors based on mode
+        if mode == "viral_reel":
+            hook_prefix_en = f"Stop scrolling! 95% of engineers get this wrong in tech interviews: {title}!"
+            hook_prefix_mr = f"थांबा! ९५% इंजिनिअर्स या प्रश्नात फसतात: {title}! चला ३० सेकंदात समजून घेऊया!"
+            hook_prefix_hi = f"रुकिए! ९५% डेवलपर्स इस सवाल में गलती करते हैं: {title}! आइए ३० सेकंड में समझते हैं!"
+        elif mode == "architecture_3d":
+            hook_prefix_en = f"Production System Architecture Breakdown: {title}! How modern cloud systems scale."
+            hook_prefix_mr = f"प्रोडक्शन क्लाउड सिस्टिम आर्किटेक्चर: {title}! हाय-थ्रूपुट सिस्टिम कशी काम करते पाहा."
+            hook_prefix_hi = f"प्रोडक्शन क्लाउड आर्किटेक्चर ब्रेकडाउन: {title}! हाई-स्केल सिस्टम कैसे काम करती है देखिए."
+        elif mode == "deep_mentor":
+            hook_prefix_en = f"Welcome to today's deep concept masterclass: {title}. Let's build your mental model from scratch."
+            hook_prefix_mr = f"आजच्या डीप टेक मास्टरक्लासमध्ये स्वागत: {title}. चला मुळापासून ही संकल्पना समजून घेऊया."
+            hook_prefix_hi = f"आज के डीप कॉन्सेप्ट मास्टरक्लास में स्वागत है: {title}. आइए बुनियादी सिद्धांतों से सीखते हैं."
+        else:  # faang_drill
+            hook_prefix_en = f"High-frequency FAANG interview drill: {title}! Watch how to handle every edge case cleanly."
+            hook_prefix_mr = f"टॉप टेक कंपन्यांचा आवडता इंटरव्ह्यू प्रश्न: {title}! सर्व एज केसेस आणि अचूक लॉजिक पाहा."
+            hook_prefix_hi = f"टॉप कंपनी इंटरव्यू का सबसे जरूरी सवाल: {title}! सभी एज केसेज और सही लॉजिक देखिए."
 
         if content_type == "theory":
-            concept = matched.get("concept_summary", "Understand the core structural differences between SQL operations.")
+            concept = matched.get("concept_summary", "Understand the core structural differences between system operations.")
             golden = matched.get("golden_rule", "Filter individual records with WHERE, filter aggregated groups with HAVING.")
             return [
                 {
-                    "id": 1, "action_type": "problem_intro", "title": "Theory Question & Objective",
-                    "speech_en": f"Top SQL interview theory question: {title}! Let's understand the core concept step by step.",
-                    "speech_mr": f"एसक्यूएल थिअरी इंटरव्ह्यू प्रश्न: {title}! चला ही संकल्पना स्टेप बाय स्टेप सोप्या भाषेत समजूया.",
-                    "speech_hi": f"एसक्यूएल थ्योरी इंटरव्यू का अहम सवाल: {title}! आइए इस कॉन्सेप्ट को आसान भाषा में समझते हैं."
+                    "id": 1, "action_type": "problem_intro", "title": "Theory Question & Core Objective",
+                    "speech_en": hook_prefix_en,
+                    "speech_mr": hook_prefix_mr,
+                    "speech_hi": hook_prefix_hi
                 },
                 {
-                    "id": 2, "action_type": "data_inspection", "title": "Core Distinction & Confusion",
+                    "id": 2, "action_type": "data_inspection", "title": "Core Distinction & Misconception",
                     "speech_en": f"Why do candidates stumble? {concept}. Let's examine the internal difference.",
                     "speech_mr": f"उमेदवार इथे का अडखळतात? {concept}. चला यातील तांत्रिक फरक नीट समजून घेऊया.",
                     "speech_hi": f"कैंडिडेट्स अक्सर यहाँ क्यों गलती करते हैं? {concept}. आइए इसका इंटरनल अंतर देखते हैं."
@@ -1216,7 +1241,7 @@ class SqlShortVideoEngine:
                     "speech_hi": "डेटाबेस एग्जीक्यूशन आर्डर देखिए: पहले FROM और WHERE से रोज फिल्टर होते हैं, फिर GROUP BY और आखिर में HAVING ग्रुप्स चेक करता है."
                 },
                 {
-                    "id": 4, "action_type": "code_build", "title": "Syntax & Code Placement",
+                    "id": 4, "action_type": "code_build", "title": "Syntax & Implementation Placement",
                     "speech_en": "Here is the code syntax side-by-side. WHERE filters before aggregation, while HAVING filters aggregate functions like COUNT.",
                     "speech_mr": "इथे कोड सिंटॅक्स शेजारी-शेजारी बघा. WHERE ॲग्रीगेशनच्या आधी लागते, तर HAVING मध्ये COUNT, SUM सारखी फंक्शन्स वापरता येतात.",
                     "speech_hi": "यहाँ कोड सिंटैक्स साथ-साथ देखिए. WHERE एग्रीगेशन से पहले लगता है, जबकि HAVING में COUNT, SUM जैसे फंक्शन्स चेक होते हैं."
@@ -1239,24 +1264,24 @@ class SqlShortVideoEngine:
             return [
                 {
                     "id": 1, "action_type": "problem_intro", "title": "Question Statement & Target",
-                    "speech_en": f"High-frequency SQL interview question: {title}! Let's solve it step by step cleanly.",
-                    "speech_mr": f"एसक्यूएल इंटरव्ह्यूचा क्लासिक प्रश्न: {title}! चला स्टेप बाय स्टेप लॉजिक समजून घेऊन सोडूया.",
-                    "speech_hi": f"एसक्यूएल इंटरव्यू का पसंदीदा सवाल: {title}! आइए स्टेप बाय स्टेप लॉजिक समझकर सॉल्व करते हैं."
+                    "speech_en": hook_prefix_en,
+                    "speech_mr": hook_prefix_mr,
+                    "speech_hi": hook_prefix_hi
                 },
                 {
                     "id": 2, "action_type": "data_inspection", "title": "Data Inspection & Schema",
-                    "speech_en": f"Inspect our {tbl} table. Pay close attention to multiple records, ties, and target group columns.",
-                    "speech_mr": f"आपला {tbl} टेबल तपासा. डुप्लिकेट नोंदी, ग्रुप्स आणि लक्ष वेधून घेणाऱ्या महत्त्वाच्या कॉलमवर लक्ष द्या.",
-                    "speech_hi": f"हमारे {tbl} टेबल को ध्यान से देखिए. डुप्लिकेट रिकॉर्ड्स, ग्रुप्स और जरूरी कॉलम्स पर ध्यान देना जरूरी है."
+                    "speech_en": f"Inspect our {tbl} schema. Notice how duplicate values, ties, and group partitions can trap naive solutions.",
+                    "speech_mr": f"आपला {tbl} टेबल तपासा. डुप्लिकेट नोंदी, टाय होणारे गुण आणि ग्रुप पार्टिशन्स कशा अडचणी निर्माण करतात ते पाहा.",
+                    "speech_hi": f"हमारे {tbl} टेबल को देखिए. डुप्लिकेट रिकॉर्ड्स, टाई और ग्रुप पार्टिशन्स पर ध्यान देना बहुत जरूरी है."
                 },
                 {
                     "id": 3, "action_type": "logic_flowchart", "title": "Algorithm & Flowchart Pipeline",
-                    "speech_en": "Here is our execution pipeline: First partition and order the rows, apply our window or filter condition, then pick the target records.",
+                    "speech_en": "Here is our execution pipeline: First partition and order the records, apply our window or filter condition, then pick target rows.",
                     "speech_mr": "आपली एक्झिक्युशन पाइपलाइन: प्रथम योग्य ग्रुप्स आणि ऑर्डरिंग लावा, विंडो किंवा फिल्टर कंडिशन अप्लाय करा, आणि अचूक टार्गेट रो निवडा.",
                     "speech_hi": "हमारा एग्जीक्यूशन पाइपलाइन: पहले ग्रुप्स और आर्डर तय करें, फिर विंडो या फिल्टर कंडीशन लगाएं, और सही टारगेट रो चुनें."
                 },
                 {
-                    "id": 4, "action_type": "code_build", "title": "SQL Query Construction",
+                    "id": 4, "action_type": "code_build", "title": "Code Construction & Arrow Focus",
                     "speech_en": f"Writing the production query. Pay special attention to {arrow}, which isolates the exact target rows directly.",
                     "speech_mr": f"चला क्वेरी लिहूया: विशेष लक्ष द्या {arrow} वर, जे थेट आपल्या टार्गेट नोंदी वेगळ्या करते.",
                     "speech_hi": f"आइए प्रोडक्शन क्वेरी लिखते हैं: खास ध्यान दीजिए {arrow} पर, जो सीधे हमारे टारगेट रिकॉर्ड्स को चुनता है."
@@ -1269,7 +1294,7 @@ class SqlShortVideoEngine:
                 },
                 {
                     "id": 6, "action_type": "final_result", "title": "Verified Output & Complexity",
-                    "speech_en": "Look at the verified final result! Clean, optimized, and 100% production-ready for FAANG interviews.",
+                    "speech_en": "Look at the verified final result! Clean, optimized, and 100% production-ready for top engineering interviews.",
                     "speech_mr": "फायनल रिझल्ट पाहा! अचूक, वेगवान आणि इंटरव्ह्यूसाठी १०० टक्के रेडी क्वेरी!",
                     "speech_hi": "फाइनल रिजल्ट देखिए! एकदम क्लीन, फास्ट और टॉप कंपनी इंटरव्यू के लिए तैयार क्वेरी!"
                 }
@@ -1655,7 +1680,8 @@ class SqlShortVideoEngine:
         self,
         topic_or_question: str,
         difficulty: str = "Medium",
-        language: str = "mr"
+        language: str = "mr",
+        mode: str = "faang_drill"
     ) -> Dict[str, Any]:
         """
         Asynchronously generates a synchronized, viral 50-55s video creation blueprint:
@@ -1776,7 +1802,7 @@ class SqlShortVideoEngine:
             matched = self._dynamic_analyze_prompt(text_input, lang_key=lang_key)
 
         matched_content_type = matched.get("content_type", content_type)
-        stages = self._build_dynamic_stages(matched, matched_content_type, lang_key)
+        stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
 
         # Gather voice narration script across educational stages
         narration_parts = []
@@ -1811,15 +1837,15 @@ class SqlShortVideoEngine:
         if audio_file_path:
             actual_dur = get_mp3_duration(audio_file_path)
         if actual_dur <= 0.0:
-            actual_dur = round(len(full_narration.split()) / 2.6, 2) + 3.5
+            actual_dur = round(len(full_narration.split()) / 2.6, 2)
 
-        # Strictly cap duration at 58.0 seconds for YouTube Shorts / Reels compliance (<60s)
-        actual_dur = min(58.0, max(20.0, actual_dur))
+        # Strictly cap spoken narration at 54.5s so total video (narration + 3.5s outro) is <= 58.0s
+        narration_dur = min(54.5, max(15.0, actual_dur))
 
         # Synchronize stage boundaries based on word counts and real audio duration
         calibrated_stages, final_dur, outro_start = compute_audio_synchronized_stages(
             raw_stages=stages,
-            audio_duration=actual_dur,
+            audio_duration=narration_dur,
             pro_tip=matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."),
             lang_key=lang_key
         )
@@ -1834,6 +1860,7 @@ class SqlShortVideoEngine:
             "title": matched.get("title", "SQL Interview Preparation"),
             "difficulty": difficulty,
             "language": lang_key,
+            "mode": mode,
             "audio_url": audio_url,
             "hook": hook,
             "question": matched.get("question", text_input),
@@ -1843,6 +1870,7 @@ class SqlShortVideoEngine:
             "duration": final_dur,
             "max_duration_seconds": final_dur,
             "outro_start": outro_start,
+            "narration_duration": narration_dur,
             "aspect_ratio": "9:16",
             "branding": "@Code_With_Mangesh"
         }

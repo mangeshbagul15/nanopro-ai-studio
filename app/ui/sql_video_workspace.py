@@ -227,7 +227,34 @@ def get_sql_video_workspace_html() -> str:
         font-weight: 800 !important;
         box-shadow: 0 0 14px rgba(99, 102, 241, 0.45) !important;
     }
-    .sql-avatar-btn.active .btn-check {
+    /* High-Visibility Selected States for Creation Mode Buttons */
+    .sql-mode-btn {
+        font-size: 11px;
+        padding: 8px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1.5px solid #1E2D4A !important;
+        background: #070B16 !important;
+        color: #94A3B8 !important;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 6px;
+        font-weight: 600;
+    }
+    .sql-mode-btn:hover {
+        border-color: #38BDF8 !important;
+        color: #F8FAFC !important;
+    }
+    .sql-mode-btn.active {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25)) !important;
+        border: 2px solid #38BDF8 !important;
+        color: #38BDF8 !important;
+        font-weight: 800 !important;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.45) !important;
+    }
+    .sql-mode-btn.active .btn-check {
         display: inline-block;
     }
 
@@ -284,8 +311,11 @@ def get_sql_video_workspace_html() -> str:
                     </span>
                     <span id="pipelineGitHubModelBadge" style="font-size: 11px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
                         <span>🧠</span>
-                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #53 • Loss: 0.0372 • 190 Vectors</span>
+                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #54 • Loss: 0.0363 • 196 Vectors</span>
                     </span>
+                    <button type="button" class="btn btn-secondary" onclick="triggerModelTraining()" id="btnTrainModelNow" style="font-size: 10px; padding: 3px 10px; border-color: #10B981; color: #10B981; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Execute Live Backpropagation & Weight Tuning on GitHub Model">
+                        <span>🚀</span> <span>Train Model Now</span>
+                    </button>
                     <button type="button" class="btn btn-secondary" onclick="openAgentBrainModal()" style="font-size: 10px; padding: 3px 10px; border-color: #A855F7; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="View 12 Specialist Agents, Thoughts & Perfectionist Audit">
                         <span>🧠</span> <span>12 Agents Brain Matrix &amp; Audit</span>
                     </button>
@@ -419,6 +449,33 @@ def get_sql_video_workspace_html() -> str:
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
                     <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. MASTER PROMPT &amp; TECH SCENARIO INPUT</h3>
                     <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ Universal AI Studio</span>
+                </div>
+
+                <!-- Creation Mode Selector (FAANG Drill, 3D Architecture, Viral 60s Reel, Deep Mentor) -->
+                <div style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #38BDF8; text-transform: uppercase; letter-spacing: 0.5px;">
+                            🎯 Creation Mode (व्हिडिओ निर्मिती प्रकार):
+                        </span>
+                        <span id="activeCreationModeBadge" style="font-size: 10px; color: #10B981; font-weight: 700; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">
+                            🏢 FAANG Interview Drill
+                        </span>
+                    </div>
+                    <input type="hidden" id="sqlShortCreationMode" value="faang_drill" />
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                        <button type="button" class="sql-mode-btn active" id="btnModeFaang" onclick="setSqlCreationMode('faang_drill')">
+                            <span class="btn-check">✓</span> <span>🏢 FAANG Drill (Code/SQL)</span>
+                        </button>
+                        <button type="button" class="sql-mode-btn" id="btnModeArch" onclick="setSqlCreationMode('architecture_3d')">
+                            <span class="btn-check">✓</span> <span>🌐 3D Cloud Architecture</span>
+                        </button>
+                        <button type="button" class="sql-mode-btn" id="btnModeViral" onclick="setSqlCreationMode('viral_reel')">
+                            <span class="btn-check">✓</span> <span>⚡ Viral 60s Tech Reel</span>
+                        </button>
+                        <button type="button" class="sql-mode-btn" id="btnModeMentor" onclick="setSqlCreationMode('deep_mentor')">
+                            <span class="btn-check">✓</span> <span>👨‍🏫 Deep Academic Mentor</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Master Prompt Input Textarea -->

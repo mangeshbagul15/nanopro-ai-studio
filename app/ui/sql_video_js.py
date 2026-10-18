@@ -35,46 +35,61 @@ def get_sql_video_js() -> str:
         audioUrl: "/audio/preset_sql_q1_second_highest_salary_en.mp3"
     };
 
-    // Dynamic duration calibration & proportional stage scaling (<60s Shorts & Reels standard)
+    // Dynamic duration calibration & proportional stage scaling (<58s Shorts & Reels standard)
     function calibrateAudioDuration() {
         const audioEl = document.getElementById("sqlVoiceAudio");
         if (!audioEl) return;
         const realDur = audioEl.duration;
         if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 5.0) {
-            // Strictly cap at 58.5s so video is ALWAYS placed on YouTube Shorts & Instagram Reels shelf
-            const boundedDur = Math.min(58.5, realDur);
-            sqlShortState.maxDuration = boundedDur;
+            // realDur is the measured spoken teacher narration length.
+            // Outro branding card strictly displays for 3.5s AFTER spoken speech completes.
+            const narrationDur = Math.min(54.5, realDur);
+            const totalDur = Math.min(58.0, Number((narrationDur + 3.5).toFixed(2)));
+            sqlShortState.narrationDuration = narrationDur;
+            sqlShortState.maxDuration = totalDur;
             const sc = document.getElementById("sqlShortScrubber");
             if (sc) {
-                sc.max = boundedDur;
+                sc.max = totalDur;
                 sc.step = "0.1";
             }
-            scaleScenesToRealDuration(boundedDur);
+            scaleScenesToRealDuration(narrationDur, totalDur);
             updatePlayerScrubberUI(sqlShortState.currentTime);
         }
     }
 
-    function scaleScenesToRealDuration(dur) {
+    function scaleScenesToRealDuration(narrationDur, totalDur) {
         const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
-        if (!p) {
-            renderPromptStandbyScreen(ctx, W, H, t);
-            return;
-        }
         if (!p) return;
         const stagesList = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : null);
         if (!stagesList || stagesList.length === 0) return;
-        const lastScene = stagesList[stagesList.length - 1];
-        const origMax = p.max_duration_seconds || lastScene.orig_end || lastScene.end || 56.0;
-        const ratio = dur / origMax;
-        stagesList.forEach(s => {
+
+        // Separate educational stages (1 to 6) from outro branding stage (7)
+        const eduStages = stagesList.filter(s => s.action_type !== "branding_outro" && s.id !== 7 && !s.title?.includes("Outro"));
+        const outroStage = stagesList.find(s => s.action_type === "branding_outro" || s.id === 7 || s.title?.includes("Outro"));
+
+        // Scale educational stages across 0.0 to narrationDur
+        const origEduMax = eduStages.length > 0 ? (eduStages[eduStages.length - 1].orig_end || eduStages[eduStages.length - 1].end || 50.0) : 50.0;
+        const eduRatio = narrationDur / Math.max(1.0, origEduMax);
+
+        let currT = 0.0;
+        eduStages.forEach((s, idx) => {
             if (s.orig_start === undefined) s.orig_start = s.start;
             if (s.orig_end === undefined) s.orig_end = s.end;
-            s.start = Number((s.orig_start * ratio).toFixed(2));
-            s.end = Number((s.orig_end * ratio).toFixed(2));
+            s.start = Number(currT.toFixed(2));
+            const dur = (s.orig_end - s.orig_start) * eduRatio;
+            const endT = (idx === eduStages.length - 1) ? narrationDur : (currT + dur);
+            s.end = Number(endT.toFixed(2));
+            currT = s.end;
         });
-        if (p.orig_outro_start === undefined) p.orig_outro_start = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, origMax - 3.5);
-        p.outro_start = Math.max(0, Number((p.orig_outro_start * ratio).toFixed(2)));
-        p.max_duration_seconds = dur;
+
+        // Outro starts EXACTLY when narration finishes (narrationDur)
+        p.outro_start = Number(narrationDur.toFixed(2));
+        p.max_duration_seconds = totalDur;
+
+        if (outroStage) {
+            outroStage.start = p.outro_start;
+            outroStage.end = totalDur;
+        }
     }
 
     function attachAudioSyncListeners(audioEl) {
@@ -84,10 +99,9 @@ def get_sql_video_js() -> str:
         audioEl.addEventListener("durationchange", calibrateAudioDuration);
         audioEl.addEventListener("canplay", calibrateAudioDuration);
         audioEl.addEventListener("ended", () => {
-            sqlShortState.currentTime = sqlShortState.maxDuration;
-            pauseSqlShortPlay();
-            renderSqlShortFrame(sqlShortState.currentTime);
-            updatePlayerScrubberUI(sqlShortState.currentTime);
+            // Audio narration finished! DO NOT pause immediately!
+            // Allow the canvas animation loop to smoothly display the 3.5s outro branding screen.
+            console.log("Teacher voice narration finished at", audioEl.currentTime, "s. Displaying Outro branding screen...");
         });
     }
 
@@ -196,6 +210,79 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
         } catch(e) {
             console.warn("Audio loading notice:", e);
+        }
+    }
+
+    function setSqlCreationMode(mode) {
+        sqlShortState.creationMode = mode;
+        const hiddenInp = document.getElementById("sqlShortCreationMode");
+        if (hiddenInp) hiddenInp.value = mode;
+
+        document.querySelectorAll(".sql-mode-btn").forEach(b => b.classList.remove("active"));
+        const btnIdMap = {
+            "faang_drill": "btnModeFaang",
+            "architecture_3d": "btnModeArch",
+            "viral_reel": "btnModeViral",
+            "deep_mentor": "btnModeMentor"
+        };
+        const btn = document.getElementById(btnIdMap[mode]);
+        if (btn) btn.classList.add("active");
+
+        const badge = document.getElementById("activeCreationModeBadge");
+        const modeLabels = {
+            "faang_drill": "🏢 FAANG Interview Drill",
+            "architecture_3d": "🌐 3D Cloud Architecture",
+            "viral_reel": "⚡ Viral 60s Tech Reel",
+            "deep_mentor": "👨‍🏫 Deep Academic Mentor"
+        };
+        if (badge) badge.innerText = modeLabels[mode] || mode;
+
+        logPipelineStep("Creation Mode Set", `Switched to ${modeLabels[mode] || mode}. Multi-agent prompt synthesis aligned.`);
+        renderSqlShortFrame(sqlShortState.currentTime);
+    }
+
+    async function triggerModelTraining() {
+        const btn = document.getElementById("btnTrainModelNow");
+        if (btn) {
+            btn.innerHTML = `<span>⏳ Tuning Weights...</span>`;
+            btn.disabled = true;
+        }
+
+        const node7 = document.getElementById("pnode-7");
+        if (node7) {
+            node7.classList.add("training");
+        }
+
+        const promptVal = (document.getElementById("sqlShortQuestion")?.value || "").trim() || "Dynamic Tech Video Architecture Training";
+        logPipelineStep("Synaptic Backprop", `Training epoch weights on: "${promptVal.slice(0, 40)}..."`);
+
+        try {
+            const res = await fetch("/api/tech_video/train_step", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ prompt: promptVal })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const epPill = document.getElementById("pipelineEpochPill");
+                if (epPill) epPill.innerText = `Epoch #${data.epoch}`;
+                const lossPill = document.getElementById("pipelineLossPill");
+                if (lossPill) lossPill.innerText = `Loss: ${data.current_loss}`;
+                const badge = document.getElementById("pipelineGitHubModelText");
+                if (badge) badge.innerText = `GitHub Model: Epoch #${data.epoch} • Loss: ${data.current_loss} • ${data.knowledge_vectors_count} Vectors`;
+
+                logPipelineStep("Model Weights Updated", `Epoch #${data.epoch} loss converged to ${data.current_loss} (Δ ${data.delta_loss}). Synced ${data.knowledge_vectors_count} knowledge vectors.`);
+            }
+        } catch (e) {
+            console.warn("Training error:", e);
+        } finally {
+            setTimeout(() => {
+                if (node7) node7.classList.remove("training");
+                if (btn) {
+                    btn.innerHTML = `<span>🚀 Train Model Now</span>`;
+                    btn.disabled = false;
+                }
+            }, 600);
         }
     }
 
@@ -462,7 +549,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     question: q,
-                    language: sqlShortState.audioLang || "mr"
+                    language: sqlShortState.audioLang || "mr",
+                    mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill"
                 })
             });
             const data = await res.json();
@@ -897,6 +985,149 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillText("+", x + w - 20, y + 20);
         }
 
+        ctx.restore();
+    }
+
+    // 1B. 3D Perspective Vanishing Point Grid (Floor Horizon Shader)
+    function draw3DPerspectiveGrid(ctx, W, H, t) {
+        ctx.save();
+        const horizonY = 380;
+        const vanishX = W / 2;
+
+        // Radiating perspective lines from horizon down to canvas bottom
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.08)";
+        ctx.lineWidth = 1.5;
+        const numRays = 16;
+        for (let i = 0; i <= numRays; i++) {
+            const bottomX = (i / numRays) * (W + 600) - 300;
+            ctx.beginPath();
+            ctx.moveTo(vanishX, horizonY);
+            ctx.lineTo(bottomX, H);
+            ctx.stroke();
+        }
+
+        // Horizontal transverse lines scrolling towards camera with time t
+        const numLines = 11;
+        const speed = 0.35;
+        const timeOffset = (t * speed) % 1.0;
+        for (let i = 0; i < numLines; i++) {
+            const p = (i + timeOffset) / numLines;
+            // Nonlinear exponential z-depth perspective
+            const y = horizonY + Math.pow(p, 2.2) * (H - horizonY);
+            const alpha = 0.02 + p * 0.12;
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
+            ctx.lineWidth = 1.0 + p * 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // 1C. Volumetric Digital Cyber Matrix / Binary Rain (High-Tech 4K Ambience)
+    const _matrixChars = "01AF89X<>{}#=;:*+~";
+    function drawCyberMatrixRain(ctx, W, H, t) {
+        ctx.save();
+        ctx.font = "bold 13px 'JetBrains Mono', monospace";
+        const cols = 22;
+        const colWidth = W / cols;
+        for (let c = 0; c < cols; c++) {
+            const seed = (c * 17) % 100;
+            const dropSpeed = 110 + seed * 2.5;
+            const yPos = ((t * dropSpeed) + seed * 50) % (H + 400) - 200;
+            const x = c * colWidth + 14;
+
+            for (let j = 0; j < 6; j++) {
+                const charY = yPos - j * 22;
+                if (charY > 180 && charY < H - 80) {
+                    const charIdx = (Math.floor(t * 8) + c + j) % _matrixChars.length;
+                    const ch = _matrixChars[charIdx];
+                    if (j === 0) {
+                        ctx.fillStyle = "#A7F3D0";
+                        ctx.shadowColor = "#10B981";
+                        ctx.shadowBlur = 8;
+                        ctx.fillText(ch, x, charY);
+                        ctx.shadowBlur = 0;
+                    } else {
+                        const alpha = Math.max(0.04, 0.20 - j * 0.035);
+                        ctx.fillStyle = `rgba(16, 185, 129, ${alpha.toFixed(3)})`;
+                        ctx.fillText(ch, x, charY);
+                    }
+                }
+            }
+        }
+        ctx.restore();
+    }
+
+    // 1D. Animated Laser Scanner Beam
+    function drawLaserScannerBeam(ctx, x, y, w, h, t) {
+        ctx.save();
+        const scanY = y + ((Math.sin(t * 2.5) * 0.5 + 0.5) * h);
+        const grad = ctx.createLinearGradient(x, scanY - 8, x, scanY + 8);
+        grad.addColorStop(0, "rgba(56, 189, 248, 0)");
+        grad.addColorStop(0.5, "rgba(56, 189, 248, 0.65)");
+        grad.addColorStop(1, "rgba(56, 189, 248, 0)");
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, scanY - 8, w, 16);
+
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(x + 10, scanY);
+        ctx.lineTo(x + w - 10, scanY);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+
+    // 1E. 3D Kinetic Neon Arrow Pointer
+    function drawKineticNeonArrow(ctx, targetX, targetY, t, label = "🎯 TARGET") {
+        ctx.save();
+        const bounce = Math.sin(t * 8) * 8;
+        const arrowX = targetX + bounce;
+        const arrowY = targetY;
+
+        // Pulsing concentric rings
+        const ringSize = 18 + (Math.sin(t * 10) * 0.5 + 0.5) * 10;
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(targetX - 25, targetY, ringSize, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Neon Glow Pointer Arrow
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = "#38BDF8";
+        ctx.beginPath();
+        ctx.moveTo(arrowX - 10, arrowY);
+        ctx.lineTo(arrowX - 35, arrowY - 14);
+        ctx.lineTo(arrowX - 30, arrowY - 5);
+        ctx.lineTo(arrowX - 70, arrowY - 5);
+        ctx.lineTo(arrowX - 70, arrowY + 5);
+        ctx.lineTo(arrowX - 30, arrowY + 5);
+        ctx.lineTo(arrowX - 35, arrowY + 14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Label Badge
+        if (label) {
+            ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(arrowX - 180, arrowY - 16, 100, 32, 6);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 14px 'JetBrains Mono', monospace";
+            ctx.fillText(label, arrowX - 170, arrowY + 5);
+        }
         ctx.restore();
     }
 
@@ -1826,6 +2057,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
 
+        // 3D 4K Visual Effects (Perspective Vanishing Point Floor Grid & Digital Matrix Rain)
+        draw3DPerspectiveGrid(ctx, W, H, t);
+        drawCyberMatrixRain(ctx, W, H, t);
+
         // Render 3D Motion Video (if loaded)
         const bgVid = sqlShortState.backgroundVideoElement;
         if (bgVid && sqlShortState.backgroundVideoLoaded && bgVid.readyState >= 2) {
@@ -1861,19 +2096,34 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.font = "bold 32px 'Segoe UI', sans-serif";
         ctx.fillText("👑 @Code_With_Mangesh", 60, 68);
 
+        // 4K 60FPS High-Tech Engine Badge
+        ctx.fillStyle = "rgba(16, 185, 129, 0.20)";
+        ctx.beginPath();
+        ctx.roundRect(W - 470, 32, 185, 48, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 16px 'JetBrains Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("⚡ 4K 60FPS 3D", W - 378, 62);
+        ctx.textAlign = "left";
+
         ctx.fillStyle = "#F59E0B";
         ctx.beginPath();
         ctx.roundRect(W - 270, 32, 210, 48, 12);
         ctx.fill();
         ctx.fillStyle = "#000000";
-        ctx.font = "bold 20px 'Segoe UI', sans-serif";
+        ctx.font = "bold 19px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🔥 " + (p.difficulty || "FAANG SQL").toUpperCase(), W - 165, 63);
+        const modeTag = (sqlShortState.creationMode || "faang").replace("_", " ").toUpperCase();
+        ctx.fillText("🔥 " + (p.difficulty ? p.difficulty.toUpperCase() : modeTag), W - 165, 63);
         ctx.textAlign = "left";
 
         ctx.fillStyle = "#94A3B8";
         ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        const subtitleBar = p.title ? p.title.slice(0, 46) : "Interactive AI SQL Interview Masterclass";
+        const subtitleBar = p.title ? p.title.slice(0, 46) : "Universal Tech Architecture Masterclass";
         ctx.fillText(`⚡ ${subtitleBar}`, 60, 125);
 
         // Visual Audio Waveform Equalizer Bars
@@ -2391,7 +2641,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                     renderSqlSyntaxLine(ctx, allLines[i], 160, lineY);
                 }
 
-                // Laser Focus Box on active clause
+                // High-Tech Laser Scanner Beam & Kinetic Arrow Tracking
+                drawLaserScannerBeam(ctx, 150, 420, W - 300, 320, t);
                 const highlightY = 450 + Math.min(linesToShow - 1, 2) * 50;
                 ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
                 ctx.beginPath();
@@ -2402,6 +2653,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.stroke();
 
                 drawPhotonSparks(ctx, W - 140, highlightY, "#38BDF8", t);
+                drawKineticNeonArrow(ctx, W - 140, highlightY, t, p.arrow_target || "TARGET CLAUSE");
 
                 // 3. Engine Simulation Intermediate Output Glass Card
                 drawGlassTile(ctx, 60, 880, W - 120, 600, 20, "#10B981", false, true, 1.0);
@@ -2908,16 +3160,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         pauseSqlShortPlay();
 
-        // Enforce strictly <60s for YouTube Shorts / Reels standard
+        // Enforce strictly <= 58.0s for YouTube Shorts / Reels compliance (<60s)
         let totalDuration = durationSec;
         if (!totalDuration || totalDuration > 60) {
-            if (audioEl && audioEl.duration && !isNaN(audioEl.duration) && isFinite(audioEl.duration) && audioEl.duration > 5) {
-                totalDuration = Math.min(58.5, audioEl.duration);
-            } else {
-                totalDuration = Math.min(58.5, sqlShortState.maxDuration || 56.0);
-            }
+            totalDuration = sqlShortState.maxDuration || 56.0;
         }
-        totalDuration = Math.min(59.5, totalDuration);
+        totalDuration = Math.min(58.0, totalDuration);
 
         if (celebrationBox) celebrationBox.style.display = "none";
         if (pContainer) pContainer.style.display = "block";
@@ -3128,6 +3376,8 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.insertPromptScenario = insertPromptScenario;
     window.openAgentBrainModal = openAgentBrainModal;
     window.closeAgentBrainModal = closeAgentBrainModal;
+    window.setSqlCreationMode = setSqlCreationMode;
+    window.triggerModelTraining = triggerModelTraining;
 
     // Auto-initialize telemetry on load
     if (typeof document !== 'undefined') {
