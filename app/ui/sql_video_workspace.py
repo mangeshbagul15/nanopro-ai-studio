@@ -34,11 +34,28 @@ def get_sql_video_workspace_html() -> str:
     }
     .sql-studio-grid {
         display: grid;
-        grid-template-columns: minmax(360px, 1.15fr) 340px minmax(440px, 1.25fr);
+        grid-template-columns: minmax(320px, 1.15fr) 340px minmax(340px, 1.25fr);
         width: 100%;
-        min-width: 1140px;
+        max-width: 100%;
         gap: 20px;
         align-items: start;
+        box-sizing: border-box;
+    }
+    @media (max-width: 1220px) {
+        .sql-studio-grid {
+            grid-template-columns: minmax(300px, 1fr) 340px;
+        }
+        #exportCardContainer {
+            grid-column: 1 / -1;
+        }
+    }
+    @media (max-width: 768px) {
+        .sql-studio-grid {
+            grid-template-columns: 1fr;
+        }
+        #exportCardContainer {
+            grid-column: 1;
+        }
     }
     @keyframes laserPulse {
         0% { background-position: 0% 50%; }
@@ -68,12 +85,27 @@ def get_sql_video_workspace_html() -> str:
         background: #0B132B;
         border: 1.5px solid #1E293B;
         border-radius: 10px;
-        padding: 8px 10px;
-        min-width: 115px;
+        padding: 8px 6px;
+        min-width: 100px;
+        max-width: 140px;
         flex: 1;
         text-align: center;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: default;
+        overflow: hidden;
+        word-break: break-word;
+        box-sizing: border-box;
+    }
+    .agent-node .agent-badge {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 8px;
+        padding: 1px 4px;
+        border-radius: 3px;
+        box-sizing: border-box;
     }
     .agent-node.active {
         border-color: #38BDF8 !important;
@@ -138,8 +170,9 @@ def get_sql_video_workspace_html() -> str:
     /* High-Visibility Selected States for Voice Language Buttons */
     .sql-lang-btn {
         flex: 1;
-        font-size: 11px;
-        padding: 8px 4px;
+        font-size: 10.5px;
+        line-height: 1.2;
+        padding: 7px 4px;
         border-radius: 6px;
         cursor: pointer;
         border: 1.5px solid #1E2D4A !important;
@@ -149,8 +182,14 @@ def get_sql_video_workspace_html() -> str:
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        gap: 4px;
         font-weight: 600;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        text-align: center;
+        min-width: 0;
+        box-sizing: border-box;
     }
     .sql-lang-btn:hover {
         border-color: #38BDF8 !important;
@@ -170,8 +209,9 @@ def get_sql_video_workspace_html() -> str:
     /* High-Visibility Selected States for Subtitle Buttons */
     .sql-text-btn {
         flex: 1;
-        font-size: 11px;
-        padding: 8px 4px;
+        font-size: 10.5px;
+        line-height: 1.2;
+        padding: 7px 4px;
         border-radius: 6px;
         cursor: pointer;
         border: 1.5px solid #1E2D4A !important;
@@ -181,8 +221,14 @@ def get_sql_video_workspace_html() -> str:
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        gap: 4px;
         font-weight: 600;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        text-align: center;
+        min-width: 0;
+        box-sizing: border-box;
     }
     .sql-text-btn:hover {
         border-color: #F59E0B !important;
@@ -202,8 +248,9 @@ def get_sql_video_workspace_html() -> str:
     /* High-Visibility Selected States for Avatar Toggle Buttons */
     .sql-avatar-btn {
         flex: 1;
-        font-size: 11px;
-        padding: 8px 4px;
+        font-size: 10.5px;
+        line-height: 1.2;
+        padding: 7px 4px;
         border-radius: 6px;
         cursor: pointer;
         border: 1.5px solid #1E2D4A !important;
@@ -213,8 +260,14 @@ def get_sql_video_workspace_html() -> str:
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        gap: 4px;
         font-weight: 600;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        text-align: center;
+        min-width: 0;
+        box-sizing: border-box;
     }
     .sql-avatar-btn:hover {
         border-color: #818CF8 !important;
@@ -229,8 +282,9 @@ def get_sql_video_workspace_html() -> str:
     }
     /* High-Visibility Selected States for Creation Mode Buttons */
     .sql-mode-btn {
-        font-size: 11px;
-        padding: 8px 8px;
+        font-size: 10px;
+        line-height: 1.25;
+        padding: 6px 6px;
         border-radius: 6px;
         cursor: pointer;
         border: 1.5px solid #1E2D4A !important;
@@ -240,8 +294,20 @@ def get_sql_video_workspace_html() -> str:
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        gap: 6px;
+        gap: 5px;
         font-weight: 600;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        min-width: 0;
+        box-sizing: border-box;
+        text-align: left;
+    }
+    .sql-mode-btn span:not(.btn-check) {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        word-break: break-word;
     }
     .sql-mode-btn:hover {
         border-color: #38BDF8 !important;
@@ -281,6 +347,17 @@ def get_sql_video_workspace_html() -> str:
     }
     .sql-shorts-container * {
         box-sizing: border-box;
+    }
+    .sql-shorts-container .btn {
+        min-width: 0;
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+    }
+    .pipeline-btn {
+        white-space: nowrap !important;
+        font-size: 10px !important;
+        padding: 3px 8px !important;
+        min-width: 0 !important;
     }
     </style>
 
@@ -324,29 +401,29 @@ def get_sql_video_workspace_html() -> str:
                         </div>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span id="pipelineMasterStatusBadge" style="font-size: 11px; background: rgba(16,185,129,0.15); border: 1.5px solid #10B981; color: #10B981; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span id="pipelineMasterStatusBadge" style="font-size: 10px; background: rgba(16,185,129,0.15); border: 1.5px solid #10B981; color: #10B981; padding: 3px 8px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
                         <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; box-shadow: 0 0 8px #10B981; display: inline-block;"></span>
-                        <span id="pipelineMasterStatusText">NanoPro Manager Active</span>
+                        <span id="pipelineMasterStatusText">NanoPro Active</span>
                     </span>
-                    <span id="pipelineGitHubModelBadge" onclick="openWeightsOptimizerModal()" style="cursor: pointer; font-size: 11px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;" title="View Live Synaptic Weights & AdamW Loss Convergence">
+                    <span id="pipelineGitHubModelBadge" onclick="openWeightsOptimizerModal()" style="cursor: pointer; font-size: 10px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 8px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap; max-width: 100%;" title="View Live Synaptic Weights & AdamW Loss Convergence">
                         <span>🧠</span>
-                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #54 • Loss: 0.0363 • 196 Vectors</span>
+                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #54 • Loss: 0.0363</span>
                     </span>
-                    <button type="button" class="btn btn-secondary" onclick="triggerModelTraining()" id="btnTrainModelNow" style="font-size: 10px; padding: 3px 10px; border-color: #10B981; color: #10B981; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Execute Live Backpropagation & Weight Tuning on GitHub Model">
-                        <span>🚀</span> <span>Train Model Now</span>
+                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="triggerModelTraining()" id="btnTrainModelNow" style="border-color: #10B981; color: #10B981; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Execute Live Backpropagation & Weight Tuning on GitHub Model">
+                        <span>🚀</span> <span>Train Model</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="openWeightsOptimizerModal()" style="font-size: 10px; padding: 3px 10px; border-color: #C084FC; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open Weights Optimizer & AdamW Tuning Studio">
+                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="openWeightsOptimizerModal()" style="border-color: #C084FC; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open Weights Optimizer & AdamW Tuning Studio">
                         <span>⚡</span> <span>Weights Optimizer</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="openElevenLabsModal()" style="font-size: 10px; padding: 3px 10px; border-color: #8B5CF6; color: #C4B5FD; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open ElevenLabs Humanlike AI Voice Studio">
-                        <span>🎙️</span> <span>ElevenLabs Voice AI</span>
+                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="openElevenLabsModal()" style="border-color: #8B5CF6; color: #C4B5FD; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open ElevenLabs Humanlike AI Voice Studio">
+                        <span>🎙️</span> <span>ElevenLabs Voice</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="openAgentBrainModal()" style="font-size: 10px; padding: 3px 10px; border-color: #38BDF8; color: #38BDF8; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="View 12 Specialist Agents, Thoughts & Perfectionist Audit">
-                        <span>🧠</span> <span>12 Agents Brain Matrix &amp; Audit</span>
+                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="openAgentBrainModal()" style="border-color: #38BDF8; color: #38BDF8; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="View 12 Specialist Agents, Thoughts & Perfectionist Audit">
+                        <span>🧠</span> <span>12 Agents Matrix</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="toggleTelemetry()" style="font-size: 10px; padding: 3px 9px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;" title="Toggle Telemetry Sidebar">
-                        ◨ Workspace Expanded
+                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="toggleTelemetry()" style="border-color: #38BDF8; color: #38BDF8; font-weight: 700;" title="Toggle Telemetry Sidebar">
+                        ◨ Toggle Sidebar
                     </button>
                 </div>
             </div>
@@ -741,20 +818,20 @@ def get_sql_video_workspace_html() -> str:
 
                     <!-- Direct Download Button Group -->
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
-                            <span style="font-size: 18px;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD 9:16 SHORT / REEL (&lt;60s) (WITH SYNCHRONIZED VOICE)</span>
+                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px 10px; font-weight: 900; font-size: 12px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35); white-space: normal; line-height: 1.3; text-align: center; word-break: break-word; box-sizing: border-box;">
+                            <span style="font-size: 18px; flex-shrink: 0;">📥</span>
+                            <span id="exportBtnLabel">DOWNLOAD 9:16 REEL (&lt;60s) (VOICE SYNCED)</span>
                         </button>
 
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(15)" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="15-sec quick test video with audio">
-                                ⚡ Quick 15s Test
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(15)" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #38BDF8; color: #38BDF8; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="15-sec quick test video with audio">
+                                ⚡ Quick 15s
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #10B981; color: #10B981;" title="Download Teacher Audio (MP3)">
-                                🎵 Save Voice (MP3)
+                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #10B981; color: #10B981; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="Download Teacher Audio (MP3)">
+                                🎵 Save Voice
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;" title="Save current frame as HD PNG">
-                                📸 Save Frame (PNG)
+                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #F59E0B; color: #F59E0B; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="Save current frame as HD PNG">
+                                📸 Save Frame
                             </button>
                         </div>
                     </div>
@@ -880,7 +957,7 @@ def get_sql_video_workspace_html() -> str:
             <!-- Modal Content (Scrollable) -->
             <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
                 <!-- Live Telemetry Stats Bar -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
                     <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
                         <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Current Epoch</div>
                         <div id="modalOptimizerEpoch" style="font-size: 18px; font-weight: 800; color: #C084FC; font-family: monospace;">Epoch #54</div>
@@ -981,7 +1058,7 @@ def get_sql_video_workspace_html() -> str:
                 </div>
 
                 <!-- Model & Category Grid -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
                     <!-- Model Selector -->
                     <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
                         <label style="font-size: 12px; font-weight: 700; color: #38BDF8; display: block; margin-bottom: 8px;">

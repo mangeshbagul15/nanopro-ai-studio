@@ -2467,10 +2467,10 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#64748B";
                 ctx.font = "italic 23px monospace";
-                ctx.fillText(`/* Step 1: Inspect ${p.table_name || 'table'} & identify key columns */`, 90, 1105);
-                ctx.fillText(`/* Step 2: ${pipelineStages[1] ? pipelineStages[1].name + ' — ' + pipelineStages[1].sub : 'Analyze partitions and candidate rows'} */`, 90, 1155);
-                ctx.fillText(`/* Step 3: ${pipelineStages[2] ? pipelineStages[2].name + ' — ' + pipelineStages[2].sub : 'Build core window/aggregate specification'} */`, 90, 1205);
-                ctx.fillText(`/* Step 4: ${pipelineStages[3] ? pipelineStages[3].name + ' — ' + pipelineStages[3].sub : 'Filter target records & verify output'} */`, 90, 1255);
+                ctx.fillText(fitTextToWidth(ctx, `/* Step 1: Inspect ${p.table_name || 'table'} & identify key columns */`, W - 190), 90, 1105);
+                ctx.fillText(fitTextToWidth(ctx, `/* Step 2: ${pipelineStages[1] ? pipelineStages[1].name + ' — ' + pipelineStages[1].sub : 'Analyze partitions and candidate rows'} */`, W - 190), 90, 1155);
+                ctx.fillText(fitTextToWidth(ctx, `/* Step 3: ${pipelineStages[2] ? pipelineStages[2].name + ' — ' + pipelineStages[2].sub : 'Build core window/aggregate specification'} */`, W - 190), 90, 1205);
+                ctx.fillText(fitTextToWidth(ctx, `/* Step 4: ${pipelineStages[3] ? pipelineStages[3].name + ' — ' + pipelineStages[3].sub : 'Filter target records & verify output'} */`, W - 190), 90, 1255);
 
                 // Learning Goal Glass Pill
                 drawGlassTile(ctx, 90, 1370, W - 180, 80, 14, "#38BDF8", false, true, 1.0);
@@ -2655,13 +2655,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#10B981";
                 ctx.font = "bold 27px 'Segoe UI', sans-serif";
-                ctx.fillText("🎯 STRATEGY VALIDATED BY SENIOR INTERVIEWERS:", 90, 1205);
+                ctx.fillText(fitTextToWidth(ctx, "🎯 STRATEGY VALIDATED BY SENIOR INTERVIEWERS:", W - 180), 90, 1205);
 
                 ctx.fillStyle = "#F8FAFC";
                 ctx.font = "24px 'Segoe UI', sans-serif";
-                ctx.fillText("• Explaining the execution pipeline demonstrates engineering depth.", 90, 1265);
-                ctx.fillText("• Eliminates redundant subqueries, temporary tables, and cartesian joins.", 90, 1320);
-                ctx.fillText("• Next step: Let's write the query step-by-step in our SQL editor!", 90, 1375);
+                ctx.fillText(fitTextToWidth(ctx, "• Explaining the execution pipeline demonstrates engineering depth.", W - 180), 90, 1265);
+                ctx.fillText(fitTextToWidth(ctx, "• Eliminates redundant subqueries, temporary tables, and cartesian joins.", W - 180), 90, 1320);
+                ctx.fillText(fitTextToWidth(ctx, "• Next step: Let's write the query step-by-step in our SQL editor!", W - 180), 90, 1375);
 
                 ctx.restore();
             }
@@ -2958,7 +2958,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 ctx.fillStyle = "#FFFFFF";
                 ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText("✅ 100% Accurate & Duplicate-Safe • Production-Ready FAANG Query!", 90, 1435);
+                ctx.fillText(fitTextToWidth(ctx, "✅ 100% Accurate & Duplicate-Safe • Production-Ready FAANG Query!", W - 180), 90, 1435);
 
                 drawPhotonSparks(ctx, W - 140, 1260, "#10B981", t);
 
@@ -3029,15 +3029,33 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.textAlign = "left";
     }
 
-    // Syntax Highlight Helper
-    function renderSqlSyntaxLine(ctx, text, startX, lineY) {
-        const tokens = text.split(/(\s+|[(),;])/);
+    // Syntax Highlight Helper with Dynamic Responsive Auto-Scaling & Boundary Clamping
+    function renderSqlSyntaxLine(ctx, text, startX, lineY, maxWidth) {
+        if (!text) return;
+        const maxW = maxWidth || (1080 - startX - 90); // Never overflow canvas boundary (W=1080)
+        let baseFontSize = 24;
+        ctx.font = "bold " + baseFontSize + "px monospace";
+        let measuredWidth = ctx.measureText(text).width;
+
+        // Auto-scale font down if line exceeds max available width
+        if (measuredWidth > maxW) {
+            const scale = maxW / measuredWidth;
+            baseFontSize = Math.max(14, Math.floor(baseFontSize * scale));
+            ctx.font = "bold " + baseFontSize + "px monospace";
+            measuredWidth = ctx.measureText(text).width;
+        }
+
+        // Truncate cleanly if line exceeds width even at minimum 14px font
+        let renderText = text;
+        if (measuredWidth > maxW) {
+            renderText = fitTextToWidth(ctx, text, maxW);
+        }
+
+        const tokens = renderText.split(/(\s+|[(),;])/);
         let currX = startX;
 
-        const KEYWORDS = ["SELECT", "FROM", "WHERE", "ORDER", "BY", "DESC", "ASC", "OVER", "PARTITION", "ROWS", "BETWEEN", "UNBOUNDED", "PRECEDING", "AND", "CURRENT", "ROW", "WITH", "AS", "GROUP", "HAVING", "LIMIT", "OFFSET", "JOIN", "LEFT", "ON", "DATE", "ROUND", "COUNT", "MIN", "MAX"];
-        const FUNCTIONS = ["DENSE_RANK", "RANK", "ROW_NUMBER", "SUM", "LAG", "LEAD", "AVG"];
-
-        ctx.font = "bold 26px monospace";
+        const KEYWORDS = ["SELECT", "FROM", "WHERE", "ORDER", "BY", "DESC", "ASC", "OVER", "PARTITION", "ROWS", "BETWEEN", "UNBOUNDED", "PRECEDING", "AND", "CURRENT", "ROW", "WITH", "AS", "GROUP", "HAVING", "LIMIT", "OFFSET", "JOIN", "LEFT", "ON", "DATE", "ROUND", "COUNT", "MIN", "MAX", "QUALIFY", "CASE", "WHEN", "THEN", "ELSE", "END", "DEF", "RETURN", "IMPORT", "CLASS", "ASYNC", "AWAIT", "CREATE", "TABLE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE"];
+        const FUNCTIONS = ["DENSE_RANK", "RANK", "ROW_NUMBER", "SUM", "LAG", "LEAD", "AVG", "COALESCE", "NULLIF", "CAST", "PRINT", "LEN"];
 
         tokens.forEach(tok => {
             const clean = tok.toUpperCase().trim();
@@ -3284,7 +3302,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
         }
         if (btn) btn.disabled = true;
-        if (btnLabel) btnLabel.innerText = `⏳ Shorts / Reels व्हिडिओ रेंडर होत आहे (${Math.round(totalDuration)}s <60s)...`;
+        if (btnLabel) btnLabel.innerText = `⏳ Rendering 9:16 Reel (${Math.round(totalDuration)}s)...`;
 
         // Audio Multiplexing Setup
         let audioTracks = [];
@@ -3365,7 +3383,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                     }
                 }
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 SHORT / REEL (<60s) (WITH SYNCHRONIZED VOICE)";
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 REEL (<60s) (VOICE SYNCED)";
             }, 300);
         };
 
