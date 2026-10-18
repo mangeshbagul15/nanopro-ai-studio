@@ -85,14 +85,23 @@ ELEVENLABS_VOICE_CATALOG = [
 
 USE_CASE_PRESETS = {
     "indian_tech_youtuber": {
-        "title": "🇮🇳 Premium Indian Hindi Tech YouTuber (28-32y Male)",
-        "voice_id": "TX3LPaxmHKxFdv7VOQHJ",  # Liam / Aarav
-        "model_id": "eleven_multilingual_v2",
-        "stability": 0.50,
+        "title": "🇮🇳 Premium Indian Hindi Tech YouTuber (25-35y Male • Eleven v4)",
+        "voice_id": "TX3LPaxmHKxFdv7VOQHJ",  # Liam / Aarav (25-35y Indian Tech Educator)
+        "model_id": "eleven_v4",             # Flagship Eleven v4 Architecture
+        "fallback_model_id": "eleven_multilingual_v2",
+        "stability": 0.55,
         "similarity_boost": 0.85,
-        "style": 0.20,
-        "pacing_words_per_sec": 2.4,
-        "description": "Warm, confident, conversational 28-32y Indian software engineer and YouTube Shorts creator. Fluent Hindi-English code-switching and studio-quality technical delivery."
+        "style": 0.0,
+        "pacing_words_per_sec": 2.4,         # Medium-Fast Pacing
+        "language": "Hindi + English technical words",
+        "voice_gender": "Indian Male (25-35 years)",
+        "tone": "Friendly + Professional",
+        "emotion": "Curious + Confident",
+        "energy": "Medium-High",
+        "accent": "Natural Indian Hindi",
+        "pronunciation": "Crystal-clear SQL, Python, JOIN, DENSE_RANK terminology",
+        "delivery": "Coding teacher + Tech creator",
+        "description": "25-35y Indian male software engineer & YouTube creator. Friendly + professional tone, curious + confident delivery, medium-high energy, natural Indian Hindi accent with crystal-clear SQL, Python, JOIN pronunciation."
     },
     "videos": {
         "title": "🎬 Videos, YouTube Shorts & Instagram Reels",
@@ -218,9 +227,21 @@ class ElevenLabsVoiceEngine:
             "use_cases": USE_CASE_PRESETS,
             "models": [
                 {
+                    "id": "eleven_v4",
+                    "name": "Eleven v4 (Flagship Next-Gen)",
+                    "description": "ElevenLabs flagship architecture. Reads scripts like a human voice actor with context-aware emotional nuance, natural intent, and dynamic speech delivery across 90+ languages.",
+                    "latency": "Standard (~500ms)"
+                },
+                {
+                    "id": "eleven_v4_turbo",
+                    "name": "Eleven v4 Turbo",
+                    "description": "Low-latency (~100ms) variant of Eleven v4 tailored for real-time conversational voice agents and rapid vertical reel synthesis.",
+                    "latency": "Real-time (~100ms)"
+                },
+                {
                     "id": "eleven_multilingual_v2",
                     "name": "Eleven Multilingual v2",
-                    "description": "Most natural, emotionally rich speech across 29 languages (including Marathi, Hindi, English).",
+                    "description": "Proven natural, emotionally rich speech across 29 languages (including Marathi, Hindi, English).",
                     "latency": "Standard (~600ms)"
                 },
                 {
@@ -261,14 +282,15 @@ class ElevenLabsVoiceEngine:
         self,
         text: str,
         voice_id: Optional[str] = None,
-        model_id: str = "eleven_multilingual_v2",
-        stability: float = 0.5,
-        similarity_boost: float = 0.75,
+        model_id: str = "eleven_v4",
+        stability: float = 0.55,
+        similarity_boost: float = 0.85,
         style: float = 0.15,
         output_filename: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Synthesizes humanlike speech using ElevenLabs Text-to-Speech API.
+        Supports Eleven v4, Eleven v4 Turbo, and Eleven Multilingual v2.
         Saves the resulting MP3 file and returns metadata.
         """
         k = self._resolve_api_key()
@@ -278,15 +300,25 @@ class ElevenLabsVoiceEngine:
         v_id = voice_id or self.default_voice_id
         url = f"{self.base_url}/text-to-speech/{v_id}"
 
-        payload = {
-            "text": text,
-            "model_id": model_id,
-            "voice_settings": {
+        # Eleven v4 models use stability and similarity_boost (style/speed sliders not supported on v4)
+        if model_id.startswith("eleven_v4"):
+            voice_settings = {
+                "stability": stability,
+                "similarity_boost": similarity_boost,
+                "use_speaker_boost": True
+            }
+        else:
+            voice_settings = {
                 "stability": stability,
                 "similarity_boost": similarity_boost,
                 "style": style,
                 "use_speaker_boost": True
             }
+
+        payload = {
+            "text": text,
+            "model_id": model_id,
+            "voice_settings": voice_settings
         }
         json_data = json.dumps(payload).encode("utf-8")
 

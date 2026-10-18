@@ -948,25 +948,35 @@ def get_sql_video_workspace_html() -> str:
 
             <!-- Modal Content (Scrollable) -->
             <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
-                <!-- Highlighted Persona Card: 28-32y Indian Male Tech Educator -->
+                <!-- Highlighted Persona Card: 25-35y Indian Male Tech Educator -->
                 <div style="background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(16,185,129,0.12)); border: 2px solid #10B981; border-radius: 12px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 24px;">🇮🇳</span>
+                            <span style="font-size: 26px;">🇮🇳</span>
                             <div>
-                                <div style="font-size: 14px; font-weight: 800; color: #10B981;">INDIAN MALE TECH EDUCATOR &amp; YOUTUBER (28–32 Years Old)</div>
-                                <div style="font-size: 11px; color: #94A3B8;">Native Hindi / Hinglish • Fluent Technical English Terminology • Engaging Shorts Delivery</div>
+                                <div style="font-size: 15px; font-weight: 800; color: #10B981;">INDIAN MALE TECH EDUCATOR &amp; YOUTUBE CREATOR (25–35 Years Old)</div>
+                                <div style="font-size: 11px; color: #94A3B8;">Natural Hindi + English Technical Words • Model: <b>Eleven v4</b> (Flagship) • Edge-TTS Madhur Cascade</div>
                             </div>
                         </div>
-                        <span style="font-size: 11px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid #10B981; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
-                            ✨ Default Primary Persona
+                        <span style="font-size: 11px; background: rgba(16,185,129,0.2); color: #10B981; border: 1.5px solid #10B981; padding: 4px 12px; border-radius: 20px; font-weight: 800;">
+                            ✨ Default Primary Persona (Eleven v4 Active)
                         </span>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; font-size: 11px; color: #CBD5E1; margin-top: 8px;">
-                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">🗣️ <b>Tone:</b> Warm, clear, confident, energetic</div>
-                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">⚡ <b>Pacing:</b> Moderate-fast (+8%), natural pauses</div>
-                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">💡 <b>Pronunciation:</b> Accurate SQL, Python, AWS terms</div>
-                        <div style="background: rgba(15,23,42,0.8); padding: 6px 8px; border-radius: 6px; border: 1px solid #1E293B;">🎙️ <b>Clarity:</b> Studio mic quality, 0% robotic rush</div>
+
+                    <!-- 12-Attribute Specification Matrix Table -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; font-size: 11px; color: #CBD5E1;">
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🗣️ <b>Language:</b> Hindi + English tech terms</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🎙️ <b>Voice:</b> Indian Male (25–35 years)</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🤝 <b>Tone:</b> Friendly + Professional</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">💡 <b>Emotion:</b> Curious + Confident</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">⚡ <b>Speed:</b> Medium-Fast (Reel Pacing)</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🇮🇳 <b>Accent:</b> Natural Indian Hindi</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🔥 <b>Energy:</b> Medium-High</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">⏸️ <b>Pauses:</b> प्रश्नानंतर, महत्त्वाच्या मुद्द्यांनंतर</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">📈 <b>Expression:</b> Natural, engaging cadence</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">💻 <b>Pronunciation:</b> SQL, Python, JOIN स्पष्ट</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">👨‍🏫 <b>Delivery:</b> Coding teacher + Tech creator</div>
+                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #A855F7; color: #C084FC;">🤖 <b>Model:</b> Eleven v4 (Flagship AI)</div>
                     </div>
                 </div>
 
@@ -978,12 +988,14 @@ def get_sql_video_workspace_html() -> str:
                             🤖 ElevenLabs Model Architecture:
                         </label>
                         <select id="modalElevenLabsModelSelect" style="width: 100%; background: #070B16; color: #F8FAFC; border: 1px solid #283C62; border-radius: 6px; padding: 8px; font-size: 12px;">
-                            <option value="eleven_multilingual_v2" selected>eleven_multilingual_v2 (Most Natural Humanlike • 29+ Langs)</option>
-                            <option value="eleven_turbo_v2_5">eleven_turbo_v2_5 (Low Latency ~250ms • High Quality)</option>
-                            <option value="eleven_flash_v2_5">eleven_flash_v2_5 (Super Fast ~75ms • Realtime)</option>
+                            <option value="eleven_v4" selected>⚡ Eleven v4 (Flagship Next-Gen • Context-Aware Emotional Voice AI)</option>
+                            <option value="eleven_v4_turbo">Eleven v4 Turbo (Ultra-Low Latency ~100ms • Real-Time)</option>
+                            <option value="eleven_multilingual_v2">Eleven Multilingual v2 (Proven Natural • 29+ Langs)</option>
+                            <option value="eleven_turbo_v2_5">Eleven Turbo v2.5 (Low Latency ~250ms • High Quality)</option>
+                            <option value="eleven_flash_v2_5">Eleven Flash v2.5 (Super Fast ~75ms • Realtime)</option>
                         </select>
                         <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
-                            Multi-model cascade automatically applies if quota or network requires.
+                            Eleven v4 infers intent, emotional curiosity on questions, and confident delivery from context.
                         </div>
                     </div>
 

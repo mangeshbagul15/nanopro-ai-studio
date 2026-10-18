@@ -3644,7 +3644,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const player = document.getElementById("modalElevenLabsAudioPlayer");
 
         const text = (textEl?.value || "").trim() || "हेलो दोस्तों! क्या आप जानते हैं कि SQL में DENSE_RANK और ROW_NUMBER में क्या फर्क होता है? चलिए 60 सेकंड में समझते हैं!";
-        const model = modelEl?.value || "eleven_multilingual_v2";
+        const model = modelEl?.value || "eleven_v4";
         const cat = catEl?.value || "indian_tech_youtuber";
 
         if (btn) {

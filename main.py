@@ -1551,12 +1551,12 @@ async def api_elevenlabs_save_key(req: ElevenLabsKeyRequest):
 async def api_voice_tts(req: VoiceTTSRequest):
     """Synthesizes high-fidelity humanlike speech using ElevenLabs Voice AI model APIs."""
     from app.core.elevenlabs_voice import elevenlabs_voice_engine, USE_CASE_PRESETS
-    preset = USE_CASE_PRESETS.get(req.use_case or "videos", {})
-    voice_id = req.voice_id or preset.get("voice_id") or "EXAVITQu4vr4xnSDxMaL"
-    model_id = req.model_id or preset.get("model_id") or "eleven_multilingual_v2"
-    stab = req.stability if req.stability is not None else preset.get("stability", 0.5)
-    sim = req.similarity_boost if req.similarity_boost is not None else preset.get("similarity_boost", 0.75)
-    stl = req.style if req.style is not None else preset.get("style", 0.15)
+    preset = USE_CASE_PRESETS.get(req.use_case or "indian_tech_youtuber", {})
+    voice_id = req.voice_id or preset.get("voice_id") or "TX3LPaxmHKxFdv7VOQHJ"
+    model_id = req.model_id or preset.get("model_id") or "eleven_v4"
+    stab = req.stability if req.stability is not None else preset.get("stability", 0.55)
+    sim = req.similarity_boost if req.similarity_boost is not None else preset.get("similarity_boost", 0.85)
+    stl = req.style if req.style is not None else preset.get("style", 0.0)
 
     try:
         res = elevenlabs_voice_engine.generate_speech(
@@ -1573,9 +1573,10 @@ async def api_voice_tts(req: VoiceTTSRequest):
         # Fall back gracefully to Edge TTS if ElevenLabs quota is 0 so creation never fails
         log_event(f"ElevenLabs synthesis notice ({e}). Generating fallback via Microsoft Neural TTS...", level="WARNING", component="ElevenLabs")
         from app.core.neural_tts import neural_tts
-        fb_res = await neural_tts.synthesize_async(text=req.text, language="en")
+        target_lang = getattr(req, "language", None) or "hi"
+        fb_res = await neural_tts.synthesize_async(text=req.text, language=target_lang, voice_gender="male")
         if fb_res.get("status") == "success":
-            fb_res["notice"] = f"ElevenLabs Quota Exceeded/Notice: {e}. Clean audio generated via Microsoft Neural Edge-TTS."
+            fb_res["notice"] = f"ElevenLabs Quota Exceeded/Notice: {e}. Clean audio generated via Microsoft Neural Edge-TTS (Madhur Neural)."
             return JSONResponse(fb_res)
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 

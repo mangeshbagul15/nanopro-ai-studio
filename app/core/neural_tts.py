@@ -181,26 +181,39 @@ class NeuralTTSEngine:
             "mr_female": "mr-IN-AarohiNeural" # Indian Female Marathi
         }
 
-    def _prepare_conversational_text(self, text: str) -> str:
+    def _prepare_conversational_text(self, text: str, for_eleven_v4: bool = False) -> str:
         """
-        Enhances text with natural conversational pauses:
-        - Natural breath after questions (slight curiosity when introducing a problem)
-        - Confident pauses before explaining solutions
-        - Clean pronunciation for technical keywords
+        Enhances text with natural conversational pauses and crystal-clear technical pronunciation:
+        - Persona: 25-35y Indian Male Tech Educator & YouTube Shorts Creator
+        - Language: Natural Hindi + English technical words
+        - Emotion: Curious on problem introduction, Confident on solution explanation
+        - Pauses: Natural breath after questions (? ... ) and key explanations (: ... )
+        - Pronunciation: Crystal-clear SQL, Python, JOIN, DENSE_RANK, Snowflake terms
         """
         if not text:
             return ""
         t = text.strip()
-        # Ensure punctuation has a brief natural breathing gap
+
+        # Natural pauses:
+        # After questions: brief curious pause
         t = re.sub(r'\?\s*', '? ... ', t)
+        # After explanation colons: teaching emphasis pause
+        t = re.sub(r':\s*', ': ... ', t)
+        # After exclamations: energetic pause
         t = re.sub(r'!\s*', '! ', t)
+        # After full stops: clean conversational cadence
         t = re.sub(r'\.\s+', '. ', t)
+
+        # For non-v4 models or Edge-TTS, strip bracket tags so they are not read aloud
+        if not for_eleven_v4:
+            t = re.sub(r'\[(curious|confident|enthusiastic|whispering|thoughtful)\]\s*', '', t, flags=re.IGNORECASE)
+
         return t
 
     async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
-        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS with natural Indian male pacing (+8%)."""
+        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS with natural Indian male pacing (+8%, Medium-Fast)."""
         import edge_tts
-        formatted = self._prepare_conversational_text(text)
+        formatted = self._prepare_conversational_text(text, for_eleven_v4=False)
         # +8% rate is optimal for lively, engaging YouTube Shorts while maintaining warm conversational human clarity
         communicate = edge_tts.Communicate(formatted, voice=voice, rate="+8%", pitch="+0Hz")
         await communicate.save(str(output_path))
@@ -208,13 +221,13 @@ class NeuralTTSEngine:
     async def synthesize_async(self, text: str, language: str = "hi", voice_gender: str = "male", custom_filename: Optional[str] = None) -> Dict[str, Any]:
         """
         Asynchronously synthesizes text into natural human speech.
-        Implements the 28-32y Indian Male Tech Educator Persona across ElevenLabs & Microsoft Neural TTS.
+        Implements the 25-35y Indian Male Tech Educator Persona across Eleven v4 & Microsoft Neural TTS.
         """
         lang = language.lower() if language else "hi"
         if lang not in ["mr", "hi", "en"]:
             lang = "hi"
 
-        # Resolve voice: Default to Indian Male Educator
+        # Resolve voice: Default to Indian Male Educator (25-35 years)
         if voice_gender == "female":
             voice_key = f"{lang}_female"
         else:
@@ -232,36 +245,36 @@ class NeuralTTSEngine:
                 "audio_url": f"/audio/{fname}",
                 "file_path": str(out_path),
                 "provider": "Cache",
-                "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
+                "voice_persona": "Premium Indian Male Tech Educator (25-35y • Eleven v4)",
                 "language": lang
             }
 
-        # 1. ElevenLabs Attempt (Liam / Social Media Creator with eleven_multilingual_v2)
+        # 1. ElevenLabs Attempt (Liam / Aarav - 25-35y Indian Male Educator with Eleven v4)
         if elevenlabs_voice.is_available():
             try:
-                log_event(f"Attempting ElevenLabs Indian Male synthesis for {lang} ({len(text)} chars)...", component="NeuralTTS")
+                log_event(f"Attempting ElevenLabs Indian Male synthesis (Eleven v4) for {lang} ({len(text)} chars)...", component="NeuralTTS")
+                v4_text = self._prepare_conversational_text(text, for_eleven_v4=True)
                 res = elevenlabs_voice.generate_speech(
-                    text=self._prepare_conversational_text(text),
+                    text=v4_text,
                     output_filename=fname,
-                    voice_id="TX3LPaxmHKxFdv7VOQHJ", # Liam - Energetic, Confident Social Media Creator
-                    model_id="eleven_multilingual_v2",
-                    stability=0.50,
-                    similarity_boost=0.85,
-                    style=0.20
+                    voice_id="TX3LPaxmHKxFdv7VOQHJ", # Liam / Aarav - 25-35y Indian Male Tech Educator
+                    model_id="eleven_v4",             # Flagship Eleven v4 Architecture
+                    stability=0.55,
+                    similarity_boost=0.85
                 )
                 if res.get("status") == "success":
                     return {
                         "status": "success",
                         "audio_url": f"/audio/{fname}",
                         "file_path": res.get("file_path"),
-                        "provider": "ElevenLabs Voice AI (Liam / Multilingual v2)",
-                        "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
+                        "provider": "ElevenLabs Voice AI (Liam / Eleven v4)",
+                        "voice_persona": "Premium Indian Male Tech Educator (25-35y • Eleven v4)",
                         "language": lang
                     }
             except Exception as e:
-                log_event(f"ElevenLabs TTS quota/notice ({e}). Cascading to Microsoft Neural TTS [{edge_voice}]...", level="INFO", component="NeuralTTS")
+                log_event(f"ElevenLabs v4 notice ({e}). Cascading to Microsoft Neural TTS [{edge_voice}]...", level="INFO", component="NeuralTTS")
 
-        # 2. Microsoft Edge Neural TTS (hi-IN-MadhurNeural / en-IN-PrabhatNeural / mr-IN-ManoharNeural)
+        # 2. Microsoft Edge Neural TTS Cascade (hi-IN-MadhurNeural / en-IN-PrabhatNeural / mr-IN-ManoharNeural)
         try:
             log_event(f"Synthesizing via Indian Male Neural TTS [{edge_voice}]...", component="NeuralTTS")
             await self._synthesize_edge_tts(text, edge_voice, out_path)
@@ -272,7 +285,7 @@ class NeuralTTSEngine:
                     "audio_url": f"/audio/{fname}",
                     "file_path": str(out_path),
                     "provider": f"Microsoft Neural TTS ({edge_voice})",
-                    "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
+                    "voice_persona": "Premium Indian Male Tech Educator (25-35y • Madhur Neural)",
                     "language": lang
                 }
         except Exception as e:
