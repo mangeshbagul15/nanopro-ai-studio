@@ -1708,6 +1708,173 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
     }
 
+    // ==========================================================================
+    // VIRAL TRENDING 3D DEVELOPER STUDIO CHARACTER ASSETS & COMPOSITOR
+    // ==========================================================================
+    const viralAssets = {
+        thinkingFull: new Image(),
+        explainingFull: new Image(),
+        loaded: false
+    };
+    if (typeof window !== "undefined") {
+        viralAssets.thinkingFull.src = "/assets/avatar/scene_thinking_full.jpg";
+        viralAssets.explainingFull.src = "/assets/avatar/scene_explaining_full.jpg";
+        viralAssets.loaded = true;
+    }
+
+    function drawTrending3DDeveloperStudio(ctx, W, H, p, currentStageIdx, activeStage, t) {
+        let hasImg = false;
+        const charImg = (currentStageIdx <= 2) ? viralAssets.thinkingFull : viralAssets.explainingFull;
+        if (charImg && charImg.complete && charImg.naturalWidth > 0) {
+            ctx.save();
+            ctx.drawImage(charImg, 0, 0, W, H);
+            hasImg = true;
+
+            // 1. Dark Top Gradient for Header & Alert Card Readability
+            const topGrad = ctx.createLinearGradient(0, 0, 0, 420);
+            topGrad.addColorStop(0, "rgba(5, 9, 20, 0.92)");
+            topGrad.addColorStop(0.5, "rgba(5, 9, 20, 0.65)");
+            topGrad.addColorStop(1, "rgba(5, 9, 20, 0.0)");
+            ctx.fillStyle = topGrad;
+            ctx.fillRect(0, 0, W, 420);
+
+            // 2. Translucent Frosted Glass Backing for Content Area
+            const cardBackGrad = ctx.createRadialGradient(W / 2, 600, 50, W / 2, 600, 550);
+            cardBackGrad.addColorStop(0, "rgba(5, 10, 25, 0.82)");
+            cardBackGrad.addColorStop(0.7, "rgba(5, 10, 25, 0.60)");
+            cardBackGrad.addColorStop(1, "rgba(5, 10, 25, 0.0)");
+            ctx.fillStyle = cardBackGrad;
+            ctx.fillRect(0, 220, W, 880);
+
+            // 3. Dark Bottom Gradient for Subtitle Readability
+            const botGrad = ctx.createLinearGradient(0, H - 460, 0, H);
+            botGrad.addColorStop(0, "rgba(5, 9, 20, 0.0)");
+            botGrad.addColorStop(0.4, "rgba(5, 9, 20, 0.82)");
+            botGrad.addColorStop(1, "rgba(5, 9, 20, 0.98)");
+            ctx.fillStyle = botGrad;
+            ctx.fillRect(0, H - 460, W, 460);
+
+            ctx.restore();
+        }
+
+        if (!hasImg) {
+            ctx.fillStyle = "#070B16";
+            ctx.fillRect(0, 0, W, H);
+            draw3DAIMotionEngine(ctx, W, H, t);
+        }
+
+        // Floating Alert Badges in Stages 1 & 2 (BUG, SECURITY, SLOW)
+        if (currentStageIdx <= 2) {
+            drawFloatingAlertBadges(ctx, W, H, t);
+        }
+
+        // Glowing Lightbulb in Stage 3 (Idea / Solution Moment)
+        if (currentStageIdx === 3) {
+            drawGlowingLightbulbIdea(ctx, W, H, t);
+        }
+    }
+
+    function drawFloatingAlertBadges(ctx, W, H, t) {
+        ctx.save();
+        // Floating Bug Alert (Left)
+        const b1Y = 460 + Math.sin(t * 3.5) * 8;
+        drawGlassTile(ctx, 70, b1Y, 200, 68, 16, "#EF4444", true, false, 0.92);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 24px 'Segoe UI', sans-serif";
+        ctx.fillText("BUG ⚠️", 100, b1Y + 44);
+
+        // Floating Security Lock Alert (Right)
+        const b2Y = 410 + Math.cos(t * 3.2) * 8;
+        drawGlassTile(ctx, W - 290, b2Y, 220, 68, 16, "#38BDF8", true, false, 0.92);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 21px 'Segoe UI', sans-serif";
+        ctx.fillText("SECURITY 🔒", W - 265, b2Y + 44);
+
+        // Floating Slow Alert (Lower Right)
+        const b3Y = 600 + Math.sin(t * 4.0 + 1) * 8;
+        drawGlassTile(ctx, W - 260, b3Y, 200, 68, 16, "#F59E0B", true, false, 0.92);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 24px 'Segoe UI', sans-serif";
+        ctx.fillText("SLOW 🐌", W - 235, b3Y + 44);
+        ctx.restore();
+    }
+
+    function drawGlowingLightbulbIdea(ctx, W, H, t) {
+        ctx.save();
+        const bulbX = 660;
+        const bulbY = 230;
+        const pulse = 1.0 + Math.sin(t * 8) * 0.15;
+        ctx.translate(bulbX, bulbY);
+        ctx.scale(pulse, pulse);
+
+        const rad = ctx.createRadialGradient(0, 0, 10, 0, 0, 90);
+        rad.addColorStop(0, "rgba(250, 204, 21, 0.90)");
+        rad.addColorStop(0.5, "rgba(234, 179, 8, 0.40)");
+        rad.addColorStop(1, "rgba(234, 179, 8, 0)");
+        ctx.fillStyle = rad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 90, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = "72px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("💡", 0, 22);
+        ctx.restore();
+    }
+
+    function drawTrendingTopHeader(ctx, W, H, p, t) {
+        const domain = (p.domain || "TECH").toUpperCase();
+        let domainColor = "#F59E0B";
+        if (domain.includes("PY")) domainColor = "#38BDF8";
+        else if (domain.includes("AI")) domainColor = "#818CF8";
+        else if (domain.includes("SQL")) domainColor = "#F59E0B";
+        else domainColor = "#10B981";
+
+        const titleText = p.title || p.question || "Mastering Modern Tech";
+
+        ctx.save();
+        const barY = 40;
+        const barH = 64;
+        ctx.fillStyle = "rgba(10, 16, 32, 0.88)";
+        ctx.beginPath();
+        ctx.roundRect(50, barY, W - 100, barH, 32);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Domain Tag Pill
+        ctx.fillStyle = domainColor;
+        ctx.beginPath();
+        ctx.roundRect(56, barY + 6, 120, barH - 12, 26);
+        ctx.fill();
+        ctx.fillStyle = "#000000";
+        ctx.font = "900 22px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(domain, 116, barY + 41);
+
+        // Title Text
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 25px 'Segoe UI', sans-serif";
+        ctx.fillText(fitTextToWidth(ctx, titleText, W - 320), 195, barY + 42);
+
+        // Equalizer waveform or Channel Tag
+        if (sqlShortState.isPlaying) {
+            ctx.fillStyle = "#10B981";
+            for (let i = 0; i < 6; i++) {
+                const bh = 10 + Math.sin(t * 14 + i * 1.2) * 14;
+                ctx.fillRect(W - 140 + i * 12, barY + (barH / 2 - bh / 2), 5, bh);
+            }
+        } else {
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 17px 'Segoe UI', sans-serif";
+            ctx.textAlign = "right";
+            ctx.fillText("● @codeu", W - 75, barY + 41);
+        }
+        ctx.restore();
+    }
+
     // 1D. Animated Laser Scanner Beam
     function drawLaserScannerBeam(ctx, x, y, w, h, t) {
         ctx.save();
@@ -3275,71 +3442,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             return;
         }
 
-        // 1. Dark Cyber/Fintech Neon Background
-        ctx.fillStyle = "#070B16";
-        ctx.fillRect(0, 0, W, H);
-
-        // Tech grid lines
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.04)";
-        ctx.lineWidth = 2;
-        for (let x = 0; x < W; x += 80) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-        }
-        for (let y = 0; y < H; y += 80) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-        }
-
-        // 3D Motion Background Rendering (60 FPS Native Canvas Shaders)
-        draw3DAIMotionEngine(ctx, W, H, t);
-
-        // Render 3D Motion Video (if loaded)
-        const bgVid = sqlShortState.backgroundVideoElement;
-        if (bgVid && sqlShortState.backgroundVideoLoaded && bgVid.readyState >= 2) {
-            ctx.save();
-            ctx.globalAlpha = 0.35;
-            const bgW = bgVid.videoWidth || 720;
-            const bgH = bgVid.videoHeight || 1280;
-            const cropX = bgW * 0.06;
-            const cropY = bgH * 0.06;
-            const cropW = bgW * 0.88;
-            const cropH = bgH * 0.88;
-            ctx.drawImage(bgVid, cropX, cropY, cropW, cropH, 0, 0, W, H);
-            ctx.restore();
-        }
-
-        // Ambient cyber lighting
-        const radGrad = ctx.createRadialGradient(W / 2, 450, 40, W / 2, 450, 750);
-        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.16)");
-        radGrad.addColorStop(0.5, "rgba(14, 165, 233, 0.06)");
-        radGrad.addColorStop(1, "rgba(7, 11, 22, 0)");
-        ctx.fillStyle = radGrad;
-        ctx.fillRect(0, 0, W, H);
-
-        // Floating Minimalist Modern Header Pill (Zero Template Clutter)
-        ctx.save();
-        ctx.fillStyle = "rgba(11, 17, 32, 0.70)";
-        ctx.beginPath();
-        ctx.roundRect(60, 36, W - 120, 56, 28);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 22px 'Segoe UI', sans-serif";
-        const titleStr = p.title || "Tech Architecture Masterclass";
-        ctx.fillText(fitTextToWidth(ctx, `⚡ ${titleStr}`, W - 260), 90, 72);
-
-        // Visual Audio Waveform Equalizer Bars
-        if (sqlShortState.isPlaying) {
-            ctx.fillStyle = "#10B981";
-            for (let i = 0; i < 6; i++) {
-                const bh = 8 + Math.sin(t * 14 + i * 1.2) * 12;
-                ctx.fillRect(W - 160 + i * 10, 52 + (12 - bh / 2), 4, bh);
-            }
-        }
-        ctx.restore();
-
         // =========================================================================
         // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (<60s Shorts & Reels Standard)
         // =========================================================================
@@ -3372,6 +3474,12 @@ SECOND_HIGHEST_SALARY: 70000`;
             const estIdx = Math.min(6, Math.floor((t / Math.max(1, maxDur)) * 6) + 1);
             currentStageIdx = estIdx;
         }
+
+        // 1. Draw Viral Trending 3D Developer Character Studio Scene
+        drawTrending3DDeveloperStudio(ctx, W, H, p, currentStageIdx, activeStage, t);
+
+        // 2. Draw Trending Top Header Pill
+        drawTrendingTopHeader(ctx, W, H, p, t);
 
         // Audio Chime on Stage Advance
         if (sqlShortState.lastBleepScene !== currentStageIdx && sqlShortState.isPlaying) {

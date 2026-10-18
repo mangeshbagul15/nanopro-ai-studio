@@ -195,6 +195,10 @@ _audio_mount_dir = BASE_DIR / "data" / "audio"
 _audio_mount_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/audio", StaticFiles(directory=str(_audio_mount_dir)), name="audio")
 
+_assets_mount_dir = BASE_DIR / "data" / "assets"
+_assets_mount_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/assets", StaticFiles(directory=str(_assets_mount_dir)), name="assets")
+
 # Pydantic Request Models
 class VoiceInteractRequest(BaseModel):
     transcript: Optional[str] = None
