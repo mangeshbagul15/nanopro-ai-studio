@@ -10480,17 +10480,18 @@ Ready for message compilation and automated dispatch.
         /* --- 2. SIDEBAR COLLAPSE & EXPAND --- */
         function initSidebarState() {
             const shell = document.getElementById('app-shell');
+            if (!shell) return;
             if (window.innerWidth <= 768) {
-                // On mobile screens, NEVER add sidebar-collapsed! Main page is 100% full screen.
-                if (shell) {
-                    shell.classList.remove('sidebar-collapsed');
-                    shell.classList.remove('mobile-sidebar-open');
-                }
+                shell.classList.remove('sidebar-collapsed');
+                shell.classList.remove('mobile-sidebar-open');
                 return;
             }
-            const isCollapsed = localStorage.getItem('nanopro_sidebar_collapsed') === 'true';
-            if (shell && isCollapsed) {
+            // Default to fully open sidebar on desktop so all left features are visible!
+            const isExplicitlyCollapsed = localStorage.getItem('nanopro_sidebar_collapsed') === 'force_collapsed';
+            if (isExplicitlyCollapsed) {
                 shell.classList.add('sidebar-collapsed');
+            } else {
+                shell.classList.remove('sidebar-collapsed');
             }
         }
         function toggleMobileSidebar(forceState) {
@@ -10515,7 +10516,7 @@ Ready for message compilation and automated dispatch.
                 return;
             }
             const collapsed = shell.classList.toggle('sidebar-collapsed');
-            localStorage.setItem('nanopro_sidebar_collapsed', collapsed ? 'true' : 'false');
+            localStorage.setItem('nanopro_sidebar_collapsed', collapsed ? 'force_collapsed' : 'false');
             logLocal('UI', 'Sidebar collapsed: ' + collapsed);
         }
 
@@ -11195,8 +11196,35 @@ function navigateHistory(direction) {
                 if (idx !== -1) historyIndex = idx;
                 isNavigatingHistory = false;
                 updateHistoryButtons();
+            } else {
+                const targetHash = (window.location.hash || '').replace('#', '').trim();
+                if (targetHash && document.getElementById('view-' + targetHash)) {
+                    switchView(targetHash, true);
+                }
             }
         });
+
+        window.addEventListener('hashchange', () => {
+            const targetHash = (window.location.hash || '').replace('#', '').trim();
+            if (targetHash && document.getElementById('view-' + targetHash) && currentActiveView !== targetHash) {
+                switchView(targetHash, true);
+            }
+        });
+
+        // Instant deep link hash activation on page boot
+        if (typeof document !== 'undefined') {
+            const activateInitialHash = () => {
+                const initHash = (window.location.hash || '').replace('#', '').trim();
+                if (initHash && document.getElementById('view-' + initHash)) {
+                    switchView(initHash, true);
+                }
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', activateInitialHash);
+            } else {
+                activateInitialHash();
+            }
+        }
 
         function reloadActiveView() {
             logLocal('Navigation', 'Reloading active view: ' + currentActiveView);

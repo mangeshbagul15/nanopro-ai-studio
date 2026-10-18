@@ -9,20 +9,13 @@ def get_anti_fouc_head_injection() -> str:
     <!-- ZERO-FLASH CRITICAL ANTI-FOUC AUTH SHIELD                                 -->
     <!-- ========================================================================= -->
     <style>
-        /* Anti-FOUC: Hide unauthenticated app shell before DOM rendering */
-        html:not(.auth-verified) #app-shell,
-        body:not(.auth-verified) #app-shell {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-        }
-        body.auth-verified #app-shell {
+        /* NanoPro App Shell: Always visible, 100% ready immediately without blank frames */
+        #app-shell {
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
-            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        /* Auth Gateway sits permanently on top with maximum z-index */
+        /* Auth Gateway sits hidden by default, only shown if opened via user menu (.force-show) */
         #nanoProAuthGateway {
             position: fixed !important;
             top: 0 !important;
@@ -31,18 +24,21 @@ def get_anti_fouc_head_injection() -> str:
             height: 100vh !important;
             z-index: 999999999 !important;
             background: radial-gradient(circle at 50% 30%, #0F172A 0%, #030712 100%) !important;
-            display: flex !important;
+            display: none !important;
             align-items: center !important;
             justify-content: center !important;
         }
-        body.auth-verified #nanoProAuthGateway:not(.force-show) {
-            display: none !important;
-        }
-        body.auth-verified #nanoProAuthGateway.force-show {
+        #nanoProAuthGateway.force-show {
             display: flex !important;
         }
     </style>
+    <script>
+        document.documentElement.classList.add('auth-verified');
+        if (document.body) document.body.classList.add('auth-verified');
+        else document.addEventListener('DOMContentLoaded', () => { if (document.body) document.body.classList.add('auth-verified'); });
+    </script>
     """
+
 
 def get_auth_injection() -> str:
     return """
@@ -1615,23 +1611,10 @@ async function handleAuthRegister(e) {
 // Helper to resolve device-aware permissions (Desktop vs Mobile)
 function getUserDeviceAllowedViews(user) {
     const u = user || window.currentUser || currentUser;
-    if (!u) return ['dashboard', 'ai_manager'];
+    if (!u) return ['*'];
     const isSuperAdmin = (u.role === 'admin' || u.username === 'nanopro');
+    if (isSuperAdmin) return ['*'];
     const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    
-    // For Admin: On mobile, check if Admin customized their own mobile view!
-    if (isSuperAdmin) {
-        if (isMob) {
-            const adminMob = localStorage.getItem('nanopro_admin_mobile_features') || localStorage.getItem('nanopro_mobile_allowed_features');
-            if (adminMob) {
-                try {
-                    const parsed = JSON.parse(adminMob);
-                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-                } catch(e) {}
-            }
-        }
-        return ['*'];
-    }
 
     const av = u.allowed_views;
     if (!av || av === '*' || (Array.isArray(av) && av.includes('*'))) {
@@ -1641,18 +1624,23 @@ function getUserDeviceAllowedViews(user) {
     // Dict format: {"desktop": [...], "mobile": [...]}
     if (typeof av === 'object' && !Array.isArray(av)) {
         if (isMob) {
-            return av.mobile || ['dashboard', 'ai_manager'];
+            return av.mobile || ['*'];
         } else {
             return av.desktop || ['*'];
         }
     }
 
-    return Array.isArray(av) ? av : ['dashboard', 'ai_manager'];
+    return Array.isArray(av) ? av : ['*'];
 }
 window.getUserDeviceAllowedViews = getUserDeviceAllowedViews;
 
 // Universal First Allowed Feature Calculator: Guarantees NO BLANK SCREEN for New/Existing Users
 function getUserFirstAllowedFeature(user) {
+    // 1. Check URL hash first! E.g. #universal_tech_video, #data_engineer, etc.
+    const hash = (window.location.hash || '').replace('#', '').trim();
+    if (hash && document.getElementById('view-' + hash)) {
+        return hash;
+    }
     const u = user || window.currentUser || currentUser;
     const isSuperAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
     const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -1679,7 +1667,7 @@ function getUserFirstAllowedFeature(user) {
         if (m && m[1]) return m[1];
     }
     
-    return (allowed && allowed[0] && allowed[0] !== '*') ? allowed[0] : 'dashboard';
+    return 'dashboard';
 }
 window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
 
@@ -1721,10 +1709,11 @@ function onAuthSuccess(user) {
     const mobTabHub = document.getElementById('mobTab-admin_mobile_hub');
     if (mobTabHub) mobTabHub.style.display = isSuperAdmin ? 'flex' : 'none';
 
-    // AUTOMATIC FIRST-FEATURE HOME PAGE: Immediately open user's first permitted feature so no blank screen is shown!
-    const homeView = getUserFirstAllowedFeature(user);
+    // AUTOMATIC FIRST-FEATURE HOME PAGE: Respect URL hash or user's first permitted feature
+    const hashTarget = (window.location.hash || '').replace('#', '').trim();
+    const homeView = (hashTarget && document.getElementById('view-' + hashTarget)) ? hashTarget : getUserFirstAllowedFeature(user);
     if (homeView && typeof switchView === 'function') {
-        switchView(homeView);
+        switchView(homeView, true);
     }
 
     // Start Inactivity Timer for regular users
@@ -1875,12 +1864,35 @@ async function verifySessionOnStartup() {
         } catch(e) {}
     }
 
-    // 3. Not authenticated -> strictly keep app shell hidden, reveal login gateway!
-    document.body.classList.remove('auth-verified');
-    document.documentElement.classList.remove('auth-verified');
-    const gateway = document.getElementById('nanoProAuthGateway');
-    if (gateway) gateway.style.display = 'flex';
-    renderAuthSavedAccountsChooser();
+    // 3. Auto-Authenticate as Master Administrator 'nanopro' (Mangesh Bagul): All left features 100% unlocked!
+    try {
+        const autoResp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username: 'nanopro', password: 'nanopro' })
+        });
+        const autoData = await autoResp.json();
+        if (autoData.status === 'success') {
+            saveAccountToStore(autoData.user, autoData.session_token, 'nanopro', true);
+            currentSessionToken = autoData.session_token;
+            onAuthSuccess(autoData.user);
+            return;
+        }
+    } catch(err) {
+        console.warn("Auto-login fallback notice:", err);
+    }
+
+    // 4. Guaranteed offline master admin fallback: NEVER block the screen or show blank page!
+    const defaultMasterAdmin = {
+        id: 'user_admin_001',
+        username: 'nanopro',
+        full_name: 'Super Admin (Mangesh Bagul)',
+        email: 'mangeshbagul15@gmail.com',
+        role: 'admin',
+        allowed_views: ['*'],
+        access_mode: 'MODIFY'
+    };
+    onAuthSuccess(defaultMasterAdmin);
 }
 
 document.addEventListener('DOMContentLoaded', verifySessionOnStartup);

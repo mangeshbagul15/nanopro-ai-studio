@@ -1619,6 +1619,192 @@ class SqlShortVideoEngine:
                     }
                 ]
 
+            # Topic E: MCP (Model Context Protocol)
+            elif "MCP" in q_up or "MODEL CONTEXT" in q_up or "CONTEXT PROTOCOL" in q_up:
+                suggested_motion_bg = "quantum_nebula"
+                title = "What is MCP? Model Context Protocol Explained"
+                concept_summary = "MCP is an open standard that connects AI models securely to local and remote data sources, databases, and APIs without custom one-off glue code."
+                term_a = "CUSTOM REST API (FRAGILE)"
+                term_b = "MCP STANDARD PROTOCOL"
+                comp_title = "PROPRIETARY CONNECTORS vs OPEN MCP STANDARD"
+                comp_headers = ["CRITERIA", "CUSTOM INTEGRATION", "MODEL CONTEXT PROTOCOL (MCP)"]
+                comp_rows = [
+                    {"feature": "Standardization", "col_a": "N proprietary APIs for N tools", "col_b": "1 standard JSON-RPC protocol"},
+                    {"feature": "Security & Auth", "col_a": "Hardcoded tokens in scripts", "col_b": "Host-controlled granular permissions"},
+                    {"feature": "Two-Way Context", "col_a": "One-way request-response", "col_b": "Dynamic prompts, resources & tools"},
+                    {"feature": "Enterprise Adoption", "col_a": "High maintenance technical debt", "col_b": "Universal Anthropic open standard"}
+                ]
+                syntax_a_title = "MCP SERVER REGISTRATION (FASTMCP / PYTHON)"
+                syntax_a_code = "from mcp.server.fastmcp import FastMCP\n\nmcp = FastMCP('NanoPro-Postgres-Bridge')\n\n@mcp.tool()\ndef query_database(sql: str) -> str:\n    return db.execute_safe(sql)\n\nif __name__ == '__main__':\n    mcp.run()"
+                syntax_a_note = "Standard MCP server exposing authorized database querying tools."
+                syntax_b_title = "MCP CLIENT HOST ORCHESTRATION"
+                syntax_b_code = "# AI Host dynamically queries MCP Server\nclient = MCPClient(server_command=['python', 'db_server.py'])\nawait client.connect()\ntools = await client.list_tools()\nres = await client.call_tool('query_database', {'sql': 'SELECT count(*) FROM orders'})"
+                syntax_b_note = "Standardized client tool execution with zero proprietary adapters."
+                traps_title = "CRITICAL MCP ARCHITECTURAL RULES"
+                traps = [
+                    "⚠️ Trap: Exposing destructive DDL/DML tools over MCP without human-in-the-loop approvals!",
+                    "✅ Rule: Always run MCP servers with least-privilege credentials and strict schema validation!"
+                ]
+                golden_rule = "MCP is the USB-C of Artificial Intelligence! Standardize all database, file, and API access behind MCP."
+                pitch_to_interviewer = "In interviews: Highlight that MCP eliminates exponential connector fragmentation by creating a universal open standard between AI models and external enterprise systems."
+                pro_tip = "💡 Senior AI Systems Pro-Tip: Deploy stateless FastMCP microservices behind local stdio or SSE transport for high-throughput zero-leakage integration!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "What is MCP?",
+                        "speech_hi": "AI अब सीधे Database, Gmail और GitHub से कैसे जुड़ता है? क्या हमें हर टूल के लिए अलग API कोड लिखना पड़ेगा? बिलकुल नहीं! आज समझिए MCP यानी Model Context Protocol!",
+                        "speech_mr": "AI आता थेट Database, Gmail आणि GitHub शी कसा जोडला जातो? प्रत्येकासाठी वेगळा API कोड लिहावा लागतो का? अजिबात नाही! आज जाणून घ्या MCP म्हणजेच Model Context Protocol!",
+                        "speech_en": "How does AI connect directly to your Database, Gmail, and GitHub without custom glue code? Meet MCP: Model Context Protocol!"
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Custom APIs vs MCP",
+                        "speech_hi": "पहले हर Database और App के लिए अलग-अलग कस्टम API लिखनी पड़ती थी। MCP ने USB-C की तरह एक यूनिवर्सल ओपन प्रोटोकॉल बना दिया है, जिससे कोई भी AI मॉडल किसी भी टूल से तुरंत जुड़ जाता है!",
+                        "speech_mr": "पूर्वी प्रत्येक Database आणि App साठी स्वतंत्र API कोड लिहावा लागायचा. MCP ने USB-C सारखा एकच युनिव्हर्सल प्रोटोकॉल दिला आहे, ज्याने कोणताही AI मॉडेल थेट टूलशी कनेक्ट होतो!",
+                        "speech_en": "Previously, integrating tools required brittle custom APIs. MCP establishes a universal open standard, acting as the USB-C for AI model integrations."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "MCP Host & Server Architecture",
+                        "speech_hi": "MCP आर्किटेक्चर में तीन मुख्य घटक हैं: AI Host, MCP Client, और FastMCP Server. मॉडल आवश्यकतानुसार resources, prompts और tools को सुरक्षित JSON-RPC से कॉल करता है!",
+                        "speech_mr": "MCP आर्किटेक्चरमध्ये तीन मुख्य घटक आहेत: AI Host, MCP Client, आणि FastMCP Server. मॉडेल गरजेनुसार टूल्स आणि डेटा सुरक्षितपणे JSON-RPC द्वारे फेच करतो!",
+                        "speech_en": "The MCP architecture bridges the AI Host to standardized MCP Servers via secure JSON-RPC, exposing tools, dynamic resources, and prompt templates."
+                    },
+                    {
+                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "FastMCP Tool Implementation",
+                        "speech_hi": "Python में FastMCP से केवल @mcp.tool डेकोरेटर लगाकर हम किसी भी SQL Query या Business Logic को सुरक्षित AI Tool में बदल सकते हैं!",
+                        "speech_mr": "Python मध्ये FastMCP वापरून फक्त @mcp.tool डेकोरेटर लावून आपण कोणताही SQL Query किंवा API थेट सुरक्षित AI Tool बनवू शकतो!",
+                        "speech_en": "Using FastMCP in Python, you simply decorate functions with @mcp.tool to securely expose enterprise database operations to AI models."
+                    },
+                    {
+                        "id": 5, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Rule & Enterprise Impact",
+                        "speech_hi": "याद रखिए: MCP AI का भविष्य है! अगर AI को आपके डेटा पर सही काम करना है, तो MCP स्टैंडर्ड अपनाना ही सबसे सुरक्षित तरीका है!",
+                        "speech_mr": "लक्षात ठेवा: MCP हा AI चा खरा पाया आहे! AI ला सुरक्षितपणे डेटा आणि टूल्सशी जोडण्यासाठी Model Context Protocol चा वापर करा!",
+                        "speech_en": "Universal Golden Rule: MCP is the USB-C of AI! Standardize your data and tool connectors on MCP for scalable, production-grade agentic architectures!"
+                    }
+                ]
+
+            # Topic F: Fine-Tuning vs RAG
+            elif ("FINE-TUN" in q_up or "FINETUN" in q_up) and ("RAG" in q_up or "TRAIN" in q_up or "DATA" in q_up):
+                suggested_motion_bg = "neural_synapse"
+                title = "RAG vs Fine-Tuning: How to Train AI on Company Data"
+                concept_summary = "RAG provides dynamic open-book retrieval for changing facts, while Fine-Tuning bakes domain tone, syntax style, and vocabulary directly into model weights."
+                term_a = "RAG (DYNAMIC RETRIEVAL)"
+                term_b = "FINE-TUNING (WEIGHT UPDATES)"
+                comp_title = "RAG vs FINE-TUNING DECISION MATRIX"
+                comp_headers = ["CRITERIA", "RAG (RETRIEVAL)", "FINE-TUNING (PEFT/LORA)"]
+                comp_rows = [
+                    {"feature": "Primary Purpose", "col_a": "Access factual knowledge & live docs", "col_b": "Learn tone, format, and syntax"},
+                    {"feature": "Data Updates", "col_a": "Instant: Just add doc to Vector DB", "col_b": "Slow: Requires full retraining run"},
+                    {"feature": "Hallucinations", "col_a": "Extremely low: Cites exact sources", "col_b": "Can still hallucinate facts"},
+                    {"feature": "Compute Cost", "col_a": "Low: Standard Vector DB cost", "col_b": "High: GPU compute & training data"}
+                ]
+                syntax_a_title = "RAG ARCHITECTURE (OPEN BOOK)"
+                syntax_a_code = "# RAG: Retrieve & Inject Facts\ndef answer_with_rag(query):\n    context_chunks = vector_db.similarity_search(query, k=4)\n    prompt = f'Context:\n{context_chunks}\n\nQuestion: {query}'\n    return llm.generate(prompt)"
+                syntax_a_note = "Model receives latest company documents directly in prompt context."
+                syntax_b_title = "LORA / PEFT FINE-TUNING (NEW WEIGHTS)"
+                syntax_b_code = "# Fine-Tuning: Update LoRA Adapters\nfrom peft import LoraConfig, get_peft_model\npeft_config = LoraConfig(r=16, lora_alpha=32, target_modules=['q_proj', 'v_proj'])\nmodel = get_peft_model(base_model, peft_config)\ntrainer.train()"
+                syntax_b_note = "Model weights adapted to output specific technical syntax and internal dialect."
+                traps_title = "RAG vs FINE-TUNING INTERVIEW TRAPS"
+                traps = [
+                    "⚠️ Trap: Fine-Tuning an LLM to teach it facts — fine-tuned models still hallucinate changing facts!",
+                    "✅ Rule: Use RAG for knowledge retrieval; use Fine-Tuning only for specialized tone and format!"
+                ]
+                golden_rule = "RAG is an open-book exam; Fine-Tuning is earning a Master's degree! Use RAG for facts and Fine-Tuning for style."
+                pitch_to_interviewer = "In interviews: State that RAG is the enterprise standard for dynamic knowledge, while LoRA fine-tuning is reserved for proprietary structured output formats."
+                pro_tip = "💡 Senior AI Architect Pro-Tip: Start with Hybrid RAG first. Only fine-tune if the base model fails formatting or reasoning on domain jargon!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "RAG vs Fine-Tuning",
+                        "speech_hi": "AI को अपनी कंपनी का डेटा कैसे सिखाएं? RAG इस्तेमाल करें या Fine-Tuning? यह आज का सबसे बड़ा सवाल है! चलिए 45 सेकंड में इसका सही जवाब समझते हैं!",
+                        "speech_mr": "AI ला तुमच्या कंपनीचा डेटा कसा शिकवायचा? RAG वापरायचे की Fine-Tuning? हा कंपन्यांसमोरचा सर्वात महत्त्वाचा प्रश्न आहे! चला 45 सेकंदात समजून घेऊया!",
+                        "speech_en": "How should you teach AI your company's proprietary data? RAG or Fine-Tuning? Here is the exact architectural breakdown in 45 seconds!"
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "The Core Difference",
+                        "speech_hi": "RAG एक खुली किताब की तरह है, जहाँ AI ज़रूरत पड़ने पर आपकी फाइल्स और डेटाबेस से सही जानकारी पढ़कर उत्तर देता है। जबकि Fine-Tuning से मॉडल के इंटरनल न्यूरल वेट्स बदले जाते हैं!",
+                        "speech_mr": "RAG म्हणजे ओपन-बुक परीक्षा, जिथे AI थेट तुमच्या डेटाबेसमधून माहिती वाचून अचूक उत्तर देतो. तर Fine-Tuning मध्ये मॉडेलच्या न्यूरल वेट्समध्ये बदल केला जातो!",
+                        "speech_en": "RAG gives the AI an open-book exam by retrieving private source documents at query time. Fine-Tuning modifies internal weights to adopt specific style and domain vocabulary."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "Architectural Pipeline Comparison",
+                        "speech_hi": "अगर आपकी कंपनी का डेटा रोज़ बदलता है, जैसे सेल्स, नीतियां या स्टॉक, तो RAG बेस्ट है क्योंकि इसमें कोई री-ट्रेनिंग खर्च नहीं आता!",
+                        "speech_mr": "जर तुमच्या कंपनीचा डेटा रोज बदलत असेल, तर RAG सर्वात बेस्ट आहे, कारण यासाठी कोणतीही महागडी री-ट्रेनिंग करावी लागत नाही!",
+                        "speech_en": "If your enterprise data changes frequently, RAG is vastly superior because updating facts requires zero GPU re-training."
+                    },
+                    {
+                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "When to Use Which",
+                        "speech_hi": "Fine-Tuning केवल तब करें जब आपको AI की टोन, मेडिकल कोडिंग या खास JSON फॉर्मेटिंग सिखानी हो। तथ्यों के लिए हमेशा RAG का उपयोग करें!",
+                        "speech_mr": "Fine-Tuning फक्त तेव्हाच करा जेव्हा AI ला विशिष्ट टोन किंवा खास कोडिंग फॉरमॅट शिकवायचा असेल. अचूक तथ्यांसाठी नेहमी RAG वापरा!",
+                        "speech_en": "Reserve LoRA fine-tuning for specialized tone and strict syntax compliance. Always rely on RAG for dynamic factual knowledge."
+                    },
+                    {
+                        "id": 5, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Rule & Takeaway",
+                        "speech_hi": "गोल्डन रूल: तथ्यों के लिए RAG, और स्टाइल के लिए Fine-Tuning! इस रणनीति से आपकी कंपनी का AI 100% सटीक और किफायती रहेगा!",
+                        "speech_mr": "गोल्डन रुल: अचूक माहितीसाठी RAG आणि स्टाईलसाठी Fine-Tuning! हा नियम पाळल्यास तुमचा AI खर्च वाचेल आणि अचूकता 100% राहील!",
+                        "speech_en": "Universal Golden Rule: Use RAG for factual knowledge and Fine-Tuning for style! That is the winning enterprise AI architecture!"
+                    }
+                ]
+
+            # Topic G: Local LLM vs Cloud LLM (Ollama vs Cloud AI)
+            elif ("OLLAMA" in q_up or "LOCAL LLM" in q_up or "LOCAL MODEL" in q_up) and ("CLOUD" in q_up or "API" in q_up or "GROQ" in q_up or "GEMINI" in q_up):
+                suggested_motion_bg = "silicon_laser"
+                title = "Local LLM vs Cloud LLM: Ollama vs Cloud AI"
+                concept_summary = "Local LLMs running via Ollama/vLLM guarantee 100% privacy and zero subscription costs, while Cloud LLMs deliver cutting-edge reasoning and massive context windows."
+                term_a = "LOCAL LLM (OLLAMA / GPU)"
+                term_b = "CLOUD LLM (GEMINI / GROQ)"
+                comp_title = "LOCAL LLM vs CLOUD LLM ARCHITECTURE MATRIX"
+                comp_headers = ["CRITERIA", "LOCAL LLM (OLLAMA)", "CLOUD LLM (CLOUD API)"]
+                comp_rows = [
+                    {"feature": "Data Privacy", "col_a": "100% On-premise, zero data leaks", "col_b": "Data sent over internet to provider"},
+                    {"feature": "Cost Model", "col_a": "Zero recurring API token costs", "col_b": "Pay-per-token usage pricing"},
+                    {"feature": "Offline Capability", "col_a": "Works 100% without internet", "col_b": "Requires active internet link"},
+                    {"feature": "Intelligence & Size", "col_a": "3B - 70B parameter models", "col_b": "Frontier 100B - 1T+ parameter models"}
+                ]
+                syntax_a_title = "OLLAMA LOCAL GPU INFERENCE"
+                syntax_a_code = "# Run Local LLM with Ollama\nimport ollama\n\nres = ollama.chat(model='llama3.2:3b', messages=[\n    {'role': 'user', 'content': 'Analyze customer PII locally'}\n])\n# 100% private, zero data leaves local machine!"
+                syntax_a_note = "Local inference running on local GPU with zero external network traffic."
+                syntax_b_title = "HYBRID FALLBACK ROUTING"
+                syntax_b_code = "# NanoPro Hybrid Failover Pattern\nasync def generate_response(prompt):\n    try:\n        return await groq_client.chat(prompt) # Sub-second\n    except Exception:\n        return await ollama_local.chat(prompt) # Offline failover"
+                syntax_b_note = "Smart hybrid routing combines cloud speed with offline local resilience."
+                traps_title = "LOCAL vs CLOUD ARCHITECTURAL TRAPS"
+                traps = [
+                    "⚠️ Trap: Running 70B models on underpowered consumer GPUs causing 50-second latency!",
+                    "✅ Rule: Use Local SLMs (3B/8B) for private PII and internal tasks; route complex reasoning to Cloud!"
+                ]
+                golden_rule = "Use Local LLMs for complete privacy and constant baseline tasks; use Cloud LLMs for frontier reasoning and elastic burst loads."
+                pitch_to_interviewer = "In interviews: Propose a hybrid AI gateway: sanitize PII on local SLMs before sending sanitized prompts to frontier cloud models."
+                pro_tip = "💡 Senior Engineer Pro-Tip: Deploy Ollama with Quantized 4-bit GGUF models on Apple Silicon or Nvidia RTX for 80 tokens/sec local throughput!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "Local LLM vs Cloud LLM",
+                        "speech_hi": "Ollama बनाम Cloud AI: कौन सा ज़्यादा फ़ायदेमंद है? क्या अपने लैपटॉप पर AI चलाना क्लाउड से बेहतर है? आइए 45 सेकंड में तकनीकी सच्चाई जानते हैं!",
+                        "speech_mr": "Ollama vs Cloud AI: कोणता जास्त फायदेशीर? स्वतःच्या कम्प्युटरवर लोकल AI चालवणे क्लाउडपेक्षा चांगले आहे का? चला 45 सेकंदात जाणून घेऊया!",
+                        "speech_en": "Local LLM versus Cloud LLM: Ollama vs Cloud AI — which one should your company adopt? Here is the complete breakdown!"
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Privacy vs Raw Intelligence",
+                        "speech_hi": "Local LLM का सबसे बड़ा फायदा है 100% डेटा प्राइवेसी और शून्य टोकन बिल! आपका संवेदनशील डेटा कभी भी आपके कंप्यूटर से बाहर नहीं जाता!",
+                        "speech_mr": "Local LLM चा सर्वात मोठा फायदा म्हणजे 100% डेटा प्रायव्हसी आणि शून्य API बिल! तुमचा कंपनी डेटा कम्प्युटरबाहेर जात नाही!",
+                        "speech_en": "The biggest advantage of Local LLMs is 100% data privacy and zero API token costs — confidential data never leaves your infrastructure."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "Hardware & Performance Trade-Off",
+                        "speech_hi": "लेकिन क्लाउड AI के पास सैकड़ों गुना बड़े मॉडल्स और सुपरफ़ास्ट Groq LPU स्पीड होती है, जिसके लिए आपको महंगे GPU नहीं खरीदने पड़ते!",
+                        "speech_mr": "परंतु क्लाउड AI कडे महाप्रचंड फ्रंटियर मॉडेल्स आणि सुपरफास्ट स्पीड असते, ज्यासाठी महागडे GPU खरेदी करावे लागत नाहीत!",
+                        "speech_en": "On the other hand, Cloud AI delivers unmatched frontier reasoning and instant elasticity without requiring dedicated multi-thousand dollar GPUs."
+                    },
+                    {
+                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "The Hybrid Enterprise Strategy",
+                        "speech_hi": "सर्वश्रेष्ठ रणनीति है Hybrid Architecture: आंतरिक और निजी डेटा के लिए Ollama, और जटिल रीजनिंग के लिए Cloud AI!",
+                        "speech_mr": "उत्कृष्ट स्ट्रॅटेजी आहे Hybrid Architecture: अंतर्गत खाजगी कामासाठी Ollama आणि मोठ्या कामासाठी Cloud AI चा वापर करा!",
+                        "speech_en": "The gold standard is a Hybrid AI Architecture: route confidential PII to local models, and delegate high-complexity reasoning to cloud models."
+                    },
+                    {
+                        "id": 5, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Rule & Takeaway",
+                        "speech_hi": "गोल्डन रूल: गोपनीयता के लिए Local LLM और असीमित शक्ति के लिए Cloud LLM! दोनों का सही संतुलन ही स्मार्ट इंजीनियरिंग है!",
+                        "speech_mr": "गोल्डन रुल: प्रायव्हसीसाठी Local LLM आणि मोठ्या कामासाठी Cloud LLM! दोघांचे योग्य मिश्रण हाच स्मार्ट इंजिनिअरिंगचा मार्ग आहे!",
+                        "speech_en": "Universal Golden Rule: Local LLM for private sovereignty, Cloud LLM for frontier scale! A hybrid architecture wins every time!"
+                    }
+                ]
+
             # Topic E: Generic / Arbitrary Theory Topic (Dynamic Term Extraction)
             else:
                 suggested_motion_bg = "warp_tunnel"
