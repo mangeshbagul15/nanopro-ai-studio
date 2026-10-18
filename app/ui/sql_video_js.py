@@ -913,7 +913,13 @@ SECOND_HIGHEST_SALARY: 70000`;
         try {
             if (!_sqlCyberAudioCtx) {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (AudioCtx) _sqlCyberAudioCtx = new AudioCtx();
+                if (AudioCtx) {
+                    _sqlCyberAudioCtx = new AudioCtx();
+                    window._sqlCyberAudioCtx = _sqlCyberAudioCtx;
+                    if (window.nanoProRegisterAudioContext) {
+                        window.nanoProRegisterAudioContext(_sqlCyberAudioCtx);
+                    }
+                }
             }
             if (_sqlCyberAudioCtx && _sqlCyberAudioCtx.state === 'suspended') {
                 _sqlCyberAudioCtx.resume();
@@ -3191,11 +3197,15 @@ SECOND_HIGHEST_SALARY: 70000`;
             renderSqlShortFrame(sqlShortState.currentTime);
             updatePlayerScrubberUI(sqlShortState.currentTime);
 
-            if (sqlShortState.isPlaying) {
+            if (sqlShortState.isPlaying && document.visibilityState !== 'hidden') {
                 sqlShortState.animationFrameId = requestAnimationFrame(step);
+            } else {
+                sqlShortState.animationFrameId = null;
             }
         }
-        sqlShortState.animationFrameId = requestAnimationFrame(step);
+        if (sqlShortState.isPlaying && document.visibilityState !== 'hidden') {
+            sqlShortState.animationFrameId = requestAnimationFrame(step);
+        }
     }
 
     function pauseSqlShortPlay() {
@@ -3313,11 +3323,15 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (audioCtx.state === 'suspended') {
                     await audioCtx.resume();
                 }
-                const audioDest = audioCtx.createMediaStreamDestination();
+                audioDest = audioCtx.createMediaStreamDestination();
                 const audioSource = audioCtx.createMediaElementSource(audioEl);
                 audioSource.connect(audioDest);
                 audioSource.connect(audioCtx.destination);
                 audioTracks = audioDest.stream.getAudioTracks();
+                window._sqlExportAudioCtx = audioCtx;
+                if (window.nanoProRegisterAudioContext) {
+                    window.nanoProRegisterAudioContext(audioCtx);
+                }
             } catch(e) {
                 console.warn("AudioContext stream capture notice:", e);
             }
@@ -3325,6 +3339,9 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const videoTracks = canvas.captureStream(30).getVideoTracks();
         const combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
+        if (window.nanoProRegisterMediaStream) {
+            window.nanoProRegisterMediaStream(combinedStream);
+        }
 
         let mimeType = "video/webm;codecs=vp9,opus";
         if (!MediaRecorder.isTypeSupported(mimeType)) {
@@ -3351,6 +3368,16 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         recorder.onstop = () => {
             if (audioEl) audioEl.pause();
+            // Free and stop all video and audio tracks immediately to avoid OS device lockups
+            try {
+                videoTracks.forEach(t => { try { t.stop(); } catch(e){} });
+                audioTracks.forEach(t => { try { t.stop(); } catch(e){} });
+                combinedStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+                if (audioCtx && audioCtx.state !== 'closed') {
+                    audioCtx.close();
+                }
+                window._sqlExportAudioCtx = null;
+            } catch(e) {}
             if (pFill) pFill.style.width = "100%";
             if (pPctText) pPctText.innerText = "100%";
             if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ व ऑडिओ डाऊनलोड होत आहे...";
@@ -3744,5 +3771,26 @@ SECOND_HIGHEST_SALARY: 70000`;
             initPipelineTelemetry();
         }
     }
+
+    // Video Studio Clean Teardown Listeners (Avoid Chrome Zombie Lockups)
+    window.addEventListener("pagehide", () => {
+        try {
+            if (typeof pauseSqlShortPlay === "function") pauseSqlShortPlay();
+            if (_sqlCyberAudioCtx && _sqlCyberAudioCtx.state !== "closed") {
+                _sqlCyberAudioCtx.close();
+                _sqlCyberAudioCtx = null;
+            }
+            if (window._sqlExportAudioCtx && window._sqlExportAudioCtx.state !== "closed") {
+                window._sqlExportAudioCtx.close();
+                window._sqlExportAudioCtx = null;
+            }
+            const a = document.getElementById("sqlVoiceAudio");
+            if (a) {
+                a.pause();
+                a.removeAttribute("src");
+                a.load();
+            }
+        } catch(e) {}
+    }, { capture: true });
     </script>
     '''

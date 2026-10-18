@@ -17981,6 +17981,172 @@ function formatMarkdown(text) {
 }
 
 
+/* ==========================================================================
+   NANOPRO ZERO-HANG LIFECYCLE & CLEAN SHUTDOWN ARCHITECTURE (CHROME CRASH DEFENDER)
+   Prevents background zombie chrome.exe tasks, audio device lockups, and hanging GPU contexts.
+   ========================================================================== */
+window._nanoProTimers = [];
+window._nanoProAnimFrames = [];
+window._nanoProMediaStreams = [];
+window._nanoProAudioContexts = [];
+window._nanoProAbortController = new AbortController();
+
+window.nanoProSetInterval = function(fn, delay) {
+    const id = setInterval(fn, delay);
+    window._nanoProTimers.push(id);
+    return id;
+};
+
+window.nanoProRegisterAudioContext = function(ctx) {
+    if (ctx && !window._nanoProAudioContexts.includes(ctx)) {
+        window._nanoProAudioContexts.push(ctx);
+    }
+    return ctx;
+};
+
+window.nanoProRegisterMediaStream = function(stream) {
+    if (stream && !window._nanoProMediaStreams.includes(stream)) {
+        window._nanoProMediaStreams.push(stream);
+    }
+    return stream;
+};
+
+window.performNanoProCleanShutdown = function() {
+    try {
+        console.log('[NanoPro Lifecycle] Executing clean zero-hang shutdown & teardown...');
+
+        // 1. Abort all active fetch / network requests
+        try {
+            if (window._nanoProAbortController) {
+                window._nanoProAbortController.abort();
+            }
+        } catch(e) {}
+
+        // 2. Clear all registered setInterval & setTimeout timers
+        if (window._nanoProTimers && window._nanoProTimers.length > 0) {
+            window._nanoProTimers.forEach(id => {
+                try { clearInterval(id); clearTimeout(id); } catch(e) {}
+            });
+            window._nanoProTimers = [];
+        }
+
+        // 3. Cancel all animation frames across the entire studio
+        const animIds = [
+            window.panoramicCanvasAnimId,
+            window.lakehouse3dAnimFrame,
+            window.catlogLineageAnimId,
+            window.pixelOfficeAnimFrameId,
+            window.sqlShortState?.animationFrameId,
+            ...(window._nanoProAnimFrames || [])
+        ];
+        animIds.forEach(id => {
+            if (id) {
+                try { cancelAnimationFrame(id); } catch(e) {}
+            }
+        });
+        window.panoramicCanvasAnimId = null;
+        window.lakehouse3dAnimFrame = null;
+        window.catlogLineageAnimId = null;
+        window.pixelOfficeAnimFrameId = null;
+        if (window.sqlShortState) window.sqlShortState.animationFrameId = null;
+        window._nanoProAnimFrames = [];
+
+        // 4. Close all Web Audio Contexts immediately to release OS audio driver
+        const audioCtxs = [
+            window._sqlCyberAudioCtx,
+            window._sqlExportAudioCtx,
+            ...(window._nanoProAudioContexts || [])
+        ];
+        audioCtxs.forEach(ctx => {
+            if (ctx && ctx.state !== 'closed') {
+                try { ctx.close(); } catch(e) {}
+            }
+        });
+        window._sqlCyberAudioCtx = null;
+        window._sqlExportAudioCtx = null;
+        window._nanoProAudioContexts = [];
+
+        // 5. Stop all MediaStreams & Canvas capture tracks immediately
+        if (window._nanoProMediaStreams && window._nanoProMediaStreams.length > 0) {
+            window._nanoProMediaStreams.forEach(stream => {
+                try {
+                    if (stream.getTracks) {
+                        stream.getTracks().forEach(track => {
+                            try { track.stop(); } catch(e) {}
+                        });
+                    }
+                } catch(e) {}
+            });
+            window._nanoProMediaStreams = [];
+        }
+
+        // 6. Pause and release all native audio and video elements
+        document.querySelectorAll('audio, video').forEach(media => {
+            try {
+                media.pause();
+                media.removeAttribute('src');
+                media.load();
+            } catch(e) {}
+        });
+
+        // 7. Clear all canvas 2D contexts to release GPU hardware locks
+        document.querySelectorAll('canvas').forEach(canvas => {
+            try {
+                const ctx = canvas.getContext('2d');
+                if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.width = 1;
+                canvas.height = 1;
+            } catch(e) {}
+        });
+
+        console.log('[NanoPro Lifecycle] Teardown complete. GPU, Audio and Network handles released cleanly.');
+    } catch(e) {
+        console.warn('[NanoPro Lifecycle] Teardown warning:', e);
+    }
+};
+
+// Bind to both pagehide and beforeunload (modern standard for clean browser tab closure)
+window.addEventListener('pagehide', window.performNanoProCleanShutdown, { capture: true });
+window.addEventListener('beforeunload', window.performNanoProCleanShutdown, { capture: true });
+
+// Page Visibility API: Stop heavy rendering when tab is hidden / minimized
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        if (window.panoramicCanvasAnimId) {
+            cancelAnimationFrame(window.panoramicCanvasAnimId);
+            window.panoramicCanvasAnimId = null;
+        }
+        if (window.lakehouse3dAnimFrame) {
+            cancelAnimationFrame(window.lakehouse3dAnimFrame);
+            window.lakehouse3dAnimFrame = null;
+        }
+        if (window.catlogLineageAnimId) {
+            cancelAnimationFrame(window.catlogLineageAnimId);
+            window.catlogLineageAnimId = null;
+        }
+        if (window.pixelOfficeAnimFrameId) {
+            cancelAnimationFrame(window.pixelOfficeAnimFrameId);
+            window.pixelOfficeAnimFrameId = null;
+        }
+        if (window.sqlShortState && window.sqlShortState.isPlaying) {
+            if (typeof window.pauseSqlShortPlay === 'function') {
+                window.pauseSqlShortPlay();
+            }
+        }
+    } else if (document.visibilityState === 'visible') {
+        if (typeof initPanoramicCanvas === 'function') {
+            const pCanv = document.getElementById('panoramicCanvas');
+            if (pCanv && pCanv.offsetWidth > 0) initPanoramicCanvas();
+        }
+        if (typeof CURRENT_ACTIVE_DE_TAB !== 'undefined' && CURRENT_ACTIVE_DE_TAB === '3dPipeline') {
+            if (typeof render3dLakehouseLoop === 'function') render3dLakehouseLoop();
+        }
+        if (typeof CURRENT_ACTIVE_DE_TAB !== 'undefined' && CURRENT_ACTIVE_DE_TAB === 'catlog') {
+            if (typeof renderCatlogLineageCanvasLoop === 'function') renderCatlogLineageCanvasLoop();
+        }
+    }
+});
+
 window.addEventListener('DOMContentLoaded', () => {
             try { 
                 const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -17995,15 +18161,15 @@ window.addEventListener('DOMContentLoaded', () => {
             try { renderOfficeStations('dashOfficeFloor'); } catch(e) {}
             try { renderOfficeStations('officeFloorFull'); } catch(e) {}
 
-            // Staggered lightweight background initialization (eliminates browser socket exhaustion)
+            // Staggered lightweight background initialization (tracked for clean shutdown)
             setTimeout(() => { try { pollStatsAndAgents(); } catch(e) {} }, 1000);
-            setTimeout(() => { try { setInterval(pollStatsAndAgents, 6000); } catch(e) {} }, 2500);
-            setTimeout(() => { try { setInterval(pollLogs, 8000); } catch(e) {} }, 3500);
+            setTimeout(() => { try { nanoProSetInterval(pollStatsAndAgents, 6000); } catch(e) {} }, 2500);
+            setTimeout(() => { try { nanoProSetInterval(pollLogs, 8000); } catch(e) {} }, 3500);
             setTimeout(() => { try { initPanoramicCanvas(); } catch(e) {} }, 4000);
             setTimeout(() => { try { if (typeof initSqlStudioUI === 'function') initSqlStudioUI(); } catch(e) {} }, 4500);
             setTimeout(() => { try { if (typeof initCatlogLineageCanvas === 'function') initCatlogLineageCanvas(); } catch(e) {} }, 5000);
             setTimeout(() => { try { if (typeof startNanoProAutonomousManagerLoop === 'function') startNanoProAutonomousManagerLoop(); } catch(e) {} }, 5500);
-            setTimeout(() => { try { setInterval(checkFloatingNewsAlerts, 45000); } catch(e) {} }, 6000);
+            setTimeout(() => { try { nanoProSetInterval(checkFloatingNewsAlerts, 45000); } catch(e) {} }, 6000);
             setTimeout(() => { try { logLocal('System', 'Nano Pro Intelligent Personal AI Operating Center active.'); } catch(e) {} }, 500);
         });
     
@@ -18086,8 +18252,8 @@ window.addEventListener('DOMContentLoaded', () => {
             let packetProgress = [0, 0.2, 0.4, 0.6, 0.8];
 
             function draw() {
-                if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
-                    panoramicCanvasAnimId = requestAnimationFrame(draw);
+                if (document.visibilityState === 'hidden' || canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
+                    panoramicCanvasAnimId = null;
                     return;
                 }
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -20140,7 +20306,7 @@ ${d.preview}`;
 
         // Initialize real-time notification polling
         setTimeout(loadLiveNotifications, 1500);
-        setInterval(loadLiveNotifications, 12000);
+        nanoProSetInterval(loadLiveNotifications, 12000);
 
 
         let isTestingAws = false;
@@ -20758,9 +20924,13 @@ ${d.preview}`;
 
         function render3dLakehouseLoop() {
             try {
+                if (document.visibilityState === 'hidden') {
+                    lakehouse3dAnimFrame = null;
+                    return;
+                }
                 const canvas = document.getElementById('canvas3dLakehouse');
-                if (!canvas || CURRENT_ACTIVE_DE_TAB !== '3dPipeline') {
-                    lakehouse3dAnimFrame = requestAnimationFrame(render3dLakehouseLoop);
+                if (!canvas || CURRENT_ACTIVE_DE_TAB !== '3dPipeline' || canvas.offsetWidth === 0) {
+                    lakehouse3dAnimFrame = null;
                     return;
                 }
                 const rect = canvas.getBoundingClientRect();
@@ -20773,7 +20943,7 @@ ${d.preview}`;
 
                 const ctx = canvas.getContext('2d');
                 if (!ctx) {
-                    lakehouse3dAnimFrame = requestAnimationFrame(render3dLakehouseLoop);
+                    lakehouse3dAnimFrame = null;
                     return;
                 }
 
@@ -21884,6 +22054,10 @@ WHEN NOT MATCHED THEN
                 ctx.restore();
             });
 
+            if (document.visibilityState === 'hidden' || CURRENT_ACTIVE_DE_TAB !== 'catlog') {
+                catlogLineageAnimId = null;
+                return;
+            }
             catlogLineageAnimId = requestAnimationFrame(renderCatlogLineageCanvasLoop);
         }
 
@@ -23372,7 +23546,7 @@ ORDER BY balance DESC;`
         let nanoProAutoLoopTimer = null;
         function startNanoProAutonomousManagerLoop() {
             if (nanoProAutoLoopTimer) return;
-            nanoProAutoLoopTimer = setInterval(async () => {
+            nanoProAutoLoopTimer = nanoProSetInterval(async () => {
                 try {
                     const res = await fetch('/api/de_modern/secops/diagnostics');
                     const d = await res.json();
@@ -24411,7 +24585,7 @@ print(list(process_txn_batches(sample_data, batch_size=2)))`,
             if (btn) btn.innerText = '⏸ Pause';
             updateSqlCountdownDisplay();
 
-            sqlCountdownInterval = setInterval(() => {
+            sqlCountdownInterval = nanoProSetInterval(() => {
                 if (isSqlCountdownPaused) return;
                 sqlCountdownSeconds--;
                 updateSqlCountdownDisplay();
@@ -24871,6 +25045,15 @@ function runPixelOfficeLoop(timestamp) {
                 }
             }
         }
+    }
+    if (document.visibilityState === 'hidden') {
+        pixelOfficeAnimFrameId = null;
+        return;
+    }
+    const pCanvas = document.getElementById('pixelOfficeCanvas');
+    if (!pCanvas || pCanvas.offsetWidth === 0) {
+        pixelOfficeAnimFrameId = null;
+        return;
     }
     pixelOfficeAnimFrameId = requestAnimationFrame(runPixelOfficeLoop);
 }
@@ -27857,7 +28040,7 @@ async function toggleCareerDispatcher() {
     }
 }
 
-setInterval(updateCareerDispatcherUI, 20000);
+nanoProSetInterval(updateCareerDispatcherUI, 20000);
 setTimeout(updateCareerDispatcherUI, 1500);
 
 // --- MULTILINGUAL PROMPT MAKER STUDIO JS ---
