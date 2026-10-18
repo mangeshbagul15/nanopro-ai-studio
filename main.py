@@ -1147,7 +1147,7 @@ async def api_sql_video_run_sandbox(req: SqlShortSandboxRequest):
 async def api_sql_video_synthesize_voice(req: SqlShortVoiceRequest):
     """Synthesizes high-fidelity voiceover using ElevenLabs / Microsoft Neural Edge-TTS."""
     from app.core.neural_tts import neural_tts
-    if req.preset_id:
+    if req.preset_id and req.preset_id not in ["custom", "custom_ai", "custom_ai_scenario", "custom_master_prompt"]:
         res = await neural_tts.get_preset_audio_async(preset_id=req.preset_id, language=req.language or "mr")
         return JSONResponse(res)
 
@@ -1324,7 +1324,7 @@ async def api_runway_organization():
 
 @app.post("/api/runway/generate")
 async def api_runway_generate(req: RunwayGenerateRequest):
-    """Submits 9:16 vertical video generation to Runway Gen-4 with multi-token failover."""
+    """Submits 9:16 vertical video generation to Runway Gen-4 with multi-token failover and zero-drop cascade."""
     try:
         if req.mode == "image_to_video" and req.image_url:
             res = runway_video.create_image_to_video(
@@ -1345,7 +1345,14 @@ async def api_runway_generate(req: RunwayGenerateRequest):
             )
         return JSONResponse(res)
     except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+        log_event(f"Runway generate notice ({e}). Auto-cascading to Cinematic Video Router...", level="WARNING", component="RunwayAPI")
+        cascade_res = video_cascade_router.generate_cinematic_background_with_failover(
+            prompt=req.prompt or "High-tech cloud database and neon data flows",
+            image_url=req.image_url,
+            aspect_ratio="9:16"
+        )
+        cascade_res["notice"] = f"Runway token quota reached. Auto-cascaded to {cascade_res.get('provider')}."
+        return JSONResponse(cascade_res)
 
 @app.get("/api/runway/status/{task_id}")
 async def api_runway_status(task_id: str):

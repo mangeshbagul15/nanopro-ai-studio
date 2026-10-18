@@ -2,54 +2,55 @@
   "model_name": "NanoPro-TechVid-v1",
   "version": "1.5.2-continuous-learn",
   "repo_url": "https://github.com/mangesh-nanopro-studio/tech-video-neural-engine",
-  "total_epochs": 64,
-  "current_loss": 0.0284,
+  "total_epochs": 69,
+  "current_loss": 0.0259,
   "initial_loss": 0.45,
   "learning_rate": 0.0005,
-  "knowledge_vectors_count": 255,
+  "knowledge_vectors_count": 285,
   "status": "active_learning",
-  "last_updated": "2026-10-18 11:09:14",
+  "last_updated": "2026-10-18 12:37:19",
   "domains": {
     "sql": {
-      "epochs": 23,
+      "epochs": 27,
       "concepts": [
-        "HIGHEST",
-        "MICRO",
-        "HAVING CLAUSE",
-        "CREATE",
-        "SQL",
-        "CLONING",
-        "INDEX OPTIMIZATION",
-        "TABLE",
-        "PREVENT",
-        "FIND",
-        "CUSTOMER_ID",
         "PARTITION BY",
+        "DEPT",
+        "HAVING",
+        "BETWEEN",
+        "DIFFERENCE",
+        "MYSQL",
+        "DISTINCT",
+        "INDEX OPTIMIZATION",
+        "MICRO",
+        "HIGHEST",
+        "DENSE_RANK",
+        "POSTGRESQL",
         "SALARY",
-        "COPY",
-        "USING"
+        "TABLE",
+        "CLONING"
       ],
-      "loss": 0.0284
+      "loss": 0.0259
     },
     "python": {
-      "epochs": 11,
+      "epochs": 12,
       "concepts": [
-        "STAGE",
-        "PYTHON",
-        "MULTI",
-        "BUILD",
-        "AST",
-        "CONCURRENT",
-        "DOCKER",
-        "DECORATORS",
-        "GATHER",
-        "OPTIMIZE",
-        "SEMAPHORE",
         "TYPE HINTS",
-        "ASYNCIO",
+        "STAGE",
+        "EXPLAIN",
+        "ASYNC",
+        "BUILD",
+        "FASTAPI",
+        "MULTI",
+        "GATHER",
         "GENERATORS",
-        "FASTAPI"
-      ]
+        "SEMAPHORE",
+        "OPTIMIZE",
+        "DOCKER",
+        "AWAIT",
+        "CONCURRENT",
+        "ASYNCIO"
+      ],
+      "loss": 0.0279
     },
     "snowflake": {
       "epochs": 9,
@@ -125,6 +126,141 @@
     }
   },
   "recent_training_steps": [
+    {
+      "step_id": "step_69",
+      "epoch": 69,
+      "timestamp": "2026-10-18 12:37:19",
+      "domain": "sql",
+      "prompt_sample": "Explain difference between WHERE and HAVING in PostgreSQL",
+      "loss": 0.0259,
+      "delta_loss": -0.0005,
+      "learned_concepts": [
+        "EXPLAIN",
+        "DIFFERENCE",
+        "BETWEEN",
+        "HAVING",
+        "POSTGRESQL",
+        "DEPT"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 55.7,
+      "synaptic_weights": {
+        "w_retention_hook": 0.942,
+        "w_pacing_constraint": 0.9849,
+        "w_ast_precision": 0.994,
+        "w_trap_depth": 0.956,
+        "w_visual_density": 0.978,
+        "w_audio_sync": 0.989
+      }
+    },
+    {
+      "step_id": "step_68",
+      "epoch": 68,
+      "timestamp": "2026-10-18 12:36:58",
+      "domain": "sql",
+      "prompt_sample": "How to find 2nd highest salary in MySQL?",
+      "loss": 0.0264,
+      "delta_loss": -0.0005,
+      "learned_concepts": [
+        "HOW",
+        "FIND",
+        "HIGHEST",
+        "SALARY",
+        "MYSQL",
+        "DENSE_RANK"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 55.1,
+      "synaptic_weights": {
+        "w_retention_hook": 0.942,
+        "w_pacing_constraint": 0.9849,
+        "w_ast_precision": 0.994,
+        "w_trap_depth": 0.956,
+        "w_visual_density": 0.978,
+        "w_audio_sync": 0.989
+      }
+    },
+    {
+      "step_id": "step_67",
+      "epoch": 67,
+      "timestamp": "2026-10-18 12:33:46",
+      "domain": "sql",
+      "prompt_sample": "Explain difference between WHERE and HAVING in PostgreSQL",
+      "loss": 0.0269,
+      "delta_loss": -0.0005,
+      "learned_concepts": [
+        "EXPLAIN",
+        "DIFFERENCE",
+        "BETWEEN",
+        "HAVING",
+        "POSTGRESQL",
+        "CUSTOMER_ID"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 47.8,
+      "synaptic_weights": {
+        "w_retention_hook": 0.942,
+        "w_pacing_constraint": 0.9849,
+        "w_ast_precision": 0.994,
+        "w_trap_depth": 0.956,
+        "w_visual_density": 0.978,
+        "w_audio_sync": 0.989
+      }
+    },
+    {
+      "step_id": "step_66",
+      "epoch": 66,
+      "timestamp": "2026-10-18 12:33:40",
+      "domain": "sql",
+      "prompt_sample": "How to find 2nd highest salary in MySQL?",
+      "loss": 0.0274,
+      "delta_loss": -0.0005,
+      "learned_concepts": [
+        "HOW",
+        "FIND",
+        "HIGHEST",
+        "SALARY",
+        "MYSQL",
+        "DISTINCT"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 47.8,
+      "synaptic_weights": {
+        "w_retention_hook": 0.942,
+        "w_pacing_constraint": 0.9849,
+        "w_ast_precision": 0.994,
+        "w_trap_depth": 0.956,
+        "w_visual_density": 0.978,
+        "w_audio_sync": 0.989
+      }
+    },
+    {
+      "step_id": "step_65",
+      "epoch": 65,
+      "timestamp": "2026-10-18 12:20:08",
+      "domain": "python",
+      "prompt_sample": "Explain Python async and await with event loop",
+      "loss": 0.0279,
+      "delta_loss": -0.0005,
+      "learned_concepts": [
+        "EXPLAIN",
+        "PYTHON",
+        "ASYNC",
+        "AWAIT",
+        "EVENT",
+        "LOOP"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 59.5,
+      "synaptic_weights": {
+        "w_retention_hook": 0.942,
+        "w_pacing_constraint": 0.9849,
+        "w_ast_precision": 0.994,
+        "w_trap_depth": 0.956,
+        "w_visual_density": 0.978,
+        "w_audio_sync": 0.989
+      }
+    },
     {
       "step_id": "step_64",
       "epoch": 64,
@@ -227,100 +363,6 @@
       ],
       "vectors_added": 6,
       "duration_calibrated": 45.2
-    },
-    {
-      "step_id": "step_59",
-      "epoch": 59,
-      "timestamp": "2026-10-18 10:11:25",
-      "domain": "sql",
-      "prompt_sample": "Stop using SELECT * in production",
-      "loss": 0.032,
-      "delta_loss": -0.0008,
-      "learned_concepts": [
-        "STOP",
-        "USING",
-        "PRODUCTION",
-        "ORDER_ID",
-        "CUSTOMER_ID",
-        "STATUS"
-      ],
-      "vectors_added": 6,
-      "duration_calibrated": 45.2
-    },
-    {
-      "step_id": "step_58",
-      "epoch": 58,
-      "timestamp": "2026-10-18 10:11:14",
-      "domain": "sql",
-      "prompt_sample": "How Snowflake micro-partitions prevent table scans in AWS S3",
-      "loss": 0.0328,
-      "delta_loss": -0.0008,
-      "learned_concepts": [
-        "HOW",
-        "SNOWFLAKE",
-        "MICRO",
-        "PARTITIONS",
-        "PREVENT",
-        "TABLE"
-      ],
-      "vectors_added": 6,
-      "duration_calibrated": 45.2
-    },
-    {
-      "step_id": "step_57",
-      "epoch": 57,
-      "timestamp": "2026-10-18 10:11:01",
-      "domain": "sql",
-      "prompt_sample": "Find 2nd highest salary in employee table",
-      "loss": 0.0336,
-      "delta_loss": -0.0009,
-      "learned_concepts": [
-        "FIND",
-        "HIGHEST",
-        "SALARY",
-        "EMPLOYEE",
-        "TABLE",
-        "DISTINCT"
-      ],
-      "vectors_added": 6,
-      "duration_calibrated": 45.2
-    },
-    {
-      "step_id": "step_56",
-      "epoch": 56,
-      "timestamp": "2026-10-18 10:10:47",
-      "domain": "sql",
-      "prompt_sample": "Find 2nd highest salary in employee table",
-      "loss": 0.0345,
-      "delta_loss": -0.0009,
-      "learned_concepts": [
-        "FIND",
-        "HIGHEST",
-        "SALARY",
-        "EMPLOYEE",
-        "TABLE",
-        "DISTINCT"
-      ],
-      "vectors_added": 6,
-      "duration_calibrated": 45.2
-    },
-    {
-      "step_id": "step_55",
-      "epoch": 55,
-      "timestamp": "2026-10-18 10:09:35",
-      "domain": "snowflake",
-      "prompt_sample": "Optimize Snowflake QUALIFY and AWS S3 partitioning",
-      "loss": 0.0354,
-      "delta_loss": -0.0009,
-      "learned_concepts": [
-        "OPTIMIZE",
-        "SNOWFLAKE",
-        "QUALIFY",
-        "AWS",
-        "PARTITIONING"
-      ],
-      "vectors_added": 5,
-      "duration_calibrated": 50.0
     }
   ],
   "weights_optimizer": {
@@ -333,29 +375,29 @@
     "convergence_score": "99.88%",
     "synaptic_weights": {
       "w_retention_hook": 0.942,
-      "w_pacing_constraint": 0.985,
+      "w_pacing_constraint": 0.9849,
       "w_ast_precision": 0.994,
       "w_trap_depth": 0.956,
       "w_visual_density": 0.978,
       "w_audio_sync": 0.989
     },
     "momentum_m": {
-      "w_retention_hook": 0.00075,
-      "w_pacing_constraint": 0.0016,
-      "w_ast_precision": 0.0008,
-      "w_trap_depth": 0.00123,
-      "w_visual_density": 0.00144,
-      "w_audio_sync": 0.00094
+      "w_retention_hook": 5.9e-05,
+      "w_pacing_constraint": 0.000487,
+      "w_ast_precision": 6.3e-05,
+      "w_trap_depth": 0.000235,
+      "w_visual_density": 0.000113,
+      "w_audio_sync": 0.00027
     },
     "momentum_v": {
-      "w_retention_hook": 9.99e-06,
-      "w_pacing_constraint": 1.998e-05,
-      "w_ast_precision": 9.99e-06,
-      "w_trap_depth": 1.499e-05,
-      "w_visual_density": 1.799e-05,
-      "w_audio_sync": 1.199e-05
+      "w_retention_hook": 9.94e-06,
+      "w_pacing_constraint": 1.989e-05,
+      "w_ast_precision": 9.94e-06,
+      "w_trap_depth": 1.494e-05,
+      "w_visual_density": 1.794e-05,
+      "w_audio_sync": 1.195e-05
     },
-    "total_optimization_steps": 65,
+    "total_optimization_steps": 70,
     "last_step_time": "2026-10-18 11:08:58"
   }
 }
