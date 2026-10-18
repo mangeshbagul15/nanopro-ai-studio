@@ -1483,7 +1483,143 @@ class SqlShortVideoEngine:
                         "speech_en": "Golden Rule: Filter individual records with WHERE, filter aggregated groups with HAVING. Explain this clearly to impress senior hiring managers!"
                     }
                 ]
-            # Topic C: Generic / Arbitrary Theory Topic (Dynamic Term Extraction)
+            # Topic C: RAG (Retrieval-Augmented Generation)
+            elif "RAG" in q_up or "RETRIEVAL" in q_up or ("VECTOR" in q_up and "DB" in q_up):
+                suggested_motion_bg = "neural_synapse"
+                title = "What is RAG? Retrieval-Augmented Generation"
+                concept_summary = "RAG grounds LLMs by dynamically retrieving relevant private enterprise documents from a Vector Database, eliminating hallucinations without costly retraining."
+                term_a = "STANDARD LLM (NO RAG)"
+                term_b = "RAG ARCHITECTURE (RETRIEVAL)"
+                comp_title = "STANDARD LLM vs RAG ARCHITECTURE"
+                comp_headers = ["FEATURE", "STANDARD LLM (STATIC)", "RAG (DYNAMIC RETRIEVAL)"]
+                comp_rows = [
+                    {"feature": "Data Freshness", "col_a": "❌ Cutoff date, zero live knowledge", "col_b": "✅ Instant real-time updates via DB"},
+                    {"feature": "Private Data Access", "col_a": "❌ Cannot access company files", "col_b": "✅ Queries private PDFs, docs, Notion"},
+                    {"feature": "Hallucinations", "col_a": "❌ High risk of inventing facts", "col_b": "✅ Zero: Grounded in cited sources"},
+                    {"feature": "Cost & Complexity", "col_a": "Expensive fine-tuning required", "col_b": "Low cost: Pay only for vector search"}
+                ]
+                syntax_a_title = "RAG INGESTION & VECTOR EMBEDDING"
+                syntax_a_code = "# Step 1: Chunk & Store Embeddings\nchunks = splitter.split_text(company_pdf)\nfor chunk in chunks:\n    vector = embed_model.get_embedding(chunk)\n    vector_db.upsert(id=chunk.id, vector=vector, metadata=chunk.text)"
+                syntax_a_note = "Semantic vector embeddings generated and stored in Pinecone/Upstash vector DB."
+                syntax_b_title = "RAG RETRIEVAL & LLM PROMPT"
+                syntax_b_code = "# Step 2: Retrieve Top-K & Augment Prompt\ndef answer_question(user_query):\n    q_vec = embed_model.get_embedding(user_query)\n    top_docs = vector_db.query(vector=q_vec, top_k=3)\n    prompt = f'Context: {top_docs}\\nQuestion: {user_query}'\n    return llm.generate(prompt)"
+                syntax_b_note = "Top relevant documents injected into LLM context window at query time."
+                traps_title = "CRITICAL RAG INTERVIEW TRAPS"
+                traps = [
+                    "❌ Trap: Poor chunking strategies cause LLM to miss key context or exceed token limits!",
+                    "✅ Rule: Use RAG for factual knowledge and live data; use Fine-Tuning only for specialized tone!"
+                ]
+                golden_rule = "RAG gives AI an open-book exam! Use RAG for dynamic private facts; use Fine-Tuning only for specialized formatting."
+                pitch_to_interviewer = "In interviews: Explain that RAG decouples knowledge storage from model weights, slashing maintenance costs and eliminating hallucinations."
+                pro_tip = "💡 Senior AI Architect Pro-Tip: Optimize chunk size (500 tokens with 10% overlap) and hybrid search (BM25 + Dense) for 99% accuracy!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "RAG Core Challenge",
+                        "speech_hi": "AI को आपकी कंपनी का प्राइवेट डेटा कैसे सिखाएं? बिना मॉडल को दोबारा ट्रेन किए? आइए 45 सेकंड में समझते हैं RAG यानी Retrieval-Augmented Generation!",
+                        "speech_mr": "AI ला तुमच्या कंपनीचा खाजगी डेटा कसा शिकवायचा? मॉडेलला पुन्हा ट्रेन न करता? चला ४५ सेकंदात समजूया RAG म्हणजेच Retrieval-Augmented Generation!",
+                        "speech_en": "How do you teach AI your company's private documents without costly re-training? Welcome to RAG: Retrieval-Augmented Generation!"
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Standard LLM vs RAG",
+                        "speech_hi": "साधारण LLM पुराना डेटा जानता है और मनगढ़ंत जवाब देता है. RAG आपकी कंपनी के वेक्टराइज्ड डॉक्युमेंट्स ढूंढकर सही उत्तर देता है!",
+                        "speech_mr": "साधारण LLM मध्ये जुनी माहिती असते आणि तो खोटे उत्तर देऊ शकतो. RAG कंपनीच्या खऱ्या कागदपत्रांचा पुरावा वापरून अचूक उत्तर देतो!",
+                        "speech_en": "Standard models suffer from knowledge cutoffs and hallucinations. RAG grounds every response directly in your verified source documents."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "RAG Architecture Pipeline",
+                        "speech_hi": "RAG की 4-स्टेप वर्किंग: पहले डॉक्युमेंट्स चंक होकर वेक्टर डेटाबेस में स्टोर होते हैं, फिर सवाल आने पर टॉप मैचिंग डेटा LLM को मिलता है.",
+                        "speech_mr": "RAG ची सिस्टिम पाइपलाइन: आधी कागदपत्रांचे चंक्स होऊन वेक्टर डेटाबेसमध्ये साठवले जातात, मग युजरच्या प्रश्नानुसार मॅचिंग डेटा LLM ला दिला जातो.",
+                        "speech_en": "Here is the RAG architecture pipeline: Chunk the source text, store dense embeddings in vector DB, retrieve top-k chunks, and pass them to the LLM."
+                    },
+                    {
+                        "id": 4, "action_type": "code_build", "visual_type": "code", "title": "Python Vector Search Pipeline",
+                        "speech_hi": "यह देखिए प्रोडक्शन कोड: वेक्टर सर्च से टॉप-के डॉक्युमेंट्स आते हैं और फिर LLM सटीक और प्रामाणिक उत्तर तैयार करता है.",
+                        "speech_mr": "हा बघा प्रोडक्शन पायथन कोड: आधी वेक्टर सर्च होतो, टॉप डॉक्युमेंट्स गोळा होतात आणि मग LLM खात्रीशीर उत्तर तयार करतो.",
+                        "speech_en": "Look at the production Python code: Vector similarity isolates relevant context, and the model synthesizes a 100% grounded answer."
+                    },
+                    {
+                        "id": 5, "action_type": "simulation_execution", "visual_type": "comparison", "title": "RAG vs Fine-Tuning Traps",
+                        "speech_hi": "तुलना याद रखें: प्राइवेट डेटा और अक्सर बदलने वाली जानकारी के लिए हमेशा RAG चुनें; फाइन-ट्यूनिंग सिर्फ स्टाइल और टोन बदलने के लिए है!",
+                        "speech_mr": "तुलना लक्षात ठेवा: खाजगी डेटा आणि बदलणाऱ्या माहितीसाठी नेहमी RAG निवडा; फाइन-ट्युनिंग फक्त भाषाशैली आणि टोनसाठी वापरावे!",
+                        "speech_en": "Remember the trade-off: Use RAG for factual knowledge and real-time updates. Reserve fine-tuning strictly for specialized domain syntax."
+                    },
+                    {
+                        "id": 6, "action_type": "final_result", "visual_type": "takeaway", "title": "Golden RAG Rule",
+                        "speech_hi": "गोल्डन रूल: RAG एआई के लिए ओपन-बुक एग्जाम है! बिना री-ट्रेनिंग के सुरक्षित और लेटेस्ट जानकारी का सबसे बेस्ट उपाय!",
+                        "speech_mr": "सुवर्ण नियम: RAG म्हणजे AI साठी ओपन-बुक परीक्षा! री-ट्रेनिंगचा खर्च वाचवून अचूक माहिती मिळवण्याचा १०० टक्के विश्वासार्ह मार्ग!",
+                        "speech_en": "Universal Golden Rule: RAG gives AI an open-book exam! Decouple knowledge from weights for enterprise accuracy and zero hallucinations!"
+                    }
+                ]
+
+            # Topic D: Agentic AI vs Generative AI / AI Agents
+            elif "AGENT" in q_up or "AGENTIC" in q_up:
+                suggested_motion_bg = "neural_synapse"
+                title = "Agentic AI vs Generative AI: The Autonomous Leap"
+                concept_summary = "Generative AI produces passive text and images on request, while Agentic AI plans workflows, executes tools via MCP, and self-corrects autonomously to achieve business goals."
+                term_a = "GENERATIVE AI (PASSIVE)"
+                term_b = "AGENTIC AI (AUTONOMOUS)"
+                comp_title = "GENERATIVE AI vs AGENTIC AI MATRIX"
+                comp_headers = ["CRITERIA", "GENERATIVE AI (CHATGPT)", "AGENTIC AI (AUTONOMOUS)"]
+                comp_rows = [
+                    {"feature": "Execution Model", "col_a": "Passive: Generates text & waits", "col_b": "Active: Plans, calls tools, executes"},
+                    {"feature": "Real-World Action", "col_a": "❌ Cannot browse, send emails, edit DB", "col_b": "✅ Calls APIs, MCP tools, runs code"},
+                    {"feature": "Error Recovery", "col_a": "❌ Crashes or stops on error", "col_b": "✅ Self-healing loop with reflection"},
+                    {"feature": "Workflow Depth", "col_a": "Single turn prompt-response", "col_b": "Multi-step autonomous delegation"}
+                ]
+                syntax_a_title = "GENERATIVE AI (PASSIVE CHAT)"
+                syntax_a_code = "# Passive Generative AI\nresponse = llm.chat('Write a SQL query for customer churn')\n# Returns text only. Cannot execute query or verify results!"
+                syntax_a_note = "Single-turn prompt to response. Model has zero tool access or execution agency."
+                syntax_b_title = "AGENTIC AI (AUTONOMOUS LOOP)"
+                syntax_b_code = "# Autonomous Agentic Execution Loop\nasync def run_agent(goal):\n    plan = await agent.decompose(goal)\n    for step in plan.steps:\n        res = await mcp.execute(step.tool, step.args)\n        if res.error: await agent.self_heal(res.error)\n    return plan.deliverable"
+                syntax_b_note = "Autonomous multi-step loop with planning, tool calling, and self-healing error recovery."
+                traps_title = "AGENTIC AI PITFALLS TO AVOID"
+                traps = [
+                    "❌ Trap: Giving AI agents unconstrained write access without human-in-the-loop guardrails!",
+                    "✅ Rule: Use Generative AI for brainstorming and drafting; use Agentic AI for end-to-end task execution!"
+                ]
+                golden_rule = "Generative AI writes answers; Agentic AI achieves goals! Combine LLM reasoning with MCP tools for autonomous software workflows."
+                pitch_to_interviewer = "In interviews: Contrast passive text synthesis with autonomous goal decomposition, environment feedback loops, and tool orchestration."
+                pro_tip = "💡 Senior AI Lead Pro-Tip: Implement state checkpoints, max loop limits, and schema validation to build reliable production agents!"
+                stages = [
+                    {
+                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "Agentic AI Shift",
+                        "speech_hi": "ChatGPT सिर्फ सवाल का जवाब देता है, लेकिन AI Agent आपका पूरा काम खुद कैसे करता है? आइए 45 सेकंड में समझते हैं Agentic AI की ताकत!",
+                        "speech_mr": "ChatGPT फक्त उत्तर देतो, पण AI Agent स्वतः काम कसं करतो? चला ४५ सेकंदात समजूया Agentic AI चं रहस्य!",
+                        "speech_en": "ChatGPT only gives passive text answers, but how does an AI Agent autonomously complete entire projects? Let's master Agentic AI!"
+                    },
+                    {
+                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Passive vs Autonomous",
+                        "speech_hi": "जेनरेटिव एआई सिर्फ टेक्स्ट लिखता है. जबकि एजेंटिक एआई खुद लक्ष्य तय करता है, टूल्स चलाता है और गलतियों को खुद ठीक करता है!",
+                        "speech_mr": "जनरेटिव्ह एआय फक्त मजकूर तयार करतो, पण एजेंटिक एआय स्वतः निर्णय घेऊन टूल्स, डेटाबेस आणि ॲप्स वापरून काम पूर्ण करतो!",
+                        "speech_en": "Generative AI waits passively for prompts. Agentic AI proactively plans multi-step tasks, invokes real-world tools, and delivers working outcomes."
+                    },
+                    {
+                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "Agentic Execution Loop",
+                        "speech_hi": "एजेंटिक वर्कफ्लो देखिए: पहले लक्ष्य को छोटे टास्क में बांटता है, फिर MCP टूल्स और डेटाबेस से कनेक्ट होकर काम पूरा करता है.",
+                        "speech_mr": "एजेंटिक आर्किटेक्चर पाहा: आधी प्लॅनिंग होते, मग टूल्स आणि कोड रन होतात आणि अडचण आल्यास एआय स्वतः दुरुस्ती करतो.",
+                        "speech_en": "Here is the agentic loop: Goal perception, multi-step planning, tool invocation through MCP, environment feedback, and self-correction."
+                    },
+                    {
+                        "id": 4, "action_type": "code_build", "visual_type": "code", "title": "Autonomous Agent Loop Code",
+                        "speech_hi": "प्रोडक्शन कोड देखिए: एजेंट टूल्स चलाता है, रिजल्ट चेक करता है और फेल होने पर खुद को सुधारकर सही आउटपुट देता है.",
+                        "speech_mr": "हा बघा प्रोडक्शन कोड: एआय स्वतः पायथन कोड एक्झिक्युट करतो, रिझल्ट पडताळतो आणि फायनल आऊटपुट देतो.",
+                        "speech_en": "Look at the production loop: The agent dispatches tool calls, inspects the execution trace, and self-heals when exceptions occur."
+                    },
+                    {
+                        "id": 5, "action_type": "simulation_execution", "visual_type": "comparison", "title": "Enterprise Agency Matrix",
+                        "speech_hi": "यह मैट्रिक्स याद रखें: कंटेंट राइटिंग के लिए जेनरेटिव एआई, लेकिन सॉफ्टवेयर बिल्डिंग और ऑटोमेशन के लिए एजेंटिक एआई जरूरी है!",
+                        "speech_mr": "हा मॅट्रिक्स लक्षात ठेवा: लेखनासाठी जनरेटिव्ह एआय उत्तम, पण सॉफ्टवेअर डेव्हलपमेंट आणि ऑटोमेशनसाठी एजेंटिक एआय आवश्यक आहे!",
+                        "speech_en": "Memorize this matrix: Generative AI assists human creators; Agentic AI drives autonomous digital workers in production enterprises."
+                    },
+                    {
+                        "id": 6, "action_type": "final_result", "visual_type": "takeaway", "title": "Future of AI Takeaway",
+                        "speech_hi": "गोल्डन रूल: जेनरेटिव एआई सोचता है, लेकिन एजेंटिक एआई काम पूरा करता है! यही सॉफ्टवेयर का अगला भविष्य है!",
+                        "speech_mr": "सुवर्ण नियम: जनरेटिव्ह एआय फक्त लिहितो, पण एजेंटिक एआय प्रत्यक्ष काम पूर्ण करतो! भविष्यात हीच खरी क्रांती आहे!",
+                        "speech_en": "Universal Golden Rule: Generative AI creates text; Agentic AI creates outcomes! Tool orchestration is the definitive future of software!"
+                    }
+                ]
+
+            # Topic E: Generic / Arbitrary Theory Topic (Dynamic Term Extraction)
             else:
                 suggested_motion_bg = "warp_tunnel"
                 vs_match = re.search(r"(.*?)\s+(?:vs\.?|versus|and)\s+(.*)", text_clean, re.IGNORECASE)

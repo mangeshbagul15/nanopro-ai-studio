@@ -1723,154 +1723,109 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function drawTrending3DDeveloperStudio(ctx, W, H, p, currentStageIdx, activeStage, t) {
-        let hasImg = false;
-        const charImg = (currentStageIdx <= 2) ? viralAssets.thinkingFull : viralAssets.explainingFull;
-        if (charImg && charImg.complete && charImg.naturalWidth > 0) {
-            ctx.save();
-            ctx.drawImage(charImg, 0, 0, W, H);
-            hasImg = true;
+        // 1. Deep Midnight Cosmic Studio Gradient (Zero Distracting Static Photos)
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+        bgGrad.addColorStop(0, "#050814");
+        bgGrad.addColorStop(0.4, "#080F24");
+        bgGrad.addColorStop(1, "#030611");
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
 
-            // 1. Dark Top Gradient for Header & Alert Card Readability
-            const topGrad = ctx.createLinearGradient(0, 0, 0, 420);
-            topGrad.addColorStop(0, "rgba(5, 9, 20, 0.92)");
-            topGrad.addColorStop(0.5, "rgba(5, 9, 20, 0.65)");
-            topGrad.addColorStop(1, "rgba(5, 9, 20, 0.0)");
-            ctx.fillStyle = topGrad;
-            ctx.fillRect(0, 0, W, 420);
-
-            // 2. Translucent Frosted Glass Backing for Content Area
-            const cardBackGrad = ctx.createRadialGradient(W / 2, 600, 50, W / 2, 600, 550);
-            cardBackGrad.addColorStop(0, "rgba(5, 10, 25, 0.82)");
-            cardBackGrad.addColorStop(0.7, "rgba(5, 10, 25, 0.60)");
-            cardBackGrad.addColorStop(1, "rgba(5, 10, 25, 0.0)");
-            ctx.fillStyle = cardBackGrad;
-            ctx.fillRect(0, 220, W, 880);
-
-            // 3. Dark Bottom Gradient for Subtitle Readability
-            const botGrad = ctx.createLinearGradient(0, H - 460, 0, H);
-            botGrad.addColorStop(0, "rgba(5, 9, 20, 0.0)");
-            botGrad.addColorStop(0.4, "rgba(5, 9, 20, 0.82)");
-            botGrad.addColorStop(1, "rgba(5, 9, 20, 0.98)");
-            ctx.fillStyle = botGrad;
-            ctx.fillRect(0, H - 460, W, 460);
-
-            ctx.restore();
-        }
-
-        if (!hasImg) {
-            ctx.fillStyle = "#070B16";
-            ctx.fillRect(0, 0, W, H);
-            draw3DAIMotionEngine(ctx, W, H, t);
-        }
-
-        // Floating Alert Badges in Stages 1 & 2 (BUG, SECURITY, SLOW)
-        if (currentStageIdx <= 2) {
-            drawFloatingAlertBadges(ctx, W, H, t);
-        }
-
-        // Glowing Lightbulb in Stage 3 (Idea / Solution Moment)
-        if (currentStageIdx === 3) {
-            drawGlowingLightbulbIdea(ctx, W, H, t);
-        }
-    }
-
-    function drawFloatingAlertBadges(ctx, W, H, t) {
+        // 2. Ambient Generative Cyber Motion Layer (Subtle & Elegant)
         ctx.save();
-        // Floating Bug Alert (Left)
-        const b1Y = 460 + Math.sin(t * 3.5) * 8;
-        drawGlassTile(ctx, 70, b1Y, 200, 68, 16, "#EF4444", true, false, 0.92);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        ctx.fillText("BUG ⚠️", 100, b1Y + 44);
-
-        // Floating Security Lock Alert (Right)
-        const b2Y = 410 + Math.cos(t * 3.2) * 8;
-        drawGlassTile(ctx, W - 290, b2Y, 220, 68, 16, "#38BDF8", true, false, 0.92);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 21px 'Segoe UI', sans-serif";
-        ctx.fillText("SECURITY 🔒", W - 265, b2Y + 44);
-
-        // Floating Slow Alert (Lower Right)
-        const b3Y = 600 + Math.sin(t * 4.0 + 1) * 8;
-        drawGlassTile(ctx, W - 260, b3Y, 200, 68, 16, "#F59E0B", true, false, 0.92);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        ctx.fillText("SLOW 🐌", W - 235, b3Y + 44);
+        ctx.globalAlpha = 0.35;
+        draw3DAIMotionEngine(ctx, W, H, t);
         ctx.restore();
+
+        // 3. Subtle Corner Glowing Gradient Flares for 3D Depth
+        const flare1 = ctx.createRadialGradient(80, 180, 20, 80, 180, 420);
+        flare1.addColorStop(0, "rgba(56, 189, 248, 0.12)");
+        flare1.addColorStop(1, "rgba(56, 189, 248, 0)");
+        ctx.fillStyle = flare1;
+        ctx.fillRect(0, 0, 500, 500);
+
+        const flare2 = ctx.createRadialGradient(W - 80, H - 350, 20, W - 80, H - 350, 450);
+        flare2.addColorStop(0, "rgba(168, 85, 247, 0.12)");
+        flare2.addColorStop(1, "rgba(168, 85, 247, 0)");
+        ctx.fillStyle = flare2;
+        ctx.fillRect(W - 550, H - 700, 550, 700);
+
+        // 4. Smooth Edge Contrast Vignettes for Header & Subtitle Typography
+        const topGrad = ctx.createLinearGradient(0, 0, 0, 220);
+        topGrad.addColorStop(0, "rgba(4, 7, 16, 0.88)");
+        topGrad.addColorStop(1, "rgba(4, 7, 16, 0.0)");
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(0, 0, W, 220);
+
+        const botGrad = ctx.createLinearGradient(0, H - 380, 0, H);
+        botGrad.addColorStop(0, "rgba(4, 7, 16, 0.0)");
+        botGrad.addColorStop(1, "rgba(4, 7, 16, 0.95)");
+        ctx.fillStyle = botGrad;
+        ctx.fillRect(0, H - 380, W, 380);
     }
 
-    function drawGlowingLightbulbIdea(ctx, W, H, t) {
-        ctx.save();
-        const bulbX = 660;
-        const bulbY = 230;
-        const pulse = 1.0 + Math.sin(t * 8) * 0.15;
-        ctx.translate(bulbX, bulbY);
-        ctx.scale(pulse, pulse);
-
-        const rad = ctx.createRadialGradient(0, 0, 10, 0, 0, 90);
-        rad.addColorStop(0, "rgba(250, 204, 21, 0.90)");
-        rad.addColorStop(0.5, "rgba(234, 179, 8, 0.40)");
-        rad.addColorStop(1, "rgba(234, 179, 8, 0)");
-        ctx.fillStyle = rad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 90, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = "72px 'Segoe UI', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("💡", 0, 22);
-        ctx.restore();
-    }
-
-    function drawTrendingTopHeader(ctx, W, H, p, t) {
-        const domain = (p.domain || "TECH").toUpperCase();
+    function drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx = 1, totalStages = 5) {
+        const domain = (p.domain || (p.solution_sql ? "SQL" : "AI TECH")).toUpperCase();
         let domainColor = "#F59E0B";
         if (domain.includes("PY")) domainColor = "#38BDF8";
-        else if (domain.includes("AI")) domainColor = "#818CF8";
+        else if (domain.includes("AI") || domain.includes("AGENT") || domain.includes("MCP")) domainColor = "#818CF8";
         else if (domain.includes("SQL")) domainColor = "#F59E0B";
         else domainColor = "#10B981";
 
         const titleText = p.title || p.question || "Mastering Modern Tech";
 
         ctx.save();
-        const barY = 40;
-        const barH = 64;
-        ctx.fillStyle = "rgba(10, 16, 32, 0.88)";
+        const barY = 38;
+        const barH = 68;
+        ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
         ctx.beginPath();
-        ctx.roundRect(50, barY, W - 100, barH, 32);
+        ctx.roundRect(50, barY, W - 100, barH, 20);
         ctx.fill();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
         // Domain Tag Pill
         ctx.fillStyle = domainColor;
         ctx.beginPath();
-        ctx.roundRect(56, barY + 6, 120, barH - 12, 26);
+        ctx.roundRect(58, barY + 8, 125, barH - 16, 14);
         ctx.fill();
         ctx.fillStyle = "#000000";
-        ctx.font = "900 22px 'Segoe UI', sans-serif";
+        ctx.font = "900 20px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(domain, 116, barY + 41);
+        ctx.fillText(domain, 120, barY + 43);
+
+        // Stage Indicator (e.g. PART 2/6)
+        ctx.beginPath();
+        ctx.roundRect(192, barY + 12, 115, barH - 24, 10);
+        ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 15px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`PART ${currentStageIdx}/${totalStages}`, 249, barY + 42);
 
         // Title Text
         ctx.textAlign = "left";
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 25px 'Segoe UI', sans-serif";
-        ctx.fillText(fitTextToWidth(ctx, titleText, W - 320), 195, barY + 42);
+        ctx.font = "bold 23px 'Segoe UI', sans-serif";
+        ctx.fillText(fitTextToWidth(ctx, titleText, W - 490), 320, barY + 43);
 
         // Equalizer waveform or Channel Tag
         if (sqlShortState.isPlaying) {
             ctx.fillStyle = "#10B981";
             for (let i = 0; i < 6; i++) {
                 const bh = 10 + Math.sin(t * 14 + i * 1.2) * 14;
-                ctx.fillRect(W - 140 + i * 12, barY + (barH / 2 - bh / 2), 5, bh);
+                ctx.fillRect(W - 130 + i * 11, barY + (barH / 2 - bh / 2), 5, bh);
             }
         } else {
             ctx.fillStyle = "#10B981";
             ctx.font = "bold 17px 'Segoe UI', sans-serif";
             ctx.textAlign = "right";
-            ctx.fillText("● @codeu", W - 75, barY + 41);
+            ctx.fillText("● @Code_With_Mangesh", W - 70, barY + 43);
         }
         ctx.restore();
     }
@@ -2753,13 +2708,17 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const vtLower = (vType || "").toLowerCase();
         let normalizedType = "hook";
-        if (vtLower.includes("code") || vtLower.includes("syntax")) {
+        if (vtLower.includes("table") || vtLower.includes("schema") || vtLower.includes("inspect") || vtLower.includes("data")) {
+            normalizedType = "table";
+        } else if (vtLower.includes("simul") || vtLower.includes("eval") || vtLower.includes("exec") || vtLower.includes("filter")) {
+            normalizedType = "simulation";
+        } else if (vtLower.includes("code") || vtLower.includes("syntax") || vtLower.includes("build") || vtLower.includes("query")) {
             normalizedType = "code";
-        } else if (vtLower.includes("diagram") || vtLower.includes("arch") || vtLower.includes("flow")) {
+        } else if (vtLower.includes("diagram") || vtLower.includes("arch") || vtLower.includes("flow") || vtLower.includes("pipeline")) {
             normalizedType = "diagram";
-        } else if (vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix")) {
+        } else if (vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix") || vtLower.includes("diff")) {
             normalizedType = "comparison";
-        } else if (vtLower.includes("step") || vtLower.includes("road") || vtLower.includes("simul")) {
+        } else if (vtLower.includes("step") || vtLower.includes("road")) {
             normalizedType = "steps";
         } else if (vtLower.includes("stat") || vtLower.includes("metric") || vtLower.includes("num")) {
             normalizedType = "stat";
@@ -2768,11 +2727,13 @@ SECOND_HIGHEST_SALARY: 70000`;
         } else if (currentStageIdx === 1) {
             normalizedType = "hook";
         } else if (currentStageIdx === 2) {
-            normalizedType = (p.solution_sql || vData.code) ? "diagram" : "comparison";
+            normalizedType = (p.sample_rows && p.sample_rows.length > 0) ? "table" : (p.solution_sql ? "diagram" : "comparison");
         } else if (currentStageIdx === 3) {
-            normalizedType = (p.solution_sql || vData.code) ? "code" : "diagram";
+            normalizedType = "diagram";
         } else if (currentStageIdx === 4) {
-            normalizedType = (p.solution_sql || vData.code) ? "steps" : "code";
+            normalizedType = "code";
+        } else if (currentStageIdx === 5) {
+            normalizedType = (p.sample_rows && p.sample_rows.length > 0) ? "simulation" : "takeaway";
         } else {
             normalizedType = "takeaway";
         }
@@ -2867,6 +2828,279 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 20px monospace";
             ctx.fillText("WATCH STEP-BY-STEP EXPLANATION", W / 2, 1125 + arrowBounce);
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL: TABLE (9:16 Canva-Style High-Impact Sample Data Table & Ties)
+        // =========================================================================
+        else if (normalizedType === "table") {
+            const tblX = 60;
+            const tblY = 280;
+            const tblW = W - 120;
+            const tblH = 880;
+
+            ctx.save();
+            // Frosted Glass Table Container
+            ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+            ctx.beginPath();
+            ctx.roundRect(tblX, tblY, tblW, tblH, 22);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = "rgba(56, 189, 248, 0.25)";
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // macOS Header Strip
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(tblX, tblY, tblW, 58, [22, 22, 0, 0]);
+            ctx.fill();
+
+            // Window Dots
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(tblX + 35, tblY + 29, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(tblX + 62, tblY + 29, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(tblX + 89, tblY + 29, 8, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.textAlign = "left";
+            const tblName = p.table_name || "EMPLOYEES";
+            ctx.fillText(`📊 ${tblName} TABLE — SAMPLE DATA & TIE ANALYSIS`, tblX + 130, tblY + 37);
+
+            // Table Columns Header Row
+            const colY = tblY + 75;
+            const colH = 50;
+            ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+            ctx.fillRect(tblX + 15, colY, tblW - 30, colH);
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(tblX + 15, colY, tblW - 30, colH);
+
+            const headers = p.col_headers || ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"];
+            const colWidth = (tblW - 30) / headers.length;
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 21px monospace";
+            ctx.textAlign = "center";
+            headers.forEach((h, hi) => {
+                ctx.fillText(h, tblX + 15 + hi * colWidth + colWidth / 2, colY + 33);
+            });
+
+            // Table Rows
+            const defaultRows = [
+                { account: "101 Amit", date: "IT", amt: "₹60,000", balance: "60k" },
+                { account: "102 Rahul", date: "HR", amt: "₹50,000", balance: "50k" },
+                { account: "103 Priya", date: "IT", amt: "₹80,000", balance: "80k (Tie #1)" },
+                { account: "104 Neha", date: "Finance", amt: "₹70,000", balance: "70k (🎯 2nd)" },
+                { account: "105 Kiran", date: "IT", amt: "₹80,000", balance: "80k (Tie #2)" }
+            ];
+            const rows = (p.sample_rows && p.sample_rows.length > 0) ? p.sample_rows.slice(0, 5) : defaultRows;
+            const rowH = 75;
+            const startRowY = colY + colH + 12;
+
+            rows.forEach((r, ri) => {
+                const ry = startRowY + ri * (rowH + 8);
+                const isTie = (r.amt && r.amt.includes("80")) || (r.balance && r.balance.includes("Tie"));
+                const isTarget = (r.amt && r.amt.includes("70")) || (r.balance && (r.balance.includes("🎯") || r.balance.includes("2nd")));
+
+                ctx.save();
+                if (isTarget) {
+                    ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+                    ctx.strokeStyle = "#10B981";
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = "#10B981";
+                    ctx.shadowBlur = 14;
+                } else if (isTie) {
+                    ctx.fillStyle = "rgba(245, 158, 11, 0.18)";
+                    ctx.strokeStyle = "#F59E0B";
+                    ctx.lineWidth = 2.0;
+                    ctx.shadowColor = "#F59E0B";
+                    ctx.shadowBlur = 10;
+                } else {
+                    ctx.fillStyle = ri % 2 === 0 ? "rgba(15, 23, 42, 0.65)" : "rgba(10, 16, 32, 0.50)";
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+                    ctx.lineWidth = 1;
+                }
+
+                ctx.beginPath();
+                ctx.roundRect(tblX + 15, ry, tblW - 30, rowH, 12);
+                ctx.fill();
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Values
+                const vals = [
+                    r.account ? r.account.split(" ")[0] : ("10" + (ri + 1)),
+                    r.account ? (r.account.split(" ")[1] || r.account) : ("Name " + (ri + 1)),
+                    r.date || "IT",
+                    r.amt || "₹70,000"
+                ];
+
+                ctx.textAlign = "center";
+                vals.forEach((v, vi) => {
+                    if (vi === 3) {
+                        ctx.fillStyle = isTarget ? "#10B981" : (isTie ? "#F59E0B" : "#F8FAFC");
+                        ctx.font = "bold 24px monospace";
+                    } else {
+                        ctx.fillStyle = "#E2E8F0";
+                        ctx.font = "21px 'Segoe UI', sans-serif";
+                    }
+                    ctx.fillText(v, tblX + 15 + vi * colWidth + colWidth / 2, ry + 46);
+                });
+
+                // Status Badge on Right
+                if (isTie) {
+                    ctx.fillStyle = "#F59E0B";
+                    ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "right";
+                    ctx.fillText("⚠️ DUPLICATE TIE", tblX + tblW - 35, ry + 46);
+                } else if (isTarget) {
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "right";
+                    ctx.fillText("🎯 2nd HIGHEST", tblX + tblW - 35, ry + 46);
+                }
+                ctx.restore();
+            });
+
+            // Bottom Interview Trap Box
+            const trapY = tblY + tblH - 145;
+            ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
+            ctx.beginPath();
+            ctx.roundRect(tblX + 25, trapY, tblW - 50, 115, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#EF4444";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 19px 'Segoe UI', sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText("❌ INTERVIEW TRAP: LIMIT 1 OFFSET 1 FAILS ON DUPLICATES!", tblX + 45, trapY + 36);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 18px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ PRO SOLUTION: Use SUBQUERY or DENSE_RANK() for 100% Accuracy", tblX + 45, trapY + 74);
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL: SIMULATION (Row-by-Row Filter Evaluation & Verified Output)
+        // =========================================================================
+        else if (normalizedType === "simulation") {
+            const simX = 60;
+            const simY = 280;
+            const simW = W - 120;
+            const simH = 880;
+
+            ctx.save();
+            ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+            ctx.beginPath();
+            ctx.roundRect(simX, simY, simW, simH, 22);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = "rgba(16, 185, 129, 0.25)";
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Header Strip
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(simX, simY, simW, 58, [22, 22, 0, 0]);
+            ctx.fill();
+
+            // Window Dots
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(simX + 35, simY + 29, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(simX + 62, simY + 29, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(simX + 89, simY + 29, 8, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 20px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText("⚡ ROW-BY-ROW FILTER EVALUATION SIMULATION", simX + 130, simY + 37);
+
+            // Column Header
+            const colY = simY + 75;
+            ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+            ctx.fillRect(simX + 15, colY, simW - 30, 48);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 19px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText("RECORD / NAME", simX + 35, colY + 32);
+            ctx.fillText("SALARY", simX + 280, colY + 32);
+            ctx.fillText("EVALUATION", simX + 460, colY + 32);
+            ctx.fillText("ACTION", simX + simW - 140, colY + 32);
+
+            const evals = getClientFilterEvals(p);
+            const rowCount = Math.min(evals.length, 5);
+            const visibleCount = Math.max(1, Math.min(rowCount, Math.floor(stageProg * (rowCount + 1)) + 1));
+            const rowH = 70;
+            const startY = colY + 60;
+
+            for (let i = 0; i < visibleCount; i++) {
+                const ev = evals[i];
+                const ry = startY + i * (rowH + 8);
+                const isKeep = (ev.status === "keep" || ev.action === "KEEP");
+
+                ctx.save();
+                ctx.fillStyle = isKeep ? "rgba(16, 185, 129, 0.20)" : "rgba(239, 68, 68, 0.12)";
+                ctx.beginPath();
+                ctx.roundRect(simX + 15, ry, simW - 30, rowH, 12);
+                ctx.fill();
+                ctx.strokeStyle = isKeep ? "#10B981" : "rgba(239, 68, 68, 0.4)";
+                ctx.lineWidth = isKeep ? 2.5 : 1;
+                ctx.stroke();
+
+                ctx.fillStyle = isKeep ? "#10B981" : "#F8FAFC";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText(ev.name, simX + 35, ry + 44);
+
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 21px monospace";
+                ctx.fillText(ev.salary, simX + 280, ry + 44);
+
+                ctx.fillStyle = isKeep ? "#10B981" : "#EF4444";
+                ctx.font = "18px monospace";
+                ctx.fillText(ev.cond || (isKeep ? "TARGET MATCH" : "EXCLUDED"), simX + 460, ry + 44);
+
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                if (isKeep) {
+                    ctx.fillStyle = "#10B981";
+                    ctx.fillText("✔ KEEP 🎯", simX + simW - 140, ry + 44);
+                } else {
+                    ctx.fillStyle = "#EF4444";
+                    ctx.fillText("✖ EXCLUDE", simX + simW - 140, ry + 44);
+                }
+                ctx.restore();
+            }
+
+            // Large Output Box at bottom
+            const outY = simY + simH - 165;
+            ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+            ctx.beginPath();
+            ctx.roundRect(simX + 25, outY, simW - 50, 135, 16);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "#10B981";
+            ctx.shadowBlur = 24;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🏆 100% VERIFIED FINAL DELIVERABLE", W / 2, outY + 45);
+
+            const outVal = p.output_value || "SECOND_HIGHEST_SALARY: 70000";
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "900 34px monospace";
+            ctx.fillText(outVal, W / 2, outY + 95);
             ctx.restore();
         }
 
@@ -3478,8 +3712,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         // 1. Draw Viral Trending 3D Developer Character Studio Scene
         drawTrending3DDeveloperStudio(ctx, W, H, p, currentStageIdx, activeStage, t);
 
-        // 2. Draw Trending Top Header Pill
-        drawTrendingTopHeader(ctx, W, H, p, t);
+        // 2. Draw Trending Top Header Pill with Live Stage Tracker
+        drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
 
         // Audio Chime on Stage Advance
         if (sqlShortState.lastBleepScene !== currentStageIdx && sqlShortState.isPlaying) {
@@ -3498,32 +3732,55 @@ SECOND_HIGHEST_SALARY: 70000`;
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
         }
 
+        // =========================================================================
+        // CINEMATIC CAMERA SYSTEM: DYNAMIC ZOOM PUNCH-IN & BREATHING MOTION
+        // =========================================================================
+        ctx.save();
+        const punch = Math.max(0, 1.0 - stageProg * 2.8);
+        const camZoom = 1.0 + 0.045 * Math.pow(punch, 2) + 0.012 * Math.sin(t * 2.0);
+        ctx.translate(W / 2, 750);
+        ctx.scale(camZoom, camZoom);
+        ctx.translate(-W / 2, -750);
+
         renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
+        ctx.restore();
 
         // =========================================================================
-        // FLOATING SUBTITLE PILL (Translucent Frosted Glass, Word-by-Word Highlight)
+        // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)
         // =========================================================================
         const subPillX = 60;
-        const subPillY = H - 300;
+        const subPillY = H - 320;
         const subPillW = W - 120;
-        const subPillH = 170;
+        const subPillH = 190;
 
         ctx.save();
-        ctx.fillStyle = "rgba(10, 16, 32, 0.78)";
+        ctx.fillStyle = "rgba(8, 14, 28, 0.88)";
         ctx.beginPath();
         ctx.roundRect(subPillX, subPillY, subPillW, subPillH, 22);
         ctx.fill();
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "rgba(56, 189, 248, 0.35)";
+        ctx.shadowBlur = 12;
         ctx.stroke();
+        ctx.shadowBlur = 0;
 
-        // Subtitle Language Pill Badge
+        // Subtitle Language Pill Badge + Equalizer
         ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 18px 'Segoe UI', sans-serif";
         const langBadge = (sqlShortState.audioLang === "mr" ? "मराठी" : (sqlShortState.audioLang === "hi" ? "हिन्दी" : "ENGLISH")) + " AI VOICE";
         ctx.fillText(`🎙️ ${langBadge}`, subPillX + 25, subPillY + 36);
 
-        // Subtitle Text
+        // Animated Mini Equalizer bars inside badge
+        if (sqlShortState.isPlaying) {
+            ctx.fillStyle = "#38BDF8";
+            for (let b = 0; b < 4; b++) {
+                const eh = 6 + Math.sin(t * 12 + b * 1.5) * 8;
+                ctx.fillRect(subPillX + 220 + b * 9, subPillY + 36 - eh, 5, eh);
+            }
+        }
+
+        // Subtitle Text Word-by-Word Highlight
         let subtitleText = "";
         if (activeStage) {
             subtitleText = activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || activeStage.speech_en || "";
@@ -3534,12 +3791,41 @@ SECOND_HIGHEST_SALARY: 70000`;
             subtitleText = p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
         }
 
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 26px 'Segoe UI', sans-serif";
-        const subLines = wrapCanvasText(ctx, subtitleText, subPillW - 50, 3);
-        subLines.forEach((line, idx) => {
-            ctx.fillText(line, subPillX + 25, subPillY + 75 + idx * 36);
-        });
+        if (subtitleText) {
+            const words = subtitleText.trim().split(/\s+/).filter(Boolean);
+            const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
+
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            let curX = subPillX + 25;
+            let curY = subPillY + 80;
+            const lineH = 42;
+            const maxLineW = subPillW - 50;
+
+            words.forEach((w, wi) => {
+                const wMetrics = ctx.measureText(w + " ");
+                if (curX + wMetrics.width > subPillX + maxLineW && curX > subPillX + 25) {
+                    curX = subPillX + 25;
+                    curY += lineH;
+                }
+                const isSpoken = (wi <= activeWordIdx);
+                const isCurrent = (wi === activeWordIdx);
+
+                if (isCurrent) {
+                    ctx.fillStyle = "#FACC15";
+                    ctx.shadowColor = "#FACC15";
+                    ctx.shadowBlur = 14;
+                    ctx.fillText(w, curX, curY);
+                    ctx.shadowBlur = 0;
+                } else if (isSpoken) {
+                    ctx.fillStyle = "#FDE047";
+                    ctx.fillText(w, curX, curY);
+                } else {
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.fillText(w, curX, curY);
+                }
+                curX += wMetrics.width;
+            });
+        }
         ctx.restore();
     }
 
