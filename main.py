@@ -1312,6 +1312,26 @@ async def api_runway_status(task_id: str):
     res = runway_video.get_task_status(task_id)
     return JSONResponse(res)
 
+@app.get("/api/video/heygen/status/{video_id}")
+async def api_video_heygen_status(video_id: str):
+    """Alias for /api/heygen/status/{video_id}."""
+    return await api_heygen_status(video_id)
+
+@app.get("/api/video/did/status/{talk_id}")
+async def api_video_did_status(talk_id: str):
+    """Alias for /api/did/status/{talk_id}."""
+    return await api_did_status(talk_id)
+
+@app.post("/api/video/runway/generate")
+async def api_video_runway_generate(req: RunwayGenerateRequest):
+    """Alias for /api/runway/generate."""
+    return await api_runway_generate(req)
+
+@app.get("/api/video/runway/status/{task_id}")
+async def api_video_runway_status(task_id: str):
+    """Alias for /api/runway/status/{task_id}."""
+    return await api_runway_status(task_id)
+
 @app.post("/api/video/cinematic_cascade")
 async def api_video_cinematic_cascade(req: CinematicCascadeRequest):
     """

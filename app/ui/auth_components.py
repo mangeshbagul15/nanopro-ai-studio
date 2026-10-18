@@ -1086,6 +1086,7 @@ def get_auth_injection() -> str:
                             <span>6. Creation &amp; Media</span>
                             <span style="font-size:10.5px; color:#38BDF8; cursor:pointer;" onclick="toggleGroupCheckboxes('g6', 'desktop')">Toggle</span>
                         </div>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="universal_tech_video"> Universal Tech Video Maker</label>
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="sql_video"> SQL Video Maker</label>
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="python_video"> Python Video Maker</label>
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g6" value="image_agent"> Image Maker</label>
@@ -1947,7 +1948,7 @@ function selectPermPreset(preset, device='desktop') {
     } else if (preset === 'ai_stack') {
         views = ['dashboard', 'ai_manager', 'ai_office', 'models_hub', 'agent_control', 'automation_scheduler', 'task_history', 'assistant'];
     } else if (preset === 'media_comm') {
-        views = ['dashboard', 'sql_video', 'python_video', 'image_agent', 'coding_agent', 'document_studio', 'communication', 'telegram_agent', 'whatsapp_hub', 'news_center'];
+        views = ['dashboard', 'universal_tech_video', 'sql_video', 'python_video', 'image_agent', 'coding_agent', 'document_studio', 'communication', 'telegram_agent', 'whatsapp_hub', 'news_center'];
     }
     views.forEach(v => {
         const el = document.querySelector(`${targetCls}[value="${v}"]`);

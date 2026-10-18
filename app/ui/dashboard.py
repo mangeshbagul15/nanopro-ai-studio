@@ -17,12 +17,11 @@ def get_dashboard_html() -> str:
     )
     processed = processed.replace("<body>", "<body>\n" + get_auth_injection() + "\n")
 
-    # Inject 9:16 SQL Short Video Studio directly inside the SQL Video Workspace
-    # while preserving existing components below it
+    # Inject 9:16 Universal Tech Short Video Studio directly inside the Universal Tech Video Workspace
     sql_workspace_html = get_sql_video_workspace_html()
     processed = processed.replace(
-        '<div class="workspace-view" id="view-sql_video">',
-        '<div class="workspace-view" id="view-sql_video">\n' + sql_workspace_html
+        '<div class="workspace-view" id="view-universal_tech_video">',
+        '<div class="workspace-view" id="view-universal_tech_video">\n' + sql_workspace_html
     )
 
     # Inject SQL Short Video Client-Side JavaScript Engine
@@ -3014,6 +3013,10 @@ def _get_raw_dashboard_html() -> str:
                     <span class="nav-group-arrow">&#9662;</span>
                 </div>
                 <ul class="nav-group-items">
+                    <li class="nav-item" onclick="switchView('universal_tech_video')" data-tooltip="Universal Tech Video Maker">
+                        <span class="nav-item-icon">&#127916;</span>
+                        <span class="nav-item-label">Universal Tech Video Maker</span>
+                    </li>
                     <li class="nav-item" onclick="switchView('sql_video')" data-tooltip="SQL Video Maker">
                         <span class="nav-item-icon">&#9654;</span>
                         <span class="nav-item-label">SQL Video Maker</span>
@@ -3429,6 +3432,10 @@ def _get_raw_dashboard_html() -> str:
                 <h2>Manager Deliverable &amp; Execution Output <button type="button" class="btn btn-secondary" onclick="copyViewer('dashOutput')" style="font-size:11px; padding:3px 10px;">Copy</button></h2>
                 <div class="viewer-box" id="dashOutput">Awaiting instructions. Select an agent from the left sidebar or execute a command above.</div>
             </div>
+        </div>
+
+        <!-- VIEW: UNIVERSAL TECH VIDEO MAKER (9:16 SHORTS & REELS) -->
+        <div class="workspace-view" id="view-universal_tech_video">
         </div>
 
         <!-- VIEW: SQL VIDEO MAKER -->
@@ -10591,6 +10598,7 @@ Ready for message compilation and automated dispatch.
             { id: 'github_explorer', title: 'GitHub AI Explorer', category: 'Discover', icon: '🐙' },
             { id: 'research_library', title: 'AI Research Library', category: 'Discover', icon: '📑' },
             { id: 'research_agent', title: 'Research Agent Intelligence', category: 'Discover', icon: '👁️' },
+            { id: 'universal_tech_video', title: 'Universal Tech Video Maker (9:16 Shorts & Reels)', category: 'Studios', icon: '🎬' },
             { id: 'sql_video', title: 'SQL Video Maker', category: 'Studios', icon: '▶' },
             { id: 'python_video', title: 'Python Video Maker', category: 'Studios', icon: '▶' },
             { id: 'image_agent', title: 'Image Maker & Thumbnail Studio', category: 'Studios', icon: '■' },
@@ -11025,6 +11033,7 @@ Ready for message compilation and automated dispatch.
                 user_management: "User Management & Security Administration (Admin Only)",
 
                 dashboard: "Dashboard & Overview",
+                universal_tech_video: "Universal Tech Video Maker (9:16 Shorts & Reels)",
                 sql_video: "SQL Video Maker Workspace",
                 python_video: "Python Video Maker Workspace",
                 image_agent: "Image Maker & Thumbnail Studio",

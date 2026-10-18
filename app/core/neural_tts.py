@@ -176,9 +176,9 @@ class NeuralTTSEngine:
         }
 
     async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
-        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS."""
+        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS at lively Shorts/Reels speed (<60s)."""
         import edge_tts
-        communicate = edge_tts.Communicate(text, voice=voice, rate="+0%", pitch="+0Hz")
+        communicate = edge_tts.Communicate(text, voice=voice, rate="+15%", pitch="+0Hz")
         await communicate.save(str(output_path))
 
     async def synthesize_async(self, text: str, language: str = "mr", voice_gender: str = "female", custom_filename: Optional[str] = None) -> Dict[str, Any]:

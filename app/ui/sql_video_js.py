@@ -10,492 +10,18 @@ def get_sql_video_js() -> str:
     /* ==========================================================================
        9:16 SQL SHORT & REEL ENGINE (CLIENT-SIDE ZERO-SERVER-LOAD)
        ========================================================================== */
-    const SQL_CLIENT_PRESETS = {
-        "sql_q1_second_highest_salary": {
-            id: "sql_q1_second_highest_salary",
-            title: "SQL Interview Question #1 — Find the Second-Highest Salary",
-            difficulty: "FAANG / MNC Standard",
-            duration: 85.0,
-            question: "Using the EMPLOYEES table, write a SQL query to find the second-highest distinct salary.",
-            table_name: "EMPLOYEES",
-            col_headers: ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"],
-            schema_sql: `CREATE TABLE EMPLOYEES (
-    EMP_ID INTEGER PRIMARY KEY,
-    EMP_NAME TEXT,
-    DEPARTMENT TEXT,
-    SALARY REAL
-);
-INSERT INTO EMPLOYEES VALUES 
-(101, 'Amit', 'IT', 60000),
-(102, 'Rahul', 'HR', 50000),
-(103, 'Priya', 'IT', 80000),
-(104, 'Neha', 'Finance', 70000),
-(105, 'Kiran', 'IT', 80000);`,
-            inner_query_sql: `SELECT MAX(SALARY)
-FROM EMPLOYEES;`,
-            solution_sql: `SELECT MAX(SALARY) AS SECOND_HIGHEST_SALARY
-FROM EMPLOYEES
-WHERE SALARY < (
-    SELECT MAX(SALARY)
-    FROM EMPLOYEES
-);`,
-            arrow_target: "WHERE SALARY < (SELECT MAX(SALARY))",
-            arrow_line_idx: 2,
-            distinct_salaries: [60000, 50000, 80000, 70000, 80000],
-            highest_salary: 80000,
-            second_highest_salary: 70000,
-            sample_rows: [
-                {account: "101 Amit", date: "IT", amt: "₹60,000", balance: "60k (< 80k)", status: "keep"},
-                {account: "102 Rahul", date: "HR", amt: "₹50,000", balance: "50k (< 80k)", status: "keep"},
-                {account: "103 Priya", date: "IT", amt: "₹80,000", balance: "80k (Top Tie)", status: "tie"},
-                {account: "104 Neha", date: "Finance", amt: "₹70,000", balance: "70k (🎯 2nd)", status: "target"},
-                {account: "105 Kiran", date: "IT", amt: "₹80,000", balance: "80k (Top Tie)", status: "tie"}
-            ],
-            filter_evaluations: [
-                {name: "Amit", salary: "60,000", cond: "60000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
-                {name: "Rahul", salary: "50,000", cond: "50000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
-                {name: "Priya", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"},
-                {name: "Neha", salary: "70,000", cond: "70000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
-                {name: "Kiran", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"}
-            ],
-            scenes: [
-                {
-                    id: 1, start: 0.0, end: 8.0,
-                    speech_en: "Here's a popular SQL interview question. How do you find the second-highest salary from an Employees table? Let's understand the logic and build the query step by step.",
-                    speech_mr: "एसक्यूएल इंटरव्ह्यूमधील सर्वात महत्त्वाचा प्रश्न: एम्प्लॉईज टेबलमधून दुसऱ्या क्रमांकाचा सर्वाधिक पगार कसा शोधायचा? चला लॉजिक समजून घेऊन स्टेप-बाय-स्टेप क्वेरी लिहूया!",
-                    speech_hi: "एसक्यूएल इंटरव्यू का एक बेहद पॉपुलर सवाल: एम्प्लॉईज टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालें? आइए लॉजिक समझकर स्टेप बाय स्टेप क्वेरी बनाते हैं!"
-                },
-                {
-                    id: 2, start: 8.0, end: 20.0,
-                    speech_en: "First, understand the requirement. We need the second-highest distinct salary, not the second employee. Notice that eighty thousand appears twice. We must count it only once.",
-                    speech_mr: "पहिले प्रश्न नीट समजून घ्या. आपल्याला दुसरा डिस्टिंक्ट पगार हवा आहे, दुसरा कर्मचारी नाही. इथे ऐंशी हजार पगार दोनदा आला आहे. तो आपल्याला एकदाच मोजायचा आहे.",
-                    speech_hi: "पहले सवाल को समझिए. हमें सेकंड हाईएस्ट डिस्टिंक्ट सैलरी चाहिए. ध्यान दीजिए कि अस्सी हजार दो बार आया है. हमें इसे केवल एक बार ही गिनना है."
-                },
-                {
-                    id: 3, start: 20.0, end: 32.0,
-                    speech_en: "Now, how should we solve it? First, find the maximum salary. Then exclude that salary. Finally, find the maximum from the remaining values. That's our second-highest salary.",
-                    speech_mr: "आता हे कसे सोडवायचे? प्रथम सर्वात मोठा पगार शोधा. मग तो पगार वगळा. आणि उरलेल्या पगारांमधून सर्वात मोठा पगार निवडा. तोच आपला दुसरा सर्वाधिक पगार!",
-                    speech_hi: "अब इसे कैसे सॉल्व करें? पहले मैक्सिमम सैलरी निकालिए. फिर उसे बाहर कीजिए. और बाकी बची वैल्यूज में से मैक्सिमम निकालिए. वही है हमारी सेकंड हाईएस्ट सैलरी!"
-                },
-                {
-                    id: 4, start: 32.0, end: 44.0,
-                    speech_en: "Let's write the inner query first. SELECT MAX salary FROM Employees. This returns eighty thousand, the highest salary in our table.",
-                    speech_mr: "चला आधी आतील क्वेरी लिहूया: सिलेक्ट मॅक्स सॅलरी फ्रॉम एम्प्लॉईज. ही क्वेरी आपल्याला ऐंशी हजार, म्हणजेच सर्वात मोठा पगार देते.",
-                    speech_hi: "आइए पहले इनर क्वेरी लिखते हैं: सिलेक्ट मैक्स सैलरी फ्रॉम एम्प्लॉईज. यह हमें अस्सी हजार यानी सबसे बड़ी सैलरी देती है."
-                },
-                {
-                    id: 5, start: 44.0, end: 58.0,
-                    speech_en: "Next, we exclude the highest salary using WHERE salary is less than the result of our inner query. This removes both eighty-thousand values, leaving seventy, sixty, and fifty thousand.",
-                    speech_mr: "आता व्हेअर सॅलरी लहान सबक्वेरी ही अट लावून ऐंशी हजार वगळूया. यामुळे ऐंशी हजार असणाऱ्या दोन्ही नोंदी वगळल्या जाऊन सत्तर, साठ आणि पन्नास हजार उरतात.",
-                    speech_hi: "अब व्हेअर सैलरी लेस दैन सबक्वेरी लगाकर अस्सी हजार को फिल्टर करते हैं. इससे दोनों अस्सी हजार वाले रिकॉर्ड्स हट जाते हैं और सत्तर, साठ और पचास हजार बचते हैं."
-                },
-                {
-                    id: 6, start: 58.0, end: 72.0,
-                    speech_en: "Now the outer MAX function checks the remaining salaries. The highest remaining value is seventy thousand. That's our answer! The key is using a subquery to exclude the original maximum.",
-                    speech_mr: "आता बाहेरील मॅक्स फंक्शन उरलेल्या पगारांमधून सर्वात मोठा पगार शोधते. उरलेल्यांमध्ये सर्वात मोठी रक्कम आहे सत्तर हजार! सबक्वेरीमुळे हे उत्तर १०० टक्के अचूक येते!",
-                    speech_hi: "अब आउटर मैक्स फंक्शन बचे हुए रिकॉर्ड्स को चेक करता है. सबसे बड़ी बची हुई वैल्यू है सत्तर हजार! यही हमारा सही जवाब है!"
-                },
-                {
-                    id: 7, start: 72.0, end: 85.0,
-                    speech_en: "Interview tip! Always clarify whether they want the second-highest distinct salary. If the highest salary appears multiple times, this query still returns the correct second-highest value. Follow Code with Mangesh for more SQL interview questions!",
-                    speech_mr: "इंटरव्ह्यू टिप! जर सर्वाधिक पगार अनेक लोकांचा समान असेल तरीही ही सबक्वेरी अचूक काम करते. पुढील एसक्यूएल प्रश्नांसाठी फॉलो करा कोड विथ मंगेश!",
-                    speech_hi: "इंटरव्यू टिप! अगर हाईएस्ट सैलरी डुप्लीकेट भी हो, तब भी यह सबक्वेरी मेथड हमेशा सही उत्तर देता है. ऐसे ही एसक्यूएल सवालों के लिए फॉलो कीजिए कोड विथ मंगेश!"
-                }
-            ],
-            hook_mr: "🚨 Top IT कंपन्यांच्या SQL इंटरव्ह्यूमध्ये ९०% मुलं या प्रश्नात चूक करतात! एकापेक्षा जास्त लोकांचा पगार समान असताना २ रा सर्वाधिक पगार कसा शोधायचा?",
-            hook_hi: "🚨 Top IT कंपनियों के SQL इंटरव्यू में 90% लोग इस सवाल में गलती करते हैं! जब कई लोगों की सेम सैलरी हो तो 2nd हाईएस्ट सैलरी कैसे निकालें?",
-            hook_en: "🚨 90% of candidates make a mistake on this top SQL interview question: Finding the 2nd Highest Salary with Ties!",
-            hook_minglish: "🚨 Top MNC interview madhe 90% loka fasatat! Priya & Kiran doghanchi salary same 80k aslyavar 2nd highest salary kashi kadhaychi?",
-            hook_hinglish: "🚨 Top MNC interview me 90% log fas jate hai! Priya & Kiran dono ki salary same 80k hone par 2nd highest salary kaise nikale?",
-            explanation_mr: "इथे आतील सबक्वेरी आधी पूर्ण टेबलमधून कमाल पगार ८०,००० शोधून काढते. मग बाहेरील मुख्य क्वेरी ८०,००० पेक्षा कमी असलेल्या पगारांमधून (६० हजार, ५० हजार, ७० हजार) सर्वात मोठा पगार शोधते, जो येतो बरोबर ७०,०००!",
-            explanation_hi: "यहाँ अंदर वाली सबक्वेरी पहले पूरे टेबल से मैक्सिमम सैलरी 80,000 निकालती है। फिर बाहर वाली मेन क्वेरी 80,000 से कम वाली सैलरीज में से सबसे बड़ी सैलरी चुनती है, जो आती है 70,000!",
-            explanation_en: "The inner subquery finds MAX = 80,000. The outer query filters WHERE SALARY < 80,000 excluding ties, and selects the MAX of remaining (60k, 50k, 70k) which is 70,000!",
-            explanation_minglish: "Inner query adhi MAX salary 80,000 kadhte. Mag outer query 80,000 peksha lahan aslelya salaries madhun MAX ghete, ji 70,000 ahe!",
-            explanation_hinglish: "Inner query pehle MAX salary 80,000 nikalegi. Fir outer query 80,000 se kam me se MAX legi, jo 70,000 hai!",
-            pro_tip: "💡 Interviewer Pro-Tip: 'LIMIT 1 OFFSET 1' breaks when top salaries tie (Priya & Kiran 80k). Subquery or DENSE_RANK() is mandatory in FAANG interviews!"
-        },
-        "faang_dense_rank_ties": {
-            id: "faang_dense_rank_ties",
-            title: "Amazon / Google: 2nd Highest Salary With Ties (DENSE_RANK)",
-            difficulty: "Hard",
-            hook_mr: "🚨 Google आणि Amazon मुलाखतीत ९५% मुलं या प्रश्नात फेल होतात! समान पगार असताना २ रा नंबर कसा काढायचा?",
-            hook_hi: "🚨 Google और Amazon SQL इंटरव्यू का सबसे घातक सवाल! जब दो लोगों की सेम सैलरी हो तो 2nd हाईएस्ट सैलरी कैसे निकालें?",
-            hook_en: "🚨 95% of candidates fail this Google & Amazon SQL interview question: 2nd Highest Salary with Ties!",
-            hook_minglish: "🚨 Google & Amazon interview madhe 95% pora fail hotat! Duplicate salary aslyavar 2nd highest salary kashi kadhaychi?",
-            hook_hinglish: "🚨 Google & Amazon SQL interview me 95% log fail ho jate hai! Duplicate salary hone par 2nd highest salary kaise nikale?",
-            question: "Find the 2nd highest salary from the employees table. When multiple employees tie for the top salary, ensure the 2nd distinct highest salary is returned cleanly.",
-            table_name: "company_employees",
-            col_headers: ["EMPLOYEE", "DEPARTMENT", "SALARY", "DENSE_RANK"],
-            schema_sql: `CREATE TABLE company_employees (
-    emp_id INTEGER PRIMARY KEY,
-    emp_name TEXT,
-    department TEXT,
-    salary REAL
-);
-INSERT INTO company_employees VALUES 
-(1, 'Aarav Sharma', 'Investment', 185000.0),
-(2, 'Rohit Deshmukh', 'Investment', 185000.0),
-(3, 'Priya Kulkarni', 'Platforms', 160000.0),
-(4, 'Sneha Patel', 'Security', 140000.0);`,
-            solution_sql: `WITH RankedSalaries AS (
-    SELECT emp_name, department, salary,
-        DENSE_RANK() OVER (
-            ORDER BY salary DESC
-        ) AS rnk
-    FROM company_employees
-)
-SELECT emp_name, department, salary
-FROM RankedSalaries
-WHERE rnk = 2;`,
-            arrow_target: "DENSE_RANK() OVER (ORDER BY salary DESC)",
-            arrow_line_idx: 2,
-            explanation_mr: "इथे आरव आणि रोहित दोघांचा पगार समान ₹१,८५,००० असल्याने दोघांना १ ला रँक मिळतो. RANK() मुळे पुढचा नंबर ३ रा होतो, पण DENSE_RANK() नंबर स्किप न करता प्रियाला अचूक २ रा नंबर देते!",
-            explanation_hi: "यहाँ आरव और रोहित दोनों की सैलरी ₹1,85,000 होने पर दोनों को 1st रैंक मिलती है। DENSE_RANK() रैंक स्किप नहीं करता और प्रिया को सही 2nd रैंक देता है!",
-            explanation_en: "When multiple employees tie for the highest salary, standard RANK() skips rank 2 and jumps to 3 (1, 1, 3). DENSE_RANK() never skips numbers (1, 1, 2)!",
-            explanation_minglish: "Top 2 chi salary same asel tar RANK() rank 3 var jump karte. Pan DENSE_RANK() rank skip karat nahi ani accurate 2nd salary Priya la bhetate!",
-            explanation_hinglish: "Ties hone par normal RANK() 3 pe jump karega. But DENSE_RANK() rank skip nahi karta aur exact 2nd salary nikalta hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: Never use 'LIMIT 1 OFFSET 1' when salaries can tie—DENSE_RANK() is the only standard-compliant solution!",
-            sample_rows: [
-                {account: "Aarav Sharma", date: "Investment", amt: "₹1,85,000", balance: "Rank 1 (Tie)"},
-                {account: "Rohit Deshmukh", date: "Investment", amt: "₹1,85,000", balance: "Rank 1 (Tie)"},
-                {account: "Priya Kulkarni", date: "Platforms", amt: "₹1,60,000", balance: "🎯 Rank 2 (अचूक)"},
-                {account: "Sneha Patel", date: "Security", amt: "₹1,40,000", balance: "Rank 3"}
-            ]
-        },
-        "goldman_running_balance": {
-            id: "goldman_running_balance",
-            title: "Goldman Sachs / HDFC: Cumulative Running Balance (SUM OVER PARTITION BY)",
-            difficulty: "Medium",
-            hook_mr: "🚨 HDFC आणि Goldman Sachs बँकेच्या टेक्निकल राऊंडमधील नंबर १ प्रश्न: क्युम्युलेटिव्ह बॅलन्स कसा काढायचा?",
-            hook_hi: "🚨 Goldman Sachs और HDFC बैंक इंटरव्यू का पसंदीदा सवाल: Cumulative Running Balance कैसे कैलकुलेट करें?",
-            hook_en: "🚨 Goldman Sachs & HDFC favorite SQL test: Calculate running ledger balance per account!",
-            hook_minglish: "🚨 Goldman Sachs & HDFC interview cha No. 1 question: Cumulative balance kasa calculate karaycha?",
-            hook_hinglish: "🚨 Goldman Sachs & HDFC interview ka No. 1 question: Cumulative running balance kaise nikale?",
-            question: "Calculate the cumulative running balance for each customer account ordered by transaction date without using slow correlated subqueries.",
-            table_name: "bank_transactions",
-            col_headers: ["ACCOUNT", "TXN_DATE", "AMOUNT", "RUNNING_BAL"],
-            schema_sql: `CREATE TABLE bank_transactions (
-    txn_id INTEGER PRIMARY KEY,
-    account_no TEXT,
-    txn_date TEXT,
-    amount REAL
-);
-INSERT INTO bank_transactions VALUES 
-(101, 'ACC-8821', '2026-10-01', 5000.0),
-(102, 'ACC-8821', '2026-10-03', -1200.0),
-(103, 'ACC-8821', '2026-10-05', 8500.0),
-(104, 'ACC-9942', '2026-10-02', 12000.0);`,
-            solution_sql: `SELECT account_no, txn_date, amount,
-    SUM(amount) OVER (
-        PARTITION BY account_no 
-        ORDER BY txn_date 
-        ROWS BETWEEN UNBOUNDED PRECEDING 
-        AND CURRENT ROW
-    ) AS running_balance
-FROM bank_transactions;`,
-            arrow_target: "PARTITION BY account_no",
-            arrow_line_idx: 2,
-            explanation_mr: "इथे 'PARTITION BY account_no' मुळे प्रत्येक खात्याचा स्वतंत्र ग्रुप तयार होतो, आणि 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW' मुळे सुरुवातीपासून आजपर्यंतची चालू बेरीज चालू राहते!",
-            explanation_hi: "यहाँ 'PARTITION BY account_no' हर अकाउंट को अलग रखता है और 'SUM(amount) OVER' लगातार चालू बैलेंस को जोड़ता जाता है!",
-            explanation_en: "PARTITION BY account_no keeps each customer ledger strictly isolated while SUM() OVER accumulates sequentially in O(N) linear time!",
-            explanation_minglish: "PARTITION BY account_no mule pratyek account cha vegla ledger rahto ani running balance step-by-step calculate hoto!",
-            explanation_hinglish: "PARTITION BY se har account ka hisab alag rehta hai aur running balance step by step calculate hota hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: Correlated subqueries run in quadratic O(N²) time. Window functions process millions of rows in linear O(N) time!",
-            sample_rows: [
-                {account: "ACC-8821", date: "2026-10-01", amt: "+₹5,000", balance: "₹5,000"},
-                {account: "ACC-8821", date: "2026-10-03", amt: "-₹1,200", balance: "₹3,800"},
-                {account: "ACC-8821", date: "2026-10-05", amt: "+₹8,500", balance: "🎯 ₹12,300"},
-                {account: "ACC-9942", date: "2026-10-02", amt: "+₹12,000", balance: "₹12,000"}
-            ]
-        },
-        "uber_consecutive_active_days": {
-            id: "uber_consecutive_active_days",
-            title: "Uber / Swiggy: Consecutive Active Days (Gaps & Islands Problem)",
-            difficulty: "Hard",
-            hook_mr: "🚨 Uber आणि Swiggy च्या सिस्टीम डिझाइन SQL मध्ये सलग ३ दिवस सक्रिय ड्रायव्हर्स कसे शोधायचे?",
-            hook_hi: "🚨 Uber और Swiggy डेटा एनालिस्ट इंटरव्यू: लगातार 3 दिन एक्टिव रहने वाले राइडर्स कैसे खोजें?",
-            hook_en: "🚨 Uber & Swiggy Data Analyst Interview: Solve the legendary Gaps and Islands problem!",
-            hook_minglish: "🚨 Uber ani Swiggy interview cha legendary Gaps & Islands problem kasa solve karaycha?",
-            hook_hinglish: "🚨 Uber aur Swiggy ka classic Gaps & Islands SQL problem: Consecutive 3 days active users!",
-            question: "Find all driver IDs who completed rides for at least 3 consecutive days using the Gaps and Islands date subtraction technique.",
-            table_name: "driver_trips",
-            col_headers: ["DRIVER_ID", "STREAK_START", "STREAK_END", "ACTIVE_DAYS"],
-            schema_sql: `CREATE TABLE driver_trips (
-    trip_id INTEGER PRIMARY KEY,
-    driver_id TEXT,
-    trip_date TEXT
-);
-INSERT INTO driver_trips VALUES 
-(1, 'DRV-101', '2026-10-01'),
-(2, 'DRV-101', '2026-10-02'),
-(3, 'DRV-101', '2026-10-03'),
-(4, 'DRV-202', '2026-10-01');`,
-            solution_sql: `WITH GroupedTrips AS (
-    SELECT driver_id, trip_date,
-        DATE(trip_date, '-' || ROW_NUMBER() OVER (
-            PARTITION BY driver_id ORDER BY trip_date
-        ) || ' days') AS island_group
-    FROM driver_trips
-)
-SELECT driver_id, MIN(trip_date) AS s_start,
-    MAX(trip_date) AS s_end, COUNT(*) AS days
-FROM GroupedTrips
-GROUP BY driver_id, island_group
-HAVING COUNT(*) >= 3;`,
-            arrow_target: "ROW_NUMBER() OVER (PARTITION BY driver_id ORDER BY trip_date)",
-            arrow_line_idx: 2,
-            explanation_mr: "जेव्हा तारखा सलग असतात, तेव्हा 'trip_date - ROW_NUMBER()' केल्यास एकच स्थिर तारीख (Island Group Key) मिळते! HAVING COUNT >= 3 ने सलग ३ दिवस काम केलेले ड्रायव्हर्स सापडतात!",
-            explanation_hi: "जब तारीखें लगातार होती हैं, तो trip_date में से ROW_NUMBER घटाने पर एक स्थिर ग्रुप मिलता है! HAVING COUNT >= 3 से लगातार एक्टिव ड्राइवर्स मिल जाते हैं!",
-            explanation_en: "Subtracting ROW_NUMBER() from consecutive dates yields an identical anchor date. Grouping with HAVING COUNT >= 3 cleanly isolates streaks!",
-            explanation_minglish: "Trip_date madhun ROW_NUMBER minus kelyavar constant anchor date milte. HAVING COUNT >= 3 mule 3 days streak clear diste!",
-            explanation_hinglish: "Dates me se ROW_NUMBER minus karne par island key banti hai aur continuous active days filter ho jate hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: The 'date minus row_number' trick is the most prized FAANG technique for solving streak and login retention queries!",
-            sample_rows: [
-                {account: "DRV-101", date: "2026-10-01", amt: "Day 1", balance: "Active"},
-                {account: "DRV-101", date: "2026-10-02", amt: "Day 2", balance: "Active"},
-                {account: "DRV-101", date: "2026-10-03", amt: "Day 3", balance: "🎯 Streak: 3 Days"}
-            ]
-        },
-        "netflix_top_n_per_category": {
-            id: "netflix_top_n_per_category",
-            title: "Netflix / Spotify: Top 2 Most Streamed Titles Per Category (PARTITION BY)",
-            difficulty: "Medium",
-            hook_mr: "🚨 Netflix आणि Spotify च्या डेटा सायन्स मुलाखतीत प्रत्येक कॅटेगरीतील टॉप २ शो कसे शोधतात?",
-            hook_hi: "🚨 Netflix और Spotify SQL इंटरव्यू: हर कैटेगरी में से टॉप 2 सबसे ज्यादा देखे गए शोज कैसे निकालें?",
-            hook_en: "🚨 Netflix & Spotify Data Science Interview: Extract Top 2 most streamed titles per genre!",
-            hook_minglish: "🚨 Netflix & Spotify interview: pratyek genre madhun Top 2 most watched movies kase kadhayche?",
-            hook_hinglish: "🚨 Netflix & Spotify interview: har category se Top 2 highest stream titles kaise filter kare?",
-            question: "Find the top 2 most watched titles for each genre based on total watch hours using window partitioning.",
-            table_name: "content_streams",
-            col_headers: ["TITLE", "GENRE", "WATCH_HOURS", "GENRE_RANK"],
-            schema_sql: `CREATE TABLE content_streams (
-    content_id INTEGER PRIMARY KEY,
-    title TEXT,
-    genre TEXT,
-    watch_hours INTEGER
-);
-INSERT INTO content_streams VALUES 
-(1, 'Stranger Things', 'Sci-Fi', 850000),
-(2, 'Dark', 'Sci-Fi', 720000),
-(3, 'The Crown', 'Drama', 910000),
-(4, 'Breaking Bad', 'Drama', 990000);`,
-            solution_sql: `WITH RankedContent AS (
-    SELECT title, genre, watch_hours,
-        DENSE_RANK() OVER (
-            PARTITION BY genre 
-            ORDER BY watch_hours DESC
-        ) AS rank_in_genre
-    FROM content_streams
-)
-SELECT title, genre, watch_hours, rank_in_genre
-FROM RankedContent
-WHERE rank_in_genre <= 2;`,
-            arrow_target: "PARTITION BY genre ORDER BY watch_hours DESC",
-            arrow_line_idx: 3,
-            explanation_mr: "इथे 'PARTITION BY genre' मुळे प्रत्येक जॉनरचे (Sci-Fi, Drama) स्वतंत्र रँकिंग ब्लॉक तयार होते आणि 'WHERE rank_in_genre <= 2' मुळे प्रत्येक जॉनरचे टॉप २ शोज बाहेर येतात!",
-            explanation_hi: "यहाँ 'PARTITION BY genre' हर जॉनर का अलग पार्टीशन बनाता है और 'WHERE rank_in_genre <= 2' से हर कैटेगरी के टॉप 2 शोज फिल्टर हो जाते हैं!",
-            explanation_en: "PARTITION BY genre resets the ranking boundary for each genre independently, letting WHERE rank <= 2 extract top performers without grouping collapse!",
-            explanation_minglish: "PARTITION BY genre mule Sci-Fi ani Drama cha ranking vegla hoto ani top 2 titles extract hotat!",
-            explanation_hinglish: "PARTITION BY genre se category wise ranking reset hoti hai aur top 2 records easily mil jate hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: Using PARTITION BY with DENSE_RANK() avoids expensive self-joins and scales to millions of catalogue items!",
-            sample_rows: [
-                {account: "Breaking Bad", date: "Drama", amt: "990,000 hrs", balance: "🎯 Rank 1"},
-                {account: "The Crown", date: "Drama", amt: "910,000 hrs", balance: "🎯 Rank 2"},
-                {account: "Stranger Things", date: "Sci-Fi", amt: "850,000 hrs", balance: "🎯 Rank 1"},
-                {account: "Dark", date: "Sci-Fi", amt: "720,000 hrs", balance: "🎯 Rank 2"}
-            ]
-        },
-        "meta_reciprocal_friends": {
-            id: "meta_reciprocal_friends",
-            title: "Meta / LinkedIn: Find Reciprocal Follows / Mutual Connections (Self-Join)",
-            difficulty: "Medium",
-            hook_mr: "🚨 Meta (Facebook) आणि LinkedIn च्या SQL टेस्टमध्ये म्युचुअल फॉलोवर्स कसे शोधायचे?",
-            hook_hi: "🚨 Meta और LinkedIn इंटरव्यू: दो लोग जो एक-दूसरे को फॉलो करते हैं उन्हें SQL से कैसे निकालें?",
-            hook_en: "🚨 Meta & LinkedIn SQL Interview: Find all pairs of mutual / reciprocal connections!",
-            hook_minglish: "🚨 Meta & LinkedIn interview: mutual friends ani reciprocal follows kase find out karayche?",
-            hook_hinglish: "🚨 Meta & LinkedIn interview: mutual connections aur reciprocal follow pairs kaise nikale?",
-            question: "Find all distinct pairs of users who reciprocally follow each other. Do not return duplicate reversed pairs (A, B) and (B, A).",
-            table_name: "user_follows",
-            col_headers: ["USER_A", "USER_B", "STATUS", "RELATION"],
-            schema_sql: `CREATE TABLE user_follows (
-    user_id TEXT,
-    following_id TEXT,
-    follow_date TEXT,
-    PRIMARY KEY (user_id, following_id)
-);
-INSERT INTO user_follows VALUES 
-('USR-1', 'USR-2', '2026-10-01'),
-('USR-2', 'USR-1', '2026-10-02'),
-('USR-3', 'USR-4', '2026-10-04'),
-('USR-4', 'USR-3', '2026-10-05');`,
-            solution_sql: `SELECT f1.user_id AS user_a,
-    f1.following_id AS user_b
-FROM user_follows f1
-JOIN user_follows f2 
-  ON f1.user_id = f2.following_id 
- AND f1.following_id = f2.user_id
-WHERE f1.user_id < f1.following_id;`,
-            arrow_target: "ON f1.user_id = f2.following_id AND f1.following_id = f2.user_id",
-            arrow_line_idx: 3,
-            explanation_mr: "इथे Self-Join वापरला आहे. '(USR-1, USR-2)' आणि '(USR-2, USR-1)' अशी डुप्लिकेट जोडी नको म्हणून 'WHERE f1.user_id < f1.following_id' लावून एकच अचूक जोडी ठेवली!",
-            explanation_hi: "यहाँ हमने Self-Join इस्तेमाल किया है। '(A, B)' और '(B, A)' जैसे डुप्लिकेट्स को रोकने के लिए 'WHERE user_id < following_id' की शर्त लगाई गई है!",
-            explanation_en: "Self-joining the table on reciprocal user IDs matches bidirectional friendships. Adding 'WHERE f1.user_id < f1.following_id' eliminates symmetric duplicate pairs!",
-            explanation_minglish: "Self-join kelyane reciprocal follows bhetle. Ani f1.user_id < f1.following_id mule reverse duplicates delete jhale!",
-            explanation_hinglish: "Self-join se mutual followers nikalte hai aur f1.user_id < f1.following_id se duplicate pairs filter ho jate hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: Whenever comparing bidirectional graph edges, adding '<' on the keys prevents redundant mirrored output!",
-            sample_rows: [
-                {account: "USR-1", date: "USR-2", amt: "Follows Both", balance: "🎯 Mutual Match"},
-                {account: "USR-3", date: "USR-4", amt: "Follows Both", balance: "🎯 Mutual Match"}
-            ]
-        },
-        "amazon_churn_zero_orders": {
-            id: "amazon_churn_zero_orders",
-            title: "Amazon / Flipkart: Customers Who Registered But Never Placed an Order (Anti-Join)",
-            difficulty: "Easy",
-            hook_mr: "🚨 Amazon SQL राउंड १: रजिस्ट्रेशन केले पण १ ही ऑर्डर न दिलेले ग्राहक कसे शोधायचे? 'NOT IN' का वापरू नये?",
-            hook_hi: "🚨 Amazon SQL Interview: वे कस्टमर्स जिन्होंने रजिस्टर किया पर कभी ऑर्डर नहीं दिया! NOT IN क्यों फेल होता है?",
-            hook_en: "🚨 Amazon & Flipkart SQL Test: Find registered customers with ZERO orders! Why NOT IN fails!",
-            hook_minglish: "🚨 Amazon SQL test: account banavla pan 0 orders keleli lok kashi shodhaychi? LEFT JOIN magic!",
-            hook_hinglish: "🚨 Amazon SQL test: sign up kiya par zero orders wale customers kaise filter kare?",
-            question: "Find all registered customers who have never placed an order. Demonstrate why LEFT JOIN with IS NULL is superior to NOT IN.",
-            table_name: "portal_customers",
-            col_headers: ["CUSTOMER_ID", "NAME", "SIGNUP_DATE", "TOTAL_ORDERS"],
-            schema_sql: `CREATE TABLE portal_customers (
-    customer_id TEXT PRIMARY KEY,
-    customer_name TEXT,
-    signup_date TEXT
-);
-CREATE TABLE portal_orders (
-    order_id INTEGER PRIMARY KEY,
-    customer_id TEXT,
-    total_amt REAL
-);
-INSERT INTO portal_customers VALUES 
-('CUST-1', 'Rajesh K', '2026-09-01'),
-('CUST-2', 'Sunita M', '2026-09-05');
-INSERT INTO portal_orders VALUES (501, 'CUST-1', 4500.0);`,
-            solution_sql: `SELECT c.customer_id, c.customer_name,
-    c.signup_date
-FROM portal_customers c
-LEFT JOIN portal_orders o 
-  ON c.customer_id = o.customer_id
-WHERE o.order_id IS NULL;`,
-            arrow_target: "WHERE o.order_id IS NULL",
-            arrow_line_idx: 4,
-            explanation_mr: "इथे 'LEFT JOIN' मुळे सर्व ग्राहक येतात. खरेदी नसलेल्यांच्या ऑर्डर आयडी समोर 'NULL' येतो. 'WHERE o.order_id IS NULL' मुळे शून्य ऑर्डर असलेले ग्राहक अचूक वेगळे होतात!",
-            explanation_hi: "यहाँ 'LEFT JOIN' सभी कस्टमर्स को लाता है। 'WHERE order_id IS NULL' से वे कस्टमर्स तुरंत फिल्टर हो जाते हैं जिन्होंने कभी कोई खरीदारी नहीं की!",
-            explanation_en: "LEFT JOIN preserves all customers. For non-purchasers, order columns evaluate to NULL. 'WHERE o.order_id IS NULL' filters them safely without the NULL trap of NOT IN!",
-            explanation_minglish: "LEFT JOIN mule sagli lok yetat ani purchase naslyane order_id NULL disto. WHERE o.order_id IS NULL zero order customers extract karte!",
-            explanation_hinglish: "LEFT JOIN se all customers load hote hai aur WHERE order_id IS NULL se non-buying customers accurately filter hote hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: If a subquery contains even a single NULL, 'NOT IN' returns EMPTY SET! In production, always use LEFT JOIN with IS NULL or NOT EXISTS!",
-            sample_rows: [
-                {account: "CUST-1", date: "Rajesh K", amt: "₹4,500.0", balance: "1 Order (Active)"},
-                {account: "CUST-2", date: "Sunita M", amt: "NULL", balance: "🎯 0 Orders (Churn Risk)"}
-            ]
-        },
-        "stripe_consecutive_fraud": {
-            id: "stripe_consecutive_fraud",
-            title: "Stripe / PayPal: Rapid Consecutive Suspicious Card Withdrawals (LAG / LEAD)",
-            difficulty: "Hard",
-            hook_mr: "🚨 Stripe आणि PayPal फ्रॉड डिटेक्शन SQL: ५ मिनिटांत एकाच कार्डवरून सलग मोठे विड्रॉव्हल कसे पकडायचे?",
-            hook_hi: "🚨 Stripe और PayPal फ्रॉड डिटेक्शन: 5 मिनट में लगातार 2 बड़े विड्रॉल कैसे डिटेक्ट करें?",
-            hook_en: "🚨 Stripe & PayPal Fraud Security: Detect rapid consecutive high-value withdrawals with LAG()!",
-            hook_minglish: "🚨 Stripe & PayPal fraud detection: 5 min madhe back-to-back mothe transactions kase track karayche?",
-            hook_hinglish: "🚨 Stripe & PayPal fraud detection: LAG function se rapid suspicious transactions kaise pakde?",
-            question: "Find all card accounts that made consecutive withdrawals of more than ₹10,000 back-to-back using the LAG() window function.",
-            table_name: "card_transactions",
-            col_headers: ["CARD_NO", "AMOUNT", "PREV_AMOUNT", "FRAUD_STATUS"],
-            schema_sql: `CREATE TABLE card_transactions (
-    id INTEGER PRIMARY KEY,
-    card_no TEXT,
-    amount REAL,
-    tx_time TEXT
-);
-INSERT INTO card_transactions VALUES 
-(1, 'CARD-1001', 15000.0, '10:00:00'),
-(2, 'CARD-1001', 20000.0, '10:04:00'),
-(3, 'CARD-1002', 2000.0, '11:00:00');`,
-            solution_sql: `WITH TxnWithLag AS (
-    SELECT card_no, amount, tx_time,
-        LAG(amount, 1) OVER (
-            PARTITION BY card_no 
-            ORDER BY tx_time
-        ) AS prev_amount
-    FROM card_transactions
-)
-SELECT card_no, amount, prev_amount, tx_time
-FROM TxnWithLag
-WHERE amount >= 10000 AND prev_amount >= 10000;`,
-            arrow_target: "LAG(amount, 1) OVER (PARTITION BY card_no ORDER BY tx_time)",
-            arrow_line_idx: 2,
-            explanation_mr: "इथे 'LAG()' फंक्शन आधीच्या विड्रॉव्हलची रक्कम लगेच पुढच्या ओळीत दाखवते. जर चालू रक्कम आणि आधीची रक्कम दोन्ही ₹१०,००० पेक्षा जास्त असतील तर फ्रॉड अलार्म लगेच ट्रिगर होतो!",
-            explanation_hi: "यहाँ 'LAG()' पिछली ट्रांजैक्शन की वैल्यू सामने लाता है। जब करंट और पिछला दोनों अमाउंट ₹10,000+ होते हैं तो फ्रॉड फ़्लैग हो जाता है!",
-            explanation_en: "LAG() accesses preceding rows without self-joins. Checking where both current amount and prev_amount exceed ₹10,000 detects velocity fraud in a single scan!",
-            explanation_minglish: "LAG() function adhicha transaction samor aante. Current ani previous amount 10k peksha jast asel tar fraud alert lagech disto!",
-            explanation_hinglish: "LAG() function pichhle record ko current row me fetch karta hai aur consecutive high value transactions flag ho jate hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: LAG() and LEAD() avoid costly Cartesian self-joins and are the foundation of real-time fraud engines!",
-            sample_rows: [
-                {account: "CARD-1001", date: "10:00:00", amt: "₹15,000", balance: "Txn #1"},
-                {account: "CARD-1001", date: "10:04:00", amt: "₹20,000", balance: "🚨 FRAUD ALERT (Consecutive)"}
-            ]
-        },
-        "zomato_mom_growth": {
-            id: "zomato_mom_growth",
-            title: "Swiggy / Zomato: Month-over-Month (MoM) Revenue Growth Percentage (LAG Window)",
-            difficulty: "Medium",
-            hook_mr: "🚨 Zomato आणि Swiggy बिझनेस रिपोर्टिंग: दर महिन्याची टक्केवारीतील वाढ (MoM Growth %) कशी काढायची?",
-            hook_hi: "🚨 Zomato और Swiggy डेटा एनालिटिक्स: Month-over-Month रेवेन्यू ग्रोथ % कैसे निकालें?",
-            hook_en: "🚨 Swiggy & Zomato Business Intelligence: Calculate Month-over-Month (MoM) Growth % with LAG()!",
-            hook_minglish: "🚨 Zomato & Swiggy BI interview: Month-over-Month growth percentage kashi calculate karaychi?",
-            hook_hinglish: "🚨 Zomato & Swiggy analytics: MoM revenue growth % ka standard SQL formula!",
-            question: "Calculate the Month-over-Month (MoM) revenue growth percentage across consecutive reporting months using the LAG() window function.",
-            table_name: "monthly_business_metrics",
-            col_headers: ["REPORT_MONTH", "REVENUE", "PREV_MONTH", "MOM_GROWTH_%"],
-            schema_sql: `CREATE TABLE monthly_business_metrics (
-    report_month TEXT PRIMARY KEY,
-    total_revenue REAL
-);
-INSERT INTO monthly_business_metrics VALUES 
-('2026-07', 5000000.0),
-('2026-08', 6200000.0),
-('2026-09', 7500000.0),
-('2026-10', 9000000.0);`,
-            solution_sql: `WITH MonthlyTotals AS (
-    SELECT report_month, total_revenue,
-        LAG(total_revenue, 1) OVER (
-            ORDER BY report_month
-        ) AS prev_month_revenue
-    FROM monthly_business_metrics
-)
-SELECT report_month, total_revenue, prev_month_revenue,
-    ROUND(((total_revenue - prev_month_revenue) * 100.0) / prev_month_revenue, 2) AS mom_growth_pct
-FROM MonthlyTotals;`,
-            arrow_target: "LAG(total_revenue, 1) OVER (ORDER BY report_month)",
-            arrow_line_idx: 2,
-            explanation_mr: "इथे 'LAG(total_revenue, 1)' मागील महिन्याचा महसूल बरोबर बाजूला आणतो, ज्यामुळे ((Current - Prev) * 100 / Prev) सूत्राने टक्केवारीतील नफा अचूक काढता येतो!",
-            explanation_hi: "यहाँ 'LAG(total_revenue, 1)' पिछले महीने का रेवेन्यू सामने लाता है, जिससे ((Current - Prev) * 100 / Prev) फ़ॉर्मूले से MoM Growth % निकल आता है!",
-            explanation_en: "LAG(total_revenue, 1) pulls previous month revenue onto the current row, allowing clean ((Current - Prev) * 100 / Prev) calculation without joining on date offsets!",
-            explanation_minglish: "LAG function pichlya mahinyacha revenue deto ani MoM growth percentage clean calculate hoto!",
-            explanation_hinglish: "LAG() se pichhle mahine ka revenue easily milta hai aur MoM percentage growth accurately compute hoti hai!",
-            pro_tip: "💡 Senior Interviewer Pro-Tip: Rounding to 2 decimal places and handling NULL on the first month makes your SQL dashboard-ready for C-level executives!",
-            sample_rows: [
-                {account: "2026-07", date: "₹50.0 L", amt: "Base Month", balance: "0.0%"},
-                {account: "2026-08", date: "₹62.0 L", amt: "₹50.0 L", balance: "+24.0% Growth"},
-                {account: "2026-09", date: "₹75.0 L", amt: "₹62.0 L", balance: "+20.97% Growth"},
-                {account: "2026-10", date: "₹90.0 L", amt: "₹75.0 L", balance: "🎯 +20.0% Growth"}
-            ]
-        }
-    };
+    const SQL_CLIENT_PRESETS = {};
 
     let sqlShortState = {
         currentTime: 0.0,
-        maxDuration: 85.0,
+        maxDuration: 56.0,
         isPlaying: false,
         playbackSpeed: 1.0,
-        audioLang: 'en',
-        textStyle: 'english',
+        audioLang: 'mr',
+        textStyle: 'minglish',
         showAvatar: true,
-        activePreset: SQL_CLIENT_PRESETS["sql_q1_second_highest_salary"],
+        activePreset: null,
+        activeVideoSpec: null,
         selectedAvatar: "Nadim_public_5",
         avatarVideoElement: null,
         avatarVideoLoaded: false,
@@ -508,6 +34,62 @@ FROM MonthlyTotals;`,
         recordedChunks: [],
         audioUrl: "/audio/preset_sql_q1_second_highest_salary_en.mp3"
     };
+
+    // Dynamic duration calibration & proportional stage scaling (<60s Shorts & Reels standard)
+    function calibrateAudioDuration() {
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        if (!audioEl) return;
+        const realDur = audioEl.duration;
+        if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 5.0) {
+            // Strictly cap at 58.5s so video is ALWAYS placed on YouTube Shorts & Instagram Reels shelf
+            const boundedDur = Math.min(58.5, realDur);
+            sqlShortState.maxDuration = boundedDur;
+            const sc = document.getElementById("sqlShortScrubber");
+            if (sc) {
+                sc.max = boundedDur;
+                sc.step = "0.1";
+            }
+            scaleScenesToRealDuration(boundedDur);
+            updatePlayerScrubberUI(sqlShortState.currentTime);
+        }
+    }
+
+    function scaleScenesToRealDuration(dur) {
+        const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
+        if (!p) {
+            renderPromptStandbyScreen(ctx, W, H, t);
+            return;
+        }
+        if (!p) return;
+        const stagesList = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : null);
+        if (!stagesList || stagesList.length === 0) return;
+        const lastScene = stagesList[stagesList.length - 1];
+        const origMax = p.max_duration_seconds || lastScene.orig_end || lastScene.end || 56.0;
+        const ratio = dur / origMax;
+        stagesList.forEach(s => {
+            if (s.orig_start === undefined) s.orig_start = s.start;
+            if (s.orig_end === undefined) s.orig_end = s.end;
+            s.start = Number((s.orig_start * ratio).toFixed(2));
+            s.end = Number((s.orig_end * ratio).toFixed(2));
+        });
+        if (p.orig_outro_start === undefined) p.orig_outro_start = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, origMax - 3.5);
+        p.outro_start = Math.max(0, Number((p.orig_outro_start * ratio).toFixed(2)));
+        p.max_duration_seconds = dur;
+    }
+
+    function attachAudioSyncListeners(audioEl) {
+        if (!audioEl || audioEl._hasSyncListeners) return;
+        audioEl._hasSyncListeners = true;
+        audioEl.addEventListener("loadedmetadata", calibrateAudioDuration);
+        audioEl.addEventListener("durationchange", calibrateAudioDuration);
+        audioEl.addEventListener("canplay", calibrateAudioDuration);
+        audioEl.addEventListener("ended", () => {
+            sqlShortState.currentTime = sqlShortState.maxDuration;
+            pauseSqlShortPlay();
+            renderSqlShortFrame(sqlShortState.currentTime);
+            updatePlayerScrubberUI(sqlShortState.currentTime);
+        });
+    }
 
     // Initialize Workspace on Page Load
     document.addEventListener("DOMContentLoaded", () => {
@@ -525,7 +107,7 @@ FROM MonthlyTotals;`,
 
 ## 1. VIDEO CONFIGURATION
 * Aspect Ratio: 9:16
-* Target Duration: 85 seconds
+* Target Duration: 55 seconds (YouTube Shorts & Reels <60s)
 * Voice: Natural Indian AI teacher
 * Branding: @Code_With_Mangesh
 
@@ -574,16 +156,10 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function initSqlShortWorkspace() {
-        const preset = sqlShortState.activePreset;
-        const qEl = document.getElementById("sqlShortQuestion");
-        const cEl = document.getElementById("sqlShortCodePreview");
-        if (qEl && !qEl.value.trim()) {
-            qEl.value = DEMO_MASTER_PROMPT;
+        const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
+        if (p) {
+            updateSqlBlueprintUI(p);
         }
-        if (cEl) cEl.value = preset.solution_sql || "";
-
-        updateSqlBlueprintUI(preset);
-        loadPresetVoiceAudio();
         renderSqlShortFrame(0);
     }
 
@@ -612,8 +188,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             if (data.status === "success" && data.audio_url) {
                 sqlShortState.audioUrl = data.audio_url;
                 if (audioEl) {
+                    attachAudioSyncListeners(audioEl);
                     audioEl.src = data.audio_url;
                     audioEl.load();
+                    calibrateAudioDuration();
                 }
             }
         } catch(e) {
@@ -657,15 +235,19 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function handleSqlPresetChange(val) {
         if (val === "custom") {
-            document.getElementById("sqlShortQuestion").value = "";
-            document.getElementById("sqlShortCodePreview").value = "";
+            const qEl = document.getElementById("sqlShortQuestion");
+            if (qEl) qEl.value = "";
+            const cEl = document.getElementById("sqlShortCodePreview");
+            if (cEl) cEl.value = "";
             return;
         }
         const p = SQL_CLIENT_PRESETS[val];
         if (p) {
             sqlShortState.activePreset = p;
-            document.getElementById("sqlShortQuestion").value = p.question;
-            document.getElementById("sqlShortCodePreview").value = p.solution_sql;
+            const qEl = document.getElementById("sqlShortQuestion");
+            if (qEl) qEl.value = p.question;
+            const cEl = document.getElementById("sqlShortCodePreview");
+            if (cEl) cEl.value = p.solution_sql || "";
             updateSqlBlueprintUI(p);
             loadPresetVoiceAudio();
             restartSqlShortPlay();
@@ -673,31 +255,12 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function updateSqlBlueprintUI(p) {
+        if (!p) return;
         const hookText = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr || p.hook || "";
         const hookEl = document.getElementById("bpTimelineHook");
         if (hookEl) hookEl.innerText = hookText;
         const arrowEl = document.getElementById("bpArrowTarget");
         if (arrowEl) arrowEl.innerText = p.arrow_target || p.golden_rule || "OVER ()";
-
-        // Update Technical Concept Breakdown Box
-        const conceptEl = document.getElementById("studentConceptHelp");
-        if (conceptEl) {
-            if (p.content_type === "theory") {
-                conceptEl.innerHTML = `
-                    • <b>प्रश्न व संकल्पना (Concept Understanding):</b> ${p.question}<br>
-                    • <b>महत्त्वाचा सुवर्ण नियम (Golden Rule):</b> <code style="color:#10B981; background:rgba(16,185,129,0.1); padding:2px 4px; border-radius:4px;">${p.golden_rule || p.concept_summary || "Row filter with WHERE, Group filter with HAVING"}</code><br>
-                    • <b>कम्पॅरिझन मॅट्रिक्स:</b> ${p.comparison_title || 'Side-by-Side Breakdown'}<br>
-                    • <b>${p.pro_tip || ''}</b>
-                `;
-            } else {
-                conceptEl.innerHTML = `
-                    • <b>प्रश्न समजून घ्या (Question Understanding):</b> ${p.question}<br>
-                    • <b>महत्त्वाची क्लॉज व ॲरो (Critical Clause):</b> <code style="color:#38BDF8; background:rgba(56,189,248,0.1); padding:2px 4px; border-radius:4px;">${p.arrow_target || 'OVER ()'}</code><br>
-                    • <b>स्पष्टीकरण:</b> ${p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.explanation || ''}<br>
-                    • <b>${p.pro_tip || ''}</b>
-                `;
-            }
-        }
     }
 
     async function generateSqlShortBlueprint() {
@@ -719,15 +282,27 @@ SECOND_HIGHEST_SALARY: 70000`;
             });
             const data = await res.json();
             if (data.status === "success") {
-                sqlShortState.activePreset = Object.assign({
+                const targetDur = data.max_duration_seconds || 56.0;
+                sqlShortState.maxDuration = targetDur;
+                const dynamicSpec = Object.assign({
                     id: data.id || "custom_ai",
                     content_type: data.content_type || "sql_query",
                     title: data.title || "SQL Interview Preparation",
                     difficulty: data.difficulty || "Core Interview",
                     question: data.question || q,
-                    scenes: data.scenes || [],
+                    stages: data.stages || data.scenes || [],
+                    scenes: data.stages || data.scenes || [],
+                    outro_start: (data.outro_start !== undefined) ? data.outro_start : Math.max(0, targetDur - 3.5),
+                    pipeline_stages: data.pipeline_stages || [],
+                    sample_rows: data.sample_rows || [],
+                    col_headers: data.col_headers || ["ID", "ATTRIBUTE", "AMOUNT", "STATUS"],
+                    filter_evaluations: data.filter_evaluations || [],
+                    output_rows: data.output_rows || [],
+                    output_value: data.output_value || "",
                     pro_tip: data.pro_tip || "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."
                 }, data);
+                sqlShortState.activeVideoSpec = dynamicSpec;
+                sqlShortState.activePreset = dynamicSpec;
 
                 // Update Code Preview
                 const codePreviewEl = document.getElementById("sqlShortCodePreview");
@@ -740,8 +315,10 @@ SECOND_HIGHEST_SALARY: 70000`;
                     sqlShortState.audioUrl = data.audio_url;
                     const audioEl = document.getElementById("sqlVoiceAudio");
                     if (audioEl) {
+                        attachAudioSyncListeners(audioEl);
                         audioEl.src = data.audio_url;
                         audioEl.load();
+                        calibrateAudioDuration();
                     }
                 }
 
@@ -764,16 +341,15 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     async function renderAiAvatarVideo() {
-        const avatar = sqlShortState.selectedAvatar;
+        const avatar = sqlShortState.selectedAvatar || "Nadim_public_5";
         const statusEl = document.getElementById("avatarRenderStatus");
         const btn = document.getElementById("btnRenderAvatar");
-        if (!avatar || avatar === "none") {
-            alert("Please select an AI Avatar from the dropdown first!");
-            return;
-        }
 
         const p = sqlShortState.activePreset;
-        const script = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr;
+        const promptText = (document.getElementById("sqlShortQuestion")?.value || "").trim();
+        const script = (p && (p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr || p.speech_mr))
+            || promptText.slice(0, 150)
+            || "Welcome to today's tech masterclass with Code with Mangesh!";
 
         statusEl.style.display = "block";
         statusEl.style.color = "#38BDF8";
@@ -848,7 +424,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const interval = setInterval(async () => {
             attempts++;
             try {
-                const res = await fetch(`/api/video/heygen/status/${videoId}`);
+                let res = await fetch(`/api/heygen/status/${videoId}`);
+                if (!res.ok) res = await fetch(`/api/video/heygen/status/${videoId}`);
                 const data = await res.json();
                 if (data.status === "completed" && data.video_url) {
                     clearInterval(interval);
@@ -882,7 +459,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const interval = setInterval(async () => {
             attempts++;
             try {
-                const res = await fetch(`/api/video/did/status/${talkId}`);
+                let res = await fetch(`/api/did/status/${talkId}`);
+                if (!res.ok) res = await fetch(`/api/video/did/status/${talkId}`);
                 const data = await res.json();
                 if (data.status === "done" && data.result_url) {
                     clearInterval(interval);
@@ -911,7 +489,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     async function renderCinematicBackgroundVideo() {
-        const bgChoice = document.getElementById("sqlCinematicBgSelect").value;
+        const bgChoice = document.getElementById("sqlCinematicBgSelect")?.value || "cyber_matrix";
         const statusEl = document.getElementById("cinematicBgRenderStatus");
         const btn = document.getElementById("btnRenderCinematicBg");
 
@@ -920,7 +498,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             sqlShortState.backgroundVideoLoaded = false;
             statusEl.style.display = "block";
             statusEl.style.color = "#10B981";
-            statusEl.innerText = "⚡ Using Cyber Grid Neon Canvas (Ultra-Fast 60 FPS)";
+            statusEl.innerText = "⚡ Using Transparent Cyber Glass Canvas (Ultra-Fast 60 FPS)";
             renderSqlShortFrame(sqlShortState.currentTime);
             return;
         }
@@ -932,10 +510,10 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         try {
             const isLuma = bgChoice.startsWith("luma");
-            const endpoint = isLuma ? "/api/video/luma_cascade" : "/api/video/runway/generate";
+            const endpoint = isLuma ? "/api/video/luma_cascade" : "/api/runway/generate";
             const promptText = isLuma 
-                ? "3D cinematic golden SQL database particles flowing vertically in dark cyberspace, 9:16 aspect ratio, volumetric lighting, 4k"
-                : "Hyper-realistic high-tech Mumbai banking server room, glowing neon cyan data racks, server status lights, 9:16 vertical view, photorealistic, 8k";
+                ? "3D cinematic golden tech database particles flowing vertically in dark cyberspace, 9:16 aspect ratio, volumetric lighting, 4k"
+                : "Hyper-realistic high-tech server room and cloud analytics cluster, glowing neon cyan data racks, server status lights, 9:16 vertical view, photorealistic, 8k";
 
             const res = await fetch(endpoint, {
                 method: "POST",
@@ -1000,616 +578,338 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     /* ==========================================================================
-       THEORY & CONCEPTUAL 7-SCENE MASTER STORYBOARD (1080 x 1920 9:16)
+       3D HIGH-TECH GLASSMORPHISM & DYNAMIC MOTION VECTOR ENGINE
        ========================================================================== */
-    function renderTheoryShortStoryboard(ctx, W, H, p, t) {
-        // SCENE 1 (0 to 8.0s): THEORY TOPIC & CONCEPT INTRODUCTION
-        if (t < 8.0) {
-            ctx.save();
-            const s1Alpha = t < 0.5 ? t / 0.5 : (t > 7.5 ? (8.0 - t) / 0.5 : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s1Alpha));
+    let _sqlCyberAudioCtx = null;
+    function playCyberBleep(freq = 880, dur = 0.08) {
+        try {
+            if (!_sqlCyberAudioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) _sqlCyberAudioCtx = new AudioCtx();
+            }
+            if (_sqlCyberAudioCtx && _sqlCyberAudioCtx.state === 'suspended') {
+                _sqlCyberAudioCtx.resume();
+            }
+            if (!_sqlCyberAudioCtx) return;
+            const osc = _sqlCyberAudioCtx.createOscillator();
+            const gain = _sqlCyberAudioCtx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, _sqlCyberAudioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq * 1.4, _sqlCyberAudioCtx.currentTime + dur);
+            gain.gain.setValueAtTime(0.04, _sqlCyberAudioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, _sqlCyberAudioCtx.currentTime + dur);
+            osc.connect(gain);
+            gain.connect(_sqlCyberAudioCtx.destination);
+            osc.start();
+            osc.stop(_sqlCyberAudioCtx.currentTime + dur);
+        } catch (e) {}
+    }
 
-            // Question Header Card
-            ctx.fillStyle = "rgba(16, 25, 46, 0.95)";
+    // 1. Draw 3D Frosted Crystal Glass Tile with Specular Rim & Depth Layering
+    function drawGlassTile(ctx, x, y, w, h, radius = 20, glowColor = "#38BDF8", elevation = false, isFront = true, alpha = 1.0) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
+
+        // Depth perspective scaling
+        if (!isFront) {
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            ctx.translate(cx, cy);
+            ctx.scale(0.93, 0.93);
+            ctx.translate(-cx, -cy);
+            ctx.globalAlpha *= 0.38;
+        } else if (elevation) {
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            ctx.translate(cx, cy);
+            ctx.scale(1.015, 1.015);
+            ctx.translate(-cx, -cy);
+        }
+
+        // Frosted Glass Body Gradient (Grey/Navy Translucent Mirror)
+        const grad = ctx.createLinearGradient(x, y, x + w * 0.3, y + h);
+        if (isFront) {
+            grad.addColorStop(0, "rgba(255, 255, 255, 0.09)");
+            grad.addColorStop(0.2, "rgba(22, 33, 62, 0.78)");
+            grad.addColorStop(0.8, "rgba(10, 16, 34, 0.88)");
+            grad.addColorStop(1, "rgba(6, 10, 22, 0.94)");
+        } else {
+            grad.addColorStop(0, "rgba(255, 255, 255, 0.04)");
+            grad.addColorStop(1, "rgba(12, 18, 36, 0.55)");
+        }
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, radius);
+        ctx.fill();
+
+        // Glowing border
+        if (isFront && glowColor) {
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = elevation ? 26 : 12;
+            ctx.strokeStyle = glowColor;
+            ctx.lineWidth = elevation ? 3.5 : 2.0;
+        } else {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+            ctx.lineWidth = 1.5;
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Specular Mirror Top Reflection Line (Crystal Clear Bevel Effect)
+        if (isFront) {
+            const specGrad = ctx.createLinearGradient(x + 20, y + 2, x + w - 20, y + 2);
+            specGrad.addColorStop(0, "rgba(255, 255, 255, 0.0)");
+            specGrad.addColorStop(0.25, "rgba(255, 255, 255, 0.55)");
+            specGrad.addColorStop(0.75, "rgba(255, 255, 255, 0.55)");
+            specGrad.addColorStop(1, "rgba(255, 255, 255, 0.0)");
+            ctx.strokeStyle = specGrad;
+            ctx.lineWidth = 2.0;
             ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 230, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3;
+            ctx.moveTo(x + 25, y + 2);
+            ctx.lineTo(x + w - 25, y + 2);
             ctx.stroke();
 
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("📋 SQL THEORY INTERVIEW TOPIC:", 90, 275);
+            // Cyber corner crosshairs (+)
+            ctx.fillStyle = "rgba(56, 189, 248, 0.5)";
+            ctx.font = "14px monospace";
+            ctx.fillText("+", x + 12, y + 20);
+            ctx.fillText("+", x + w - 20, y + 20);
+        }
 
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            const qLines = wrapCanvasText(ctx, p.question, W - 180);
-            qLines.slice(0, 3).forEach((l, i) => {
-                ctx.fillText(l, 90, 325 + i * 38);
-            });
+        ctx.restore();
+    }
 
-            // Target Highlight Badge
-            const pulse = 1.0 + Math.sin(t * 6) * 0.05;
-            ctx.save();
-            ctx.translate(W / 2, 490);
-            ctx.scale(pulse, pulse);
-            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+    // 2. Draw Dynamic Animated Laser Connector with Traveling Photon Energy Pulse
+    function drawDynamicConnector(ctx, x1, y1, x2, y2, color = "#38BDF8", t = 0, label = "") {
+        ctx.save();
+        const midY = (y1 + y2) / 2;
+
+        // Glowing dashed laser path
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([10, 8]);
+        ctx.lineDashOffset = -t * 40;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+
+        // Traveling Photon Energy Particle (Light Spark Pulse)
+        const u = (t * 0.9) % 1.0;
+        const pu = 1 - u;
+        const px = pu * pu * pu * x1 + 3 * pu * pu * u * x1 + 3 * pu * u * u * x2 + u * u * u * x2;
+        const py = pu * pu * pu * y1 + 3 * pu * pu * u * midY + 3 * pu * u * u * midY + u * u * u * y2;
+
+        ctx.save();
+        ctx.shadowColor = "#FFFFFF";
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(px, py, 11, 0, Math.PI * 2);
+        ctx.globalAlpha = 0.5;
+        ctx.fill();
+        ctx.restore();
+
+        // Arrowhead at destination
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 10, y2 - 16);
+        ctx.lineTo(x2 + 10, y2 - 16);
+        ctx.closePath();
+        ctx.fill();
+
+        // Optional Central Glass Pill Label
+        if (label) {
+            const lx = (x1 + x2) / 2;
+            const ly = midY;
+            ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
             ctx.beginPath();
-            ctx.roundRect(-300, -24, 600, 48, 14);
+            ctx.roundRect(lx - 120, ly - 18, 240, 36, 18);
             ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
             ctx.stroke();
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
+            ctx.fillStyle = color;
+            ctx.font = "bold 16px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("🎯 TARGET: QUERY EXECUTION LIFECYCLE & CORE MECHANISM", 0, 7);
-            ctx.restore();
+            ctx.fillText(label, lx, ly + 6);
+            ctx.textAlign = "left";
+        }
+        ctx.restore();
+    }
 
-            // Architectural Overview Container
-            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-            ctx.beginPath();
-            ctx.roundRect(60, 540, W - 120, 410, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
+    // 3. Draw Dynamic Architectural Pipeline (Table -> Window -> Filter -> Output)
+    function drawArchitecturePipeline(ctx, x, y, w, h, stages, activeIndex = 0, t = 0) {
+        ctx.save();
+        const stageW = (w - (stages.length - 1) * 20) / stages.length;
 
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🧠 CORE ARCHITECTURAL DEFINITION:", 90, 590);
+        stages.forEach((st, idx) => {
+            const sx = x + idx * (stageW + 20);
+            const isActive = idx === activeIndex;
+            const isDone = idx < activeIndex;
+            const nodeColor = isActive ? "#38BDF8" : (isDone ? "#10B981" : "#64748B");
 
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            const defLines = wrapCanvasText(ctx, p.concept_summary || "WHERE filters individual rows before grouping; HAVING filters aggregated groups after GROUP BY.", W - 180);
-            defLines.forEach((l, i) => {
-                ctx.fillText(l, 90, 645 + i * 38);
-            });
+            // Glass Node Tile
+            drawGlassTile(ctx, sx, y, stageW, h, 14, nodeColor, isActive, true, isActive ? 1.0 : 0.75);
 
-            // Fast Comparison Pills
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(90, 780, 420, 50);
-            ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(90, 780, 420, 50);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("1. WHERE: ROW-LEVEL FILTER", 110, 812);
-
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.fillRect(530, 780, 420, 50);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(530, 780, 420, 50);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("2. HAVING: GROUP-LEVEL FILTER", 550, 812);
-
-            // Learning Goal Guidance Card
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 980, W - 120, 500, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#1E2D4A";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 980, W - 120, 50);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1005, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1005, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1005, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("theory_roadmap.sql — Step-by-Step Understanding", 180, 1012);
-
-            ctx.fillStyle = "#64748B";
-            ctx.font = "italic 24px monospace";
-            ctx.fillText("/* Step 1: Understand why interviewers ask this question */", 90, 1080);
-            ctx.fillText("/* Step 2: Grasp database query execution order (ANSI SQL) */", 90, 1140);
-            ctx.fillText("/* Step 3: Compare code syntax & aggregate functions */", 90, 1200);
-            ctx.fillText("/* Step 4: Avoid the fatal interview traps & score bonus points! */", 90, 1260);
-
-            // Phase Badge
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(90, 1370, W - 180, 80, 14);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = "#38BDF8";
+            // Icon + Label
+            ctx.fillStyle = nodeColor;
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("🧠 LEARNING GOAL: Master the difference & explain with confidence!", 120, 1420);
+            ctx.textAlign = "center";
+            ctx.fillText(st.icon, sx + stageW / 2, y + 36);
 
-            ctx.restore();
-        }
+            ctx.fillStyle = isActive ? "#FFFFFF" : (isDone ? "#10B981" : "#94A3B8");
+            ctx.font = isActive ? "bold 15px monospace" : "14px monospace";
+            ctx.fillText(st.name, sx + stageW / 2, y + 66);
 
-        // SCENE 2 (8.0 to 20.0s): CANDIDATE CONFUSION & WHY INTERVIEWERS TEST THIS
-        if (t >= 7.5 && t < 20.5) {
-            ctx.save();
-            const s2Alpha = t < 8.5 ? (t - 7.5) : (t > 19.5 ? (20.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s2Alpha));
+            if (st.sub) {
+                ctx.fillStyle = isActive ? "#38BDF8" : "#64748B";
+                ctx.font = "12px 'Segoe UI', sans-serif";
+                ctx.fillText(st.sub, sx + stageW / 2, y + 86);
+            }
 
-            // Banner
-            ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 100, 16);
-            ctx.fill();
-            ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("⚠️ THE COMMON CONFUSION: WHY 90% OF CANDIDATES STUMBLE", 90, 268);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Both WHERE and HAVING filter data — but WHEN and WHAT do they filter?", 90, 302);
-
-            // Contrast Card 1: The Mistake
-            ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
-            ctx.beginPath();
-            ctx.roundRect(60, 345, W - 120, 320, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("❌ WHY CANDIDATES GET CONFUSED:", 90, 390);
-
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "23px 'Segoe UI', sans-serif";
-            ctx.fillText("• Candidates see boolean conditions in both and assume they are interchangeable.", 90, 440);
-            ctx.fillText("• Writing 'WHERE COUNT(*) > 2' causes an instant SQL syntax error!", 90, 490);
-            ctx.fillText("• Writing 'HAVING salary > 50000' without GROUP BY wastes CPU memory!", 90, 540);
-
-            // Contrast Card 2: The Core Difference
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 690, W - 120, 420, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ THE CORE DISTINCTION SENIOR INTERVIEWERS TEST:", 90, 740);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("1️⃣ WHERE CLAUSE — PRE-FILTER (ROW LEVEL)", 90, 800);
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   Filters individual rows BEFORE the database groups or aggregates them.", 90, 840);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("2️⃣ HAVING CLAUSE — POST-FILTER (GROUP LEVEL)", 90, 910);
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   Filters aggregated buckets AFTER GROUP BY has assembled the groups.", 90, 950);
-
-            // Memory Benefit Box
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1140, W - 120, 340, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 PERFORMANCE BENEFIT IN PRODUCTION:", 90, 1195);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• Filtering rows with WHERE reduces the row count BEFORE grouping.", 90, 1255);
-            ctx.fillText("• In large tables with 10M rows, this slashes RAM usage by over 90%!", 90, 1315);
-            ctx.fillText("• Next: Let's see the step-by-step query execution lifecycle!", 90, 1375);
-
-            ctx.restore();
-        }
-
-        // SCENE 3 (20.0 to 32.0s): QUERY EXECUTION LIFECYCLE FLOWCHART
-        if (t >= 19.5 && t < 32.5) {
-            ctx.save();
-            const s3Alpha = t < 20.5 ? (t - 19.5) : (t > 31.5 ? (32.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s3Alpha));
-
-            ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 95, 16);
-            ctx.fill();
-            ctx.strokeStyle = "#818CF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#818CF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("⚙️ DATABASE ENGINE QUERY EXECUTION LIFECYCLE (ANSI SQL)", 90, 265);
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("How the database engine executes clauses in strict logical sequence:", 90, 296);
-
-            const pipeline = [
-                {
-                    num: "1️⃣",
-                    stage: "FROM & JOIN",
-                    desc: "Loads target tables & resolves joins into memory buffer",
-                    activeRange: [20.0, 23.0],
-                    color: "#38BDF8"
-                },
-                {
-                    num: "2️⃣",
-                    stage: "WHERE (ROW-LEVEL FILTER)",
-                    desc: "⚡ Prunes rows BEFORE grouping (Indexes are used!)",
-                    activeRange: [23.0, 26.0],
-                    color: "#F59E0B"
-                },
-                {
-                    num: "3️⃣",
-                    stage: "GROUP BY & AGGREGATION",
-                    desc: "Clusters remaining rows & computes SUM, COUNT, AVG",
-                    activeRange: [26.0, 29.0],
-                    color: "#EC4899"
-                },
-                {
-                    num: "4️⃣",
-                    stage: "HAVING (GROUP-LEVEL FILTER)",
-                    desc: "🎯 Filters entire groups failing aggregate conditions",
-                    activeRange: [29.0, 32.5],
-                    color: "#10B981"
-                }
-            ];
-
-            pipeline.forEach((st, idx) => {
-                const boxY = 335 + idx * 195;
-                const isActive = t >= st.activeRange[0] && t < st.activeRange[1];
-
-                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.8)";
-                ctx.beginPath();
-                ctx.roundRect(60, boxY, W - 120, 130, 16);
-                ctx.fill();
-
-                ctx.strokeStyle = isActive ? st.color : "#1E2D4A";
-                ctx.lineWidth = isActive ? 3.5 : 2;
-                if (isActive) {
-                    ctx.shadowColor = st.color;
-                    ctx.shadowBlur = 18;
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                ctx.fillStyle = st.color;
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(`${st.num} ${st.stage}`, 90, boxY + 45);
-
-                ctx.fillStyle = isActive ? "#F8FAFC" : "#94A3B8";
-                ctx.font = "bold 22px monospace";
-                ctx.fillText(st.desc, 90, boxY + 95);
-
-                if (idx < 3) {
-                    ctx.fillStyle = "#818CF8";
-                    ctx.font = "bold 32px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText("↓", W / 2, boxY + 168);
-                    ctx.textAlign = "left";
-                }
-            });
-
-            // Summary Takeaway
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1140, W - 120, 360, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 THE KEY TAKEAWAY FOR INTERVIEWS:", 90, 1195);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• WHERE executes at Step 2; HAVING executes at Step 4!", 90, 1255);
-            ctx.fillText("• Because WHERE runs before GROUP BY, it CANNOT evaluate aggregates.", 90, 1315);
-            ctx.fillText("• Next: Let's see the code syntax comparison side by side!", 90, 1375);
-
-            ctx.restore();
-        }
-
-        // SCENE 4 (32.0 to 44.0s): SIDE-BY-SIDE SQL SYNTAX COMPARISON
-        if (t >= 31.5 && t < 44.5) {
-            ctx.save();
-            const s4Alpha = t < 32.5 ? (t - 31.5) : (t > 43.5 ? (44.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s4Alpha));
-
-            // Window 1: Syntax A (WHERE)
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 520, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 220, W - 120, 48);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(p.syntax_a_title || "WHERE CLAUSE SYNTAX (ROW FILTER)", 180, 252);
-
-            const codeALines = (p.syntax_a_code || "SELECT name, department, salary\nFROM employees\nWHERE salary > 50000;").split("\n");
-            codeALines.forEach((ln, idx) => {
-                const lineY = 320 + idx * 56;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, ln, 160, lineY);
-            });
-
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(90, 580, W - 180, 130);
-            ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(90, 580, W - 180, 130);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("⚡ ROW-LEVEL ATTRIBUTE: 'salary > 50000'", 120, 625);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Evaluated row by row directly from table or index scan.", 120, 670);
-
-            // Window 2: Syntax B (HAVING)
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 770, W - 120, 580, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 770, W - 120, 48);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 794, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 794, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 794, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(p.syntax_b_title || "HAVING CLAUSE SYNTAX (GROUP FILTER)", 180, 802);
-
-            const codeBLines = (p.syntax_b_code || "SELECT department, COUNT(*)\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 5;").split("\n");
-            codeBLines.forEach((ln, idx) => {
-                const lineY = 870 + idx * 56;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, ln, 160, lineY);
-            });
-
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.fillRect(90, 1150, W - 180, 160);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 1150, W - 180, 160);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("⚡ AGGREGATE FUNCTION: 'HAVING COUNT(*) > 5'", 120, 1200);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Evaluates only after rows are clustered into departments.", 120, 1245);
-            ctx.fillText("Discarding entire department groups with fewer than 5 people.", 120, 1285);
-
-            // Bouncing Arrow pointing to difference
-            const arrowBounce = Math.sin(t * 6) * 10;
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("👉 Notice: HAVING requires GROUP BY & Aggregate functions!", 90 + arrowBounce, 1420);
-
-            ctx.restore();
-        }
-
-        // SCENE 5 (44.0 to 58.0s): COMPREHENSIVE COMPARISON MATRIX TABLE
-        if (t >= 43.5 && t < 58.5) {
-            ctx.save();
-            const s5Alpha = t < 44.5 ? (t - 43.5) : (t > 57.5 ? (58.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s5Alpha));
-
-            // Header Banner
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 95, 16);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(`🔍 ${p.comparison_title || 'WHERE vs HAVING COMPARISON MATRIX'}`, 90, 265);
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Memorize these 4 pillars for immediate high marks in your interview:", 90, 296);
-
-            // Table Header
-            const headers = p.comparison_headers || ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"];
-            ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
-            ctx.fillRect(60, 340, W - 120, 60);
-            ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(60, 340, W - 120, 60);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText(headers[0], 90, 378);
-            ctx.fillText(headers[1], 420, 378);
-            ctx.fillText(headers[2], 740, 378);
-
-            const matrixRows = p.comparison_rows || [
-                {feature: "Execution Stage", col_a: "Pre-Filter (Before GROUP BY)", col_b: "Post-Filter (After GROUP BY)"},
-                {feature: "Aggregate Functions", col_a: "❌ CANNOT use (SUM, COUNT)", col_b: "✅ CAN use (e.g. COUNT > 5)"},
-                {feature: "Target Scope", col_a: "Individual table rows", col_b: "Aggregated groups"},
-                {feature: "Index Optimization", col_a: "Uses Table Indexes fast", col_b: "Cannot use B-Tree indexes"}
-            ];
-
-            const rowsToShow = Math.min(matrixRows.length, Math.floor((t - 44.0) * 0.4) + 1);
-
-            matrixRows.slice(0, rowsToShow).forEach((r, idx) => {
-                const rowY = 415 + idx * 175;
-                const isLatest = idx === rowsToShow - 1;
-
-                ctx.fillStyle = isLatest ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.85)";
-                ctx.beginPath();
-                ctx.roundRect(60, rowY, W - 120, 155, 14);
-                ctx.fill();
-
-                ctx.strokeStyle = isLatest ? "#10B981" : "#1E2D4A";
-                ctx.lineWidth = isLatest ? 3 : 1.5;
-                if (isLatest) {
-                    ctx.shadowColor = "#10B981";
-                    ctx.shadowBlur = 15;
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                ctx.fillText(r.feature, 90, rowY + 45);
-
-                ctx.fillStyle = "#38BDF8";
+            // Arrow connector to next
+            if (idx < stages.length - 1) {
+                const arrX = sx + stageW + 10;
+                ctx.fillStyle = isDone ? "#10B981" : "rgba(255, 255, 255, 0.3)";
                 ctx.font = "bold 20px monospace";
-                ctx.fillText(`WHERE: ${r.col_a}`, 90, rowY + 90);
+                ctx.fillText("▶", arrX, y + h / 2 + 6);
+            }
+        });
+        ctx.textAlign = "left";
+        ctx.restore();
+    }
 
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText(`HAVING: ${r.col_b}`, 90, rowY + 130);
-            });
+    // 4. Draw Dynamic Micro-Sparks Burst (Photon Energy Burst)
+    function drawPhotonSparks(ctx, cx, cy, color = "#38BDF8", t = 0) {
+        ctx.save();
+        const sparkCount = 8;
+        for (let i = 0; i < sparkCount; i++) {
+            const angle = (i / sparkCount) * Math.PI * 2 + (t * 2.0);
+            const dist = 18 + Math.sin(t * 8 + i) * 12;
+            const sx = cx + Math.cos(angle) * dist;
+            const sy = cy + Math.sin(angle) * dist;
+            const r = 2.5 + Math.sin(t * 10 + i) * 1.5;
 
-            // Summary Card at Bottom
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
             ctx.beginPath();
-            ctx.roundRect(60, 1180, W - 120, 320, 18);
+            ctx.arc(sx, sy, Math.max(1, r), 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 INTERVIEW CHECKLIST SUMMARY:", 90, 1235);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• Need to filter individual rows? ➔ Use WHERE.", 90, 1295);
-            ctx.fillText("• Need to filter COUNT, SUM, AVG of groups? ➔ Use HAVING.", 90, 1355);
-            ctx.fillText("• You can combine both in the same query for maximum speed!", 90, 1415);
-
-            ctx.restore();
         }
+        ctx.restore();
+    }
 
-        // SCENE 6 (58.0 to 72.0s): FATAL INTERVIEW TRAPS & GOLDEN TAKEAWAY
-        if (t >= 57.5 && t < 72.5) {
-            ctx.save();
-            const s6Alpha = t < 58.5 ? (t - 57.5) : (t > 71.5 ? (72.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s6Alpha));
-
-            // Traps Container
-            ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 480, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(`❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, 90, 275);
-
-            const trapsList = p.traps && p.traps.length > 0 ? p.traps : [
-                "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
-                "✅ Rule: Always filter non-aggregated rows with WHERE first to cut group memory by 90%!"
+    // Helper: Dynamic Client Pipeline Stages Generator
+    function getClientPipelineStages(p) {
+        if (p.pipeline_stages && Array.isArray(p.pipeline_stages) && p.pipeline_stages.length >= 3) {
+            return p.pipeline_stages;
+        }
+        const sql = (p.solution_sql || "").toUpperCase();
+        const q = (p.question || "").toUpperCase();
+        if (sql.includes("NTILE") || q.includes("TOP 10%")) {
+            return [
+                {icon: "📁", name: p.table_name || "TRANSACTIONS", sub: "Raw Dataset"},
+                {icon: "🧮", name: "SUM() / CTE", sub: "Aggregate Totals"},
+                {icon: "📊", name: "NTILE(10)", sub: "10-Bucketing"},
+                {icon: "🎯", name: "QUALIFY = 1", sub: "Top 10% Filter"}
             ];
-
-            trapsList.forEach((trp, idx) => {
-                const trapY = 330 + idx * 160;
-                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-                ctx.fillRect(90, trapY, W - 180, 130);
-                ctx.strokeStyle = trp.startsWith("❌") ? "#EF4444" : "#10B981";
-                ctx.strokeRect(90, trapY, W - 180, 130);
-
-                ctx.fillStyle = trp.startsWith("❌") ? "#FCA5A5" : "#A7F3D0";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                const tLines = wrapCanvasText(ctx, trp, W - 220);
-                tLines.forEach((tl, ti) => {
-                    ctx.fillText(tl, 115, trapY + 45 + ti * 36);
-                });
-            });
-
-            // Big Glowing Neon Golden Takeaway Card
-            ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
-            ctx.beginPath();
-            ctx.roundRect(60, 740, W - 120, 440, 22);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 4;
-            ctx.shadowColor = "#10B981";
-            ctx.shadowBlur = 24;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("🏆 THE UNIVERSAL GOLDEN RULE:", 90, 805);
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-            ctx.fillRect(90, 840, W - 180, 220);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 840, W - 180, 220);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            const ruleText = p.golden_rule || "Golden Rule: Filter individual rows with WHERE; filter aggregated groups with HAVING.";
-            const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220);
-            rLines.forEach((rl, ri) => {
-                ctx.fillText(rl, 120, 920 + ri * 46);
-            });
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ Saying this one sentence guarantees full points in an interview!", 90, 1130);
-
-            // Verified Badge
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1220, W - 120, 260, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("🚀 HOW TO SAY THIS TO AN INTERVIEWER:", 90, 1270);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("\"I use WHERE to prune individual rows before grouping,", 90, 1320);
-            ctx.fillText("and HAVING to filter post-aggregation group metrics.\"", 90, 1365);
-            ctx.fillText("Next: Senior Interviewer Pro-Tip & Outro!", 90, 1415);
-
-            ctx.restore();
         }
+        if (sql.includes("ROW_NUMBER") || sql.includes("QUALIFY") || q.includes("LATEST")) {
+            return [
+                {icon: "📁", name: p.table_name || "TRANSACTIONS", sub: "Raw Rows"},
+                {icon: "🪟", name: "PARTITION BY", sub: "Customer Key"},
+                {icon: "🔢", name: "ROW_NUMBER()", sub: "Date DESC"},
+                {icon: "🎯", name: "QUALIFY = 1", sub: "Latest Record"}
+            ];
+        }
+        if (sql.includes("DENSE_RANK")) {
+            return [
+                {icon: "📁", name: p.table_name || "EMPLOYEES", sub: "Raw Records"},
+                {icon: "🔢", name: "DENSE_RANK()", sub: "Ordered Ranks"},
+                {icon: "🛡️", name: "TIE HANDLING", sub: "No Rank Skips"},
+                {icon: "🎯", name: "WHERE RNK = 2", sub: "Target Value"}
+            ];
+        }
+        if (sql.includes("LAG") || sql.includes("LEAD")) {
+            return [
+                {icon: "📁", name: p.table_name || "DATA", sub: "Time Series"},
+                {icon: "⏮️", name: "LAG() WINDOW", sub: "Offset Fetch"},
+                {icon: "🧮", name: "DELTA / RATIO", sub: "Difference"},
+                {icon: "🎯", name: "FLAGGED ROWS", sub: "Trigger Condition"}
+            ];
+        }
+        if (sql.includes("JOIN")) {
+            return [
+                {icon: "📁", name: "TABLE A", sub: "Left Source"},
+                {icon: "📁", name: "TABLE B", sub: "Right Source"},
+                {icon: "⚡", name: "JOIN ON KEY", sub: "Record Match"},
+                {icon: "🎯", name: "RESULT SET", sub: "Merged Output"}
+            ];
+        }
+        if (sql.includes("GROUP BY")) {
+            return [
+                {icon: "📁", name: p.table_name || "RECORDS", sub: "Input Rows"},
+                {icon: "🪟", name: "GROUP BY", sub: "Cluster Keys"},
+                {icon: "🧮", name: "AGGREGATE", sub: "SUM/COUNT/AVG"},
+                {icon: "🎯", name: "HAVING FILTER", sub: "Filtered Groups"}
+            ];
+        }
+        return [
+            {icon: "📁", name: p.table_name || "INPUT_TABLE", sub: "All Records"},
+            {icon: "⚡", name: "SUBQUERY / CTE", sub: "Compute Logic"},
+            {icon: "🛡️", name: "FILTER / EXCLUSION", sub: "Condition Logic"},
+            {icon: "🎯", name: "TARGET OUTPUT", sub: "Final Selection"}
+        ];
+    }
 
-        // SCENE 7 (72.0 to 85.0s): SENIOR INTERVIEWER PRO-TIP & OUTRO BRANDING
-        if (t >= 71.5) {
+    // Helper: Dynamic Client Filter Evaluations Generator
+    function getClientFilterEvals(p) {
+        if (p.filter_evaluations && Array.isArray(p.filter_evaluations) && p.filter_evaluations.length > 0) {
+            return p.filter_evaluations;
+        }
+        if (p.sample_rows && Array.isArray(p.sample_rows) && p.sample_rows.length > 0) {
+            return p.sample_rows.slice(0, 5).map((r, i) => {
+                const isTarget = r.is_target !== undefined ? r.is_target : (i === 0 || i === 2 || (r.balance && (r.balance.includes("🎯") || r.balance.includes("1"))));
+                return {
+                    name: r.account || ("Record #" + (i + 1)),
+                    salary: r.amt || r.date || "Val",
+                    cond: isTarget ? "MATCH = TRUE" : "MATCH = FALSE",
+                    res: isTarget ? "TRUE" : "FALSE",
+                    action: isTarget ? "KEEP" : "EXCLUDE",
+                    status: isTarget ? "keep" : "exclude"
+                };
+            });
+        }
+        return [
+            {name: "Row 1", salary: "Val 1", cond: "Condition = TRUE", res: "TRUE", action: "KEEP", status: "keep"},
+            {name: "Row 2", salary: "Val 2", cond: "Condition = FALSE", res: "FALSE", action: "EXCLUDE", status: "exclude"},
+            {name: "Row 3", salary: "Val 3", cond: "Condition = TRUE", res: "TRUE", action: "KEEP", status: "keep"}
+        ];
+    }
+
+    /* ==========================================================================
+       THEORY & CONCEPTUAL MASTER STORYBOARD (1080 x 1920 9:16)
+       ========================================================================== */
+    function renderTheoryShortStoryboard(ctx, W, H, p, t, currentStageIdx, activeStage, isOutro, outroStart, stageProg, stageAlpha) {
+        // SCENE 7 (Outro Branding): Rendered ONLY when isOutro is true!
+        if (isOutro) {
             ctx.save();
-            const s7Alpha = t < 72.5 ? (t - 71.5) : 1.0;
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s7Alpha));
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
             // Senior Interviewer Pro-Tip Card
             ctx.fillStyle = "rgba(139, 92, 246, 0.16)";
@@ -1651,16 +951,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillText(`   ${p.pro_tip || "Filter early with WHERE to minimize memory footprint!"}`, 90, 665);
 
             // Outro Branding Card (@Code_With_Mangesh)
-            ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 870, W - 120, 630, 24);
-            ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 4;
-            ctx.shadowColor = "rgba(245, 158, 11, 0.35)";
-            ctx.shadowBlur = 20;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
+            drawGlassTile(ctx, 60, 870, W - 120, 630, 24, "#F59E0B", true, true, 1.0);
 
             ctx.fillStyle = "#F59E0B";
             ctx.font = "bold 44px 'Segoe UI', sans-serif";
@@ -1684,7 +975,486 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.font = "italic 22px 'Segoe UI', sans-serif";
             ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
 
+            drawPhotonSparks(ctx, W / 2 - 280, 950, "#F59E0B", t);
+            drawPhotonSparks(ctx, W / 2 + 280, 950, "#F59E0B", t);
+
             ctx.textAlign = "left";
+            ctx.restore();
+            return;
+        }
+
+        // SCENE 1: THEORY TOPIC & CONCEPT INTRODUCTION
+        if (currentStageIdx === 1) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+            drawGlassTile(ctx, 60, 220, W - 120, 230, 20, "#38BDF8", true, true, 1.0);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("📋 SQL THEORY INTERVIEW TOPIC:", 90, 275);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            const qLines = wrapCanvasText(ctx, p.question, W - 180);
+            qLines.slice(0, 3).forEach((l, i) => {
+                ctx.fillText(l, 90, 325 + i * 38);
+            });
+
+            // Target Highlight Badge
+            const pulse = 1.0 + Math.sin(t * 6) * 0.05;
+            ctx.save();
+            ctx.translate(W / 2, 490);
+            ctx.scale(pulse, pulse);
+            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+            ctx.beginPath();
+            ctx.roundRect(-300, -24, 600, 48, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🎯 TARGET: QUERY EXECUTION LIFECYCLE & CORE MECHANISM", 0, 7);
+            ctx.restore();
+
+            // Architectural Overview Glass Container
+            drawGlassTile(ctx, 60, 540, W - 120, 410, 20, "#10B981", false, true, 1.0);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🧠 CORE ARCHITECTURAL DEFINITION:", 90, 590);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            const defLines = wrapCanvasText(ctx, p.concept_summary || "WHERE filters individual rows before grouping; HAVING filters aggregated groups after GROUP BY.", W - 180);
+            defLines.forEach((l, i) => {
+                ctx.fillText(l, 90, 645 + i * 38);
+            });
+
+            drawGlassTile(ctx, 90, 780, 420, 50, 10, "#38BDF8", false, true, 0.85);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("1. WHERE: ROW-LEVEL FILTER", 110, 812);
+
+            drawGlassTile(ctx, 530, 780, 420, 50, 10, "#10B981", false, true, 0.85);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("2. HAVING: GROUP-LEVEL FILTER", 550, 812);
+
+            drawGlassTile(ctx, 60, 980, W - 120, 500, 20, "rgba(255, 255, 255, 0.15)", false, false, 0.9);
+
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 980, W - 120, 50);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1005, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1005, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1005, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("theory_roadmap.sql — Step-by-Step Understanding", 180, 1012);
+
+            ctx.fillStyle = "#64748B";
+            ctx.font = "italic 24px monospace";
+            ctx.fillText("/* Step 1: Understand why interviewers ask this question */", 90, 1080);
+            ctx.fillText("/* Step 2: Grasp database query execution order (ANSI SQL) */", 90, 1140);
+            ctx.fillText("/* Step 3: Compare code syntax & aggregate functions */", 90, 1200);
+            ctx.fillText("/* Step 4: Avoid the fatal interview traps & score bonus points! */", 90, 1260);
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(90, 1370, W - 180, 80, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("🧠 LEARNING GOAL: Master the difference & explain with confidence!", 120, 1420);
+
+            ctx.restore();
+        }
+
+        // SCENE 2: CANDIDATE CONFUSION & WHY INTERVIEWERS TEST THIS
+        else if (currentStageIdx === 2) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+            ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 100, 16);
+            ctx.fill();
+            ctx.strokeStyle = "#EF4444";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("⚠️ THE COMMON CONFUSION: WHY 90% OF CANDIDATES STUMBLE", 90, 268);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Both WHERE and HAVING filter data — but WHEN and WHAT do they filter?", 90, 302);
+
+            ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
+            ctx.beginPath();
+            ctx.roundRect(60, 345, W - 120, 320, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#EF4444";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("❌ WHY CANDIDATES GET CONFUSED:", 90, 390);
+
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "23px 'Segoe UI', sans-serif";
+            ctx.fillText("• Candidates see boolean conditions in both and assume they are interchangeable.", 90, 440);
+            ctx.fillText("• Writing 'WHERE COUNT(*) > 2' causes an instant SQL syntax error!", 90, 490);
+            ctx.fillText("• Writing 'HAVING salary > 50000' without GROUP BY wastes CPU memory!", 90, 540);
+
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 690, W - 120, 420, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ THE CORE DISTINCTION SENIOR INTERVIEWERS TEST:", 90, 740);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("1️⃣ WHERE CLAUSE — PRE-FILTER (ROW LEVEL)", 90, 800);
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   Filters individual rows BEFORE the database groups or aggregates them.", 90, 840);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("2️⃣ HAVING CLAUSE — POST-FILTER (GROUP LEVEL)", 90, 910);
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("   Filters aggregated buckets AFTER GROUP BY has assembled the groups.", 90, 950);
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1140, W - 120, 340, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 PERFORMANCE BENEFIT IN PRODUCTION:", 90, 1195);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• Filtering rows with WHERE reduces the row count BEFORE grouping.", 90, 1255);
+            ctx.fillText("• In large tables with 10M rows, this slashes RAM usage by over 90%!", 90, 1315);
+            ctx.fillText("• Next: Let's see the step-by-step query execution lifecycle!", 90, 1375);
+
+            ctx.restore();
+        }
+
+        // SCENE 3: QUERY EXECUTION LIFECYCLE FLOWCHART
+        else if (currentStageIdx === 3) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+            ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 220, W - 120, 95, 16);
+            ctx.fill();
+            ctx.strokeStyle = "#818CF8";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = "#818CF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText("⚙️ DATABASE ENGINE QUERY EXECUTION LIFECYCLE (ANSI SQL)", 90, 265);
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("How the database engine executes clauses in strict logical sequence:", 90, 296);
+
+            const pipeline = [
+                { num: "1️⃣", stage: "FROM & JOIN", desc: "Loads target tables & resolves joins into memory buffer", color: "#38BDF8" },
+                { num: "2️⃣", stage: "WHERE (ROW-LEVEL FILTER)", desc: "⚡ Prunes rows BEFORE grouping (Indexes are used!)", color: "#F59E0B" },
+                { num: "3️⃣", stage: "GROUP BY & AGGREGATION", desc: "Clusters remaining rows & computes SUM, COUNT, AVG", color: "#EC4899" },
+                { num: "4️⃣", stage: "HAVING (GROUP-LEVEL FILTER)", desc: "🎯 Filters entire groups failing aggregate conditions", color: "#10B981" }
+            ];
+
+            const activePipelineIdx = Math.min(pipeline.length - 1, Math.floor(stageProg * pipeline.length));
+
+            pipeline.forEach((st, idx) => {
+                const boxY = 335 + idx * 195;
+                const isActive = idx === activePipelineIdx;
+
+                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.8)";
+                ctx.beginPath();
+                ctx.roundRect(60, boxY, W - 120, 130, 16);
+                ctx.fill();
+
+                ctx.strokeStyle = isActive ? st.color : "#1E2D4A";
+                ctx.lineWidth = isActive ? 3.5 : 2;
+                if (isActive) {
+                    ctx.shadowColor = st.color;
+                    ctx.shadowBlur = 18;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = st.color;
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText(`${st.num} ${st.stage}`, 90, boxY + 45);
+
+                ctx.fillStyle = isActive ? "#F8FAFC" : "#94A3B8";
+                ctx.font = "bold 22px monospace";
+                ctx.fillText(st.desc, 90, boxY + 95);
+
+                if (idx < 3) {
+                    ctx.fillStyle = "#818CF8";
+                    ctx.font = "bold 32px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("↓", W / 2, boxY + 168);
+                    ctx.textAlign = "left";
+                }
+            });
+
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(60, 1140, W - 120, 360, 18);
+            ctx.fill();
+            ctx.strokeStyle = "#10B981";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 THE KEY TAKEAWAY FOR INTERVIEWS:", 90, 1195);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• WHERE executes at Step 2; HAVING executes at Step 4!", 90, 1255);
+            ctx.fillText("• Because WHERE runs before GROUP BY, it CANNOT evaluate aggregates.", 90, 1315);
+            ctx.fillText("• Next: Let's see the code syntax comparison side by side!", 90, 1375);
+
+            ctx.restore();
+        }
+
+        // SCENE 4: SIDE-BY-SIDE SQL SYNTAX COMPARISON
+        else if (currentStageIdx === 4) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+            drawGlassTile(ctx, 60, 220, W - 120, 520, 20, "#38BDF8", true, true, 1.0);
+
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 220, W - 120, 48);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText(p.syntax_a_title || "WHERE CLAUSE SYNTAX (ROW FILTER)", 180, 252);
+
+            const codeALines = (p.syntax_a_code || "SELECT name, department, salary\nFROM employees\nWHERE salary > 50000;").split("\n");
+            codeALines.forEach((ln, idx) => {
+                const lineY = 320 + idx * 56;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+            });
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.fillRect(90, 580, W - 180, 130);
+            ctx.strokeStyle = "#38BDF8";
+            ctx.strokeRect(90, 580, W - 180, 130);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("⚡ ROW-LEVEL ATTRIBUTE: 'salary > 50000'", 120, 625);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Evaluated row by row directly from table or index scan.", 120, 670);
+
+            drawGlassTile(ctx, 60, 770, W - 120, 580, 20, "#10B981", false, true, 1.0);
+
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 770, W - 120, 48);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText(p.syntax_b_title || "HAVING CLAUSE SYNTAX (GROUP FILTER)", 180, 802);
+
+            const codeBLines = (p.syntax_b_code || "SELECT department, COUNT(*)\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 5;").split("\n");
+            codeBLines.forEach((ln, idx) => {
+                const lineY = 870 + idx * 56;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 24px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+            });
+
+            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+            ctx.fillRect(90, 1150, W - 180, 160);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(90, 1150, W - 180, 160);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("⚡ AGGREGATE FUNCTION: 'HAVING COUNT(*) > 5'", 120, 1200);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Evaluates only after rows are clustered into departments.", 120, 1245);
+            ctx.fillText("Discarding entire department groups with fewer than 5 people.", 120, 1285);
+
+            const arrowBounce = Math.sin(t * 6) * 10;
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("👉 Notice: HAVING requires GROUP BY & Aggregate functions!", 90 + arrowBounce, 1420);
+
+            ctx.restore();
+        }
+
+        // SCENE 5: COMPREHENSIVE COMPARISON MATRIX TABLE
+        else if (currentStageIdx === 5) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+            drawGlassTile(ctx, 60, 220, W - 120, 95, 16, "#38BDF8", false, true, 1.0);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText(`🔍 ${p.comparison_title || 'WHERE vs HAVING COMPARISON MATRIX'}`, 90, 265);
+            ctx.fillStyle = "#CBD5E1";
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText("Memorize these 4 pillars for immediate high marks in your interview:", 90, 296);
+
+            const headers = p.comparison_headers || ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"];
+            ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+            ctx.fillRect(60, 340, W - 120, 60);
+            ctx.strokeStyle = "#38BDF8";
+            ctx.strokeRect(60, 340, W - 120, 60);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px monospace";
+            ctx.fillText(headers[0], 90, 378);
+            ctx.fillText(headers[1], 420, 378);
+            ctx.fillText(headers[2], 740, 378);
+
+            const matrixRows = p.comparison_rows || [
+                {feature: "Execution Stage", col_a: "Pre-Filter (Before GROUP BY)", col_b: "Post-Filter (After GROUP BY)"},
+                {feature: "Aggregate Functions", col_a: "❌ CANNOT use (SUM, COUNT)", col_b: "✅ CAN use (e.g. COUNT > 5)"},
+                {feature: "Target Scope", col_a: "Individual table rows", col_b: "Aggregated groups"},
+                {feature: "Index Optimization", col_a: "Uses Table Indexes fast", col_b: "Cannot use B-Tree indexes"}
+            ];
+
+            const rowsToShow = Math.min(matrixRows.length, Math.floor(stageProg * (matrixRows.length + 1)) + 1);
+
+            matrixRows.slice(0, rowsToShow).forEach((r, idx) => {
+                const rowY = 415 + idx * 175;
+                const isLatest = idx === rowsToShow - 1;
+
+                drawGlassTile(ctx, 60, rowY, W - 120, 155, 14, isLatest ? "#10B981" : "#1E2D4A", isLatest, true, isLatest ? 1.0 : 0.85);
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText(r.feature, 90, rowY + 45);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText(`WHERE: ${r.col_a}`, 90, rowY + 90);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText(`HAVING: ${r.col_b}`, 90, rowY + 130);
+            });
+
+            drawGlassTile(ctx, 60, 1180, W - 120, 320, 18, "#10B981", false, true, 1.0);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 INTERVIEW CHECKLIST SUMMARY:", 90, 1235);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            ctx.fillText("• Need to filter individual rows? ➔ Use WHERE.", 90, 1295);
+            ctx.fillText("• Need to filter COUNT, SUM, AVG of groups? ➔ Use HAVING.", 90, 1355);
+            ctx.fillText("• You can combine both in the same query for maximum speed!", 90, 1415);
+
+            ctx.restore();
+        }
+
+        // SCENE 6: FATAL INTERVIEW TRAPS & GOLDEN TAKEAWAY
+        else {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+            drawGlassTile(ctx, 60, 220, W - 120, 480, 20, "#EF4444", true, true, 1.0);
+
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.fillText(`❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, 90, 275);
+
+            const trapsList = p.traps && p.traps.length > 0 ? p.traps : [
+                "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
+                "✅ Rule: Always filter non-aggregated rows with WHERE first to cut group memory by 90%!"
+            ];
+
+            trapsList.forEach((trp, idx) => {
+                const trapY = 330 + idx * 160;
+                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+                ctx.fillRect(90, trapY, W - 180, 130);
+                ctx.strokeStyle = trp.startsWith("❌") ? "#EF4444" : "#10B981";
+                ctx.strokeRect(90, trapY, W - 180, 130);
+
+                ctx.fillStyle = trp.startsWith("❌") ? "#FCA5A5" : "#A7F3D0";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                const tLines = wrapCanvasText(ctx, trp, W - 220);
+                tLines.forEach((tl, ti) => {
+                    ctx.fillText(tl, 115, trapY + 45 + ti * 36);
+                });
+            });
+
+            drawGlassTile(ctx, 60, 740, W - 120, 440, 22, "#10B981", true, true, 1.0);
+
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.fillText("🏆 THE UNIVERSAL GOLDEN RULE:", 90, 805);
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(90, 840, W - 180, 220);
+            ctx.strokeStyle = "#10B981";
+            ctx.strokeRect(90, 840, W - 180, 220);
+
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            const ruleText = p.golden_rule || "Golden Rule: Filter individual rows with WHERE; filter aggregated groups with HAVING.";
+            const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220);
+            rLines.forEach((rl, ri) => {
+                ctx.fillText(rl, 120, 920 + ri * 46);
+            });
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("✅ Saying this one sentence guarantees full points in an interview!", 90, 1130);
+
+            drawGlassTile(ctx, 60, 1220, W - 120, 260, 18, "#38BDF8", false, true, 1.0);
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("🚀 HOW TO SAY THIS TO AN INTERVIEWER:", 90, 1270);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.fillText("\"I use WHERE to prune individual rows before grouping,", 90, 1320);
+            ctx.fillText("and HAVING to filter post-aggregation group metrics.\"", 90, 1365);
+            ctx.fillText("Next: Senior Interviewer Pro-Tip & Outro!", 90, 1415);
+
             ctx.restore();
         }
     }
@@ -1692,6 +1462,128 @@ SECOND_HIGHEST_SALARY: 70000`;
     /* ==========================================================================
        CANVAS RENDERING ENGINE (1080 x 1920 9:16 VERTICAL REEL FORMAT)
        ========================================================================== */
+    /* ==========================================================================
+       PROMPT-DRIVEN AWAITING STATE (NO STATIC TEMPLATES)
+       ========================================================================== */
+    function renderPromptStandbyScreen(ctx, W, H, t) {
+        // 1. Dark Cyber/Fintech Neon Background
+        ctx.fillStyle = "#070B16";
+        ctx.fillRect(0, 0, W, H);
+
+        // Tech grid lines
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.05)";
+        ctx.lineWidth = 2;
+        for (let x = 0; x < W; x += 80) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+        }
+        for (let y = 0; y < H; y += 80) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+
+        // Ambient cyber lighting
+        const radGrad = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 800);
+        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.20)");
+        radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.10)");
+        radGrad.addColorStop(1, "rgba(7, 11, 22, 0)");
+        ctx.fillStyle = radGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Top Header Bar
+        ctx.fillStyle = "#0B1120";
+        ctx.fillRect(0, 0, W, 180);
+        ctx.strokeStyle = "#1E293B";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 180); ctx.lineTo(W, 180); ctx.stroke();
+
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 32px 'Segoe UI', sans-serif";
+        ctx.fillText("👑 @Code_With_Mangesh", 60, 68);
+
+        ctx.fillStyle = "#10B981";
+        ctx.beginPath();
+        ctx.roundRect(W - 270, 32, 210, 48, 12);
+        ctx.fill();
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 18px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("⚡ 100% PROMPT AI", W - 165, 62);
+        ctx.textAlign = "left";
+
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "bold 23px 'Segoe UI', sans-serif";
+        ctx.fillText("Dynamic AI Video Generator • Shorts & Reels (<60s)", 60, 125);
+
+        // Floating Center 3D Frosted Mirror Tile
+        drawGlassTile(ctx, 70, 320, W - 140, 950, 28, "#38BDF8", true, true, 1.0);
+
+        // Center Pulsating Cyber Radar Ring
+        const pulse = 1.0 + Math.sin(t * 4) * 0.08;
+        ctx.save();
+        ctx.translate(W / 2, 480);
+        ctx.scale(pulse, pulse);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, 75, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, 95, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+        ctx.beginPath(); ctx.arc(0, 0, 55, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "52px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("✨", 0, 18);
+        ctx.restore();
+
+        // Title and Status
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 34px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("PROMPT-DRIVEN AI VIDEO STUDIO", W / 2, 630);
+
+        ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+        ctx.beginPath();
+        ctx.roundRect(W / 2 - 160, 660, 320, 42, 20);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 20px 'Segoe UI', sans-serif";
+        ctx.fillText("🟢 Awaiting Master Prompt", W / 2, 688);
+
+        // Instructions
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 25px 'Segoe UI', sans-serif";
+        ctx.fillText("व्हिडिओ कसा तयार करायचा?", W / 2, 760);
+
+        ctx.font = "22px 'Segoe UI', sans-serif";
+        ctx.fillStyle = "#CBD5E1";
+        ctx.fillText("1️⃣ Column 1 मध्ये तुमचा कोणताही SQL प्रश्न लिहा", W / 2, 820);
+        ctx.fillText("   किंवा व्हिडिओ कसा हवा आहे याचे स्पष्ट मार्गदर्शन लिहा.", W / 2, 855);
+
+        ctx.fillText("2️⃣ [Generate AI Video & Voice from Master Prompt] वर क्लिक करा.", W / 2, 920);
+
+        ctx.fillText("3️⃣ AI मॉडेल स्वतः प्रश्नानुसार व्हिडिओची रचना ठरवेल,", W / 2, 985);
+        ctx.fillText("   सॅम्पल टेबल, कोड ॲनिमेशन आणि ऑडिओ तयार करेल!", W / 2, 1020);
+
+        // Feature Highlights
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.fillText("🛡️ 100% Dynamic • Zero Static Templates • (<60s Reels)", W / 2, 1110);
+
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "italic 21px 'Segoe UI', sans-serif";
+        ctx.fillText("Follow @Code_With_Mangesh for daily SQL mastery", W / 2, 1170);
+
+        drawPhotonSparks(ctx, 110, 360, "#38BDF8", t);
+        drawPhotonSparks(ctx, W - 110, 360, "#10B981", t);
+        drawPhotonSparks(ctx, 110, 1220, "#F59E0B", t);
+        drawPhotonSparks(ctx, W - 110, 1220, "#818CF8", t);
+
+        ctx.textAlign = "left";
+    }
+
     function renderSqlShortFrame(t) {
         const canvas = document.getElementById("sqlShortCanvas");
         if (!canvas) return;
@@ -1729,66 +1621,74 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.restore();
         }
 
-        // Top Status Header (Time, Title & Difficulty Pill)
-        ctx.fillStyle = "rgba(14, 21, 40, 0.85)";
-        ctx.fillRect(40, 60, W - 80, 110);
-        ctx.strokeStyle = "#1E2D4A";
-        ctx.strokeRect(40, 60, W - 80, 110);
+        // Ambient cyber lighting
+        const radGrad = ctx.createRadialGradient(W / 2, 450, 40, W / 2, 450, 750);
+        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.16)");
+        radGrad.addColorStop(0.5, "rgba(14, 165, 233, 0.06)");
+        radGrad.addColorStop(1, "rgba(7, 11, 22, 0)");
+        ctx.fillStyle = radGrad;
+        ctx.fillRect(0, 0, W, H);
 
+        // Top Header Bar
+        ctx.fillStyle = "#0B1120";
+        ctx.fillRect(0, 0, W, 180);
+        ctx.strokeStyle = "#1E293B";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 180); ctx.lineTo(W, 180); ctx.stroke();
+
+        // Studio Branding Pill & Difficulty Tag
         ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 30px 'Segoe UI', sans-serif";
-        ctx.fillText("🚀 FAANG & TOP MNC SQL INTERVIEW PREP", 70, 125);
+        ctx.font = "bold 32px 'Segoe UI', sans-serif";
+        ctx.fillText("👑 @Code_With_Mangesh", 60, 68);
 
-        // Difficulty Pill
         ctx.fillStyle = "#F59E0B";
-        ctx.fillRect(W - 250, 92, 170, 48);
+        ctx.beginPath();
+        ctx.roundRect(W - 270, 32, 210, 48, 12);
+        ctx.fill();
         ctx.fillStyle = "#000000";
-        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.font = "bold 20px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(p.difficulty.toUpperCase(), W - 165, 124);
+        ctx.fillText("🔥 " + (p.difficulty || "FAANG SQL").toUpperCase(), W - 165, 63);
         ctx.textAlign = "left";
 
-        // Progress Bar (0:00 to 1:25)
-        const progress = Math.min(1.0, t / (sqlShortState.maxDuration || 85.0));
-        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-        ctx.fillRect(40, 185, W - 80, 10);
-        const grad = ctx.createLinearGradient(40, 0, W - 40, 0);
-        grad.addColorStop(0, "#06B6D4");
-        grad.addColorStop(0.5, "#38BDF8");
-        grad.addColorStop(1, "#10B981");
-        ctx.fillStyle = grad;
-        ctx.fillRect(40, 185, (W - 80) * progress, 10);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "bold 24px 'Segoe UI', sans-serif";
+        const subtitleBar = p.title ? p.title.slice(0, 46) : "Interactive AI SQL Interview Masterclass";
+        ctx.fillText(`⚡ ${subtitleBar}`, 60, 125);
 
-        // AI AVATAR PRESENTER PiP (Picture-in-Picture badge with Anti-Watermark Circular Crop)
-        if (sqlShortState.showAvatar && sqlShortState.selectedAvatar && sqlShortState.selectedAvatar !== "none") {
+        // Visual Audio Waveform Equalizer Bars
+        if (sqlShortState.isPlaying) {
+            ctx.fillStyle = "#38BDF8";
+            for (let i = 0; i < 9; i++) {
+                const bh = 10 + Math.sin(t * 14 + i * 1.2) * 14;
+                ctx.fillRect(W - 270 + i * 12, 110 + (24 - bh), 6, bh);
+            }
+        }
+
+        // Floating AI Avatar Presenter Bubble
+        if (sqlShortState.showAvatar) {
             ctx.save();
             const avatarX = W - 140;
-            const avatarY = 125;
-            const radius = 54;
+            const avatarY = 260;
+            const radius = 64;
 
-            // Outer glowing ring
-            const glow = 1.0 + Math.sin(t * 5) * 0.08;
-            ctx.shadowColor = "#8B5CF6";
+            ctx.shadowColor = "#38BDF8";
             ctx.shadowBlur = 18;
-            ctx.strokeStyle = "#8B5CF6";
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.arc(avatarX, avatarY, radius * glow, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            // Background circle
-            ctx.fillStyle = "#0F172A";
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
             ctx.beginPath();
             ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Render live avatar video if loaded
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
             const vid = sqlShortState.avatarVideoElement;
             if (vid && sqlShortState.avatarVideoLoaded && vid.readyState >= 2) {
                 ctx.save();
                 ctx.beginPath();
-                ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
+                ctx.arc(avatarX, avatarY, radius - 2, 0, Math.PI * 2);
                 ctx.clip();
 
                 const vw = vid.videoWidth || 640;
@@ -1801,7 +1701,6 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.drawImage(vid, sx, sy, sw, sh, avatarX - radius, avatarY - radius, radius * 2, radius * 2);
                 ctx.restore();
             } else {
-                // Procedural Cyber Teacher Avatar Presenter
                 ctx.fillStyle = "#38BDF8";
                 ctx.font = "38px 'Segoe UI', sans-serif";
                 ctx.textAlign = "center";
@@ -1813,831 +1712,727 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // =========================================================================
-        // 7-SCENE MASTER STORYBOARD (0 to 85 Seconds)
+        // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (<60s Shorts & Reels Standard)
         // =========================================================================
-        if (p.content_type === "theory") {
-            renderTheoryShortStoryboard(ctx, W, H, p, t);
+        const maxDur = sqlShortState.maxDuration || 56.0;
+        const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
+        const outroStart = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, maxDur - 3.5);
+        const isOutro = (t >= outroStart);
+
+        let currentStageIdx = 0;
+        let activeStage = null;
+
+        if (isOutro) {
+            currentStageIdx = stages.length > 0 ? stages.length : 7;
+        } else if (stages.length > 0) {
+            for (let i = 0; i < stages.length; i++) {
+                if (t >= stages[i].start && t < stages[i].end) {
+                    currentStageIdx = i + 1;
+                    activeStage = stages[i];
+                    break;
+                }
+            }
+            if (!activeStage) {
+                if (t < stages[0].start) {
+                    activeStage = stages[0];
+                    currentStageIdx = 1;
+                } else {
+                    activeStage = stages[stages.length - 1];
+                    currentStageIdx = stages.length;
+                }
+            }
         } else {
+            const estIdx = Math.min(6, Math.floor((t / Math.max(1, outroStart)) * 6) + 1);
+            currentStageIdx = estIdx;
+        }
 
-        // SCENE 1 (0 to 8.0s): INTERVIEW QUESTION INTRODUCTION
-        if (t < 8.0) {
-            ctx.save();
-            const s1Alpha = t < 0.5 ? t / 0.5 : (t > 7.5 ? (8.0 - t) / 0.5 : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s1Alpha));
+        // Audio Chime on Stage Advance
+        if (sqlShortState.lastBleepScene !== currentStageIdx && sqlShortState.isPlaying) {
+            sqlShortState.lastBleepScene = currentStageIdx;
+            playCyberBleep(880 + (currentStageIdx * 60), 0.08);
+        }
 
-            // Question Header Card
-            ctx.fillStyle = "rgba(16, 25, 46, 0.95)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 200, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3;
-            ctx.stroke();
+        let stageProg = 0.5;
+        let stageAlpha = 1.0;
+        if (activeStage && activeStage.end > activeStage.start) {
+            const sDur = activeStage.end - activeStage.start;
+            const sElapsed = Math.max(0, t - activeStage.start);
+            stageProg = Math.min(1.0, sElapsed / sDur);
+            const alphaIn = Math.min(1.0, sElapsed / 0.35);
+            const alphaOut = Math.min(1.0, (activeStage.end - t) / 0.35);
+            stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
+        } else if (isOutro) {
+            const oElapsed = Math.max(0, t - outroStart);
+            stageAlpha = Math.min(1.0, oElapsed / 0.4);
+            stageProg = Math.min(1.0, oElapsed / 3.5);
+        }
 
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("📋 SQL INTERVIEW QUESTION #1:", 90, 275);
+        if (p.content_type === "theory") {
+            renderTheoryShortStoryboard(ctx, W, H, p, t, currentStageIdx, activeStage, isOutro, outroStart, stageProg, stageAlpha);
+        } else {
+            const pipelineStages = getClientPipelineStages(p);
+            const filterEvals = getClientFilterEvals(p);
+            const actionType = isOutro ? "summary_outro" : (activeStage ? (activeStage.action_type || ("stage_" + currentStageIdx)) : ("stage_" + currentStageIdx));
 
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            const qLines = wrapCanvasText(ctx, p.question, W - 180);
-            qLines.slice(0, 2).forEach((l, i) => {
-                ctx.fillText(l, 90, 325 + i * 38);
-            });
+            // =========================================================================
+            // SCENE 7 (Branding & Outro): RENDERED STRICTLY ONLY WHEN isOutro IS TRUE!
+            // =========================================================================
+            if (isOutro) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            // Target Highlight Badge
-            const pulse = 1.0 + Math.sin(t * 6) * 0.05;
-            ctx.save();
-            ctx.translate(W / 2, 385);
-            ctx.scale(pulse, pulse);
-            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
-            ctx.beginPath();
-            ctx.roundRect(-260, -22, 520, 44, 12);
-            ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 20px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("🎯 TARGET: SECOND-HIGHEST DISTINCT SALARY", 0, 7);
-            ctx.restore();
+                // 1. Senior Interviewer Pro-Tip Glass Card
+                drawGlassTile(ctx, 60, 220, W - 120, 620, 22, "#8B5CF6", true, true, 1.0);
 
-            // EMPLOYEES Table View
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 24px monospace";
-            ctx.fillText(`INPUT TABLE: ${p.table_name || "EMPLOYEES"} (5 RECORDS)`, 60, 470);
+                ctx.fillStyle = "#8B5CF6";
+                ctx.font = "bold 32px 'Segoe UI', sans-serif";
+                ctx.fillText("💡 SENIOR FAANG INTERVIEWER PRO-TIP:", 90, 280);
 
-            const headers = p.col_headers || ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"];
-            ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
-            ctx.fillRect(60, 490, W - 120, 56);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText(headers[0], 90, 526);
-            ctx.fillText(headers[1], 310, 526);
-            ctx.fillText(headers[2], 560, 526);
-            ctx.fillText(headers[3], 800, 526);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText("1️⃣ Why Interviewers Value This Approach:", 90, 340);
+                ctx.fillStyle = "#C7D2FE";
+                ctx.font = "22px 'Segoe UI', sans-serif";
+                ctx.fillText("   " + (p.pro_tip || "Explaining query mechanics before writing code demonstrates senior-level clarity!"), 90, 380);
 
-            // SALARY Column Vertical Highlight Band
-            ctx.fillStyle = "rgba(56, 189, 248, 0.10)";
-            ctx.fillRect(770, 490, 220, 480);
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-            ctx.setLineDash([6, 6]);
-            ctx.strokeRect(770, 490, 220, 480);
-            ctx.setLineDash([]);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText("2️⃣ Universal SQL Compatibility & Performance:", 90, 480);
+                ctx.fillStyle = "#C7D2FE";
+                ctx.font = "22px 'Segoe UI', sans-serif";
+                ctx.fillText("   Optimizers use B-Tree indexes & partition pruning for low latency.", 90, 520);
+                ctx.fillText("   Handles edge cases, nulls, and duplicate values gracefully.", 90, 560);
 
-            // 5 Employee Rows
-            const sampleRows = p.sample_rows || [];
-            sampleRows.forEach((r, idx) => {
-                const rowY = 555 + idx * 78;
-                ctx.fillStyle = idx % 2 === 0 ? "rgba(15, 23, 42, 0.9)" : "rgba(30, 41, 59, 0.8)";
-                ctx.fillRect(60, rowY, W - 120, 70);
-                ctx.strokeStyle = "#1E2D4A";
-                ctx.strokeRect(60, rowY, W - 120, 70);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText("3️⃣ FAANG Best Practice:", 90, 640);
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 22px monospace";
+                ctx.fillText("   Always state time complexity O(N log K) and memory footprint!", 90, 685);
+
+                // 2. Outro Branding Card (@Code_With_Mangesh) on Glowing Amber Glass
+                drawGlassTile(ctx, 60, 870, W - 120, 630, 24, "#F59E0B", true, true, 1.0);
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 44px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.fillText("FAANG & Top MNC SQL Interview Preparation Studio", W / 2, 1005);
+
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "28px 'Segoe UI', sans-serif";
+                ctx.fillText("⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W / 2, 1100);
+                ctx.fillText("🔔 Follow @Code_With_Mangesh for daily SQL questions", W / 2, 1160);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.fillText("🚀 100% Free AI High-Tech Education for Every Student!", W / 2, 1260);
+
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "italic 22px 'Segoe UI', sans-serif";
+                ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
+
+                drawPhotonSparks(ctx, W / 2 - 280, 950, "#F59E0B", t);
+                drawPhotonSparks(ctx, W / 2 + 280, 950, "#F59E0B", t);
+
+                ctx.textAlign = "left";
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // SCENE 1: PROBLEM STATEMENT & ARCHITECTURE PIPELINE
+            // =========================================================================
+            else if (actionType === "problem_intro" || currentStageIdx === 1) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+                // 1. Floating 3D Frosted Glass Question Tile
+                drawGlassTile(ctx, 60, 220, W - 120, 200, 20, "#38BDF8", true, true, 1.0);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.fillText("📋 SQL INTERVIEW PROBLEM STATEMENT:", 95, 272);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 25px 'Segoe UI', sans-serif";
+                const qLines = wrapCanvasText(ctx, p.question, W - 190);
+                qLines.slice(0, 2).forEach((l, i) => {
+                    ctx.fillText(l, 95, 318 + i * 36);
+                });
+
+                // Target Highlight Badge with Neon Pulse
+                const pulse = 1.0 + Math.sin(t * 6) * 0.05;
+                ctx.save();
+                ctx.translate(W / 2, 385);
+                ctx.scale(pulse, pulse);
+                ctx.fillStyle = "rgba(245, 158, 11, 0.22)";
+                ctx.beginPath();
+                ctx.roundRect(-280, -22, 560, 44, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#F59E0B";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 20px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                const targetText = p.target_badge || ("🎯 TARGET: " + (p.title || "OPTIMAL SQL QUERY").toUpperCase().slice(0, 36));
+                ctx.fillText(targetText, 0, 7);
+                ctx.restore();
+
+                // 2. High-Tech Architecture Pipeline Diagram (Frosted Glass Nodes)
+                drawArchitecturePipeline(ctx, 60, 440, W - 120, 105, pipelineStages, 0, t);
+
+                // 3. Dynamic Frosted Glass Table View
+                drawGlassTile(ctx, 60, 565, W - 120, 420, 18, "rgba(56, 189, 248, 0.4)", false, true, 0.95);
+
+                const headers = p.col_headers && p.col_headers.length >= 3 ? p.col_headers : ["ID / KEY", "DATE / ATTR", "AMOUNT", "STATUS"];
+                ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
+                ctx.fillRect(80, 585, W - 160, 52);
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 21px monospace";
+                ctx.fillText(headers[0], 105, 618);
+                ctx.fillText(headers[1], 315, 618);
+                ctx.fillText(headers[2] || "VAL", 560, 618);
+                ctx.fillText(headers[3] || "STATUS", 810, 618);
+
+                // Sample Rows in Glass Table
+                const sampleRows = p.sample_rows && p.sample_rows.length > 0 ? p.sample_rows : [
+                    {account: "REC-101", date: "2026-03-15", amt: "45000", balance: "Row #1"},
+                    {account: "REC-102", date: "2026-03-12", amt: "95000", balance: "Row #2"},
+                    {account: "REC-103", date: "2026-03-10", amt: "25000", balance: "Row #3"},
+                    {account: "REC-104", date: "2026-03-01", amt: "12000", balance: "Row #4"}
+                ];
+                sampleRows.slice(0, 4).forEach((r, idx) => {
+                    const rowY = 645 + idx * 76;
+                    ctx.fillStyle = idx % 2 === 0 ? "rgba(15, 23, 42, 0.85)" : "rgba(30, 41, 59, 0.70)";
+                    ctx.fillRect(80, rowY, W - 160, 66);
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+                    ctx.strokeRect(80, rowY, W - 160, 66);
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "21px monospace";
+                    ctx.fillText(r.account || "", 105, rowY + 42);
+                    ctx.fillText(r.date || "", 315, rowY + 42);
+                    ctx.fillText(r.amt || "", 560, rowY + 42);
+
+                    ctx.fillStyle = "#38BDF8";
+                    ctx.font = "bold 22px monospace";
+                    ctx.fillText(r.balance || "", 810, rowY + 42);
+                });
+
+                // 4. Dynamic Laser Connector linking Table to Pipeline Stage 1
+                drawDynamicConnector(ctx, 200, 645, 170, 545, "#38BDF8", t, "⚡ PIPELINE INPUT");
+
+                // 5. Floating Frosted Glass IDE Tile (Empty Editor with Roadmap)
+                drawGlassTile(ctx, 60, 1005, W - 120, 480, 20, "rgba(255, 255, 255, 0.15)", false, false, 0.9);
+
+                ctx.fillStyle = "#1E293B";
+                ctx.fillRect(60, 1005, W - 120, 50);
+                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1030, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1030, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1030, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText("query_roadmap.sql — Step-by-Step AI Teacher Logic", 180, 1037);
+
+                ctx.fillStyle = "#64748B";
+                ctx.font = "italic 23px monospace";
+                ctx.fillText(`/* Step 1: Inspect ${p.table_name || 'table'} & identify key columns */`, 90, 1105);
+                ctx.fillText(`/* Step 2: ${pipelineStages[1] ? pipelineStages[1].name + ' — ' + pipelineStages[1].sub : 'Analyze partitions and candidate rows'} */`, 90, 1155);
+                ctx.fillText(`/* Step 3: ${pipelineStages[2] ? pipelineStages[2].name + ' — ' + pipelineStages[2].sub : 'Build core window/aggregate specification'} */`, 90, 1205);
+                ctx.fillText(`/* Step 4: ${pipelineStages[3] ? pipelineStages[3].name + ' — ' + pipelineStages[3].sub : 'Filter target records & verify output'} */`, 90, 1255);
+
+                // Learning Goal Glass Pill
+                drawGlassTile(ctx, 90, 1370, W - 180, 80, 14, "#38BDF8", false, true, 1.0);
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText("🧠 LEARNING GOAL: Grasp problem logic before typing SQL!", 120, 1420);
+
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // SCENE 2: DATA INSPECTION & INTERVIEW TRAP
+            // =========================================================================
+            else if (actionType === "data_inspection" || currentStageIdx === 2) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+                // 1. Data Inspection Glass Tile (Front Layer)
+                drawGlassTile(ctx, 60, 220, W - 120, 410, 20, "#F59E0B", true, true, 1.0);
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.fillText("🔍 DATA INSPECTION — NOTICE DATA PATTERNS & EDGE CASES:", 90, 268);
+
+                const sampleRows = p.sample_rows && p.sample_rows.length > 0 ? p.sample_rows : [
+                    {account: "REC-101", date: "2026-03-15", amt: "45000", balance: "Target Row", is_target: true},
+                    {account: "REC-102", date: "2026-03-12", amt: "95000", balance: "Active", is_target: false},
+                    {account: "REC-103", date: "2026-03-10", amt: "25000", balance: "Target Row", is_target: true},
+                    {account: "REC-104", date: "2026-03-01", amt: "12000", balance: "Active", is_target: false}
+                ];
+
+                sampleRows.slice(0, 4).forEach((r, idx) => {
+                    const rowY = 295 + idx * 74;
+                    const isTarget = r.is_target !== undefined ? r.is_target : (idx === 0 || idx === 2);
+                    ctx.fillStyle = isTarget ? "rgba(16, 185, 129, 0.22)" : "rgba(15, 23, 42, 0.85)";
+                    ctx.fillRect(85, rowY, W - 170, 64);
+                    ctx.strokeStyle = isTarget ? "#10B981" : "rgba(255, 255, 255, 0.1)";
+                    ctx.lineWidth = isTarget ? 2.5 : 1.5;
+                    ctx.strokeRect(85, rowY, W - 170, 64);
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "21px monospace";
+                    ctx.fillText(r.account || "", 110, rowY + 40);
+                    ctx.fillText(r.date || "", 320, rowY + 40);
+                    ctx.fillText(r.amt || "", 560, rowY + 40);
+
+                    if (isTarget) {
+                        ctx.fillStyle = "#10B981";
+                        ctx.font = "bold 21px monospace";
+                        ctx.fillText("🎯 CANDIDATE (Rank 1)", 760, rowY + 40);
+                    } else {
+                        ctx.fillStyle = "#94A3B8";
+                        ctx.font = "20px monospace";
+                        ctx.fillText(r.balance || "PASS", 760, rowY + 40);
+                    }
+                });
+
+                // 2. High-Tech Partition / Data Buckets Diagram (Middle Tile)
+                drawGlassTile(ctx, 60, 650, W - 120, 320, 18, "#38BDF8", false, true, 1.0);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText(`🪟 ${pipelineStages[1] ? pipelineStages[1].name.toUpperCase() : 'DATA PARTITION'} & CANDIDATE BREAKDOWN:`, 90, 695);
+
+                const sampleKeys = sampleRows.slice(0, 3);
+                sampleKeys.forEach((r, i) => {
+                    const by = 725 + i * 70;
+                    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+                    ctx.fillRect(90, by, W - 180, 58);
+                    ctx.strokeStyle = i === 0 ? "#10B981" : (i === 1 ? "#38BDF8" : "#F59E0B");
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(90, by, W - 180, 58);
+
+                    ctx.fillStyle = i === 0 ? "#10B981" : (i === 1 ? "#38BDF8" : "#F59E0B");
+                    ctx.font = "bold 20px monospace";
+                    ctx.fillText(`👥 ${r.account || 'Group ' + (i + 1)}:`, 110, by + 37);
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "20px monospace";
+                    ctx.fillText(`${r.date || ''} • ${r.amt || ''} ➔ ${r.is_target ? '🎯 Selected' : 'Evaluated'}`, 340, by + 37);
+                });
+
+                // 3. The Fatal Interview Trap Card (Bottom Tile)
+                drawGlassTile(ctx, 60, 990, W - 120, 500, 20, "#EF4444", true, true, 1.0);
+
+                ctx.fillStyle = "#EF4444";
+                ctx.font = "bold 28px 'Segoe UI', sans-serif";
+                ctx.fillText("❌ THE FATAL INTERVIEW TRAP: COMMON PITFALLS TO AVOID!", 90, 1045);
 
                 ctx.fillStyle = "#F8FAFC";
                 ctx.font = "22px monospace";
-                ctx.fillText(r.account, 90, rowY + 44);
-                ctx.fillText(r.date, 310, rowY + 44);
-                ctx.fillText(r.amt, 560, rowY + 44);
+                const trapCode = p.trap_code || "SELECT * FROM ... ORDER BY ... LIMIT 1 OFFSET 1; -- FAILS ON TIES / GROUPS!";
+                ctx.fillText(trapCode, 90, 1100);
 
-                // Highlighted Salary Column Value
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText(r.amt, 800, rowY + 44);
-            });
+                ctx.fillStyle = "#CBD5E1";
+                ctx.font = "24px 'Segoe UI', sans-serif";
+                const trapsList = (p.traps && p.traps.length > 0) ? p.traps : [
+                    "• Naive LIMIT/OFFSET or MAX() fails when duplicate values or ties exist!",
+                    "• Basic GROUP BY drops row-level attributes, forcing messy self-joins.",
+                    "• In FAANG interviews, failing to handle duplicate ties costs 50% points!"
+                ];
+                trapsList.slice(0, 3).forEach((tr, ti) => {
+                    ctx.fillText(tr.startsWith("•") ? tr : ("• " + tr), 90, 1160 + ti * 55);
+                });
 
-            // SQL Editor Preview (Empty with Step-by-Step Guidance)
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 990, W - 120, 510, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#1E2D4A";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 25px 'Segoe UI', sans-serif";
+                ctx.fillText("✅ Solution: Build dynamic multi-stage query logic with zero data loss!", 90, 1345);
 
-            // Window Header
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 990, W - 120, 50);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1015, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1015, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1015, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("query_builder.sql (Empty Editor)", 180, 1022);
+                // Dynamic Connector Line between Middle Diagram and Trap Tile
+                drawDynamicConnector(ctx, 300, 970, 300, 1030, "#EF4444", t, "⚠️ TRAP DETECTED");
 
-            ctx.fillStyle = "#64748B";
-            ctx.font = "italic 24px monospace";
-            ctx.fillText("/* Step 1: Understand question before writing code */", 90, 1100);
-            ctx.fillText("/* Requirement: Find 2nd highest DISTINCT salary */", 90, 1150);
-            ctx.fillText("/* Notice: Priya & Kiran BOTH earn ₹80,000! */", 90, 1200);
-            ctx.fillText("/* SQL Query will be built logically step-by-step! */", 90, 1250);
-
-            // Phase Badge
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(90, 1370, W - 180, 80, 14);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("🧠 LEARNING GOAL: Identify what the interviewer is asking!", 120, 1420);
-
-            ctx.restore();
-        }
-
-        // SCENE 2 (8.0 to 20.0s): UNDERSTAND THE QUESTION & DUPLICATE TIE TRAP
-        if (t >= 7.5 && t < 20.5) {
-            ctx.save();
-            const s2Alpha = t < 8.5 ? (t - 7.5) : (t > 19.5 ? (20.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s2Alpha));
-
-            // Table EMPLOYEES with Pulsing Tie Alerts
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 24px monospace";
-            ctx.fillText("EMPLOYEES TABLE — NOTICE DUPLICATE TOP SALARIES:", 60, 255);
-
-            const sampleRows = p.sample_rows || [];
-            sampleRows.forEach((r, idx) => {
-                const rowY = 275 + idx * 72;
-                const isTie = idx === 2 || idx === 4; // Priya & Kiran (80,000)
-
-                ctx.fillStyle = isTie ? "rgba(239, 68, 68, 0.22)" : "rgba(15, 23, 42, 0.85)";
-                ctx.fillRect(60, rowY, W - 120, 64);
-
-                if (isTie) {
-                    const glowW = 2.5 + Math.sin(t * 8) * 1.5;
-                    ctx.strokeStyle = "#EF4444";
-                    ctx.lineWidth = glowW;
-                    ctx.strokeRect(60, rowY, W - 120, 64);
-                } else {
-                    ctx.strokeStyle = "#1E2D4A";
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(60, rowY, W - 120, 64);
-                }
-
-                ctx.fillStyle = isTie ? "#FCA5A5" : "#F8FAFC";
-                ctx.font = "22px monospace";
-                ctx.fillText(r.account, 90, rowY + 40);
-                ctx.fillText(r.date, 310, rowY + 40);
-                ctx.fillText(r.amt, 560, rowY + 40);
-
-                if (isTie) {
-                    ctx.fillStyle = "#EF4444";
-                    ctx.font = "bold 22px monospace";
-                    ctx.fillText("⚠️ TOP TIE (₹80,000)", 780, rowY + 40);
-                } else if (idx === 3) {
-                    ctx.fillStyle = "#10B981";
-                    ctx.font = "bold 22px monospace";
-                    ctx.fillText("🎯 2ND HIGHEST", 780, rowY + 40);
-                } else {
-                    ctx.fillStyle = "#64748B";
-                    ctx.font = "20px monospace";
-                    ctx.fillText(r.amt, 800, rowY + 40);
-                }
-            });
-
-            // Distinct Salaries Inspection Container
-            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-            ctx.beginPath();
-            ctx.roundRect(60, 660, W - 120, 320, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("🔍 SALARY VALUES INSPECTION:", 90, 705);
-
-            // Salary Pills
-            const pills = ["60,000", "50,000", "80,000 🔥", "70,000 ⭐", "80,000 🔥"];
-            pills.forEach((pill, i) => {
-                const px = 90 + i * 180;
-                const is80 = pill.includes("80,000");
-                const is70 = pill.includes("70,000");
-                ctx.fillStyle = is80 ? "rgba(239, 68, 68, 0.25)" : (is70 ? "rgba(16, 185, 129, 0.25)" : "rgba(30, 41, 59, 0.9)");
-                ctx.fillRect(px, 730, 165, 48);
-                ctx.strokeStyle = is80 ? "#EF4444" : (is70 ? "#10B981" : "#475569");
-                ctx.strokeRect(px, 730, 165, 48);
-                ctx.fillStyle = is80 ? "#EF4444" : (is70 ? "#10B981" : "#E2E8F0");
-                ctx.font = "bold 20px monospace";
-                ctx.fillText(pill, px + 12, 762);
-            });
-
-            // Distinction Summary Cards
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 23px 'Segoe UI', sans-serif";
-            ctx.fillText("🥇 Highest Salary: ₹80,000 (Priya & Kiran — appears twice!)", 90, 835);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 25px 'Segoe UI', sans-serif";
-            ctx.fillText("🥈 Second-Highest Distinct Salary: ₹70,000 (Neha — Target Answer)", 90, 890);
-
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "italic 20px 'Segoe UI', sans-serif";
-            ctx.fillText("Important: Multiple employees sharing the top salary must NOT distort the answer!", 90, 940);
-
-            // The Fatal Interview Trap Card
-            ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1020, W - 120, 480, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("❌ THE FATAL INTERVIEW TRAP: WHY 'LIMIT 1 OFFSET 1' FAILS!", 90, 1075);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "22px monospace";
-            ctx.fillText("SELECT SALARY FROM EMPLOYEES ORDER BY SALARY DESC LIMIT 1 OFFSET 1;", 90, 1130);
-
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• Row 1 = ₹80,000 (Priya - Highest)", 90, 1190);
-            ctx.fillText("• Row 2 = ₹80,000 (Kiran - Duplicate Highest)", 90, 1240);
-            
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 25px 'Segoe UI', sans-serif";
-            ctx.fillText("➔ Returns ₹80,000! (FAILS TEST CASES IN AN INTERVIEW ❌)", 90, 1300);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ Solution: Use Subquery to exclude top salary before selecting MAX!", 90, 1370);
-
-            ctx.restore();
-        }
-
-        // SCENE 3 (20.0 to 32.0s): DECIDE THE SQL LOGIC (4-STEP STRATEGY FLOWCHART)
-        if (t >= 19.5 && t < 32.5) {
-            ctx.save();
-            const s3Alpha = t < 20.5 ? (t - 19.5) : (t > 31.5 ? (32.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s3Alpha));
-
-            // Header Banner
-            ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 95, 16);
-            ctx.fill();
-            ctx.strokeStyle = "#818CF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#818CF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 4-STEP LOGICAL STRATEGY (BEFORE WRITING SQL)", 90, 265);
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("Deconstructing the subquery algorithm so you can explain it in an interview:", 90, 296);
-
-            // Flowchart 4 Steps
-            const steps = [
-                {
-                    num: "1️⃣",
-                    title: "FIND HIGHEST SALARY IN TABLE",
-                    query: "SELECT MAX(SALARY) FROM EMPLOYEES ➔ ₹80,000",
-                    activeRange: [20.0, 23.0],
-                    color: "#38BDF8"
-                },
-                {
-                    num: "2️⃣",
-                    title: "EXCLUDE HIGHEST SALARY (FILTER)",
-                    query: "WHERE SALARY < 80,000 (Removes BOTH Priya & Kiran)",
-                    activeRange: [23.0, 26.0],
-                    color: "#F59E0B"
-                },
-                {
-                    num: "3️⃣",
-                    title: "COLLECT REMAINING DISTINCT SALARIES",
-                    query: "Remaining Pool: { ₹70,000, ₹60,000, ₹50,000 }",
-                    activeRange: [26.0, 29.0],
-                    color: "#EC4899"
-                },
-                {
-                    num: "4️⃣",
-                    title: "FIND MAXIMUM FROM REMAINING POOL",
-                    query: "MAX({ 70k, 60k, 50k }) ➔ ₹70,000 (🎯 TARGET ANSWER!)",
-                    activeRange: [29.0, 32.5],
-                    color: "#10B981"
-                }
-            ];
-
-            steps.forEach((st, idx) => {
-                const boxY = 335 + idx * 195;
-                const isActive = t >= st.activeRange[0] && t < st.activeRange[1];
-
-                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.8)";
-                ctx.beginPath();
-                ctx.roundRect(60, boxY, W - 120, 130, 16);
-                ctx.fill();
-
-                ctx.strokeStyle = isActive ? st.color : "#1E2D4A";
-                ctx.lineWidth = isActive ? 3.5 : 2;
-                if (isActive) {
-                    ctx.shadowColor = st.color;
-                    ctx.shadowBlur = 18;
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                ctx.fillStyle = st.color;
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(`${st.num} ${st.title}`, 90, boxY + 45);
-
-                ctx.fillStyle = isActive ? "#F8FAFC" : "#94A3B8";
-                ctx.font = "bold 23px monospace";
-                ctx.fillText(st.query, 90, boxY + 95);
-
-                // Down Arrow (except last step)
-                if (idx < 3) {
-                    ctx.fillStyle = "#818CF8";
-                    ctx.font = "bold 32px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText("↓", W / 2, boxY + 168);
-                    ctx.textAlign = "left";
-                }
-            });
-
-            // Strategy Takeaway Card
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1140, W - 120, 360, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 STRATEGY VALIDATED BY SENIOR INTERVIEWERS:", 90, 1195);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• By excluding the global maximum, the next maximum IS the 2nd highest!", 90, 1255);
-            ctx.fillText("• Handles duplicate ties naturally across all database engines.", 90, 1315);
-            ctx.fillText("• Next step: Let's write the inner query first in our SQL editor!", 90, 1375);
-
-            ctx.restore();
-        }
-
-        // SCENE 4 (32.0 to 44.0s): BUILD THE INNER QUERY (TYPEWRITER BUILD)
-        if (t >= 31.5 && t < 44.5) {
-            ctx.save();
-            const s4Alpha = t < 32.5 ? (t - 31.5) : (t > 43.5 ? (44.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s4Alpha));
-
-            // Top: Compact EMPLOYEES Table showing MAX highlight
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText("STEP 1: INSPECT EMPLOYEES TABLE TO EXTRACT MAX(SALARY):", 60, 255);
-
-            const sampleRows = p.sample_rows || [];
-            sampleRows.forEach((r, idx) => {
-                const rowY = 275 + idx * 60;
-                const isMax = idx === 2 || idx === 4;
-
-                ctx.fillStyle = isMax ? "rgba(56, 189, 248, 0.2)" : "rgba(15, 23, 42, 0.85)";
-                ctx.fillRect(60, rowY, W - 120, 54);
-                ctx.strokeStyle = isMax ? "#38BDF8" : "#1E2D4A";
-                ctx.lineWidth = isMax ? 2.5 : 1;
-                ctx.strokeRect(60, rowY, W - 120, 54);
-
-                ctx.fillStyle = isMax ? "#38BDF8" : "#94A3B8";
-                ctx.font = isMax ? "bold 20px monospace" : "19px monospace";
-                ctx.fillText(r.account, 85, rowY + 34);
-                ctx.fillText(r.date, 310, rowY + 34);
-                ctx.fillText(r.amt, 560, rowY + 34);
-                ctx.fillText(isMax ? "🔥 MAX VALUE = ₹80,000" : r.balance, 780, rowY + 34);
-            });
-
-            // SQL IDE Window (Typewriter Animation for Inner Query)
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 600, W - 120, 470, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            // Window Header
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 600, W - 120, 50);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 625, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 625, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 625, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("query_solution.sql — Step 1: Write Inner Query First", 180, 632);
-
-            // Typewriter Inner Query
-            const innerLines = [
-                "SELECT MAX(SALARY)",
-                "FROM EMPLOYEES;"
-            ];
-            const typingProgress = (t - 32.0) * 1.8;
-            const linesToShow = Math.min(innerLines.length, Math.max(1, Math.floor(typingProgress)));
-
-            for (let i = 0; i < linesToShow; i++) {
-                const lineY = 710 + i * 65;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 26px monospace";
-                ctx.fillText((i + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, innerLines[i], 160, lineY);
+                ctx.restore();
             }
 
-            // Laser Focus Box around MAX(SALARY)
-            if (t >= 34.0) {
+            // =========================================================================
+            // SCENE 3: 4-STEP LOGICAL STRATEGY FLOWCHART
+            // =========================================================================
+            else if (actionType === "logic_flowchart" || currentStageIdx === 3) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+                // 1. Header Banner Glass Tile
+                drawGlassTile(ctx, 60, 220, W - 120, 95, 16, "#818CF8", false, true, 1.0);
+
+                ctx.fillStyle = "#818CF8";
+                ctx.font = "bold 28px 'Segoe UI', sans-serif";
+                ctx.fillText("💡 LOGICAL ALGORITHM FLOWCHART (BEFORE WRITING CODE)", 90, 265);
+                ctx.fillStyle = "#CBD5E1";
+                ctx.font = "20px 'Segoe UI', sans-serif";
+                ctx.fillText("Step-by-step query construction to explain clearly to the interviewer:", 90, 296);
+
+                // 2. Flowchart Steps with Depth Layering
+                const steps = pipelineStages.map((st, i) => ({
+                    num: `${i + 1}️⃣`,
+                    icon: st.icon || "⚙️",
+                    title: st.name || ("STEP " + (i + 1)),
+                    query: st.sub || "Execution block",
+                    sub: `Stage ${i + 1} processing pipeline`,
+                    color: i === 0 ? "#38BDF8" : (i === 1 ? "#F59E0B" : (i === 2 ? "#EC4899" : "#10B981"))
+                }));
+
+                const activeStepIdx = Math.min(steps.length - 1, Math.floor(stageProg * steps.length));
+                const stepSpacing = steps.length <= 3 ? 240 : 190;
+
+                steps.forEach((st, idx) => {
+                    const boxY = 335 + idx * stepSpacing;
+                    const isActive = idx === activeStepIdx;
+
+                    drawGlassTile(ctx, 60, boxY, W - 120, steps.length <= 3 ? 175 : 135, 18, st.color, isActive, isActive, isActive ? 1.0 : 0.45);
+
+                    ctx.fillStyle = st.color;
+                    ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                    ctx.fillText(`${st.num} ${st.icon} ${st.title}`, 95, boxY + 45);
+
+                    ctx.fillStyle = isActive ? "#FFFFFF" : "#94A3B8";
+                    ctx.font = "bold 24px monospace";
+                    ctx.fillText(st.query, 95, boxY + 95);
+
+                    if (st.sub && steps.length <= 3) {
+                        ctx.fillStyle = isActive ? "#38BDF8" : "#64748B";
+                        ctx.font = "20px 'Segoe UI', sans-serif";
+                        ctx.fillText(st.sub, 95, boxY + 140);
+                    }
+
+                    if (isActive) {
+                        drawPhotonSparks(ctx, W - 120, boxY + 50, st.color, t);
+                    }
+
+                    // Dynamic Laser Connector to next step
+                    if (idx < steps.length - 1) {
+                        const connY1 = boxY + (steps.length <= 3 ? 175 : 135);
+                        const connY2 = connY1 + (steps.length <= 3 ? 65 : 55);
+                        drawDynamicConnector(ctx, W / 2, connY1, W / 2, connY2, st.color, t, "");
+                    }
+                });
+
+                // Strategy Takeaway Card at bottom
+                drawGlassTile(ctx, 60, steps.length <= 3 ? 1160 : 1150, W - 120, 340, 20, "#10B981", false, true, 1.0);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 27px 'Segoe UI', sans-serif";
+                ctx.fillText("🎯 STRATEGY VALIDATED BY SENIOR INTERVIEWERS:", 90, 1205);
+
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "24px 'Segoe UI', sans-serif";
+                ctx.fillText("• Explaining the execution pipeline demonstrates engineering depth.", 90, 1265);
+                ctx.fillText("• Eliminates redundant subqueries, temporary tables, and cartesian joins.", 90, 1320);
+                ctx.fillText("• Next step: Let's write the query step-by-step in our SQL editor!", 90, 1375);
+
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // SCENE 4: KINETIC TYPEWRITER BUILD ON GLASS IDE
+            // =========================================================================
+            else if (actionType === "code_build" || currentStageIdx === 4) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+                // 1. Architecture Pipeline (Stage 2 / 3 Active)
+                drawArchitecturePipeline(ctx, 60, 220, W - 120, 105, pipelineStages, 1, t);
+
+                // 2. Kinetic Frosted Glass SQL IDE Window
+                drawGlassTile(ctx, 60, 350, W - 120, 500, 20, "#38BDF8", true, true, 1.0);
+
+                ctx.fillStyle = "#1E293B";
+                ctx.fillRect(60, 350, W - 120, 52);
+                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 376, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 376, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 376, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText("query_builder.sql — Step 1: Core Specification", 180, 384);
+
+                // Typewriter Animation
+                const allLines = (p.solution_sql || "SELECT * FROM TRANSACTIONS;").split("\n");
+                const linesToShow = Math.max(1, Math.min(allLines.length, Math.floor(stageProg * (allLines.length + 1)) + 1));
+
+                for (let i = 0; i < linesToShow; i++) {
+                    const lineY = 460 + i * 50;
+                    ctx.fillStyle = "#475569";
+                    ctx.font = "bold 25px monospace";
+                    ctx.fillText((i + 1).toString().padStart(2, "0"), 95, lineY);
+                    renderSqlSyntaxLine(ctx, allLines[i], 160, lineY);
+                }
+
+                // Laser Focus Box on active clause
+                const highlightY = 450 + Math.min(linesToShow - 1, 2) * 50;
                 ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
                 ctx.beginPath();
-                ctx.roundRect(260, 670, 270, 55, 8);
+                ctx.roundRect(150, highlightY - 26, W - 240, 48, 10);
                 ctx.fill();
                 ctx.strokeStyle = "#38BDF8";
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Arrow from Table
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 20px 'Segoe UI', sans-serif";
-                ctx.fillText("⚡ AGGREGATES TOP VALUE", 550, 705);
+                drawPhotonSparks(ctx, W - 140, highlightY, "#38BDF8", t);
+
+                // 3. Engine Simulation Intermediate Output Glass Card
+                drawGlassTile(ctx, 60, 880, W - 120, 600, 20, "#10B981", false, true, 1.0);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 28px 'Segoe UI', sans-serif";
+                ctx.fillText("⚡ DATABASE ENGINE: IN-MEMORY EVALUATION", 90, 935);
+
+                filterEvals.slice(0, 5).forEach((row, i) => {
+                    const ry = 970 + i * 74;
+                    const isTop = row.status === "keep";
+                    ctx.fillStyle = isTop ? "rgba(16, 185, 129, 0.22)" : "rgba(15, 23, 42, 0.85)";
+                    ctx.fillRect(90, ry, W - 180, 64);
+                    ctx.strokeStyle = isTop ? "#10B981" : "rgba(255, 255, 255, 0.08)";
+                    ctx.lineWidth = isTop ? 2.5 : 1;
+                    ctx.strokeRect(90, ry, W - 180, 64);
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "22px monospace";
+                    ctx.fillText(row.name, 120, ry + 42);
+                    ctx.fillText(row.salary || row.cond, 350, ry + 42);
+
+                    ctx.fillStyle = isTop ? "#10B981" : "#94A3B8";
+                    ctx.font = "bold 22px monospace";
+                    ctx.fillText(row.action || (isTop ? "TARGET" : "PASS"), 760, ry + 42);
+                });
+
+                // Dynamic Connector Line between IDE and Simulation
+                drawDynamicConnector(ctx, W / 2, 850, W / 2, 880, "#38BDF8", t, "⚡ ENGINE EXECUTION");
+
+                ctx.restore();
             }
 
-            // Subquery Execution Output Card
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1100, W - 120, 400, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
+            // =========================================================================
+            // SCENE 5: APPLY FILTER & ROW-BY-ROW SIMULATION
+            // =========================================================================
+            else if (actionType === "simulation_execution" || currentStageIdx === 5) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText("⚡ INNER SUBQUERY EXECUTION RESULT:", 90, 1155);
+                // 1. Frosted Glass IDE Tile showing Filter
+                drawGlassTile(ctx, 60, 220, W - 120, 420, 20, "#F59E0B", true, true, 1.0);
 
-            // Output Grid
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(90, 1190, 440, 140);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 1190, 440, 140);
+                ctx.fillStyle = "#1E293B";
+                ctx.fillRect(60, 220, W - 120, 50);
+                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 245, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 245, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 245, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText("query_solution.sql — Step 2: Apply Target Filter", 180, 253);
 
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText("MAX(SALARY)", 120, 1230);
-            ctx.fillStyle = "#475569";
-            ctx.fillText("--------------------", 120, 1255);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 44px monospace";
-            ctx.fillText("80000", 120, 1305);
+                const filterLines = (p.solution_sql || "SELECT * FROM TRANSACTIONS;").split("\n");
+                filterLines.slice(0, 7).forEach((ln, idx) => {
+                    const lineY = 310 + idx * 46;
+                    ctx.fillStyle = "#475569";
+                    ctx.font = "bold 24px monospace";
+                    ctx.fillText((idx + 1).toString().padStart(2, "0"), 95, lineY);
 
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText("• Returns a single scalar value: ₹80,000", 90, 1375);
-            ctx.fillText("• This 80,000 will now be passed to our outer WHERE condition!", 90, 1425);
+                    const isFilterLine = ln.toUpperCase().includes("QUALIFY") || ln.toUpperCase().includes("WHERE") || ln.toUpperCase().includes("HAVING");
+                    if (isFilterLine) {
+                        ctx.fillStyle = "rgba(245, 158, 11, 0.22)";
+                        ctx.fillRect(150, lineY - 26, W - 260, 36);
+                    }
+                    renderSqlSyntaxLine(ctx, ln, 160, lineY);
+                });
 
-            ctx.restore();
-        }
+                // Dynamic Bouncing Laser Arrow on QUALIFY / Filter
+                const arrowBounce = Math.sin(t * 6) * 12;
+                const arrowX = 660 + arrowBounce;
+                const arrowY = 430;
+                ctx.fillStyle = "#F59E0B";
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX + 35, arrowY - 16);
+                ctx.lineTo(arrowX + 35, arrowY - 8);
+                ctx.lineTo(arrowX + 90, arrowY - 8);
+                ctx.lineTo(arrowX + 90, arrowY + 8);
+                ctx.lineTo(arrowX + 35, arrowY + 8);
+                ctx.lineTo(arrowX + 35, arrowY + 16);
+                ctx.closePath();
+                ctx.fill();
 
-        // SCENE 5 (44.0 to 58.0s): APPLY THE FILTER (ROW-BY-ROW SIMULATION)
-        if (t >= 43.5 && t < 58.5) {
-            ctx.save();
-            const s5Alpha = t < 44.5 ? (t - 43.5) : (t > 57.5 ? (58.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s5Alpha));
+                ctx.fillStyle = "#F59E0B";
+                ctx.fillRect(arrowX + 100, arrowY - 18, 220, 36);
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 17px 'Segoe UI', sans-serif";
+                ctx.fillText("⚡ FILTER EVALUATION", arrowX + 110, arrowY + 6);
 
-            // Expanded SQL IDE showing WHERE Filter
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 390, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 3;
-            ctx.stroke();
+                // 2. Row-by-Row Evaluation Simulation Table on Frosted Glass
+                drawGlassTile(ctx, 60, 670, W - 120, 530, 20, "#38BDF8", false, true, 1.0);
 
-            // Window Header
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 220, W - 120, 48);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("query_solution.sql — Step 2: Apply Exclusion Filter", 180, 252);
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 25px 'Segoe UI', sans-serif";
+                ctx.fillText("🔍 DATABASE ENGINE: ROW-BY-ROW FILTER EVALUATION:", 90, 715);
 
-            const filterLines = [
-                "SELECT *",
-                "FROM EMPLOYEES",
-                "WHERE SALARY < (",
-                "    SELECT MAX(SALARY)",
-                "    FROM EMPLOYEES",
-                ");"
-            ];
+                const rowsToShow = Math.min(filterEvals.length, Math.floor(stageProg * (filterEvals.length + 1)) + 1);
 
-            filterLines.forEach((ln, idx) => {
-                const lineY = 305 + idx * 46;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+                filterEvals.slice(0, rowsToShow).forEach((ev, i) => {
+                    const rY = 745 + i * 76;
+                    const isExclude = ev.status === "exclude";
 
-                if (idx === 2) {
-                    ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
-                    ctx.fillRect(150, lineY - 26, 420, 34);
+                    ctx.fillStyle = isExclude ? "rgba(239, 68, 68, 0.22)" : "rgba(16, 185, 129, 0.18)";
+                    ctx.fillRect(80, rY, W - 160, 66);
+                    ctx.strokeStyle = isExclude ? "#EF4444" : "#10B981";
+                    ctx.strokeRect(80, rY, W - 160, 66);
+
+                    ctx.fillStyle = isExclude ? "#FCA5A5" : "#FFFFFF";
+                    ctx.font = "22px monospace";
+                    ctx.fillText(ev.name, 105, rY + 42);
+                    ctx.fillText(ev.salary || "", 350, rY + 42);
+                    ctx.fillText(ev.cond, 560, rY + 42);
+
+                    ctx.fillStyle = isExclude ? "#EF4444" : "#10B981";
+                    ctx.font = "bold 22px monospace";
+                    ctx.fillText(isExclude ? "❌ EXCLUDE" : "✅ KEEP", 830, rY + 42);
+                });
+
+                // 3. Filtered Candidates Outcome Glass Card
+                drawGlassTile(ctx, 60, 1225, W - 120, 275, 18, "#10B981", false, true, 1.0);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.fillText("🎯 FILTERED CANDIDATE DATA POOL:", 90, 1275);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 23px monospace";
+                const keptRows = filterEvals.filter(e => e.status === "keep").map(e => e.name).slice(0, 3).join(", ");
+                ctx.fillText(`KEPT RECORDS: { ${keptRows || 'Evaluated Top Candidates'} }`, 90, 1330);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "22px 'Segoe UI', sans-serif";
+                ctx.fillText("All invalid and duplicate entries have been cleanly eliminated!", 90, 1385);
+                ctx.fillText("Next: View verified final query execution output!", 90, 1435);
+
+                // Dynamic Connector Line linking IDE filter line to Kept Rows
+                drawDynamicConnector(ctx, 500, 640, 500, 670, "#10B981", t, "✅ FILTER = TRUE");
+
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // SCENE 6: FINAL PRODUCTION QUERY & VERIFIED OUTPUT
+            // =========================================================================
+            else {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+
+                // 1. Complete Production SQL IDE Window on Frosted Glass
+                drawGlassTile(ctx, 60, 220, W - 120, 500, 20, "#10B981", true, true, 1.0);
+
+                ctx.fillStyle = "#1E293B";
+                ctx.fillRect(60, 220, W - 120, 50);
+                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 245, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 245, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 245, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText("production_solution.sql — Final Verified Execution", 180, 253);
+
+                const finalLines = (p.solution_sql || "SELECT * FROM TRANSACTIONS;").split("\n");
+                finalLines.forEach((ln, idx) => {
+                    const lineY = 310 + idx * 48;
+                    ctx.fillStyle = "#475569";
+                    ctx.font = "bold 24px monospace";
+                    ctx.fillText((idx + 1).toString().padStart(2, "0"), 95, lineY);
+
+                    if (idx === 0) {
+                        ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+                        ctx.fillRect(150, lineY - 30, W - 260, 42);
+                        ctx.strokeStyle = "#10B981";
+                        ctx.strokeRect(150, lineY - 30, W - 260, 42);
+                    }
+                    renderSqlSyntaxLine(ctx, ln, 160, lineY);
+                });
+
+                // 2. Outer Execution Calculation Summary Tile
+                drawGlassTile(ctx, 60, 745, W - 120, 280, 18, "#38BDF8", false, true, 1.0);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 25px 'Segoe UI', sans-serif";
+                ctx.fillText("🧮 EXECUTION CALCULATION SUMMARY:", 90, 790);
+
+                ctx.fillStyle = "#CBD5E1";
+                ctx.font = "24px monospace";
+                ctx.fillText(`TABLE EVALUATED: ${p.table_name || 'TRANSACTIONS'} (${filterEvals.length} Records)`, 90, 845);
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 25px monospace";
+                ctx.fillText("EXECUTION STATUS: 100% Verified Production Output", 90, 905);
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText("⚡ Engine Complexity: O(N log K) Linear Sorting • Zero Cartesian Join", 90, 965);
+
+                // 3. Big Glowing Neon 3D Glass Output Card
+                drawGlassTile(ctx, 60, 1050, W - 120, 450, 22, "#10B981", true, true, 1.0);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 32px 'Segoe UI', sans-serif";
+                ctx.fillText("🏆 VERIFIED FINAL QUERY OUTPUT:", 90, 1110);
+
+                ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+                ctx.fillRect(90, 1145, W - 180, 230);
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(90, 1145, W - 180, 230);
+
+                if (p.output_rows && Array.isArray(p.output_rows) && p.output_rows.length > 0) {
+                    ctx.fillStyle = "#38BDF8";
+                    ctx.font = "bold 22px monospace";
+                    const colHeaders = (p.col_headers || ["ID", "COL2", "COL3", "VALUE"]).slice(0, 4).join("   ");
+                    ctx.fillText(colHeaders, 120, 1195);
+                    ctx.fillStyle = "#475569";
+                    ctx.fillText("---------------------------------------------", 120, 1225);
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 24px monospace";
+                    p.output_rows.slice(0, 3).forEach((row, ri) => {
+                        const rowStr = Array.isArray(row) ? row.join("   ") : Object.values(row).join("   ");
+                        ctx.fillText(rowStr, 120, 1265 + ri * 40);
+                    });
+                } else if (p.output_value) {
+                    ctx.fillStyle = "#38BDF8";
+                    ctx.font = "bold 26px monospace";
+                    ctx.fillText("RESULT_VALUE", 130, 1205);
+                    ctx.fillStyle = "#475569";
+                    ctx.fillText("-------------------------------------", 130, 1240);
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 72px monospace";
+                    ctx.fillText(p.output_value.toString(), 130, 1320);
+                } else {
+                    ctx.fillStyle = "#38BDF8";
+                    ctx.font = "bold 22px monospace";
+                    ctx.fillText("CUSTOMER_ID   TOTAL_AMOUNT   STATUS", 120, 1195);
+                    ctx.fillStyle = "#475569";
+                    ctx.fillText("---------------------------------------------", 120, 1225);
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 24px monospace";
+                    ctx.fillText("C103          95000          🎯 TOP 10%", 120, 1265);
+                    ctx.fillText("C101          45000          🎯 TOP 10%", 120, 1305);
                 }
-                renderSqlSyntaxLine(ctx, ln, 160, lineY);
-            });
 
-            // Dynamic Laser Arrow on WHERE Line
-            const arrowBounce = Math.sin(t * 6) * 12;
-            const arrowX = 640 + arrowBounce;
-            const arrowY = 390;
-            ctx.fillStyle = "#F59E0B";
-            ctx.beginPath();
-            ctx.moveTo(arrowX, arrowY);
-            ctx.lineTo(arrowX + 35, arrowY - 16);
-            ctx.lineTo(arrowX + 35, arrowY - 8);
-            ctx.lineTo(arrowX + 90, arrowY - 8);
-            ctx.lineTo(arrowX + 90, arrowY + 8);
-            ctx.lineTo(arrowX + 35, arrowY + 8);
-            ctx.lineTo(arrowX + 35, arrowY + 16);
-            ctx.closePath();
-            ctx.fill();
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText("✅ 100% Accurate & Duplicate-Safe • Production-Ready FAANG Query!", 90, 1435);
 
-            ctx.fillStyle = "#F59E0B";
-            ctx.fillRect(arrowX + 100, arrowY - 18, 230, 36);
-            ctx.fillStyle = "#000";
-            ctx.font = "bold 18px 'Segoe UI', sans-serif";
-            ctx.fillText("⚡ EXCLUSION FILTER (< 80k)", arrowX + 110, arrowY + 6);
+                drawPhotonSparks(ctx, W - 140, 1260, "#10B981", t);
 
-            // Row-by-Row Simulation Table
-            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-            ctx.beginPath();
-            ctx.roundRect(60, 635, W - 120, 560, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("🔍 DATABASE ENGINE: ROW-BY-ROW FILTER SIMULATION:", 90, 675);
-
-            // Table Header
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(80, 695, W - 160, 48);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("EMPLOYEE", 100, 726);
-            ctx.fillText("SALARY", 320, 726);
-            ctx.fillText("CONDITION (< 80k)", 540, 726);
-            ctx.fillText("ACTION", 820, 726);
-
-            // Progressive Row Reveals
-            const evals = p.filter_evaluations || [
-                {name: "Amit", salary: "60,000", cond: "60000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
-                {name: "Rahul", salary: "50,000", cond: "50000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
-                {name: "Priya", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"},
-                {name: "Neha", salary: "70,000", cond: "70000 < 80000", res: "TRUE", action: "KEEP", status: "keep"},
-                {name: "Kiran", salary: "80,000", cond: "80000 < 80000", res: "FALSE", action: "EXCLUDE", status: "exclude"}
-            ];
-
-            const rowsToShow = Math.min(evals.length, Math.floor((t - 44.0) * 0.5) + 1);
-
-            evals.slice(0, rowsToShow).forEach((ev, i) => {
-                const rY = 755 + i * 80;
-                const isExclude = ev.status === "exclude";
-
-                ctx.fillStyle = isExclude ? "rgba(239, 68, 68, 0.22)" : "rgba(16, 185, 129, 0.15)";
-                ctx.fillRect(80, rY, W - 160, 68);
-                ctx.strokeStyle = isExclude ? "#EF4444" : "#10B981";
-                ctx.strokeRect(80, rY, W - 160, 68);
-
-                ctx.fillStyle = isExclude ? "#FCA5A5" : "#F8FAFC";
-                ctx.font = "22px monospace";
-                ctx.fillText(ev.name, 100, rY + 42);
-                ctx.fillText(`₹${ev.salary}`, 320, rY + 42);
-                ctx.fillText(ev.cond, 540, rY + 42);
-
-                ctx.fillStyle = isExclude ? "#EF4444" : "#10B981";
-                ctx.font = "bold 22px monospace";
-                ctx.fillText(isExclude ? "❌ EXCLUDE" : "✅ KEEP", 820, rY + 42);
-            });
-
-            // Filtered Pool Outcome Card
-            ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1220, W - 120, 280, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 FILTERED REMAINING CANDIDATES POOL:", 90, 1270);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px monospace";
-            ctx.fillText("REMAINING SALARIES: { Amit (60k), Rahul (50k), Neha (70k) }", 90, 1330);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("Both ₹80,000 duplicate entries have been cleanly eliminated!", 90, 1385);
-            ctx.fillText("Next: Apply outer SELECT MAX() to get the 2nd highest salary!", 90, 1435);
-
-            ctx.restore();
-        }
-
-        // SCENE 6 (58.0 to 72.0s): BUILD FINAL QUERY & CALCULATE OUTPUT
-        if (t >= 57.5 && t < 72.5) {
-            ctx.save();
-            const s6Alpha = t < 58.5 ? (t - 57.5) : (t > 71.5 ? (72.5 - t) : 1.0);
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s6Alpha));
-
-            // Complete Production SQL IDE Window
-            ctx.fillStyle = "#0B1120";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 480, 20);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
-            // Window Header
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 220, W - 120, 48);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText("final_query_solution.sql — Step 3: Complete Execution", 180, 252);
-
-            const finalLines = p.solution_sql.split("\n");
-            finalLines.forEach((ln, idx) => {
-                const lineY = 310 + idx * 52;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-
-                if (idx === 0) {
-                    ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
-                    ctx.fillRect(150, lineY - 30, W - 260, 42);
-                    ctx.strokeStyle = "#10B981";
-                    ctx.strokeRect(150, lineY - 30, W - 260, 42);
-                }
-                renderSqlSyntaxLine(ctx, ln, 160, lineY);
-            });
-
-            // Evaluation Summary Box
-            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-            ctx.beginPath();
-            ctx.roundRect(60, 725, W - 120, 290, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("🧮 OUTER QUERY EXECUTION CALCULATION:", 90, 770);
-
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "24px monospace";
-            ctx.fillText("REMAINING SALARIES : [ 60000, 50000, 70000 ]", 90, 830);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px monospace";
-            ctx.fillText("MAX([ 60000, 50000, 70000 ]) ➔ 70000", 90, 890);
-
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 Matched Employee: Neha • Finance Department (₹70,000)", 90, 950);
-
-            // Big Glowing Neon Output Card
-            ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1040, W - 120, 460, 22);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 4;
-            ctx.shadowColor = "#10B981";
-            ctx.shadowBlur = 24;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("🏆 VERIFIED FINAL QUERY OUTPUT:", 90, 1105);
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-            ctx.fillRect(90, 1140, W - 180, 230);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 1140, W - 180, 230);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 26px monospace";
-            ctx.fillText("SECOND_HIGHEST_SALARY", 130, 1200);
-            ctx.fillStyle = "#475569";
-            ctx.fillText("-------------------------------------", 130, 1235);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 72px monospace";
-            const displayOutput = (p.output_value || p.second_highest_salary || "70000").toString();
-            ctx.fillText(displayOutput, 130, 1320);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("✅ 100% Accurate & Duplicate-Safe • Solved in O(N) Linear Time!", 90, 1430);
-
-            ctx.restore();
-        }
-
-        // SCENE 7 (72.0 to 85.0s): SENIOR INTERVIEWER PRO-TIP & OUTRO BRANDING
-        if (t >= 71.5) {
-            ctx.save();
-            const s7Alpha = t < 72.5 ? (t - 71.5) : 1.0;
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, s7Alpha));
-
-            // Senior Interviewer Pro-Tip Card
-            ctx.fillStyle = "rgba(139, 92, 246, 0.16)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 620, 22);
-            ctx.fill();
-            ctx.strokeStyle = "#8B5CF6";
-            ctx.lineWidth = 3.5;
-            ctx.shadowColor = "rgba(139, 92, 246, 0.35)";
-            ctx.shadowBlur = 18;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = "#8B5CF6";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 SENIOR FAANG INTERVIEWER PRO-TIP:", 90, 280);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("1️⃣ Always ask the interviewer:", 90, 340);
-            ctx.fillStyle = "#C7D2FE";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   \"Can multiple employees share the top salary?\"", 90, 380);
-            ctx.fillText("   Explaining why 'LIMIT 1 OFFSET 1' fails scores huge bonus points!", 90, 420);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("2️⃣ Universal ANSI SQL Compatibility:", 90, 480);
-            ctx.fillStyle = "#C7D2FE";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText("   This subquery solution works natively across Oracle, PostgreSQL,", 90, 520);
-            ctx.fillText("   MySQL, SQLite, Snowflake, and Microsoft SQL Server.", 90, 560);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("3️⃣ If asked for N-th Highest Salary (3rd, 5th, 10th):", 90, 620);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 22px monospace";
-            ctx.fillText("   Use DENSE_RANK() OVER (ORDER BY SALARY DESC) AS rnk", 90, 665);
-            ctx.fillText("   WHERE rnk = N; (Prevents rank skips!)", 90, 705);
-
-            // Outro Branding Card (@Code_With_Mangesh)
-            ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 870, W - 120, 630, 24);
-            ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 4;
-            ctx.shadowColor = "rgba(245, 158, 11, 0.35)";
-            ctx.shadowBlur = 20;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 44px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("FAANG & Top MNC SQL Interview Preparation Studio", W / 2, 1005);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "28px 'Segoe UI', sans-serif";
-            ctx.fillText("⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W / 2, 1100);
-            ctx.fillText("🔔 Follow @Code_With_Mangesh for daily SQL questions", W / 2, 1160);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🚀 100% Free AI High-Tech Education for Every Student!", W / 2, 1260);
-
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "italic 22px 'Segoe UI', sans-serif";
-            ctx.fillText("Empowering students from rural to global tech careers", W / 2, 1320);
-
-            ctx.textAlign = "left";
-            ctx.restore();
-        }
+                ctx.restore();
+            }
         } // Close else block for sql_query storyboard
 
         // =========================================================================
@@ -2654,9 +2449,17 @@ SECOND_HIGHEST_SALARY: 70000`;
         const langBadge = (sqlShortState.audioLang === "mr" ? "मराठी" : (sqlShortState.audioLang === "hi" ? "हिन्दी" : "ENGLISH")) + " AI TEACHER";
         ctx.fillText(`🎙️ ${langBadge} • 👑 @Code_With_Mangesh`, 70, H - 315);
 
-        // Dynamic Active Scene Speech Subtitles
+        // Dynamic Active Scene Speech Subtitles (Frame-Perfect Sync to Audio Narration)
         let subtitleText = "";
-        if (p.scenes && p.scenes.length > 0) {
+        if (isOutro) {
+            subtitleText = sqlShortState.audioLang === "mr" 
+                ? "👑 @Code_With_Mangesh: रोजच्या नवीन SQL ट्रिक्स आणि FAANG इंटरव्ह्यू तयारीसाठी आताच फॉलो करा!"
+                : (sqlShortState.audioLang === "hi"
+                    ? "👑 @Code_With_Mangesh: डेली SQL इंटरव्यू ट्रिक्स के लिए अभी फॉलो करें!"
+                    : "👑 @Code_With_Mangesh: Follow for daily FAANG SQL interview preparation!");
+        } else if (activeStage) {
+            subtitleText = activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || activeStage.speech_en || "";
+        } else if (p.scenes && p.scenes.length > 0) {
             const sc = p.scenes.find(s => t >= s.start && t < s.end) || p.scenes[p.scenes.length - 1];
             subtitleText = sc['speech_' + sqlShortState.audioLang] || sc['speech_en'] || "";
         } else {
@@ -2763,6 +2566,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         // Play synchronized natural voice audio
         const audioEl = document.getElementById("sqlVoiceAudio");
         if (audioEl && audioEl.src && !audioEl.error) {
+            attachAudioSyncListeners(audioEl);
             audioEl.currentTime = sqlShortState.currentTime;
             audioEl.playbackRate = sqlShortState.playbackSpeed;
             audioEl.play().catch(e => console.warn("Audio play prevented:", e));
@@ -2775,8 +2579,15 @@ SECOND_HIGHEST_SALARY: 70000`;
             const deltaSec = (now - lastTime) / 1000.0;
             lastTime = now;
 
-            sqlShortState.currentTime += deltaSec * sqlShortState.playbackSpeed;
-            if (sqlShortState.currentTime > sqlShortState.maxDuration) {
+            // Frame-perfect hardware audio clock locking (Zero Drift)
+            const audioEl = document.getElementById("sqlVoiceAudio");
+            if (audioEl && !audioEl.paused && !audioEl.ended && audioEl.currentTime > 0) {
+                sqlShortState.currentTime = audioEl.currentTime;
+            } else {
+                sqlShortState.currentTime += deltaSec * sqlShortState.playbackSpeed;
+            }
+
+            if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
                 sqlShortState.currentTime = sqlShortState.maxDuration;
                 pauseSqlShortPlay();
             }
@@ -2831,7 +2642,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (tm) {
             const mins = Math.floor(t / 60);
             const secs = Math.floor(t % 60).toString().padStart(2, "0");
-            const maxT = sqlShortState.maxDuration || 85.0;
+            const maxT = sqlShortState.maxDuration || 58.0;
             const maxMins = Math.floor(maxT / 60);
             const maxSecs = Math.floor(maxT % 60).toString().padStart(2, "0");
             tm.innerText = `${mins}:${secs} / ${maxMins}:${maxSecs}`;
@@ -2856,7 +2667,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     /* ==========================================================================
        MEDIARECORDER AUDIO-MULTIPLEXED EXPORT & DOWNLOAD
        ========================================================================== */
-    async function exportSqlShortVideo(durationSec = 85) {
+    async function exportSqlShortVideo(durationSec = null) {
         const canvas = document.getElementById("sqlShortCanvas");
         const audioEl = document.getElementById("sqlVoiceAudio");
         const btn = document.getElementById("btnDownloadShortVideo");
@@ -2876,6 +2687,18 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         pauseSqlShortPlay();
+
+        // Enforce strictly <60s for YouTube Shorts / Reels standard
+        let totalDuration = durationSec;
+        if (!totalDuration || totalDuration > 60) {
+            if (audioEl && audioEl.duration && !isNaN(audioEl.duration) && isFinite(audioEl.duration) && audioEl.duration > 5) {
+                totalDuration = Math.min(58.5, audioEl.duration);
+            } else {
+                totalDuration = Math.min(58.5, sqlShortState.maxDuration || 56.0);
+            }
+        }
+        totalDuration = Math.min(59.5, totalDuration);
+
         if (celebrationBox) celebrationBox.style.display = "none";
         if (pContainer) pContainer.style.display = "block";
         if (badgeEl) {
@@ -2884,7 +2707,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
         }
         if (btn) btn.disabled = true;
-        if (btnLabel) btnLabel.innerText = `⏳ व्हिडिओ व ऑडिओ एकत्र रेंडर होत आहे (${durationSec}s)...`;
+        if (btnLabel) btnLabel.innerText = `⏳ Shorts / Reels व्हिडिओ रेंडर होत आहे (${Math.round(totalDuration)}s <60s)...`;
 
         // Audio Multiplexing Setup
         let audioTracks = [];
@@ -2926,8 +2749,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        const totalDuration = durationSec || 85;
-        const totalFrames = totalDuration * 30;
+        const totalFrames = Math.round(totalDuration * 30);
         let frameCount = 0;
         const dt = 1.0 / 30.0;
         const startTime = performance.now();
@@ -2943,16 +2765,13 @@ SECOND_HIGHEST_SALARY: 70000`;
                 badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
             }
 
-            for (let i = 1; i <= 7; i++) {
-                const pill = document.getElementById("stagePill" + i);
-                if (pill) pill.className = "stage-pill done";
-            }
+
 
             const blob = new Blob(chunks, { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            const filename = `Clean_9x16_${sqlShortState.activePreset.id}_${sqlShortState.audioLang}_${totalDuration}s.webm`;
+            const filename = `Clean_9x16_${sqlShortState.activePreset.id}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.webm`;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
@@ -2969,7 +2788,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                     }
                 }
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD 85s AI TEACHER VIDEO (WITH SYNCHRONIZED VOICE)";
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 SHORT / REEL (<60s) (WITH SYNCHRONIZED VOICE)";
             }, 300);
         };
 
@@ -2979,15 +2798,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             audioEl.play().catch(e => console.warn("Audio play during export:", e));
         }
 
-        function updateStagePill(stageNum) {
-            for (let i = 1; i <= 7; i++) {
-                const pill = document.getElementById("stagePill" + i);
-                if (!pill) continue;
-                if (i < stageNum) pill.className = "stage-pill done";
-                else if (i === stageNum) pill.className = "stage-pill active";
-                else pill.className = "stage-pill";
-            }
-        }
+
 
         function recordStep() {
             if (frameCount < totalFrames) {
@@ -2995,28 +2806,37 @@ SECOND_HIGHEST_SALARY: 70000`;
                 for (let b = 0; b < stepBatch && frameCount < totalFrames; b++) {
                     sqlShortState.currentTime = (frameCount * dt);
                     const t = sqlShortState.currentTime;
+                    const p = sqlShortState.activePreset;
+                    const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
+                    const outroStart = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, totalDuration - 3.5);
+                    const isOutro = (t >= outroStart);
 
                     let currentStage = 1;
-                    let stageText = "पायरी १/७: 📋 प्रश्न ओळख (0-8s)";
-                    if (totalDuration <= 15) {
-                        if (t < 2.0) { currentStage = 1; stageText = "पायरी १/७: 📋 प्रश्न ओळख"; }
-                        else if (t < 4.0) { currentStage = 2; stageText = "पायरी २/७: ⚠️ डुप्लिकेट समज"; }
-                        else if (t < 6.0) { currentStage = 3; stageText = "पायरी ३/७: 🔄 लॉजिक फ्लो"; }
-                        else if (t < 8.5) { currentStage = 4; stageText = "पायरी ४/७: ⚡ इनर सबक्वेरी"; }
-                        else if (t < 11.0) { currentStage = 5; stageText = "पायरी ५/७: 🔍 रो फिल्टर"; }
-                        else if (t < 13.0) { currentStage = 6; stageText = "पायरी ६/७: 🎯 निकाल ७०,०००"; }
-                        else { currentStage = 7; stageText = "पायरी ७/७: 💡 प्रो-टिप व @Code_With_Mangesh"; }
+                    let stageText = "पायरी १/७: 📋 प्रश्न ओळख";
+
+                    if (isOutro) {
+                        currentStage = 7;
+                        stageText = "पायरी ७/७: 💡 सीनियर इंटरव्ह्यूअर प्रो-टिप व @Code_With_Mangesh";
+                    } else if (stages.length > 0) {
+                        const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
+                        if (actIdx !== -1) {
+                            currentStage = Math.min(6, actIdx + 1);
+                            const st = stages[actIdx];
+                            stageText = `पायरी ${currentStage}/${Math.max(6, stages.length)}: ${st.title || st.action_type || ''}`;
+                        } else if (t < stages[0].start) {
+                            currentStage = 1;
+                            stageText = `पायरी 1/${stages.length}: ${stages[0].title || ''}`;
+                        } else {
+                            currentStage = Math.min(6, stages.length);
+                            stageText = `पायरी ${currentStage}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
+                        }
                     } else {
-                        if (t < 8.0) { currentStage = 1; stageText = "पायरी १/७: 📋 प्रश्न ओळख व EMPLOYEES स्कीमा (0-8s)"; }
-                        else if (t < 20.0) { currentStage = 2; stageText = "पायरी २/७: ⚠️ ८०,००० डुप्लिकेट समज व ट्रॅप (8-20s)"; }
-                        else if (t < 32.0) { currentStage = 3; stageText = "पायरी ३/७: 🔄 ४-स्टेप लॉजिक फ्लोचार्ट (20-32s)"; }
-                        else if (t < 44.0) { currentStage = 4; stageText = "पायरी ४/७: ⚡ इनर सबक्वेरी SELECT MAX(SALARY) (32-44s)"; }
-                        else if (t < 58.0) { currentStage = 5; stageText = "पायरी ५/७: 🔍 रो-बाय-रो फिल्टर मूल्यांकन (44-58s)"; }
-                        else if (t < 72.0) { currentStage = 6; stageText = "पायरी ६/७: 🎯 अंतिम क्वेरी व निकाल ७०,००० (58-72s)"; }
-                        else { currentStage = 7; stageText = "पायरी ७/७: 💡 सीनियर इंटरव्ह्यूअर प्रो-टिप व @Code_With_Mangesh (72-85s)"; }
+                        const estStage = Math.min(6, Math.floor((t / Math.max(1, outroStart)) * 6) + 1);
+                        currentStage = estStage;
+                        stageText = `पायरी ${currentStage}/6: विश्लेषण चालू`;
                     }
 
-                    updateStagePill(currentStage);
+                    
                     if (pDesc) pDesc.innerText = stageText;
 
                     if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
