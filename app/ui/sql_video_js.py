@@ -1163,7 +1163,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         sqlShortState.motionBgType = bgType;
         const sel = document.getElementById('sqlCinematicBgSelect');
         if (sel) sel.value = bgType;
-        sqlShortState.enable3DMotionEngine = (bgType !== 'cyber_matrix');
+        sqlShortState.enable3DMotionEngine = true;
 
         document.querySelectorAll('.sql-motion-bg-chip').forEach(btn => {
             const isMatch = btn.getAttribute('data-bg') === bgType;
@@ -1350,13 +1350,13 @@ SECOND_HIGHEST_SALARY: 70000`;
         // Frosted Glass Body Gradient (Grey/Navy Translucent Mirror)
         const grad = ctx.createLinearGradient(x, y, x + w * 0.3, y + h);
         if (isFront) {
-            grad.addColorStop(0, "rgba(255, 255, 255, 0.09)");
-            grad.addColorStop(0.2, "rgba(22, 33, 62, 0.78)");
-            grad.addColorStop(0.8, "rgba(10, 16, 34, 0.88)");
-            grad.addColorStop(1, "rgba(6, 10, 22, 0.94)");
+            grad.addColorStop(0, "rgba(255, 255, 255, 0.12)");
+            grad.addColorStop(0.25, "rgba(15, 23, 42, 0.35)");
+            grad.addColorStop(0.8, "rgba(8, 14, 28, 0.45)");
+            grad.addColorStop(1, "rgba(4, 8, 18, 0.55)");
         } else {
-            grad.addColorStop(0, "rgba(255, 255, 255, 0.04)");
-            grad.addColorStop(1, "rgba(12, 18, 36, 0.55)");
+            grad.addColorStop(0, "rgba(255, 255, 255, 0.05)");
+            grad.addColorStop(1, "rgba(10, 16, 32, 0.25)");
         }
 
         ctx.fillStyle = grad;
@@ -2218,508 +2218,935 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     /* ==========================================================================
+       3D ISOMETRIC VISUAL DIAGRAMMING & FLOWCHART ENGINE
+       (NO RIGID TEMPLATES: DYNAMIC 3D ARCHITECTURES, ROTATIONS & POINTING ARROWS)
+       ========================================================================== */
+
+    // 1. 3D Isometric Server Rack with Dynamic Angle Rotation, Flashing LEDs & Spinning Fan
+    function draw3DIsometricServer(ctx, cx, cy, t, label = "LOCAL SERVER", isActive = true) {
+        ctx.save();
+        const tilt = Math.sin(t * 1.5) * 0.04;
+        ctx.translate(cx, cy);
+        ctx.rotate(tilt);
+
+        // Holographic Base Disc on Floor
+        const basePulse = 1.0 + Math.sin(t * 4) * 0.06;
+        ctx.save();
+        ctx.translate(0, 150);
+        ctx.scale(basePulse, basePulse * 0.38);
+        ctx.beginPath();
+        ctx.arc(0, 0, 110, 0, Math.PI * 2);
+        ctx.fillStyle = isActive ? "rgba(16, 185, 129, 0.22)" : "rgba(56, 189, 248, 0.15)";
+        ctx.fill();
+        ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = isActive ? "#10B981" : "#38BDF8";
+        ctx.shadowBlur = 16;
+        ctx.stroke();
+        ctx.restore();
+
+        const w = 85;
+        const h = 180;
+        const topH = 42;
+
+        // TOP FACE (Isometric Diamond)
+        ctx.beginPath();
+        ctx.moveTo(0, -topH);
+        ctx.lineTo(w, 0);
+        ctx.lineTo(0, topH);
+        ctx.lineTo(-w, 0);
+        ctx.closePath();
+        const topGrad = ctx.createLinearGradient(-w, -topH, w, topH);
+        topGrad.addColorStop(0, "rgba(51, 65, 85, 0.85)");
+        topGrad.addColorStop(1, "rgba(30, 41, 59, 0.90)");
+        ctx.fillStyle = topGrad;
+        ctx.fill();
+        ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        // Top Face Server Grid / Logo
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(0, -topH + 10); ctx.lineTo(0, topH - 10);
+        ctx.moveTo(-w + 20, 0); ctx.lineTo(w - 20, 0);
+        ctx.stroke();
+
+        // LEFT FACE (Chassis Side Heat Dissipation Fins)
+        ctx.beginPath();
+        ctx.moveTo(-w, 0);
+        ctx.lineTo(0, topH);
+        ctx.lineTo(0, topH + h);
+        ctx.lineTo(-w, h);
+        ctx.closePath();
+        const leftGrad = ctx.createLinearGradient(-w, 0, 0, topH + h);
+        leftGrad.addColorStop(0, "rgba(15, 23, 42, 0.92)");
+        leftGrad.addColorStop(1, "rgba(8, 14, 28, 0.96)");
+        ctx.fillStyle = leftGrad;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Heat Dissipation Ribs
+        for (let i = 1; i <= 6; i++) {
+            const ribY = topH + (i * 24);
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.18)";
+            ctx.beginPath();
+            ctx.moveTo(-w + 14, (i * 24) - 7);
+            ctx.lineTo(-14, ribY - 7);
+            ctx.stroke();
+        }
+
+        // RIGHT FACE (Server Front Panel with Drive Bays, LEDs, and Fan)
+        ctx.beginPath();
+        ctx.moveTo(0, topH);
+        ctx.lineTo(w, 0);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, topH + h);
+        ctx.closePath();
+        const rightGrad = ctx.createLinearGradient(0, topH, w, h);
+        rightGrad.addColorStop(0, "rgba(24, 34, 53, 0.92)");
+        rightGrad.addColorStop(1, "rgba(15, 23, 42, 0.95)");
+        ctx.fillStyle = rightGrad;
+        ctx.fill();
+        ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        // Drive Bays with Blinking Multicolored LEDs
+        for (let b = 0; b < 4; b++) {
+            const bayY = topH + 12 + b * 28;
+            // Drive sled outline
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(8, bayY + 4);
+            ctx.lineTo(w - 12, bayY - 14);
+            ctx.lineTo(w - 12, bayY + 6);
+            ctx.lineTo(8, bayY + 24);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Status LEDs
+            const led1On = Math.sin(t * 10 + b * 1.5) > -0.2;
+            const led2On = Math.cos(t * 8 + b * 2.0) > 0.1;
+            ctx.fillStyle = led1On ? "#10B981" : "#064E3B";
+            ctx.shadowColor = "#10B981";
+            ctx.shadowBlur = led1On ? 8 : 0;
+            ctx.beginPath();
+            ctx.arc(16, bayY + 12, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = led2On ? "#38BDF8" : "#0C4A6E";
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = led2On ? 8 : 0;
+            ctx.beginPath();
+            ctx.arc(26, bayY + 9, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // 3D Spinning Cooling Fan at Bottom Right Face
+        const fanX = 42;
+        const fanY = topH + 140;
+        ctx.save();
+        ctx.translate(fanX, fanY);
+        ctx.scale(1.0, 0.65);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 22, 0, Math.PI * 2);
+        ctx.stroke();
+        // Fan Blades
+        const fanAngle = t * 14;
+        for (let fa = 0; fa < 4; fa++) {
+            const a = fanAngle + (fa * Math.PI / 2);
+            ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(a) * 18, Math.sin(a) * 18);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Floating 3D Holographic Label Above Server
+        const bob = Math.sin(t * 3) * 6;
+        ctx.save();
+        ctx.translate(0, -topH - 30 + bob);
+        ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+        ctx.beginPath();
+        ctx.roundRect(-135, -20, 270, 40, 12);
+        ctx.fill();
+        ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = isActive ? "#10B981" : "#38BDF8";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = isActive ? "#10B981" : "#38BDF8";
+        ctx.font = "bold 17px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🖥️ " + label, 0, 6);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // 2. 3D Floating Multi-AZ Cloud Architecture Platform with Radiating Waves
+    function draw3DIsometricCloud(ctx, cx, cy, t, label = "CLOUD SERVER", isActive = true) {
+        ctx.save();
+        const bobY = Math.sin(t * 2.2) * 8;
+        ctx.translate(cx, cy + bobY);
+
+        // Radiating Auto-Scaling Expansion Waves
+        for (let r = 0; r < 3; r++) {
+            const p = ((t * 0.45 + r * 0.33) % 1.0);
+            const radius = 60 + p * 110;
+            const alpha = (1.0 - p) * 0.35;
+            ctx.save();
+            ctx.translate(0, 80);
+            ctx.scale(1.0, 0.42);
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Floating Hexagonal Base Platform
+        ctx.save();
+        ctx.translate(0, 75);
+        ctx.scale(1.0, 0.48);
+        ctx.beginPath();
+        const hexR = 100;
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI / 3) + Math.PI / 6;
+            const x = Math.cos(angle) * hexR;
+            const y = Math.sin(angle) * hexR;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        const baseGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 100);
+        baseGrad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+        baseGrad.addColorStop(0.7, "rgba(168, 85, 247, 0.25)");
+        baseGrad.addColorStop(1, "rgba(15, 23, 42, 0.7)");
+        ctx.fillStyle = baseGrad;
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // 3 Floating Availability Zone (AZ) Pods
+        const azNodes = [
+            {name: "AZ-1", region: "us-east-1", x: -65, y: -20, col: "#38BDF8"},
+            {name: "AZ-2", region: "eu-west-1", x: 0, y: -60, col: "#C084FC"},
+            {name: "AZ-3", region: "ap-south-1", x: 65, y: -20, col: "#10B981"}
+        ];
+
+        // Laser Mesh connecting the AZ pods
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(azNodes[0].x, azNodes[0].y);
+        ctx.lineTo(azNodes[1].x, azNodes[1].y);
+        ctx.lineTo(azNodes[2].x, azNodes[2].y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Render each AZ Pod with 3D Cube Effect
+        azNodes.forEach((node, ni) => {
+            const nodeBob = Math.sin(t * 3.5 + ni * 2) * 5;
+            ctx.save();
+            ctx.translate(node.x, node.y + nodeBob);
+
+            // Mini 3D Cube
+            ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+            ctx.beginPath();
+            ctx.roundRect(-24, -20, 48, 40, 8);
+            ctx.fill();
+            ctx.strokeStyle = node.col;
+            ctx.lineWidth = 2.0;
+            ctx.shadowColor = node.col;
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = node.col;
+            ctx.font = "bold 13px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(node.name, 0, 4);
+            ctx.restore();
+        });
+
+        // Center Floating Glowing Cloud Icon
+        ctx.save();
+        ctx.translate(0, 10);
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 24;
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "52px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("☁️", 0, 15);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // Floating 3D Holographic Label Above Cloud
+        const lblBob = Math.sin(t * 3 + 1) * 6;
+        ctx.save();
+        ctx.translate(0, -95 + lblBob);
+        ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+        ctx.beginPath();
+        ctx.roundRect(-145, -20, 290, 40, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 17px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("☁️ " + label, 0, 6);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // 3. Dynamic 3D Architecture Comparison Pipeline (Client Gateway -> Splitter -> Local Server vs Cloud Cluster)
+    function draw3DSystemArchitectureDiagram(ctx, W, H, p, t, stageProg) {
+        const tA = p.term_a || "LOCAL SERVER (ON-PREMISES)";
+        const tB = p.term_b || "CLOUD SERVER (AWS/AZURE)";
+
+        // Top Client Traffic Gateway / API Router
+        const gwX = W / 2;
+        const gwY = 280;
+        ctx.save();
+        ctx.translate(gwX, gwY);
+        drawGlassTile(ctx, -220, -32, 440, 64, 16, "#38BDF8", true, true, 1.0);
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 20px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🌐 CLIENT TRAFFIC & API GATEWAY", 0, -2);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "bold 15px monospace";
+        ctx.fillText("Production Ingress • 100,000 Req/sec", 0, 20);
+        ctx.restore();
+
+        // Dual Branching Dynamic Laser Connectors with Traveling Photons
+        const leftTargetX = 280;
+        const leftTargetY = 470;
+        const rightTargetX = 800;
+        const rightTargetY = 470;
+
+        drawDynamicConnector(ctx, gwX - 80, gwY + 32, leftTargetX, leftTargetY, "#10B981", t, "⚡ LAN (LOW LATENCY)");
+        drawDynamicConnector(ctx, gwX + 80, gwY + 32, rightTargetX, rightTargetY, "#38BDF8", t, "🚀 WAN (AUTO-SCALE)");
+
+        // 3D Isometric Visual Models
+        draw3DIsometricServer(ctx, leftTargetX, 600, t, tA, true);
+        draw3DIsometricCloud(ctx, rightTargetX, 600, t, tB, true);
+
+        // Operational Spec Chips under Server
+        drawGlassTile(ctx, 60, 780, 440, 310, 16, "#10B981", false, true, 0.95);
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.fillText("⚡ LOCAL SERVER PILLARS:", 85, 825);
+        const serverPillars = [
+            "• Physical hardware ownership in rack",
+            "• Deterministic sub-millisecond LAN speed",
+            "• Strict data isolation within private firewall",
+            "• High upfront CapEx, in-house sysadmins"
+        ];
+        serverPillars.forEach((sp, idx) => {
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText(sp, 85, 870 + idx * 48);
+        });
+
+        // Operational Spec Chips under Cloud
+        drawGlassTile(ctx, 580, 780, 440, 310, 16, "#38BDF8", false, true, 0.95);
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.fillText("☁️ CLOUD SERVER PILLARS:", 605, 825);
+        const cloudPillars = [
+            "• On-demand virtual instances (AWS/GCP)",
+            "• Automated elasticity: scale up in seconds",
+            "• Multi-region failover and SLA redundancy",
+            "• Pay-as-you-go OpEx, zero hardware maintenance"
+        ];
+        cloudPillars.forEach((cp, idx) => {
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText(cp, 605, 870 + idx * 48);
+        });
+
+        // Interactive Connecting Laser Arrow Comparing Latency & Cost
+        const sweepX = (W / 2) + Math.sin(t * 3) * 14;
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("⟵ CAPEX (FIXED) vs OPEX (ELASTIC) ⟶", sweepX, 1140);
+        ctx.textAlign = "left";
+
+        // Animated Laser Scanner Line across bottom
+        drawLaserScannerBeam(ctx, 60, 1170, W - 120, 20, t);
+    }
+
+    // 4. Dynamic 3D Decision Tree Flowchart (Replaces rigid cards with branching nodes)
+    function draw3DDecisionFlowchart(ctx, W, H, p, t, stageProg) {
+        const tA = p.term_a || "LOCAL SERVER";
+        const tB = p.term_b || "CLOUD SERVER";
+
+        // Top Step 1 Node
+        const topX = W / 2;
+        const topY = 270;
+        drawGlassTile(ctx, topX - 260, topY - 30, 520, 60, 14, "#818CF8", true, true, 1.0);
+        ctx.fillStyle = "#818CF8";
+        ctx.font = "bold 20px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🎯 STEP 1: DEFINE SYSTEM CONSTRAINTS & WORKLOAD", topX, topY + 8);
+        ctx.textAlign = "left";
+
+        // Laser from Step 1 down into 3D Decision Diamond
+        drawDynamicConnector(ctx, topX, topY + 30, topX, 410, "#818CF8", t, "EVALUATE");
+
+        // 3D Isometric Decision Diamond Node
+        const dmX = W / 2;
+        const dmY = 510;
+        const dmW = 280;
+        const dmH = 95;
+        const dAngle = Math.sin(t * 2) * 0.03;
+
+        ctx.save();
+        ctx.translate(dmX, dmY);
+        ctx.rotate(dAngle);
+
+        ctx.beginPath();
+        ctx.moveTo(0, -dmH);
+        ctx.lineTo(dmW, 0);
+        ctx.lineTo(0, dmH);
+        ctx.lineTo(-dmW, 0);
+        ctx.closePath();
+
+        const dmGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, dmW);
+        dmGrad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+        dmGrad.addColorStop(0.6, "rgba(15, 23, 42, 0.90)");
+        dmGrad.addColorStop(1, "rgba(4, 8, 18, 0.95)");
+        ctx.fillStyle = dmGrad;
+        ctx.fill();
+
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#F59E0B";
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("⚖️ ARCHITECTURAL DECISION POINT:", 0, -30);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 20px 'Segoe UI', sans-serif";
+        ctx.fillText("Strict Compliance & Constant Load?", 0, 5);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "18px 'Segoe UI', sans-serif";
+        ctx.fillText("OR Elastic Traffic & Rapid Global Expansion?", 0, 35);
+        ctx.restore();
+
+        // Branch 1: Left [YES] ➔ Emerald Green Line & Pointing Arrow
+        const leftDestX = 280;
+        const leftDestY = 750;
+        drawDynamicConnector(ctx, dmX - dmW + 40, dmY, leftDestX, leftDestY, "#10B981", t, "YES (COMPLIANCE / BASELINE)");
+
+        // Branch 2: Right [NO] ➔ Cyan Line & Pointing Arrow
+        const rightDestX = 800;
+        const rightDestY = 750;
+        drawDynamicConnector(ctx, dmX + dmW - 40, dmY, rightDestX, rightDestY, "#38BDF8", t, "NO (ELASTIC SCALE)");
+
+        // Result Decision Box 1: Local Server
+        drawGlassTile(ctx, 60, 780, 440, 340, 16, "#10B981", true, true, 1.0);
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 24px 'Segoe UI', sans-serif";
+        ctx.fillText("✅ DEPLOY " + tA, 85, 825);
+        const yesPoints = [
+            "👉 Zero third-party cloud outage exposure",
+            "👉 Predictable LAN speed (<1ms ping)",
+            "👉 Full audit control for banking/medical",
+            "👉 Amortised hardware cost over 3-5 years"
+        ];
+        yesPoints.forEach((yp, yi) => {
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText(yp, 85, 875 + yi * 48);
+        });
+
+        // Result Decision Box 2: Cloud Server
+        drawGlassTile(ctx, 580, 780, 440, 340, 16, "#38BDF8", true, true, 1.0);
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 24px 'Segoe UI', sans-serif";
+        ctx.fillText("✅ DEPLOY " + tB, 605, 825);
+        const noPoints = [
+            "👉 Instant automated multi-AZ spin-up",
+            "👉 Handle viral user traffic spikes cleanly",
+            "👉 Pay only for CPU seconds consumed",
+            "👉 Global disaster recovery in minutes"
+        ];
+        noPoints.forEach((np, ni) => {
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText(np, 605, 875 + ni * 48);
+        });
+
+        // Kinetic Neon Arrow & Interview Summary Pill at Bottom
+        const bounceY = Math.sin(t * 6) * 6;
+        drawGlassTile(ctx, 60, 1160, W - 120, 80, 14, "#F59E0B", false, true, 1.0);
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 21px 'Segoe UI', sans-serif";
+        ctx.fillText("💡 INTERVIEW STRATEGY: Senior architects explain trade-offs before picking any server!", 95, 1208 + bounceY);
+    }
+
+    // 5. 3D Rotating Golden Trophy Badge with Concentric Orbital Rings
+    function draw3DHolographicTrophy(ctx, cx, cy, t) {
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        // Concentric Orbital Rings
+        for (let o = 0; o < 2; o++) {
+            const rotA = t * (o === 0 ? 1.8 : -1.4);
+            ctx.save();
+            ctx.rotate(rotA);
+            ctx.scale(1.0, 0.35);
+            ctx.strokeStyle = o === 0 ? "rgba(245, 158, 11, 0.6)" : "rgba(56, 189, 248, 0.4)";
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, 0, 75 + o * 25, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Satellite Sparkle
+            const satX = Math.cos(rotA * 2) * (75 + o * 25);
+            const satY = Math.sin(rotA * 2) * (75 + o * 25);
+            ctx.fillStyle = "#F59E0B";
+            ctx.shadowColor = "#F59E0B";
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(satX, satY, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // Golden Rotating Hexagon
+        const hexAngle = t * 0.8;
+        ctx.save();
+        ctx.rotate(hexAngle);
+        ctx.beginPath();
+        const r = 50;
+        for (let i = 0; i < 6; i++) {
+            const a = (i * Math.PI / 3);
+            const x = Math.cos(a) * r;
+            const y = Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        const goldGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, r);
+        goldGrad.addColorStop(0, "rgba(254, 240, 138, 0.95)");
+        goldGrad.addColorStop(0.6, "rgba(245, 158, 11, 0.9)");
+        goldGrad.addColorStop(1, "rgba(180, 83, 9, 0.9)");
+        ctx.fillStyle = goldGrad;
+        ctx.shadowColor = "#F59E0B";
+        ctx.shadowBlur = 24;
+        ctx.fill();
+        ctx.strokeStyle = "#FEF08A";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // Center Trophy Icon
+        ctx.fillStyle = "#000000";
+        ctx.font = "38px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🏆", 0, 14);
+
+        ctx.restore();
+    }
+
+    /* ==========================================================================
        THEORY & CONCEPTUAL MASTER STORYBOARD (1080 x 1920 9:16)
        ========================================================================== */
     function renderTheoryShortStoryboard(ctx, W, H, p, t, currentStageIdx, activeStage, isOutro, outroStart, stageProg, stageAlpha) {
-        const tA = p.term_a || (p.comparison_headers && p.comparison_headers.length > 1 ? p.comparison_headers[1] : "CONCEPT A");
-        const tB = p.term_b || (p.comparison_headers && p.comparison_headers.length > 2 ? p.comparison_headers[2] : "CONCEPT B");
-        const pipeline = getClientPipelineStages(p);
+        const tA = p.term_a || (p.comparison_headers && p.comparison_headers.length > 1 ? p.comparison_headers[1] : "LOCAL SERVER");
+        const tB = p.term_b || (p.comparison_headers && p.comparison_headers.length > 2 ? p.comparison_headers[2] : "CLOUD SERVER");
 
-        // SCENE 1: THEORY TOPIC & CONCEPT INTRODUCTION
+        // SCENE 1: 3D ARCHITECTURAL OVERVIEW & LIVE VISUAL PIPELINE
         if (currentStageIdx === 1) {
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            drawGlassTile(ctx, 60, 220, W - 120, 230, 20, "#38BDF8", true, true, 1.0);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "📋 TECH ARCHITECTURE INTERVIEW TOPIC:", W - 180), 90, 275);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            const qLines = wrapCanvasText(ctx, p.question || p.title || "Core Architecture Concept", W - 180, 3);
-            qLines.forEach((l, i) => {
-                ctx.fillText(l, 90, 325 + i * 38);
-            });
-
-            // Target Highlight Badge
-            const pulse = 1.0 + Math.sin(t * 6) * 0.05;
-            ctx.save();
-            ctx.translate(W / 2, 490);
-            ctx.scale(pulse, pulse);
-            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
-            ctx.beginPath();
-            ctx.roundRect(-300, -24, 600, 48, 14);
-            ctx.fill();
-            ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 20px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            const tgtLabel = "🎯 TARGET: " + (p.title || (tA + " vs " + tB)).toUpperCase();
-            ctx.fillText(fitTextToWidth(ctx, tgtLabel, 560), 0, 7);
-            ctx.restore();
-
-            // Architectural Overview Glass Container
-            drawGlassTile(ctx, 60, 540, W - 120, 410, 20, "#10B981", false, true, 1.0);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "🧠 CORE ARCHITECTURAL DEFINITION:", W - 180), 90, 590);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            const defLines = wrapCanvasText(ctx, p.concept_summary || (`Understand the structural difference and operational trade-offs between ${tA} and ${tB}.`), W - 180, 3);
-            defLines.forEach((l, i) => {
-                ctx.fillText(l, 90, 645 + i * 38);
-            });
-
-            drawGlassTile(ctx, 90, 780, 420, 50, 10, "#38BDF8", false, true, 0.85);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(fitTextToWidth(ctx, "1. " + tA, 400), 110, 812);
-
-            drawGlassTile(ctx, 530, 780, 420, 50, 10, "#10B981", false, true, 0.85);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(fitTextToWidth(ctx, "2. " + tB, 400), 550, 812);
-
-            drawGlassTile(ctx, 60, 980, W - 120, 500, 20, "rgba(255, 255, 255, 0.15)", false, false, 0.9);
-
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 980, W - 120, 50);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1005, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1005, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1005, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(fitTextToWidth(ctx, "architecture_roadmap.sh — Step-by-Step Understanding", W - 240), 180, 1012);
-
-            ctx.fillStyle = "#64748B";
-            ctx.font = "italic 23px monospace";
-            ctx.fillText(fitTextToWidth(ctx, `/* Step 1: Understand why interviewers test ${tA} vs ${tB} */`, W - 180), 90, 1080);
-            ctx.fillText(fitTextToWidth(ctx, "/* Step 2: Grasp system lifecycle & execution sequencing */", W - 180), 90, 1140);
-            ctx.fillText(fitTextToWidth(ctx, "/* Step 3: Compare production syntax & deployment configurations */", W - 180), 90, 1200);
-            ctx.fillText(fitTextToWidth(ctx, "/* Step 4: Avoid the fatal interview traps & score bonus points! */", W - 180), 90, 1260);
-
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(90, 1370, W - 180, 80, 14);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2;
-            ctx.stroke();
+            // Top Header Topic Pill
+            drawGlassTile(ctx, 60, 205, W - 120, 68, 16, "#38BDF8", true, true, 1.0);
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            const goalLines = wrapCanvasText(ctx, "🧠 LEARNING GOAL: " + (p.title || "Master this core concept & explain with confidence!"), W - 220, 2);
-            goalLines.forEach((gl, gi) => {
-                ctx.fillText(gl, 115, 1405 + gi * 30);
+            ctx.fillText(fitTextToWidth(ctx, "🌐 TECH ARCHITECTURE TOPIC: " + (p.title || (tA + " vs " + tB)).toUpperCase(), W - 180), 90, 248);
+
+            // 3D System Architecture Diagram (Server vs Cloud with Laser Conduits)
+            draw3DSystemArchitectureDiagram(ctx, W, H, p, t, stageProg);
+
+            // Bottom Learning Objective HUD
+            drawGlassTile(ctx, 60, 1220, W - 120, 230, 18, "#38BDF8", false, true, 0.95);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("🎯 CORE ARCHITECTURAL OBJECTIVE:", 90, 1265);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            const defLines = wrapCanvasText(ctx, p.concept_summary || (`Understand operational trade-offs, cost models, and latency tolerances between ${tA} and ${tB}.`), W - 180, 2);
+            defLines.forEach((l, i) => {
+                ctx.fillText(l, 90, 1308 + i * 36);
             });
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 19px monospace";
+            ctx.fillText("Roadmap: 1. Architecture ➔ 2. Trade-offs ➔ 3. Decision Tree ➔ 4. Syntax ➔ 5. Takeaway", 90, 1410);
 
             ctx.restore();
         }
 
-        // SCENE 2: CANDIDATE CONFUSION & WHY INTERVIEWERS TEST THIS
+        // SCENE 2: CANDIDATE CONFUSION & DUAL-ANGLED 3D PERSPECTIVE DISSECTION
         else if (currentStageIdx === 2) {
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 100, 16);
-            ctx.fill();
-            ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚠️ WHY CANDIDATES STUMBLE: ${tA} vs ${tB}`, W - 180), 90, 268);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "Both solve system requirements — but when and why do you choose which?", W - 180), 90, 302);
-
-            ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
-            ctx.beginPath();
-            ctx.roundRect(60, 345, W - 120, 320, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#EF4444";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
+            // Header Alert Banner
+            drawGlassTile(ctx, 60, 205, W - 120, 75, 16, "#EF4444", true, true, 1.0);
             ctx.fillStyle = "#EF4444";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("❌ WHY CANDIDATES GET CONFUSED:", 90, 390);
-
+            ctx.fillText(fitTextToWidth(ctx, `⚠️ WHY CANDIDATES STUMBLE IN INTERVIEWS: ${tA} vs ${tB}`, W - 180), 90, 242);
             ctx.fillStyle = "#CBD5E1";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            const confusionBullets = (p.traps && p.traps.length > 0) ? p.traps.slice(0, 3) : [
-                `• Candidates confuse operational scope between ${tA} and ${tB}.`,
-                "• Overlooking infrastructure cost models leads to massive bill shock!",
-                "• In senior interviews, failing to articulate trade-offs loses 50% points!"
-            ];
-            let bY = 435;
-            confusionBullets.forEach(b => {
-                const blines = wrapCanvasText(ctx, b, W - 180, 2);
-                blines.forEach(bl => {
-                    ctx.fillText(bl, 90, bY);
-                    bY += 34;
-                });
-                bY += 6;
-            });
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText("Both solve system requirements — but when and why do you choose which?", 90, 268);
 
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 690, W - 120, 420, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
+            // Tilted 3D Panel 1 (Local Server Perspective)
+            ctx.save();
+            ctx.translate(280, 480);
+            ctx.rotate(-0.035);
+            drawGlassTile(ctx, -220, -160, 440, 320, 16, "#10B981", true, true, 1.0);
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "✅ THE CORE DISTINCTION SENIOR INTERVIEWERS TEST:", W - 180), 90, 740);
-
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("1️⃣ " + tA, -195, -115);
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `1️⃣ ${tA} — PRIMARY MODEL`, W - 180), 90, 800);
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            const descA = (p.comparison_rows && p.comparison_rows[0]) ? p.comparison_rows[0].col_a : "Direct hardware control, predictable baseline latency, localized compute.";
-            ctx.fillText(fitTextToWidth(ctx, "   " + descA, W - 180), 90, 840);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `2️⃣ ${tB} — DISTRIBUTED MODEL`, W - 180), 90, 910);
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            const descB = (p.comparison_rows && p.comparison_rows[0]) ? p.comparison_rows[0].col_b : "On-demand elasticity, managed infrastructure, global multi-region redundancy.";
-            ctx.fillText(fitTextToWidth(ctx, "   " + descB, W - 180), 90, 950);
-
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1140, W - 120, 340, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 PRODUCTION PERFORMANCE BENEFIT:", 90, 1195);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "23px 'Segoe UI', sans-serif";
-            const perfBullets = [
-                `• Choosing the right model between ${tA} and ${tB} optimizes CapEx vs OpEx.`,
-                "• Slashing latency bottlenecks ensures 99.99% high availability in production.",
-                "• Next: Let's see the step-by-step query/system execution lifecycle!"
+            ctx.font = "17px 'Segoe UI', sans-serif";
+            const ptsA = [
+                "• 100% Data Sovereignty & Isolation",
+                "• Zero 3rd-party outage exposure",
+                "• Low deterministic LAN latency (<1ms)",
+                "• Heavy upfront CapEx (hardware/cooling)"
             ];
-            let pY = 1250;
-            perfBullets.forEach(pb => {
-                const pbl = wrapCanvasText(ctx, pb, W - 180, 2);
-                pbl.forEach(pl => {
-                    ctx.fillText(pl, 90, pY);
-                    pY += 36;
-                });
-                pY += 6;
+            ptsA.forEach((pt, pi) => {
+                ctx.fillText(pt, -195, -70 + pi * 40);
             });
+            ctx.restore();
+
+            // Tilted 3D Panel 2 (Cloud Server Perspective)
+            ctx.save();
+            ctx.translate(800, 480);
+            ctx.rotate(0.035);
+            drawGlassTile(ctx, -220, -160, 440, 320, 16, "#38BDF8", true, true, 1.0);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText("2️⃣ " + tB, -195, -115);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "17px 'Segoe UI', sans-serif";
+            const ptsB = [
+                "• Elastic spin-up in <3 seconds",
+                "• Multi-region global availability",
+                "• Pay-as-you-go monthly OpEx billing",
+                "• Unmonitored instances cause bill shock!"
+            ];
+            ptsB.forEach((pt, pi) => {
+                ctx.fillText(pt, -195, -70 + pi * 40);
+            });
+            ctx.restore();
+
+            // Central Laser Crosshair with Bidirectional Neon Arrows
+            drawDynamicConnector(ctx, 480, 480, 600, 480, "#F59E0B", t, "TRADE-OFF COMPARISON");
+
+            // Common Misconceptions Glass Card
+            drawGlassTile(ctx, 60, 680, W - 120, 460, 18, "#EF4444", false, true, 1.0);
+            ctx.fillStyle = "#EF4444";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText("❌ FATAL INTERVIEW MISCONCEPTIONS TO AVOID:", 90, 725);
+            const confusionBullets = (p.traps && p.traps.length > 0) ? p.traps : [
+                `• Believing Cloud is always cheaper: unmonitored idle cloud instances lead to 400% bill shock!`,
+                `• Assuming Local Servers are obsolete: high-frequency trading & banks strictly require bare-metal LAN speed.`,
+                `• Failing to articulate CapEx vs OpEx trade-offs immediately drops candidate interview scores by 50%!`
+            ];
+            confusionBullets.forEach((cb, ci) => {
+                ctx.fillStyle = "#CBD5E1";
+                ctx.font = "19px 'Segoe UI', sans-serif";
+                const clines = wrapCanvasText(ctx, (cb.startsWith("•") ? cb : ("• " + cb)), W - 180, 2);
+                clines.forEach((cl, cli) => {
+                    ctx.fillText(cl, 90, 775 + ci * 68 + cli * 28);
+                });
+            });
+
+            // Bottom Pro-Tip Pill
+            drawGlassTile(ctx, 60, 1170, W - 120, 80, 14, "#10B981", false, true, 1.0);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 21px 'Segoe UI', sans-serif";
+            ctx.fillText("💡 SENIOR ARCHITECT RULE: Pick based on workload predictability, latency SLAs, and compliance!", 90, 1218);
 
             ctx.restore();
         }
 
-        // SCENE 3: QUERY / SYSTEM EXECUTION LIFECYCLE FLOWCHART
+        // SCENE 3: 3D DECISION TREE FLOWCHART
         else if (currentStageIdx === 3) {
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 95, 16);
-            ctx.fill();
-            ctx.strokeStyle = "#818CF8";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.fillStyle = "#818CF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚙️ ${p.lifecycle_title || 'SYSTEM & ARCHITECTURE EXECUTION LIFECYCLE'}`, W - 180), 90, 265);
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText("How the engine evaluates components in strict sequence:", 90, 296);
-
-            const activePipelineIdx = Math.min(pipeline.length - 1, Math.floor(stageProg * pipeline.length));
-
-            pipeline.forEach((st, idx) => {
-                const boxY = 335 + idx * 195;
-                const isActive = idx === activePipelineIdx;
-                const stColor = idx === 0 ? "#38BDF8" : (idx === 1 ? "#F59E0B" : (idx === 2 ? "#EC4899" : "#10B981"));
-
-                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.98)" : "rgba(15, 23, 42, 0.8)";
-                ctx.beginPath();
-                ctx.roundRect(60, boxY, W - 120, 130, 16);
-                ctx.fill();
-
-                ctx.strokeStyle = isActive ? stColor : "#1E2D4A";
-                ctx.lineWidth = isActive ? 3.5 : 2;
-                if (isActive) {
-                    ctx.shadowColor = stColor;
-                    ctx.shadowBlur = 18;
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                ctx.fillStyle = stColor;
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(`${idx + 1}️⃣ ${st.icon || '⚙️'} ${st.name}`, 90, boxY + 45);
-
-                ctx.fillStyle = isActive ? "#F8FAFC" : "#94A3B8";
-                ctx.font = "bold 22px monospace";
-                ctx.fillText(st.sub, 90, boxY + 95);
-
-                if (idx < pipeline.length - 1) {
-                    ctx.fillStyle = "#818CF8";
-                    ctx.font = "bold 32px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText("↓", W / 2, boxY + 168);
-                    ctx.textAlign = "left";
-                }
-            });
-
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.beginPath();
-            ctx.roundRect(60, 1140, W - 120, 360, 18);
-            ctx.fill();
-            ctx.strokeStyle = "#10B981";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 THE KEY TAKEAWAY FOR INTERVIEWS:", 90, 1195);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `• ${tA}: Evaluated at initial stage for baseline control.`, W - 180), 90, 1255);
-            ctx.fillText(fitTextToWidth(ctx, `• ${tB}: Evaluated at distributed stage for elastic operations.`, W - 180), 90, 1315);
-            ctx.fillText("• Next: Let's see the code syntax and configuration side by side!", 90, 1375);
+            // Full-screen 3D Decision Tree Flowchart with Rotating Diamond & Branching Lasers
+            draw3DDecisionFlowchart(ctx, W, H, p, t, stageProg);
 
             ctx.restore();
         }
 
-        // SCENE 4: SIDE-BY-SIDE SYNTAX & CONFIGURATION COMPARISON
+        // SCENE 4: DUAL 3D CYBER TERMINALS & SYNTAX COMPARISON
         else if (currentStageIdx === 4) {
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            drawGlassTile(ctx, 60, 220, W - 120, 520, 20, "#38BDF8", true, true, 1.0);
-
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 220, W - 120, 48);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 244, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(p.syntax_a_title || `${tA} CONFIGURATION / SYNTAX`, 180, 252);
-
-            const codeALines = (p.syntax_a_code || `# ${tA} Configuration\ndef setup_${tA.toLowerCase().slice(0, 10)}():\n    return {'mode': 'production'}`).split("\n");
-            codeALines.slice(0, 6).forEach((ln, idx) => {
-                const lineY = 320 + idx * 52;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 24px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, ln, 160, lineY);
-            });
-
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(90, 580, W - 180, 130);
-            ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(90, 580, W - 180, 130);
+            // Header Pill
+            drawGlassTile(ctx, 60, 205, W - 120, 60, 14, "#38BDF8", true, true, 1.0);
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚡ ${tA} SPECIFICATION`, W - 220), 120, 625);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, p.syntax_a_note || "Direct control pattern with localized execution scope.", W - 220), 120, 670);
+            ctx.fillText("⚡ PRODUCTION DEPLOYMENT SYNTAX & CONFIGURATION", 90, 242);
 
-            drawGlassTile(ctx, 60, 770, W - 120, 580, 20, "#10B981", false, true, 1.0);
-
+            // Top 3D Terminal (Local Server Bare-Metal Configuration)
+            drawGlassTile(ctx, 60, 280, W - 120, 480, 18, "#10B981", true, true, 1.0);
             ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 770, W - 120, 48);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 794, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 794, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 794, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(60, 280, W - 120, 44);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 302, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(118, 302, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(141, 302, 7, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 20px monospace";
-            ctx.fillText(p.syntax_b_title || `${tB} CONFIGURATION / SYNTAX`, 180, 802);
+            ctx.font = "bold 18px monospace";
+            ctx.fillText(p.syntax_a_title || `${tA} CONFIGURATION / SYSTEMD SERVICE`, 175, 308);
 
-            const codeBLines = (p.syntax_b_code || `# ${tB} Configuration\ndef setup_${tB.toLowerCase().slice(0, 10)}():\n    return {'mode': 'distributed'}`).split("\n");
-            codeBLines.slice(0, 6).forEach((ln, idx) => {
-                const lineY = 870 + idx * 52;
+            const codeALines = (p.syntax_a_code || `[Unit]\nDescription=${tA} High-Performance Daemon\nAfter=network.target\n\n[Service]\nExecStart=/usr/local/bin/server_app\nMemoryMax=64G`).split("\n");
+            codeALines.slice(0, 6).forEach((ln, idx) => {
+                const lineY = 365 + idx * 42;
                 ctx.fillStyle = "#475569";
-                ctx.font = "bold 24px monospace";
+                ctx.font = "bold 20px monospace";
                 ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, ln, 160, lineY);
+                renderSqlSyntaxLine(ctx, ln, 150, lineY);
             });
+            drawLaserScannerBeam(ctx, 60, 340, W - 120, 240, t);
 
             ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.fillRect(90, 1150, W - 180, 160);
+            ctx.fillRect(90, 640, W - 180, 95);
             ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 1150, W - 180, 160);
+            ctx.strokeRect(90, 640, W - 180, 95);
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚡ ${tB} SPECIFICATION`, W - 220), 120, 1200);
+            ctx.font = "bold 19px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, `⚡ ${tA} SPECIFICATION`, W - 220), 115, 675);
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, p.syntax_b_note || "Distributed elasticity pattern with automated lifecycle scaling.", W - 220), 120, 1245);
-            ctx.fillText(fitTextToWidth(ctx, "Provides high availability and decoupled cluster failover.", W - 220), 120, 1285);
+            ctx.font = "17px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, p.syntax_a_note || "Direct bare-metal execution with deterministic LAN latency.", W - 220), 115, 712);
 
-            const arrowBounce = Math.sin(t * 6) * 10;
+            // Bottom 3D Terminal (Cloud Terraform Infrastructure-as-Code)
+            drawGlassTile(ctx, 60, 790, W - 120, 500, 18, "#38BDF8", true, true, 1.0);
+            ctx.fillStyle = "#1E293B";
+            ctx.fillRect(60, 790, W - 120, 44);
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 812, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(118, 812, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(141, 812, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 18px monospace";
+            ctx.fillText(p.syntax_b_title || `${tB} INFRASTRUCTURE AS CODE (TERRAFORM)`, 175, 818);
+
+            const codeBLines = (p.syntax_b_code || `resource "aws_instance" "cluster" {\n  ami           = "ami-0c55b159cbfafe1f0"\n  instance_type = "t4g.xlarge"\n  monitoring    = true\n  tags = { Tier = "Elastic-Cloud" }\n}`).split("\n");
+            codeBLines.slice(0, 6).forEach((ln, idx) => {
+                const lineY = 875 + idx * 42;
+                ctx.fillStyle = "#475569";
+                ctx.font = "bold 20px monospace";
+                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
+                renderSqlSyntaxLine(ctx, ln, 150, lineY);
+            });
+            drawLaserScannerBeam(ctx, 60, 850, W - 120, 240, t * 1.1);
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.fillRect(90, 1165, W - 180, 95);
+            ctx.strokeStyle = "#38BDF8";
+            ctx.strokeRect(90, 1165, W - 180, 95);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 19px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, `⚡ ${tB} SPECIFICATION`, W - 220), 115, 1200);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "17px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, p.syntax_b_note || "Automated multi-AZ elasticity with decoupled cluster failover.", W - 220), 115, 1237);
+
+            // Bottom Connecting Observation
+            const arrowBounce = Math.sin(t * 6) * 8;
             ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `👉 Notice: ${tA} vs ${tB} serve distinct production requirements!`, W - 180), 90 + arrowBounce, 1420);
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, `👉 Notice: Local uses systemd bare-metal; Cloud uses automated IaC provisioning!`, W - 180), 90 + arrowBounce, 1335);
 
             ctx.restore();
         }
 
-        // SCENE 5: COMPREHENSIVE COMPARISON MATRIX TABLE
+        // SCENE 5: COMPREHENSIVE COMPARISON HUD MATRIX
         else if (currentStageIdx === 5) {
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            drawGlassTile(ctx, 60, 220, W - 120, 95, 16, "#38BDF8", false, true, 1.0);
-
+            drawGlassTile(ctx, 60, 205, W - 120, 80, 16, "#38BDF8", false, true, 1.0);
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `🔍 ${p.comparison_title || (tA + ' vs ' + tB + ' COMPARISON MATRIX')}`, W - 180), 90, 265);
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, `🔍 ${p.comparison_title || (tA + ' vs ' + tB + ' COMPARISON MATRIX')}`, W - 180), 90, 248);
             ctx.fillStyle = "#CBD5E1";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "Memorize these pillars for immediate high marks in your interview:", W - 180), 90, 296);
+            ctx.font = "18px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, "Memorize these 4 pillars for immediate high marks in your interview:", W - 180), 90, 274);
 
-            const headers = p.comparison_headers || ["FEATURE / ASPECT", tA, tB];
+            const headers = p.comparison_headers || ["CRITERIA", tA, tB];
             ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
-            ctx.fillRect(60, 340, W - 120, 60);
+            ctx.fillRect(60, 305, W - 120, 54);
             ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(60, 340, W - 120, 60);
+            ctx.strokeRect(60, 305, W - 120, 54);
 
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 21px monospace";
-            ctx.fillText(fitTextToWidth(ctx, headers[0], 290), 90, 378);
-            ctx.fillText(fitTextToWidth(ctx, headers[1], 290), 420, 378);
-            ctx.fillText(fitTextToWidth(ctx, headers[2] || tB, 260), 740, 378);
+            ctx.font = "bold 19px monospace";
+            ctx.fillText(fitTextToWidth(ctx, headers[0], 270), 85, 340);
+            ctx.fillText(fitTextToWidth(ctx, headers[1], 320), 385, 340);
+            ctx.fillText(fitTextToWidth(ctx, headers[2] || tB, 300), 735, 340);
 
             const matrixRows = p.comparison_rows || [
-                {feature: "Capital & Cost Model", col_a: `Optimized for ${tA}`, col_b: `Optimized for ${tB}`},
-                {feature: "Elasticity & Scale", col_a: "Deterministic fixed allocation", col_b: "Dynamic auto-scaling"},
-                {feature: "Operational Overhead", col_a: "Direct operational scope", col_b: "Managed platform scope"},
-                {feature: "Production Use Case", col_a: "Core predictable workload", col_b: "Distributed elastic workload"}
+                {feature: "Capital & Cost Model", col_a: `High initial CapEx (Hardware & Cooling)`, col_b: `Pay-as-you-go OpEx (Usage-based)`},
+                {feature: "Elasticity & Scalability", col_a: "Slow (Weeks to order & rack servers)", col_b: "Instant Auto-Scaling in seconds"},
+                {feature: "Maintenance Overhead", col_a: "In-house IT team for disks, OS & power", col_b: "100% managed by cloud vendor"},
+                {feature: "Data Sovereignty & SLA", col_a: "Physical isolation within private firewall", col_b: "Multi-region global redundancy"}
             ];
 
             const rowsToShow = Math.min(matrixRows.length, Math.floor(stageProg * (matrixRows.length + 1)) + 1);
 
-            matrixRows.slice(0, rowsToShow).forEach((r, idx) => {
-                const rowY = 415 + idx * 175;
+            matrixRows.slice(0, 4).forEach((r, idx) => {
+                const rowY = 375 + idx * 195;
                 const isLatest = idx === rowsToShow - 1;
 
-                drawGlassTile(ctx, 60, rowY, W - 120, 155, 14, isLatest ? "#10B981" : "#1E2D4A", isLatest, true, isLatest ? 1.0 : 0.85);
+                drawGlassTile(ctx, 60, rowY, W - 120, 180, 14, isLatest ? "#10B981" : "#1E2D4A", isLatest, true, isLatest ? 1.0 : 0.85);
 
                 ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, r.feature, W - 180), 90, rowY + 45);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText(fitTextToWidth(ctx, `${headers[1] || tA}: ${r.col_a}`, W - 180), 90, rowY + 90);
+                ctx.font = "bold 21px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, `📌 ${r.feature}`, W - 180), 85, rowY + 38);
 
                 ctx.fillStyle = "#10B981";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText(fitTextToWidth(ctx, `${headers[2] || tB}: ${r.col_b}`, W - 180), 90, rowY + 130);
+                ctx.font = "bold 18px monospace";
+                ctx.fillText(fitTextToWidth(ctx, `🖥️ ${headers[1] || tA}: ${r.col_a}`, W - 180), 85, rowY + 84);
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 18px monospace";
+                ctx.fillText(fitTextToWidth(ctx, `☁️ ${headers[2] || tB}: ${r.col_b}`, W - 180), 85, rowY + 130);
             });
 
-            drawGlassTile(ctx, 60, 1180, W - 120, 320, 18, "#10B981", false, true, 1.0);
+            // Sweeping Laser Scanner Line over active row
+            drawLaserScannerBeam(ctx, 60, 375, W - 120, 780, t);
 
+            // Bottom Checklist Pill
+            drawGlassTile(ctx, 60, 1180, W - 120, 230, 18, "#10B981", false, true, 1.0);
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "💡 INTERVIEW CHECKLIST SUMMARY:", W - 180), 90, 1235);
-
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, "💡 INTERVIEW CHECKLIST SUMMARY:", W - 180), 90, 1228);
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `• Need direct control and fixed latency? ➔ Choose ${tA}.`, W - 180), 90, 1295);
-            ctx.fillText(fitTextToWidth(ctx, `• Need elastic scaling and global disaster recovery? ➔ Choose ${tB}.`, W - 180), 90, 1355);
-            ctx.fillText(fitTextToWidth(ctx, "• Senior leads always balance CapEx, OpEx, and SLA tolerances!", W - 180), 90, 1415);
+            ctx.font = "20px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, `• Need complete data isolation & steady-state compute? ➔ Choose ${tA}.`, W - 180), 90, 1275);
+            ctx.fillText(fitTextToWidth(ctx, `• Need elastic auto-scaling & global disaster recovery? ➔ Choose ${tB}.`, W - 180), 90, 1325);
+            ctx.fillText(fitTextToWidth(ctx, "• Senior leads always balance CapEx, OpEx, and SLA tolerances!", W - 180), 90, 1375);
 
             ctx.restore();
         }
 
-        // SCENE 6: FATAL INTERVIEW TRAPS & GOLDEN TAKEAWAY
+        // SCENE 6: FATAL INTERVIEW TRAPS & 3D ROTATING GOLDEN TROPHY
         else {
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-            drawGlassTile(ctx, 60, 220, W - 120, 480, 20, "#EF4444", true, true, 1.0);
-
+            // Top Traps Tile
+            drawGlassTile(ctx, 60, 205, W - 120, 360, 18, "#EF4444", true, true, 1.0);
             ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, W - 180), 90, 275);
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, `❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, W - 180), 90, 255);
 
             const trapsList = (p.traps && p.traps.length > 0) ? p.traps : [
-                `❌ Trap: Applying ${tA} when decoupled scaling is required creates severe bottlenecks!`,
+                `❌ Trap: Applying ${tA} when rapid elastic scaling is required creates severe traffic bottleneck crashes!`,
                 `✅ Rule: Evaluate cost models, maintenance overhead, and data sovereignty before deciding!`
             ];
 
             trapsList.forEach((trp, idx) => {
-                const trapY = 330 + idx * 160;
-                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-                ctx.fillRect(90, trapY, W - 180, 130);
+                const trapY = 285 + idx * 125;
+                ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+                ctx.fillRect(85, trapY, W - 170, 105);
                 ctx.strokeStyle = trp.startsWith("❌") ? "#EF4444" : "#10B981";
-                ctx.strokeRect(90, trapY, W - 180, 130);
+                ctx.strokeRect(85, trapY, W - 170, 105);
 
                 ctx.fillStyle = trp.startsWith("❌") ? "#FCA5A5" : "#A7F3D0";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.font = "bold 20px 'Segoe UI', sans-serif";
                 const tLines = wrapCanvasText(ctx, trp, W - 220, 2);
                 tLines.forEach((tl, ti) => {
-                    ctx.fillText(tl, 115, trapY + 45 + ti * 36);
+                    ctx.fillText(tl, 110, trapY + 40 + ti * 34);
                 });
             });
 
-            drawGlassTile(ctx, 60, 740, W - 120, 440, 22, "#10B981", true, true, 1.0);
+            // 3D Rotating Golden Trophy Medallion
+            draw3DHolographicTrophy(ctx, W / 2, 650, t);
 
+            // Universal Golden Rule Card
+            drawGlassTile(ctx, 60, 750, W - 120, 360, 20, "#10B981", true, true, 1.0);
             ctx.fillStyle = "#10B981";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
             ctx.fillText(fitTextToWidth(ctx, "🏆 THE UNIVERSAL GOLDEN RULE:", W - 180), 90, 805);
 
-            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-            ctx.fillRect(90, 840, W - 180, 220);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+            ctx.fillRect(85, 830, W - 170, 175);
             ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 840, W - 180, 220);
+            ctx.strokeRect(85, 830, W - 170, 175);
 
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
             const ruleText = p.golden_rule || `Choose ${tA} for localized control and constant baseline loads; choose ${tB} for elastic scaling and zero hardware overhead.`;
             const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220, 3);
             rLines.forEach((rl, ri) => {
-                ctx.fillText(rl, 120, 920 + ri * 46);
+                ctx.fillText(rl, 115, 890 + ri * 42);
             });
 
             ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "✅ Saying this one sentence guarantees full points in an interview!", W - 180), 90, 1130);
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            ctx.fillText(fitTextToWidth(ctx, "✅ Explaining this architecture trade-off guarantees top marks in senior interviews!", W - 180), 90, 1060);
 
-            drawGlassTile(ctx, 60, 1220, W - 120, 260, 18, "#38BDF8", false, true, 1.0);
-
+            // Pitch to Interviewer Card
+            drawGlassTile(ctx, 60, 1140, W - 120, 270, 18, "#38BDF8", false, true, 1.0);
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("🚀 HOW TO SAY THIS TO AN INTERVIEWER:", 90, 1270);
+            ctx.fillText("🚀 HOW TO SAY THIS TO AN INTERVIEWER:", 90, 1190);
             ctx.fillStyle = "#F8FAFC";
-            ctx.font = "22px 'Segoe UI', sans-serif";
+            ctx.font = "21px 'Segoe UI', sans-serif";
             const pitchLines = wrapCanvasText(ctx, p.pitch_to_interviewer || (`"I evaluate the trade-offs between ${tA} and ${tB} based on latency tolerances, capital expenditure, and maintenance overhead."`), W - 180, 2);
             pitchLines.forEach((pl, pi) => {
-                ctx.fillText(pl, 90, 1320 + pi * 45);
+                ctx.fillText(pl, 90, 1240 + pi * 40);
             });
-            ctx.fillText("Next: Senior Interviewer Pro-Tip & Outro!", 90, 1415);
+            ctx.fillStyle = "#10B981";
+            ctx.font = "bold 19px monospace";
+            ctx.fillText("Mastered @Code_With_Mangesh • Save & Share this Reel!", 90, 1365);
 
             ctx.restore();
         }
