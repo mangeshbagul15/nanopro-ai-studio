@@ -192,15 +192,15 @@ class VideoCascadeRouter:
             logs.append(f"Luma error: {str(e)}")
 
         # -------------------------------------------------------------
-        # 3. ZERO-DROP GUARANTEED FALLBACK: CYBER MOTION CANVAS LOOP
+        # 3. ZERO-DROP GUARANTEED FALLBACK: 3D AI PROCEDURAL MOTION ENGINE
         # -------------------------------------------------------------
-        log_event("Activated Zero-Drop Guaranteed Fallback: High-Tech Cyber Grid Motion Loop.", component="CascadeRouter")
+        log_event("Activated Zero-Drop Guaranteed Fallback: 3D AI Procedural Motion Engine (60 FPS Volumetric Depth).", component="CascadeRouter")
         return {
             "status": "success",
-            "provider": "Cyber_Grid_Motion",
+            "provider": "3D_AI_Motion_Engine",
             "failover_used": True,
-            "mode": "client_rendered",
-            "message": "Cloud token quota reached. Seamlessly rendered via client-side 60s 9:16 Canvas with zero server load!",
+            "mode": "3d_procedural_motion",
+            "message": "Cloud token quota reached. Seamlessly activated Built-in 60 FPS 3D AI Motion Engine with volumetric particles and cyber depth!",
             "logs": logs
         }
 

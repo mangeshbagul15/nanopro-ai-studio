@@ -32,6 +32,7 @@ class RunwayVideoEngine:
             "key_d12587db38b98eedd97b34bab231bbcbe66aef4e6f756d206a31a196fc5125b78d7769d7d20f91ac444bedad9787157b366a5ad9f8943552f16479b709613e70"
         ]
         self.active_token_idx = 0
+        self.tokens_depleted_until = 0.0
 
     def _resolve_api_tokens(self) -> List[str]:
         """Resolves all available Runway API keys from memory, vault, and environment."""
@@ -112,6 +113,9 @@ class RunwayVideoEngine:
         model: str = "gen4.5"
     ) -> Dict[str, Any]:
         """Submits a text-to-video generation task to Runway Gen-4.5 with multi-token failover."""
+        if getattr(self, "tokens_depleted_until", 0) > time.time():
+            raise RuntimeError("Runway tokens out of credits (cooldown active). Auto-cascading to 3D AI Motion Engine.")
+
         tokens = self._resolve_api_tokens()
         if not tokens:
             raise ValueError("Runway API Key missing. Add RUNWAY_API_KEY in CredentialsVault.")
@@ -163,7 +167,9 @@ class RunwayVideoEngine:
                 last_error = f"Token #{idx + 1} Exception: {str(e)}"
                 log_event(f"Runway Token #{idx + 1} error: {e}", level="WARNING", component="RunwayVideo")
 
-        # If all tokens fail (e.g. 0 credit balance), raise clean error for cascade router
+        # If all tokens fail (e.g. 0 credit balance), activate cooldown & raise clean error for cascade router
+        if "credit" in last_error.lower() or "400" in last_error:
+            self.tokens_depleted_until = time.time() + 1800
         raise RuntimeError(f"All {attempts} Runway tokens exhausted or out of credits. Last error: {last_error}")
 
     def create_image_to_video(
@@ -175,6 +181,9 @@ class RunwayVideoEngine:
         model: str = "gen4_turbo"
     ) -> Dict[str, Any]:
         """Submits an image-to-video animation task to Runway Gen-4 Turbo with multi-token failover."""
+        if getattr(self, "tokens_depleted_until", 0) > time.time():
+            raise RuntimeError("Runway tokens out of credits (cooldown active). Auto-cascading to 3D AI Motion Engine.")
+
         tokens = self._resolve_api_tokens()
         if not tokens:
             raise ValueError("Runway API Key missing.")
@@ -228,6 +237,8 @@ class RunwayVideoEngine:
                 last_error = f"Token #{idx + 1} Exception: {str(e)}"
                 log_event(f"Runway Token #{idx + 1} error: {e}", level="WARNING", component="RunwayVideo")
 
+        if "credit" in last_error.lower() or "400" in last_error:
+            self.tokens_depleted_until = time.time() + 1800
         raise RuntimeError(f"All {attempts} Runway tokens exhausted or out of credits. Last error: {last_error}")
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:

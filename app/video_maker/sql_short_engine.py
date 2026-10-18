@@ -125,24 +125,18 @@ def compute_audio_synchronized_stages(
     """
     raw_audio_dur = float(audio_duration) if audio_duration and float(audio_duration) > 0 else 30.0
 
-    # Dynamically compute outro duration based on spoken duration (e.g. 6-8% of total narration, clamped between 2.0s and 3.8s)
-    outro_dur = round(max(2.0, min(3.8, raw_audio_dur * 0.07)), 2)
+    # Video duration strictly matches narration duration (<58s Shorts/Reels standard)
+    # Zero trailing outro screen or branding cards appended as requested by user
+    total_dur = min(58.5, round(raw_audio_dur, 2))
+    edu_dur = total_dur
+    outro_start = total_dur
 
-    # Strictly guarantee that total video duration (narration + outro) stays within 60.0s (<60s Shorts/Reels standard)
-    if raw_audio_dur + outro_dur > 59.5:
-        narration_dur = round(59.5 - outro_dur, 2)
-    else:
-        narration_dur = round(raw_audio_dur, 2)
-
-    edu_dur = narration_dur
-    outro_start = narration_dur
-    total_dur = round(narration_dur + outro_dur, 2)
-
-    # Filter out any pre-existing branding stage
+    # Filter out any pre-existing branding/outro stage
     edu_stages = [
         s for s in raw_stages
         if s.get("action_type") != "branding_outro"
         and s.get("id") != 7
+        and "Outro" not in (s.get("title") or "")
         and "Code with Mangesh" not in (s.get("speech_en") or "")
         and "कोड विथ मंगेश" not in (s.get("speech_mr") or "")
     ]
@@ -167,7 +161,7 @@ def compute_audio_synchronized_stages(
         fraction = word_counts[idx] / total_words
         stage_dur = round(fraction * edu_dur, 2)
         start_t = round(curr_t, 2)
-        end_t = round(curr_t + stage_dur, 2) if idx < len(edu_stages) - 1 else outro_start
+        end_t = round(curr_t + stage_dur, 2) if idx < len(edu_stages) - 1 else total_dur
         curr_t = end_t
 
         calibrated.append({
@@ -183,21 +177,8 @@ def compute_audio_synchronized_stages(
             "duration": round(end_t - start_t, 2)
         })
 
-    # Append strictly isolated Outro Branding Stage (only dynamic outro_dur, strictly after narration completes)
-    calibrated.append({
-        "id": len(calibrated) + 1,
-        "action_type": "branding_outro",
-        "title": "Interviewer Pro-Tip & Outro",
-        "speech": pro_tip or "Follow @Code_With_Mangesh for daily tech mastery!",
-        "speech_mr": pro_tip or "पुढील टेक व्हिडिओंसाठी फॉलो करा कोड विथ मंगेश!",
-        "speech_hi": pro_tip or "टेक मास्टरी के लिए फॉलो कीजिए कोड विथ मंगेश!",
-        "speech_en": pro_tip or "Follow @Code_With_Mangesh for daily tech mastery!",
-        "start": outro_start,
-        "end": total_dur,
-        "duration": round(total_dur - outro_start, 2)
-    })
-
-    return calibrated, total_dur, outro_start
+    # No outro stage appended: cleanly finishes at final result
+    return calibrated, total_dur, total_dur
 
 
 TOP_MNC_SQL_PRESETS = [
@@ -1864,12 +1845,18 @@ class SqlShortVideoEngine:
         audio_url = f"/audio/preset_sql_q1_second_highest_salary_{lang_key}.mp3"
         audio_file_path = None
         try:
+            import hashlib
             from app.core.neural_tts import neural_tts
             preset_id = matched.get("id", "custom")
+            narration_hash = hashlib.md5(full_narration.encode('utf-8')).hexdigest()[:10]
+            if str(preset_id).startswith("custom") or preset_id == "custom":
+                custom_filename = f"voice_custom_{narration_hash}_{lang_key}.mp3"
+            else:
+                custom_filename = f"voice_{preset_id}_{narration_hash}_{lang_key}.mp3"
             tts_res = await neural_tts.synthesize_async(
                 text=full_narration,
                 language=lang_key,
-                custom_filename=f"voice_{preset_id}_{lang_key}.mp3"
+                custom_filename=custom_filename
             )
             if tts_res.get("status") == "success" and tts_res.get("audio_url"):
                 audio_url = tts_res.get("audio_url")

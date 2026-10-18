@@ -723,10 +723,10 @@ def get_sql_video_workspace_html() -> str:
                     <!-- Dynamic Background Selector Buttons (Zero Dropdowns) -->
                     <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
                     <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                        <button type="button" class="sql-avatar-btn active" id="btnBgCyber" onclick="document.getElementById('sqlCinematicBgSelect').value='cyber_matrix'; this.classList.add('active'); document.getElementById('btnBg3D').classList.remove('active');">
+                        <button type="button" class="sql-avatar-btn active" id="btnBgCyber" onclick="setSqlMotionEngine(false); document.getElementById('sqlCinematicBgSelect').value='cyber_matrix'; this.classList.add('active'); document.getElementById('btnBg3D').classList.remove('active');">
                             <span class="btn-check">✓</span> <span>🌐 Transparent Cyber Glass</span>
                         </button>
-                        <button type="button" class="sql-avatar-btn" id="btnBg3D" onclick="document.getElementById('sqlCinematicBgSelect').value='runway_cloud'; this.classList.add('active'); document.getElementById('btnBgCyber').classList.remove('active');">
+                        <button type="button" class="sql-avatar-btn" id="btnBg3D" onclick="setSqlMotionEngine(true); document.getElementById('sqlCinematicBgSelect').value='runway_cloud'; this.classList.add('active'); document.getElementById('btnBgCyber').classList.remove('active');">
                             <span class="btn-check">✓</span> <span>🎥 3D AI Motion Engine</span>
                         </button>
                     </div>

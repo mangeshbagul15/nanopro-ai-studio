@@ -13,6 +13,7 @@ Architecture:
 import os
 import re
 import asyncio
+import hashlib
 from pathlib import Path
 from typing import Dict, Any, Optional
 from app.core.logger import log_event
@@ -232,13 +233,16 @@ class NeuralTTSEngine:
             voice_key = f"{lang}_female"
         else:
             voice_key = f"{lang}_male" if f"{lang}_male" in self.voice_map else lang
+        edge_voice = self.voice_map.get(voice_key, self.voice_map.get(lang, "hi-IN-MadhurNeural"))
 
-        edge_voice = self.voice_map.get(voice_key, "hi-IN-MadhurNeural")
-
-        fname = custom_filename if custom_filename else f"voice_{lang}_{int(abs(hash(text)) % 10000000)}.mp3"
+        text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()[:12]
+        if not custom_filename or "scenario" in custom_filename or "master_prompt" in custom_filename:
+            fname = f"voice_{lang}_{text_hash}.mp3"
+        else:
+            fname = custom_filename
         out_path = self.output_dir / fname
 
-        # If already cached, return immediately
+        # If already cached for this exact text hash, return immediately
         if out_path.exists() and out_path.stat().st_size > 1000:
             return {
                 "status": "success",

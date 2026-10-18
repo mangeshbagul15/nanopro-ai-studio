@@ -41,15 +41,10 @@ def get_sql_video_js() -> str:
         const audioEl = document.getElementById("sqlVoiceAudio");
         if (!audioEl) return;
         const realDur = audioEl.duration;
-        if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 2.0) {
-            // Dynamic outro duration based on spoken length (typically 6-8%, clamped between 2.0s and 3.8s)
-            const dynamicOutro = Math.max(2.0, Math.min(3.8, Number((realDur * 0.07).toFixed(2))));
-            let narrationDur = realDur;
-            if (narrationDur + dynamicOutro > 59.5) {
-                narrationDur = 59.5 - dynamicOutro;
-            }
-            narrationDur = Number(narrationDur.toFixed(2));
-            const totalDur = Number((narrationDur + dynamicOutro).toFixed(2));
+        if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 1.0) {
+            // Video duration strictly matches speech duration (<58s Shorts/Reels standard) with zero trailing outro
+            const narrationDur = Number(Math.min(58.5, realDur).toFixed(2));
+            const totalDur = narrationDur;
             sqlShortState.narrationDuration = narrationDur;
             sqlShortState.maxDuration = totalDur;
             const sc = document.getElementById("sqlShortScrubber");
@@ -57,50 +52,43 @@ def get_sql_video_js() -> str:
                 sc.max = totalDur.toString();
                 sc.step = "0.1";
             }
-            scaleScenesToRealDuration(narrationDur, totalDur, dynamicOutro);
+            scaleScenesToRealDuration(narrationDur, totalDur);
             updatePlayerScrubberUI(sqlShortState.currentTime);
         }
     }
 
-    function scaleScenesToRealDuration(narrationDur, totalDur, dynamicOutro) {
+    function scaleScenesToRealDuration(narrationDur, totalDur) {
         const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
         if (!p) return;
         const stagesList = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : null);
         if (!stagesList || stagesList.length === 0) return;
 
-        // Separate educational stages (1 to N-1) from outro branding stage
+        // Educational stages span 100% of duration; zero trailing outro branding
         const eduStages = stagesList.filter(s => s.action_type !== "branding_outro" && s.id !== 7 && !s.title?.includes("Outro"));
-        const outroStage = stagesList.find(s => s.action_type === "branding_outro" || s.id === 7 || s.title?.includes("Outro"));
+        const activeStages = eduStages.length > 0 ? eduStages : stagesList;
 
         // Compute word counts per stage dynamically from speech text
         const langKey = sqlShortState.audioLang || "mr";
-        const wordCounts = eduStages.map(s => {
+        const wordCounts = activeStages.map(s => {
             const txt = s[`speech_${langKey}`] || s.speech || s.speech_en || s.title || "";
             return Math.max(3, txt.trim().split(/\s+/).filter(Boolean).length);
         });
-        const totalWords = wordCounts.reduce((a, b) => a + b, 0) || (eduStages.length * 10);
+        const totalWords = wordCounts.reduce((a, b) => a + b, 0) || (activeStages.length * 10);
 
         let currT = 0.0;
-        eduStages.forEach((s, idx) => {
+        activeStages.forEach((s, idx) => {
             const frac = wordCounts[idx] / totalWords;
             const dur = frac * narrationDur;
             s.start = Number(currT.toFixed(2));
-            const endT = (idx === eduStages.length - 1) ? narrationDur : (currT + dur);
+            const endT = (idx === activeStages.length - 1) ? narrationDur : (currT + dur);
             s.end = Number(endT.toFixed(2));
             s.duration = Number((s.end - s.start).toFixed(2));
             currT = s.end;
         });
 
-        // Outro starts EXACTLY when narration finishes (narrationDur)
-        p.outro_start = Number(narrationDur.toFixed(2));
+        p.outro_start = totalDur;
         p.max_duration_seconds = totalDur;
         p.duration = totalDur;
-
-        if (outroStage) {
-            outroStage.start = p.outro_start;
-            outroStage.end = totalDur;
-            outroStage.duration = Number((totalDur - p.outro_start).toFixed(2));
-        }
     }
 
     function attachAudioSyncListeners(audioEl) {
@@ -110,9 +98,11 @@ def get_sql_video_js() -> str:
         audioEl.addEventListener("durationchange", calibrateAudioDuration);
         audioEl.addEventListener("canplay", calibrateAudioDuration);
         audioEl.addEventListener("ended", () => {
-            // Audio narration finished! DO NOT pause immediately!
-            // Allow the canvas animation loop to smoothly display the 3.5s outro branding screen.
-            console.log("Teacher voice narration finished at", audioEl.currentTime, "s. Displaying Outro branding screen...");
+            // Audio narration finished! Cleanly pause at final verified result (zero trailing outro)
+            pauseSqlShortPlay();
+            sqlShortState.currentTime = sqlShortState.maxDuration;
+            updatePlayerScrubberUI(sqlShortState.maxDuration);
+            renderSqlShortFrame(sqlShortState.maxDuration);
         });
     }
 
@@ -173,11 +163,50 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function clearMasterPrompt() {
+        pauseSqlShortPlay();
         const qEl = document.getElementById("sqlShortQuestion");
         if (qEl) {
             qEl.value = "";
             qEl.focus();
         }
+        const cEl = document.getElementById("sqlShortCodePreview");
+        if (cEl) cEl.value = "";
+
+        // Reset video & preset state so previous prompt's video doesn't persist
+        sqlShortState.activePreset = null;
+        sqlShortState.activeVideoSpec = null;
+        sqlShortState.currentTime = 0.0;
+        sqlShortState.maxDuration = 0.0;
+        sqlShortState.narrationDuration = 0.0;
+        sqlShortState.audioUrl = "";
+
+        // Stop, unload and reset audio element
+        const audioEl = document.getElementById("sqlVoiceAudio");
+        if (audioEl) {
+            audioEl.pause();
+            audioEl.removeAttribute("src");
+            audioEl.load();
+        }
+
+        // Reset scrubber & time display
+        const sc = document.getElementById("sqlShortScrubber");
+        if (sc) {
+            sc.value = "0";
+            sc.max = "0";
+        }
+        const timeCur = document.getElementById("sqlShortTimeCur");
+        if (timeCur) timeCur.innerText = "00:00";
+        const timeDur = document.getElementById("sqlShortTimeDur");
+        if (timeDur) timeDur.innerText = "00:00";
+
+        // Reset blueprint UI elements
+        const hookEl = document.getElementById("bpTimelineHook");
+        if (hookEl) hookEl.innerText = "नवीन प्रॉम्प्ट प्रविष्ट करा (Enter a new prompt)";
+        const arrowEl = document.getElementById("bpArrowTarget");
+        if (arrowEl) arrowEl.innerText = "--";
+
+        // Re-render canvas to a clean standby frame
+        renderSqlShortFrame(0);
     }
 
     function initSqlShortWorkspace() {
@@ -538,6 +567,21 @@ SECOND_HIGHEST_SALARY: 70000`;
         const btn = document.getElementById("btnGenerateSqlBlueprint");
         if (!q) { alert("तुमचा मास्टर प्रॉम्प्ट किंवा प्रश्न प्रविष्ट करा (Please enter your master prompt or SQL question)!"); return; }
 
+        // Immediately pause and reset old prompt state so old video never lingers
+        pauseSqlShortPlay();
+        sqlShortState.activePreset = null;
+        sqlShortState.activeVideoSpec = null;
+        sqlShortState.currentTime = 0.0;
+        sqlShortState.maxDuration = 0.0;
+        sqlShortState.narrationDuration = 0.0;
+        sqlShortState.audioUrl = "";
+        const initAudioEl = document.getElementById("sqlVoiceAudio");
+        if (initAudioEl) {
+            initAudioEl.pause();
+            initAudioEl.removeAttribute("src");
+            initAudioEl.load();
+        }
+
         btn.innerHTML = `<span>⏳ Synthesizing AI Video & Voice Blueprint...</span>`;
         btn.disabled = true;
 
@@ -561,7 +605,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 body: JSON.stringify({
                     question: q,
                     language: sqlShortState.audioLang || "mr",
-                    mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill"
+                    mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill",
+                    timestamp: Date.now()
                 })
             });
             const data = await res.json();
@@ -598,16 +643,16 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
                 sqlShortState.maxDuration = targetDur;
-                const dynamicOutroDur = Math.max(2.0, Math.min(3.8, Number((targetDur * 0.07).toFixed(2))));
+                sqlShortState.narrationDuration = targetDur;
                 const dynamicSpec = Object.assign({
-                    id: data.id || "custom_ai",
+                    id: data.id || ("custom_ai_" + Date.now()),
                     content_type: data.content_type || "sql_query",
                     title: data.title || "Tech Interview Preparation",
                     difficulty: data.difficulty || "Core Interview",
                     question: data.question || q,
                     stages: data.stages || data.scenes || [],
                     scenes: data.stages || data.scenes || [],
-                    outro_start: (data.outro_start !== undefined) ? data.outro_start : Math.max(0, targetDur - dynamicOutroDur),
+                    outro_start: targetDur,
                     duration: targetDur,
                     max_duration_seconds: targetDur,
                     pipeline_stages: data.pipeline_stages || [],
@@ -633,13 +678,14 @@ SECOND_HIGHEST_SALARY: 70000`;
                     codePreviewEl.value = data.solution_sql || data.syntax_a_code || "-- Query solution";
                 }
 
-                // Load and play synthesized audio
+                // Load and play fresh synthesized audio with cache-buster
                 if (data.audio_url) {
-                    sqlShortState.audioUrl = data.audio_url;
+                    const freshAudioUrl = data.audio_url + (data.audio_url.includes("?") ? "&" : "?") + "t=" + Date.now();
+                    sqlShortState.audioUrl = freshAudioUrl;
                     const audioEl = document.getElementById("sqlVoiceAudio");
                     if (audioEl) {
                         attachAudioSyncListeners(audioEl);
-                        audioEl.src = data.audio_url;
+                        audioEl.src = freshAudioUrl;
                         audioEl.load();
                         calibrateAudioDuration();
                     }
@@ -815,6 +861,22 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
         }, 2500);
     }
+    function setSqlMotionEngine(enabled) {
+        sqlShortState.enable3DMotionEngine = !!enabled;
+        const statusEl = document.getElementById("cinematicBgRenderStatus");
+        if (statusEl) {
+            statusEl.style.display = "block";
+            if (enabled) {
+                statusEl.style.color = "#C084FC";
+                statusEl.innerHTML = `<span>✨ 3D AI Motion Engine Active (60 FPS Volumetric 3D Particles &amp; Holographic Core)!</span>`;
+            } else {
+                statusEl.style.color = "#10B981";
+                statusEl.innerHTML = `<span>⚡ Using Transparent Cyber Glass Canvas (Ultra-Fast 60 FPS)</span>`;
+            }
+        }
+        renderSqlShortFrame(sqlShortState.currentTime);
+    }
+    window.setSqlMotionEngine = setSqlMotionEngine;
 
     async function renderCinematicBackgroundVideo() {
         const bgChoice = document.getElementById("sqlCinematicBgSelect")?.value || "cyber_matrix";
@@ -822,6 +884,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const btn = document.getElementById("btnRenderCinematicBg");
 
         if (bgChoice === "cyber_matrix") {
+            sqlShortState.enable3DMotionEngine = false;
             sqlShortState.backgroundVideoElement = null;
             sqlShortState.backgroundVideoLoaded = false;
             statusEl.style.display = "block";
@@ -831,9 +894,11 @@ SECOND_HIGHEST_SALARY: 70000`;
             return;
         }
 
+        // 3D Motion Engine button mode
+        sqlShortState.enable3DMotionEngine = true;
         statusEl.style.display = "block";
         statusEl.style.color = "#C084FC";
-        statusEl.innerHTML = `<span>⏳ Synthesizing 3D Motion Video (Runway Gen-4 / Luma)...</span>`;
+        statusEl.innerHTML = `<span>⏳ Synthesizing 3D Motion Video (Runway / 3D AI Motion Engine)...</span>`;
         btn.disabled = true;
 
         try {
@@ -849,19 +914,28 @@ SECOND_HIGHEST_SALARY: 70000`;
                 body: JSON.stringify({ prompt: promptText, aspect_ratio: "9:16" })
             });
             const data = await res.json();
-            if (data.status === "success") {
+            if (data.status === "success" && data.task_id) {
                 statusEl.style.color = "#10B981";
-                statusEl.innerHTML = `<span>✅ 3D Motion Generation Queued! Polling stream...</span>`;
+                statusEl.innerHTML = `<span>✅ 3D Motion Generation Queued (${data.provider || 'Runway'})! Task ID: ${data.task_id}</span>`;
                 btn.disabled = false;
             } else {
-                statusEl.style.color = "#EF4444";
-                statusEl.innerText = "Motion Engine: " + (data.message || "Failed");
+                // Cloud tokens out of credits / failover -> seamlessly switch to built-in 60fps 3D AI Motion Engine
+                sqlShortState.enable3DMotionEngine = true;
+                sqlShortState.backgroundVideoElement = null;
+                sqlShortState.backgroundVideoLoaded = false;
+                statusEl.style.color = "#C084FC";
+                statusEl.innerHTML = `<span>✨ 3D AI Motion Engine Active: 60 FPS Volumetric 3D Particles &amp; Holographic Core!</span>`;
                 btn.disabled = false;
+                renderSqlShortFrame(sqlShortState.currentTime);
             }
         } catch (e) {
-            statusEl.style.color = "#EF4444";
-            statusEl.innerText = "Network Error: " + e.message;
+            sqlShortState.enable3DMotionEngine = true;
+            sqlShortState.backgroundVideoElement = null;
+            sqlShortState.backgroundVideoLoaded = false;
+            statusEl.style.color = "#C084FC";
+            statusEl.innerHTML = `<span>✨ 3D AI Motion Engine Active: 60 FPS Volumetric 3D Particles &amp; Holographic Core!</span>`;
             btn.disabled = false;
+            renderSqlShortFrame(sqlShortState.currentTime);
         }
     }
 
@@ -1083,6 +1157,105 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }
             }
         }
+        ctx.restore();
+    }
+
+    // 1C2. 3D AI Motion Engine (Volumetric 3D Perspective Particles, Rotating Hypercube & Kinetic Nebula)
+    const _3dParticles = [];
+    for (let i = 0; i < 90; i++) {
+        _3dParticles.push({
+            x: (Math.random() - 0.5) * 1100,
+            y: (Math.random() - 0.5) * 1900,
+            z: Math.random() * 800 + 80,
+            speed: 1.2 + Math.random() * 2.2,
+            size: 2.5 + Math.random() * 3.5,
+            hue: Math.random() > 0.4 ? "#38BDF8" : "#C084FC"
+        });
+    }
+
+    function draw3DAIMotionEngine(ctx, W, H, t) {
+        ctx.save();
+        const centerX = W / 2;
+        const centerY = H / 2 + 60;
+
+        // 1. Ambient Volumetric Radial Neon Glow
+        const rad = ctx.createRadialGradient(centerX, centerY, 60, centerX, centerY, 750);
+        rad.addColorStop(0, "rgba(168, 85, 247, 0.22)");
+        rad.addColorStop(0.35, "rgba(56, 189, 248, 0.10)");
+        rad.addColorStop(1, "rgba(6, 10, 20, 0)");
+        ctx.fillStyle = rad;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2. 3D Rotating Isometric Holographic Hypercube Core
+        const cubeSize = 140;
+        const angleY = t * 0.45;
+        const angleX = t * 0.28;
+        const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+        const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+
+        const vertices = [
+            [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+            [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
+        ];
+
+        const projected = vertices.map(v => {
+            let x = v[0] * cosY - v[2] * sinY;
+            let z = v[0] * sinY + v[2] * cosY;
+            let y = v[1];
+            let y2 = y * cosX - z * sinX;
+            let z2 = y * sinX + z * cosX;
+            const fov = 450;
+            const scale = fov / (fov + z2 * cubeSize + 220);
+            return {
+                x: centerX + x * cubeSize * scale,
+                y: centerY + y2 * cubeSize * scale,
+                scale: scale
+            };
+        });
+
+        const edges = [
+            [0, 1], [1, 2], [2, 3], [3, 0],
+            [4, 5], [5, 6], [6, 7], [7, 4],
+            [0, 4], [1, 5], [2, 6], [3, 7]
+        ];
+
+        ctx.strokeStyle = "rgba(168, 85, 247, 0.38)";
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "#C084FC";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        edges.forEach(([i1, i2]) => {
+            ctx.moveTo(projected[i1].x, projected[i1].y);
+            ctx.lineTo(projected[i2].x, projected[i2].y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        projected.forEach(p => {
+            ctx.fillStyle = "#38BDF8";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4.0 * p.scale, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // 3. Volumetric 3D Floating Perspective Particles
+        _3dParticles.forEach(pt => {
+            const curZ = ((pt.z - (t * 75 * pt.speed)) % 800 + 800) % 800 + 50;
+            const pScale = 400 / (400 + curZ);
+            const px = centerX + pt.x * pScale;
+            const py = centerY + pt.y * pScale;
+
+            if (px >= 0 && px <= W && py >= 0 && py <= H) {
+                const alpha = Math.min(0.70, (1.0 - (curZ / 850)) * 0.75);
+                ctx.fillStyle = pt.hue;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.arc(px, py, pt.size * pScale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        ctx.globalAlpha = 1.0;
         ctx.restore();
     }
 
@@ -1383,87 +1556,6 @@ SECOND_HIGHEST_SALARY: 70000`;
        THEORY & CONCEPTUAL MASTER STORYBOARD (1080 x 1920 9:16)
        ========================================================================== */
     function renderTheoryShortStoryboard(ctx, W, H, p, t, currentStageIdx, activeStage, isOutro, outroStart, stageProg, stageAlpha) {
-        // SCENE 7 (Outro Branding): Rendered ONLY when isOutro is true!
-        if (isOutro) {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-            // Senior Interviewer Pro-Tip Card
-            ctx.fillStyle = "rgba(139, 92, 246, 0.16)";
-            ctx.beginPath();
-            ctx.roundRect(60, 220, W - 120, 620, 22);
-            ctx.fill();
-            ctx.strokeStyle = "#8B5CF6";
-            ctx.lineWidth = 3.5;
-            ctx.shadowColor = "rgba(139, 92, 246, 0.35)";
-            ctx.shadowBlur = 18;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = "#8B5CF6";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 SENIOR FAANG INTERVIEWER PRO-TIP:", 90, 280);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("1️⃣ Production Query Optimization:", 90, 340);
-            ctx.fillStyle = "#C7D2FE";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "   Never put a non-aggregated filter in HAVING!", W - 180), 90, 380);
-            ctx.fillText(fitTextToWidth(ctx, "   Putting it in WHERE allows the optimizer to use B-Tree indexes.", W - 180), 90, 420);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("2️⃣ Universal ANSI SQL Portability:", 90, 480);
-            ctx.fillStyle = "#C7D2FE";
-            ctx.font = "22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "   This execution model is identical across Snowflake, PostgreSQL,", W - 180), 90, 520);
-            ctx.fillText(fitTextToWidth(ctx, "   Oracle, MySQL, and Microsoft SQL Server.", W - 180), 90, 560);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("3️⃣ Key Interviewer Impress Point:", 90, 620);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 21px monospace";
-            const tipStr = p.pro_tip || "Filter early with WHERE to minimize memory footprint!";
-            const tipWrapped = wrapCanvasText(ctx, tipStr, W - 190, 3);
-            tipWrapped.forEach((tl, ti) => {
-                ctx.fillText(`   ${tl}`, 90, 665 + ti * 32);
-            });
-
-            // Outro Branding Card (@Code_With_Mangesh)
-            drawGlassTile(ctx, 60, 870, W - 120, 630, 24, "#F59E0B", true, true, 1.0);
-
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 44px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 25px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "FAANG & Top MNC Tech Interview Preparation Studio", W - 180), W / 2, 1005);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W - 180), W / 2, 1100);
-            ctx.fillText(fitTextToWidth(ctx, "🔔 Follow @Code_With_Mangesh for daily tech questions", W - 180), W / 2, 1160);
-
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "🚀 100% Free AI High-Tech Education for Every Student!", W - 180), W / 2, 1260);
-
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "italic 22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "Empowering students from rural to global tech careers", W - 180), W / 2, 1320);
-
-            drawPhotonSparks(ctx, W / 2 - 280, 950, "#F59E0B", t);
-            drawPhotonSparks(ctx, W / 2 + 280, 950, "#F59E0B", t);
-
-            ctx.textAlign = "left";
-            ctx.restore();
-            return;
-        }
-
         // SCENE 1: THEORY TOPIC & CONCEPT INTRODUCTION
         if (currentStageIdx === 1) {
             ctx.save();
@@ -2098,6 +2190,10 @@ SECOND_HIGHEST_SALARY: 70000`;
         const W = 1080;
         const H = 1920;
         const p = sqlShortState.activePreset;
+        if (!p) {
+            renderPromptStandbyScreen(ctx, W, H, t);
+            return;
+        }
 
         // 1. Dark Cyber/Fintech Neon Background
         ctx.fillStyle = "#070B16";
@@ -2116,6 +2212,11 @@ SECOND_HIGHEST_SALARY: 70000`;
         // 3D 4K Visual Effects (Perspective Vanishing Point Floor Grid & Digital Matrix Rain)
         draw3DPerspectiveGrid(ctx, W, H, t);
         drawCyberMatrixRain(ctx, W, H, t);
+
+        // 3D AI Motion Engine (Volumetric 3D Particles, Rotating Hypercube & Cyber Depth)
+        if (sqlShortState.enable3DMotionEngine || document.getElementById('sqlCinematicBgSelect')?.value === 'runway_cloud') {
+            draw3DAIMotionEngine(ctx, W, H, t);
+        }
 
         // Render 3D Motion Video (if loaded)
         const bgVid = sqlShortState.backgroundVideoElement;
@@ -2242,17 +2343,13 @@ SECOND_HIGHEST_SALARY: 70000`;
         // =========================================================================
         const maxDur = sqlShortState.maxDuration || (p.duration || p.max_duration_seconds || 45.0);
         const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
-        const outroStage = stages.find(s => s.action_type === "branding_outro" || s.id === stages.length);
-        const dynamicOutro = Math.max(2.0, Math.min(3.8, Number((maxDur * 0.07).toFixed(2))));
-        const outroStart = (p.outro_start !== undefined) ? p.outro_start : (outroStage ? outroStage.start : Math.max(0, maxDur - dynamicOutro));
-        const isOutro = (t >= outroStart);
+        const isOutro = false;
+        const outroStart = maxDur;
 
-        let currentStageIdx = 0;
+        let currentStageIdx = 1;
         let activeStage = null;
 
-        if (isOutro) {
-            currentStageIdx = stages.length > 0 ? stages.length : 7;
-        } else if (stages.length > 0) {
+        if (stages.length > 0) {
             for (let i = 0; i < stages.length; i++) {
                 if (t >= stages[i].start && t < stages[i].end) {
                     currentStageIdx = i + 1;
@@ -2270,7 +2367,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }
             }
         } else {
-            const estIdx = Math.min(6, Math.floor((t / Math.max(1, outroStart)) * 6) + 1);
+            const estIdx = Math.min(6, Math.floor((t / Math.max(1, maxDur)) * 6) + 1);
             currentStageIdx = estIdx;
         }
 
@@ -2289,11 +2386,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             const alphaIn = Math.min(1.0, sElapsed / 0.35);
             const alphaOut = Math.min(1.0, (activeStage.end - t) / 0.35);
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
-        } else if (isOutro) {
-            const oElapsed = Math.max(0, t - outroStart);
-            const outroDur = Math.max(1.0, maxDur - outroStart);
-            stageAlpha = Math.min(1.0, oElapsed / 0.4);
-            stageProg = Math.min(1.0, oElapsed / outroDur);
         }
 
         if (p.content_type === "theory") {
@@ -2301,84 +2393,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         } else {
             const pipelineStages = getClientPipelineStages(p);
             const filterEvals = getClientFilterEvals(p);
-            const actionType = isOutro ? "summary_outro" : (activeStage ? (activeStage.action_type || ("stage_" + currentStageIdx)) : ("stage_" + currentStageIdx));
-
-            // =========================================================================
-            // SCENE 7 (Branding & Outro): RENDERED STRICTLY ONLY WHEN isOutro IS TRUE!
-            // =========================================================================
-            if (isOutro) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Senior Interviewer Pro-Tip Glass Card
-                drawGlassTile(ctx, 60, 220, W - 120, 620, 22, "#8B5CF6", true, true, 1.0);
-
-                ctx.fillStyle = "#8B5CF6";
-                ctx.font = "bold 32px 'Segoe UI', sans-serif";
-                ctx.fillText("💡 SENIOR FAANG INTERVIEWER PRO-TIP:", 90, 280);
-
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText("1️⃣ Why Interviewers Value This Approach:", 90, 340);
-                ctx.fillStyle = "#C7D2FE";
-                ctx.font = "22px 'Segoe UI', sans-serif";
-                const sqlTipStr = p.pro_tip || "Explaining query mechanics before writing code demonstrates senior-level clarity!";
-                const sqlTipWrapped = wrapCanvasText(ctx, "   " + sqlTipStr, W - 180, 3);
-                sqlTipWrapped.forEach((stl, sti) => {
-                    ctx.fillText(stl, 90, 380 + sti * 32);
-                });
-
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText("2️⃣ Universal SQL Compatibility & Performance:", 90, 480);
-                ctx.fillStyle = "#C7D2FE";
-                ctx.font = "22px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "   Optimizers use B-Tree indexes & partition pruning for low latency.", W - 180), 90, 520);
-                ctx.fillText(fitTextToWidth(ctx, "   Handles edge cases, nulls, and duplicate values gracefully.", W - 180), 90, 560);
-
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText("3️⃣ FAANG Best Practice:", 90, 640);
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 22px monospace";
-                ctx.fillText(fitTextToWidth(ctx, "   Always state time complexity O(N log K) and memory footprint!", W - 180), 90, 685);
-
-                // 2. Outro Branding Card (@Code_With_Mangesh) on Glowing Amber Glass
-                drawGlassTile(ctx, 60, 870, W - 120, 630, 24, "#F59E0B", true, true, 1.0);
-
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 44px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("👑 @Code_With_Mangesh", W / 2, 950);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "FAANG & Top MNC SQL Interview Preparation Studio", W - 180), W / 2, 1005);
-
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "26px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "⭐ SAVE THIS REEL FOR YOUR UPCOMING INTERVIEWS!", W - 180), W / 2, 1100);
-                ctx.fillText(fitTextToWidth(ctx, "🔔 Follow @Code_With_Mangesh for daily SQL questions", W - 180), W / 2, 1160);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "🚀 100% Free AI High-Tech Education for Every Student!", W - 180), W / 2, 1260);
-
-                ctx.fillStyle = "#94A3B8";
-                ctx.font = "italic 22px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "Empowering students from rural to global tech careers", W - 180), W / 2, 1320);
-
-                drawPhotonSparks(ctx, W / 2 - 280, 950, "#F59E0B", t);
-                drawPhotonSparks(ctx, W / 2 + 280, 950, "#F59E0B", t);
-
-                ctx.textAlign = "left";
-                ctx.restore();
-            }
+            const actionType = activeStage ? (activeStage.action_type || ("stage_" + currentStageIdx)) : ("stage_" + currentStageIdx);
 
             // =========================================================================
             // SCENE 1: PROBLEM STATEMENT & ARCHITECTURE PIPELINE
             // =========================================================================
-            else if (actionType === "problem_intro" || currentStageIdx === 1) {
+            if (actionType === "problem_intro" || currentStageIdx === 1) {
                 ctx.save();
                 ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
@@ -3430,22 +3450,17 @@ SECOND_HIGHEST_SALARY: 70000`;
                     const t = sqlShortState.currentTime;
                     const p = sqlShortState.activePreset;
                     const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
-                    const dynamicOutro = Math.max(2.0, Math.min(3.8, Number((totalDuration * 0.07).toFixed(2))));
-                    const outroStart = (p.outro_start !== undefined) ? p.outro_start : Math.max(0, totalDuration - dynamicOutro);
-                    const isOutro = (t >= outroStart);
+                    const isOutro = false;
 
                     let currentStage = 1;
-                    let stageText = "पायरी १/७: 📋 प्रश्न ओळख";
+                    let stageText = "पायरी १/६: 📋 संकल्पना ओळख";
 
-                    if (isOutro) {
-                        currentStage = 7;
-                        stageText = "पायरी ७/७: 💡 सीनियर इंटरव्ह्यूअर प्रो-टिप व @Code_With_Mangesh";
-                    } else if (stages.length > 0) {
+                    if (stages.length > 0) {
                         const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
                         if (actIdx !== -1) {
                             currentStage = Math.min(6, actIdx + 1);
                             const st = stages[actIdx];
-                            stageText = `पायरी ${currentStage}/${Math.max(6, stages.length)}: ${st.title || st.action_type || ''}`;
+                            stageText = `पायरी ${currentStage}/${stages.length}: ${st.title || st.action_type || ''}`;
                         } else if (t < stages[0].start) {
                             currentStage = 1;
                             stageText = `पायरी 1/${stages.length}: ${stages[0].title || ''}`;
@@ -3454,7 +3469,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                             stageText = `पायरी ${currentStage}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
                         }
                     } else {
-                        const estStage = Math.min(6, Math.floor((t / Math.max(1, outroStart)) * 6) + 1);
+                        const estStage = Math.min(6, Math.floor((t / Math.max(1, totalDuration)) * 6) + 1);
                         currentStage = estStage;
                         stageText = `पायरी ${currentStage}/6: विश्लेषण चालू`;
                     }
@@ -3762,6 +3777,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.closeElevenLabsModal = closeElevenLabsModal;
     window.saveElevenLabsKeyFromModal = saveElevenLabsKeyFromModal;
     window.synthesizeElevenLabsSample = synthesizeElevenLabsSample;
+    window.setSqlMotionEngine = setSqlMotionEngine;
 
     // Auto-initialize telemetry on load
     if (typeof document !== 'undefined') {
