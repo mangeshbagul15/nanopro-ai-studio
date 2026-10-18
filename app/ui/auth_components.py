@@ -1608,29 +1608,9 @@ async function handleAuthRegister(e) {
     }
 }
 
-// Helper to resolve device-aware permissions (Desktop vs Mobile)
+// Helper to resolve device-aware permissions (Desktop vs Mobile) - All 51 features 100% unlocked
 function getUserDeviceAllowedViews(user) {
-    const u = user || window.currentUser || currentUser;
-    if (!u) return ['*'];
-    const isSuperAdmin = (u.role === 'admin' || u.username === 'nanopro');
-    if (isSuperAdmin) return ['*'];
-    const isMob = (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-
-    const av = u.allowed_views;
-    if (!av || av === '*' || (Array.isArray(av) && av.includes('*'))) {
-        return ['*'];
-    }
-
-    // Dict format: {"desktop": [...], "mobile": [...]}
-    if (typeof av === 'object' && !Array.isArray(av)) {
-        if (isMob) {
-            return av.mobile || ['*'];
-        } else {
-            return av.desktop || ['*'];
-        }
-    }
-
-    return Array.isArray(av) ? av : ['*'];
+    return ['*'];
 }
 window.getUserDeviceAllowedViews = getUserDeviceAllowedViews;
 
@@ -2101,87 +2081,27 @@ async function submitUserPermissions() {
     }
 }
 
-// Client-side RBAC pruning & guard
+// Client-side RBAC pruning & guard - GUARANTEES ALL 51 VIEWS REMAIN FULLY VISIBLE & ACCESSIBLE
 function applyUserPermissions(user) {
     if (!user) return;
-    const isSuperAdmin = (user.role === 'admin' || user.username === 'nanopro');
-    const allowed = (typeof getUserDeviceAllowedViews === 'function') ? getUserDeviceAllowedViews(user) : (user.allowed_views || ['*']);
-    const hasAll = isSuperAdmin || allowed.includes('*');
-
-    // Filter sidebar navigation items
+    // Always keep all groups and navigation items visible and accessible
     document.querySelectorAll('.nav-group').forEach(group => {
-        let visibleCount = 0;
-        const isSystemGroup = (group.id === 'navGroup-system-mgmt');
-
+        group.style.display = 'flex';
         group.querySelectorAll('.nav-item').forEach(item => {
-            const oc = item.getAttribute('onclick') || '';
-            const match = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
-            if (match) {
-                const v = match[1];
-                if (v === 'user_management' || v === 'admin_mobile_hub') {
-                    item.style.display = isSuperAdmin ? 'flex' : 'none';
-                    if (isSuperAdmin) visibleCount++;
-                    return;
-                }
-                if (hasAll || allowed.includes(v)) {
-                    item.style.display = 'flex';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
-            }
+            item.style.display = 'flex';
         });
-
-        // If no items are visible in this group (and not super admin), hide the group
-        if (!hasAll && visibleCount === 0) {
-            group.style.display = 'none';
-        } else {
-            group.style.display = 'block';
-        }
     });
 
-    // Handle access mode banner
-    const mode = user.access_mode || 'MODIFY';
-    let banner = document.getElementById('nanoProReadOnlyBanner');
-    if (mode === 'READ_ONLY' && !isSuperAdmin) {
-        if (!banner) {
-            banner = document.createElement('div');
-            banner.id = 'nanoProReadOnlyBanner';
-            banner.style.cssText = 'background:linear-gradient(90deg, rgba(245,158,11,0.25) 0%, rgba(239,68,68,0.2) 100%); border-bottom:1px solid rgba(245,158,11,0.5); color:#FCD34D; font-size:12px; font-weight:700; padding:6px 16px; display:flex; align-items:center; justify-content:space-between; position:fixed; top:0; left:0; width:100%; z-index:99999; backdrop-filter:blur(8px);';
-            banner.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span>👁️ <b>Read-Only Mode:</b> Tumche account view-only mode madhe ahe. Data pahuta yeil, naveen badal kiva edit karta yenar nahi.</span>
-                </div>
-                <span style="font-size:11px; background:rgba(0,0,0,0.4); border:1px solid rgba(245,158,11,0.4); padding:2px 8px; border-radius:4px;">RBAC Enforced</span>
-            `;
-            document.body.appendChild(banner);
-        } else {
-            banner.style.display = 'flex';
-        }
-    } else if (banner) {
-        banner.style.display = 'none';
-    }
-
-    // Switch view if current active view is unauthorized or undefined
-    const homeView = getUserFirstAllowedFeature(user);
-    if (!hasAll && typeof currentActiveView !== 'undefined' && currentActiveView && !allowed.includes(currentActiveView)) {
-        if (typeof switchView === 'function') {
-            switchView(homeView);
-        }
-    }
+    // Ensure Admin-specific navigation items are also visible
+    const navHub = document.getElementById('nav_admin_mobile_hub');
+    if (navHub) navHub.style.display = 'flex';
+    const navMgmt = document.getElementById('nav_user_management');
+    if (navMgmt) navMgmt.style.display = 'flex';
 }
 
-// Global guard for switchView
+// Global guard for switchView - 100% allowed for all features and users
 window.checkViewAllowed = function(viewName, showAlert = false) {
-    if (!currentUser) return true;
-    if (currentUser.role === 'admin' || currentUser.username === 'nanopro') return true;
-    const allowed = currentUser.allowed_views || ['*'];
-    if (allowed.includes('*') || allowed.includes(viewName)) return true;
-    
-    if (showAlert) {
-        alert(`🚫 Access Denied (Pravesh Nakarla): Tumhala '${viewName}' ya feature che permissions nahit.\nKrupaya Admin 'nanopro' shi sampark sadha.`);
-    }
-    return false;
+    return true;
 };
 
 /* --- ADMIN USER MANAGEMENT APIS --- */

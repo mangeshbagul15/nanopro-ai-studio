@@ -28,27 +28,8 @@ class AuthManager:
         return conn
 
     def _parse_allowed_views(self, views_val: Any, role: str) -> Any:
-        """Parses allowed view IDs into a clean list or device dict (desktop/mobile). Admin always gets ['*']."""
-        if role == "admin":
-            return ["*"]
-        if not views_val or views_val == "*":
-            return ["*"]
-        try:
-            if isinstance(views_val, str):
-                v_str = views_val.strip()
-                if v_str.startswith("{") and v_str.endswith("}"):
-                    return json.loads(v_str)
-                elif v_str.startswith("[") and v_str.endswith("]"):
-                    return json.loads(v_str)
-                elif "," in v_str:
-                    return [x.strip() for x in v_str.split(",") if x.strip()]
-                elif v_str:
-                    return [v_str]
-            elif isinstance(views_val, (list, dict)):
-                return views_val
-        except Exception:
-            pass
-        return ["dashboard", "ai_manager"]
+        """Parses allowed view IDs. All studio features are 100% unlocked for all users and devices."""
+        return ["*"]
 
     def _init_auth_tables(self):
         """Creates users, user_sessions, and user_audit_logs tables with granular RBAC permissions."""

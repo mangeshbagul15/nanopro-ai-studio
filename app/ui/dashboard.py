@@ -10722,50 +10722,26 @@ Ready for message compilation and automated dispatch.
            Persisted in localStorage. Applied on page load & view switch.
            ===================================================================== */
 
-        // Default mobile-allowed feature list (conservative — fast & useful features only)
-        const DEFAULT_MOBILE_ALLOWED = [
-            'admin_mobile_hub', 'ai_manager', 'dashboard', 'amazon_tracker', 'communication',
-            'news_center', 'career_hub', 'assistant', 'approvals',
-            'telegram_agent', 'whatsapp_hub', 'settings'
-        ];
+        // All features allowed across all devices (Desktop, Mobile, Tablet)
+        const DEFAULT_MOBILE_ALLOWED = ['*'];
 
         function getMobileAllowedFeatures() {
-            const saved = localStorage.getItem('nanopro_mobile_allowed_features');
-            if (saved) {
-                try { 
-                    const parsed = JSON.parse(saved); 
-                    if (Array.isArray(parsed) && !parsed.includes('admin_mobile_hub')) {
-                        parsed.unshift('admin_mobile_hub');
-                    }
-                    return parsed;
-                } catch(e) {}
-            }
-            return DEFAULT_MOBILE_ALLOWED;
+            return ['*'];
         }
 
         function saveMobileAllowedFeatures(list) {
-            localStorage.setItem('nanopro_mobile_allowed_features', JSON.stringify(list));
+            localStorage.setItem('nanopro_mobile_allowed_features', JSON.stringify(['*']));
         }
 
-        // Apply device feature gating on mobile:
-        // On mobile (<768px), hide sidebar nav items that are NOT in the allowed list
+        // Apply device feature gating: Keep all navigation items 100% visible across all devices
         function applyMobileFeatureGating() {
-            if (window.innerWidth > 768) return; // Desktop: show everything allowed by RBAC
-
-            const allowed = getMobileAllowedFeatures();
             const navItems = document.querySelectorAll('#sidebarNavContainer .nav-item[onclick]');
             navItems.forEach(item => {
-                const onclick = item.getAttribute('onclick') || '';
-                const match = onclick.match(/switchView\(['"]([^'"]+)['"]\)/);
-                if (match) {
-                    const viewId = match[1];
-                    const isAllowed = allowed.includes('*') || allowed.includes(viewId);
-                    item.style.display = isAllowed ? '' : 'none';
-                }
+                item.style.display = 'flex';
             });
 
-            // Also update mobile bottom nav tabs based on allowed features
-            updateMobileBottomNav(allowed);
+            // Also update mobile bottom nav tabs
+            updateMobileBottomNav(['*']);
         }
 
         // Dynamically show/hide bottom nav items
@@ -10925,157 +10901,159 @@ Ready for message compilation and automated dispatch.
 
         function switchView(viewName, skipHistoryPush = false) {
             if (!viewName) return;
-            // RBAC Granular Permission Guard: if unallowed, seamlessly route to user's first allowed home feature
-            if (window.checkViewAllowed && !window.checkViewAllowed(viewName, false)) {
-                const safeHome = (typeof getUserFirstAllowedFeature === 'function') 
-                    ? getUserFirstAllowedFeature(window.currentUser) 
-                    : 'dashboard';
-                if (safeHome && safeHome !== viewName) {
-                    console.warn(`[RBAC] '${viewName}' not allowed. Falling back to first allowed feature: '${safeHome}'`);
-                    switchView(safeHome, skipHistoryPush);
+            try {
+                // 1. TOP PRIORITY: Instantly switch visible workspace view in 0ms with zero blank frames
+                const allViews = document.querySelectorAll('.workspace-view');
+                let targetView = document.getElementById('view-' + viewName);
+                if (!targetView) {
+                    console.warn('[switchView] View element not found: view-' + viewName);
+                    targetView = document.getElementById('view-dashboard') || allViews[0];
                 }
-                return;
-            }
-            logLocal('Navigation', 'Switched center workspace to: ' + viewName);
-            currentActiveView = viewName;
 
-            // Auto close mobile sidebar when any view is selected
-            if (typeof toggleMobileSidebar === 'function') {
-                toggleMobileSidebar(false);
-            }
+                allViews.forEach(v => {
+                    v.classList.remove('active');
+                    v.style.display = 'none';
+                });
+                
+                if (targetView) {
+                    targetView.classList.add('active');
+                    targetView.style.display = 'flex';
+                }
+                currentActiveView = viewName;
 
-            // Sync Mobile Bottom Nav Active Tab
-            document.querySelectorAll('.mobile-bottom-nav-item').forEach(b => b.classList.remove('active'));
-            const mobActiveBtn = document.getElementById('mobTab-' + viewName);
-            if (mobActiveBtn) mobActiveBtn.classList.add('active');
+                // Smoothly scroll the viewport container back to top
+                const vp = document.getElementById('main-content-viewport');
+                if (vp) vp.scrollTop = 0;
 
-            // Highlight sidebar nav item
-            document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('active');
-                if (el.getAttribute('onclick') && el.getAttribute('onclick').includes("'" + viewName + "'")) {
+                // 2. Highlight active sidebar nav item
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.classList.remove('active');
+                    const oc = el.getAttribute('onclick') || '';
+                    if (oc.includes("'" + viewName + "'") || oc.includes('"' + viewName + '"')) {
+                        el.classList.add('active');
+                    }
+                });
+
+                // 3. Auto close mobile sidebar when any view is selected
+                if (typeof toggleMobileSidebar === 'function') {
+                    try { toggleMobileSidebar(false); } catch(e){}
+                }
+
+                // 4. Sync Mobile Bottom Nav Active Tab
+                document.querySelectorAll('.mobile-bottom-nav-item').forEach(b => b.classList.remove('active'));
+                const mobActiveBtn = document.getElementById('mobTab-' + viewName);
+                if (mobActiveBtn) mobActiveBtn.classList.add('active');
+
+                // 5. Auto-minimize right panel ONLY when entering Universal Tech Video Maker
+                const appShell = document.getElementById('app-shell');
+                if (appShell) {
+                    if (viewName === 'universal_tech_video') {
+                        appShell.setAttribute('data-auto-minimized-by-tech-video', 'true');
+                        appShell.classList.add('right-panel-collapsed');
+                        appShell.classList.remove('telemetry-forced-open');
+                    } else if (appShell.getAttribute('data-auto-minimized-by-tech-video') === 'true') {
+                        appShell.classList.remove('right-panel-collapsed');
+                        appShell.removeAttribute('data-auto-minimized-by-tech-video');
+                    }
+                }
+
+                // 6. Push state and update browser URL hash
+                if (!skipHistoryPush && !window.isNavigatingHistory) {
+                    if (typeof navigationHistory !== 'undefined' && typeof historyIndex !== 'undefined') {
+                        if (historyIndex < navigationHistory.length - 1) {
+                            navigationHistory = navigationHistory.slice(0, historyIndex + 1);
+                        }
+                        navigationHistory.push(viewName);
+                        historyIndex = navigationHistory.length - 1;
+                    }
+                    try {
+                        window.history.pushState({ view: viewName }, '', '#' + viewName);
+                    } catch(e){}
+                }
+                if (typeof updateHistoryButtons === 'function') {
+                    try { updateHistoryButtons(); } catch(e){}
+                }
+
+                // 7. Update Topbar breadcrumbs & title
+                const titleMap = {
+                    admin_mobile_hub: "NanoPro Command Hub (Admin)",
+                    news_center: "News Center — ABP Majha & Aaj Tak",
+                    entertainment_center: "Entertainment & Modern Lifestyle Center",
+                    book_reader: "Book Reader & Intelligent Learning Assistant",
+                    automation_scheduler: "Task Scheduler & Automation Center",
+                    cloud_trends: "Cloud & Lakehouse Architecture Hub — Snowflake vs AWS (2026 Trends)",
+                    ai_manager: "AI Manager — Natural Language Operating Center",
+                    voice_assistant: "NanoPro Voice Assistant (Marathi, Hindi & English)",
+                    free_apis: "Free API & Developer Resource Finder",
+                    github_explorer: "GitHub AI Project Explorer",
+                    research_library: "AI Research Library & Technical Intelligence",
+                    live_discovery: "Live Discovery Monitor & Background Schedules",
+                    models_hub: "AI Models & Provider Hub",
+                    agent_control: "AI Agent Control Center",
+                    approvals: "Action Approvals & Risk Management",
+                    data_engineer: "Data Engineering & Pipeline Center",
+                    data_analyst: "Data Analyst & Quality Profiling",
+                    data_science: "Data Science & Machine Learning Lab",
+                    file_converter: "Universal File Format Converter",
+                    cyber_lab: "Cybersecurity Learning Lab",
+                    research_knowledge: "Research & Knowledge Intelligence",
+                    document_studio: "Resume & Document Studio",
+                    communication: "Unified Communication Hub",
+                    whatsapp_hub: "WhatsApp AI Hub & Broadcast Center (+91 84337 55448)",
+                    sms_gateway: "SMS Gateway Hub (TextBee & Android Local SIM)",
+                    app_launcher: "Application & Website Launcher",
+                    shopping_services: "Shopping & E-Commerce Services",
+                    media_discovery: "Legitimate Media Discovery",
+                    monitoring: "System Health & Resource Monitoring",
+                    task_history: "Task History & Audit Trail",
+                    amazon_tracker: "Amazon Price Tracker & Dropped Alerts",
+                    career_hub: "Data Engineering Career & Job Hub",
+                    learning_hub: "Technical Learning & Interview Practice",
+                    startup_recovery: "Startup Recovery & Daily Planning Operations",
+                    discovery_dashboard: "Autonomous Discovery & Issue Governance",
+                    storage_dashboard: "Local Storage & Data Usage Dashboard",
+                    vault: "Credentials Vault (Encrypted Secrets)",
+                    bitcoin_wallet: "Bitcoin Wallet & Live Payment Center",
+                    user_management: "User Management & Security Administration (Admin Only)",
+                    dashboard: "Dashboard & Overview",
+                    universal_tech_video: "Universal Tech Video Maker (9:16 Shorts & Reels)",
+                    sql_video: "SQL Video Maker Workspace",
+                    python_video: "Python Video Maker Workspace",
+                    image_agent: "Image Maker & Thumbnail Studio",
+                    coding_agent: "Coding Agent Workspace",
+                    research_agent: "Research & Technical Intelligence",
+                    telegram_agent: "Telegram AI Dispatch Hub",
+                    assistant: "Tasks & Scheduled Reminders",
+                    ai_office: "Animated AI Office (Live Robots)",
+                    backups: "Backups & Persistent Memory",
+                    logs: "Live Execution Monitoring Logs",
+                    settings: "Studio & Model Settings"
+                };
+                const displayTitle = titleMap[viewName] || viewName.toUpperCase().replace(/_/g, ' ');
+                const tEl = document.getElementById('topbarTitle');
+                if (tEl) tEl.innerText = displayTitle;
+                const bBadge = document.getElementById('topbarModeBadge');
+                if (bBadge) bBadge.innerText = viewName.toUpperCase().replace(/_/g, ' ');
+                const bcEl = document.getElementById('breadcrumbCurrent');
+                if (bcEl) bcEl.innerText = displayTitle;
+
+                // 8. Decouple background loaders with setTimeout so UI switch is instant (0ms) and never hangs
+                setTimeout(() => {
+                    try {
+                        runViewContextualLoader(viewName);
+                    } catch (e) {
+                        console.warn('[switchView contextual loader error]', e);
+                    }
+                }, 30);
+            } catch (err) {
+                console.error('[switchView fatal error recovered]', err);
+                const el = document.getElementById('view-' + viewName);
+                if (el) {
+                    document.querySelectorAll('.workspace-view').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
+                    el.style.display = 'flex';
                     el.classList.add('active');
                 }
-            });
-
-            // Activate workspace view INSTANTLY in 0ms with zero blank frames
-            const allViews = document.querySelectorAll('.workspace-view');
-            let targetView = document.getElementById('view-' + viewName);
-            if (!targetView) {
-                const fallbackId = (typeof getUserFirstAllowedFeature === 'function')
-                    ? getUserFirstAllowedFeature(window.currentUser)
-                    : 'ai_manager';
-                targetView = document.getElementById('view-' + fallbackId) || document.getElementById('view-ai_manager') || allViews[0];
             }
-
-            allViews.forEach(v => {
-                v.classList.remove('active');
-                v.style.display = 'none';
-            });
-            
-            if (targetView) {
-                targetView.classList.add('active');
-                targetView.style.display = 'flex';
-                if (viewName === 'admin_mobile_hub' && typeof refreshHubData === 'function') {
-                    refreshHubData();
-                }
-            }
-
-            // Auto-minimize right panel (Studio Status, Active AI Agent, Selected Model, Live Execution Logs)
-            // ONLY when entering Universal Tech Video Maker to grant 100% full screen workspace width!
-            const appShell = document.getElementById('app-shell');
-            if (appShell) {
-                if (viewName === 'universal_tech_video') {
-                    appShell.setAttribute('data-auto-minimized-by-tech-video', 'true');
-                    appShell.classList.add('right-panel-collapsed');
-                    appShell.classList.remove('telemetry-forced-open');
-                } else if (appShell.getAttribute('data-auto-minimized-by-tech-video') === 'true') {
-                    appShell.classList.remove('right-panel-collapsed');
-                    appShell.removeAttribute('data-auto-minimized-by-tech-video');
-                }
-            }
-
-            // Update Browser History and In-App Navigation Stack
-            if (!skipHistoryPush && !isNavigatingHistory) {
-                if (historyIndex < navigationHistory.length - 1) {
-                    navigationHistory = navigationHistory.slice(0, historyIndex + 1);
-                }
-                navigationHistory.push(viewName);
-                historyIndex = navigationHistory.length - 1;
-                window.history.pushState({ view: viewName }, '', '#' + viewName);
-            }
-            updateHistoryButtons();
-
-            const titleMap = {
-                admin_mobile_hub: "NanoPro Command Hub (Admin)",
-                news_center: "News Center — ABP Majha & Aaj Tak",
-                entertainment_center: "Entertainment & Modern Lifestyle Center",
-                book_reader: "Book Reader & Intelligent Learning Assistant",
-                automation_scheduler: "Task Scheduler & Automation Center",
-                cloud_trends: "Cloud & Lakehouse Architecture Hub — Snowflake vs AWS (2026 Trends)",
-                ai_manager: "AI Manager — Natural Language Operating Center",
-                voice_assistant: "NanoPro Voice Assistant (Marathi, Hindi & English)",
-                free_apis: "Free API & Developer Resource Finder",
-                github_explorer: "GitHub AI Project Explorer",
-                research_library: "AI Research Library & Technical Intelligence",
-                live_discovery: "Live Discovery Monitor & Background Schedules",
-                models_hub: "AI Models & Provider Hub",
-                agent_control: "AI Agent Control Center",
-                approvals: "Action Approvals & Risk Management",
-                data_engineer: "Data Engineering & Pipeline Center",
-                data_analyst: "Data Analyst & Quality Profiling",
-                data_science: "Data Science & Machine Learning Lab",
-                file_converter: "Universal File Format Converter",
-                cyber_lab: "Cybersecurity Learning Lab",
-                research_knowledge: "Research & Knowledge Intelligence",
-                document_studio: "Resume & Document Studio",
-                automation_scheduler: "Automation Scheduler & Persistent Cron",
-                communication: "Unified Communication Hub",
-                whatsapp_hub: "WhatsApp AI Hub & CallMeBot Broadcast Center (+91 84337 55448)",
-                sms_gateway: "SMS Gateway Hub (TextBee & Android Local SIM — 0% Watermark)",
-                app_launcher: "Application & Website Launcher",
-                shopping_services: "Shopping & E-Commerce Services",
-                media_discovery: "Legitimate Media Discovery",
-                monitoring: "System Health & Resource Monitoring",
-                task_history: "Task History & Audit Trail",
-                amazon_tracker: "Amazon Price Tracker & Dropped Alerts",
-                career_hub: "Data Engineering Career & Job Hub",
-                learning_hub: "Technical Learning & Interview Practice",
-                startup_recovery: "Startup Recovery & Daily Planning Operations",
-                discovery_dashboard: "Autonomous Discovery & Issue Governance",
-                storage_dashboard: "Local Storage & Data Usage Dashboard",
-                vault: "Credentials Vault (Encrypted Secrets)",
-                bitcoin_wallet: "Bitcoin Wallet & Live Payment Center",
-                user_management: "User Management & Security Administration (Admin Only)",
-
-                dashboard: "Dashboard & Overview",
-                universal_tech_video: "Universal Tech Video Maker (9:16 Shorts & Reels)",
-                sql_video: "SQL Video Maker Workspace",
-                python_video: "Python Video Maker Workspace",
-                image_agent: "Image Maker & Thumbnail Studio",
-                coding_agent: "Coding Agent Workspace",
-                research_agent: "Research & Technical Intelligence",
-                telegram_agent: "Telegram AI Dispatch Hub",
-                assistant: "Tasks & Scheduled Reminders",
-                ai_office: "Animated AI Office (Live Robots)",
-                backups: "Backups & Persistent Memory",
-                logs: "Live Execution Monitoring Logs",
-                settings: "Studio & Model Settings"
-            };
-            const tEl = document.getElementById('topbarTitle');
-            if (tEl) tEl.innerText = titleMap[viewName] || viewName.toUpperCase();
-            const bBadge = document.getElementById('topbarModeBadge');
-            if (bBadge) bBadge.innerText = viewName.toUpperCase().replace('_', ' ');
-            const bcEl = document.getElementById('breadcrumbCurrent');
-            if (bcEl) bcEl.innerText = titleMap[viewName] || viewName.toUpperCase();
-
-            // Decouple background loaders with setTimeout so UI switch is instant (0ms) and never hangs
-            setTimeout(() => {
-                try {
-                    runViewContextualLoader(viewName);
-                } catch (e) {
-                    console.warn('[switchView contextual loader error]', e);
-                }
-            }, 30);
         }
 
         function runViewContextualLoader(viewName) {
