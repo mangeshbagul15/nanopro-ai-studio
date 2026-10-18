@@ -851,5 +851,6 @@ def get_sql_video_workspace_html() -> str:
             </div>
         </div>
     </div>
+    </div>
     <!-- END 9:16 SQL SHORT & REEL STUDIO UPGRADE -->
     '''
