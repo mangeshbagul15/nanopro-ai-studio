@@ -690,49 +690,15 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <!-- Quick Domain Scenario Preset Chips (1-Click Test Scenarios) -->
-                <div style="margin-bottom: 8px;">
-                    <span style="font-size: 10px; color: #94A3B8; display: block; margin-bottom: 4px;">⚡ <b>क्लिक करून थेट सुरू करा (Trending 1-Click Tech Prompts):</b></span>
-                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('sql')" style="font-size: 10px; padding: 3px 8px; border-color: #38BDF8; color: #38BDF8; font-weight:600;">
-                            ⚡ SQL: DENSE_RANK &amp; Ties
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('snowflake')" style="font-size: 10px; padding: 3px 8px; border-color: #06B6D4; color: #06B6D4; font-weight:600;">
-                            ⚡ Snowflake: QUALIFY &amp; Snowpipe
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('python')" style="font-size: 10px; padding: 3px 8px; border-color: #10B981; color: #10B981; font-weight:600;">
-                            ⚡ Python: Asyncio Event Loop
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('aws')" style="font-size: 10px; padding: 3px 8px; border-color: #F59E0B; color: #F59E0B; font-weight:600;">
-                            ⚡ AWS: S3 to Redshift Data Lake
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('de')" style="font-size: 10px; padding: 3px 8px; border-color: #8B5CF6; color: #8B5CF6; font-weight:600;">
-                            ⚡ Data Eng: Medallion Architecture
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('rag')" style="font-size: 10px; padding: 3px 8px; border-color: #EC4899; color: #EC4899; font-weight:600;">
-                            ⚡ AI/RAG: Vector Search Embeddings
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('docker')" style="font-size: 10px; padding: 3px 8px; border-color: #38BDF8; color: #38BDF8; font-weight:600;">
-                            ⚡ Docker: Multi-Stage Build
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insertPromptScenario('git')" style="font-size: 10px; padding: 3px 8px; border-color: #10B981; color: #10B981; font-weight:600;">
-                            ⚡ Git: Rebase vs Merge
-                        </button>
-                    </div>
-                </div>
+                <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt), टेक प्रश्न, कोडिंग प्रॉब्लेम किंवा संकल्पना इथे प्रविष्ट करा...
 
-                <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा मास्टर प्रॉम्प्ट (Master Prompt), टेक प्रश्न, कोडिंग किंवा संकल्पना इथे प्रविष्ट करा...
+उदा. 
+- SQL / Database: Window functions, DENSE_RANK, CTE, Indexes, Ties, Joins...
+- Python / Backend: Asyncio Event Loop, FastAPI, Redis, Microservices...
+- Cloud / Architecture: AWS Data Lake, Docker Multi-Stage, Kubernetes...
+- Theory / Concepts: Local Server vs Cloud Server, Git Rebase vs Merge...
 
-उदा. ट्रेंडिंग विषय:
-- SQL / Snowflake: Find the latest transaction per customer using ROW_NUMBER() and QUALIFY in Snowflake.
-- Python: Advanced FastAPI async background task queue with Redis &amp; Upstash.
-- AWS / Data Engineering: S3 to Snowflake Auto-Ingest Snowpipe real-time architecture.
-- AI &amp; RAG: Vector search, chunking &amp; semantic retrieval pipeline using LangChain.
-- Cloud &amp; Docker: Multi-stage Docker build &amp; Kubernetes deployment best practices.
-- Git: Interactive Rebase vs Merge conflict resolution workflow.
-- Theory / Architecture: Grey/navy blue transparent glass tiles, laser connecting arrows, step-by-step animations...
-
-✨ कोडिंग मॉडेल्स (Groq LPU / Gemini Flash) आणि व्हिडिओ इंजिन स्वतः हा प्रॉम्प्ट वाचून व्हिडिओची रचना, ॲनिमेशन आणि ऑडिओ 100% डायनॅमिकली तयार करेल!" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; font-family: monospace; border-radius: 8px; padding: 10px; line-height: 1.5; resize: vertical;"></textarea>
+✨ तुम्ही कोणताही विषय किंवा प्रॉम्प्ट प्रविष्ट करा — AI मॉडेल व व्हिडिओ इंजिन त्यानुसार व्हिडिओची रचना, ॲनिमेशन आणि ऑडिओ 100% डायनॅमिकली तयार करेल!" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; font-family: monospace; border-radius: 8px; padding: 10px; line-height: 1.5; resize: vertical;"></textarea>
 
                 <!-- 3. CODE & ARCHITECTURE BLUEPRINT (SYNTAX & AST SANDBOX) -->
                 <div id="codeBlueprintContainer" style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.85); border: 1.5px solid #1E2D4A; border-radius: 8px; padding: 12px; transition: all 0.3s ease;">
