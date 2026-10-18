@@ -1157,6 +1157,12 @@ async def api_sql_video_synthesize_voice(req: SqlShortVoiceRequest):
     res = await neural_tts.synthesize_async(text=text, language=req.language or "mr", voice_gender=req.voice_gender or "female")
     return JSONResponse(res)
 
+@app.get("/api/tech_video/learning_telemetry")
+async def api_tech_video_learning_telemetry():
+    """Returns real-time telemetry from the GitHub self-learning model."""
+    from app.core.github_learning_model import github_learning_model
+    return JSONResponse(github_learning_model.get_telemetry())
+
 @app.get("/workspace/sql-video", response_class=HTMLResponse)
 async def api_sql_video_direct_workspace():
     """Serves direct standalone view for the 9:16 SQL Short Video Studio."""

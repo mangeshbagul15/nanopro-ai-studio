@@ -1,0 +1,135 @@
+{
+  "model_name": "NanoPro-TechVid-v1",
+  "version": "1.5.2-continuous-learn",
+  "repo_url": "https://github.com/mangesh-nanopro-studio/tech-video-neural-engine",
+  "total_epochs": 53,
+  "current_loss": 0.0372,
+  "initial_loss": 0.45,
+  "learning_rate": 0.0005,
+  "knowledge_vectors_count": 190,
+  "status": "active_learning",
+  "last_updated": "2026-10-18 09:11:14",
+  "domains": {
+    "sql": {
+      "epochs": 16,
+      "concepts": [
+        "CTE",
+        "DENSE_RANK",
+        "PARTITION BY",
+        "LEAD/LAG",
+        "SELF JOIN",
+        "INDEX OPTIMIZATION",
+        "HAVING CLAUSE"
+      ]
+    },
+    "python": {
+      "epochs": 9,
+      "concepts": [
+        "AST",
+        "GENERATORS",
+        "ASYNCIO",
+        "DECORATORS",
+        "TYPE HINTS",
+        "PANDAS VECTORIZATION"
+      ]
+    },
+    "snowflake": {
+      "epochs": 8,
+      "concepts": [
+        "STREAM & TASK",
+        "CLUSTERING KEYS",
+        "LAKE",
+        "EXPLAIN",
+        "SNOWFLAKE",
+        "ZERO COPY CLONING",
+        "AWS",
+        "PYTHON",
+        "DATA",
+        "TIME TRAVEL",
+        "SNOWPARK"
+      ]
+    },
+    "aws": {
+      "epochs": 6,
+      "concepts": [
+        "LAMBDA SERVERLESS",
+        "S3 DATA LAKES",
+        "GLUE ETL",
+        "REDSHIFT SPECTRUM",
+        "IAM LEAST PRIVILEGE"
+      ]
+    },
+    "data_engineering": {
+      "epochs": 5,
+      "concepts": [
+        "MEDALLION ARCHITECTURE",
+        "DELTA LAKE",
+        "DBT TRANSFORMATIONS",
+        "AIRFLOW DAGS"
+      ]
+    },
+    "ai_rag": {
+      "epochs": 4,
+      "concepts": [
+        "VECTOR EMBEDDINGS",
+        "COSINE SIMILARITY",
+        "HYBRID SEARCH",
+        "CHUNK OVERLAP",
+        "RERANKING"
+      ]
+    },
+    "cloud_docker": {
+      "epochs": 3,
+      "concepts": [
+        "MULTI-STAGE BUILDS",
+        "CONTAINER SECURITY",
+        "DOCKER COMPOSE",
+        "KUBERNETES PODS"
+      ]
+    },
+    "git": {
+      "epochs": 2,
+      "concepts": [
+        "REBASE VS MERGE",
+        "CHERRY PICK",
+        "BISECT DEBUGGING",
+        "INTERACTIVE REBASE"
+      ]
+    }
+  },
+  "recent_training_steps": [
+    {
+      "step_id": "step_53",
+      "epoch": 53,
+      "timestamp": "2026-10-18 09:11:14",
+      "domain": "snowflake",
+      "prompt_sample": "Explain AWS S3 vs Snowflake Data Lake with Python code",
+      "loss": 0.0372,
+      "delta_loss": -0.001,
+      "learned_concepts": [
+        "EXPLAIN",
+        "AWS",
+        "SNOWFLAKE",
+        "DATA",
+        "LAKE",
+        "PYTHON"
+      ],
+      "vectors_added": 6,
+      "duration_calibrated": 43.0
+    },
+    {
+      "step_id": "step_52",
+      "epoch": 52,
+      "timestamp": "2026-10-18 09:10:51",
+      "domain": "sql",
+      "loss": 0.0382,
+      "delta_loss": -0.0012,
+      "learned_concepts": [
+        "DENSE_RANK",
+        "PARTITION BY",
+        "NULL HANDLING"
+      ],
+      "vectors_added": 3
+    }
+  ]
+}

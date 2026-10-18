@@ -34,10 +34,81 @@ def get_sql_video_workspace_html() -> str:
     }
     .sql-studio-grid {
         display: grid;
-        grid-template-columns: 370px 340px 480px;
-        min-width: 1210px;
+        grid-template-columns: minmax(360px, 1.15fr) 340px minmax(440px, 1.25fr);
+        width: 100%;
+        min-width: 1140px;
         gap: 20px;
         align-items: start;
+    }
+    @keyframes laserPulse {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+    }
+    @keyframes learnPulse {
+        0%, 100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.3); border-color: #A855F7; }
+        50% { box-shadow: 0 0 22px rgba(168, 85, 247, 0.85); border-color: #C084FC; }
+    }
+    .agent-pipeline-container {
+        background: #090E1D;
+        border: 1.5px solid #1E2D4A;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 25px rgba(0,0,0,0.5);
+    }
+    .agent-nodes-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 8px 0;
+    }
+    .agent-node {
+        background: #0B132B;
+        border: 1.5px solid #1E293B;
+        border-radius: 10px;
+        padding: 8px 10px;
+        min-width: 115px;
+        flex: 1;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: default;
+    }
+    .agent-node.active {
+        border-color: #38BDF8 !important;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.2)) !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+        transform: translateY(-2px);
+    }
+    .agent-node.completed {
+        border-color: #10B981 !important;
+        background: rgba(16, 185, 129, 0.12) !important;
+    }
+    .agent-node.training {
+        border-color: #A855F7 !important;
+        background: rgba(168, 85, 247, 0.15) !important;
+        animation: learnPulse 1.4s infinite;
+    }
+    .agent-connector {
+        height: 3px;
+        flex: 0.35;
+        min-width: 14px;
+        background: #1E293B;
+        position: relative;
+        overflow: hidden;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    .agent-connector.active {
+        background: linear-gradient(90deg, #38BDF8, #6366F1, #10B981);
+        background-size: 200% 100%;
+        animation: laserPulse 1s linear infinite;
+        box-shadow: 0 0 10px #38BDF8;
+    }
+    .agent-connector.completed {
+        background: #10B981;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
     }
     .stage-pill {
         padding: 6px 8px;
@@ -188,6 +259,132 @@ def get_sql_video_workspace_html() -> str:
                 <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical Reel (&lt;60s)</span>
                 <span class="status-pill" style="background: rgba(139, 92, 246, 0.15); border: 1px solid #8B5CF6; color: #8B5CF6; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🔊 Regional AI Voice Live</span>
                 <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🤖 Coding Intelligence Models Live</span>
+            </div>
+        </div>
+
+        <!-- AUTONOMOUS MULTI-AGENT VIDEO PIPELINE (NANOPRO MASTER MANAGER ORCHESTRATION) -->
+        <div class="agent-pipeline-container" id="agentPipelineContainer">
+            <!-- Pipeline Header & Live Telemetry -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(30, 45, 74, 0.8); padding-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">🤖</span>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">
+                            AUTONOMOUS MULTI-AGENT VIDEO PIPELINE (NANOPRO MASTER ORCHESTRATION)
+                        </div>
+                        <div style="font-size: 11px; color: #94A3B8;">
+                            Prompt ➔ Decomposition ➔ Code Architecture ➔ Sandbox Verification ➔ Visual Retouch ➔ Neural Voice ➔ GitHub Learning ➔ 9:16 Deliverable
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span id="pipelineMasterStatusBadge" style="font-size: 11px; background: rgba(16,185,129,0.15); border: 1.5px solid #10B981; color: #10B981; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                        <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; box-shadow: 0 0 8px #10B981; display: inline-block;"></span>
+                        <span id="pipelineMasterStatusText">NanoPro Manager Active</span>
+                    </span>
+                    <span id="pipelineGitHubModelBadge" style="font-size: 11px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 10px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                        <span>🧠</span>
+                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #52 • Loss: 0.0382 • 184 Vectors</span>
+                    </span>
+                    <button type="button" class="btn btn-secondary" onclick="toggleTelemetry()" style="font-size: 10px; padding: 3px 9px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;" title="Toggle Telemetry Sidebar">
+                        ◨ Workspace Expanded
+                    </button>
+                </div>
+            </div>
+
+            <!-- 8 Interactive Pipeline Nodes & Laser Connectors -->
+            <div class="agent-nodes-wrapper">
+                <!-- Node 1: Prompt Box -->
+                <div class="agent-node active" id="pnode-1" data-step="prompt">
+                    <div style="font-size: 16px; margin-bottom: 2px;">📝</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">1. Prompt Box</div>
+                    <div style="font-size: 9px; color: #94A3B8;">User Scenario</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #38BDF8; background: rgba(56,189,248,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Input Domain</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-1"></div>
+
+                <!-- Node 2: NanoPro Manager -->
+                <div class="agent-node" id="pnode-2" data-step="manager">
+                    <div style="font-size: 16px; margin-bottom: 2px;">🤖</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">2. NanoPro Agent</div>
+                    <div style="font-size: 9px; color: #94A3B8;">Orchestration</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #10B981; background: rgba(16,185,129,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Master Controller</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-2"></div>
+
+                <!-- Node 3: Developing (Coding & Architecture) -->
+                <div class="agent-node" id="pnode-3" data-step="coding">
+                    <div style="font-size: 16px; margin-bottom: 2px;">💻</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">3. Developing</div>
+                    <div style="font-size: 9px; color: #94A3B8;">Code &amp; Schema</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #F59E0B; background: rgba(245,158,11,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Groq / Gemini</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-3"></div>
+
+                <!-- Node 4: Modification & Verification Sandbox -->
+                <div class="agent-node" id="pnode-4" data-step="verification">
+                    <div style="font-size: 16px; margin-bottom: 2px;">🧪</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">4. Modification</div>
+                    <div style="font-size: 9px; color: #94A3B8;">AST &amp; Logic Check</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #06B6D4; background: rgba(6,182,212,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">SQLite AST Sandbox</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-4"></div>
+
+                <!-- Node 5: Retouch (Visual Motion & Layout) -->
+                <div class="agent-node" id="pnode-5" data-step="retouch">
+                    <div style="font-size: 16px; margin-bottom: 2px;">🎨</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">5. Retouch</div>
+                    <div style="font-size: 9px; color: #94A3B8;">9:16 Canvas &amp; Neon</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #EC4899; background: rgba(236,72,153,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Runway / Cyber Glass</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-5"></div>
+
+                <!-- Node 6: Final Audio & Subtitle -->
+                <div class="agent-node" id="pnode-6" data-step="voice">
+                    <div style="font-size: 16px; margin-bottom: 2px;">🎙️</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">6. Voice &amp; Subtitle</div>
+                    <div style="font-size: 9px; color: #94A3B8;">Synced Voiceover</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #8B5CF6; background: rgba(139,92,246,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">ElevenLabs / Edge</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-6"></div>
+
+                <!-- Node 7: GitHub Self-Learning Model -->
+                <div class="agent-node" id="pnode-7" data-step="learning">
+                    <div style="font-size: 16px; margin-bottom: 2px;">🧠</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">7. GitHub Model</div>
+                    <div style="font-size: 9px; color: #94A3B8;">Continuous Learning</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #A855F7; background: rgba(168,85,247,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">Weights Optimizer</div>
+                </div>
+
+                <div class="agent-connector" id="pconn-7"></div>
+
+                <!-- Node 8: Final Result Deliverable -->
+                <div class="agent-node" id="pnode-8" data-step="result">
+                    <div style="font-size: 16px; margin-bottom: 2px;">🎬</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">8. Final Result</div>
+                    <div style="font-size: 9px; color: #94A3B8;">1-Click 9:16 Video</div>
+                    <div class="agent-badge" style="font-size: 8px; color: #10B981; background: rgba(16,185,129,0.15); border-radius: 3px; padding: 1px 4px; margin-top: 4px; display: inline-block;">1080x1920 (&lt;60s)</div>
+                </div>
+            </div>
+
+            <!-- Live Multi-Agent Execution & Learning Console Ticker -->
+            <div style="margin-top: 10px; background: #050811; border: 1px solid #1E293B; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                    <span style="font-size: 13px; color: #38BDF8;">⚡</span>
+                    <div id="pipelineLiveLogTicker" style="font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        [NanoPro Manager] Master Orchestrator ready. All 7 specialized AI agents &amp; GitHub self-learning weights active.
+                    </div>
+                </div>
+                <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                    <span id="pipelineEpochPill" style="font-size: 10px; color: #C084FC; font-family: monospace; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); padding: 2px 6px; border-radius: 4px;">Epoch #52</span>
+                    <span id="pipelineLossPill" style="font-size: 10px; color: #10B981; font-family: monospace; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 4px;">Loss: 0.0382</span>
+                </div>
             </div>
         </div>
 

@@ -10979,6 +10979,20 @@ Ready for message compilation and automated dispatch.
                 }
             }
 
+            // Auto-minimize right panel (Studio Status, Active AI Agent, Selected Model, Live Execution Logs)
+            // ONLY when entering Universal Tech Video Maker to grant 100% full screen workspace width!
+            const appShell = document.getElementById('app-shell');
+            if (appShell) {
+                if (viewName === 'universal_tech_video') {
+                    appShell.setAttribute('data-auto-minimized-by-tech-video', 'true');
+                    appShell.classList.add('right-panel-collapsed');
+                    appShell.classList.remove('telemetry-forced-open');
+                } else if (appShell.getAttribute('data-auto-minimized-by-tech-video') === 'true') {
+                    appShell.classList.remove('right-panel-collapsed');
+                    appShell.removeAttribute('data-auto-minimized-by-tech-video');
+                }
+            }
+
             // Update Browser History and In-App Navigation Stack
             if (!skipHistoryPush && !isNavigatingHistory) {
                 if (historyIndex < navigationHistory.length - 1) {
