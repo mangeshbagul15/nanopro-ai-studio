@@ -163,10 +163,13 @@ def compute_audio_synchronized_stages(
         end_t = round(curr_t + stage_dur, 2) if idx < len(edu_stages) - 1 else total_dur
         curr_t = end_t
 
-        calibrated.append({
+        stage_dict = dict(s)
+        stage_dict.update({
             "id": idx + 1,
-            "action_type": s.get("action_type") or _infer_action_type(idx, len(edu_stages)),
-            "title": s.get("title") or f"Stage {idx + 1}",
+            "action_type": s.get("action_type") or s.get("visual_type") or _infer_action_type(idx, len(edu_stages)),
+            "visual_type": s.get("visual_type") or s.get("action_type") or ("hook" if idx == 0 else ("takeaway" if idx == len(edu_stages) - 1 else "diagram")),
+            "visual_data": s.get("visual_data") or {},
+            "title": s.get("title") or f"Scene {idx + 1}",
             "speech": s.get(f"speech_{lang_key}") or s.get("speech") or s.get("speech_en") or "",
             "speech_mr": s.get("speech_mr") or s.get("speech") or "",
             "speech_hi": s.get("speech_hi") or s.get("speech") or "",
@@ -175,6 +178,7 @@ def compute_audio_synchronized_stages(
             "end": end_t,
             "duration": round(end_t - start_t, 2)
         })
+        calibrated.append(stage_dict)
 
     # No outro stage appended: cleanly finishes at final result
     return calibrated, total_dur, total_dur
@@ -1209,15 +1213,19 @@ class SqlShortVideoEngine:
         if existing and len(existing) >= 4 and any("speech" in s or f"speech_{lang_key}" in s for s in existing):
             clean_existing = []
             for i, s in enumerate(existing):
-                clean_existing.append({
+                item = dict(s)
+                item.update({
                     "id": i + 1,
-                    "action_type": s.get("action_type") or _infer_action_type(i, len(existing)),
-                    "title": s.get("title") or f"Stage {i + 1}",
+                    "action_type": s.get("action_type") or s.get("visual_type") or _infer_action_type(i, len(existing)),
+                    "visual_type": s.get("visual_type") or s.get("action_type") or ("hook" if i == 0 else ("takeaway" if i == len(existing) - 1 else "diagram")),
+                    "visual_data": s.get("visual_data") or {},
+                    "title": s.get("title") or f"Scene {i + 1}",
                     "speech": s.get(f"speech_{lang_key}") or s.get("speech_en") or s.get("speech") or "",
                     "speech_mr": s.get("speech_mr") or s.get("speech") or "",
                     "speech_hi": s.get("speech_hi") or s.get("speech") or "",
                     "speech_en": s.get("speech_en") or s.get("speech") or ""
                 })
+                clean_existing.append(item)
             return clean_existing
 
         title = matched.get("title", "Tech Architecture & Coding")
@@ -2086,84 +2094,82 @@ class SqlShortVideoEngine:
                 max_w = 21
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
 
-                if content_type == "theory":
-                    ai_prompt = (
-                        f"You are an elite Senior Tech Lead & Educator creating an ultra-viral 50-55 second educational 9:16 vertical video (YouTube Short / Instagram Reel) on this Tech Theory/Architecture topic:\n"
-                        f"Topic / Question: {text_input}\n"
-                        f"Tech Domain: SQL, Python, Snowflake, AWS, Data Engineering, AI/RAG, Cloud, Docker, Git, Machine Learning, Data Modeling\n"
-                        f"Voice Persona Specification (Eleven v4 / Indian Male Educator 25-35y):\n"
-                        f"- Tone: Friendly + Professional (Coding teacher + Tech creator)\n"
-                        f"- Emotion: Curious when introducing the problem, Confident when explaining the solution\n"
-                        f"- Accent & Language: Natural Indian Hindi with English technical words (SQL, Python, JOIN, DENSE_RANK, GROUP BY, Snowflake, etc. clearly pronounced in English/Hinglish)\n"
-                        f"- Energy: Medium-High, engaging reel pacing with natural breath pauses after questions (?)\n\n"
-                        f"Model Training Guidance:\n{learned_guide}\n\n"
-                        f"Requirements:\n"
-                        f"- Total speech across all 6 stages must be strictly 110-125 words ({min_w}-{max_w} words per stage) so the video duration remains strictly under 58 seconds (<60s Shorts standard).\n"
-                        f"- Output strictly raw valid JSON with no markdown wrapping:\n"
-                        f'{{"content_type": "theory", "title": "...", "concept_summary": "1-2 sentence core definition", '
-                        f'"comparison_title": "COMPARISON MATRIX", "comparison_headers": ["ASPECT", "CONCEPT A", "CONCEPT B"], '
-                        f'"comparison_rows": ['
-                        f'{{"feature": "Execution Stage", "col_a": "...", "col_b": "..."}}, '
-                        f'{{"feature": "Usage Scope", "col_a": "...", "col_b": "..."}}, '
-                        f'{{"feature": "Performance", "col_a": "...", "col_b": "..."}}, '
-                        f'{{"feature": "Best Practice", "col_a": "...", "col_b": "..."}}'
-                        f'], '
-                        f'"syntax_a_title": "CONCEPT A CODE / SYNTAX", "syntax_a_code": "...", '
-                        f'"syntax_b_title": "CONCEPT B CODE / SYNTAX", "syntax_b_code": "...", '
-                        f'"traps": ["Trap 1", "Rule 1"], "golden_rule": "Golden takeaway rule", "pro_tip": "Interviewer pro-tip", '
-                        f'"stages": ['
-                        f'{{"id": 1, "action_type": "problem_intro", "title": "Concept Overview", "speech": "{min_w}-{max_w} words intro in {lang_key}"}}, '
-                        f'{{"id": 2, "action_type": "data_inspection", "title": "Core Mechanism", "speech": "{min_w}-{max_w} words mechanism in {lang_key}"}}, '
-                        f'{{"id": 3, "action_type": "logic_flowchart", "title": "Architecture Flowchart", "speech": "{min_w}-{max_w} words execution order in {lang_key}"}}, '
-                        f'{{"id": 4, "action_type": "code_build", "title": "Syntax & Implementation", "speech": "{min_w}-{max_w} words syntax in {lang_key}"}}, '
-                        f'{{"id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix", "speech": "{min_w}-{max_w} words matrix in {lang_key}"}}, '
-                        f'{{"id": 6, "action_type": "final_result", "title": "Golden Takeaway", "speech": "{min_w}-{max_w} words golden rule in {lang_key}"}}'
-                        f']}}'
-                    )
-                else:
-                    ai_prompt = (
-                        f"You are an elite Senior Tech Lead & Educator creating an ultra-viral 50-55 second educational 9:16 vertical video (YouTube Short / Instagram Reel) on this Tech / Coding / Architecture problem:\n"
-                        f"Topic / Question: {text_input}\n"
-                        f"Tech Domain: SQL, Python, Snowflake, AWS, Data Engineering, AI/RAG, Cloud, Docker, Git, Machine Learning, Data Modeling\n"
-                        f"Target Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
-                        f"Voice Persona Specification (Eleven v4 / Indian Male Educator 25-35y):\n"
-                        f"- Tone: Friendly + Professional (Coding teacher + Tech creator)\n"
-                        f"- Emotion: Curious when introducing the problem, Confident when explaining the solution\n"
-                        f"- Accent & Language: Natural Indian Hindi with English technical words (SQL, Python, JOIN, DENSE_RANK, GROUP BY, Snowflake, etc. clearly pronounced in English/Hinglish)\n"
-                        f"- Energy: Medium-High, engaging reel pacing with natural breath pauses after questions (?)\n\n"
-                        f"Model Training Guidance:\n{learned_guide}\n\n"
-                        f"Requirements:\n"
-                        f"- Total speech across all 6 stages must be strictly 110-125 words ({min_w}-{max_w} words per stage) so the video duration remains strictly under 58 seconds (<60s Shorts standard).\n"
-                        f"- Output strictly raw valid JSON with no markdown wrapping:\n"
-                        f'{{"content_type": "sql_query", "title": "...", "table_name": "...", '
-                        f'"col_headers": ["COL1", "COL2", "COL3", "COL4"], '
-                        f'"sample_rows": ['
-                        f'{{"account": "...", "date": "...", "amt": "...", "balance": "..."}}, '
-                        f'{{"account": "...", "date": "...", "amt": "...", "balance": "..."}}, '
-                        f'{{"account": "...", "date": "...", "amt": "...", "balance": "..."}}, '
-                        f'{{"account": "...", "date": "...", "amt": "...", "balance": "..."}}'
-                        f'], '
-                        f'"pipeline_stages": ['
-                        f'{{"icon": "📁", "name": "...", "sub": "..."}}, '
-                        f'{{"icon": "⚙️", "name": "...", "sub": "..."}}, '
-                        f'{{"icon": "🔄", "name": "...", "sub": "..."}}, '
-                        f'{{"icon": "🎯", "name": "...", "sub": "..."}}'
-                        f'], '
-                        f'"solution_sql": "...", "arrow_target": "...", "pro_tip": "...", '
-                        f'"filter_evaluations": ['
-                        f'{{"name": "...", "salary": "...", "cond": "...", "res": "TRUE", "action": "KEEP", "status": "keep"}}, '
-                        f'{{"name": "...", "salary": "...", "cond": "...", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}}'
-                        f'], '
-                        f'"output_title": "VERIFIED EXECUTION OUTPUT", "output_headers": ["COL1", "COL2"], "output_rows": [["...", "..."]], '
-                        f'"stages": ['
-                        f'{{"id": 1, "action_type": "problem_intro", "title": "Problem Statement", "speech": "{min_w}-{max_w} words question in {lang_key}"}}, '
-                        f'{{"id": 2, "action_type": "data_inspection", "title": "Component Inspection", "speech": "{min_w}-{max_w} words structure in {lang_key}"}}, '
-                        f'{{"id": 3, "action_type": "logic_flowchart", "title": "Execution Pipeline", "speech": "{min_w}-{max_w} words logic in {lang_key}"}}, '
-                        f'{{"id": 4, "action_type": "code_build", "title": "Code Construction", "speech": "{min_w}-{max_w} words code in {lang_key}"}}, '
-                        f'{{"id": 5, "action_type": "simulation_execution", "title": "Execution Simulation", "speech": "{min_w}-{max_w} words simulation in {lang_key}"}}, '
-                        f'{{"id": 6, "action_type": "final_result", "title": "Verified Result", "speech": "{min_w}-{max_w} words result in {lang_key}"}}'
-                        f']}}'
-                    )
+                ai_prompt = (
+                    f"You are an elite Senior Tech Lead, Educator & 3D Video Designer creating an ultra-viral 50-55 second educational 9:16 vertical video (YouTube Short / Instagram Reel) entirely from scratch.\n"
+                    f"Input Prompt: {text_input}\n"
+                    f"Target Voice Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
+                    f"The input could be: a coding question, an architecture or theory topic, raw code, or a speech script.\n"
+                    f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
+                    f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
+                    f"2. Formulate 4 to 5 educational scenes (Total speech: strictly 100-120 words, ~20 words per scene in {lang_key}) so video stays strictly under 55 seconds.\n"
+                    f"3. For EACH scene, freely decide its visual_type and visual_data:\n"
+                    f"   - 'hook': High-impact headline, punchy question, 3D pulsing focal orb / icon (Scene 1)\n"
+                    f"   - 'code': Clean IDE code window with syntax highlighting, line numbers, and active highlight line\n"
+                    f"   - 'diagram': Floating architecture nodes with glowing laser conduits and traveling photons\n"
+                    f"   - 'comparison': Side-by-side comparison cards (Item A vs Item B) with clear trade-offs\n"
+                    f"   - 'steps': Clean roadmap sequence (3-4 steps) with glowing progress\n"
+                    f"   - 'stat': Big animated numerical metric (e.g. '10x Faster', 'O(1) Memory')\n"
+                    f"   - 'takeaway': Golden trophy takeaway rule with pro tips\n\n"
+                    f"Output strictly raw valid JSON with no markdown wrapping:\n"
+                    f"{{\n"
+                    f'  "title": "Clear punchy video title",\n'
+                    f'  "domain": "SQL | Python | Cloud | Architecture | DevOps | AI",\n'
+                    f'  "suggested_motion_bg": "quantum_nebula | warp_tunnel | neural_synapse | silicon_laser | fintech_ledger",\n'
+                    f'  "pro_tip": "One key senior engineer pro-tip",\n'
+                    f'  "scenes": [\n'
+                    f'    {{\n'
+                    f'      "id": 1,\n'
+                    f'      "title": "Problem Hook",\n'
+                    f'      "speech": "Natural teacher speech in {lang_key} (18-22 words)",\n'
+                    f'      "visual_type": "hook",\n'
+                    f'      "visual_data": {{\n'
+                    f'        "headline": "Punchy Question or Concept",\n'
+                    f'        "subtext": "Core challenge to solve",\n'
+                    f'        "icon": "⚡",\n'
+                    f'        "highlight_tag": "TOP INTERVIEW QUESTION"\n'
+                    f'      }}\n'
+                    f'    }},\n'
+                    f'    {{\n'
+                    f'      "id": 2,\n'
+                    f'      "title": "Core Mechanism",\n'
+                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
+                    f'      "visual_type": "diagram",\n'
+                    f'      "visual_data": {{\n'
+                    f'        "nodes": [\n'
+                    f'          {{"id": "n1", "label": "Client", "icon": "📱", "sub": "Request"}},\n'
+                    f'          {{"id": "n2", "label": "Engine", "icon": "⚙️", "sub": "Compute"}},\n'
+                    f'          {{"id": "n3", "label": "Output", "icon": "🎯", "sub": "Result"}}\n'
+                    f'        ],\n'
+                    f'        "connections": [{{"from": "n1", "to": "n2", "label": "Call"}}, {{"from": "n2", "to": "n3", "label": "Data"}}]\n'
+                    f'      }}\n'
+                    f'    }},\n'
+                    f'    {{\n'
+                    f'      "id": 3,\n'
+                    f'      "title": "Solution Implementation",\n'
+                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
+                    f'      "visual_type": "code",\n'
+                    f'      "visual_data": {{\n'
+                    f'        "language": "python",\n'
+                    f'        "filename": "solution.py",\n'
+                    f'        "code": "def solve():\\n    # solution logic\\n    return True",\n'
+                    f'        "highlight_line": 2,\n'
+                    f'        "note": "Core logic"\n'
+                    f'      }}\n'
+                    f'    }},\n'
+                    f'    {{\n'
+                    f'      "id": 4,\n'
+                    f'      "title": "Golden Takeaway",\n'
+                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
+                    f'      "visual_type": "takeaway",\n'
+                    f'      "visual_data": {{\n'
+                    f'        "rule": "Golden takeaway rule",\n'
+                    f'        "bullets": ["Key point 1", "Key point 2"],\n'
+                    f'        "pro_tip": "Senior engineer tip"\n'
+                    f'      }}\n'
+                    f'    }}\n'
+                    f'  ]\n'
+                    f"}}"
+                )
 
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
@@ -2175,6 +2181,9 @@ class SqlShortVideoEngine:
                     matched = parsed
                     matched["id"] = "custom_ai_scenario"
                     matched["question"] = text_input
+                    matched["difficulty"] = difficulty
+                    if "scenes" in matched and not matched.get("stages"):
+                        matched["stages"] = matched["scenes"]
                     matched["difficulty"] = difficulty
             except Exception as e:
                 log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
@@ -2245,6 +2254,8 @@ class SqlShortVideoEngine:
             "content_type": matched_content_type,
             "id": matched.get("id", "custom"),
             "title": matched.get("title", "SQL Interview Preparation"),
+            "domain": matched.get("domain", "Tech Architecture"),
+            "suggested_motion_bg": matched.get("suggested_motion_bg") or matched.get("bg_theme") or "quantum_nebula",
             "difficulty": difficulty,
             "language": lang_key,
             "mode": mode,

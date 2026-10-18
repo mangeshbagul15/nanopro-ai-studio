@@ -2736,370 +2736,631 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     /* ==========================================================================
-       THEORY & CONCEPTUAL MASTER STORYBOARD (1080 x 1920 9:16)
+       DYNAMIC SCENE VISUAL RENDERER (1080 x 1920 9:16 VERTICAL REEL FORMAT)
+       Zero Rigid Templates • Zero Multi-Card Stacking • 100% Prompt-Driven
        ========================================================================== */
-    function renderTheoryShortStoryboard(ctx, W, H, p, t, currentStageIdx, activeStage, isOutro, outroStart, stageProg, stageAlpha) {
-        const tA = p.term_a || (p.comparison_headers && p.comparison_headers.length > 1 ? p.comparison_headers[1] : "LOCAL SERVER");
-        const tB = p.term_b || (p.comparison_headers && p.comparison_headers.length > 2 ? p.comparison_headers[2] : "CLOUD SERVER");
+    function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-        // SCENE 1: 3D ARCHITECTURAL OVERVIEW & LIVE VISUAL PIPELINE
-        if (currentStageIdx === 1) {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-            // Top Header Topic Pill
-            drawGlassTile(ctx, 60, 205, W - 120, 68, 16, "#38BDF8", true, true, 1.0);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "🌐 TECH ARCHITECTURE TOPIC: " + (p.title || (tA + " vs " + tB)).toUpperCase(), W - 180), 90, 248);
-
-            // 3D System Architecture Diagram (Server vs Cloud with Laser Conduits)
-            draw3DSystemArchitectureDiagram(ctx, W, H, p, t, stageProg);
-
-            // Bottom Learning Objective HUD
-            drawGlassTile(ctx, 60, 1220, W - 120, 230, 18, "#38BDF8", false, true, 0.95);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("🎯 CORE ARCHITECTURAL OBJECTIVE:", 90, 1265);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 20px 'Segoe UI', sans-serif";
-            const defLines = wrapCanvasText(ctx, p.concept_summary || (`Understand operational trade-offs, cost models, and latency tolerances between ${tA} and ${tB}.`), W - 180, 2);
-            defLines.forEach((l, i) => {
-                ctx.fillText(l, 90, 1308 + i * 36);
-            });
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 19px monospace";
-            ctx.fillText("Roadmap: 1. Architecture ➔ 2. Trade-offs ➔ 3. Decision Tree ➔ 4. Syntax ➔ 5. Takeaway", 90, 1410);
-
-            ctx.restore();
+        let vType = "hook";
+        let vData = {};
+        if (activeStage) {
+            vType = activeStage.visual_type || activeStage.action_type || "hook";
+            vData = activeStage.visual_data || {};
         }
 
-        // SCENE 2: CANDIDATE CONFUSION & DUAL-ANGLED 3D PERSPECTIVE DISSECTION
-        else if (currentStageIdx === 2) {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-            // Header Alert Banner
-            drawGlassTile(ctx, 60, 205, W - 120, 75, 16, "#EF4444", true, true, 1.0);
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚠️ WHY CANDIDATES STUMBLE IN INTERVIEWS: ${tA} vs ${tB}`, W - 180), 90, 242);
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "18px 'Segoe UI', sans-serif";
-            ctx.fillText("Both solve system requirements — but when and why do you choose which?", 90, 268);
-
-            // Tilted 3D Panel 1 (Local Server Perspective)
-            ctx.save();
-            ctx.translate(280, 480);
-            ctx.rotate(-0.035);
-            drawGlassTile(ctx, -220, -160, 440, 320, 16, "#10B981", true, true, 1.0);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("1️⃣ " + tA, -195, -115);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "17px 'Segoe UI', sans-serif";
-            const ptsA = [
-                "• 100% Data Sovereignty & Isolation",
-                "• Zero 3rd-party outage exposure",
-                "• Low deterministic LAN latency (<1ms)",
-                "• Heavy upfront CapEx (hardware/cooling)"
-            ];
-            ptsA.forEach((pt, pi) => {
-                ctx.fillText(pt, -195, -70 + pi * 40);
-            });
-            ctx.restore();
-
-            // Tilted 3D Panel 2 (Cloud Server Perspective)
-            ctx.save();
-            ctx.translate(800, 480);
-            ctx.rotate(0.035);
-            drawGlassTile(ctx, -220, -160, 440, 320, 16, "#38BDF8", true, true, 1.0);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("2️⃣ " + tB, -195, -115);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "17px 'Segoe UI', sans-serif";
-            const ptsB = [
-                "• Elastic spin-up in <3 seconds",
-                "• Multi-region global availability",
-                "• Pay-as-you-go monthly OpEx billing",
-                "• Unmonitored instances cause bill shock!"
-            ];
-            ptsB.forEach((pt, pi) => {
-                ctx.fillText(pt, -195, -70 + pi * 40);
-            });
-            ctx.restore();
-
-            // Central Laser Crosshair with Bidirectional Neon Arrows
-            drawDynamicConnector(ctx, 480, 480, 600, 480, "#F59E0B", t, "TRADE-OFF COMPARISON");
-
-            // Common Misconceptions Glass Card
-            drawGlassTile(ctx, 60, 680, W - 120, 460, 18, "#EF4444", false, true, 1.0);
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("❌ FATAL INTERVIEW MISCONCEPTIONS TO AVOID:", 90, 725);
-            const confusionBullets = (p.traps && p.traps.length > 0) ? p.traps : [
-                `• Believing Cloud is always cheaper: unmonitored idle cloud instances lead to 400% bill shock!`,
-                `• Assuming Local Servers are obsolete: high-frequency trading & banks strictly require bare-metal LAN speed.`,
-                `• Failing to articulate CapEx vs OpEx trade-offs immediately drops candidate interview scores by 50%!`
-            ];
-            confusionBullets.forEach((cb, ci) => {
-                ctx.fillStyle = "#CBD5E1";
-                ctx.font = "19px 'Segoe UI', sans-serif";
-                const clines = wrapCanvasText(ctx, (cb.startsWith("•") ? cb : ("• " + cb)), W - 180, 2);
-                clines.forEach((cl, cli) => {
-                    ctx.fillText(cl, 90, 775 + ci * 68 + cli * 28);
-                });
-            });
-
-            // Bottom Pro-Tip Pill
-            drawGlassTile(ctx, 60, 1170, W - 120, 80, 14, "#10B981", false, true, 1.0);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 21px 'Segoe UI', sans-serif";
-            ctx.fillText("💡 SENIOR ARCHITECT RULE: Pick based on workload predictability, latency SLAs, and compliance!", 90, 1218);
-
-            ctx.restore();
+        const vtLower = (vType || "").toLowerCase();
+        let normalizedType = "hook";
+        if (vtLower.includes("code") || vtLower.includes("syntax")) {
+            normalizedType = "code";
+        } else if (vtLower.includes("diagram") || vtLower.includes("arch") || vtLower.includes("flow")) {
+            normalizedType = "diagram";
+        } else if (vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix")) {
+            normalizedType = "comparison";
+        } else if (vtLower.includes("step") || vtLower.includes("road") || vtLower.includes("simul")) {
+            normalizedType = "steps";
+        } else if (vtLower.includes("stat") || vtLower.includes("metric") || vtLower.includes("num")) {
+            normalizedType = "stat";
+        } else if (vtLower.includes("takeaway") || vtLower.includes("result") || vtLower.includes("final") || vtLower.includes("rule")) {
+            normalizedType = "takeaway";
+        } else if (currentStageIdx === 1) {
+            normalizedType = "hook";
+        } else if (currentStageIdx === 2) {
+            normalizedType = (p.solution_sql || vData.code) ? "diagram" : "comparison";
+        } else if (currentStageIdx === 3) {
+            normalizedType = (p.solution_sql || vData.code) ? "code" : "diagram";
+        } else if (currentStageIdx === 4) {
+            normalizedType = (p.solution_sql || vData.code) ? "steps" : "code";
+        } else {
+            normalizedType = "takeaway";
         }
 
-        // SCENE 3: 3D DECISION TREE FLOWCHART
-        else if (currentStageIdx === 3) {
+        // =========================================================================
+        // VISUAL 1: HOOK (Bold High-Impact Title & 3D Pulsing Holographic Orb)
+        // =========================================================================
+        if (normalizedType === "hook") {
+            const headline = vData.headline || activeStage.title || p.title || p.question || "Mastering Modern Tech Architecture";
+            const subtext = vData.subtext || p.concept_summary || p.question || "Core Production Challenge Explained Step-by-Step";
+            const icon = vData.icon || "⚡";
+            const tag = vData.highlight_tag || (p.domain ? ("🔥 " + p.domain.toUpperCase()) : "🎯 CORE TECH CONCEPT");
+
+            const orbY = 460;
+            const orbPulse = 1.0 + Math.sin(t * 3.5) * 0.08;
             ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+            ctx.translate(W / 2, orbY);
+            ctx.scale(orbPulse, orbPulse);
 
-            // Full-screen 3D Decision Tree Flowchart with Rotating Diamond & Branching Lasers
-            draw3DDecisionFlowchart(ctx, W, H, p, t, stageProg);
+            for (let r = 0; r < 3; r++) {
+                const ringR = 90 + r * 38 + Math.sin(t * 4 + r * 1.5) * 8;
+                const ringAlpha = 0.15 - r * 0.04;
+                ctx.strokeStyle = r === 0 ? "rgba(56, 189, 248, " + ringAlpha + ")" : (r === 1 ? "rgba(168, 85, 247, " + ringAlpha + ")" : "rgba(16, 185, 129, " + ringAlpha + ")");
+                ctx.lineWidth = 2.5 - r * 0.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+                ctx.stroke();
+            }
 
-            ctx.restore();
-        }
-
-        // SCENE 4: DUAL 3D CYBER TERMINALS & SYNTAX COMPARISON
-        else if (currentStageIdx === 4) {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-            // Header Pill
-            drawGlassTile(ctx, 60, 205, W - 120, 60, 14, "#38BDF8", true, true, 1.0);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText("⚡ PRODUCTION DEPLOYMENT SYNTAX & CONFIGURATION", 90, 242);
-
-            // Top 3D Terminal (Local Server Bare-Metal Configuration)
-            drawGlassTile(ctx, 60, 280, W - 120, 480, 18, "#10B981", true, true, 1.0);
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 280, W - 120, 44);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 302, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(118, 302, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(141, 302, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 18px monospace";
-            ctx.fillText(p.syntax_a_title || `${tA} CONFIGURATION / SYSTEMD SERVICE`, 175, 308);
-
-            const codeALines = (p.syntax_a_code || `[Unit]\nDescription=${tA} High-Performance Daemon\nAfter=network.target\n\n[Service]\nExecStart=/usr/local/bin/server_app\nMemoryMax=64G`).split("\n");
-            codeALines.slice(0, 6).forEach((ln, idx) => {
-                const lineY = 365 + idx * 42;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, ln, 150, lineY);
-            });
-            drawLaserScannerBeam(ctx, 60, 340, W - 120, 240, t);
-
-            ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-            ctx.fillRect(90, 640, W - 180, 95);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(90, 640, W - 180, 95);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 19px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚡ ${tA} SPECIFICATION`, W - 220), 115, 675);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "17px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, p.syntax_a_note || "Direct bare-metal execution with deterministic LAN latency.", W - 220), 115, 712);
-
-            // Bottom 3D Terminal (Cloud Terraform Infrastructure-as-Code)
-            drawGlassTile(ctx, 60, 790, W - 120, 500, 18, "#38BDF8", true, true, 1.0);
-            ctx.fillStyle = "#1E293B";
-            ctx.fillRect(60, 790, W - 120, 44);
-            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 812, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(118, 812, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(141, 812, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 18px monospace";
-            ctx.fillText(p.syntax_b_title || `${tB} INFRASTRUCTURE AS CODE (TERRAFORM)`, 175, 818);
-
-            const codeBLines = (p.syntax_b_code || `resource "aws_instance" "cluster" {\n  ami           = "ami-0c55b159cbfafe1f0"\n  instance_type = "t4g.xlarge"\n  monitoring    = true\n  tags = { Tier = "Elastic-Cloud" }\n}`).split("\n");
-            codeBLines.slice(0, 6).forEach((ln, idx) => {
-                const lineY = 875 + idx * 42;
-                ctx.fillStyle = "#475569";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText((idx + 1).toString().padStart(2, "0"), 90, lineY);
-                renderSqlSyntaxLine(ctx, ln, 150, lineY);
-            });
-            drawLaserScannerBeam(ctx, 60, 850, W - 120, 240, t * 1.1);
-
-            ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-            ctx.fillRect(90, 1165, W - 180, 95);
+            const sphereGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 75);
+            sphereGrad.addColorStop(0, "rgba(56, 189, 248, 0.95)");
+            sphereGrad.addColorStop(0.5, "rgba(14, 165, 233, 0.45)");
+            sphereGrad.addColorStop(1, "rgba(2, 6, 23, 0.85)");
+            ctx.fillStyle = sphereGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 75, 0, Math.PI * 2);
+            ctx.fill();
             ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(90, 1165, W - 180, 95);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 19px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `⚡ ${tB} SPECIFICATION`, W - 220), 115, 1200);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "17px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, p.syntax_b_note || "Automated multi-AZ elasticity with decoupled cluster failover.", W - 220), 115, 1237);
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = 30;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
 
-            // Bottom Connecting Observation
-            const arrowBounce = Math.sin(t * 6) * 8;
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "58px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(icon, 0, 20);
+            ctx.restore();
+
+            // Floating Topic Tag Badge
+            ctx.save();
+            ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+            ctx.beginPath();
+            ctx.roundRect(W / 2 - 210, 620, 420, 44, 22);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 2;
+            ctx.stroke();
             ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 22px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `👉 Notice: Local uses systemd bare-metal; Cloud uses automated IaC provisioning!`, W - 180), 90 + arrowBounce, 1335);
-
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(tag, W / 2, 649);
             ctx.restore();
-        }
 
-        // SCENE 5: COMPREHENSIVE COMPARISON HUD MATRIX
-        else if (currentStageIdx === 5) {
+            // Headline
             ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 44px 'Segoe UI', sans-serif";
+            ctx.shadowColor = "rgba(56, 189, 248, 0.6)";
+            ctx.shadowBlur = 18;
+            const hLines = wrapCanvasText(ctx, headline, W - 200, 3);
+            hLines.forEach((hl, i) => {
+                ctx.fillText(hl, W / 2, 740 + i * 58);
+            });
+            ctx.shadowBlur = 0;
 
-            drawGlassTile(ctx, 60, 205, W - 120, 80, 16, "#38BDF8", false, true, 1.0);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `🔍 ${p.comparison_title || (tA + ' vs ' + tB + ' COMPARISON MATRIX')}`, W - 180), 90, 248);
-            ctx.fillStyle = "#CBD5E1";
-            ctx.font = "18px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "Memorize these 4 pillars for immediate high marks in your interview:", W - 180), 90, 274);
-
-            const headers = p.comparison_headers || ["CRITERIA", tA, tB];
-            ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
-            ctx.fillRect(60, 305, W - 120, 54);
-            ctx.strokeStyle = "#38BDF8";
-            ctx.strokeRect(60, 305, W - 120, 54);
-
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 19px monospace";
-            ctx.fillText(fitTextToWidth(ctx, headers[0], 270), 85, 340);
-            ctx.fillText(fitTextToWidth(ctx, headers[1], 320), 385, 340);
-            ctx.fillText(fitTextToWidth(ctx, headers[2] || tB, 300), 735, 340);
-
-            const matrixRows = p.comparison_rows || [
-                {feature: "Capital & Cost Model", col_a: `High initial CapEx (Hardware & Cooling)`, col_b: `Pay-as-you-go OpEx (Usage-based)`},
-                {feature: "Elasticity & Scalability", col_a: "Slow (Weeks to order & rack servers)", col_b: "Instant Auto-Scaling in seconds"},
-                {feature: "Maintenance Overhead", col_a: "In-house IT team for disks, OS & power", col_b: "100% managed by cloud vendor"},
-                {feature: "Data Sovereignty & SLA", col_a: "Physical isolation within private firewall", col_b: "Multi-region global redundancy"}
-            ];
-
-            const rowsToShow = Math.min(matrixRows.length, Math.floor(stageProg * (matrixRows.length + 1)) + 1);
-
-            matrixRows.slice(0, 4).forEach((r, idx) => {
-                const rowY = 375 + idx * 195;
-                const isLatest = idx === rowsToShow - 1;
-
-                drawGlassTile(ctx, 60, rowY, W - 120, 180, 14, isLatest ? "#10B981" : "#1E2D4A", isLatest, true, isLatest ? 1.0 : 0.85);
-
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 21px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, `📌 ${r.feature}`, W - 180), 85, rowY + 38);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 18px monospace";
-                ctx.fillText(fitTextToWidth(ctx, `🖥️ ${headers[1] || tA}: ${r.col_a}`, W - 180), 85, rowY + 84);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 18px monospace";
-                ctx.fillText(fitTextToWidth(ctx, `☁️ ${headers[2] || tB}: ${r.col_b}`, W - 180), 85, rowY + 130);
+            // Subtext
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "26px 'Segoe UI', sans-serif";
+            const subLines = wrapCanvasText(ctx, subtext, W - 240, 2);
+            subLines.forEach((sl, i) => {
+                ctx.fillText(sl, W / 2, 940 + i * 40);
             });
 
-            // Sweeping Laser Scanner Line over active row
-            drawLaserScannerBeam(ctx, 60, 375, W - 120, 780, t);
+            // Pulsing Bottom Prompt Arrow
+            const arrowBounce = Math.sin(t * 6) * 10;
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            ctx.fillText("⬇", W / 2, 1080 + arrowBounce);
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.fillText("WATCH STEP-BY-STEP EXPLANATION", W / 2, 1125 + arrowBounce);
+            ctx.restore();
+        }
 
-            // Bottom Checklist Pill
-            drawGlassTile(ctx, 60, 1180, W - 120, 230, 18, "#10B981", false, true, 1.0);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "💡 INTERVIEW CHECKLIST SUMMARY:", W - 180), 90, 1228);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "20px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `• Need complete data isolation & steady-state compute? ➔ Choose ${tA}.`, W - 180), 90, 1275);
-            ctx.fillText(fitTextToWidth(ctx, `• Need elastic auto-scaling & global disaster recovery? ➔ Choose ${tB}.`, W - 180), 90, 1325);
-            ctx.fillText(fitTextToWidth(ctx, "• Senior leads always balance CapEx, OpEx, and SLA tolerances!", W - 180), 90, 1375);
+        // =========================================================================
+        // VISUAL 2: CODE (Spacious Modern Glowing IDE Window)
+        // =========================================================================
+        else if (normalizedType === "code") {
+            const lang = (vData.language || "python").toLowerCase();
+            const filename = vData.filename || (lang === "sql" ? "solution.sql" : (lang === "javascript" || lang === "ts" ? "solution.ts" : "solution.py"));
+            let codeText = vData.code || p.solution_sql || p.syntax_a_code || "def solve():\n    # Optimal solution\n    return True";
+            const codeLines = codeText.split("\n");
+            const highlightLine = vData.highlight_line !== undefined ? vData.highlight_line : Math.min(2, codeLines.length);
+
+            const ideX = 60;
+            const ideY = 320;
+            const ideW = W - 120;
+            const ideH = 820;
+
+            ctx.save();
+            ctx.fillStyle = "rgba(10, 16, 32, 0.82)";
+            ctx.beginPath();
+            ctx.roundRect(ideX, ideY, ideW, ideH, 20);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // macOS Header Bar
+            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(ideX, ideY, ideW, 54, [20, 20, 0, 0]);
+            ctx.fill();
+
+            // Window Controls
+            ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(ideX + 35, ideY + 27, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(ideX + 62, ideY + 27, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(ideX + 89, ideY + 27, 8, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText("💻 " + filename, ideX + 130, ideY + 35);
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.2)";
+            ctx.beginPath();
+            ctx.roundRect(ideX + ideW - 140, ideY + 12, 115, 30, 8);
+            ctx.fill();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 16px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(lang.toUpperCase(), ideX + ideW - 82, ideY + 33);
+            ctx.textAlign = "left";
+
+            const linesToShow = Math.max(1, Math.min(codeLines.length, Math.floor(stageProg * (codeLines.length + 1)) + 1));
+            const lineSpacing = Math.min(50, Math.floor((ideH - 120) / Math.max(codeLines.length, 6)));
+
+            for (let i = 0; i < linesToShow; i++) {
+                const ly = ideY + 105 + i * lineSpacing;
+                const isHl = (i + 1 === highlightLine) || (i === 1 && highlightLine === 0);
+
+                if (isHl) {
+                    ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
+                    ctx.beginPath();
+                    ctx.roundRect(ideX + 15, ly - 30, ideW - 30, lineSpacing - 4, 8);
+                    ctx.fill();
+                    ctx.strokeStyle = "#38BDF8";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    drawKineticNeonArrow(ctx, ideX + ideW - 70, ly - 10, t, "TARGET");
+                }
+
+                ctx.fillStyle = isHl ? "#38BDF8" : "#475569";
+                ctx.font = "bold 23px monospace";
+                ctx.fillText((i + 1).toString().padStart(2, "0"), ideX + 30, ly);
+
+                renderSqlSyntaxLine(ctx, codeLines[i], ideX + 85, ly);
+            }
+
+            drawLaserScannerBeam(ctx, ideX + 20, ideY + 65, ideW - 40, ideH - 130, t);
+
+            if (vData.note || p.pro_tip) {
+                const noteText = vData.note || p.pro_tip || "Key execution logic highlighted";
+                ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+                ctx.beginPath();
+                ctx.roundRect(ideX + 25, ideY + ideH - 65, ideW - 50, 48, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 19px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, "💡 " + noteText, ideW - 80), ideX + 45, ideY + ideH - 35);
+            }
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL 3: DIAGRAM (Floating 3D System Architecture Nodes & Conduits)
+        // =========================================================================
+        else if (normalizedType === "diagram") {
+            const diagY = 360;
+            const diagH = 780;
+            const rawNodes = vData.nodes || (p.pipeline_stages && p.pipeline_stages.length > 0 ? p.pipeline_stages.map((ps, pi) => ({
+                id: "n" + pi,
+                label: ps.name || ("Stage " + (pi + 1)),
+                icon: ps.icon || "⚙️",
+                sub: ps.sub || "Pipeline execution",
+                color: pi === 0 ? "#38BDF8" : (pi === 1 ? "#A855F7" : (pi === 2 ? "#F59E0B" : "#10B981"))
+            })) : [
+                { id: "client", label: "Client App", icon: "📱", sub: "HTTP API Request", color: "#38BDF8" },
+                { id: "gateway", label: "API Gateway", icon: "🛡️", sub: "Auth & Rate Limit", color: "#A855F7" },
+                { id: "service", label: "Compute Service", icon: "⚙️", sub: "Core Business Logic", color: "#F59E0B" },
+                { id: "database", label: "Distributed DB", icon: "💾", sub: "Persistent Data Store", color: "#10B981" }
+            ]);
+
+            const nodes = rawNodes.slice(0, 4);
+            const activeNodeIdx = Math.min(nodes.length - 1, Math.floor(stageProg * nodes.length));
+
+            ctx.save();
+            ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+            ctx.beginPath();
+            ctx.roundRect(W / 2 - 240, diagY - 10, 480, 48, 24);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 22px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("⚡ SYSTEM ARCHITECTURE FLOW", W / 2, diagY + 22);
+            ctx.textAlign = "left";
+
+            const nodeSpacing = Math.floor((diagH - 100) / nodes.length);
+            const nodeW = W - 180;
+            const nodeH = 115;
+            const nodeX = 90;
+
+            nodes.forEach((nd, i) => {
+                const ny = diagY + 70 + i * nodeSpacing;
+                const isActive = (i === activeNodeIdx);
+                const col = nd.color || (i === 0 ? "#38BDF8" : (i === 1 ? "#A855F7" : (i === 2 ? "#F59E0B" : "#10B981")));
+
+                ctx.save();
+                const hover = isActive ? Math.sin(t * 5) * 4 : 0;
+                ctx.translate(0, hover);
+
+                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.90)" : "rgba(10, 16, 32, 0.65)";
+                ctx.beginPath();
+                ctx.roundRect(nodeX, ny, nodeW, nodeH, 18);
+                ctx.fill();
+
+                ctx.strokeStyle = isActive ? col : "rgba(255, 255, 255, 0.12)";
+                ctx.lineWidth = isActive ? 3 : 1.5;
+                if (isActive) {
+                    ctx.shadowColor = col;
+                    ctx.shadowBlur = 22;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = isActive ? col : "rgba(255, 255, 255, 0.1)";
+                ctx.beginPath();
+                ctx.arc(nodeX + 65, ny + nodeH / 2, 36, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "34px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(nd.icon || "⚙️", nodeX + 65, ny + nodeH / 2 + 12);
+                ctx.textAlign = "left";
+
+                ctx.fillStyle = isActive ? col : "#FFFFFF";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.fillText(nd.label || ("Node " + (i + 1)), nodeX + 125, ny + 48);
+
+                ctx.fillStyle = isActive ? "#E2E8F0" : "#64748B";
+                ctx.font = "20px 'Segoe UI', sans-serif";
+                ctx.fillText(nd.sub || "Pipeline execution phase", nodeX + 125, ny + 85);
+
+                if (isActive) {
+                    ctx.fillStyle = col;
+                    ctx.font = "bold 18px monospace";
+                    ctx.fillText("⚡ ACTIVE", nodeX + nodeW - 130, ny + 64);
+                    drawPhotonSparks(ctx, nodeX + nodeW - 50, ny + nodeH / 2, col, t);
+                }
+                ctx.restore();
+
+                if (i < nodes.length - 1) {
+                    const connY1 = ny + nodeH;
+                    const connY2 = connY1 + (nodeSpacing - nodeH);
+                    drawDynamicConnector(ctx, W / 2, connY1, W / 2, connY2, col, t, "");
+                }
+            });
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL 4: COMPARISON (Dual 3D Comparative Cards)
+        // =========================================================================
+        else if (normalizedType === "comparison") {
+            const compY = 360;
+            const cardW = (W - 150) / 2;
+            const cardH = 760;
+
+            const nameA = vData.item_a ? vData.item_a.name : (p.term_a || "CONCEPT A");
+            const bulletsA = vData.item_a ? vData.item_a.bullets : ["Low latency LAN execution", "Complete physical data isolation", "Zero 3rd party dependency", "High upfront CapEx"];
+            const colA = vData.item_a ? (vData.item_a.color || "#10B981") : "#10B981";
+
+            const nameB = vData.item_b ? vData.item_b.name : (p.term_b || "CONCEPT B");
+            const bulletsB = vData.item_b ? vData.item_b.bullets : ["Elastic on-demand scaling", "Multi-region global reach", "Pay-as-you-go OpEx billing", "Requires cost governance"];
+            const colB = vData.item_b ? (vData.item_b.color || "#38BDF8") : "#38BDF8";
+
+            ctx.save();
+            ctx.save();
+            ctx.translate(60 + cardW / 2, compY + cardH / 2);
+            ctx.rotate(-0.02);
+            ctx.fillStyle = "rgba(10, 16, 32, 0.85)";
+            ctx.beginPath();
+            ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+            ctx.fill();
+            ctx.strokeStyle = colA;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = colA;
+            ctx.shadowBlur = 14;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = colA;
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(fitTextToWidth(ctx, nameA, cardW - 40), 0, -cardH / 2 + 55);
+
+            ctx.textAlign = "left";
+            bulletsA.slice(0, 5).forEach((b, bi) => {
+                const by = -cardH / 2 + 120 + bi * 85;
+                ctx.fillStyle = colA;
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText("✔", -cardW / 2 + 25, by);
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "19px 'Segoe UI', sans-serif";
+                const bLines = wrapCanvasText(ctx, b, cardW - 70, 2);
+                bLines.forEach((bl, bli) => {
+                    ctx.fillText(bl, -cardW / 2 + 55, by + bli * 28);
+                });
+            });
+            ctx.restore();
+
+            // Central Pulsing VS Badge
+            const vsY = compY + cardH / 2;
+            const vsPulse = 1.0 + Math.sin(t * 6) * 0.1;
+            ctx.save();
+            ctx.translate(W / 2, vsY);
+            ctx.scale(vsPulse, vsPulse);
+            ctx.fillStyle = "#0F172A";
+            ctx.beginPath();
+            ctx.arc(0, 0, 42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "#F59E0B";
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 24px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("VS", 0, 8);
+            ctx.restore();
+
+            // Card B (Right Panel)
+            ctx.save();
+            ctx.translate(W - 60 - cardW / 2, compY + cardH / 2);
+            ctx.rotate(0.02);
+            ctx.fillStyle = "rgba(10, 16, 32, 0.85)";
+            ctx.beginPath();
+            ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+            ctx.fill();
+            ctx.strokeStyle = colB;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = colB;
+            ctx.shadowBlur = 14;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = colB;
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(fitTextToWidth(ctx, nameB, cardW - 40), 0, -cardH / 2 + 55);
+
+            ctx.textAlign = "left";
+            bulletsB.slice(0, 5).forEach((b, bi) => {
+                const by = -cardH / 2 + 120 + bi * 85;
+                ctx.fillStyle = colB;
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.fillText("✔", -cardW / 2 + 25, by);
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "19px 'Segoe UI', sans-serif";
+                const bLines = wrapCanvasText(ctx, b, cardW - 70, 2);
+                bLines.forEach((bl, bli) => {
+                    ctx.fillText(bl, -cardW / 2 + 55, by + bli * 28);
+                });
+            });
+            ctx.restore();
 
             ctx.restore();
         }
 
-        // SCENE 6: FATAL INTERVIEW TRAPS & 3D ROTATING GOLDEN TROPHY
-        else {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-            // Top Traps Tile
-            drawGlassTile(ctx, 60, 205, W - 120, 360, 18, "#EF4444", true, true, 1.0);
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, `❌ ${p.traps_title || 'FATAL INTERVIEW TRAPS TO AVOID'}`, W - 180), 90, 255);
-
-            const trapsList = (p.traps && p.traps.length > 0) ? p.traps : [
-                `❌ Trap: Applying ${tA} when rapid elastic scaling is required creates severe traffic bottleneck crashes!`,
-                `✅ Rule: Evaluate cost models, maintenance overhead, and data sovereignty before deciding!`
+        // =========================================================================
+        // VISUAL 5: STEPS (Clean Numbered Sequence Roadmap)
+        // =========================================================================
+        else if (normalizedType === "steps") {
+            const stepsY = 360;
+            const stepsH = 780;
+            const rawSteps = vData.steps || [
+                { num: "01", title: "Analyze Schema & Edge Cases", detail: "Check partition keys, duplicate values, and data types" },
+                { num: "02", title: "Formulate Core Logic", detail: "Construct window/rank calculations or index filtering" },
+                { num: "03", title: "Execute & Validate Output", detail: "Verify benchmark latency and accuracy on sample data" }
             ];
 
-            trapsList.forEach((trp, idx) => {
-                const trapY = 285 + idx * 125;
-                ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-                ctx.fillRect(85, trapY, W - 170, 105);
-                ctx.strokeStyle = trp.startsWith("❌") ? "#EF4444" : "#10B981";
-                ctx.strokeRect(85, trapY, W - 170, 105);
+            const activeIdx = Math.min(rawSteps.length - 1, Math.floor(stageProg * rawSteps.length));
+            const stepSpacing = Math.floor(stepsH / rawSteps.length);
 
-                ctx.fillStyle = trp.startsWith("❌") ? "#FCA5A5" : "#A7F3D0";
-                ctx.font = "bold 20px 'Segoe UI', sans-serif";
-                const tLines = wrapCanvasText(ctx, trp, W - 220, 2);
-                tLines.forEach((tl, ti) => {
-                    ctx.fillText(tl, 110, trapY + 40 + ti * 34);
+            ctx.save();
+            rawSteps.forEach((st, idx) => {
+                const sy = stepsY + idx * stepSpacing;
+                const isActive = (idx === activeIdx);
+
+                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.90)" : "rgba(10, 16, 32, 0.60)";
+                ctx.beginPath();
+                ctx.roundRect(70, sy, W - 140, stepSpacing - 25, 18);
+                ctx.fill();
+
+                ctx.strokeStyle = isActive ? "#38BDF8" : "rgba(255, 255, 255, 0.12)";
+                ctx.lineWidth = isActive ? 3 : 1.5;
+                if (isActive) {
+                    ctx.shadowColor = "#38BDF8";
+                    ctx.shadowBlur = 18;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = isActive ? "#38BDF8" : "rgba(255, 255, 255, 0.1)";
+                ctx.beginPath();
+                ctx.arc(140, sy + (stepSpacing - 25) / 2, 38, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = isActive ? "#000000" : "#FFFFFF";
+                ctx.font = "bold 26px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(st.num || ("0" + (idx + 1)), 140, sy + (stepSpacing - 25) / 2 + 9);
+                ctx.textAlign = "left";
+
+                ctx.fillStyle = isActive ? "#38BDF8" : "#F8FAFC";
+                ctx.font = "bold 27px 'Segoe UI', sans-serif";
+                ctx.fillText(st.title || ("Step " + (idx + 1)), 210, sy + 58);
+
+                ctx.fillStyle = isActive ? "#CBD5E1" : "#64748B";
+                ctx.font = "21px 'Segoe UI', sans-serif";
+                const dLines = wrapCanvasText(ctx, st.detail || "", W - 380, 2);
+                dLines.forEach((dl, dli) => {
+                    ctx.fillText(dl, 210, sy + 98 + dli * 28);
+                });
+
+                if (isActive) {
+                    drawPhotonSparks(ctx, W - 120, sy + (stepSpacing - 25) / 2, "#38BDF8", t);
+                }
+            });
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL 6: STAT (Massive Holographic Metric Display)
+        // =========================================================================
+        else if (normalizedType === "stat") {
+            const bigStat = vData.big_stat || "10x";
+            const statLabel = vData.label || "PERFORMANCE IMPROVEMENT";
+            const statDetail = vData.detail || "Linear latency scaling with zero full table scans";
+            const col = vData.color || "#10B981";
+
+            ctx.save();
+            ctx.textAlign = "center";
+
+            const statY = 620;
+            const pulse = 1.0 + Math.sin(t * 4) * 0.05;
+            ctx.save();
+            ctx.translate(W / 2, statY);
+            ctx.scale(pulse, pulse);
+
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 4;
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 35;
+            ctx.beginPath();
+            ctx.arc(0, 0, 160, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = col;
+            ctx.font = "bold 96px 'Segoe UI', sans-serif";
+            ctx.fillText(bigStat, 0, 32);
+            ctx.restore();
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 34px 'Segoe UI', sans-serif";
+            ctx.fillText(statLabel, W / 2, 870);
+
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "24px 'Segoe UI', sans-serif";
+            const dLines = wrapCanvasText(ctx, statDetail, W - 200, 2);
+            dLines.forEach((dl, i) => {
+                ctx.fillText(dl, W / 2, 930 + i * 38);
+            });
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL 7: TAKEAWAY (Golden Trophy / Key Takeaway Card)
+        // =========================================================================
+        else {
+            const rule = vData.rule || p.golden_rule || activeStage.title || "Master the Execution Logic Before Coding!";
+            const bullets = vData.bullets || (p.traps && p.traps.length > 0 ? p.traps : [
+                "Explain the data flow to the interviewer first",
+                "Address edge cases, duplicate ties, and NULLs",
+                "Articulate time and space complexity trade-offs"
+            ]);
+            const proTip = vData.pro_tip || p.pro_tip || "💡 Senior Pro-Tip: State trade-offs before writing code.";
+
+            const takeY = 360;
+            const takeH = 780;
+
+            ctx.save();
+            const trophyY = takeY + 70;
+            const trophyBob = Math.sin(t * 3) * 8;
+            ctx.save();
+            ctx.translate(W / 2, trophyY + trophyBob);
+            ctx.fillStyle = "#F59E0B";
+            ctx.shadowColor = "#F59E0B";
+            ctx.shadowBlur = 28;
+            ctx.font = "72px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🏆", 0, 20);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+
+            ctx.fillStyle = "rgba(10, 16, 32, 0.85)";
+            ctx.beginPath();
+            ctx.roundRect(70, takeY + 160, W - 140, takeH - 180, 22);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "#F59E0B";
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("⭐ KEY INTERVIEW TAKEAWAY & GOLDEN RULE ⭐", W / 2, takeY + 225);
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 32px 'Segoe UI', sans-serif";
+            const rLines = wrapCanvasText(ctx, rule, W - 220, 2);
+            rLines.forEach((rl, ri) => {
+                ctx.fillText(rl, W / 2, takeY + 285 + ri * 44);
+            });
+
+            ctx.textAlign = "left";
+            bullets.slice(0, 3).forEach((b, bi) => {
+                const by = takeY + 390 + bi * 80;
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.fillText("✔", 110, by);
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "22px 'Segoe UI', sans-serif";
+                const bl = wrapCanvasText(ctx, b, W - 280, 2);
+                bl.forEach((line, li) => {
+                    ctx.fillText(line, 150, by + li * 30);
                 });
             });
 
-            // 3D Rotating Golden Trophy Medallion
-            draw3DHolographicTrophy(ctx, W / 2, 650, t);
-
-            // Universal Golden Rule Card
-            drawGlassTile(ctx, 60, 750, W - 120, 360, 20, "#10B981", true, true, 1.0);
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "🏆 THE UNIVERSAL GOLDEN RULE:", W - 180), 90, 805);
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-            ctx.fillRect(85, 830, W - 170, 175);
-            ctx.strokeStyle = "#10B981";
-            ctx.strokeRect(85, 830, W - 170, 175);
-
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            const ruleText = p.golden_rule || `Choose ${tA} for localized control and constant baseline loads; choose ${tB} for elastic scaling and zero hardware overhead.`;
-            const rLines = wrapCanvasText(ctx, `"${ruleText}"`, W - 220, 3);
-            rLines.forEach((rl, ri) => {
-                ctx.fillText(rl, 115, 890 + ri * 42);
-            });
-
-            ctx.fillStyle = "#38BDF8";
+            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+            ctx.beginPath();
+            ctx.roundRect(100, takeY + takeH - 95, W - 200, 52, 14);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#F59E0B";
             ctx.font = "bold 20px 'Segoe UI', sans-serif";
-            ctx.fillText(fitTextToWidth(ctx, "✅ Explaining this architecture trade-off guarantees top marks in senior interviews!", W - 180), 90, 1060);
-
-            // Pitch to Interviewer Card
-            drawGlassTile(ctx, 60, 1140, W - 120, 270, 18, "#38BDF8", false, true, 1.0);
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
-            ctx.fillText("🚀 HOW TO SAY THIS TO AN INTERVIEWER:", 90, 1190);
-            ctx.fillStyle = "#F8FAFC";
-            ctx.font = "21px 'Segoe UI', sans-serif";
-            const pitchLines = wrapCanvasText(ctx, p.pitch_to_interviewer || (`"I evaluate the trade-offs between ${tA} and ${tB} based on latency tolerances, capital expenditure, and maintenance overhead."`), W - 180, 2);
-            pitchLines.forEach((pl, pi) => {
-                ctx.fillText(pl, 90, 1240 + pi * 40);
-            });
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 19px monospace";
-            ctx.fillText("Mastered @Code_With_Mangesh • Save & Share this Reel!", 90, 1365);
-
+            ctx.textAlign = "center";
+            ctx.fillText(fitTextToWidth(ctx, proTip, W - 240), W / 2, takeY + takeH - 62);
             ctx.restore();
         }
+
+        ctx.restore();
     }
 
     /* ==========================================================================
@@ -3295,699 +3556,49 @@ SECOND_HIGHEST_SALARY: 70000`;
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
         }
 
-        if (p.content_type === "theory") {
-            renderTheoryShortStoryboard(ctx, W, H, p, t, currentStageIdx, activeStage, isOutro, outroStart, stageProg, stageAlpha);
-        } else {
-            const pipelineStages = getClientPipelineStages(p);
-            const filterEvals = getClientFilterEvals(p);
-            const actionType = activeStage ? (activeStage.action_type || ("stage_" + currentStageIdx)) : ("stage_" + currentStageIdx);
-
-            // =========================================================================
-            // SCENE 1: PROBLEM STATEMENT & ARCHITECTURE PIPELINE
-            // =========================================================================
-            if (actionType === "problem_intro" || currentStageIdx === 1) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Floating 3D Frosted Glass Question Tile
-                drawGlassTile(ctx, 60, 220, W - 120, 200, 20, "#38BDF8", true, true, 1.0);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText("📋 SQL INTERVIEW PROBLEM STATEMENT:", 95, 272);
-
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                const qLines = wrapCanvasText(ctx, p.question, W - 190);
-                qLines.slice(0, 2).forEach((l, i) => {
-                    ctx.fillText(l, 95, 318 + i * 36);
-                });
-
-                // Target Highlight Badge with Neon Pulse
-                const pulse = 1.0 + Math.sin(t * 6) * 0.05;
-                ctx.save();
-                ctx.translate(W / 2, 385);
-                ctx.scale(pulse, pulse);
-                ctx.fillStyle = "rgba(245, 158, 11, 0.22)";
-                ctx.beginPath();
-                ctx.roundRect(-280, -22, 560, 44, 12);
-                ctx.fill();
-                ctx.strokeStyle = "#F59E0B";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 20px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                const targetText = p.target_badge || ("🎯 TARGET: " + (p.title || "OPTIMAL SQL QUERY").toUpperCase().slice(0, 36));
-                ctx.fillText(targetText, 0, 7);
-                ctx.restore();
-
-                // 2. High-Tech Architecture Pipeline Diagram (Frosted Glass Nodes)
-                drawArchitecturePipeline(ctx, 60, 440, W - 120, 105, pipelineStages, 0, t);
-
-                // 3. Dynamic Frosted Glass Table View
-                drawGlassTile(ctx, 60, 565, W - 120, 420, 18, "rgba(56, 189, 248, 0.4)", false, true, 0.95);
-
-                const headers = p.col_headers && p.col_headers.length >= 3 ? p.col_headers : ["ID / KEY", "DATE / ATTR", "AMOUNT", "STATUS"];
-                ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
-                ctx.fillRect(80, 585, W - 160, 52);
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 21px monospace";
-                ctx.fillText(headers[0], 105, 618);
-                ctx.fillText(headers[1], 315, 618);
-                ctx.fillText(headers[2] || "VAL", 560, 618);
-                ctx.fillText(headers[3] || "STATUS", 810, 618);
-
-                // Sample Rows in Glass Table
-                const sampleRows = p.sample_rows && p.sample_rows.length > 0 ? p.sample_rows : [
-                    {account: "REC-101", date: "2026-03-15", amt: "45000", balance: "Row #1"},
-                    {account: "REC-102", date: "2026-03-12", amt: "95000", balance: "Row #2"},
-                    {account: "REC-103", date: "2026-03-10", amt: "25000", balance: "Row #3"},
-                    {account: "REC-104", date: "2026-03-01", amt: "12000", balance: "Row #4"}
-                ];
-                sampleRows.slice(0, 4).forEach((r, idx) => {
-                    const rowY = 645 + idx * 76;
-                    ctx.fillStyle = idx % 2 === 0 ? "rgba(15, 23, 42, 0.85)" : "rgba(30, 41, 59, 0.70)";
-                    ctx.fillRect(80, rowY, W - 160, 66);
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-                    ctx.strokeRect(80, rowY, W - 160, 66);
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "21px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, String(r.account || ""), 190), 105, rowY + 42);
-                    ctx.fillText(fitTextToWidth(ctx, String(r.date || ""), 220), 315, rowY + 42);
-                    ctx.fillText(fitTextToWidth(ctx, String(r.amt || ""), 220), 560, rowY + 42);
-
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.font = "bold 22px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, String(r.balance || ""), 170), 810, rowY + 42);
-                });
-
-                // 4. Dynamic Laser Connector linking Table to Pipeline Stage 1
-                drawDynamicConnector(ctx, 200, 645, 170, 545, "#38BDF8", t, "⚡ PIPELINE INPUT");
-
-                // 5. Floating Frosted Glass IDE Tile (Empty Editor with Roadmap)
-                drawGlassTile(ctx, 60, 1005, W - 120, 480, 20, "rgba(255, 255, 255, 0.15)", false, false, 0.9);
-
-                ctx.fillStyle = "#1E293B";
-                ctx.fillRect(60, 1005, W - 120, 50);
-                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 1030, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 1030, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 1030, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText("query_roadmap.sql — Step-by-Step AI Teacher Logic", 180, 1037);
-
-                ctx.fillStyle = "#64748B";
-                ctx.font = "italic 23px monospace";
-                ctx.fillText(fitTextToWidth(ctx, `/* Step 1: Inspect ${p.table_name || 'table'} & identify key columns */`, W - 190), 90, 1105);
-                ctx.fillText(fitTextToWidth(ctx, `/* Step 2: ${pipelineStages[1] ? pipelineStages[1].name + ' — ' + pipelineStages[1].sub : 'Analyze partitions and candidate rows'} */`, W - 190), 90, 1155);
-                ctx.fillText(fitTextToWidth(ctx, `/* Step 3: ${pipelineStages[2] ? pipelineStages[2].name + ' — ' + pipelineStages[2].sub : 'Build core window/aggregate specification'} */`, W - 190), 90, 1205);
-                ctx.fillText(fitTextToWidth(ctx, `/* Step 4: ${pipelineStages[3] ? pipelineStages[3].name + ' — ' + pipelineStages[3].sub : 'Filter target records & verify output'} */`, W - 190), 90, 1255);
-
-                // Learning Goal Glass Pill
-                drawGlassTile(ctx, 90, 1370, W - 180, 80, 14, "#38BDF8", false, true, 1.0);
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                ctx.fillText("🧠 LEARNING GOAL: Grasp problem logic before typing SQL!", 120, 1420);
-
-                ctx.restore();
-            }
-
-            // =========================================================================
-            // SCENE 2: DATA INSPECTION & INTERVIEW TRAP
-            // =========================================================================
-            else if (actionType === "data_inspection" || currentStageIdx === 2) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Data Inspection Glass Tile (Front Layer)
-                drawGlassTile(ctx, 60, 220, W - 120, 410, 20, "#F59E0B", true, true, 1.0);
-
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText("🔍 DATA INSPECTION — NOTICE DATA PATTERNS & EDGE CASES:", 90, 268);
-
-                const sampleRows = p.sample_rows && p.sample_rows.length > 0 ? p.sample_rows : [
-                    {account: "REC-101", date: "2026-03-15", amt: "45000", balance: "Target Row", is_target: true},
-                    {account: "REC-102", date: "2026-03-12", amt: "95000", balance: "Active", is_target: false},
-                    {account: "REC-103", date: "2026-03-10", amt: "25000", balance: "Target Row", is_target: true},
-                    {account: "REC-104", date: "2026-03-01", amt: "12000", balance: "Active", is_target: false}
-                ];
-
-                sampleRows.slice(0, 4).forEach((r, idx) => {
-                    const rowY = 295 + idx * 74;
-                    const isTarget = r.is_target !== undefined ? r.is_target : (idx === 0 || idx === 2);
-                    ctx.fillStyle = isTarget ? "rgba(16, 185, 129, 0.22)" : "rgba(15, 23, 42, 0.85)";
-                    ctx.fillRect(85, rowY, W - 170, 64);
-                    ctx.strokeStyle = isTarget ? "#10B981" : "rgba(255, 255, 255, 0.1)";
-                    ctx.lineWidth = isTarget ? 2.5 : 1.5;
-                    ctx.strokeRect(85, rowY, W - 170, 64);
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "21px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, String(r.account || ""), 190), 110, rowY + 40);
-                    ctx.fillText(fitTextToWidth(ctx, String(r.date || ""), 220), 320, rowY + 40);
-                    ctx.fillText(fitTextToWidth(ctx, String(r.amt || ""), 180), 560, rowY + 40);
-
-                    if (isTarget) {
-                        ctx.fillStyle = "#10B981";
-                        ctx.font = "bold 21px monospace";
-                        const targetText = r.balance ? String(r.balance) : (r.status ? `🎯 ${r.status}` : (r.rnk ? `🎯 Rank ${r.rnk}` : "🎯 TARGET RECORD"));
-                        ctx.fillText(fitTextToWidth(ctx, targetText, 210), 760, rowY + 40);
-                    } else {
-                        ctx.fillStyle = "#94A3B8";
-                        ctx.font = "20px monospace";
-                        ctx.fillText(fitTextToWidth(ctx, String(r.balance || r.status || "PASS"), 210), 760, rowY + 40);
-                    }
-                });
-
-                // 2. High-Tech Partition / Data Buckets Diagram (Middle Tile)
-                drawGlassTile(ctx, 60, 650, W - 120, 320, 18, "#38BDF8", false, true, 1.0);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, `🪟 ${pipelineStages[1] ? pipelineStages[1].name.toUpperCase() : 'DATA PARTITION'} & CANDIDATE BREAKDOWN:`, W - 180), 90, 695);
-
-                const sampleKeys = sampleRows.slice(0, 3);
-                sampleKeys.forEach((r, i) => {
-                    const by = 725 + i * 70;
-                    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
-                    ctx.fillRect(90, by, W - 180, 58);
-                    ctx.strokeStyle = i === 0 ? "#10B981" : (i === 1 ? "#38BDF8" : "#F59E0B");
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(90, by, W - 180, 58);
-
-                    ctx.fillStyle = i === 0 ? "#10B981" : (i === 1 ? "#38BDF8" : "#F59E0B");
-                    ctx.font = "bold 20px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, `👥 ${r.account || 'Group ' + (i + 1)}:`, 210), 110, by + 37);
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "20px monospace";
-                    const detailStr = `${r.date || ''} • ${r.amt || ''} ➔ ${r.is_target ? '🎯 Selected' : 'Evaluated'}`;
-                    ctx.fillText(fitTextToWidth(ctx, detailStr, W - 180 - 270), 340, by + 37);
-                });
-
-                // 3. The Fatal Interview Trap Card (Bottom Tile)
-                drawGlassTile(ctx, 60, 990, W - 120, 500, 20, "#EF4444", true, true, 1.0);
-
-                ctx.fillStyle = "#EF4444";
-                ctx.font = "bold 28px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "❌ THE FATAL INTERVIEW TRAP: COMMON PITFALLS TO AVOID!", W - 180), 90, 1045);
-
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "22px monospace";
-                const trapCode = p.trap_code || "SELECT * FROM ... ORDER BY ... LIMIT 1 OFFSET 1; -- FAILS ON TIES / GROUPS!";
-                ctx.fillText(fitTextToWidth(ctx, trapCode, W - 180), 90, 1100);
-
-                ctx.fillStyle = "#CBD5E1";
-                ctx.font = "24px 'Segoe UI', sans-serif";
-                const trapsList = (p.traps && p.traps.length > 0) ? p.traps : [
-                    "• Naive LIMIT/OFFSET or MAX() fails when duplicate values or ties exist!",
-                    "• Basic GROUP BY drops row-level attributes, forcing messy self-joins.",
-                    "• In FAANG interviews, failing to handle duplicate ties costs 50% points!"
-                ];
-                trapsList.slice(0, 3).forEach((tr, ti) => {
-                    const prefix = tr.startsWith("•") ? tr : ("• " + tr);
-                    ctx.fillText(fitTextToWidth(ctx, prefix, W - 180), 90, 1160 + ti * 55);
-                });
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "✅ Solution: Build dynamic multi-stage query logic with zero data loss!", W - 180), 90, 1345);
-
-                // Dynamic Connector Line between Middle Diagram and Trap Tile
-                drawDynamicConnector(ctx, 300, 970, 300, 1030, "#EF4444", t, "⚠️ TRAP DETECTED");
-
-                ctx.restore();
-            }
-
-            // =========================================================================
-            // SCENE 3: 4-STEP LOGICAL STRATEGY FLOWCHART
-            // =========================================================================
-            else if (actionType === "logic_flowchart" || currentStageIdx === 3) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Header Banner Glass Tile
-                drawGlassTile(ctx, 60, 220, W - 120, 95, 16, "#818CF8", false, true, 1.0);
-
-                ctx.fillStyle = "#818CF8";
-                ctx.font = "bold 28px 'Segoe UI', sans-serif";
-                ctx.fillText("💡 LOGICAL ALGORITHM FLOWCHART (BEFORE WRITING CODE)", 90, 265);
-                ctx.fillStyle = "#CBD5E1";
-                ctx.font = "20px 'Segoe UI', sans-serif";
-                ctx.fillText("Step-by-step query construction to explain clearly to the interviewer:", 90, 296);
-
-                // 2. Flowchart Steps with Depth Layering
-                const steps = pipelineStages.map((st, i) => ({
-                    num: `${i + 1}️⃣`,
-                    icon: st.icon || "⚙️",
-                    title: st.name || ("STEP " + (i + 1)),
-                    query: st.sub || "Execution block",
-                    sub: `Stage ${i + 1} processing pipeline`,
-                    color: i === 0 ? "#38BDF8" : (i === 1 ? "#F59E0B" : (i === 2 ? "#EC4899" : "#10B981"))
-                }));
-
-                const activeStepIdx = Math.min(steps.length - 1, Math.floor(stageProg * steps.length));
-                const stepSpacing = steps.length <= 3 ? 240 : 190;
-
-                steps.forEach((st, idx) => {
-                    const boxY = 335 + idx * stepSpacing;
-                    const isActive = idx === activeStepIdx;
-
-                    drawGlassTile(ctx, 60, boxY, W - 120, steps.length <= 3 ? 175 : 135, 18, st.color, isActive, isActive, isActive ? 1.0 : 0.45);
-
-                    ctx.fillStyle = st.color;
-                    ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                    ctx.fillText(fitTextToWidth(ctx, `${st.num} ${st.icon} ${st.title}`, W - 190), 95, boxY + 45);
-
-                    ctx.fillStyle = isActive ? "#FFFFFF" : "#94A3B8";
-                    ctx.font = "bold 24px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, st.query, W - 190), 95, boxY + 95);
-
-                    if (st.sub && steps.length <= 3) {
-                        ctx.fillStyle = isActive ? "#38BDF8" : "#64748B";
-                        ctx.font = "20px 'Segoe UI', sans-serif";
-                        ctx.fillText(fitTextToWidth(ctx, st.sub, W - 190), 95, boxY + 140);
-                    }
-
-                    if (isActive) {
-                        drawPhotonSparks(ctx, W - 120, boxY + 50, st.color, t);
-                    }
-
-                    // Dynamic Laser Connector to next step
-                    if (idx < steps.length - 1) {
-                        const connY1 = boxY + (steps.length <= 3 ? 175 : 135);
-                        const connY2 = connY1 + (steps.length <= 3 ? 65 : 55);
-                        drawDynamicConnector(ctx, W / 2, connY1, W / 2, connY2, st.color, t, "");
-                    }
-                });
-
-                // Strategy Takeaway Card at bottom
-                drawGlassTile(ctx, 60, steps.length <= 3 ? 1160 : 1150, W - 120, 340, 20, "#10B981", false, true, 1.0);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 27px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "🎯 STRATEGY VALIDATED BY SENIOR INTERVIEWERS:", W - 180), 90, 1205);
-
-                ctx.fillStyle = "#F8FAFC";
-                ctx.font = "24px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "• Explaining the execution pipeline demonstrates engineering depth.", W - 180), 90, 1265);
-                ctx.fillText(fitTextToWidth(ctx, "• Eliminates redundant subqueries, temporary tables, and cartesian joins.", W - 180), 90, 1320);
-                ctx.fillText(fitTextToWidth(ctx, "• Next step: Let's write the query step-by-step in our SQL editor!", W - 180), 90, 1375);
-
-                ctx.restore();
-            }
-
-            // =========================================================================
-            // SCENE 4: KINETIC TYPEWRITER BUILD ON GLASS IDE
-            // =========================================================================
-            else if (actionType === "code_build" || currentStageIdx === 4) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Architecture Pipeline (Stage 2 / 3 Active)
-                drawArchitecturePipeline(ctx, 60, 220, W - 120, 105, pipelineStages, 1, t);
-
-                // 2. Kinetic Frosted Glass SQL IDE Window
-                drawGlassTile(ctx, 60, 350, W - 120, 500, 20, "#38BDF8", true, true, 1.0);
-
-                ctx.fillStyle = "#1E293B";
-                ctx.fillRect(60, 350, W - 120, 52);
-                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 376, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 376, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 376, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText("query_builder.sql — Step 1: Core Specification", 180, 384);
-
-                // Typewriter Animation
-                const allLines = (p.solution_sql || "SELECT * FROM TRANSACTIONS;").split("\n");
-                const linesToShow = Math.max(1, Math.min(allLines.length, Math.floor(stageProg * (allLines.length + 1)) + 1));
-
-                for (let i = 0; i < linesToShow; i++) {
-                    const lineY = 460 + i * 50;
-                    ctx.fillStyle = "#475569";
-                    ctx.font = "bold 25px monospace";
-                    ctx.fillText((i + 1).toString().padStart(2, "0"), 95, lineY);
-                    renderSqlSyntaxLine(ctx, allLines[i], 160, lineY);
-                }
-
-                // High-Tech Laser Scanner Beam & Kinetic Arrow Tracking
-                drawLaserScannerBeam(ctx, 150, 420, W - 300, 320, t);
-                const highlightY = 450 + Math.min(linesToShow - 1, 2) * 50;
-                ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-                ctx.beginPath();
-                ctx.roundRect(150, highlightY - 26, W - 240, 48, 10);
-                ctx.fill();
-                ctx.strokeStyle = "#38BDF8";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                drawPhotonSparks(ctx, W - 140, highlightY, "#38BDF8", t);
-                drawKineticNeonArrow(ctx, W - 140, highlightY, t, p.arrow_target || "TARGET CLAUSE");
-
-                // 3. Engine Simulation Intermediate Output Glass Card
-                drawGlassTile(ctx, 60, 880, W - 120, 600, 20, "#10B981", false, true, 1.0);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 28px 'Segoe UI', sans-serif";
-                ctx.fillText("⚡ DATABASE ENGINE: IN-MEMORY EVALUATION", 90, 935);
-
-                filterEvals.slice(0, 5).forEach((row, i) => {
-                    const ry = 970 + i * 74;
-                    const isTop = row.status === "keep";
-                    ctx.fillStyle = isTop ? "rgba(16, 185, 129, 0.22)" : "rgba(15, 23, 42, 0.85)";
-                    ctx.fillRect(90, ry, W - 180, 64);
-                    ctx.strokeStyle = isTop ? "#10B981" : "rgba(255, 255, 255, 0.08)";
-                    ctx.lineWidth = isTop ? 2.5 : 1;
-                    ctx.strokeRect(90, ry, W - 180, 64);
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "22px monospace";
-                    ctx.fillText(row.name, 120, ry + 42);
-                    ctx.fillText(row.salary || row.cond, 350, ry + 42);
-
-                    ctx.fillStyle = isTop ? "#10B981" : "#94A3B8";
-                    ctx.font = "bold 22px monospace";
-                    ctx.fillText(row.action || (isTop ? "TARGET" : "PASS"), 760, ry + 42);
-                });
-
-                // Dynamic Connector Line between IDE and Simulation
-                drawDynamicConnector(ctx, W / 2, 850, W / 2, 880, "#38BDF8", t, "⚡ ENGINE EXECUTION");
-
-                ctx.restore();
-            }
-
-            // =========================================================================
-            // SCENE 5: APPLY FILTER & ROW-BY-ROW SIMULATION
-            // =========================================================================
-            else if (actionType === "simulation_execution" || currentStageIdx === 5) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Frosted Glass IDE Tile showing Filter
-                drawGlassTile(ctx, 60, 220, W - 120, 420, 20, "#F59E0B", true, true, 1.0);
-
-                ctx.fillStyle = "#1E293B";
-                ctx.fillRect(60, 220, W - 120, 50);
-                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 245, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 245, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 245, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText("query_solution.sql — Step 2: Apply Target Filter", 180, 253);
-
-                const filterLines = (p.solution_sql || "SELECT * FROM TRANSACTIONS;").split("\n");
-                filterLines.slice(0, 7).forEach((ln, idx) => {
-                    const lineY = 310 + idx * 46;
-                    ctx.fillStyle = "#475569";
-                    ctx.font = "bold 24px monospace";
-                    ctx.fillText((idx + 1).toString().padStart(2, "0"), 95, lineY);
-
-                    const isFilterLine = ln.toUpperCase().includes("QUALIFY") || ln.toUpperCase().includes("WHERE") || ln.toUpperCase().includes("HAVING");
-                    if (isFilterLine) {
-                        ctx.fillStyle = "rgba(245, 158, 11, 0.22)";
-                        ctx.fillRect(150, lineY - 26, W - 260, 36);
-                    }
-                    renderSqlSyntaxLine(ctx, ln, 160, lineY);
-                });
-
-                // Dynamic Bouncing Laser Arrow on QUALIFY / Filter
-                const arrowBounce = Math.sin(t * 6) * 12;
-                const arrowX = 660 + arrowBounce;
-                const arrowY = 430;
-                ctx.fillStyle = "#F59E0B";
-                ctx.beginPath();
-                ctx.moveTo(arrowX, arrowY);
-                ctx.lineTo(arrowX + 35, arrowY - 16);
-                ctx.lineTo(arrowX + 35, arrowY - 8);
-                ctx.lineTo(arrowX + 90, arrowY - 8);
-                ctx.lineTo(arrowX + 90, arrowY + 8);
-                ctx.lineTo(arrowX + 35, arrowY + 8);
-                ctx.lineTo(arrowX + 35, arrowY + 16);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.fillStyle = "#F59E0B";
-                ctx.fillRect(arrowX + 100, arrowY - 18, 220, 36);
-                ctx.fillStyle = "#000000";
-                ctx.font = "bold 17px 'Segoe UI', sans-serif";
-                ctx.fillText("⚡ FILTER EVALUATION", arrowX + 110, arrowY + 6);
-
-                // 2. Row-by-Row Evaluation Simulation Table on Frosted Glass
-                drawGlassTile(ctx, 60, 670, W - 120, 530, 20, "#38BDF8", false, true, 1.0);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                ctx.fillText("🔍 DATABASE ENGINE: ROW-BY-ROW FILTER EVALUATION:", 90, 715);
-
-                const rowsToShow = Math.min(filterEvals.length, Math.floor(stageProg * (filterEvals.length + 1)) + 1);
-
-                filterEvals.slice(0, rowsToShow).forEach((ev, i) => {
-                    const rY = 745 + i * 76;
-                    const isExclude = ev.status === "exclude";
-
-                    ctx.fillStyle = isExclude ? "rgba(239, 68, 68, 0.22)" : "rgba(16, 185, 129, 0.18)";
-                    ctx.fillRect(80, rY, W - 160, 66);
-                    ctx.strokeStyle = isExclude ? "#EF4444" : "#10B981";
-                    ctx.strokeRect(80, rY, W - 160, 66);
-
-                    ctx.fillStyle = isExclude ? "#FCA5A5" : "#FFFFFF";
-                    ctx.font = "22px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, String(ev.name || ""), 220), 105, rY + 42);
-                    ctx.fillText(fitTextToWidth(ctx, String(ev.salary || ""), 190), 350, rY + 42);
-                    ctx.fillText(fitTextToWidth(ctx, String(ev.cond || ""), 250), 560, rY + 42);
-
-                    ctx.fillStyle = isExclude ? "#EF4444" : "#10B981";
-                    ctx.font = "bold 22px monospace";
-                    ctx.fillText(fitTextToWidth(ctx, isExclude ? "❌ EXCLUDE" : "✅ KEEP", 160), 830, rY + 42);
-                });
-
-                // 3. Filtered Candidates Outcome Glass Card
-                drawGlassTile(ctx, 60, 1225, W - 120, 275, 18, "#10B981", false, true, 1.0);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "🎯 FILTERED CANDIDATE DATA POOL:", W - 180), 90, 1275);
-
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 23px monospace";
-                const keptRows = filterEvals.filter(e => e.status === "keep").map(e => e.name).slice(0, 3).join(", ");
-                ctx.fillText(fitTextToWidth(ctx, `KEPT RECORDS: { ${keptRows || 'Evaluated Top Candidates'} }`, W - 180), 90, 1330);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "22px 'Segoe UI', sans-serif";
-                ctx.fillText("All invalid and duplicate entries have been cleanly eliminated!", 90, 1385);
-                ctx.fillText("Next: View verified final query execution output!", 90, 1435);
-
-                // Dynamic Connector Line linking IDE filter line to Kept Rows
-                drawDynamicConnector(ctx, 500, 640, 500, 670, "#10B981", t, "✅ FILTER = TRUE");
-
-                ctx.restore();
-            }
-
-            // =========================================================================
-            // SCENE 6: FINAL PRODUCTION QUERY & VERIFIED OUTPUT
-            // =========================================================================
-            else {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
-
-                // 1. Complete Production SQL IDE Window on Frosted Glass
-                drawGlassTile(ctx, 60, 220, W - 120, 500, 20, "#10B981", true, true, 1.0);
-
-                ctx.fillStyle = "#1E293B";
-                ctx.fillRect(60, 220, W - 120, 50);
-                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(95, 245, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(120, 245, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(145, 245, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 20px monospace";
-                ctx.fillText("production_solution.sql — Final Verified Execution", 180, 253);
-
-                const finalLines = (p.solution_sql || "SELECT * FROM TRANSACTIONS;").split("\n");
-                finalLines.forEach((ln, idx) => {
-                    const lineY = 310 + idx * 48;
-                    ctx.fillStyle = "#475569";
-                    ctx.font = "bold 24px monospace";
-                    ctx.fillText((idx + 1).toString().padStart(2, "0"), 95, lineY);
-
-                    if (idx === 0) {
-                        ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
-                        ctx.fillRect(150, lineY - 30, W - 260, 42);
-                        ctx.strokeStyle = "#10B981";
-                        ctx.strokeRect(150, lineY - 30, W - 260, 42);
-                    }
-                    renderSqlSyntaxLine(ctx, ln, 160, lineY);
-                });
-
-                // 2. Outer Execution Calculation Summary Tile
-                drawGlassTile(ctx, 60, 745, W - 120, 280, 18, "#38BDF8", false, true, 1.0);
-
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "bold 25px 'Segoe UI', sans-serif";
-                ctx.fillText("🧮 EXECUTION CALCULATION SUMMARY:", 90, 790);
-
-                ctx.fillStyle = "#CBD5E1";
-                ctx.font = "24px monospace";
-                ctx.fillText(`TABLE EVALUATED: ${p.table_name || 'TRANSACTIONS'} (${filterEvals.length} Records)`, 90, 845);
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 25px monospace";
-                ctx.fillText("EXECUTION STATUS: 100% Verified Production Output", 90, 905);
-                ctx.fillStyle = "#F59E0B";
-                ctx.font = "bold 22px 'Segoe UI', sans-serif";
-                ctx.fillText("⚡ Engine Complexity: O(N log K) Linear Sorting • Zero Cartesian Join", 90, 965);
-
-                // 3. Big Glowing Neon 3D Glass Output Card
-                drawGlassTile(ctx, 60, 1050, W - 120, 450, 22, "#10B981", true, true, 1.0);
-
-                ctx.fillStyle = "#10B981";
-                ctx.font = "bold 32px 'Segoe UI', sans-serif";
-                ctx.fillText("🏆 VERIFIED FINAL QUERY OUTPUT:", 90, 1110);
-
-                ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-                ctx.fillRect(90, 1145, W - 180, 230);
-                ctx.strokeStyle = "#10B981";
-                ctx.lineWidth = 2;
-                ctx.strokeRect(90, 1145, W - 180, 230);
-
-                if (p.output_rows && Array.isArray(p.output_rows) && p.output_rows.length > 0) {
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.font = "bold 22px monospace";
-                    const colHeaders = (p.col_headers || ["ID", "COL2", "COL3", "VALUE"]).slice(0, 4).join("   ");
-                    ctx.fillText(colHeaders, 120, 1195);
-                    ctx.fillStyle = "#475569";
-                    ctx.fillText("---------------------------------------------", 120, 1225);
-
-                    ctx.fillStyle = "#10B981";
-                    ctx.font = "bold 24px monospace";
-                    p.output_rows.slice(0, 3).forEach((row, ri) => {
-                        const rowStr = Array.isArray(row) ? row.join("   ") : Object.values(row).join("   ");
-                        ctx.fillText(rowStr, 120, 1265 + ri * 40);
-                    });
-                } else if (p.output_value) {
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.font = "bold 26px monospace";
-                    ctx.fillText("RESULT_VALUE", 130, 1205);
-                    ctx.fillStyle = "#475569";
-                    ctx.fillText("-------------------------------------", 130, 1240);
-
-                    ctx.fillStyle = "#10B981";
-                    ctx.font = "bold 72px monospace";
-                    ctx.fillText(p.output_value.toString(), 130, 1320);
-                } else if (p.output_rows && Array.isArray(p.output_rows) && p.output_rows.length > 0) {
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.font = "bold 20px monospace";
-                    const colHeaders = (p.output_headers && p.output_headers.length > 0) 
-                        ? p.output_headers.join("   ") 
-                        : (typeof p.output_rows[0] === 'object' && !Array.isArray(p.output_rows[0]) ? Object.keys(p.output_rows[0]).join("   ") : "ENTITY   VALUE   STATUS");
-                    ctx.fillText(fitTextToWidth(ctx, colHeaders.toUpperCase(), W - 240), 120, 1195);
-                    ctx.fillStyle = "#475569";
-                    ctx.fillText("---------------------------------------------", 120, 1225);
-
-                    p.output_rows.slice(0, 3).forEach((orow, oi) => {
-                        ctx.fillStyle = oi === 0 ? "#10B981" : "#F8FAFC";
-                        ctx.font = "bold 22px monospace";
-                        const rStr = Array.isArray(orow) ? orow.join("   ") : Object.values(orow).join("   ");
-                        ctx.fillText(fitTextToWidth(ctx, rStr, W - 240), 120, 1265 + oi * 42);
-                    });
-                } else if (p.sample_rows && Array.isArray(p.sample_rows) && p.sample_rows.length > 0) {
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.font = "bold 20px monospace";
-                    const firstRow = p.sample_rows[0];
-                    const keys = Object.keys(firstRow).filter(k => k !== 'is_target');
-                    ctx.fillText(fitTextToWidth(ctx, keys.join("   ").toUpperCase(), W - 240), 120, 1195);
-                    ctx.fillStyle = "#475569";
-                    ctx.fillText("---------------------------------------------", 120, 1225);
-
-                    p.sample_rows.slice(0, 3).forEach((srow, si) => {
-                        ctx.fillStyle = si === 0 ? "#10B981" : "#F8FAFC";
-                        ctx.font = "bold 22px monospace";
-                        const vals = keys.map(k => srow[k]).join("   ");
-                        ctx.fillText(fitTextToWidth(ctx, vals, W - 240), 120, 1265 + si * 42);
-                    });
-                } else {
-                    ctx.fillStyle = "#10B981";
-                    ctx.font = "bold 32px monospace";
-                    ctx.fillText("🎯 QUERY EXECUTED SUCCESSFULLY", 120, 1240);
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.font = "20px monospace";
-                    ctx.fillText("Optimal Result Verified • Zero Performance Traps", 120, 1285);
-                }
-
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText(fitTextToWidth(ctx, "✅ 100% Accurate & Duplicate-Safe • Production-Ready FAANG Query!", W - 180), 90, 1435);
-
-                drawPhotonSparks(ctx, W - 140, 1260, "#10B981", t);
-
-                ctx.restore();
-            }
-        } // Close else block for sql_query storyboard
+        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
 
         // =========================================================================
-        // BOTTOM SUBTITLE / TEXT OVERLAY BANNER (Multilingual & Synchronized)
+        // FLOATING SUBTITLE PILL (Translucent Frosted Glass, Word-by-Word Highlight)
         // =========================================================================
-        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
-        ctx.fillRect(40, H - 360, W - 80, 220);
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(40, H - 360, W - 80, 220);
+        const subPillX = 60;
+        const subPillY = H - 300;
+        const subPillW = W - 120;
+        const subPillH = 170;
 
+        ctx.save();
+        ctx.fillStyle = "rgba(10, 16, 32, 0.78)";
+        ctx.beginPath();
+        ctx.roundRect(subPillX, subPillY, subPillW, subPillH, 22);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Subtitle Language Pill Badge
         ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        const langBadge = (sqlShortState.audioLang === "mr" ? "मराठी" : (sqlShortState.audioLang === "hi" ? "हिन्दी" : "ENGLISH")) + " AI TEACHER";
-        ctx.fillText(`🎙️ ${langBadge} • 👑 @Code_With_Mangesh`, 70, H - 315);
+        ctx.font = "bold 18px 'Segoe UI', sans-serif";
+        const langBadge = (sqlShortState.audioLang === "mr" ? "मराठी" : (sqlShortState.audioLang === "hi" ? "हिन्दी" : "ENGLISH")) + " AI VOICE";
+        ctx.fillText(`🎙️ ${langBadge}`, subPillX + 25, subPillY + 36);
 
-        // Dynamic Active Scene Speech Subtitles (Frame-Perfect Sync to Audio Narration)
+        // Subtitle Text
         let subtitleText = "";
-        if (isOutro) {
-            subtitleText = sqlShortState.audioLang === "mr" 
-                ? "👑 @Code_With_Mangesh: रोजच्या नवीन SQL ट्रिक्स आणि FAANG इंटरव्ह्यू तयारीसाठी आताच फॉलो करा!"
-                : (sqlShortState.audioLang === "hi"
-                    ? "👑 @Code_With_Mangesh: डेली SQL इंटरव्यू ट्रिक्स के लिए अभी फॉलो करें!"
-                    : "👑 @Code_With_Mangesh: Follow for daily FAANG SQL interview preparation!");
-        } else if (activeStage) {
+        if (activeStage) {
             subtitleText = activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || activeStage.speech_en || "";
         } else if (p.scenes && p.scenes.length > 0) {
             const sc = p.scenes.find(s => t >= s.start && t < s.end) || p.scenes[p.scenes.length - 1];
             subtitleText = sc['speech_' + sqlShortState.audioLang] || sc['speech_en'] || "";
         } else {
-            subtitleText = p['explanation_' + sqlShortState.textStyle] || p['explanation_' + sqlShortState.audioLang] || p.explanation_en;
+            subtitleText = p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
         }
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 28px 'Segoe UI', sans-serif";
-        const subLines = wrapCanvasText(ctx, subtitleText, W - 140);
-        subLines.slice(0, 3).forEach((line, idx) => {
-            ctx.fillText(line, 70, H - 262 + idx * 42);
-        });
-
-        // =========================================================================
-        // ZERO-WATERMARK SHIELD (Bottom Footer)
-        // =========================================================================
-        ctx.fillStyle = "#070B16";
-        ctx.fillRect(0, H - 120, W, 120);
-
-        // Tri-Color Glowing Ribbon
-        const mGrad = ctx.createLinearGradient(0, H - 120, W, H - 120);
-        mGrad.addColorStop(0, "#0284C7");
-        mGrad.addColorStop(0.5, "#38BDF8");
-        mGrad.addColorStop(1, "#10B981");
-        ctx.fillStyle = mGrad;
-        ctx.fillRect(0, H - 120, W, 5);
-
-        ctx.fillStyle = "#F8FAFC";
         ctx.font = "bold 26px 'Segoe UI', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("👑 @Code_With_Mangesh • TOP MNC & FAANG SQL STUDIO", W / 2, H - 70);
-
-        ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 20px 'Segoe UI', sans-serif";
-        ctx.fillText("✨ 100% Clean Zero-Watermark Studio • Step-by-Step Code Mastery", W / 2, H - 32);
-        ctx.textAlign = "left";
+        const subLines = wrapCanvasText(ctx, subtitleText, subPillW - 50, 3);
+        subLines.forEach((line, idx) => {
+            ctx.fillText(line, subPillX + 25, subPillY + 75 + idx * 36);
+        });
+        ctx.restore();
     }
 
     // Syntax Highlight Helper with Dynamic Responsive Auto-Scaling & Boundary Clamping
