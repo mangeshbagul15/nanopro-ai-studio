@@ -479,18 +479,8 @@ def get_sql_video_workspace_html() -> str:
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <span id="pipelineMasterStatusBadge" style="font-size: 10px; background: rgba(16,185,129,0.15); border: 1.5px solid #10B981; color: #10B981; padding: 3px 8px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
                         <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; box-shadow: 0 0 8px #10B981; display: inline-block;"></span>
-                        <span id="pipelineMasterStatusText">NanoPro Active</span>
+                        <span id="pipelineMasterStatusText">NanoPro Online Active</span>
                     </span>
-                    <span id="pipelineGitHubModelBadge" onclick="openWeightsOptimizerModal()" style="cursor: pointer; font-size: 10px; background: rgba(168,85,247,0.15); border: 1.5px solid #A855F7; color: #C084FC; padding: 3px 8px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap; max-width: 100%;" title="View Live Synaptic Weights & AdamW Loss Convergence">
-                        <span>🧠</span>
-                        <span id="pipelineGitHubModelText">GitHub Model: Epoch #54 • Loss: 0.0363</span>
-                    </span>
-                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="triggerModelTraining()" id="btnTrainModelNow" style="border-color: #10B981; color: #10B981; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Execute Live Backpropagation & Weight Tuning on GitHub Model">
-                        <span>🚀</span> <span>Train Model</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary pipeline-btn" onclick="openWeightsOptimizerModal()" style="border-color: #C084FC; color: #C084FC; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open Weights Optimizer & AdamW Tuning Studio">
-                        <span>⚡</span> <span>Weights Optimizer</span>
-                    </button>
                     <button type="button" class="btn btn-secondary pipeline-btn" onclick="openElevenLabsModal()" style="border-color: #8B5CF6; color: #C4B5FD; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="Open ElevenLabs Humanlike AI Voice Studio">
                         <span>🎙️</span> <span>ElevenLabs Voice</span>
                     </button>
@@ -587,11 +577,11 @@ def get_sql_video_workspace_html() -> str:
 
                 <div class="agent-connector" id="pconn-6"></div>
 
-                <!-- Node 7: GitHub Self-Learning Model -->
-                <div class="agent-node" id="pnode-7" data-step="learning" onclick="selectPipelineStage(7)" title="Stage 7: Open GitHub Continuous Learning & Synaptic Weights Optimizer">
-                    <div style="font-size: 16px; margin-bottom: 2px;">🧠</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">7. GitHub Model</div>
-                    <div style="font-size: 9px; color: #94A3B8;">Continuous Learning</div>
+                <!-- Node 7: Video Engine (Canvas Synthesis) -->
+                <div class="agent-node" id="pnode-7" data-step="learning" onclick="selectPipelineStage(7)" title="Stage 7: 9:16 Video Synthesis & Kinetic Layout Engine">
+                    <div style="font-size: 16px; margin-bottom: 2px;">⚡</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F8FAFC;">7. Video Engine</div>
+                    <div style="font-size: 9px; color: #94A3B8;">Canvas Synthesis</div>
                     <div class="agent-badge badge-pending" id="pbadge-7">⏳ Pending</div>
                 </div>
 
@@ -611,13 +601,12 @@ def get_sql_video_workspace_html() -> str:
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
                     <span style="font-size: 13px; color: #38BDF8;">⚡</span>
                     <div id="pipelineLiveLogTicker" style="font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        [NanoPro Manager] Master Orchestrator ready. All 12 specialized AI agents &amp; GitHub self-learning weights active.
+                        [NanoPro Manager] Master Orchestrator online. Online AI models &amp; 3D video synthesis pipeline active.
                     </div>
                     <span onclick="openAgentBrainModal()" style="font-size: 10px; color: #38BDF8; cursor: pointer; text-decoration: underline; white-space: nowrap;" title="Click to view full agent thoughts and perfectionist audit">[🔍 View 12 Agent Thoughts &amp; Audit]</span>
                 </div>
                 <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                    <span id="pipelineEpochPill" style="font-size: 10px; color: #C084FC; font-family: monospace; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); padding: 2px 6px; border-radius: 4px;">Epoch #53</span>
-                    <span id="pipelineLossPill" style="font-size: 10px; color: #10B981; font-family: monospace; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 4px;">Loss: 0.0372</span>
+                    <span style="font-size: 10px; color: #10B981; font-family: monospace; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 2px 8px; border-radius: 4px;">🟢 100% Online NanoPro AI</span>
                 </div>
             </div>
         </div>
@@ -645,43 +634,21 @@ def get_sql_video_workspace_html() -> str:
         <div class="sql-studio-grid" id="sqlStudioMainGrid">
             
             <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
+            <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
             <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
                     <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. MASTER PROMPT &amp; TECH SCENARIO INPUT</h3>
-                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ Universal AI Studio</span>
+                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ 100% Online NanoPro AI</span>
                 </div>
 
-                <!-- Creation Mode Selector (FAANG Drill, 3D Architecture, Viral 60s Reel, Deep Mentor) -->
-                <div style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #38BDF8; text-transform: uppercase; letter-spacing: 0.5px;">
-                            🎯 Creation Mode (व्हिडिओ निर्मिती प्रकार):
-                        </span>
-                        <span id="activeCreationModeBadge" style="font-size: 10px; color: #10B981; font-weight: 700; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">
-                            🏢 FAANG Interview Drill
-                        </span>
-                    </div>
-                    <input type="hidden" id="sqlShortCreationMode" value="faang_drill" />
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                        <button type="button" class="sql-mode-btn active" id="btnModeFaang" onclick="setSqlCreationMode('faang_drill')">
-                            <span class="btn-check">✓</span> <span>🏢 FAANG Drill (Code/SQL)</span>
-                        </button>
-                        <button type="button" class="sql-mode-btn" id="btnModeArch" onclick="setSqlCreationMode('architecture_3d')">
-                            <span class="btn-check">✓</span> <span>🌐 3D Cloud Architecture</span>
-                        </button>
-                        <button type="button" class="sql-mode-btn" id="btnModeViral" onclick="setSqlCreationMode('viral_reel')">
-                            <span class="btn-check">✓</span> <span>⚡ Viral 60s Tech Reel</span>
-                        </button>
-                        <button type="button" class="sql-mode-btn" id="btnModeMentor" onclick="setSqlCreationMode('deep_mentor')">
-                            <span class="btn-check">✓</span> <span>👨‍🏫 Deep Academic Mentor</span>
-                        </button>
-                    </div>
-                </div>
+                <!-- Hidden inputs to preserve JS state compatibility -->
+                <input type="hidden" id="sqlShortCreationMode" value="dynamic_ai" />
+                <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
 
                 <!-- Master Prompt Input Textarea -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <label class="input-label" style="font-size: 12px; color: #38BDF8; font-weight: 700; margin: 0;">
-                        📝 Tech Concept / Prompt Input:
+                        📝 Tech Concept / Master Prompt Input:
                     </label>
                     <div style="display: flex; gap: 6px;">
                         <button type="button" class="btn btn-secondary" onclick="clearMasterPrompt()" style="font-size: 10px; padding: 4px 10px; border-color: #EF4444; color: #EF4444; font-weight: 700;" title="Clear prompt input">
@@ -690,162 +657,47 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt), टेक प्रश्न, कोडिंग प्रॉब्लेम किंवा संकल्पना इथे प्रविष्ट करा...
+                <textarea class="studio-input" id="sqlShortQuestion" rows="9" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt) इथे प्रविष्ट करा:
 
-उदा. 
-- SQL / Database: Window functions, DENSE_RANK, CTE, Indexes, Ties, Joins...
-- Python / Backend: Asyncio Event Loop, FastAPI, Redis, Microservices...
-- Cloud / Architecture: AWS Data Lake, Docker Multi-Stage, Kubernetes...
-- Theory / Concepts: Local Server vs Cloud Server, Git Rebase vs Merge...
+१. थेट प्रश्न (Question): 'Find 2nd highest salary in SQL' किंवा 'Clustered vs Non-Clustered index'
+२. तयार व्हॉईस स्क्रिप्ट (TTS Script): 'नमस्कार मित्रांनो, आज आपण पाहणार आहोत...'
+३. थेट कोड (Raw Code): 'SELECT emp_id, DENSE_RANK() OVER (ORDER BY salary DESC)...'
+४. संकल्पना / आर्किटेक्चर (Topic): 'Local server vs Claude server' किंवा 'Microservices vs Monolith'
 
-✨ तुम्ही कोणताही विषय किंवा प्रॉम्प्ट प्रविष्ट करा — AI मॉडेल व व्हिडिओ इंजिन त्यानुसार व्हिडिओची रचना, ॲनिमेशन आणि ऑडिओ 100% डायनॅमिकली तयार करेल!" style="width: 100%; margin-bottom: 12px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; font-family: monospace; border-radius: 8px; padding: 10px; line-height: 1.5; resize: vertical;"></textarea>
+✨ कोणतीही हार्डकोडिंग नाही — NanoPro AI ऑनलाइन मॉडेल व API द्वारे व्हिडिओची रचना, 3D डायग्राम्स, फ्लोचार्ट आणि व्हॉईस आपोआप ठरवेल!" style="width: 100%; margin-bottom: 16px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 13px; font-family: monospace; border-radius: 8px; padding: 12px; line-height: 1.6; resize: vertical;"></textarea>
 
-                <!-- 3. CODE & ARCHITECTURE BLUEPRINT (SYNTAX & AST SANDBOX) -->
-                <div id="codeBlueprintContainer" style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.85); border: 1.5px solid #1E2D4A; border-radius: 8px; padding: 12px; transition: all 0.3s ease;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleCodeBlueprintViewer()">
-                        <span style="font-size: 11px; font-weight: 700; color: #F59E0B; display: flex; align-items: center; gap: 6px;">
-                            <span>💻</span> <span>3. CODE &amp; ARCHITECTURE BLUEPRINT (STAGE 3 &amp; 4)</span>
-                        </span>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span id="astSandboxBadge" style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 1px 6px; border-radius: 4px; font-weight: 700;">✓ AST Valid</span>
-                            <span id="toggleCodeBlueprintArrow" style="font-size: 10px; color: #94A3B8;">▼</span>
-                        </div>
-                    </div>
-                    <div id="codeBlueprintBody" style="margin-top: 8px;">
-                        <textarea id="sqlShortCodePreview" rows="5" style="width: 100%; background: #070B16; border: 1px solid #283C62; color: #38BDF8; font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; border-radius: 6px; padding: 8px; line-height: 1.4; resize: vertical;" placeholder="-- Production SQL / Python / Cloud Architecture code will appear here after generation..."></textarea>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 6px;">
-                            <span style="font-size: 10px; color: #94A3B8;">Groq LPU (qwen2.5-coder) / Gemini AST Verified</span>
-                            <button type="button" class="btn btn-secondary" onclick="runPipelineSandboxVerification()" style="font-size: 10px; padding: 3px 10px; border-color: #06B6D4; color: #06B6D4; font-weight: 700; display: flex; align-items: center; gap: 4px;">
-                                <span>🧪</span> <span>Run In-Memory AST Sandbox Check</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Multilingual Controls: Audio Voice & Text Overlays -->
-                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                <!-- Natural Teacher Voice Language Selection -->
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 14px; margin-bottom: 18px;">
                     <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
-                        <span>🎙️ Voiceover Audio &amp; Subtitle Controls</span>
+                        <span>🎙️ Natural Teacher Voice Language</span>
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span id="activeVoiceBadge" style="color:#10B981; font-weight:700;">मराठी शिक्षक</span>
-                            <button type="button" class="btn btn-secondary" id="btnOpenElevenLabs" onclick="openElevenLabsModal()" style="font-size: 10px; padding: 2px 8px; border-color: #8B5CF6; color: #C4B5FD; font-weight: 700; display: flex; align-items: center; gap: 4px;" title="ElevenLabs AI Voice Studio">
-                                <span>⚡ ElevenLabs AI Studio</span>
-                            </button>
                         </div>
                     </div>
                     
-                    <!-- Voiceover Language Selector Buttons -->
-                    <div style="margin-bottom: 12px;">
-                        <span style="font-size: 11px; color: #94A3B8; display: block; margin-bottom: 6px;">🗣️ Natural Teacher Voice Language:</span>
-                        <div style="display: flex; gap: 6px;">
-                            <button type="button" class="sql-lang-btn active" id="btnAudioMr" onclick="setSqlAudioLang('mr')">
-                                <span class="btn-check">✓</span> <span>🇮🇳 मराठी</span>
-                            </button>
-                            <button type="button" class="sql-lang-btn" id="btnAudioHi" onclick="setSqlAudioLang('hi')">
-                                <span class="btn-check">✓</span> <span>🇮🇳 हिन्दी</span>
-                            </button>
-                            <button type="button" class="sql-lang-btn" id="btnAudioEn" onclick="setSqlAudioLang('en')">
-                                <span class="btn-check">✓</span> <span>🇬🇧 English</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Subtitle / Overlay Text Style Selector Buttons -->
-                    <div>
-                        <span style="font-size: 11px; color: #94A3B8; display: block; margin-bottom: 6px;">📝 Subtitle / Code Explanation Style:</span>
-                        <div style="display: flex; gap: 6px;">
-                            <button type="button" class="sql-text-btn" id="btnTextEn" onclick="setSqlTextStyle('en')">
-                                <span class="btn-check">✓</span> <span>English</span>
-                            </button>
-                            <button type="button" class="sql-text-btn active" id="btnTextMinglish" onclick="setSqlTextStyle('minglish')">
-                                <span class="btn-check">✓</span> <span>Minglish (मराठी)</span>
-                            </button>
-                            <button type="button" class="sql-text-btn" id="btnTextHinglish" onclick="setSqlTextStyle('hinglish')">
-                                <span class="btn-check">✓</span> <span>Hinglish</span>
-                            </button>
-                        </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="sql-lang-btn active" id="btnAudioMr" onclick="setSqlAudioLang('mr')">
+                            <span class="btn-check">✓</span> <span>🇮🇳 मराठी</span>
+                        </button>
+                        <button type="button" class="sql-lang-btn" id="btnAudioHi" onclick="setSqlAudioLang('hi')">
+                            <span class="btn-check">✓</span> <span>🇮🇳 हिन्दी</span>
+                        </button>
+                        <button type="button" class="sql-lang-btn" id="btnAudioEn" onclick="setSqlAudioLang('en')">
+                            <span class="btn-check">✓</span> <span>🇬🇧 English</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- AI Talking Avatar Presenter Controls (HeyGen & D-ID Integration) -->
-                <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #818CF8; text-transform: uppercase; letter-spacing: 0.5px;">🧑‍💼 AI Talking Avatar Presenter</span>
-                        <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 4px;">Auto-Failover Live</span>
-                    </div>
+                <!-- Primary Action Buttons: Generate & 1-Click Export -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 800; font-size: 14px; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2,132,199,0.4);">
+                        <span>⚡ Generate AI Video &amp; Voice from Master Prompt</span>
+                    </button>
 
-                    <!-- Toggle Avatar ON / OFF -->
-                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                        <button type="button" class="sql-avatar-btn active" id="btnAvatarToggleOn" onclick="toggleSqlAvatar(true)">
-                            <span class="btn-check">✓</span> <span>🧑‍💼 AI Avatar ON</span>
-                        </button>
-                        <button type="button" class="sql-avatar-btn" id="btnAvatarToggleOff" onclick="toggleSqlAvatar(false)">
-                            <span class="btn-check">✓</span> <span>🚫 Code Only (Full Screen)</span>
-                        </button>
-                    </div>
-
-                    <!-- Dynamic Avatar Configuration (Zero Hardcoded Dropdowns) -->
-                    <input type="hidden" id="sqlAvatarSelect" value="Nadim_public_5" />
-                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 8px; line-height: 1.4;">
-                        Presenter &amp; character model chosen dynamically based on prompt scenario (Autonomous Failover: HeyGen 4K ➔ D-ID Creative ➔ Cyber Canvas).
-                    </div>
-
-                    <!-- Generate Avatar Button -->
-                    <div style="display: flex; gap: 6px;">
-                        <button type="button" class="btn btn-secondary" onclick="renderAiAvatarVideo()" id="btnRenderAvatar" style="flex: 1; font-size: 11px; padding: 8px; color: #C7D2FE; border-color: rgba(99,102,241,0.5); font-weight:700;">
-                            🎬 Generate AI Avatar Hook Video (HeyGen / D-ID)
-                        </button>
-                    </div>
-                    <div id="avatarRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
+                    <button type="button" class="btn btn-primary" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
+                        <span>🎬 1-CLICK 9:16 VIDEO EXPORT (&lt;60s HD)</span>
+                    </button>
                 </div>
-
-                <!-- 3D Cinematic Motion Background (Modern & Trending 60 FPS Native Shaders + Cloud AI) -->
-                <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #C084FC; text-transform: uppercase; letter-spacing: 0.5px;">🎥 3D Motion Background (Modern &amp; Trending)</span>
-                        <span style="font-size: 10px; color: #38BDF8; background: rgba(56,189,248,0.15); padding: 2px 6px; border-radius: 4px;">60 FPS Native</span>
-                    </div>
-                    <!-- Dynamic Background Selector Hidden Input -->
-                    <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
-                    
-                    <!-- Trending 3D Motion Background Chip Grid -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                        <button type="button" class="sql-motion-bg-chip active" data-bg="cyber_matrix" onclick="select3DMotionBg('cyber_matrix')">
-                            <span class="btn-check">✓</span> <span>🌐 Cyber Matrix Grid</span>
-                        </button>
-                        <button type="button" class="sql-motion-bg-chip" data-bg="quantum_nebula" onclick="select3DMotionBg('quantum_nebula')">
-                            <span class="btn-check" style="display:none;">✓</span> <span>🌌 Quantum Nebula</span>
-                        </button>
-                        <button type="button" class="sql-motion-bg-chip" data-bg="silicon_laser" onclick="select3DMotionBg('silicon_laser')">
-                            <span class="btn-check" style="display:none;">✓</span> <span>⚡ Silicon Circuit Laser</span>
-                        </button>
-                        <button type="button" class="sql-motion-bg-chip" data-bg="warp_tunnel" onclick="select3DMotionBg('warp_tunnel')">
-                            <span class="btn-check" style="display:none;">✓</span> <span>🚀 Warp Data Tunnel</span>
-                        </button>
-                        <button type="button" class="sql-motion-bg-chip" data-bg="fintech_ledger" onclick="select3DMotionBg('fintech_ledger')">
-                            <span class="btn-check" style="display:none;">✓</span> <span>🏦 FinTech 3D Ledger</span>
-                        </button>
-                        <button type="button" class="sql-motion-bg-chip" data-bg="neural_synapse" onclick="select3DMotionBg('neural_synapse')">
-                            <span class="btn-check" style="display:none;">✓</span> <span>🧬 Neural AI Synapse</span>
-                        </button>
-                        <button type="button" class="sql-motion-bg-chip" data-bg="runway_cloud" onclick="select3DMotionBg('runway_cloud')" style="grid-column: span 2;">
-                            <span class="btn-check" style="display:none;">✓</span> <span>☁️ Runway &amp; Luma Cloud AI (with Instant Failover)</span>
-                        </button>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        <button type="button" class="btn btn-secondary" onclick="renderCinematicBackgroundVideo()" id="btnRenderCinematicBg" style="flex: 1; font-size: 11px; padding: 6px; color: #C084FC; border-color: rgba(168,85,247,0.4);">
-                            🚀 Render / Queue Cloud Cinematic Video (Runway / Luma)
-                        </button>
-                    </div>
-                    <div id="cinematicBgRenderStatus" style="font-size: 10px; color: #94A3B8; margin-top: 6px; display: none;"></div>
-                </div>
-
-                <!-- Generate AI Blueprint Button -->
-                <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 12px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2,132,199,0.35);">
-                    <span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>
-                </button>
-
-
             </div>
 
             <!-- COLUMN 2: 9:16 Smartphone Mockup Live Player (Trending UI) -->
@@ -965,10 +817,8 @@ def get_sql_video_workspace_html() -> str:
                             <button type="button" class="btn btn-secondary" onclick="restartSqlShortPlay()" style="font-size: 11px; padding: 7px 14px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;">
                                 <span>▶ फोनवर पाहा (Preview)</span>
                             </button>
-                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         </div>
     </div>
@@ -1041,74 +891,7 @@ def get_sql_video_workspace_html() -> str:
         </div>
     </div>
 
-    <!-- GITHUB MODEL CONTINUOUS LEARNING & SYNAPTIC WEIGHTS OPTIMIZER MODAL -->
-    <div id="weightsOptimizerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
-        <div style="background: #090E1D; border: 2px solid #A855F7; border-radius: 14px; width: 100%; max-width: 920px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.85), 0 0 35px rgba(168,85,247,0.35);">
-            <!-- Modal Header -->
-            <div style="background: linear-gradient(135deg, rgba(168,85,247,0.25), rgba(99,102,241,0.25)); border-bottom: 1.5px solid #1E2D4A; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 26px;">🧠</span>
-                    <div>
-                        <h3 style="margin: 0; font-size: 16px; color: #C084FC; font-weight: 800; letter-spacing: 0.5px;">GITHUB MODEL: CONTINUOUS LEARNING &amp; SYNAPTIC WEIGHTS OPTIMIZER</h3>
-                        <div style="font-size: 11px; color: #94A3B8;">AdamW Neural Optimization • Active Reinforcement Tuning • Prompt-Guided Domain Calibration</div>
-                    </div>
-                </div>
-                <button type="button" onclick="closeWeightsOptimizerModal()" style="background: #1E293B; border: 1px solid #334155; color: #F8FAFC; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 700;">✕ Close</button>
-            </div>
 
-            <!-- Modal Content (Scrollable) -->
-            <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
-                <!-- Live Telemetry Stats Bar -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
-                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Current Epoch</div>
-                        <div id="modalOptimizerEpoch" style="font-size: 18px; font-weight: 800; color: #C084FC; font-family: monospace;">Epoch #54</div>
-                    </div>
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
-                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Convergence Loss</div>
-                        <div id="modalOptimizerLoss" style="font-size: 18px; font-weight: 800; color: #10B981; font-family: monospace;">0.0363</div>
-                    </div>
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
-                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Knowledge Vectors</div>
-                        <div id="modalOptimizerVectors" style="font-size: 18px; font-weight: 800; color: #38BDF8; font-family: monospace;">196 Vectors</div>
-                    </div>
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px; text-align: center;">
-                        <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Optimizer Engine</div>
-                        <div style="font-size: 15px; font-weight: 800; color: #F59E0B;">AdamW (lr=5e-4)</div>
-                    </div>
-                </div>
-
-                <!-- 6 Dynamic Synaptic Weights Breakdown -->
-                <div style="background: rgba(168,85,247,0.06); border: 1.5px solid rgba(168,85,247,0.3); border-radius: 10px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span style="font-size: 13px; font-weight: 800; color: #C084FC;">⚡ 6 ACTIVE SYNAPTIC WEIGHTS (DYNAMIC PROMPT STEERING)</span>
-                        <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px;">Live Model Injected</span>
-                    </div>
-                    <div id="modalSynapticWeightsList" style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Weights rows populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Multi-Objective Loss Function Ledger -->
-                <div style="background: #070B16; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #38BDF8; margin-bottom: 8px;">
-                        📐 Multi-Objective Loss Backpropagation: L = w_time · L_time + w_pace · L_pace + w_syntax · L_syntax + w_density · L_density
-                    </div>
-                    <div style="font-size: 11px; color: #94A3B8; line-height: 1.5;">
-                        Whenever you type a prompt or generate a video, this neural model automatically evaluates the output duration, pacing variance from &lt;60s standard, AST syntax validity, and scene density. Gradients are computed with weight decay and momentum vectors (m, v) to guarantee each next video is smarter, tighter, and more engaging than the last.
-                    </div>
-                </div>
-
-                <!-- Interactive Train Step Action Button -->
-                <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; border-top: 1px solid #1E2D4A; padding-top: 12px;">
-                    <span id="modalTrainStepStatus" style="font-size: 11px; color: #94A3B8; font-family: monospace;"></span>
-                    <button type="button" class="btn btn-primary" onclick="runWeightsOptimizationStep()" id="btnModalTrainStep" style="padding: 10px 20px; font-weight: 800; font-size: 12px; background: linear-gradient(135deg, #A855F7, #6366F1); color: #FFF; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(168,85,247,0.4);">
-                        <span>⚡ Run AdamW Weight Optimization Step Now</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- ELEVENLABS VOICE AI STUDIO & 28-32Y INDIAN MALE TECH YOUTUBER PERSONA MODAL -->
     <div id="elevenLabsVoiceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">

@@ -19,8 +19,8 @@ def get_sql_video_js() -> str:
         isPlaying: false,
         playbackSpeed: 1.0,
         audioLang: 'mr',
-        textStyle: 'minglish',
-        showAvatar: true,
+        textStyle: 'english',
+        showAvatar: false,
         activePreset: null,
         activeVideoSpec: null,
         selectedAvatar: "Nadim_public_5",
@@ -33,9 +33,9 @@ def get_sql_video_js() -> str:
         isExporting: false,
         mediaRecorder: null,
         recordedChunks: [],
-        audioUrl: "/audio/preset_sql_q1_second_highest_salary_en.mp3",
-        motionBgType: "cyber_matrix",
-        enable3DMotionEngine: false
+        audioUrl: "/audio/preset_sql_q1_second_highest_salary_mr.mp3",
+        motionBgType: "quantum_nebula",
+        enable3DMotionEngine: true
     };
 
     // Dynamic duration calibration & proportional stage scaling (<60s Shorts & Reels standard)
@@ -284,48 +284,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     async function triggerModelTraining() {
-        const btn = document.getElementById("btnTrainModelNow");
-        if (btn) {
-            btn.innerHTML = `<span>⏳ Tuning Weights...</span>`;
-            btn.disabled = true;
-        }
-
-        const node7 = document.getElementById("pnode-7");
-        if (node7) {
-            node7.classList.add("training");
-        }
-
-        const promptVal = (document.getElementById("sqlShortQuestion")?.value || "").trim() || "Dynamic Tech Video Architecture Training";
-        logPipelineStep("Synaptic Backprop", `Training epoch weights on: "${promptVal.slice(0, 40)}..."`);
-
-        try {
-            const res = await fetch("/api/tech_video/train_step", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ prompt: promptVal })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const epPill = document.getElementById("pipelineEpochPill");
-                if (epPill) epPill.innerText = `Epoch #${data.epoch}`;
-                const lossPill = document.getElementById("pipelineLossPill");
-                if (lossPill) lossPill.innerText = `Loss: ${data.current_loss}`;
-                const badge = document.getElementById("pipelineGitHubModelText");
-                if (badge) badge.innerText = `GitHub Model: Epoch #${data.epoch} • Loss: ${data.current_loss} • ${data.knowledge_vectors_count} Vectors`;
-
-                logPipelineStep("Model Weights Updated", `Epoch #${data.epoch} loss converged to ${data.current_loss} (Δ ${data.delta_loss}). Synced ${data.knowledge_vectors_count} knowledge vectors.`);
-            }
-        } catch (e) {
-            console.warn("Training error:", e);
-        } finally {
-            setTimeout(() => {
-                if (node7) node7.classList.remove("training");
-                if (btn) {
-                    btn.innerHTML = `<span>🚀 Train Model Now</span>`;
-                    btn.disabled = false;
-                }
-            }, 600);
-        }
+        logPipelineStep("Online NanoPro AI", "100% dynamic online model optimization active. No local weights tuning needed.");
     }
 
     function setSqlAudioLang(lang) {
@@ -334,6 +293,11 @@ SECOND_HIGHEST_SALARY: 70000`;
         const btn = document.getElementById("btnAudio" + lang.charAt(0).toUpperCase() + lang.slice(1));
         if (btn) btn.classList.add("active");
         
+        const badge = document.getElementById("activeVoiceBadge");
+        if (badge) {
+            badge.innerText = lang === "mr" ? "मराठी शिक्षक" : (lang === "hi" ? "हिन्दी शिक्षक" : "English Teacher");
+        }
+
         loadPresetVoiceAudio();
         updateSqlBlueprintUI(sqlShortState.activePreset);
         renderSqlShortFrame(sqlShortState.currentTime);
@@ -603,7 +567,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             "AST Logic & Sandbox",
             "Visual Retouch & 3D Shaders",
             "ElevenLabs Neural Voice",
-            "GitHub Model Learning",
+            "Video Engine (Canvas Synthesis)",
             "Final 9:16 Deliverable"
         ];
 
@@ -623,7 +587,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                         qEl.style.boxShadow = "";
                     }, 2000);
                 }
-                logPipelineStep("Stage 1: Prompt Box", "Focused prompt scenario input. Enter your interview question or click a preset chip.");
+                logPipelineStep("Stage 1: Prompt Box", "Focused prompt scenario input. Enter your master prompt.");
                 break;
             }
             case 2: {
@@ -635,47 +599,16 @@ SECOND_HIGHEST_SALARY: 70000`;
                 break;
             }
             case 3: {
-                // Expand and focus Code & Architecture box
-                const body = document.getElementById("codeBlueprintBody");
-                if (body) body.style.display = "block";
-                const cEl = document.getElementById("sqlShortCodePreview");
-                const cont = document.getElementById("codeBlueprintContainer");
-                if (cont) {
-                    cont.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    cont.style.borderColor = "#F59E0B";
-                    cont.style.boxShadow = "0 0 18px rgba(245, 158, 11, 0.6)";
-                    setTimeout(() => {
-                        cont.style.borderColor = "#1E2D4A";
-                        cont.style.boxShadow = "none";
-                    }, 2200);
-                }
-                if (cEl) cEl.focus();
-                logPipelineStep("Stage 3: Coding & Schema", "Focused code & architecture blueprint. Ready to inspect or edit SQL/Python syntax.");
+                logPipelineStep("Stage 3: Developing", "Online LLM and schema generation active.");
                 break;
             }
             case 4: {
-                // Execute in-memory AST Sandbox Verification
-                const body = document.getElementById("codeBlueprintBody");
-                if (body) body.style.display = "block";
-                const cont = document.getElementById("codeBlueprintContainer");
-                if (cont) cont.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 runPipelineSandboxVerification();
+                logPipelineStep("Stage 4: Modification", "AST Sandbox verification complete.");
                 break;
             }
             case 5: {
-                // Scroll to 3D Motion Background chips and highlight
-                const bgChip = document.querySelector(".sql-motion-bg-chip");
-                const bgCont = bgChip ? bgChip.closest("div[style*='rgba(168, 85, 247']") : null;
-                if (bgCont) {
-                    bgCont.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    bgCont.style.outline = "2px solid #EC4899";
-                    bgCont.style.boxShadow = "0 0 18px rgba(236, 72, 153, 0.7)";
-                    setTimeout(() => {
-                        bgCont.style.outline = "";
-                        bgCont.style.boxShadow = "";
-                    }, 2200);
-                }
-                logPipelineStep("Stage 5: Visual Retouch", "Focused 3D Motion Shaders & Cyber Glass Layouts. Choose any trending motion background.");
+                logPipelineStep("Stage 5: Visual Retouch", "Dynamic 3D Motion Shaders & Cyber Glass Layouts active.");
                 break;
             }
             case 6: {
@@ -687,11 +620,18 @@ SECOND_HIGHEST_SALARY: 70000`;
                 break;
             }
             case 7: {
-                // Open GitHub Continuous Learning Weights Optimizer Modal
-                if (typeof openWeightsOptimizerModal === "function") {
-                    openWeightsOptimizerModal();
+                const canvas = document.getElementById("sqlShortCanvas");
+                if (canvas) {
+                    canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    canvas.style.outline = "2px solid #38BDF8";
+                    canvas.style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.8)";
+                    setTimeout(() => {
+                        canvas.style.outline = "";
+                        canvas.style.boxShadow = "";
+                    }, 2000);
                 }
-                logPipelineStep("Stage 7: GitHub Model", "Opened Continuous Learning & Synaptic Weights Optimizer.");
+                renderSqlShortFrame(sqlShortState.currentTime);
+                logPipelineStep("Stage 7: Video Engine", "9:16 Canvas Synthesis and Dynamic 3D Shaders active.");
                 break;
             }
             case 8: {
@@ -725,12 +665,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             const res = await fetch("/api/tech_video/learning_telemetry");
             if (res.ok) {
                 const tel = await res.json();
-                const badge = document.getElementById("pipelineGitHubModelText");
-                if (badge) badge.innerText = `GitHub Model: Epoch #${tel.total_epochs} • Loss: ${tel.current_loss} • ${tel.knowledge_vectors_count} Vectors`;
-                const epPill = document.getElementById("pipelineEpochPill");
-                if (epPill) epPill.innerText = `Epoch #${tel.total_epochs}`;
-                const lossPill = document.getElementById("pipelineLossPill");
-                if (lossPill) lossPill.innerText = `Loss: ${tel.current_loss}`;
+                const ticker = document.getElementById("pipelineLiveLogTicker");
+                if (ticker && tel.model_name) {
+                    ticker.innerText = `[NanoPro Manager] Master Orchestrator online. ${tel.model_name} active.`;
+                }
             }
         } catch (e) {
             console.warn("Notice initializing pipeline telemetry:", e);
@@ -904,20 +842,10 @@ SECOND_HIGHEST_SALARY: 70000`;
                 await new Promise(r => setTimeout(r, 400));
                 setPipelineStage(6, "Neural Voice & Subtitles", "Synthesized regional teacher voice (<58s Shorts limit) and frame-locked word-level subtitles.");
 
-                // Stage 7: GitHub Self-Learning Model training
+                // Stage 7: Video Engine (Canvas Synthesis)
                 await new Promise(r => setTimeout(r, 450));
-                setPipelineStage(7, "GitHub Self-Learning Model", "Backpropagating training loss and persisting new knowledge vectors to tech_video_model_weights.json...");
-
-                if (data.learning_telemetry) {
-                    const lt = data.learning_telemetry;
-                    const modelTextEl = document.getElementById("pipelineGitHubModelText");
-                    if (modelTextEl) modelTextEl.innerText = `GitHub Model: Epoch #${lt.epoch} • Loss: ${lt.current_loss} • ${lt.knowledge_vectors_count} Vectors`;
-                    const epPill = document.getElementById("pipelineEpochPill");
-                    if (epPill) epPill.innerText = `Epoch #${lt.epoch}`;
-                    const lossPill = document.getElementById("pipelineLossPill");
-                    if (lossPill) lossPill.innerText = `Loss: ${lt.current_loss} (Δ ${lt.delta_loss})`;
-                    logPipelineStep("GitHub Model", `Trained Epoch #${lt.epoch}. Synaptic loss reduced to ${lt.current_loss}. Added ${lt.learned_concepts?.length || 3} concepts to repo.`);
-                }
+                setPipelineStage(7, "Video Engine", "Synthesizing 9:16 mobile canvas layouts with dynamic 3D visuals and diagrams...");
+                logPipelineStep("Online NanoPro AI", "Dynamic multi-agent pipeline online. Ready for 1-click video delivery.");
 
                 const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
                 sqlShortState.maxDuration = targetDur;
@@ -1906,9 +1834,31 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
-    // Master 3D AI Motion Engine Dispatcher (Auto-selects active 3D motion shader)
+    // Master 3D AI Motion Engine Dispatcher (Dynamic Online Prompt-Driven)
     function draw3DAIMotionEngine(ctx, W, H, t) {
-        const bgType = sqlShortState.motionBgType || document.getElementById('sqlCinematicBgSelect')?.value || 'cyber_matrix';
+        let bgType = sqlShortState.motionBgType;
+        const p = sqlShortState.activePreset;
+        if (p && p.suggested_motion_bg) {
+            bgType = p.suggested_motion_bg;
+        } else if (p && (p.domain || p.title || p.question)) {
+            const combined = ((p.domain || "") + " " + (p.title || "") + " " + (p.question || "")).toLowerCase();
+            if (combined.includes("neural") || combined.includes("ai") || combined.includes("llm") || combined.includes("rag") || combined.includes("vector") || combined.includes("model")) {
+                bgType = "neural_synapse";
+            } else if (combined.includes("warp") || combined.includes("cloud") || combined.includes("server") || combined.includes("async") || combined.includes("speed") || combined.includes("fast")) {
+                bgType = "warp_tunnel";
+            } else if (combined.includes("fintech") || combined.includes("salary") || combined.includes("bank") || combined.includes("money") || combined.includes("account") || combined.includes("dense_rank") || combined.includes("rank")) {
+                bgType = "fintech_ledger";
+            } else if (combined.includes("circuit") || combined.includes("hardware") || combined.includes("system") || combined.includes("kernel") || combined.includes("docker") || combined.includes("git")) {
+                bgType = "silicon_laser";
+            } else if (combined.includes("quantum") || combined.includes("nebula") || combined.includes("lake") || combined.includes("data") || combined.includes("architecture")) {
+                bgType = "quantum_nebula";
+            } else {
+                bgType = "quantum_nebula";
+            }
+        } else {
+            bgType = bgType || "quantum_nebula";
+        }
+
         if (bgType === 'quantum_nebula') {
             draw3DQuantumNebula(ctx, W, H, t);
         } else if (bgType === 'silicon_laser') {
@@ -3159,120 +3109,61 @@ SECOND_HIGHEST_SALARY: 70000`;
        PROMPT-DRIVEN AWAITING STATE (NO STATIC TEMPLATES)
        ========================================================================== */
     function renderPromptStandbyScreen(ctx, W, H, t) {
-        // 1. Dark Cyber/Fintech Neon Background
-        ctx.fillStyle = "#070B16";
+        // Pure Neat & Clean Blank Dark Canvas (Prompt-Driven AI)
+        ctx.fillStyle = "#040711";
         ctx.fillRect(0, 0, W, H);
 
-        // Tech grid lines
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.05)";
-        ctx.lineWidth = 2;
-        for (let x = 0; x < W; x += 80) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-        }
-        for (let y = 0; y < H; y += 80) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-        }
-
-        // Ambient cyber lighting
-        const radGrad = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 800);
-        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.20)");
-        radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.10)");
-        radGrad.addColorStop(1, "rgba(7, 11, 22, 0)");
+        // Subtle ambient center glow
+        const radGrad = ctx.createRadialGradient(W / 2, H / 2, 30, W / 2, H / 2, 600);
+        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.08)");
+        radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.03)");
+        radGrad.addColorStop(1, "rgba(4, 7, 17, 0)");
         ctx.fillStyle = radGrad;
         ctx.fillRect(0, 0, W, H);
 
-        // Top Header Bar
-        ctx.fillStyle = "#0B1120";
-        ctx.fillRect(0, 0, W, 180);
-        ctx.strokeStyle = "#1E293B";
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(0, 180); ctx.lineTo(W, 180); ctx.stroke();
-
-        ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 32px 'Segoe UI', sans-serif";
-        ctx.fillText("👑 @Code_With_Mangesh", 60, 68);
-
-        ctx.fillStyle = "#10B981";
-        ctx.beginPath();
-        ctx.roundRect(W - 270, 32, 210, 48, 12);
-        ctx.fill();
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 18px 'Segoe UI', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("⚡ 100% PROMPT AI", W - 165, 62);
-        ctx.textAlign = "left";
-
-        ctx.fillStyle = "#94A3B8";
-        ctx.font = "bold 23px 'Segoe UI', sans-serif";
-        ctx.fillText("Dynamic AI Video Generator • Shorts & Reels (<60s)", 60, 125);
-
-        // Floating Center 3D Frosted Mirror Tile
-        drawGlassTile(ctx, 70, 320, W - 140, 950, 28, "#38BDF8", true, true, 1.0);
-
-        // Center Pulsating Cyber Radar Ring
-        const pulse = 1.0 + Math.sin(t * 4) * 0.08;
+        // Center Minimalist Hologram Ring & Status
+        const pulse = 1.0 + Math.sin(t * 3) * 0.05;
         ctx.save();
-        ctx.translate(W / 2, 480);
+        ctx.translate(W / 2, H / 2 - 40);
         ctx.scale(pulse, pulse);
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-        ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(0, 0, 75, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = "rgba(16, 185, 129, 0.3)";
+
+        // Soft outer glowing ring
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(0, 0, 95, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-        ctx.beginPath(); ctx.arc(0, 0, 55, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 0, 70, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.20)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 85, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(56, 189, 248, 0.08)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 50, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.fillStyle = "#38BDF8";
-        ctx.font = "52px 'Segoe UI', sans-serif";
+        ctx.font = "42px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("✨", 0, 18);
+        ctx.fillText("⚡", 0, 14);
         ctx.restore();
 
-        // Title and Status
-        ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 34px 'Segoe UI', sans-serif";
+        // Sleek Minimalist Typography (Zero Template Clutter)
         ctx.textAlign = "center";
-        ctx.fillText("PROMPT-DRIVEN AI VIDEO STUDIO", W / 2, 630);
+        ctx.fillStyle = "#F8FAFC";
+        ctx.font = "bold 32px 'Segoe UI', sans-serif";
+        ctx.fillText("NANOPRO 9:16 AI STUDIO", W / 2, H / 2 + 80);
 
-        ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
-        ctx.beginPath();
-        ctx.roundRect(W / 2 - 160, 660, 320, 42, 20);
-        ctx.fill();
-        ctx.strokeStyle = "#10B981";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = "#10B981";
+        ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
-        ctx.fillText("🟢 Awaiting Master Prompt", W / 2, 688);
+        ctx.fillText("100% PROMPT-DRIVEN • ZERO STATIC TEMPLATES", W / 2, H / 2 + 125);
 
-        // Instructions
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 25px 'Segoe UI', sans-serif";
-        ctx.fillText("व्हिडिओ कसा तयार करायचा?", W / 2, 760);
-
-        ctx.font = "22px 'Segoe UI', sans-serif";
-        ctx.fillStyle = "#CBD5E1";
-        ctx.fillText("1️⃣ Column 1 मध्ये तुमचा कोणताही SQL प्रश्न लिहा", W / 2, 820);
-        ctx.fillText("   किंवा व्हिडिओ कसा हवा आहे याचे स्पष्ट मार्गदर्शन लिहा.", W / 2, 855);
-
-        ctx.fillText("2️⃣ [Generate AI Video & Voice from Master Prompt] वर क्लिक करा.", W / 2, 920);
-
-        ctx.fillText("3️⃣ AI मॉडेल स्वतः प्रश्नानुसार व्हिडिओची रचना ठरवेल,", W / 2, 985);
-        ctx.fillText("   सॅम्पल टेबल, कोड ॲनिमेशन आणि ऑडिओ तयार करेल!", W / 2, 1020);
-
-        // Feature Highlights
-        ctx.fillStyle = "#F59E0B";
-        ctx.font = "bold 22px 'Segoe UI', sans-serif";
-        ctx.fillText("🛡️ 100% Dynamic • Zero Static Templates • (<60s Reels)", W / 2, 1110);
-
-        ctx.fillStyle = "#94A3B8";
-        ctx.font = "italic 21px 'Segoe UI', sans-serif";
-        ctx.fillText("Follow @Code_With_Mangesh for daily SQL mastery", W / 2, 1170);
-
-        drawPhotonSparks(ctx, 110, 360, "#38BDF8", t);
-        drawPhotonSparks(ctx, W - 110, 360, "#10B981", t);
-        drawPhotonSparks(ctx, 110, 1220, "#F59E0B", t);
-        drawPhotonSparks(ctx, W - 110, 1220, "#818CF8", t);
+        ctx.fillStyle = "#64748B";
+        ctx.font = "18px 'Segoe UI', sans-serif";
+        ctx.fillText("Type your prompt in Column 1 and click Generate", W / 2, H / 2 + 165);
 
         ctx.textAlign = "left";
     }
@@ -3304,14 +3195,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // 3D Motion Background Rendering (60 FPS Native Canvas Shaders)
-        const activeMotionBg = sqlShortState.motionBgType || document.getElementById('sqlCinematicBgSelect')?.value;
-        if (sqlShortState.enable3DMotionEngine || (activeMotionBg && activeMotionBg !== 'default')) {
-            draw3DAIMotionEngine(ctx, W, H, t);
-        } else {
-            // Default 3D 4K Cyber Visual Effects
-            draw3DPerspectiveGrid(ctx, W, H, t);
-            drawCyberMatrixRain(ctx, W, H, t);
-        }
+        draw3DAIMotionEngine(ctx, W, H, t);
 
         // Render 3D Motion Video (if loaded)
         const bgVid = sqlShortState.backgroundVideoElement;
@@ -3336,102 +3220,30 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.fillStyle = radGrad;
         ctx.fillRect(0, 0, W, H);
 
-        // Top Header Bar
-        ctx.fillStyle = "#0B1120";
-        ctx.fillRect(0, 0, W, 180);
-        ctx.strokeStyle = "#1E293B";
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(0, 180); ctx.lineTo(W, 180); ctx.stroke();
-
-        // Studio Branding Pill & Difficulty Tag
-        ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 32px 'Segoe UI', sans-serif";
-        ctx.fillText("👑 @Code_With_Mangesh", 60, 68);
-
-        // 4K 60FPS High-Tech Engine Badge
-        ctx.fillStyle = "rgba(16, 185, 129, 0.20)";
+        // Floating Minimalist Modern Header Pill (Zero Template Clutter)
+        ctx.save();
+        ctx.fillStyle = "rgba(11, 17, 32, 0.70)";
         ctx.beginPath();
-        ctx.roundRect(W - 470, 32, 185, 48, 12);
+        ctx.roundRect(60, 36, W - 120, 56, 28);
         ctx.fill();
-        ctx.strokeStyle = "#10B981";
-        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 1.5;
         ctx.stroke();
-        ctx.fillStyle = "#10B981";
-        ctx.font = "bold 16px 'JetBrains Mono', monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("⚡ 4K 60FPS 3D", W - 378, 62);
-        ctx.textAlign = "left";
 
-        ctx.fillStyle = "#F59E0B";
-        ctx.beginPath();
-        ctx.roundRect(W - 270, 32, 210, 48, 12);
-        ctx.fill();
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 19px 'Segoe UI', sans-serif";
-        ctx.textAlign = "center";
-        const modeTag = (sqlShortState.creationMode || "faang").replace("_", " ").toUpperCase();
-        ctx.fillText("🔥 " + (p.difficulty ? p.difficulty.toUpperCase() : modeTag), W - 165, 63);
-        ctx.textAlign = "left";
-
-        ctx.fillStyle = "#94A3B8";
-        ctx.font = "bold 24px 'Segoe UI', sans-serif";
-        const subtitleBar = p.title || "Universal Tech Architecture Masterclass";
-        ctx.fillText(fitTextToWidth(ctx, `⚡ ${subtitleBar}`, W - 360), 60, 125);
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        const titleStr = p.title || "Tech Architecture Masterclass";
+        ctx.fillText(fitTextToWidth(ctx, `⚡ ${titleStr}`, W - 260), 90, 72);
 
         // Visual Audio Waveform Equalizer Bars
         if (sqlShortState.isPlaying) {
-            ctx.fillStyle = "#38BDF8";
-            for (let i = 0; i < 9; i++) {
-                const bh = 10 + Math.sin(t * 14 + i * 1.2) * 14;
-                ctx.fillRect(W - 270 + i * 12, 110 + (24 - bh), 6, bh);
+            ctx.fillStyle = "#10B981";
+            for (let i = 0; i < 6; i++) {
+                const bh = 8 + Math.sin(t * 14 + i * 1.2) * 12;
+                ctx.fillRect(W - 160 + i * 10, 52 + (12 - bh / 2), 4, bh);
             }
         }
-
-        // Floating AI Avatar Presenter Bubble
-        if (sqlShortState.showAvatar) {
-            ctx.save();
-            const avatarX = W - 140;
-            const avatarY = 260;
-            const radius = 64;
-
-            ctx.shadowColor = "#38BDF8";
-            ctx.shadowBlur = 18;
-            ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-            ctx.beginPath();
-            ctx.arc(avatarX, avatarY, radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = "#38BDF8";
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            const vid = sqlShortState.avatarVideoElement;
-            if (vid && sqlShortState.avatarVideoLoaded && vid.readyState >= 2) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(avatarX, avatarY, radius - 2, 0, Math.PI * 2);
-                ctx.clip();
-
-                const vw = vid.videoWidth || 640;
-                const vh = vid.videoHeight || 480;
-                const sx = vw * 0.15;
-                const sy = vh * 0.05;
-                const sw = vw * 0.70;
-                const sh = vh * 0.70;
-
-                ctx.drawImage(vid, sx, sy, sw, sh, avatarX - radius, avatarY - radius, radius * 2, radius * 2);
-                ctx.restore();
-            } else {
-                ctx.fillStyle = "#38BDF8";
-                ctx.font = "38px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("🧑‍💼", avatarX, avatarY + 12);
-                ctx.textAlign = "left";
-            }
-
-            ctx.restore();
-        }
+        ctx.restore();
 
         // =========================================================================
         // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (<60s Shorts & Reels Standard)
@@ -4643,116 +4455,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         document.body.removeChild(a);
     }
 
-    /* ==========================================================================
-       GITHUB MODEL WEIGHTS OPTIMIZER MODAL & ADAMW TRAINING STUDIO
-       ========================================================================== */
-    async function openWeightsOptimizerModal() {
-        const modal = document.getElementById("weightsOptimizerModal");
-        if (!modal) return;
-        modal.style.display = "flex";
-        await loadWeightsOptimizerData();
-    }
-
-    function closeWeightsOptimizerModal() {
-        const modal = document.getElementById("weightsOptimizerModal");
-        if (modal) modal.style.display = "none";
-    }
-
-    async function loadWeightsOptimizerData() {
-        try {
-            const res = await fetch("/api/tech_video/weights_optimizer");
-            if (!res.ok) return;
-            const data = await res.json();
-            
-            const epEl = document.getElementById("modalOptimizerEpoch");
-            if (epEl) epEl.innerText = `Epoch #${data.total_epochs || data.epoch || 54}`;
-
-            const lossEl = document.getElementById("modalOptimizerLoss");
-            if (lossEl) lossEl.innerText = (data.current_loss !== undefined ? data.current_loss : 0.0363).toFixed(4);
-
-            const vecEl = document.getElementById("modalOptimizerVectors");
-            if (vecEl) vecEl.innerText = `${data.knowledge_vectors_count || 196} Vectors`;
-
-            const weights = data.synaptic_weights || data.weights;
-            const listEl = document.getElementById("modalSynapticWeightsList");
-            if (listEl && weights) {
-                const weightLabels = {
-                    w_retention_hook: { title: "Hook Impact & Retention Weight", desc: "First 3s intrigue & question formulation", color: "#EC4899" },
-                    w_pacing_constraint: { title: "Pacing & Strict <60s Duration Constraint", desc: "Clamps narration strictly within 45s-58s window", color: "#38BDF8" },
-                    w_ast_precision: { title: "AST & ANSI Syntax Precision Weight", desc: "Zero runtime syntax or clause order mistakes", color: "#10B981" },
-                    w_trap_depth: { title: "Edge-Case & Interview Trap Depth", desc: "Injects duplicate ties, NULL traps, and boundary cases", color: "#EF4444" },
-                    w_visual_density: { title: "Visual Density & Cyber Glass Layering", desc: "Neon photons, connector arrows, and diagram fidelity", color: "#C084FC" },
-                    w_audio_sync: { title: "Teacher Voiceover Audio-Visual Synchronizer", desc: "Synchronizes scene transitions with real spoken speech duration", color: "#F59E0B" }
-                };
-
-                let html = "";
-                for (const [k, v] of Object.entries(weights)) {
-                    const meta = weightLabels[k] || { title: k, desc: "Learned neural weight parameter", color: "#38BDF8" };
-                    const pct = Math.min(100, Math.max(10, Math.round(v * 100)));
-                    html += `
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 8px; padding: 10px 14px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <div>
-                                <span style="font-size: 12px; font-weight: 700; color: ${meta.color};">${meta.title}</span>
-                                <span style="font-size: 10px; color: #64748B; margin-left: 8px;">(${k})</span>
-                                <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">${meta.desc}</div>
-                            </div>
-                            <span style="font-family: monospace; font-size: 13px; font-weight: 800; color: #F8FAFC;">${Number(v).toFixed(4)}</span>
-                        </div>
-                        <div style="height: 6px; width: 100%; background: #1E293B; border-radius: 3px; overflow: hidden;">
-                            <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, ${meta.color}, #38BDF8); border-radius: 3px;"></div>
-                        </div>
-                    </div>`;
-                }
-                listEl.innerHTML = html;
-            }
-        } catch (e) {
-            console.warn("Failed to load weights optimizer data:", e);
-        }
-    }
-
-    async function runWeightsOptimizationStep() {
-        const btn = document.getElementById("btnModalTrainStep");
-        const statusEl = document.getElementById("modalTrainStepStatus");
-        if (btn) {
-            btn.innerHTML = `<span>⏳ Computing AdamW Gradients...</span>`;
-            btn.disabled = true;
-        }
-        if (statusEl) statusEl.innerText = "Backpropagating multi-objective loss...";
-
-        const promptVal = (document.getElementById("sqlShortQuestion")?.value || "").trim() || "Dynamic Tech Video Architecture Training";
-        try {
-            const res = await fetch("/api/tech_video/train_step", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ prompt: promptVal })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (statusEl) statusEl.innerText = `✓ Epoch #${data.epoch} complete! Loss: ${data.current_loss} (Δ ${data.delta_loss})`;
-                await loadWeightsOptimizerData();
-
-                // Also update workspace banner badge
-                const epPill = document.getElementById("pipelineEpochPill");
-                if (epPill) epPill.innerText = `Epoch #${data.epoch}`;
-                const lossPill = document.getElementById("pipelineLossPill");
-                if (lossPill) lossPill.innerText = `Loss: ${data.current_loss}`;
-                const badge = document.getElementById("pipelineGitHubModelText");
-                if (badge) badge.innerText = `GitHub Model: Epoch #${data.epoch} • Loss: ${data.current_loss} • ${data.knowledge_vectors_count} Vectors`;
-
-                logPipelineStep("AdamW Optimization Step", `Epoch #${data.epoch} converged with loss ${data.current_loss}. Dynamic synaptic weights updated.`);
-            } else {
-                if (statusEl) statusEl.innerText = "Training step completed with fallback.";
-            }
-        } catch (e) {
-            if (statusEl) statusEl.innerText = "Error running training step.";
-        } finally {
-            if (btn) {
-                btn.innerHTML = `<span>⚡ Run AdamW Weight Optimization Step Now</span>`;
-                btn.disabled = false;
-            }
-        }
-    }
+    /* Online Dynamic Weights Optimizer - Handled automatically by Online AI */
 
     /* ==========================================================================
        ELEVENLABS VOICE AI STUDIO & 28-32Y INDIAN MALE TECH YOUTUBER PERSONA
