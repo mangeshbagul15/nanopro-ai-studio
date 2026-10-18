@@ -356,153 +356,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (arrowEl) arrowEl.innerText = p.arrow_target || p.golden_rule || "OVER ()";
     }
 
-    function logPipelineStep(agentName, message) {
-        const ticker = document.getElementById("pipelineLiveLogTicker");
-        if (ticker) {
-            const timeStr = new Date().toLocaleTimeString();
-            ticker.innerHTML = `[${timeStr}] <b style="color: #38BDF8;">[${agentName}]</b> <span style="color: #E2E8F0;">${message}</span>`;
-        }
-    }
-
-    function setPipelineStage(activeIdx, agentName, message) {
-        logPipelineStep(agentName, message);
-
-        // 1. Update Progress Bar & Percentage
-        const pct = Math.min(100, Math.round((activeIdx / 8) * 100));
-        const bar = document.getElementById("pipelineProgressBarFill");
-        if (bar) {
-            bar.style.width = `${pct}%`;
-            if (pct >= 100) {
-                bar.style.background = "linear-gradient(90deg, #10B981, #059669, #34D399)";
-                bar.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.85)";
-            } else {
-                bar.style.background = "linear-gradient(90deg, #38BDF8, #6366F1, #10B981)";
-                bar.style.boxShadow = "0 0 10px rgba(56, 189, 248, 0.7)";
-            }
-        }
-
-        // 2. Update Progress Label & Percentage Text
-        const labelEl = document.getElementById("pipelineProgressLabel");
-        if (labelEl) {
-            labelEl.innerText = `Stage ${activeIdx} of 8: ${agentName} Active`;
-        }
-        const pctEl = document.getElementById("pipelineProgressPercent");
-        if (pctEl) {
-            pctEl.innerText = `${pct}% ${pct >= 100 ? 'COMPLETE' : 'RUNNING'}`;
-            pctEl.style.color = pct >= 100 ? '#10B981' : '#38BDF8';
-            pctEl.style.borderColor = pct >= 100 ? 'rgba(16,185,129,0.5)' : 'rgba(56,189,248,0.5)';
-            pctEl.style.background = pct >= 100 ? 'rgba(16,185,129,0.2)' : 'rgba(56,189,248,0.2)';
-        }
-
-        // 3. Update Master Status Header Badge
-        const masterStatusBadge = document.getElementById("pipelineMasterStatusBadge");
-        const masterStatus = document.getElementById("pipelineMasterStatusText");
-        if (masterStatus) {
-            if (activeIdx === 8) {
-                masterStatus.innerText = "✓ STAGE 8/8 READY (100%)";
-                if (masterStatusBadge) {
-                    masterStatusBadge.style.borderColor = "#10B981";
-                    masterStatusBadge.style.color = "#10B981";
-                    masterStatusBadge.style.background = "rgba(16,185,129,0.2)";
-                }
-            } else {
-                masterStatus.innerText = `⚡ STAGE ${activeIdx}/8 ACTIVE: ${agentName.toUpperCase()}`;
-                if (masterStatusBadge) {
-                    masterStatusBadge.style.borderColor = "#38BDF8";
-                    masterStatusBadge.style.color = "#38BDF8";
-                    masterStatusBadge.style.background = "rgba(56,189,248,0.2)";
-                }
-            }
-        }
-
-        // 4. Update All 8 Nodes, Connectors and Badges
-        for (let i = 1; i <= 8; i++) {
-            const node = document.getElementById(`pnode-${i}`);
-            const conn = document.getElementById(`pconn-${i}`);
-            const badge = document.getElementById(`pbadge-${i}`);
-
-            if (node) {
-                node.classList.remove('active', 'completed', 'training');
-                if (i < activeIdx) {
-                    node.classList.add('completed');
-                    if (badge) {
-                        badge.className = "agent-badge badge-done";
-                        badge.innerText = "✓ Done";
-                    }
-                } else if (i === activeIdx) {
-                    if (i === 7) {
-                        node.classList.add('training');
-                    } else {
-                        node.classList.add('active');
-                    }
-                    if (badge) {
-                        badge.className = "agent-badge badge-running";
-                        badge.innerText = "⚡ RUNNING";
-                    }
-                } else {
-                    if (badge) {
-                        badge.className = "agent-badge badge-pending";
-                        badge.innerText = "⏳ Pending";
-                    }
-                }
-            }
-            if (conn) {
-                conn.classList.remove('active', 'completed');
-                if (i < activeIdx) {
-                    conn.classList.add('completed');
-                } else if (i === activeIdx) {
-                    conn.classList.add('active');
-                }
-            }
-        }
-    }
-
-    function markPipelineAllCompleted() {
-        for (let i = 1; i <= 8; i++) {
-            const node = document.getElementById(`pnode-${i}`);
-            const conn = document.getElementById(`pconn-${i}`);
-            const badge = document.getElementById(`pbadge-${i}`);
-            if (node) {
-                node.classList.remove('active', 'training');
-                node.classList.add('completed');
-            }
-            if (conn) {
-                conn.classList.remove('active');
-                conn.classList.add('completed');
-            }
-            if (badge) {
-                badge.className = "agent-badge badge-done";
-                badge.innerText = "✓ Done";
-            }
-        }
-        const bar = document.getElementById("pipelineProgressBarFill");
-        if (bar) {
-            bar.style.width = "100%";
-            bar.style.background = "linear-gradient(90deg, #10B981, #059669, #34D399)";
-            bar.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.85)";
-        }
-        const pctEl = document.getElementById("pipelineProgressPercent");
-        if (pctEl) {
-            pctEl.innerText = "100% COMPLETE";
-            pctEl.style.color = "#10B981";
-            pctEl.style.borderColor = "rgba(16,185,129,0.5)";
-            pctEl.style.background = "rgba(16,185,129,0.2)";
-        }
-        const labelEl = document.getElementById("pipelineProgressLabel");
-        if (labelEl) {
-            labelEl.innerText = "Stage 8 of 8: Master 9:16 Video Synthesis Complete (Ready)";
-        }
-        const masterStatus = document.getElementById("pipelineMasterStatusText");
-        const masterStatusBadge = document.getElementById("pipelineMasterStatusBadge");
-        if (masterStatus) {
-            masterStatus.innerText = "✓ Pipeline Complete (100% Ready)";
-            if (masterStatusBadge) {
-                masterStatusBadge.style.borderColor = "#10B981";
-                masterStatusBadge.style.color = "#10B981";
-                masterStatusBadge.style.background = "rgba(16,185,129,0.2)";
-            }
-        }
-    }
+    function logPipelineStep() {}
+    function setPipelineStage() {}
+    function markPipelineAllCompleted() {}
 
     function toggleCodeBlueprintViewer() {
         const body = document.getElementById("codeBlueprintBody");
@@ -660,20 +516,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
     }
 
-    async function initPipelineTelemetry() {
-        try {
-            const res = await fetch("/api/tech_video/learning_telemetry");
-            if (res.ok) {
-                const tel = await res.json();
-                const ticker = document.getElementById("pipelineLiveLogTicker");
-                if (ticker && tel.model_name) {
-                    ticker.innerText = `[NanoPro Manager] Master Orchestrator online. ${tel.model_name} active.`;
-                }
-            }
-        } catch (e) {
-            console.warn("Notice initializing pipeline telemetry:", e);
-        }
-    }
+    function initPipelineTelemetry() {}
 
     const SCENARIO_PRESETS = {
         sql: "Find the 2nd Highest Salary per Department using DENSE_RANK() and PARTITION BY in SQL. Handle ties and explain why DENSE_RANK() is preferred over ROW_NUMBER().",
@@ -797,15 +640,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         btn.disabled = true;
 
         // Stage 1: Ingest prompt & scenario (12.5%)
-        setPipelineStage(1, "Prompt Ingestion Agent", "Parsing user scenario and detecting technical domain...");
         await new Promise(r => setTimeout(r, 250));
 
         // Stage 2: NanoPro Master Manager decomposition (25%)
-        setPipelineStage(2, "NanoPro Master Manager", "Orchestrating multi-agent workflow: allocating coding, sandbox, visual, voice & learning tasks...");
         await new Promise(r => setTimeout(r, 250));
 
         // Stage 3: Coding & Architecture Agent dispatch (37.5%)
-        setPipelineStage(3, "Coding & Architecture Agent", "Groq LPU (qwen2.5-coder) / Gemini synthesizing production code, sample tables & dynamic schema...");
 
         try {
             const res = await fetch("/api/sql_video/generate_prompt", {
@@ -831,20 +671,16 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 // Stage 4: Modification & Sandbox Verification
                 await new Promise(r => setTimeout(r, 350));
-                setPipelineStage(4, "Logic Sandbox & AST Agent", "Executing in-memory verification sandbox. Syntax trees and data outputs 100% verified.");
                 runPipelineSandboxVerification();
 
                 // Stage 5: Visual Motion & Retouch
                 await new Promise(r => setTimeout(r, 400));
-                setPipelineStage(5, "Visual Retouch Agent", "Assembling 9:16 vertical kinetic canvas with neon highlight borders, arrow indicators & transitions.");
 
                 // Stage 6: Neural Voice & Subtitles
                 await new Promise(r => setTimeout(r, 400));
-                setPipelineStage(6, "Neural Voice & Subtitles", "Synthesized regional teacher voice (<58s Shorts limit) and frame-locked word-level subtitles.");
 
                 // Stage 7: Video Engine (Canvas Synthesis)
                 await new Promise(r => setTimeout(r, 450));
-                setPipelineStage(7, "Video Engine", "Synthesizing 9:16 mobile canvas layouts with dynamic 3D visuals and diagrams...");
                 logPipelineStep("Online NanoPro AI", "Dynamic multi-agent pipeline online. Ready for 1-click video delivery.");
 
                 const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
@@ -905,8 +741,6 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 // Stage 8: 1-Click Deliverable Complete
                 await new Promise(r => setTimeout(r, 450));
-                setPipelineStage(8, "1-Click Deliverable", "Master 9:16 video generation complete! Client-side canvas ready for instant export.");
-                markPipelineAllCompleted();
             } else {
                 alert("Blueprint generation error: " + (data.message || "Failed"));
             }
@@ -4199,9 +4033,6 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.loadPresetVoiceAudio = loadPresetVoiceAudio;
     window.loadDemoMasterPrompt = loadDemoMasterPrompt;
     window.clearMasterPrompt = clearMasterPrompt;
-    window.initPipelineTelemetry = initPipelineTelemetry;
-    window.setPipelineStage = setPipelineStage;
-    window.logPipelineStep = logPipelineStep;
     window.insertPromptScenario = insertPromptScenario;
     window.openAgentBrainModal = openAgentBrainModal;
     window.closeAgentBrainModal = closeAgentBrainModal;
@@ -4218,16 +4049,6 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.selectPipelineStage = selectPipelineStage;
     window.runPipelineSandboxVerification = runPipelineSandboxVerification;
     window.toggleCodeBlueprintViewer = toggleCodeBlueprintViewer;
-    window.markPipelineAllCompleted = markPipelineAllCompleted;
-
-    // Auto-initialize telemetry on load
-    if (typeof document !== 'undefined') {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPipelineTelemetry);
-        } else {
-            initPipelineTelemetry();
-        }
-    }
 
     // Video Studio Clean Teardown Listeners (Avoid Chrome Zombie Lockups)
     window.addEventListener("pagehide", () => {
