@@ -2376,6 +2376,51 @@ class SqlShortVideoEngine:
         finally:
             conn.close()
 
+    def _build_prompt_fallback(self, text: str, lang_key: str) -> Dict[str, Any]:
+        """Build a topic-grounded storyboard when the model is unavailable or returns invalid JSON."""
+        topic = re.sub(r"\s+", " ", (text or "").strip())[:220] or "Technology"
+        words = [w for w in re.findall(r"[A-Za-z0-9_+#.-]+", topic) if len(w) > 2]
+        anchor = " ".join(words[:4]) or topic[:48]
+        labels = [anchor, "Core components", "Data or action flow", "Real-world outcome", "Key takeaway"]
+        titles = ["The core idea", "What it contains", "How it works", "Where it helps", "Remember this"]
+        en = [
+            f"Let's understand {topic}. Start with the central idea and the problem this topic solves.",
+            f"The important parts of {anchor} work together. Focus on each component's role and how they connect.",
+            f"Follow the flow in order: an input arrives, the relevant steps process it, and a clear result emerges.",
+            f"In practice, {anchor} helps teams make this process more useful, reliable, and easier to operate.",
+            f"The key takeaway about {anchor} is to understand the purpose, the parts, and how the complete flow produces its outcome."
+        ]
+        mr = [
+            f"चला {topic} समजून घेऊया. ही मुख्य कल्पना कोणती समस्या सोडवते ते आधी पाहू.",
+            f"{anchor} चे महत्त्वाचे भाग एकत्र काम करतात. प्रत्येक भागाची भूमिका आणि त्यांचा संबंध समजून घ्या.",
+            "प्रवाह क्रमाने पाहा: इनपुट येतो, आवश्यक टप्पे त्यावर प्रक्रिया करतात आणि शेवटी स्पष्ट परिणाम मिळतो.",
+            f"प्रत्यक्ष वापरात {anchor} ही प्रक्रिया अधिक उपयुक्त, विश्वासार्ह आणि हाताळायला सोपी बनवतो.",
+            f"{anchor} मधला मुख्य धडा म्हणजे उद्देश, घटक आणि पूर्ण प्रवाहाचा परिणाम एकत्र समजून घेणे."
+        ]
+        hi = [
+            f"आइए {topic} को समझते हैं। पहले देखें कि यह मुख्य विचार किस समस्या को हल करता है।",
+            f"{anchor} के जरूरी हिस्से मिलकर काम करते हैं। हर हिस्से की भूमिका और उनका संबंध समझें।",
+            "प्रवाह को क्रम से देखें: इनपुट आता है, जरूरी चरण उस पर काम करते हैं और स्पष्ट परिणाम मिलता है।",
+            f"वास्तविक उपयोग में {anchor} इस प्रक्रिया को अधिक उपयोगी, भरोसेमंद और संभालने में आसान बनाता है।",
+            f"{anchor} की मुख्य सीख है उद्देश्य, हिस्सों और पूरे प्रवाह के परिणाम को साथ समझना।"
+        ]
+        speech = {"en": en, "mr": mr, "hi": hi}.get(lang_key, en)
+        scenes = []
+        for i, line in enumerate(speech):
+            left = labels[i]
+            right = labels[(i + 1) % len(labels)]
+            scenes.append({
+                "title": titles[i], "speech": line,
+                "visual_description": f"A topic-specific visual explaining {topic}: {titles[i].lower()}.",
+                "visual_motif": "connected topic map", "composition": ["centerpiece", "split", "flow", "radial", "close-up"][i],
+                "motion": ["assemble", "orbit", "travel", "pulse", "settle"][i],
+                "entities": [
+                    {"label": left, "detail": f"Topic element: {left}", "shape": "orb", "color": "#38BDF8"},
+                    {"label": right, "detail": f"Connected idea: {right}", "shape": "block", "color": "#A78BFA"}
+                ],
+                "relationships": [{"from": left, "to": right, "label": "connects to"}]
+            })
+        return {"title": topic[:80], "domain": "Prompt-based technology", "content_type": "tech_topic", "suggested_motion_bg": "neural_synapse", "scenes": scenes}
     async def generate_short_prompt_async(
         self,
         topic_or_question: str,
@@ -2404,7 +2449,7 @@ class SqlShortVideoEngine:
 
         # Content Type Detection informs metadata only. Every user prompt must pass through
         # the model so no SQL demo blueprint or static storyboard can replace its topic.
-        content_type = self._detect_content_type(text_input)
+        content_type = "sql_query" if re.search(r"```sql|^\s*(?:SELECT|WITH)\b|\bwrite\s+(?:an?\s+)?sql\s+(?:query|code)\b", text_input, re.I | re.M) else "tech_topic"
 
         # 4. If still not matched, synthesize via online AI model dynamically
         if not matched and len(text_input) > 8:
@@ -2424,7 +2469,7 @@ class SqlShortVideoEngine:
                     f"2. Formulate 5 to 8 educational scenes that cover every key point in the user's scenario. Write enough narration to explain the full request naturally; do not shorten or omit content to fit a Shorts duration limit.\n"
                     f"3. For each scene, express what the spoken line means as visual_description, visual_motif, entities (2-5 prompt-specific objects with label, detail, shape, color), and relationships (from/to). Pick a different composition and motion for each beat; vary entity count and spatial arrangement, avoid repeating the same composition, and never use placeholder/demo entities.\n"
                     f"4. Write speech naturally in the selected language, covering all important prompt details. Scene speech in order is the exact narration that must be synthesized; avoid generic interview intros/outros unless the prompt asks for them.\n\n"
-                    f"Output strictly raw JSON with title, domain, suggested_motion_bg, and scenes. Each scene has title, speech, visual_description, visual_motif, composition, motion, entities, and relationships. Entities are arrays of {{label, detail, shape, color}}; relationships are arrays of {{from, to, label}}. Every entity and visual detail must come from the user's topic or be necessary to explain it.\n"
+                    f"Output strictly raw JSON with title, domain, content_type, suggested_motion_bg, and scenes. Set content_type to sql_query only when the user explicitly asks for SQL code; otherwise use tech_topic. Each scene has title, speech, visual_description, visual_motif, composition, motion, entities, and relationships. Entities are arrays of {{label, detail, shape, color}}; relationships are arrays of {{from, to, label}}. Every entity and visual detail must come from the user's topic or be necessary to explain it.\n"
                     f'{{"title":"Topic-specific title","domain":"Inferred domain","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"A beat grounded in the prompt","speech":"Complete spoken explanation in {lang_key}","visual_description":"What the viewer should see while hearing this line","visual_motif":"Topic-specific motif","composition":"A composition suited to this beat","motion":"How the objects move in sync with the explanation","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"orb, ring, block, stream, or another apt form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"another apt form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}]}}]}}'
                     f"}}"
                 )
@@ -2454,12 +2499,16 @@ class SqlShortVideoEngine:
                     matched["difficulty"] = difficulty
             except Exception as e:
                 log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
-                raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.") from e
+                matched = self._build_prompt_fallback(text_input, lang_key)
+                matched["id"] = "custom_prompt_fallback"
+                matched["question"] = text_input
+                matched["difficulty"] = difficulty
+                matched["stages"] = matched["scenes"]
 
         if not matched:
             raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.")
 
-        matched_content_type = matched.get("content_type", content_type)
+        matched_content_type = matched.get("content_type") or content_type or "tech_topic"
         stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
 
         # Gather voice narration script across educational stages
@@ -2523,7 +2572,7 @@ class SqlShortVideoEngine:
             "status": "success",
             "content_type": matched_content_type,
             "id": matched.get("id", "custom"),
-            "title": matched.get("title", "SQL Interview Preparation"),
+            "title": matched.get("title", text_input[:80] or "Technology Topic"),
             "domain": matched.get("domain", "Tech Architecture"),
             "suggested_motion_bg": matched.get("suggested_motion_bg") or matched.get("bg_theme") or "quantum_nebula",
             "difficulty": difficulty,

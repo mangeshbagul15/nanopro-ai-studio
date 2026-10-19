@@ -667,12 +667,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 // Update Code Preview immediately
                 const codePreviewEl = document.getElementById("sqlShortCodePreview");
                 if (codePreviewEl) {
-                    codePreviewEl.value = data.solution_sql || data.syntax_a_code || "-- Query solution";
+                    codePreviewEl.value = data.solution_sql || data.syntax_a_code || (data.content_type === "sql_query" ? "-- Query solution" : "-- Topic-specific storyboard");
                 }
 
                 // Stage 4: Modification & Sandbox Verification
                 await new Promise(r => setTimeout(r, 350));
-                runPipelineSandboxVerification();
+                if (data.content_type === "sql_query" || data.solution_sql) runPipelineSandboxVerification();
 
                 // Stage 5: Visual Motion & Retouch
                 await new Promise(r => setTimeout(r, 400));
@@ -689,7 +689,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 sqlShortState.narrationDuration = targetDur;
                 const dynamicSpec = Object.assign({
                     id: data.id || ("custom_ai_" + Date.now()),
-                    content_type: data.content_type || "sql_query",
+                    content_type: data.content_type || "tech_topic",
                     title: data.title || "Tech Interview Preparation",
                     difficulty: data.difficulty || "Core Interview",
                     question: data.question || q,
@@ -717,7 +717,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 // Update Code Preview
                 if (codePreviewEl) {
-                    codePreviewEl.value = data.solution_sql || data.syntax_a_code || "-- Query solution";
+                    codePreviewEl.value = data.solution_sql || data.syntax_a_code || (data.content_type === "sql_query" ? "-- Query solution" : "-- Topic-specific storyboard");
                 }
 
                 // Load and play fresh synthesized audio with cache-buster
