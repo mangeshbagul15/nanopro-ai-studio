@@ -11,7 +11,7 @@
 
 ## Task status
 
-- [ ] Task 1: Expand the AI scene contract.
+- [x] Task 1: Expand the AI scene contract — 11 tests passed; visual contract validator enforces visual prompt, continuity, and normalized native overlays.
 - [ ] Task 2: Add strict scene-image generation.
 - [ ] Task 3: Build the per-scene asset pipeline.
 - [ ] Task 4: Add observable asynchronous generation jobs.
