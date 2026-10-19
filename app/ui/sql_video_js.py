@@ -1860,15 +1860,16 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Domain Tag Pill
+        // Domain Tag Pill: the label is clamped to the pill so long domains such as
+        // "PROMPT-BASED TECHNOLOGY" can never bleed across the header.
         ctx.fillStyle = domainColor;
         ctx.beginPath();
         ctx.roundRect(58, barY + 8, 125, barH - 16, 14);
         ctx.fill();
         ctx.fillStyle = "#000000";
-        ctx.font = "900 20px 'Segoe UI', sans-serif";
+        ctx.font = "900 19px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(domain, 120, barY + 43);
+        ctx.fillText(fitTextToWidth(ctx, domain, 104), 120, barY + 43);
 
         // Stage Indicator (e.g. PART 2/6)
         ctx.beginPath();
@@ -1889,19 +1890,11 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.font = "bold 23px 'Segoe UI', sans-serif";
         ctx.fillText(fitTextToWidth(ctx, titleText, W - 490), 320, barY + 43);
 
-        // Equalizer waveform or Channel Tag
-        if (sqlShortState.isPlaying) {
-            ctx.fillStyle = "#10B981";
-            for (let i = 0; i < 6; i++) {
-                const bh = 10 + Math.sin(t * 14 + i * 1.2) * 14;
-                ctx.fillRect(W - 130 + i * 11, barY + (barH / 2 - bh / 2), 5, bh);
-            }
-        } else {
-            ctx.fillStyle = "#10B981";
-            ctx.font = "bold 17px 'Segoe UI', sans-serif";
-            ctx.textAlign = "right";
-            ctx.fillText("● @Code_With_Mangesh", W - 70, barY + 43);
-        }
+        // Channel Tag (static; no animated equalizer on the exported frame)
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 17px 'Segoe UI', sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText("● @Code_With_Mangesh", W - 70, barY + 43);
         ctx.restore();
     }
 
@@ -2966,16 +2959,17 @@ SECOND_HIGHEST_SALARY: 70000`;
         const boxX = 92, boxW = W - 184;
 
         items.forEach((item, i) => {
-            if (i > focus) return;
+            // Every node is drawn from the first frame so the full architecture is
+            // always visible; narration only moves the highlight forward.
             const y = startY + i * (nodeH + gap);
-            const entry = (i < focus) ? 1 : Math.min(1, Math.max(0, progress * items.length - focus + 0.2));
-            const active = (i === focus);
+            const state = (i < focus) ? "past" : (i === focus ? "active" : "pending");
+            const active = state === "active";
             ctx.save();
-            ctx.globalAlpha *= entry;
+            ctx.globalAlpha *= active ? 1 : (state === "past" ? 0.82 : 0.32);
             ctx.textBaseline = "alphabetic";
 
             if (i > 0) {
-                ctx.strokeStyle = active ? "rgba(56,189,248,0.9)" : "rgba(148,163,184,0.42)";
+                ctx.strokeStyle = state === "pending" ? "rgba(148,163,184,0.25)" : (active ? "rgba(56,189,248,0.9)" : "rgba(56,189,248,0.45)");
                 ctx.lineWidth = active ? 4 : 2;
                 ctx.beginPath();
                 ctx.moveTo(W / 2, y - gap + 2);
@@ -2986,7 +2980,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.lineTo(W / 2, y - 4);
                 ctx.lineTo(W / 2 + 11, y - 20);
                 ctx.closePath();
-                ctx.fillStyle = active ? "#38BDF8" : "rgba(148,163,184,0.65)";
+                ctx.fillStyle = state === "pending" ? "rgba(148,163,184,0.3)" : (active ? "#38BDF8" : "rgba(56,189,248,0.55)");
                 ctx.fill();
             }
 
@@ -3011,14 +3005,14 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.font = "800 26px 'Segoe UI', sans-serif";
             ctx.fillText(String(i + 1), badgeX, badgeY + 1);
             ctx.font = "30px 'Segoe UI Symbol', 'Segoe UI', sans-serif";
-            ctx.fillStyle = active ? "#7DD3FC" : "#64748B";
+            ctx.fillStyle = active ? "#7DD3FC" : "#5B6B85";
             ctx.fillText(diagramGlyph(item.icon || item.shape, i), boxX + 124, badgeY + 1);
 
             ctx.textAlign = "left";
             ctx.textBaseline = "alphabetic";
             const textX = boxX + 176, textW = boxW - 214;
             ctx.font = "700 30px 'Segoe UI', sans-serif";
-            ctx.fillStyle = active ? "#FFFFFF" : "#CBD5E1";
+            ctx.fillStyle = active ? "#FFFFFF" : (state === "past" ? "#B4C2D6" : "#77839A");
             const labelLines = splitDiagramText(ctx, item.label || item.name || "", textW, 2, 30);
             labelLines.forEach((line, li) => ctx.fillText(line, textX, y + (labelLines.length > 1 ? 62 : 78) + li * 34));
             const detail = String(item.detail || "").trim();
