@@ -9,7 +9,7 @@ def get_sql_video_workspace_html() -> str:
     <style>
     .sql-shorts-container {
         width: 100%;
-        overflow-x: auto;
+        overflow-x: hidden;
         overflow-y: visible;
         padding-bottom: 20px;
         -webkit-overflow-scrolling: touch;
@@ -34,7 +34,7 @@ def get_sql_video_workspace_html() -> str:
     }
     .sql-studio-grid {
         display: grid;
-        grid-template-columns: minmax(320px, 1.15fr) 340px minmax(340px, 1.25fr);
+        grid-template-columns: minmax(320px, 0.8fr) minmax(380px, 1.2fr);
         width: 100%;
         max-width: 100%;
         gap: 20px;
@@ -43,7 +43,7 @@ def get_sql_video_workspace_html() -> str:
     }
     @media (max-width: 1220px) {
         .sql-studio-grid {
-            grid-template-columns: minmax(300px, 1fr) 340px;
+            grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
         }
         #exportCardContainer {
             grid-column: 1 / -1;
@@ -56,6 +56,18 @@ def get_sql_video_workspace_html() -> str:
         #exportCardContainer {
             grid-column: 1;
         }
+    }
+    .sql-shorts-container #phoneBezel {
+        width: min(100%, 405px) !important;
+        height: auto !important;
+        aspect-ratio: 9 / 16;
+    }
+    .sql-shorts-container #sqlShortCanvas {
+        display: block;
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 9 / 16;
+        object-fit: contain;
     }
     @keyframes laserPulse {
         0% { background-position: 0% 50%; }
@@ -470,7 +482,7 @@ def get_sql_video_workspace_html() -> str:
             <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
                     <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. MASTER PROMPT &amp; TECH SCENARIO INPUT</h3>
-                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ 100% Online NanoPro AI</span>
+                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">✨ Prompt-Led Animation</span>
                 </div>
 
                 <!-- Hidden inputs to preserve JS state compatibility -->
@@ -496,7 +508,7 @@ def get_sql_video_workspace_html() -> str:
 ३. थेट कोड (Raw Code): 'SELECT emp_id, DENSE_RANK() OVER (ORDER BY salary DESC)...'
 ४. संकल्पना / आर्किटेक्चर (Topic): 'Local server vs Claude server' किंवा 'Microservices vs Monolith'
 
-✨ कोणतीही हार्डकोडिंग नाही — NanoPro AI ऑनलाइन मॉडेल व API द्वारे व्हिडिओची रचना, 3D डायग्राम्स, फ्लोचार्ट आणि व्हॉईस आपोआप ठरवेल!" style="width: 100%; margin-bottom: 16px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 13px; font-family: monospace; border-radius: 8px; padding: 12px; line-height: 1.6; resize: vertical;"></textarea>
+✨ तुमच्या prompt मधील विषय आणि narration नुसार प्रत्येक scene चे animated visuals बनतील. कोणताही ठराविक video template वापरला जाणार नाही." style="width: 100%; margin-bottom: 16px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 13px; font-family: monospace; border-radius: 8px; padding: 12px; line-height: 1.6; resize: vertical;"></textarea>
 
                 <!-- Natural Teacher Voice Language Selection -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 14px; margin-bottom: 18px;">
@@ -520,15 +532,12 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <!-- Primary Action Buttons: Generate & 1-Click Export -->
+                <!-- Generate from the prompt. The final full-length export is below the preview. -->
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 800; font-size: 14px; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2,132,199,0.4);">
                         <span>⚡ Generate AI Video &amp; Voice from Master Prompt</span>
                     </button>
 
-                    <button type="button" class="btn btn-primary" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
-                        <span>🎬 1-CLICK FULL-LENGTH 9:16 MP4 EXPORT</span>
-                    </button>
                 </div>
             </div>
 
@@ -610,9 +619,6 @@ def get_sql_video_workspace_html() -> str:
                         </button>
 
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-secondary" onclick="exportSqlShortVideo(15)" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #38BDF8; color: #38BDF8; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="15-sec quick test video with audio">
-                                ⚡ Quick 15s
-                            </button>
                             <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #10B981; color: #10B981; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="Download Teacher Audio (MP3)">
                                 🎵 Save Voice
                             </button>

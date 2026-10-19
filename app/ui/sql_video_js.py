@@ -745,7 +745,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 alert("Blueprint generation error: " + (data.message || "Failed"));
             }
         } catch (e) {
-            console.warn("Using local generator fallback:", e);
+            console.error("Prompt-driven video generation failed:", e);
+            alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
         } finally {
             btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
             btn.disabled = false;
@@ -2695,6 +2696,157 @@ SECOND_HIGHEST_SALARY: 70000`;
        DYNAMIC SCENE VISUAL RENDERER (1080 x 1920 9:16 VERTICAL REEL FORMAT)
        Zero Rigid Templates • Zero Multi-Card Stacking • 100% Prompt-Driven
        ========================================================================== */
+    function drawPromptMotionBackground(ctx, W, H, t) {
+        const bg = ctx.createLinearGradient(0, 0, W * 0.8, H);
+        bg.addColorStop(0, "#050814");
+        bg.addColorStop(0.48, "#0B1230");
+        bg.addColorStop(1, "#030611");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+        ctx.save();
+        ctx.globalAlpha = 0.48;
+        draw3DAIMotionEngine(ctx, W, H, t);
+        ctx.restore();
+    }
+
+    // Render the scene's semantic objects and links as a moving, topic-specific composition.
+    function renderPromptDrivenVisual(ctx, W, H, p, stage, progress, alpha, t) {
+        const visual = (stage && stage.visual_data) || {};
+        const title = (stage && stage.title) || p.title || p.question || "";
+        const description = visual.visual_description || (stage && stage.visual_description) || title;
+        const rawEntities = visual.entities || (stage && stage.entities) || visual.nodes || [];
+        const entities = (Array.isArray(rawEntities) ? rawEntities : [])
+            .filter(item => item && (item.label || item.name || item.title)).slice(0, 6);
+        const fallbackEntities = title.split(/\s+/).filter(word => word.length > 3).slice(0, 3)
+            .map((word, i) => ({ label: word, detail: i === 0 ? description : "", color: i % 2 ? "#A78BFA" : "#38BDF8" }));
+        const nodes = entities.length ? entities : fallbackEntities;
+        const links = visual.relationships || (stage && stage.relationships) || visual.connections || [];
+        const composition = String(visual.composition || (stage && stage.composition) || "").toLowerCase();
+        const motion = String(visual.motion || (stage && stage.motion) || "").toLowerCase();
+        const top = 720, bottom = 1450;
+        const points = nodes.map((node, i) => {
+            const count = Math.max(nodes.length, 1);
+            let x, y;
+            if (composition.includes("split") && count > 1) {
+                const half = Math.ceil(count / 2);
+                x = i < half ? W * 0.28 : W * 0.72;
+                y = top + (i % half) * ((bottom - top) / Math.max(1, half - 1));
+            } else if (composition.includes("vertical") || composition.includes("cascade") || composition.includes("flow")) {
+                x = W / 2 + Math.sin(i * 1.35 + t * 0.35) * Math.min(150, W * 0.14);
+                y = top + i * ((bottom - top) / Math.max(1, count - 1));
+            } else {
+                const angle = (Math.PI * 2 * i / count) - Math.PI / 2 + t * 0.12;
+                const spread = motion.includes("converg") ? 0.45 + progress * 0.55 : (motion.includes("expand") ? 0.55 + progress * 0.65 : 1);
+                x = W / 2 + Math.cos(angle) * Math.min(W * 0.31, 330) * spread;
+                y = (top + bottom) / 2 + Math.sin(angle) * 310 * spread;
+            }
+            return { x, y, node };
+        });
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.15, Math.min(1, alpha));
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#F8FAFC";
+        ctx.font = "800 48px 'Segoe UI', sans-serif";
+        wrapCanvasText(ctx, title, W - 170, 2).forEach((line, i) => ctx.fillText(line, W / 2, 260 + i * 60));
+        ctx.fillStyle = "#CBD5E1";
+        ctx.font = "24px 'Segoe UI', sans-serif";
+        wrapCanvasText(ctx, description, W - 210, 3).forEach((line, i) => ctx.fillText(line, W / 2, 430 + i * 36));
+
+        const findPoint = key => points.find(point => String(point.node.id || point.node.label || point.node.name) === String(key));
+        const edges = Array.isArray(links) ? links : [];
+        edges.forEach((edge, i) => {
+            const from = findPoint(edge.from), to = findPoint(edge.to);
+            if (!from || !to) return;
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.quadraticCurveTo(W / 2 + Math.sin(t + i) * 28, (from.y + to.y) / 2, to.x, to.y);
+            ctx.strokeStyle = "rgba(125, 211, 252, 0.52)";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = 16;
+            ctx.stroke();
+            const phase = (t * 0.42 + i / Math.max(1, edges.length)) % 1;
+            ctx.beginPath();
+            ctx.arc(from.x + (to.x - from.x) * phase, from.y + (to.y - from.y) * phase, 9, 0, Math.PI * 2);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            if (edge.label) {
+                ctx.font = "18px 'Segoe UI', sans-serif";
+                ctx.fillStyle = "#BAE6FD";
+                ctx.fillText(String(edge.label).slice(0, 36), (from.x + to.x) / 2, (from.y + to.y) / 2 - 16);
+            }
+        });
+
+        points.forEach(({ x, y, node }, i) => {
+            const color = /^#[0-9a-f]{6}$/i.test(node.color || "") ? node.color : (i % 2 ? "#A78BFA" : "#38BDF8");
+            const pulseRate = motion.includes("pulse") || motion.includes("beat") ? 4.2 : 2.4;
+            const pulse = 1 + Math.sin(t * pulseRate + i * 1.7) * 0.055;
+            const radius = Math.min(78, 54 + String(node.label || node.name).length * 0.45) * pulse;
+            const shape = String(node.shape || "orb").toLowerCase();
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(1, 0.82);
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 32;
+            if (shape.includes("ring") || shape.includes("loop")) {
+                ctx.beginPath();
+                ctx.ellipse(0, 0, radius, radius * 0.55, Math.sin(t + i) * 0.3, 0, Math.PI * 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 10;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(0, 0, radius * 0.62, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(8, 15, 35, 0.82)";
+                ctx.fill();
+            } else if (shape.includes("block") || shape.includes("cube") || shape.includes("card")) {
+                ctx.beginPath();
+                ctx.roundRect(-radius, -radius * 0.72, radius * 2, radius * 1.44, 18);
+                ctx.fillStyle = color;
+                ctx.globalAlpha *= 0.74;
+                ctx.fill();
+                ctx.globalAlpha /= 0.74;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(-radius, -radius * 0.72);
+                ctx.lineTo(-radius * 0.62, -radius * 1.05);
+                ctx.lineTo(radius * 1.38, -radius * 1.05);
+                ctx.lineTo(radius, -radius * 0.72);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                const glow = ctx.createRadialGradient(-radius * 0.28, -radius * 0.32, 5, 0, 0, radius);
+                glow.addColorStop(0, "#FFFFFF");
+                glow.addColorStop(0.2, color);
+                glow.addColorStop(1, "rgba(8, 15, 35, 0.96)");
+                ctx.fillStyle = glow;
+                ctx.fill();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            wrapCanvasText(ctx, String(node.label || node.name), 250, 2).forEach((line, lineIdx) => ctx.fillText(line, x, y + radius + 42 + lineIdx * 30));
+            const detail = String(node.detail || "").trim();
+            if (detail) {
+                ctx.fillStyle = "#CBD5E1";
+                ctx.font = "19px 'Segoe UI', sans-serif";
+                wrapCanvasText(ctx, detail, 260, 2).forEach((line, lineIdx) => ctx.fillText(line, x, y + radius + 74 + lineIdx * 26));
+            }
+        });
+        ctx.restore();
+    }
+
     function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
@@ -3709,8 +3861,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             currentStageIdx = estIdx;
         }
 
-        // 1. Draw Viral Trending 3D Developer Character Studio Scene
-        drawTrending3DDeveloperStudio(ctx, W, H, p, currentStageIdx, activeStage, t);
+        // Keep a moving cinematic atmosphere while letting the prompt define the scene content.
+        drawPromptMotionBackground(ctx, W, H, t);
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
@@ -3742,7 +3894,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.scale(camZoom, camZoom);
         ctx.translate(-W / 2, -750);
 
-        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
+        renderPromptDrivenVisual(ctx, W, H, p, activeStage, stageProg, stageAlpha, t);
         ctx.restore();
 
         // =========================================================================

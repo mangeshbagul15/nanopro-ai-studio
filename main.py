@@ -1130,12 +1130,15 @@ async def api_sql_video_presets():
 @app.post("/api/sql_video/generate_prompt")
 async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
     """Generates a prompt-driven 9:16 video blueprint with full narration-synchronized stages and regional voice."""
-    res = await sql_short_engine.generate_short_prompt_async(
-        topic_or_question=req.question,
-        difficulty=req.difficulty or "Medium",
-        language=req.language or "mr",
-        mode=req.mode or "faang_drill"
-    )
+    try:
+        res = await sql_short_engine.generate_short_prompt_async(
+            topic_or_question=req.question,
+            difficulty=req.difficulty or "Medium",
+            language=req.language or "mr",
+            mode=req.mode or "faang_drill"
+        )
+    except RuntimeError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
     return JSONResponse(res)
 
 @app.post("/api/sql_video/run_sandbox")

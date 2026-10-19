@@ -52,6 +52,22 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn('"-c:v", "libx264"', source)
         self.assertIn('media_type="video/mp4"', source)
 
+    def test_universal_video_prompt_requests_topic_specific_visuals(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn('"visual_description"', source)
+        self.assertIn('"entities"', source)
+        self.assertIn("avoid repeating the same composition", source.lower())
+        self.assertNotIn('"title": "Problem Hook"', source)
+        self.assertIn("Every user prompt must pass through", source)
+        self.assertIn('audio_url = ""', source)
+        self.assertNotIn('audio_url = f"/audio/preset_sql_q1_second_highest_salary_', source)
+
+    def test_video_maker_uses_strict_portrait_preview_and_no_short_test_export(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8")
+        self.assertIn('aspect-ratio: 9 / 16', source)
+        self.assertIn('width="1080" height="1920"', source)
+        self.assertNotIn('exportSqlShortVideo(15)', source)
+
 
 if __name__ == "__main__":
     unittest.main()

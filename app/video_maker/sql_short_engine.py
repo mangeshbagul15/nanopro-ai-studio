@@ -1217,7 +1217,11 @@ class SqlShortVideoEngine:
                     "id": i + 1,
                     "action_type": s.get("action_type") or s.get("visual_type") or _infer_action_type(i, len(existing)),
                     "visual_type": s.get("visual_type") or s.get("action_type") or ("hook" if i == 0 else ("takeaway" if i == len(existing) - 1 else "diagram")),
-                    "visual_data": s.get("visual_data") or {},
+                    "visual_data": s.get("visual_data") or {
+                        key: s.get(key) for key in (
+                            "visual_description", "visual_motif", "composition", "motion", "entities", "relationships"
+                        ) if s.get(key) is not None
+                    },
                     "title": s.get("title") or f"Scene {i + 1}",
                     "speech": s.get(f"speech_{lang_key}") or s.get("speech_en") or s.get("speech") or "",
                     "speech_mr": s.get("speech_mr") or s.get("speech") or "",
@@ -2398,13 +2402,8 @@ class SqlShortVideoEngine:
         text_input = (topic_or_question or "").strip()
         matched = None
 
-        # 1. Try parsing full Markdown Master Prompt first
-        if "## SCENE" in text_input or "MASTER PROMPT" in text_input or "**Question:**" in text_input:
-            parsed_master = self._parse_master_prompt_text(text_input, lang_key=lang_key)
-            if parsed_master:
-                matched = parsed_master
-
-        # 2. Content Type Detection
+        # Content Type Detection informs metadata only. Every user prompt must pass through
+        # the model so no SQL demo blueprint or static storyboard can replace its topic.
         content_type = self._detect_content_type(text_input)
 
         # 4. If still not matched, synthesize via online AI model dynamically
@@ -2423,72 +2422,10 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Formulate 5 to 8 educational scenes that cover every key point in the user's scenario. Write enough narration to explain the full request naturally; do not shorten or omit content to fit a Shorts duration limit.\n"
-                    f"3. For EACH scene, freely decide its visual_type and visual_data:\n"
-                    f"   - 'hook': High-impact headline, punchy question, 3D pulsing focal orb / icon (Scene 1)\n"
-                    f"   - 'code': Clean IDE code window with syntax highlighting, line numbers, and active highlight line\n"
-                    f"   - 'diagram': Floating architecture nodes with glowing laser conduits and traveling photons\n"
-                    f"   - 'comparison': Side-by-side comparison cards (Item A vs Item B) with clear trade-offs\n"
-                    f"   - 'steps': Clean roadmap sequence (3-4 steps) with glowing progress\n"
-                    f"   - 'stat': Big animated numerical metric (e.g. '10x Faster', 'O(1) Memory')\n"
-                    f"   - 'takeaway': Golden trophy takeaway rule with pro tips\n\n"
-                    f"Output strictly raw valid JSON with no markdown wrapping:\n"
-                    f"{{\n"
-                    f'  "title": "Clear punchy video title",\n'
-                    f'  "domain": "SQL | Python | Cloud | Architecture | DevOps | AI",\n'
-                    f'  "suggested_motion_bg": "quantum_nebula | warp_tunnel | neural_synapse | silicon_laser | fintech_ledger",\n'
-                    f'  "pro_tip": "One key senior engineer pro-tip",\n'
-                    f'  "scenes": [\n'
-                    f'    {{\n'
-                    f'      "id": 1,\n'
-                    f'      "title": "Problem Hook",\n'
-                    f'      "speech": "Natural teacher speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "hook",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "headline": "Punchy Question or Concept",\n'
-                    f'        "subtext": "Core challenge to solve",\n'
-                    f'        "icon": "⚡",\n'
-                    f'        "highlight_tag": "TOP INTERVIEW QUESTION"\n'
-                    f'      }}\n'
-                    f'    }},\n'
-                    f'    {{\n'
-                    f'      "id": 2,\n'
-                    f'      "title": "Core Mechanism",\n'
-                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "diagram",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "nodes": [\n'
-                    f'          {{"id": "n1", "label": "Client", "icon": "📱", "sub": "Request"}},\n'
-                    f'          {{"id": "n2", "label": "Engine", "icon": "⚙️", "sub": "Compute"}},\n'
-                    f'          {{"id": "n3", "label": "Output", "icon": "🎯", "sub": "Result"}}\n'
-                    f'        ],\n'
-                    f'        "connections": [{{"from": "n1", "to": "n2", "label": "Call"}}, {{"from": "n2", "to": "n3", "label": "Data"}}]\n'
-                    f'      }}\n'
-                    f'    }},\n'
-                    f'    {{\n'
-                    f'      "id": 3,\n'
-                    f'      "title": "Solution Implementation",\n'
-                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "code",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "language": "python",\n'
-                    f'        "filename": "solution.py",\n'
-                    f'        "code": "def solve():\\n    # solution logic\\n    return True",\n'
-                    f'        "highlight_line": 2,\n'
-                    f'        "note": "Core logic"\n'
-                    f'      }}\n'
-                    f'    }},\n'
-                    f'    {{\n'
-                    f'      "id": 4,\n'
-                    f'      "title": "Golden Takeaway",\n'
-                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "takeaway",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "rule": "Golden takeaway rule",\n'
-                    f'        "bullets": ["Key point 1", "Key point 2"],\n'
-                    f'        "pro_tip": "Senior engineer tip"\n'
-                    f'      }}\n'
-                    f'    }}\n'
-                    f'  ]\n'
+                    f"3. For each scene, express what the spoken line means as visual_description, visual_motif, entities (2-5 prompt-specific objects with label, detail, shape, color), and relationships (from/to). Pick a different composition and motion for each beat; vary entity count and spatial arrangement, avoid repeating the same composition, and never use placeholder/demo entities.\n"
+                    f"4. Write speech naturally in the selected language, covering all important prompt details. Scene speech in order is the exact narration that must be synthesized; avoid generic interview intros/outros unless the prompt asks for them.\n\n"
+                    f"Output strictly raw JSON with title, domain, suggested_motion_bg, and scenes. Each scene has title, speech, visual_description, visual_motif, composition, motion, entities, and relationships. Entities are arrays of {{label, detail, shape, color}}; relationships are arrays of {{from, to, label}}. Every entity and visual detail must come from the user's topic or be necessary to explain it.\n"
+                    f'{{"title":"Topic-specific title","domain":"Inferred domain","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"A beat grounded in the prompt","speech":"Complete spoken explanation in {lang_key}","visual_description":"What the viewer should see while hearing this line","visual_motif":"Topic-specific motif","composition":"A composition suited to this beat","motion":"How the objects move in sync with the explanation","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"orb, ring, block, stream, or another apt form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"another apt form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}]}}]}}'
                     f"}}"
                 )
 
@@ -2499,6 +2436,15 @@ class SqlShortVideoEngine:
                 if "{" in ai_resp and "}" in ai_resp:
                     json_str = ai_resp[ai_resp.find("{"):ai_resp.rfind("}") + 1]
                     parsed = json.loads(json_str)
+                    scenes = parsed.get("scenes") if isinstance(parsed, dict) else None
+                    if not isinstance(scenes, list) or len(scenes) < 5:
+                        raise ValueError("The generated storyboard must contain at least five prompt-specific scenes.")
+                    for scene in scenes:
+                        if (not isinstance(scene, dict) or not scene.get("speech")
+                                or not scene.get("visual_description")
+                                or not isinstance(scene.get("entities"), list)
+                                or len(scene["entities"]) < 2):
+                            raise ValueError("A generated scene is missing its narration or prompt-specific visual elements.")
                     matched = parsed
                     matched["id"] = "custom_ai_scenario"
                     matched["question"] = text_input
@@ -2508,10 +2454,10 @@ class SqlShortVideoEngine:
                     matched["difficulty"] = difficulty
             except Exception as e:
                 log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
+                raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.") from e
 
-        # Fallback to 100% dynamic prompt analysis (zero hardcoded static templates)
         if not matched:
-            matched = self._dynamic_analyze_prompt(text_input, lang_key=lang_key)
+            raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.")
 
         matched_content_type = matched.get("content_type", content_type)
         stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
@@ -2528,7 +2474,7 @@ class SqlShortVideoEngine:
             full_narration = matched.get(f"explanation_{lang_key}") or matched.get("explanation_mr") or matched.get("question", "")
 
         # Synthesize regional audio
-        audio_url = f"/audio/preset_sql_q1_second_highest_salary_{lang_key}.mp3"
+        audio_url = ""
         audio_file_path = None
         try:
             import hashlib
@@ -2547,8 +2493,11 @@ class SqlShortVideoEngine:
             if tts_res.get("status") == "success" and tts_res.get("audio_url"):
                 audio_url = tts_res.get("audio_url")
                 audio_file_path = tts_res.get("file_path")
+            else:
+                raise RuntimeError("Speech synthesis did not return audio for this narration.")
         except Exception as e:
             log_event(f"Audio synthesis notice in short engine: {e}", level="DEBUG", component="SqlShortEngine")
+            raise RuntimeError("NanoPro could not synthesize audio for this narration. Please retry.") from e
 
         # Measure exact audio duration directly from MP3 frame headers
         actual_dur = 0.0
