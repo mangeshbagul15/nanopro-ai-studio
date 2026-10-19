@@ -2907,36 +2907,58 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     const DIAGRAM_ACTION_LABELS = {
-        problem_intro: "Introduction",
-        data_inspection: "Inspect the data",
-        logic_flowchart: "Follow the logic",
-        code_build: "Build the code",
-        simulation_execution: "Run the simulation",
-        final_result: "Final result",
-        takeaway: "Key takeaway"
+        en: {
+            problem_intro: "Introduction",
+            data_inspection: "Inspect the data",
+            logic_flowchart: "Follow the logic",
+            code_build: "Build the code",
+            simulation_execution: "Run the simulation",
+            final_result: "Final result",
+            takeaway: "Key takeaway"
+        },
+        mr: {
+            problem_intro: "प्रस्तावना",
+            data_inspection: "डेटा तपासणी",
+            logic_flowchart: "लॉजिक क्रम",
+            code_build: "कोड तयार करा",
+            simulation_execution: "सिम्युलेशन चालवा",
+            final_result: "अंतिम निकाल",
+            takeaway: "मुख्य मुद्दा"
+        },
+        hi: {
+            problem_intro: "परिचय",
+            data_inspection: "डेटा जाँच",
+            logic_flowchart: "लॉजिक क्रम",
+            code_build: "कोड बनाएँ",
+            simulation_execution: "सिम्युलेशन चलाएँ",
+            final_result: "अंतिम परिणाम",
+            takeaway: "मुख्य बात"
+        }
     };
 
     function diagramActionLabel(value) {
         const key = String(value || "").trim().toLowerCase();
         if (!key) return "";
-        if (DIAGRAM_ACTION_LABELS[key]) return DIAGRAM_ACTION_LABELS[key];
+        const lang = (typeof sqlShortState !== "undefined" && sqlShortState.audioLang) || "en";
+        const table = DIAGRAM_ACTION_LABELS[lang] || DIAGRAM_ACTION_LABELS.en;
+        if (table[key]) return table[key];
         const words = key.replace(/_/g, " ");
         return words.charAt(0).toUpperCase() + words.slice(1);
     }
 
     function diagramIconForLabel(label) {
         const text = String(label || "").toLowerCase();
-        if (/query|user|client|request|input/.test(text)) return "user";
-        if (/embed|vector|search|retriev|chunk|index/.test(text)) return "db";
-        if (/model|llm|generat|context|assembl|reason/.test(text)) return "model";
+        // English and Devanagari keywords, because narration language drives the labels.
+        if (/प्रश्न|वापरकर्त|परिचय|query|user|client|input/.test(text)) return "user";
+        if (/शोध|एम्बेड|वेक्टर|डेटाबेस|संग्रह|embed|vector|search|retriev|chunk|index|database|storage/.test(text)) return "db";
+        if (/अंतिम|निर्मिती|उत्तर|final|result|output|answer|response|deploy|production/.test(text)) return "prod";
+        if (/कॉन्टेक्स्ट|मॉडेल|एलएलएम|context|model|llm|generat|assembl|reason/.test(text)) return "model";
         if (/api|gateway|network|service|route/.test(text)) return "network";
-        if (/database|table|storage|warehouse|layer|partition/.test(text)) return "storage";
         if (/test|valid|verif|check|quality/.test(text)) return "test";
-        if (/build|transform|execut|train|aggregate|process/.test(text)) return "build";
-        if (/code|script|file|commit|log/.test(text)) return "code";
+        if (/build|transform|execut|train|aggregate|process|सिम्युलेशन/.test(text)) return "build";
+        if (/code|script|file|commit|log|कोड/.test(text)) return "code";
         if (/auth|security|lock|permission|encrypt/.test(text)) return "lock";
         if (/container|pod|orchestrat|runtime/.test(text)) return "container";
-        if (/deploy|release|production|response|output|result|answer|monitor/.test(text)) return "prod";
         return "node";
     }
 
