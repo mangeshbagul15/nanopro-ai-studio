@@ -13,7 +13,7 @@
 
 - [x] Task 1: Expand the AI scene contract — 11 tests passed; visual contract validator enforces visual prompt, continuity, and normalized native overlays.
 - [x] Task 2: Add strict scene-image generation — 3 focused tests passed; strict mode fails closed, preserves the model-authored visual prompt, and returns provider URLs when available.
-- [ ] Task 3: Build the per-scene asset pipeline.
+- [x] Task 3: Build the per-scene asset pipeline — 3 tests passed; distinct prompt-hash caching, 9:16 normalization, Runway graceful fallback, and fail-closed image errors verified.
 - [ ] Task 4: Add observable asynchronous generation jobs.
 - [ ] Task 5: Composite generated scene assets in the player.
 - [ ] Task 6: Verify prompt differences and final export.
