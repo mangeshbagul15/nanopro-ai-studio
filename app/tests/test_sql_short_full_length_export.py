@@ -262,6 +262,20 @@ class PromptScenePlayerTests(unittest.TestCase):
             self.assertEqual(steps[0]["label"], expected_first_step, f"wrong diagram flow for: {prompt}")
             self.assertEqual(len(steps), 5)
 
+    def test_generated_storyboard_uses_scene_titles_as_numbered_flow(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        spec = source.split("function buildDiagramSpec(", 1)[1].split("function drawDiagramFlow(", 1)[0]
+        self.assertIn("hasStageTitles", spec)
+        self.assertIn("diagramIconForLabel", spec)
+        self.assertIn("Number(stageIndex)", spec.replace('typeof stageIndex === "number"', "Number(stageIndex) >= 0"))
+        self.assertIn("sceneList.slice(0, 5)", spec)
+
+    def test_storyboard_source_is_reported_with_the_result(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn('"storyboard_source": matched.get("storyboard_source"', source)
+        self.assertIn('matched["storyboard_source"] = "online_model"', source)
+        self.assertIn('matched["storyboard_source"] = "local_fallback"', source)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]

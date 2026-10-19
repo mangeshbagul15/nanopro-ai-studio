@@ -2765,6 +2765,8 @@ class SqlShortVideoEngine:
             "outro_start": outro_start,
             "narration_duration": outro_start,
             "aspect_ratio": "9:16",
+            "storyboard_source": matched.get("storyboard_source", "local_fallback"),
+            "llm_error": str(matched.get("llm_error") or "")[:240],
             "branding": "@Code_With_Mangesh"
         }
 

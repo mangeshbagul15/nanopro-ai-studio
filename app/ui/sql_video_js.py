@@ -2906,19 +2906,34 @@ SECOND_HIGHEST_SALARY: 70000`;
             .map(line => (line.length > limit ? line.slice(0, limit - 1) + "…" : line));
     }
 
-    function buildDiagramSpec(p, stage) {
+    function diagramIconForLabel(label) {
+        const text = String(label || "").toLowerCase();
+        if (/query|user|client|request|input/.test(text)) return "user";
+        if (/embed|vector|search|retriev|chunk|index/.test(text)) return "db";
+        if (/model|llm|generat|context|assembl|reason/.test(text)) return "model";
+        if (/api|gateway|network|service|route/.test(text)) return "network";
+        if (/database|table|storage|warehouse|layer|partition/.test(text)) return "storage";
+        if (/test|valid|verif|check|quality/.test(text)) return "test";
+        if (/build|transform|execut|train|aggregate|process/.test(text)) return "build";
+        if (/code|script|file|commit|log/.test(text)) return "code";
+        if (/auth|security|lock|permission|encrypt/.test(text)) return "lock";
+        if (/container|pod|orchestrat|runtime/.test(text)) return "container";
+        if (/deploy|release|production|response|output|result|answer|monitor/.test(text)) return "prod";
+        return "node";
+    }
+
+    function buildDiagramSpec(p, stage, stageIndex) {
         const visual = (stage && stage.visual_data) || {};
         let layout = String(visual.layout || visual.visual_type || (stage && stage.visual_type) || "").toLowerCase();
         let steps = Array.isArray(visual.steps) ? visual.steps.filter(item => item && (item.label || item.name)) : [];
         let code = visual.code || null;
         let table = visual.table || null;
         let compare = visual.compare || null;
+        const sceneList = (p && (p.stages || p.scenes)) || [];
+        const hasStageTitles = sceneList.length >= 3
+            && sceneList.some(scene => scene && scene.title && !/^scene\s*\d+$/i.test(String(scene.title)));
 
-        if (!steps.length && stage && Array.isArray(stage.entities)) {
-            steps = stage.entities
-                .filter(item => item && (item.label || item.name))
-                .map(item => ({ label: item.label || item.name, detail: item.detail || "", icon: item.icon || item.shape || "" }));
-        }
+        // Preset data (SQL tables, comparisons, code) wins when present.
         if (!steps.length && !code && !table && !compare && p) {
             if (Array.isArray(p.comparison_rows) && p.comparison_rows.length) {
                 compare = {
@@ -2935,15 +2950,33 @@ SECOND_HIGHEST_SALARY: 70000`;
                 code = { title: "SQL SOLUTION", lines: String(p.solution_sql).split("\n") };
             }
         }
+        // A generated storyboard already names every step, so those titles become
+        // the numbered architecture flow for the whole video.
+        if (!steps.length && !code && !table && !compare && hasStageTitles) {
+            steps = sceneList.slice(0, 5).map((scene, index) => {
+                const label = (scene && scene.title) || ("Step " + (index + 1));
+                const action = String((scene && scene.action_type) || "").replace(/_/g, " ");
+                return { label, detail: action, icon: diagramIconForLabel(label) };
+            });
+        }
+        if (!steps.length && !code && !table && !compare && stage && Array.isArray(stage.entities)) {
+            steps = stage.entities
+                .filter(item => item && (item.label || item.name))
+                .map(item => {
+                    const label = item.label || item.name;
+                    return { label, detail: item.detail || "", icon: item.icon || item.shape || diagramIconForLabel(label) };
+                });
+        }
         if (!steps.length && !code && !table && !compare) {
-            const sceneList = (p && (p.stages || p.scenes)) || [];
             steps = sceneList.slice(0, 5).map((scene, index) => ({
                 label: (scene && scene.title) || ("Step " + (index + 1)),
                 detail: (scene && scene.action_type) || "",
                 icon: "node"
             }));
         }
-        const derivedFocus = stage ? Number(stage.id) - 1 : 0;
+        const derivedFocus = (typeof stageIndex === "number" && stageIndex >= 0)
+            ? stageIndex
+            : (stage && stage.id ? Number(stage.id) - 1 : 0);
         const focus = Math.max(0, Math.min(4, Number(visual.focus ?? derivedFocus) || 0));
         return { layout, steps, code, table, compare, focus };
     }
@@ -3157,7 +3190,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function renderArchitectureScene(ctx, W, H, p, stage, stageIndex, progress, alpha) {
-        const spec = buildDiagramSpec(p, stage);
+        const spec = buildDiagramSpec(p, stage, stageIndex);
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         if (spec.layout.includes("code") && spec.code) {
