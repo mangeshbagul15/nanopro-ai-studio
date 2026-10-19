@@ -1888,7 +1888,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.textAlign = "left";
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "bold 23px 'Segoe UI', sans-serif";
-        ctx.fillText(fitTextToWidth(ctx, titleText, W - 490), 320, barY + 43);
+        ctx.fillText(fitTextToWidth(ctx, titleText, 430), 320, barY + 43);
 
         // Channel Tag (static; no animated equalizer on the exported frame)
         ctx.fillStyle = "#10B981";
@@ -3421,7 +3421,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (!steps.length) return;
         const appear = Math.min(1, Math.max(0, progress * 2.2));
         const areaTop = 360, areaBottom = 1430, gap = 56;
-        const nodeH = Math.min(170, Math.floor((areaBottom - areaTop - gap * (steps.length - 1)) / steps.length));
+        const nodeH = Math.min(210, Math.floor((areaBottom - areaTop - gap * (steps.length - 1)) / steps.length));
         const totalH = steps.length * nodeH + gap * (steps.length - 1);
         const startY = areaTop + Math.max(0, Math.floor((areaBottom - areaTop - totalH) / 2));
         const boxW = W - 260, boxX = 130;
