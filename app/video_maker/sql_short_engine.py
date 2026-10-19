@@ -2414,21 +2414,45 @@ class SqlShortVideoEngine:
         topic_flow = None
         if re.search(r"\bci\s*/?\s*cd\b|continuous\s+(?:integration|delivery|deployment)", topic_lower):
             topic_flow = [("Git commit", "commit"), ("Automated build", "build"), ("Test suite", "test"), ("Staging deploy", "deploy"), ("Production release", "prod")]
-        elif re.search(r"\bdocker\b|container", topic_lower):
+        elif re.search(r"\bdocker\b", topic_lower):
             topic_flow = [("Dockerfile", "file"), ("Image layers", "layers"), ("Container runtime", "container"), ("Port mapping", "port"), ("Orchestration", "orchestrate")]
-        elif re.search(r"\bkubernetes\b|\bk8s\b|orchestrat", topic_lower):
+        elif re.search(r"\bkubernetes\b|\bk8s\b", topic_lower):
             topic_flow = [("Pod", "container"), ("Deployment", "deploy"), ("Service", "network"), ("Ingress", "port"), ("Autoscaling", "orchestrate")]
+        elif re.search(r"\brag\b|retrieval.augmented|vector\s*(?:db|database|store)|embedding", topic_lower):
+            topic_flow = [("User query", "user"), ("Embedding", "model"), ("Vector search", "db"), ("Context + LLM", "agent"), ("Grounded answer", "prod")]
+        elif re.search(r"multi.?agent|agentic|\bagents?\b", topic_lower):
+            topic_flow = [("Orchestrator", "agent"), ("Planner", "model"), ("Tool calls", "api"), ("Worker agents", "server"), ("Merged result", "prod")]
+        elif re.search(r"generative\s*ai|\bllm\b|\bgpt\b|transformer|prompt engineering", topic_lower):
+            topic_flow = [("Input prompt", "user"), ("Tokenizer", "code"), ("Transformer model", "model"), ("Token sampling", "build"), ("Output text", "prod")]
+        elif re.search(r"machine learning|deep learning|neural network|\bml\b", topic_lower):
+            topic_flow = [("Input data", "data"), ("Feature prep", "file"), ("Training", "build"), ("Model", "model"), ("Prediction", "prod")]
+        elif re.search(r"\bsnowflake\b|data warehouse", topic_lower):
+            topic_flow = [("Virtual warehouse", "server"), ("Micro-partitions", "storage"), ("Query engine", "build"), ("Result cache", "data"), ("BI output", "prod")]
+        elif re.search(r"\baws\b|\bazure\b|\bgcp\b|cloud", topic_lower):
+            topic_flow = [("Client", "user"), ("Load balancer", "network"), ("Compute service", "server"), ("Managed database", "db"), ("Monitoring", "test")]
+        elif re.search(r"\bapi\b|\brest\b|graphql|microservice", topic_lower):
+            topic_flow = [("Client request", "user"), ("API gateway", "network"), ("Service logic", "code"), ("Database call", "db"), ("JSON response", "api")]
+        elif re.search(r"banking|payment|financial|finance", topic_lower):
+            topic_flow = [("Source system", "db"), ("Staging area", "data"), ("Transformation", "build"), ("Reporting", "test"), ("Compliance check", "lock")]
+        elif re.search(r"security|cyber|\bauth|password|encryption", topic_lower):
+            topic_flow = [("User request", "user"), ("Authentication", "lock"), ("Authorization", "test"), ("Protected resource", "server"), ("Audit log", "file")]
+        elif re.search(r"devops|\bsre\b|observability|monitoring", topic_lower):
+            topic_flow = [("Code", "code"), ("Build", "build"), ("Test", "test"), ("Deploy", "deploy"), ("Monitor", "prod")]
+        elif re.search(r"migration|\betl\b|ingestion|data pipeline", topic_lower):
+            topic_flow = [("Source", "db"), ("Extraction", "data"), ("Transformation", "build"), ("Target", "storage"), ("Validation", "test")]
+        elif re.search(r"troubleshoot|debug|root cause|incident", topic_lower):
+            topic_flow = [("Error appears", "test"), ("Logs", "file"), ("Root cause", "model"), ("Fix applied", "build"), ("Verified", "prod")]
         elif re.search(r"\bsql\b|\bdatabase\b|\bjoin\b|\bindex\b", topic_lower):
             topic_flow = [("Input table", "db"), ("Filter rows", "data"), ("Join keys", "network"), ("Aggregate", "build"), ("Result set", "test")]
-        elif re.search(r"\bai\b|\bllm\b|\bneural\b|machine learning|deep learning|\bmodel\b", topic_lower):
-            topic_flow = [("Training data", "data"), ("Model weights", "model"), ("Inference", "runtime"), ("Output tokens", "code"), ("Feedback loop", "flow")]
-        elif re.search(r"\bapi\b|\brest\b|graphql|microservice", topic_lower):
-            topic_flow = [("Client request", "user"), ("Gateway", "network"), ("Service logic", "code"), ("Database call", "db"), ("JSON response", "deploy")]
+        elif re.search(r"\bpython\b|pandas|scripting", topic_lower):
+            topic_flow = [("Script", "file"), ("Parse lines", "code"), ("Execute step by step", "build"), ("Return value", "data"), ("Output", "prod")]
+        elif re.search(r"data engineering|spark|kafka|airflow|lakehouse", topic_lower):
+            topic_flow = [("Source systems", "db"), ("Ingestion", "data"), ("Transformation", "build"), ("Warehouse", "storage"), ("Analytics", "prod")]
         elif re.search(r"\bgit\b|\bbranch\b|\bmerge\b", topic_lower):
             topic_flow = [("Working tree", "file"), ("Commit", "commit"), ("Branch", "node"), ("Merge", "network"), ("Remote push", "deploy")]
         topic_steps = [label for label, _ in topic_flow] if topic_flow else None
         topic_icons = [icon for _, icon in topic_flow] if topic_flow else ["node", "node", "flow", "node", "star"]
-        labels = (topic_steps + ["Key takeaway"]) if topic_steps else [anchor, "Core components", "Data or action flow", "Real-world outcome", "Key takeaway"]
+        labels = (topic_steps + ["Key takeaway"]) if topic_steps else ["Overview", "Key components", "How it works", "Where it helps", "Result"]
         step_labels = topic_steps if topic_steps else labels[:5]
         titles = ["The problem it solves", "The parts that matter", "How the mechanism works", "What changes in practice", "Key takeaway"]
         if topic_steps:
@@ -2514,7 +2538,7 @@ class SqlShortVideoEngine:
                 ],
                 "relationships": [{"from": left, "to": right, "label": "connects to"}]
             })
-        return {"title": topic[:80], "domain": "Prompt-based technology", "content_type": "tech_topic", "suggested_motion_bg": "neural_synapse", "scenes": scenes}
+        return {"title": topic[:80], "domain": "Prompt-based technology", "content_type": "tech_topic", "suggested_motion_bg": "neural_synapse", "storyboard_source": "local_fallback", "scenes": scenes}
     async def generate_short_prompt_async(
         self,
         topic_or_question: str,
@@ -2607,6 +2631,7 @@ class SqlShortVideoEngine:
                             log_event(f"Short narration compression notice: {compact_error}", level="DEBUG", component="SqlShortEngine")
                     matched = parsed
                     matched["id"] = "custom_ai_scenario"
+                    matched["storyboard_source"] = "online_model"
                     matched["question"] = text_input
                     matched["difficulty"] = difficulty
                     if "scenes" in matched and not matched.get("stages"):
@@ -2642,6 +2667,7 @@ class SqlShortVideoEngine:
                     matched = retry_parsed
                     matched.setdefault("content_type", content_type)
                     matched["id"] = "custom_ai_scenario"
+                    matched["storyboard_source"] = "online_model"
                     matched["question"] = text_input
                     matched["difficulty"] = difficulty
                     matched["stages"] = retry_scenes
@@ -2649,6 +2675,8 @@ class SqlShortVideoEngine:
                     log_event(f"Storyboard retry notice; using local topic fallback: {retry_error}", level="DEBUG", component="SqlShortEngine")
                     matched = self._build_prompt_fallback(text_input, lang_key)
                     matched["id"] = "custom_prompt_fallback"
+                    matched["storyboard_source"] = "local_fallback"
+                    matched["llm_error"] = str(retry_error)[:240]
                     matched["question"] = text_input
                     matched["difficulty"] = difficulty
                     matched["stages"] = matched["scenes"]

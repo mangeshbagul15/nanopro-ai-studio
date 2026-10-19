@@ -231,6 +231,37 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertTrue(all(step["icon"] for step in first["steps"]))
         self.assertEqual(storyboard["scenes"][2]["visual_data"]["focus"], 2)
 
+    def test_edge_tts_retries_transient_failures(self):
+        source = (PROJECT_ROOT / "app" / "core" / "neural_tts.py").read_text(encoding="utf-8")
+        method = source.split("async def _synthesize_edge_tts(", 1)[1].split("async def synthesize_async(", 1)[0]
+        self.assertIn("for attempt in range(3)", method)
+        self.assertIn("asyncio.wait_for", method)
+        self.assertIn("Edge Neural TTS failed after 3 attempts", method)
+
+    def test_storyboard_fallback_covers_common_topic_families(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        engine = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "SqlShortVideoEngine")
+        method = next(node for node in engine.body if isinstance(node, ast.FunctionDef) and node.name == "_build_prompt_fallback")
+        namespace = {"re": __import__("re"), "Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "<storyboard-fallback>", "exec"), namespace)
+        fallback = namespace["_build_prompt_fallback"]
+        cases = {
+            "explain RAG pipeline": "User query",
+            "how does banking payment settlement work": "Source system",
+            "explain cybersecurity authentication": "User request",
+            "data migration strategy": "Source",
+            "explain API gateway": "Client request",
+            "explain machine learning": "Input data",
+            "explain generative AI": "Input prompt",
+            "explain kubernetes": "Pod",
+            "explain python list comprehension": "Script",
+        }
+        for prompt, expected_first_step in cases.items():
+            steps = fallback(None, prompt, "en")["scenes"][0]["visual_data"]["steps"]
+            self.assertEqual(steps[0]["label"], expected_first_step, f"wrong diagram flow for: {prompt}")
+            self.assertEqual(len(steps), 5)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]

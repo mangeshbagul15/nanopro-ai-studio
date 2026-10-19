@@ -212,12 +212,29 @@ class NeuralTTSEngine:
         return t
 
     async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
-        """Asynchronously synthesizes speech using Microsoft Edge Neural TTS with natural Indian male pacing (+8%, Medium-Fast)."""
+        """Synthesizes speech via Microsoft Edge Neural TTS with short retries.
+
+        The Edge endpoint intermittently resets the socket, especially on shared
+        free-tier hosts, so one flaky connection must not fail a whole video.
+        """
+        import asyncio
         import edge_tts
         formatted = self._prepare_conversational_text(text, for_eleven_v4=False)
-        # +8% rate is optimal for lively, engaging YouTube Shorts while maintaining warm conversational human clarity
-        communicate = edge_tts.Communicate(formatted, voice=voice, rate="+8%", pitch="+0Hz")
-        await communicate.save(str(output_path))
+        last_error = None
+        for attempt in range(3):
+            try:
+                # +8% rate keeps the lively YouTube Shorts pacing while staying clear.
+                communicate = edge_tts.Communicate(formatted, voice=voice, rate="+8%", pitch="+0Hz")
+                await asyncio.wait_for(communicate.save(str(output_path)), timeout=60)
+                if output_path.exists() and output_path.stat().st_size > 1000:
+                    return
+                last_error = RuntimeError("Edge Neural TTS returned an empty audio file.")
+            except Exception as exc:
+                last_error = exc
+                log_event(f"Edge Neural TTS attempt {attempt + 1}/3 failed: {exc}", level="WARNING", component="NeuralTTS")
+            if attempt < 2:
+                await asyncio.sleep(1.5 * (attempt + 1))
+        raise RuntimeError(f"Edge Neural TTS failed after 3 attempts: {last_error}")
 
     async def synthesize_async(self, text: str, language: str = "hi", voice_gender: str = "male", custom_filename: Optional[str] = None) -> Dict[str, Any]:
         """
