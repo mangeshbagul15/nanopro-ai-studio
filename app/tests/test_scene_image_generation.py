@@ -56,6 +56,22 @@ class SceneImageGenerationTests(unittest.TestCase):
             self.assertEqual(payload["generationConfig"]["imageConfig"]["aspectRatio"], "9:16")
             self.assertIn("silicon cells", payload["contents"][0]["parts"][0]["text"])
 
+    def test_cloudflare_workers_ai_generates_prompt_specific_portrait_keyframe(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = SimpleNamespace(is_available=lambda: False)
+            generate = load_generate_image(fake, temp)
+            image_bytes = b"\xff\xd8\xff" + b"x" * 1200
+            response = {"result": {"image": base64.b64encode(image_bytes).decode("ascii")}}
+            with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
+                 patch.dict("os.environ", {"CLOUDFLARE_ACCOUNT_ID": "account-test", "CLOUDFLARE_API_TOKEN": "cfut-test", "GEMINI_API_KEY": "", "OPENAI_API_KEY": "", "POLLINATIONS_API_KEY": ""}), \
+                 patch("urllib.request.urlopen", return_value=io.BytesIO(json.dumps(response).encode("utf-8"))) as request:
+                result = generate("Solar photons strike silicon cells", allow_local_fallback=False, preserve_prompt=True)
+            self.assertEqual(result["provider"], "cloudflare-flux-schnell")
+            api_request = request.call_args.args[0]
+            self.assertIn("/accounts/account-test/ai/run/@cf/black-forest-labs/flux-1-schnell", api_request.full_url)
+            self.assertEqual(api_request.get_header("Authorization"), "Bearer cfut-test")
+            self.assertIn("Solar photons strike silicon cells", json.loads(api_request.data.decode("utf-8"))["prompt"])
+
     def test_pollinations_uses_authenticated_current_generation_endpoint(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = SimpleNamespace(is_available=lambda: False)

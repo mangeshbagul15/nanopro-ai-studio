@@ -178,7 +178,50 @@ class ImageCreationAgent:
                 provider_status = f"HTTP {status_code}" if status_code else type(openai_error).__name__
                 log_event(f"OpenAI image provider failed ({provider_status}); trying Pollinations if configured.", level="WARNING", component="ImageAgent")
 
-        # 4. Current Pollinations API requires an API key; resolve it from env/vault.
+        # 4. Cloudflare Workers AI FLUX provides an independent prompt-specific fallback.
+        if not image_generated:
+            try:
+                cloudflare_account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
+                cloudflare_token = os.getenv("CLOUDFLARE_API_TOKEN", "") or os.getenv("CLOUDFLARE_WORKERS_AI_TOKEN", "")
+                if not cloudflare_token:
+                    for credential_name in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_WORKERS_AI_TOKEN", "CLOUDFLARE"):
+                        credential = credentials_vault.get_credential(credential_name)
+                        value = (credential or {}).get("secret_value", "")
+                        if value and not value.startswith("••"):
+                            cloudflare_token = value
+                            break
+                if cloudflare_account and cloudflare_token:
+                    cloudflare_payload = json.dumps({"prompt": provider_prompt}).encode("utf-8")
+                    cloudflare_request = urllib.request.Request(
+                        f"https://api.cloudflare.com/client/v4/accounts/{cloudflare_account}/ai/run/@cf/black-forest-labs/flux-1-schnell",
+                        data=cloudflare_payload,
+                        headers={
+                            "Authorization": f"Bearer {cloudflare_token}",
+                            "Content-Type": "application/json",
+                            "Accept": "image/*, application/json",
+                        },
+                    )
+                    with urllib.request.urlopen(cloudflare_request, timeout=90) as response:
+                        response_body = response.read()
+                        content_type = response.headers.get("Content-Type", "") if hasattr(response, "headers") else ""
+                    if "json" in content_type.lower() or response_body.lstrip().startswith(b"{"):
+                        parsed = json.loads(response_body.decode("utf-8"))
+                        encoded_image = (parsed.get("result") or {}).get("image")
+                        image_bytes = base64.b64decode(encoded_image, validate=True) if encoded_image else b""
+                    else:
+                        image_bytes = response_body
+                    if len(image_bytes) > 1000 and image_bytes.startswith((b"\x89PNG\r\n\x1a\n", b"\xff\xd8\xff", b"RIFF")):
+                        filepath.write_bytes(image_bytes)
+                        image_generated = True
+                        provider_used = "cloudflare-flux-schnell"
+                        source_url = "https://api.cloudflare.com/client/v4"
+                        log_event(f"Cloudflare Workers AI generated prompt-specific image ({len(image_bytes)} bytes).", component="ImageAgent")
+            except Exception as cloudflare_error:
+                status_code = getattr(cloudflare_error, "code", None)
+                provider_status = f"HTTP {status_code}" if status_code else type(cloudflare_error).__name__
+                log_event(f"Cloudflare Workers AI image provider failed ({provider_status}); trying Pollinations if configured.", level="WARNING", component="ImageAgent")
+
+        # 5. Current Pollinations API requires an API key; resolve it from env/vault.
         if not image_generated:
             try:
                 poll_key = os.getenv("POLLINATIONS_API_KEY", "")
@@ -216,10 +259,10 @@ class ImageCreationAgent:
         # Scene renders must fail closed instead of silently returning a text card.
         if not image_generated and not allow_local_fallback:
             raise RuntimeError(
-                "NanoPro could not generate a prompt-specific image. Configure a valid Replicate, Gemini, OpenAI, or Pollinations image API key with image-generation access and retry."
+                "NanoPro could not generate a prompt-specific image. Configure a valid Replicate, Gemini, OpenAI, Cloudflare Workers AI, or Pollinations image API key with image-generation access and retry."
             )
 
-        # 5. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).
+        # 6. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).
         if not image_generated:
             try:
                 from PIL import Image, ImageDraw, ImageFont
