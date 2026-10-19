@@ -2408,24 +2408,28 @@ class SqlShortVideoEngine:
         words = [w for w in re.findall(r"[A-Za-z0-9_+#.-]+", topic) if len(w) > 2]
         anchor = " ".join(words[:4]) or topic[:48]
         topic_lower = topic.lower()
-        # Ground the offline storyboard in the real mechanisms of common interview
-        # topics, so a fallback video is still about the prompt instead of filler.
-        topic_steps = None
+        # Ground the offline storyboard in the real mechanism of common interview
+        # topics, so a fallback diagram video is still about the prompt. Each entry
+        # is (label, icon) and drives one numbered node in the architecture diagram.
+        topic_flow = None
         if re.search(r"\bci\s*/?\s*cd\b|continuous\s+(?:integration|delivery|deployment)", topic_lower):
-            topic_steps = ["Git commit", "Automated build", "Test suite", "Staging deploy", "Production release"]
+            topic_flow = [("Git commit", "commit"), ("Automated build", "build"), ("Test suite", "test"), ("Staging deploy", "deploy"), ("Production release", "prod")]
         elif re.search(r"\bdocker\b|container", topic_lower):
-            topic_steps = ["Dockerfile", "Image layers", "Container runtime", "Port mapping", "Orchestration"]
+            topic_flow = [("Dockerfile", "file"), ("Image layers", "layers"), ("Container runtime", "container"), ("Port mapping", "port"), ("Orchestration", "orchestrate")]
         elif re.search(r"\bkubernetes\b|\bk8s\b|orchestrat", topic_lower):
-            topic_steps = ["Pod", "Deployment", "Service", "Ingress", "Autoscaling"]
+            topic_flow = [("Pod", "container"), ("Deployment", "deploy"), ("Service", "network"), ("Ingress", "port"), ("Autoscaling", "orchestrate")]
         elif re.search(r"\bsql\b|\bdatabase\b|\bjoin\b|\bindex\b", topic_lower):
-            topic_steps = ["Input table", "Filter rows", "Join keys", "Aggregate", "Result set"]
+            topic_flow = [("Input table", "db"), ("Filter rows", "data"), ("Join keys", "network"), ("Aggregate", "build"), ("Result set", "test")]
         elif re.search(r"\bai\b|\bllm\b|\bneural\b|machine learning|deep learning|\bmodel\b", topic_lower):
-            topic_steps = ["Training data", "Model weights", "Inference", "Output tokens", "Feedback loop"]
+            topic_flow = [("Training data", "data"), ("Model weights", "model"), ("Inference", "runtime"), ("Output tokens", "code"), ("Feedback loop", "flow")]
         elif re.search(r"\bapi\b|\brest\b|graphql|microservice", topic_lower):
-            topic_steps = ["Client request", "Gateway", "Service logic", "Database call", "JSON response"]
+            topic_flow = [("Client request", "user"), ("Gateway", "network"), ("Service logic", "code"), ("Database call", "db"), ("JSON response", "deploy")]
         elif re.search(r"\bgit\b|\bbranch\b|\bmerge\b", topic_lower):
-            topic_steps = ["Working tree", "Commit", "Branch", "Merge", "Remote push"]
+            topic_flow = [("Working tree", "file"), ("Commit", "commit"), ("Branch", "node"), ("Merge", "network"), ("Remote push", "deploy")]
+        topic_steps = [label for label, _ in topic_flow] if topic_flow else None
+        topic_icons = [icon for _, icon in topic_flow] if topic_flow else ["node", "node", "flow", "node", "star"]
         labels = (topic_steps + ["Key takeaway"]) if topic_steps else [anchor, "Core components", "Data or action flow", "Real-world outcome", "Key takeaway"]
+        step_labels = topic_steps if topic_steps else labels[:5]
         titles = ["The problem it solves", "The parts that matter", "How the mechanism works", "What changes in practice", "Key takeaway"]
         if topic_steps:
             # When the online model is unavailable, narrate the real mechanism of the
@@ -2492,6 +2496,18 @@ class SqlShortVideoEngine:
                 "visual_description": f"A topic-specific visual explaining {topic}: {titles[i].lower()}.",
                 "visual_motif": "connected topic map", "composition": ["centerpiece", "split", "flow", "radial", "close-up"][i],
                 "motion": ["assemble", "orbit", "travel", "pulse", "settle"][i],
+                "visual_data": {
+                    "layout": "flow",
+                    "focus": i,
+                    "steps": [
+                        {
+                            "label": step_label,
+                            "icon": topic_icons[idx] if idx < len(topic_icons) else "node",
+                            "detail": f"Step {idx + 1} of {len(step_labels)}",
+                        }
+                        for idx, step_label in enumerate(step_labels)
+                    ],
+                },
                 "entities": [
                     {"label": left, "detail": f"Topic element: {left}", "shape": "orb", "color": "#38BDF8"},
                     {"label": right, "detail": f"Connected idea: {right}", "shape": "block", "color": "#A78BFA"}

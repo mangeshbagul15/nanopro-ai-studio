@@ -1143,15 +1143,14 @@ async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
 
 @app.post("/api/sql_video/generate_prompt_job")
 async def api_sql_video_generate_prompt_job(req: SqlShortPromptRequest, request: Request):
-    """Queues the long-running prompt storyboard and scene rendering pipeline."""
+    """Queues the prompt storyboard and the static architecture-diagram video build."""
     from app.video_maker.video_generation_jobs import queue_generation_job
-    from app.video_maker.scene_visual_pipeline import generate_scene_assets
     queued = queue_generation_job(
         task_manager,
         req.question,
         str(request.base_url).rstrip("/"),
         sql_short_engine.generate_short_prompt_async,
-        generate_scene_assets,
+        None,  # Diagram-only render: no AI image generation is performed.
         difficulty=req.difficulty or "Medium",
         language=req.language or "mr",
         mode=req.mode or "faang_drill",

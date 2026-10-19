@@ -196,6 +196,41 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("asyncio.Semaphore(1)", pipeline_source)
         self.assertIn('image.draft("RGB"', pipeline_source)
 
+    def test_video_job_skips_ai_image_generation(self):
+        source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
+        route = source.split('@app.post("/api/sql_video/generate_prompt_job")', 1)[1].split("@app.get(", 1)[0]
+        self.assertIn("None,  # Diagram-only render", route)
+        self.assertNotIn("generate_scene_assets", route)
+
+    def test_video_frames_are_static_diagrams_without_ai_images(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        frame = source.split("function renderSqlShortFrame(", 1)[1]
+        self.assertIn("renderArchitectureScene(ctx, W, H, p, activeStage", frame)
+        self.assertNotIn("renderPromptSceneAssetVisual(ctx, W, H, p, activeStage", frame)
+        self.assertNotIn("drawPromptMotionBackground(ctx, W, H, t)", frame)
+        self.assertNotIn("AI VOICE", source)
+        for renderer in ("drawDiagramFlow", "drawDiagramCodePanel", "drawDiagramTablePanel", "drawDiagramComparePanel"):
+            self.assertIn(f"function {renderer}(", source)
+        self.assertIn("DIAGRAM_GLYPHS", source)
+
+    def test_storyboard_fallback_builds_numbered_diagram_steps(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        engine = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "SqlShortVideoEngine")
+        method = next(node for node in engine.body if isinstance(node, ast.FunctionDef) and node.name == "_build_prompt_fallback")
+        namespace = {"re": __import__("re"), "Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "<storyboard-fallback>", "exec"), namespace)
+        storyboard = namespace["_build_prompt_fallback"](None, "explain Docker", "en")
+        first = storyboard["scenes"][0]["visual_data"]
+        self.assertEqual(first["layout"], "flow")
+        self.assertEqual(first["focus"], 0)
+        self.assertEqual(
+            [step["label"] for step in first["steps"]],
+            ["Dockerfile", "Image layers", "Container runtime", "Port mapping", "Orchestration"],
+        )
+        self.assertTrue(all(step["icon"] for step in first["steps"]))
+        self.assertEqual(storyboard["scenes"][2]["visual_data"]["focus"], 2)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]

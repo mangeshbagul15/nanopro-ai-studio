@@ -2886,6 +2886,304 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    /* ==========================================================================
+       STATIC ARCHITECTURE-DIAGRAM RENDERERS
+       No AI photos and no heavy animation: numbered node flow, code panel, table
+       and comparison panel, revealed as the narration reaches each step.
+       ========================================================================== */
+    const DIAGRAM_GLYPHS = {
+        code: "⌨", file: "▤", commit: "◆", build: "⚙", test: "✓", deploy: "▲", prod: "●",
+        layers: "▤", container: "▣", runtime: "⚙", port: "▮", orchestrate: "◈",
+        db: "▦", cloud: "☁", server: "▭", api: "◇", agent: "♟", model: "◉",
+        data: "▦", node: "●", storage: "▤", network: "◇", user: "◉", lock: "▣", flow: "→"
+    };
+
+    function diagramGlyph(name, index) {
+        const key = String(name || "").toLowerCase().replace(/[^a-z]/g, "");
+        if (DIAGRAM_GLYPHS[key]) return DIAGRAM_GLYPHS[key];
+        const fallback = ["●", "◆", "■", "▲", "◈"];
+        return fallback[index % fallback.length];
+    }
+
+    function splitDiagramText(ctx, text, maxWidth, maxLines, maxChars) {
+        const clean = String(text || "").replace(/\s+/g, " ").trim();
+        if (!clean) return [];
+        const limit = maxChars || 46;
+        return wrapCanvasText(ctx, clean, maxWidth, maxLines).slice(0, maxLines)
+            .map(line => (line.length > limit ? line.slice(0, limit - 1) + "…" : line));
+    }
+
+    function buildDiagramSpec(p, stage) {
+        const visual = (stage && stage.visual_data) || {};
+        let layout = String(visual.layout || visual.visual_type || (stage && stage.visual_type) || "").toLowerCase();
+        let steps = Array.isArray(visual.steps) ? visual.steps.filter(item => item && (item.label || item.name)) : [];
+        let code = visual.code || null;
+        let table = visual.table || null;
+        let compare = visual.compare || null;
+
+        if (!steps.length && stage && Array.isArray(stage.entities)) {
+            steps = stage.entities
+                .filter(item => item && (item.label || item.name))
+                .map(item => ({ label: item.label || item.name, detail: item.detail || "", icon: item.icon || item.shape || "" }));
+        }
+        if (!steps.length && !code && !table && !compare && p) {
+            if (Array.isArray(p.comparison_rows) && p.comparison_rows.length) {
+                compare = {
+                    left_title: p.comparison_headers ? p.comparison_headers[1] : "Option A",
+                    right_title: p.comparison_headers ? p.comparison_headers[2] : "Option B",
+                    rows: p.comparison_rows.map(row => [row.col_a || "", row.col_b || ""])
+                };
+            } else if (Array.isArray(p.sample_rows) && p.sample_rows.length) {
+                table = {
+                    headers: (p.col_headers || ["ID", "ATTRIBUTE", "AMOUNT", "STATUS"]).slice(0, 4),
+                    rows: p.sample_rows.map(row => [row.account || "", row.date || "", row.amt || "", row.balance || ""])
+                };
+            } else if (p.solution_sql) {
+                code = { title: "SQL SOLUTION", lines: String(p.solution_sql).split("\n") };
+            }
+        }
+        if (!steps.length && !code && !table && !compare) {
+            const sceneList = (p && (p.stages || p.scenes)) || [];
+            steps = sceneList.slice(0, 5).map((scene, index) => ({
+                label: (scene && scene.title) || ("Step " + (index + 1)),
+                detail: (scene && scene.action_type) || "",
+                icon: "node"
+            }));
+        }
+        const derivedFocus = stage ? Number(stage.id) - 1 : 0;
+        const focus = Math.max(0, Math.min(4, Number(visual.focus ?? derivedFocus) || 0));
+        return { layout, steps, code, table, compare, focus };
+    }
+
+    function drawDiagramFlow(ctx, W, H, rawSteps, progress, focusIndex) {
+        const items = (Array.isArray(rawSteps) ? rawSteps : []).slice(0, 5);
+        if (!items.length) return;
+        const focus = Math.max(0, Math.min(items.length - 1, Number(focusIndex) || 0));
+        const areaTop = 236, areaBottom = 1510, gap = 44;
+        const nodeH = Math.min(170, Math.floor((areaBottom - areaTop - gap * (items.length - 1)) / items.length));
+        const totalH = items.length * nodeH + gap * (items.length - 1);
+        const startY = areaTop + Math.max(0, Math.floor((areaBottom - areaTop - totalH) / 2));
+        const boxX = 92, boxW = W - 184;
+
+        items.forEach((item, i) => {
+            if (i > focus) return;
+            const y = startY + i * (nodeH + gap);
+            const entry = (i < focus) ? 1 : Math.min(1, Math.max(0, progress * items.length - focus + 0.2));
+            const active = (i === focus);
+            ctx.save();
+            ctx.globalAlpha *= entry;
+            ctx.textBaseline = "alphabetic";
+
+            if (i > 0) {
+                ctx.strokeStyle = active ? "rgba(56,189,248,0.9)" : "rgba(148,163,184,0.42)";
+                ctx.lineWidth = active ? 4 : 2;
+                ctx.beginPath();
+                ctx.moveTo(W / 2, y - gap + 2);
+                ctx.lineTo(W / 2, y - 18);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(W / 2 - 11, y - 20);
+                ctx.lineTo(W / 2, y - 4);
+                ctx.lineTo(W / 2 + 11, y - 20);
+                ctx.closePath();
+                ctx.fillStyle = active ? "#38BDF8" : "rgba(148,163,184,0.65)";
+                ctx.fill();
+            }
+
+            ctx.beginPath();
+            ctx.roundRect(boxX, y, boxW, nodeH, 22);
+            ctx.fillStyle = active ? "rgba(13,27,52,0.97)" : "rgba(10,17,32,0.92)";
+            ctx.fill();
+            ctx.strokeStyle = active ? "#38BDF8" : "rgba(56,189,248,0.32)";
+            ctx.lineWidth = active ? 3 : 2;
+            if (active) { ctx.shadowColor = "#38BDF8"; ctx.shadowBlur = 20; }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            const badgeX = boxX + 54, badgeY = y + nodeH / 2;
+            ctx.beginPath();
+            ctx.arc(badgeX, badgeY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = active ? "#38BDF8" : "rgba(56,189,248,0.16)";
+            ctx.fill();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = active ? "#04121F" : "#BAE6FD";
+            ctx.font = "800 26px 'Segoe UI', sans-serif";
+            ctx.fillText(String(i + 1), badgeX, badgeY + 1);
+            ctx.font = "30px 'Segoe UI Symbol', 'Segoe UI', sans-serif";
+            ctx.fillStyle = active ? "#7DD3FC" : "#64748B";
+            ctx.fillText(diagramGlyph(item.icon || item.shape, i), boxX + 124, badgeY + 1);
+
+            ctx.textAlign = "left";
+            ctx.textBaseline = "alphabetic";
+            const textX = boxX + 176, textW = boxW - 214;
+            ctx.font = "700 30px 'Segoe UI', sans-serif";
+            ctx.fillStyle = active ? "#FFFFFF" : "#CBD5E1";
+            const labelLines = splitDiagramText(ctx, item.label || item.name || "", textW, 2, 30);
+            labelLines.forEach((line, li) => ctx.fillText(line, textX, y + (labelLines.length > 1 ? 62 : 78) + li * 34));
+            const detail = String(item.detail || "").trim();
+            if (detail) {
+                ctx.font = "400 21px 'Segoe UI', sans-serif";
+                ctx.fillStyle = active ? "#BAE6FD" : "#7C8CA6";
+                const detailLine = splitDiagramText(ctx, detail, textW, 1, 34)[0];
+                if (detailLine) ctx.fillText(detailLine, textX, y + nodeH - 24);
+            }
+            ctx.restore();
+        });
+    }
+
+    function drawDiagramCodePanel(ctx, W, H, code, progress) {
+        const lines = (((code && code.lines) || [])).map(String).slice(0, 16);
+        if (!lines.length) return;
+        const x = 76, y = 250, w = W - 152;
+        const panelH = Math.min(1240, 108 + lines.length * 44);
+        ctx.fillStyle = "rgba(6,11,22,0.96)";
+        ctx.strokeStyle = "rgba(56,189,248,0.4)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, panelH, 20);
+        ctx.fill();
+        ctx.stroke();
+        ctx.save();
+        ctx.strokeStyle = "rgba(56,189,248,0.3)";
+        ctx.beginPath();
+        ctx.moveTo(x, y + 64);
+        ctx.lineTo(x + w, y + 64);
+        ctx.stroke();
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.font = "700 24px 'Segoe UI', sans-serif";
+        ctx.fillStyle = "#7DD3FC";
+        ctx.fillText(splitDiagramText(ctx, (code && code.title) || "Code", w - 60, 1, 48)[0] || "Code", x + 28, y + 42);
+        ctx.restore();
+
+        const ratio = Math.max(0, Math.min(1, progress));
+        const activeLine = Math.min(lines.length - 1, Math.floor(ratio * lines.length));
+        lines.forEach((line, i) => {
+            const ly = y + 104 + i * 44;
+            if (i === activeLine) {
+                ctx.fillStyle = "rgba(56,189,248,0.14)";
+                ctx.fillRect(x + 14, ly - 30, w - 28, 40);
+            }
+            ctx.textAlign = "left";
+            ctx.textBaseline = "alphabetic";
+            ctx.font = "400 18px Consolas, monospace";
+            ctx.fillStyle = "#475569";
+            ctx.fillText(String(i + 1).padStart(2, " "), x + 22, ly);
+            let fontSize = 21;
+            ctx.font = `500 ${fontSize}px Consolas, monospace`;
+            while (fontSize > 13 && ctx.measureText(line).width > w - 120) {
+                fontSize -= 1;
+                ctx.font = `500 ${fontSize}px Consolas, monospace`;
+            }
+            ctx.fillStyle = (i === activeLine) ? "#E0F2FE" : "#94A3B8";
+            ctx.fillText(line, x + 74, ly);
+        });
+    }
+
+    function drawDiagramTablePanel(ctx, W, H, table, progress) {
+        const headers = ((table && table.headers) || []).slice(0, 4);
+        const rows = ((table && table.rows) || []).slice(0, 7);
+        if (!headers.length) return;
+        const x = 70, y = 250, w = W - 140;
+        const cols = Math.max(1, headers.length);
+        const colW = w / cols;
+        const rowH = 72;
+        const panelH = Math.min(1240, 70 + rowH * (rows.length + 1));
+        ctx.fillStyle = "rgba(6,11,22,0.96)";
+        ctx.strokeStyle = "rgba(56,189,248,0.4)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, panelH, 18);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(14,26,48,0.98)";
+        ctx.fillRect(x, y, w, 70);
+        ctx.font = "700 20px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        headers.forEach((header, c) => {
+            ctx.fillStyle = "#7DD3FC";
+            ctx.fillText(splitDiagramText(ctx, header, colW - 16, 1, 16)[0] || "", x + c * colW + colW / 2, y + 44);
+        });
+        const revealRows = Math.max(1, Math.min(rows.length, Math.ceil(Math.max(0.15, Math.min(1, progress)) * rows.length)));
+        rows.forEach((row, r) => {
+            if (r >= revealRows) return;
+            const ry = y + 70 + r * rowH;
+            ctx.fillStyle = (r % 2) ? "rgba(12,20,38,0.6)" : "rgba(8,14,28,0.5)";
+            ctx.fillRect(x, ry, w, rowH);
+            ctx.font = "500 20px 'Segoe UI', sans-serif";
+            (Array.isArray(row) ? row : [row]).slice(0, cols).forEach((cell, c) => {
+                ctx.fillStyle = (r === revealRows - 1) ? "#E0F2FE" : "#A8B6CC";
+                ctx.fillText(splitDiagramText(ctx, cell, colW - 16, 1, 16)[0] || "", x + c * colW + colW / 2, ry + 45);
+            });
+        });
+    }
+
+    function drawDiagramComparePanel(ctx, W, H, compare, progress) {
+        const headings = [String(compare.left_title || "Option A"), String(compare.right_title || "Option B")];
+        const rows = ((compare && compare.rows) || []).slice(0, 6);
+        const x = 60, y = 258, gapX = 36;
+        const colW = (W - x * 2 - gapX) / 2;
+        const colX = [x, x + colW + gapX];
+        headings.forEach((heading, i) => {
+            ctx.beginPath();
+            ctx.roundRect(colX[i], y, colW, 76, 16);
+            ctx.fillStyle = i === 0 ? "rgba(14,30,54,0.98)" : "rgba(24,20,46,0.98)";
+            ctx.fill();
+            ctx.strokeStyle = i === 0 ? "rgba(56,189,248,0.7)" : "rgba(167,139,250,0.7)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "alphabetic";
+            ctx.font = "700 23px 'Segoe UI', sans-serif";
+            ctx.fillStyle = i === 0 ? "#7DD3FC" : "#C4B5FD";
+            ctx.fillText(splitDiagramText(ctx, heading, colW - 24, 1, 18)[0] || "", colX[i] + colW / 2, y + 47);
+        });
+        const revealRows = Math.max(1, Math.min(rows.length, Math.ceil(Math.max(0.15, Math.min(1, progress)) * rows.length)));
+        rows.forEach((row, r) => {
+            if (r >= revealRows) return;
+            const ry = y + 94 + r * 94;
+            const pair = Array.isArray(row) ? row : [row.left || row.col_a || "", row.right || row.col_b || ""];
+            [0, 1].forEach(i => {
+                ctx.beginPath();
+                ctx.roundRect(colX[i], ry, colW, 76, 12);
+                ctx.fillStyle = "rgba(9,15,29,0.94)";
+                ctx.fill();
+                ctx.strokeStyle = "rgba(148,163,184,0.3)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.textAlign = "center";
+                ctx.font = "500 19px 'Segoe UI', sans-serif";
+                ctx.fillStyle = (r === revealRows - 1) ? "#E0F2FE" : "#A8B6CC";
+                ctx.fillText(splitDiagramText(ctx, pair[i] || "", colW - 24, 1, 22)[0] || "", colX[i] + colW / 2, ry + 45);
+            });
+        });
+    }
+
+    function renderArchitectureScene(ctx, W, H, p, stage, stageIndex, progress, alpha) {
+        const spec = buildDiagramSpec(p, stage);
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        if (spec.layout.includes("code") && spec.code) {
+            drawDiagramCodePanel(ctx, W, H, spec.code, progress);
+        } else if (spec.layout.includes("table") && spec.table) {
+            drawDiagramTablePanel(ctx, W, H, spec.table, progress);
+        } else if ((spec.layout.includes("comp") || spec.layout.includes("vs")) && spec.compare) {
+            drawDiagramComparePanel(ctx, W, H, spec.compare, progress);
+        } else if (spec.code) {
+            drawDiagramCodePanel(ctx, W, H, spec.code, progress);
+        } else if (spec.compare) {
+            drawDiagramComparePanel(ctx, W, H, spec.compare, progress);
+        } else if (spec.table) {
+            drawDiagramTablePanel(ctx, W, H, spec.table, progress);
+        } else {
+            drawDiagramFlow(ctx, W, H, spec.steps, progress, spec.focus);
+        }
+        ctx.restore();
+    }
+
     async function loadPromptSceneAssets(sceneAssets) {
         sqlShortState.sceneAssets = new Map();
         sqlShortState.sceneAssetList = Array.isArray(sceneAssets) ? sceneAssets : [];
@@ -4177,20 +4475,14 @@ SECOND_HIGHEST_SALARY: 70000`;
             currentStageIdx = estIdx;
         }
 
-        // The AI keyframe covers the frame opaquely, so painting the expensive 3D
-        // motion engine underneath it only burns export frames. Keep a cheap base
-        // gradient for scene transitions and run the engine when it can be seen.
-        const activeSceneAsset = sqlShortState.sceneAssets.get(`index:${stages.indexOf(activeStage)}`);
-        if (activeSceneAsset) {
-            const baseBg = ctx.createLinearGradient(0, 0, W * 0.8, H);
-            baseBg.addColorStop(0, "#050814");
-            baseBg.addColorStop(0.48, "#0B1230");
-            baseBg.addColorStop(1, "#030611");
-            ctx.fillStyle = baseBg;
-            ctx.fillRect(0, 0, W, H);
-        } else {
-            drawPromptMotionBackground(ctx, W, H, t);
-        }
+        // Static technical canvas: a clean gradient plus diagrams. No photo plate,
+        // no motion engine, no per-frame animation unless the narration advances.
+        const baseBg = ctx.createLinearGradient(0, 0, W * 0.85, H);
+        baseBg.addColorStop(0, "#060A16");
+        baseBg.addColorStop(0.46, "#0B1230");
+        baseBg.addColorStop(1, "#04070F");
+        ctx.fillStyle = baseBg;
+        ctx.fillRect(0, 0, W, H);
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
@@ -4212,29 +4504,30 @@ SECOND_HIGHEST_SALARY: 70000`;
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
         }
 
-        // =========================================================================
-        // CINEMATIC CAMERA SYSTEM: DYNAMIC ZOOM PUNCH-IN & BREATHING MOTION
-        // =========================================================================
-        ctx.save();
-        const punch = Math.max(0, 1.0 - stageProg * 2.8);
-        const camZoom = 1.0 + 0.045 * Math.pow(punch, 2) + 0.012 * Math.sin(t * 2.0);
-        ctx.translate(W / 2, 750);
-        ctx.scale(camZoom, camZoom);
-        ctx.translate(-W / 2, -750);
+        // Stage title: one clamped line under the header, so a long topic can never
+        // spill outside the 9:16 frame.
+        const stageTitle = String((activeStage && activeStage.title) || "");
+        if (stageTitle) {
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "alphabetic";
+            ctx.font = "700 32px 'Segoe UI', sans-serif";
+            ctx.fillStyle = "#E2E8F0";
+            const titleLine = splitDiagramText(ctx, stageTitle, W - 170, 1, 46)[0];
+            if (titleLine) ctx.fillText(titleLine, W / 2, 176);
+            ctx.restore();
+        }
 
         const activeStageIndex = stages.indexOf(activeStage);
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
-        // Crossfade from the outgoing scene instead of dipping to the empty
-        // background, so scene changes feel edited rather than flipped.
-        const outgoingAlpha = (previousStage && sceneElapsed < 0.35) ? Math.max(0, 1 - sceneElapsed / 0.35) : 0;
+        // Lightweight transition only: the outgoing diagram fades out while the new
+        // one fades in. Nothing keeps moving after a scene has settled.
+        const outgoingAlpha = (previousStage && sceneElapsed < 0.3) ? Math.max(0, 1 - sceneElapsed / 0.3) : 0;
         if (outgoingAlpha > 0) {
-            renderPromptSceneAssetVisual(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha, t, false);
+            renderArchitectureScene(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6);
         }
-        if (!renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t)) {
-            renderPromptDrivenVisual(ctx, W, H, p, activeStage, stageProg, stageAlpha, t);
-        }
-        ctx.restore();
+        renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha);
 
         // =========================================================================
         // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)
@@ -4256,22 +4549,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Subtitle Language Pill Badge + Equalizer
-        ctx.fillStyle = "#38BDF8";
-        ctx.font = "bold 18px 'Segoe UI', sans-serif";
-        const langBadge = (sqlShortState.audioLang === "mr" ? "मराठी" : (sqlShortState.audioLang === "hi" ? "हिन्दी" : "ENGLISH")) + " AI VOICE";
-        ctx.fillText(`🎙️ ${langBadge}`, subPillX + 25, subPillY + 36);
-
-        // Animated Mini Equalizer bars inside badge
-        if (sqlShortState.isPlaying) {
-            ctx.fillStyle = "#38BDF8";
-            for (let b = 0; b < 4; b++) {
-                const eh = 6 + Math.sin(t * 12 + b * 1.5) * 8;
-                ctx.fillRect(subPillX + 220 + b * 9, subPillY + 36 - eh, 5, eh);
-            }
-        }
-
-        // Subtitle Text Word-by-Word Highlight
+        // Subtitle Text Word-by-Word Highlight (no language badge, no equalizer)
         let subtitleText = "";
         if (activeStage) {
             subtitleText = activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || activeStage.speech_en || "";
@@ -4288,7 +4566,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             ctx.font = "bold 28px 'Segoe UI', sans-serif";
             let curX = subPillX + 25;
-            let curY = subPillY + 80;
+            let curY = subPillY + 66;
             const lineH = 42;
             const maxLineW = subPillW - 50;
 

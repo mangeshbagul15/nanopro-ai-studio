@@ -20,14 +20,20 @@ async def _execute_generation(job_id, manager, question, difficulty, language, m
             raise RuntimeError("NanoPro created an empty storyboard; no video was produced.")
 
         manager.update_job_stage(job_id, "audio_synced", 22, status="running", tool_used="narration-and-scene-timing")
-        manager.update_job_stage(job_id, "scene_images", 25, status="running", tool_used="prompt-specific-image-generation")
+        if assets_factory is None:
+            # Diagram-only videos: no image provider is used at all, so the render is
+            # fast, deterministic and cannot exhaust the free-tier memory.
+            manager.update_job_stage(job_id, "diagram_layout", 70, status="running", tool_used="canvas-architecture-diagram")
+            scene_assets = []
+        else:
+            manager.update_job_stage(job_id, "scene_images", 25, status="running", tool_used="prompt-specific-image-generation")
 
-        def report(stage, progress):
-            manager.update_job_stage(job_id, str(stage), 25 + int(max(0, min(100, progress)) * 0.6), status="running")
+            def report(stage, progress):
+                manager.update_job_stage(job_id, str(stage), 25 + int(max(0, min(100, progress)) * 0.6), status="running")
 
-        scene_assets = await assets_factory(scenes, job_id, public_base_url, report)
-        if len(scene_assets) != len(scenes):
-            raise RuntimeError("Scene asset generation returned an incomplete video; retry the generation.")
+            scene_assets = await assets_factory(scenes, job_id, public_base_url, report)
+            if len(scene_assets) != len(scenes):
+                raise RuntimeError("Scene asset generation returned an incomplete video; retry the generation.")
         manager.update_job_stage(job_id, "composition_ready", 95, status="running", tool_used="9:16-canvas-composition")
         blueprint["scene_assets"] = scene_assets
         manager.set_job_completed(job_id, blueprint)
