@@ -2906,46 +2906,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             .map(line => (line.length > limit ? line.slice(0, limit - 1) + "…" : line));
     }
 
-    const DIAGRAM_ACTION_LABELS = {
-        en: {
-            problem_intro: "Introduction",
-            data_inspection: "Inspect the data",
-            logic_flowchart: "Follow the logic",
-            code_build: "Build the code",
-            simulation_execution: "Run the simulation",
-            final_result: "Final result",
-            takeaway: "Key takeaway"
-        },
-        mr: {
-            problem_intro: "प्रस्तावना",
-            data_inspection: "डेटा तपासणी",
-            logic_flowchart: "लॉजिक क्रम",
-            code_build: "कोड तयार करा",
-            simulation_execution: "सिम्युलेशन चालवा",
-            final_result: "अंतिम निकाल",
-            takeaway: "मुख्य मुद्दा"
-        },
-        hi: {
-            problem_intro: "परिचय",
-            data_inspection: "डेटा जाँच",
-            logic_flowchart: "लॉजिक क्रम",
-            code_build: "कोड बनाएँ",
-            simulation_execution: "सिम्युलेशन चलाएँ",
-            final_result: "अंतिम परिणाम",
-            takeaway: "मुख्य बात"
-        }
-    };
-
-    function diagramActionLabel(value) {
-        const key = String(value || "").trim().toLowerCase();
-        if (!key) return "";
-        const lang = (typeof sqlShortState !== "undefined" && sqlShortState.audioLang) || "en";
-        const table = DIAGRAM_ACTION_LABELS[lang] || DIAGRAM_ACTION_LABELS.en;
-        if (table[key]) return table[key];
-        const words = key.replace(/_/g, " ");
-        return words.charAt(0).toUpperCase() + words.slice(1);
-    }
-
     function diagramIconForLabel(label) {
         const text = String(label || "").toLowerCase();
         // English and Devanagari keywords, because narration language drives the labels.
@@ -2978,7 +2938,10 @@ SECOND_HIGHEST_SALARY: 70000`;
         const isSqlQuery = String((p && p.content_type) || "") === "sql_query";
         const stageTitleSteps = () => sceneList.slice(0, 5).map((scene, index) => {
             const label = (scene && scene.title) || ("Step " + (index + 1));
-            return { label, detail: diagramActionLabel(scene && scene.action_type), icon: diagramIconForLabel(label) };
+            // The scene title already says what the step is. The structural
+            // action_type (e.g. "code_build") is too generic to caption the node and
+            // can contradict the title, so it is intentionally not shown.
+            return { label, detail: "", icon: diagramIconForLabel(label) };
         });
 
         if (!steps.length && !code && !table && !compare) {
