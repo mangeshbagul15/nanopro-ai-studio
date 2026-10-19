@@ -3182,7 +3182,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.textBaseline = "alphabetic";
             ctx.font = "700 27px 'Segoe UI', sans-serif";
             ctx.fillStyle = active ? "#FFFFFF" : (state === "past" ? "#B4C2D6" : "#8A97AD");
-            const labelLines = splitDiagramText(ctx, item.label || item.name || "", boxW - 180, 2, 26);
+            const labelLines = splitDiagramText(ctx, item.label || item.name || "", boxW - 180, 2, 40);
             labelLines.forEach((line, li) => ctx.fillText(line, boxX + 152, y + (labelLines.length > 1 ? nodeH / 2 - 4 : nodeH / 2 + 9) + li * 32));
             ctx.restore();
         });
@@ -3318,9 +3318,321 @@ SECOND_HIGHEST_SALARY: 70000`;
         });
     }
 
+
+    /* ==========================================================================
+       BRIEF-MODE SCENE DESIGNS
+       A scene-by-scene production brief chooses its own layout: title, split screen,
+       pipeline, comparison table, chip grid, warning card or two cards.
+       ========================================================================== */
+    function drawBriefCard(ctx, x, y, w, h, opts) {
+        const o = opts || {};
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, o.radius || 22);
+        ctx.fillStyle = o.fill || "rgba(12,20,36,0.94)";
+        ctx.fill();
+        ctx.strokeStyle = o.border || "rgba(56,189,248,0.45)";
+        ctx.lineWidth = o.lineWidth || 2;
+        if (o.glow) {
+            ctx.shadowColor = o.border || "#38BDF8";
+            ctx.shadowBlur = o.glow;
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+
+    function drawBriefTitle(ctx, W, H, stage, progress) {
+        const appear = Math.min(1, Math.max(0, progress * 3));
+        const vd = (stage && stage.visual_data) || {};
+        const labels = vd.labels || [];
+        ctx.save();
+        ctx.globalAlpha *= appear;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 66px 'Segoe UI', sans-serif";
+        const title = splitDiagramText(ctx, String(stage && stage.title || ""), W - 200, 2, 34);
+        title.forEach((line, i) => ctx.fillText(line, W / 2, 840 + i * 80));
+        if (labels.length) {
+            ctx.font = "600 34px 'Segoe UI', sans-serif";
+            ctx.fillStyle = "#94A3B8";
+            labels.slice(0, 2).forEach((label, i) => {
+                const line = splitDiagramText(ctx, label, W - 220, 1, 44)[0];
+                if (line) ctx.fillText(line, W / 2, 1035 + i * 48);
+            });
+        }
+        ctx.restore();
+    }
+
+    function drawBriefSplit(ctx, W, H, stage, progress) {
+        const vd = (stage && stage.visual_data) || {};
+        const labels = vd.labels || [];
+        const visual = String(vd.visual || "");
+        const colW = (W - 120 - 40) / 2;
+        const top = 340, height = 1080;
+        const appear = Math.min(1, Math.max(0, progress * 2.5));
+
+        // Split the brief's visual sentence into left/right bullet points.
+        const leftBullets = [], rightBullets = [];
+        visual.split(/(?<=[.;])\s+/).forEach(fragment => {
+            const low = fragment.toLowerCase();
+            if (low.includes("left")) leftBullets.push(fragment.replace(/^.*?left[:\s-]*/i, "").trim());
+            else if (low.includes("right")) rightBullets.push(fragment.replace(/^.*?right[:\s-]*/i, "").trim());
+        });
+        labels.slice(2, 8).forEach((item, i) => (i % 2 ? rightBullets : leftBullets).push(item));
+
+        const columns = [
+            { x: 60, heading: labels[0] || "BEFORE", color: "#38BDF8", bullets: leftBullets },
+            { x: 60 + colW + 40, heading: labels[1] || "AFTER", color: "#A78BFA", bullets: rightBullets }
+        ];
+        ctx.save();
+        ctx.globalAlpha *= appear;
+        columns.forEach(column => {
+            drawBriefCard(ctx, column.x, top, colW, height, { border: column.color + "AA" });
+            ctx.textAlign = "center";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = column.color;
+            ctx.font = "800 30px 'Segoe UI', sans-serif";
+            splitDiagramText(ctx, column.heading, colW - 52, 2, 22)
+                .forEach((line, i) => ctx.fillText(line, column.x + colW / 2, top + 74 + i * 38));
+            ctx.textAlign = "left";
+            ctx.fillStyle = column.color === "#38BDF8" ? "#BAE6FD" : "#DDD6FE";
+            ctx.font = "500 26px 'Segoe UI', sans-serif";
+            column.bullets.slice(0, 5).forEach((bullet, i) => {
+                const y = top + 190 + i * 130;
+                splitDiagramText(ctx, bullet, colW - 70, 2, 26).forEach((line, li) => {
+                    ctx.fillText((li === 0 ? "• " : "   ") + line, column.x + 28, y + li * 34);
+                });
+            });
+        });
+        ctx.strokeStyle = "rgba(56,189,248,0.5)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(W / 2, top + 22);
+        ctx.lineTo(W / 2, top + height - 22);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawBriefPipeline(ctx, W, H, stage, progress) {
+        const vd = (stage && stage.visual_data) || {};
+        const steps = ((vd.steps && vd.steps.length ? vd.steps : vd.labels) || []).slice(0, 5).map(String);
+        if (!steps.length) return;
+        const appear = Math.min(1, Math.max(0, progress * 2.2));
+        const areaTop = 360, areaBottom = 1430, gap = 56;
+        const nodeH = Math.min(170, Math.floor((areaBottom - areaTop - gap * (steps.length - 1)) / steps.length));
+        const totalH = steps.length * nodeH + gap * (steps.length - 1);
+        const startY = areaTop + Math.max(0, Math.floor((areaBottom - areaTop - totalH) / 2));
+        const boxW = W - 260, boxX = 130;
+        ctx.save();
+        steps.forEach((label, i) => {
+            const nodeAppear = Math.min(1, Math.max(0, appear * steps.length - i));
+            if (nodeAppear <= 0) return;
+            const y = startY + i * (nodeH + gap);
+            ctx.save();
+            ctx.globalAlpha *= nodeAppear;
+            if (i > 0) {
+                ctx.strokeStyle = "rgba(56,189,248,0.7)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(W / 2, y - gap + 4);
+                ctx.lineTo(W / 2, y - 18);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(W / 2 - 9, y - 20);
+                ctx.lineTo(W / 2, y - 6);
+                ctx.lineTo(W / 2 + 9, y - 20);
+                ctx.closePath();
+                ctx.fillStyle = "#38BDF8";
+                ctx.fill();
+            }
+            drawBriefCard(ctx, boxX, y, boxW, nodeH, { border: "rgba(56,189,248,0.5)" });
+            ctx.beginPath();
+            ctx.arc(boxX + 58, y + nodeH / 2, 26, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(56,189,248,0.92)";
+            ctx.fill();
+            ctx.fillStyle = "#04202F";
+            ctx.font = "800 24px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(String(i + 1), boxX + 58, y + nodeH / 2 + 1);
+            ctx.textAlign = "left";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "700 32px 'Segoe UI', sans-serif";
+            const lines = splitDiagramText(ctx, label, boxW - 170, 2, 28);
+            lines.forEach((line, li) => ctx.fillText(line, boxX + 112, y + nodeH / 2 + (lines.length > 1 ? -6 : 11) + li * 36));
+            ctx.restore();
+        });
+        ctx.restore();
+    }
+
+    function drawBriefTable(ctx, W, H, stage, progress) {
+        const vd = (stage && stage.visual_data) || {};
+        const rows = (vd.rows || []).slice(0, 8);
+        if (rows.length < 2) return;
+        const headers = rows[0].slice(0, 3);
+        const body = rows.slice(1, 7);
+        const x = 60, width = W - 180;
+        const columns = [Math.round(width * 0.34), Math.round(width * 0.33), 0];
+        columns[2] = width - columns[0] - columns[1];
+        const headH = 84;
+        let y = 340;
+        ctx.save();
+        ctx.textBaseline = "alphabetic";
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, headH, 14);
+        ctx.fillStyle = "rgba(18,32,54,0.96)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(56,189,248,0.5)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        let cx = x;
+        headers.forEach((head, i) => {
+            ctx.textAlign = i === 0 ? "left" : "center";
+            ctx.font = "700 26px 'Segoe UI', sans-serif";
+            ctx.fillStyle = i === 1 ? "#7DD3FC" : (i === 2 ? "#C4B5FD" : "#E2E8F0");
+            const tx = i === 0 ? cx + 22 : cx + columns[i] / 2;
+            ctx.fillText(splitDiagramText(ctx, head, columns[i] - 24, 1, 18)[0] || "", tx, y + 52);
+            cx += columns[i];
+        });
+        y += headH + 12;
+        const rowH = 158;
+        const revealed = Math.max(1, Math.min(body.length, Math.ceil(Math.max(0.2, Math.min(1, progress * 1.6)) * body.length)));
+        body.forEach((row, r) => {
+            const ry = y + r * (rowH + 10);
+            const visible = r < revealed;
+            ctx.beginPath();
+            ctx.roundRect(x, ry, width, rowH, 12);
+            ctx.fillStyle = visible ? "rgba(10,18,32,0.95)" : "rgba(8,14,26,0.85)";
+            ctx.fill();
+            ctx.strokeStyle = (r === revealed - 1) ? "rgba(56,189,248,0.9)" : "rgba(56,189,248,0.22)";
+            ctx.lineWidth = (r === revealed - 1) ? 3 : 2;
+            ctx.stroke();
+            if (!visible) return;
+            let colX = x;
+            row.slice(0, 3).forEach((cell, i) => {
+                ctx.textAlign = i === 0 ? "left" : "center";
+                ctx.font = i === 0 ? "600 24px 'Segoe UI', sans-serif" : "500 22px 'Segoe UI', sans-serif";
+                ctx.fillStyle = i === 0 ? "#BAE6FD" : "#E2E8F0";
+                const lines = splitDiagramText(ctx, cell, columns[i] - 26, 2, 20);
+                const tx = i === 0 ? colX + 20 : colX + columns[i] / 2;
+                lines.forEach((line, li) => ctx.fillText(line, tx, ry + 56 + li * 32));
+                colX += columns[i];
+            });
+        });
+        ctx.restore();
+    }
+
+    function drawBriefChips(ctx, W, H, stage, progress) {
+        const vd = (stage && stage.visual_data) || {};
+        const labels = (vd.labels || []).slice(0, 6);
+        if (!labels.length) return;
+        const cols = 2, chipW = 400, chipH = 112, gapX = 40, gapY = 46;
+        const startX = (W - (cols * chipW + gapX)) / 2;
+        const startY = 560;
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        labels.forEach((label, i) => {
+            const appear = Math.min(1, Math.max(0, progress * labels.length - i));
+            if (appear <= 0) return;
+            const r = i % cols, c = Math.floor(i / cols);
+            const x = startX + r * (chipW + gapX);
+            const y = startY + c * (chipH + gapY);
+            ctx.save();
+            ctx.globalAlpha *= appear;
+            ctx.beginPath();
+            ctx.roundRect(x, y, chipW, chipH, chipH / 2);
+            ctx.fillStyle = "rgba(12,20,36,0.94)";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(212,175,55,0.7)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "700 30px 'Segoe UI', sans-serif";
+            ctx.fillText(splitDiagramText(ctx, label, chipW - 50, 1, 18)[0] || "", x + chipW / 2, y + chipH / 2 + 1);
+            ctx.restore();
+        });
+        ctx.restore();
+    }
+
+    function drawBriefWarning(ctx, W, H, stage, progress) {
+        const vd = (stage && stage.visual_data) || {};
+        const labels = (vd.labels || []).slice(0, 3);
+        const appear = Math.min(1, Math.max(0, progress * 2.5));
+        ctx.save();
+        ctx.globalAlpha *= appear;
+        ctx.beginPath();
+        ctx.roundRect(80, 660, W - 200, 470, 26);
+        ctx.fillStyle = "rgba(42,12,16,0.96)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(229,72,77,0.9)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#E5484D";
+        ctx.font = "800 44px 'Segoe UI', sans-serif";
+        ctx.fillText("!", 118, 756);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 38px 'Segoe UI', sans-serif";
+        const title = splitDiagramText(ctx, String(stage && stage.title || "Warning"), W - 320, 1, 28)[0] || "";
+        ctx.fillText(title, 170, 756);
+        ctx.fillStyle = "#FCA5A5";
+        ctx.font = "600 32px 'Segoe UI', sans-serif";
+        labels.forEach((label, i) => {
+            const line = splitDiagramText(ctx, label, W - 300, 1, 38)[0];
+            if (line) ctx.fillText(line, 118, 854 + i * 54);
+        });
+        ctx.restore();
+    }
+
+    function drawBriefCards(ctx, W, H, stage, progress) {
+        const vd = (stage && stage.visual_data) || {};
+        const labels = (vd.labels || []).slice(0, 4);
+        const appear = Math.min(1, Math.max(0, progress * 2.4));
+        const cardW = (W - 120 - 40) / 2;
+        ctx.save();
+        ctx.globalAlpha *= appear;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        [0, 1].forEach(i => {
+            const x = 60 + i * (cardW + 40);
+            drawBriefCard(ctx, x, 560, cardW, 520, { border: i ? "rgba(167,139,250,0.85)" : "rgba(56,189,248,0.85)" });
+            ctx.fillStyle = i ? "#C4B5FD" : "#7DD3FC";
+            ctx.font = "800 32px 'Segoe UI', sans-serif";
+            const heading = labels[i * 2] || (i ? "OPTION B" : "OPTION A");
+            splitDiagramText(ctx, heading, cardW - 50, 2, 16)
+                .forEach((line, li) => ctx.fillText(line, x + cardW / 2, 640 + li * 40));
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "600 28px 'Segoe UI', sans-serif";
+            const body = labels[i * 2 + 1] || "";
+            splitDiagramText(ctx, body, cardW - 60, 3, 22)
+                .forEach((line, li) => ctx.fillText(line, x + cardW / 2, 760 + li * 40));
+        });
+        ctx.restore();
+    }
+
     function renderArchitectureScene(ctx, W, H, p, stage, stageIndex, progress, alpha, t) {
         const spec = buildDiagramSpec(p, stage, stageIndex);
         const time = Number(t) || 0;
+        const briefLayout = String(((stage && stage.visual_data) || {}).layout || "").toLowerCase();
+        if (briefLayout) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            if (briefLayout === "title") drawBriefTitle(ctx, W, H, stage, progress);
+            else if (briefLayout === "split") drawBriefSplit(ctx, W, H, stage, progress);
+            else if (briefLayout === "pipeline") drawBriefPipeline(ctx, W, H, stage, progress);
+            else if (briefLayout === "table") drawBriefTable(ctx, W, H, stage, progress);
+            else if (briefLayout === "chips") drawBriefChips(ctx, W, H, stage, progress);
+            else if (briefLayout === "warning") drawBriefWarning(ctx, W, H, stage, progress);
+            else if (briefLayout === "cards") drawBriefCards(ctx, W, H, stage, progress);
+            else drawBriefPipeline(ctx, W, H, stage, progress);
+            ctx.restore();
+            return;
+        }
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         if (spec.layout.includes("code") && spec.code) {
@@ -4664,7 +4976,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         // Stage title: one clamped line under the header, so a long topic can never
         // spill outside the 9:16 frame.
         const stageTitle = String((activeStage && activeStage.title) || "");
-        if (stageTitle) {
+        if (stageTitle && !/^hook$/i.test(stageTitle.trim())) {
             ctx.save();
             ctx.textAlign = "center";
             ctx.textBaseline = "alphabetic";
@@ -4685,6 +4997,9 @@ SECOND_HIGHEST_SALARY: 70000`;
             renderArchitectureScene(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6, t);
         }
         renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
+
+        // Briefs may explicitly forbid showing the narration at the bottom.
+        if (p.show_subtitles === false) { return; }
 
         // =========================================================================
         // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)

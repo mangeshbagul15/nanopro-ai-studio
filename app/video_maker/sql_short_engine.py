@@ -1024,6 +1024,141 @@ TOP_MNC_THEORY_PRESETS = [
 ]
 
 
+def _infer_brief_layout(visual: str, rows: list, labels: list) -> str:
+    """Pick the scene design the brief is asking for."""
+    text = (visual or "").lower()
+    if "split screen" in text or "split-screen" in text:
+        return "split"
+    if "warning" in text or "hallucinat" in text or "red" in text and "card" in text:
+        return "warning"
+    if "chip" in text or "pill" in text or "2x2" in text or "2 x 2" in text:
+        return "chips"
+    if rows and ("table" in text or "row by row" in text or len(rows) >= 4):
+        return "table"
+    if "two clean animated cards" in text or ("card" in text and "cards" in text):
+        return "cards"
+    if "pipeline" in text or "architecture" in text or "flow" in text or "→" in (visual or ""):
+        return "pipeline"
+    if "title" in text and ("scale" in text or "fades in" in text):
+        return "title"
+    return "pipeline" if (labels or rows) else "cards"
+
+
+def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
+    """Convert a scene-by-scene production brief into a structured video blueprint.
+
+    The brief wins over the generic storyboard: each SCENE block keeps its own
+    voiceover, on-screen labels and design, so the video follows the author's plan
+    instead of a generic five-step diagram.
+    """
+    if not text:
+        return None
+    marks = list(re.finditer(r"(?im)^\s*#{0,3}\s*\**\s*SCENE\s+(\d+)\b", text))
+    if len(marks) < 2:
+        return None
+
+    headline = ""
+    match = re.search(r"titled\s+[\u201c\"']([^\u201d\"']{3,90})[\u201d\"']", text, re.I)
+    if match:
+        headline = match.group(1).strip()
+    if not headline:
+        bold = re.search(r"\*\*([^*\n]{3,80})\*\*", text)
+        headline = bold.group(1).strip() if bold else text.strip().split("\n")[0][:80]
+    headline = headline.strip().strip('"\u201c\u201d\'')
+
+    blocks = []
+    for index, mark in enumerate(marks):
+        start_at = mark.end()
+        end_at = marks[index + 1].start() if index + 1 < len(marks) else len(text)
+        blocks.append((mark, text[start_at:end_at]))
+
+    scenes: List[Dict[str, Any]] = []
+    for index, (mark, body) in enumerate(blocks):
+        voice = re.search(r"(?is)\bvoiceover\s*:\s*[\u201c\"](.+?)[\u201d\"]", body)
+        if not voice:
+            voice = re.search(r"(?is)\bvoiceover\s*:\s*(.+?)(?=\n\s*\*\*|\n\s*SCENE|\Z)", body)
+        if not voice:
+            continue
+        speech = re.sub(r"\s+", " ", voice.group(1)).replace("**", "").strip().strip('"\u201c\u201d')
+        if not speech:
+            continue
+
+        first_line = next((line for line in body.splitlines() if line.strip()), "")
+        scene_title = re.sub(r"\([^)]*sec[^)]*\)", "", first_line, flags=re.I)
+        scene_title = re.sub(r"^[\s\u2014\-\u2013:.|*#]+|[\s\u2014\-\u2013:.|*#]+$", "", scene_title).strip()
+        scene_title = re.sub(r"(?i)^voiceover\s*:?\s*", "", scene_title).strip()
+        if not scene_title:
+            scene_title = f"Scene {mark.group(1)}"
+
+        window = re.search(r"\((\d+(?:\.\d+)?)\s*[\u2013\-\u2014]\s*(\d+(?:\.\d+)?)\s*sec\)", body, re.I)
+        start_s = float(window.group(1)) if window else None
+        end_s = float(window.group(2)) if window else None
+
+        visual_match = re.search(r"(?is)\*\*visual:\*\*(.+?)(?=\n\s*\*\*|\Z)", body)
+        visual = re.sub(r"\s+", " ", visual_match.group(1)).strip() if visual_match else ""
+
+        labels: List[str] = []
+        for line in re.finditer(r"(?im)^\s*\**\s*on-screen[^\n*]*\**\s*:?\s*(.+)$", body):
+            for part in re.split(r"\||;", line.group(1)):
+                clean = re.sub(r"[`*]", "", part).strip()
+                if clean:
+                    labels.append(clean)
+        if not labels and visual:
+            labels = [phrase.strip() for phrase in re.findall(r"\b[A-Z][A-Z0-9 /&+\-]{1,}\b", visual)][:6]
+        labels = labels[:8]
+
+        chain: List[str] = []
+        arrow = re.search(r"`([^`]*\u2192[^`]*)`", visual or body)
+        if arrow:
+            chain = [part.strip(" `") for part in arrow.group(1).split("\u2192") if part.strip(" `")]
+
+        rows: List[List[str]] = []
+        for line in body.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("|"):
+                continue
+            cells = [re.sub(r"[`*]", "", cell).strip() for cell in stripped.strip("|").split("|")]
+            if len(cells) >= 3 and not set("".join(cells)) <= set("-: "):
+                rows.append(cells[:3])
+
+        layout = _infer_brief_layout(visual or body, rows, labels)
+        scenes.append({
+            "id": index + 1,
+            "title": scene_title,
+            "speech": speech,
+            "speech_en": speech,
+            "action_type": "diagram",
+            "visual_data": {
+                "layout": layout,
+                "focus": index,
+                "labels": labels,
+                "steps": chain,
+                "rows": rows,
+                "visual": visual[:400],
+            },
+            "start": start_s,
+            "end": end_s,
+            "entities": [],
+            "relationships": [],
+        })
+
+    if len(scenes) < 2:
+        return None
+    duration = max([scene["end"] for scene in scenes if scene.get("end")] or [0.0])
+    return {
+        "title": headline or "Explainer",
+        "domain": "Explainer",
+        "content_type": "tech_topic",
+        "suggested_motion_bg": "quantum_nebula",
+        "storyboard_source": "detailed_brief",
+        "show_subtitles": not bool(re.search(
+            r"(?i)(do not|don\'?t|avoid)\s+(show|display)[^.\n]{0,50}(voiceover|narration|subtitles?)", text
+        )),
+        "scenes": scenes,
+        "stages": scenes,
+        "duration": duration,
+    }
+
 class SqlShortVideoEngine:
     """
     Dedicated prompt-driven 9:16 video creation engine.
@@ -1249,7 +1384,7 @@ class SqlShortVideoEngine:
         - deep_mentor: First-principles cognitive scaffolding, real-world human analogies
         """
         existing = matched.get("stages") or matched.get("scenes") or []
-        if existing and len(existing) >= 4 and any("speech" in s or f"speech_{lang_key}" in s for s in existing):
+        if existing and len(existing) >= 2 and any("speech" in s or f"speech_{lang_key}" in s for s in existing):
             clean_existing = []
             for i, s in enumerate(existing):
                 item = dict(s)
@@ -2623,6 +2758,13 @@ class SqlShortVideoEngine:
         # Content Type Detection informs metadata only. Every user prompt must pass through
         # the model so no SQL demo blueprint or static storyboard can replace its topic.
         content_type = "sql_query" if re.search(r"```sql|^\s*(?:SELECT|WITH)\b|\bwrite\s+(?:an?\s+)?sql\s+(?:query|code)\b", text_input, re.I | re.M) else "tech_topic"
+
+        # A scene-by-scene production brief defines its own scenes, visuals and text,
+        # so it bypasses the generic storyboard entirely.
+        brief_blueprint = _parse_detailed_brief(text_input)
+        if brief_blueprint:
+            matched = brief_blueprint
+            lang_key = "en"
 
         # 4. If still not matched, synthesize via online AI model dynamically
         if not matched and len(text_input) > 8:

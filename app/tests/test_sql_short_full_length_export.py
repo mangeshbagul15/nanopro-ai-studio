@@ -320,6 +320,51 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("await self._english_on_screen_text(stages,", source)
         self.assertIn('matched["title"] = english_headline', source)
 
+    def test_detailed_brief_produces_scene_specific_layouts(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        nodes = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("_infer_brief_layout", "_parse_detailed_brief")]
+        namespace = {"re": __import__("re"), "Optional": Optional, "Dict": Dict, "Any": Any, "List": List}
+        module = ast.Module(body=nodes, type_ignores=[])
+        ast.fix_missing_locations(module)
+        exec(compile(module, "<brief-parser>", "exec"), namespace)
+        brief = """
+### SCENE 1 - HOOK (0-5 sec)
+**Voiceover:** "Every second databases process transactions."
+**Visual:** Split screen. Left: banking. Right: analytics.
+**On-screen text:** `OLTP = Transactions` | `OLAP = Analytics`
+
+### SCENE 2 - FLOW (5-12 sec)
+**Voiceover:** "OLTP handles everyday operations."
+**Visual:** Animate this flow:
+`Customer -> Banking App -> OLTP Database`
+
+### SCENE 3 - DIFF (12-22 sec)
+**Voiceover:** "OLTP focuses on current operations."
+**Visual:** Build a comparison table row by row.
+| Feature | OLTP | OLAP |
+| Purpose | Daily operations | Data analysis |
+| Example | Bank transfer | Monthly report |
+
+### SCENE 4 - TYPES (22-28 sec)
+**Voiceover:** "Modern stacks mix workloads."
+**Visual:** Four pill chips in a 2x2 grid: TEXT, IMAGE, VIDEO, AUDIO
+"""
+        parsed = namespace["_parse_detailed_brief"](brief)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed["storyboard_source"], "detailed_brief")
+        self.assertEqual(len(parsed["scenes"]), 4)
+        layouts = [scene["visual_data"]["layout"] for scene in parsed["scenes"]]
+        self.assertEqual(layouts, ["split", "pipeline", "table", "chips"])
+        self.assertEqual(parsed["scenes"][0]["title"], "HOOK")
+        self.assertEqual(parsed["scenes"][2]["visual_data"]["rows"][0], ["Feature", "OLTP", "OLAP"])
+
+    def test_brief_scene_designs_exist_in_the_renderer(self):
+        js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        for name in ("drawBriefTitle", "drawBriefSplit", "drawBriefPipeline", "drawBriefTable", "drawBriefChips", "drawBriefWarning", "drawBriefCards"):
+            self.assertIn(f"function {name}(", js)
+        self.assertIn("if (p.show_subtitles === false) { return; }", js)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
