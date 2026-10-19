@@ -75,7 +75,60 @@ class ImageCreationAgent:
         except Exception as re_err:
             log_event(f"Replicate image provider failed ({type(re_err).__name__}); trying configured image providers.", component="ImageAgent")
 
-        # 2. OpenAI image generation. Render deployments commonly configure OpenAI
+        # 2. Gemini image generation. Reuse the configured Google key and explicitly
+        # request a portrait image so scene assets are born in the Shorts/Reels ratio.
+        if not image_generated:
+            try:
+                gemini_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+                if not gemini_key:
+                    for credential_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI", "GOOGLE"):
+                        credential = credentials_vault.get_credential(credential_name)
+                        value = (credential or {}).get("secret_value", "")
+                        if value and not value.startswith("••"):
+                            gemini_key = value
+                            break
+                if gemini_key:
+                    for model_name in ("gemini-3.1-flash-image", "gemini-2.5-flash-image"):
+                        payload = {
+                            "contents": [{"parts": [{"text": provider_prompt}]}],
+                            "generationConfig": {
+                                "responseModalities": ["IMAGE"],
+                                "imageConfig": {
+                                    "aspectRatio": "9:16" if height >= width else "16:9",
+                                    "imageSize": "1K",
+                                },
+                            },
+                        }
+                        request = urllib.request.Request(
+                            f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={
+                                "x-goog-api-key": gemini_key,
+                                "Content-Type": "application/json",
+                                "Accept": "application/json",
+                            },
+                        )
+                        try:
+                            with urllib.request.urlopen(request, timeout=90) as response:
+                                response_data = json.loads(response.read().decode("utf-8"))
+                        except Exception as model_error:
+                            log_event(f"Gemini image model {model_name} failed ({type(model_error).__name__}); trying fallback model if available.", level="WARNING", component="ImageAgent")
+                            continue
+                        parts = (((response_data.get("candidates") or [{}])[0]).get("content") or {}).get("parts") or []
+                        inline_image = next((part.get("inlineData") or part.get("inline_data") for part in parts if part.get("inlineData") or part.get("inline_data")), None)
+                        encoded_image = (inline_image or {}).get("data")
+                        if encoded_image:
+                            image_bytes = base64.b64decode(encoded_image, validate=True)
+                            if len(image_bytes) > 1000:
+                                filepath.write_bytes(image_bytes)
+                                image_generated = True
+                                provider_used = "gemini-flash-image"
+                                log_event(f"Gemini generated prompt-specific portrait image ({len(image_bytes)} bytes).", component="ImageAgent")
+                                break
+            except Exception as gemini_error:
+                log_event(f"Gemini image provider failed ({type(gemini_error).__name__}); trying OpenAI if configured.", level="WARNING", component="ImageAgent")
+
+        # 3. OpenAI image generation. Render deployments commonly configure OpenAI
         # for narration/storyboards; reuse that server-side key for prompt-specific art.
         if not image_generated:
             try:
@@ -118,7 +171,7 @@ class ImageCreationAgent:
             except Exception as openai_error:
                 log_event(f"OpenAI image provider failed ({type(openai_error).__name__}); trying Pollinations if configured.", level="WARNING", component="ImageAgent")
 
-        # 3. Current Pollinations API requires an API key; resolve it from env/vault.
+        # 4. Current Pollinations API requires an API key; resolve it from env/vault.
         if not image_generated:
             try:
                 poll_key = os.getenv("POLLINATIONS_API_KEY", "")
@@ -159,7 +212,7 @@ class ImageCreationAgent:
                 "NanoPro could not generate a prompt-specific image. Configure a valid Replicate, OpenAI, or Pollinations image API key and retry."
             )
 
-        # 3. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).
+        # 5. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).
         if not image_generated:
             try:
                 from PIL import Image, ImageDraw, ImageFont

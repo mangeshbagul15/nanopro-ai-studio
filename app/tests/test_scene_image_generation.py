@@ -36,6 +36,26 @@ def load_generate_image(fake_replicate, output_dir):
 
 
 class SceneImageGenerationTests(unittest.TestCase):
+    def test_gemini_image_api_generates_prompt_specific_portrait_keyframe(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = SimpleNamespace(is_available=lambda: False)
+            generate = load_generate_image(fake, temp)
+            image_bytes = b"\x89PNG\r\n\x1a\n" + b"x" * 1200
+            response = {"candidates": [{"content": {"parts": [
+                {"inlineData": {"mimeType": "image/png", "data": base64.b64encode(image_bytes).decode("ascii")}}
+            ]}}]}
+            with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
+                 patch.dict("os.environ", {"GEMINI_API_KEY": "AIza-test-image-key", "OPENAI_API_KEY": "", "POLLINATIONS_API_KEY": ""}), \
+                 patch("urllib.request.urlopen", return_value=io.BytesIO(json.dumps(response).encode("utf-8"))) as request:
+                result = generate("Solar photons release electrons inside silicon cells", allow_local_fallback=False, preserve_prompt=True)
+            self.assertEqual(result["provider"], "gemini-flash-image")
+            self.assertTrue(Path(result["file_path"]).is_file())
+            api_request = request.call_args.args[0]
+            self.assertEqual(api_request.get_header("X-goog-api-key"), "AIza-test-image-key")
+            payload = json.loads(api_request.data.decode("utf-8"))
+            self.assertEqual(payload["generationConfig"]["imageConfig"]["aspectRatio"], "9:16")
+            self.assertIn("silicon cells", payload["contents"][0]["parts"][0]["text"])
+
     def test_pollinations_uses_authenticated_current_generation_endpoint(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = SimpleNamespace(is_available=lambda: False)
