@@ -2407,8 +2407,26 @@ class SqlShortVideoEngine:
         topic = re.sub(r"\s+", " ", (text or "").strip())[:220] or "Technology"
         words = [w for w in re.findall(r"[A-Za-z0-9_+#.-]+", topic) if len(w) > 2]
         anchor = " ".join(words[:4]) or topic[:48]
-        labels = [anchor, "Core components", "Data or action flow", "Real-world outcome", "Key takeaway"]
-        titles = ["The core idea", "What it contains", "How it works", "Where it helps", "Remember this"]
+        topic_lower = topic.lower()
+        # Ground the offline storyboard in the real mechanisms of common interview
+        # topics, so a fallback video is still about the prompt instead of filler.
+        topic_steps = None
+        if re.search(r"\bci\s*/?\s*cd\b|continuous\s+(?:integration|delivery|deployment)", topic_lower):
+            topic_steps = ["Git commit", "Automated build", "Test suite", "Staging deploy", "Production release"]
+        elif re.search(r"\bdocker\b|container", topic_lower):
+            topic_steps = ["Dockerfile", "Image layers", "Container runtime", "Port mapping", "Orchestration"]
+        elif re.search(r"\bkubernetes\b|\bk8s\b|orchestrat", topic_lower):
+            topic_steps = ["Pod", "Deployment", "Service", "Ingress", "Autoscaling"]
+        elif re.search(r"\bsql\b|\bdatabase\b|\bjoin\b|\bindex\b", topic_lower):
+            topic_steps = ["Input table", "Filter rows", "Join keys", "Aggregate", "Result set"]
+        elif re.search(r"\bai\b|\bllm\b|\bneural\b|machine learning|deep learning|\bmodel\b", topic_lower):
+            topic_steps = ["Training data", "Model weights", "Inference", "Output tokens", "Feedback loop"]
+        elif re.search(r"\bapi\b|\brest\b|graphql|microservice", topic_lower):
+            topic_steps = ["Client request", "Gateway", "Service logic", "Database call", "JSON response"]
+        elif re.search(r"\bgit\b|\bbranch\b|\bmerge\b", topic_lower):
+            topic_steps = ["Working tree", "Commit", "Branch", "Merge", "Remote push"]
+        labels = (topic_steps + ["Key takeaway"]) if topic_steps else [anchor, "Core components", "Data or action flow", "Real-world outcome", "Key takeaway"]
+        titles = ["The problem it solves", "The parts that matter", "How the mechanism works", "What changes in practice", "Key takeaway"]
         en = [
             f"Let's understand {topic}. Start with the central idea and the problem this topic solves.",
             f"The important parts of {anchor} work together. Focus on each component's role and how they connect.",
@@ -2437,7 +2455,11 @@ class SqlShortVideoEngine:
             right = labels[(i + 1) % len(labels)]
             scenes.append({
                 "title": titles[i], "speech": line,
-                "visual_prompt": f"Portrait educational scene about {topic}. Show {left} in the context of {right}; depict {titles[i].lower()} as the visible action.",
+                "visual_prompt": (
+                    f"Stylised 3D technical diagram explaining {topic}: a glowing '{left}' component connected to '{right}', "
+                    f"with animated data packets travelling along the link while the assembly shows {titles[i].lower()}. "
+                    "Dark navy background, clean isometric interface panels, crisp glowing edges, no people, no text."
+                ),
                 "continuity": f"Keep the same visual style and subject identity for {topic} across scenes.",
                 "overlay_items": [{"kind": "label", "content": left[:48], "x": 0.5, "y": 0.82}],
                 "visual_description": f"A topic-specific visual explaining {topic}: {titles[i].lower()}.",
@@ -2495,10 +2517,10 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Formulate 5 to 6 educational scenes that cover the essential points. Target 45 to 55 seconds of spoken narration, always aiming below 60 seconds. Be concise: English narration up to 112 words total; Marathi or Hindi up to 88 words total. Keep the key idea, important steps, and outcome; omit secondary detail when needed.\n"
-                    f"3. For every scene, create a precise English visual_prompt showing the actual subject and physical/software action described by its spoken line, including environment, objects, camera framing, and what changes over time. Keep one continuity description across scenes; avoid repeating the same composition or using an orbiting node graph. Explain invisible mechanisms with a grounded cutaway; never invent unrelated planets, characters, or metaphors.\n"
+                    f"3. For every scene, create a precise English visual_prompt describing a stylised 3D technical motion-graphic of the exact mechanism from its spoken line: the named components, their arrangement, the data or control flow between them, and what changes over time. Never describe people, presenters, faces, hands, offices or generic stock-photo scenes; the frame must show the topic itself as clean 3D diagram shapes, interface panels, glowing packets and labelled components on a dark background. Keep on-screen words out of the image prompt (they are drawn later as overlays). Keep one continuity description across scenes; avoid repeating the same composition or using an orbiting node graph. Explain invisible mechanisms with a grounded cutaway; never invent unrelated planets, characters, or metaphors.\n"
                     f"4. Write speech naturally in the selected language, covering all important prompt details. Scene speech in order is the exact narration that must be synthesized; avoid generic interview intros/outros unless the prompt asks for them.\n\n"
                     f"Output raw JSON with title, domain, content_type, suggested_motion_bg, and scenes. Set content_type to sql_query only when SQL code is explicitly requested; otherwise tech_topic. Each scene has title, speech, visual_prompt, continuity, visual_description, visual_motif, composition, motion, entities, relationships, and overlay_items. overlay_items are arrays of {{kind, content, x, y}}, where kind is label/code/formula and x/y are numbers from 0 to 1. Keep code and exact text out of the image prompt; place them in overlay_items. Every visual must show the scene's narrated mechanism.\n"
-                    f'{{"title":"Topic-specific title","domain":"Inferred domain","content_type":"tech_topic","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"A beat grounded in the prompt","speech":"Complete spoken explanation in {lang_key}","visual_prompt":"English shot prompt showing this exact topic action","continuity":"Recurring subject and style","visual_description":"What the viewer should see","visual_motif":"Topic-specific motif","composition":"Camera framing","motion":"Visible action over time","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}],"overlay_items":[{{"kind":"label","content":"Exact concise label","x":0.5,"y":0.8}}]}}]}}'
+                    f'{{"title":"Topic-specific title","domain":"Inferred domain","content_type":"tech_topic","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"A beat grounded in the prompt","speech":"Complete spoken explanation in {lang_key}","visual_prompt":"English 3D diagram prompt of this exact topic mechanism, no people","continuity":"Recurring subject and style","visual_description":"What the viewer should see","visual_motif":"Topic-specific motif","composition":"Camera framing","motion":"Visible action over time","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}],"overlay_items":[{{"kind":"label","content":"Exact concise label","x":0.5,"y":0.8}}]}}]}}'
                 )
 
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(

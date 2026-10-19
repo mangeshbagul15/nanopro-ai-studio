@@ -2745,6 +2745,109 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    function drawSceneMotionGraphics(ctx, W, H, stage, stageIndex, progress, t) {
+        const entities = Array.isArray(stage?.entities)
+            ? stage.entities.filter(item => item && (item.label || item.name))
+            : [];
+        ctx.save();
+
+        // HUD corner brackets: the frame reads as a live motion-graphics render.
+        ctx.strokeStyle = "rgba(56,189,248,0.45)";
+        ctx.lineWidth = 3;
+        const inset = 26, arm = 54;
+        [[inset, inset, 1, 1], [W - inset, inset, -1, 1], [inset, H - inset, 1, -1], [W - inset, H - inset, -1, -1]].forEach(([x, y, sx, sy]) => {
+            ctx.beginPath();
+            ctx.moveTo(x, y + sy * arm);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + sx * arm, y);
+            ctx.stroke();
+        });
+
+        // Streaming packets imply the narrated mechanism is actually running.
+        const streamY = H * 0.665;
+        ctx.strokeStyle = "rgba(56,189,248,0.2)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(W * 0.08, streamY);
+        ctx.bezierCurveTo(W * 0.36, streamY - 44, W * 0.64, streamY + 44, W * 0.92, streamY);
+        ctx.stroke();
+        for (let i = 0; i < 5; i++) {
+            const phase = (t * 0.28 + i / 5) % 1;
+            const px = W * (0.08 + 0.84 * phase);
+            const py = streamY + Math.sin(phase * Math.PI * 2) * 26;
+            ctx.beginPath();
+            ctx.fillStyle = "#7DD3FC";
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = 18;
+            ctx.arc(px, py, 4 + 2 * Math.sin(t * 6 + i), 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        // The storyboard's own two subjects become animated chips, so the motion is
+        // about this prompt instead of a generic decoration.
+        if (entities.length >= 2) {
+            const leftText = String(entities[0].label || entities[0].name || "");
+            const rightText = String(entities[1].label || entities[1].name || "");
+            const chipY = H * 0.78;
+            const reveal = Math.min(1, Math.max(0, (t - Number(stage?.start || 0)) / 0.5));
+            ctx.save();
+            ctx.globalAlpha = ctx.globalAlpha * reveal;
+            ctx.font = "700 24px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            const leftW = Math.min(W * 0.4, ctx.measureText(leftText).width + 46);
+            const rightW = Math.min(W * 0.4, ctx.measureText(rightText).width + 46);
+            const gap = 96;
+            const startX = (W - (leftW + rightW + gap)) / 2;
+            const slide = (1 - reveal) * 40;
+            const chips = [
+                { cx: startX + leftW / 2 - slide, cw: leftW, text: leftText, fg: "#BAE6FD" },
+                { cx: startX + leftW + gap + rightW / 2 + slide, cw: rightW, text: rightText, fg: "#DDD6FE" }
+            ];
+            chips.forEach(chip => {
+                ctx.fillStyle = "rgba(8,18,36,0.9)";
+                ctx.strokeStyle = "rgba(56,189,248,0.55)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(chip.cx - chip.cw / 2, chipY - 28, chip.cw, 56, 16);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = chip.fg;
+                ctx.fillText(chip.text.length > 26 ? chip.text.slice(0, 25) + "…" : chip.text, chip.cx, chipY + 8);
+            });
+            const linkPhase = (t * 0.7) % 1;
+            const linkLeft = startX + leftW + 20;
+            const linkRight = startX + leftW + gap - 20;
+            ctx.strokeStyle = "rgba(125,211,252,0.5)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(linkLeft, chipY);
+            ctx.lineTo(linkRight, chipY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.fillStyle = "#F8FAFC";
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = 14;
+            ctx.arc(linkLeft + (linkRight - linkLeft) * linkPhase, chipY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // Thin scene rail keeps the progress readable while watching.
+        const railW = W - 120;
+        ctx.fillStyle = "rgba(148,163,184,0.28)";
+        ctx.beginPath();
+        ctx.roundRect(60, H - 96, railW, 6, 3);
+        ctx.fill();
+        ctx.fillStyle = "#38BDF8";
+        ctx.beginPath();
+        ctx.roundRect(60, H - 96, Math.max(6, railW * Math.min(1, Math.max(0, progress))), 6, 3);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
     async function loadPromptSceneAssets(sceneAssets) {
         sqlShortState.sceneAssets = new Map();
         sqlShortState.sceneAssetList = Array.isArray(sceneAssets) ? sceneAssets : [];
@@ -2775,12 +2878,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         })));
     }
 
-    function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t) {
+    function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = true) {
         const scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
             sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex));
         if (!scene) return false;
         ctx.save();
-        ctx.globalAlpha = Math.max(0.2, Math.min(1, alpha));
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         const localTime = Math.max(0, t - Number(stage?.start || 0));
         const media = scene.video && scene.video.readyState >= 2 ? scene.video : scene.image;
         if (scene.video && scene.video.readyState >= 2) {
@@ -2820,60 +2923,66 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.fillStyle = vignette;
         ctx.fillRect(0, 0, W, H);
 
-        const visual = stage?.visual_data || {};
-        const title = String(stage?.title || p.title || p.question || "");
-        ctx.textAlign = "center";
-        ctx.font = "800 44px 'Segoe UI', sans-serif";
-        const titleLines = wrapCanvasText(ctx, title, W - 190, 2);
-        const titleTextWidth = titleLines.reduce((widest, line) => Math.max(widest, ctx.measureText(line).width), 0);
-        const titleBoxWidth = Math.min(W - 140, Math.max(320, titleTextWidth + 68));
-        const titleBoxHeight = titleLines.length * 54 + 30;
-        if (titleLines.length) {
-            const titleBox = ctx.createLinearGradient(0, 196, 0, 196 + titleBoxHeight);
-            titleBox.addColorStop(0, "rgba(4,10,26,0.86)");
-            titleBox.addColorStop(1, "rgba(4,10,26,0.58)");
-            ctx.fillStyle = titleBox;
-            ctx.beginPath();
-            ctx.roundRect((W - titleBoxWidth) / 2, 196, titleBoxWidth, titleBoxHeight, 20);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(56,189,248,0.28)";
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.fillStyle = "#FFFFFF";
-            ctx.shadowColor = "rgba(0,0,0,0.7)";
-            ctx.shadowBlur = 12;
-            titleLines.forEach((line, index) => ctx.fillText(line, W / 2, 232 + index * 54));
-            ctx.shadowBlur = 0;
-        }
+        // Previous-scene passes reuse this renderer for the plate only, so the HUD,
+        // title and overlays belong exclusively to the incoming scene.
+        if (drawText) {
+            drawSceneMotionGraphics(ctx, W, H, stage, stageIndex, progress, t);
 
-        const overlays = visual.overlay_items || stage?.overlay_items || [];
-        overlays.forEach(item => {
-            if (!item || !item.content) return;
-            const x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
-            const y = Math.max(0.08, Math.min(0.86, Number(item.y ?? 0.72))) * H;
-            const code = item.kind === "code" || item.kind === "formula";
-            const overlayFont = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
-            // Set the font BEFORE wrapping and measuring, otherwise the label box is
-            // sized from whichever font was set last and the text spills off frame.
-            ctx.font = overlayFont;
-            const lines = wrapCanvasText(ctx, String(item.content), W * 0.78, code ? 3 : 2);
-            const lineHeight = code ? 34 : 30;
-            const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
-            const boxHeight = lines.length * lineHeight + 32;
-            ctx.fillStyle = code ? "rgba(3,10,25,0.9)" : "rgba(8,18,36,0.84)";
-            ctx.strokeStyle = code ? "rgba(56,189,248,0.8)" : "rgba(255,255,255,0.4)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.roundRect(x - boxWidth / 2, y - 24, boxWidth, boxHeight, 18);
-            ctx.fill();
-            ctx.stroke();
-            ctx.fillStyle = code ? "#BAE6FD" : "#FFFFFF";
-            ctx.font = overlayFont;
-            ctx.shadowColor = "rgba(0,0,0,0.55)";
-            ctx.shadowBlur = 6;
-            lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * lineHeight));
-            ctx.shadowBlur = 0;
-        });
+            const visual = stage?.visual_data || {};
+            const title = String(stage?.title || p.title || p.question || "");
+            ctx.textAlign = "center";
+            ctx.font = "800 44px 'Segoe UI', sans-serif";
+            const titleLines = wrapCanvasText(ctx, title, W - 190, 2);
+            const titleTextWidth = titleLines.reduce((widest, line) => Math.max(widest, ctx.measureText(line).width), 0);
+            const titleBoxWidth = Math.min(W - 140, Math.max(320, titleTextWidth + 68));
+            const titleBoxHeight = titleLines.length * 54 + 30;
+            if (titleLines.length) {
+                const titleBox = ctx.createLinearGradient(0, 196, 0, 196 + titleBoxHeight);
+                titleBox.addColorStop(0, "rgba(4,10,26,0.86)");
+                titleBox.addColorStop(1, "rgba(4,10,26,0.58)");
+                ctx.fillStyle = titleBox;
+                ctx.beginPath();
+                ctx.roundRect((W - titleBoxWidth) / 2, 196, titleBoxWidth, titleBoxHeight, 20);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(56,189,248,0.28)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = "#FFFFFF";
+                ctx.shadowColor = "rgba(0,0,0,0.7)";
+                ctx.shadowBlur = 12;
+                titleLines.forEach((line, index) => ctx.fillText(line, W / 2, 232 + index * 54));
+                ctx.shadowBlur = 0;
+            }
+
+            const overlays = visual.overlay_items || stage?.overlay_items || [];
+            overlays.forEach(item => {
+                if (!item || !item.content) return;
+                const x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
+                const y = Math.max(0.08, Math.min(0.86, Number(item.y ?? 0.72))) * H;
+                const code = item.kind === "code" || item.kind === "formula";
+                const overlayFont = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
+                // Set the font BEFORE wrapping and measuring, otherwise the label box is
+                // sized from whichever font was set last and the text spills off frame.
+                ctx.font = overlayFont;
+                const lines = wrapCanvasText(ctx, String(item.content), W * 0.78, code ? 3 : 2);
+                const lineHeight = code ? 34 : 30;
+                const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
+                const boxHeight = lines.length * lineHeight + 32;
+                ctx.fillStyle = code ? "rgba(3,10,25,0.9)" : "rgba(8,18,36,0.84)";
+                ctx.strokeStyle = code ? "rgba(56,189,248,0.8)" : "rgba(255,255,255,0.4)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(x - boxWidth / 2, y - 24, boxWidth, boxHeight, 18);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = code ? "#BAE6FD" : "#FFFFFF";
+                ctx.font = overlayFont;
+                ctx.shadowColor = "rgba(0,0,0,0.55)";
+                ctx.shadowBlur = 6;
+                lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * lineHeight));
+                ctx.shadowBlur = 0;
+            });
+        }
         ctx.restore();
         return true;
     }
@@ -4076,6 +4185,14 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.translate(-W / 2, -750);
 
         const activeStageIndex = stages.indexOf(activeStage);
+        const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
+        const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
+        // Crossfade from the outgoing scene instead of dipping to the empty
+        // background, so scene changes feel edited rather than flipped.
+        const outgoingAlpha = (previousStage && sceneElapsed < 0.35) ? Math.max(0, 1 - sceneElapsed / 0.35) : 0;
+        if (outgoingAlpha > 0) {
+            renderPromptSceneAssetVisual(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha, t, false);
+        }
         if (!renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t)) {
             renderPromptDrivenVisual(ctx, W, H, p, activeStage, stageProg, stageAlpha, t);
         }

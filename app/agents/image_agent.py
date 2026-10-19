@@ -47,14 +47,16 @@ class ImageCreationAgent:
         image_generated = False
         provider_used = "local-canvas"
         source_url = None
-        # Scene keyframes are watched full-screen behind subtitles, so steer the
-        # providers towards graded vertical cinematography instead of flat clip art.
+        # Scene keyframes fill the whole 9:16 frame, so they must read as technical
+        # motion graphics for the narrated mechanism, never as stock photos of people.
         # The model-authored visual prompt is always kept verbatim and first.
         scene_directives = (
-            "Vertical 9:16 cinematic keyframe for a short-form tech explainer video: "
-            "one clear focal subject, realistic photographic detail, volumetric rim lighting, "
-            "filmic colour grade, shallow depth of field, crisp micro-detail, "
-            "balanced negative space in the top and bottom thirds for captions, "
+            "Render this as a vertical 9:16 technical motion-graphics frame for a short tech explainer: "
+            "stylised 3D isometric illustration or abstract diagram of the exact mechanism described, "
+            "clearly separated component shapes, glowing data-flow lines, clean interface panels, "
+            "deep navy background, dramatic rim lighting, crisp detail, "
+            "balanced empty space in the top and bottom thirds for captions. "
+            "Strictly no people, no human figures, no presenter, no faces, no hands, no silhouettes, "
             "no text, no letters, no captions, no watermark, no logo."
         )
         provider_prompt = (

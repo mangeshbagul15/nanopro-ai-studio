@@ -138,6 +138,24 @@ class SceneImageGenerationTests(unittest.TestCase):
                 result = generate("A solar panel", allow_local_fallback=False, preserve_prompt=True)
             self.assertEqual(result.get("source_url"), "https://img.example/scene.png")
 
+    def test_scene_prompt_forbids_people_and_requests_technical_visuals(self):
+        with tempfile.TemporaryDirectory() as temp:
+            prompt = "Explain a CI/CD pipeline to a beginner"
+            received = []
+            fake = SimpleNamespace(
+                is_available=lambda: True,
+                generate_image=lambda **kwargs: received.append(kwargs) or {"image_url": "https://img.example/ci.png"},
+            )
+            generate = load_generate_image(fake, temp)
+            with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
+                 patch("urllib.request.urlopen", return_value=io.BytesIO(b"x" * 1200)):
+                generate(prompt, preserve_prompt=True, width=1080, height=1920)
+            sent = received[0]["prompt"]
+            self.assertIn(prompt, sent)
+            self.assertIn("no people", sent.lower())
+            self.assertIn("technical motion-graphics", sent.lower())
+            self.assertEqual(received[0]["aspect_ratio"], "9:16")
+
     def test_concurrent_scene_calls_get_distinct_output_files(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = SimpleNamespace(

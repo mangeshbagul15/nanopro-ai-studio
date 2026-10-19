@@ -100,6 +100,21 @@ class FullLengthVideoExportTests(unittest.TestCase):
         marathi = namespace["_build_prompt_fallback"](None, "क्वांटम कंप्यूटिंग", "mr")
         self.assertTrue(marathi["scenes"][0]["speech"].startswith("चला"))
 
+    def test_storyboard_fallback_uses_topic_specific_mechanisms(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        engine = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "SqlShortVideoEngine")
+        method = next(node for node in engine.body if isinstance(node, ast.FunctionDef) and node.name == "_build_prompt_fallback")
+        namespace = {"re": __import__("re"), "Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "<storyboard-fallback>", "exec"), namespace)
+        storyboard = namespace["_build_prompt_fallback"](None, "Explain a CI/CD pipeline with Docker", "en")
+        labels = [scene["entities"][0]["label"] for scene in storyboard["scenes"]]
+        self.assertIn("Automated build", labels)
+        first_visual = storyboard["scenes"][0]["visual_prompt"]
+        self.assertNotIn("Portrait educational scene", first_visual)
+        self.assertIn("no people", first_visual.lower())
+        self.assertIn("3D technical diagram", first_visual)
+
     def test_universal_topics_do_not_default_to_sql_ui(self):
         engine_source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         ui_source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")

@@ -107,7 +107,7 @@ async def generate_scene_assets(
             visual_prompt,
             str(scene.get("continuity", "")),
             str(scene.get("speech", "")),
-            "flux|1080x1920|strict|portrait|cinematic-v2",
+            "flux|1080x1920|strict|portrait|cinematic-v3",
         ))
         prompt_hash = hashlib.sha256(cache_material.encode("utf-8")).hexdigest()
         filename = f"{prompt_hash}.jpg"
