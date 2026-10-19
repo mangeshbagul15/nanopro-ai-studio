@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import urllib.request
 from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
@@ -55,6 +56,24 @@ async def _animate_if_available(asset_url: str, prompt: str, duration: int, publ
     return None
 
 
+async def _cache_runway_video(remote_url: str | None, destination: Path, public_base_url: str) -> str | None:
+    if not remote_url:
+        return None
+    try:
+        request = urllib.request.Request(remote_url, headers={"User-Agent": "NanoProAI/1.0"})
+        with await asyncio.to_thread(urllib.request.urlopen, request, timeout=90) as response:
+            content = await asyncio.to_thread(response.read)
+        if len(content) < 1024:
+            return None
+        local_path = destination.with_suffix(".mp4")
+        temp_path = local_path.with_suffix(".mp4.part")
+        temp_path.write_bytes(content)
+        temp_path.replace(local_path)
+        return f"{public_base_url.rstrip('/')}/assets/video_scenes/{local_path.name}"
+    except Exception:
+        return None
+
+
 async def generate_scene_assets(
     scenes: list[dict],
     job_id: str,
@@ -74,30 +93,44 @@ async def generate_scene_assets(
         title = str(scene.get("title") or f"Scene {index + 1}")
         if not visual_prompt:
             raise RuntimeError(f"Could not create scene {index + 1} ({title}): visual prompt is missing.")
-        prompt_hash = hashlib.sha256((visual_prompt + "|flux|1080x1920").encode("utf-8")).hexdigest()
+        cache_material = "|".join((
+            visual_prompt,
+            str(scene.get("continuity", "")),
+            str(scene.get("speech", "")),
+            "flux|1080x1920|strict|portrait",
+        ))
+        prompt_hash = hashlib.sha256(cache_material.encode("utf-8")).hexdigest()
         filename = f"{prompt_hash}.jpg"
         destination = asset_root / filename
         async with semaphore:
             if not destination.exists():
-                try:
-                    generated = await asyncio.to_thread(
-                        image_creation_agent.generate_image,
-                        visual_prompt,
-                        style="modern_tech",
-                        width=1080,
-                        height=1920,
-                        allow_local_fallback=False,
-                        preserve_prompt=True,
-                    )
-                    source = Path(generated["file_path"])
-                    if not source.is_file():
-                        raise RuntimeError("Image provider returned no local image file.")
-                    _normalize_portrait(source, destination)
-                except Exception as exc:
-                    raise RuntimeError(f"Could not create scene {index + 1} ({title}): {exc}") from exc
+                last_error = None
+                for _ in range(2):
+                    try:
+                        generated = await asyncio.to_thread(
+                            image_creation_agent.generate_image,
+                            visual_prompt,
+                            style="modern_tech",
+                            width=1080,
+                            height=1920,
+                            allow_local_fallback=False,
+                            preserve_prompt=True,
+                        )
+                        source = Path(generated["file_path"])
+                        if not source.is_file():
+                            raise RuntimeError("Image provider returned no local image file.")
+                        _normalize_portrait(source, destination)
+                        last_error = None
+                        break
+                    except Exception as exc:
+                        last_error = exc
+                if last_error:
+                    raise RuntimeError(f"Could not create scene {index + 1} ({title}): {last_error}") from last_error
             image_url = f"{public_base_url.rstrip('/')}/assets/video_scenes/{filename}"
             duration = float(scene.get("duration", scene.get("duration_seconds", 5)) or 5)
-            video_url = await _animate_if_available(image_url, visual_prompt, int(duration), public_base_url)
+            progress_callback(f"image_motion:{index + 1}/{len(scenes)}", int(completed * 100 / max(1, len(scenes))))
+            remote_video_url = await _animate_if_available(image_url, visual_prompt, int(duration), public_base_url)
+            video_url = await _cache_runway_video(remote_video_url, destination, public_base_url)
             async with progress_lock:
                 completed += 1
                 progress_callback(f"scene_images:{completed}/{len(scenes)}", int(completed * 100 / max(1, len(scenes))))

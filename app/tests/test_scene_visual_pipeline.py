@@ -1,5 +1,6 @@
 import asyncio
 import importlib.util
+import io
 import tempfile
 import unittest
 import sys
@@ -95,6 +96,30 @@ class SceneVisualPipelineTests(unittest.IsolatedAsyncioTestCase):
         result = await self._run(scenes, image)
         self.assertEqual(sum(asset["duration"] for asset in result), 49.7)
         self.assertEqual(result[-1]["end"], 49.7)
+
+    async def test_image_provider_retries_a_scene_once(self):
+        attempts = []
+        def image(prompt, **kwargs):
+            attempts.append(prompt)
+            if len(attempts) == 1:
+                raise RuntimeError("temporary image provider error")
+            return {"file_path": str(self.source), "provider": "fake"}
+        result = await self._run([{"title": "Solar", "visual_prompt": "A solar panel converts sunlight"}], image)
+        self.assertEqual(len(attempts), 2)
+        self.assertTrue(result[0]["image_url"].endswith(".jpg"))
+
+    async def test_runway_clip_is_saved_as_same_origin_scene_asset(self):
+        def image(prompt, **kwargs):
+            return {"file_path": str(self.source), "provider": "fake"}
+        runway = SimpleNamespace(
+            is_available=lambda: True,
+            create_image_to_video=lambda **kwargs: {"task_id": "task-1"},
+            get_task_status=lambda task_id: {"status": "succeeded", "video_url": "https://cdn.example/clip.mp4"},
+        )
+        with patch("urllib.request.urlopen", return_value=io.BytesIO(b"m" * 2048)):
+            result = await self._run([{"title": "Solar", "visual_prompt": "A solar panel tilts toward sunlight", "duration": 5}], image, runway)
+        self.assertIn("/assets/video_scenes/", result[0]["video_url"])
+        self.assertTrue(result[0]["video_url"].endswith(".mp4"))
 
 
 if __name__ == "__main__":
