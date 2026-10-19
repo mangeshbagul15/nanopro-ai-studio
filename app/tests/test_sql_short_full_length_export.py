@@ -53,6 +53,13 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn('"-c:v", "libx264"', source)
         self.assertIn('media_type="video/mp4"', source)
 
+    def test_mp4_conversion_limits_encoder_memory_for_free_instances(self):
+        source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
+        route = source.split('@app.post("/api/sql_video/finalize_mp4")', 1)[1].split("@app.get(", 1)[0]
+        self.assertIn('"-preset", "ultrafast"', route)
+        self.assertIn('"-threads", "1"', route)
+        self.assertIn('"-filter_threads", "1"', route)
+
     def test_universal_video_prompt_requests_topic_specific_visuals(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn('"visual_description"', source)

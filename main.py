@@ -1222,8 +1222,9 @@ def api_sql_video_finalize_mp4(file: UploadFile = File(...)):
         result = subprocess.run(
             [
                 audio_processor.ffmpeg_bin, "-nostdin", "-y", "-i", str(source_path),
-                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast",
-                "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "ultrafast",
+                "-threads", "1", "-filter_threads", "1", "-crf", "24", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-threads:a", "1", "-b:a", "128k",
                 "-movflags", "+faststart", str(final_path),
             ],
             capture_output=True,
