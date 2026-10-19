@@ -537,6 +537,7 @@ def get_sql_video_workspace_html() -> str:
                     <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 800; font-size: 14px; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2,132,199,0.4);">
                         <span>⚡ Generate AI Video &amp; Voice from Master Prompt</span>
                     </button>
+                    <div id="sqlVideoGenerationStatus" role="status" aria-live="polite" style="min-height: 18px; color: #7DD3FC; font-size: 12px;"></div>
 
                 </div>
             </div>

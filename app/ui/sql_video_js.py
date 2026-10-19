@@ -23,6 +23,8 @@ def get_sql_video_js() -> str:
         showAvatar: false,
         activePreset: null,
         activeVideoSpec: null,
+        sceneAssets: new Map(),
+        sceneAssetList: [],
         selectedAvatar: "Nadim_public_5",
         avatarVideoElement: null,
         avatarVideoLoaded: false,
@@ -648,7 +650,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         // Stage 3: Coding & Architecture Agent dispatch (37.5%)
 
         try {
-            const res = await fetch("/api/sql_video/generate_prompt", {
+            const res = await fetch("/api/sql_video/generate_prompt_job", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
@@ -658,9 +660,26 @@ SECOND_HIGHEST_SALARY: 70000`;
                     timestamp: Date.now()
                 })
             });
-            const data = await res.json();
+            const queued = await res.json();
+            if (!res.ok || !queued.job_id) throw new Error(queued.detail || queued.message || "Could not queue video generation.");
+            const statusEl = document.getElementById("sqlVideoGenerationStatus");
+            let data = null;
+            for (let attempt = 0; attempt < 360; attempt++) {
+                const pollRes = await fetch("/api/sql_video/generation_jobs/" + encodeURIComponent(queued.job_id), { cache: "no-store" });
+                const job = await pollRes.json();
+                if (!pollRes.ok) throw new Error(job.detail || "Could not read video generation progress.");
+                if (statusEl) statusEl.textContent = `${job.stage || "Preparing video"} · ${Math.round(job.progress || 0)}%`;
+                if (job.status === "done" || job.status === "completed") {
+                    data = job.result_data;
+                    break;
+                }
+                if (job.status === "error" || job.status === "failed") throw new Error(job.error_message || "Video generation failed.");
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            if (!data) throw new Error("Video generation timed out while preparing the scene visuals.");
             if (data.status === "success") {
                 if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
+                await loadPromptSceneAssets(data.scene_assets || []);
                 sqlShortState.agentPipeline = data.agent_pipeline || [];
                 sqlShortState.perfectionistAudit = data.perfectionist_audit || null;
 
@@ -759,8 +778,12 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
         } catch (e) {
             console.error("Prompt-driven video generation failed:", e);
+            const statusEl = document.getElementById("sqlVideoGenerationStatus");
+            if (statusEl) statusEl.textContent = e.message || String(e);
             alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
         } finally {
+            const statusEl = document.getElementById("sqlVideoGenerationStatus");
+            if (statusEl && sqlShortState.activeVideoSpec) statusEl.textContent = "Ready · prompt-specific 9:16 scene visuals";
             btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
             btn.disabled = false;
         }
@@ -2722,7 +2745,95 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
-    // Render the scene's semantic objects and links as a moving, topic-specific composition.
+    async function loadPromptSceneAssets(sceneAssets) {
+        sqlShortState.sceneAssets = new Map();
+        sqlShortState.sceneAssetList = Array.isArray(sceneAssets) ? sceneAssets : [];
+        await Promise.all(sqlShortState.sceneAssetList.map((asset, index) => new Promise((resolve, reject) => {
+            const image = new Image();
+            image.crossOrigin = "anonymous";
+            const imageTimer = setTimeout(() => reject(new Error(`Scene ${index + 1} image timed out while loading.`)), 20000);
+            image.onload = () => {
+                clearTimeout(imageTimer);
+                const scene = { image, video: null, asset };
+                sqlShortState.sceneAssets.set(String(asset.scene_id ?? index), scene);
+                sqlShortState.sceneAssets.set(`index:${index}`, scene);
+                if (!asset.video_url) return resolve();
+                const video = document.createElement("video");
+                video.crossOrigin = "anonymous";
+                video.muted = true;
+                video.loop = true;
+                video.playsInline = true;
+                video.preload = "auto";
+                const videoTimer = setTimeout(resolve, 7000);
+                video.onloadeddata = () => { clearTimeout(videoTimer); scene.video = video; resolve(); };
+                video.onerror = () => { clearTimeout(videoTimer); resolve(); }; // Image remains the prompt-specific fallback.
+                video.src = asset.video_url;
+                video.load();
+            };
+            image.onerror = () => reject(new Error(`Scene ${index + 1} image could not be loaded.`));
+            image.src = asset.image_url;
+        })));
+    }
+
+    function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t) {
+        const scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
+            sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex));
+        if (!scene) return false;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.2, Math.min(1, alpha));
+        const localTime = Math.max(0, t - Number(stage?.start || 0));
+        const media = scene.video && scene.video.readyState >= 2 ? scene.video : scene.image;
+        if (scene.video && scene.video.readyState >= 2) {
+            const expected = scene.video.duration ? localTime % scene.video.duration : localTime;
+            if (Math.abs(scene.video.currentTime - expected) > 0.65) {
+                try { scene.video.currentTime = expected; } catch (_) {}
+            }
+            if (scene.video.paused) scene.video.play().catch(() => {});
+        }
+        const zoom = 1.025 + 0.035 * progress + 0.008 * Math.sin(t * 0.55);
+        const width = W * zoom, height = H * zoom;
+        ctx.drawImage(media, (W - width) / 2, (H - height) / 2, width, height);
+        const shade = ctx.createLinearGradient(0, 0, 0, H);
+        shade.addColorStop(0, "rgba(2,6,23,0.58)");
+        shade.addColorStop(0.42, "rgba(2,6,23,0.03)");
+        shade.addColorStop(0.72, "rgba(2,6,23,0.12)");
+        shade.addColorStop(1, "rgba(2,6,23,0.82)");
+        ctx.fillStyle = shade;
+        ctx.fillRect(0, 0, W, H);
+
+        const visual = stage?.visual_data || {};
+        const title = String(stage?.title || p.title || p.question || "");
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 46px 'Segoe UI', sans-serif";
+        wrapCanvasText(ctx, title, W - 150, 2).forEach((line, index) => ctx.fillText(line, W / 2, 250 + index * 58));
+
+        const overlays = visual.overlay_items || stage?.overlay_items || [];
+        overlays.forEach(item => {
+            if (!item || !item.content) return;
+            const x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
+            const y = Math.max(0.08, Math.min(0.86, Number(item.y ?? 0.72))) * H;
+            const code = item.kind === "code" || item.kind === "formula";
+            const lines = wrapCanvasText(ctx, String(item.content), W * 0.78, code ? 3 : 2);
+            const lineHeight = code ? 34 : 30;
+            const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
+            const boxHeight = lines.length * lineHeight + 32;
+            ctx.fillStyle = code ? "rgba(3,10,25,0.9)" : "rgba(8,18,36,0.84)";
+            ctx.strokeStyle = code ? "rgba(56,189,248,0.8)" : "rgba(255,255,255,0.4)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(x - boxWidth / 2, y - 24, boxWidth, boxHeight, 18);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = code ? "#BAE6FD" : "#FFFFFF";
+            ctx.font = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
+            lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * lineHeight));
+        });
+        ctx.restore();
+        return true;
+    }
+
+    // Generic semantic diagram remains only for legacy scenes without prompt-specific media.
     function renderPromptDrivenVisual(ctx, W, H, p, stage, progress, alpha, t) {
         const visual = (stage && stage.visual_data) || {};
         const title = (stage && stage.title) || p.title || p.question || "";
@@ -3907,7 +4018,10 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.scale(camZoom, camZoom);
         ctx.translate(-W / 2, -750);
 
-        renderPromptDrivenVisual(ctx, W, H, p, activeStage, stageProg, stageAlpha, t);
+        const activeStageIndex = stages.indexOf(activeStage);
+        if (!renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t)) {
+            renderPromptDrivenVisual(ctx, W, H, p, activeStage, stageProg, stageAlpha, t);
+        }
         ctx.restore();
 
         // =========================================================================

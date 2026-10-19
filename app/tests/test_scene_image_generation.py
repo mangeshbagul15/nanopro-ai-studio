@@ -3,6 +3,7 @@ import io
 import json
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -20,6 +21,7 @@ def load_generate_image(fake_replicate, output_dir):
     namespace = {
         "Dict": dict, "Any": object, "Optional": object, "Path": Path,
         "os": __import__("os"), "time": __import__("time"),
+        "uuid": uuid,
         "subprocess": __import__("subprocess"), "urllib": __import__("urllib"),
         "log_event": lambda *args, **kwargs: None,
         "db": SimpleNamespace(add_knowledge=lambda *args, **kwargs: None),
@@ -67,6 +69,20 @@ class SceneImageGenerationTests(unittest.TestCase):
                  patch("urllib.request.urlopen", return_value=io.BytesIO(b"x" * 1200)):
                 result = generate("A solar panel", allow_local_fallback=False, preserve_prompt=True)
             self.assertEqual(result.get("source_url"), "https://img.example/scene.png")
+
+    def test_concurrent_scene_calls_get_distinct_output_files(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = SimpleNamespace(
+                is_available=lambda: True,
+                generate_image=lambda **kwargs: {"image_url": "https://img.example/scene.png"},
+            )
+            generate = load_generate_image(fake, temp)
+            with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
+                 patch("urllib.request.urlopen", side_effect=lambda *args, **kwargs: io.BytesIO(b"x" * 1200)), \
+                 patch("time.time", return_value=1700000000):
+                first = generate("Scene one")
+                second = generate("Scene two")
+            self.assertNotEqual(first["filename"], second["filename"])
 
 
 if __name__ == "__main__":

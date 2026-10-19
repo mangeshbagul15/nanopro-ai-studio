@@ -9,6 +9,7 @@ import time
 import subprocess
 import urllib.request
 import urllib.parse
+import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional
 from app.core.config import IMAGE_OUTPUT_DIR
@@ -36,7 +37,7 @@ class ImageCreationAgent:
         """
         log_event(f"ImageCreationAgent generating image for: {prompt[:60]}", component="ImageAgent")
         timestamp = int(time.time())
-        filename = f"gen_img_{timestamp}.png"
+        filename = f"gen_img_{timestamp}_{uuid.uuid4().hex[:10]}.png"
         filepath = self.output_dir / filename
 
         # 1. Try Replicate Flux.1 / SDXL if configured and credit active

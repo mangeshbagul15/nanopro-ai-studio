@@ -144,5 +144,28 @@ class SceneVisualContractTests(unittest.TestCase):
             self._validator()(scene)
 
 
+class PromptScenePlayerTests(unittest.TestCase):
+    def test_generate_ui_polls_scene_job_progress(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn('/api/sql_video/generate_prompt_job', source)
+        self.assertIn('/api/sql_video/generation_jobs/', source)
+        self.assertIn('job.result_data', source)
+        self.assertIn('sqlVideoGenerationStatus', source)
+
+    def test_scene_renderer_uses_ai_assets_and_native_overlays(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn('async function loadPromptSceneAssets(sceneAssets)', source)
+        renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
+        self.assertIn('drawImage(media', renderer)
+        self.assertIn('overlay_items', renderer)
+
+    def test_asset_scene_skips_generic_orbit_nodes(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
+        self.assertIn('ctx.drawImage(media', renderer)
+        self.assertIn('return;', renderer)
+        self.assertIn('aspect-ratio: 9 / 16', (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
