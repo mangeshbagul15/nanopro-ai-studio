@@ -108,6 +108,32 @@ def _infer_action_type(idx: int, total: int) -> str:
     return "final_result"
 
 
+def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate the model-authored scene brief and native overlays used by media rendering."""
+    if not isinstance(scene, dict):
+        raise ValueError("A scene visual brief must be an object.")
+    for field in ("visual_prompt", "continuity"):
+        if not isinstance(scene.get(field), str) or not scene[field].strip():
+            raise ValueError(f"Scene visual brief is missing {field}.")
+    overlays = scene.get("overlay_items")
+    if not isinstance(overlays, list):
+        raise ValueError("Scene overlay_items must be a list.")
+    normalized = []
+    for item in overlays:
+        if not isinstance(item, dict) or item.get("kind") not in {"label", "code", "formula"}:
+            raise ValueError("Scene overlays must use label, code, or formula kind.")
+        if not isinstance(item.get("content"), str) or not item["content"].strip():
+            raise ValueError("Scene overlays must contain visible text.")
+        try:
+            x, y = float(item.get("x")), float(item.get("y"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Scene overlay anchors must be normalized canvas coordinates.") from exc
+        if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
+            raise ValueError("Scene overlay anchors must be normalized canvas coordinates.")
+        normalized.append({**item, "x": x, "y": y, "content": item["content"].strip()})
+    return {**scene, "visual_prompt": scene["visual_prompt"].strip(), "continuity": scene["continuity"].strip(), "overlay_items": normalized}
+
+
 def compute_audio_synchronized_stages(
     raw_stages: List[Dict[str, Any]],
     audio_duration: float,
@@ -1219,7 +1245,7 @@ class SqlShortVideoEngine:
                     "visual_type": s.get("visual_type") or s.get("action_type") or ("hook" if i == 0 else ("takeaway" if i == len(existing) - 1 else "diagram")),
                     "visual_data": s.get("visual_data") or {
                         key: s.get(key) for key in (
-                            "visual_description", "visual_motif", "composition", "motion", "entities", "relationships"
+                            "visual_prompt", "continuity", "overlay_items", "visual_description", "visual_motif", "composition", "motion", "entities", "relationships"
                         ) if s.get(key) is not None
                     },
                     "title": s.get("title") or f"Scene {i + 1}",
@@ -2411,6 +2437,9 @@ class SqlShortVideoEngine:
             right = labels[(i + 1) % len(labels)]
             scenes.append({
                 "title": titles[i], "speech": line,
+                "visual_prompt": f"Portrait educational scene about {topic}. Show {left} in the context of {right}; depict {titles[i].lower()} as the visible action.",
+                "continuity": f"Keep the same visual style and subject identity for {topic} across scenes.",
+                "overlay_items": [{"kind": "label", "content": left[:48], "x": 0.5, "y": 0.82}],
                 "visual_description": f"A topic-specific visual explaining {topic}: {titles[i].lower()}.",
                 "visual_motif": "connected topic map", "composition": ["centerpiece", "split", "flow", "radial", "close-up"][i],
                 "motion": ["assemble", "orbit", "travel", "pulse", "settle"][i],
@@ -2466,10 +2495,10 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Formulate 5 to 6 educational scenes that cover the essential points. Target 45 to 55 seconds of spoken narration, always aiming below 60 seconds. Be concise: English narration up to 112 words total; Marathi or Hindi up to 88 words total. Keep the key idea, important steps, and outcome; omit secondary detail when needed.\n"
-                    f"3. For each scene, express what the spoken line means as visual_description, visual_motif, entities (2-5 prompt-specific objects with label, detail, shape, color), and relationships (from/to). Pick a different composition and motion for each beat; vary entity count and spatial arrangement, avoid repeating the same composition, and never use placeholder/demo entities.\n"
+                    f"3. For every scene, create a precise English visual_prompt showing the actual subject and physical/software action described by its spoken line, including environment, objects, camera framing, and what changes over time. Keep one continuity description across scenes; avoid repeating the same composition or using an orbiting node graph. Explain invisible mechanisms with a grounded cutaway; never invent unrelated planets, characters, or metaphors.\n"
                     f"4. Write speech naturally in the selected language, covering all important prompt details. Scene speech in order is the exact narration that must be synthesized; avoid generic interview intros/outros unless the prompt asks for them.\n\n"
-                    f"Output strictly raw JSON with title, domain, content_type, suggested_motion_bg, and scenes. Set content_type to sql_query only when the user explicitly asks for SQL code; otherwise use tech_topic. Each scene has title, speech, visual_description, visual_motif, composition, motion, entities, and relationships. Entities are arrays of {{label, detail, shape, color}}; relationships are arrays of {{from, to, label}}. Every entity and visual detail must come from the user's topic or be necessary to explain it.\n"
-                    f'{{"title":"Topic-specific title","domain":"Inferred domain","content_type":"tech_topic","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"A beat grounded in the prompt","speech":"Complete spoken explanation in {lang_key}","visual_description":"What the viewer should see while hearing this line","visual_motif":"Topic-specific motif","composition":"A composition suited to this beat","motion":"How the objects move in sync with the explanation","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"orb, ring, block, stream, or another apt form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"another apt form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}]}}]}}'
+                    f"Output raw JSON with title, domain, content_type, suggested_motion_bg, and scenes. Set content_type to sql_query only when SQL code is explicitly requested; otherwise tech_topic. Each scene has title, speech, visual_prompt, continuity, visual_description, visual_motif, composition, motion, entities, relationships, and overlay_items. overlay_items are arrays of {{kind, content, x, y}}, where kind is label/code/formula and x/y are numbers from 0 to 1. Keep code and exact text out of the image prompt; place them in overlay_items. Every visual must show the scene's narrated mechanism.\n"
+                    f'{{"title":"Topic-specific title","domain":"Inferred domain","content_type":"tech_topic","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"A beat grounded in the prompt","speech":"Complete spoken explanation in {lang_key}","visual_prompt":"English shot prompt showing this exact topic action","continuity":"Recurring subject and style","visual_description":"What the viewer should see","visual_motif":"Topic-specific motif","composition":"Camera framing","motion":"Visible action over time","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}],"overlay_items":[{{"kind":"label","content":"Exact concise label","x":0.5,"y":0.8}}]}}]}}'
                 )
 
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
@@ -2488,6 +2517,8 @@ class SqlShortVideoEngine:
                                 or not isinstance(scene.get("entities"), list)
                                 or len(scene["entities"]) < 2):
                             raise ValueError("A generated scene is missing its narration or prompt-specific visual elements.")
+                    scenes = [_validate_scene_visual_contract(scene) for scene in scenes]
+                    parsed["scenes"] = scenes
                     narration_word_count = sum(len(str(scene.get("speech", "")).split()) for scene in scenes)
                     if narration_word_count > max_narration_words:
                         compact_prompt = (
@@ -2523,7 +2554,7 @@ class SqlShortVideoEngine:
                         f"Create a valid, topic-specific 9:16 animated video storyboard for: {text_input}\n"
                         f"Write all speech in {lang_key}. Return raw JSON with title, domain, content_type, suggested_motion_bg, and exactly 5 scenes. "
                         f"Use content_type tech_topic unless the user explicitly requests SQL code. Every scene must contain title, speech, visual_description, "
-                        f"visual_motif, composition, motion, at least two topic-specific entities (label, detail, shape, color), and relationships (from, to, label). "
+                        f"visual_motif, composition, motion, visual_prompt, continuity, overlay_items, at least two topic-specific entities (label, detail, shape, color), and relationships (from, to, label). "
                         f"Keep narration concise for a video under 60 seconds. Do not add markdown or generic interview content."
                     )
                     retry_resp, _, _ = model_manager.execute_with_fallback(
@@ -2541,7 +2572,10 @@ class SqlShortVideoEngine:
                                 or not isinstance(scene.get("entities"), list)
                                 or len(scene["entities"]) < 2):
                             raise ValueError("A retried scene is missing topic-specific visuals or narration.")
+                    retry_scenes = [_validate_scene_visual_contract(scene) for scene in retry_scenes]
+                    retry_parsed["scenes"] = retry_scenes
                     matched = retry_parsed
+                    matched.setdefault("content_type", content_type)
                     matched["id"] = "custom_ai_scenario"
                     matched["question"] = text_input
                     matched["difficulty"] = difficulty

@@ -106,5 +106,43 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertNotIn('exportSqlShortVideo(15)', source)
 
 
+
+class SceneVisualContractTests(unittest.TestCase):
+    @staticmethod
+    def _validator():
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        node = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_validate_scene_visual_contract")
+        namespace = {"Any": Any, "Dict": Dict, "List": List}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), "<scene-contract>", "exec"), namespace)
+        return namespace["_validate_scene_visual_contract"]
+
+    def test_accepts_prompt_specific_scene_and_native_code_overlay(self):
+        scene = {
+            "title": "Python list traversal",
+            "speech": "The loop reads each item and adds it to the result.",
+            "visual_prompt": "Close view of a Python list; the loop visits each value in order and updates the result list.",
+            "continuity": "Same list and loop variable remain visible across this explanation.",
+            "overlay_items": [
+                {"kind": "code", "content": "for item in values:", "x": 0.12, "y": 0.82},
+                {"kind": "label", "content": "result list", "x": 0.75, "y": 0.7},
+            ],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual(validated["visual_prompt"], scene["visual_prompt"])
+        self.assertEqual(validated["overlay_items"][0]["content"], "for item in values:")
+
+    def test_rejects_overlay_outside_normalized_canvas(self):
+        scene = {
+            "title": "Photon",
+            "speech": "A photon transfers energy to an electron.",
+            "visual_prompt": "A photon strikes a silicon cell and releases an electron.",
+            "continuity": "The same silicon cell stays in view.",
+            "overlay_items": [{"kind": "label", "content": "electron", "x": 1.3, "y": 0.5}],
+        }
+        with self.assertRaisesRegex(ValueError, "normalized canvas"):
+            self._validator()(scene)
+
+
 if __name__ == "__main__":
     unittest.main()
