@@ -20,7 +20,15 @@ class ImageCreationAgent:
         self.output_dir = IMAGE_OUTPUT_DIR
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def generate_image(self, prompt: str, style: str = "modern_tech", width: int = 1080, height: int = 1920) -> Dict[str, Any]:
+    def generate_image(
+        self,
+        prompt: str,
+        style: str = "modern_tech",
+        width: int = 1080,
+        height: int = 1920,
+        allow_local_fallback: bool = True,
+        preserve_prompt: bool = False,
+    ) -> Dict[str, Any]:
         """
         Generates an image from prompt.
         If an external image service / local Stable Diffusion is configured, calls it.
@@ -34,11 +42,17 @@ class ImageCreationAgent:
         # 1. Try Replicate Flux.1 / SDXL if configured and credit active
         image_generated = False
         provider_used = "local-canvas"
+        source_url = None
+        provider_prompt = (
+            f"{prompt}, portrait composition, high visual quality"
+            if preserve_prompt
+            else f"{prompt}, style {style}, 8k sharp, cinematic lighting"
+        )
         try:
             from app.core.replicate_engine import replicate_engine
             if replicate_engine.is_available():
                 rep_res = replicate_engine.generate_image(
-                    prompt=f"{prompt}, style {style}, 8k sharp, cinematic lighting",
+                    prompt=provider_prompt,
                     model="black-forest-labs/flux-schnell"
                 )
                 img_url = rep_res.get("image_url")
@@ -52,6 +66,7 @@ class ImageCreationAgent:
                                 f.write(r_bytes)
                             image_generated = True
                             provider_used = "replicate-flux"
+                            source_url = img_url
                             log_event(f"Replicate generated AI image ({len(r_bytes)} bytes) for: {prompt[:40]}", component="ImageAgent")
         except Exception as re_err:
             log_event(f"Replicate skipped/cascading ({re_err}), falling back to Pollinations Flux.", component="ImageAgent")
@@ -59,7 +74,11 @@ class ImageCreationAgent:
         # 2. Try Generative AI via Pollinations.ai (Flux.1 / SDXL - Zero-Config, Free Lifetime)
         if not image_generated:
             try:
-                enhanced_prompt = f"{prompt}, style {style}, professional 8k sharp, cinematic lighting, trending on artstation"
+                enhanced_prompt = (
+                    f"{prompt}, portrait composition, high visual quality"
+                    if preserve_prompt
+                    else f"{prompt}, style {style}, professional 8k sharp, cinematic lighting, trending on artstation"
+                )
                 encoded_prompt = urllib.parse.quote(enhanced_prompt)
                 # Use scaled dimensions for fast generation
                 target_w = min(width, 1024)
@@ -73,11 +92,18 @@ class ImageCreationAgent:
                             f.write(img_data)
                         image_generated = True
                         provider_used = "pollinations-flux"
+                        source_url = poll_url
                         log_event(f"Pollinations.ai generated real AI image ({len(img_data)} bytes) for: {prompt[:40]}", component="ImageAgent")
             except Exception as pe:
                 log_event(f"Pollinations.ai skipped or offline ({pe}), using local graphics canvas fallback.", component="ImageAgent")
 
-        # 3. Fallback to local Pillow or FFmpeg canvas if offline
+        # Scene renders must fail closed instead of silently returning a text card.
+        if not image_generated and not allow_local_fallback:
+            raise RuntimeError(
+                "NanoPro could not generate a prompt-specific image. Check the configured image providers and retry."
+            )
+
+        # 3. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).
         if not image_generated:
             try:
                 from PIL import Image, ImageDraw, ImageFont
@@ -110,6 +136,7 @@ class ImageCreationAgent:
             "file_path": str(filepath),
             "filename": filename,
             "provider": provider_used,
+            "source_url": source_url,
             "created_at": time.time()
         }
         
