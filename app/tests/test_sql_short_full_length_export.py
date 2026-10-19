@@ -45,6 +45,7 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("(timestamp - startTime) / 1000", source)
         self.assertNotIn("stepBatch = totalDuration <= 15 ? 1 : 2", source)
         self.assertNotIn("Math.min(59.5, totalDuration)", source)
+        self.assertIn("Generate click produces the complete synchronized 9:16 MP4 download", source)
 
     def test_mp4_conversion_route_uses_h264_and_returns_a_video_file(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")

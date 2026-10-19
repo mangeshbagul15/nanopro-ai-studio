@@ -660,6 +660,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             });
             const data = await res.json();
             if (data.status === "success") {
+                if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
                 sqlShortState.agentPipeline = data.agent_pipeline || [];
                 sqlShortState.perfectionistAudit = data.perfectionist_audit || null;
 
@@ -732,6 +733,16 @@ SECOND_HIGHEST_SALARY: 70000`;
                     }
                 }
 
+                const narrationAudio = document.getElementById("sqlVoiceAudio");
+                if (!narrationAudio) throw new Error("Narration audio player is unavailable.");
+                if (narrationAudio.readyState < 1) {
+                    await new Promise((resolve, reject) => {
+                        const timer = setTimeout(() => reject(new Error("Narration audio did not finish loading.")), 20000);
+                        narrationAudio.addEventListener("loadedmetadata", () => { clearTimeout(timer); resolve(); }, { once: true });
+                        narrationAudio.addEventListener("error", () => { clearTimeout(timer); reject(new Error("Narration audio could not be loaded.")); }, { once: true });
+                    });
+                }
+
                 if (data.suggested_motion_bg) {
                     select3DMotionBg(data.suggested_motion_bg);
                 }
@@ -739,8 +750,10 @@ SECOND_HIGHEST_SALARY: 70000`;
                 updateSqlBlueprintUI(sqlShortState.activePreset);
                 restartSqlShortPlay();
 
-                // Stage 8: 1-Click Deliverable Complete
+                // Generate click produces the complete synchronized 9:16 MP4 download.
                 await new Promise(r => setTimeout(r, 450));
+                logPipelineStep("Full 9:16 MP4", "Rendering the complete prompt-specific animation; the final MP4 will download automatically.");
+                void exportSqlShortVideo();
             } else {
                 alert("Blueprint generation error: " + (data.message || "Failed"));
             }
