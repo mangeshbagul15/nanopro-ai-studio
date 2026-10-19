@@ -1141,6 +1141,32 @@ async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
         return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
     return JSONResponse(res)
 
+@app.post("/api/sql_video/generate_prompt_job")
+async def api_sql_video_generate_prompt_job(req: SqlShortPromptRequest, request: Request):
+    """Queues the long-running prompt storyboard and scene rendering pipeline."""
+    from app.video_maker.video_generation_jobs import queue_generation_job
+    from app.video_maker.scene_visual_pipeline import generate_scene_assets
+    queued = queue_generation_job(
+        task_manager,
+        req.question,
+        str(request.base_url).rstrip("/"),
+        sql_short_engine.generate_short_prompt_async,
+        generate_scene_assets,
+        difficulty=req.difficulty or "Medium",
+        language=req.language or "mr",
+        mode=req.mode or "faang_drill",
+    )
+    return JSONResponse(queued, status_code=202)
+
+@app.get("/api/sql_video/generation_jobs/{job_id}")
+async def api_sql_video_generation_job_status(job_id: str):
+    """Returns progress and the complete synchronized blueprint for a video job."""
+    from app.video_maker.video_generation_jobs import get_generation_job
+    result = get_generation_job(task_manager, job_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Video generation job not found")
+    return JSONResponse(result)
+
 @app.post("/api/sql_video/run_sandbox")
 async def api_sql_video_run_sandbox(req: SqlShortSandboxRequest):
     """Executes SQL in an ephemeral in-memory SQLite sandbox with zero server load (<2ms)."""
