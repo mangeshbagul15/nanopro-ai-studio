@@ -60,6 +60,7 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("avoid repeating the same composition", source.lower())
         self.assertNotIn('"title": "Problem Hook"', source)
         self.assertNotIn('f"}}"', source)
+        self.assertIn('"content_type":"tech_topic"', source)
         self.assertIn("Every user prompt must pass through", source)
         self.assertIn('audio_url = ""', source)
         self.assertNotIn('audio_url = f"/audio/preset_sql_q1_second_highest_salary_', source)
