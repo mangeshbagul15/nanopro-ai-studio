@@ -290,6 +290,12 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn('matched["storyboard_source"] = "online_model"', source)
         self.assertIn('matched["storyboard_source"] = "local_fallback"', source)
 
+    def test_storyboard_prompt_requests_native_language_narration(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn("Marathi in Devanagari script", source)
+        self.assertIn("Every speech value must be written only in this language", source)
+        self.assertIn("speech\":\"Complete spoken explanation in {lang_name}", source)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
