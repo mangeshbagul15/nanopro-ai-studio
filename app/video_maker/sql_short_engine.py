@@ -2554,8 +2554,8 @@ class SqlShortVideoEngine:
             })
         return {"title": topic[:80], "domain": "Prompt-based technology", "content_type": "tech_topic", "suggested_motion_bg": "neural_synapse", "storyboard_source": "local_fallback", "scenes": scenes}
 
-    async def _english_on_screen_text(self, stages: List[Dict[str, Any]]) -> bool:
-        """Translate titles and narration to English for on-screen text only.
+    async def _english_on_screen_text(self, stages: List[Dict[str, Any]], headline: str = "") -> str:
+        """Translate the headline, titles and narration to English for on-screen text only.
 
         The synthesized voice keeps the selected regional language, so the video can
         be an English-text short with a Marathi/Hindi voice. Models often ignore an
@@ -2564,12 +2564,13 @@ class SqlShortVideoEngine:
         titles = [str(stage.get("title") or "") for stage in stages]
         spoken = [str(stage.get("speech") or "") for stage in stages]
         if not any(titles) or not any(spoken):
-            return False
+            return ""
         prompt = (
-            "Translate the following short video titles and narration lines into natural English. "
+            "Translate the following short video headline, titles and narration lines into natural English. "
             "Keep product and technical terms (Docker, RAG, SQL, API, Kubernetes) unchanged. "
-            'Return raw JSON only: {"titles":[...],"subtitles":[...]} with exactly '
-            f"{len(titles)} items in each array and the same order.\n"
+            'Return raw JSON only: {"title":"English video title","titles":[...],"subtitles":[...]} with exactly '
+            f"{len(titles)} title items and {len(spoken)} subtitle items in the same order.\n"
+            f"headline: {json.dumps(str(headline or ''), ensure_ascii=False)}\n"
             f"titles: {json.dumps(titles, ensure_ascii=False)}\n"
             f"subtitles: {json.dumps(spoken, ensure_ascii=False)}"
         )
@@ -2583,14 +2584,15 @@ class SqlShortVideoEngine:
                 payload = json.loads(translated[translated.find("{"):translated.rfind("}") + 1])
                 new_titles = payload.get("titles") or []
                 new_subs = payload.get("subtitles") or []
+                new_headline = str(payload.get("title") or "").strip()
                 if len(new_titles) == len(titles) and len(new_subs) == len(spoken) and all(str(item).strip() for item in list(new_titles) + list(new_subs)):
                     for stage, title, subtitle in zip(stages, new_titles, new_subs):
                         stage["title"] = str(title).strip()
                         stage["speech_en"] = str(subtitle).strip()
-                    return True
+                    return new_headline
             except Exception as exc:
                 log_event(f"English on-screen translation attempt {attempt + 1} failed: {exc}", level="DEBUG", component="SqlShortEngine")
-        return False
+        return ""
 
     async def generate_short_prompt_async(
         self,
@@ -2749,7 +2751,9 @@ class SqlShortVideoEngine:
         # The built-in storyboard is already English, so only model output needs this.
         if lang_key != "en" and matched.get("storyboard_source") != "local_fallback":
             try:
-                await self._english_on_screen_text(stages)
+                english_headline = await self._english_on_screen_text(stages, matched.get("title") or "")
+                if english_headline:
+                    matched["title"] = english_headline
             except Exception as exc:
                 log_event(f"English subtitle pass notice: {exc}", level="DEBUG", component="SqlShortEngine")
 

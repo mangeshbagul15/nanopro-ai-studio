@@ -317,7 +317,8 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn("async def _english_on_screen_text", source)
         self.assertIn('stage["speech_en"] = str(subtitle).strip()', source)
-        self.assertIn("await self._english_on_screen_text(stages)", source)
+        self.assertIn("await self._english_on_screen_text(stages,", source)
+        self.assertIn('matched["title"] = english_headline', source)
 
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
