@@ -313,6 +313,12 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("drawIso3DNode(ctx, boxX, y, boxW, nodeH, depth", js)
         self.assertIn("drawDiagramAmbientParticles", js)
 
+    def test_model_storyboards_get_an_english_on_screen_pass(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn("async def _english_on_screen_text", source)
+        self.assertIn('stage["speech_en"] = str(subtitle).strip()', source)
+        self.assertIn("await self._english_on_screen_text(stages)", source)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]

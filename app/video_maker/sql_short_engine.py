@@ -2553,6 +2553,45 @@ class SqlShortVideoEngine:
                 "relationships": [{"from": left, "to": right, "label": "connects to"}]
             })
         return {"title": topic[:80], "domain": "Prompt-based technology", "content_type": "tech_topic", "suggested_motion_bg": "neural_synapse", "storyboard_source": "local_fallback", "scenes": scenes}
+
+    async def _english_on_screen_text(self, stages: List[Dict[str, Any]]) -> bool:
+        """Translate titles and narration to English for on-screen text only.
+
+        The synthesized voice keeps the selected regional language, so the video can
+        be an English-text short with a Marathi/Hindi voice. Models often ignore an
+        extra per-scene field, so this focused pass guarantees the on-screen copy.
+        """
+        titles = [str(stage.get("title") or "") for stage in stages]
+        spoken = [str(stage.get("speech") or "") for stage in stages]
+        if not any(titles) or not any(spoken):
+            return False
+        prompt = (
+            "Translate the following short video titles and narration lines into natural English. "
+            "Keep product and technical terms (Docker, RAG, SQL, API, Kubernetes) unchanged. "
+            'Return raw JSON only: {"titles":[...],"subtitles":[...]} with exactly '
+            f"{len(titles)} items in each array and the same order.\n"
+            f"titles: {json.dumps(titles, ensure_ascii=False)}\n"
+            f"subtitles: {json.dumps(spoken, ensure_ascii=False)}"
+        )
+        from app.core.model_adapter import model_manager
+        for attempt in range(2):
+            try:
+                translated, _, _ = model_manager.execute_with_fallback(
+                    prompt=prompt,
+                    system_prompt="You are a precise translator. Output one raw JSON object, no markdown.",
+                )
+                payload = json.loads(translated[translated.find("{"):translated.rfind("}") + 1])
+                new_titles = payload.get("titles") or []
+                new_subs = payload.get("subtitles") or []
+                if len(new_titles) == len(titles) and len(new_subs) == len(spoken) and all(str(item).strip() for item in list(new_titles) + list(new_subs)):
+                    for stage, title, subtitle in zip(stages, new_titles, new_subs):
+                        stage["title"] = str(title).strip()
+                        stage["speech_en"] = str(subtitle).strip()
+                    return True
+            except Exception as exc:
+                log_event(f"English on-screen translation attempt {attempt + 1} failed: {exc}", level="DEBUG", component="SqlShortEngine")
+        return False
+
     async def generate_short_prompt_async(
         self,
         topic_or_question: str,
@@ -2705,6 +2744,14 @@ class SqlShortVideoEngine:
 
         matched_content_type = matched.get("content_type") or content_type or "tech_topic"
         stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
+
+        # On-screen text is English even when the narration voice is Marathi or Hindi.
+        # The built-in storyboard is already English, so only model output needs this.
+        if lang_key != "en" and matched.get("storyboard_source") != "local_fallback":
+            try:
+                await self._english_on_screen_text(stages)
+            except Exception as exc:
+                log_event(f"English subtitle pass notice: {exc}", level="DEBUG", component="SqlShortEngine")
 
         # Gather voice narration script across educational stages
         narration_parts = []
