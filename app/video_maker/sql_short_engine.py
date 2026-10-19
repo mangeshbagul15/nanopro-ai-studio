@@ -2517,12 +2517,42 @@ class SqlShortVideoEngine:
                         matched["stages"] = matched["scenes"]
                     matched["difficulty"] = difficulty
             except Exception as e:
-                log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
-                matched = self._build_prompt_fallback(text_input, lang_key)
-                matched["id"] = "custom_prompt_fallback"
-                matched["question"] = text_input
-                matched["difficulty"] = difficulty
-                matched["stages"] = matched["scenes"]
+                log_event(f"AI short prompt synthesis notice; retrying storyboard: {e}", level="DEBUG", component="SqlShortEngine")
+                try:
+                    repair_prompt = (
+                        f"Create a valid, topic-specific 9:16 animated video storyboard for: {text_input}\n"
+                        f"Write all speech in {lang_key}. Return raw JSON with title, domain, content_type, suggested_motion_bg, and exactly 5 scenes. "
+                        f"Use content_type tech_topic unless the user explicitly requests SQL code. Every scene must contain title, speech, visual_description, "
+                        f"visual_motif, composition, motion, at least two topic-specific entities (label, detail, shape, color), and relationships (from, to, label). "
+                        f"Keep narration concise for a video under 60 seconds. Do not add markdown or generic interview content."
+                    )
+                    retry_resp, _, _ = model_manager.execute_with_fallback(
+                        prompt=repair_prompt,
+                        system_prompt="Return one valid raw JSON object. Make every scene specific to the user's topic.",
+                    )
+                    retry_json = retry_resp[retry_resp.find("{"):retry_resp.rfind("}") + 1]
+                    retry_parsed = json.loads(retry_json)
+                    retry_scenes = retry_parsed.get("scenes") if isinstance(retry_parsed, dict) else None
+                    if not isinstance(retry_scenes, list) or len(retry_scenes) < 5:
+                        raise ValueError("The retry storyboard did not contain five scenes.")
+                    for scene in retry_scenes:
+                        if (not isinstance(scene, dict) or not scene.get("speech")
+                                or not scene.get("visual_description")
+                                or not isinstance(scene.get("entities"), list)
+                                or len(scene["entities"]) < 2):
+                            raise ValueError("A retried scene is missing topic-specific visuals or narration.")
+                    matched = retry_parsed
+                    matched["id"] = "custom_ai_scenario"
+                    matched["question"] = text_input
+                    matched["difficulty"] = difficulty
+                    matched["stages"] = retry_scenes
+                except Exception as retry_error:
+                    log_event(f"Storyboard retry notice; using local topic fallback: {retry_error}", level="DEBUG", component="SqlShortEngine")
+                    matched = self._build_prompt_fallback(text_input, lang_key)
+                    matched["id"] = "custom_prompt_fallback"
+                    matched["question"] = text_input
+                    matched["difficulty"] = difficulty
+                    matched["stages"] = matched["scenes"]
 
         if not matched:
             raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.")

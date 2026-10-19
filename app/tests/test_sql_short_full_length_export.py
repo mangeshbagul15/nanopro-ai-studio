@@ -72,6 +72,12 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("Short narration compression notice", source)
         self.assertIn("audio_duration=actual_dur", source)
 
+    def test_invalid_model_storyboard_retries_before_local_fallback(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn("retrying storyboard", source)
+        self.assertIn("Make every scene specific to the user's topic", source)
+        self.assertIn("Storyboard retry notice; using local topic fallback", source)
+
     def test_storyboard_fallback_preserves_any_topic_and_language(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         tree = ast.parse(source)
