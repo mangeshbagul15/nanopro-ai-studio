@@ -2906,6 +2906,24 @@ SECOND_HIGHEST_SALARY: 70000`;
             .map(line => (line.length > limit ? line.slice(0, limit - 1) + "…" : line));
     }
 
+    const DIAGRAM_ACTION_LABELS = {
+        problem_intro: "Introduction",
+        data_inspection: "Inspect the data",
+        logic_flowchart: "Follow the logic",
+        code_build: "Build the code",
+        simulation_execution: "Run the simulation",
+        final_result: "Final result",
+        takeaway: "Key takeaway"
+    };
+
+    function diagramActionLabel(value) {
+        const key = String(value || "").trim().toLowerCase();
+        if (!key) return "";
+        if (DIAGRAM_ACTION_LABELS[key]) return DIAGRAM_ACTION_LABELS[key];
+        const words = key.replace(/_/g, " ");
+        return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+
     function diagramIconForLabel(label) {
         const text = String(label || "").toLowerCase();
         if (/query|user|client|request|input/.test(text)) return "user";
@@ -2938,8 +2956,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const isSqlQuery = String((p && p.content_type) || "") === "sql_query";
         const stageTitleSteps = () => sceneList.slice(0, 5).map((scene, index) => {
             const label = (scene && scene.title) || ("Step " + (index + 1));
-            const action = String((scene && scene.action_type) || "").replace(/_/g, " ");
-            return { label, detail: action, icon: diagramIconForLabel(label) };
+            return { label, detail: diagramActionLabel(scene && scene.action_type), icon: diagramIconForLabel(label) };
         });
 
         if (!steps.length && !code && !table && !compare) {
