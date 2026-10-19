@@ -455,7 +455,7 @@ def get_sql_video_workspace_html() -> str:
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ All Video APIs Active</span>
                 <span class="status-pill" style="background: rgba(236, 72, 153, 0.15); border: 1px solid #EC4899; color: #EC4899; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🛡️ 100% Watermark-Free</span>
-                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 9:16 Vertical Reel (&lt;60s)</span>
+                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 Full-Length 9:16 Video</span>
                 <span class="status-pill" style="background: rgba(139, 92, 246, 0.15); border: 1px solid #8B5CF6; color: #8B5CF6; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🔊 Regional AI Voice Live</span>
                 <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🤖 Coding Intelligence Models Live</span>
             </div>
@@ -527,7 +527,7 @@ def get_sql_video_workspace_html() -> str:
                     </button>
 
                     <button type="button" class="btn btn-primary" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
-                        <span>🎬 1-CLICK 9:16 VIDEO EXPORT (&lt;60s HD)</span>
+                        <span>🎬 1-CLICK FULL-LENGTH 9:16 MP4 EXPORT</span>
                     </button>
                 </div>
             </div>
@@ -606,7 +606,7 @@ def get_sql_video_workspace_html() -> str:
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px 10px; font-weight: 900; font-size: 12px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35); white-space: normal; line-height: 1.3; text-align: center; word-break: break-word; box-sizing: border-box;">
                             <span style="font-size: 18px; flex-shrink: 0;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD 9:16 REEL (&lt;60s) (VOICE SYNCED)</span>
+                            <span id="exportBtnLabel">DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)</span>
                         </button>
 
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -633,7 +633,7 @@ def get_sql_video_workspace_html() -> str:
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94A3B8; font-family: monospace;">
                             <span id="exportEstTime" style="color: #F59E0B; font-weight: 700;">⏱️ अंदाजे वेळ: मोजत आहे...</span>
-                            <span id="exportFrameStats">🎞️ फ्रेम: 0 / 1800</span>
+                            <span id="exportFrameStats">🎞️ फ्रेम: 0 / narration duration</span>
                         </div>
                     </div>
 
@@ -687,8 +687,8 @@ def get_sql_video_workspace_html() -> str:
                             <div style="color: #94A3B8; font-size: 10px;">Zero syntax errors, balanced clauses, valid keywords</div>
                         </div>
                         <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
-                            <div style="color: #10B981; font-weight: 700;">✓ Trial 2: Speech Pacing &amp; Duration Limit</div>
-                            <div style="color: #94A3B8; font-size: 10px;">Word count dynamically calibrated (100-120 words), strictly within &lt;60s Shorts window</div>
+                            <div style="color: #10B981; font-weight: 700;">✓ Trial 2: Speech Pacing &amp; Full Duration</div>
+                            <div style="color: #94A3B8; font-size: 10px;">Scene timings follow the complete generated narration; no 60-second cutoff.</div>
                         </div>
                         <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; font-size: 11px; padding: 8px 10px;">
                             <div style="color: #10B981; font-weight: 700;">✓ Trial 3: 6-Stage Curriculum Progression</div>

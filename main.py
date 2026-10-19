@@ -1129,7 +1129,7 @@ async def api_sql_video_presets():
 
 @app.post("/api/sql_video/generate_prompt")
 async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
-    """Generates viral 9:16 Short/Reel creation blueprint (<58s) with synchronized stages and regional voice."""
+    """Generates a prompt-driven 9:16 video blueprint with full narration-synchronized stages and regional voice."""
     res = await sql_short_engine.generate_short_prompt_async(
         topic_or_question=req.question,
         difficulty=req.difficulty or "Medium",
@@ -1162,6 +1162,58 @@ async def api_sql_video_synthesize_voice(req: SqlShortVoiceRequest):
 
     res = await neural_tts.synthesize_async(text=text, language=req.language or "mr", voice_gender=req.voice_gender or "female")
     return JSONResponse(res)
+
+
+@app.post("/api/sql_video/finalize_mp4")
+def api_sql_video_finalize_mp4(file: UploadFile = File(...)):
+    """Convert the complete browser-recorded WebM into a downloadable H.264/AAC MP4."""
+    from app.core.config import VIDEO_OUTPUT_DIR
+
+    output_dir = VIDEO_OUTPUT_DIR / "sql_shorts"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    job_token = f"{time.time_ns()}_{threading.get_ident()}"
+    source_path = output_dir / f".incoming_{job_token}.webm"
+    final_path = output_dir / f"NanoPro_Full_Video_{job_token}.mp4"
+    max_upload_bytes = 200 * 1024 * 1024
+    total_bytes = 0
+
+    try:
+        with source_path.open("wb") as source_file:
+            while True:
+                chunk = file.file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                if total_bytes > max_upload_bytes:
+                    raise HTTPException(status_code=413, detail="Video export exceeds the 200 MB limit.")
+                source_file.write(chunk)
+        if total_bytes == 0:
+            raise HTTPException(status_code=400, detail="The browser video recording is empty.")
+
+        result = subprocess.run(
+            [
+                audio_processor.ffmpeg_bin, "-nostdin", "-y", "-i", str(source_path),
+                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast",
+                "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+                "-movflags", "+faststart", str(final_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=900,
+        )
+        if result.returncode != 0 or not final_path.is_file() or final_path.stat().st_size == 0:
+            detail = (result.stderr or "FFmpeg returned no output.")[-1200:]
+            raise HTTPException(status_code=500, detail=f"MP4 conversion failed: {detail}")
+        return FileResponse(
+            str(final_path),
+            media_type="video/mp4",
+            filename=f"NanoPro_Full_Video_{job_token}.mp4",
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(status_code=504, detail="MP4 conversion timed out. Please try again.") from exc
+    finally:
+        source_path.unlink(missing_ok=True)
+        file.file.close()
 
 @app.get("/api/tech_video/learning_telemetry")
 async def api_tech_video_learning_telemetry():

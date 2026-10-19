@@ -1,6 +1,6 @@
 """
-Mangesh Nano Pro AI Studio - 9:16 SQL Short Video Creation Engine
-Specialized for Mobile, Instagram Reels & YouTube Shorts (Max 60 Seconds).
+Mangesh Nano Pro AI Studio - Prompt-Driven 9:16 Video Creation Engine
+Specialized for complete vertical explainers, Shorts, and Reels.
 Features:
 - Banking & enterprise-level SQL interview scenarios.
 - Viral peak-point hook in the first 3 seconds for audience retention.
@@ -8,7 +8,7 @@ Features:
 - Moving arrow indicators highlighting key SQL keywords (PARTITION BY, DENSE_RANK, etc.).
 - Multilingual voiceover (Marathi, Hindi, English) powered by ElevenLabs Voice AI.
 - Multilingual subtitle overlays (English, Minglish, Hinglish).
-- Zero-server-load client-side Canvas/MediaRecorder MP4 rendering & download.
+- Client-side Canvas rendering with complete narration-synced MP4 export.
 - Live in-memory SQLite sandbox for verifying queries against real bank tables.
 """
 
@@ -119,14 +119,13 @@ def compute_audio_synchronized_stages(
     - Zero hardcoded timings: every timestamp is derived from speech word counts and real audio duration.
     - Spoken educational narration spans 0.0 to audio_duration.
     - Dynamic outro duration calculated strictly from audio length (typically 6-8% of video, 2.0-3.8s).
-    - Total duration strictly stays under 60.0s (<60s YouTube Shorts / Reels standard).
+    - Total duration follows the complete synthesized narration with no arbitrary cutoff.
     - Subtitles and animations are 100% frame-locked to spoken word counts from prompt.
     """
     raw_audio_dur = float(audio_duration) if audio_duration and float(audio_duration) > 0 else 30.0
 
-    # Video duration strictly matches narration duration (<58s Shorts/Reels standard)
-    # Zero trailing outro screen or branding cards appended as requested by user
-    total_dur = min(58.5, round(raw_audio_dur, 2))
+    # Preserve the complete narration duration so longer prompt scenarios are not truncated.
+    total_dur = round(raw_audio_dur, 2)
     edu_dur = total_dur
     outro_start = total_dur
 
@@ -987,8 +986,8 @@ TOP_MNC_THEORY_PRESETS = [
 
 class SqlShortVideoEngine:
     """
-    Dedicated 9:16 Short Video Creation Engine.
-    Produces viral <60-second Reels & Shorts with synchronized code, arrows, and multilingual voiceovers.
+    Dedicated prompt-driven 9:16 video creation engine.
+    Produces complete vertical explainers with synchronized visuals and multilingual voiceovers.
     Supports both SQL Coding / Query questions and SQL Theory / Concept questions.
     """
 
@@ -997,7 +996,7 @@ class SqlShortVideoEngine:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def get_presets(self) -> List[Dict[str, Any]]:
-        """Returns built-in high-yield banking & theory interview SQL scenarios with dynamically calibrated timings (<60s)."""
+        """Returns built-in high-yield scenarios with narration-calibrated stage timings."""
         raw_presets = BANKING_SQL_PRESETS + TOP_MNC_THEORY_PRESETS
         calibrated = []
         for p in raw_presets:
@@ -1202,7 +1201,7 @@ class SqlShortVideoEngine:
     def _build_dynamic_stages(self, matched: Dict[str, Any], content_type: str, lang_key: str, mode: str = "faang_drill") -> List[Dict[str, Any]]:
         """
         Constructs crisp educational teaching stages tailored to the question, domain, and creation mode.
-        Total script is concise (~110-125 words) for Shorts/Reels compliance (<60s).
+        Include every key point from the supplied scenario; let narration duration match its scope.
         Modes supported:
         - faang_drill: Edge cases, ties, NULL handling, execution plans
         - architecture_3d: Cloud data lake, pipelines, Medallion, microservices, containerization
@@ -2381,12 +2380,12 @@ class SqlShortVideoEngine:
         mode: str = "faang_drill"
     ) -> Dict[str, Any]:
         """
-        Asynchronously generates a synchronized, viral 50-55s video creation blueprint:
+        Asynchronously generates a synchronized, prompt-driven video creation blueprint:
         - Detects content type: SQL Query or Theory
         - AI model decides structure: sample schema, dynamic pipeline, filter evals, and solution SQL
         - Synthesizes regional voiceover (Marathi / Hindi / English)
         - Analyzes exact synthesized MP3 duration and word counts
-        - Frame-locks stage boundaries so voiceover and animations match perfectly (<60s Shorts standard)
+        - Frame-locks stage boundaries so voiceover and animations match the complete narration
         """
         clean_lang = (language or "mr").lower()
         if clean_lang in ["minglish", "mr_en", "mr"]:
@@ -2417,13 +2416,13 @@ class SqlShortVideoEngine:
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
 
                 ai_prompt = (
-                    f"You are an elite Senior Tech Lead, Educator & 3D Video Designer creating an ultra-viral 50-55 second educational 9:16 vertical video (YouTube Short / Instagram Reel) entirely from scratch.\n"
+                    f"You are an elite Senior Tech Lead, Educator & 3D Video Designer creating a complete educational 9:16 vertical video entirely from scratch.\n"
                     f"Input Prompt: {text_input}\n"
                     f"Target Voice Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
                     f"The input could be: a coding question, an architecture or theory topic, raw code, or a speech script.\n"
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
-                    f"2. Formulate 4 to 5 educational scenes (Total speech: strictly 100-120 words, ~20 words per scene in {lang_key}) so video stays strictly under 55 seconds.\n"
+                    f"2. Formulate 5 to 8 educational scenes that cover every key point in the user's scenario. Write enough narration to explain the full request naturally; do not shorten or omit content to fit a Shorts duration limit.\n"
                     f"3. For EACH scene, freely decide its visual_type and visual_data:\n"
                     f"   - 'hook': High-impact headline, punchy question, 3D pulsing focal orb / icon (Scene 1)\n"
                     f"   - 'code': Clean IDE code window with syntax highlighting, line numbers, and active highlight line\n"
@@ -2560,7 +2559,7 @@ class SqlShortVideoEngine:
             rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
             actual_dur = round(words_count / rate, 2)
 
-        # Synchronize stage boundaries dynamically based on word counts and real audio duration (<60s Shorts standard)
+        # Synchronize stage boundaries dynamically based on word counts and the complete real audio duration.
         calibrated_stages, final_dur, outro_start = compute_audio_synchronized_stages(
             raw_stages=stages,
             audio_duration=actual_dur,
@@ -2663,7 +2662,7 @@ class SqlShortVideoEngine:
             "status": "APPROVED",
             "trials": [
                 {"trial": 1, "name": "Python AST & SQL Syntax Verification", "status": "PASSED", "detail": "Valid syntax and structure verified."},
-                {"trial": 2, "name": "Speech Pacing & Duration (<60s Constraint)", "status": "PASSED", "detail": f"Exact duration: {final_dur:.1f}s within target bounds."},
+                {"trial": 2, "name": "Speech Pacing & Full Duration", "status": "PASSED", "detail": f"Exact duration: {final_dur:.1f}s; complete narration retained."},
                 {"trial": 3, "name": "9:16 Canvas Visual Safety Margins", "status": "PASSED", "detail": "All visual containers inside phone viewport."},
                 {"trial": 4, "name": "Takeaway & Retention Formula", "status": "PASSED", "detail": "Hook in first 3s, actionable conclusion."},
                 {"trial": 5, "name": "Audio-Visual Lip & Waveform Sync", "status": "PASSED", "detail": "Stage markers synchronized with voice track."},
@@ -2746,10 +2745,10 @@ class SqlShortVideoEngine:
             {
                 "id": "agent_typography",
                 "name": "Kinetic Typography & Frame Aligner Agent",
-                "role": "Phoneme-to-Frame Sync (<58s Shorts Standard)",
+                "role": "Phoneme-to-Frame Sync (Full Narration)",
                 "status": "completed",
                 "model": "Acoustic Frame Aligner",
-                "thought": f"Calibrated {len(calibrated_stages)} stage boundaries. Strict <58.0s constraint enforced (exact duration: {final_dur}s).",
+                "thought": f"Calibrated {len(calibrated_stages)} stage boundaries to the complete narration (exact duration: {final_dur}s).",
                 "latency_ms": 120,
                 "accuracy": "100%"
             },
@@ -2786,7 +2785,7 @@ class SqlShortVideoEngine:
             {
                 "id": "agent_export",
                 "name": "Master QA & 1-Click Video Delivery Agent",
-                "role": "Zero-Watermark 9:16 MP4 Deliverable (<60s)",
+                "role": "Zero-Watermark Full-Length 9:16 MP4 Deliverable",
                 "status": "ready",
                 "model": "Canvas MediaRecorder HD Engine",
                 "thought": f"Passed all 6 perfectionist trials ({perfectionist_audit['perfectionist_score']}). Outro branding scheduled strictly post-narration.",

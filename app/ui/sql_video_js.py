@@ -38,14 +38,14 @@ def get_sql_video_js() -> str:
         enable3DMotionEngine: true
     };
 
-    // Dynamic duration calibration & proportional stage scaling (<60s Shorts & Reels standard)
+    // Dynamic duration calibration & proportional stage scaling for complete narration
     function calibrateAudioDuration() {
         const audioEl = document.getElementById("sqlVoiceAudio");
         if (!audioEl) return;
         const realDur = audioEl.duration;
         if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 1.0) {
-            // Video duration strictly matches speech duration (<58s Shorts/Reels standard) with zero trailing outro
-            const narrationDur = Number(Math.min(58.5, realDur).toFixed(2));
+            // Keep every narrated word in the rendered video; do not truncate long scenarios.
+            const narrationDur = Number(realDur.toFixed(2));
             const totalDur = narrationDur;
             sqlShortState.narrationDuration = narrationDur;
             sqlShortState.maxDuration = totalDur;
@@ -124,7 +124,7 @@ def get_sql_video_js() -> str:
 
 ## 1. VIDEO CONFIGURATION
 * Aspect Ratio: 9:16
-* Target Duration: 55 seconds (YouTube Shorts & Reels <60s)
+* Target Duration: Match the complete generated narration; preserve all key points in the prompt.
 * Voice: Natural Indian AI teacher
 * Branding: @Code_With_Mangesh
 
@@ -274,7 +274,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const modeLabels = {
             "faang_drill": "🏢 FAANG Interview Drill",
             "architecture_3d": "🌐 3D Cloud Architecture",
-            "viral_reel": "⚡ Viral 60s Tech Reel",
+            "viral_reel": "⚡ Viral Tech Reel (full narration)",
             "deep_mentor": "👨‍🏫 Deep Academic Mentor"
         };
         if (badge) badge.innerText = modeLabels[mode] || mode;
@@ -510,7 +510,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                     }, 2500);
                 }
                 restartSqlShortPlay();
-                logPipelineStep("Stage 8: Final Result", "Playing 9:16 vertical video preview. Ready for 1-click HD video export (<60s).");
+                logPipelineStep("Stage 8: Final Result", "Playing the complete 9:16 vertical video preview. Ready for full-length HD export.");
                 break;
             }
         }
@@ -549,7 +549,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             grade: "AAA+ Enterprise Standard",
             audit_checks: [
                 { trial: 1, check: "Python AST & ANSI SQL Syntax", status: "PASSED", badge: "🛡️ 100% Valid Python AST & SQL" },
-                { trial: 2, check: "Shorts Pacing & Word-Count (<58s Limit)", status: "PASSED", badge: "⏱️ Strict <58s Shorts Calibrated" },
+                { trial: 2, check: "Full Narration Pacing & Duration", status: "PASSED", badge: "⏱️ Complete narration calibrated" },
                 { trial: 3, check: "6-Stage Deep Pedagogical Architecture", status: "PASSED", badge: "🎓 6 Educational Stages Frame-Locked" },
                 { trial: 4, check: "Enterprise Edge-Case Traps & Pro-Tips", status: "PASSED", badge: "💡 Edge-Case Traps & Golden Rule" },
                 { trial: 5, check: "Kinetic Neon Highlights & Arrow Tracking", status: "PASSED", badge: "🎯 Arrow Pointer Synced to Spoken Speech" },
@@ -581,11 +581,11 @@ SECOND_HIGHEST_SALARY: 70000`;
             { id: "agent_ast", name: "Static AST & Syntax Validator Agent", role: "Python AST & SQL Grammar Parser", model: "Python AST Engine & ANSI Parser", thought: "100% AST integrity confirmed. Balanced parentheses.", latency_ms: 75, accuracy: "100%" },
             { id: "agent_sandbox", name: "Sandbox Execution & Data Accuracy Agent", role: "In-Memory SQLite Sandbox Validator", model: "In-Memory Ephemeral Sandbox", thought: "Executed code against live in-memory table. Validated outputs.", latency_ms: 85, accuracy: "100%" },
             { id: "agent_edgecase", name: "Edge-Case & Interview Trap Hunter Agent", role: "Common Pitfalls & Senior Pro-Tips", model: "NanoPro Edge-Hunter Engine", thought: "Extracted edge cases, traps, and formulated Senior Takeaway.", latency_ms: 130, accuracy: "99.7%" },
-            { id: "agent_typography", name: "Kinetic Typography & Frame Aligner Agent", role: "Phoneme-to-Frame Sync (<58s Shorts Standard)", model: "Acoustic Frame Aligner", thought: "Frame-locked stage boundaries strictly under 58 seconds.", latency_ms: 120, accuracy: "100%" },
+            { id: "agent_typography", name: "Kinetic Typography & Frame Aligner Agent", role: "Phoneme-to-Frame Sync (Full Narration)", model: "Acoustic Frame Aligner", thought: "Frame-locked stage boundaries span the complete narration.", latency_ms: 120, accuracy: "100%" },
             { id: "agent_voice", name: "Neural Voiceover & Speech AI Agent", role: "Regional Teacher Voice (MR/HI/EN)", model: "ElevenLabs / Microsoft Neural Edge-TTS", thought: "Synthesized natural regional audio with frame-locked waveforms.", latency_ms: 680, accuracy: "99.8%" },
             { id: "agent_retouch", name: "Cinematic 9:16 Canvas & Neon Shader Agent", role: "Glassmorphic Canvas & Arrow Pointer", model: "Runway Gen-4 / Cyber Glass Canvas", thought: "Rendered glowing syntax, table scanner, and kinetic arrow indicators.", latency_ms: 290, accuracy: "100%" },
             { id: "agent_github_model", name: "GitHub Self-Learning & Synaptic Tuning Agent", role: "Continuous Model Weight Optimization", model: "NanoPro-TechVid-v1", thought: "Trained epoch weights, decreased synaptic loss, synced vectors.", latency_ms: 70, accuracy: "99.9%" },
-            { id: "agent_export", name: "Master QA & 1-Click Video Delivery Agent", role: "Zero-Watermark 9:16 MP4 Deliverable (<60s)", model: "Canvas MediaRecorder HD Engine", thought: "Passed all 6 perfectionist trials. 100% watermark-free deliverable ready.", latency_ms: 140, accuracy: "100%" }
+            { id: "agent_export", name: "Master QA & 1-Click Video Delivery Agent", role: "Zero-Watermark Full-Length 9:16 MP4 Deliverable", model: "Canvas MediaRecorder HD Engine", thought: "Passed all 6 perfectionist trials. Complete watermark-free deliverable ready.", latency_ms: 140, accuracy: "100%" }
         ];
 
         const agentsGrid = document.getElementById("modalAgentsStreamGrid");
@@ -3677,7 +3677,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // =========================================================================
-        // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (<60s Shorts & Reels Standard)
+        // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (full narration duration)
         // =========================================================================
         const maxDur = sqlShortState.maxDuration || (p.duration || p.max_duration_seconds || 45.0);
         const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
@@ -4091,12 +4091,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         pauseSqlShortPlay();
 
-        // Enforce strictly < 60.0s for YouTube Shorts / Reels compliance (<60s)
+        // Export the full generated narration; the 15-second quick export remains an explicit optional test.
         let totalDuration = durationSec;
         if (!totalDuration || totalDuration > 60) {
             totalDuration = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 45.0);
         }
-        totalDuration = Math.min(59.5, totalDuration);
+        totalDuration = Math.max(1, totalDuration);
 
         if (celebrationBox) celebrationBox.style.display = "none";
         if (pContainer) pContainer.style.display = "block";
@@ -4157,55 +4157,80 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const totalFrames = Math.round(totalDuration * 30);
         let frameCount = 0;
+        let lastProgressFrame = 0;
         const dt = 1.0 / 30.0;
         const startTime = performance.now();
 
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
             if (audioEl) audioEl.pause();
             // Free and stop all video and audio tracks immediately to avoid OS device lockups
             try {
                 videoTracks.forEach(t => { try { t.stop(); } catch(e){} });
                 audioTracks.forEach(t => { try { t.stop(); } catch(e){} });
                 combinedStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
-                if (audioCtx && audioCtx.state !== 'closed') {
-                    audioCtx.close();
-                }
+                if (audioCtx && audioCtx.state !== 'closed') audioCtx.close();
                 window._sqlExportAudioCtx = null;
             } catch(e) {}
-            if (pFill) pFill.style.width = "100%";
-            if (pPctText) pPctText.innerText = "100%";
-            if (pDesc) pDesc.innerText = "✅ रेंडरिंग पूर्ण झाले! व्हिडिओ व ऑडिओ डाऊनलोड होत आहे...";
+
+            if (pFill) pFill.style.width = "92%";
+            if (pPctText) pPctText.innerText = "92%";
+            if (pDesc) pDesc.innerText = "Full narration captured. Preparing the final MP4...";
             if (badgeEl) {
-                badgeEl.innerText = "पूर्ण झाले (Completed)";
-                badgeEl.style.color = "#10B981";
-                badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
+                badgeEl.innerText = "MP4 conversion in progress";
+                badgeEl.style.color = "#38BDF8";
+                badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
             }
 
-
-
-            const blob = new Blob(chunks, { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            const filename = `Clean_9x16_${sqlShortState.activePreset.id}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.webm`;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            setTimeout(() => {
-                if (celebrationBox) {
-                    celebrationBox.style.display = "block";
-                    celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    const btnAgain = document.getElementById("btnDownloadAgain");
-                    if (btnAgain) {
-                        btnAgain.href = url;
-                        btnAgain.download = filename;
-                    }
+            try {
+                const webmBlob = new Blob(chunks, { type: mimeType });
+                const form = new FormData();
+                form.append("file", webmBlob, "nanopro_full_video.webm");
+                const response = await fetch("/api/sql_video/finalize_mp4", { method: "POST", body: form });
+                if (!response.ok) {
+                    const failure = await response.json().catch(() => ({}));
+                    throw new Error(failure.detail || `MP4 conversion failed (${response.status})`);
                 }
+                const mp4Blob = await response.blob();
+                if (mp4Blob.size < 1024) throw new Error("The converted MP4 is empty.");
+                const url = URL.createObjectURL(mp4Blob);
+                const a = document.createElement("a");
+                const safeId = String(sqlShortState.activePreset?.id || "tech_explainer").replace(/[^a-zA-Z0-9_-]/g, "_");
+                const filename = `NanoPro_Full_9x16_${safeId}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.mp4`;
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                if (pFill) pFill.style.width = "100%";
+                if (pPctText) pPctText.innerText = "100%";
+                if (pDesc) pDesc.innerText = "Full-length MP4 is ready and downloading.";
+                if (badgeEl) {
+                    badgeEl.innerText = "Full MP4 ready";
+                    badgeEl.style.color = "#10B981";
+                    badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
+                }
+                setTimeout(() => {
+                    if (celebrationBox) {
+                        celebrationBox.style.display = "block";
+                        celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        const btnAgain = document.getElementById("btnDownloadAgain");
+                        if (btnAgain) {
+                            btnAgain.href = url;
+                            btnAgain.download = filename;
+                        }
+                    }
+                }, 300);
+            } catch (error) {
+                if (pDesc) pDesc.innerText = `Final MP4 export failed: ${error.message}`;
+                if (badgeEl) {
+                    badgeEl.innerText = "MP4 export failed";
+                    badgeEl.style.color = "#EF4444";
+                    badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
+                }
+            } finally {
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD 9:16 REEL (<60s) (VOICE SYNCED)";
-            }, 300);
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)";
+            }
         };
 
         recorder.start();
@@ -4216,68 +4241,49 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-        function recordStep() {
-            if (frameCount < totalFrames) {
-                const stepBatch = totalDuration <= 15 ? 1 : 2;
-                for (let b = 0; b < stepBatch && frameCount < totalFrames; b++) {
-                    sqlShortState.currentTime = (frameCount * dt);
-                    const t = sqlShortState.currentTime;
-                    const p = sqlShortState.activePreset;
-                    const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
-                    const isOutro = false;
+        function recordStep(timestamp) {
+            const elapsed = Math.min(totalDuration, Math.max(0, (timestamp - startTime) / 1000));
+            sqlShortState.currentTime = elapsed;
+            const t = elapsed;
+            const p = sqlShortState.activePreset;
+            const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
 
-                    let currentStage = 1;
-                    let stageText = "पायरी १/६: 📋 संकल्पना ओळख";
-
-                    if (stages.length > 0) {
-                        const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
-                        if (actIdx !== -1) {
-                            currentStage = Math.min(6, actIdx + 1);
-                            const st = stages[actIdx];
-                            stageText = `पायरी ${currentStage}/${stages.length}: ${st.title || st.action_type || ''}`;
-                        } else if (t < stages[0].start) {
-                            currentStage = 1;
-                            stageText = `पायरी 1/${stages.length}: ${stages[0].title || ''}`;
-                        } else {
-                            currentStage = Math.min(6, stages.length);
-                            stageText = `पायरी ${currentStage}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
-                        }
-                    } else {
-                        const estStage = Math.min(6, Math.floor((t / Math.max(1, totalDuration)) * 6) + 1);
-                        currentStage = estStage;
-                        stageText = `पायरी ${currentStage}/6: विश्लेषण चालू`;
-                    }
-
-                    
-                    if (pDesc) pDesc.innerText = stageText;
-
-                    if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
-                        sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
-                    }
-
-                    renderSqlShortFrame(t);
-                    updatePlayerScrubberUI(t);
-                    frameCount++;
+            let stageText = "Stage 1: Concept introduction";
+            if (stages.length > 0) {
+                const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
+                if (actIdx !== -1) {
+                    const st = stages[actIdx];
+                    stageText = `Stage ${actIdx + 1}/${stages.length}: ${st.title || st.action_type || ''}`;
+                } else if (t < stages[0].start) {
+                    stageText = `Stage 1/${stages.length}: ${stages[0].title || ''}`;
+                } else {
+                    stageText = `Stage ${stages.length}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
                 }
-
-                if (frameCount % 15 === 0 || frameCount >= totalFrames) {
-                    const pct = Math.min(100, Math.floor((frameCount / totalFrames) * 100));
-                    if (pFill) pFill.style.width = pct + "%";
-                    if (pPctText) pPctText.innerText = pct + "%";
-
-                    const elapsedSec = (performance.now() - startTime) / 1000.0;
-                    if (elapsedSec > 0.2) {
-                        const framesPerSec = frameCount / elapsedSec;
-                        const remainingSec = Math.max(1, Math.ceil((totalFrames - frameCount) / framesPerSec));
-                        if (pEstTime) pEstTime.innerText = `⏱️ अंदाजे वेळ: ${remainingSec} सेकंद बाकी (${remainingSec}s left)`;
-                    }
-                    if (pFrameStats) pFrameStats.innerText = `🎞️ फ्रेम: ${frameCount} / ${totalFrames}`;
-                }
-
-                requestAnimationFrame(recordStep);
             } else {
-                recorder.stop();
+                const stage = Math.min(6, Math.floor((t / Math.max(1, totalDuration)) * 6) + 1);
+                stageText = `Stage ${stage}/6: Explanation in progress`;
             }
+
+            if (pDesc) pDesc.innerText = stageText;
+            if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
+                sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
+            }
+            renderSqlShortFrame(t);
+            updatePlayerScrubberUI(t);
+
+            frameCount = Math.min(totalFrames, Math.floor(t / dt));
+            if (frameCount - lastProgressFrame >= 15 || t >= totalDuration) {
+                lastProgressFrame = frameCount;
+                const pct = Math.min(100, Math.floor((t / totalDuration) * 100));
+                if (pFill) pFill.style.width = pct + "%";
+                if (pPctText) pPctText.innerText = pct + "%";
+                const remainingSec = Math.max(0, Math.ceil(totalDuration - t));
+                if (pEstTime) pEstTime.innerText = `Estimated time remaining: ${remainingSec}s`;
+                if (pFrameStats) pFrameStats.innerText = `Frame: ${frameCount} / ${totalFrames}`;
+            }
+
+            if (t < totalDuration) requestAnimationFrame(recordStep);
+            else recorder.stop();
         }
         requestAnimationFrame(recordStep);
     }
