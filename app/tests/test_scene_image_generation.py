@@ -90,8 +90,9 @@ class SceneImageGenerationTests(unittest.TestCase):
             generate = load_generate_image(fake, temp)
             with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
                  patch("urllib.request.urlopen", side_effect=OSError("offline")):
-                with self.assertRaisesRegex(RuntimeError, "prompt-specific image"):
+                with self.assertRaisesRegex(RuntimeError, "prompt-specific image") as raised:
                     generate("A solar panel converting sunlight", allow_local_fallback=False)
+            self.assertIn("Gemini", str(raised.exception))
             self.assertEqual(list(Path(temp).iterdir()), [])
 
     def test_scene_mode_preserves_visual_prompt(self):

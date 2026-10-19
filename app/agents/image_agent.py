@@ -112,7 +112,12 @@ class ImageCreationAgent:
                             with urllib.request.urlopen(request, timeout=90) as response:
                                 response_data = json.loads(response.read().decode("utf-8"))
                         except Exception as model_error:
-                            log_event(f"Gemini image model {model_name} failed ({type(model_error).__name__}); trying fallback model if available.", level="WARNING", component="ImageAgent")
+                            status_code = getattr(model_error, "code", None)
+                            status_label = getattr(model_error, "reason", "")
+                            provider_status = f"HTTP {status_code}" if status_code else type(model_error).__name__
+                            if status_label:
+                                provider_status += f" {str(status_label)[:80]}"
+                            log_event(f"Gemini image model {model_name} failed ({provider_status}); trying fallback model if available.", level="WARNING", component="ImageAgent")
                             continue
                         parts = (((response_data.get("candidates") or [{}])[0]).get("content") or {}).get("parts") or []
                         inline_image = next((part.get("inlineData") or part.get("inline_data") for part in parts if part.get("inlineData") or part.get("inline_data")), None)
@@ -169,7 +174,9 @@ class ImageCreationAgent:
                             provider_used = "openai-gpt-image"
                             log_event(f"OpenAI generated prompt-specific image ({len(image_bytes)} bytes).", component="ImageAgent")
             except Exception as openai_error:
-                log_event(f"OpenAI image provider failed ({type(openai_error).__name__}); trying Pollinations if configured.", level="WARNING", component="ImageAgent")
+                status_code = getattr(openai_error, "code", None)
+                provider_status = f"HTTP {status_code}" if status_code else type(openai_error).__name__
+                log_event(f"OpenAI image provider failed ({provider_status}); trying Pollinations if configured.", level="WARNING", component="ImageAgent")
 
         # 4. Current Pollinations API requires an API key; resolve it from env/vault.
         if not image_generated:
@@ -209,7 +216,7 @@ class ImageCreationAgent:
         # Scene renders must fail closed instead of silently returning a text card.
         if not image_generated and not allow_local_fallback:
             raise RuntimeError(
-                "NanoPro could not generate a prompt-specific image. Configure a valid Replicate, OpenAI, or Pollinations image API key and retry."
+                "NanoPro could not generate a prompt-specific image. Configure a valid Replicate, Gemini, OpenAI, or Pollinations image API key with image-generation access and retry."
             )
 
         # 5. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).
