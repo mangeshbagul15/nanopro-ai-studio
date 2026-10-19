@@ -599,7 +599,7 @@ def get_sql_video_workspace_html() -> str:
                         <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 700;">🛡️ 100% Zero-Watermark</span>
                     </div>
                     <div style="font-size: 11px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">
-                        1080x1920 फुल-एचडी रेंडरिंग सोबत नॅचरल AI शिक्षक ऑडिओ इंटिग्रेटेड (&lt;६० से.)! कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात.
+                        1080x1920 फुल-एचडी रेंडरिंग सोबत नॅचरल AI शिक्षक ऑडिओ इंटिग्रेटेड, पूर्ण narration duration सह! कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात.
                     </div>
 
                     <!-- Direct Download Button Group -->
