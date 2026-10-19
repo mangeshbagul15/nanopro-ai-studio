@@ -2932,47 +2932,47 @@ SECOND_HIGHEST_SALARY: 70000`;
         const sceneList = (p && (p.stages || p.scenes)) || [];
         const hasStageTitles = sceneList.length >= 3
             && sceneList.some(scene => scene && scene.title && !/^scene\s*\d+$/i.test(String(scene.title)));
+        // Generated videos are identified by their custom_* id; only those presets
+        // carry the SQL sample rows, comparisons and solution code.
+        const isGenerated = /^custom/i.test(String((p && p.id) || ""));
+        const isSqlQuery = String((p && p.content_type) || "") === "sql_query";
+        const stageTitleSteps = () => sceneList.slice(0, 5).map((scene, index) => {
+            const label = (scene && scene.title) || ("Step " + (index + 1));
+            const action = String((scene && scene.action_type) || "").replace(/_/g, " ");
+            return { label, detail: action, icon: diagramIconForLabel(label) };
+        });
 
-        // Preset data (SQL tables, comparisons, code) wins when present.
-        if (!steps.length && !code && !table && !compare && p) {
-            if (Array.isArray(p.comparison_rows) && p.comparison_rows.length) {
+        if (!steps.length && !code && !table && !compare) {
+            if (isSqlQuery && p && p.solution_sql) {
+                // A requested SQL query renders as a highlighted code panel.
+                code = { title: "SQL SOLUTION", lines: String(p.solution_sql).split("\n") };
+            } else if (isGenerated && hasStageTitles) {
+                // A generated storyboard names every step, so those titles are the
+                // numbered architecture flow for the whole video.
+                steps = stageTitleSteps();
+            } else if (p && Array.isArray(p.comparison_rows) && p.comparison_rows.length) {
                 compare = {
                     left_title: p.comparison_headers ? p.comparison_headers[1] : "Option A",
                     right_title: p.comparison_headers ? p.comparison_headers[2] : "Option B",
                     rows: p.comparison_rows.map(row => [row.col_a || "", row.col_b || ""])
                 };
-            } else if (Array.isArray(p.sample_rows) && p.sample_rows.length) {
+            } else if (p && Array.isArray(p.sample_rows) && p.sample_rows.length) {
                 table = {
                     headers: (p.col_headers || ["ID", "ATTRIBUTE", "AMOUNT", "STATUS"]).slice(0, 4),
                     rows: p.sample_rows.map(row => [row.account || "", row.date || "", row.amt || "", row.balance || ""])
                 };
-            } else if (p.solution_sql) {
+            } else if (p && p.solution_sql) {
                 code = { title: "SQL SOLUTION", lines: String(p.solution_sql).split("\n") };
+            } else if (hasStageTitles) {
+                steps = stageTitleSteps();
+            } else if (stage && Array.isArray(stage.entities)) {
+                steps = stage.entities
+                    .filter(item => item && (item.label || item.name))
+                    .map(item => {
+                        const label = item.label || item.name;
+                        return { label, detail: item.detail || "", icon: item.icon || item.shape || diagramIconForLabel(label) };
+                    });
             }
-        }
-        // A generated storyboard already names every step, so those titles become
-        // the numbered architecture flow for the whole video.
-        if (!steps.length && !code && !table && !compare && hasStageTitles) {
-            steps = sceneList.slice(0, 5).map((scene, index) => {
-                const label = (scene && scene.title) || ("Step " + (index + 1));
-                const action = String((scene && scene.action_type) || "").replace(/_/g, " ");
-                return { label, detail: action, icon: diagramIconForLabel(label) };
-            });
-        }
-        if (!steps.length && !code && !table && !compare && stage && Array.isArray(stage.entities)) {
-            steps = stage.entities
-                .filter(item => item && (item.label || item.name))
-                .map(item => {
-                    const label = item.label || item.name;
-                    return { label, detail: item.detail || "", icon: item.icon || item.shape || diagramIconForLabel(label) };
-                });
-        }
-        if (!steps.length && !code && !table && !compare) {
-            steps = sceneList.slice(0, 5).map((scene, index) => ({
-                label: (scene && scene.title) || ("Step " + (index + 1)),
-                detail: (scene && scene.action_type) || "",
-                icon: "node"
-            }));
         }
         const derivedFocus = (typeof stageIndex === "number" && stageIndex >= 0)
             ? stageIndex
