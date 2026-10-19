@@ -6,6 +6,8 @@ and saves metadata to the local project store.
 
 import os
 import time
+import json
+import base64
 import subprocess
 import urllib.request
 import urllib.parse
@@ -15,6 +17,7 @@ from typing import Dict, Any, Optional
 from app.core.config import IMAGE_OUTPUT_DIR
 from app.core.logger import log_event
 from app.core.database import db
+from app.core.database import credentials_vault
 
 class ImageCreationAgent:
     def __init__(self):
@@ -70,38 +73,90 @@ class ImageCreationAgent:
                             source_url = img_url
                             log_event(f"Replicate generated AI image ({len(r_bytes)} bytes) for: {prompt[:40]}", component="ImageAgent")
         except Exception as re_err:
-            log_event(f"Replicate skipped/cascading ({re_err}), falling back to Pollinations Flux.", component="ImageAgent")
+            log_event(f"Replicate image provider failed ({type(re_err).__name__}); trying configured image providers.", component="ImageAgent")
 
-        # 2. Try Generative AI via Pollinations.ai (Flux.1 / SDXL - Zero-Config, Free Lifetime)
+        # 2. OpenAI image generation. Render deployments commonly configure OpenAI
+        # for narration/storyboards; reuse that server-side key for prompt-specific art.
         if not image_generated:
             try:
-                enhanced_prompt = (
-                    f"{prompt}, portrait composition, high visual quality"
-                    if preserve_prompt
-                    else f"{prompt}, style {style}, professional 8k sharp, cinematic lighting, trending on artstation"
-                )
-                encoded_prompt = urllib.parse.quote(enhanced_prompt)
-                # Use scaled dimensions for fast generation
-                target_w = min(width, 1024)
-                target_h = min(height, 1024)
-                poll_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={target_w}&height={target_h}&model=flux&nologo=true&seed={timestamp%100000}"
-                req = urllib.request.Request(poll_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NanoProAI/1.0"})
-                with urllib.request.urlopen(req, timeout=18) as resp:
-                    img_data = resp.read()
-                    if len(img_data) > 1000:
-                        with open(filepath, "wb") as f:
-                            f.write(img_data)
+                openai_key = os.getenv("OPENAI_API_KEY", "")
+                if not openai_key:
+                    for credential_name in ("OPENAI_API_KEY", "OPENAI_API", "OPENAI"):
+                        credential = credentials_vault.get_credential(credential_name)
+                        value = (credential or {}).get("secret_value", "")
+                        if value and not value.startswith("••"):
+                            openai_key = value
+                            break
+                if openai_key:
+                    target_size = "1024x1536" if height >= width else "1536x1024"
+                    payload = {
+                        "model": "gpt-image-1",
+                        "prompt": provider_prompt,
+                        "size": target_size,
+                        "quality": "medium",
+                        "n": 1,
+                    }
+                    request = urllib.request.Request(
+                        "https://api.openai.com/v1/images/generations",
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={
+                            "Authorization": f"Bearer {openai_key}",
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                        },
+                    )
+                    with urllib.request.urlopen(request, timeout=90) as response:
+                        response_data = json.loads(response.read().decode("utf-8"))
+                    encoded_image = ((response_data.get("data") or [{}])[0]).get("b64_json")
+                    if encoded_image:
+                        image_bytes = base64.b64decode(encoded_image, validate=True)
+                        if len(image_bytes) > 1000:
+                            filepath.write_bytes(image_bytes)
+                            image_generated = True
+                            provider_used = "openai-gpt-image"
+                            log_event(f"OpenAI generated prompt-specific image ({len(image_bytes)} bytes).", component="ImageAgent")
+            except Exception as openai_error:
+                log_event(f"OpenAI image provider failed ({type(openai_error).__name__}); trying Pollinations if configured.", level="WARNING", component="ImageAgent")
+
+        # 3. Current Pollinations API requires an API key; resolve it from env/vault.
+        if not image_generated:
+            try:
+                poll_key = os.getenv("POLLINATIONS_API_KEY", "")
+                if not poll_key:
+                    for credential_name in ("POLLINATIONS_API_KEY", "POLLINATIONS_API", "POLLINATIONS"):
+                        credential = credentials_vault.get_credential(credential_name)
+                        value = (credential or {}).get("secret_value", "")
+                        if value and not value.startswith("••"):
+                            poll_key = value
+                            break
+                if poll_key:
+                    enhanced_prompt = provider_prompt
+                    encoded_prompt = urllib.parse.quote(enhanced_prompt, safe="")
+                    target_w = min(width, 1024)
+                    target_h = min(height, 1536)
+                    poll_url = f"https://gen.pollinations.ai/image/{encoded_prompt}?width={target_w}&height={target_h}&model=black-forest-labs/flux.1-schnell"
+                    request = urllib.request.Request(poll_url, headers={"Authorization": f"Bearer {poll_key}", "Accept": "image/*"})
+                    with urllib.request.urlopen(request, timeout=90) as response:
+                        img_data = response.read()
+                    valid_image = (
+                        img_data.startswith(b"\x89PNG\r\n\x1a\n")
+                        or img_data.startswith(b"\xff\xd8\xff")
+                        or (img_data.startswith(b"RIFF") and img_data[8:12] == b"WEBP")
+                        or img_data.startswith((b"GIF87a", b"GIF89a"))
+                    )
+                    if len(img_data) > 1000 and valid_image:
+                        filepath.write_bytes(img_data)
                         image_generated = True
                         provider_used = "pollinations-flux"
-                        source_url = poll_url
-                        log_event(f"Pollinations.ai generated real AI image ({len(img_data)} bytes) for: {prompt[:40]}", component="ImageAgent")
+                        source_url = "https://gen.pollinations.ai"
+                        log_event(f"Pollinations generated prompt-specific image ({len(img_data)} bytes).", component="ImageAgent")
             except Exception as pe:
-                log_event(f"Pollinations.ai skipped or offline ({pe}), using local graphics canvas fallback.", component="ImageAgent")
+                log_event(f"Pollinations image provider failed ({type(pe).__name__}).", level="WARNING", component="ImageAgent")
 
         # Scene renders must fail closed instead of silently returning a text card.
         if not image_generated and not allow_local_fallback:
             raise RuntimeError(
-                "NanoPro could not generate a prompt-specific image. Check the configured image providers and retry."
+                "NanoPro could not generate a prompt-specific image. Configure a valid Replicate, OpenAI, or Pollinations image API key and retry."
             )
 
         # 3. Fallback to local Pillow or FFmpeg canvas if offline (legacy callers only).

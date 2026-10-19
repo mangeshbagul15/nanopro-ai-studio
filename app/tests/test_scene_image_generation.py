@@ -1,4 +1,5 @@
 import ast
+import base64
 import io
 import json
 import tempfile
@@ -20,11 +21,13 @@ def load_generate_image(fake_replicate, output_dir):
     ast.fix_missing_locations(module)
     namespace = {
         "Dict": dict, "Any": object, "Optional": object, "Path": Path,
+        "json": json, "base64": base64,
         "os": __import__("os"), "time": __import__("time"),
         "uuid": uuid,
         "subprocess": __import__("subprocess"), "urllib": __import__("urllib"),
         "log_event": lambda *args, **kwargs: None,
         "db": SimpleNamespace(add_knowledge=lambda *args, **kwargs: None),
+        "credentials_vault": SimpleNamespace(get_credential=lambda name: None),
     }
     exec(compile(module, str(SOURCE), "exec"), namespace)
     method_fn = namespace["generate_image"]
@@ -33,6 +36,34 @@ def load_generate_image(fake_replicate, output_dir):
 
 
 class SceneImageGenerationTests(unittest.TestCase):
+    def test_pollinations_uses_authenticated_current_generation_endpoint(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = SimpleNamespace(is_available=lambda: False)
+            generate = load_generate_image(fake, temp)
+            payload = b"\x89PNG\r\n\x1a\n" + b"x" * 1200
+            with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
+                 patch.dict("os.environ", {"POLLINATIONS_API_KEY": "sk-test-pollen-key", "OPENAI_API_KEY": ""}), \
+                 patch("urllib.request.urlopen", return_value=io.BytesIO(payload)) as request:
+                result = generate("A water cycle evaporation scene", allow_local_fallback=False, preserve_prompt=True)
+            self.assertEqual(result["provider"], "pollinations-flux")
+            self.assertTrue(request.call_args.args[0].full_url.startswith("https://gen.pollinations.ai/image/"))
+            self.assertEqual(request.call_args.args[0].get_header("Authorization"), "Bearer sk-test-pollen-key")
+
+    def test_openai_images_is_used_when_replicate_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = SimpleNamespace(is_available=lambda: False)
+            generate = load_generate_image(fake, temp)
+            response = {"data": [{"b64_json": base64.b64encode(b"x" * 1200).decode("ascii")}]}
+            with patch.dict("sys.modules", {"app.core.replicate_engine": SimpleNamespace(replicate_engine=fake)}), \
+                 patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-image-key"}), \
+                 patch("urllib.request.urlopen", return_value=io.BytesIO(json.dumps(response).encode("utf-8"))) as request:
+                result = generate("A close-up cutaway of silicon cells releasing electrons", allow_local_fallback=False, preserve_prompt=True)
+            self.assertEqual(result["provider"], "openai-gpt-image")
+            self.assertTrue(Path(result["file_path"]).is_file())
+            request_data = json.loads(request.call_args.args[0].data.decode("utf-8"))
+            self.assertIn("silicon cells releasing electrons", request_data["prompt"])
+            self.assertEqual(request_data["size"], "1024x1536")
+
     def test_strict_scene_mode_raises_instead_of_creating_placeholder(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = SimpleNamespace(is_available=lambda: False)
