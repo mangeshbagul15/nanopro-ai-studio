@@ -16,13 +16,23 @@ from app.core.runway_video import runway_video
 
 def _normalize_portrait(source: Path, destination: Path) -> tuple[int, int]:
     try:
-        from PIL import Image, ImageOps
+        from PIL import Image, ImageFilter, ImageOps
     except ImportError as exc:
         raise RuntimeError("Pillow is required to normalize generated scene images.") from exc
     with Image.open(source) as image:
-        image = ImageOps.fit(image.convert("RGB"), (1080, 1920), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        image.save(destination, format="JPEG", quality=92, optimize=True)
+        fitted = ImageOps.fit(
+            image.convert("RGB"),
+            (1080, 1920),
+            # Bias slightly above centre: generated keyframes usually place the
+            # subject in the upper half, so a dead-centre crop decapitates them.
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.44),
+        )
+    # LANCZOS resampling softens micro-detail; restore local contrast so the frame
+    # still reads as sharp footage once the video is re-encoded to H.264.
+    fitted = fitted.filter(ImageFilter.UnsharpMask(radius=1.4, percent=105, threshold=3))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    fitted.save(destination, format="JPEG", quality=95, optimize=True, subsampling=0)
     return 1080, 1920
 
 
@@ -97,7 +107,7 @@ async def generate_scene_assets(
             visual_prompt,
             str(scene.get("continuity", "")),
             str(scene.get("speech", "")),
-            "flux|1080x1920|strict|portrait",
+            "flux|1080x1920|strict|portrait|cinematic-v2",
         ))
         prompt_hash = hashlib.sha256(cache_material.encode("utf-8")).hexdigest()
         filename = f"{prompt_hash}.jpg"

@@ -2790,23 +2790,61 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             if (scene.video.paused) scene.video.play().catch(() => {});
         }
-        const zoom = 1.025 + 0.035 * progress + 0.008 * Math.sin(t * 0.55);
+        // Slow push-in plus a gentle drifting sway keeps the frame alive without
+        // cropping the subject out of the 9:16 safe area.
+        const zoom = 1.02 + 0.05 * progress + 0.006 * Math.sin(t * 0.55);
         const width = W * zoom, height = H * zoom;
-        ctx.drawImage(media, (W - width) / 2, (H - height) / 2, width, height);
+        const driftX = Math.sin(t * 0.42) * W * 0.004;
+        const driftY = Math.cos(t * 0.37) * H * 0.003;
+        // Filmic grade: a touch more saturation and contrast makes generated
+        // keyframes read like graded footage instead of flat illustrations.
+        const previousFilter = ctx.filter;
+        ctx.filter = "saturate(1.14) contrast(1.07) brightness(1.02)";
+        ctx.drawImage(media, (W - width) / 2 + driftX, (H - height) / 2 + driftY, width, height);
+        ctx.filter = previousFilter;
+
+        // Scrims stay transparent across the subject and only darken the bands that
+        // actually carry captions, so the artwork keeps its punch.
         const shade = ctx.createLinearGradient(0, 0, 0, H);
-        shade.addColorStop(0, "rgba(2,6,23,0.58)");
-        shade.addColorStop(0.42, "rgba(2,6,23,0.03)");
-        shade.addColorStop(0.72, "rgba(2,6,23,0.12)");
-        shade.addColorStop(1, "rgba(2,6,23,0.82)");
+        shade.addColorStop(0, "rgba(2,6,23,0.55)");
+        shade.addColorStop(0.2, "rgba(2,6,23,0.06)");
+        shade.addColorStop(0.66, "rgba(2,6,23,0.02)");
+        shade.addColorStop(0.88, "rgba(2,6,23,0.5)");
+        shade.addColorStop(1, "rgba(2,6,23,0.88)");
         ctx.fillStyle = shade;
+        ctx.fillRect(0, 0, W, H);
+
+        const vignette = ctx.createRadialGradient(W / 2, H * 0.46, W * 0.3, W / 2, H * 0.46, W * 0.95);
+        vignette.addColorStop(0, "rgba(0,0,0,0)");
+        vignette.addColorStop(1, "rgba(0,0,0,0.38)");
+        ctx.fillStyle = vignette;
         ctx.fillRect(0, 0, W, H);
 
         const visual = stage?.visual_data || {};
         const title = String(stage?.title || p.title || p.question || "");
         ctx.textAlign = "center";
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 46px 'Segoe UI', sans-serif";
-        wrapCanvasText(ctx, title, W - 150, 2).forEach((line, index) => ctx.fillText(line, W / 2, 250 + index * 58));
+        ctx.font = "800 44px 'Segoe UI', sans-serif";
+        const titleLines = wrapCanvasText(ctx, title, W - 190, 2);
+        const titleTextWidth = titleLines.reduce((widest, line) => Math.max(widest, ctx.measureText(line).width), 0);
+        const titleBoxWidth = Math.min(W - 140, Math.max(320, titleTextWidth + 68));
+        const titleBoxHeight = titleLines.length * 54 + 30;
+        if (titleLines.length) {
+            const titleBox = ctx.createLinearGradient(0, 196, 0, 196 + titleBoxHeight);
+            titleBox.addColorStop(0, "rgba(4,10,26,0.86)");
+            titleBox.addColorStop(1, "rgba(4,10,26,0.58)");
+            ctx.fillStyle = titleBox;
+            ctx.beginPath();
+            ctx.roundRect((W - titleBoxWidth) / 2, 196, titleBoxWidth, titleBoxHeight, 20);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(56,189,248,0.28)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#FFFFFF";
+            ctx.shadowColor = "rgba(0,0,0,0.7)";
+            ctx.shadowBlur = 12;
+            titleLines.forEach((line, index) => ctx.fillText(line, W / 2, 232 + index * 54));
+            ctx.shadowBlur = 0;
+        }
 
         const overlays = visual.overlay_items || stage?.overlay_items || [];
         overlays.forEach(item => {
@@ -2814,6 +2852,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             const x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
             const y = Math.max(0.08, Math.min(0.86, Number(item.y ?? 0.72))) * H;
             const code = item.kind === "code" || item.kind === "formula";
+            const overlayFont = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
+            // Set the font BEFORE wrapping and measuring, otherwise the label box is
+            // sized from whichever font was set last and the text spills off frame.
+            ctx.font = overlayFont;
             const lines = wrapCanvasText(ctx, String(item.content), W * 0.78, code ? 3 : 2);
             const lineHeight = code ? 34 : 30;
             const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
@@ -2826,8 +2868,11 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fill();
             ctx.stroke();
             ctx.fillStyle = code ? "#BAE6FD" : "#FFFFFF";
-            ctx.font = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
+            ctx.font = overlayFont;
+            ctx.shadowColor = "rgba(0,0,0,0.55)";
+            ctx.shadowBlur = 6;
             lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * lineHeight));
+            ctx.shadowBlur = 0;
         });
         ctx.restore();
         return true;
@@ -3985,8 +4030,20 @@ SECOND_HIGHEST_SALARY: 70000`;
             currentStageIdx = estIdx;
         }
 
-        // Keep a moving cinematic atmosphere while letting the prompt define the scene content.
-        drawPromptMotionBackground(ctx, W, H, t);
+        // The AI keyframe covers the frame opaquely, so painting the expensive 3D
+        // motion engine underneath it only burns export frames. Keep a cheap base
+        // gradient for scene transitions and run the engine when it can be seen.
+        const activeSceneAsset = sqlShortState.sceneAssets.get(`index:${stages.indexOf(activeStage)}`);
+        if (activeSceneAsset) {
+            const baseBg = ctx.createLinearGradient(0, 0, W * 0.8, H);
+            baseBg.addColorStop(0, "#050814");
+            baseBg.addColorStop(0.48, "#0B1230");
+            baseBg.addColorStop(1, "#030611");
+            ctx.fillStyle = baseBg;
+            ctx.fillRect(0, 0, W, H);
+        } else {
+            drawPromptMotionBackground(ctx, W, H, t);
+        }
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
@@ -4427,7 +4484,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const chunks = [];
         const recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 8000000
+            videoBitsPerSecond: 14000000,
+            audioBitsPerSecond: 128000
         });
 
         recorder.ondataavailable = e => {

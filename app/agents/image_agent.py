@@ -47,31 +47,58 @@ class ImageCreationAgent:
         image_generated = False
         provider_used = "local-canvas"
         source_url = None
+        # Scene keyframes are watched full-screen behind subtitles, so steer the
+        # providers towards graded vertical cinematography instead of flat clip art.
+        # The model-authored visual prompt is always kept verbatim and first.
+        scene_directives = (
+            "Vertical 9:16 cinematic keyframe for a short-form tech explainer video: "
+            "one clear focal subject, realistic photographic detail, volumetric rim lighting, "
+            "filmic colour grade, shallow depth of field, crisp micro-detail, "
+            "balanced negative space in the top and bottom thirds for captions, "
+            "no text, no letters, no captions, no watermark, no logo."
+        )
         provider_prompt = (
-            f"{prompt}, portrait composition, high visual quality"
+            f"{prompt}. {scene_directives}"
             if preserve_prompt
             else f"{prompt}, style {style}, 8k sharp, cinematic lighting"
         )
+        # Ask image models for a native 9:16 frame. Generating square and cropping
+        # to portrait later slices away roughly 44% of the composed artwork.
+        requested_ratio = "9:16" if height >= width else "16:9"
         try:
             from app.core.replicate_engine import replicate_engine
             if replicate_engine.is_available():
-                rep_res = replicate_engine.generate_image(
-                    prompt=provider_prompt,
-                    model="black-forest-labs/flux-schnell"
-                )
-                img_url = rep_res.get("image_url")
-                if img_url:
+                # FLUX 1.1 Pro carries noticeably more photographic detail than the
+                # fast Schnell variant; fall back when the better model is unavailable.
+                for replicate_model in ("black-forest-labs/flux-1.1-pro", "black-forest-labs/flux-schnell"):
+                    try:
+                        rep_res = replicate_engine.generate_image(
+                            prompt=provider_prompt,
+                            model=replicate_model,
+                            aspect_ratio=requested_ratio,
+                        )
+                    except Exception as model_error:
+                        log_event(
+                            f"Replicate [{replicate_model}] failed ({type(model_error).__name__}); trying next image model.",
+                            level="WARNING",
+                            component="ImageAgent",
+                        )
+                        continue
+                    img_url = (rep_res or {}).get("image_url")
+                    if not img_url:
+                        continue
                     # Download Replicate image to output directory
                     req_rep = urllib.request.Request(img_url, headers={"User-Agent": "NanoProAI/2.0"})
                     with urllib.request.urlopen(req_rep, timeout=15) as r_resp:
                         r_bytes = r_resp.read()
-                        if len(r_bytes) > 1000:
-                            with open(filepath, "wb") as f:
-                                f.write(r_bytes)
-                            image_generated = True
-                            provider_used = "replicate-flux"
-                            source_url = img_url
-                            log_event(f"Replicate generated AI image ({len(r_bytes)} bytes) for: {prompt[:40]}", component="ImageAgent")
+                    if len(r_bytes) > 1000:
+                        with open(filepath, "wb") as f:
+                            f.write(r_bytes)
+                        image_generated = True
+                        provider_used = "replicate-flux-schnell" if "schnell" in replicate_model else "replicate-flux-pro"
+                        source_url = img_url
+                        log_event(f"Replicate [{replicate_model}] generated AI image ({len(r_bytes)} bytes) for: {prompt[:40]}", component="ImageAgent")
+                        break
         except Exception as re_err:
             log_event(f"Replicate image provider failed ({type(re_err).__name__}); trying configured image providers.", component="ImageAgent")
 
@@ -89,35 +116,41 @@ class ImageCreationAgent:
                             break
                 if gemini_key:
                     for model_name in ("gemini-3.1-flash-image", "gemini-2.5-flash-image"):
-                        payload = {
-                            "contents": [{"parts": [{"text": provider_prompt}]}],
-                            "generationConfig": {
-                                "responseModalities": ["IMAGE"],
-                                "imageConfig": {
-                                    "aspectRatio": "9:16" if height >= width else "16:9",
-                                    "imageSize": "1K",
+                        response_data = None
+                        # 2K output keeps far more detail once it is normalised down to
+                        # 1080x1920; step back to 1K only when the model rejects it.
+                        for image_size in ("2K", "1K"):
+                            payload = {
+                                "contents": [{"parts": [{"text": provider_prompt}]}],
+                                "generationConfig": {
+                                    "responseModalities": ["IMAGE"],
+                                    "imageConfig": {
+                                        "aspectRatio": requested_ratio,
+                                        "imageSize": image_size,
+                                    },
                                 },
-                            },
-                        }
-                        request = urllib.request.Request(
-                            f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-                            data=json.dumps(payload).encode("utf-8"),
-                            headers={
-                                "x-goog-api-key": gemini_key,
-                                "Content-Type": "application/json",
-                                "Accept": "application/json",
-                            },
-                        )
-                        try:
-                            with urllib.request.urlopen(request, timeout=90) as response:
-                                response_data = json.loads(response.read().decode("utf-8"))
-                        except Exception as model_error:
-                            status_code = getattr(model_error, "code", None)
-                            status_label = getattr(model_error, "reason", "")
-                            provider_status = f"HTTP {status_code}" if status_code else type(model_error).__name__
-                            if status_label:
-                                provider_status += f" {str(status_label)[:80]}"
-                            log_event(f"Gemini image model {model_name} failed ({provider_status}); trying fallback model if available.", level="WARNING", component="ImageAgent")
+                            }
+                            request = urllib.request.Request(
+                                f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                                data=json.dumps(payload).encode("utf-8"),
+                                headers={
+                                    "x-goog-api-key": gemini_key,
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json",
+                                },
+                            )
+                            try:
+                                with urllib.request.urlopen(request, timeout=90) as response:
+                                    response_data = json.loads(response.read().decode("utf-8"))
+                                break
+                            except Exception as model_error:
+                                status_code = getattr(model_error, "code", None)
+                                status_label = getattr(model_error, "reason", "")
+                                provider_status = f"HTTP {status_code}" if status_code else type(model_error).__name__
+                                if status_label:
+                                    provider_status += f" {str(status_label)[:80]}"
+                                log_event(f"Gemini image model {model_name} at {image_size} failed ({provider_status}); retrying at the next supported size.", level="WARNING", component="ImageAgent")
+                        if response_data is None:
                             continue
                         parts = (((response_data.get("candidates") or [{}])[0]).get("content") or {}).get("parts") or []
                         inline_image = next((part.get("inlineData") or part.get("inline_data") for part in parts if part.get("inlineData") or part.get("inline_data")), None)
