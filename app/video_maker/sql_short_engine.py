@@ -2427,27 +2427,54 @@ class SqlShortVideoEngine:
             topic_steps = ["Working tree", "Commit", "Branch", "Merge", "Remote push"]
         labels = (topic_steps + ["Key takeaway"]) if topic_steps else [anchor, "Core components", "Data or action flow", "Real-world outcome", "Key takeaway"]
         titles = ["The problem it solves", "The parts that matter", "How the mechanism works", "What changes in practice", "Key takeaway"]
-        en = [
-            f"Let's understand {topic}. Start with the central idea and the problem this topic solves.",
-            f"The important parts of {anchor} work together. Focus on each component's role and how they connect.",
-            f"Follow the flow in order: an input arrives, the relevant steps process it, and a clear result emerges.",
-            f"In practice, {anchor} helps teams make this process more useful, reliable, and easier to operate.",
-            f"The key takeaway about {anchor} is to understand the purpose, the parts, and how the complete flow produces its outcome."
-        ]
-        mr = [
-            f"चला {topic} समजून घेऊया. ही मुख्य कल्पना कोणती समस्या सोडवते ते आधी पाहू.",
-            f"{anchor} चे महत्त्वाचे भाग एकत्र काम करतात. प्रत्येक भागाची भूमिका आणि त्यांचा संबंध समजून घ्या.",
-            "प्रवाह क्रमाने पाहा: इनपुट येतो, आवश्यक टप्पे त्यावर प्रक्रिया करतात आणि शेवटी स्पष्ट परिणाम मिळतो.",
-            f"प्रत्यक्ष वापरात {anchor} ही प्रक्रिया अधिक उपयुक्त, विश्वासार्ह आणि हाताळायला सोपी बनवतो.",
-            f"{anchor} मधला मुख्य धडा म्हणजे उद्देश, घटक आणि पूर्ण प्रवाहाचा परिणाम एकत्र समजून घेणे."
-        ]
-        hi = [
-            f"आइए {topic} को समझते हैं। पहले देखें कि यह मुख्य विचार किस समस्या को हल करता है।",
-            f"{anchor} के जरूरी हिस्से मिलकर काम करते हैं। हर हिस्से की भूमिका और उनका संबंध समझें।",
-            "प्रवाह को क्रम से देखें: इनपुट आता है, जरूरी चरण उस पर काम करते हैं और स्पष्ट परिणाम मिलता है।",
-            f"वास्तविक उपयोग में {anchor} इस प्रक्रिया को अधिक उपयोगी, भरोसेमंद और संभालने में आसान बनाता है।",
-            f"{anchor} की मुख्य सीख है उद्देश्य, हिस्सों और पूरे प्रवाह के परिणाम को साथ समझना।"
-        ]
+        if topic_steps:
+            # When the online model is unavailable, narrate the real mechanism of the
+            # recognised topic instead of generic filler, so the fallback video still
+            # explains the user's prompt step by step.
+            s = topic_steps
+            en = [
+                f"Let's understand {topic}. The whole flow starts at {s[0]}, where every change is captured.",
+                f"That change then goes into {s[1]}, which turns it into something that can actually run.",
+                f"Next comes {s[2]}, which proves the result is correct before anything moves forward.",
+                f"Only after that does it reach {s[3]}, and finally {s[4]} where real users experience it.",
+                f"So {anchor} is simply {s[0]}, {s[1]}, {s[2]}, {s[3]} and {s[4]} connected in one reliable chain."
+            ]
+            mr = [
+                f"चला {topic} समजून घेऊया. हा संपूर्ण प्रवाह {s[0]} पासून सुरू होतो, जिथे प्रत्येक बदल नोंदवला जातो.",
+                f"मग तो बदल {s[1]} मध्ये जातो, जिथे त्याचं प्रत्यक्ष चालणारं स्वरूप तयार होतं.",
+                f"नंतर {s[2]} येतो, जो काहीही पुढे जाण्याआधी निकाल बरोबर असल्याची खात्री देतो.",
+                f"त्यानंतरच {s[3]} गाठला जातो आणि शेवटी {s[4]} इथे खरे युजर्स तो अनुभवतात.",
+                f"म्हणजे {anchor} म्हणजे {s[0]}, {s[1]}, {s[2]}, {s[3]} आणि {s[4]} एका विश्वासार्ह साखळीने जोडलेले."
+            ]
+            hi = [
+                f"आइए {topic} को समझें। पूरा प्रवाह {s[0]} से शुरू होता है, जहाँ हर बदल दर्ज होता है।",
+                f"फिर वह बदल {s[1]} में जाता है, जहाँ उसे चलने लायक रूप मिलता है।",
+                f"इसके बाद {s[2]} आता है, जो आगे बढ़ने से पहले नतीजा सही होने की पुष्टि करता है।",
+                f"उसके बाद ही {s[3]} तक पहुँचता है और अंत में {s[4]} पर असली यूज़र्स तक।",
+                f"यानी {anchor} का मतलब है {s[0]}, {s[1]}, {s[2]}, {s[3]} और {s[4]} का एक भरोसेमंद क्रम।"
+            ]
+        else:
+            en = [
+                f"Let's understand {topic}. Start with the central idea and the problem this topic solves.",
+                f"The important parts of {anchor} work together. Focus on each component's role and how they connect.",
+                f"Follow the flow in order: an input arrives, the relevant steps process it, and a clear result emerges.",
+                f"In practice, {anchor} helps teams make this process more useful, reliable, and easier to operate.",
+                f"The key takeaway about {anchor} is to understand the purpose, the parts, and how the complete flow produces its outcome."
+            ]
+            mr = [
+                f"चला {topic} समजून घेऊया. ही मुख्य कल्पना कोणती समस्या सोडवते ते आधी पाहू.",
+                f"{anchor} चे महत्त्वाचे भाग एकत्र काम करतात. प्रत्येक भागाची भूमिका आणि त्यांचा संबंध समजून घ्या.",
+                "प्रवाह क्रमाने पाहा: इनपुट येतो, आवश्यक टप्पे त्यावर प्रक्रिया करतात आणि शेवटी स्पष्ट परिणाम मिळतो.",
+                f"प्रत्यक्ष वापरात {anchor} ही प्रक्रिया अधिक उपयुक्त, विश्वासार्ह आणि हाताळायला सोपी बनवतो.",
+                f"{anchor} मधला मुख्य धडा म्हणजे उद्देश, घटक आणि पूर्ण प्रवाहाचा परिणाम एकत्र समजून घेणे."
+            ]
+            hi = [
+                f"आइए {topic} को समझते हैं। पहले देखें कि यह मुख्य विचार किस समस्या को हल करता है।",
+                f"{anchor} के जरूरी हिस्से मिलकर काम करते हैं। हर हिस्से की भूमिका और उनका संबंध समझें।",
+                "प्रवाह को क्रम से देखें: इनपुट आता है, जरूरी चरण उस पर काम करते हैं और स्पष्ट परिणाम मिलता है।",
+                f"वास्तविक उपयोग में {anchor} इस प्रक्रिया को अधिक उपयोगी, भरोसेमंद और संभालने में आसान बनाता है।",
+                f"{anchor} की मुख्य सीख है उद्देश्य, हिस्सों और पूरे प्रवाह के परिणाम को साथ समझना।"
+            ]
         speech = {"en": en, "mr": mr, "hi": hi}.get(lang_key, en)
         scenes = []
         for i, line in enumerate(speech):

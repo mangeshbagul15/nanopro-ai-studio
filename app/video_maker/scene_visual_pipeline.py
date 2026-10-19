@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
 import urllib.request
 from pathlib import Path
@@ -20,6 +21,11 @@ def _normalize_portrait(source: Path, destination: Path) -> tuple[int, int]:
     except ImportError as exc:
         raise RuntimeError("Pillow is required to normalize generated scene images.") from exc
     with Image.open(source) as image:
+        if image.format == "JPEG" and max(image.size) > 1400:
+            # Have libjpeg decode straight to a smaller RGB buffer. A 2K provider
+            # frame would otherwise materialise a ~25 MB bitmap per scene, which is
+            # what pushed the 512 MB Render instance into a restart.
+            image.draft("RGB", (1080, 1920))
         fitted = ImageOps.fit(
             image.convert("RGB"),
             (1080, 1920),
@@ -93,7 +99,9 @@ async def generate_scene_assets(
     """Create one cached 9:16 model-generated keyframe per storyboard scene."""
     asset_root = Path(BASE_DIR) / "data" / "assets" / "video_scenes"
     asset_root.mkdir(parents=True, exist_ok=True)
-    semaphore = asyncio.Semaphore(2)
+    # One scene image at a time keeps peak RSS inside the 512 MB free Render tier.
+    # Raise this only when the instance genuinely has memory headroom.
+    semaphore = asyncio.Semaphore(1)
     progress_lock = asyncio.Lock()
     completed = 0
 
@@ -130,6 +138,8 @@ async def generate_scene_assets(
                         if not source.is_file():
                             raise RuntimeError("Image provider returned no local image file.")
                         _normalize_portrait(source, destination)
+                        # Release the decoded provider bitmap before the next scene.
+                        gc.collect()
                         last_error = None
                         break
                     except Exception as exc:

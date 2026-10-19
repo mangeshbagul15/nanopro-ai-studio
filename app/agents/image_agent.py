@@ -118,41 +118,39 @@ class ImageCreationAgent:
                             break
                 if gemini_key:
                     for model_name in ("gemini-3.1-flash-image", "gemini-2.5-flash-image"):
-                        response_data = None
-                        # 2K output keeps far more detail once it is normalised down to
-                        # 1080x1920; step back to 1K only when the model rejects it.
-                        for image_size in ("2K", "1K"):
-                            payload = {
-                                "contents": [{"parts": [{"text": provider_prompt}]}],
-                                "generationConfig": {
-                                    "responseModalities": ["IMAGE"],
-                                    "imageConfig": {
-                                        "aspectRatio": requested_ratio,
-                                        "imageSize": image_size,
-                                    },
+                        # 1K portrait output already matches the 1080x1920 render target.
+                        # Asking for 2K doubled peak RAM here and got the 512 MB Render
+                        # container restarted mid-render, which surfaced in the browser
+                        # as "Unexpected end of JSON input".
+                        payload = {
+                            "contents": [{"parts": [{"text": provider_prompt}]}],
+                            "generationConfig": {
+                                "responseModalities": ["IMAGE"],
+                                "imageConfig": {
+                                    "aspectRatio": requested_ratio,
+                                    "imageSize": "1K",
                                 },
-                            }
-                            request = urllib.request.Request(
-                                f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-                                data=json.dumps(payload).encode("utf-8"),
-                                headers={
-                                    "x-goog-api-key": gemini_key,
-                                    "Content-Type": "application/json",
-                                    "Accept": "application/json",
-                                },
-                            )
-                            try:
-                                with urllib.request.urlopen(request, timeout=90) as response:
-                                    response_data = json.loads(response.read().decode("utf-8"))
-                                break
-                            except Exception as model_error:
-                                status_code = getattr(model_error, "code", None)
-                                status_label = getattr(model_error, "reason", "")
-                                provider_status = f"HTTP {status_code}" if status_code else type(model_error).__name__
-                                if status_label:
-                                    provider_status += f" {str(status_label)[:80]}"
-                                log_event(f"Gemini image model {model_name} at {image_size} failed ({provider_status}); retrying at the next supported size.", level="WARNING", component="ImageAgent")
-                        if response_data is None:
+                            },
+                        }
+                        request = urllib.request.Request(
+                            f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={
+                                "x-goog-api-key": gemini_key,
+                                "Content-Type": "application/json",
+                                "Accept": "application/json",
+                            },
+                        )
+                        try:
+                            with urllib.request.urlopen(request, timeout=90) as response:
+                                response_data = json.loads(response.read().decode("utf-8"))
+                        except Exception as model_error:
+                            status_code = getattr(model_error, "code", None)
+                            status_label = getattr(model_error, "reason", "")
+                            provider_status = f"HTTP {status_code}" if status_code else type(model_error).__name__
+                            if status_label:
+                                provider_status += f" {str(status_label)[:80]}"
+                            log_event(f"Gemini image model {model_name} failed ({provider_status}); trying fallback model if available.", level="WARNING", component="ImageAgent")
                             continue
                         parts = (((response_data.get("candidates") or [{}])[0]).get("content") or {}).get("parts") or []
                         inline_image = next((part.get("inlineData") or part.get("inline_data") for part in parts if part.get("inlineData") or part.get("inline_data")), None)

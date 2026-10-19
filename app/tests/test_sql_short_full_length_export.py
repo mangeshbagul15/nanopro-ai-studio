@@ -181,6 +181,21 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn('drawImage(media', renderer)
         self.assertIn('overlay_items', renderer)
 
+    def test_video_generation_survives_empty_server_responses(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("async function readVideoJsonResponse", source)
+        self.assertIn("consecutivePollFailures", source)
+        self.assertIn("await readVideoJsonResponse(queuedRes)", source)
+        self.assertIn("await readVideoJsonResponse(pollRes)", source)
+
+    def test_scene_pipeline_stays_inside_free_tier_memory(self):
+        image_source = (PROJECT_ROOT / "app" / "agents" / "image_agent.py").read_text(encoding="utf-8")
+        self.assertIn('"imageSize": "1K"', image_source)
+        self.assertNotIn('"imageSize": "2K"', image_source)
+        pipeline_source = (PROJECT_ROOT / "app" / "video_maker" / "scene_visual_pipeline.py").read_text(encoding="utf-8")
+        self.assertIn("asyncio.Semaphore(1)", pipeline_source)
+        self.assertIn('image.draft("RGB"', pipeline_source)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]

@@ -618,6 +618,24 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (modal) modal.style.display = "none";
     }
 
+    async function readVideoJsonResponse(response) {
+        // A free-tier container can restart mid-render and answer with an empty body.
+        // response.json() would then throw the opaque "Unexpected end of JSON input",
+        // so read the text first and let the caller retry with a real explanation.
+        let text = "";
+        try {
+            text = await response.text();
+        } catch (_) {
+            return { ok: false, empty: true, status: response.status };
+        }
+        if (!text || !text.trim()) return { ok: false, empty: true, status: response.status };
+        try {
+            return { ok: true, data: JSON.parse(text), status: response.status };
+        } catch (_) {
+            return { ok: false, invalid: true, status: response.status, snippet: text.slice(0, 160) };
+        }
+    }
+
     async function generateSqlShortBlueprint() {
         const q = document.getElementById("sqlShortQuestion").value.trim();
         const btn = document.getElementById("btnGenerateSqlBlueprint");
@@ -650,7 +668,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         // Stage 3: Coding & Architecture Agent dispatch (37.5%)
 
         try {
-            const res = await fetch("/api/sql_video/generate_prompt_job", {
+            const queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
@@ -660,13 +678,33 @@ SECOND_HIGHEST_SALARY: 70000`;
                     timestamp: Date.now()
                 })
             });
-            const queued = await res.json();
-            if (!res.ok || !queued.job_id) throw new Error(queued.detail || queued.message || "Could not queue video generation.");
+            const queuedRead = await readVideoJsonResponse(queuedRes);
+            if (!queuedRead.ok) {
+                throw new Error(queuedRead.empty
+                    ? "NanoPro server ने रिकामा response दिला (free-tier memory restart). 30 सेकंद थांबून पुन्हा Generate दाबा."
+                    : "NanoPro server ने अपूर्ण response दिला. पुन्हा Generate दाबा.");
+            }
+            const queued = queuedRead.data;
+            if (!queuedRes.ok || !queued.job_id) throw new Error(queued.detail || queued.message || "Could not queue video generation.");
             const statusEl = document.getElementById("sqlVideoGenerationStatus");
             let data = null;
+            let consecutivePollFailures = 0;
             for (let attempt = 0; attempt < 360; attempt++) {
                 const pollRes = await fetch("/api/sql_video/generation_jobs/" + encodeURIComponent(queued.job_id), { cache: "no-store" });
-                const job = await pollRes.json();
+                const pollRead = await readVideoJsonResponse(pollRes);
+                if (!pollRead.ok) {
+                    consecutivePollFailures += 1;
+                    if (consecutivePollFailures >= 8) {
+                        throw new Error(pollRead.status === 404
+                            ? "Render server restart झाला कारणाने video job हरवला (free-tier memory limit). पुन्हा Generate दाबा."
+                            : "Video render करताना NanoPro server थांबला. पुन्हा Generate दाबा.");
+                    }
+                    if (statusEl) statusEl.textContent = `Reconnecting to NanoPro server… (${consecutivePollFailures}/8)`;
+                    await new Promise(r => setTimeout(r, 1500));
+                    continue;
+                }
+                consecutivePollFailures = 0;
+                const job = pollRead.data;
                 if (!pollRes.ok) throw new Error(job.detail || "Could not read video generation progress.");
                 if (statusEl) statusEl.textContent = `${job.stage || "Preparing video"} · ${Math.round(job.progress || 0)}%`;
                 if (job.status === "done" || job.status === "completed") {
