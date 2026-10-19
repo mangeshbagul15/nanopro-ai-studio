@@ -1108,9 +1108,9 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         labels = labels[:8]
 
         chain: List[str] = []
-        arrow = re.search(r"`([^`]*\u2192[^`]*)`", visual or body)
+        arrow = re.search(r"`([^`]*(?:\u2192|->)[^`]*)`", visual or body)
         if arrow:
-            chain = [part.strip(" `") for part in arrow.group(1).split("\u2192") if part.strip(" `")]
+            chain = [part.strip(" `") for part in re.split(r"\u2192|->", arrow.group(1)) if part.strip(" `")]
 
         rows: List[List[str]] = []
         for line in body.splitlines():
@@ -2978,6 +2978,7 @@ class SqlShortVideoEngine:
             "narration_duration": outro_start,
             "aspect_ratio": "9:16",
             "storyboard_source": matched.get("storyboard_source", "local_fallback"),
+            "show_subtitles": matched.get("show_subtitles", True),
             "llm_error": str(matched.get("llm_error") or "")[:240],
             "branding": "@Code_With_Mangesh"
         }
