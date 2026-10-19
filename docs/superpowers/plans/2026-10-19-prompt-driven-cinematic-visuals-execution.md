@@ -16,4 +16,4 @@
 - [x] Task 3: Build the per-scene asset pipeline — 3 tests passed; distinct prompt-hash caching, 9:16 normalization, Runway graceful fallback, and fail-closed image errors verified.
 - [x] Task 4: Add observable asynchronous generation jobs — 3 lifecycle tests passed; queued/progress/completed/failed states return full job payloads, and failures never publish partial success.
 - [x] Task 5: Composite generated scene assets in the player — 14 UI/export tests passed; job polling, AI image/video composition, native overlays, audio-time seeking, accessible progress, 9:16 preview/export, and JavaScript syntax verified.
-- [ ] Task 6: Verify prompt differences and final export.
+- [x] Task 6: Verify prompt differences and final export — 5 pipeline tests passed; Solar and Python scenes produce separate prompt hashes and 1080×1920 assets, and scene timing covers the full 49.7-second narration fixture. Render/browser export verification remains scheduled after deploy.

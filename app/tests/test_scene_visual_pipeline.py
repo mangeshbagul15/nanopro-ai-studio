@@ -69,6 +69,33 @@ class SceneVisualPipelineTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(RuntimeError, "scene 1.*Solar"):
             await self._run([{"title": "Solar", "visual_prompt": "A panel converts light", "speech": "Solar", "continuity": "panel"}], image)
 
+    async def test_solar_and_coding_prompts_produce_different_scene_assets(self):
+        prompts = []
+        def image(prompt, **kwargs):
+            prompts.append(prompt)
+            return {"file_path": str(self.source), "provider": "fake", "source_url": "https://img.example/key.png"}
+        solar = await self._run([{"id": 1, "title": "Solar", "visual_prompt": "Photons strike silicon cells and release electrons", "speech": "Solar"}], image)
+        coding = await self._run([{"id": 1, "title": "Python", "visual_prompt": "A Python loop reads list values and appends results", "speech": "Coding"}], image)
+        self.assertIn("silicon cells", prompts[0])
+        self.assertIn("Python loop", prompts[1])
+        self.assertNotEqual(solar[0]["prompt_hash"], coding[0]["prompt_hash"])
+        self.assertNotEqual(solar[0]["image_url"], coding[0]["image_url"])
+        from PIL import Image
+        with Image.open(self.root / "data" / "assets" / "video_scenes" / (solar[0]["prompt_hash"] + ".jpg")) as image_file:
+            self.assertEqual(image_file.size, (1080, 1920))
+
+    async def test_generated_scene_assets_cover_the_complete_narration_timeline(self):
+        def image(prompt, **kwargs):
+            return {"file_path": str(self.source), "provider": "fake"}
+        scenes = [
+            {"id": 1, "title": "Hook", "visual_prompt": "Solar panel in sunlight", "start": 0, "end": 8.5, "duration": 8.5},
+            {"id": 2, "title": "Mechanism", "visual_prompt": "Electrons move through a circuit", "start": 8.5, "end": 25, "duration": 16.5},
+            {"id": 3, "title": "Result", "visual_prompt": "Electricity powers a home", "start": 25, "end": 49.7, "duration": 24.7},
+        ]
+        result = await self._run(scenes, image)
+        self.assertEqual(sum(asset["duration"] for asset in result), 49.7)
+        self.assertEqual(result[-1]["end"], 49.7)
+
 
 if __name__ == "__main__":
     unittest.main()

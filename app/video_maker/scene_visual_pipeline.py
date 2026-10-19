@@ -106,6 +106,8 @@ async def generate_scene_assets(
                 "image_url": image_url,
                 "video_url": video_url,
                 "provider": "runway-gen4-turbo" if video_url else "prompt-specific-ai-image",
+                "start": float(scene.get("start", 0) or 0),
+                "end": float(scene.get("end", (scene.get("start", 0) or 0) + duration) or 0),
                 "duration": duration,
                 "prompt_hash": prompt_hash,
                 "width": 1080,
