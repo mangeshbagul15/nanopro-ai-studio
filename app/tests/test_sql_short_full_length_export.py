@@ -296,6 +296,23 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("Every speech value must be written only in this language", source)
         self.assertIn("speech\":\"Complete spoken explanation in {lang_name}", source)
 
+    def test_on_screen_text_is_english_only(self):
+        js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("subtitleText = activeStage.speech_en", js)
+        self.assertNotIn("AI VOICE", js)
+        workspace = (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8")
+        self.assertNotIn("Regional AI Voice", workspace)
+        engine = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn('"speech_en": en[i]', engine)
+        self.assertIn("the same narration translated into natural English", engine)
+
+    def test_diagram_renders_3d_isometric_slabs(self):
+        js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("function drawIso3DNode(", js)
+        self.assertIn("function drawIsoFloorGrid(", js)
+        self.assertIn("drawIso3DNode(ctx, boxX, y, boxW, nodeH, depth", js)
+        self.assertIn("drawDiagramAmbientParticles", js)
+
     def test_asset_scene_skips_generic_orbit_nodes(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
