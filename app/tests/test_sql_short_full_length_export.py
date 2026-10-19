@@ -65,6 +65,13 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn('audio_url = ""', source)
         self.assertNotIn('audio_url = f"/audio/preset_sql_q1_second_highest_salary_', source)
 
+    def test_short_form_narration_targets_under_sixty_seconds(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn("Target 45 to 55 seconds", source)
+        self.assertIn("max_narration_words = 112 if lang_key == \"en\" else 88", source)
+        self.assertIn("Short narration compression notice", source)
+        self.assertIn("audio_duration=actual_dur", source)
+
     def test_storyboard_fallback_preserves_any_topic_and_language(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         tree = ast.parse(source)

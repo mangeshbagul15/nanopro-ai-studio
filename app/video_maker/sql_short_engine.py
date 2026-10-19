@@ -2455,8 +2455,7 @@ class SqlShortVideoEngine:
         if not matched and len(text_input) > 8:
             try:
                 from app.core.model_adapter import model_manager
-                min_w = 17
-                max_w = 21
+                max_narration_words = 112 if lang_key == "en" else 88
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
 
                 ai_prompt = (
@@ -2466,7 +2465,7 @@ class SqlShortVideoEngine:
                     f"The input could be: a coding question, an architecture or theory topic, raw code, or a speech script.\n"
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
-                    f"2. Formulate 5 to 8 educational scenes that cover every key point in the user's scenario. Write enough narration to explain the full request naturally; do not shorten or omit content to fit a Shorts duration limit.\n"
+                    f"2. Formulate 5 to 6 educational scenes that cover the essential points. Target 45 to 55 seconds of spoken narration, always aiming below 60 seconds. Be concise: English narration up to 112 words total; Marathi or Hindi up to 88 words total. Keep the key idea, important steps, and outcome; omit secondary detail when needed.\n"
                     f"3. For each scene, express what the spoken line means as visual_description, visual_motif, entities (2-5 prompt-specific objects with label, detail, shape, color), and relationships (from/to). Pick a different composition and motion for each beat; vary entity count and spatial arrangement, avoid repeating the same composition, and never use placeholder/demo entities.\n"
                     f"4. Write speech naturally in the selected language, covering all important prompt details. Scene speech in order is the exact narration that must be synthesized; avoid generic interview intros/outros unless the prompt asks for them.\n\n"
                     f"Output strictly raw JSON with title, domain, content_type, suggested_motion_bg, and scenes. Set content_type to sql_query only when the user explicitly asks for SQL code; otherwise use tech_topic. Each scene has title, speech, visual_description, visual_motif, composition, motion, entities, and relationships. Entities are arrays of {{label, detail, shape, color}}; relationships are arrays of {{from, to, label}}. Every entity and visual detail must come from the user's topic or be necessary to explain it.\n"
@@ -2489,6 +2488,27 @@ class SqlShortVideoEngine:
                                 or not isinstance(scene.get("entities"), list)
                                 or len(scene["entities"]) < 2):
                             raise ValueError("A generated scene is missing its narration or prompt-specific visual elements.")
+                    narration_word_count = sum(len(str(scene.get("speech", "")).split()) for scene in scenes)
+                    if narration_word_count > max_narration_words:
+                        compact_prompt = (
+                            f"Rewrite the narration for this {text_input!r} short video in {lang_key}. "
+                            f"Return raw JSON only: {{\"scenes\":[{{\"speech\":\"...\"}}]}}. "
+                            f"Return exactly {len(scenes)} concise scene speech lines, preserve their order and all essential facts, "
+                            f"and keep the total at or below {max_narration_words} whitespace-separated words."
+                        )
+                        try:
+                            compact_resp, _, _ = model_manager.execute_with_fallback(
+                                prompt=compact_prompt,
+                                system_prompt="You are a precise short-form narration editor. Preserve the topic and factual meaning. Output valid raw JSON."
+                            )
+                            compact_json = compact_resp[compact_resp.find("{"):compact_resp.rfind("}") + 1]
+                            compact_scenes = json.loads(compact_json).get("scenes", [])
+                            compact_words = sum(len(str(scene.get("speech", "")).split()) for scene in compact_scenes)
+                            if len(compact_scenes) == len(scenes) and compact_words <= max_narration_words and all(scene.get("speech") for scene in compact_scenes):
+                                for original, compact in zip(scenes, compact_scenes):
+                                    original["speech"] = compact["speech"].strip()
+                        except Exception as compact_error:
+                            log_event(f"Short narration compression notice: {compact_error}", level="DEBUG", component="SqlShortEngine")
                     matched = parsed
                     matched["id"] = "custom_ai_scenario"
                     matched["question"] = text_input
