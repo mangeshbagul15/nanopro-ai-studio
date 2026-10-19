@@ -109,29 +109,43 @@ def _infer_action_type(idx: int, total: int) -> str:
 
 
 def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate the model-authored scene brief and native overlays used by media rendering."""
+    """Normalize the model-authored scene brief instead of rejecting it.
+
+    The diagram renderer only needs the scene title and its numbered steps, so a
+    model that omits an optional field must not throw away an otherwise good
+    storyboard. Only genuinely unusable overlay anchors are rejected.
+    """
     if not isinstance(scene, dict):
         raise ValueError("A scene visual brief must be an object.")
-    for field in ("visual_prompt", "continuity"):
-        if not isinstance(scene.get(field), str) or not scene[field].strip():
-            raise ValueError(f"Scene visual brief is missing {field}.")
+    visual_prompt = scene.get("visual_prompt")
+    if not isinstance(visual_prompt, str) or not visual_prompt.strip():
+        visual_prompt = str(scene.get("title") or scene.get("speech") or "").strip()
+    continuity = scene.get("continuity")
+    if not isinstance(continuity, str) or not continuity.strip():
+        continuity = "Keep one consistent technical-diagram style across scenes."
     overlays = scene.get("overlay_items")
     if not isinstance(overlays, list):
-        raise ValueError("Scene overlay_items must be a list.")
+        overlays = []
+    allowed_kinds = {"label", "code", "formula"}
     normalized = []
     for item in overlays:
-        if not isinstance(item, dict) or item.get("kind") not in {"label", "code", "formula"}:
-            raise ValueError("Scene overlays must use label, code, or formula kind.")
-        if not isinstance(item.get("content"), str) or not item["content"].strip():
-            raise ValueError("Scene overlays must contain visible text.")
+        if not isinstance(item, dict):
+            continue
+        content = item.get("content")
+        if not isinstance(content, str) or not content.strip():
+            continue
+        # Models invent kinds such as "text", "note" or "arrow"; render those as labels.
+        kind = str(item.get("kind") or "label").strip().lower()
+        if kind not in allowed_kinds:
+            kind = "label"
         try:
             x, y = float(item.get("x")), float(item.get("y"))
-        except (TypeError, ValueError) as exc:
-            raise ValueError("Scene overlay anchors must be normalized canvas coordinates.") from exc
+        except (TypeError, ValueError):
+            x, y = 0.5, 0.72
         if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
             raise ValueError("Scene overlay anchors must be normalized canvas coordinates.")
-        normalized.append({**item, "x": x, "y": y, "content": item["content"].strip()})
-    return {**scene, "visual_prompt": scene["visual_prompt"].strip(), "continuity": scene["continuity"].strip(), "overlay_items": normalized}
+        normalized.append({**item, "kind": kind, "x": x, "y": y, "content": content.strip()})
+    return {**scene, "visual_prompt": visual_prompt, "continuity": continuity.strip(), "overlay_items": normalized}
 
 
 def compute_audio_synchronized_stages(
@@ -2601,11 +2615,11 @@ class SqlShortVideoEngine:
                     if not isinstance(scenes, list) or len(scenes) < 5:
                         raise ValueError("The generated storyboard must contain at least five prompt-specific scenes.")
                     for scene in scenes:
-                        if (not isinstance(scene, dict) or not scene.get("speech")
-                                or not scene.get("visual_description")
-                                or not isinstance(scene.get("entities"), list)
-                                or len(scene["entities"]) < 2):
-                            raise ValueError("A generated scene is missing its narration or prompt-specific visual elements.")
+                        if not isinstance(scene, dict) or not str(scene.get("speech") or "").strip():
+                            raise ValueError("A generated scene is missing its narration.")
+                        scene.setdefault("visual_description", str(scene.get("title") or scene.get("speech"))[:160])
+                        if not isinstance(scene.get("entities"), list):
+                            scene["entities"] = []
                     scenes = [_validate_scene_visual_contract(scene) for scene in scenes]
                     parsed["scenes"] = scenes
                     narration_word_count = sum(len(str(scene.get("speech", "")).split()) for scene in scenes)
@@ -2657,11 +2671,11 @@ class SqlShortVideoEngine:
                     if not isinstance(retry_scenes, list) or len(retry_scenes) < 5:
                         raise ValueError("The retry storyboard did not contain five scenes.")
                     for scene in retry_scenes:
-                        if (not isinstance(scene, dict) or not scene.get("speech")
-                                or not scene.get("visual_description")
-                                or not isinstance(scene.get("entities"), list)
-                                or len(scene["entities"]) < 2):
-                            raise ValueError("A retried scene is missing topic-specific visuals or narration.")
+                        if not isinstance(scene, dict) or not str(scene.get("speech") or "").strip():
+                            raise ValueError("A retried scene is missing its narration.")
+                        scene.setdefault("visual_description", str(scene.get("title") or scene.get("speech"))[:160])
+                        if not isinstance(scene.get("entities"), list):
+                            scene["entities"] = []
                     retry_scenes = [_validate_scene_visual_contract(scene) for scene in retry_scenes]
                     retry_parsed["scenes"] = retry_scenes
                     matched = retry_parsed

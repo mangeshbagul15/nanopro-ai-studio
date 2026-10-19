@@ -154,6 +154,20 @@ class SceneVisualContractTests(unittest.TestCase):
         self.assertEqual(validated["visual_prompt"], scene["visual_prompt"])
         self.assertEqual(validated["overlay_items"][0]["content"], "for item in values:")
 
+    def test_accepts_model_overlays_with_invented_kinds(self):
+        scene = {
+            "title": "Context assembly",
+            "speech": "Retrieved chunks are added to the prompt before generation.",
+            "overlay_items": [
+                {"kind": "text", "content": "context block", "x": 0.5, "y": 0.4},
+                {"kind": "", "content": "retrieved chunks", "x": 0.4, "y": 0.6},
+            ],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual([item["kind"] for item in validated["overlay_items"]], ["label", "label"])
+        self.assertTrue(validated["visual_prompt"])
+        self.assertTrue(validated["continuity"])
+
     def test_rejects_overlay_outside_normalized_canvas(self):
         scene = {
             "title": "Photon",
