@@ -187,6 +187,26 @@ Show the cloud.
         self.assertIn(("retry-policy", "retry-success"), edge_pairs)
         self.assertTrue(all(edge["from"] in nodes and edge["to"] in nodes for edge in graph["edges"]))
 
+    def test_llm_brief_fallback_builds_accurate_interactive_pipeline(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_llm_fallback_graph")
+        namespace = {"Dict": Dict, "Any": Any, "List": List}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "<llm-graph-fallback>", "exec"), namespace)
+        stages = [{"title": f"Scene {index}"} for index in range(6)]
+        graph = namespace["_llm_fallback_graph"](stages)
+        nodes = {node["id"]: node for node in graph["nodes"]}
+        self.assertEqual(graph["layout"], "pipeline")
+        self.assertEqual(nodes["tokenizer"]["shape"], "hexagon")
+        self.assertEqual(nodes["embeddings"]["shape"], "circle")
+        self.assertEqual(nodes["next-token"]["shape"], "dashboard")
+        self.assertIn("generated-response", nodes)
+        edge_pairs = {(edge["from"], edge["to"]) for edge in graph["edges"]}
+        self.assertIn(("generated-response", "transformer"), edge_pairs)
+        valid_targets = set(nodes) | {edge["id"] for edge in graph["edges"]}
+        self.assertTrue(all(action["target_id"] in valid_targets for stage in stages for action in stage["diagram_actions"]))
+        self.assertTrue(all(stage["diagram_actions"] for stage in stages))
+
     def test_airflow_pipeline_layout_places_parallel_tasks_side_by_side(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
         tree = ast.parse(source)
@@ -601,8 +621,8 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertNotIn('lang_key = "en"', source.split("brief_blueprint = _parse_detailed_brief", 1)[1].split("# 4.", 1)[0])
         self.assertIn("_architecture_from_detailed_brief(text_input, stages)", source)
-        self.assertIn("No generic vertical-box fallback was rendered", source)
-        self.assertIn('graph["layout"] = "pipeline"', source)
+        self.assertIn("_llm_fallback_graph(stages)", source)
+        self.assertIn('"layout": "pipeline"', source)
         self.assertIn("Required prompt-specific concepts that must appear as separate graph nodes", source)
         self.assertIn("Choose the number of educational scenes to fit the prompt's complexity", source)
 
