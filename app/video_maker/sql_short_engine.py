@@ -553,7 +553,6 @@ def compute_audio_synchronized_stages(
         s for s in raw_stages
         if s.get("user_authored_scene") or (
             s.get("action_type") != "branding_outro"
-            and s.get("id") != 7
             and "Outro" not in (s.get("title") or "")
             and "Code with Mangesh" not in (s.get("speech_en") or "")
             and "कोड विथ मंगेश" not in (s.get("speech_mr") or "")

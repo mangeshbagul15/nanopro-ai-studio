@@ -550,6 +550,16 @@ Show the cloud.
         self.assertEqual(len(calibrated), 1)
         self.assertEqual(calibrated[0]["title"], "CTA")
 
+    def test_unmarked_educational_scene_seven_is_not_removed_by_id(self):
+        stages = [{
+            "id": 7,
+            "title": "Quiz",
+            "speech_en": "Which token should the model predict next?",
+        }]
+        calibrated, _, _ = load_duration_calibrator()(stages, 5, lang_key="en")
+        self.assertEqual(len(calibrated), 1)
+        self.assertEqual(calibrated[0]["title"], "Quiz")
+
     def test_browser_export_stays_local_and_saves_the_full_voice_synced_video(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         export = source.split("async function exportSqlShortVideo(", 1)[1].split("function downloadCurrentFrameAsPng", 1)[0]
