@@ -3768,14 +3768,35 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (!elements.length) return false;
         const points = new Map();
         const top = 350, usableHeight = 1120;
+        const scale = elements.length <= 3 ? 1.35 : 1.15;
         elements.slice(0, 12).forEach((item, index) => {
-            const x = Math.max(90, Math.min(W - 90, Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18)) * W));
+            const rawX = Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18));
             const normalizedY = Number(item.y ?? (0.35 + (index * 0.37) % 0.45));
-            const y = top + Math.max(0, Math.min(1, normalizedY)) * usableHeight;
+            const x = Math.max(115, Math.min(W - 115, W / 2 + (rawX - 0.5) * W * scale));
+            const y = top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight;
             points.set(String(item.label), { x, y, item, index });
         });
         ctx.save();
         ctx.globalAlpha *= Math.max(0, Math.min(1, progress * 3));
+        const firstColor = String(elements[0].color || "#38BDF8");
+        const rgb = /^#([0-9a-f]{6})$/i.exec(firstColor);
+        const glowRgb = rgb ? `${parseInt(rgb[1].slice(0, 2), 16)},${parseInt(rgb[1].slice(2, 4), 16)},${parseInt(rgb[1].slice(4, 6), 16)}` : "56,189,248";
+        const focal = points.get(String(elements[0].label));
+        const glow = ctx.createRadialGradient(focal.x, focal.y, 0, focal.x, focal.y, H * 0.52);
+        glow.addColorStop(0, `rgba(${glowRgb},0.22)`);
+        glow.addColorStop(0.5, `rgba(${glowRgb},0.07)`);
+        glow.addColorStop(1, `rgba(${glowRgb},0)`);
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, top - 120, W, usableHeight + 300);
+        ctx.globalAlpha *= 0.3;
+        for (let i = 0; i < 24; i++) {
+            const x = ((i * 197 + 83) % 997) / 997 * W;
+            const y = top + ((i * 313 + 41) % 1021) / 1021 * usableHeight;
+            const twinkle = 0.45 + 0.55 * Math.sin(time * 1.4 + i * 1.7);
+            ctx.fillStyle = `rgba(226,232,240,${0.35 * twinkle})`;
+            ctx.fillRect(x, y, 2 + (i % 2), 2 + (i % 2));
+        }
+        ctx.globalAlpha /= 0.3;
         (Array.isArray(visual.connectors) ? visual.connectors : []).forEach((connector, index) => {
             const from = points.get(String(connector.from || "")), to = points.get(String(connector.to || ""));
             if (!from || !to) return;
@@ -3795,7 +3816,6 @@ SECOND_HIGHEST_SALARY: 70000`;
         });
         points.forEach(({ x, y, item, index }) => {
             const color = item.color || "#38BDF8";
-            const shape = String(item.shape || "icon").toLowerCase();
             const scale = 1 + Math.sin(time * 1.7 + index * 0.8) * 0.025;
             ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -3803,17 +3823,19 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillStyle = color;
             const glyph = String(item.glyph || item.icon || "");
             if (glyph) {
-                ctx.font = "800 82px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif";
+                const glyphSize = elements.length <= 3 ? 152 : elements.length <= 6 ? 124 : 96;
+                ctx.font = `800 ${glyphSize}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`;
                 ctx.fillText(glyph.slice(0, 2), 0, -8, 220);
             }
             ctx.shadowBlur = 0;
-            ctx.fillStyle = "#F8FAFC"; ctx.font = "700 25px 'Segoe UI', sans-serif";
-            const labelLines = splitDiagramText(ctx, item.label, 290, 2, 26);
-            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 72 + lineIndex * 30 : lineIndex * 30));
+            const labelFont = elements.length <= 3 ? 42 : elements.length <= 6 ? 36 : 30;
+            ctx.fillStyle = "#F8FAFC"; ctx.font = `750 ${labelFont}px 'Segoe UI', sans-serif`;
+            const labelLines = splitDiagramText(ctx, item.label, 360, 2, 30);
+            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 112 + lineIndex * 42 : lineIndex * 42));
             if (item.detail) {
-                ctx.fillStyle = "#94A3B8"; ctx.font = "500 18px 'Segoe UI', sans-serif";
-                const detail = splitDiagramText(ctx, item.detail, 250, 1, 34)[0];
-                if (detail) ctx.fillText(detail, 0, (glyph ? 78 : 8) + labelLines.length * 30);
+                ctx.fillStyle = "#CBD5E1"; ctx.font = "500 26px 'Segoe UI', sans-serif";
+                const detail = splitDiagramText(ctx, item.detail, 340, 1, 34)[0];
+                if (detail) ctx.fillText(detail, 0, (glyph ? 118 : 8) + labelLines.length * 42);
             }
             ctx.restore();
         });
@@ -5232,7 +5254,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             const words = subtitleText.trim().split(/\s+/).filter(Boolean);
             const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
 
-            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            ctx.font = "bold 40px 'Segoe UI', sans-serif";
             let curX = 85;
             let curY = subPillY + 66;
             const lineH = 42;
