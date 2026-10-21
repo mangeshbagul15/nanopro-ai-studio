@@ -5463,11 +5463,29 @@ SECOND_HIGHEST_SALARY: 70000`;
                 const webmBlob = new Blob(chunks, { type: mimeType });
                 const form = new FormData();
                 form.append("file", webmBlob, "nanopro_full_video.webm");
-                const response = await fetch("/api/sql_video/finalize_mp4", { method: "POST", body: form });
-                if (!response.ok) {
-                    const failure = await response.json().catch(() => ({}));
-                    throw new Error(failure.detail || `MP4 conversion failed (${response.status})`);
+                const queueResponse = await fetch("/api/sql_video/finalize_mp4", { method: "POST", body: form });
+                if (!queueResponse.ok) {
+                    const failure = await queueResponse.json().catch(() => ({}));
+                    throw new Error(failure.detail || `MP4 conversion failed (${queueResponse.status})`);
                 }
+                const queuedJob = await queueResponse.json();
+                if (!queuedJob.job_id) throw new Error("The MP4 conversion job was not created.");
+                let conversionReady = false;
+                for (let attempt = 0; attempt < 900; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const statusResponse = await fetch(`/api/sql_video/finalize_mp4/${encodeURIComponent(queuedJob.job_id)}`);
+                    if (!statusResponse.ok) throw new Error(`MP4 conversion status failed (${statusResponse.status})`);
+                    const status = await statusResponse.json();
+                    if (status.status === "ready") {
+                        conversionReady = true;
+                        break;
+                    }
+                    if (status.status === "failed") throw new Error(status.message || "MP4 conversion failed.");
+                    if (pDesc) pDesc.innerText = "Narration captured. Preparing MP4 in the background...";
+                }
+                if (!conversionReady) throw new Error("MP4 conversion is taking too long. Please try again.");
+                const response = await fetch(`/api/sql_video/finalize_mp4/${encodeURIComponent(queuedJob.job_id)}/download`);
+                if (!response.ok) throw new Error(`MP4 download failed (${response.status})`);
                 const mp4Blob = await response.blob();
                 if (mp4Blob.size < 1024) throw new Error("The converted MP4 is empty.");
                 const url = URL.createObjectURL(mp4Blob);

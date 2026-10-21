@@ -186,6 +186,10 @@ Show the cloud.
     def test_browser_download_requests_final_mp4_without_duration_cap(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn('fetch("/api/sql_video/finalize_mp4"', source)
+        self.assertIn('fetch(`/api/sql_video/finalize_mp4/${encodeURIComponent(queuedJob.job_id)}`)', source)
+        self.assertIn('status.status === "ready"', source)
+        self.assertIn('status.status === "failed"', source)
+        self.assertIn('finalize_mp4/${encodeURIComponent(queuedJob.job_id)}/download', source)
         self.assertIn(".mp4`", source)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)
@@ -199,13 +203,16 @@ Show the cloud.
         self.assertIn('@app.post("/api/sql_video/finalize_mp4")', source)
         self.assertIn('"-c:v", "libx264"', source)
         self.assertIn('media_type="video/mp4"', source)
+        self.assertIn('return JSONResponse({"job_id": job_token, "status": "queued"}, status_code=202)', source)
+        self.assertIn('@app.get("/api/sql_video/finalize_mp4/{job_id}/download")', source)
+        self.assertIn('background_tasks.add_task(_run_sql_video_mp4_conversion', source)
 
     def test_mp4_conversion_limits_encoder_memory_for_free_instances(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
-        route = source.split('@app.post("/api/sql_video/finalize_mp4")', 1)[1].split("@app.get(", 1)[0]
-        self.assertIn('"-preset", "ultrafast"', route)
-        self.assertIn('"-threads", "1"', route)
-        self.assertIn('"-filter_threads", "1"', route)
+        encoder = source.split("def _run_sql_video_mp4_conversion", 1)[1].split("@app.post(", 1)[0]
+        self.assertIn('"-preset", "ultrafast"', encoder)
+        self.assertIn('"-threads", "1"', encoder)
+        self.assertIn('"-filter_threads", "1"', encoder)
 
     def test_universal_video_prompt_requests_topic_specific_visuals(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")

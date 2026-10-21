@@ -22,8 +22,9 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR.parent))
 
-from fastapi import FastAPI, Form, Body, Query, HTTPException, UploadFile, File, Request
+from fastapi import FastAPI, Form, Body, Query, HTTPException, UploadFile, File, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from starlette.background import BackgroundTask
 from pydantic import BaseModel
 try:
     from pydantic import ConfigDict
@@ -1192,9 +1193,42 @@ async def api_sql_video_synthesize_voice(req: SqlShortVoiceRequest):
     return JSONResponse(res)
 
 
+_sql_video_export_jobs = {}
+_sql_video_export_jobs_lock = threading.Lock()
+
+
+def _run_sql_video_mp4_conversion(job_id: str, source_path: Path, final_path: Path):
+    try:
+        result = subprocess.run(
+            [
+                audio_processor.ffmpeg_bin, "-nostdin", "-y", "-i", str(source_path),
+                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "ultrafast",
+                "-threads", "1", "-filter_threads", "1", "-crf", "20", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-threads:a", "1", "-b:a", "128k",
+                "-movflags", "+faststart", str(final_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=900,
+        )
+        if result.returncode != 0 or not final_path.is_file() or final_path.stat().st_size == 0:
+            detail = (result.stderr or "FFmpeg returned no output.")[-1200:]
+            raise RuntimeError(f"MP4 conversion failed: {detail}")
+        with _sql_video_export_jobs_lock:
+            _sql_video_export_jobs[job_id].update({"status": "ready", "updated_at": time.time()})
+    except subprocess.TimeoutExpired:
+        with _sql_video_export_jobs_lock:
+            _sql_video_export_jobs[job_id].update({"status": "failed", "message": "MP4 conversion timed out. Please try again.", "updated_at": time.time()})
+    except Exception as exc:
+        with _sql_video_export_jobs_lock:
+            _sql_video_export_jobs[job_id].update({"status": "failed", "message": str(exc)[:1200], "updated_at": time.time()})
+    finally:
+        source_path.unlink(missing_ok=True)
+
+
 @app.post("/api/sql_video/finalize_mp4")
-def api_sql_video_finalize_mp4(file: UploadFile = File(...)):
-    """Convert the complete browser-recorded WebM into a downloadable H.264/AAC MP4."""
+def api_sql_video_finalize_mp4(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    """Queue H.264 conversion so long FFmpeg jobs do not time out the upload request."""
     from app.core.config import VIDEO_OUTPUT_DIR
 
     output_dir = VIDEO_OUTPUT_DIR / "sql_shorts"
@@ -1217,32 +1251,43 @@ def api_sql_video_finalize_mp4(file: UploadFile = File(...)):
                 source_file.write(chunk)
         if total_bytes == 0:
             raise HTTPException(status_code=400, detail="The browser video recording is empty.")
-
-        result = subprocess.run(
-            [
-                audio_processor.ffmpeg_bin, "-nostdin", "-y", "-i", str(source_path),
-                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "ultrafast",
-                "-threads", "1", "-filter_threads", "1", "-crf", "20", "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-threads:a", "1", "-b:a", "128k",
-                "-movflags", "+faststart", str(final_path),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=900,
-        )
-        if result.returncode != 0 or not final_path.is_file() or final_path.stat().st_size == 0:
-            detail = (result.stderr or "FFmpeg returned no output.")[-1200:]
-            raise HTTPException(status_code=500, detail=f"MP4 conversion failed: {detail}")
-        return FileResponse(
-            str(final_path),
-            media_type="video/mp4",
-            filename=f"NanoPro_Full_Video_{job_token}.mp4",
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise HTTPException(status_code=504, detail="MP4 conversion timed out. Please try again.") from exc
-    finally:
+        with _sql_video_export_jobs_lock:
+            expired = [key for key, job in _sql_video_export_jobs.items() if time.time() - job.get("updated_at", 0) > 3600]
+            for key in expired:
+                old_job = _sql_video_export_jobs.pop(key)
+                Path(old_job.get("output_path", "")).unlink(missing_ok=True)
+            _sql_video_export_jobs[job_token] = {"status": "queued", "updated_at": time.time(), "output_path": str(final_path)}
+        background_tasks.add_task(_run_sql_video_mp4_conversion, job_token, source_path, final_path)
+        file.file.close()
+        return JSONResponse({"job_id": job_token, "status": "queued"}, status_code=202)
+    except Exception:
         source_path.unlink(missing_ok=True)
         file.file.close()
+        raise
+
+
+@app.get("/api/sql_video/finalize_mp4/{job_id}")
+def api_sql_video_finalize_mp4_status(job_id: str):
+    with _sql_video_export_jobs_lock:
+        job = _sql_video_export_jobs.get(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="MP4 export job not found.")
+        return JSONResponse({"status": job["status"], "message": job.get("message")})
+
+
+@app.get("/api/sql_video/finalize_mp4/{job_id}/download")
+def api_sql_video_finalize_mp4_download(job_id: str):
+    with _sql_video_export_jobs_lock:
+        job = _sql_video_export_jobs.get(job_id)
+        if not job or job["status"] != "ready":
+            raise HTTPException(status_code=409, detail="MP4 export is not ready.")
+        final_path = Path(job["output_path"])
+    return FileResponse(
+        str(final_path),
+        media_type="video/mp4",
+        filename=f"NanoPro_Full_Video_{job_id}.mp4",
+        background=BackgroundTask(final_path.unlink, missing_ok=True),
+    )
 
 @app.get("/api/tech_video/learning_telemetry")
 async def api_tech_video_learning_telemetry():
