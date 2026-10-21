@@ -500,11 +500,12 @@ class SceneVisualContractTests(unittest.TestCase):
 
 
 class PromptScenePlayerTests(unittest.TestCase):
-    def test_generate_ui_polls_scene_job_progress(self):
+    def test_generate_ui_uses_direct_prompt_api_without_ephemeral_job_polling(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
-        self.assertIn('/api/sql_video/generate_prompt_job', source)
-        self.assertIn('/api/sql_video/generation_jobs/', source)
-        self.assertIn('job.result_data', source)
+        generation = source.split("async function generateSqlShortBlueprint()", 1)[1].split("function ", 1)[0]
+        self.assertIn('/api/sql_video/generate_prompt', generation)
+        self.assertNotIn('/api/sql_video/generation_jobs/', generation)
+        self.assertIn('const data = generationRead.data', generation)
         self.assertIn('sqlVideoGenerationStatus', source)
 
     def test_architecture_renderer_uses_independent_vector_components(self):
@@ -521,9 +522,8 @@ class PromptScenePlayerTests(unittest.TestCase):
     def test_video_generation_survives_empty_server_responses(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn("async function readVideoJsonResponse", source)
-        self.assertIn("consecutivePollFailures", source)
-        self.assertIn("await readVideoJsonResponse(queuedRes)", source)
-        self.assertIn("await readVideoJsonResponse(pollRes)", source)
+        self.assertIn("await readVideoJsonResponse(generationRes)", source)
+        self.assertIn("generationRead.empty", source)
 
     def test_scene_pipeline_stays_inside_free_tier_memory(self):
         image_source = (PROJECT_ROOT / "app" / "agents" / "image_agent.py").read_text(encoding="utf-8")

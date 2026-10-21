@@ -667,7 +667,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         // Stage 3: Coding & Architecture Agent dispatch (37.5%)
 
         try {
-            const queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
+            const statusEl = document.getElementById("sqlVideoGenerationStatus");
+            if (statusEl) statusEl.textContent = "NanoPro is creating the prompt-specific storyboard and narration…";
+            const generationRes = await fetch("/api/sql_video/generate_prompt", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
@@ -677,43 +679,16 @@ SECOND_HIGHEST_SALARY: 70000`;
                     timestamp: Date.now()
                 })
             });
-            const queuedRead = await readVideoJsonResponse(queuedRes);
-            if (!queuedRead.ok) {
-                throw new Error(queuedRead.empty
+            const generationRead = await readVideoJsonResponse(generationRes);
+            if (!generationRead.ok) {
+                throw new Error(generationRead.empty
                     ? "NanoPro server ने रिकामा response दिला (free-tier memory restart). 30 सेकंद थांबून पुन्हा Generate दाबा."
                     : "NanoPro server ने अपूर्ण response दिला. पुन्हा Generate दाबा.");
             }
-            const queued = queuedRead.data;
-            if (!queuedRes.ok || !queued.job_id) throw new Error(queued.detail || queued.message || "Could not queue video generation.");
-            const statusEl = document.getElementById("sqlVideoGenerationStatus");
-            let data = null;
-            let consecutivePollFailures = 0;
-            for (let attempt = 0; attempt < 360; attempt++) {
-                const pollRes = await fetch("/api/sql_video/generation_jobs/" + encodeURIComponent(queued.job_id), { cache: "no-store" });
-                const pollRead = await readVideoJsonResponse(pollRes);
-                if (!pollRead.ok) {
-                    consecutivePollFailures += 1;
-                    if (consecutivePollFailures >= 8) {
-                        throw new Error(pollRead.status === 404
-                            ? "Render server restart झाला कारणाने video job हरवला (free-tier memory limit). पुन्हा Generate दाबा."
-                            : "Video render करताना NanoPro server थांबला. पुन्हा Generate दाबा.");
-                    }
-                    if (statusEl) statusEl.textContent = `Reconnecting to NanoPro server… (${consecutivePollFailures}/8)`;
-                    await new Promise(r => setTimeout(r, 1500));
-                    continue;
-                }
-                consecutivePollFailures = 0;
-                const job = pollRead.data;
-                if (!pollRes.ok) throw new Error(job.detail || "Could not read video generation progress.");
-                if (statusEl) statusEl.textContent = `${job.stage || "Preparing video"} · ${Math.round(job.progress || 0)}%`;
-                if (job.status === "done" || job.status === "completed") {
-                    data = job.result_data;
-                    break;
-                }
-                if (job.status === "error" || job.status === "failed") throw new Error(job.error_message || "Video generation failed.");
-                await new Promise(r => setTimeout(r, 1000));
+            const data = generationRead.data;
+            if (!generationRes.ok || data.status !== "success") {
+                throw new Error(data.detail || data.message || "NanoPro could not create the prompt storyboard.");
             }
-            if (!data) throw new Error("Video generation timed out while preparing the architecture animation.");
             if (data.status === "success") {
                 if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
                 sqlShortState.agentPipeline = data.agent_pipeline || [];
