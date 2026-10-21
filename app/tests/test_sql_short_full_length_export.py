@@ -786,7 +786,7 @@ Scene 8 (0:58-1:05) - Closing
         self.assertIn("const glyphSize = elements.length <= 3 ? 152", visual)
         self.assertNotIn("packetX", visual)
         self.assertNotIn("ctx.roundRect(subPillX", frame)
-        self.assertIn("sqlShortState.baseBackgroundCanvas = baseBackgroundCanvas", frame)
+        self.assertIn('ctx.fillStyle = "#04070F";', frame)
         self.assertIn("const subTextWidth = W - 170", frame)
 
     def test_architecture_graph_uses_vertical_safe_margins(self):

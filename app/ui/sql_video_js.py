@@ -5180,21 +5180,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         // Static technical canvas: a clean gradient plus diagrams. No photo plate,
         // no motion engine, no per-frame animation unless the narration advances.
-        let baseBackgroundCanvas = sqlShortState.baseBackgroundCanvas;
-        if (!baseBackgroundCanvas || baseBackgroundCanvas.width !== W || baseBackgroundCanvas.height !== H) {
-            baseBackgroundCanvas = document.createElement("canvas");
-            baseBackgroundCanvas.width = W;
-            baseBackgroundCanvas.height = H;
-            const backgroundContext = baseBackgroundCanvas.getContext("2d");
-            const baseBg = backgroundContext.createLinearGradient(0, 0, W * 0.85, H);
-            baseBg.addColorStop(0, "#060A16");
-            baseBg.addColorStop(0.46, "#0B1230");
-            baseBg.addColorStop(1, "#04070F");
-            backgroundContext.fillStyle = baseBg;
-            backgroundContext.fillRect(0, 0, W, H);
-            sqlShortState.baseBackgroundCanvas = baseBackgroundCanvas;
-        }
-        ctx.drawImage(baseBackgroundCanvas, 0, 0, W, H);
+        ctx.fillStyle = "#04070F";
+        ctx.fillRect(0, 0, W, H);
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
