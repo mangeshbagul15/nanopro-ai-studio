@@ -393,7 +393,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         // 2. Visual feedback on badge
         if (badgeEl) {
-            badgeEl.innerText = syntaxValid ? "✓ AST 100% Verified" : "⚠️ Syntax Warning";
+            badgeEl.innerText = syntaxValid ? "✓ Delimiters Balanced" : "⚠️ Delimiter Imbalance";
             badgeEl.style.color = syntaxValid ? "#10B981" : "#F59E0B";
             badgeEl.style.background = syntaxValid ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)";
             badgeEl.style.borderColor = syntaxValid ? "#10B981" : "#F59E0B";
@@ -410,22 +410,22 @@ SECOND_HIGHEST_SALARY: 70000`;
             }, 2500);
         }
 
-        logPipelineStep("AST Sandbox & Verification", syntaxValid 
-            ? "In-memory AST grammar verified. Balanced clauses, zero syntax errors, data integrity 100% OK." 
-            : `AST syntax warning detected (Parentheses diff: ${parenCount}, Quotes: ${singleQuoteCount % 2 === 0 ? 'even' : 'odd'}). Auto-correcting...`);
+        logPipelineStep("Text Delimiter Check", syntaxValid
+            ? "Parentheses, braces, and single-quote counts are balanced. This is not a SQL/Python parser or query execution."
+            : `Delimiter imbalance detected (parentheses ${parenCount}, braces ${braceCount}, single quotes ${singleQuoteCount % 2 === 0 ? 'even' : 'odd'}). Review the code; no automatic correction was applied.`);
     }
 
     function selectPipelineStage(stageNum) {
         const stageNames = [
             "",
             "Prompt Ingestion",
-            "NanoPro Orchestrator",
-            "Coding & Architecture",
-            "AST Logic & Sandbox",
-            "Visual Retouch & 3D Shaders",
-            "ElevenLabs Neural Voice",
-            "Video Engine (Canvas Synthesis)",
-            "Final 9:16 Deliverable"
+            "Video Workflow & Quality Report",
+            "Prompt Model & Storyboard",
+            "Delimiter Balance Check",
+            "Deterministic Canvas Motion",
+            "Narration Voice Settings",
+            "Video Preview",
+            "Local 9:16 Export"
         ];
 
         setPipelineStage(stageNum, stageNames[stageNum] || `Stage ${stageNum}`, `Selected by user. Activating stage functionality...`);
@@ -448,24 +448,24 @@ SECOND_HIGHEST_SALARY: 70000`;
                 break;
             }
             case 2: {
-                // Open 12 Agent Brain Matrix Modal
+                // Open the observed video workflow and quality report.
                 if (typeof openAgentBrainModal === "function") {
                     openAgentBrainModal();
                 }
-                logPipelineStep("Stage 2: NanoPro Agent", "Opened 12 Specialist Agent Brain Matrix and multi-agent coordination graph.");
+                logPipelineStep("Stage 2: Generation Report", "Opened the current pre-render checks and workflow steps. No specialist-agent execution is implied.");
                 break;
             }
             case 3: {
-                logPipelineStep("Stage 3: Developing", "Online LLM and schema generation active.");
+                logPipelineStep("Stage 3: Storyboard workflow", "The prompt model runs after Generate is submitted; selecting this stage does not dispatch another agent.");
                 break;
             }
             case 4: {
                 runPipelineSandboxVerification();
-                logPipelineStep("Stage 4: Modification", "AST Sandbox verification complete.");
+                logPipelineStep("Stage 4: Modification", "Simple text delimiter check complete; no database query was executed.");
                 break;
             }
             case 5: {
-                logPipelineStep("Stage 5: Visual Retouch", "Dynamic 3D Motion Shaders & Cyber Glass Layouts active.");
+                logPipelineStep("Stage 5: Motion renderer", "The local canvas draws the sentence-cue timeline, 3D component focus, and data path; no separate shader agent is dispatched.");
                 break;
             }
             case 6: {
@@ -544,71 +544,61 @@ SECOND_HIGHEST_SALARY: 70000`;
         const modal = document.getElementById("agentBrainModal");
         if (!modal) return;
         modal.style.display = "flex";
+        const auditEsc = value => String(value ?? "").replace(/[&<>\"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#39;" }[ch]));
 
         const audit = sqlShortState.perfectionistAudit || {
-            perfectionist_score: "99.8%",
-            grade: "AAA+ Enterprise Standard",
-            audit_checks: [
-                { trial: 1, check: "Python AST & ANSI SQL Syntax", status: "PASSED", badge: "🛡️ 100% Valid Python AST & SQL" },
-                { trial: 2, check: "Full Narration Pacing & Duration", status: "PASSED", badge: "⏱️ Complete narration calibrated" },
-                { trial: 3, check: "6-Stage Deep Pedagogical Architecture", status: "PASSED", badge: "🎓 6 Educational Stages Frame-Locked" },
-                { trial: 4, check: "Enterprise Edge-Case Traps & Pro-Tips", status: "PASSED", badge: "💡 Edge-Case Traps & Golden Rule" },
-                { trial: 5, check: "Kinetic Neon Highlights & Arrow Tracking", status: "PASSED", badge: "🎯 Arrow Pointer Synced to Spoken Speech" },
-                { trial: 6, check: "Zero Voice Overrun Guarantee", status: "PASSED", badge: "🛡️ Outro strictly post-narration" }
-            ]
+            status: "NOT_RUN",
+            perfectionist_score: "N/A",
+            simulation_notice: "External systems and visual/audio quality checks are not verified by storyboard generation.",
+            audit_checks: [{ trial: 1, check: "Pre-render report", status: "NOT_RUN", badge: "Generate a storyboard to inspect checks." }]
         };
 
         const scoreBadge = document.getElementById("modalAuditScoreBadge");
-        if (scoreBadge) scoreBadge.innerText = `Score: ${audit.perfectionist_score} (${audit.grade || 'AAA+ Enterprise Ready'})`;
+        if (scoreBadge) {
+            const auditStatus = audit.status || "NOT_RUN";
+            const auditColor = auditStatus === "PASSED" || auditStatus === "POST_RENDER_PASSED" ? "#10B981" : auditStatus === "BLOCKED" ? "#EF4444" : auditStatus.includes("WARNINGS") || auditStatus === "READY_WITH_WARNINGS" ? "#FBBF24" : "#94A3B8";
+            scoreBadge.innerText = `Quality report: ${auditStatus} · score not calculated`;
+            scoreBadge.style.color = auditColor;
+            scoreBadge.style.borderColor = auditColor;
+            scoreBadge.style.background = `${auditColor}22`;
+        }
 
         const trialsGrid = document.getElementById("modalAuditTrialsGrid");
         if (trialsGrid && audit.audit_checks) {
             trialsGrid.innerHTML = audit.audit_checks.map(c => `
-                <div style="background: #0B132B; border: 1px solid ${c.status === 'PASSED' ? '#10B981' : '#38BDF8'}; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
-                    <div style="color: ${c.status === 'PASSED' ? '#10B981' : '#38BDF8'}; font-weight: 700; display:flex; justify-content:space-between;">
-                        <span>✓ Trial ${c.trial}: ${c.check}</span>
-                        <span style="font-size:9px; background:rgba(16,185,129,0.2); padding:1px 5px; border-radius:4px;">${c.status}</span>
+                <div style="background: #0B132B; border: 1px solid ${c.status === 'PASSED' ? '#10B981' : c.status === 'FAILED' ? '#EF4444' : '#64748B'}; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+                    <div style="color: ${c.status === 'PASSED' ? '#10B981' : c.status === 'FAILED' ? '#FCA5A5' : '#CBD5E1'}; font-weight: 700; display:flex; justify-content:space-between;">
+                        <span>${c.status === 'PASSED' ? '✓' : c.status === 'FAILED' ? '✕' : '○'} Check ${c.trial}: ${auditEsc(c.check)}</span>
+                        <span style="font-size:9px; background:rgba(100,116,139,0.2); padding:1px 5px; border-radius:4px;">${auditEsc(c.status)}</span>
                     </div>
-                    <div style="color: #94A3B8; font-size: 10px; margin-top: 3px;">${c.badge}</div>
+                    <div style="color: #94A3B8; font-size: 10px; margin-top: 3px;">${auditEsc(c.badge)}</div>
                 </div>
             `).join("");
         }
+        if (trialsGrid && audit.simulation_notice) {
+            trialsGrid.insertAdjacentHTML("beforeend", `<div style="color:#FBBF24;font-size:10px;padding:8px 2px;">${auditEsc(audit.simulation_notice)}</div>`);
+        }
 
-        const pipeline = (sqlShortState.agentPipeline && sqlShortState.agentPipeline.length > 0) ? sqlShortState.agentPipeline : [
-            { id: "agent_master", name: "NanoPro Master Manager Agent", role: "Master Orchestrator & Task Decomposition", model: "NanoPro-Core-v14", thought: "Orchestrated 11 sub-agents with synchronized pipeline execution.", latency_ms: 110, accuracy: "100%" },
-            { id: "agent_intent", name: "Deep Intent & Domain Intelligence Agent", role: "Tech Domain & Viral Retention Hook", model: "DeepSeek V3 / Groq LPU", thought: "Classified tech domain and formulated 3-second viral hook.", latency_ms: 260, accuracy: "99.8%" },
-            { id: "agent_pedagogy", name: "Senior Tech Curriculum Architect Agent", role: "Educational Pacing & Cognitive Balance", model: "Gemini Flash / DeepSeek", thought: "Constructed 6-phase learning progression.", latency_ms: 190, accuracy: "100%" },
-            { id: "agent_coding", name: "Production Coding Specialist Agent", role: "ANSI SQL / Python Code Engineering", model: "Groq LPU (qwen2.5-coder:3b)", thought: "Synthesized production code with sample tables and zero deprecation.", latency_ms: 580, accuracy: "99.9%" },
-            { id: "agent_ast", name: "Static AST & Syntax Validator Agent", role: "Python AST & SQL Grammar Parser", model: "Python AST Engine & ANSI Parser", thought: "100% AST integrity confirmed. Balanced parentheses.", latency_ms: 75, accuracy: "100%" },
-            { id: "agent_sandbox", name: "Sandbox Execution & Data Accuracy Agent", role: "In-Memory SQLite Sandbox Validator", model: "In-Memory Ephemeral Sandbox", thought: "Executed code against live in-memory table. Validated outputs.", latency_ms: 85, accuracy: "100%" },
-            { id: "agent_edgecase", name: "Edge-Case & Interview Trap Hunter Agent", role: "Common Pitfalls & Senior Pro-Tips", model: "NanoPro Edge-Hunter Engine", thought: "Extracted edge cases, traps, and formulated Senior Takeaway.", latency_ms: 130, accuracy: "99.7%" },
-            { id: "agent_typography", name: "Kinetic Typography & Frame Aligner Agent", role: "Phoneme-to-Frame Sync (Full Narration)", model: "Acoustic Frame Aligner", thought: "Frame-locked stage boundaries span the complete narration.", latency_ms: 120, accuracy: "100%" },
-            { id: "agent_voice", name: "Neural Voiceover & Speech AI Agent", role: "Regional Teacher Voice (MR/HI/EN)", model: "ElevenLabs / Microsoft Neural Edge-TTS", thought: "Synthesized natural regional audio with frame-locked waveforms.", latency_ms: 680, accuracy: "99.8%" },
-            { id: "agent_retouch", name: "Cinematic 9:16 Canvas & Neon Shader Agent", role: "Glassmorphic Canvas & Arrow Pointer", model: "Runway Gen-4 / Cyber Glass Canvas", thought: "Rendered glowing syntax, table scanner, and kinetic arrow indicators.", latency_ms: 290, accuracy: "100%" },
-            { id: "agent_github_model", name: "GitHub Self-Learning & Synaptic Tuning Agent", role: "Continuous Model Weight Optimization", model: "NanoPro-TechVid-v1", thought: "Trained epoch weights, decreased synaptic loss, synced vectors.", latency_ms: 70, accuracy: "99.9%" },
-            { id: "agent_export", name: "Master QA & 1-Click Video Delivery Agent", role: "Zero-Watermark Full-Length 9:16 MP4 Deliverable", model: "Canvas MediaRecorder HD Engine", thought: "Passed all 6 perfectionist trials. Complete watermark-free deliverable ready.", latency_ms: 140, accuracy: "100%" }
-        ];
+        const pipeline = Array.isArray(sqlShortState.agentPipeline) ? sqlShortState.agentPipeline : [];
 
         const agentsGrid = document.getElementById("modalAgentsStreamGrid");
         if (agentsGrid) {
-            agentsGrid.innerHTML = pipeline.map((a, idx) => `
+            agentsGrid.innerHTML = pipeline.length ? pipeline.map((a, idx) => `
                 <div style="background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 12px; font-weight: 700; color: #38BDF8;">
-                            #${idx + 1} ${a.name}
+                            #${idx + 1} ${auditEsc(a.name)}
                         </span>
                         <div style="display:flex; gap: 6px; align-items: center;">
-                            <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 1px 6px; border-radius: 4px; font-weight:700;">${a.accuracy || '100%'}</span>
-                            <span style="font-size: 10px; color: #CBD5E1; font-family: monospace; background: #1E293B; padding: 1px 6px; border-radius: 4px;">${a.latency_ms || 120}ms</span>
-                            <span style="font-size: 10px; color: #F59E0B; background: rgba(245,158,11,0.15); padding: 1px 6px; border-radius: 4px;">${a.model || 'AI Model'}</span>
+                            <span style="font-size: 10px; color: ${a.status === 'completed' ? '#10B981' : a.status === 'blocked' ? '#FCA5A5' : '#CBD5E1'}; background: rgba(100,116,139,0.15); padding: 1px 6px; border-radius: 4px; font-weight:700;">${auditEsc(a.status || 'not_run')}</span>
                         </div>
                     </div>
-                    <div style="font-size: 10px; color: #64748B;">Role: ${a.role}</div>
+                    <div style="font-size: 10px; color: #64748B;">${auditEsc(a.role)}</div>
                     <div style="font-size: 11px; color: #E2E8F0; font-family: 'JetBrains Mono', Consolas, monospace; background: rgba(15,23,42,0.8); padding: 6px 10px; border-radius: 5px; border-left: 2px solid #38BDF8; margin-top: 2px;">
-                        💭 <i>"${a.thought || 'Executed task successfully.'}"</i>
+                        ${auditEsc(a.thought || 'No execution details were supplied.')}
                     </div>
                 </div>
-            `).join("");
+            `).join("") : `<div style="color:#94A3B8;font-size:11px;padding:8px;">No generation workflow has run yet.</div>`;
         }
     }
 
@@ -658,17 +648,10 @@ SECOND_HIGHEST_SALARY: 70000`;
         btn.innerHTML = `<span>⏳ Synthesizing AI Video & Voice Blueprint...</span>`;
         btn.disabled = true;
 
-        // Stage 1: Ingest prompt & scenario (12.5%)
-        await new Promise(r => setTimeout(r, 250));
-
-        // Stage 2: NanoPro Master Manager decomposition (25%)
-        await new Promise(r => setTimeout(r, 250));
-
-        // Stage 3: Coding & Architecture Agent dispatch (37.5%)
+        const statusEl = document.getElementById("sqlVideoGenerationStatus");
+        if (statusEl) statusEl.textContent = "Sending the prompt to the storyboard and narration workflow…";
 
         try {
-            const statusEl = document.getElementById("sqlVideoGenerationStatus");
-            if (statusEl) statusEl.textContent = "NanoPro is creating the prompt-specific storyboard and narration…";
             const generationRes = await fetch("/api/sql_video/generate_prompt", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -700,19 +683,9 @@ SECOND_HIGHEST_SALARY: 70000`;
                     codePreviewEl.value = data.solution_sql || data.syntax_a_code || (data.content_type === "sql_query" ? "-- Query solution" : "-- Topic-specific storyboard");
                 }
 
-                // Stage 4: Modification & Sandbox Verification
-                await new Promise(r => setTimeout(r, 350));
+                // Run the optional code delimiter balance check only when a code sample exists.
                 if (data.content_type === "sql_query" || data.solution_sql) runPipelineSandboxVerification();
-
-                // Stage 5: Visual Motion & Retouch
-                await new Promise(r => setTimeout(r, 400));
-
-                // Stage 6: Neural Voice & Subtitles
-                await new Promise(r => setTimeout(r, 400));
-
-                // Stage 7: Video Engine (Canvas Synthesis)
-                await new Promise(r => setTimeout(r, 450));
-                logPipelineStep("Online NanoPro AI", "Dynamic multi-agent pipeline online. Ready for 1-click video delivery.");
+                logPipelineStep("Video specialist workflow", "Storyboard, measured narration, motion timeline, and structural QA are ready. No app-wide agent swarm is claimed.");
 
                 const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
                 if (["mr", "hi", "en"].includes(data.language)) {
@@ -775,8 +748,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 restartSqlShortPlay();
 
                 // Generate click produces the complete synchronized 9:16 MP4 download.
-                await new Promise(r => setTimeout(r, 450));
-                logPipelineStep("Full 9:16 MP4", "Rendering the complete prompt-specific animation; the final MP4 will download automatically.");
+                logPipelineStep("Local 9:16 export", "Rendering starts on this device; export checks will report only measured results.");
                 void exportSqlShortVideo();
             } else {
                 alert("Blueprint generation error: " + (data.message || "Failed"));
@@ -3762,27 +3734,153 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
-    function drawPromptVisualPlan(ctx, W, H, stage, progress, time) {
-        const visual = (stage && stage.visual_data) || {};
-        const elements = Array.isArray(visual.elements) ? visual.elements.filter(item => item && item.label) : [];
+    function drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep) {
+        if (!cue) return;
+        const query = String(cue.sql_query || "").trim();
+        const rows = Array.isArray(cue.table_rows) ? cue.table_rows.slice(0, 6) : [];
+        const state = String(cue.state_change || "").trim();
+        if (!query && !rows.length && !state) return;
+        const x = 96, y = H - 850, w = W - 192, h = 198;
+        const action = String(cue.simulated_action || "none");
+        ctx.save(); ctx.globalAlpha = 0.97;
+        ctx.fillStyle = "rgba(4,11,22,0.96)"; ctx.strokeStyle = interactionStep === "verify" ? "rgba(34,197,94,0.9)" : "rgba(56,189,248,0.82)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, 20); ctx.fill(); ctx.stroke();
+        ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.font = "800 22px 'Segoe UI', sans-serif";
+        ctx.fillStyle = "#7DD3FC"; ctx.fillText(query ? "SQL EDITOR · SIMULATED RUN" : rows.length ? "SIMULATED DATA OUTPUT" : interactionStep === "verify" ? "VALIDATION CHECK" : "PROCESS STATE", x + 22, y + 25);
+        if (query || rows.length) {
+            ctx.textAlign = "right"; ctx.font = "800 13px 'Segoe UI', sans-serif"; ctx.fillStyle = "#FBBF24";
+            ctx.fillText("ILLUSTRATIVE · NOT EXECUTED", x + w - 142, y + 25);
+        }
+        if (query) {
+            const runX = x + w - 125, runY = y + 12;
+            ctx.fillStyle = progress >= 0.76 && action === "run_query" ? "#10B981" : "rgba(14,40,58,0.98)";
+            ctx.beginPath(); ctx.roundRect(runX, runY, 100, 28, 9); ctx.fill();
+            ctx.fillStyle = "#E2E8F0"; ctx.textAlign = "center"; ctx.font = "750 15px 'Segoe UI', sans-serif"; ctx.fillText(progress >= 0.76 && action === "run_query" ? "✓ SIMULATED" : "▶ RUN", runX + 50, runY + 15);
+            const visibleChars = Math.floor(query.length * Math.max(0, Math.min(1, progress / (action === "run_query" ? 0.72 : 0.92))));
+            query.slice(0, visibleChars).split("\n").slice(0, 4).forEach((line, lineIndex) => {
+                ctx.fillStyle = line.trim().startsWith("--") ? "#94A3B8" : "#A7F3D0"; ctx.textAlign = "left"; ctx.font = "600 20px 'Consolas', monospace";
+                ctx.fillText(`${String(lineIndex + 1).padStart(2, "0")}  ${line.slice(0, 78)}`, x + 24, y + 67 + lineIndex * 29);
+            });
+            if (action === "run_query" && progress >= 0.68 && progress <= 0.82) {
+                const clickX = runX + 55, clickY = runY + 15, pulse = 1 + 0.35 * Math.sin(time * 18);
+                ctx.save(); ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(clickX, clickY, 12 * pulse, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(clickX - 26, clickY + 10); ctx.lineTo(clickX - 9, clickY + 25); ctx.lineTo(clickX - 13, clickY + 8); ctx.closePath(); ctx.fill(); ctx.restore();
+            }
+        } else if (rows.length && ["open_table", "expand_table", "cursor_click"].includes(action)) {
+            const openX = x + w - 150, openY = y + 12;
+            ctx.fillStyle = progress >= 0.38 ? "#0F766E" : "rgba(14,40,58,0.98)"; ctx.beginPath(); ctx.roundRect(openX, openY, 124, 28, 9); ctx.fill();
+            ctx.fillStyle = "#E2E8F0"; ctx.textAlign = "center"; ctx.font = "750 15px 'Segoe UI', sans-serif"; ctx.fillText(progress >= 0.38 ? "TABLE OPEN" : "⌄ OPEN TABLE", openX + 62, openY + 15);
+            if (progress >= 0.22 && progress <= 0.42) {
+                const clickX = openX + 66, clickY = openY + 15, pulse = 1 + 0.35 * Math.sin(time * 18);
+                ctx.save(); ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(clickX, clickY, 12 * pulse, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(clickX - 26, clickY + 10); ctx.lineTo(clickX - 9, clickY + 25); ctx.lineTo(clickX - 13, clickY + 8); ctx.closePath(); ctx.fill(); ctx.restore();
+            }
+        }
+        const revealRows = rows.length && (action === "open_table" || action === "expand_table" ? progress >= 0.38 : action === "run_query" ? progress >= 0.82 : ["output", "verify"].includes(interactionStep));
+        if (revealRows) {
+            const rowStart = y + (query ? 154 : 66), count = Math.min(rows.length, 3), cols = Math.max(1, ...rows.slice(0, count).map(row => row.length));
+            rows.slice(0, count).forEach((row, rowIndex) => {
+                const cellW = (w - 44) / cols, cellY = rowStart + rowIndex * 25;
+                if (rowIndex === 0) { ctx.fillStyle = "rgba(56,189,248,0.16)"; ctx.fillRect(x + 18, cellY - 12, w - 36, 24); }
+                row.slice(0, cols).forEach((cell, colIndex) => { ctx.fillStyle = rowIndex === 0 ? "#BAE6FD" : "#E2E8F0"; ctx.font = rowIndex === 0 ? "750 16px 'Segoe UI', sans-serif" : "600 16px 'Consolas', monospace"; ctx.textAlign = "left"; ctx.fillText(String(cell).slice(0, 30), x + 26 + colIndex * cellW, cellY, cellW - 12); });
+            });
+        } else if (state) {
+            ctx.fillStyle = "#E2E8F0"; ctx.font = "600 20px 'Segoe UI', sans-serif"; ctx.textAlign = "left";
+            const line = splitDiagramText(ctx, state, w - 44, 1, 27)[0]; if (line) ctx.fillText(line, x + 22, y + 78);
+        }
+        if (interactionStep === "verify" && cue.expected_result && cue.observed_result) {
+            const expected = String(cue.expected_result).trim().toLowerCase(), observed = String(cue.observed_result).trim().toLowerCase();
+            const expectedNumbers = expected.match(/(?<![\w])\d[\d,]*(?:\.\d+)?/g), observedNumbers = observed.match(/(?<![\w])\d[\d,]*(?:\.\d+)?/g);
+            const matches = expectedNumbers && expectedNumbers.length && observedNumbers && observedNumbers.length
+                ? expectedNumbers[expectedNumbers.length - 1].replace(/,/g, "") === observedNumbers[observedNumbers.length - 1].replace(/,/g, "")
+                : expected === observed;
+            const comparisonComplete = progress >= 0.82;
+            ctx.fillStyle = comparisonComplete ? (matches ? "#86EFAC" : "#FCA5A5") : "#FDE68A"; ctx.textAlign = "right"; ctx.font = "800 17px 'Segoe UI', sans-serif";
+            const resultLabel = comparisonComplete ? (matches ? "✓ MATCH" : "✕ MISMATCH") : "↔ COMPARING";
+            ctx.fillText(`${resultLabel} · EXPECTED ${cue.expected_result.slice(0, 26)} · ACTUAL ${cue.observed_result.slice(0, 26)}`, x + w - 18, y + h - 16, w - 44);
+        }
+        ctx.restore();
+    }
+
+    function drawPromptVisualPlan(ctx, W, H, stage, progress, time, visualOverride, cueIndex = 0, cue = null) {
+        const visual = visualOverride || (stage && stage.visual_data) || {};
+        const stageCues = Array.isArray(stage?.sentence_cues) ? stage.sentence_cues : [];
+        const allVisuals = [stage?.visual_data, ...stageCues.map(item => item && item.visual_data), visual]
+            .filter(item => item && Array.isArray(item.elements));
+        const elementByLabel = new Map();
+        allVisuals.forEach(source => source.elements.forEach(item => {
+            if (item && item.label && !elementByLabel.has(String(item.label))) elementByLabel.set(String(item.label), item);
+        }));
+        const elements = Array.from(elementByLabel.values()).slice(0, 12);
         if (!elements.length) return false;
+        const interactionStep = String(cue && cue.interaction_step || "introduce").toLowerCase();
+        const focusNeedle = String(cue && (cue.focus_element || cue.emphasis) || "").toLowerCase();
+        const findElement = needle => elements.find(item => {
+            const label = String(item.label || "").toLowerCase();
+            return label && needle && (label.includes(needle) || needle.includes(label));
+        });
+        let focusItem = findElement(focusNeedle);
+        if (!focusItem && visualOverride?.elements?.length) focusItem = elements.find(item => String(item.label) === String(visualOverride.elements[0].label));
+        if (!focusItem && elements.length) focusItem = elements[Math.min(cueIndex, elements.length - 1)];
+        const visibleLabels = new Set();
+        const historyLabels = new Set();
+        const revealedConnectorKeys = new Set();
+        const connectorKey = item => `${String(item.from || "")}\u2192${String(item.to || "")}`;
+        const addCueVisibility = (sourceCue, isCurrent) => {
+            if (!sourceCue || !sourceCue.visual_data) return;
+            const sourceVisual = sourceCue.visual_data;
+            const sourceStep = String(sourceCue.interaction_step || "").toLowerCase();
+            const sourceElements = Array.isArray(sourceVisual.elements) ? sourceVisual.elements : [];
+            const needle = String(sourceCue.focus_element || sourceCue.emphasis || "").toLowerCase();
+            const focused = sourceElements.find(item => {
+                const label = String(item.label || "").toLowerCase();
+                return label && needle && (label.includes(needle) || needle.includes(label));
+            }) || sourceElements[0];
+            if (focused && !["connect", "transfer"].includes(sourceStep)) {
+                visibleLabels.add(String(focused.label));
+                if (!isCurrent) historyLabels.add(String(focused.label));
+            }
+            (Array.isArray(sourceVisual.connectors) ? sourceVisual.connectors : []).forEach(connector => {
+                if (!connector || !connector.from || !connector.to) return;
+                if (["connect", "transfer"].includes(sourceStep)) {
+                    revealedConnectorKeys.add(connectorKey(connector));
+                    visibleLabels.add(String(connector.from)); visibleLabels.add(String(connector.to));
+                    if (!isCurrent) { historyLabels.add(String(connector.from)); historyLabels.add(String(connector.to)); }
+                }
+            });
+        };
+        stageCues.slice(0, Math.max(0, cueIndex)).forEach(item => addCueVisibility(item, false));
+        if (cue) addCueVisibility(cue, true);
+        else {
+            const count = Math.max(1, elements.length);
+            elements.slice(0, Math.max(1, Math.ceil(progress * count))).forEach(item => visibleLabels.add(String(item.label)));
+        }
+        if (focusItem && !["connect", "transfer"].includes(interactionStep)) visibleLabels.add(String(focusItem.label));
+        if (interactionStep === "continue" && focusItem) {
+            const next = elements.find((item, index) => index > elements.indexOf(focusItem));
+            if (next) { focusItem = next; visibleLabels.add(String(next.label)); }
+        }
+        const visibleElements = elements.filter(item => visibleLabels.has(String(item.label)));
+        if (!visibleElements.length) {
+            const fallback = focusItem || elements[0];
+            visibleLabels.add(String(fallback.label)); visibleElements.push(fallback); focusItem = fallback;
+        }
         const points = new Map();
-        const top = 350, usableHeight = 1120;
-        const scale = elements.length <= 3 ? 1.35 : 1.15;
-        elements.slice(0, 12).forEach((item, index) => {
+        const top = 390, usableHeight = 760;
+        const scale = elements.length <= 3 ? 1.05 : 0.94;
+        elements.forEach((item, index) => {
             const rawX = Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18));
             const normalizedY = Number(item.y ?? (0.35 + (index * 0.37) % 0.45));
-            const x = Math.max(115, Math.min(W - 115, W / 2 + (rawX - 0.5) * W * scale));
-            const y = top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight;
+            const x = Math.max(190, Math.min(W - 190, W / 2 + (rawX - 0.5) * W * scale));
+            const y = Math.max(470, Math.min(H - 1040, top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight));
             points.set(String(item.label), { x, y, item, index });
         });
         ctx.save();
-        ctx.globalAlpha *= Math.max(0, Math.min(1, progress * 3));
         const firstColor = String(elements[0].color || "#38BDF8");
         const rgb = /^#([0-9a-f]{6})$/i.exec(firstColor);
         const glowRgb = rgb ? `${parseInt(rgb[1].slice(0, 2), 16)},${parseInt(rgb[1].slice(2, 4), 16)},${parseInt(rgb[1].slice(4, 6), 16)}` : "56,189,248";
         const focal = points.get(String(elements[0].label));
-        let backdrop = stage._promptVisualBackdrop;
+        let backdrop = stage._promptVisualBackdrops && stage._promptVisualBackdrops[cueIndex];
         if (!backdrop || backdrop.width !== 540 || backdrop.height !== 960) {
             backdrop = document.createElement("canvas");
             backdrop.width = 540;
@@ -3801,49 +3899,189 @@ SECOND_HIGHEST_SALARY: 70000`;
                 backdropCtx.fillStyle = `rgba(226,232,240,${0.12 + (i % 3) * 0.07})`;
                 backdropCtx.fillRect(x, y, 2, 2);
             }
-            stage._promptVisualBackdrop = backdrop;
+            if (!stage._promptVisualBackdrops) stage._promptVisualBackdrops = {};
+            stage._promptVisualBackdrops[cueIndex] = backdrop;
         }
         ctx.drawImage(backdrop, 0, 0, W, H);
-        (Array.isArray(visual.connectors) ? visual.connectors : []).forEach((connector, index) => {
+        const connectorByKey = new Map();
+        allVisuals.forEach(source => (Array.isArray(source.connectors) ? source.connectors : []).forEach(item => {
+            if (item && item.from && item.to) connectorByKey.set(connectorKey(item), item);
+        }));
+        const connectors = Array.from(connectorByKey.values()).filter(item =>
+            revealedConnectorKeys.has(connectorKey(item))
+            && visibleLabels.has(String(item.from)) && visibleLabels.has(String(item.to))
+        );
+        const stepLabels = { introduce: "1 · INTRODUCE", highlight: "2 · HIGHLIGHT", connect: "3 · CONNECT", transfer: "4 · TRANSFER", process: "5 · PROCESS", failure: "5A · FAILURE", diagnose: "5B · DIAGNOSE", recover: "5C · RECOVERY", reprocess: "5D · REPROCESS", output: "6 · OUTPUT", verify: "7 · VERIFY", complete: "8 · COMPLETE", continue: "9 · CONTINUE" };
+        const stepLabel = stepLabels[interactionStep] || stepLabels.introduce;
+        const componentState = String(cue && cue.component_state || "introducing").replace(/_/g, " ").toUpperCase();
+        ctx.save();
+        ctx.globalAlpha = 0.94;
+        ctx.fillStyle = "rgba(8,17,31,0.88)";
+        ctx.strokeStyle = "rgba(56,189,248,0.72)";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(W * 0.5 - 245, 255, 490, 58, 28); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#BAE6FD"; ctx.font = "750 22px 'Segoe UI', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(`${stepLabel} · STATE: ${componentState}`, W * 0.5, 284, 470);
+        ctx.restore();
+        let focusPoint = focusItem ? points.get(String(focusItem.label)) : null;
+        let cameraTargetPoint = focusPoint;
+        if (interactionStep === "continue") {
+            const activeIndex = focusPoint ? focusPoint.index : -1;
+            cameraTargetPoint = Array.from(points.values()).find(point => point.index > activeIndex) || focusPoint;
+        }
+        const ease = value => { const v = Math.max(0, Math.min(1, value)); return v * v * (3 - 2 * v); };
+        const cameraMove = String(cue && cue.camera_move || "push_in").toLowerCase();
+        const cueEventText = String(cue && `${cue.speech || ""} ${cue.state_change || ""} ${cue.emphasis || ""}` || "").toLowerCase();
+        const failureCue = interactionStep === "failure" || (/failure|failed|mismatch|error|विफल|गलत|त्रुटि/.test(cueEventText) && !/no failure|without failure|not failed|कोई विफलता नहीं/.test(cueEventText));
+        const cameraProgress = ease(progress);
+        let cameraZoom = 1 + 0.045 * cameraProgress, cameraPanX = 0, cameraPanY = 0, cameraOrbit = 0;
+        if (cameraMove === "pull_back") cameraZoom = 1.055 - 0.055 * cameraProgress;
+        if (cameraMove === "hold" || cameraMove === "rack_focus") cameraZoom = 1.025;
+        if (cameraTargetPoint && (interactionStep === "continue" || ["pan_to_source", "pan_to_destination", "pan_to_next", "rack_focus", "orbit_left", "orbit_right"].includes(cameraMove))) {
+            cameraPanX = Math.max(-W * 0.16, Math.min(W * 0.16, (W * 0.5 - cameraTargetPoint.x) * 0.28 * cameraProgress));
+            cameraPanY = Math.max(-H * 0.16, Math.min(H * 0.16, (H * 0.43 - cameraTargetPoint.y) * 0.36 * cameraProgress));
+        }
+        if (cameraMove === "orbit_left") cameraOrbit = -0.012 * cameraProgress;
+        if (cameraMove === "orbit_right") cameraOrbit = 0.012 * cameraProgress;
+        // A deterministic frame-based camera makes seek, pause, replay and export agree.
+        ctx.save(); ctx.translate(W * 0.5, H * 0.5); ctx.scale(cameraZoom, cameraZoom); ctx.rotate(cameraOrbit); ctx.translate(-W * 0.5 + cameraPanX, -H * 0.5 + cameraPanY);
+        ctx.save(); ctx.globalAlpha = 0.12; ctx.strokeStyle = "rgba(56,189,248,0.34)"; ctx.lineWidth = 1;
+        const gridShift = (time * 26) % 90;
+        for (let y = 350 + gridShift; y < H - 570; y += 90) { ctx.beginPath(); ctx.moveTo(55, y); ctx.lineTo(W - 55, y); ctx.stroke(); }
+        for (let x = 80; x < W; x += 90) { ctx.beginPath(); ctx.moveTo(x, 350); ctx.lineTo(W / 2 + (x - W / 2) * 1.45, H - 570); ctx.stroke(); }
+        ctx.restore();
+        const currentConnectorKeys = new Set((Array.isArray(visual.connectors) ? visual.connectors : []).map(connectorKey));
+        connectors.forEach((connector, index) => {
             const from = points.get(String(connector.from || "")), to = points.get(String(connector.to || ""));
             if (!from || !to) return;
+            const routeDx = to.x - from.x, routeDy = to.y - from.y;
+            const routeLength = Math.max(1, Math.hypot(routeDx, routeDy));
+            const portInset = Math.min(145, routeLength * 0.22);
+            const pathFrom = { x: from.x + routeDx / routeLength * portInset, y: from.y + routeDy / routeLength * portInset };
+            const pathTo = { x: to.x - routeDx / routeLength * portInset, y: to.y - routeDy / routeLength * portInset };
+            const isCurrentConnector = cue && currentConnectorKeys.has(connectorKey(connector));
+            const wasDrawn = !isCurrentConnector;
+            const connectorProgress = wasDrawn ? 1 : interactionStep === "connect"
+                ? Math.max(0, Math.min(1, (progress - 0.12) / 0.62))
+                : interactionStep === "transfer" ? 1
+                : Math.max(0, Math.min(1, (progress - 0.32 - (index / Math.max(1, connectors.length)) * 0.08) / 0.12));
+            if (connectorProgress <= 0) return;
             const color = connector.color || "#38BDF8";
-            const bend = (index % 2 ? 1 : -1) * Math.min(180, Math.abs(to.x - from.x) * 0.3 + 54);
-            const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
+            const bend = (index % 2 ? 1 : -1) * Math.min(180, Math.abs(pathTo.x - pathFrom.x) * 0.3 + 54);
+            const midX = (pathFrom.x + pathTo.x) / 2, midY = (pathFrom.y + pathTo.y) / 2;
             ctx.save();
-            ctx.beginPath(); ctx.moveTo(from.x, from.y);
-            ctx.quadraticCurveTo(midX - bend, midY + bend, to.x, to.y);
-            ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha *= 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 20; ctx.stroke(); ctx.shadowBlur = 0;
-            ctx.strokeStyle = "rgba(255,255,255,0.42)"; ctx.lineWidth = 2; ctx.globalAlpha *= 1.8; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pathFrom.x, pathFrom.y);
+            ctx.quadraticCurveTo(midX - bend, midY + bend, pathTo.x, pathTo.y);
+            const dashLength = Math.hypot(pathTo.x - pathFrom.x, pathTo.y - pathFrom.y) * 1.35;
+            ctx.setLineDash([dashLength]); ctx.lineDashOffset = dashLength * (1 - connectorProgress);
+            ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha = 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 20; ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = "rgba(255,255,255,0.42)"; ctx.lineWidth = 2; ctx.globalAlpha = 0.72; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
+            const controlX = midX - bend, controlY = midY + bend;
+            if (connectorProgress >= 0.96) {
+                ctx.save(); ctx.translate(pathTo.x, pathTo.y); ctx.rotate(Math.atan2(pathTo.y - controlY, pathTo.x - controlX));
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-25, -14); ctx.lineTo(-25, 14); ctx.closePath();
+                ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 16; ctx.fill(); ctx.restore();
+            }
+            if (interactionStep === "transfer" && isCurrentConnector && connectorProgress >= 1 && progress >= 0.08 && progress <= 0.92) {
+                const packetT = Math.max(0, Math.min(1, (progress - 0.08) / 0.84));
+                const inverse = 1 - packetT;
+                const packetX = inverse * inverse * pathFrom.x + 2 * inverse * packetT * controlX + packetT * packetT * pathTo.x;
+                const packetY = inverse * inverse * pathFrom.y + 2 * inverse * packetT * controlY + packetT * packetT * pathTo.y;
+                ctx.save(); ctx.beginPath(); ctx.moveTo(packetX - 34, packetY); ctx.lineTo(packetX, packetY); ctx.strokeStyle = color; ctx.globalAlpha = 0.65; ctx.lineWidth = 6; ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 18; ctx.stroke();
+                ctx.beginPath(); ctx.arc(packetX, packetY, 15, 0, Math.PI * 2); ctx.fillStyle = "#FFFFFF"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 28; ctx.fill();
+                ctx.beginPath(); ctx.arc(packetX, packetY, 5, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); ctx.restore();
+            }
+            if (failureCue && isCurrentConnector && connectorProgress >= 1 && progress >= 0.55 && progress < 0.92) {
+                const stopT = 0.62, inverse = 1 - stopT;
+                const stopX = inverse * inverse * pathFrom.x + 2 * inverse * stopT * controlX + stopT * stopT * pathTo.x;
+                const stopY = inverse * inverse * pathFrom.y + 2 * inverse * stopT * controlY + stopT * stopT * pathTo.y;
+                ctx.save(); ctx.fillStyle = "#EF4444"; ctx.shadowColor = "#EF4444"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 24;
+                ctx.beginPath(); ctx.arc(stopX, stopY, 18, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(stopX - 7, stopY - 7); ctx.lineTo(stopX + 7, stopY + 7); ctx.moveTo(stopX + 7, stopY - 7); ctx.lineTo(stopX - 7, stopY + 7); ctx.stroke(); ctx.restore();
+            }
             ctx.restore();
         });
         points.forEach(({ x, y, item, index }) => {
+            if (!visibleLabels.has(String(item.label))) return;
             const color = item.color || "#38BDF8";
-            const scale = 1 + Math.sin(time * 1.7 + index * 0.8) * 0.025;
+            const connectionStep = interactionStep === "connect" || interactionStep === "transfer";
+            const isHistoryNode = historyLabels.has(String(item.label));
+            const elementProgress = isHistoryNode ? 1 : Math.max(0, Math.min(1, connectionStep
+                ? (progress - 0.06) / 0.52
+                : (progress - 0.03) / 0.34));
+            if (elementProgress <= 0) return;
+            const enter = 0.82 + 0.18 * Math.sin(elementProgress * Math.PI / 2);
+            const scale = enter * (1 + Math.sin(time * 1.7 + index * 0.8) * 0.025);
+            const isFocused = focusPoint && focusPoint.index === index;
+            if (isFocused) {
+                ctx.save(); ctx.translate(x, y); ctx.rotate(-0.12 + Math.sin(time * 0.32) * 0.035);
+                ctx.globalAlpha *= 0.55 + 0.12 * Math.sin(time * 1.8);
+                ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([14, 12]);
+                ctx.beginPath(); ctx.ellipse(0, 0, 194, 174, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([5, 17]); ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.ellipse(0, 0, 174, 190, time * 0.16, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+                const orbit = time * 1.35;
+                ctx.fillStyle = "#E0F2FE"; ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 18;
+                ctx.beginPath(); ctx.arc(Math.cos(orbit) * 194, Math.sin(orbit) * 174, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.88; ctx.shadowBlur = 0; ctx.font = "700 17px Consolas, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#BAE6FD";
+                ctx.fillText(interactionStep === "transfer" ? "PACKET IN MOTION" : "CORE · LIVE TELEMETRY", 0, -205);
+                ctx.restore();
+            }
             ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+            ctx.globalAlpha *= elementProgress * (focusPoint && focusPoint.index !== index ? 0.24 : 1);
+            // Extruded isometric shell: three faces, a glassy front panel and
+            // routed circuit traces create depth while remaining browser-native.
+            const cardW = elements.length <= 3 ? 320 : 292, cardH = 292, depthX = 18, depthY = -12;
+            const left = -cardW / 2, right = cardW / 2, topFace = -142, bottom = cardH / 2;
+            ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 24;
+            ctx.beginPath(); ctx.moveTo(right, topFace); ctx.lineTo(right + depthX, topFace + depthY); ctx.lineTo(right + depthX, bottom + depthY); ctx.lineTo(right, bottom); ctx.closePath();
+            ctx.fillStyle = "rgba(9,25,44,0.96)"; ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(left, bottom); ctx.lineTo(right, bottom); ctx.lineTo(right + depthX, bottom + depthY); ctx.lineTo(left + depthX, bottom + depthY); ctx.closePath();
+            ctx.fillStyle = "rgba(12,37,58,0.98)"; ctx.fill(); ctx.strokeStyle = "rgba(125,211,252,0.62)"; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(left, topFace); ctx.lineTo(left + depthX, topFace + depthY); ctx.lineTo(right + depthX, topFace + depthY); ctx.lineTo(right, topFace); ctx.closePath();
+            const cap = ctx.createLinearGradient(0, topFace, 0, topFace + 28); cap.addColorStop(0, color); cap.addColorStop(1, "rgba(15,35,58,0.96)");
+            ctx.fillStyle = cap; ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(left, topFace, cardW, cardH, 26);
+            const body = ctx.createLinearGradient(left, topFace, right, bottom); body.addColorStop(0, "rgba(17,35,58,0.97)"); body.addColorStop(0.55, "rgba(6,15,29,0.97)"); body.addColorStop(1, "rgba(8,24,40,0.97)");
+            ctx.fillStyle = body; ctx.fill(); ctx.strokeStyle = focusPoint && focusPoint.index === index ? "#E0F2FE" : color; ctx.lineWidth = focusPoint && focusPoint.index === index ? 4 : 2; ctx.stroke();
+            ctx.globalAlpha *= 0.34; ctx.strokeStyle = color; ctx.lineWidth = 2;
+            for (let trace = 0; trace < 3; trace++) { ctx.beginPath(); ctx.moveTo(left + 22, topFace + 30 + trace * 17); ctx.lineTo(left + 54 + trace * 9, topFace + 30 + trace * 17); ctx.lineTo(left + 72 + trace * 9, topFace + 48 + trace * 17); ctx.stroke(); }
+            ctx.restore();
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.shadowColor = color; ctx.shadowBlur = 32;
             ctx.fillStyle = color;
             const glyph = String(item.glyph || item.icon || "");
             if (glyph) {
-                const glyphSize = elements.length <= 3 ? 152 : elements.length <= 6 ? 124 : 96;
+                const glyphSize = elements.length <= 3 ? 88 : elements.length <= 6 ? 78 : 68;
                 ctx.font = `800 ${glyphSize}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`;
                 ctx.shadowBlur = sqlShortState.isExporting ? 0 : 32;
-                ctx.fillText(glyph.slice(0, 2), 0, -8, 220);
+                ctx.fillText(glyph.slice(0, 2), 0, -58, 200);
             }
             ctx.shadowBlur = 0;
-            const labelFont = elements.length <= 3 ? 42 : elements.length <= 6 ? 36 : 30;
+            const labelFont = elements.length <= 3 ? 30 : elements.length <= 6 ? 27 : 24;
             ctx.fillStyle = "#F8FAFC"; ctx.font = `750 ${labelFont}px 'Segoe UI', sans-serif`;
             const displayLabel = String(item.label).replace(/[_-]+/g, " ");
-            const labelLines = splitDiagramText(ctx, displayLabel, 360, 2, 30);
-            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 112 + lineIndex * 42 : lineIndex * 42));
+            const labelLines = splitDiagramText(ctx, displayLabel, cardW - 52, 2, 27);
+            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 8 + lineIndex * 31 : -34 + lineIndex * 31));
             if (item.detail) {
-                ctx.fillStyle = "#CBD5E1"; ctx.font = "500 26px 'Segoe UI', sans-serif";
-                const detail = splitDiagramText(ctx, item.detail, 340, 1, 34)[0];
-                if (detail) ctx.fillText(detail, 0, (glyph ? 118 : 8) + labelLines.length * 42);
+                ctx.fillStyle = "#CBD5E1"; ctx.font = "500 19px 'Segoe UI', sans-serif";
+                const detail = splitDiagramText(ctx, item.detail, cardW - 58, 2, 25).slice(0, 2);
+                detail.forEach((line, lineIndex) => ctx.fillText(line, 0, (glyph ? 48 : 10) + labelLines.length * 29 + lineIndex * 24));
+            }
+            if (interactionStep === "process" && focusPoint && focusPoint.index === index) {
+                const pulse = 1 + 0.08 * Math.sin(time * 6);
+                ctx.save(); ctx.globalAlpha = 0.75; ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 5; ctx.shadowColor = "#F59E0B"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 18;
+                ctx.beginPath(); ctx.ellipse(0, 12, 198 * pulse, 166 * pulse, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
             }
             ctx.restore();
         });
+        drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep);
+        if (cue && Number(cue.pause_after) > 0 && progress >= 1 - Math.min(0.18, Number(cue.pause_after) * 0.16)) {
+            ctx.save(); ctx.globalAlpha = 0.92; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "750 20px 'Segoe UI', sans-serif";
+            ctx.fillStyle = "rgba(8,17,31,0.82)"; ctx.beginPath(); ctx.roundRect(W / 2 - 128, H - 618, 256, 38, 19); ctx.fill();
+            ctx.fillStyle = "#FDE68A"; ctx.fillText(interactionStep === "verify" ? "HOLD · VERIFY RESULT" : "PAUSE · LET IT LAND", W / 2, H - 599); ctx.restore();
+        }
+        ctx.restore();
         ctx.restore();
         return true;
     }
@@ -3996,8 +4234,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             const overlays = visual.overlay_items || stage?.overlay_items || [];
             overlays.forEach(item => {
                 if (!item || !item.content) return;
-                const x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
-                const y = Math.max(0.08, Math.min(0.86, Number(item.y ?? 0.72))) * H;
+                let x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
+                let y = Math.max(0.08, Math.min(0.82, Number(item.y ?? 0.66))) * H;
                 const code = item.kind === "code" || item.kind === "formula";
                 const overlayFont = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
                 // Set the font BEFORE wrapping and measuring, otherwise the label box is
@@ -4007,6 +4245,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 const lineHeight = code ? 34 : 30;
                 const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
                 const boxHeight = lines.length * lineHeight + 32;
+                x = Math.max(boxWidth / 2 + 24, Math.min(W - boxWidth / 2 - 24, x));
+                y = Math.max(300 + boxHeight / 2, Math.min(H - 550 - boxHeight / 2, y));
                 ctx.fillStyle = code ? "rgba(3,10,25,0.9)" : "rgba(8,18,36,0.84)";
                 ctx.strokeStyle = code ? "rgba(56,189,248,0.8)" : "rgba(255,255,255,0.4)";
                 ctx.lineWidth = 2;
@@ -4550,21 +4790,21 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             // Large Output Box at bottom
             const outY = simY + simH - 165;
-            ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+            ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
             ctx.beginPath();
             ctx.roundRect(simX + 25, outY, simW - 50, 135, 16);
             ctx.fill();
-            ctx.strokeStyle = "#10B981";
+            ctx.strokeStyle = "#38BDF8";
             ctx.lineWidth = 3;
-            ctx.shadowColor = "#10B981";
+            ctx.shadowColor = "#38BDF8";
             ctx.shadowBlur = 24;
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            ctx.fillStyle = "#10B981";
+            ctx.fillStyle = "#7DD3FC";
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("🏆 100% VERIFIED FINAL DELIVERABLE", W / 2, outY + 45);
+            ctx.fillText("ILLUSTRATIVE RESULT · VERIFY IN YOUR ENVIRONMENT", W / 2, outY + 45);
 
             const outVal = p.output_value || "SECOND_HIGHEST_SALARY: 70000";
             ctx.fillStyle = "#FFFFFF";
@@ -5178,8 +5418,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             currentStageIdx = estIdx;
         }
 
-        // Static technical canvas: a clean gradient plus diagrams. No photo plate,
-        // no motion engine, no per-frame animation unless the narration advances.
+        // Deterministic technical stage: every camera, component and cue motion is
+        // derived from the audio-locked scene time for stable seek and export.
         ctx.fillStyle = "#04070F";
         ctx.fillRect(0, 0, W, H);
 
@@ -5220,7 +5460,33 @@ SECOND_HIGHEST_SALARY: 70000`;
         const activeStageIndex = stages.indexOf(activeStage);
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
-        const sceneVisualRendered = drawPromptVisualPlan(ctx, W, H, activeStage, stageProg, t);
+        const sentenceCues = activeStage && Array.isArray(activeStage.sentence_cues) ? activeStage.sentence_cues.filter(cue => cue && cue.speech) : [];
+        let activeCue = null;
+        let cueProgress = stageProg;
+        let activeCueIndex = 0;
+        if (sentenceCues.length) {
+            const cueSpeechWeights = sentenceCues.map(cue => Math.max(1, String(cue.speech).trim().split(/\s+/).filter(Boolean).length));
+            const cuePauseWeights = sentenceCues.map((cue, index) => index === sentenceCues.length - 1 ? 0 : Math.max(0, Math.min(1.2, Number(cue.pause_after) || 0)) * 2.6);
+            // Reserve only the requested teaching beats (usually after a result or
+            // verification). The active visual holds its last frame during that beat.
+            const cueWeights = cueSpeechWeights.map((words, index) => words + cuePauseWeights[index]);
+            const totalCueWords = cueWeights.reduce((sum, count) => sum + count, 0);
+            let cueCursor = 0;
+            for (let cueIdx = 0; cueIdx < sentenceCues.length; cueIdx++) {
+                const cueEnd = cueCursor + cueWeights[cueIdx] / totalCueWords;
+                if (stageProg < cueEnd || cueIdx === sentenceCues.length - 1) {
+                    activeCue = sentenceCues[cueIdx];
+                    activeCueIndex = cueIdx;
+                    const cueWindow = Math.max(0.001, cueEnd - cueCursor);
+                    const localProgress = Math.max(0, Math.min(1, (stageProg - cueCursor) / cueWindow));
+                    const speechFraction = cueSpeechWeights[cueIdx] / cueWeights[cueIdx];
+                    cueProgress = Math.max(0, Math.min(1, localProgress / Math.max(0.001, speechFraction)));
+                    break;
+                }
+                cueCursor = cueEnd;
+            }
+        }
+        const sceneVisualRendered = drawPromptVisualPlan(ctx, W, H, activeStage, activeCue ? cueProgress : stageProg, t, activeCue && activeCue.visual_data, activeCueIndex, activeCue);
         const graphRendered = !sceneVisualRendered && drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph, t, activeStageIndex, maxDur, activeStage);
         if (!graphRendered && !sceneVisualRendered) {
             renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
@@ -5232,15 +5498,15 @@ SECOND_HIGHEST_SALARY: 70000`;
         // =========================================================================
         // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)
         // =========================================================================
-        const subPillY = H - 520;
-        const subTextWidth = W - 170;
+        const subPillY = H - 458;
+        const subTextWidth = W - 176;
 
         const hasShortCaption = Boolean(activeStage && String(activeStage.caption || "").trim());
         const showShortCaption = hasShortCaption && sceneElapsed <= 4;
 
         // Subtitle Text Word-by-Word Highlight (English only, no voice badge)
-        let subtitleText = hasShortCaption ? (showShortCaption ? activeStage.caption : "") : "";
-        if (!hasShortCaption && activeStage) {
+        let subtitleText = activeCue ? (activeCue.speech_en || activeCue.speech) : (hasShortCaption ? (showShortCaption ? activeStage.caption : "") : "");
+        if (!activeCue && !hasShortCaption && activeStage) {
             // On-screen text is always English; only the synthesized voice follows the
             // selected regional language.
             subtitleText = activeStage.speech_en || activeStage['speech_en'] || activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || "";
@@ -5251,40 +5517,64 @@ SECOND_HIGHEST_SALARY: 70000`;
             subtitleText = p.explanation_en || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
         }
 
+        if (activeCue && activeCue.emphasis) {
+            const focusText = String(activeCue.emphasis).trim().slice(0, 64).toUpperCase();
+            if (focusText) {
+                ctx.save();
+                ctx.font = "800 22px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "rgba(8, 18, 36, 0.88)";
+                ctx.fillRect(245, H - 570, 590, 46);
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.72)";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(245, H - 570, 590, 46);
+                ctx.fillStyle = "#7DD3FC";
+                ctx.fillText(`FOCUS · ${focusText}`, W / 2, H - 547, 560);
+                ctx.restore();
+            }
+        }
+
         if (subtitleText) {
             const words = subtitleText.trim().split(/\s+/).filter(Boolean);
-            const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
-
+            const activeWordIdx = Math.min(words.length - 1, Math.floor((activeCue ? cueProgress : stageProg) * words.length));
             ctx.font = "bold 40px 'Segoe UI', sans-serif";
-            let curX = 85;
-            let curY = subPillY + 66;
-            const lineH = 42;
-            const maxLineW = subTextWidth;
-
-            words.forEach((w, wi) => {
-                const wMetrics = ctx.measureText(w + " ");
-                if (curX + wMetrics.width > 85 + maxLineW && curX > 85) {
-                    curX = 85;
-                    curY += lineH;
-                }
-                const isSpoken = (wi <= activeWordIdx);
-                const isCurrent = (wi === activeWordIdx);
-
-                if (isCurrent) {
-                    ctx.fillStyle = "#FACC15";
-                    ctx.shadowColor = "#FACC15";
-                    ctx.shadowBlur = sqlShortState.isExporting ? 0 : 14;
-                    ctx.fillText(w, curX, curY);
-                    ctx.shadowBlur = 0;
-                } else if (isSpoken) {
-                    ctx.fillStyle = "#FDE047";
-                    ctx.fillText(w, curX, curY);
-                } else {
-                    ctx.fillStyle = "#94A3B8";
-                    ctx.fillText(w, curX, curY);
-                }
-                curX += wMetrics.width;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "alphabetic";
+            const allLines = wrapCanvasText(ctx, words.join(" "), subTextWidth, 6);
+            const maxLines = 3;
+            const subtitleLines = allLines.slice(0, maxLines);
+            if (allLines.length > maxLines && subtitleLines.length) {
+                const last = subtitleLines.length - 1;
+                subtitleLines[last] = fitTextToWidth(ctx, `${subtitleLines[last]}…`, subTextWidth - 12);
+            }
+            const lineH = 48;
+            const blockHeight = subtitleLines.length * lineH + 28;
+            const blockTop = Math.max(H - 340, subPillY - 24);
+            ctx.save();
+            ctx.fillStyle = "rgba(2,6,18,0.82)";
+            ctx.strokeStyle = "rgba(148,163,184,0.24)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(54, blockTop, W - 108, blockHeight, 20); ctx.fill(); ctx.stroke();
+            let wordIndex = 0;
+            subtitleLines.forEach((line, lineIndex) => {
+                const lineWords = line.split(/\s+/).filter(Boolean);
+                const lineWidth = lineWords.reduce((sum, word) => sum + ctx.measureText(word).width, 0)
+                    + Math.max(0, lineWords.length - 1) * ctx.measureText(" ").width;
+                let curX = (W - lineWidth) / 2;
+                const curY = blockTop + 22 + lineIndex * lineH;
+                lineWords.forEach(word => {
+                    const isSpoken = wordIndex <= activeWordIdx;
+                    const isCurrent = wordIndex === activeWordIdx;
+                    ctx.fillStyle = isCurrent ? "#FACC15" : isSpoken ? "#FDE047" : "#E2E8F0";
+                    ctx.shadowColor = isCurrent ? "#FACC15" : "transparent";
+                    ctx.shadowBlur = isCurrent && !sqlShortState.isExporting ? 12 : 0;
+                    ctx.fillText(word, curX, curY, subTextWidth);
+                    curX += ctx.measureText(word + " ").width;
+                    wordIndex++;
+                });
             });
+            ctx.restore();
         }
         ctx.restore();
     }
@@ -5563,6 +5853,42 @@ SECOND_HIGHEST_SALARY: 70000`;
     /* ==========================================================================
        MEDIARECORDER AUDIO-MULTIPLEXED EXPORT & DOWNLOAD
        ========================================================================== */
+    async function checkSqlVideoDevice() {
+        const output = document.getElementById("sqlVideoDeviceStatus");
+        if (!output) return;
+        output.textContent = "Checking browser-reported device capabilities…";
+        const esc = value => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+        const cores = Number(navigator.hardwareConcurrency) || null;
+        const memory = Number(navigator.deviceMemory) || null;
+        let gpu = "Not exposed by this browser";
+        try {
+            const probe = document.createElement("canvas");
+            const gl = probe.getContext("webgl2") || probe.getContext("webgl");
+            if (gl) {
+                gpu = "Browser WebGL graphics available (hardware acceleration is browser-managed)";
+                const lose = gl.getExtension("WEBGL_lose_context");
+                if (lose) lose.loseContext();
+            }
+        } catch (_) {}
+        const mp4 = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
+        const webm = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
+        const duration = Math.max(1, Number(sqlShortState.maxDuration || sqlShortState.activeVideoSpec?.duration || 60));
+        const estimatedMB = ((9000000 + 192000) * duration / 8 / 1000000).toFixed(1);
+        let storage = "Browser storage estimate unavailable";
+        try {
+            const estimate = navigator.storage && await navigator.storage.estimate();
+            if (estimate && Number.isFinite(estimate.quota)) {
+                const usedMB = (Number(estimate.usage || 0) / 1048576).toFixed(0);
+                const quotaMB = (estimate.quota / 1048576).toFixed(0);
+                storage = `Origin storage estimate ${usedMB} MB used / ${quotaMB} MB quota (not physical free disk space)`;
+            }
+        } catch (_) {}
+        const saveMode = window.showSaveFilePicker && window.isSecureContext
+            ? "Direct-to-file saving is supported; video frames are streamed to the selected file."
+            : "Direct-to-file saving is unavailable; the browser download may buffer video chunks in RAM.";
+        output.innerHTML = `<span style="color:#CBD5E1"><b>CPU:</b> ${cores ? `${cores} logical threads reported` : "not reported"} · <b>RAM:</b> ${memory ? `about ${memory} GB device-memory class (coarse browser estimate)` : "not exposed"}<br><b>GPU:</b> ${esc(gpu)}<br><b>Encoder:</b> ${mp4 ? "MP4" : ""}${mp4 && webm ? " / " : ""}${webm ? "WebM" : ""}${!mp4 && !webm ? "No MediaRecorder format detected" : ""} · <b>Estimated file:</b> about ${estimatedMB} MB for ${Math.round(duration)}s at configured bitrate<br><b>Storage:</b> ${esc(storage)}<br>${esc(saveMode)}</span>`;
+    }
+
     async function exportSqlShortVideo(durationSec = null) {
         const canvas = document.getElementById("sqlShortCanvas");
         const audioEl = document.getElementById("sqlVoiceAudio");
@@ -5584,10 +5910,28 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         pauseSqlShortPlay();
 
-        // Export the full generated narration; the 15-second quick export remains an explicit optional test.
-        let totalDuration = durationSec;
-        if (!totalDuration || totalDuration > 60) {
-            totalDuration = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 45.0);
+        const activeSpec = sqlShortState.activeVideoSpec || {};
+        const measuredDuration = Number(activeSpec.duration || sqlShortState.maxDuration || 0);
+        const durationLimit = Number(activeSpec.max_duration_seconds || 60);
+        const preflight = activeSpec.pre_render_validation;
+        if (preflight && preflight.render_allowed === false) {
+            alert(`Pre-render quality gate blocked this video: ${(preflight.critical_failures || []).join(", ") || "review required"}`);
+            return;
+        }
+        if (!durationSec && measuredDuration > durationLimit + 0.1) {
+            alert(`Narration is ${measuredDuration.toFixed(1)}s, above the ${durationLimit.toFixed(0)}s limit. Shorten and regenerate it before export.`);
+            return;
+        }
+        // A full export always retains the complete measured narration. Short clips
+        // remain available only through the explicit quick-export action.
+        let totalDuration = durationSec || measuredDuration || 45.0;
+        if (!durationSec && Math.abs(totalDuration - measuredDuration) > 0.1) {
+            alert("The full export duration must match the complete narration.");
+            return;
+        }
+        if (totalDuration > durationLimit + 0.1) {
+            alert(`Requested export is ${totalDuration.toFixed(1)}s, above the ${durationLimit.toFixed(0)}s limit.`);
+            return;
         }
         totalDuration = Math.max(1, totalDuration);
 
@@ -5688,6 +6032,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         let fileWriteChain = Promise.resolve();
         let fileWriteError = null;
         let recorder;
+        let recordedBytes = null;
+        let pendingVideoBlob = null;
         try {
             recorder = new MediaRecorder(combinedStream, {
                 mimeType,
@@ -5740,13 +6086,46 @@ SECOND_HIGHEST_SALARY: 70000`;
             try {
                 await fileWriteChain;
                 if (fileWriteError) throw fileWriteError;
-                if (saveWritable) {
-                    await saveWritable.close();
-                } else {
+                if (!saveWritable) {
                     const videoBlob = new Blob(chunks, { type: recorder.mimeType || mimeType });
                     if (videoBlob.size < 1024) throw new Error("The locally recorded video is empty.");
+                    recordedBytes = videoBlob.size;
+                    pendingVideoBlob = videoBlob;
                     downloadUrl = URL.createObjectURL(videoBlob);
                     sqlShortState.lastExportUrl = downloadUrl;
+                }
+                const audioDuration = Number(audioEl && audioEl.duration);
+                const postChecks = [
+                    { name: "Canvas format", status: canvas.width === 1080 && canvas.height === 1920 ? "PASSED" : "FAILED", detail: `${canvas.width}×${canvas.height} pixels.` },
+                    { name: "Narration duration", status: Number.isFinite(audioDuration) && Math.abs(audioDuration - totalDuration) <= 0.75 ? "PASSED" : "FAILED", detail: `Audio ${Number.isFinite(audioDuration) ? audioDuration.toFixed(2) : "unknown"}s; render ${totalDuration.toFixed(2)}s.` },
+                    { name: "Captured tracks", status: videoTracks.length > 0 && audioTracks.length > 0 ? "PASSED" : "FAILED", detail: `Video tracks ${videoTracks.length}; voice tracks ${audioTracks.length}.` },
+                    { name: "Recorded frames", status: frameCount >= totalFrames - 1 ? "PASSED" : "FAILED", detail: `${frameCount} of ${totalFrames} expected frames.` },
+                    { name: "Saved output size", status: recordedBytes === null ? "NOT_RUN" : recordedBytes >= 1024 ? "PASSED" : "FAILED", detail: recordedBytes === null ? "Direct-to-file write completed; byte count is not exposed by the browser." : `${(recordedBytes / 1048576).toFixed(1)} MB.` }
+                ];
+                const failedPostChecks = postChecks.filter(check => check.status === "FAILED");
+                sqlShortState.postRenderValidation = {
+                    status: failedPostChecks.length ? "FAILED" : postChecks.some(check => check.status === "NOT_RUN") ? "PASSED_WITH_WARNINGS" : "PASSED",
+                    checks: postChecks,
+                    output_type: outputExtension.toUpperCase(),
+                    duration_seconds: totalDuration,
+                    simulation_notice: "Post-render checks validate the local recording container and timing; they do not execute or verify external SQL, AWS, or API results."
+                };
+                if (sqlShortState.perfectionistAudit) {
+                    const audit = sqlShortState.perfectionistAudit;
+                    const previousChecks = Array.isArray(audit.audit_checks) ? audit.audit_checks : [];
+                    audit.audit_checks = previousChecks.concat(postChecks.map((check, index) => ({
+                        trial: previousChecks.length + index + 1,
+                        check: `Post-render · ${check.name}`,
+                        status: check.status,
+                        badge: check.detail
+                    })));
+                    audit.status = failedPostChecks.length ? "BLOCKED" : postChecks.some(check => check.status === "NOT_RUN") ? "POST_RENDER_PASSED_WITH_WARNINGS" : "POST_RENDER_PASSED";
+                    audit.simulation_notice = `${audit.simulation_notice || ""} ${sqlShortState.postRenderValidation.simulation_notice}`.trim();
+                }
+                if (failedPostChecks.length) throw new Error(`Post-render quality gate failed: ${failedPostChecks.map(check => check.name).join(", ")}`);
+                if (saveWritable) {
+                    await saveWritable.close();
+                } else if (pendingVideoBlob) {
                     const a = document.createElement("a");
                     a.href = downloadUrl;
                     a.download = filename;
@@ -5756,7 +6135,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }
                 if (pFill) pFill.style.width = "100%";
                 if (pPctText) pPctText.innerText = "100%";
-                if (pDesc) pDesc.innerText = `${outputExtension.toUpperCase()} audio-video is ready on this device.`;
+                if (pDesc) pDesc.innerText = `${outputExtension.toUpperCase()} audio-video is ready on this device. Post-render QA: ${postChecks.filter(check => check.status === "PASSED").length} passed${postChecks.some(check => check.status === "NOT_RUN") ? "; direct-save byte count not available" : ""}.`;
                 if (badgeEl) {
                     badgeEl.innerText = `Local ${outputExtension.toUpperCase()} ready`;
                     badgeEl.style.color = "#10B981";
@@ -5778,6 +6157,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }, 300);
             } catch (error) {
                 if (saveWritable) await saveWritable.abort().catch(() => {});
+                if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+                if (sqlShortState.lastExportUrl === downloadUrl) sqlShortState.lastExportUrl = null;
                 if (pDesc) pDesc.innerText = `Local ${outputExtension.toUpperCase()} export failed: ${error.message}. No video was sent to Render.`;
                 if (badgeEl) {
                     badgeEl.innerText = "Local export failed";
@@ -5982,6 +6363,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.toggleSqlShortPlay = toggleSqlShortPlay;
     window.restartSqlShortPlay = restartSqlShortPlay;
     window.setSqlShortSpeed = setSqlShortSpeed;
+    window.checkSqlVideoDevice = checkSqlVideoDevice;
     window.exportSqlShortVideo = exportSqlShortVideo;
     window.downloadCurrentFrameAsPng = downloadCurrentFrameAsPng;
     window.runInMemorySqlSandbox = runInMemorySqlSandbox;

@@ -143,8 +143,16 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
             normalized_elements.append({**item, "x": x, "y": y, "label": str(item["label"]).strip()})
     if not normalized_elements:
         raise ValueError("AI-authored visual elements need normalized x/y coordinates.")
+    element_labels = {item["label"] for item in normalized_elements}
     connectors = visual_data.get("connectors")
-    visual_data = {**visual_data, "elements": normalized_elements, "connectors": connectors if isinstance(connectors, list) else []}
+    normalized_connectors = []
+    for connector in connectors if isinstance(connectors, list) else []:
+        if not isinstance(connector, dict):
+            continue
+        source, destination = str(connector.get("from") or "").strip(), str(connector.get("to") or "").strip()
+        if source in element_labels and destination in element_labels and source != destination:
+            normalized_connectors.append({**connector, "from": source, "to": destination})
+    visual_data = {**visual_data, "elements": normalized_elements, "connectors": normalized_connectors}
     allowed_kinds = {"label", "code", "formula"}
     normalized = []
     for item in overlays:
@@ -164,7 +172,285 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
         if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
             raise ValueError("Scene overlay anchors must be normalized canvas coordinates.")
         normalized.append({**item, "kind": kind, "x": x, "y": y, "content": content.strip()})
-    return {**scene, "visual_data": visual_data, "visual_prompt": visual_prompt, "continuity": continuity.strip(), "overlay_items": normalized}
+    sentence_cues = scene.get("sentence_cues")
+    normalized_cues = []
+    interaction_steps = {
+        "introduce", "highlight", "connect", "transfer",
+        "process", "failure", "diagnose", "recover", "reprocess", "output", "verify", "complete", "continue",
+    }
+    component_states = {"hidden", "introducing", "highlighted", "connected", "processing", "failed", "diagnosing", "recovering", "reprocessing", "output_ready", "verified", "completed"}
+    state_for_step = {"introduce": "introducing", "highlight": "highlighted", "connect": "connected", "transfer": "connected", "process": "processing", "failure": "failed", "diagnose": "diagnosing", "recover": "recovering", "reprocess": "reprocessing", "output": "output_ready", "verify": "verified", "complete": "completed"}
+    camera_moves = {"push_in", "pull_back", "pan_to_source", "pan_to_destination", "pan_to_next", "orbit_left", "orbit_right", "rack_focus", "hold"}
+    if isinstance(sentence_cues, list):
+        for cue in sentence_cues[:16]:
+            if not isinstance(cue, dict) or not str(cue.get("speech") or "").strip():
+                continue
+            cue_speech = str(cue["speech"]).strip()
+            if len(re.findall(r"[.!?।](?=\s|$)", cue_speech)) != 1:
+                continue
+            cue_visual = cue.get("visual_data")
+            cue_elements = cue_visual.get("elements") if isinstance(cue_visual, dict) else None
+            if not isinstance(cue_elements, list) or not cue_elements:
+                continue
+            normalized_cue_elements = []
+            for element in cue_elements[:12]:
+                if not isinstance(element, dict) or not str(element.get("label") or "").strip():
+                    continue
+                try:
+                    x, y = float(element.get("x")), float(element.get("y"))
+                except (TypeError, ValueError):
+                    continue
+                if 0 <= x <= 1 and 0 <= y <= 1:
+                    normalized_cue_elements.append({**element, "x": x, "y": y, "label": str(element["label"]).strip()})
+            if normalized_cue_elements:
+                cue_labels = {element["label"] for element in normalized_cue_elements}
+                cue_connectors = []
+                for connector in cue_visual.get("connectors", []) if isinstance(cue_visual.get("connectors"), list) else []:
+                    if not isinstance(connector, dict):
+                        continue
+                    source, destination = str(connector.get("from") or "").strip(), str(connector.get("to") or "").strip()
+                    if source in cue_labels and destination in cue_labels and source != destination:
+                        cue_connectors.append({**connector, "from": source, "to": destination})
+                step = str(cue.get("interaction_step") or "introduce").strip().lower()
+                if step not in interaction_steps:
+                    step = "introduce"
+                if step == "transfer" and not cue_connectors:
+                    step = "connect"
+                camera_move = str(cue.get("camera_move") or "push_in").strip().lower()
+                if camera_move not in camera_moves:
+                    camera_move = "push_in"
+                try:
+                    pause_after = max(0.0, min(1.2, float(cue.get("pause_after", 0.0))))
+                except (TypeError, ValueError):
+                    pause_after = 0.0
+                simulated_action = str(cue.get("simulated_action") or "none").strip().lower()
+                if simulated_action not in {"none", "cursor_click", "open_table", "expand_table", "run_query"}:
+                    simulated_action = "none"
+                table_rows = cue.get("table_rows")
+                normalized_table_rows = []
+                if isinstance(table_rows, list):
+                    for row in table_rows[:7]:
+                        if isinstance(row, (list, tuple)):
+                            normalized_table_rows.append([str(cell)[:48] for cell in row[:5]])
+                component_state = str(cue.get("component_state") or state_for_step.get(step) or "highlighted").strip().lower()
+                if component_state not in component_states:
+                    component_state = state_for_step.get(step, "highlighted")
+                expected_component_state = state_for_step.get(step)
+                if expected_component_state and component_state != expected_component_state:
+                    component_state = expected_component_state
+                normalized_cues.append({
+                    "speech": cue_speech,
+                    "speech_en": str(cue.get("speech_en") or cue["speech"]).strip(),
+                    "action": str(cue.get("action") or "reveal").strip()[:80],
+                    "emphasis": str(cue.get("emphasis") or "").strip()[:80],
+                    "interaction_step": step,
+                    "component_state": component_state,
+                    "focus_element": str(cue.get("focus_element") or "").strip()[:80],
+                    "camera_move": camera_move,
+                    "pause_after": pause_after,
+                    "state_change": str(cue.get("state_change") or "").strip()[:140],
+                    "expected_result": str(cue.get("expected_result") or "").strip()[:140],
+                    "observed_result": str(cue.get("observed_result") or "").strip()[:140],
+                    "sql_query": str(cue.get("sql_query") or "").strip()[:600],
+                    "simulated_action": simulated_action,
+                    "table_rows": normalized_table_rows,
+                    "result_mode": "simulated",
+                    "visual_data": {**cue_visual, "elements": normalized_cue_elements,
+                                    "connectors": cue_connectors},
+                })
+    scene_speech = str(scene.get("speech") or "")
+    cues_speech = "".join("".join(cue["speech"].split()) for cue in normalized_cues)
+    if normalized_cues and cues_speech != "".join(scene_speech.split()):
+        normalized_cues = []
+    return {**scene, "sentence_cues": normalized_cues, "visual_data": visual_data, "visual_prompt": visual_prompt, "continuity": continuity.strip(), "overlay_items": normalized}
+
+
+def _extract_short_video_duration_limit(prompt: str, default: float = 60.0) -> float:
+    """Read explicit max/target duration without mistaking per-scene timings for the limit."""
+    unit = r"(?:seconds?|secs?|sec|s|सेकंड|सेकण्ड|सेकंड्स)"
+    patterns = (
+        rf"(?:अधिकतम|मैक्सिमम|लक्ष्य|अवधि सीमा)\s*(?:वीडियो\s*)?(?:अवधि|लंबाई)?\s*[:=~-]?\s*(\d+(?:\.\d+)?)\s*{unit}",
+        rf"\b(?:max(?:imum)?|target|limit(?:ed)?)\s*(?:video\s*)?(?:duration|length)?\s*[:=~-]?\s*(\d+(?:\.\d+)?)\s*[- ]?{unit}\b",
+        rf"\b(\d+(?:\.\d+)?)\s*[- ]?{unit}\s*(?:maximum|max|limit|target)\b",
+        rf"\b(?:duration|length)\s*(?:limit)?\s*[:=~-]?\s*(\d+(?:\.\d+)?)\s*[- ]?{unit}\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, prompt or "", re.I)
+        if match:
+            value = next((group for group in match.groups() if group), None)
+            if value:
+                return min(60.0, max(1.0, float(value)))
+    return min(60.0, max(1.0, float(default)))
+
+
+def _extract_requested_scene_count(prompt: str) -> Optional[int]:
+    explicit = re.search(r"\b(?:exactly|use|create|make|total(?:\s+of)?)\s+(\d+)\s+(?:distinct\s+)?scenes?\b", prompt or "", re.I)
+    if explicit:
+        return int(explicit.group(1))
+    numbered = [int(value) for value in re.findall(r"\bSCENE\s+(\d+)\b", prompt or "", re.I)]
+    return max(numbered) if numbered else None
+
+
+def _extract_source_target_values(prompt: str) -> Dict[str, str]:
+    values: Dict[str, str] = {}
+    for name, next_name in (("source", "target"), ("target", "expected target|expected source|scene|sql")):
+        end_pattern = rf"(?=\b(?:{next_name})\s*:|$)"
+        section = re.search(rf"\b{name}\s*:\s*(.*?){end_pattern}", prompt or "", re.I | re.S)
+        if not section:
+            continue
+        body = section.group(1)
+        match = re.search(r"(?:BALANCE\s*[:=]\s*|₹\s*)([\d,]+)", body, re.I)
+        if match:
+            values[name] = match.group(1).replace(",", "")
+    return values
+
+
+def _comparison_values_match(expected: Any, observed: Any) -> bool:
+    left, right = str(expected or "").strip().casefold(), str(observed or "").strip().casefold()
+    left_numbers = re.findall(r"(?<![\w])\d[\d,]*(?:\.\d+)?", left)
+    right_numbers = re.findall(r"(?<![\w])\d[\d,]*(?:\.\d+)?", right)
+    if left_numbers and right_numbers:
+        return left_numbers[-1].replace(",", "") == right_numbers[-1].replace(",", "")
+    return left == right
+
+
+def build_pre_render_validation_report(
+    stages: List[Dict[str, Any]],
+    duration: float,
+    max_duration: float,
+    architecture_graph: Dict[str, Any],
+    *,
+    duration_measured: bool,
+    mismatch_scenario: bool = False,
+    requested_scene_count: Optional[int] = None,
+    dms_snowflake_scenario: bool = False,
+    source_target_values: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """Report only checks performed on the generated blueprint; never infer a pass."""
+    checks: List[Dict[str, str]] = []
+
+    def add(name: str, status: str, detail: str, critical: bool = False) -> None:
+        checks.append({"name": name, "status": status, "detail": detail, "critical": critical})
+
+    ordered = bool(stages) and all(
+        float(stage.get("end", 0) or 0) >= float(stage.get("start", 0) or 0)
+        and (index == 0 or abs(float(stage.get("start", 0) or 0) - float(stages[index - 1].get("end", 0) or 0)) <= 0.03)
+        for index, stage in enumerate(stages)
+    ) and abs(float(stages[-1].get("end", 0) or 0) - float(duration)) <= 0.1
+    add("Scene timeline", "PASSED" if ordered else "FAILED", "Scene boundaries are contiguous and cover the measured narration." if ordered else "Scene boundaries have a gap, overlap, or do not cover the narration.", True)
+
+    if requested_scene_count:
+        count_ok = len(stages) == int(requested_scene_count)
+        add("Requested scene count", "PASSED" if count_ok else "FAILED", f"Storyboard has {len(stages)} scenes; requested {requested_scene_count}." if count_ok else f"Storyboard has {len(stages)} scenes; requested exactly {requested_scene_count}.", not count_ok)
+    else:
+        add("Requested scene count", "NOT_RUN", "The prompt did not specify an exact scene count.")
+
+    graph = architecture_graph if isinstance(architecture_graph, dict) else {}
+    nodes = {str(node.get("id")) for node in graph.get("nodes", []) if isinstance(node, dict)}
+    edges = [edge for edge in graph.get("edges", []) if isinstance(edge, dict)]
+    connections_valid = all(str(edge.get("from")) in nodes and str(edge.get("to")) in nodes and str(edge.get("from")) != str(edge.get("to")) for edge in edges)
+    actions = graph.get("actions", []) if isinstance(graph.get("actions"), list) else []
+    draw_ends = {str(action.get("target_id")): float(action.get("end", 0) or 0) for action in actions if isinstance(action, dict) and action.get("action") == "draw_edge"}
+    packet_starts_after_draw = all(
+        float(action.get("start", 0) or 0) + 0.001 >= draw_ends.get(str(action.get("target_id")), float("inf"))
+        for action in actions if isinstance(action, dict) and action.get("action") == "packets"
+    )
+    add("Connection endpoints and packet order", "PASSED" if connections_valid and packet_starts_after_draw else "FAILED", f"{len(nodes)} components, {len(edges)} valid directed connections; packet routes start after their connection is drawn." if connections_valid and packet_starts_after_draw else "A connection endpoint is invalid or a packet starts before its path is drawn.", True)
+
+    if dms_snowflake_scenario:
+        visual_edges = []
+        graph_labels = {str(node.get("id")): str(node.get("label") or node.get("id")) for node in graph.get("nodes", []) if isinstance(node, dict)}
+        visual_edges.extend({"from": graph_labels.get(str(edge.get("from")), str(edge.get("from", ""))), "to": graph_labels.get(str(edge.get("to")), str(edge.get("to", "")))} for edge in edges)
+        for stage in stages:
+            visuals = [stage.get("visual_data")]
+            visuals.extend(cue.get("visual_data") for cue in stage.get("sentence_cues", []) if isinstance(cue, dict))
+            for visual in visuals:
+                if isinstance(visual, dict):
+                    visual_edges.extend(visual.get("connectors", []) if isinstance(visual.get("connectors"), list) else [])
+        route_edges = [(str(edge.get("from", "")), str(edge.get("to", ""))) for edge in visual_edges if isinstance(edge, dict)]
+        labels = {label.casefold(): label for edge in route_edges for label in edge}
+        dms = next((key for key in labels if re.search(r"\bdms\b|database migration service", labels[key], re.I)), "")
+        snowflake = next((key for key in labels if re.search(r"snowflake", labels[key], re.I)), "")
+        intermediaries = {key for key in labels if re.search(r"\bs3\b|snowpipe|kinesis|kafka|ingestion|integration|staging", labels[key], re.I)}
+        adjacency: Dict[str, List[str]] = {}
+        for source, target in route_edges:
+            adjacency.setdefault(source.casefold(), []).append(target.casefold())
+        route_ok = False
+        if dms and snowflake and intermediaries:
+            pending = [(dms, 0)]
+            visited = set()
+            while pending:
+                current, hops = pending.pop(0)
+                if (current, hops) in visited:
+                    continue
+                visited.add((current, hops))
+                if current == snowflake and hops >= 2:
+                    route_ok = True
+                    break
+                pending.extend((target, hops + 1) for target in adjacency.get(current, []))
+        add("DMS to Snowflake ingestion path", "PASSED" if route_ok else "FAILED", "An explicit intermediary ingestion component is shown between AWS DMS and Snowflake." if route_ok else "The storyboard must show a supported intermediary path (for example S3 → Snowpipe) instead of assuming direct DMS-to-Snowflake delivery.", not route_ok)
+
+    cues = [cue for stage in stages for cue in (stage.get("sentence_cues") or []) if isinstance(cue, dict)]
+    exact_cues = bool(cues) and all(str(cue.get("speech") or "").strip() for cue in cues)
+    add("Sentence cue mapping", "PASSED" if exact_cues else "NOT_RUN", f"{len(cues)} sentence cues are attached to the storyboard." if exact_cues else "No usable sentence-level cue map is available; synchronization is scene-level only.")
+
+    steps = [str(cue.get("interaction_step") or "").lower() for cue in cues]
+    failure_i = next((i for i, step in enumerate(steps) if step == "failure"), None)
+    diagnose_i = next((i for i, cue in enumerate(cues) if re.search(r"diagnos|investigat|root cause|जांच|जाँच|कारण", str(cue.get("speech", "")), re.I) or str(cue.get("interaction_step", "")).lower() == "process" and re.search(r"diagnos|investigat", str(cue.get("state_change", "")), re.I)), None)
+    recover_i = next((i for i, step in enumerate(steps) if step == "recover"), None)
+    verify_i = next((i for i, step in enumerate(steps) if step == "verify"), None)
+    event_order = failure_i is not None and diagnose_i is not None and recover_i is not None and verify_i is not None and failure_i < diagnose_i < recover_i < verify_i
+    if mismatch_scenario:
+        add("Failure → diagnosis → recovery → verification", "PASSED" if event_order else "FAILED", "The required event sequence is present in sentence cues." if event_order else "A mismatch prompt needs ordered failure, diagnosis, recovery, and verification cues.", True)
+    else:
+        add("Failure and recovery order", "PASSED" if failure_i is None or event_order else "FAILED", "No failure sequence was requested, or the failure flow is ordered." if failure_i is None or event_order else "Failure flow is out of order.", failure_i is not None)
+
+    success_before_verify = any(
+        re.search(r"success|verified|match|सफल|सही", str(cue.get("state_change", "")) + " " + str(cue.get("observed_result", "")), re.I)
+        and (verify_i is None or i < verify_i)
+        for i, cue in enumerate(cues)
+    )
+    add("Success follows verification", "FAILED" if success_before_verify else ("PASSED" if verify_i is not None else "NOT_RUN"), "Success state is not scheduled before verification." if not success_before_verify and verify_i is not None else "No explicit verification cue was authored." if not success_before_verify else "A success state appears before verification.", success_before_verify)
+
+    comparisons = [cue for cue in cues if str(cue.get("interaction_step", "")).lower() == "verify"]
+    invalid_comparison = any(cue.get("expected_result") and cue.get("observed_result") and not _comparison_values_match(cue["expected_result"], cue["observed_result"]) for cue in comparisons)
+    add("Expected versus observed output", "FAILED" if invalid_comparison else ("PASSED" if comparisons else "NOT_RUN"), "Verification cue values agree." if comparisons and not invalid_comparison else "No explicit value comparison was provided." if not comparisons else "A verification cue reports different expected and observed values.", invalid_comparison)
+
+    required_values = source_target_values or {}
+    if mismatch_scenario and required_values.get("source") and required_values.get("target"):
+        content = " ".join(json.dumps(stage, ensure_ascii=False) for stage in stages)
+        source_seen = required_values["source"] in re.sub(r"[,\s]", "", content)
+        target_seen = required_values["target"] in re.sub(r"[,\s]", "", content)
+        final_is_source = bool(comparisons) and all(
+            required_values["source"] in re.sub(r"[,\s]", "", str(cue.get("expected_result", "")))
+            and required_values["source"] in re.sub(r"[,\s]", "", str(cue.get("observed_result", "")))
+            for cue in comparisons[-1:]
+        )
+        data_ok = source_seen and target_seen and final_is_source and not invalid_comparison
+        add("Mismatch example value consistency", "PASSED" if data_ok else "FAILED", "The source and stale target values appear in the story, and final verification returns to the source value." if data_ok else "The required source/stale values or final source-value comparison are missing or inconsistent.", not data_ok)
+
+    completed_before_verify = any(
+        str(cue.get("component_state") or "").lower() == "completed"
+        and (verify_i is None or index < verify_i or not comparisons or invalid_comparison)
+        for index, cue in enumerate(cues)
+    )
+    add("Component completion gate", "FAILED" if completed_before_verify else ("PASSED" if any(str(cue.get("component_state") or "").lower() == "completed" for cue in cues) else "NOT_RUN"), "Completed component states follow successful verification." if not completed_before_verify and any(str(cue.get("component_state") or "").lower() == "completed" for cue in cues) else "No explicit component-completion event was authored." if not completed_before_verify else "A component is marked completed before final verification passes.", completed_before_verify)
+
+    measured = bool(duration_measured) and float(duration) > 0
+    within_limit = not max_duration or float(duration) <= float(max_duration) + 0.1
+    add("Narration duration limit", "PASSED" if measured and within_limit else "FAILED" if not within_limit else "NOT_RUN", f"Measured voice duration {float(duration):.1f}s; limit {float(max_duration):.1f}s." if measured and max_duration else f"Measured voice duration {float(duration):.1f}s." if measured else "Voice duration was estimated, not measured.", not within_limit)
+    add("External database / AWS / API execution", "NOT_RUN", "No external database, AWS service, or API was executed. Any displayed query/result is an illustrative simulation.")
+    add("Visual safe area and readability", "NOT_RUN", "Frame-by-frame safe-area and subtitle occlusion review was not performed before browser rendering.")
+    add("Audio intelligibility and music mix", "NOT_RUN", "Audio was synthesized and duration measured; intelligibility, clipping, and music balance were not acoustically evaluated.")
+
+    critical_failures = [check["name"] for check in checks if check["critical"] and check["status"] == "FAILED"]
+    return {
+        "status": "BLOCKED" if critical_failures else "READY_WITH_WARNINGS" if any(check["status"] == "NOT_RUN" for check in checks) else "PASSED",
+        "render_allowed": not critical_failures,
+        "checks": checks,
+        "critical_failures": critical_failures,
+        "simulation_notice": "Storyboard SQL outputs, diagnostics, AWS events, and service responses are simulated unless a check explicitly says it executed a real system.",
+    }
 
 
 def compute_audio_synchronized_stages(
@@ -175,11 +461,9 @@ def compute_audio_synchronized_stages(
 ) -> Tuple[List[Dict[str, Any]], float, float]:
     """
     Dynamically aligns each stage's start and end boundaries to real spoken audio duration.
-    - Zero hardcoded timings: every timestamp is derived from speech word counts and real audio duration.
-    - Spoken educational narration spans 0.0 to audio_duration.
-    - Dynamic outro duration calculated strictly from audio length (typically 6-8% of video, 2.0-3.8s).
-    - Total duration follows the complete synthesized narration with no arbitrary cutoff.
-    - Subtitles and animations are 100% frame-locked to spoken word counts from prompt.
+    - Stage timestamps are proportional to scene word counts and measured narration duration.
+    - The returned duration is the complete narration duration; no outro interval is added.
+    - Phrase cues are then timed proportionally by word count in the browser, so they are approximate rather than forced to three seconds.
     """
     raw_audio_dur = float(audio_duration) if audio_duration and float(audio_duration) > 0 else 30.0
 
@@ -188,7 +472,7 @@ def compute_audio_synchronized_stages(
     edu_dur = total_dur
     outro_start = total_dur
 
-    # Filter out any pre-existing branding/outro stage
+    # Filter out any pre-existing branding/outro stage; branding is a static overlay.
     edu_stages = [
         s for s in raw_stages
         if s.get("user_authored_scene") or (
@@ -3197,7 +3481,8 @@ class SqlShortVideoEngine:
             prompt = (
                 f"Shorten this narration to at most {budget} whitespace-separated words total. Write in {language_name}; "
                 "preserve every scene in the same order, technical meaning and named systems. Keep a natural speaking pace and short pauses; "
-                "remove repetition and secondary phrasing instead of speaking faster. Do not add facts or stage directions. "
+                + ("For Hindi, keep relaxed friend-to-friend spoken Hindi with common technical English terms; avoid shuddh/formal/bookish Hindi and forced slang. " if language == "hi" else "")
+                + "remove repetition and secondary phrasing instead of speaking faster. Do not add facts or stage directions. "
                 f"Return JSON only with exactly {len(scenes)} scene objects, each with a speech string, in the same order.\n"
                 f"Scenes: {json.dumps(scenes, ensure_ascii=False)}"
             )
@@ -3237,7 +3522,8 @@ class SqlShortVideoEngine:
         topic_or_question: str,
         difficulty: str = "Medium",
         language: str = "mr",
-        mode: str = "faang_drill"
+        mode: str = "faang_drill",
+        _pre_render_repair_attempt: int = 0,
     ) -> Dict[str, Any]:
         """
         Asynchronously generates a synchronized, prompt-driven video creation blueprint:
@@ -3268,8 +3554,7 @@ class SqlShortVideoEngine:
             ai_resp = ""
             try:
                 from app.core.model_adapter import model_manager
-                duration_match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:seconds?|secs?)\b", text_input, re.I)
-                target_seconds = float(duration_match.group(1)) if duration_match else 60.0
+                target_seconds = _extract_short_video_duration_limit(text_input, default=60.0)
                 max_narration_words = max(24, int(target_seconds * 140 / 60))
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
                 lang_name = {
@@ -3277,20 +3562,27 @@ class SqlShortVideoEngine:
                     "hi": "Hindi in Devanagari script",
                     "en": "English",
                 }.get(lang_key, "English")
+                narration_style = (
+                    "For Hindi, use relaxed everyday spoken Indian Hindi like two tech friends talking: ask and answer short questions, use natural turns such as 'देख', 'अच्छा', or 'चल' only when they fit, and keep necessary technical terms in English. Avoid shuddh/formal/bookish Hindi, literal translations, forced slang, and long lecture sentences. The generated track uses one narrator, so write a friendly conversational explanation rather than pretending there are two separate voices."
+                    if lang_key == "hi" else
+                    "Keep the narration warm, conversational, and easy to say aloud; prefer short friend-to-friend explanations over textbook phrasing."
+                )
 
                 ai_prompt = (
                     f"You are an elite Senior Tech Lead, Educator & 3D Video Designer creating a complete educational 9:16 vertical video entirely from scratch.\n"
                     f"Input Prompt: {text_input}\n"
-                    f"Target narration language: {lang_name}. Every speech value must be written only in this language and its native script, never in English, and never prefixed with a language code.\n\n"
+                    f"Target narration language: {lang_name}. Every speech value must be written only in this language and its native script, never in English, and never prefixed with a language code. {narration_style}\n\n"
                     f"The input could be: a coding question, an architecture or theory topic, raw code, or a speech script.\n"
-                    f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
+                    f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant. Use an interactive medallion-flow art direction: a luminous 3D core for the component being taught, a small number of orbiting satellites for related systems, a visible directional route, and restrained real-time telemetry that updates only when the narrated action happens. Avoid a static full-architecture poster.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Keep narration concise and obey any explicit duration limit, while preserving natural speaking pace.\n"
                     f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, do not use them; choose prompt-specific cinematic, editorial, typographic, or metaphor-driven visuals instead.\n"
-                    f"4. For each scene, return visual_data authored for that scene: composition (short description), elements (up to 12 objects with label, normalized x/y coordinates, shape, color, and optional detail), and connectors (from/to element labels, style, color, and optional label). Use visual elements and connectors only when appropriate to that scene; use distinct placements/compositions where requested. Shapes may include icon, circle, glyph, text, character, or any simple vector shape. No fixed graph layout is required. Do not request images or image-based slides; the renderer draws editable vector elements.\n"
-                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles.\n\n"
-                    f"Output raw JSON with title, domain, content_type, max_duration_seconds when requested, and scenes. Each scene must include title, speech, speech_en, and visual_data with composition, elements, and connectors. Preserve every scene, timing, speaker line, caption, duration, and visual constraint explicitly stated by the user.\n"
-                    f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","scenes":[{{"title":"Scene title","speech":"Narration in {lang_name}.","speech_en":"Narration in English.","caption":"Short on-screen caption","visual_data":{{"composition":"Scene-specific composition from the user brief","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}]}}'
+                    f"4. Return visual_data authored for that scene with a scene-specific composition: composition (short description), elements (up to 12 objects with label, normalized x/y coordinates, shape, color, and optional detail), and connectors (from/to element labels, style, color, and optional label). Use visual elements and connectors only when appropriate to that scene; use distinct placements/compositions where requested. Shapes may include icon, circle, glyph, text, character, or any simple vector shape. No fixed graph layout is required. Do not request images or image-based slides; the renderer draws editable vector elements.\n"
+                    f"4a. For Oracle → AWS DMS → Snowflake scenarios, never assume a direct DMS-to-Snowflake target. Show a supported configured ingestion path such as AWS DMS → Amazon S3 → Snowpipe → Snowflake, or another explicitly named intermediary integration, and explain it. Do not invent a specific root cause unless the prompt supplies evidence.\n"
+                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles.\n"
+                    f"6. Split each scene narration into sentence_cues in spoken order. Every cue must match exactly one spoken sentence and its English subtitle. Include action, emphasis, interaction_step (introduce, highlight, connect, transfer, process, failure, diagnose, recover, reprocess, output, verify, complete, continue), component_state (hidden, introducing, highlighted, connected, processing, failed, diagnosing, recovering, reprocessing, output_ready, verified, completed), focus_element, camera_move (push_in, pull_back, pan_to_source, pan_to_destination, pan_to_next, orbit_left, orbit_right, rack_focus, hold), pause_after (0 to 1.2 seconds, only after a completed idea), state_change, expected_result, observed_result, sql_query, simulated_action (none, cursor_click, open_table, expand_table, run_query), table_rows, and fresh visual_data. Cue speech concatenated in order must exactly reproduce parent scene speech. Build a Remotion-style deterministic timeline: all camera/object/status motion is a pure function of scene time so scrub, pause, replay and export render the same frame. Reveal one named component at a time when its phrase is spoken; previously introduced components may remain dimmed. For connect, show only the source and destination, then progressively draw their directed path. For transfer, animate one packet along that same path and stop it at the destination before processing. On continue, pan to and reveal the next component. Use orbiting medallion rings and telemetry only around the active component, with distinct camera movement on meaningful scene changes. When narration says SQL Query, type the actual query in a visible editor and simulate Run; show rows only after execution. No SQL, database, AWS, or external API is actually executed by this video renderer; label all sample queries, logs, and outputs as illustrative simulations. Plan narration pauses after meaningful clauses/checkpoints; do not show an outcome before the operation that produces it. Reveal the architecture progressively. Every connection endpoint must exactly match an element label, preserve source-to-destination direction, and carry values consistent with the described scenario. For a mismatch, show detect → failure → diagnosis → recovery → re-run → final verification; recovery must follow failure and final success can appear only after verification passes.\n\n"
+                    f"Output raw JSON with title, domain, content_type, max_duration_seconds when requested, and scenes. Each scene must include title, speech, speech_en, sentence_cues, and visual_data with composition, elements, and connectors. Preserve every scene, timing, speaker line, caption, duration, and visual constraint explicitly stated by the user.\n"
+                    f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","scenes":[{{"title":"Scene title","speech":"Narration in {lang_name}.","speech_en":"Narration in English.","caption":"Short on-screen caption","sentence_cues":[{{"speech":"One complete spoken sentence in {lang_name}.","speech_en":"Matching English subtitle sentence.","action":"reveal then transform","emphasis":"key concept","interaction_step":"introduce","component_state":"introducing","focus_element":"Oracle Database","camera_move":"push_in","pause_after":0.4,"state_change":"Current component shows an active CDC record","expected_result":"Source value 8000","observed_result":"Target value 10000","sql_query":"SELECT id, balance FROM accounts WHERE id = 42;","simulated_action":"run_query","table_rows":[["ID","BALANCE"],["42","8000"]],"visual_data":{{"composition":"Visual progression for this exact sentence","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Scene-specific establishing composition","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}]}}'
                 )
 
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
@@ -3330,9 +3622,11 @@ class SqlShortVideoEngine:
                             if len(compact_scenes) == len(scenes) and compact_words <= max_narration_words and all(scene.get("speech") for scene in compact_scenes):
                                 for original, compact in zip(scenes, compact_scenes):
                                     original["speech"] = compact["speech"].strip()
+                                    original.pop("sentence_cues", None)
                         except Exception as compact_error:
                             log_event(f"Short narration compression notice: {compact_error}", level="DEBUG", component="SqlShortEngine")
                     matched = parsed
+                    matched["max_duration_seconds"] = target_seconds
                     matched["id"] = "custom_ai_scenario"
                     matched["storyboard_source"] = "online_model"
                     matched["question"] = text_input
@@ -3347,10 +3641,10 @@ class SqlShortVideoEngine:
                         f"Repair the earlier AI response, which failed parsing or scene-visual validation: {e}. "
                         f"Earlier response: {ai_resp[:12000]}\n\n"
                         f"Use this complete user prompt as the source of truth and create its 9:16 video: {text_input}\n"
-                        f"Write all speech in {lang_name}. Return raw JSON only with title, domain, content_type, and scenes. "
-                        f"Preserve requested scene count/order, timings, dialogue, captions, duration, and all visual constraints. Return max_duration_seconds when requested. Each scene must contain title, speech, speech_en, caption, and scene-specific visual_data: composition, elements (label, normalized x/y, shape, glyph, color, detail), and connectors (from/to labels, style, color). "
+                        f"Write all speech in {lang_name}. Narration style: {narration_style} Return raw JSON only with title, domain, content_type, and scenes. "
+                        f"Preserve requested scene count/order, timings, dialogue, captions, duration, and visual constraints. Every sentence_cue maps one exact spoken sentence to its subtitle, action, emphasis, interaction_step, focus_element, camera_move, pause_after, state_change, expected_result, observed_result, sql_query, simulated_action, table_rows, and scene-specific visual_data. Use a deterministic frame timeline so seek, pause, replay and export render identical frames. Camera moves are intentional and voice-linked; hold briefly only after meaningful checkpoints. Progressively reveal components, type real SQL when narrated, simulate clicks and table expansion, and follow introduce, highlight, connect, transfer, process, failure, recover, output, verify, continue. Preserve failure → diagnosis → recovery → rerun → final verification order and never show success before validation passes. Validate connector endpoints and direction. "
                         f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, explicitly honor that. Render only editable vector elements; do not request image assets. "
-                        f'Example scene shape: {{"title":"Scene title","speech":"Line in {lang_name}.","speech_en":"English line.","caption":"Short caption","visual_data":{{"composition":"Composition matching this scene","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}.'
+                        f'Example scene shape: {{"title":"Scene title","speech":"Line in {lang_name}.","speech_en":"English line.","caption":"Short caption","sentence_cues":[{{"speech":"Line in {lang_name}.","speech_en":"English line.","action":"reveal","emphasis":"key point","interaction_step":"introduce","focus_element":"Source","camera_move":"push_in","pause_after":0.4,"state_change":"Source becomes active","expected_result":"Source row is present","observed_result":"Source row is present","visual_data":{{"composition":"Sentence-specific visual progression","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Composition matching this scene","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}.'
                     )
                     retry_resp, _, _ = model_manager.execute_with_fallback(
                         prompt=repair_prompt,
@@ -3370,6 +3664,7 @@ class SqlShortVideoEngine:
                     retry_scenes = [_validate_scene_visual_contract(scene) for scene in retry_scenes]
                     retry_parsed["scenes"] = retry_scenes
                     matched = retry_parsed
+                    matched["max_duration_seconds"] = target_seconds
                     matched.setdefault("content_type", content_type)
                     matched["id"] = "custom_ai_scenario"
                     matched["storyboard_source"] = "online_model"
@@ -3450,6 +3745,20 @@ class SqlShortVideoEngine:
             for stage, speech in zip(stages, condensed_speeches):
                 stage["speech"] = speech
                 stage[f"speech_{lang_key}"] = speech
+                stage["speech_en"] = speech
+                sentences = [part.strip() for part in re.split(r"(?<=[.!?।])\s+", speech) if part.strip()]
+                old_cues = stage.get("sentence_cues") if isinstance(stage.get("sentence_cues"), list) else []
+                scene_visual = stage.get("visual_data") if isinstance(stage.get("visual_data"), dict) else {}
+                stage["sentence_cues"] = [
+                    {
+                        **(old_cues[min(index, len(old_cues) - 1)] if old_cues else {}),
+                        "speech": sentence,
+                        "speech_en": sentence,
+                        "visual_data": (old_cues[min(index, len(old_cues) - 1)].get("visual_data") if old_cues else None) or scene_visual,
+                        "result_mode": "simulated",
+                    }
+                    for index, sentence in enumerate(sentences[:16])
+                ]
             full_narration = "\n\n".join(condensed_speeches)
             narration_hash = hashlib.md5(full_narration.encode("utf-8")).hexdigest()[:10]
             if str(preset_id).startswith("custom") or preset_id == "custom":
@@ -3487,6 +3796,30 @@ class SqlShortVideoEngine:
             final_dur,
             title=matched.get("title") or text_input,
         )
+        pre_render_validation = build_pre_render_validation_report(
+            calibrated_stages,
+            final_dur,
+            duration_limit,
+            architecture_graph,
+            duration_measured=bool(audio_file_path and get_mp3_duration(audio_file_path) > 0),
+            mismatch_scenario=bool(re.search(r"mismatch|data mismatch|failure|recover|reconcil|असंगति|मिसमैच|गड़बड़ी", text_input, re.I)),
+            requested_scene_count=_extract_requested_scene_count(text_input),
+            dms_snowflake_scenario=bool(re.search(r"\bDMS\b", text_input, re.I) and re.search(r"Snowflake", text_input, re.I)),
+            source_target_values=_extract_source_target_values(text_input),
+        )
+        if not pre_render_validation["render_allowed"]:
+            if _pre_render_repair_attempt < 1:
+                repair_prompt = (
+                    f"{text_input}\n\n"
+                    "AUTOMATIC PRE-RENDER REPAIR: regenerate the complete storyboard and narration to fix these critical quality-gate failures: "
+                    f"{'; '.join(pre_render_validation['critical_failures'])}. Keep the requested duration and scene count. "
+                    "Preserve correct source/destination endpoints and direction; draw a real intermediary such as AWS DMS → Amazon S3 → Snowpipe → Snowflake when that architecture is requested. "
+                    "For a mismatch lesson order failure → diagnosis → recovery → verification, and show success only after equal values are compared."
+                )
+                return await self.generate_short_prompt_async(
+                    repair_prompt, difficulty, language, mode, _pre_render_repair_attempt + 1
+                )
+            raise RuntimeError("Pre-render quality gate blocked this storyboard: " + "; ".join(pre_render_validation["critical_failures"]))
 
         hook = matched.get(f"hook_{lang_key}", matched.get("hook_mr", matched.get("hook_en", "")))
         explanation = matched.get(f"explanation_{lang_key}", matched.get("explanation_mr", matched.get("explanation_en", "")))
@@ -3509,14 +3842,15 @@ class SqlShortVideoEngine:
             "scenes": calibrated_stages,
             "architecture_graph": architecture_graph,
             "duration": final_dur,
-            "max_duration_seconds": final_dur,
+            "max_duration_seconds": duration_limit,
             "outro_start": outro_start,
             "narration_duration": outro_start,
             "aspect_ratio": "9:16",
             "storyboard_source": matched.get("storyboard_source", "local_fallback"),
             "show_subtitles": matched.get("show_subtitles", True),
             "llm_error": str(matched.get("llm_error") or "")[:240],
-            "branding": "@Code_With_Mangesh"
+            "branding": "@Code_With_Mangesh",
+            "pre_render_validation": pre_render_validation,
         }
 
         # Include SQL query specific fields
@@ -3579,152 +3913,33 @@ class SqlShortVideoEngine:
                 "explanation": matched.get("concept_summary", "")
             })
 
-        # Multi-Trial Perfectionist Engine Audit (AST, Timing, Visual & Takeaway Checks)
-        solution_str = matched.get("solution_sql") or matched.get("syntax_a_code", "") or text_input
         perfectionist_audit = {
-            "perfectionist_score": "99.8%",
-            "score_numeric": 99.8,
-            "status": "APPROVED",
-            "trials": [
-                {"trial": 1, "name": "Python AST & SQL Syntax Verification", "status": "PASSED", "detail": "Valid syntax and structure verified."},
-                {"trial": 2, "name": "Speech Pacing & Full Duration", "status": "PASSED", "detail": f"Exact duration: {final_dur:.1f}s; complete narration retained."},
-                {"trial": 3, "name": "9:16 Canvas Visual Safety Margins", "status": "PASSED", "detail": "All visual containers inside phone viewport."},
-                {"trial": 4, "name": "Takeaway & Retention Formula", "status": "PASSED", "detail": "Hook in first 3s, actionable conclusion."},
-                {"trial": 5, "name": "Audio-Visual Lip & Waveform Sync", "status": "PASSED", "detail": "Stage markers synchronized with voice track."},
-                {"trial": 6, "name": "Zero-Watermark Output Assurance", "status": "PASSED", "detail": "Clean output verified, watermark removed."}
-            ]
+            "perfectionist_score": "N/A",
+            "grade": "Blueprint pre-render checks",
+            "status": pre_render_validation["status"],
+            "audit_checks": [
+                {"trial": index + 1, "check": check["name"], "status": check["status"], "badge": check["detail"]}
+                for index, check in enumerate(pre_render_validation["checks"])
+            ],
+            "trials": pre_render_validation["checks"],
+            "simulation_notice": pre_render_validation["simulation_notice"],
         }
 
-        # 12 Specialized Perfectionist Agents Architecture (100% Online Dynamic Pipeline)
+        # Only expose steps that actually ran; browser rendering has not started yet.
         agent_pipeline = [
-            {
-                "id": "agent_master",
-                "name": "NanoPro Master Manager Agent",
-                "role": "Master Orchestrator & Task Decomposition",
-                "status": "completed",
-                "model": "NanoPro-Core-v14 (Online)",
-                "thought": f"Decomposed '{text_input[:40]}...' into 6 educational scenes. Allocated 11 specialist sub-agents with strict SLAs.",
-                "latency_ms": 110,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_intent",
-                "name": "Deep Intent & Domain Intelligence Agent",
-                "role": "Tech Domain & Viral Retention Hook",
-                "status": "completed",
-                "model": "DeepSeek V3 / Groq LPU",
-                "thought": f"Classified scenario into domain '{matched.get('domain', 'Tech Architecture').upper()}'. Formulated high-retention 3s viral hook.",
-                "latency_ms": 260,
-                "accuracy": "99.8%"
-            },
-            {
-                "id": "agent_pedagogy",
-                "name": "Senior Tech Curriculum Architect Agent",
-                "role": "Educational Pacing & Cognitive Load Balance",
-                "status": "completed",
-                "model": "Gemini Flash / DeepSeek",
-                "thought": "Structured 6-phase curriculum: Problem Statement ➔ Structure Inspection ➔ Logic Pipeline ➔ Implementation ➔ Simulation ➔ Golden Takeaway.",
-                "latency_ms": 190,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_coding",
-                "name": "Production Coding Specialist Agent",
-                "role": "ANSI SQL / Python Code Engineering",
-                "status": "completed",
-                "model": "Groq LPU (qwen2.5-coder:3b / llama-3.3-70b)",
-                "thought": "Synthesized clean, production-grade syntax with sample rows, verified column types, and zero deprecations.",
-                "latency_ms": 580,
-                "accuracy": "99.9%"
-            },
-            {
-                "id": "agent_ast",
-                "name": "Static AST & Syntax Validator Agent",
-                "role": "Python AST & SQL Grammar Parser",
-                "status": "completed",
-                "model": "Python AST Engine & ANSI Parser",
-                "thought": "100% AST integrity confirmed. Balanced parentheses, valid clauses, and verified token boundaries.",
-                "latency_ms": 75,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_sandbox",
-                "name": "Sandbox Execution & Data Accuracy Agent",
-                "role": "In-Memory SQLite Sandbox Validator",
-                "status": "completed",
-                "model": "In-Memory Ephemeral Sandbox",
-                "thought": "Executed query in isolated SQLite sandbox (<2ms). Output values and intermediate filter evaluations 100% verified.",
-                "latency_ms": 85,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_edgecase",
-                "name": "Edge-Case & Interview Trap Hunter Agent",
-                "role": "Common Pitfalls & Senior Pro-Tips",
-                "status": "completed",
-                "model": "NanoPro Edge-Hunter Engine",
-                "thought": "Identified edge cases (ties, NULL values, partition boundaries) and formulated Senior Interviewer Pro-Tip.",
-                "latency_ms": 130,
-                "accuracy": "99.7%"
-            },
-            {
-                "id": "agent_typography",
-                "name": "Kinetic Typography & Frame Aligner Agent",
-                "role": "Phoneme-to-Frame Sync (Full Narration)",
-                "status": "completed",
-                "model": "Acoustic Frame Aligner",
-                "thought": f"Calibrated {len(calibrated_stages)} stage boundaries to the complete narration (exact duration: {final_dur}s).",
-                "latency_ms": 120,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_voice",
-                "name": "Neural Voiceover & Speech AI Agent",
-                "role": "Regional Teacher Voice (MR/HI/EN)",
-                "status": "completed",
-                "model": "ElevenLabs / Microsoft Neural Edge-TTS",
-                "thought": f"Synthesized natural teacher voiceover in language '{lang_key}'. Frame-locked audio waveform track.",
-                "latency_ms": 680,
-                "accuracy": "99.8%"
-            },
-            {
-                "id": "agent_retouch",
-                "name": "Cinematic 9:16 Canvas & Neon Shader Agent",
-                "role": "Glassmorphic Canvas & Arrow Pointer",
-                "status": "completed",
-                "model": "Runway Gen-4 / Cyber Glass Canvas Engine",
-                "thought": "Rendered 1080x1920 layout with neon code highlights, animated scanner beam, and kinetic arrow indicators.",
-                "latency_ms": 290,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_online_ai",
-                "name": "NanoPro Online AI Synthesis Agent",
-                "role": "Dynamic Online Intelligence Orchestration",
-                "status": "completed",
-                "model": "NanoPro Online AI (Groq / Gemini / Claude)",
-                "thought": "Dynamically coordinated online LLMs and prompt analyzers with 100% cloud-native real-time synthesis.",
-                "latency_ms": 70,
-                "accuracy": "100%"
-            },
-            {
-                "id": "agent_export",
-                "name": "Master QA & 1-Click Video Delivery Agent",
-                "role": "Zero-Watermark Full-Length 9:16 MP4 Deliverable",
-                "status": "ready",
-                "model": "Canvas MediaRecorder HD Engine",
-                "thought": f"Passed all 6 perfectionist trials ({perfectionist_audit['perfectionist_score']}). Outro branding scheduled strictly post-narration.",
-                "latency_ms": 140,
-                "accuracy": "100%"
-            }
+            {"id": "storyboard", "name": "Storyboard & dialogue lead", "role": "Prompt model writes topic-specific scenes and conversational narration; this is a workflow role, not a separate registered agent.", "status": "completed", "thought": f"Built {len(calibrated_stages)} scenes from the submitted prompt."},
+            {"id": "voice", "name": "Voice & pacing specialist", "role": "Narration synthesis and measured voice duration", "status": "completed", "thought": f"Synthesized {lang_key} narration; measured duration {final_dur:.1f}s."},
+            {"id": "motion", "name": "Motion & medallion director", "role": "Sentence-cue timeline for component reveal, path drawing, packet transfer, camera focus, and pauses", "status": "ready", "thought": "Cue timeline is prepared for deterministic browser playback and export."},
+            {"id": "layout", "name": "Frame-safe layout specialist", "role": "Canvas text wrapping and safe-area clamping", "status": "ready", "thought": "Labels, overlays, and subtitles use bounded layouts; frame-by-frame visual review still requires an export preview."},
+            {"id": "pre_render", "name": "Technical QA specialist", "role": "Structural route, values, order, scene count, and timing checks", "status": "completed", "thought": pre_render_validation["status"]},
+            {"id": "browser_export", "name": "Local render & export auditor", "role": "1080×1920 browser capture with audio/video delivery checks", "status": "not_run", "thought": "Export starts after the user starts browser rendering."},
         ]
-
         res["agent_pipeline"] = agent_pipeline
         res["learning_telemetry"] = {
             "status": "online_ai_active",
-            "model_name": "NanoPro Online AI Engine",
-            "mode": "100% Dynamic Online Pipeline",
-            "perfectionist_score": 99.8
+            "model_name": used_model if "used_model" in locals() else "Configured model adapter",
+            "mode": "Prompt-driven storyboard",
+            "perfectionist_score": None
         }
         res["synaptic_weights"] = {}
         res["weights_optimizer"] = {}

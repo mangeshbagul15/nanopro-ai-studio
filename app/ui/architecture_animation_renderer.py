@@ -203,7 +203,11 @@ ARCHITECTURE_ANIMATION_JS = r'''
         if (progress <= 0) return;
         const points = architectureConnectorPoints(edge, source, target);
         const sourcePort = points[0], targetPort = points[points.length - 1];
+        const focusedIds = (graph.actions || []).filter(action => action.action === "highlight_node"
+            && time >= Number(action.start || 0) && time <= Number(action.end || action.start || 0)).map(action => String(action.target_id));
+        const edgeDimmed = focusedIds.length > 0 && !focusedIds.includes(String(edge.from)) && !focusedIds.includes(String(edge.to));
         ctx.save();
+        ctx.globalAlpha *= edgeDimmed ? 0.2 : 1;
         ctx.strokeStyle = edge.color || "#38BDF8";
         ctx.lineWidth = 4;
         ctx.lineCap = "round";
@@ -252,7 +256,9 @@ ARCHITECTURE_ANIMATION_JS = r'''
         const x = position.x - boxWidth / 2, y = position.y - boxHeight / 2;
         const color = node.color || "#38BDF8";
         ctx.save();
-        ctx.globalAlpha = entrance;
+        const hasActiveFocus = (graph.actions || []).some(action => action.action === "highlight_node"
+            && time >= Number(action.start || 0) && time <= Number(action.end || action.start || 0));
+        ctx.globalAlpha = entrance * (hasActiveFocus && !highlighted ? 0.24 : 1);
         ctx.shadowColor = highlighted || pulsing || morphing ? color : "rgba(56,189,248,0.35)";
         ctx.shadowBlur = highlighted || pulsing ? 28 : 12;
         const box = architectureShapePath(ctx, node.shape || "rounded_rectangle", x, y, boxWidth, boxHeight);
@@ -293,7 +299,7 @@ ARCHITECTURE_ANIMATION_JS = r'''
         descriptionLines.forEach(line => { ctx.globalAlpha = entrance * architectureClamp((reveal - 0.28) * 4, 0, 1); ctx.fillText(line, box.cx, textY); textY += lineHeight; });
         ctx.restore();
         ctx.beginPath(); ctx.arc(x + boxWidth - 16, y + 15, 5, 0, Math.PI * 2);
-        ctx.fillStyle = node.status === "warning" ? "#FBBF24" : node.status === "error" ? "#F87171" : "#34D399"; ctx.fill();
+        ctx.fillStyle = node.status === "warning" ? "#FBBF24" : node.status === "error" ? "#F87171" : highlighted ? "#38BDF8" : "#64748B"; ctx.fill();
         if (expanding) {
             ctx.strokeStyle = color; ctx.globalAlpha = 0.55 + 0.35 * Math.sin(time * 6); ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(x - 8, y - 8, boxWidth + 16, boxHeight + 16, 24); ctx.stroke();

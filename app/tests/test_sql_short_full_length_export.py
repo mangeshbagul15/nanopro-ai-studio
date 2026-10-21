@@ -1,4 +1,5 @@
 import ast
+import json
 import re
 import unittest
 from collections import defaultdict, deque
@@ -40,7 +41,170 @@ def load_detailed_brief_parser():
     return namespace["_parse_detailed_brief"]
 
 
+def load_pre_render_validator():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    functions = [item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in {"build_pre_render_validation_report", "_comparison_values_match"}]
+    namespace = {"re": re, "json": json, "Any": Any, "Dict": Dict, "List": List, "Optional": Optional}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "<pre-render-validation-test>", "exec"), namespace)
+    return namespace["build_pre_render_validation_report"]
+
+
+def load_duration_limit_parser():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_extract_short_video_duration_limit")
+    namespace = {"re": re}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "<duration-limit-test>", "exec"), namespace)
+    return namespace["_extract_short_video_duration_limit"]
+
+
+def load_scene_count_parser():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_extract_requested_scene_count")
+    namespace = {"re": re, "Optional": Optional}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "<scene-count-test>", "exec"), namespace)
+    return namespace["_extract_requested_scene_count"]
+
+
+def load_source_target_value_parser():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_extract_source_target_values")
+    namespace = {"re": re, "Dict": Dict}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "<source-target-values-test>", "exec"), namespace)
+    return namespace["_extract_source_target_values"]
+
+
 class FullLengthVideoExportTests(unittest.TestCase):
+    def test_pre_render_report_distinguishes_passed_from_unperformed_checks(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "sentence_cues": [
+            {"interaction_step": "failure", "speech": "Mismatch detected."},
+            {"interaction_step": "process", "speech": "We investigate the cause."},
+            {"interaction_step": "recover", "speech": "We reconcile the row."},
+            {"interaction_step": "verify", "speech": "Values match.", "expected_result": "8000", "observed_result": "8000"},
+        ]}]
+        graph = {
+            "nodes": [{"id": "oracle"}, {"id": "target"}],
+            "edges": [{"id": "e1", "from": "oracle", "to": "target"}],
+            "actions": [
+                {"target_id": "e1", "action": "draw_edge", "start": 1.0, "end": 2.0},
+                {"target_id": "e1", "action": "packets", "start": 2.0, "end": 3.0},
+            ],
+        }
+        report = validate(stages, 10.0, 60.0, graph, duration_measured=True, mismatch_scenario=True)
+        statuses = {item["name"]: item["status"] for item in report["checks"]}
+        self.assertTrue(report["render_allowed"])
+        self.assertEqual(statuses["Failure → diagnosis → recovery → verification"], "PASSED")
+        self.assertEqual(statuses["External database / AWS / API execution"], "NOT_RUN")
+        self.assertEqual(statuses["Visual safe area and readability"], "NOT_RUN")
+
+    def test_mismatch_value_consistency_checks_source_stale_and_final_values(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "speech": "Source balance 8000; stale target balance 10000.", "visual_data": {}, "sentence_cues": [
+            {"interaction_step": "verify", "expected_result": "Source 101 balance 8000", "observed_result": "Target 101 balance 8000", "speech": "Values match."},
+        ]}]
+        report = validate(stages, 10.0, 60.0, {"nodes": [], "edges": [], "actions": []}, duration_measured=True, mismatch_scenario=True, source_target_values={"source": "8000", "target": "10000"})
+        check = next(item for item in report["checks"] if item["name"] == "Mismatch example value consistency")
+        self.assertEqual(check["status"], "PASSED")
+
+    def test_source_target_parser_reads_account_balance_values(self):
+        parse_values = load_source_target_value_parser()
+        prompt = "SOURCE:\nAccount 101 = ₹8,000\nTARGET:\nAccount 101 = ₹10,000\n"
+        self.assertEqual(parse_values(prompt), {"source": "8000", "target": "10000"})
+
+    def test_pre_render_report_blocks_overlong_voice_and_false_recovery_order(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 61.0, "sentence_cues": [
+            {"interaction_step": "failure", "speech": "Mismatch detected."},
+            {"interaction_step": "recover", "speech": "We recover."},
+            {"interaction_step": "verify", "speech": "Values match.", "expected_result": "8000", "observed_result": "8000"},
+        ]}]
+        graph = {"nodes": [], "edges": [], "actions": []}
+        report = validate(stages, 61.0, 60.0, graph, duration_measured=True, mismatch_scenario=True)
+        self.assertFalse(report["render_allowed"])
+        self.assertIn("Narration duration limit", report["critical_failures"])
+        self.assertIn("Failure → diagnosis → recovery → verification", report["critical_failures"])
+
+    def test_pre_render_report_blocks_component_completion_before_verification(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "sentence_cues": [
+            {"interaction_step": "complete", "component_state": "completed", "speech": "The component is done."},
+            {"interaction_step": "verify", "component_state": "verified", "speech": "The result matches.", "expected_result": "8", "observed_result": "8"},
+        ]}]
+        graph = {"nodes": [], "edges": [], "actions": []}
+        report = validate(stages, 10.0, 60.0, graph, duration_measured=True)
+        self.assertIn("Component completion gate", report["critical_failures"])
+
+    def test_prompt_duration_is_capped_at_one_minute_and_results_are_labeled_simulated(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        renderer = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("target_seconds = _extract_short_video_duration_limit(text_input, default=60.0)", source)
+        self.assertIn('"result_mode": "simulated"', source)
+        self.assertIn("ILLUSTRATIVE · NOT EXECUTED", renderer)
+        self.assertIn("postRenderValidation", renderer)
+        self.assertIn("Post-render quality gate failed", renderer)
+        self.assertIn("preflight.render_allowed === false", renderer)
+        self.assertIn('"component_state"', source)
+        self.assertIn('"completed"', source)
+        self.assertIn('interactionStep === "transfer" && isCurrentConnector && connectorProgress >= 1', renderer)
+        self.assertIn('progress >= 0.08 && progress <= 0.92', renderer)
+
+    def test_duration_parser_ignores_scene_lengths_and_caps_long_requests(self):
+        parse_limit = load_duration_limit_parser()
+        self.assertEqual(parse_limit("Scene 1: 0–4 seconds. Maximum duration: 60 seconds."), 60)
+        self.assertEqual(parse_limit("Target duration: 45 sec; each step is 3 seconds."), 45)
+        self.assertEqual(parse_limit("Maximum duration: 90 seconds."), 60)
+        self.assertEqual(parse_limit("अधिकतम अवधि 30 सेकंड"), 30)
+
+    def test_scene_count_parser_reads_explicit_and_numbered_scene_specs(self):
+        parse_count = load_scene_count_parser()
+        self.assertEqual(parse_count("Create exactly 6 distinct scenes."), 6)
+        self.assertEqual(parse_count("SCENE 1 — HOOK; SCENE 2 — SOURCE; SCENE 9 — TAKEAWAY"), 9)
+        self.assertIsNone(parse_count("Make a technical explainer."))
+
+    def test_dms_snowflake_path_requires_an_intermediary(self):
+        validate = load_pre_render_validator()
+        stage = {"start": 0.0, "end": 10.0, "visual_data": {"elements": [], "connectors": [
+            {"from": "AWS DMS", "to": "Amazon S3"},
+            {"from": "Amazon S3", "to": "Snowpipe"},
+            {"from": "Snowpipe", "to": "Snowflake"},
+        ]}}
+        graph = {"nodes": [], "edges": [], "actions": []}
+        report = validate([stage], 10, 60, graph, duration_measured=True, dms_snowflake_scenario=True)
+        route = next(item for item in report["checks"] if item["name"] == "DMS to Snowflake ingestion path")
+        self.assertEqual(route["status"], "PASSED")
+
+    def test_fallback_architecture_reveals_nodes_at_their_scene_not_upfront(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        functions = [item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in {"_slug", "_shape_for", "_layout_nodes", "_stage_for_time", "build_architecture_animation"}]
+        namespace = {
+            "re": re, "Any": Any, "defaultdict": defaultdict, "deque": deque,
+            "NODE_SHAPES": {"database", "rectangle", "rounded_rectangle", "circle", "diamond", "hexagon", "cloud", "document", "table", "terminal", "dashboard"},
+            "EDGE_STYLES": {"straight", "curved", "elbow", "bezier"}, "LAYOUTS": {"pipeline", "layered", "hierarchical", "tree"},
+            "ACTION_ALIASES": {"reveal": "reveal_node", "enter": "reveal_node", "node_entrance": "reveal_node", "draw": "draw_edge", "draw_connector": "draw_edge", "connect": "draw_edge", "focus": "highlight_node", "highlight": "highlight_node", "data_flow": "packets", "move_data": "packets", "expand": "expand_node", "pulse": "pulse_node", "morph": "morph_node"},
+        }
+        exec(compile(ast.Module(body=functions, type_ignores=[]), "<progressive-architecture-test>", "exec"), namespace)
+        graph = {"nodes": [{"id": label, "label": label} for label in ("Oracle", "AWS DMS", "Amazon S3", "Snowflake")], "edges": [
+            {"id": "oracle-dms", "from": "Oracle", "to": "AWS DMS"},
+            {"id": "dms-s3", "from": "AWS DMS", "to": "Amazon S3"},
+            {"id": "s3-snowflake", "from": "Amazon S3", "to": "Snowflake"},
+        ]}
+        stages = [
+            {"start": 0, "end": 10, "title": "Oracle source", "speech": "Oracle is our source."},
+            {"start": 10, "end": 20, "title": "Replication", "speech": "AWS DMS captures changes."},
+            {"start": 20, "end": 30, "title": "Target", "speech": "Amazon S3 and Snowflake receive the data."},
+        ]
+        animation = namespace["build_architecture_animation"](graph, stages, 30)
+        reveal_times = {action["target_id"]: action["start"] for action in animation["actions"] if action["action"] == "reveal_node"}
+        self.assertLess(reveal_times["oracle"], 10)
+        self.assertGreaterEqual(reveal_times["aws-dms"], 10)
+        self.assertGreaterEqual(reveal_times["amazon-s3"], 20)
+        self.assertGreaterEqual(reveal_times["snowflake"], 20)
+
     def test_idempotency_payment_blueprint_is_local_12_scene_graph_animation(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         tree = ast.parse(source)
@@ -349,6 +513,18 @@ Show the cloud.
         self.assertIn("Video rendering आणि export या device वरच होतात", source)
         self.assertIn("Prompt, storyboard आणि voice NanoPro APIs मधून येतात", source)
         self.assertIn("LOCAL, VOICE SYNCED", source)
+        self.assertIn("Check CPU · GPU · RAM · Storage", source)
+        device_check = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("function checkSqlVideoDevice()", device_check)
+        self.assertIn("not physical free disk space", device_check)
+        self.assertIn("browser download may buffer video chunks in RAM", device_check)
+
+    def test_sentence_visuals_reveal_elements_and_connectors_as_each_cue_speaks(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("const connectorProgress", source)
+        self.assertIn("const elementProgress", source)
+        self.assertIn("FOCUS · ${focusText}", source)
+        self.assertIn("activeCue.speech_en || activeCue.speech", source)
 
     def test_mp4_conversion_route_uses_h264_and_returns_a_video_file(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
@@ -455,7 +631,7 @@ class SceneVisualContractTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         tree = ast.parse(source)
         node = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_validate_scene_visual_contract")
-        namespace = {"Any": Any, "Dict": Dict, "List": List}
+        namespace = {"Any": Any, "Dict": Dict, "List": List, "re": re}
         exec(compile(ast.Module(body=[node], type_ignores=[]), "<scene-contract>", "exec"), namespace)
         return namespace["_validate_scene_visual_contract"]
 
@@ -489,6 +665,78 @@ class SceneVisualContractTests(unittest.TestCase):
         self.assertEqual([item["kind"] for item in validated["overlay_items"]], ["label", "label"])
         self.assertTrue(validated["visual_prompt"])
         self.assertTrue(validated["continuity"])
+
+    def test_keeps_sentence_level_visual_cues_for_narration_sync(self):
+        scene = {
+            "title": "Retry safely",
+            "speech": "The first request charges once. A retry reuses the same key.",
+            "visual_data": {"elements": [{"label": "Request", "x": 0.5, "y": 0.4}]},
+            "sentence_cues": [
+                {"speech": "The first request charges once.", "speech_en": "The first request charges once.", "action": "reveal charge", "visual_data": {"elements": [{"label": "Charge", "x": 0.5, "y": 0.4}]}},
+                {"speech": "A retry reuses the same key.", "speech_en": "A retry reuses the same key.", "action": "reuse key", "visual_data": {"elements": [{"label": "Same key", "x": 0.5, "y": 0.6}]}},
+            ],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual(len(validated["sentence_cues"]), 2)
+        self.assertEqual(validated["sentence_cues"][1]["visual_data"]["elements"][0]["label"], "Same key")
+        self.assertEqual(validated["sentence_cues"][1]["interaction_step"], "introduce")
+
+    def test_normalizes_sentence_cue_interaction_step(self):
+        scene = {
+            "title": "Transfer",
+            "speech": "The packet moves to Snowflake.",
+            "visual_data": {"elements": [{"label": "Pipeline", "x": 0.5, "y": 0.4}]},
+            "sentence_cues": [{
+                "speech": "The packet moves to Snowflake.",
+                "interaction_step": "transfer",
+                "emphasis": "DMS",
+                "visual_data": {
+                    "elements": [{"label": "DMS", "x": 0.35, "y": 0.4}, {"label": "Snowflake", "x": 0.7, "y": 0.6}],
+                    "connectors": [{"from": "DMS", "to": "Snowflake"}, {"from": "Oracle", "to": "Unknown"}],
+                },
+            }],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual(validated["sentence_cues"][0]["interaction_step"], "transfer")
+        self.assertEqual(validated["sentence_cues"][0]["visual_data"]["connectors"], [{"from": "DMS", "to": "Snowflake"}])
+
+    def test_downgrades_transfer_without_a_valid_connection_path(self):
+        scene = {
+            "title": "Missing path",
+            "speech": "The packet moves.",
+            "visual_data": {"elements": [{"label": "DMS", "x": 0.3, "y": 0.4}]},
+            "sentence_cues": [{
+                "speech": "The packet moves.",
+                "interaction_step": "transfer",
+                "visual_data": {"elements": [{"label": "DMS", "x": 0.3, "y": 0.4}], "connectors": [{"from": "DMS", "to": "Missing"}]},
+            }],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual(validated["sentence_cues"][0]["interaction_step"], "connect")
+        self.assertEqual(validated["sentence_cues"][0]["visual_data"]["connectors"], [])
+
+    def test_drops_malformed_sentence_visual_cues_without_rejecting_scene(self):
+        scene = {
+            "title": "Safe fallback",
+            "speech": "The request is safe.",
+            "visual_data": {"elements": [{"label": "Request", "x": 0.5, "y": 0.4}]},
+            "sentence_cues": [{"speech": "The request is safe.", "visual_data": {"elements": [{"label": "Bad", "x": 8, "y": 8}]}}],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual(validated["sentence_cues"], [])
+
+    def test_drops_sentence_cue_that_contains_multiple_sentences(self):
+        scene = {
+            "title": "Keep the narration sequence",
+            "speech": "The event is captured. The target applies it.",
+            "visual_data": {"elements": [{"label": "Pipeline", "x": 0.5, "y": 0.4}]},
+            "sentence_cues": [{
+                "speech": "The event is captured. The target applies it.",
+                "visual_data": {"elements": [{"label": "Two steps", "x": 0.5, "y": 0.4}]},
+            }],
+        }
+        validated = self._validator()(scene)
+        self.assertEqual(validated["sentence_cues"], [])
 
     def test_rejects_overlay_outside_normalized_canvas(self):
         scene = {
@@ -554,7 +802,7 @@ class PromptScenePlayerTests(unittest.TestCase):
         frame = source.split("function renderSqlShortFrame(", 1)[1]
         self.assertIn("drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph", frame)
         self.assertIn("maxDur, activeStage)", frame)
-        self.assertIn("const subPillY = H - 520", frame)
+        self.assertIn("const subPillY = H - 458", frame)
         self.assertIn("activeStage.caption", frame)
         self.assertNotIn("renderPromptSceneAssetVisual(", frame)
         self.assertNotIn("loadPromptSceneAssets(data.scene_assets", source)
@@ -631,7 +879,11 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn("Marathi in Devanagari script", source)
         self.assertIn("Every speech value must be written only in this language", source)
-        self.assertIn("Every speech value must be written only in this language", source)
+        self.assertIn("relaxed everyday spoken Indian Hindi", source)
+        self.assertIn("Avoid shuddh/formal/bookish Hindi", source)
+        self.assertIn("The generated track uses one narrator", source)
+        self.assertIn("interactive medallion-flow art direction", source)
+        self.assertIn("one named component at a time", source)
 
     def test_on_screen_text_is_english_only(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
@@ -775,7 +1027,8 @@ Scene 8 (0:58-1:05) - Closing
     def test_scene_visuals_use_ai_authored_compositions_before_graph_fallback(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn("function drawPromptVisualPlan(", js)
-        self.assertIn("visual.elements", js)
+        self.assertIn("allVisuals = [stage?.visual_data", js)
+        self.assertIn("elementByLabel", js)
         self.assertIn("const sceneVisualRendered = drawPromptVisualPlan", js)
         self.assertIn("!sceneVisualRendered && drawTechnicalArchitectureGraph", js)
 
@@ -784,14 +1037,27 @@ Scene 8 (0:58-1:05) - Closing
         visual = js.split("function drawPromptVisualPlan(", 1)[1].split("function renderArchitectureScene(", 1)[0]
         frame = js.split("function renderSqlShortFrame(", 1)[1].split("function renderSqlSyntaxLine(", 1)[0]
         self.assertNotIn("ctx.arc(0, 0", visual)
-        self.assertIn("stage._promptVisualBackdrop = backdrop", visual)
+        self.assertIn("stage._promptVisualBackdrops[cueIndex] = backdrop", visual)
         self.assertIn("sqlShortState.isExporting ? 0 : 20", visual)
         self.assertIn('String(item.label).replace(/[_-]+/g, " ")', visual)
-        self.assertIn("const glyphSize = elements.length <= 3 ? 152", visual)
-        self.assertNotIn("packetX", visual)
+        self.assertIn("const glyphSize = elements.length <= 3 ? 88 : elements.length <= 6 ? 78 : 68", visual)
+        self.assertIn('interactionStep === "transfer"', visual)
+        self.assertIn("const packetX =", visual)
+        self.assertIn('ctx.lineTo(-25, -14)', visual)
+        self.assertIn("stepLabels[interactionStep]", visual)
+        self.assertIn("historyLabels", visual)
+        self.assertIn("revealedConnectorKeys", visual)
+        self.assertIn('ctx.ellipse(0, 0, 194, 174', visual)
+        self.assertIn('CORE · LIVE TELEMETRY', visual)
+        self.assertIn("Math.max(470, Math.min(H - 1040", visual)
         self.assertNotIn("ctx.roundRect(subPillX", frame)
         self.assertIn('ctx.fillStyle = "#04070F";', frame)
-        self.assertIn("const subTextWidth = W - 170", frame)
+        self.assertIn("const subTextWidth = W - 176", frame)
+        self.assertIn("const maxLines = 3", frame)
+        self.assertIn("fitTextToWidth(ctx, `${subtitleLines[last]}…`", frame)
+        engine = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertIn("Frame-safe layout specialist", engine)
+        self.assertIn("Motion & medallion director", engine)
 
     def test_architecture_graph_uses_vertical_safe_margins(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")

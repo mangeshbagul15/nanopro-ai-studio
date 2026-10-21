@@ -186,7 +186,8 @@ def build_architecture_animation(
             "shape": _shape_for(raw),
             "color": str(raw.get("color") or "#38BDF8"),
             "parent_id": _slug(raw.get("parent_id")) if raw.get("parent_id") else None,
-            "status": str(raw.get("status") or "active")[:24],
+            # Do not paint a newly introduced component green before its operation runs.
+            "status": "pending",
         }
         nodes.append(node)
         id_by_key[node_id] = node_id
@@ -340,24 +341,38 @@ def build_architecture_animation(
             })
             event_keys.add((target_id, action))
 
-    sequence: list[tuple[str, str]] = []
     node_ids = {node["id"] for node in nodes}
-    outgoing_edges: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    stage_for_node: dict[str, int] = {}
+    for node_index, node in enumerate(nodes):
+        label = str(node.get("label") or "").casefold()
+        matches = [
+            index for index, stage in enumerate(stages)
+            if label and label in (str(stage.get("title") or "") + " " + str(stage.get("speech") or "")).casefold()
+        ]
+        stage_for_node[node["id"]] = matches[0] if matches else round(node_index * max(0, len(stages) - 1) / max(1, len(nodes) - 1))
+        if (node["id"], "reveal_node") not in event_keys:
+            stage_index = stage_for_node[node["id"]]
+            stage_start = float(stages[stage_index].get("start", 0) or 0)
+            stage_duration = max(0.1, float(stages[stage_index].get("end", total_duration) or total_duration) - stage_start)
+            start = stage_start + min(0.18, stage_duration * 0.12)
+            graph["actions"].append({
+                "target_id": node["id"], "action": "reveal_node", "start": round(start, 3),
+                "end": round(min(total_duration, start + min(0.65, stage_duration * 0.3)), 3),
+                "duration": round(min(0.65, stage_duration * 0.3), 3), "stage_index": stage_index,
+            })
+
     for edge in edges:
-        outgoing_edges[edge["from"]].append(edge)
-    for node in nodes:
-        sequence.append((node["id"], "reveal_node"))
-        sequence.extend((edge["id"], "draw_edge") for edge in outgoing_edges[node["id"]])
-    sequence = [item for item in sequence if item not in event_keys]
-    for index, (target_id, action) in enumerate(sequence):
-        start = total_duration * 0.72 * index / max(1, len(sequence) - 1)
+        if (edge["id"], "draw_edge") in event_keys:
+            continue
+        stage_index = max(stage_for_node.get(edge["from"], 0), stage_for_node.get(edge["to"], 0))
+        stage = stages[stage_index]
+        stage_start = float(stage.get("start", 0) or 0)
+        stage_duration = max(0.1, float(stage.get("end", total_duration) or total_duration) - stage_start)
+        start = stage_start + min(0.3, stage_duration * 0.22)
         graph["actions"].append({
-            "target_id": target_id,
-            "action": action,
-            "start": round(start, 3),
-            "end": round(min(total_duration, start + (0.9 if action == "draw_edge" else 0.55)), 3),
-            "duration": 0.9 if action == "draw_edge" else 0.55,
-            "stage_index": _stage_for_time(stages, start),
+            "target_id": edge["id"], "action": "draw_edge", "start": round(start, 3),
+            "end": round(min(total_duration, start + min(0.9, stage_duration * 0.4)), 3),
+            "duration": round(min(0.9, stage_duration * 0.4), 3), "stage_index": stage_index,
         })
 
     for edge in edges:
