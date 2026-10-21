@@ -3879,15 +3879,20 @@ class SqlShortVideoEngine:
             final_dur,
             title=matched.get("title") or text_input,
         )
+        mismatch_scenario = _is_data_mismatch_prompt(validation_prompt)
+        dms_snowflake_scenario = bool(
+            re.search(r"\bDMS\b", validation_prompt, re.I)
+            and re.search(r"Snowflake", validation_prompt, re.I)
+        )
         pre_render_validation = build_pre_render_validation_report(
             calibrated_stages,
             final_dur,
             duration_limit,
             architecture_graph,
             duration_measured=bool(audio_file_path and get_mp3_duration(audio_file_path) > 0),
-            mismatch_scenario=_is_data_mismatch_prompt(validation_prompt),
+            mismatch_scenario=mismatch_scenario,
             requested_scene_count=_extract_requested_scene_count(validation_prompt),
-            dms_snowflake_scenario=bool(re.search(r"\bDMS\b", validation_prompt, re.I) and re.search(r"Snowflake", validation_prompt, re.I)),
+            dms_snowflake_scenario=dms_snowflake_scenario,
             source_target_values=_extract_source_target_values(validation_prompt),
         )
         if not pre_render_validation["render_allowed"]:

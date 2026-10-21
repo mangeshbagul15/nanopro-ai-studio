@@ -166,6 +166,7 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("validation_prompt = str(_original_user_prompt or text_input).strip()", generation)
         self.assertIn("_original_user_prompt=validation_prompt", generation)
         self.assertIn("Do not add unrelated architecture or failure scenarios.", generation)
+        self.assertIn("dms_snowflake_scenario = bool(", generation)
 
     def test_pre_render_report_blocks_overlong_voice_and_false_recovery_order(self):
         validate = load_pre_render_validator()
