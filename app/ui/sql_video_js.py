@@ -5410,7 +5410,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             return;
         }
 
-        const videoTracks = canvas.captureStream(30).getVideoTracks();
+        const exportFrameRate = 24;
+        const videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks();
         const combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
         if (window.nanoProRegisterMediaStream) {
             window.nanoProRegisterMediaStream(combinedStream);
@@ -5427,7 +5428,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const chunks = [];
         const recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 6000000,
+            videoBitsPerSecond: 3500000,
             audioBitsPerSecond: 128000
         });
 
@@ -5435,10 +5436,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        const totalFrames = Math.round(totalDuration * 30);
+        const totalFrames = Math.round(totalDuration * exportFrameRate);
         let frameCount = 0;
         let lastProgressFrame = 0;
-        const dt = 1.0 / 30.0;
+        const dt = 1.0 / exportFrameRate;
         const startTime = performance.now();
 
         recorder.onstop = async () => {

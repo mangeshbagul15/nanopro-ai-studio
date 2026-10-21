@@ -193,7 +193,8 @@ Show the cloud.
         self.assertIn(".mp4`", source)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)
-        self.assertIn("videoBitsPerSecond: 6000000", source)
+        self.assertIn("videoBitsPerSecond: 3500000", source)
+        self.assertIn("const exportFrameRate = 24", source)
         self.assertNotIn("stepBatch = totalDuration <= 15 ? 1 : 2", source)
         self.assertNotIn("Math.min(59.5, totalDuration)", source)
         self.assertIn("Generate click produces the complete synchronized 9:16 MP4 download", source)
@@ -210,6 +211,8 @@ Show the cloud.
     def test_mp4_conversion_limits_encoder_memory_for_free_instances(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
         encoder = source.split("def _run_sql_video_mp4_conversion", 1)[1].split("@app.post(", 1)[0]
+        self.assertIn('"scale=720:1280:flags=fast_bilinear"', encoder)
+        self.assertIn('"-r", "24"', encoder)
         self.assertIn('"-preset", "ultrafast"', encoder)
         self.assertIn('"-threads", "1"', encoder)
         self.assertIn('"-filter_threads", "1"', encoder)
