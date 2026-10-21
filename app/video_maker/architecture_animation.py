@@ -75,13 +75,16 @@ def _layout_nodes(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], layo
     if not nodes:
         return
     if layout == "pipeline":
+        row_count = (len(nodes) + 1) // 2
         for index, node in enumerate(nodes):
+            row = index // 2
+            column = index % 2 if row % 2 == 0 else 1 - index % 2
             node.update({
-                "x": 0.5,
-                "y": 0.16 if len(nodes) == 1 else 0.16 + 0.59 * index / (len(nodes) - 1),
-                "layer": index,
-                "column_index": 0,
-                "column_count": 1,
+                "x": 0.5 if len(nodes) == 1 else 0.25 + 0.5 * column,
+                "y": 0.5 if row_count == 1 else 0.22 + 0.56 * row / (row_count - 1),
+                "layer": row,
+                "column_index": column,
+                "column_count": 2 if len(nodes) > 1 else 1,
             })
         return
 

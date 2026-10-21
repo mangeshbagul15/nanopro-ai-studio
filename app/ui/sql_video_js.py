@@ -740,6 +740,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 logPipelineStep("Online NanoPro AI", "Dynamic multi-agent pipeline online. Ready for 1-click video delivery.");
 
                 const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
+                if (["mr", "hi", "en"].includes(data.language)) {
+                    sqlShortState.audioLang = data.language;
+                    document.querySelectorAll(".sql-lang-btn").forEach(button => button.classList.remove("active"));
+                    const languageButton = document.getElementById("btnAudio" + data.language.charAt(0).toUpperCase() + data.language.slice(1));
+                    if (languageButton) languageButton.classList.add("active");
+                }
                 sqlShortState.maxDuration = targetDur;
                 sqlShortState.narrationDuration = targetDur;
                 const dynamicSpec = Object.assign({
@@ -782,21 +788,13 @@ SECOND_HIGHEST_SALARY: 70000`;
                     const audioEl = document.getElementById("sqlVoiceAudio");
                     if (audioEl) {
                         attachAudioSyncListeners(audioEl);
-                        audioEl.src = freshAudioUrl;
-                        audioEl.load();
-                        calibrateAudioDuration();
+                        await loadSqlNarration(audioEl, freshAudioUrl);
                     }
                 }
 
                 const narrationAudio = document.getElementById("sqlVoiceAudio");
                 if (!narrationAudio) throw new Error("Narration audio player is unavailable.");
-                if (narrationAudio.readyState < 1) {
-                    await new Promise((resolve, reject) => {
-                        const timer = setTimeout(() => reject(new Error("Narration audio did not finish loading.")), 20000);
-                        narrationAudio.addEventListener("loadedmetadata", () => { clearTimeout(timer); resolve(); }, { once: true });
-                        narrationAudio.addEventListener("error", () => { clearTimeout(timer); reject(new Error("Narration audio could not be loaded.")); }, { once: true });
-                    });
-                }
+                if (!narrationAudio.src || narrationAudio.error) throw new Error("The new narration audio could not be loaded.");
 
                 updateSqlBlueprintUI(sqlShortState.activePreset);
                 restartSqlShortPlay();
@@ -5286,6 +5284,36 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
     }
 
+    function loadSqlNarration(audioEl, url) {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => finish(new Error("Narration audio did not finish loading.")), 20000);
+            const finish = error => {
+                clearTimeout(timeout);
+                audioEl.removeEventListener("canplay", handleReady);
+                audioEl.removeEventListener("error", handleError);
+                if (error) reject(error);
+                else resolve();
+            };
+            const handleReady = () => {
+                if (audioEl.currentSrc && audioEl.currentSrc !== new URL(url, window.location.href).href) return;
+                audioEl.muted = false;
+                audioEl.volume = 1;
+                calibrateAudioDuration();
+                finish();
+            };
+            const handleError = () => finish(new Error("Narration audio could not be loaded."));
+            audioEl.pause();
+            audioEl.muted = false;
+            audioEl.volume = 1;
+            audioEl.currentTime = 0;
+            audioEl.addEventListener("canplay", handleReady);
+            audioEl.addEventListener("error", handleError, { once: true });
+            audioEl.src = url;
+            audioEl.load();
+            if (audioEl.readyState >= 3) handleReady();
+        });
+    }
+
     function downloadVoiceoverMp3() {
         const audioEl = document.getElementById("sqlVoiceAudio");
         const url = (audioEl && audioEl.src) ? audioEl.src : sqlShortState.audioUrl;
@@ -5347,22 +5375,39 @@ SECOND_HIGHEST_SALARY: 70000`;
         let audioCtx = null;
         if (audioEl && audioEl.src && !audioEl.error) {
             try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let audioRoute = window._sqlVideoAudioRoute;
+                if (!audioRoute || audioRoute.audioEl !== audioEl) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const audioSource = audioCtx.createMediaElementSource(audioEl);
+                    const destination = audioCtx.createMediaStreamDestination();
+                    audioSource.connect(destination);
+                    audioSource.connect(audioCtx.destination);
+                    audioRoute = { audioEl, audioCtx, destination };
+                    window._sqlVideoAudioRoute = audioRoute;
+                    window._sqlExportAudioCtx = audioCtx;
+                    if (window.nanoProRegisterAudioContext) window.nanoProRegisterAudioContext(audioCtx);
+                }
+                audioCtx = audioRoute.audioCtx;
+                if (audioCtx.state === "closed") throw new Error("The audio capture route has closed; reload the studio before exporting again.");
                 if (audioCtx.state === 'suspended') {
                     await audioCtx.resume();
                 }
-                audioDest = audioCtx.createMediaStreamDestination();
-                const audioSource = audioCtx.createMediaElementSource(audioEl);
-                audioSource.connect(audioDest);
-                audioSource.connect(audioCtx.destination);
-                audioTracks = audioDest.stream.getAudioTracks();
-                window._sqlExportAudioCtx = audioCtx;
-                if (window.nanoProRegisterAudioContext) {
-                    window.nanoProRegisterAudioContext(audioCtx);
-                }
+                audioTracks = audioRoute.destination.stream.getAudioTracks().map(track => track.clone());
             } catch(e) {
-                console.warn("AudioContext stream capture notice:", e);
+                if (pDesc) pDesc.innerText = `Audio capture setup failed: ${e.message}`;
+                if (badgeEl) badgeEl.innerText = "Audio capture failed";
+                if (btn) btn.disabled = false;
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)";
+                console.error("AudioContext stream capture notice:", e);
+                return;
             }
+        }
+        if (!audioTracks.length) {
+            if (pDesc) pDesc.innerText = "Narration audio is unavailable; refusing to export a muted video.";
+            if (badgeEl) badgeEl.innerText = "Audio track missing";
+            if (btn) btn.disabled = false;
+            if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)";
+            return;
         }
 
         const videoTracks = canvas.captureStream(30).getVideoTracks();
@@ -5403,8 +5448,6 @@ SECOND_HIGHEST_SALARY: 70000`;
                 videoTracks.forEach(t => { try { t.stop(); } catch(e){} });
                 audioTracks.forEach(t => { try { t.stop(); } catch(e){} });
                 combinedStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
-                if (audioCtx && audioCtx.state !== 'closed') audioCtx.close();
-                window._sqlExportAudioCtx = null;
             } catch(e) {}
 
             if (pFill) pFill.style.width = "92%";

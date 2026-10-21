@@ -1,4 +1,5 @@
 import ast
+import re
 import unittest
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -26,7 +27,45 @@ def load_duration_calibrator():
     return namespace["compute_audio_synchronized_stages"]
 
 
+def load_detailed_brief_parser():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    functions = [
+        item for item in tree.body
+        if isinstance(item, ast.FunctionDef) and item.name in {"_infer_brief_layout", "_parse_detailed_brief"}
+    ]
+    namespace = {"re": re, "Any": Any, "Dict": Dict, "List": List, "Optional": Optional}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "<brief-parser-test>", "exec"), namespace)
+    return namespace["_parse_detailed_brief"]
+
+
 class FullLengthVideoExportTests(unittest.TestCase):
+    def test_scene_brief_extracts_hindi_voiceover_and_scene_titles(self):
+        brief = """# PROJECT: AWS DMS explainer
+# SCENE 1 — INTERVIEW QUESTION
+### Time: 00–06 seconds
+### Voiceover
+[CONFIDENT, ENGAGING]
+"AWS DMS, Oracle से Snowflake तक डेटा कैसे पहुँचाता है? [PAUSE 0.3s]"
+### Diagram and animation
+Show Oracle.
+### On-screen text:
+`INTERVIEW QUESTION`
+---
+# SCENE 2 — WHAT IS AWS DMS?
+### Voiceover
+"AWS DMS एक managed service है।"
+### Diagram and animation
+Show the cloud.
+"""
+        result = load_detailed_brief_parser()(brief)
+        self.assertEqual(result["title"], "AWS DMS explainer")
+        self.assertEqual([scene["title"] for scene in result["scenes"]], ["INTERVIEW QUESTION", "WHAT IS AWS DMS?"])
+        self.assertIn("Oracle से Snowflake", result["scenes"][0]["speech"])
+        self.assertNotIn("PAUSE", result["scenes"][0]["speech"])
+        self.assertEqual(result["scenes"][0]["start"], 0)
+        self.assertEqual(result["scenes"][0]["end"], 6)
+
     def test_scene_timeline_covers_narration_longer_than_one_minute(self):
         stages = [
             {"title": "Architecture", "speech_en": "A detailed sentence describing a system design stage."},
@@ -372,6 +411,21 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn('"x": 0.5', source)
         self.assertIn('0.16 + 0.59 * index / (len(nodes) - 1)', source)
         self.assertIn('aspect-ratio: 9 / 16', (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8"))
+
+    def test_audio_capture_route_is_reused_between_exports(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        export = source.split("async function exportSqlShortVideo(", 1)[1].split("window.exportSqlShortVideo", 1)[0]
+        self.assertIn("window._sqlVideoAudioRoute", export)
+        self.assertEqual(export.count("createMediaElementSource(audioEl)"), 1)
+        self.assertIn("audioRoute.destination.stream.getAudioTracks().map(track => track.clone())", export)
+        self.assertIn("refusing to export a muted video", export)
+        self.assertNotIn("audioCtx.close()", export)
+
+    def test_detailed_project_brief_preserves_explicit_scenes_for_model_parsing(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        self.assertNotIn('lang_key = "en"', source.split("brief_blueprint = _parse_detailed_brief", 1)[1].split("# 4.", 1)[0])
+        self.assertIn("_architecture_from_detailed_brief(text_input, stages)", source)
+        self.assertIn("Choose the number of educational scenes to fit the prompt's complexity", source)
 
 
 if __name__ == "__main__":
