@@ -3265,6 +3265,7 @@ class SqlShortVideoEngine:
         # Send the complete user brief through the AI path; no topic-specific
         # storyboard or visual layout is selected by application code.
         if len(text_input) > 8:
+            ai_resp = ""
             try:
                 from app.core.model_adapter import model_manager
                 duration_match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:seconds?|secs?)\b", text_input, re.I)
@@ -3343,10 +3344,13 @@ class SqlShortVideoEngine:
                 log_event(f"AI short prompt synthesis notice; retrying storyboard: {e}", level="DEBUG", component="SqlShortEngine")
                 try:
                     repair_prompt = (
+                        f"Repair the earlier AI response, which failed parsing or scene-visual validation: {e}. "
+                        f"Earlier response: {ai_resp[:12000]}\n\n"
                         f"Use this complete user prompt as the source of truth and create its 9:16 video: {text_input}\n"
-                        f"Write all speech in {lang_name}. Return raw JSON with title, domain, content_type, and scenes. "
+                        f"Write all speech in {lang_name}. Return raw JSON only with title, domain, content_type, and scenes. "
                         f"Preserve requested scene count/order, timings, dialogue, captions, duration, and all visual constraints. Return max_duration_seconds when requested. Each scene must contain title, speech, speech_en, caption, and scene-specific visual_data: composition, elements (label, normalized x/y, shape, glyph, color, detail), and connectors (from/to labels, style, color). "
-                        f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. Render only editable vector elements; do not request image assets."
+                        f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. Render only editable vector elements; do not request image assets. "
+                        f'Example scene shape: {{"title":"Scene title","speech":"Line in {lang_name}.","speech_en":"English line.","caption":"Short caption","visual_data":{{"composition":"Composition matching this scene","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}.'
                     )
                     retry_resp, _, _ = model_manager.execute_with_fallback(
                         prompt=repair_prompt,
@@ -3374,7 +3378,7 @@ class SqlShortVideoEngine:
                     matched["stages"] = retry_scenes
                 except Exception as retry_error:
                     log_event(f"Storyboard retry notice; using local topic fallback: {retry_error}", level="DEBUG", component="SqlShortEngine")
-                    raise RuntimeError("AI video generation failed; no hardcoded storyboard was substituted. Please retry.") from retry_error
+                    raise RuntimeError(f"AI video generation failed without a hardcoded storyboard fallback: {retry_error}") from retry_error
 
         if not matched:
             raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.")

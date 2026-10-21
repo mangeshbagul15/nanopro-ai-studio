@@ -109,7 +109,7 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("Input Prompt: {text_input}", generation)
         self.assertNotIn("_idempotency_payment_blueprint()", generation)
         self.assertNotIn("_parse_detailed_brief(text_input)", generation)
-        self.assertIn("no hardcoded storyboard was substituted", generation)
+        self.assertIn("without a hardcoded storyboard fallback", generation)
 
     def test_airflow_brief_preserves_all_seven_hindi_scenes(self):
         brief = """# PROJECT: Apache Airflow DAG Kaise Kaam Karta Hai?
