@@ -69,6 +69,27 @@ Show the cloud.
         self.assertEqual(result["scenes"][0]["visual_data"]["layout"], "")
         self.assertEqual(result["max_duration_seconds"], 60)
 
+    def test_aws_dms_graph_fallback_keeps_named_components_and_shapes(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        function = next(
+            item for item in tree.body
+            if isinstance(item, ast.FunctionDef) and item.name == "_aws_dms_fallback_graph"
+        )
+        namespace = {"Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "<aws-dms-fallback-test>", "exec"), namespace)
+        graph = namespace["_aws_dms_fallback_graph"]()
+        nodes = {node["label"]: node for node in graph["nodes"]}
+        self.assertEqual(nodes["Oracle Database"]["shape"], "database")
+        self.assertEqual(nodes["DMS Replication Instance"]["shape"], "hexagon")
+        self.assertEqual(nodes["Snowflake Database"]["shape"], "database")
+        self.assertIn("Replication Task", nodes)
+        self.assertIn("Full Load", nodes)
+        self.assertIn("CDC Change Stream", nodes)
+        self.assertEqual(graph["groups"][0]["shape"], "cloud")
+        node_ids = set(nodes[node]["id"] for node in nodes)
+        self.assertTrue(all(edge["from"] in node_ids and edge["to"] in node_ids for edge in graph["edges"]))
+
     def test_scene_timeline_covers_narration_longer_than_one_minute(self):
         stages = [
             {"title": "Architecture", "speech_en": "A detailed sentence describing a system design stage."},
