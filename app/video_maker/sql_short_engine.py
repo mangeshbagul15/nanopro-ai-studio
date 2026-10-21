@@ -1394,7 +1394,7 @@ class SqlShortVideoEngine:
                     "visual_type": s.get("visual_type") or s.get("action_type") or ("hook" if i == 0 else ("takeaway" if i == len(existing) - 1 else "diagram")),
                     "visual_data": s.get("visual_data") or {
                         key: s.get(key) for key in (
-                            "visual_prompt", "continuity", "overlay_items", "visual_description", "visual_motif", "composition", "motion", "entities", "relationships"
+                            "visual_prompt", "continuity", "overlay_items", "visual_description", "visual_motif", "composition", "motion", "entities", "relationships", "diagram_actions", "architecture_graph"
                         ) if s.get(key) is not None
                     },
                     "title": s.get("title") or f"Scene {i + 1}",
@@ -2786,10 +2786,11 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Formulate 5 to 6 educational scenes that cover the essential points. Target 45 to 55 seconds of spoken narration, always aiming below 60 seconds. Be concise: English narration up to 112 words total; Marathi or Hindi up to 88 words total. Keep the key idea, important steps, and outcome; omit secondary detail when needed.\n"
-                    f"3. For every scene, create a precise English visual_prompt describing a stylised 3D technical motion-graphic of the exact mechanism from its spoken line: the named components, their arrangement, the data or control flow between them, and what changes over time. Never describe people, presenters, faces, hands, offices or generic stock-photo scenes; the frame must show the topic itself as clean 3D diagram shapes, interface panels, glowing packets and labelled components on a dark background. Keep on-screen words out of the image prompt (they are drawn later as overlays). Keep one continuity description across scenes; avoid repeating the same composition or using an orbiting node graph. Explain invisible mechanisms with a grounded cutaway; never invent unrelated planets, characters, or metaphors.\n"
-                    f"4. Write speech naturally in {lang_name}, covering all important prompt details. Scene speech in order is the exact narration that must be synthesized; avoid generic interview intros/outros unless the prompt asks for them. Also add speech_en: the same narration translated into natural English, used only for the on-screen subtitle. Every title and every step label must be written in English.\n\n"
-                    f"Output raw JSON with title, domain, content_type, suggested_motion_bg, and scenes. Set content_type to sql_query only when SQL code is explicitly requested; otherwise tech_topic. Each scene has title, speech, visual_prompt, continuity, visual_description, visual_motif, composition, motion, entities, relationships, and overlay_items. overlay_items are arrays of {{kind, content, x, y}}, where kind is label/code/formula and x/y are numbers from 0 to 1. Keep code and exact text out of the image prompt; place them in overlay_items. Every visual must show the scene's narrated mechanism.\n"
-                    f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","suggested_motion_bg":"One fitting motion background","scenes":[{{"title":"English scene title","speech":"Complete spoken explanation in {lang_name}","speech_en":"The same narration in English","visual_prompt":"English 3D diagram prompt of this exact topic mechanism, no people","continuity":"Recurring subject and style","visual_description":"What the viewer should see","visual_motif":"Topic-specific motif","composition":"Camera framing","motion":"Visible action over time","entities":[{{"label":"Prompt-specific entity","detail":"Its role or property","shape":"form","color":"#38BDF8"}},{{"label":"Related prompt-specific entity","detail":"Its role or property","shape":"form","color":"#A78BFA"}}],"relationships":[{{"from":"Prompt-specific entity","to":"Related prompt-specific entity","label":"Meaningful relationship"}}],"overlay_items":[{{"kind":"label","content":"Exact concise label","x":0.5,"y":0.8}}]}}]}}'
+                    f"3. Build one editable architecture_graph for the whole video. Return nodes with stable id, label, description, and shape; shapes may be database, rectangle, rounded_rectangle, circle, diamond, hexagon, cloud, document, table, terminal, or dashboard. Return directed edges with stable id, from, to, label, style (straight, curved, elbow, or bezier), and data_flow. Use the real components and relationships from the prompt; do not substitute generic numbered steps. Choose pipeline, layered, hierarchical, or tree layout.\n"
+                    f"4. For every narration scene, include diagram_actions referencing those exact node or edge IDs. Use reveal_node, draw_edge, highlight_node, packets, expand_node, pulse_node, or morph_node, with cue_progress from 0 to 1 indicating when the spoken explanation reaches that action. Make the source appear first, draw its connector before revealing its destination, and keep one stable graph layout throughout. Do not request or describe images, photos, image prompts, or image-based slides; the renderer draws every component from editable vector shapes and text.\n"
+                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles. Every node label and diagram action target must use the graph IDs and English labels.\n\n"
+                    f"Output raw JSON with title, domain, content_type, architecture_graph, and scenes. Set content_type to sql_query only when SQL code is explicitly requested; otherwise tech_topic. Keep nodes and edges complete and connected; descriptions must fit a compact vertical 9:16 diagram. Each scene must have title, speech, speech_en, and diagram_actions. Actions are objects with target_id, action, and cue_progress.\n"
+                    f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","architecture_graph":{{"layout":"pipeline","nodes":[{{"id":"source","label":"Prompt-specific source","description":"What enters the system","shape":"database"}},{{"id":"processor","label":"Prompt-specific processor","description":"What it does","shape":"rounded_rectangle"}}],"edges":[{{"id":"source-to-processor","from":"source","to":"processor","label":"data flow","style":"bezier","data_flow":true}}]}},"scenes":[{{"title":"Source and ingestion","speech":"Explain the source and ingestion in {lang_name}.","speech_en":"Explain the source and ingestion.","diagram_actions":[{{"target_id":"source","action":"reveal_node","cue_progress":0.1}},{{"target_id":"source-to-processor","action":"draw_edge","cue_progress":0.55}},{{"target_id":"processor","action":"reveal_node","cue_progress":0.8}},{{"target_id":"source-to-processor","action":"packets","cue_progress":0.9}}]}}]}}'
                 )
 
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
@@ -2845,9 +2846,9 @@ class SqlShortVideoEngine:
                     repair_prompt = (
                         f"Create a valid, topic-specific 9:16 animated video storyboard for: {text_input}\n"
                         f"Write all speech in {lang_name}. Return raw JSON with title, domain, content_type, suggested_motion_bg, and exactly 5 scenes. "
-                        f"Use content_type tech_topic unless the user explicitly requests SQL code. Every scene must contain title, speech, visual_description, "
-                        f"visual_motif, composition, motion, visual_prompt, continuity, overlay_items, at least two topic-specific entities (label, detail, shape, color), and relationships (from, to, label). "
-                        f"Keep narration concise for a video under 60 seconds. Do not add markdown or generic interview content."
+                        f"Use content_type tech_topic unless the user explicitly requests SQL code. Return one architecture_graph with connected prompt-specific nodes and directed edges, "
+                        f"then 5 scenes with title, speech, speech_en, and diagram_actions using those exact graph IDs. Actions may be reveal_node, draw_edge, highlight_node, packets, expand_node, pulse_node, or morph_node, each with cue_progress from 0 to 1. "
+                        f"The complete graph must be drawn from editable vector components; do not request images or image-based slides. Keep narration concise for a video under 60 seconds and do not add generic interview content."
                     )
                     retry_resp, _, _ = model_manager.execute_with_fallback(
                         prompt=repair_prompt,
@@ -2952,6 +2953,13 @@ class SqlShortVideoEngine:
             pro_tip=matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."),
             lang_key=lang_key
         )
+        from app.video_maker.architecture_animation import build_architecture_animation
+        architecture_graph = build_architecture_animation(
+            matched.get("architecture_graph") or matched.get("diagram") or matched.get("graph"),
+            calibrated_stages,
+            final_dur,
+            title=matched.get("title") or text_input,
+        )
 
         hook = matched.get(f"hook_{lang_key}", matched.get("hook_mr", matched.get("hook_en", "")))
         explanation = matched.get(f"explanation_{lang_key}", matched.get("explanation_mr", matched.get("explanation_en", "")))
@@ -2972,6 +2980,7 @@ class SqlShortVideoEngine:
             "pro_tip": matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."),
             "stages": calibrated_stages,
             "scenes": calibrated_stages,
+            "architecture_graph": architecture_graph,
             "duration": final_dur,
             "max_duration_seconds": final_dur,
             "outro_start": outro_start,

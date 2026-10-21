@@ -54,7 +54,7 @@ def queue_generation_job(
     job_id = manager.create_job(
         prompt=question,
         agent_id="video_agent",
-        plan=["storyboard", "scene_images", "image_motion", "audio_sync", "composition"],
+        plan=["storyboard", "voiceover_sync", "diagram_layout", "composition"],
     )
     coroutine = _execute_generation(
         job_id, manager, question, difficulty, language, mode, public_base_url, blueprint_factory, assets_factory

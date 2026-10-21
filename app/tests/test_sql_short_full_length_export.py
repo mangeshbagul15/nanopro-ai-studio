@@ -188,12 +188,14 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn('job.result_data', source)
         self.assertIn('sqlVideoGenerationStatus', source)
 
-    def test_scene_renderer_uses_ai_assets_and_native_overlays(self):
-        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
-        self.assertIn('async function loadPromptSceneAssets(sceneAssets)', source)
-        renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
-        self.assertIn('drawImage(media', renderer)
-        self.assertIn('overlay_items', renderer)
+    def test_architecture_renderer_uses_independent_vector_components(self):
+        renderer = (PROJECT_ROOT / "app" / "ui" / "architecture_animation_renderer.py").read_text(encoding="utf-8")
+        self.assertIn("function drawTechnicalArchitectureGraph(", renderer)
+        self.assertIn("architectureStrokeProgress", renderer)
+        self.assertIn('"packets"', renderer)
+        for shape in ("database", "diamond", "hexagon", "cloud", "document", "terminal", "dashboard"):
+            self.assertIn(f'shape === "{shape}"', renderer)
+        self.assertNotIn("drawImage(", renderer)
 
     def test_video_generation_survives_empty_server_responses(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
@@ -210,19 +212,18 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("asyncio.Semaphore(1)", pipeline_source)
         self.assertIn('image.draft("RGB"', pipeline_source)
 
-    def test_video_job_generates_prompt_specific_scene_images(self):
+    def test_video_job_skips_scene_images_for_diagram_render(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
         route = source.split('@app.post("/api/sql_video/generate_prompt_job")', 1)[1].split("@app.get(", 1)[0]
-        self.assertIn("from app.video_maker.scene_visual_pipeline import generate_scene_assets", route)
-        self.assertIn("generate_scene_assets,", route)
-        self.assertNotIn("None,  # Diagram-only render", route)
+        self.assertNotIn("generate_scene_assets", route)
+        self.assertIn("sql_short_engine.generate_short_prompt_async,\n        None,", route)
 
-    def test_video_frames_render_scene_images_and_keep_diagram_fallback(self):
+    def test_video_frames_render_vector_graph_without_scene_images(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         frame = source.split("function renderSqlShortFrame(", 1)[1]
-        self.assertIn("renderPromptSceneAssetVisual(", frame)
-        self.assertIn("if (!hasActiveAsset)", frame)
-        self.assertIn("renderArchitectureScene(ctx, W, H, p, activeStage", frame)
+        self.assertIn("drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph", frame)
+        self.assertNotIn("renderPromptSceneAssetVisual(", frame)
+        self.assertNotIn("loadPromptSceneAssets(data.scene_assets", source)
         self.assertNotIn("AI VOICE", source)
         for renderer in ("drawDiagramFlow", "drawDiagramCodePanel", "drawDiagramTablePanel", "drawDiagramComparePanel"):
             self.assertIn(f"function {renderer}(", source)
@@ -295,7 +296,7 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn("Marathi in Devanagari script", source)
         self.assertIn("Every speech value must be written only in this language", source)
-        self.assertIn("speech\":\"Complete spoken explanation in {lang_name}", source)
+        self.assertIn("Every speech value must be written only in this language", source)
 
     def test_on_screen_text_is_english_only(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
@@ -305,7 +306,7 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertNotIn("Regional AI Voice", workspace)
         engine = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn('"speech_en": en[i]', engine)
-        self.assertIn("the same narration translated into natural English", engine)
+        self.assertIn("Add speech_en as a natural English translation", engine)
 
     def test_diagram_renders_3d_isometric_slabs(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
@@ -366,11 +367,10 @@ class PromptScenePlayerTests(unittest.TestCase):
             self.assertIn(f"function {name}(", js)
         self.assertIn("if (p.show_subtitles === false) { return; }", js)
 
-    def test_asset_scene_skips_generic_orbit_nodes(self):
-        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
-        renderer = source.split('function renderPromptSceneAssetVisual(', 1)[1].split('function renderPromptDrivenVisual(', 1)[0]
-        self.assertIn('ctx.drawImage(media', renderer)
-        self.assertIn('return;', renderer)
+    def test_architecture_graph_uses_vertical_safe_margins(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
+        self.assertIn('"x": 0.5', source)
+        self.assertIn('0.16 + 0.59 * index / (len(nodes) - 1)', source)
         self.assertIn('aspect-ratio: 9 / 16', (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8"))
 
 

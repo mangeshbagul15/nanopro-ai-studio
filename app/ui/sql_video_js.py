@@ -3,9 +3,10 @@ Mangesh Nano Pro AI Studio - 9:16 SQL Short Video Client-Side Engine
 Handles HTML5 Canvas 1080x1920 9:16 rendering, dynamic arrow motion, 
 typewriter SQL code animations, multilingual voiceover, and MediaRecorder export with audio multiplexing.
 """
+from app.ui.architecture_animation_renderer import ARCHITECTURE_ANIMATION_JS
 
 def get_sql_video_js() -> str:
-    return r'''
+    script = r'''
     <script>
     /* ==========================================================================
        9:16 SQL SHORT & REEL ENGINE (CLIENT-SIDE ZERO-SERVER-LOAD)
@@ -23,8 +24,6 @@ def get_sql_video_js() -> str:
         showAvatar: false,
         activePreset: null,
         activeVideoSpec: null,
-        sceneAssets: new Map(),
-        sceneAssetList: [],
         selectedAvatar: "Nadim_public_5",
         avatarVideoElement: null,
         avatarVideoLoaded: false,
@@ -714,10 +713,9 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (job.status === "error" || job.status === "failed") throw new Error(job.error_message || "Video generation failed.");
                 await new Promise(r => setTimeout(r, 1000));
             }
-            if (!data) throw new Error("Video generation timed out while preparing the scene visuals.");
+            if (!data) throw new Error("Video generation timed out while preparing the architecture animation.");
             if (data.status === "success") {
                 if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
-                await loadPromptSceneAssets(data.scene_assets || []);
                 sqlShortState.agentPipeline = data.agent_pipeline || [];
                 sqlShortState.perfectionistAudit = data.perfectionist_audit || null;
 
@@ -800,10 +798,6 @@ SECOND_HIGHEST_SALARY: 70000`;
                     });
                 }
 
-                if (data.suggested_motion_bg) {
-                    select3DMotionBg(data.suggested_motion_bg);
-                }
-
                 updateSqlBlueprintUI(sqlShortState.activePreset);
                 restartSqlShortPlay();
 
@@ -821,7 +815,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
         } finally {
             const statusEl = document.getElementById("sqlVideoGenerationStatus");
-            if (statusEl && sqlShortState.activeVideoSpec) statusEl.textContent = "Ready · prompt-specific 9:16 scene visuals";
+            if (statusEl && sqlShortState.activeVideoSpec) statusEl.textContent = "Ready · voice-synchronized architecture animation";
             btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
             btn.disabled = false;
         }
@@ -4990,20 +4984,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const activeStageIndex = stages.indexOf(activeStage);
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
-        // Crossfade prompt-generated scene media while keeping diagrams as fallback.
-        const outgoingAlpha = (previousStage && sceneElapsed < 0.3) ? Math.max(0, 1 - sceneElapsed / 0.3) : 0;
-        if (outgoingAlpha > 0) {
-            const hasPreviousAsset = renderPromptSceneAssetVisual(
-                ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6, t, false
-            );
-            if (!hasPreviousAsset) {
-                renderArchitectureScene(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6, t);
-            }
-        }
-        const hasActiveAsset = activeStage && renderPromptSceneAssetVisual(
-            ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t, false
-        );
-        if (!hasActiveAsset) {
+        const graphRendered = drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph, t, activeStageIndex, maxDur);
+        if (!graphRendered) {
             renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
         }
 
@@ -5725,3 +5707,4 @@ SECOND_HIGHEST_SALARY: 70000`;
     }, { capture: true });
     </script>
     '''
+    return script.replace("    </script>", f"{ARCHITECTURE_ANIMATION_JS}\n    </script>", 1)

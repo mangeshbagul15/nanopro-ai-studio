@@ -36,6 +36,18 @@ class FakeTaskManager:
 
 
 class GenerationJobTests(unittest.IsolatedAsyncioTestCase):
+    async def test_diagram_only_job_skips_image_generation(self):
+        helper = load_job_helpers()
+        manager = FakeTaskManager()
+        async def blueprint(**kwargs):
+            return {"status": "success", "duration": 50, "stages": [{"title": "Source"}], "architecture_graph": {"nodes": []}}
+        helper.queue_generation_job(manager, "Oracle to Snowflake", "https://studio.example", blueprint, None)
+        await asyncio.sleep(0.02)
+        job = helper.get_generation_job(manager, "job-1")
+        self.assertEqual(job["status"], "done")
+        self.assertEqual(job["result_data"]["scene_assets"], [])
+        self.assertEqual(job["stage"], "completed")
+
     async def test_generation_job_returns_id_and_polls_progress(self):
         helper = load_job_helpers()
         manager = FakeTaskManager()
