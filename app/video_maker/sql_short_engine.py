@@ -303,6 +303,15 @@ def _extract_source_target_values(prompt: str) -> Dict[str, str]:
     return values
 
 
+def _is_data_mismatch_prompt(prompt: str) -> bool:
+    """Enable the strict mismatch lesson gate only for an actual data discrepancy topic."""
+    return bool(re.search(
+        r"\b(?:data\s+)?mismatch\b|\bdiscrepanc\w*\b|\bout of sync\b|\bsource[- /]target\s+(?:data\s+)?mismatch\b|मिसमैच|असंगति|डेटा\s+में\s+अंतर|डेटा\s+का\s+अंतर",
+        prompt or "",
+        re.I,
+    ))
+
+
 def _comparison_values_match(expected: Any, observed: Any) -> bool:
     left, right = str(expected or "").strip().casefold(), str(observed or "").strip().casefold()
     left_numbers = re.findall(r"(?<![\w])\d[\d,]*(?:\.\d+)?", left)
@@ -3586,6 +3595,7 @@ class SqlShortVideoEngine:
         language: str = "mr",
         mode: str = "faang_drill",
         _pre_render_repair_attempt: int = 0,
+        _original_user_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Asynchronously generates a synchronized, prompt-driven video creation blueprint:
@@ -3604,6 +3614,7 @@ class SqlShortVideoEngine:
             lang_key = "en"
 
         text_input = (topic_or_question or "").strip()
+        validation_prompt = str(_original_user_prompt or text_input).strip()
         matched = None
 
         # Content Type Detection informs metadata only. Every user prompt must pass through
@@ -3874,22 +3885,29 @@ class SqlShortVideoEngine:
             duration_limit,
             architecture_graph,
             duration_measured=bool(audio_file_path and get_mp3_duration(audio_file_path) > 0),
-            mismatch_scenario=bool(re.search(r"mismatch|data mismatch|failure|recover|reconcil|असंगति|मिसमैच|गड़बड़ी", text_input, re.I)),
-            requested_scene_count=_extract_requested_scene_count(text_input),
-            dms_snowflake_scenario=bool(re.search(r"\bDMS\b", text_input, re.I) and re.search(r"Snowflake", text_input, re.I)),
-            source_target_values=_extract_source_target_values(text_input),
+            mismatch_scenario=_is_data_mismatch_prompt(validation_prompt),
+            requested_scene_count=_extract_requested_scene_count(validation_prompt),
+            dms_snowflake_scenario=bool(re.search(r"\bDMS\b", validation_prompt, re.I) and re.search(r"Snowflake", validation_prompt, re.I)),
+            source_target_values=_extract_source_target_values(validation_prompt),
         )
         if not pre_render_validation["render_allowed"]:
             if _pre_render_repair_attempt < 1:
+                repair_rules = [
+                    "Keep the original topic, narration language, scene count, duration, and facts. Do not add unrelated architecture or failure scenarios."
+                ]
+                if dms_snowflake_scenario:
+                    repair_rules.append("For the requested DMS-to-Snowflake lesson, preserve the configured intermediary ingestion route, such as AWS DMS → Amazon S3 → Snowpipe → Snowflake.")
+                if pre_render_validation["checks"] and mismatch_scenario:
+                    repair_rules.append("For this actual mismatch lesson, order failure → diagnosis → recovery → verification, and show success only after equal values are compared.")
                 repair_prompt = (
                     f"{text_input}\n\n"
                     "AUTOMATIC PRE-RENDER REPAIR: regenerate the complete storyboard and narration to fix these critical quality-gate failures: "
-                    f"{'; '.join(pre_render_validation['critical_failures'])}. Keep the requested duration and scene count. "
-                    "Preserve correct source/destination endpoints and direction; draw a real intermediary such as AWS DMS → Amazon S3 → Snowpipe → Snowflake when that architecture is requested. "
-                    "For a mismatch lesson order failure → diagnosis → recovery → verification, and show success only after equal values are compared."
+                    f"{'; '.join(pre_render_validation['critical_failures'])}. "
+                    + " ".join(repair_rules)
                 )
                 return await self.generate_short_prompt_async(
-                    repair_prompt, difficulty, language, mode, _pre_render_repair_attempt + 1
+                    repair_prompt, difficulty, language, mode, _pre_render_repair_attempt + 1,
+                    _original_user_prompt=validation_prompt,
                 )
             raise RuntimeError("Pre-render quality gate blocked this storyboard: " + "; ".join(pre_render_validation["critical_failures"]))
 

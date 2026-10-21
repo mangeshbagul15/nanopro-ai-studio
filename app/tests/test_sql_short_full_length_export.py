@@ -87,6 +87,15 @@ def load_source_target_value_parser():
     return namespace["_extract_source_target_values"]
 
 
+def load_mismatch_prompt_classifier():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_is_data_mismatch_prompt")
+    namespace = {"re": re}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "<mismatch-classifier-test>", "exec"), namespace)
+    return namespace["_is_data_mismatch_prompt"]
+
+
 class FullLengthVideoExportTests(unittest.TestCase):
     def test_pre_render_report_distinguishes_passed_from_unperformed_checks(self):
         validate = load_pre_render_validator()
@@ -145,6 +154,18 @@ class FullLengthVideoExportTests(unittest.TestCase):
         parse_values = load_source_target_value_parser()
         prompt = "SOURCE:\nAccount 101 = ₹8,000\nTARGET:\nAccount 101 = ₹10,000\n"
         self.assertEqual(parse_values(prompt), {"source": "8000", "target": "10000"})
+
+    def test_generic_failure_recovery_instructions_do_not_trigger_mismatch_gate(self):
+        classify = load_mismatch_prompt_classifier()
+        self.assertFalse(classify("Explain how an LLM works. Mention failure and recovery only as generic concepts."))
+        self.assertTrue(classify("How to fix an AWS DMS to Snowflake data mismatch."))
+
+    def test_repair_retry_preserves_original_prompt_for_quality_gates(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        generation = source.split("async def generate_short_prompt_async", 1)[1]
+        self.assertIn("validation_prompt = str(_original_user_prompt or text_input).strip()", generation)
+        self.assertIn("_original_user_prompt=validation_prompt", generation)
+        self.assertIn("Do not add unrelated architecture or failure scenarios.", generation)
 
     def test_pre_render_report_blocks_overlong_voice_and_false_recovery_order(self):
         validate = load_pre_render_validator()
