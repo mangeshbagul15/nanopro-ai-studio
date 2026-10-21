@@ -5804,35 +5804,33 @@ SECOND_HIGHEST_SALARY: 70000`;
             const elapsed = Math.min(totalDuration, Math.max(0, (timestamp - startTime) / 1000));
             sqlShortState.currentTime = elapsed;
             const t = elapsed;
-            const p = sqlShortState.activePreset;
-            const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
-
-            let stageText = "Stage 1: Concept introduction";
-            if (stages.length > 0) {
-                const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
-                if (actIdx !== -1) {
-                    const st = stages[actIdx];
-                    stageText = `Stage ${actIdx + 1}/${stages.length}: ${st.title || st.action_type || ''}`;
-                } else if (t < stages[0].start) {
-                    stageText = `Stage 1/${stages.length}: ${stages[0].title || ''}`;
-                } else {
-                    stageText = `Stage ${stages.length}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
-                }
-            } else {
-                const stage = Math.min(6, Math.floor((t / Math.max(1, totalDuration)) * 6) + 1);
-                stageText = `Stage ${stage}/6: Explanation in progress`;
-            }
-
-            if (pDesc) pDesc.innerText = stageText;
             if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
                 sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
             }
             renderSqlShortFrame(t);
-            updatePlayerScrubberUI(t);
 
             frameCount = Math.min(totalFrames, Math.floor(t / dt));
             if (frameCount - lastProgressFrame >= 15 || t >= totalDuration) {
                 lastProgressFrame = frameCount;
+                const p = sqlShortState.activePreset;
+                const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
+                let stageText = "Stage 1: Concept introduction";
+                if (stages.length > 0) {
+                    const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
+                    if (actIdx !== -1) {
+                        const st = stages[actIdx];
+                        stageText = `Stage ${actIdx + 1}/${stages.length}: ${st.title || st.action_type || ''}`;
+                    } else if (t < stages[0].start) {
+                        stageText = `Stage 1/${stages.length}: ${stages[0].title || ''}`;
+                    } else {
+                        stageText = `Stage ${stages.length}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
+                    }
+                } else {
+                    const stage = Math.min(6, Math.floor((t / Math.max(1, totalDuration)) * 6) + 1);
+                    stageText = `Stage ${stage}/6: Explanation in progress`;
+                }
+                if (pDesc && pDesc.innerText !== stageText) pDesc.innerText = stageText;
+                updatePlayerScrubberUI(t);
                 const pct = Math.min(100, Math.floor((t / totalDuration) * 100));
                 if (pFill) pFill.style.width = pct + "%";
                 if (pPctText) pPctText.innerText = pct + "%";

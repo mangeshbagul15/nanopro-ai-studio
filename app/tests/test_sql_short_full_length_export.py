@@ -328,6 +328,10 @@ Show the cloud.
         self.assertIn('let outputExtension = mimeType ? "mp4" : "webm"', export)
         self.assertIn('mimeType = ["video/webm;codecs=vp9,opus"', export)
         self.assertIn("recorder.start(1000)", export)
+        record_step = export.split("function recordStep(timestamp)", 1)[1]
+        self.assertIn("frameCount - lastProgressFrame >= 15", record_step)
+        self.assertLess(record_step.index("renderSqlShortFrame(t)"), record_step.index("updatePlayerScrubberUI(t)"))
+        self.assertLess(record_step.index("frameCount = Math.min(totalFrames"), record_step.index("updatePlayerScrubberUI(t)"))
         self.assertIn("saveWritable.write(event.data)", export)
         self.assertNotIn("finalize_mp4", export)
         self.assertNotIn("FormData", export)
