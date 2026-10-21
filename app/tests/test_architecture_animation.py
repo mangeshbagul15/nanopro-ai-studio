@@ -39,7 +39,7 @@ class ArchitectureAnimationTests(unittest.TestCase):
         self.assertGreater(len({node["x"] for node in result["nodes"]}), 1)
         self.assertGreater(len({node["y"] for node in result["nodes"]}), 1)
         self.assertEqual([edge["from"] for edge in result["edges"]], ["oracle", "dms", "snowflake", "sql"])
-        self.assertTrue(all(0.25 <= node["x"] <= 0.75 and 0.22 <= node["y"] <= 0.78 for node in result["nodes"]))
+        self.assertTrue(all(0.18 <= node["x"] <= 0.82 and 0.22 <= node["y"] <= 0.78 for node in result["nodes"]))
         actions = {(item["target_id"], item["action"]): item for item in result["actions"]}
         self.assertEqual(actions[("oracle-dms", "draw_edge")]["start"], 10.5)
         self.assertLess(actions[("oracle-dms", "draw_edge")]["start"], actions[("dms", "reveal_node")]["start"])

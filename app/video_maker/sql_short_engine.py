@@ -172,11 +172,13 @@ def compute_audio_synchronized_stages(
     # Filter out any pre-existing branding/outro stage
     edu_stages = [
         s for s in raw_stages
-        if s.get("action_type") != "branding_outro"
-        and s.get("id") != 7
-        and "Outro" not in (s.get("title") or "")
-        and "Code with Mangesh" not in (s.get("speech_en") or "")
-        and "कोड विथ मंगेश" not in (s.get("speech_mr") or "")
+        if s.get("user_authored_scene") or (
+            s.get("action_type") != "branding_outro"
+            and s.get("id") != 7
+            and "Outro" not in (s.get("title") or "")
+            and "Code with Mangesh" not in (s.get("speech_en") or "")
+            and "कोड विथ मंगेश" not in (s.get("speech_mr") or "")
+        )
     ]
     if not edu_stages:
         edu_stages = raw_stages
@@ -1138,6 +1140,7 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         layout = _infer_brief_layout(visual or body, rows, labels)
         scenes.append({
             "id": index + 1,
+            "user_authored_scene": True,
             "title": scene_title,
             "speech": speech,
             "speech_en": speech,
@@ -1159,6 +1162,10 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
     if len(scenes) < 2:
         return None
     duration = max([scene["end"] for scene in scenes if scene.get("end")] or [0.0])
+    strict_limit = re.search(
+        r"(?i)(?:\bstrictly\s+\d+(?:\.\d+)?\s*[–—-]\s*|\b(?:do not|must not|never)\s+exceed\s+)(\d+(?:\.\d+)?)\s*(?:seconds?|secs?|s\b)",
+        text,
+    )
     return {
         "title": headline or "Explainer",
         "domain": "Explainer",
@@ -1171,6 +1178,7 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         "scenes": scenes,
         "stages": scenes,
         "duration": duration,
+        "max_duration_seconds": float(strict_limit.group(1)) if strict_limit else None,
         "source_brief": text,
     }
 
@@ -2843,6 +2851,35 @@ class SqlShortVideoEngine:
                 last_error = exc
         raise RuntimeError(f"The online model could not produce a faithful architecture graph: {last_error}")
 
+    async def _condense_narration_to_duration(
+        self, stages: List[Dict[str, Any]], language: str, max_words: int
+    ) -> List[str]:
+        language_name = {"mr": "natural Marathi", "hi": "natural Indian Hindi", "en": "natural English"}.get(language, "natural Hindi")
+        scenes = [
+            {"title": str(stage.get("title") or f"Scene {index + 1}"), "speech": str(stage.get(f"speech_{language}") or stage.get("speech") or "")}
+            for index, stage in enumerate(stages)
+        ]
+        prompt = (
+            f"Shorten this narration to at most {max_words} whitespace-separated words total. Write in {language_name}; "
+            "preserve every scene in the same order, the technical meaning and all named systems. Keep normal speaking pace and natural short pauses; "
+            "remove repetition and secondary phrasing instead of speaking faster. Do not add facts or stage directions. "
+            f"Return JSON only with a speech string for each of the {len(scenes)} scenes, in the same order.\n"
+            f"Scenes: {json.dumps(scenes, ensure_ascii=False)}"
+        )
+        from app.core.model_adapter import model_manager
+        response, _, _ = model_manager.execute_with_fallback(
+            prompt=prompt,
+            system_prompt="You are a precise technical narration editor. Return valid JSON only and preserve technical accuracy.",
+        )
+        payload = json.loads(response[response.find("{"):response.rfind("}") + 1])
+        condensed = payload.get("scenes") if isinstance(payload, dict) else None
+        if not isinstance(condensed, list) or len(condensed) != len(stages):
+            raise ValueError("The online model did not preserve all narration scenes while shortening the script.")
+        speeches = [str(scene.get("speech") or "").strip() if isinstance(scene, dict) else "" for scene in condensed]
+        if not all(speeches) or sum(len(speech.split()) for speech in speeches) > max_words:
+            raise ValueError("The shortened narration did not meet the duration word budget.")
+        return speeches
+
     async def generate_short_prompt_async(
         self,
         topic_or_question: str,
@@ -3068,6 +3105,37 @@ class SqlShortVideoEngine:
             words_count = len(full_narration.split())
             rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
             actual_dur = round(words_count / rate, 2)
+
+        duration_limit = float(matched.get("max_duration_seconds") or 0)
+        if duration_limit > 0 and actual_dur > duration_limit:
+            speech_word_count = len(full_narration.split())
+            target_words = max(24, int(speech_word_count * max(1.0, duration_limit - 5) / actual_dur))
+            condensed_speeches = await self._condense_narration_to_duration(stages, lang_key, target_words)
+            for stage, speech in zip(stages, condensed_speeches):
+                stage["speech"] = speech
+                stage[f"speech_{lang_key}"] = speech
+            full_narration = "\n\n".join(condensed_speeches)
+            narration_hash = hashlib.md5(full_narration.encode("utf-8")).hexdigest()[:10]
+            if str(preset_id).startswith("custom") or preset_id == "custom":
+                custom_filename = f"voice_custom_{narration_hash}_{lang_key}.mp3"
+            else:
+                custom_filename = f"voice_{preset_id}_{narration_hash}_{lang_key}.mp3"
+            tts_res = await neural_tts.synthesize_async(
+                text=full_narration,
+                language=lang_key,
+                custom_filename=custom_filename,
+            )
+            if tts_res.get("status") != "success" or not tts_res.get("audio_url"):
+                raise RuntimeError("NanoPro could not synthesize the duration-corrected narration.")
+            audio_url = tts_res.get("audio_url")
+            audio_file_path = tts_res.get("file_path")
+            actual_dur = get_mp3_duration(audio_file_path) if audio_file_path else 0.0
+            if actual_dur <= 0.0:
+                actual_dur = round(len(full_narration.split()) / (2.3 if lang_key in ["mr", "hi"] else 2.5), 2)
+            if actual_dur > duration_limit:
+                raise RuntimeError(
+                    f"The narration still exceeds the prompt's {duration_limit:g}-second limit after natural shortening."
+                )
 
         # Synchronize stage boundaries dynamically based on word counts and the complete real audio duration.
         calibrated_stages, final_dur, outro_start = compute_audio_synchronized_stages(

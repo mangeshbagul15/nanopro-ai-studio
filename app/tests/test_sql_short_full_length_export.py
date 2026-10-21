@@ -42,6 +42,7 @@ def load_detailed_brief_parser():
 class FullLengthVideoExportTests(unittest.TestCase):
     def test_scene_brief_extracts_hindi_voiceover_and_scene_titles(self):
         brief = """# PROJECT: AWS DMS explainer
+Duration: Strictly 55–60 seconds.
 # SCENE 1 — INTERVIEW QUESTION
 ### Time: 00–06 seconds
 ### Voiceover
@@ -66,6 +67,7 @@ Show the cloud.
         self.assertEqual(result["scenes"][0]["start"], 0)
         self.assertEqual(result["scenes"][0]["end"], 6)
         self.assertEqual(result["scenes"][0]["visual_data"]["layout"], "")
+        self.assertEqual(result["max_duration_seconds"], 60)
 
     def test_scene_timeline_covers_narration_longer_than_one_minute(self):
         stages = [
@@ -77,12 +79,24 @@ Show the cloud.
         self.assertEqual(outro_start, 127.4)
         self.assertEqual(calibrated[-1]["end"], 127.4)
 
+    def test_user_authored_scene_seven_is_not_removed_as_a_template_outro(self):
+        stages = [{
+            "id": 7,
+            "user_authored_scene": True,
+            "title": "CTA",
+            "speech_en": "Follow Code with Mangesh for more technical explainers.",
+        }]
+        calibrated, _, _ = load_duration_calibrator()(stages, 5, lang_key="en")
+        self.assertEqual(len(calibrated), 1)
+        self.assertEqual(calibrated[0]["title"], "CTA")
+
     def test_browser_download_requests_final_mp4_without_duration_cap(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn('fetch("/api/sql_video/finalize_mp4"', source)
         self.assertIn(".mp4`", source)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)
+        self.assertIn("videoBitsPerSecond: 6000000", source)
         self.assertNotIn("stepBatch = totalDuration <= 15 ? 1 : 2", source)
         self.assertNotIn("Math.min(59.5, totalDuration)", source)
         self.assertIn("Generate click produces the complete synchronized 9:16 MP4 download", source)

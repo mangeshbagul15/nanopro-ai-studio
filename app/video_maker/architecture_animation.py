@@ -75,16 +75,17 @@ def _layout_nodes(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], layo
     if not nodes:
         return
     if layout == "pipeline":
-        row_count = (len(nodes) + 1) // 2
+        column_count = 3
+        row_count = (len(nodes) + column_count - 1) // column_count
         for index, node in enumerate(nodes):
-            row = index // 2
-            column = index % 2 if row % 2 == 0 else 1 - index % 2
+            row = index // column_count
+            column = index % column_count if row % 2 == 0 else column_count - 1 - index % column_count
             node.update({
-                "x": 0.5 if len(nodes) == 1 else 0.25 + 0.5 * column,
+                "x": (0.18, 0.5, 0.82)[column] if len(nodes) > 1 else 0.5,
                 "y": 0.5 if row_count == 1 else 0.22 + 0.56 * row / (row_count - 1),
                 "layer": row,
                 "column_index": column,
-                "column_count": 2 if len(nodes) > 1 else 1,
+                "column_count": min(column_count, len(nodes)) if len(nodes) > 1 else 1,
             })
         return
 
@@ -181,7 +182,7 @@ def build_architecture_animation(
         node = {
             "id": node_id,
             "label": label[:72],
-            "description": str(raw.get("description") or raw.get("detail") or "").strip()[:140],
+            "description": str(raw.get("description") or raw.get("detail") or "").strip()[:90],
             "shape": _shape_for(raw),
             "color": str(raw.get("color") or "#38BDF8"),
             "parent_id": _slug(raw.get("parent_id")) if raw.get("parent_id") else None,

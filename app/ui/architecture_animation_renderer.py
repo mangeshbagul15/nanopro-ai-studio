@@ -24,8 +24,9 @@ ARCHITECTURE_ANIMATION_JS = r'''
 
     function architectureNodeSize(node, width, height, count) {
         const columns = Math.max(1, Number(node.column_count) || 1);
-        const boxWidth = Math.min(width * 0.7, width * 0.7 / columns);
-        const boxHeight = Math.min(144, Math.max(76, height * 0.66 / Math.max(1, count) * 0.74));
+        const boxWidth = Math.min(width * 0.88, width * 0.88 / columns);
+        const rowCount = Math.max(1, Math.ceil(count / columns));
+        const boxHeight = Math.min(150, Math.max(104, height * 0.62 / rowCount * 0.56));
         return { width: boxWidth, height: boxHeight };
     }
 
@@ -281,8 +282,8 @@ ARCHITECTURE_ANIMATION_JS = r'''
         ctx.font = `700 ${fontSize}px 'Segoe UI', sans-serif`;
         const titleLines = wrapCanvasText(ctx, node.label || "Component", boxWidth * 0.84, 2);
         const titleHeight = titleLines.length * (fontSize + 3);
-        const descriptionLines = node.description ? wrapCanvasText(ctx, node.description, boxWidth * 0.82, 2) : [];
-        const lineHeight = Math.min(19, boxHeight * 0.16);
+        const descriptionLines = node.description ? wrapCanvasText(ctx, node.description, boxWidth * 0.82, 1) : [];
+        const lineHeight = Math.min(18, boxHeight * 0.15);
         const descriptionHeight = descriptionLines.length * lineHeight;
         const contentHeight = titleHeight + descriptionHeight + (descriptionLines.length ? 4 : 0);
         let textY = box.cy - contentHeight / 2 + fontSize / 2;

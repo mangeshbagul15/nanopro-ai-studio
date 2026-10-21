@@ -5427,7 +5427,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const chunks = [];
         const recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 14000000,
+            videoBitsPerSecond: 6000000,
             audioBitsPerSecond: 128000
         });
 
