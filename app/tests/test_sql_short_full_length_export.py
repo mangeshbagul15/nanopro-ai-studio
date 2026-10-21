@@ -65,6 +65,7 @@ Show the cloud.
         self.assertNotIn("PAUSE", result["scenes"][0]["speech"])
         self.assertEqual(result["scenes"][0]["start"], 0)
         self.assertEqual(result["scenes"][0]["end"], 6)
+        self.assertEqual(result["scenes"][0]["visual_data"]["layout"], "")
 
     def test_scene_timeline_covers_narration_longer_than_one_minute(self):
         stages = [
@@ -425,6 +426,9 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertNotIn('lang_key = "en"', source.split("brief_blueprint = _parse_detailed_brief", 1)[1].split("# 4.", 1)[0])
         self.assertIn("_architecture_from_detailed_brief(text_input, stages)", source)
+        self.assertIn("No generic vertical-box fallback was rendered", source)
+        self.assertIn('graph["layout"] = "pipeline"', source)
+        self.assertIn("Required prompt-specific concepts that must appear as separate graph nodes", source)
         self.assertIn("Choose the number of educational scenes to fit the prompt's complexity", source)
 
 
