@@ -3813,7 +3813,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.save();
             ctx.beginPath(); ctx.moveTo(from.x, from.y);
             ctx.quadraticCurveTo(midX - bend, midY + bend, to.x, to.y);
-            ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha *= 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = 20; ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha *= 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 6 : 20; ctx.stroke(); ctx.shadowBlur = 0;
             ctx.strokeStyle = "rgba(255,255,255,0.42)"; ctx.lineWidth = 2; ctx.globalAlpha *= 1.8; ctx.stroke();
             ctx.restore();
         });
@@ -3828,6 +3828,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             if (glyph) {
                 const glyphSize = elements.length <= 3 ? 152 : elements.length <= 6 ? 124 : 96;
                 ctx.font = `800 ${glyphSize}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`;
+                ctx.shadowBlur = sqlShortState.isExporting ? 10 : 32;
                 ctx.fillText(glyph.slice(0, 2), 0, -8, 220);
             }
             ctx.shadowBlur = 0;
@@ -5788,11 +5789,13 @@ SECOND_HIGHEST_SALARY: 70000`;
                     badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
                 }
             } finally {
+                sqlShortState.isExporting = false;
                 if (btn) btn.disabled = false;
                 if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
             }
         };
 
+        sqlShortState.isExporting = true;
         recorder.start(1000);
         if (audioEl && audioEl.src) {
             audioEl.currentTime = 0;
