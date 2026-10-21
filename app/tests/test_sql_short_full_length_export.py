@@ -237,6 +237,8 @@ Show the cloud.
         self.assertIn('status.status === "ready"', source)
         self.assertIn('status.status === "failed"', source)
         self.assertIn('finalize_mp4/${encodeURIComponent(queuedJob.job_id)}/download', source)
+        self.assertIn("synchronized WebM backup", source)
+        self.assertIn("${Math.round(totalDuration)}s.webm", source)
         self.assertIn(".mp4`", source)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)

@@ -5460,8 +5460,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
             }
 
+            const webmBlob = new Blob(chunks, { type: mimeType });
             try {
-                const webmBlob = new Blob(chunks, { type: mimeType });
                 const form = new FormData();
                 form.append("file", webmBlob, "nanopro_full_video.webm");
                 const queueResponse = await fetch("/api/sql_video/finalize_mp4", { method: "POST", body: form });
@@ -5518,11 +5518,20 @@ SECOND_HIGHEST_SALARY: 70000`;
                     }
                 }, 300);
             } catch (error) {
-                if (pDesc) pDesc.innerText = `Final MP4 export failed: ${error.message}`;
+                const webmUrl = URL.createObjectURL(webmBlob);
+                const fallbackLink = document.createElement("a");
+                const fallbackId = String(sqlShortState.activePreset?.id || "tech_explainer").replace(/[^a-zA-Z0-9_-]/g, "_");
+                const fallbackName = `NanoPro_Full_9x16_${fallbackId}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.webm`;
+                fallbackLink.href = webmUrl;
+                fallbackLink.download = fallbackName;
+                document.body.appendChild(fallbackLink);
+                fallbackLink.click();
+                document.body.removeChild(fallbackLink);
+                if (pDesc) pDesc.innerText = `MP4 conversion unavailable (${error.message}). Downloaded the synchronized WebM backup.`;
                 if (badgeEl) {
-                    badgeEl.innerText = "MP4 export failed";
-                    badgeEl.style.color = "#EF4444";
-                    badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
+                    badgeEl.innerText = "Synchronized WebM backup ready";
+                    badgeEl.style.color = "#F59E0B";
+                    badgeEl.style.background = "rgba(245, 158, 11, 0.15)";
                 }
             } finally {
                 if (btn) btn.disabled = false;
