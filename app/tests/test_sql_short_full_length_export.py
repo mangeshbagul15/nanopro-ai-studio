@@ -769,6 +769,14 @@ Scene 8 (0:58-1:05) - Closing
         self.assertIn("const sceneVisualRendered = drawPromptVisualPlan", js)
         self.assertIn("!sceneVisualRendered && drawTechnicalArchitectureGraph", js)
 
+    def test_prompt_visual_elements_and_captions_are_not_rendered_as_boxes_or_nodes(self):
+        js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        visual = js.split("function drawPromptVisualPlan(", 1)[1].split("function renderArchitectureScene(", 1)[0]
+        frame = js.split("function renderSqlShortFrame(", 1)[1].split("function renderSqlSyntaxLine(", 1)[0]
+        self.assertNotIn("ctx.arc(0, 0", visual)
+        self.assertNotIn("ctx.roundRect(subPillX", frame)
+        self.assertIn("const subTextWidth = W - 170", frame)
+
     def test_architecture_graph_uses_vertical_safe_margins(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
         self.assertIn('"x": 0.5', source)

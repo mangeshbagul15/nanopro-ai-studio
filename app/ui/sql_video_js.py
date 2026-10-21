@@ -3794,8 +3794,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         const points = new Map();
         const top = 350, usableHeight = 1120;
         elements.slice(0, 12).forEach((item, index) => {
-            const x = Math.max(70, Math.min(W - 70, Number(item.x ?? 0.5) * W));
-            const y = top + Math.max(0, Math.min(1, Number(item.y ?? 0.5))) * usableHeight;
+            const x = Math.max(90, Math.min(W - 90, Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18)) * W));
+            const normalizedY = Number(item.y ?? (0.35 + (index * 0.37) % 0.45));
+            const y = top + Math.max(0, Math.min(1, normalizedY)) * usableHeight;
             points.set(String(item.label), { x, y, item, index });
         });
         ctx.save();
@@ -3804,39 +3805,40 @@ SECOND_HIGHEST_SALARY: 70000`;
             const from = points.get(String(connector.from || "")), to = points.get(String(connector.to || ""));
             if (!from || !to) return;
             const color = connector.color || "#38BDF8";
-            const bend = (index % 2 ? 1 : -1) * Math.min(90, Math.abs(to.x - from.x) * 0.12 + 32);
+            const bend = (index % 2 ? 1 : -1) * Math.min(180, Math.abs(to.x - from.x) * 0.3 + 54);
             const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
             ctx.beginPath(); ctx.moveTo(from.x, from.y);
             ctx.quadraticCurveTo(midX - bend, midY + bend, to.x, to.y);
-            ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 16; ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha *= 0.5; ctx.shadowColor = color; ctx.shadowBlur = 24; ctx.stroke(); ctx.shadowBlur = 0; ctx.globalAlpha /= 0.5;
             const phase = (time * 0.55 + index * 0.23) % 1;
             const inverse = 1 - phase;
             const packetX = inverse * inverse * from.x + 2 * inverse * phase * (midX - bend) + phase * phase * to.x;
             const packetY = inverse * inverse * from.y + 2 * inverse * phase * (midY + bend) + phase * phase * to.y;
-            ctx.beginPath(); ctx.arc(packetX, packetY, 6, 0, Math.PI * 2); ctx.fillStyle = "#FFFFFF"; ctx.fill();
+            const trail = ctx.createRadialGradient(packetX, packetY, 0, packetX, packetY, 30);
+            trail.addColorStop(0, "rgba(255,255,255,0.85)"); trail.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = trail; ctx.fillRect(packetX - 30, packetY - 30, 60, 60);
         });
         points.forEach(({ x, y, item, index }) => {
             const color = item.color || "#38BDF8";
             const shape = String(item.shape || "icon").toLowerCase();
-            const scale = 1 + Math.sin(time * 2.2 + index * 0.8) * 0.035;
+            const scale = 1 + Math.sin(time * 1.7 + index * 0.8) * 0.025;
             ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-            if (shape !== "text") {
-                ctx.beginPath();
-                if (shape === "diamond") { ctx.moveTo(0, -37); ctx.lineTo(37, 0); ctx.lineTo(0, 37); ctx.lineTo(-37, 0); ctx.closePath(); }
-                else ctx.arc(0, 0, 34, 0, Math.PI * 2);
-                ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.stroke(); ctx.shadowBlur = 0;
-                ctx.fillStyle = "rgba(7,16,34,0.82)"; ctx.fill();
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.shadowColor = color; ctx.shadowBlur = 32;
+            ctx.fillStyle = color;
+            const glyph = String(item.glyph || item.icon || "");
+            if (glyph) {
+                ctx.font = "800 82px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif";
+                ctx.fillText(glyph.slice(0, 2), 0, -8, 220);
             }
-            ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.font = "800 28px 'Segoe UI', sans-serif";
-            ctx.fillText(String(item.glyph || item.icon || item.label).slice(0, shape === "text" ? 22 : 2), 0, 0, 280);
-            ctx.fillStyle = "#F8FAFC"; ctx.font = "650 23px 'Segoe UI', sans-serif"; ctx.textBaseline = "top";
-            const labelLines = splitDiagramText(ctx, item.label, 250, 2, 24);
-            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, shape === "text" ? 28 + lineIndex * 28 : 48 + lineIndex * 27));
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#F8FAFC"; ctx.font = "700 25px 'Segoe UI', sans-serif";
+            const labelLines = splitDiagramText(ctx, item.label, 290, 2, 26);
+            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 72 + lineIndex * 30 : lineIndex * 30));
             if (item.detail) {
                 ctx.fillStyle = "#94A3B8"; ctx.font = "500 18px 'Segoe UI', sans-serif";
                 const detail = splitDiagramText(ctx, item.detail, 250, 1, 34)[0];
-                if (detail) ctx.fillText(detail, 0, (shape === "text" ? 60 : 82) + labelLines.length * 25);
+                if (detail) ctx.fillText(detail, 0, (glyph ? 78 : 8) + labelLines.length * 30);
             }
             ctx.restore();
         });
@@ -5232,27 +5234,11 @@ SECOND_HIGHEST_SALARY: 70000`;
         // =========================================================================
         // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)
         // =========================================================================
-        const subPillX = 60;
         const subPillY = H - 520;
-        const subPillW = W - 120;
-        const subPillH = 180;
+        const subTextWidth = W - 170;
 
         const hasShortCaption = Boolean(activeStage && String(activeStage.caption || "").trim());
         const showShortCaption = hasShortCaption && sceneElapsed <= 4;
-        if (!hasShortCaption || showShortCaption) {
-            ctx.save();
-            ctx.fillStyle = "rgba(8, 14, 28, 0.88)";
-            ctx.beginPath();
-            ctx.roundRect(subPillX, subPillY, subPillW, subPillH, 22);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
-            ctx.lineWidth = 2.0;
-            ctx.shadowColor = "rgba(56, 189, 248, 0.35)";
-            ctx.shadowBlur = 12;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.restore();
-        }
 
         // Subtitle Text Word-by-Word Highlight (English only, no voice badge)
         let subtitleText = hasShortCaption ? (showShortCaption ? activeStage.caption : "") : "";
@@ -5272,15 +5258,15 @@ SECOND_HIGHEST_SALARY: 70000`;
             const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
 
             ctx.font = "bold 28px 'Segoe UI', sans-serif";
-            let curX = subPillX + 25;
+            let curX = 85;
             let curY = subPillY + 66;
             const lineH = 42;
-            const maxLineW = subPillW - 50;
+            const maxLineW = subTextWidth;
 
             words.forEach((w, wi) => {
                 const wMetrics = ctx.measureText(w + " ");
-                if (curX + wMetrics.width > subPillX + maxLineW && curX > subPillX + 25) {
-                    curX = subPillX + 25;
+                if (curX + wMetrics.width > 85 + maxLineW && curX > 85) {
+                    curX = 85;
                     curY += lineH;
                 }
                 const isSpoken = (wi <= activeWordIdx);
