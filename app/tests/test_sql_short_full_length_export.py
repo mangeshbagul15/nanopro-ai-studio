@@ -44,7 +44,7 @@ def load_detailed_brief_parser():
 def load_pre_render_validator():
     source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
-    functions = [item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in {"build_pre_render_validation_report", "_comparison_values_match"}]
+    functions = [item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in {"build_pre_render_validation_report", "_comparison_values_match", "_infer_interaction_step"}]
     namespace = {"re": re, "json": json, "Any": Any, "Dict": Dict, "List": List, "Optional": Optional}
     exec(compile(ast.Module(body=functions, type_ignores=[]), "<pre-render-validation-test>", "exec"), namespace)
     return namespace["build_pre_render_validation_report"]
@@ -57,6 +57,16 @@ def load_duration_limit_parser():
     namespace = {"re": re}
     exec(compile(ast.Module(body=[function], type_ignores=[]), "<duration-limit-test>", "exec"), namespace)
     return namespace["_extract_short_video_duration_limit"]
+
+
+def load_sentence_cue_builder():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    names = {"_ensure_sentence_cues", "_infer_interaction_step", "_comparison_values_match"}
+    functions = [item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in names]
+    namespace = {"re": re, "Any": Any, "Dict": Dict, "List": List}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "<sentence-cue-builder-test>", "exec"), namespace)
+    return namespace["_ensure_sentence_cues"]
 
 
 def load_scene_count_parser():
@@ -100,6 +110,27 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertEqual(statuses["Failure → diagnosis → recovery → verification"], "PASSED")
         self.assertEqual(statuses["External database / AWS / API execution"], "NOT_RUN")
         self.assertEqual(statuses["Visual safe area and readability"], "NOT_RUN")
+
+    def test_mismatch_sequence_infers_actions_from_natural_dialogue(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "sentence_cues": [
+            {"speech": "Oracle shows 8000, but Snowflake has a stale value of 10000."},
+            {"speech": "We trace the DMS logs and find the delayed batch."},
+            {"speech": "Replay that batch and reconcile the Snowflake row."},
+            {"speech": "Now validation confirms both sides match at 8000."},
+        ]}]
+        report = validate(stages, 10.0, 60.0, {"nodes": [], "edges": [], "actions": []}, duration_measured=True, mismatch_scenario=True)
+        check = next(item for item in report["checks"] if item["name"] == "Failure → diagnosis → recovery → verification")
+        self.assertEqual(check["status"], "PASSED")
+
+    def test_fallback_sentence_cues_preserve_semantic_mismatch_sequence(self):
+        build_cues = load_sentence_cue_builder()
+        stage = {
+            "speech_en": "A mismatch appears: source is 8000, target is stale at 10000. We trace the DMS logs. Replay the delayed batch and reconcile the row. Validation now confirms both values match at 8000.",
+            "visual_data": {"elements": [{"label": "DMS", "x": 0.5, "y": 0.5}]},
+        }
+        build_cues([stage], "en")
+        self.assertEqual([cue["interaction_step"] for cue in stage["sentence_cues"]], ["failure", "diagnose", "recover", "verify"])
 
     def test_mismatch_value_consistency_checks_source_stale_and_final_values(self):
         validate = load_pre_render_validator()
@@ -630,9 +661,9 @@ class SceneVisualContractTests(unittest.TestCase):
     def _validator():
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         tree = ast.parse(source)
-        node = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_validate_scene_visual_contract")
+        functions = [item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in {"_validate_scene_visual_contract", "_infer_interaction_step", "_comparison_values_match"}]
         namespace = {"Any": Any, "Dict": Dict, "List": List, "re": re}
-        exec(compile(ast.Module(body=[node], type_ignores=[]), "<scene-contract>", "exec"), namespace)
+        exec(compile(ast.Module(body=functions, type_ignores=[]), "<scene-contract>", "exec"), namespace)
         return namespace["_validate_scene_visual_contract"]
 
     def test_accepts_prompt_specific_scene_and_native_code_overlay(self):

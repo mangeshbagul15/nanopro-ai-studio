@@ -211,9 +211,7 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
                     source, destination = str(connector.get("from") or "").strip(), str(connector.get("to") or "").strip()
                     if source in cue_labels and destination in cue_labels and source != destination:
                         cue_connectors.append({**connector, "from": source, "to": destination})
-                step = str(cue.get("interaction_step") or "introduce").strip().lower()
-                if step not in interaction_steps:
-                    step = "introduce"
+                step = _infer_interaction_step(cue)
                 if step == "transfer" and not cue_connectors:
                     step = "connect"
                 camera_move = str(cue.get("camera_move") or "push_in").strip().lower()
@@ -314,6 +312,70 @@ def _comparison_values_match(expected: Any, observed: Any) -> bool:
     return left == right
 
 
+def _infer_interaction_step(cue: Dict[str, Any]) -> str:
+    """Infer a cue's teaching action when a storyboard model omits its enum label."""
+    allowed = {
+        "introduce", "highlight", "connect", "transfer", "process", "failure",
+        "diagnose", "recover", "reprocess", "output", "verify", "complete", "continue",
+    }
+    explicit = str(cue.get("interaction_step") or "").strip().lower()
+    if explicit in allowed and explicit not in {"introduce", "highlight", "continue"}:
+        return explicit
+
+    text = " ".join(str(cue.get(key) or "") for key in (
+        "speech", "action", "emphasis", "state_change", "expected_result", "observed_result"
+    )).casefold()
+    expected, observed = cue.get("expected_result"), cue.get("observed_result")
+    if expected and observed and not _comparison_values_match(expected, observed):
+        return "failure"
+    if re.search(r"\b(validate|validation|verify|verification|verified|matches|matched|equal|consistent|confirmed)\b|मिलान|सत्यापित|बराबर|मेल खा|पुष्टि|सही निकला", text, re.I):
+        return "verify"
+    if re.search(r"\b(recover|recovery|reconcile|reconciliation|repair|fix|correct|replay|backfill|resync|catch up)\b|रिकवर|रिकन्साइल|सुधार|ठीक कर|फिर से भेज|दोबारा चल|रीप्ले", text, re.I):
+        return "recover"
+    if re.search(r"\b(diagnos\w*|investigat\w*|root cause|trace|inspect|find the cause|check the logs)\b|जांच|जाँच|कारण पता|वजह|लॉग देख", text, re.I):
+        return "diagnose"
+    if re.search(r"\b(mismatch|mis-match|discrepanc\w*|out of sync|stale|wrong value|failed|failure|error)\b|मिसमैच|असंगति|मेल नहीं|गड़बड़ी|अंतर मिला|गलत मान", text, re.I):
+        return "failure"
+    if re.search(r"\b(re-run|rerun|reprocess|re-process|resume|reapply)\b|दोबारा प्रोसेस|फिर से प्रोसेस", text, re.I):
+        return "reprocess"
+    if re.search(r"\b(output|result|returns|shows|dashboard|table)\b|नतीजा|आउटपुट|तालिका", text, re.I):
+        return "output"
+    if re.search(r"\b(connect|connection|route|transfer|packet|flows to)\b|जुड़|कनेक्शन|ट्रांसफर|पैकेट", text, re.I):
+        return "connect"
+    if re.search(r"\b(process|apply|merge|execute|run query)\b|प्रोसेस|अप्लाई|चलाता", text, re.I):
+        return "process"
+    if re.search(r"\b(focus|highlight|active component)\b|हाइलाइट", text, re.I):
+        return "highlight"
+    return explicit if explicit in allowed else "introduce"
+
+
+def _ensure_sentence_cues(stages: List[Dict[str, Any]], lang_key: str) -> None:
+    """Build a sentence-aligned visual cue map when model-authored cues were unusable."""
+    state_for_step = {
+        "introduce": "introducing", "highlight": "highlighted", "connect": "connected",
+        "transfer": "connected", "process": "processing", "failure": "failed",
+        "diagnose": "diagnosing", "recover": "recovering", "reprocess": "reprocessing",
+        "output": "output_ready", "verify": "verified", "complete": "completed",
+    }
+    for stage in stages:
+        if stage.get("sentence_cues"):
+            continue
+        speech = str(stage.get(f"speech_{lang_key}") or stage.get("speech") or "").strip()
+        visual = stage.get("visual_data") if isinstance(stage.get("visual_data"), dict) else {}
+        if not speech or not isinstance(visual.get("elements"), list) or not visual["elements"]:
+            continue
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?।])\s+", speech) if part.strip()]
+        cues = []
+        for sentence in sentences[:16]:
+            cue = {"speech": sentence, "visual_data": visual, "result_mode": "simulated"}
+            step = _infer_interaction_step(cue)
+            cue["interaction_step"] = step
+            cue["component_state"] = state_for_step.get(step, "highlighted")
+            cues.append(cue)
+        if cues and "".join("".join(cue["speech"].split()) for cue in cues) == "".join(speech.split()):
+            stage["sentence_cues"] = cues
+
+
 def build_pre_render_validation_report(
     stages: List[Dict[str, Any]],
     duration: float,
@@ -394,9 +456,9 @@ def build_pre_render_validation_report(
     exact_cues = bool(cues) and all(str(cue.get("speech") or "").strip() for cue in cues)
     add("Sentence cue mapping", "PASSED" if exact_cues else "NOT_RUN", f"{len(cues)} sentence cues are attached to the storyboard." if exact_cues else "No usable sentence-level cue map is available; synchronization is scene-level only.")
 
-    steps = [str(cue.get("interaction_step") or "").lower() for cue in cues]
+    steps = [_infer_interaction_step(cue) for cue in cues]
     failure_i = next((i for i, step in enumerate(steps) if step == "failure"), None)
-    diagnose_i = next((i for i, cue in enumerate(cues) if re.search(r"diagnos|investigat|root cause|जांच|जाँच|कारण", str(cue.get("speech", "")), re.I) or str(cue.get("interaction_step", "")).lower() == "process" and re.search(r"diagnos|investigat", str(cue.get("state_change", "")), re.I)), None)
+    diagnose_i = next((i for i, cue in enumerate(cues) if steps[i] == "diagnose" or re.search(r"diagnos|investigat|root cause|जांच|जाँच|कारण", str(cue.get("speech", "")) + " " + str(cue.get("state_change", "")), re.I)), None)
     recover_i = next((i for i, step in enumerate(steps) if step == "recover"), None)
     verify_i = next((i for i, step in enumerate(steps) if step == "verify"), None)
     event_order = failure_i is not None and diagnose_i is not None and recover_i is not None and verify_i is not None and failure_i < diagnose_i < recover_i < verify_i
@@ -3680,6 +3742,7 @@ class SqlShortVideoEngine:
 
         matched_content_type = matched.get("content_type") or content_type or "tech_topic"
         stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
+        _ensure_sentence_cues(stages, lang_key)
 
         # On-screen text is English even when the narration voice is Marathi or Hindi.
         # The built-in storyboard is already English, so only model output needs this.
@@ -3759,6 +3822,15 @@ class SqlShortVideoEngine:
                     }
                     for index, sentence in enumerate(sentences[:16])
                 ]
+                state_for_step = {
+                    "introduce": "introducing", "highlight": "highlighted", "connect": "connected",
+                    "transfer": "connected", "process": "processing", "failure": "failed",
+                    "diagnose": "diagnosing", "recover": "recovering", "reprocess": "reprocessing",
+                    "output": "output_ready", "verify": "verified", "complete": "completed",
+                }
+                for cue in stage["sentence_cues"]:
+                    cue["interaction_step"] = _infer_interaction_step(cue)
+                    cue["component_state"] = state_for_step.get(cue["interaction_step"], "highlighted")
             full_narration = "\n\n".join(condensed_speeches)
             narration_hash = hashlib.md5(full_narration.encode("utf-8")).hexdigest()[:10]
             if str(preset_id).startswith("custom") or preset_id == "custom":
