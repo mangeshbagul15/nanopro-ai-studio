@@ -281,6 +281,27 @@ def _extract_short_video_duration_limit(prompt: str, default: float = 60.0) -> f
     return min(60.0, max(1.0, float(default)))
 
 
+def _extract_short_video_min_duration(prompt: str, default: float = 0.0) -> float:
+    """Read a requested lower bound only when it is explicitly tied to video duration."""
+    text = prompt or ""
+    unit = r"(?:seconds?|secs?|sec|s|सेकंड|सेकण्ड|सेकंड्स)"
+    range_match = re.search(
+        rf"\b(?:video\s*)?(?:duration|length)\s*[:=]\s*(\d+(?:\.\d+)?)\s*(?:-|–|—|to)\s*(\d+(?:\.\d+)?)\s*[- ]?{unit}\b",
+        text,
+        re.I,
+    )
+    if range_match:
+        return min(60.0, max(0.0, float(range_match.group(1))))
+    minimum_match = re.search(
+        rf"\b(?:minimum|min)\s*(?:video\s*)?(?:duration|length)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*[- ]?{unit}\b",
+        text,
+        re.I,
+    )
+    if minimum_match:
+        return min(60.0, max(0.0, float(minimum_match.group(1))))
+    return min(60.0, max(0.0, float(default)))
+
+
 def _extract_requested_scene_count(prompt: str) -> Optional[int]:
     explicit = re.search(r"\b(?:exactly|use|create|make|total(?:\s+of)?)\s+(\d+)\s+(?:distinct\s+)?scenes?\b", prompt or "", re.I)
     if explicit:
@@ -396,6 +417,7 @@ def build_pre_render_validation_report(
     requested_scene_count: Optional[int] = None,
     dms_snowflake_scenario: bool = False,
     source_target_values: Optional[Dict[str, str]] = None,
+    min_duration: float = 0.0,
 ) -> Dict[str, Any]:
     """Report only checks performed on the generated blueprint; never infer a pass."""
     checks: List[Dict[str, str]] = []
@@ -513,8 +535,16 @@ def build_pre_render_validation_report(
     add("Component completion gate", completion_status, "Completed component states follow successful verification." if completion_status == "PASSED" else "No mismatch/value-verification completion gate is needed for this explainer." if completion_status == "NOT_RUN" else "A component is marked completed before final verification passes.", completed_before_verify)
 
     measured = bool(duration_measured) and float(duration) > 0
-    within_limit = not max_duration or float(duration) <= float(max_duration) + 0.1
-    add("Narration duration limit", "PASSED" if measured and within_limit else "FAILED" if not within_limit else "NOT_RUN", f"Measured voice duration {float(duration):.1f}s; limit {float(max_duration):.1f}s." if measured and max_duration else f"Measured voice duration {float(duration):.1f}s." if measured else "Voice duration was estimated, not measured.", not within_limit)
+    within_limit = (not max_duration or float(duration) <= float(max_duration) + 0.1) and float(duration) + 0.1 >= float(min_duration or 0)
+    duration_detail = (
+        f"Measured voice duration {float(duration):.1f}s; requested {float(min_duration):.1f}–{float(max_duration):.1f}s."
+        if measured and min_duration and max_duration else
+        f"Measured voice duration {float(duration):.1f}s; limit {float(max_duration):.1f}s."
+        if measured and max_duration else
+        f"Measured voice duration {float(duration):.1f}s." if measured else
+        "Voice duration was estimated, not measured."
+    )
+    add("Narration duration limit", "PASSED" if measured and within_limit else "FAILED" if max_duration and float(duration) > float(max_duration) + 0.1 or min_duration and float(duration) + 0.1 < float(min_duration) else "NOT_RUN", duration_detail, bool(max_duration and float(duration) > float(max_duration) + 0.1 or min_duration and float(duration) + 0.1 < float(min_duration)))
     add("External database / AWS / API execution", "NOT_RUN", "No external database, AWS service, or API was executed. Any displayed query/result is an illustrative simulation.")
     add("Visual safe area and readability", "NOT_RUN", "Frame-by-frame safe-area and subtitle occlusion review was not performed before browser rendering.")
     add("Audio intelligibility and music mix", "NOT_RUN", "Audio was synthesized and duration measured; intelligibility, clipping, and music balance were not acoustically evaluated.")
@@ -3632,6 +3662,7 @@ class SqlShortVideoEngine:
             try:
                 from app.core.model_adapter import model_manager
                 target_seconds = _extract_short_video_duration_limit(text_input, default=60.0)
+                minimum_seconds = _extract_short_video_min_duration(text_input)
                 max_narration_words = max(24, int(target_seconds * 140 / 60))
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
                 lang_name = {
@@ -3653,7 +3684,8 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant. Use an interactive medallion-flow art direction: a luminous 3D core for the component being taught, a small number of orbiting satellites for related systems, a visible directional route, and restrained real-time telemetry that updates only when the narrated action happens. Avoid a static full-architecture poster.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Keep narration concise and obey any explicit duration limit, while preserving natural speaking pace.\n"
-                    f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, do not use them; choose prompt-specific cinematic, editorial, typographic, or metaphor-driven visuals instead.\n"
+                    + (f"The user explicitly requested at least {minimum_seconds:g} seconds of video narration; develop enough accurate, useful explanation to meet that minimum without filler, and stay below {target_seconds:g} seconds.\n" if minimum_seconds else "")
+                    + f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, do not use them; choose prompt-specific cinematic, editorial, typographic, or metaphor-driven visuals instead.\n"
                     f"4. Return visual_data authored for that scene with a scene-specific composition: composition (short description), elements (up to 12 objects with label, normalized x/y coordinates, shape, color, and optional detail), and connectors (from/to element labels, style, color, and optional label). Use visual elements and connectors only when appropriate to that scene; use distinct placements/compositions where requested. Shapes may include icon, circle, glyph, text, character, or any simple vector shape. No fixed graph layout is required. Do not request images or image-based slides; the renderer draws editable vector elements.\n"
                     f"4a. For Oracle → AWS DMS → Snowflake scenarios, never assume a direct DMS-to-Snowflake target. Show a supported configured ingestion path such as AWS DMS → Amazon S3 → Snowpipe → Snowflake, or another explicitly named intermediary integration, and explain it. Do not invent a specific root cause unless the prompt supplies evidence.\n"
                     f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles.\n"
@@ -3816,6 +3848,7 @@ class SqlShortVideoEngine:
             actual_dur = round(words_count / rate, 2)
 
         duration_limit = float(matched.get("max_duration_seconds") or 0)
+        minimum_duration = _extract_short_video_min_duration(validation_prompt)
         if duration_limit > 0 and actual_dur > duration_limit:
             speech_word_count = len(full_narration.split())
             target_words = max(24, int(speech_word_count * max(1.0, duration_limit - 5) / actual_dur))
@@ -3899,6 +3932,7 @@ class SqlShortVideoEngine:
             requested_scene_count=requested_scene_count,
             dms_snowflake_scenario=dms_snowflake_scenario,
             source_target_values=_extract_source_target_values(validation_prompt),
+            min_duration=minimum_duration,
         )
         if not pre_render_validation["render_allowed"]:
             if _pre_render_repair_attempt < 1:
@@ -3907,6 +3941,8 @@ class SqlShortVideoEngine:
                 ]
                 if requested_scene_count:
                     repair_rules.append(f"Return exactly {requested_scene_count} scenes, preserving the user's scene titles, order, and time ranges.")
+                if minimum_duration:
+                    repair_rules.append(f"Minimum video duration: {minimum_duration:g} seconds; maximum video duration: {duration_limit:g} seconds. Expand existing explanations with useful topic-specific detail, not filler, and preserve all requested scenes.")
                 if dms_snowflake_scenario:
                     repair_rules.append("For the requested DMS-to-Snowflake lesson, preserve the configured intermediary ingestion route, such as AWS DMS → Amazon S3 → Snowpipe → Snowflake.")
                 if pre_render_validation["checks"] and mismatch_scenario:

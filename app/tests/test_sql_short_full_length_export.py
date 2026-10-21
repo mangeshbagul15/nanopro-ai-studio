@@ -59,6 +59,15 @@ def load_duration_limit_parser():
     return namespace["_extract_short_video_duration_limit"]
 
 
+def load_min_duration_parser():
+    source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_extract_short_video_min_duration")
+    namespace = {"re": re}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "<min-duration-test>", "exec"), namespace)
+    return namespace["_extract_short_video_min_duration"]
+
+
 def load_sentence_cue_builder():
     source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -217,6 +226,19 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn('"completed"', source)
         self.assertIn('interactionStep === "transfer" && isCurrentConnector && connectorProgress >= 1', renderer)
         self.assertIn('progress >= 0.08 && progress <= 0.92', renderer)
+
+    def test_video_duration_range_enforces_requested_minimum_without_confusing_scene_times(self):
+        parse_minimum = load_min_duration_parser()
+        self.assertEqual(parse_minimum("Duration: 55–60 seconds"), 55)
+        self.assertEqual(parse_minimum("SCENE 1 (0–6 seconds); Duration: 55-60 seconds"), 55)
+        self.assertEqual(parse_minimum("Maximum duration: 60 seconds"), 0)
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 49.3, "sentence_cues": []}]
+        report = validate(stages, 49.3, 60.0, {"nodes": [], "edges": [], "actions": []}, duration_measured=True, min_duration=55.0)
+        check = next(item for item in report["checks"] if item["name"] == "Narration duration limit")
+        self.assertEqual(check["status"], "FAILED")
+        self.assertIn("55.0–60.0s", check["detail"])
+        self.assertIn("Narration duration limit", report["critical_failures"])
 
     def test_duration_parser_ignores_scene_lengths_and_caps_long_requests(self):
         parse_limit = load_duration_limit_parser()
