@@ -2840,7 +2840,10 @@ class SqlShortVideoEngine:
                     prompt=request_prompt,
                     system_prompt="You are a technical architecture diagram planner. Return valid JSON only; do not write narration or image prompts.",
                 )
-                payload = json.loads(response[response.find("{"):response.rfind("}") + 1])
+                json_start = response.find("{")
+                if json_start < 0:
+                    raise ValueError("The online model did not return an architecture graph object.")
+                payload, _ = json.JSONDecoder().raw_decode(response[json_start:])
                 graph = payload.get("architecture_graph") if isinstance(payload, dict) else None
                 scene_specs = payload.get("scenes") if isinstance(payload, dict) else None
                 nodes = graph.get("nodes") if isinstance(graph, dict) else None
@@ -2918,7 +2921,10 @@ class SqlShortVideoEngine:
                     prompt=prompt,
                     system_prompt="You are a precise technical narration editor. Return valid JSON only and preserve technical accuracy.",
                 )
-                payload = json.loads(response[response.find("{"):response.rfind("}") + 1])
+                json_start = response.find("{")
+                if json_start < 0:
+                    raise ValueError("The online model did not return a JSON narration object.")
+                payload, _ = json.JSONDecoder().raw_decode(response[json_start:])
                 condensed = payload.get("scenes") if isinstance(payload, dict) else None
                 if not isinstance(condensed, list) or len(condensed) != len(stages):
                     raise ValueError("The online model did not preserve all narration scenes while shortening the script.")

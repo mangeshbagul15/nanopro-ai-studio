@@ -159,6 +159,7 @@ Show the cloud.
         method = source.split("async def _condense_narration_to_duration", 1)[1].split("async def generate_short_prompt_async", 1)[0]
         self.assertIn("for attempt in range(3)", method)
         self.assertIn("budget = max(24, int(budget * 0.8))", method)
+        self.assertIn("json.JSONDecoder().raw_decode", method)
         self.assertIn("Narration shortening failed after three attempts", method)
 
     def test_invalid_model_storyboard_retries_before_local_fallback(self):
