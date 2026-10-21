@@ -40,6 +40,78 @@ def load_detailed_brief_parser():
 
 
 class FullLengthVideoExportTests(unittest.TestCase):
+    def test_airflow_brief_preserves_all_seven_hindi_scenes(self):
+        brief = """# PROJECT: Apache Airflow DAG Kaise Kaam Karta Hai?
+Duration: Maximum 60 seconds
+# SCENE 1 — INTERVIEW QUESTION
+### Time: 0–6 seconds
+### Hindi Voiceover:
+"DAG क्या है?"
+### Diagram and Animation:
+Show the scheduler.
+# SCENE 2 — WHAT IS A DAG?
+### Time: 6–14 seconds
+### Hindi Voiceover:
+"DAG tasks और dependencies define करता है।"
+### Diagram and Animation:
+Show Extract, Transform, Load.
+# SCENE 3 — SCHEDULER AND TASK EXECUTION
+### Time: 14–24 seconds
+### Hindi Voiceover:
+"Scheduler eligible tasks schedule करता है।"
+### Diagram and Animation:
+Reveal scheduled tasks.
+# SCENE 4 — PARALLEL EXECUTION
+### Time: 24–34 seconds
+### Hindi Voiceover:
+"Independent tasks parallel चल सकते हैं।"
+### Diagram and Animation:
+Show two branches merging.
+# SCENE 5 — RETRY AND FAILURE HANDLING
+### Time: 34–44 seconds
+### Hindi Voiceover:
+"Failed task configured retry के बाद चल सकता है।"
+### Diagram and Animation:
+Show retry loop.
+# SCENE 6 — INTERVIEW ANSWER AND FINAL DAG
+### Time: 44–55 seconds
+### Hindi Voiceover:
+"DAG dependencies बताता है, Scheduler schedule करता है।"
+### Diagram and Animation:
+Reveal final graph.
+# SCENE 7 — CTA
+### Time: 55–60 seconds
+### Hindi Voiceover:
+"Code With Mangesh को follow करें।"
+### Diagram and Animation:
+Show branding.
+"""
+        result = load_detailed_brief_parser()(brief)
+        self.assertEqual(result["title"], "Apache Airflow DAG Kaise Kaam Karta Hai?")
+        self.assertEqual(len(result["scenes"]), 7)
+        self.assertIn("Independent tasks", result["scenes"][3]["speech"])
+        self.assertEqual(result["max_duration_seconds"], 60)
+
+    def test_local_narration_compression_keeps_each_scene_within_budget(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        function = next(
+            item for item in tree.body
+            if isinstance(item, ast.FunctionDef) and item.name == "_deterministic_condense_scenes"
+        )
+        condensed = ast.get_source_segment(source, function)
+        namespace = {"List": List, "Dict": Dict, "re": re, "ValueError": ValueError}
+        exec(compile(condensed, "<local-narration-compression>", "exec"), namespace)
+        scenes = [
+            {"speech": "Data Engineer interview में Airflow DAG क्या है? यह task dependencies बताता है।"},
+            {"speech": "Scheduler eligible tasks को schedule करता है, workers उन्हें execute करते हैं।"},
+            {"speech": "Parallel tasks साथ चलते हैं; failure पर configured retries काम आते हैं।"},
+        ]
+        result = namespace["_deterministic_condense_scenes"](scenes, 15)
+        self.assertEqual(len(result), len(scenes))
+        self.assertTrue(all(result))
+        self.assertLessEqual(sum(len(speech.split()) for speech in result), 15)
+
     def test_scene_brief_extracts_hindi_voiceover_and_scene_titles(self):
         brief = """# PROJECT: AWS DMS explainer
 Duration: Strictly 55–60 seconds.
@@ -160,7 +232,8 @@ Show the cloud.
         self.assertIn("for attempt in range(3)", method)
         self.assertIn("budget = max(24, int(budget * 0.8))", method)
         self.assertIn("json.JSONDecoder().raw_decode", method)
-        self.assertIn("Narration shortening failed after three attempts", method)
+        self.assertIn("Online narration shortening failed", method)
+        self.assertIn("_deterministic_condense_scenes(scenes, max_words)", method)
 
     def test_invalid_model_storyboard_retries_before_local_fallback(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")

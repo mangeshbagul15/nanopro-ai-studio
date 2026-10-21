@@ -1163,7 +1163,7 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         return None
     duration = max([scene["end"] for scene in scenes if scene.get("end")] or [0.0])
     strict_limit = re.search(
-        r"(?i)(?:\bstrictly\s+\d+(?:\.\d+)?\s*[–—-]\s*|\b(?:do not|must not|never)\s+exceed\s+)(\d+(?:\.\d+)?)\s*(?:seconds?|secs?|s\b)",
+        r"(?i)(?:\bstrictly\s+\d+(?:\.\d+)?\s*[–—-]\s*|\b(?:do not|must not|never)\s+exceed\s+|\bmaximum\s+(?:of\s+)?)(\d+(?:\.\d+)?)\s*(?:seconds?|secs?|s\b)",
         text,
     )
     return {
@@ -1218,6 +1218,41 @@ def _aws_dms_fallback_graph() -> Dict[str, Any]:
             "node_ids": ["replication-task", "replication-instance"],
         }],
     }
+
+
+def _deterministic_condense_scenes(scenes: List[Dict[str, str]], max_words: int) -> List[str]:
+    speeches = [str(scene.get("speech") or "").strip() for scene in scenes]
+    if not speeches or any(not speech for speech in speeches) or max_words < len(speeches):
+        raise ValueError("The local narration fallback cannot preserve every scene within this word budget.")
+    lengths = [len(speech.split()) for speech in speeches]
+    if sum(lengths) <= max_words:
+        return speeches
+
+    allocations = [min(length, max(1, min(5, max_words // len(speeches)))) for length in lengths]
+    while sum(allocations) < max_words:
+        candidates = [index for index, length in enumerate(lengths) if allocations[index] < length]
+        if not candidates:
+            break
+        selected = max(candidates, key=lambda index: lengths[index] / (allocations[index] + 1))
+        allocations[selected] += 1
+
+    condensed = []
+    for speech, word_limit in zip(speeches, allocations):
+        words = speech.split()
+        if len(words) <= word_limit:
+            condensed.append(speech)
+            continue
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?।])\s+", speech) if part.strip()]
+        kept_sentences = []
+        for sentence in sentences:
+            if len((" ".join(kept_sentences + [sentence])).split()) > word_limit:
+                break
+            kept_sentences.append(sentence)
+        if kept_sentences:
+            condensed.append(" ".join(kept_sentences))
+        else:
+            condensed.append(" ".join(words[:word_limit]).rstrip(" ,;:") + "…")
+    return condensed
 
 
 class SqlShortVideoEngine:
@@ -2939,7 +2974,13 @@ class SqlShortVideoEngine:
                 last_error = str(exc)
             if attempt < 2:
                 budget = max(24, int(budget * 0.8))
-        raise ValueError(f"Narration shortening failed after three attempts: {last_error}")
+        condensed = _deterministic_condense_scenes(scenes, max_words)
+        log_event(
+            f"Online narration shortening failed; used scene-preserving local compression: {last_error}",
+            level="WARNING",
+            component="SqlShortEngine",
+        )
+        return condensed
 
     async def generate_short_prompt_async(
         self,
