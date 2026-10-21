@@ -1285,7 +1285,7 @@ def _airflow_fallback_graph() -> Dict[str, Any]:
         {"id": "retry-success-edge", "from": "retry-policy", "to": "retry-success", "label": "attempt again", "style": "curved", "data_flow": False},
         {"id": "monitor-observes", "from": "monitoring", "to": "validation", "label": "run status", "style": "elbow", "data_flow": False},
     ]
-    return {"layout": "hierarchical", "nodes": nodes, "edges": edges, "groups": []}
+    return {"layout": "pipeline", "nodes": nodes, "edges": edges, "groups": []}
 
 
 class SqlShortVideoEngine:

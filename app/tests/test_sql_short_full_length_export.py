@@ -1,6 +1,7 @@
 import ast
 import re
 import unittest
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -173,7 +174,7 @@ Show the cloud.
         exec(compile(ast.Module(body=[function], type_ignores=[]), "<airflow-graph-test>", "exec"), namespace)
         graph = namespace["_airflow_fallback_graph"]()
         nodes = {node["id"]: node for node in graph["nodes"]}
-        self.assertEqual(graph["layout"], "hierarchical")
+        self.assertEqual(graph["layout"], "pipeline")
         self.assertEqual(nodes["scheduler"]["shape"], "circle")
         self.assertEqual(nodes["transform"]["shape"], "hexagon")
         self.assertEqual(nodes["load"]["shape"], "database")
@@ -185,6 +186,28 @@ Show the cloud.
         self.assertIn(("failed-task", "retry-policy"), edge_pairs)
         self.assertIn(("retry-policy", "retry-success"), edge_pairs)
         self.assertTrue(all(edge["from"] in nodes and edge["to"] in nodes for edge in graph["edges"]))
+
+    def test_airflow_pipeline_layout_places_parallel_tasks_side_by_side(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == "_layout_nodes")
+        namespace = {"defaultdict": defaultdict, "deque": deque, "Any": Any}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "<airflow-pipeline-layout-test>", "exec"), namespace)
+        engine_source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        engine_tree = ast.parse(engine_source)
+        graph_function = next(
+            item for item in engine_tree.body
+            if isinstance(item, ast.FunctionDef) and item.name == "_airflow_fallback_graph"
+        )
+        graph_namespace = {"Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[graph_function], type_ignores=[]), "<airflow-graph-fallback>", "exec"), graph_namespace)
+        graph = graph_namespace["_airflow_fallback_graph"]()
+        nodes = [dict(node) for node in graph["nodes"]]
+        namespace["_layout_nodes"](nodes, graph["edges"], graph["layout"])
+        positions = {node["id"]: node for node in nodes}
+        self.assertNotEqual(positions["customer-task"]["x"], positions["transaction-task"]["x"])
+        self.assertEqual(positions["customer-task"]["y"], positions["transaction-task"]["y"])
+        self.assertGreater(len({node["x"] for node in nodes}), 1)
 
     def test_scene_timeline_covers_narration_longer_than_one_minute(self):
         stages = [
