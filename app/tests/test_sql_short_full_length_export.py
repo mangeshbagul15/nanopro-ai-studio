@@ -525,6 +525,12 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("await readVideoJsonResponse(generationRes)", source)
         self.assertIn("generationRead.empty", source)
 
+    def test_narration_loader_accepts_audio_ready_at_timeout(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        loader = source.split("function loadSqlNarration(", 1)[1].split("function downloadVoiceoverMp3(", 1)[0]
+        self.assertIn("audioEl.readyState >= 3 && !audioEl.error", loader)
+        self.assertIn("}, 60000);", loader)
+
     def test_scene_pipeline_stays_inside_free_tier_memory(self):
         image_source = (PROJECT_ROOT / "app" / "agents" / "image_agent.py").read_text(encoding="utf-8")
         self.assertIn('"imageSize": "1K"', image_source)

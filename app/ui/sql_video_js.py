@@ -5517,7 +5517,10 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function loadSqlNarration(audioEl, url) {
         return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => finish(new Error("Narration audio did not finish loading.")), 20000);
+            const timeout = setTimeout(() => {
+                if (audioEl.readyState >= 3 && !audioEl.error) handleReady();
+                else finish(new Error("Narration audio did not finish loading."));
+            }, 60000);
             const finish = error => {
                 clearTimeout(timeout);
                 audioEl.removeEventListener("canplay", handleReady);
