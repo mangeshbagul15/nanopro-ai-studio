@@ -133,6 +133,13 @@ Show the cloud.
         self.assertIn("Short narration compression notice", source)
         self.assertIn("audio_duration=actual_dur", source)
 
+    def test_duration_shortening_retries_when_model_exceeds_word_budget(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        method = source.split("async def _condense_narration_to_duration", 1)[1].split("async def generate_short_prompt_async", 1)[0]
+        self.assertIn("for attempt in range(3)", method)
+        self.assertIn("budget = max(24, int(budget * 0.8))", method)
+        self.assertIn("Narration shortening failed after three attempts", method)
+
     def test_invalid_model_storyboard_retries_before_local_fallback(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn("retrying storyboard", source)

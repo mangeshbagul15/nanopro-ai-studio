@@ -2859,26 +2859,38 @@ class SqlShortVideoEngine:
             {"title": str(stage.get("title") or f"Scene {index + 1}"), "speech": str(stage.get(f"speech_{language}") or stage.get("speech") or "")}
             for index, stage in enumerate(stages)
         ]
-        prompt = (
-            f"Shorten this narration to at most {max_words} whitespace-separated words total. Write in {language_name}; "
-            "preserve every scene in the same order, the technical meaning and all named systems. Keep normal speaking pace and natural short pauses; "
-            "remove repetition and secondary phrasing instead of speaking faster. Do not add facts or stage directions. "
-            f"Return JSON only with a speech string for each of the {len(scenes)} scenes, in the same order.\n"
-            f"Scenes: {json.dumps(scenes, ensure_ascii=False)}"
-        )
         from app.core.model_adapter import model_manager
-        response, _, _ = model_manager.execute_with_fallback(
-            prompt=prompt,
-            system_prompt="You are a precise technical narration editor. Return valid JSON only and preserve technical accuracy.",
-        )
-        payload = json.loads(response[response.find("{"):response.rfind("}") + 1])
-        condensed = payload.get("scenes") if isinstance(payload, dict) else None
-        if not isinstance(condensed, list) or len(condensed) != len(stages):
-            raise ValueError("The online model did not preserve all narration scenes while shortening the script.")
-        speeches = [str(scene.get("speech") or "").strip() if isinstance(scene, dict) else "" for scene in condensed]
-        if not all(speeches) or sum(len(speech.split()) for speech in speeches) > max_words:
-            raise ValueError("The shortened narration did not meet the duration word budget.")
-        return speeches
+        budget = max_words
+        last_error = "The online model did not return a concise narration."
+        for attempt in range(3):
+            prompt = (
+                f"Shorten this narration to at most {budget} whitespace-separated words total. Write in {language_name}; "
+                "preserve every scene in the same order, technical meaning and named systems. Keep a natural speaking pace and short pauses; "
+                "remove repetition and secondary phrasing instead of speaking faster. Do not add facts or stage directions. "
+                f"Return JSON only with exactly {len(scenes)} scene objects, each with a speech string, in the same order.\n"
+                f"Scenes: {json.dumps(scenes, ensure_ascii=False)}"
+            )
+            try:
+                response, _, _ = model_manager.execute_with_fallback(
+                    prompt=prompt,
+                    system_prompt="You are a precise technical narration editor. Return valid JSON only and preserve technical accuracy.",
+                )
+                payload = json.loads(response[response.find("{"):response.rfind("}") + 1])
+                condensed = payload.get("scenes") if isinstance(payload, dict) else None
+                if not isinstance(condensed, list) or len(condensed) != len(stages):
+                    raise ValueError("The online model did not preserve all narration scenes while shortening the script.")
+                speeches = [str(scene.get("speech") or "").strip() if isinstance(scene, dict) else "" for scene in condensed]
+                word_count = sum(len(speech.split()) for speech in speeches)
+                if not all(speeches):
+                    raise ValueError("The online model returned an empty scene narration.")
+                if word_count <= budget:
+                    return speeches
+                last_error = f"The shortened narration used {word_count} words against a {budget}-word budget."
+            except Exception as exc:
+                last_error = str(exc)
+            if attempt < 2:
+                budget = max(24, int(budget * 0.8))
+        raise ValueError(f"Narration shortening failed after three attempts: {last_error}")
 
     async def generate_short_prompt_async(
         self,
