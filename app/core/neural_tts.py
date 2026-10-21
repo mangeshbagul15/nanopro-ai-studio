@@ -168,7 +168,7 @@ class NeuralTTSEngine:
     """
 
     def __init__(self):
-        self.output_dir = Path("data/audio")
+        self.output_dir = Path(__file__).resolve().parents[2] / "data" / "audio"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.voice_map = {
             "hi": "hi-IN-MadhurNeural",       # 28-32y Indian Male Hindi Tech Educator (Default)

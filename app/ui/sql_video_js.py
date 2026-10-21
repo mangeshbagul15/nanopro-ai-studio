@@ -5222,7 +5222,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
         const sceneVisualRendered = drawPromptVisualPlan(ctx, W, H, activeStage, stageProg, t);
         const graphRendered = !sceneVisualRendered && drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph, t, activeStageIndex, maxDur, activeStage);
-        if (!graphRendered) {
+        if (!graphRendered && !sceneVisualRendered) {
             renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
         }
 
