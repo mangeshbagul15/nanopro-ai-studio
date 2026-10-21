@@ -777,6 +777,7 @@ Scene 8 (0:58-1:05) - Closing
         self.assertIn("stage._promptVisualBackdrop = backdrop", visual)
         self.assertIn('String(item.label).replace(/[_-]+/g, " ")', visual)
         self.assertIn("const glyphSize = elements.length <= 3 ? 152", visual)
+        self.assertNotIn("packetX", visual)
         self.assertNotIn("ctx.roundRect(subPillX", frame)
         self.assertIn("const subTextWidth = W - 170", frame)
 
