@@ -3607,6 +3607,243 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    function drawSpatialService(ctx, x, y, label, glyph, color, scale = 1) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 20;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 42, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(5,14,30,0.9)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.font = "700 36px 'Segoe UI Symbol', 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(glyph || "◇", 0, 1);
+        ctx.fillStyle = "#EAF6FF";
+        ctx.font = "650 22px 'Segoe UI', sans-serif";
+        ctx.textBaseline = "top";
+        const labelLines = splitDiagramText(ctx, label, 220, 2, 19);
+        labelLines.forEach((line, index) => ctx.fillText(line, 0, 54 + index * 26));
+        ctx.restore();
+    }
+
+    function drawSpatialCurve(ctx, from, to, color, progress, time, bend = 0) {
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const normalX = -dy / (Math.hypot(dx, dy) || 1);
+        const normalY = dx / (Math.hypot(dx, dy) || 1);
+        const c1 = { x: from.x + dx * 0.34 + normalX * bend, y: from.y + dy * 0.34 + normalY * bend };
+        const c2 = { x: from.x + dx * 0.66 + normalX * bend, y: from.y + dy * 0.66 + normalY * bend };
+        ctx.save();
+        ctx.globalAlpha *= Math.max(0, Math.min(1, progress));
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, to.x, to.y);
+        ctx.stroke();
+        const packetT = (time * 0.5) % 1;
+        const u = 1 - packetT;
+        const px = u*u*u*from.x + 3*u*u*packetT*c1.x + 3*u*packetT*packetT*c2.x + packetT*packetT*packetT*to.x;
+        const py = u*u*u*from.y + 3*u*u*packetT*c1.y + 3*u*packetT*packetT*c2.y + packetT*packetT*packetT*to.y;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawBriefSpatial(ctx, W, H, stage, progress, time, stageIndex) {
+        const title = String(stage && stage.title || "").toLowerCase();
+        const visual = String(((stage && stage.visual_data) || {}).visual || "").toLowerCase();
+        const labels = (((stage && stage.visual_data) || {}).labels || []).map(String);
+        const appear = Math.min(1, Math.max(0, progress * 2.4));
+        const center = { x: W / 2, y: 850 };
+        const serviceNames = ["Restaurant", "Catalog", "Payment", "User", "Delivery", "Coupon", "Order", "Support"];
+        const gatewayColor = title.includes("failure") ? "#EF4444" : "#38BDF8";
+        const isHook = title.includes("hook") || title.includes("right service");
+        const isDirect = title.includes("direct") || title.includes("problem") || visual.includes("direct-call");
+        const isOrder = title.includes("order flow") || title.includes("request flow");
+        const isResponsibility = title.includes("responsibilit") || title.includes("features");
+        const isConfig = title.includes("config") || title.includes("gateway a") || title.includes("not all gateways") || title.includes("features depend") || visual.includes("split-screen");
+        const isFailure = title.includes("failure") || title.includes("down") || title.includes("outage");
+        const isClosing = title.includes("closing") || title.includes("close") || title.includes("cta");
+
+        ctx.save();
+        ctx.globalAlpha *= appear;
+        if (isClosing) {
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "900 58px 'Segoe UI', sans-serif";
+            splitDiagramText(ctx, "CAN THE WHOLE APP GO DOWN?", W - 150, 3, 29).forEach((line, i) => ctx.fillText(line, center.x, 650 + i * 74));
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "800 36px 'Segoe UI', sans-serif";
+            ctx.fillText("WHAT ABOUT HIGH AVAILABILITY?", center.x, 930);
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "700 30px 'Segoe UI', sans-serif";
+            ctx.fillText("FOLLOW FOR PART 2", center.x, 1100);
+            drawSpatialService(ctx, center.x, 1265, "", "↗", "#22C55E", 1.05);
+            ctx.restore();
+            return;
+        }
+
+        if (isHook) {
+            const phone = { x: center.x, y: 420 };
+            const hub = { x: center.x, y: 845 };
+            drawSpatialCurve(ctx, phone, hub, "#38BDF8", appear, time);
+            drawSpatialService(ctx, phone.x, phone.y, "FOOD APP", "▯", "#FBBF24", 0.9);
+            drawSpatialService(ctx, hub.x, hub.y, "API GATEWAY", "◇", gatewayColor, 1.25);
+            serviceNames.forEach((name, index) => {
+                const angle = -Math.PI / 2 + index * Math.PI * 2 / serviceNames.length;
+                const point = { x: center.x + Math.cos(angle) * 365, y: center.y + Math.sin(angle) * 300 };
+                drawSpatialCurve(ctx, { x: hub.x, y: hub.y }, point, "rgba(56,189,248,0.7)", appear, time + index * 0.2, index % 2 ? 34 : -34);
+                drawSpatialService(ctx, point.x, point.y, name, ["⌂", "▦", "₹", "◉", "➤", "%", "▣", "? "][index], index === 2 ? "#22C55E" : "#7DD3FC", 0.76);
+            });
+        } else if (isDirect) {
+            const client = { x: 190, y: center.y };
+            drawSpatialService(ctx, client.x, client.y, "CLIENT APP", "▯", "#FBBF24", 1.05);
+            ["RESTAURANT", "ORDER", "PAYMENT"].forEach((name, index) => {
+                const point = { x: 830, y: 560 + index * 265 };
+                drawSpatialCurve(ctx, { x: client.x + 50, y: client.y }, { x: point.x - 50, y: point.y }, ["#38BDF8", "#A78BFA", "#22C55E"][index], appear, time + index * 0.3, (index - 1) * 80);
+                drawSpatialService(ctx, point.x, point.y, name, ["⌂", "▣", "₹"][index], ["#38BDF8", "#A78BFA", "#22C55E"][index], 1.05);
+            });
+        } else if (isResponsibility) {
+            drawSpatialService(ctx, center.x, center.y, "API GATEWAY", "◇", gatewayColor, 1.25);
+            const featureNames = ["AUTHENTICATION", "RATE LIMITING", "REQUEST MONITORING"];
+            const glyphs = ["⬡", "◷", "≋"];
+            featureNames.forEach((name, index) => {
+                const angle = -Math.PI / 2 + index * Math.PI * 2 / 3;
+                const point = { x: center.x + Math.cos(angle) * 300, y: center.y + Math.sin(angle) * 260 };
+                drawSpatialCurve(ctx, center, point, ["#A78BFA", "#FBBF24", "#22C55E"][index], appear, time + index * 0.25);
+                drawSpatialService(ctx, point.x, point.y, name, glyphs[index], ["#A78BFA", "#FBBF24", "#22C55E"][index], 0.95);
+            });
+        } else if (isConfig) {
+            [[300, "GATEWAY A", "#38BDF8"], [780, "GATEWAY B", "#A78BFA"]].forEach(([x, name, color]) => {
+                drawSpatialService(ctx, x, 690, name, "◇", color, 1.15);
+                ["AUTH ✓", "RATE —", name.endsWith("A") ? "MONITOR ✕" : "MONITOR ✓"].forEach((label, index) => {
+                    const yy = 930 + index * 130;
+                    ctx.fillStyle = index === 2 && name.endsWith("A") ? "#EF4444" : (index === 1 ? "#94A3B8" : "#22C55E");
+                    ctx.font = "750 26px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(label, x, yy);
+                });
+            });
+            ctx.fillStyle = "#FBBF24";
+            ctx.font = "800 28px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("FEATURES DEPEND ON CONFIGURATION", center.x, 1390);
+        } else if (isFailure) {
+            const client = { x: center.x, y: 440 };
+            drawSpatialService(ctx, client.x, client.y, "CLIENT", "▯", "#FBBF24", 0.9);
+            drawSpatialCurve(ctx, client, center, "#EF4444", appear, time);
+            drawSpatialService(ctx, center.x, center.y, "GATEWAY · DOWN", "✕", "#EF4444", 1.35);
+            serviceNames.slice(0, 5).forEach((name, index) => {
+                const point = { x: 145 + index * 198, y: 1240 + (index % 2) * 80 };
+                drawSpatialService(ctx, point.x, point.y, name, "○", "#22C55E", 0.72);
+                ctx.strokeStyle = "rgba(148,163,184,0.45)";
+                ctx.setLineDash([8, 10]);
+                ctx.beginPath();
+                ctx.moveTo(center.x, center.y + 56);
+                ctx.lineTo(point.x, point.y - 54);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = "#EF4444";
+                ctx.font = "800 28px 'Segoe UI', sans-serif";
+                ctx.fillText("×", (center.x + point.x) / 2, (center.y + point.y) / 2);
+            });
+        } else if (isOrder) {
+            const points = [
+                { x: 210, y: 500, label: "FOOD APP", glyph: "▯", color: "#FBBF24" },
+                { x: 520, y: 720, label: "API GATEWAY", glyph: "◇", color: "#38BDF8" },
+                { x: 830, y: 930, label: "ORDER SERVICE", glyph: "▣", color: "#22C55E" },
+                { x: 520, y: 1190, label: "PAYMENT", glyph: "₹", color: "#A78BFA" },
+            ];
+            points.forEach((item, index) => {
+                if (index) drawSpatialCurve(ctx, points[index - 1], item, item.color, appear, time + index * 0.2, index % 2 ? 46 : -46);
+                drawSpatialService(ctx, item.x, item.y, item.label, item.glyph, item.color, 0.95);
+            });
+        } else {
+            const points = [
+                { x: 235, y: 700, label: "CLIENT", glyph: "▯", color: "#FBBF24" },
+                { x: center.x, y: 900, label: "API GATEWAY", glyph: "◇", color: "#38BDF8" },
+                { x: 845, y: 1110, label: "MICROSERVICE", glyph: "▣", color: "#22C55E" },
+            ];
+            points.forEach((item, index) => {
+                if (index) drawSpatialCurve(ctx, points[index - 1], item, item.color, appear, time + index * 0.2, 42);
+                drawSpatialService(ctx, item.x, item.y, item.label, item.glyph, item.color, 1.05);
+            });
+        }
+        ctx.restore();
+    }
+
+    function drawPromptVisualPlan(ctx, W, H, stage, progress, time) {
+        const visual = (stage && stage.visual_data) || {};
+        const elements = Array.isArray(visual.elements) ? visual.elements.filter(item => item && item.label) : [];
+        if (!elements.length) return false;
+        const points = new Map();
+        const top = 350, usableHeight = 1120;
+        elements.slice(0, 12).forEach((item, index) => {
+            const x = Math.max(70, Math.min(W - 70, Number(item.x ?? 0.5) * W));
+            const y = top + Math.max(0, Math.min(1, Number(item.y ?? 0.5))) * usableHeight;
+            points.set(String(item.label), { x, y, item, index });
+        });
+        ctx.save();
+        ctx.globalAlpha *= Math.max(0, Math.min(1, progress * 3));
+        (Array.isArray(visual.connectors) ? visual.connectors : []).forEach((connector, index) => {
+            const from = points.get(String(connector.from || "")), to = points.get(String(connector.to || ""));
+            if (!from || !to) return;
+            const color = connector.color || "#38BDF8";
+            const bend = (index % 2 ? 1 : -1) * Math.min(90, Math.abs(to.x - from.x) * 0.12 + 32);
+            const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
+            ctx.beginPath(); ctx.moveTo(from.x, from.y);
+            ctx.quadraticCurveTo(midX - bend, midY + bend, to.x, to.y);
+            ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 16; ctx.stroke(); ctx.shadowBlur = 0;
+            const phase = (time * 0.55 + index * 0.23) % 1;
+            const inverse = 1 - phase;
+            const packetX = inverse * inverse * from.x + 2 * inverse * phase * (midX - bend) + phase * phase * to.x;
+            const packetY = inverse * inverse * from.y + 2 * inverse * phase * (midY + bend) + phase * phase * to.y;
+            ctx.beginPath(); ctx.arc(packetX, packetY, 6, 0, Math.PI * 2); ctx.fillStyle = "#FFFFFF"; ctx.fill();
+        });
+        points.forEach(({ x, y, item, index }) => {
+            const color = item.color || "#38BDF8";
+            const shape = String(item.shape || "icon").toLowerCase();
+            const scale = 1 + Math.sin(time * 2.2 + index * 0.8) * 0.035;
+            ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+            if (shape !== "text") {
+                ctx.beginPath();
+                if (shape === "diamond") { ctx.moveTo(0, -37); ctx.lineTo(37, 0); ctx.lineTo(0, 37); ctx.lineTo(-37, 0); ctx.closePath(); }
+                else ctx.arc(0, 0, 34, 0, Math.PI * 2);
+                ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.stroke(); ctx.shadowBlur = 0;
+                ctx.fillStyle = "rgba(7,16,34,0.82)"; ctx.fill();
+            }
+            ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = "800 28px 'Segoe UI', sans-serif";
+            ctx.fillText(String(item.glyph || item.icon || item.label).slice(0, shape === "text" ? 22 : 2), 0, 0, 280);
+            ctx.fillStyle = "#F8FAFC"; ctx.font = "650 23px 'Segoe UI', sans-serif"; ctx.textBaseline = "top";
+            const labelLines = splitDiagramText(ctx, item.label, 250, 2, 24);
+            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, shape === "text" ? 28 + lineIndex * 28 : 48 + lineIndex * 27));
+            if (item.detail) {
+                ctx.fillStyle = "#94A3B8"; ctx.font = "500 18px 'Segoe UI', sans-serif";
+                const detail = splitDiagramText(ctx, item.detail, 250, 1, 34)[0];
+                if (detail) ctx.fillText(detail, 0, (shape === "text" ? 60 : 82) + labelLines.length * 25);
+            }
+            ctx.restore();
+        });
+        ctx.restore();
+        return true;
+    }
+
     function renderArchitectureScene(ctx, W, H, p, stage, stageIndex, progress, alpha, t) {
         const spec = buildDiagramSpec(p, stage, stageIndex);
         const time = Number(t) || 0;
@@ -3621,6 +3858,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             else if (briefLayout === "chips") drawBriefChips(ctx, W, H, stage, progress);
             else if (briefLayout === "warning") drawBriefWarning(ctx, W, H, stage, progress);
             else if (briefLayout === "cards") drawBriefCards(ctx, W, H, stage, progress);
+            else if (briefLayout === "spatial") drawBriefSpatial(ctx, W, H, stage, progress, time, stageIndex);
             else drawBriefPipeline(ctx, W, H, stage, progress);
             ctx.restore();
             return;
@@ -4982,7 +5220,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const activeStageIndex = stages.indexOf(activeStage);
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
-        const graphRendered = drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph, t, activeStageIndex, maxDur);
+        const sceneVisualRendered = drawPromptVisualPlan(ctx, W, H, activeStage, stageProg, t);
+        const graphRendered = !sceneVisualRendered && drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph, t, activeStageIndex, maxDur, activeStage);
         if (!graphRendered) {
             renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
         }
@@ -4994,32 +5233,37 @@ SECOND_HIGHEST_SALARY: 70000`;
         // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)
         // =========================================================================
         const subPillX = 60;
-        const subPillY = H - 320;
+        const subPillY = H - 520;
         const subPillW = W - 120;
-        const subPillH = 190;
+        const subPillH = 180;
 
-        ctx.save();
-        ctx.fillStyle = "rgba(8, 14, 28, 0.88)";
-        ctx.beginPath();
-        ctx.roundRect(subPillX, subPillY, subPillW, subPillH, 22);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
-        ctx.lineWidth = 2.0;
-        ctx.shadowColor = "rgba(56, 189, 248, 0.35)";
-        ctx.shadowBlur = 12;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        const hasShortCaption = Boolean(activeStage && String(activeStage.caption || "").trim());
+        const showShortCaption = hasShortCaption && sceneElapsed <= 4;
+        if (!hasShortCaption || showShortCaption) {
+            ctx.save();
+            ctx.fillStyle = "rgba(8, 14, 28, 0.88)";
+            ctx.beginPath();
+            ctx.roundRect(subPillX, subPillY, subPillW, subPillH, 22);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+            ctx.lineWidth = 2.0;
+            ctx.shadowColor = "rgba(56, 189, 248, 0.35)";
+            ctx.shadowBlur = 12;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
 
         // Subtitle Text Word-by-Word Highlight (English only, no voice badge)
-        let subtitleText = "";
-        if (activeStage) {
+        let subtitleText = hasShortCaption ? (showShortCaption ? activeStage.caption : "") : "";
+        if (!hasShortCaption && activeStage) {
             // On-screen text is always English; only the synthesized voice follows the
             // selected regional language.
             subtitleText = activeStage.speech_en || activeStage['speech_en'] || activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || "";
-        } else if (p.scenes && p.scenes.length > 0) {
+        } else if (!hasShortCaption && p.scenes && p.scenes.length > 0) {
             const sc = p.scenes.find(s => t >= s.start && t < s.end) || p.scenes[p.scenes.length - 1];
             subtitleText = sc.speech_en || sc['speech_en'] || sc['speech_' + sqlShortState.audioLang] || "";
-        } else {
+        } else if (!hasShortCaption) {
             subtitleText = p.explanation_en || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
         }
 
@@ -5410,7 +5654,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             return;
         }
 
-        const exportFrameRate = 24;
+        const exportFrameRate = 30;
         const videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks();
         const combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
         if (window.nanoProRegisterMediaStream) {
@@ -5428,8 +5672,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const chunks = [];
         const recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 3500000,
-            audioBitsPerSecond: 128000
+            videoBitsPerSecond: 9000000,
+            audioBitsPerSecond: 192000
         });
 
         recorder.ondataavailable = e => {

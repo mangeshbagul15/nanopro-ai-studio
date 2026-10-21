@@ -1202,10 +1202,10 @@ def _run_sql_video_mp4_conversion(job_id: str, source_path: Path, final_path: Pa
         result = subprocess.run(
             [
                 audio_processor.ffmpeg_bin, "-nostdin", "-y", "-i", str(source_path),
-                "-map", "0:v:0", "-map", "0:a:0?", "-vf", "scale=720:1280:flags=fast_bilinear",
-                "-r", "24", "-c:v", "libx264", "-preset", "ultrafast",
-                "-threads", "1", "-filter_threads", "1", "-crf", "22", "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-threads:a", "1", "-b:a", "128k",
+                "-map", "0:v:0", "-map", "0:a:0?", "-vf", "scale=1080:1920:flags=lanczos",
+                "-r", "30", "-c:v", "libx264", "-preset", "ultrafast",
+                "-threads", "1", "-filter_threads", "1", "-b:v", "9M", "-maxrate", "10M", "-bufsize", "18M", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-threads:a", "1", "-b:a", "192k",
                 "-movflags", "+faststart", str(final_path),
             ],
             capture_output=True,

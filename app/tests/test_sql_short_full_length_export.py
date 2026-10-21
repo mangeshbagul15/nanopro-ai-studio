@@ -102,12 +102,14 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertTrue(all(action["stage_index"] in range(12) for action in animation["actions"]))
         self.assertTrue(all(0 <= node["x"] <= 1 and 0 <= node["y"] <= 1 for node in animation["nodes"]))
 
-    def test_idempotency_prompt_recognizes_specific_local_blueprint_before_model(self):
+    def test_every_user_prompt_is_sent_to_the_model_without_topic_blueprints(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         generation = source.split("async def generate_short_prompt_async", 1)[1]
-        self.assertIn("_idempotency_payment_blueprint()", generation)
-        self.assertLess(generation.index("_idempotency_payment_blueprint()"), generation.index("# 4. If still not matched"))
-        self.assertIn('"idempotency_payment_fallback"', generation)
+        self.assertIn("if len(text_input) > 8:", generation)
+        self.assertIn("Input Prompt: {text_input}", generation)
+        self.assertNotIn("_idempotency_payment_blueprint()", generation)
+        self.assertNotIn("_parse_detailed_brief(text_input)", generation)
+        self.assertIn("no hardcoded storyboard was substituted", generation)
 
     def test_airflow_brief_preserves_all_seven_hindi_scenes(self):
         brief = """# PROJECT: Apache Airflow DAG Kaise Kaam Karta Hai?
@@ -207,7 +209,7 @@ Show the cloud.
         self.assertNotIn("PAUSE", result["scenes"][0]["speech"])
         self.assertEqual(result["scenes"][0]["start"], 0)
         self.assertEqual(result["scenes"][0]["end"], 6)
-        self.assertEqual(result["scenes"][0]["visual_data"]["layout"], "")
+        self.assertEqual(result["scenes"][0]["visual_data"]["layout"], "pipeline")
         self.assertEqual(result["max_duration_seconds"], 60)
 
     def test_aws_dms_graph_fallback_keeps_named_components_and_shapes(self):
@@ -330,8 +332,8 @@ Show the cloud.
         self.assertIn(".mp4`", source)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)
-        self.assertIn("videoBitsPerSecond: 3500000", source)
-        self.assertIn("const exportFrameRate = 24", source)
+        self.assertIn("videoBitsPerSecond: 9000000", source)
+        self.assertIn("const exportFrameRate = 30", source)
         self.assertNotIn("stepBatch = totalDuration <= 15 ? 1 : 2", source)
         self.assertNotIn("Math.min(59.5, totalDuration)", source)
         self.assertIn("Generate click produces the complete synchronized 9:16 MP4 download", source)
@@ -348,19 +350,20 @@ Show the cloud.
     def test_mp4_conversion_limits_encoder_memory_for_free_instances(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
         encoder = source.split("def _run_sql_video_mp4_conversion", 1)[1].split("@app.post(", 1)[0]
-        self.assertIn('"scale=720:1280:flags=fast_bilinear"', encoder)
-        self.assertIn('"-r", "24"', encoder)
+        self.assertIn('"scale=1080:1920:flags=lanczos"', encoder)
+        self.assertIn('"-r", "30"', encoder)
+        self.assertIn('"-b:v", "9M"', encoder)
+        self.assertIn('"-b:a", "192k"', encoder)
         self.assertIn('"-preset", "ultrafast"', encoder)
         self.assertIn('"-threads", "1"', encoder)
         self.assertIn('"-filter_threads", "1"', encoder)
 
     def test_universal_video_prompt_requests_topic_specific_visuals(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
-        self.assertIn('"visual_description"', source)
-        self.assertIn('"entities"', source)
-        self.assertIn("avoid repeating the same composition", source.lower())
+        self.assertIn("scene-specific composition", source.lower())
+        self.assertIn("normalized x/y coordinates", source.lower())
+        self.assertIn("do not impose an application template", source.lower())
         self.assertNotIn('"title": "Problem Hook"', source)
-        self.assertNotIn('f"}}"', source)
         self.assertIn('"content_type":"tech_topic"', source)
         self.assertIn("Every user prompt must pass through", source)
         self.assertIn('audio_url = ""', source)
@@ -368,8 +371,8 @@ Show the cloud.
 
     def test_short_form_narration_targets_under_sixty_seconds(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
-        self.assertIn("Target 45 to 55 seconds", source)
-        self.assertIn("max_narration_words = 112 if lang_key == \"en\" else 88", source)
+        self.assertIn("max_narration_words = max(24, int(target_seconds * 140 / 60))", source)
+        self.assertIn("max_duration_seconds when requested", source)
         self.assertIn("Short narration compression notice", source)
         self.assertIn("audio_duration=actual_dur", source)
 
@@ -448,6 +451,7 @@ class SceneVisualContractTests(unittest.TestCase):
             "speech": "The loop reads each item and adds it to the result.",
             "visual_prompt": "Close view of a Python list; the loop visits each value in order and updates the result list.",
             "continuity": "Same list and loop variable remain visible across this explanation.",
+            "visual_data": {"composition": "Freeform loop visualization", "elements": [{"label": "List", "x": 0.5, "y": 0.5}], "connectors": []},
             "overlay_items": [
                 {"kind": "code", "content": "for item in values:", "x": 0.12, "y": 0.82},
                 {"kind": "label", "content": "result list", "x": 0.75, "y": 0.7},
@@ -461,6 +465,7 @@ class SceneVisualContractTests(unittest.TestCase):
         scene = {
             "title": "Context assembly",
             "speech": "Retrieved chunks are added to the prompt before generation.",
+            "visual_data": {"composition": "Floating context glyphs", "elements": [{"label": "Context", "x": 0.5, "y": 0.5}], "connectors": []},
             "overlay_items": [
                 {"kind": "text", "content": "context block", "x": 0.5, "y": 0.4},
                 {"kind": "", "content": "retrieved chunks", "x": 0.4, "y": 0.6},
@@ -477,6 +482,7 @@ class SceneVisualContractTests(unittest.TestCase):
             "speech": "A photon transfers energy to an electron.",
             "visual_prompt": "A photon strikes a silicon cell and releases an electron.",
             "continuity": "The same silicon cell stays in view.",
+            "visual_data": {"composition": "Photon and electron", "elements": [{"label": "Photon", "x": 0.5, "y": 0.5}], "connectors": []},
             "overlay_items": [{"kind": "label", "content": "electron", "x": 1.3, "y": 0.5}],
         }
         with self.assertRaisesRegex(ValueError, "normalized canvas"):
@@ -494,6 +500,8 @@ class PromptScenePlayerTests(unittest.TestCase):
     def test_architecture_renderer_uses_independent_vector_components(self):
         renderer = (PROJECT_ROOT / "app" / "ui" / "architecture_animation_renderer.py").read_text(encoding="utf-8")
         self.assertIn("function drawTechnicalArchitectureGraph(", renderer)
+        self.assertIn("function architectureGraphForScene(", renderer)
+        self.assertIn("stage.diagram_actions", renderer)
         self.assertIn("architectureStrokeProgress", renderer)
         self.assertIn('"packets"', renderer)
         for shape in ("database", "diamond", "hexagon", "cloud", "document", "terminal", "dashboard"):
@@ -525,6 +533,9 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         frame = source.split("function renderSqlShortFrame(", 1)[1]
         self.assertIn("drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph", frame)
+        self.assertIn("maxDur, activeStage)", frame)
+        self.assertIn("const subPillY = H - 520", frame)
+        self.assertIn("activeStage.caption", frame)
         self.assertNotIn("renderPromptSceneAssetVisual(", frame)
         self.assertNotIn("loadPromptSceneAssets(data.scene_assets", source)
         self.assertNotIn("AI VOICE", source)
@@ -593,7 +604,8 @@ class PromptScenePlayerTests(unittest.TestCase):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn('"storyboard_source": matched.get("storyboard_source"', source)
         self.assertIn('matched["storyboard_source"] = "online_model"', source)
-        self.assertIn('matched["storyboard_source"] = "local_fallback"', source)
+        generation = source.split("async def generate_short_prompt_async", 1)[1]
+        self.assertNotIn('matched["storyboard_source"] = "local_fallback"', generation)
 
     def test_storyboard_prompt_requests_native_language_narration(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
@@ -664,16 +676,92 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertEqual(parsed["scenes"][0]["title"], "HOOK")
         self.assertEqual(parsed["scenes"][2]["visual_data"]["rows"][0], ["Feature", "OLTP", "OLAP"])
 
+    def test_detailed_brief_parses_short_scene_captions(self):
+        brief = '''
+SCENE 1 (0-8 seconds): HOOK
+Voiceover: "Orders are arriving quickly."
+Caption: "Hazaaron orders ek saath"
+**Diagram and Animation**: Show the order feed and busy server.
+---
+SCENE 2 (8-16 seconds): ROUTE
+Voiceover: "The proxy forwards the order request."
+Caption: "Request sahi backend par"
+**Diagram and Animation**: Show a client request flowing to a backend service.
+'''
+        parsed = load_detailed_brief_parser()(brief)
+        self.assertEqual(parsed["scenes"][0]["caption"], "Hazaaron orders ek saath")
+
+    def test_api_gateway_character_brief_keeps_all_scenes_and_uses_spatial_layouts(self):
+        brief = """
+Scene 1 (0:00-0:08) - Hook
+- Phone, glowing gateway and eight service icons arranged as a constellation, not boxes.
+- Arjun (left): "How does the request reach the right service?"
+- Riya (right): "The gateway is the single entry point."
+Scene 2 (0:08-0:15) - Direct calls
+- Curved direct calls from the phone to Restaurant, Order and Payment services.
+- Riya: "What if clients call every service directly?"
+- Arjun: "Each address and policy must be handled separately."
+Scene 3 (0:15-0:22) - Gateway introduction
+- A glowing API Gateway node becomes the single entrance.
+- Riya: "The client talks to the API Gateway."
+Scene 4 (0:22-0:30) - Order flow
+- An animated request path moves from the app through the gateway to Order then Payment.
+- Arjun: "Does it route to the right service?"
+- Riya: "Yes, that is its job."
+Scene 5 (0:30-0:40) - Gateway responsibilities
+- Shield, speedometer and document glyphs orbit the gateway: authentication, rate limiting and monitoring.
+- Riya: "These are common gateway responsibilities."
+Scene 6 (0:40-0:50) - Configuration
+- Split-screen gateway icons compare authentication, rate limit and monitoring status, without cards.
+- Riya: "Features depend on the tool and configuration."
+- Arjun: "Can we configure them ourselves?"
+Scene 7 (0:50-0:58) - Failure
+- The gateway freezes and turns red; downstream services stay healthy but receive no requests.
+- Arjun: "What if the gateway goes down?"
+- Riya: "High availability is the next step."
+Scene 8 (0:58-1:05) - Closing
+- Character close-up, high availability question, clean end card held two seconds.
+- Riya: "Watch part two and follow."
+"""
+        parsed = load_detailed_brief_parser()(brief)
+        self.assertEqual(len(parsed["scenes"]), 8)
+        self.assertEqual(parsed["duration"], 65)
+        self.assertEqual(parsed["scenes"][0]["title"], "Hook")
+        self.assertTrue(all(scene["visual_data"]["layout"] == "spatial" for scene in parsed["scenes"]))
+        self.assertLess(len(parsed["scenes"][-1]["speech"]), 200)
+        self.assertIn("How does the request reach the right service?", parsed["scenes"][0]["speech"])
+        self.assertIn("The gateway is the single entry point.", parsed["scenes"][0]["speech"])
+        self.assertIn("Phone, glowing gateway", parsed["scenes"][0]["visual_data"]["visual"])
+
+    def test_h264_export_matches_reel_delivery_spec(self):
+        renderer = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        server = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
+        conversion = server.split("def _run_sql_video_mp4_conversion(", 1)[1].split("@app.post(\"/api/sql_video/finalize_mp4\")", 1)[0]
+        self.assertIn("const exportFrameRate = 30", renderer)
+        self.assertIn("videoBitsPerSecond: 9000000", renderer)
+        self.assertIn("audioBitsPerSecond: 192000", renderer)
+        self.assertIn('"scale=1080:1920:flags=lanczos"', conversion)
+        self.assertIn('"-r", "30"', conversion)
+        self.assertIn('"-b:v", "9M"', conversion)
+        self.assertIn('"-b:a", "192k"', conversion)
+
     def test_brief_scene_designs_exist_in_the_renderer(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         for name in ("drawBriefTitle", "drawBriefSplit", "drawBriefPipeline", "drawBriefTable", "drawBriefChips", "drawBriefWarning", "drawBriefCards"):
             self.assertIn(f"function {name}(", js)
         self.assertIn("if (p.show_subtitles === false) { return; }", js)
 
+    def test_scene_visuals_use_ai_authored_compositions_before_graph_fallback(self):
+        js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        self.assertIn("function drawPromptVisualPlan(", js)
+        self.assertIn("visual.elements", js)
+        self.assertIn("const sceneVisualRendered = drawPromptVisualPlan", js)
+        self.assertIn("!sceneVisualRendered && drawTechnicalArchitectureGraph", js)
+
     def test_architecture_graph_uses_vertical_safe_margins(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
         self.assertIn('"x": 0.5', source)
-        self.assertIn('0.16 + 0.59 * index / (len(nodes) - 1)', source)
+        self.assertIn('"y": 0.16 if level_count == 1 else 0.16 + 0.59 * layer_index / (level_count - 1)', source)
         self.assertIn('aspect-ratio: 9 / 16', (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8"))
 
     def test_audio_capture_route_is_reused_between_exports(self):
@@ -687,13 +775,11 @@ class PromptScenePlayerTests(unittest.TestCase):
 
     def test_detailed_project_brief_preserves_explicit_scenes_for_model_parsing(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
-        self.assertNotIn('lang_key = "en"', source.split("brief_blueprint = _parse_detailed_brief", 1)[1].split("# 4.", 1)[0])
-        self.assertIn("_architecture_from_detailed_brief(text_input, stages)", source)
-        self.assertIn("_llm_fallback_graph(stages)", source)
-        self.assertIn('_deterministic_condense_scenes(', source)
-        self.assertIn('if matched.get("storyboard_source") == "detailed_brief":', source)
-        self.assertIn('"layout": "pipeline"', source)
-        self.assertIn("Required prompt-specific concepts that must appear as separate graph nodes", source)
+        generation = source.split("async def generate_short_prompt_async", 1)[1]
+        self.assertIn("Input Prompt: {text_input}", generation)
+        self.assertIn("visual_data authored for that scene", generation)
+        self.assertNotIn("_architecture_from_detailed_brief(text_input, stages)", generation)
+        self.assertNotIn("if matched.get(\"storyboard_source\") == \"detailed_brief\":", generation)
         self.assertIn("Choose the number of educational scenes to fit the prompt's complexity", source)
 
 

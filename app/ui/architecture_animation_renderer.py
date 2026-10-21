@@ -301,8 +301,60 @@ ARCHITECTURE_ANIMATION_JS = r'''
         ctx.restore();
     }
 
-    function drawTechnicalArchitectureGraph(ctx, width, height, graph, time, stageIndex, totalDuration) {
+    function architectureGraphForScene(graph, stage, time) {
+        const stageActions = stage && Array.isArray(stage.diagram_actions) ? stage.diagram_actions : null;
+        if (!stageActions) return graph;
+        const validActions = stageActions.filter(action => action && typeof action === "object");
+        if (!validActions.length) return null;
+
+        const nodes = Array.isArray(graph.nodes) ? graph.nodes : [];
+        const edges = Array.isArray(graph.edges) ? graph.edges : [];
+        const targets = new Set(validActions.map(action => String(action.target_id || "")));
+        const nodeIds = new Set(nodes.filter(node => targets.has(String(node.id))).map(node => String(node.id)));
+        const edgeIds = new Set();
+        edges.forEach(edge => {
+            if (targets.has(String(edge.id))) {
+                edgeIds.add(String(edge.id));
+                nodeIds.add(String(edge.from));
+                nodeIds.add(String(edge.to));
+            }
+        });
+        if (!nodeIds.size) return null;
+
+        edges.forEach(edge => {
+            if (nodeIds.has(String(edge.from)) && nodeIds.has(String(edge.to))) edgeIds.add(String(edge.id));
+        });
+        const stageStart = Number(stage.start || 0);
+        const stageEnd = Number(stage.end || stageStart);
+        const stageDuration = Math.max(0.1, stageEnd - stageStart);
+        const actions = validActions
+            .filter(action => nodeIds.has(String(action.target_id)) || edgeIds.has(String(action.target_id)))
+            .map(action => {
+                const cue = Math.max(0, Math.min(1, Number(action.cue_progress) || 0));
+                const start = stageStart + cue * stageDuration;
+                return {
+                    target_id: String(action.target_id),
+                    action: String(action.action || "highlight_node"),
+                    start,
+                    end: stageEnd,
+                    duration: Math.min(0.7, Math.max(0.12, stageEnd - start)),
+                };
+            });
+        return {
+            ...graph,
+            nodes: nodes.filter(node => nodeIds.has(String(node.id))),
+            edges: edges.filter(edge => edgeIds.has(String(edge.id))),
+            groups: (graph.groups || []).filter(group =>
+                (group.node_ids || []).some(id => nodeIds.has(String(id)))
+            ),
+            actions,
+        };
+    }
+
+    function drawTechnicalArchitectureGraph(ctx, width, height, graph, time, stageIndex, totalDuration, stage) {
         if (!graph || !Array.isArray(graph.nodes) || !graph.nodes.length) return false;
+        graph = architectureGraphForScene(graph, stage, time);
+        if (!graph || !graph.nodes.length) return false;
         const nodes = graph.nodes;
         const positions = new Map(nodes.map(node => [node.id, architecturePoint(node, width, height, nodes)]));
         const activeFocus = (graph.actions || []).filter(action => action.action === "highlight_node"

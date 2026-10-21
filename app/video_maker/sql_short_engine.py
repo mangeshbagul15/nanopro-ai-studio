@@ -111,9 +111,8 @@ def _infer_action_type(idx: int, total: int) -> str:
 def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize the model-authored scene brief instead of rejecting it.
 
-    The diagram renderer only needs the scene title and its numbered steps, so a
-    model that omits an optional field must not throw away an otherwise good
-    storyboard. Only genuinely unusable overlay anchors are rejected.
+    Keep the API-authored scene composition renderable without choosing a visual
+    layout in application code. Reject only missing or unusable visual elements.
     """
     if not isinstance(scene, dict):
         raise ValueError("A scene visual brief must be an object.")
@@ -126,6 +125,26 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
     overlays = scene.get("overlay_items")
     if not isinstance(overlays, list):
         overlays = []
+    visual_data = scene.get("visual_data")
+    if not isinstance(visual_data, dict):
+        raise ValueError("Each AI-authored scene must include its own visual_data composition.")
+    elements = visual_data.get("elements")
+    if not isinstance(elements, list) or not elements:
+        raise ValueError("Each AI-authored scene must include visual elements.")
+    normalized_elements = []
+    for item in elements[:12]:
+        if not isinstance(item, dict) or not str(item.get("label") or "").strip():
+            continue
+        try:
+            x, y = float(item.get("x")), float(item.get("y"))
+        except (TypeError, ValueError):
+            continue
+        if 0 <= x <= 1 and 0 <= y <= 1:
+            normalized_elements.append({**item, "x": x, "y": y, "label": str(item["label"]).strip()})
+    if not normalized_elements:
+        raise ValueError("AI-authored visual elements need normalized x/y coordinates.")
+    connectors = visual_data.get("connectors")
+    visual_data = {**visual_data, "elements": normalized_elements, "connectors": connectors if isinstance(connectors, list) else []}
     allowed_kinds = {"label", "code", "formula"}
     normalized = []
     for item in overlays:
@@ -145,7 +164,7 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
         if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
             raise ValueError("Scene overlay anchors must be normalized canvas coordinates.")
         normalized.append({**item, "kind": kind, "x": x, "y": y, "content": content.strip()})
-    return {**scene, "visual_prompt": visual_prompt, "continuity": continuity.strip(), "overlay_items": normalized}
+    return {**scene, "visual_data": visual_data, "visual_prompt": visual_prompt, "continuity": continuity.strip(), "overlay_items": normalized}
 
 
 def compute_audio_synchronized_stages(
@@ -1029,6 +1048,8 @@ TOP_MNC_THEORY_PRESETS = [
 def _infer_brief_layout(visual: str, rows: list, labels: list) -> str:
     """Pick the scene design the brief is asking for."""
     text = (visual or "").lower()
+    if "gateway" in text or any(term in text for term in ("direct call", "order flow", "no boxes", "not boxes", "not cards", "constellation", "orbiting", "organic curved", "floating glyph", "gateway node", "icon-label", "abstract gateway icons", "end card", "closing")):
+        return "spatial"
     if "split screen" in text or "split-screen" in text:
         return "split"
     if "warning" in text or "hallucinat" in text or "red" in text and "card" in text:
@@ -1068,7 +1089,8 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         headline = match.group(1).strip()
     if not headline:
         bold = re.search(r"\*\*([^*\n]{3,80})\*\*", text)
-        headline = bold.group(1).strip() if bold else text.strip().split("\n")[0][:80]
+        topic = re.search(r"(?i)\b(?:explains?|about)\s+(.+?)\s+(?:in|using|through)\b", text.strip().split("\n")[0])
+        headline = bold.group(1).strip() if bold else (topic.group(1).strip() if topic else text.strip().split("\n")[0][:80])
     headline = headline.strip().strip('"\u201c\u201d\'')
 
     blocks = []
@@ -1079,20 +1101,39 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
 
     scenes: List[Dict[str, Any]] = []
     for index, (mark, body) in enumerate(blocks):
-        voice_section = re.search(r"(?is)(?:#{1,6}\s*)?\bvoiceover\b\s*:?\s*(.+?)(?=\n\s*#{1,6}\s*|\Z)", body)
+        scene_body = re.split(
+            r"(?im)^\s*(?:#{1,6}\s*)?(?:DIALOGUE AND VOICE|ANIMATION|AUDIO|CAPTIONS|OUTPUT FORMAT|QUALITY CHECKLIST)\b",
+            body,
+            maxsplit=1,
+        )[0]
+        voice_section = re.search(r"(?is)(?:#{1,6}\s*)?\bvoiceover\b\s*:?\s*(.+?)(?=\n\s*#{1,6}\s*|\Z)", scene_body)
         voice_text = voice_section.group(1) if voice_section else ""
         voice = re.search(r"(?is)[\u201c\"](.+?)[\u201d\"]", voice_text)
         if voice:
             spoken_text = voice.group(1)
         else:
-            voice = re.search(r"(?is)\bvoiceover\s*:\s*(.+?)(?=\n\s*\*\*|\n\s*SCENE|\Z)", body)
+            voice = re.search(r"(?is)\bvoiceover\s*:\s*(.+?)(?=\n\s*\*\*|\n\s*SCENE|\Z)", scene_body)
             spoken_text = voice.group(1) if voice else voice_text
+        if not spoken_text:
+            dialogue = re.findall(
+                r"(?im)^\s*[-*]?\s*(Riya|Arjun)\s*(?:\([^)]*\))?\s*:\s*([^\n]+)", scene_body
+            )
+            if not dialogue:
+                dialogue = re.findall(
+                    r"(?i)\b(Riya|Arjun)\s*(?:\([^)]*\))?\s*:\s*[\"\u201c]([^\"\u201d\n]+)[\"\u201d]",
+                    scene_body,
+                )
+            if dialogue:
+                spoken_text = " ".join(line.strip() for _, line in dialogue)
         if not spoken_text:
             continue
         speech = re.sub(r"\[[^\]]*\]", " ", spoken_text)
-        speech = re.sub(r"\s+", " ", speech).replace("**", "").strip().strip('"\u201c\u201d')
+        speech = re.sub(r"\s+", " ", speech).replace("**", "").replace('"', "").replace("\u201c", "").replace("\u201d", "").strip()
         if not speech:
             continue
+        caption_match = re.search(r"(?im)^\s*(?:\*\*)?caption(?:\*\*)?\s*:\s*[\"\u201c]?([^\n\"\u201d]+)", scene_body)
+        caption = re.sub(r"\s+", " ", caption_match.group(1)).strip() if caption_match else ""
+        caption = caption.strip(" \t\"\u201c\u201d")
 
         heading_line = text[mark.start():text.find("\n", mark.start()) if "\n" in text[mark.start():] else len(text)]
         scene_title = re.sub(r"(?i)^\s*#{0,3}\s*\**\s*SCENE\s+\d+\s*", "", heading_line)
@@ -1100,20 +1141,34 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         if not scene_title.strip(" *#—–-:"):
             first_line = next((line for line in body.splitlines() if line.strip()), "")
             scene_title = re.sub(r"\([^)]*sec[^)]*\)", "", first_line, flags=re.I)
+        scene_title = re.sub(r"\(\s*\d+:\d{2}\s*[\u2013\u2014-]\s*\d+:\d{2}\s*\)", "", scene_title)
         scene_title = re.sub(r"^[\s\u2014\-\u2013:.|*#]+|[\s\u2014\-\u2013:.|*#]+$", "", scene_title).strip()
         scene_title = re.sub(r"(?i)^voiceover\s*:?\s*", "", scene_title).strip()
         if not scene_title:
             scene_title = f"Scene {mark.group(1)}"
 
-        window = re.search(r"(?:\btime\s*:\s*|\()(\d+(?:\.\d+)?)\s*[\u2013\-\u2014]\s*(\d+(?:\.\d+)?)\s*(?:seconds?|sec)\)?", body, re.I)
-        start_s = float(window.group(1)) if window else None
-        end_s = float(window.group(2)) if window else None
+        time_source = f"{heading_line}\n{body}"
+        window = re.search(r"(?:\btime\s*:\s*|\()(\d+(?:\.\d+)?)\s*[\u2013\-\u2014]\s*(\d+(?:\.\d+)?)\s*(?:seconds?|sec)\)?", time_source, re.I)
+        clock_window = re.search(r"(\d+):(\d{2})\s*[\u2013\-\u2014-]\s*(\d+):(\d{2})", time_source)
+        if clock_window:
+            start_s = int(clock_window.group(1)) * 60 + int(clock_window.group(2))
+            end_s = int(clock_window.group(3)) * 60 + int(clock_window.group(4))
+        else:
+            start_s = float(window.group(1)) if window else None
+            end_s = float(window.group(2)) if window else None
 
-        visual_match = re.search(r"(?is)(?:\*\*diagram and animation\*\*|###\s*diagram and animation)(.+?)(?=\n\s*---\s*|\n\s*#\s*SCENE|\Z)", body)
-        visual = re.sub(r"\s+", " ", visual_match.group(1)).strip() if visual_match else ""
+        visual_match = re.search(r"(?is)(?:\*\*diagram and animation\*\*|###\s*diagram and animation|\*\*visual\s*:?\*\*|###\s*visual\s*:)(.+?)(?=\n\s*---\s*|\n\s*#\s*SCENE|\Z)", scene_body)
+        if visual_match:
+            visual_text = visual_match.group(1)
+        else:
+            visual_text = re.split(
+                r"(?im)^\s*[-*]?\s*(?:Riya|Arjun)\s*(?:\([^)]*\))?\s*:", scene_body, maxsplit=1
+            )[0]
+            visual_text = re.sub(r"(?im)^\s*(?:caption|on-screen text)\s*:\s*.*$", "", visual_text)
+        visual = re.sub(r"\s+", " ", visual_text).strip(" -*\t\r\n")
 
         labels: List[str] = []
-        for section in re.finditer(r"(?is)on-screen\s+text\s*:?\s*(.+?)(?=\n\s*\*\*|\n\s*---|\Z)", body):
+        for section in re.finditer(r"(?is)on-screen\s+text\s*:?\s*(.+?)(?=\n\s*\*\*|\n\s*---|\Z)", scene_body):
             for part in re.findall(r"`([^`]+)`|^\s*[-*]\s*(.+)$", section.group(1), re.M):
                 part = next((value for value in part if value), "")
                 clean = re.sub(r"[`*]", "", part).strip()
@@ -1124,12 +1179,12 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
         labels = labels[:8]
 
         chain: List[str] = []
-        arrow = re.search(r"`([^`]*(?:\u2192|->)[^`]*)`", visual or body)
+        arrow = re.search(r"`([^`]*(?:\u2192|->)[^`]*)`", visual or scene_body)
         if arrow:
             chain = [part.strip(" `") for part in re.split(r"\u2192|->", arrow.group(1)) if part.strip(" `")]
 
         rows: List[List[str]] = []
-        for line in body.splitlines():
+        for line in scene_body.splitlines():
             stripped = line.strip()
             if not stripped.startswith("|"):
                 continue
@@ -1137,16 +1192,17 @@ def _parse_detailed_brief(text: str) -> Optional[Dict[str, Any]]:
             if len(cells) >= 3 and not set("".join(cells)) <= set("-: "):
                 rows.append(cells[:3])
 
-        layout = _infer_brief_layout(visual or body, rows, labels)
+        layout = _infer_brief_layout(f"{scene_title} {visual or scene_body}", rows, labels)
         scenes.append({
             "id": index + 1,
             "user_authored_scene": True,
             "title": scene_title,
             "speech": speech,
             "speech_en": speech,
+            "caption": caption,
             "action_type": "diagram",
             "visual_data": {
-                "layout": "",
+                "layout": layout,
                 "focus": index,
                 "labels": labels,
                 "steps": chain,
@@ -3206,24 +3262,14 @@ class SqlShortVideoEngine:
         # the model so no SQL demo blueprint or static storyboard can replace its topic.
         content_type = "sql_query" if re.search(r"```sql|^\s*(?:SELECT|WITH)\b|\bwrite\s+(?:an?\s+)?sql\s+(?:query|code)\b", text_input, re.I | re.M) else "tech_topic"
 
-        # A scene-by-scene production brief defines its own scenes, visuals and text,
-        # so it bypasses the generic storyboard entirely.
-        brief_blueprint = _parse_detailed_brief(text_input)
-        if brief_blueprint:
-            matched = brief_blueprint
-
-        if (
-            not matched
-            and re.search(r"\bidempotenc\w*\b", text_input, re.I)
-            and re.search(r"\b(payment|pay button|double[- ]click|charge)\b", text_input, re.I)
-        ):
-            matched = _idempotency_payment_blueprint()
-
-        # 4. If still not matched, synthesize via online AI model dynamically
-        if not matched and len(text_input) > 8:
+        # Send the complete user brief through the AI path; no topic-specific
+        # storyboard or visual layout is selected by application code.
+        if len(text_input) > 8:
             try:
                 from app.core.model_adapter import model_manager
-                max_narration_words = 112 if lang_key == "en" else 88
+                duration_match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:seconds?|secs?)\b", text_input, re.I)
+                target_seconds = float(duration_match.group(1)) if duration_match else 60.0
+                max_narration_words = max(24, int(target_seconds * 140 / 60))
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
                 lang_name = {
                     "mr": "Marathi in Devanagari script",
@@ -3239,11 +3285,11 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Keep narration concise and obey any explicit duration limit, while preserving natural speaking pace.\n"
-                    f"3. Build one editable architecture_graph for the whole video. Return nodes with stable id, label, description, and shape; shapes may be database, rectangle, rounded_rectangle, circle, diamond, hexagon, cloud, document, table, terminal, or dashboard. Return directed edges with stable id, from, to, label, style (straight, curved, elbow, or bezier), and data_flow. Use the real components and relationships from the prompt; do not substitute generic numbered steps. Choose pipeline, layered, hierarchical, or tree layout.\n"
-                    f"4. For every narration scene, include diagram_actions referencing those exact node or edge IDs. Use reveal_node, draw_edge, highlight_node, packets, expand_node, pulse_node, or morph_node, with cue_progress from 0 to 1 indicating when the spoken explanation reaches that action. Make the source appear first, draw its connector before revealing its destination, and keep one stable graph layout throughout. Do not request or describe images, photos, image prompts, or image-based slides; the renderer draws every component from editable vector shapes and text.\n"
-                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles. Every node label and diagram action target must use the graph IDs and English labels.\n\n"
-                    f"Output raw JSON with title, domain, content_type, architecture_graph, and scenes. Set content_type to sql_query only when SQL code is explicitly requested; otherwise tech_topic. Keep nodes and edges complete and connected; descriptions must fit a compact vertical 9:16 diagram. Each scene must have title, speech, speech_en, and diagram_actions. Actions are objects with target_id, action, and cue_progress.\n"
-                    f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","architecture_graph":{{"layout":"pipeline","nodes":[{{"id":"source","label":"Prompt-specific source","description":"What enters the system","shape":"database"}},{{"id":"processor","label":"Prompt-specific processor","description":"What it does","shape":"rounded_rectangle"}}],"edges":[{{"id":"source-to-processor","from":"source","to":"processor","label":"data flow","style":"bezier","data_flow":true}}]}},"scenes":[{{"title":"Source and ingestion","speech":"Explain the source and ingestion in {lang_name}.","speech_en":"Explain the source and ingestion.","diagram_actions":[{{"target_id":"source","action":"reveal_node","cue_progress":0.1}},{{"target_id":"source-to-processor","action":"draw_edge","cue_progress":0.55}},{{"target_id":"processor","action":"reveal_node","cue_progress":0.8}},{{"target_id":"source-to-processor","action":"packets","cue_progress":0.9}}]}}]}}'
+                    f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the prompt requests varied non-box/non-tree scenes, honor that.\n"
+                    f"4. For each scene, return visual_data authored for that scene: composition (short description), elements (up to 12 objects with label, normalized x/y coordinates, shape, color, and optional detail), and connectors (from/to element labels, style, color, and optional label). Use visual elements and connectors only when appropriate to that scene; use distinct placements/compositions where requested. Shapes may include icon, circle, glyph, text, character, or any simple vector shape. No fixed graph layout is required. Do not request images or image-based slides; the renderer draws editable vector elements.\n"
+                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles.\n\n"
+                    f"Output raw JSON with title, domain, content_type, max_duration_seconds when requested, and scenes. Each scene must include title, speech, speech_en, and visual_data with composition, elements, and connectors. Preserve every scene, timing, speaker line, caption, duration, and visual constraint explicitly stated by the user.\n"
+                    f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","scenes":[{{"title":"Scene title","speech":"Narration in {lang_name}.","speech_en":"Narration in English.","caption":"Short on-screen caption","visual_data":{{"composition":"Scene-specific composition from the user brief","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}]}}'
                 )
 
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
@@ -3297,11 +3343,10 @@ class SqlShortVideoEngine:
                 log_event(f"AI short prompt synthesis notice; retrying storyboard: {e}", level="DEBUG", component="SqlShortEngine")
                 try:
                     repair_prompt = (
-                        f"Create a valid, topic-specific 9:16 animated video storyboard for: {text_input}\n"
-                        f"Write all speech in {lang_name}. Return raw JSON with title, domain, content_type, suggested_motion_bg, architecture_graph, and scenes. "
-                        f"Use content_type tech_topic unless the user explicitly requests SQL code. Return connected prompt-specific nodes and directed edges, and choose scene count based on the brief rather than forcing a template. "
-                        f"Every scene must have title, speech, speech_en, and diagram_actions using the graph's stable IDs. Actions may be reveal_node, draw_edge, highlight_node, packets, expand_node, pulse_node, or morph_node, each with cue_progress from 0 to 1. "
-                        f"The complete graph must be drawn from editable vector components; do not request images or image-based slides. Keep narration concise for a video under 60 seconds and do not add generic interview content."
+                        f"Use this complete user prompt as the source of truth and create its 9:16 video: {text_input}\n"
+                        f"Write all speech in {lang_name}. Return raw JSON with title, domain, content_type, and scenes. "
+                        f"Preserve requested scene count/order, timings, dialogue, captions, duration, and all visual constraints. Return max_duration_seconds when requested. Each scene must contain title, speech, speech_en, caption, and scene-specific visual_data: composition, elements (label, normalized x/y, shape, glyph, color, detail), and connectors (from/to labels, style, color). "
+                        f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. Render only editable vector elements; do not request image assets."
                     )
                     retry_resp, _, _ = model_manager.execute_with_fallback(
                         prompt=repair_prompt,
@@ -3329,13 +3374,7 @@ class SqlShortVideoEngine:
                     matched["stages"] = retry_scenes
                 except Exception as retry_error:
                     log_event(f"Storyboard retry notice; using local topic fallback: {retry_error}", level="DEBUG", component="SqlShortEngine")
-                    matched = self._build_prompt_fallback(text_input, lang_key)
-                    matched["id"] = "custom_prompt_fallback"
-                    matched["storyboard_source"] = "local_fallback"
-                    matched["llm_error"] = str(retry_error)[:240]
-                    matched["question"] = text_input
-                    matched["difficulty"] = difficulty
-                    matched["stages"] = matched["scenes"]
+                    raise RuntimeError("AI video generation failed; no hardcoded storyboard was substituted. Please retry.") from retry_error
 
         if not matched:
             raise RuntimeError("NanoPro could not generate a topic-specific storyboard. Please retry.")
@@ -3343,19 +3382,9 @@ class SqlShortVideoEngine:
         matched_content_type = matched.get("content_type") or content_type or "tech_topic"
         stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
 
-        if matched.get("storyboard_source") == "detailed_brief":
-            try:
-                matched["architecture_graph"] = await self._architecture_from_detailed_brief(text_input, stages)
-            except Exception as exc:
-                log_event(f"Detailed brief graph extraction failed: {exc}", level="WARNING", component="SqlShortEngine")
-                raise RuntimeError(
-                    "The online model did not return the detailed, topic-specific architecture graph this prompt requires. "
-                    "No generic vertical-box fallback was rendered; please retry."
-                ) from exc
-
         # On-screen text is English even when the narration voice is Marathi or Hindi.
         # The built-in storyboard is already English, so only model output needs this.
-        if lang_key != "en" and matched.get("storyboard_source") not in {"local_fallback", "detailed_brief", "idempotency_payment_fallback"}:
+        if lang_key != "en":
             try:
                 english_headline = await self._english_on_screen_text(stages, matched.get("title") or "")
                 if english_headline:
@@ -3413,12 +3442,7 @@ class SqlShortVideoEngine:
         if duration_limit > 0 and actual_dur > duration_limit:
             speech_word_count = len(full_narration.split())
             target_words = max(24, int(speech_word_count * max(1.0, duration_limit - 5) / actual_dur))
-            if matched.get("storyboard_source") in {"detailed_brief", "idempotency_payment_fallback"}:
-                condensed_speeches = _deterministic_condense_scenes(
-                    [{"speech": stage.get("speech") or ""} for stage in stages], target_words
-                )
-            else:
-                condensed_speeches = await self._condense_narration_to_duration(stages, lang_key, target_words)
+            condensed_speeches = await self._condense_narration_to_duration(stages, lang_key, target_words)
             for stage, speech in zip(stages, condensed_speeches):
                 stage["speech"] = speech
                 stage[f"speech_{lang_key}"] = speech
