@@ -132,6 +132,18 @@ class FullLengthVideoExportTests(unittest.TestCase):
         check = next(item for item in report["checks"] if item["name"] == "Failure → diagnosis → recovery → verification")
         self.assertEqual(check["status"], "PASSED")
 
+    def test_generic_explainer_does_not_require_mismatch_recovery_or_completion_gate(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "sentence_cues": [
+            {"interaction_step": "failure", "component_state": "failed", "speech": "A model may fail on ambiguous input."},
+            {"interaction_step": "complete", "component_state": "completed", "speech": "The answer is ready."},
+        ]}]
+        report = validate(stages, 10.0, 60.0, {"nodes": [], "edges": [], "actions": []}, duration_measured=True)
+        self.assertTrue(report["render_allowed"])
+        statuses = {item["name"]: item["status"] for item in report["checks"]}
+        self.assertEqual(statuses["Failure and recovery order"], "NOT_RUN")
+        self.assertEqual(statuses["Component completion gate"], "NOT_RUN")
+
     def test_fallback_sentence_cues_preserve_semantic_mismatch_sequence(self):
         build_cues = load_sentence_cue_builder()
         stage = {
@@ -167,6 +179,7 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("_original_user_prompt=validation_prompt", generation)
         self.assertIn("Do not add unrelated architecture or failure scenarios.", generation)
         self.assertIn("dms_snowflake_scenario = bool(", generation)
+        self.assertIn("Return exactly {requested_scene_count} scenes", generation)
 
     def test_pre_render_report_blocks_overlong_voice_and_false_recovery_order(self):
         validate = load_pre_render_validator()

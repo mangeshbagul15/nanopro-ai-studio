@@ -474,14 +474,16 @@ def build_pre_render_validation_report(
     if mismatch_scenario:
         add("Failure → diagnosis → recovery → verification", "PASSED" if event_order else "FAILED", "The required event sequence is present in sentence cues." if event_order else "A mismatch prompt needs ordered failure, diagnosis, recovery, and verification cues.", True)
     else:
-        add("Failure and recovery order", "PASSED" if failure_i is None or event_order else "FAILED", "No failure sequence was requested, or the failure flow is ordered." if failure_i is None or event_order else "Failure flow is out of order.", failure_i is not None)
+        add("Failure and recovery order", "NOT_RUN", "This is not a data-mismatch lesson, so mismatch recovery sequencing is not required.")
 
     success_before_verify = any(
         re.search(r"success|verified|match|सफल|सही", str(cue.get("state_change", "")) + " " + str(cue.get("observed_result", "")), re.I)
         and (verify_i is None or i < verify_i)
         for i, cue in enumerate(cues)
     )
-    add("Success follows verification", "FAILED" if success_before_verify else ("PASSED" if verify_i is not None else "NOT_RUN"), "Success state is not scheduled before verification." if not success_before_verify and verify_i is not None else "No explicit verification cue was authored." if not success_before_verify else "A success state appears before verification.", success_before_verify)
+    success_gate_failed = success_before_verify and (mismatch_scenario or verify_i is not None)
+    success_status = "FAILED" if success_gate_failed else "PASSED" if verify_i is not None else "NOT_RUN"
+    add("Success follows verification", success_status, "Success state is not scheduled before verification." if success_status == "PASSED" else "No verification gate is required for this explainer." if success_status == "NOT_RUN" else "A success state appears before verification.", success_gate_failed)
 
     comparisons = [cue for cue in cues if str(cue.get("interaction_step", "")).lower() == "verify"]
     invalid_comparison = any(cue.get("expected_result") and cue.get("observed_result") and not _comparison_values_match(cue["expected_result"], cue["observed_result"]) for cue in comparisons)
@@ -500,12 +502,15 @@ def build_pre_render_validation_report(
         data_ok = source_seen and target_seen and final_is_source and not invalid_comparison
         add("Mismatch example value consistency", "PASSED" if data_ok else "FAILED", "The source and stale target values appear in the story, and final verification returns to the source value." if data_ok else "The required source/stale values or final source-value comparison are missing or inconsistent.", not data_ok)
 
-    completed_before_verify = any(
+    completed_states = [index for index, cue in enumerate(cues) if str(cue.get("component_state") or "").lower() == "completed"]
+    completion_required = mismatch_scenario or bool(comparisons)
+    completed_before_verify = completion_required and any(
         str(cue.get("component_state") or "").lower() == "completed"
         and (verify_i is None or index < verify_i or not comparisons or invalid_comparison)
         for index, cue in enumerate(cues)
     )
-    add("Component completion gate", "FAILED" if completed_before_verify else ("PASSED" if any(str(cue.get("component_state") or "").lower() == "completed" for cue in cues) else "NOT_RUN"), "Completed component states follow successful verification." if not completed_before_verify and any(str(cue.get("component_state") or "").lower() == "completed" for cue in cues) else "No explicit component-completion event was authored." if not completed_before_verify else "A component is marked completed before final verification passes.", completed_before_verify)
+    completion_status = "FAILED" if completed_before_verify else "PASSED" if completion_required and completed_states else "NOT_RUN"
+    add("Component completion gate", completion_status, "Completed component states follow successful verification." if completion_status == "PASSED" else "No mismatch/value-verification completion gate is needed for this explainer." if completion_status == "NOT_RUN" else "A component is marked completed before final verification passes.", completed_before_verify)
 
     measured = bool(duration_measured) and float(duration) > 0
     within_limit = not max_duration or float(duration) <= float(max_duration) + 0.1
@@ -3884,6 +3889,7 @@ class SqlShortVideoEngine:
             re.search(r"\bDMS\b", validation_prompt, re.I)
             and re.search(r"Snowflake", validation_prompt, re.I)
         )
+        requested_scene_count = _extract_requested_scene_count(validation_prompt)
         pre_render_validation = build_pre_render_validation_report(
             calibrated_stages,
             final_dur,
@@ -3891,7 +3897,7 @@ class SqlShortVideoEngine:
             architecture_graph,
             duration_measured=bool(audio_file_path and get_mp3_duration(audio_file_path) > 0),
             mismatch_scenario=mismatch_scenario,
-            requested_scene_count=_extract_requested_scene_count(validation_prompt),
+            requested_scene_count=requested_scene_count,
             dms_snowflake_scenario=dms_snowflake_scenario,
             source_target_values=_extract_source_target_values(validation_prompt),
         )
@@ -3900,6 +3906,8 @@ class SqlShortVideoEngine:
                 repair_rules = [
                     "Keep the original topic, narration language, scene count, duration, and facts. Do not add unrelated architecture or failure scenarios."
                 ]
+                if requested_scene_count:
+                    repair_rules.append(f"Return exactly {requested_scene_count} scenes, preserving the user's scene titles, order, and time ranges.")
                 if dms_snowflake_scenario:
                     repair_rules.append("For the requested DMS-to-Snowflake lesson, preserve the configured intermediary ingestion route, such as AWS DMS → Amazon S3 → Snowpipe → Snowflake.")
                 if pre_render_validation["checks"] and mismatch_scenario:
