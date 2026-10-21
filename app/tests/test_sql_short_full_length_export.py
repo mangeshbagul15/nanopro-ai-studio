@@ -350,13 +350,15 @@ Show the cloud.
     def test_mp4_conversion_limits_encoder_memory_for_free_instances(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
         encoder = source.split("def _run_sql_video_mp4_conversion", 1)[1].split("@app.post(", 1)[0]
-        self.assertIn('"scale=1080:1920:flags=lanczos"', encoder)
+        self.assertNotIn('"scale=1080:1920:flags=lanczos"', encoder)
+        self.assertIn('"-threads", "1", "-filter_threads", "1", "-i"', encoder)
         self.assertIn('"-r", "30"', encoder)
         self.assertIn('"-b:v", "9M"', encoder)
         self.assertIn('"-b:a", "192k"', encoder)
         self.assertIn('"-preset", "ultrafast"', encoder)
         self.assertIn('"-threads", "1"', encoder)
         self.assertIn('"-filter_threads", "1"', encoder)
+        self.assertIn('"-x264-params", "threads=1:lookahead-threads=1:rc-lookahead=0:sync-lookahead=0:bframes=0"', encoder)
 
     def test_universal_video_prompt_requests_topic_specific_visuals(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
@@ -740,7 +742,8 @@ Scene 8 (0:58-1:05) - Closing
         self.assertIn("const exportFrameRate = 30", renderer)
         self.assertIn("videoBitsPerSecond: 9000000", renderer)
         self.assertIn("audioBitsPerSecond: 192000", renderer)
-        self.assertIn('"scale=1080:1920:flags=lanczos"', conversion)
+        self.assertNotIn('"scale=1080:1920:flags=lanczos"', conversion)
+        self.assertIn('"-threads", "1", "-filter_threads", "1", "-i"', conversion)
         self.assertIn('"-r", "30"', conversion)
         self.assertIn('"-b:v", "9M"', conversion)
         self.assertIn('"-b:a", "192k"', conversion)
