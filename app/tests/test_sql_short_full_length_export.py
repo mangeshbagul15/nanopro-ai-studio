@@ -781,11 +781,12 @@ Scene 8 (0:58-1:05) - Closing
         frame = js.split("function renderSqlShortFrame(", 1)[1].split("function renderSqlSyntaxLine(", 1)[0]
         self.assertNotIn("ctx.arc(0, 0", visual)
         self.assertIn("stage._promptVisualBackdrop = backdrop", visual)
-        self.assertIn("sqlShortState.isExporting ? 6 : 20", visual)
+        self.assertIn("sqlShortState.isExporting ? 0 : 20", visual)
         self.assertIn('String(item.label).replace(/[_-]+/g, " ")', visual)
         self.assertIn("const glyphSize = elements.length <= 3 ? 152", visual)
         self.assertNotIn("packetX", visual)
         self.assertNotIn("ctx.roundRect(subPillX", frame)
+        self.assertIn("sqlShortState.baseBackgroundCanvas = baseBackgroundCanvas", frame)
         self.assertIn("const subTextWidth = W - 170", frame)
 
     def test_architecture_graph_uses_vertical_safe_margins(self):

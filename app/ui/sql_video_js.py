@@ -3813,7 +3813,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.save();
             ctx.beginPath(); ctx.moveTo(from.x, from.y);
             ctx.quadraticCurveTo(midX - bend, midY + bend, to.x, to.y);
-            ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha *= 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 6 : 20; ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha *= 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 20; ctx.stroke(); ctx.shadowBlur = 0;
             ctx.strokeStyle = "rgba(255,255,255,0.42)"; ctx.lineWidth = 2; ctx.globalAlpha *= 1.8; ctx.stroke();
             ctx.restore();
         });
@@ -3828,7 +3828,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             if (glyph) {
                 const glyphSize = elements.length <= 3 ? 152 : elements.length <= 6 ? 124 : 96;
                 ctx.font = `800 ${glyphSize}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`;
-                ctx.shadowBlur = sqlShortState.isExporting ? 10 : 32;
+                ctx.shadowBlur = sqlShortState.isExporting ? 0 : 32;
                 ctx.fillText(glyph.slice(0, 2), 0, -8, 220);
             }
             ctx.shadowBlur = 0;
@@ -5180,12 +5180,21 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         // Static technical canvas: a clean gradient plus diagrams. No photo plate,
         // no motion engine, no per-frame animation unless the narration advances.
-        const baseBg = ctx.createLinearGradient(0, 0, W * 0.85, H);
-        baseBg.addColorStop(0, "#060A16");
-        baseBg.addColorStop(0.46, "#0B1230");
-        baseBg.addColorStop(1, "#04070F");
-        ctx.fillStyle = baseBg;
-        ctx.fillRect(0, 0, W, H);
+        let baseBackgroundCanvas = sqlShortState.baseBackgroundCanvas;
+        if (!baseBackgroundCanvas || baseBackgroundCanvas.width !== W || baseBackgroundCanvas.height !== H) {
+            baseBackgroundCanvas = document.createElement("canvas");
+            baseBackgroundCanvas.width = W;
+            baseBackgroundCanvas.height = H;
+            const backgroundContext = baseBackgroundCanvas.getContext("2d");
+            const baseBg = backgroundContext.createLinearGradient(0, 0, W * 0.85, H);
+            baseBg.addColorStop(0, "#060A16");
+            baseBg.addColorStop(0.46, "#0B1230");
+            baseBg.addColorStop(1, "#04070F");
+            backgroundContext.fillStyle = baseBg;
+            backgroundContext.fillRect(0, 0, W, H);
+            sqlShortState.baseBackgroundCanvas = baseBackgroundCanvas;
+        }
+        ctx.drawImage(baseBackgroundCanvas, 0, 0, W, H);
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
@@ -5277,7 +5286,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (isCurrent) {
                     ctx.fillStyle = "#FACC15";
                     ctx.shadowColor = "#FACC15";
-                    ctx.shadowBlur = 14;
+                    ctx.shadowBlur = sqlShortState.isExporting ? 0 : 14;
                     ctx.fillText(w, curX, curY);
                     ctx.shadowBlur = 0;
                 } else if (isSpoken) {
