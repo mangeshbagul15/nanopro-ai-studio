@@ -162,6 +162,30 @@ Show the cloud.
         node_ids = set(nodes[node]["id"] for node in nodes)
         self.assertTrue(all(edge["from"] in node_ids and edge["to"] in node_ids for edge in graph["edges"]))
 
+    def test_airflow_graph_fallback_preserves_branch_retry_and_component_shapes(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        function = next(
+            item for item in tree.body
+            if isinstance(item, ast.FunctionDef) and item.name == "_airflow_fallback_graph"
+        )
+        namespace = {"Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "<airflow-graph-test>", "exec"), namespace)
+        graph = namespace["_airflow_fallback_graph"]()
+        nodes = {node["id"]: node for node in graph["nodes"]}
+        self.assertEqual(graph["layout"], "hierarchical")
+        self.assertEqual(nodes["scheduler"]["shape"], "circle")
+        self.assertEqual(nodes["transform"]["shape"], "hexagon")
+        self.assertEqual(nodes["load"]["shape"], "database")
+        self.assertEqual(nodes["validation"]["shape"], "diamond")
+        self.assertEqual(nodes["monitoring"]["shape"], "dashboard")
+        edge_pairs = {(edge["from"], edge["to"]) for edge in graph["edges"]}
+        self.assertIn(("extract", "customer-task"), edge_pairs)
+        self.assertIn(("extract", "transaction-task"), edge_pairs)
+        self.assertIn(("failed-task", "retry-policy"), edge_pairs)
+        self.assertIn(("retry-policy", "retry-success"), edge_pairs)
+        self.assertTrue(all(edge["from"] in nodes and edge["to"] in nodes for edge in graph["edges"]))
+
     def test_scene_timeline_covers_narration_longer_than_one_minute(self):
         stages = [
             {"title": "Architecture", "speech_en": "A detailed sentence describing a system design stage."},

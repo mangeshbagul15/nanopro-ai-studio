@@ -1255,6 +1255,39 @@ def _deterministic_condense_scenes(scenes: List[Dict[str, str]], max_words: int)
     return condensed
 
 
+def _airflow_fallback_graph() -> Dict[str, Any]:
+    nodes = [
+        {"id": "scheduler", "label": "Airflow Scheduler", "description": "Checks dependencies and schedules eligible tasks", "shape": "circle"},
+        {"id": "dag", "label": "DAG Dependencies", "description": "Directed acyclic workflow definition", "shape": "rounded_rectangle"},
+        {"id": "extract", "label": "EXTRACT", "description": "Read source records", "shape": "rectangle"},
+        {"id": "customer-task", "label": "CUSTOMER DATA", "description": "Independent parallel task", "shape": "table"},
+        {"id": "transaction-task", "label": "TRANSACTION DATA", "description": "Independent parallel task", "shape": "document"},
+        {"id": "transform", "label": "TRANSFORM", "description": "Process records with task logic", "shape": "hexagon"},
+        {"id": "load", "label": "LOAD", "description": "Write processed data", "shape": "database"},
+        {"id": "validation", "label": "DATA VALIDATION", "description": "Check final dataset", "shape": "diamond"},
+        {"id": "executor", "label": "Executor + Workers", "description": "Execute scheduled task code", "shape": "cloud"},
+        {"id": "failed-task", "label": "FAILED", "description": "An example task failure state", "shape": "diamond"},
+        {"id": "retry-policy", "label": "Configured Retry", "description": "Retry policy decides whether to run again", "shape": "circle"},
+        {"id": "retry-success", "label": "RETRYING → SUCCESS", "description": "Illustrative successful retry", "shape": "rounded_rectangle"},
+        {"id": "monitoring", "label": "Monitoring Dashboard", "description": "Task status and run history", "shape": "dashboard"},
+    ]
+    edges = [
+        {"id": "scheduler-dag", "from": "scheduler", "to": "dag", "label": "schedules", "style": "curved", "data_flow": False},
+        {"id": "dag-extract", "from": "dag", "to": "extract", "label": "dependencies", "style": "bezier", "data_flow": False},
+        {"id": "extract-customer", "from": "extract", "to": "customer-task", "label": "branch A", "style": "curved", "data_flow": True},
+        {"id": "extract-transaction", "from": "extract", "to": "transaction-task", "label": "branch B", "style": "curved", "data_flow": True},
+        {"id": "customer-transform", "from": "customer-task", "to": "transform", "label": "merge", "style": "bezier", "data_flow": True},
+        {"id": "transaction-transform", "from": "transaction-task", "to": "transform", "label": "merge", "style": "bezier", "data_flow": True},
+        {"id": "transform-load", "from": "transform", "to": "load", "label": "processed rows", "style": "straight", "data_flow": True},
+        {"id": "load-validation", "from": "load", "to": "validation", "label": "validate", "style": "straight", "data_flow": True},
+        {"id": "executor-transform", "from": "executor", "to": "transform", "label": "executes task code", "style": "elbow", "data_flow": False},
+        {"id": "failed-retry", "from": "failed-task", "to": "retry-policy", "label": "failure", "style": "curved", "data_flow": False},
+        {"id": "retry-success-edge", "from": "retry-policy", "to": "retry-success", "label": "attempt again", "style": "curved", "data_flow": False},
+        {"id": "monitor-observes", "from": "monitoring", "to": "validation", "label": "run status", "style": "elbow", "data_flow": False},
+    ]
+    return {"layout": "hierarchical", "nodes": nodes, "edges": edges, "groups": []}
+
+
 class SqlShortVideoEngine:
     """
     Dedicated prompt-driven 9:16 video creation engine.
@@ -2917,7 +2950,7 @@ class SqlShortVideoEngine:
                     for edge in edges
                 ):
                     raise ValueError("The model graph did not return connected, valid edges.")
-                graph["layout"] = "pipeline"
+                graph["layout"] = graph.get("layout") if graph.get("layout") in {"pipeline", "layered", "hierarchical", "tree"} else "pipeline"
                 if isinstance(scene_specs, list):
                     for index, stage in enumerate(stages):
                         if index < len(scene_specs) and isinstance(scene_specs[index], dict):
@@ -2930,6 +2963,24 @@ class SqlShortVideoEngine:
         }
         if aws_dms_core.issubset(set(required_visuals)):
             return _aws_dms_fallback_graph()
+        if re.search(r"\bapache\s+airflow\b|\bairflow\b", brief_lower) and re.search(r"\bdag\b", brief_lower):
+            graph = _airflow_fallback_graph()
+            scene_targets = [
+                ["scheduler", "dag"],
+                ["dag", "extract", "transform", "load"],
+                ["scheduler", "executor", "extract", "transform", "load"],
+                ["customer-task", "transaction-task", "validation"],
+                ["failed-task", "retry-policy", "retry-success"],
+                ["scheduler", "dag", "extract", "customer-task", "transaction-task", "transform", "load", "validation", "executor", "monitoring"],
+                ["dag", "scheduler", "monitoring"],
+            ]
+            for index, stage in enumerate(stages):
+                targets = scene_targets[min(index, len(scene_targets) - 1)]
+                stage["diagram_actions"] = [
+                    {"target_id": target, "action": "reveal_node" if index == 0 else "highlight_node", "cue_progress": 0.2 + position * 0.18}
+                    for position, target in enumerate(targets)
+                ]
+            return graph
         raise RuntimeError(f"The online model could not produce a faithful architecture graph: {last_error}")
 
     async def _condense_narration_to_duration(
