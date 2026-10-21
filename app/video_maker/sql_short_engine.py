@@ -1333,18 +1333,18 @@ def _llm_fallback_graph(stages: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def _idempotency_payment_blueprint() -> Dict[str, Any]:
     speeches = [
-        ("PAY BUTTON · DOUBLE CLICK", "Pay button do baar tap ho gaya. Kya customer ke account se payment bhi do baar charge hogi? Interview mein ye common system-design sawaal hai."),
-        ("FRONTEND GUARD", "Frontend button disable karna helpful hai, par ye sirf user experience guard hai. Doosre device ya retry ko nahi rokta."),
-        ("SLOW NETWORK · RETRY", "Slow network mein request server tak pahunch sakti hai, par response phone tak nahi. User retry karta hai."),
-        ("IDEMPOTENCY", "Isliye payment APIs idempotency key use karti hain: same operation, same key, duplicate charge nahi."),
-        ("KEY · PROCESSING", "Client har payment attempt ke liye unique key bhejta hai, jaise a7f3-91c2. Server ise durable store mein PROCESSING ke saath claim karta hai."),
-        ("DUPLICATE · REPLAY", "Pehli request SUCCESS record karti hai. Same key dobara aaye to server saved result return karta hai, payment repeat nahi."),
-        ("TIMEOUT ≠ FAILURE", "Kabhi server par payment successful hoti hai, lekin response lost. Client ko outcome unknown hai—timeout ka matlab failure nahi."),
-        ("KEY + REQUEST FINGERPRINT", "Sirf key kaafi nahi: us key ko amount aur request fingerprint se bind karo. Same key, different payload ko reject karo."),
-        ("ATOMIC · DURABLE DB", "Concurrent retries ko unique DB constraint ya atomic transaction se serialize karo. Dono workers ek hi key claim nahi kar paayen."),
-        ("CRASH-SAFE RECOVERY", "Crash ke baad durable record bacha rehta hai. Provider ko bhi same key do, ya transactional outbox se recovery chalao."),
-        ("PAYMENT SUCCESS · ORDER NOT CONFIRMED", "Payment SUCCESS hai, par order NOT CONFIRMED. Blindly naya payment mat banao; status query aur reconciliation se order recover karo."),
-        ("RECOVER? · COMMENTS", "Aap ise recover kaise karoge—status poll, webhook, ya reconciliation job? Apna answer comments mein batao."),
+        ("PAY BUTTON · DOUBLE CLICK", "Pay button दो बार tap हो गया। क्या customer के account से payment भी दो बार charge होगी? Interview में यह common system-design सवाल है।"),
+        ("FRONTEND GUARD", "Frontend पर button disable करना helpful है, लेकिन यह सिर्फ user-experience guard है। दूसरे device या retry को नहीं रोकता।"),
+        ("SLOW NETWORK · RETRY", "Slow network में request server तक पहुँच सकती है, पर response phone तक नहीं। User फिर से retry करता है।"),
+        ("IDEMPOTENCY", "इसीलिए payment APIs idempotency key इस्तेमाल करती हैं: same operation, same key, और duplicate charge नहीं।"),
+        ("KEY · PROCESSING", "Client हर payment attempt के लिए unique key भेजता है, जैसे a7f3-91c2। Server इसे durable store में PROCESSING status के साथ claim करता है।"),
+        ("DUPLICATE · REPLAY", "पहली request SUCCESS save करती है। Same key दोबारा आए, तो server saved result लौटाता है—payment repeat नहीं करता।"),
+        ("TIMEOUT ≠ FAILURE", "कभी server पर payment SUCCESS होती है, लेकिन response खो जाता है। Client को outcome पता नहीं—timeout का मतलब failure नहीं।"),
+        ("KEY + REQUEST FINGERPRINT", "सिर्फ key काफी नहीं: इसे amount और request fingerprint से bind करें। Same key के साथ different payload आए, तो उसे reject करें।"),
+        ("ATOMIC · DURABLE DB", "Concurrent retries को unique DB constraint या atomic transaction से serialize करें। दोनों workers एक ही key claim नहीं कर पाएँगे।"),
+        ("CRASH-SAFE RECOVERY", "Crash के बाद durable DB record बचा रहता है। Provider को भी वही key दें, या transactional outbox से recovery चलाएँ।"),
+        ("PAYMENT SUCCESS · ORDER NOT CONFIRMED", "Payment SUCCESS है, लेकिन order NOT CONFIRMED। Blindly नया payment न बनाएँ; status query और reconciliation से order recover करें।"),
+        ("RECOVER? · COMMENTS", "आप इसे recover कैसे करेंगे—status poll, webhook, या reconciliation job? अपना answer comments में बताइए।"),
     ]
     scene_targets = [
         [("client-app", "reveal_node"), ("pay-button", "reveal_node"), ("client-to-api", "draw_edge")],
