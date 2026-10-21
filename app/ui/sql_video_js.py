@@ -3782,21 +3782,28 @@ SECOND_HIGHEST_SALARY: 70000`;
         const rgb = /^#([0-9a-f]{6})$/i.exec(firstColor);
         const glowRgb = rgb ? `${parseInt(rgb[1].slice(0, 2), 16)},${parseInt(rgb[1].slice(2, 4), 16)},${parseInt(rgb[1].slice(4, 6), 16)}` : "56,189,248";
         const focal = points.get(String(elements[0].label));
-        const glow = ctx.createRadialGradient(focal.x, focal.y, 0, focal.x, focal.y, H * 0.52);
-        glow.addColorStop(0, `rgba(${glowRgb},0.22)`);
-        glow.addColorStop(0.5, `rgba(${glowRgb},0.07)`);
-        glow.addColorStop(1, `rgba(${glowRgb},0)`);
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, top - 120, W, usableHeight + 300);
-        ctx.globalAlpha *= 0.3;
-        for (let i = 0; i < 24; i++) {
-            const x = ((i * 197 + 83) % 997) / 997 * W;
-            const y = top + ((i * 313 + 41) % 1021) / 1021 * usableHeight;
-            const twinkle = 0.45 + 0.55 * Math.sin(time * 1.4 + i * 1.7);
-            ctx.fillStyle = `rgba(226,232,240,${0.35 * twinkle})`;
-            ctx.fillRect(x, y, 2 + (i % 2), 2 + (i % 2));
+        let backdrop = stage._promptVisualBackdrop;
+        if (!backdrop || backdrop.width !== 540 || backdrop.height !== 960) {
+            backdrop = document.createElement("canvas");
+            backdrop.width = 540;
+            backdrop.height = 960;
+            const backdropCtx = backdrop.getContext("2d");
+            const glowX = focal.x / W * backdrop.width, glowY = focal.y / H * backdrop.height;
+            const glow = backdropCtx.createRadialGradient(glowX, glowY, 0, glowX, glowY, backdrop.height * 0.52);
+            glow.addColorStop(0, `rgba(${glowRgb},0.22)`);
+            glow.addColorStop(0.5, `rgba(${glowRgb},0.07)`);
+            glow.addColorStop(1, `rgba(${glowRgb},0)`);
+            backdropCtx.fillStyle = glow;
+            backdropCtx.fillRect(0, 0, backdrop.width, backdrop.height);
+            for (let i = 0; i < 24; i++) {
+                const x = ((i * 197 + 83) % 997) / 997 * backdrop.width;
+                const y = ((i * 313 + 41) % 1021) / 1021 * backdrop.height;
+                backdropCtx.fillStyle = `rgba(226,232,240,${0.12 + (i % 3) * 0.07})`;
+                backdropCtx.fillRect(x, y, 2, 2);
+            }
+            stage._promptVisualBackdrop = backdrop;
         }
-        ctx.globalAlpha /= 0.3;
+        ctx.drawImage(backdrop, 0, 0, W, H);
         (Array.isArray(visual.connectors) ? visual.connectors : []).forEach((connector, index) => {
             const from = points.get(String(connector.from || "")), to = points.get(String(connector.to || ""));
             if (!from || !to) return;
@@ -3830,7 +3837,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.shadowBlur = 0;
             const labelFont = elements.length <= 3 ? 42 : elements.length <= 6 ? 36 : 30;
             ctx.fillStyle = "#F8FAFC"; ctx.font = `750 ${labelFont}px 'Segoe UI', sans-serif`;
-            const labelLines = splitDiagramText(ctx, item.label, 360, 2, 30);
+            const displayLabel = String(item.label).replace(/[_-]+/g, " ");
+            const labelLines = splitDiagramText(ctx, displayLabel, 360, 2, 30);
             labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 112 + lineIndex * 42 : lineIndex * 42));
             if (item.detail) {
                 ctx.fillStyle = "#CBD5E1"; ctx.font = "500 26px 'Segoe UI', sans-serif";
