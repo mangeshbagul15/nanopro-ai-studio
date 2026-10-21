@@ -4990,13 +4990,22 @@ SECOND_HIGHEST_SALARY: 70000`;
         const activeStageIndex = stages.indexOf(activeStage);
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
-        // Lightweight transition only: the outgoing diagram fades out while the new
-        // one fades in. Nothing keeps moving after a scene has settled.
+        // Crossfade prompt-generated scene media while keeping diagrams as fallback.
         const outgoingAlpha = (previousStage && sceneElapsed < 0.3) ? Math.max(0, 1 - sceneElapsed / 0.3) : 0;
         if (outgoingAlpha > 0) {
-            renderArchitectureScene(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6, t);
+            const hasPreviousAsset = renderPromptSceneAssetVisual(
+                ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6, t, false
+            );
+            if (!hasPreviousAsset) {
+                renderArchitectureScene(ctx, W, H, p, previousStage, activeStageIndex - 1, 1, outgoingAlpha * 0.6, t);
+            }
         }
-        renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
+        const hasActiveAsset = activeStage && renderPromptSceneAssetVisual(
+            ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t, false
+        );
+        if (!hasActiveAsset) {
+            renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
+        }
 
         // Briefs may explicitly forbid showing the narration at the bottom.
         if (p.show_subtitles === false) { return; }

@@ -210,18 +210,19 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertIn("asyncio.Semaphore(1)", pipeline_source)
         self.assertIn('image.draft("RGB"', pipeline_source)
 
-    def test_video_job_skips_ai_image_generation(self):
+    def test_video_job_generates_prompt_specific_scene_images(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
         route = source.split('@app.post("/api/sql_video/generate_prompt_job")', 1)[1].split("@app.get(", 1)[0]
-        self.assertIn("None,  # Diagram-only render", route)
-        self.assertNotIn("generate_scene_assets", route)
+        self.assertIn("from app.video_maker.scene_visual_pipeline import generate_scene_assets", route)
+        self.assertIn("generate_scene_assets,", route)
+        self.assertNotIn("None,  # Diagram-only render", route)
 
-    def test_video_frames_are_static_diagrams_without_ai_images(self):
+    def test_video_frames_render_scene_images_and_keep_diagram_fallback(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         frame = source.split("function renderSqlShortFrame(", 1)[1]
+        self.assertIn("renderPromptSceneAssetVisual(", frame)
+        self.assertIn("if (!hasActiveAsset)", frame)
         self.assertIn("renderArchitectureScene(ctx, W, H, p, activeStage", frame)
-        self.assertNotIn("renderPromptSceneAssetVisual(ctx, W, H, p, activeStage", frame)
-        self.assertNotIn("drawPromptMotionBackground(ctx, W, H, t)", frame)
         self.assertNotIn("AI VOICE", source)
         for renderer in ("drawDiagramFlow", "drawDiagramCodePanel", "drawDiagramTablePanel", "drawDiagramComparePanel"):
             self.assertIn(f"function {renderer}(", source)
