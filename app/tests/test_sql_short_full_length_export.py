@@ -41,6 +41,74 @@ def load_detailed_brief_parser():
 
 
 class FullLengthVideoExportTests(unittest.TestCase):
+    def test_idempotency_payment_blueprint_is_local_12_scene_graph_animation(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        functions = [
+            item for item in tree.body
+            if isinstance(item, ast.FunctionDef)
+            and item.name in {"_idempotency_payment_blueprint", "_idempotency_payment_graph"}
+        ]
+        namespace = {"Dict": Dict, "Any": Any, "List": List}
+        exec(compile(ast.Module(body=functions, type_ignores=[]), "<idempotency-blueprint-test>", "exec"), namespace)
+        blueprint = namespace["_idempotency_payment_blueprint"]()
+        graph = blueprint["architecture_graph"]
+        stages = blueprint["scenes"]
+        nodes = {node["id"]: node for node in graph["nodes"]}
+        edges = {edge["id"]: edge for edge in graph["edges"]}
+        valid_targets = set(nodes) | set(edges)
+        action_targets = {
+            action["target_id"]
+            for stage in stages
+            for action in stage["diagram_actions"]
+        }
+
+        self.assertEqual(blueprint["storyboard_source"], "idempotency_payment_fallback")
+        self.assertEqual(blueprint["max_duration_seconds"], 80)
+        self.assertEqual(len(stages), 12)
+        self.assertTrue(all(stage["user_authored_scene"] for stage in stages))
+        self.assertTrue(all(action_targets <= valid_targets for stage in stages for action in stage["diagram_actions"]))
+        self.assertTrue(set(nodes) <= action_targets)
+        self.assertTrue(set(edges) <= action_targets)
+        self.assertEqual(nodes["key-store"]["shape"], "database")
+        self.assertEqual(nodes["provider"]["shape"], "cloud")
+        self.assertIn("durable", nodes["key-store"]["description"].lower())
+        self.assertIn("fingerprint", nodes["request-fingerprint"]["description"].lower())
+        self.assertIn(("key-store", "order-service"), {(edge["from"], edge["to"]) for edge in edges.values()})
+        self.assertIn("NOT CONFIRMED", stages[10]["title"])
+
+        renderer_source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")
+        renderer_tree = ast.parse(renderer_source)
+        renderer_functions = [
+            item for item in renderer_tree.body
+            if isinstance(item, ast.FunctionDef)
+            and item.name in {"_slug", "_shape_for", "_layout_nodes", "_stage_for_time", "build_architecture_animation"}
+        ]
+        renderer_namespace = {
+            "re": re, "Any": Any, "defaultdict": defaultdict, "deque": deque,
+            "NODE_SHAPES": {"database", "rectangle", "rounded_rectangle", "circle", "diamond", "hexagon", "cloud", "document", "table", "terminal", "dashboard"},
+            "EDGE_STYLES": {"straight", "curved", "elbow", "bezier"},
+            "LAYOUTS": {"pipeline", "layered", "hierarchical", "tree"},
+            "ACTION_ALIASES": {"reveal": "reveal_node", "enter": "reveal_node", "node_entrance": "reveal_node", "draw": "draw_edge", "draw_connector": "draw_edge", "connect": "draw_edge", "focus": "highlight_node", "highlight": "highlight_node", "data_flow": "packets", "move_data": "packets", "expand": "expand_node", "pulse": "pulse_node", "morph": "morph_node"},
+        }
+        exec(compile(ast.Module(body=renderer_functions, type_ignores=[]), "<idempotency-animation-test>", "exec"), renderer_namespace)
+        duration = 80
+        for index, stage in enumerate(stages):
+            stage["start"] = duration * index / len(stages)
+            stage["end"] = duration * (index + 1) / len(stages)
+        animation = renderer_namespace["build_architecture_animation"](graph, stages, duration)
+        self.assertEqual(len(animation["nodes"]), len(nodes))
+        self.assertEqual(len(animation["edges"]), len(edges))
+        self.assertTrue(all(action["stage_index"] in range(12) for action in animation["actions"]))
+        self.assertTrue(all(0 <= node["x"] <= 1 and 0 <= node["y"] <= 1 for node in animation["nodes"]))
+
+    def test_idempotency_prompt_recognizes_specific_local_blueprint_before_model(self):
+        source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
+        generation = source.split("async def generate_short_prompt_async", 1)[1]
+        self.assertIn("_idempotency_payment_blueprint()", generation)
+        self.assertLess(generation.index("_idempotency_payment_blueprint()"), generation.index("# 4. If still not matched"))
+        self.assertIn('"idempotency_payment_fallback"', generation)
+
     def test_airflow_brief_preserves_all_seven_hindi_scenes(self):
         brief = """# PROJECT: Apache Airflow DAG Kaise Kaam Karta Hai?
 Duration: Maximum 60 seconds

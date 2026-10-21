@@ -1331,6 +1331,104 @@ def _llm_fallback_graph(stages: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"layout": "pipeline", "nodes": nodes, "edges": edges, "groups": []}
 
 
+def _idempotency_payment_blueprint() -> Dict[str, Any]:
+    speeches = [
+        ("PAY BUTTON · DOUBLE CLICK", "Pay button do baar tap ho gaya. Kya customer ke account se payment bhi do baar charge hogi? Interview mein ye common system-design sawaal hai."),
+        ("FRONTEND GUARD", "Frontend button disable karna helpful hai, par ye sirf user experience guard hai. Doosre device ya retry ko nahi rokta."),
+        ("SLOW NETWORK · RETRY", "Slow network mein request server tak pahunch sakti hai, par response phone tak nahi. User retry karta hai."),
+        ("IDEMPOTENCY", "Isliye payment APIs idempotency key use karti hain: same operation, same key, duplicate charge nahi."),
+        ("KEY · PROCESSING", "Client har payment attempt ke liye unique key bhejta hai, jaise a7f3-91c2. Server ise durable store mein PROCESSING ke saath claim karta hai."),
+        ("DUPLICATE · REPLAY", "Pehli request SUCCESS record karti hai. Same key dobara aaye to server saved result return karta hai, payment repeat nahi."),
+        ("TIMEOUT ≠ FAILURE", "Kabhi server par payment successful hoti hai, lekin response lost. Client ko outcome unknown hai—timeout ka matlab failure nahi."),
+        ("KEY + REQUEST FINGERPRINT", "Sirf key kaafi nahi: us key ko amount aur request fingerprint se bind karo. Same key, different payload ko reject karo."),
+        ("ATOMIC · DURABLE DB", "Concurrent retries ko unique DB constraint ya atomic transaction se serialize karo. Dono workers ek hi key claim nahi kar paayen."),
+        ("CRASH-SAFE RECOVERY", "Crash ke baad durable record bacha rehta hai. Provider ko bhi same key do, ya transactional outbox se recovery chalao."),
+        ("PAYMENT SUCCESS · ORDER NOT CONFIRMED", "Payment SUCCESS hai, par order NOT CONFIRMED. Blindly naya payment mat banao; status query aur reconciliation se order recover karo."),
+        ("RECOVER? · COMMENTS", "Aap ise recover kaise karoge—status poll, webhook, ya reconciliation job? Apna answer comments mein batao."),
+    ]
+    scene_targets = [
+        [("client-app", "reveal_node"), ("pay-button", "reveal_node"), ("client-to-api", "draw_edge")],
+        [("pay-button", "pulse_node"), ("client-app", "highlight_node")],
+        [("client-to-api", "packets"), ("api-to-client", "draw_edge"), ("api-to-client", "packets")],
+        [("payment-api", "reveal_node"), ("idempotency-key", "reveal_node"), ("idempotency-key", "pulse_node")],
+        [("api-to-key-store", "draw_edge"), ("api-to-key-store", "packets"), ("key-store", "reveal_node"), ("key-store", "highlight_node")],
+        [("provider", "reveal_node"), ("api-to-provider", "draw_edge"), ("provider-to-key-store", "draw_edge"), ("key-store-to-api", "draw_edge"), ("key-store-to-api", "packets")],
+        [("api-to-client", "highlight_node"), ("client-app", "highlight_node")],
+        [("request-fingerprint", "reveal_node"), ("api-to-fingerprint", "draw_edge"), ("fingerprint-to-key-store", "draw_edge"), ("key-store", "highlight_node")],
+        [("atomic-claim", "reveal_node"), ("api-to-claim", "draw_edge"), ("claim-to-key-store", "draw_edge"), ("atomic-claim", "pulse_node")],
+        [("key-store", "highlight_node"), ("provider", "highlight_node"), ("recovery", "reveal_node"), ("key-store-to-recovery", "draw_edge")],
+        [("order-service", "reveal_node"), ("key-store-to-order", "draw_edge"), ("recovery-to-order", "draw_edge"), ("order-service", "highlight_node")],
+        [("reconciliation", "reveal_node"), ("order-to-reconciliation", "draw_edge"), ("recovery", "highlight_node"), ("reconciliation", "pulse_node")],
+    ]
+    scenes = []
+    for index, (caption, speech) in enumerate(speeches):
+        scenes.append({
+            "id": index + 1,
+            "user_authored_scene": True,
+            "title": caption,
+            "speech": speech,
+            "speech_hi": speech,
+            "speech_en": caption,
+            "action_type": "hook" if index == 0 else "diagram",
+            "visual_type": "hook" if index == 0 else "diagram",
+            "visual_data": {"layout": "", "labels": [caption], "focus": index},
+            "diagram_actions": [
+                {"target_id": target, "action": action, "cue_progress": 0.18 + position * 0.2}
+                for position, (target, action) in enumerate(scene_targets[index])
+            ],
+        })
+    return {
+        "id": "idempotency_payment_explainer",
+        "title": "Payment Idempotency: Safe Retries",
+        "domain": "System Design",
+        "content_type": "tech_topic",
+        "suggested_motion_bg": "neural_synapse",
+        "storyboard_source": "idempotency_payment_fallback",
+        "show_subtitles": True,
+        "max_duration_seconds": 80,
+        "scenes": scenes,
+        "stages": scenes,
+        "architecture_graph": _idempotency_payment_graph(),
+    }
+
+
+def _idempotency_payment_graph() -> Dict[str, Any]:
+    nodes = [
+        {"id": "client-app", "label": "CLIENT APP", "description": "Payment screen and retrying phone", "shape": "document"},
+        {"id": "pay-button", "label": "PAY · RETRY", "description": "Frontend disable is only a UX guard", "shape": "rounded_rectangle"},
+        {"id": "payment-api", "label": "PAYMENT API", "description": "Validates key and request fingerprint", "shape": "rounded_rectangle"},
+        {"id": "idempotency-key", "label": "KEY a7f3-91c2", "description": "Stable key reused for this payment retry", "shape": "terminal", "status": "PROCESSING"},
+        {"id": "request-fingerprint", "label": "REQUEST FINGERPRINT", "description": "Request fingerprint binds key to amount and payload", "shape": "table"},
+        {"id": "atomic-claim", "label": "UNIQUE KEY · ATOMIC CLAIM", "description": "A transaction or unique constraint wins one claim", "shape": "hexagon"},
+        {"id": "key-store", "label": "DURABLE IDEMPOTENCY DB", "description": "Durable key, fingerprint, status and saved response", "shape": "database"},
+        {"id": "provider", "label": "PAYMENT PROVIDER", "description": "Use provider idempotency key for safe recovery", "shape": "cloud"},
+        {"id": "recovery", "label": "STATUS · OUTBOX · RECONCILE", "description": "Recover uncertain outcomes without a new charge", "shape": "dashboard"},
+        {"id": "order-service", "label": "ORDER STATUS", "description": "Payment can succeed while order confirmation is pending", "shape": "rounded_rectangle"},
+        {"id": "reconciliation", "label": "RECONCILIATION", "description": "Webhook, polling or job repairs pending order", "shape": "dashboard"},
+    ]
+    edge_rows = [
+        ("client-to-api", "client-app", "payment-api", "request + same key", True),
+        ("api-to-client", "payment-api", "client-app", "saved result / timeout", False),
+        ("api-to-key-store", "payment-api", "key-store", "lookup key + status", False),
+        ("api-to-provider", "payment-api", "provider", "charge once", True),
+        ("provider-to-key-store", "provider", "key-store", "persist outcome", True),
+        ("key-store-to-api", "key-store", "payment-api", "replay stored result", False),
+        ("api-to-fingerprint", "payment-api", "request-fingerprint", "validate payload", False),
+        ("fingerprint-to-key-store", "request-fingerprint", "key-store", "key is payload-bound", False),
+        ("api-to-claim", "payment-api", "atomic-claim", "atomic claim", False),
+        ("claim-to-key-store", "atomic-claim", "key-store", "unique durable write", True),
+        ("key-store-to-recovery", "key-store", "recovery", "recover PROCESSING / unknown", False),
+        ("key-store-to-order", "key-store", "order-service", "payment SUCCESS", True),
+        ("recovery-to-order", "recovery", "order-service", "confirm or repair order", False),
+        ("order-to-reconciliation", "order-service", "reconciliation", "pending confirmation", False),
+    ]
+    edges = [
+        {"id": edge_id, "from": source, "to": target, "label": label, "style": "bezier", "data_flow": data_flow}
+        for edge_id, source, target, label, data_flow in edge_rows
+    ]
+    return {"layout": "pipeline", "nodes": nodes, "edges": edges, "groups": []}
+
+
 class SqlShortVideoEngine:
     """
     Dedicated prompt-driven 9:16 video creation engine.
@@ -3114,6 +3212,13 @@ class SqlShortVideoEngine:
         if brief_blueprint:
             matched = brief_blueprint
 
+        if (
+            not matched
+            and re.search(r"\bidempotenc\w*\b", text_input, re.I)
+            and re.search(r"\b(payment|pay button|double[- ]click|charge)\b", text_input, re.I)
+        ):
+            matched = _idempotency_payment_blueprint()
+
         # 4. If still not matched, synthesize via online AI model dynamically
         if not matched and len(text_input) > 8:
             try:
@@ -3250,7 +3355,7 @@ class SqlShortVideoEngine:
 
         # On-screen text is English even when the narration voice is Marathi or Hindi.
         # The built-in storyboard is already English, so only model output needs this.
-        if lang_key != "en" and matched.get("storyboard_source") not in {"local_fallback", "detailed_brief"}:
+        if lang_key != "en" and matched.get("storyboard_source") not in {"local_fallback", "detailed_brief", "idempotency_payment_fallback"}:
             try:
                 english_headline = await self._english_on_screen_text(stages, matched.get("title") or "")
                 if english_headline:
@@ -3308,7 +3413,7 @@ class SqlShortVideoEngine:
         if duration_limit > 0 and actual_dur > duration_limit:
             speech_word_count = len(full_narration.split())
             target_words = max(24, int(speech_word_count * max(1.0, duration_limit - 5) / actual_dur))
-            if matched.get("storyboard_source") == "detailed_brief":
+            if matched.get("storyboard_source") in {"detailed_brief", "idempotency_payment_fallback"}:
                 condensed_speeches = _deterministic_condense_scenes(
                     [{"speech": stage.get("speech") or ""} for stage in stages], target_words
                 )
