@@ -608,14 +608,14 @@ def get_sql_video_workspace_html() -> str:
                         <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 700;">🛡️ 100% Zero-Watermark</span>
                     </div>
                     <div style="font-size: 11px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">
-                        1080x1920 फुल-एचडी रेंडरिंग सोबत नॅचरल AI शिक्षक ऑडिओ इंटिग्रेटेड, पूर्ण narration duration सह! कोपऱ्यातील वॉटरमार्क 100% रिमूव्ह केले जातात.
+                        Video rendering आणि export या device वरच होतात. Prompt, storyboard आणि voice NanoPro APIs मधून येतात. Browser MP4 सपोर्ट करत असल्यास MP4; अन्यथा synced WebM download होईल.
                     </div>
 
                     <!-- Direct Download Button Group -->
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px 10px; font-weight: 900; font-size: 12px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35); white-space: normal; line-height: 1.3; text-align: center; word-break: break-word; box-sizing: border-box;">
                             <span style="font-size: 18px; flex-shrink: 0;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)</span>
+                            <span id="exportBtnLabel">DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)</span>
                         </button>
 
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -631,7 +631,7 @@ def get_sql_video_workspace_html() -> str:
                     <!-- Progress Bar & Remaining Time Stats (Shows during export) -->
                     <div id="exportProgressBarContainer" style="display:none; background: #0B1120; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-top: 14px;">
                         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #38BDF8; font-weight: 700; margin-bottom: 6px;">
-                            <span id="exportStageDesc">⏳ व्हिडिओ व ऑडिओ एकत्र रेंडर होत आहे...</span>
+                            <span id="exportStageDesc">⏳ तुमच्या device वर व्हिडिओ व ऑडिओ रेंडर होत आहे...</span>
                             <span id="exportPercentNum" style="font-family: monospace; font-size: 13px; color: #10B981;">0%</span>
                         </div>
                         <div style="height: 12px; width: 100%; background: #1E2D4A; border-radius: 6px; overflow: hidden; margin-bottom: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);">

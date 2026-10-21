@@ -5590,8 +5590,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const badgeEl = document.getElementById("exportLiveBadge");
         const celebrationBox = document.getElementById("videoReadyCelebration");
 
-        if (!canvas || !canvas.captureStream) {
-            alert("Your browser does not support Canvas.captureStream. Please use Chrome or Edge.");
+        if (!canvas || !canvas.captureStream || !window.MediaRecorder) {
+            alert("This browser does not support local video recording. Please use a recent Chrome or Edge browser.");
             return;
         }
 
@@ -5603,6 +5603,40 @@ SECOND_HIGHEST_SALARY: 70000`;
             totalDuration = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 45.0);
         }
         totalDuration = Math.max(1, totalDuration);
+
+        const mp4Types = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"];
+        let mimeType = mp4Types.find(type => MediaRecorder.isTypeSupported(type)) || "";
+        let outputExtension = mimeType ? "mp4" : "webm";
+        if (!mimeType) {
+            mimeType = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
+                .find(type => MediaRecorder.isTypeSupported(type));
+        }
+        if (!mimeType) {
+            alert("This browser does not support a local video format. Please use a recent Chrome or Edge browser.");
+            return;
+        }
+        const safeId = String(sqlShortState.activePreset?.id || "tech_explainer").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const filename = `NanoPro_Full_9x16_${safeId}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.${outputExtension}`;
+        if (sqlShortState.lastExportUrl) {
+            URL.revokeObjectURL(sqlShortState.lastExportUrl);
+            sqlShortState.lastExportUrl = null;
+        }
+        let saveWritable = null;
+        if (window.showSaveFilePicker && window.isSecureContext) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: filename,
+                    types: [{
+                        description: outputExtension === "mp4" ? "MP4 video" : "WebM video",
+                        accept: { [outputExtension === "mp4" ? "video/mp4" : "video/webm"]: [`.${outputExtension}`] }
+                    }]
+                });
+                saveWritable = await handle.createWritable();
+            } catch (error) {
+                if (error && error.name === "AbortError") return;
+                console.warn("Direct local file writing is unavailable; using browser download:", error);
+            }
+        }
 
         if (celebrationBox) celebrationBox.style.display = "none";
         if (pContainer) pContainer.style.display = "block";
@@ -5638,19 +5672,21 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }
                 audioTracks = audioRoute.destination.stream.getAudioTracks().map(track => track.clone());
             } catch(e) {
+                if (saveWritable) await saveWritable.abort().catch(() => {});
                 if (pDesc) pDesc.innerText = `Audio capture setup failed: ${e.message}`;
                 if (badgeEl) badgeEl.innerText = "Audio capture failed";
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)";
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
                 console.error("AudioContext stream capture notice:", e);
                 return;
             }
         }
         if (!audioTracks.length) {
+            if (saveWritable) await saveWritable.abort().catch(() => {});
             if (pDesc) pDesc.innerText = "Narration audio is unavailable; refusing to export a muted video.";
             if (badgeEl) badgeEl.innerText = "Audio track missing";
             if (btn) btn.disabled = false;
-            if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)";
+            if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
             return;
         }
 
@@ -5661,23 +5697,32 @@ SECOND_HIGHEST_SALARY: 70000`;
             window.nanoProRegisterMediaStream(combinedStream);
         }
 
-        let mimeType = "video/webm;codecs=vp9,opus";
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = "video/webm;codecs=vp8,opus";
-        }
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = "video/webm";
-        }
-
         const chunks = [];
-        const recorder = new MediaRecorder(combinedStream, {
-            mimeType: mimeType,
-            videoBitsPerSecond: 9000000,
-            audioBitsPerSecond: 192000
-        });
+        let fileWriteChain = Promise.resolve();
+        let fileWriteError = null;
+        let recorder;
+        try {
+            recorder = new MediaRecorder(combinedStream, {
+                mimeType,
+                videoBitsPerSecond: 9000000,
+                audioBitsPerSecond: 192000
+            });
+        } catch (error) {
+            if (saveWritable) await saveWritable.abort().catch(() => {});
+            combinedStream.getTracks().forEach(track => { try { track.stop(); } catch (_) {} });
+            if (btn) btn.disabled = false;
+            if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+            if (pDesc) pDesc.innerText = `This browser could not start local ${outputExtension.toUpperCase()} encoding: ${error.message}`;
+            return;
+        }
 
-        recorder.ondataavailable = e => {
-            if (e.data && e.data.size > 0) chunks.push(e.data);
+        recorder.ondataavailable = event => {
+            if (!event.data || event.data.size === 0) return;
+            if (saveWritable) {
+                fileWriteChain = fileWriteChain.then(() => saveWritable.write(event.data)).catch(error => { fileWriteError = error; });
+            } else {
+                chunks.push(event.data);
+            }
         };
 
         const totalFrames = Math.round(totalDuration * exportFrameRate);
@@ -5685,6 +5730,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         let lastProgressFrame = 0;
         const dt = 1.0 / exportFrameRate;
         const startTime = performance.now();
+        let downloadUrl = null;
 
         recorder.onstop = async () => {
             if (audioEl) audioEl.pause();
@@ -5697,56 +5743,35 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             if (pFill) pFill.style.width = "92%";
             if (pPctText) pPctText.innerText = "92%";
-            if (pDesc) pDesc.innerText = "Full narration captured. Preparing the final MP4...";
+            if (pDesc) pDesc.innerText = `Full narration captured locally. Finalizing ${outputExtension.toUpperCase()}...`;
             if (badgeEl) {
-                badgeEl.innerText = "MP4 conversion in progress";
+                badgeEl.innerText = "Local file finalizing";
                 badgeEl.style.color = "#38BDF8";
                 badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
             }
 
-            const webmBlob = new Blob(chunks, { type: mimeType });
             try {
-                const form = new FormData();
-                form.append("file", webmBlob, "nanopro_full_video.webm");
-                const queueResponse = await fetch("/api/sql_video/finalize_mp4", { method: "POST", body: form });
-                if (!queueResponse.ok) {
-                    const failure = await queueResponse.json().catch(() => ({}));
-                    throw new Error(failure.detail || `MP4 conversion failed (${queueResponse.status})`);
+                await fileWriteChain;
+                if (fileWriteError) throw fileWriteError;
+                if (saveWritable) {
+                    await saveWritable.close();
+                } else {
+                    const videoBlob = new Blob(chunks, { type: recorder.mimeType || mimeType });
+                    if (videoBlob.size < 1024) throw new Error("The locally recorded video is empty.");
+                    downloadUrl = URL.createObjectURL(videoBlob);
+                    sqlShortState.lastExportUrl = downloadUrl;
+                    const a = document.createElement("a");
+                    a.href = downloadUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
                 }
-                const queuedJob = await queueResponse.json();
-                if (!queuedJob.job_id) throw new Error("The MP4 conversion job was not created.");
-                let conversionReady = false;
-                for (let attempt = 0; attempt < 900; attempt++) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    const statusResponse = await fetch(`/api/sql_video/finalize_mp4/${encodeURIComponent(queuedJob.job_id)}`);
-                    if (!statusResponse.ok) throw new Error(`MP4 conversion status failed (${statusResponse.status})`);
-                    const status = await statusResponse.json();
-                    if (status.status === "ready") {
-                        conversionReady = true;
-                        break;
-                    }
-                    if (status.status === "failed") throw new Error(status.message || "MP4 conversion failed.");
-                    if (pDesc) pDesc.innerText = "Narration captured. Preparing MP4 in the background...";
-                }
-                if (!conversionReady) throw new Error("MP4 conversion is taking too long. Please try again.");
-                const response = await fetch(`/api/sql_video/finalize_mp4/${encodeURIComponent(queuedJob.job_id)}/download`);
-                if (!response.ok) throw new Error(`MP4 download failed (${response.status})`);
-                const mp4Blob = await response.blob();
-                if (mp4Blob.size < 1024) throw new Error("The converted MP4 is empty.");
-                const url = URL.createObjectURL(mp4Blob);
-                const a = document.createElement("a");
-                const safeId = String(sqlShortState.activePreset?.id || "tech_explainer").replace(/[^a-zA-Z0-9_-]/g, "_");
-                const filename = `NanoPro_Full_9x16_${safeId}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.mp4`;
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
                 if (pFill) pFill.style.width = "100%";
                 if (pPctText) pPctText.innerText = "100%";
-                if (pDesc) pDesc.innerText = "Full-length MP4 is ready and downloading.";
+                if (pDesc) pDesc.innerText = `${outputExtension.toUpperCase()} audio-video is ready on this device.`;
                 if (badgeEl) {
-                    badgeEl.innerText = "Full MP4 ready";
+                    badgeEl.innerText = `Local ${outputExtension.toUpperCase()} ready`;
                     badgeEl.style.color = "#10B981";
                     badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
                 }
@@ -5756,34 +5781,29 @@ SECOND_HIGHEST_SALARY: 70000`;
                         celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         const btnAgain = document.getElementById("btnDownloadAgain");
                         if (btnAgain) {
-                            btnAgain.href = url;
-                            btnAgain.download = filename;
+                            btnAgain.style.display = saveWritable ? "none" : "inline-flex";
+                            if (downloadUrl) {
+                                btnAgain.href = downloadUrl;
+                                btnAgain.download = filename;
+                            }
                         }
                     }
                 }, 300);
             } catch (error) {
-                const webmUrl = URL.createObjectURL(webmBlob);
-                const fallbackLink = document.createElement("a");
-                const fallbackId = String(sqlShortState.activePreset?.id || "tech_explainer").replace(/[^a-zA-Z0-9_-]/g, "_");
-                const fallbackName = `NanoPro_Full_9x16_${fallbackId}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.webm`;
-                fallbackLink.href = webmUrl;
-                fallbackLink.download = fallbackName;
-                document.body.appendChild(fallbackLink);
-                fallbackLink.click();
-                document.body.removeChild(fallbackLink);
-                if (pDesc) pDesc.innerText = `MP4 conversion unavailable (${error.message}). Downloaded the synchronized WebM backup.`;
+                if (saveWritable) await saveWritable.abort().catch(() => {});
+                if (pDesc) pDesc.innerText = `Local ${outputExtension.toUpperCase()} export failed: ${error.message}. No video was sent to Render.`;
                 if (badgeEl) {
-                    badgeEl.innerText = "Synchronized WebM backup ready";
-                    badgeEl.style.color = "#F59E0B";
-                    badgeEl.style.background = "rgba(245, 158, 11, 0.15)";
+                    badgeEl.innerText = "Local export failed";
+                    badgeEl.style.color = "#EF4444";
+                    badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
                 }
             } finally {
                 if (btn) btn.disabled = false;
-                if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (VOICE SYNCED MP4)";
+                if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
             }
         };
 
-        recorder.start();
+        recorder.start(1000);
         if (audioEl && audioEl.src) {
             audioEl.currentTime = 0;
             audioEl.play().catch(e => console.warn("Audio play during export:", e));

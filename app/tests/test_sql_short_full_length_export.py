@@ -320,23 +320,31 @@ Show the cloud.
         self.assertEqual(len(calibrated), 1)
         self.assertEqual(calibrated[0]["title"], "CTA")
 
-    def test_browser_download_requests_final_mp4_without_duration_cap(self):
+    def test_browser_export_stays_local_and_saves_the_full_voice_synced_video(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
-        self.assertIn('fetch("/api/sql_video/finalize_mp4"', source)
-        self.assertIn('fetch(`/api/sql_video/finalize_mp4/${encodeURIComponent(queuedJob.job_id)}`)', source)
-        self.assertIn('status.status === "ready"', source)
-        self.assertIn('status.status === "failed"', source)
-        self.assertIn('finalize_mp4/${encodeURIComponent(queuedJob.job_id)}/download', source)
-        self.assertIn("synchronized WebM backup", source)
-        self.assertIn("${Math.round(totalDuration)}s.webm", source)
-        self.assertIn(".mp4`", source)
+        export = source.split("async function exportSqlShortVideo(", 1)[1].split("function downloadCurrentFrameAsPng", 1)[0]
+        self.assertIn("window.showSaveFilePicker", export)
+        self.assertIn('MediaRecorder.isTypeSupported(type)', export)
+        self.assertIn('let outputExtension = mimeType ? "mp4" : "webm"', export)
+        self.assertIn('mimeType = ["video/webm;codecs=vp9,opus"', export)
+        self.assertIn("recorder.start(1000)", export)
+        self.assertIn("saveWritable.write(event.data)", export)
+        self.assertNotIn("finalize_mp4", export)
+        self.assertNotIn("FormData", export)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)
         self.assertIn("videoBitsPerSecond: 9000000", source)
         self.assertIn("const exportFrameRate = 30", source)
         self.assertNotIn("stepBatch = totalDuration <= 15 ? 1 : 2", source)
         self.assertNotIn("Math.min(59.5, totalDuration)", source)
-        self.assertIn("Generate click produces the complete synchronized 9:16 MP4 download", source)
+        self.assertIn("const videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks()", export)
+        self.assertIn("audioTracks", export)
+
+    def test_universal_video_export_explains_local_render_and_api_generation_split(self):
+        source = (PROJECT_ROOT / "app" / "ui" / "sql_video_workspace.py").read_text(encoding="utf-8")
+        self.assertIn("Video rendering आणि export या device वरच होतात", source)
+        self.assertIn("Prompt, storyboard आणि voice NanoPro APIs मधून येतात", source)
+        self.assertIn("LOCAL, VOICE SYNCED", source)
 
     def test_mp4_conversion_route_uses_h264_and_returns_a_video_file(self):
         source = (PROJECT_ROOT / "main.py").read_text(encoding="utf-8")
