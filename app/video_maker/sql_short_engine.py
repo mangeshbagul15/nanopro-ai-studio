@@ -3308,7 +3308,12 @@ class SqlShortVideoEngine:
         if duration_limit > 0 and actual_dur > duration_limit:
             speech_word_count = len(full_narration.split())
             target_words = max(24, int(speech_word_count * max(1.0, duration_limit - 5) / actual_dur))
-            condensed_speeches = await self._condense_narration_to_duration(stages, lang_key, target_words)
+            if matched.get("storyboard_source") == "detailed_brief":
+                condensed_speeches = _deterministic_condense_scenes(
+                    [{"speech": stage.get("speech") or ""} for stage in stages], target_words
+                )
+            else:
+                condensed_speeches = await self._condense_narration_to_duration(stages, lang_key, target_words)
             for stage, speech in zip(stages, condensed_speeches):
                 stage["speech"] = speech
                 stage[f"speech_{lang_key}"] = speech

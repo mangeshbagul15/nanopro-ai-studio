@@ -622,6 +622,8 @@ class PromptScenePlayerTests(unittest.TestCase):
         self.assertNotIn('lang_key = "en"', source.split("brief_blueprint = _parse_detailed_brief", 1)[1].split("# 4.", 1)[0])
         self.assertIn("_architecture_from_detailed_brief(text_input, stages)", source)
         self.assertIn("_llm_fallback_graph(stages)", source)
+        self.assertIn('_deterministic_condense_scenes(', source)
+        self.assertIn('if matched.get("storyboard_source") == "detailed_brief":', source)
         self.assertIn('"layout": "pipeline"', source)
         self.assertIn("Required prompt-specific concepts that must appear as separate graph nodes", source)
         self.assertIn("Choose the number of educational scenes to fit the prompt's complexity", source)
