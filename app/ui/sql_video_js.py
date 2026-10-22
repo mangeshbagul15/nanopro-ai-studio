@@ -3903,28 +3903,56 @@ SECOND_HIGHEST_SALARY: 70000`;
             const fallbackText = String(cue?.emphasis || cue?.state_change || stage?.caption || stage?.title || "").trim();
             if (fallbackText) unique.set(fallbackText, { kind: "label", content: fallbackText, x: 0.5, y: 0.5 });
         }
-        const overlays = Array.from(unique.values()).slice(0, 4);
+        const overlays = Array.from(unique.values());
         if (!overlays.length) return;
+        // Keep callouts clear of the object field and subtitles; reveal one at a time.
+        const index = Math.min(overlays.length - 1, Math.floor(Math.max(0, Math.min(0.999, progress)) * overlays.length));
+        const item = overlays[index];
         ctx.save();
-        overlays.forEach((item, index) => {
-            const content = String(item.content).slice(0, 110);
-            const rawX = Number(item.x ?? 0.5), rawY = Number(item.y ?? (0.42 + index * 0.08));
-            const x = Math.max(0.12, Math.min(0.88, Number.isFinite(rawX) ? rawX : 0.5)) * W;
-            const y = Math.max(0.24, Math.min(0.76, Number.isFinite(rawY) ? rawY : (0.42 + index * 0.08))) * H;
-            const reveal = Math.max(0, Math.min(1, progress * overlays.length * 2.2 - index));
-            if (!reveal) return;
-            const kind = String(item.kind || "label").toLowerCase();
-            ctx.save();
-            ctx.globalAlpha *= reveal * (index === 0 ? 0.96 : 0.82);
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.font = kind === "code" ? "700 26px Consolas, monospace" : kind === "formula" ? "700 30px 'Segoe UI', sans-serif" : "800 32px 'Segoe UI', sans-serif";
-            ctx.shadowColor = item.color || "#38BDF8"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 16;
-            ctx.fillStyle = item.color || "#F8FAFC";
-            const lines = wrapCanvasText(ctx, content, W * 0.78, 2);
-            lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * 38 + (1 - reveal) * 14, W * 0.82));
-            ctx.restore();
-        });
+        const content = String(item.content).replace(/\s+/g, " ").slice(0, 76);
+        const kind = String(item.kind || "label").toLowerCase();
+        const reveal = Math.max(0.25, Math.min(1, progress * overlays.length - index));
+        const x = W / 2, y = H - 548;
+        ctx.save(); ctx.globalAlpha *= reveal; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = kind === "code" ? "700 23px Consolas, monospace" : kind === "formula" ? "700 24px 'Segoe UI', sans-serif" : "750 24px 'Segoe UI', sans-serif";
+        const color = item.color || "#38BDF8", line = fitTextToWidth(ctx, content, W - 150);
+        const width = Math.min(W - 92, ctx.measureText(line).width + 48);
+        ctx.fillStyle = "rgba(3,10,24,0.94)"; ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(x - width / 2, y - 25, width, 50, 18); ctx.fill(); ctx.stroke();
+        ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 8;
+        ctx.fillStyle = item.color || "#F8FAFC"; ctx.fillText(line, x, y, width - 28);
         ctx.restore();
+        ctx.restore();
+    }
+
+    function resolveVisualPointCollisions(pointMap, W, H, options = {}) {
+        const points = Array.from(pointMap.values());
+        if (points.length < 2) return;
+        const dense = points.length > 6;
+        const minGap = Number(options.minGap) || (dense ? 118 : 198);
+        const minX = 104, maxX = W - 104;
+        const minY = Number(options.minY) || 520, maxY = Number(options.maxY) || H - 700;
+        points.forEach(point => {
+            point.x = Math.max(minX, Math.min(maxX, point.x));
+            point.y = Math.max(minY, Math.min(maxY, point.y));
+        });
+        // Deterministic relaxation keeps the authored relationships while separating labels.
+        for (let pass = 0; pass < 34; pass++) {
+            let moved = false;
+            for (let i = 0; i < points.length; i++) for (let j = i + 1; j < points.length; j++) {
+                const a = points[i], b = points[j];
+                let dx = b.x - a.x, dy = b.y - a.y, distance = Math.hypot(dx, dy);
+                if (distance >= minGap) continue;
+                if (distance < 0.01) { dx = (j % 2 ? 1 : -1); dy = ((j + i) % 2 ? 1 : -1); distance = Math.SQRT2; }
+                const push = (minGap - distance) * 0.27, ux = dx / distance, uy = dy / distance;
+                a.x = Math.max(minX, Math.min(maxX, a.x - ux * push));
+                a.y = Math.max(minY, Math.min(maxY, a.y - uy * push));
+                b.x = Math.max(minX, Math.min(maxX, b.x + ux * push));
+                b.y = Math.max(minY, Math.min(maxY, b.y + uy * push));
+                moved = true;
+            }
+            if (!moved) break;
+        }
     }
 
     function drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue) {
@@ -4207,6 +4235,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         const points = new Map();
         const top = 390, usableHeight = 760;
         const scale = elements.length <= 3 ? 1.05 : 0.94;
+        const hasCueDetailPanel = Boolean(cue && (cue.sql_query || cue.code_snippet || (Array.isArray(cue.table_rows) && cue.table_rows.length) || cue.state_change));
+        const cuePanelHeight = cue && (cue.sql_query || cue.code_snippet) ? 360 : 198;
+        const cuePanelTop = hasCueDetailPanel ? H - cuePanelHeight - 652 : H;
         elements.forEach((item, index) => {
             const rawX = Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18));
             const normalizedY = Number(item.y ?? (0.35 + (index * 0.37) % 0.45));
@@ -4217,9 +4248,14 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ? 118 + (index % gridColumns) * ((W - 236) / Math.max(1, gridColumns - 1))
                 : Math.max(190, Math.min(W - 190, W / 2 + (rawX - 0.5) * W * scale));
             const y = compactGrid
-                ? 470 + Math.floor(index / gridColumns) * Math.min(100, 440 / Math.max(1, gridRows - 1))
+                ? 480 + Math.floor(index / gridColumns) * Math.min(76, 650 / Math.max(1, gridRows - 1))
                 : Math.max(470, Math.min(H - 1040, top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight));
             points.set(String(item.label), { x, y, item, index });
+        });
+        resolveVisualPointCollisions(points, W, H, {
+            minGap: elements.length > 6 ? 58 : (hasCueDetailPanel ? 170 : 202),
+            minY: hasCueDetailPanel ? 470 : 535,
+            maxY: Math.min(H - 760, cuePanelTop - (elements.length > 6 ? 28 : 188)),
         });
         ctx.save();
         const firstColor = String(elements[0].color || "#38BDF8");
@@ -4395,7 +4431,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             const displayLabel = String(item.label).replace(/[_-]+/g, " ");
             const labelLines = splitDiagramText(ctx, displayLabel, 250, 2, 27);
             labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, radius + 42 + lineIndex * 31));
-            if (item.detail) {
+            if (item.detail && !hasCueDetailPanel) {
                 ctx.fillStyle = "#CBD5E1"; ctx.font = "500 19px 'Segoe UI', sans-serif";
                 const detail = splitDiagramText(ctx, item.detail, 260, 2, 25).slice(0, 2);
                 detail.forEach((line, lineIndex) => ctx.fillText(line, 0, radius + 73 + labelLines.length * 28 + lineIndex * 24));
@@ -4661,14 +4697,14 @@ SECOND_HIGHEST_SALARY: 70000`;
         const links = visual.relationships || (stage && stage.relationships) || visual.connections || [];
         const composition = String(visual.composition || (stage && stage.composition) || "").toLowerCase();
         const motion = String(visual.motion_grammar || visual.motion || (stage && stage.motion) || "").toLowerCase();
-        const top = 720, bottom = 1450;
+        const top = 760, bottom = 1190;
         const points = nodes.map((node, i) => {
             const count = Math.max(nodes.length, 1);
             let x, y;
             const authoredX = Number(node.x), authoredY = Number(node.y);
             if (Number.isFinite(authoredX) && Number.isFinite(authoredY)) {
                 x = Math.max(108, Math.min(W - 108, 108 + authoredX * (W - 216)));
-                y = Math.max(455, Math.min(H - 1000, 455 + authoredY * 910));
+                y = Math.max(530, Math.min(H - 710, 530 + authoredY * 660));
             } else if (count > 6) {
                 const columns = Math.min(4, count);
                 const rows = Math.ceil(count / columns);
@@ -4700,16 +4736,18 @@ SECOND_HIGHEST_SALARY: 70000`;
             y += Math.cos(t * 0.24 + i * 0.45) * parallax * 0.55;
             return { x, y, node, depth };
         });
+        points.forEach(point => { point.y = Math.max(535, Math.min(H - 760, point.y)); });
+        resolveVisualPointCollisions(new Map(points.map((point, index) => [index, point])), W, H, { minGap: points.length > 6 ? 58 : 198, minY: 535, maxY: H - 760 });
 
         ctx.save();
         ctx.globalAlpha = Math.max(0.15, Math.min(1, alpha));
         ctx.textAlign = "center";
         ctx.fillStyle = "#F8FAFC";
-        ctx.font = "800 48px 'Segoe UI', sans-serif";
-        wrapCanvasText(ctx, title, W - 170, 2).forEach((line, i) => ctx.fillText(line, W / 2, 260 + i * 60));
+        ctx.font = "800 44px 'Segoe UI', sans-serif";
+        wrapCanvasText(ctx, title, W - 170, 2).forEach((line, i) => ctx.fillText(line, W / 2, 205 + i * 54));
         ctx.fillStyle = "#CBD5E1";
         ctx.font = "24px 'Segoe UI', sans-serif";
-        wrapCanvasText(ctx, description, W - 210, 3).forEach((line, i) => ctx.fillText(line, W / 2, 430 + i * 36));
+        wrapCanvasText(ctx, description, W - 210, 2).forEach((line, i) => ctx.fillText(line, W / 2, 330 + i * 32));
 
         const findPoint = key => points.find(point => String(point.node.id || point.node.label || point.node.name) === String(key));
         const edges = Array.isArray(links) ? links : [];
@@ -4752,15 +4790,19 @@ SECOND_HIGHEST_SALARY: 70000`;
             drawPromptSemanticShape(ctx, shape, radius, color, t + i * 0.2, node.glyph || node.icon);
             ctx.shadowBlur = 0;
             ctx.restore();
-            ctx.textAlign = "center";
+            ctx.textAlign = nodes.length > 6 ? "left" : "center";
             ctx.fillStyle = "#FFFFFF";
-            ctx.font = nodes.length > 6 ? "700 17px 'Segoe UI', sans-serif" : "bold 24px 'Segoe UI', sans-serif";
-            wrapCanvasText(ctx, String(node.label || node.name), 250, 2).forEach((line, lineIdx) => ctx.fillText(line, x, y + radius + 42 + lineIdx * 30));
+            ctx.font = nodes.length > 6 ? "700 16px 'Segoe UI', sans-serif" : "bold 24px 'Segoe UI', sans-serif";
+            const labelX = nodes.length > 6 ? x + radius + 12 : x;
+            const labelY = nodes.length > 6 ? y - 3 : y + radius + 42;
+            wrapCanvasText(ctx, String(node.label || node.name), nodes.length > 6 ? 190 : 250, 2).forEach((line, lineIdx) => ctx.fillText(line, labelX, labelY + lineIdx * (nodes.length > 6 ? 19 : 30)));
             const detail = String(node.detail || "").trim();
             if (detail) {
                 ctx.fillStyle = "#CBD5E1";
-                ctx.font = nodes.length > 6 ? "15px 'Segoe UI', sans-serif" : "19px 'Segoe UI', sans-serif";
-                wrapCanvasText(ctx, detail, 260, 2).forEach((line, lineIdx) => ctx.fillText(line, x, y + radius + 74 + lineIdx * 26));
+                ctx.font = nodes.length > 6 ? "13px 'Segoe UI', sans-serif" : "19px 'Segoe UI', sans-serif";
+                const detailX = nodes.length > 6 ? labelX : x;
+                const detailY = nodes.length > 6 ? labelY + 35 : y + radius + 74;
+                wrapCanvasText(ctx, detail, nodes.length > 6 ? 190 : 260, nodes.length > 6 ? 1 : 2).forEach((line, lineIdx) => ctx.fillText(line, detailX, detailY + lineIdx * (nodes.length > 6 ? 16 : 26)));
             }
         });
         ctx.restore();
@@ -5954,7 +5996,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             subtitleText = p.explanation_en || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
         }
 
-        if (activeCue && activeCue.emphasis) {
+        if (activeCue && activeCue.emphasis && !activeCue.code_snippet && !activeCue.sql_query && !(Array.isArray(activeCue.table_rows) && activeCue.table_rows.length)) {
             const focusText = String(activeCue.emphasis).trim().slice(0, 64).toUpperCase();
             if (focusText) {
                 ctx.save();
@@ -5962,12 +6004,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillStyle = "rgba(8, 18, 36, 0.88)";
-                ctx.fillRect(245, H - 570, 590, 46);
+                ctx.fillRect(245, H - 650, 590, 46);
                 ctx.strokeStyle = "rgba(56, 189, 248, 0.72)";
                 ctx.lineWidth = 2;
-                ctx.strokeRect(245, H - 570, 590, 46);
+                ctx.strokeRect(245, H - 650, 590, 46);
                 ctx.fillStyle = "#7DD3FC";
-                ctx.fillText(`FOCUS · ${focusText}`, W / 2, H - 547, 560);
+                ctx.fillText(`FOCUS · ${focusText}`, W / 2, H - 627, 560);
                 ctx.restore();
             }
         }
