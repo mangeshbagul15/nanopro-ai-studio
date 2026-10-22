@@ -3858,7 +3858,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         allVisuals.forEach(source => source.elements.forEach(item => {
             if (item && item.label && !elementByLabel.has(String(item.label))) elementByLabel.set(String(item.label), item);
         }));
-        const elements = Array.from(elementByLabel.values()).slice(0, 18);
+        // Per-scene payloads are bounded at validation time. Keep the full cue
+        // union here so a later named component is never silently discarded.
+        const elements = Array.from(elementByLabel.values());
         if (!elements.length) return false;
         const interactionStep = String(cue && cue.interaction_step || "introduce").toLowerCase();
         const focusNeedle = String(cue && (cue.focus_element || cue.emphasis) || "").toLowerCase();
@@ -3869,7 +3871,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         let focusItem = findElement(focusNeedle);
         if (!focusItem && visualOverride?.elements?.length) focusItem = elements.find(item => String(item.label) === String(visualOverride.elements[0].label));
         if (!focusItem && elements.length) focusItem = elements[Math.min(cueIndex, elements.length - 1)];
-        const visibleLabels = new Set();
+        // Keep every authored scene object on screen from the opening frame;
+        // cue focus and connector endpoints control emphasis, not existence.
+        const visibleLabels = new Set(elements.map(item => String(item.label)));
         const historyLabels = new Set();
         const revealedConnectorKeys = new Set();
         const connectorKey = item => `${String(item.from || "")}\u2192${String(item.to || "")}`;
@@ -3918,8 +3922,15 @@ SECOND_HIGHEST_SALARY: 70000`;
         elements.forEach((item, index) => {
             const rawX = Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18));
             const normalizedY = Number(item.y ?? (0.35 + (index * 0.37) % 0.45));
-            const x = Math.max(190, Math.min(W - 190, W / 2 + (rawX - 0.5) * W * scale));
-            const y = Math.max(470, Math.min(H - 1040, top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight));
+            const compactGrid = elements.length > 6;
+            const gridColumns = compactGrid ? Math.min(4, elements.length) : 1;
+            const gridRows = compactGrid ? Math.ceil(elements.length / gridColumns) : 1;
+            const x = compactGrid
+                ? 118 + (index % gridColumns) * ((W - 236) / Math.max(1, gridColumns - 1))
+                : Math.max(190, Math.min(W - 190, W / 2 + (rawX - 0.5) * W * scale));
+            const y = compactGrid
+                ? 470 + Math.floor(index / gridColumns) * Math.min(100, 440 / Math.max(1, gridRows - 1))
+                : Math.max(470, Math.min(H - 1040, top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight));
             points.set(String(item.label), { x, y, item, index });
         });
         ctx.save();
@@ -4060,6 +4071,27 @@ SECOND_HIGHEST_SALARY: 70000`;
             const enter = 0.82 + 0.18 * Math.sin(elementProgress * Math.PI / 2);
             const scale = enter * (1 + Math.sin(time * 1.7 + index * 0.8) * 0.025);
             const isFocused = focusPoint && focusPoint.index === index;
+            if (elements.length > 6) {
+                const chipW = 208, chipH = 76;
+                ctx.save(); ctx.translate(x, y);
+                ctx.globalAlpha *= isFocused ? 0.98 : 0.58;
+                ctx.fillStyle = isFocused ? "rgba(9,34,56,0.96)" : "rgba(8,20,35,0.86)";
+                ctx.strokeStyle = isFocused ? "#E0F2FE" : color;
+                ctx.lineWidth = isFocused ? 3 : 1.5;
+                ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : (isFocused ? 18 : 7);
+                ctx.beginPath(); ctx.roundRect(-chipW / 2, -chipH / 2, chipW, chipH, 18); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+                const glyph = String(item.glyph || item.icon || "");
+                if (glyph) { ctx.font = "700 26px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif"; ctx.fillStyle = color; ctx.textAlign = "center"; ctx.fillText(glyph.slice(0, 2), -78, 8, 42); }
+                ctx.font = "700 15px 'Segoe UI', sans-serif"; ctx.fillStyle = "#F8FAFC"; ctx.textAlign = "left";
+                const compactLabel = splitDiagramText(ctx, String(item.label).replace(/[_-]+/g, " "), 132, 2, 18);
+                compactLabel.forEach((line, lineIndex) => ctx.fillText(line, glyph ? -52 : -chipW / 2 + 12, 6 + lineIndex * 18));
+                if (isFocused) {
+                    ctx.globalAlpha = 0.72 + 0.18 * Math.sin(time * 2.4); ctx.strokeStyle = color; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(-chipW / 2 - 5, -chipH / 2 - 5, chipW + 10, chipH + 10, 21); ctx.stroke();
+                }
+                ctx.restore();
+                return;
+            }
             if (isFocused) {
                 ctx.save(); ctx.translate(x, y); ctx.rotate(-0.12 + Math.sin(time * 0.32) * 0.035);
                 ctx.globalAlpha *= 0.55 + 0.12 * Math.sin(time * 1.8);

@@ -492,9 +492,14 @@ def build_pre_render_validation_report(
     diagnose_i = next((i for i, cue in enumerate(cues) if steps[i] == "diagnose" or re.search(r"diagnos|investigat|root cause|जांच|जाँच|कारण", str(cue.get("speech", "")) + " " + str(cue.get("state_change", "")), re.I)), None)
     recover_i = next((i for i, step in enumerate(steps) if step == "recover"), None)
     verify_indices = [i for i, step in enumerate(steps) if step == "verify"]
-    # A mismatch lesson may first verify and expose the bad value, then verify
-    # again after recovery. The final verification is the success gate.
-    verify_i = verify_indices[-1] if verify_indices else None
+    # A recap may mention "verify" after the actual final data comparison.
+    # Gate success against that comparison when one is present, otherwise the
+    # last explicit verify action.
+    comparison_indices = [
+        i for i, cue in enumerate(cues)
+        if steps[i] == "verify" and cue.get("expected_result") and cue.get("observed_result")
+    ]
+    verify_i = comparison_indices[-1] if comparison_indices else (verify_indices[-1] if verify_indices else None)
     event_order = failure_i is not None and diagnose_i is not None and recover_i is not None and verify_i is not None and failure_i < diagnose_i < recover_i < verify_i
     if mismatch_scenario:
         add("Failure → diagnosis → recovery → verification", "PASSED" if event_order else "FAILED", "The required event sequence is present in sentence cues." if event_order else "A mismatch prompt needs ordered failure, diagnosis, recovery, and verification cues.", True)
@@ -1646,6 +1651,8 @@ def _aws_dms_fallback_graph() -> Dict[str, Any]:
         {"id": "replication-instance", "label": "DMS Replication Instance", "description": "Runs the replication task", "shape": "hexagon"},
         {"id": "full-load", "label": "Full Load", "description": "Copies existing database tables", "shape": "table"},
         {"id": "cdc-stream", "label": "CDC Change Stream", "description": "Delivers ongoing source changes", "shape": "document"},
+        {"id": "s3-staging", "label": "Amazon S3 Staging", "description": "Supported intermediary landing zone for DMS changes", "shape": "cloud"},
+        {"id": "snowpipe-ingestion", "label": "Snowpipe Ingestion", "description": "Loads staged changes into Snowflake", "shape": "gear"},
         {"id": "target-endpoint", "label": "Target Endpoint", "description": "Snowflake connection configuration", "shape": "circle"},
         {"id": "snowflake-target", "label": "Snowflake Database", "description": "Receives tables and applied changes", "shape": "database"},
         {"id": "monitoring-dashboard", "label": "Monitoring Dashboard", "description": "Task status, latency and errors", "shape": "dashboard"},
@@ -1655,11 +1662,13 @@ def _aws_dms_fallback_graph() -> Dict[str, Any]:
         {"id": "source-endpoint-task", "from": "source-endpoint", "to": "replication-task", "label": "configured endpoint", "style": "bezier", "data_flow": False},
         {"id": "task-instance", "from": "replication-task", "to": "replication-instance", "label": "runs on", "style": "curved", "data_flow": False},
         {"id": "instance-full-load", "from": "replication-instance", "to": "full-load", "label": "Full Load", "style": "bezier", "data_flow": True},
-        {"id": "full-load-target-endpoint", "from": "full-load", "to": "target-endpoint", "label": "existing rows", "style": "curved", "data_flow": True},
+        {"id": "full-load-s3", "from": "full-load", "to": "s3-staging", "label": "existing rows", "style": "curved", "data_flow": True},
+        {"id": "s3-snowpipe", "from": "s3-staging", "to": "snowpipe-ingestion", "label": "staged files", "style": "bezier", "data_flow": True},
+        {"id": "snowpipe-target-endpoint", "from": "snowpipe-ingestion", "to": "target-endpoint", "label": "loaded data", "style": "curved", "data_flow": True},
         {"id": "target-endpoint-snowflake", "from": "target-endpoint", "to": "snowflake-target", "label": "target connection", "style": "bezier", "data_flow": True},
         {"id": "oracle-cdc", "from": "oracle-source", "to": "cdc-stream", "label": "ongoing changes", "style": "curved", "data_flow": True},
         {"id": "cdc-instance", "from": "cdc-stream", "to": "replication-instance", "label": "change events", "style": "bezier", "data_flow": True},
-        {"id": "instance-snowflake", "from": "replication-instance", "to": "snowflake-target", "label": "apply changes", "style": "curved", "data_flow": True},
+        {"id": "instance-s3", "from": "replication-instance", "to": "s3-staging", "label": "CDC files", "style": "curved", "data_flow": True},
         {"id": "instance-monitoring", "from": "replication-instance", "to": "monitoring-dashboard", "label": "status and latency", "style": "elbow", "data_flow": False},
     ]
     return {
@@ -3437,7 +3446,8 @@ class SqlShortVideoEngine:
         from app.core.model_adapter import model_manager
         for attempt in range(2):
             try:
-                translated, _, _ = model_manager.execute_with_fallback(
+                translated, _, _ = await asyncio.to_thread(
+                    model_manager.execute_with_fallback,
                     prompt=prompt,
                     system_prompt="You are a precise translator. Output one raw JSON object, no markdown.",
                 )
@@ -3502,7 +3512,8 @@ class SqlShortVideoEngine:
         for attempt in range(2):
             try:
                 request_prompt = prompt if attempt == 0 else prompt + "\nPrevious output was incomplete. Include every required concept as a separate node with the correct shape and valid connected edges."
-                response, _, _ = model_manager.execute_with_fallback(
+                response, _, _ = await asyncio.to_thread(
+                    model_manager.execute_with_fallback,
                     prompt=request_prompt,
                     system_prompt="You are a technical architecture diagram planner. Return valid JSON only; do not write narration or image prompts.",
                 )
@@ -3602,7 +3613,8 @@ class SqlShortVideoEngine:
                 f"Scenes: {json.dumps(scenes, ensure_ascii=False)}"
             )
             try:
-                response, _, _ = model_manager.execute_with_fallback(
+                response, _, _ = await asyncio.to_thread(
+                    model_manager.execute_with_fallback,
                     prompt=prompt,
                     system_prompt="You are a precise technical narration editor. Return valid JSON only and preserve technical accuracy.",
                 )
@@ -3706,7 +3718,8 @@ class SqlShortVideoEngine:
                     f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","scenes":[{{"title":"Scene title","speech":"Narration in {lang_name}.","speech_en":"Narration in English.","caption":"Short on-screen caption","sentence_cues":[{{"speech":"One complete spoken sentence in {lang_name}.","speech_en":"Matching English subtitle sentence.","action":"reveal then transform","emphasis":"key concept","interaction_step":"introduce","component_state":"introducing","focus_element":"Oracle Database","camera_move":"push_in","pause_after":0.4,"state_change":"Current component shows an active CDC record","expected_result":"Source value 8000","observed_result":"Target value 10000","sql_query":"SELECT id, balance FROM accounts WHERE id = 42;","simulated_action":"run_query","table_rows":[["ID","BALANCE"],["42","8000"]],"visual_data":{{"composition":"Visual progression for this exact sentence","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Scene-specific establishing composition","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}]}}'
                 )
 
-                ai_resp, used_model, _ = model_manager.execute_with_fallback(
+                ai_resp, used_model, _ = await asyncio.to_thread(
+                    model_manager.execute_with_fallback,
                     prompt=ai_prompt,
                     system_prompt=f"You are NanoPro AI Neural Video Generator. You output strictly raw valid JSON without markdown fences.\n{learned_guide}"
                 )
@@ -3733,7 +3746,8 @@ class SqlShortVideoEngine:
                             f"and keep the total at or below {max_narration_words} whitespace-separated words."
                         )
                         try:
-                            compact_resp, _, _ = model_manager.execute_with_fallback(
+                            compact_resp, _, _ = await asyncio.to_thread(
+                                model_manager.execute_with_fallback,
                                 prompt=compact_prompt,
                                 system_prompt="You are a precise short-form narration editor. Preserve the topic and factual meaning. Output valid raw JSON."
                             )
@@ -3767,7 +3781,8 @@ class SqlShortVideoEngine:
                         f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, explicitly honor that. Render only editable vector elements; do not request image assets. "
                         f'Example scene shape: {{"title":"Scene title","speech":"Line in {lang_name}.","speech_en":"English line.","caption":"Short caption","sentence_cues":[{{"speech":"Line in {lang_name}.","speech_en":"English line.","action":"reveal","emphasis":"key point","interaction_step":"introduce","focus_element":"Source","camera_move":"push_in","pause_after":0.4,"state_change":"Source becomes active","expected_result":"Source row is present","observed_result":"Source row is present","visual_data":{{"composition":"Sentence-specific visual progression","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Composition matching this scene","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}.'
                     )
-                    retry_resp, _, _ = model_manager.execute_with_fallback(
+                    retry_resp, _, _ = await asyncio.to_thread(
+                        model_manager.execute_with_fallback,
                         prompt=repair_prompt,
                         system_prompt="Return one valid raw JSON object. Make every scene specific to the user's topic.",
                     )
