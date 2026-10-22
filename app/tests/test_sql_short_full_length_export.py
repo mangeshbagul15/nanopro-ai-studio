@@ -215,6 +215,8 @@ class FullLengthVideoExportTests(unittest.TestCase):
         self.assertIn("Do not add unrelated architecture or failure scenarios.", generation)
         self.assertIn("dms_snowflake_scenario = bool(", generation)
         self.assertIn("Return exactly {requested_scene_count} scenes", generation)
+        self.assertIn("_pre_render_repair_attempt < 2", generation)
+        self.assertIn("expected_result=5 and observed_result=5", generation)
 
     def test_pre_render_report_blocks_overlong_voice_and_false_recovery_order(self):
         validate = load_pre_render_validator()

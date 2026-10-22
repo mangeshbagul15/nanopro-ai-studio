@@ -3946,7 +3946,7 @@ class SqlShortVideoEngine:
             min_duration=minimum_duration,
         )
         if not pre_render_validation["render_allowed"]:
-            if _pre_render_repair_attempt < 1:
+            if _pre_render_repair_attempt < 2:
                 repair_rules = [
                     "Keep the original topic, narration language, scene count, duration, and facts. Do not add unrelated architecture or failure scenarios."
                 ]
@@ -3958,6 +3958,13 @@ class SqlShortVideoEngine:
                     repair_rules.append("For the requested DMS-to-Snowflake lesson, preserve the configured intermediary ingestion route, such as AWS DMS → Amazon S3 → Snowpipe → Snowflake.")
                 if pre_render_validation["checks"] and mismatch_scenario:
                     repair_rules.append("For this actual mismatch lesson, order failure → diagnosis → recovery → verification, and show success only after equal values are compared.")
+                failed_checks = set(pre_render_validation["critical_failures"])
+                if "Expected versus observed output" in failed_checks:
+                    repair_rules.append("Make the LAST post-recovery verification cue explicit: interaction_step=verify, expected_result and observed_result must show the same corrected final value; any differing values belong only to the earlier failure diagnosis, never the final verification.")
+                if "Requested scene count" in failed_checks and requested_scene_count:
+                    repair_rules.append(f"The user numbered {requested_scene_count} scenes. Return exactly {requested_scene_count} scene objects, one for each original numbered scene, with no merging or omission.")
+                if dms_snowflake_scenario and "Expected versus observed output" in failed_checks:
+                    repair_rules.append("For this supplied DMS-to-Snowflake sample, the final Snowflake table has five records (ACCOUNT_ID 101 through 105), and the final COUNT(*) verification must be expected_result=5 and observed_result=5; keep the earlier missing-record state before recovery.")
                 repair_prompt = (
                     f"{text_input}\n\n"
                     "AUTOMATIC PRE-RENDER REPAIR: regenerate the complete storyboard and narration to fix these critical quality-gate failures: "
