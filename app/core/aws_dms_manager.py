@@ -152,7 +152,20 @@ class AwsDmsManager:
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
         except Exception as exc:
-            log_event(f"Live AWS DMS overview unavailable: {exc}", component="AwsDmsManager", level="WARNING")
+            response = getattr(exc, "response", {}) or {}
+            error_detail = response.get("Error", {}) if isinstance(response, dict) else {}
+            provider_code = error_detail.get("Code") if isinstance(error_detail, dict) else None
+            safe_codes = {
+                "AccessDenied", "AccessDeniedException", "UnrecognizedClientException",
+                "InvalidClientTokenId", "AuthFailure", "EndpointConnectionError",
+                "NoCredentialsError", "ResourceNotFoundFault", "InvalidParameterValueException",
+            }
+            live_error_code = provider_code if provider_code in safe_codes else type(exc).__name__
+            if live_error_code not in safe_codes and live_error_code not in {
+                "RuntimeError", "ImportError", "NoCredentialsError", "EndpointConnectionError",
+            }:
+                live_error_code = "AWS_API_ERROR"
+            log_event(f"Live AWS DMS overview unavailable ({live_error_code}).", component="AwsDmsManager", level="WARNING")
         with db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM dms_replication_instances")
@@ -184,16 +197,17 @@ class AwsDmsManager:
             item["cached_status"] = item.get("status")
             item["status"] = "not_verified"
         return {
-            "status": "success",
+            "status": "not_verified",
             "mode": "local_demo_cache",
             "live_verified": False,
+            "live_error_code": live_error_code,
             "aws_region": os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"),
             "replication_instances": instances,
             "endpoints": endpoints,
             "replication_tasks": tasks,
             "total_tasks": len(tasks),
             "running_tasks": 0,
-            "message": "These are cached local records only. Configure and verify AWS DMS before treating any task as live.",
+            "message": f"Live AWS DMS API unavailable ({live_error_code}); cached records are not verified and must not be treated as live tasks.",
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
