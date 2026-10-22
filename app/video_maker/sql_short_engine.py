@@ -504,14 +504,11 @@ def build_pre_render_validation_report(
     # Only treat an explicit terminal status transition as success. Narration such
     # as "pipeline can resume" or "successful record" is not a success state.
     success_status_pattern = re.compile(
-        r"(?:status|indicator|badge|pipeline|task).{0,20}(?:turns?|changes?\s+to|becomes?|is\s+now)\s*(?:green|successful|complete|सफल|हरा)|"
-        r"(?:green|successful|complete|सफल|हरा)\s+(?:status|indicator|badge|pipeline|task)\s*(?:is\s+)?(?:confirmed|verified|complete|now|✓)?", re.I
+        r"(?:status|indicator|badge|pipeline|task).{0,40}(?:success(?:ful)?|green|complete|verified|सफल|हरा)|"
+        r"(?:success(?:ful)?|green|complete|verified|सफल|हरा).{0,40}(?:status|indicator|badge|pipeline|task)", re.I
     )
     success_before_verify = any(
-        (
-            str(cue.get("component_state") or "").lower() == "completed"
-            or success_status_pattern.search(str(cue.get("state_change", "")))
-        )
+        success_status_pattern.search(str(cue.get("state_change", "")) + " " + str(cue.get("speech", "")))
         and (verify_i is None or i < verify_i)
         for i, cue in enumerate(cues)
     )
