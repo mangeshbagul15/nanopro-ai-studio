@@ -3851,6 +3851,35 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function drawPromptVisualPlan(ctx, W, H, stage, progress, time, visualOverride, cueIndex = 0, cue = null) {
         const visual = visualOverride || (stage && stage.visual_data) || {};
+        const requestedLayout = String(visual.layout || stage?.visual_data?.layout || "").toLowerCase();
+        const supportedLayouts = ["title", "split", "pipeline", "table", "chips", "warning", "cards", "spatial"];
+        if (supportedLayouts.includes(requestedLayout)) {
+            const sceneElements = Array.isArray(visual.elements) && visual.elements.length
+                ? visual.elements
+                : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
+            const layoutVisual = {
+                ...((stage && stage.visual_data) || {}),
+                ...visual,
+                layout: requestedLayout,
+                visual: String(visual.visual || visual.composition || stage?.visual_data?.composition || ""),
+                labels: Array.isArray(visual.labels) ? visual.labels : sceneElements.map(item => String(item.label || "")).filter(Boolean),
+                steps: Array.isArray(visual.steps) ? visual.steps : sceneElements.map(item => String(item.label || "")).filter(Boolean),
+                rows: Array.isArray(visual.rows) ? visual.rows : (Array.isArray(cue?.table_rows) ? cue.table_rows : (stage?.table_rows || [])),
+            };
+            const layout = requestedLayout === "table" && layoutVisual.rows.length < 2 ? "cards" : requestedLayout;
+            const layoutStage = { ...(stage || {}), visual_data: { ...layoutVisual, layout } };
+            ctx.save(); ctx.globalAlpha = 1;
+            if (layout === "title") drawBriefTitle(ctx, W, H, layoutStage, progress);
+            else if (layout === "split") drawBriefSplit(ctx, W, H, layoutStage, progress);
+            else if (layout === "pipeline") drawBriefPipeline(ctx, W, H, layoutStage, progress);
+            else if (layout === "table") drawBriefTable(ctx, W, H, layoutStage, progress);
+            else if (layout === "chips") drawBriefChips(ctx, W, H, layoutStage, progress);
+            else if (layout === "warning") drawBriefWarning(ctx, W, H, layoutStage, progress);
+            else if (layout === "spatial") drawBriefSpatial(ctx, W, H, layoutStage, progress, time, stage?.index || 0);
+            else drawBriefCards(ctx, W, H, layoutStage, progress);
+            ctx.restore();
+            return true;
+        }
         const stageCues = Array.isArray(stage?.sentence_cues) ? stage.sentence_cues : [];
         const allVisuals = [stage?.visual_data, ...stageCues.map(item => item && item.visual_data), visual]
             .filter(item => item && Array.isArray(item.elements));
