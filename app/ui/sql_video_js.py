@@ -651,7 +651,13 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             if (!pollRead?.ok || !pollRes?.ok) {
                 consecutivePollErrors += 1;
-                if (consecutivePollErrors >= 5) {
+                if (statusEl && consecutivePollErrors >= 3) {
+                    statusEl.textContent = "Reconnecting to the storyboard job; keeping your prompt active…";
+                }
+                // Render may briefly restart or shed a status request while a long
+                // model call is running. Keep the queued job alive through short
+                // outages instead of treating five missed polls as prompt failure.
+                if (consecutivePollErrors >= 30) {
                     throw new Error("NanoPro job status could not be reached. Please retry; your prompt was not rejected.");
                 }
                 continue;
