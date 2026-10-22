@@ -734,7 +734,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (data.content_type === "sql_query" || data.solution_sql) runPipelineSandboxVerification();
                 logPipelineStep("Video specialist workflow", "Storyboard, measured narration, motion timeline, and structural QA are ready. No app-wide agent swarm is claimed.");
 
-                const targetDur = Number(data.duration || data.max_duration_seconds || 45.0);
+                const targetDur = Number(data.duration || data.max_duration_seconds || 0);
                 if (["mr", "hi", "en"].includes(data.language)) {
                     sqlShortState.audioLang = data.language;
                     document.querySelectorAll(".sql-lang-btn").forEach(button => button.classList.remove("active"));
@@ -5616,7 +5616,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         // =========================================================================
         // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (full narration duration)
         // =========================================================================
-        const maxDur = sqlShortState.maxDuration || (p.duration || p.max_duration_seconds || 45.0);
+        const maxDur = sqlShortState.maxDuration || (p.duration || p.max_duration_seconds || 0);
         const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
         const isOutro = false;
         const outroStart = maxDur;
@@ -5694,7 +5694,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         let activeCueIndex = 0;
         if (sentenceCues.length) {
             const cueSpeechWeights = sentenceCues.map(cue => Math.max(1, String(cue.speech).trim().split(/\s+/).filter(Boolean).length));
-            const cuePauseWeights = sentenceCues.map((cue, index) => index === sentenceCues.length - 1 ? 0 : Math.max(0, Math.min(1.2, Number(cue.pause_after) || 0)) * 2.6);
+            const cuePauseWeights = sentenceCues.map((cue, index) => index === sentenceCues.length - 1 ? 0 : Math.max(0, Number(cue.pause_after) || 0) * 2.6);
             // Reserve only the requested teaching beats (usually after a result or
             // verification). The active visual holds its last frame during that beat.
             const cueWeights = cueSpeechWeights.map((words, index) => words + cuePauseWeights[index]);
@@ -6019,7 +6019,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function updatePlayerScrubberUI(t) {
         const sc = document.getElementById("sqlShortScrubber");
-        const maxT = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 45.0);
+        const maxT = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 0);
         if (sc) {
             sc.value = t;
             if (sc.max != maxT) sc.max = maxT.toString();
@@ -6104,7 +6104,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         } catch (_) {}
         const mp4 = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
         const webm = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
-        const duration = Math.max(1, Number(sqlShortState.maxDuration || sqlShortState.activeVideoSpec?.duration || 60));
+        const duration = Math.max(1, Number(sqlShortState.maxDuration || sqlShortState.activeVideoSpec?.duration || 0));
         const estimatedMB = ((9000000 + 192000) * duration / 8 / 1000000).toFixed(1);
         let storage = "Browser storage estimate unavailable";
         try {
@@ -6144,24 +6144,24 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const activeSpec = sqlShortState.activeVideoSpec || {};
         const measuredDuration = Number(activeSpec.duration || sqlShortState.maxDuration || 0);
-        const durationLimit = Number(activeSpec.max_duration_seconds || 60);
+        const durationLimit = Number(activeSpec.max_duration_seconds || measuredDuration || 0);
         const preflight = activeSpec.pre_render_validation;
         if (preflight && preflight.render_allowed === false) {
             alert(`Pre-render quality gate blocked this video: ${(preflight.critical_failures || []).join(", ") || "review required"}`);
             return;
         }
-        if (!durationSec && measuredDuration > durationLimit + 0.1) {
+        if (!durationSec && durationLimit > 0 && measuredDuration > durationLimit + 0.1) {
             alert(`Narration is ${measuredDuration.toFixed(1)}s, above the ${durationLimit.toFixed(0)}s limit. Shorten and regenerate it before export.`);
             return;
         }
         // A full export always retains the complete measured narration. Short clips
         // remain available only through the explicit quick-export action.
-        let totalDuration = durationSec || measuredDuration || 45.0;
+        let totalDuration = durationSec || measuredDuration || 0;
         if (!durationSec && Math.abs(totalDuration - measuredDuration) > 0.1) {
             alert("The full export duration must match the complete narration.");
             return;
         }
-        if (totalDuration > durationLimit + 0.1) {
+        if (durationLimit > 0 && totalDuration > durationLimit + 0.1) {
             alert(`Requested export is ${totalDuration.toFixed(1)}s, above the ${durationLimit.toFixed(0)}s limit.`);
             return;
         }

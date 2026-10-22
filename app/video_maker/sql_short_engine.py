@@ -218,7 +218,7 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
                 if camera_move not in camera_moves:
                     camera_move = "push_in"
                 try:
-                    pause_after = max(0.0, min(1.2, float(cue.get("pause_after", 0.0))))
+                    pause_after = max(0.0, float(cue.get("pause_after", 0.0)))
                 except (TypeError, ValueError):
                     pause_after = 0.0
                 simulated_action = str(cue.get("simulated_action") or "none").strip().lower()
@@ -246,6 +246,9 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
                     "focus_element": str(cue.get("focus_element") or "").strip()[:80],
                     "camera_move": camera_move,
                     "pause_after": pause_after,
+                    "voice_emotion": str(cue.get("voice_emotion") or "").strip().lower()[:24],
+                    "voice_pace": str(cue.get("voice_pace") or "").strip().lower()[:16],
+                    "voice_emphasis": str(cue.get("voice_emphasis") or "").strip()[:80],
                     "state_change": str(cue.get("state_change") or "").strip()[:140],
                     "expected_result": str(cue.get("expected_result") or "").strip()[:140],
                     "observed_result": str(cue.get("observed_result") or "").strip()[:140],
@@ -267,7 +270,7 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
     return {**scene, "sentence_cues": normalized_cues, "visual_data": visual_data, "visual_prompt": visual_prompt, "continuity": continuity.strip(), "overlay_items": normalized}
 
 
-def _extract_short_video_duration_limit(prompt: str, default: float = 60.0) -> float:
+def _extract_short_video_duration_limit(prompt: str, default: float = 0.0) -> float:
     """Read explicit max/target duration without mistaking per-scene timings for the limit."""
     unit = r"(?:seconds?|secs?|sec|s|सेकंड|सेकण्ड|सेकंड्स)"
     patterns = (
@@ -281,8 +284,8 @@ def _extract_short_video_duration_limit(prompt: str, default: float = 60.0) -> f
         if match:
             value = next((group for group in match.groups() if group), None)
             if value:
-                return min(60.0, max(1.0, float(value)))
-    return min(60.0, max(1.0, float(default)))
+                return max(1.0, float(value))
+    return max(0.0, float(default))
 
 
 def _extract_short_video_min_duration(prompt: str, default: float = 0.0) -> float:
@@ -295,15 +298,44 @@ def _extract_short_video_min_duration(prompt: str, default: float = 0.0) -> floa
         re.I,
     )
     if range_match:
-        return min(60.0, max(0.0, float(range_match.group(1))))
+        return max(0.0, float(range_match.group(1)))
     minimum_match = re.search(
         rf"\b(?:minimum|min)\s*(?:video\s*)?(?:duration|length)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*[- ]?{unit}\b",
         text,
         re.I,
     )
     if minimum_match:
-        return min(60.0, max(0.0, float(minimum_match.group(1))))
-    return min(60.0, max(0.0, float(default)))
+        return max(0.0, float(minimum_match.group(1)))
+    return max(0.0, float(default))
+
+
+def _build_prompt_guided_voice_script(stages: List[Dict[str, Any]], lang_key: str) -> str:
+    """Add supported TTS emotion cues and rhetorical pause beats without altering subtitles."""
+    tags = {"curious", "confident", "enthusiastic", "whispering", "thoughtful"}
+    emotion_tag = {"calm": "thoughtful", "urgent": "enthusiastic"}
+    pace_tag = {"energetic": "enthusiastic", "slow": "thoughtful"}
+    parts: List[str] = []
+    for stage in stages:
+        cues = stage.get("sentence_cues") if isinstance(stage.get("sentence_cues"), list) else []
+        speech = str(stage.get(f"speech_{lang_key}") or stage.get("speech") or stage.get("speech_en") or "").strip()
+        cue_speech = "".join("".join(str(cue.get("speech") or "").split()) for cue in cues if isinstance(cue, dict))
+        if not cues or cue_speech != "".join(speech.split()):
+            if speech:
+                parts.append(speech)
+            continue
+        for cue in cues:
+            if not isinstance(cue, dict):
+                continue
+            sentence = str(cue.get("speech") or "").strip()
+            if not sentence:
+                continue
+            emotion = str(cue.get("voice_emotion") or "").strip().lower()
+            pace = str(cue.get("voice_pace") or "").strip().lower()
+            tag = emotion if emotion in tags else emotion_tag.get(emotion) or pace_tag.get(pace, "")
+            pause = float(cue.get("pause_after") or 0)
+            pause_mark = " ... ..." if pause >= 1.25 else " ..." if pause >= 0.55 else ""
+            parts.append((f"[{tag}] " if tag else "") + sentence + pause_mark)
+    return "\n\n".join(parts)
 
 
 def _extract_requested_scene_count(prompt: str) -> Optional[int]:
@@ -3687,10 +3719,10 @@ class SqlShortVideoEngine:
             ai_resp = ""
             try:
                 from app.core.model_adapter import model_manager
-                target_seconds = _extract_short_video_duration_limit(text_input, default=60.0)
+                target_seconds = _extract_short_video_duration_limit(text_input, default=0.0)
                 minimum_seconds = _extract_short_video_min_duration(text_input)
                 authored_scene_count = len(re.findall(r"(?im)^\s*#{0,3}\s*\**\s*SCENE\s+\d+\b", text_input))
-                max_narration_words = max(24, int(target_seconds * 140 / 60))
+                max_narration_words = max(24, int(target_seconds * 140 / 60)) if target_seconds else 10000
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
                 lang_name = {
                     "mr": "Marathi in Devanagari script",
@@ -3710,15 +3742,15 @@ class SqlShortVideoEngine:
                     f"The input could be: a coding question, an architecture or theory topic, raw code, or a speech script.\n"
                     f"Your task: Design the visuals from the user's subject and directions. Do not default every video or scene to one branded composition, node-card diagram, medallion, orbit, or flowchart. Choose a fitting visual treatment independently for each scene: cinematic environment, split-screen, close-up inspection, spatial/3D scene, animated timeline, data table, code/worksheet, editorial typography, warning/recovery sequence, or connected architecture. Reuse a composition only when continuity or the prompt calls for it. Honor explicit scene-specific layouts and camera directions.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
-                    f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Keep narration concise and obey any explicit duration limit, while preserving natural speaking pace.\n"
+                    f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Honor an explicitly requested duration exactly within natural speaking pace. If duration is omitted, choose the runtime that fully explains the requested subject without filler and return it as max_duration_seconds; there is no built-in 60-second cap. Preserve scene pauses and pacing requested by the user.\n"
                     + (f"The user supplied a numbered storyboard with {authored_scene_count} scenes. Return exactly {authored_scene_count} scenes in that order; preserve each scene's narration, visual direction, labels, timing, pauses, and technical constraints. Do not merge scenes.\n" if authored_scene_count >= 2 else "")
-                    + (f"The user explicitly requested at least {minimum_seconds:g} seconds of video narration; develop enough accurate, useful explanation to meet that minimum without filler, and stay below {target_seconds:g} seconds.\n" if minimum_seconds else "")
+                    + (f"The user explicitly requested at least {minimum_seconds:g} seconds of video narration; develop enough accurate, useful explanation to meet that minimum without filler.\n" if minimum_seconds else "")
                     + f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, do not use them; choose prompt-specific cinematic, editorial, typographic, or metaphor-driven visuals instead.\n"
                     f"4. Return scene-authored visual_data with composition, a supported layout (title, split, pipeline, table, chips, warning, cards, or spatial), and up to 18 prompt-relevant elements with label, normalized x/y, shape and color, plus valid directed connectors. Choose layout and composition per scene based on the actual narrated action; adjacent scenes should visibly differ unless the user asks for continuity. Also return 1–3 concise overlay_items per scene, each with kind (label, code, or formula), content, and normalized x/y position. These are required readable on-screen words: use a short scene headline, metric, warning, record value, or takeaway, not empty text. Preserve all named people, devices, systems, environments and data needed to explain the scene. Keep relevant inactive components dimmed and visible. Medallion-flow is a reusable connection motif around active objects, not a mandatory full-screen layout. Do not turn every scene into cards or node diagrams.\n"
                     f"4a. For Oracle → AWS DMS → Snowflake scenarios, never assume a direct DMS-to-Snowflake target. Show a supported configured ingestion path such as AWS DMS → Amazon S3 → Snowpipe → Snowflake, or another explicitly named intermediary integration, and explain it. Do not invent a specific root cause unless the prompt supplies evidence.\n"
-                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles.\n"
+                    f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles. Infer fitting delivery from the prompt and assign per-sentence voice_emotion (curious, confident, enthusiastic, thoughtful, calm, urgent), voice_pace (slow, steady, energetic), voice_emphasis (short phrase to emphasize naturally in the spoken line), and pause_after (seconds); honor explicit user directions. Use these cues to guide narration and visual holds without putting direction labels into spoken/subtitle text.\n"
                     f"6. Split narration into sentence_cues in order. Each cue matches one spoken sentence and subtitle, with action, emphasis, interaction_step, component_state, focus_element, camera_move, pause_after, state_change, expected_result, observed_result, code fields, simulated_action, and fresh visual_data when needed. Cue speech must concatenate to exactly match scene speech. Use deterministic scene-time animation for seek and replay. Assign each scene a distinct primary animation suited to its action (for example packet orbit/flow, split reveal, magnifying scan, component morph, particle transfer, row-by-row table reveal, or verification pulse); describe it in action/state_change and use supported camera_move values. Match composition and camera movement to narration; do not repeat the same animation in every scene. When the prompt contains a code block, code snippet, command, configuration, or asks how code works, show the relevant code in a readable editor, type it progressively, then reveal an illustrative simulated output and a plain-language explanation tied to the code. Preserve the user's exact code where practical; otherwise show a short, accurate relevant excerpt. Set code_language, code_snippet, code_explanation, and code_output on the appropriate cue; set simulated_action to run_code for the run/reveal cue. Never execute code or imply output was actually run; if no output was supplied, label it as an illustrative expected output. For SQL, these fields may accompany sql_query and table_rows.\n\n"
-                    f"Output raw JSON with title, domain, content_type, max_duration_seconds when requested, and scenes. Each scene must include title, speech, speech_en, caption, sentence_cues, visual_data with composition/layout/elements/connectors, and overlay_items containing visible text. Preserve every user-requested scene and constraint. Never leave required overlay text empty.\n"
+                    f"Output raw JSON with title, domain, content_type, max_duration_seconds, and scenes. If the user specified duration, use that; otherwise choose an appropriate runtime based on complexity. Each scene must include title, speech, speech_en, caption, sentence_cues, visual_data with composition/layout/elements/connectors, and overlay_items containing visible text. Preserve every user-requested scene and constraint. Never leave required overlay text empty.\n"
                     f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","scenes":[{{"title":"Scene title","speech":"Narration in {lang_name}.","speech_en":"Narration in English.","caption":"Short on-screen caption","sentence_cues":[{{"speech":"One complete spoken sentence in {lang_name}.","speech_en":"Matching English subtitle sentence.","action":"reveal then transform","emphasis":"key concept","interaction_step":"introduce","component_state":"introducing","focus_element":"Oracle Database","camera_move":"push_in","pause_after":0.4,"state_change":"Current component shows an active CDC record","expected_result":"Source value 8000","observed_result":"Target value 10000","sql_query":"SELECT id, balance FROM accounts WHERE id = 42;","simulated_action":"run_query","table_rows":[["ID","BALANCE"],["42","8000"]],"visual_data":{{"composition":"Visual progression for this exact sentence","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Scene-specific establishing composition","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}]}}'
                 )
 
@@ -3765,7 +3797,10 @@ class SqlShortVideoEngine:
                         except Exception as compact_error:
                             log_event(f"Short narration compression notice: {compact_error}", level="DEBUG", component="SqlShortEngine")
                     matched = parsed
-                    matched["max_duration_seconds"] = target_seconds
+                    if target_seconds:
+                        matched["max_duration_seconds"] = target_seconds
+                    else:
+                        matched["max_duration_seconds"] = max(0.0, float(matched.get("max_duration_seconds") or 0))
                     matched["id"] = "custom_ai_scenario"
                     matched["storyboard_source"] = "online_model"
                     matched["question"] = text_input
@@ -3804,7 +3839,10 @@ class SqlShortVideoEngine:
                     retry_scenes = [_validate_scene_visual_contract(scene) for scene in retry_scenes]
                     retry_parsed["scenes"] = retry_scenes
                     matched = retry_parsed
-                    matched["max_duration_seconds"] = target_seconds
+                    if target_seconds:
+                        matched["max_duration_seconds"] = target_seconds
+                    else:
+                        matched["max_duration_seconds"] = max(0.0, float(matched.get("max_duration_seconds") or 0))
                     matched.setdefault("content_type", content_type)
                     matched["id"] = "custom_ai_scenario"
                     matched["storyboard_source"] = "online_model"
@@ -3842,6 +3880,7 @@ class SqlShortVideoEngine:
         full_narration = "\n\n".join(narration_parts)
         if not full_narration:
             full_narration = matched.get(f"explanation_{lang_key}") or matched.get("explanation_mr") or matched.get("question", "")
+        full_voice_script = _build_prompt_guided_voice_script(stages, lang_key) or full_narration
 
         # Synthesize regional audio
         audio_url = ""
@@ -3850,13 +3889,13 @@ class SqlShortVideoEngine:
             import hashlib
             from app.core.neural_tts import neural_tts
             preset_id = matched.get("id", "custom")
-            narration_hash = hashlib.md5(full_narration.encode('utf-8')).hexdigest()[:10]
+            narration_hash = hashlib.md5(full_voice_script.encode('utf-8')).hexdigest()[:10]
             if str(preset_id).startswith("custom") or preset_id == "custom":
                 custom_filename = f"voice_custom_{narration_hash}_{lang_key}.mp3"
             else:
                 custom_filename = f"voice_{preset_id}_{narration_hash}_{lang_key}.mp3"
             tts_res = await neural_tts.synthesize_async(
-                text=full_narration,
+                text=full_voice_script,
                 language=lang_key,
                 custom_filename=custom_filename
             )
@@ -3911,13 +3950,14 @@ class SqlShortVideoEngine:
                     cue["interaction_step"] = _infer_interaction_step(cue)
                     cue["component_state"] = state_for_step.get(cue["interaction_step"], "highlighted")
             full_narration = "\n\n".join(condensed_speeches)
-            narration_hash = hashlib.md5(full_narration.encode("utf-8")).hexdigest()[:10]
+            full_voice_script = _build_prompt_guided_voice_script(stages, lang_key) or full_narration
+            narration_hash = hashlib.md5(full_voice_script.encode("utf-8")).hexdigest()[:10]
             if str(preset_id).startswith("custom") or preset_id == "custom":
                 custom_filename = f"voice_custom_{narration_hash}_{lang_key}.mp3"
             else:
                 custom_filename = f"voice_{preset_id}_{narration_hash}_{lang_key}.mp3"
             tts_res = await neural_tts.synthesize_async(
-                text=full_narration,
+                text=full_voice_script,
                 language=lang_key,
                 custom_filename=custom_filename,
             )

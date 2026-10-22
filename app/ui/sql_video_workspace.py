@@ -576,7 +576,7 @@ def get_sql_video_workspace_html() -> str:
                 <!-- Player Transport Controls -->
                 <div style="width: 100%; max-width: 340px; margin-top: 12px; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 10px; padding: 10px;">
                     <!-- Timeline Scrubber -->
-                    <input type="range" id="sqlShortScrubber" min="0" max="60" value="0" step="0.1" oninput="seekSqlShortPlayer(this.value)" style="width: 100%; accent-color: #38BDF8; cursor: pointer; margin-bottom: 8px;" />
+                    <input type="range" id="sqlShortScrubber" min="0" max="0" value="0" step="0.1" oninput="seekSqlShortPlayer(this.value)" style="width: 100%; accent-color: #38BDF8; cursor: pointer; margin-bottom: 8px;" />
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; gap: 6px;">
