@@ -3283,7 +3283,7 @@ async def api_cloud_trends_career_roadmap(lang: str = "en"):
 @app.get('/api/dms/overview')
 async def api_dms_overview():
     from app.core.aws_dms_manager import aws_dms_manager
-    return JSONResponse({"status": "success", **aws_dms_manager.get_overview()})
+    return JSONResponse({"status": "success", **aws_dms_manager.get_dms_overview()})
 
 @app.post('/api/dms/tasks/{task_id}/start')
 async def api_dms_start_task(task_id: str):

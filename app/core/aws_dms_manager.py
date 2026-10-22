@@ -101,15 +101,39 @@ class AwsDmsManager:
         return None
 
     def _client(self):
-        """Return an AWS DMS client using the standard boto3 role/credential chain."""
+        """Return an AWS DMS client using env, NanoPro Vault, or the standard role chain."""
         try:
             import boto3
         except ImportError as exc:
             raise RuntimeError("boto3 is required for live AWS DMS operations") from exc
+        access_key = os.environ.get("AWS_ACCESS_KEY_ID", "").strip()
+        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "").strip()
         region = os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION")
+
+        # NanoPro already stores AWS credentials in its encrypted integration vault.
+        # Use the same record as the AWS/S3 connection test when env credentials
+        # are not present; never return or log the secret itself.
+        if not (access_key and secret_key):
+            try:
+                from app.core.connection_manager import connection_manager
+                cfg = connection_manager.get_connection_config("AWS_S3_DATA_LAKE", mask=False) or {}
+                vault_access = (cfg.get("username") or "").strip()
+                vault_secret = (cfg.get("secret_value") or "").strip()
+                metadata = cfg.get("metadata") or {}
+                region = region or metadata.get("region") or ""
+                if vault_access and vault_secret:
+                    access_key, secret_key = vault_access, vault_secret
+            except Exception as exc:
+                log_event(f"AWS Vault credential lookup unavailable: {type(exc).__name__}", component="AwsDmsManager", level="WARNING")
+
+        if access_key and not secret_key or secret_key and not access_key:
+            raise RuntimeError("AWS credential pair is incomplete in environment and NanoPro Vault")
         if not region:
-            raise RuntimeError("AWS_DEFAULT_REGION or AWS_REGION is required")
-        return boto3.client("dms", region_name=region)
+            raise RuntimeError("AWS_DEFAULT_REGION, AWS_REGION, or the AWS_S3_DATA_LAKE Vault region is required")
+        client_args = {"region_name": region}
+        if access_key and secret_key:
+            client_args.update(aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+        return boto3.client("dms", **client_args)
 
     def get_dms_overview(self) -> Dict[str, Any]:
         """Returns comprehensive status of AWS DMS infrastructure, endpoints, and replication tasks."""
