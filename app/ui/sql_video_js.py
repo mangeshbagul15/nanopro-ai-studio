@@ -36,7 +36,10 @@ def get_sql_video_js() -> str:
         recordedChunks: [],
         audioUrl: "/audio/preset_sql_q1_second_highest_salary_mr.mp3",
         motionBgType: "quantum_nebula",
-        enable3DMotionEngine: true
+        enable3DMotionEngine: true,
+        renderScale: 1,
+        lastSoundCueKey: "",
+        soundEffectEvents: 0
     };
 
     // Dynamic duration calibration & proportional stage scaling for complete narration
@@ -1119,6 +1122,9 @@ SECOND_HIGHEST_SALARY: 70000`;
        3D HIGH-TECH GLASSMORPHISM & DYNAMIC MOTION VECTOR ENGINE
        ========================================================================== */
     let _sqlCyberAudioCtx = null;
+    let _sqlSfxAudioCtx = null;
+    let _sqlSfxBus = null;
+    let _sqlSfxDestination = null;
     function playCyberBleep(freq = 880, dur = 0.08) {
         try {
             if (!_sqlCyberAudioCtx) {
@@ -1147,6 +1153,89 @@ SECOND_HIGHEST_SALARY: 70000`;
             osc.start();
             osc.stop(_sqlCyberAudioCtx.currentTime + dur);
         } catch (e) {}
+    }
+
+    function ensureSqlSfxAudio(preferredContext = null, preferredDestination = null) {
+        if (_sqlSfxAudioCtx && preferredContext && _sqlSfxAudioCtx !== preferredContext) {
+            const staleContext = _sqlSfxAudioCtx;
+            try { _sqlSfxBus?.disconnect(); } catch (_) {}
+            _sqlSfxAudioCtx = null; _sqlSfxBus = null; _sqlSfxDestination = null;
+            try { staleContext.close().catch(() => {}); } catch (_) {}
+        }
+        if (!_sqlSfxAudioCtx || _sqlSfxAudioCtx.state === "closed") {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            _sqlSfxAudioCtx = preferredContext || new AudioCtx();
+            _sqlSfxBus = _sqlSfxAudioCtx.createGain();
+            _sqlSfxDestination = preferredDestination || _sqlSfxAudioCtx.createMediaStreamDestination();
+            _sqlSfxBus.gain.value = 0.7;
+            _sqlSfxBus.connect(_sqlSfxDestination);
+            _sqlSfxBus.connect(_sqlSfxAudioCtx.destination);
+            window._sqlVideoSfxRoute = { audioCtx: _sqlSfxAudioCtx, destination: _sqlSfxDestination };
+            if (window.nanoProRegisterAudioContext) window.nanoProRegisterAudioContext(_sqlSfxAudioCtx);
+        } else if (preferredDestination && _sqlSfxDestination !== preferredDestination) {
+            try { _sqlSfxBus.disconnect(); } catch (_) {}
+            _sqlSfxDestination = preferredDestination;
+            _sqlSfxBus.connect(_sqlSfxDestination);
+            _sqlSfxBus.connect(_sqlSfxAudioCtx.destination);
+            window._sqlVideoSfxRoute = { audioCtx: _sqlSfxAudioCtx, destination: _sqlSfxDestination };
+        }
+        return { audioCtx: _sqlSfxAudioCtx, destination: _sqlSfxDestination, bus: _sqlSfxBus };
+    }
+
+    function playSqlSemanticSound(soundSpec, interactionStep = "") {
+        if (!sqlShortState.isPlaying && !sqlShortState.isExporting) return;
+        const route = ensureSqlSfxAudio();
+        if (!route) return false;
+        const ctx = route.audioCtx;
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
+        const spec = soundSpec && typeof soundSpec === "object" ? soundSpec : { description: String(soundSpec || "") };
+        const description = `${spec.type || ""} ${spec.description || ""} ${interactionStep}`.toLowerCase();
+        if (/\b(silence|silent|none|no sound)\b/.test(description)) return false;
+        const now = ctx.currentTime + 0.012;
+        const rawIntensity = Number(spec.intensity);
+        const intensity = Number.isFinite(rawIntensity) ? Math.max(0, Math.min(1, rawIntensity)) : 0.45;
+        if (intensity === 0) return false;
+        let kind = "soft";
+        if (/connect|link|join|attach|socket|handshake/.test(description)) kind = "connect";
+        else if (/transfer|move|flow|travel|packet|send|swoosh|slide|morph|zoom/.test(description)) kind = "move";
+        else if (/open|reveal|expand|unfold|launch/.test(description)) kind = "open";
+        else if (/close|fold|collapse|dismiss/.test(description)) kind = "close";
+        else if (/success|verify|complete|approved|ready/.test(description)) kind = "success";
+        else if (/fail|warning|error|blocked|alert/.test(description)) kind = "warning";
+        else if (/type|key|click|tap|press/.test(description)) kind = "click";
+        else if (/recover|retry|restore|repair/.test(description)) kind = "recover";
+        const tone = (startHz, endHz, duration, wave, gain, delay = 0) => {
+            const osc = ctx.createOscillator(), amp = ctx.createGain();
+            const start = now + delay, end = start + duration;
+            osc.type = wave; osc.frequency.setValueAtTime(startHz, start);
+            if (endHz !== startHz) osc.frequency.exponentialRampToValueAtTime(Math.max(24, endHz), end);
+            amp.gain.setValueAtTime(0.0001, start); amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * intensity), start + Math.min(0.018, duration * 0.22));
+            amp.gain.exponentialRampToValueAtTime(0.0001, end);
+            osc.connect(amp); amp.connect(route.bus); osc.start(start); osc.stop(end + 0.01);
+        };
+        const noise = (duration, gain, filterType, lowHz, highHz, delay = 0) => {
+            const frames = Math.max(1, Math.floor(ctx.sampleRate * duration));
+            const buffer = ctx.createBuffer(1, frames, ctx.sampleRate), channel = buffer.getChannelData(0);
+            for (let i = 0; i < frames; i++) channel[i] = (Math.random() * 2 - 1) * (1 - i / frames);
+            const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), amp = ctx.createGain();
+            const start = now + delay, end = start + duration;
+            source.buffer = buffer; filter.type = filterType; filter.frequency.setValueAtTime(lowHz, start);
+            filter.frequency.exponentialRampToValueAtTime(Math.max(25, highHz), end);
+            amp.gain.setValueAtTime(0.0001, start); amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * intensity), start + 0.012);
+            amp.gain.exponentialRampToValueAtTime(0.0001, end);
+            source.connect(filter); filter.connect(amp); amp.connect(route.bus); source.start(start); source.stop(end + 0.01);
+        };
+        if (kind === "connect") { tone(520, 880, 0.16, "sine", 0.11); tone(1040, 760, 0.2, "sine", 0.07, 0.11); noise(0.045, 0.045, "highpass", 2100, 800, 0.04); }
+        else if (kind === "move") { tone(760, 260, 0.22, "triangle", 0.075); tone(220, 440, 0.16, "sine", 0.045, 0.07); noise(0.24, 0.07, "bandpass", 420, 1800); }
+        else if (kind === "open") { tone(320, 720, 0.24, "sine", 0.075); tone(960, 760, 0.12, "sine", 0.035, 0.14); noise(0.2, 0.06, "bandpass", 300, 1500); }
+        else if (kind === "close") { tone(680, 280, 0.16, "triangle", 0.065); noise(0.08, 0.08, "lowpass", 700, 140); }
+        else if (kind === "success") { tone(660, 880, 0.16, "sine", 0.085); tone(990, 1320, 0.2, "sine", 0.07, 0.12); }
+        else if (kind === "warning") { tone(250, 170, 0.24, "triangle", 0.12); tone(185, 185, 0.17, "sine", 0.06, 0.12); }
+        else if (kind === "recover") { tone(300, 620, 0.23, "triangle", 0.075); tone(620, 820, 0.18, "sine", 0.06, 0.16); }
+        else if (kind === "click") { tone(1150, 720, 0.045, "sine", 0.04); noise(0.035, 0.065, "highpass", 3500, 1600); }
+        else { tone(480, 560, 0.1, "sine", 0.035); }
+        return true;
     }
 
     // 1. Draw 3D Frosted Crystal Glass Tile with Specular Rim & Depth Layering
@@ -4022,7 +4111,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                             id: String(item.label || ""), label: String(item.label || ""),
                             detail: String(item.detail || ""), shape: String(item.shape || "orb"),
                             color: String(item.color || "#38BDF8"), glyph: String(item.glyph || item.icon || ""),
-                            x: item.x, y: item.y, motion: String(item.motion || ""),
+                            x: item.x, y: item.y, depth: item.depth, motion: String(item.motion || ""),
                         })),
                         relationships: Array.isArray(visual.connectors) ? visual.connectors : (stage?.visual_data?.connectors || []),
                     },
@@ -4602,7 +4691,14 @@ SECOND_HIGHEST_SALARY: 70000`;
                 x = count === 1 ? W / 2 : W * (0.28 + col * 0.44);
                 y = count <= 2 ? (top + bottom) / 2 : top + row * Math.min(250, (bottom - top) / Math.max(1, Math.ceil(count / 2) - 1));
             }
-            return { x, y, node };
+            const depthName = String(node.depth || "").toLowerCase();
+            let depth = Number(node.depth);
+            if (!Number.isFinite(depth)) depth = /foreground|front|near/.test(depthName) ? 0.65 : /background|back|far/.test(depthName) ? -0.5 : 0;
+            depth = Math.max(-1, Math.min(1, depth));
+            const parallax = depth * 22;
+            x += Math.sin(t * 0.32 + i * 0.6) * parallax;
+            y += Math.cos(t * 0.24 + i * 0.45) * parallax * 0.55;
+            return { x, y, node, depth };
         });
 
         ctx.save();
@@ -4641,58 +4737,19 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
         });
 
-        points.forEach(({ x, y, node }, i) => {
+        points.sort((left, right) => left.depth - right.depth);
+        points.forEach(({ x, y, node, depth }, i) => {
             const color = /^#[0-9a-f]{6}$/i.test(node.color || "") ? node.color : (i % 2 ? "#A78BFA" : "#38BDF8");
             const pulseRate = motion.includes("pulse") || motion.includes("beat") ? 4.2 : 2.4;
             const pulse = 1 + Math.sin(t * pulseRate + i * 1.7) * 0.055;
-            const radius = (nodes.length > 6 ? 34 : Math.min(78, 54 + String(node.label || node.name).length * 0.45)) * pulse;
+            const radius = (nodes.length > 6 ? 34 : Math.min(78, 54 + String(node.label || node.name).length * 0.45)) * pulse * (1 + depth * 0.12);
             const shape = String(node.shape || "orb").toLowerCase();
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(1, 0.82);
             ctx.shadowColor = color;
             ctx.shadowBlur = 32;
-            if (shape.includes("ring") || shape.includes("loop")) {
-                ctx.beginPath();
-                ctx.ellipse(0, 0, radius, radius * 0.55, Math.sin(t + i) * 0.3, 0, Math.PI * 2);
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 10;
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.arc(0, 0, radius * 0.62, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(8, 15, 35, 0.82)";
-                ctx.fill();
-            } else if (shape.includes("block") || shape.includes("cube") || shape.includes("card")) {
-                ctx.beginPath();
-                ctx.roundRect(-radius, -radius * 0.72, radius * 2, radius * 1.44, 18);
-                ctx.fillStyle = color;
-                ctx.globalAlpha *= 0.74;
-                ctx.fill();
-                ctx.globalAlpha /= 0.74;
-                ctx.strokeStyle = "#FFFFFF";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(-radius, -radius * 0.72);
-                ctx.lineTo(-radius * 0.62, -radius * 1.05);
-                ctx.lineTo(radius * 1.38, -radius * 1.05);
-                ctx.lineTo(radius, -radius * 0.72);
-                ctx.closePath();
-                ctx.fillStyle = color;
-                ctx.fill();
-            } else {
-                ctx.beginPath();
-                ctx.arc(0, 0, radius, 0, Math.PI * 2);
-                const glow = ctx.createRadialGradient(-radius * 0.28, -radius * 0.32, 5, 0, 0, radius);
-                glow.addColorStop(0, "#FFFFFF");
-                glow.addColorStop(0.2, color);
-                glow.addColorStop(1, "rgba(8, 15, 35, 0.96)");
-                ctx.fillStyle = glow;
-                ctx.fill();
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 3;
-                ctx.stroke();
-            }
+            drawPromptSemanticShape(ctx, shape, radius, color, t + i * 0.2, node.glyph || node.icon);
             ctx.shadowBlur = 0;
             ctx.restore();
             ctx.textAlign = "center";
@@ -5719,10 +5776,26 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    function setSqlCanvasRenderScale(scale) {
+        const canvas = document.getElementById("sqlShortCanvas");
+        if (!canvas) return false;
+        const nextScale = scale >= 2 ? 2 : 1;
+        if (canvas.width !== 1080 * nextScale || canvas.height !== 1920 * nextScale) {
+            canvas.width = 1080 * nextScale;
+            canvas.height = 1920 * nextScale;
+        }
+        sqlShortState.renderScale = nextScale;
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.setTransform(nextScale, 0, 0, nextScale, 0, 0);
+        return !!ctx;
+    }
+
     function renderSqlShortFrame(t) {
         const canvas = document.getElementById("sqlShortCanvas");
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
+        const renderScale = Math.max(1, Number(sqlShortState.renderScale) || 1);
+        ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
         const W = 1080;
         const H = 1920;
         const p = sqlShortState.activePreset;
@@ -5770,12 +5843,6 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
-
-        // Audio Chime on Stage Advance
-        if (sqlShortState.lastBleepScene !== currentStageIdx && sqlShortState.isPlaying) {
-            sqlShortState.lastBleepScene = currentStageIdx;
-            playCyberBleep(880 + (currentStageIdx * 60), 0.08);
-        }
 
         let stageProg = 0.5;
         let stageAlpha = 1.0;
@@ -5829,6 +5896,27 @@ SECOND_HIGHEST_SALARY: 70000`;
                     break;
                 }
                 cueCursor = cueEnd;
+            }
+        }
+        const interactionStep = String(activeCue?.interaction_step || "").toLowerCase();
+        const sceneSound = activeStage?.visual_data?.sound_effect;
+        const soundSpec = activeCue?.sound_effect || ((!activeCue || activeCueIndex === 0) ? sceneSound : "");
+        const simulatedAction = String(activeCue?.simulated_action || "").toLowerCase();
+        const describedAction = String(activeCue?.action || "").toLowerCase();
+        const actionSound = ["connect", "transfer", "failure", "recover", "reprocess", "output", "verify", "complete"].includes(interactionStep)
+            || (activeCue && simulatedAction && simulatedAction !== "none")
+            || /open|close|move|slide|connect|transfer|type|click|tap|expand|collapse|morph|land|impact/.test(describedAction);
+        const soundCueKey = activeCue ? `${activeStageIndex}:${activeCueIndex}` : `${activeStageIndex}:scene`;
+        const soundProgress = activeCue ? cueProgress : stageProg;
+        const modelProgress = Number(soundSpec && typeof soundSpec === "object" ? soundSpec.at_progress : NaN);
+        const triggerProgress = Number.isFinite(modelProgress) ? Math.max(0, Math.min(1, modelProgress))
+            : ({ connect: 0.12, transfer: 0.08, failure: 0.54, recover: 0.12, reprocess: 0.12, output: 0.78, verify: 0.82, complete: 0.9 }[interactionStep] ?? 0.04);
+        if ((soundSpec || actionSound) && soundProgress >= triggerProgress && soundCueKey !== sqlShortState.lastSoundCueKey && (sqlShortState.isPlaying || sqlShortState.isExporting)) {
+            sqlShortState.lastSoundCueKey = soundCueKey;
+            let soundPlayed = false;
+            try { soundPlayed = playSqlSemanticSound(soundSpec || activeCue?.action || simulatedAction || interactionStep, interactionStep); } catch (_) {}
+            if (soundPlayed) {
+                sqlShortState.soundEffectEvents = (Number(sqlShortState.soundEffectEvents) || 0) + 1;
             }
         }
         const sceneVisualRendered = drawPromptVisualPlan(ctx, W, H, activeStage, activeCue ? cueProgress : stageProg, t, activeCue && activeCue.visual_data, activeCueIndex, activeCue);
@@ -6222,7 +6310,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         const mp4 = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
         const webm = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
         const duration = Math.max(1, Number(sqlShortState.maxDuration || sqlShortState.activeVideoSpec?.duration || 0));
-        const estimatedMB = ((9000000 + 192000) * duration / 8 / 1000000).toFixed(1);
+        const exportScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
+        const selectedVideoBitrate = exportScale === 2 ? 36000000 : 9000000;
+        const estimatedMB = ((selectedVideoBitrate + 192000) * duration / 8 / 1000000).toFixed(1);
         let storage = "Browser storage estimate unavailable";
         try {
             const estimate = navigator.storage && await navigator.storage.estimate();
@@ -6283,6 +6373,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             return;
         }
         totalDuration = Math.max(1, totalDuration);
+        const resolutionScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
+        const outputWidth = 1080 * resolutionScale;
+        const outputHeight = 1920 * resolutionScale;
+        const videoBitrate = resolutionScale === 2 ? 36000000 : 9000000;
 
         const mp4Types = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"];
         let mimeType = mp4Types.find(type => MediaRecorder.isTypeSupported(type)) || "";
@@ -6326,7 +6420,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
         }
         if (btn) btn.disabled = true;
-        if (btnLabel) btnLabel.innerText = `⏳ Rendering 9:16 Reel (${Math.round(totalDuration)}s)...`;
+        if (btnLabel) btnLabel.innerText = `⏳ Rendering ${resolutionScale === 2 ? "4K" : "1080p"} 9:16 Reel (${Math.round(totalDuration)}s)...`;
 
         // Audio Multiplexing Setup
         let audioTracks = [];
@@ -6350,6 +6444,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (audioCtx.state === 'suspended') {
                     await audioCtx.resume();
                 }
+                const sfxRoute = ensureSqlSfxAudio(audioCtx, audioRoute.destination);
+                if (sfxRoute && sfxRoute.audioCtx.state === "suspended") await sfxRoute.audioCtx.resume();
                 audioTracks = audioRoute.destination.stream.getAudioTracks().map(track => track.clone());
             } catch(e) {
                 if (saveWritable) await saveWritable.abort().catch(() => {});
@@ -6371,8 +6467,24 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         const exportFrameRate = 30;
-        const videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks();
+        let videoTracks = [];
+        try {
+            if (!setSqlCanvasRenderScale(resolutionScale)) throw new Error("Canvas resolution could not be allocated.");
+            renderSqlShortFrame(sqlShortState.currentTime);
+            videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks();
+            if (!videoTracks.length) throw new Error("The browser did not create a video capture track.");
+        } catch (error) {
+            setSqlCanvasRenderScale(1);
+            renderSqlShortFrame(sqlShortState.currentTime);
+            if (saveWritable) await saveWritable.abort().catch(() => {});
+            audioTracks.forEach(track => { try { track.stop(); } catch (_) {} });
+            if (pDesc) pDesc.innerText = `${outputWidth}×${outputHeight} canvas setup failed: ${error.message}. Try 1080p or a recent desktop browser.`;
+            if (btn) btn.disabled = false;
+            if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+            return;
+        }
         const combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
+        const videoTrackSettings = videoTracks[0]?.getSettings ? videoTracks[0].getSettings() : {};
         if (window.nanoProRegisterMediaStream) {
             window.nanoProRegisterMediaStream(combinedStream);
         }
@@ -6386,7 +6498,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         try {
             recorder = new MediaRecorder(combinedStream, {
                 mimeType,
-                videoBitsPerSecond: 9000000,
+                videoBitsPerSecond: videoBitrate,
                 audioBitsPerSecond: 192000
             });
         } catch (error) {
@@ -6395,6 +6507,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             if (btn) btn.disabled = false;
             if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
             if (pDesc) pDesc.innerText = `This browser could not start local ${outputExtension.toUpperCase()} encoding: ${error.message}`;
+            setSqlCanvasRenderScale(1);
+            renderSqlShortFrame(sqlShortState.currentTime);
             return;
         }
 
@@ -6445,7 +6559,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }
                 const audioDuration = Number(audioEl && audioEl.duration);
                 const postChecks = [
-                    { name: "Canvas format", status: canvas.width === 1080 && canvas.height === 1920 ? "PASSED" : "FAILED", detail: `${canvas.width}×${canvas.height} pixels.` },
+                    { name: "Canvas format", status: canvas.width === outputWidth && canvas.height === outputHeight && (!videoTrackSettings.width || videoTrackSettings.width === outputWidth) && (!videoTrackSettings.height || videoTrackSettings.height === outputHeight) ? "PASSED" : "FAILED", detail: `Canvas ${canvas.width}×${canvas.height}; capture ${videoTrackSettings.width || "unknown"}×${videoTrackSettings.height || "unknown"}; requested ${outputWidth}×${outputHeight}.` },
+                    { name: "Model-directed sound mix", status: window._sqlVideoSfxRoute?.destination === window._sqlVideoAudioRoute?.destination ? "PASSED" : "FAILED", detail: `${sqlShortState.soundEffectEvents || 0} synchronized sound cues routed into the narration audio track.` },
                     { name: "Narration duration", status: Number.isFinite(audioDuration) && Math.abs(audioDuration - totalDuration) <= 0.75 ? "PASSED" : "FAILED", detail: `Audio ${Number.isFinite(audioDuration) ? audioDuration.toFixed(2) : "unknown"}s; render ${totalDuration.toFixed(2)}s.` },
                     { name: "Captured tracks", status: videoTracks.length > 0 && audioTracks.length > 0 ? "PASSED" : "FAILED", detail: `Video tracks ${videoTracks.length}; voice tracks ${audioTracks.length}.` },
                     { name: "Recorded frames", status: frameCount >= totalFrames - 1 ? "PASSED" : "FAILED", detail: `${frameCount} of ${totalFrames} expected frames.` },
@@ -6485,6 +6600,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (pFill) pFill.style.width = "100%";
                 if (pPctText) pPctText.innerText = "100%";
                 if (pDesc) pDesc.innerText = `${outputExtension.toUpperCase()} audio-video is ready on this device. Post-render QA: ${postChecks.filter(check => check.status === "PASSED").length} passed${postChecks.some(check => check.status === "NOT_RUN") ? "; direct-save byte count not available" : ""}.`;
+                const qualityEl = document.getElementById("videoReadyQuality");
+                if (qualityEl) qualityEl.innerText = `${outputWidth}×${outputHeight} · 9:16 · narration + synchronized scene sound · local export`;
                 if (badgeEl) {
                     badgeEl.innerText = `Local ${outputExtension.toUpperCase()} ready`;
                     badgeEl.style.color = "#10B981";
@@ -6516,11 +6633,15 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }
             } finally {
                 sqlShortState.isExporting = false;
+                setSqlCanvasRenderScale(1);
+                renderSqlShortFrame(sqlShortState.currentTime);
                 if (btn) btn.disabled = false;
                 if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
             }
         };
 
+        sqlShortState.lastSoundCueKey = "";
+        sqlShortState.soundEffectEvents = 0;
         sqlShortState.isExporting = true;
         recorder.start(1000);
         if (audioEl && audioEl.src) {

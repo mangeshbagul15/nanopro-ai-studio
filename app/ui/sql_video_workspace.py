@@ -619,6 +619,14 @@ def get_sql_video_workspace_html() -> str:
                         <div id="sqlVideoDeviceStatus" role="status" aria-live="polite" style="margin-top:7px;color:#94A3B8;font-size:10px;line-height:1.55;">Local browser rendering uses this device's CPU and browser-managed graphics/encoder. Exact GPU use, physical free disk space, and installed RAM may be hidden by the browser.</div>
                     </div>
 
+                    <label for="sqlExportResolution" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(7,11,22,.72);border:1px solid #1E2D4A;border-radius:8px;padding:10px;margin-bottom:12px;color:#CBD5E1;font-size:11px;">
+                        <span><strong style="color:#BAE6FD;">📺 Export resolution</strong><br><span style="color:#94A3B8;">4K uses more local memory, CPU and disk space</span></span>
+                        <select id="sqlExportResolution" aria-label="Video export resolution" style="background:#0B1120;color:#F8FAFC;border:1px solid #334155;border-radius:6px;padding:7px 9px;font-size:11px;">
+                            <option value="1080">1080p · 1080×1920</option>
+                            <option value="4k">4K UHD · 2160×3840</option>
+                        </select>
+                    </label>
+
                     <!-- Direct Download Button Group -->
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px 10px; font-weight: 900; font-size: 12px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35); white-space: normal; line-height: 1.3; text-align: center; word-break: break-word; box-sizing: border-box;">
@@ -655,7 +663,7 @@ def get_sql_video_workspace_html() -> str:
                     <div id="videoReadyCelebration" style="display:none; background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25)); border: 2px solid #10B981; border-radius: 8px; padding: 14px; text-align: center; margin-top: 14px; animation: popIn 0.3s ease-out;">
                         <div style="font-size: 26px;">🎉 🏆 🎬</div>
                         <div style="font-size: 14px; font-weight: 800; color: #10B981; margin-top: 4px;">व्हिडिओ यशस्वीरित्या तयार झाला!</div>
-                        <div style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">100% वॉटरमार्क-फ्री • ऑडिओ इंटिग्रेटेड • 1080x1920 (9:16) डाऊनलोड पूर्ण झाले!</div>
+                        <div id="videoReadyQuality" style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">Watermark-free • 9:16 • selected resolution</div>
                         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                             <a id="btnDownloadAgain" href="#" class="btn btn-primary" style="font-size: 11px; padding: 7px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #000; font-weight: 800; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
                                 <span>📥 पुन्हा सेव्ह करा (Save File)</span>
