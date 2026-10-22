@@ -74,7 +74,7 @@ class SMTPClient:
             if item.get("credential_type") == "email" and item.get("secret_value"):
                 return item["secret_value"].strip()
                 
-        return "agunjgvexwcjudbx" 
+        return None
 
     def save_configuration(
         self,
@@ -1140,13 +1140,14 @@ class SMTPClient:
         res_smtp = self.test_connection(timeout=3.0)
 
         # Test Telegram fallback
-        telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN") or "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
+        telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN") or ""
         tg_ok = False
-        try:
-            tg_resp = requests.get(f"https://api.telegram.org/bot{telegram_token}/getMe", timeout=3.0)
-            tg_ok = tg_resp.status_code == 200 and tg_resp.json().get("ok", False)
-        except Exception:
-            tg_ok = False
+        if telegram_token:
+            try:
+                tg_resp = requests.get(f"https://api.telegram.org/bot{telegram_token}/getMe", timeout=3.0)
+                tg_ok = tg_resp.status_code == 200 and tg_resp.json().get("ok", False)
+            except Exception:
+                tg_ok = False
 
         tiers = [
             {"tier": 1, "name": "Google Gmail REST API", "protocol": "HTTPS Port 443", "quota": "Standard", "status": res_gmail_api.get("status"), "ready": res_gmail_api.get("success", False)},

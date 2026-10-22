@@ -16,7 +16,9 @@ import time
 import json
 import subprocess
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from calendar import monthrange
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
@@ -30,113 +32,110 @@ class AutomationScheduler:
         self._worker_thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self._running_jobs: Dict[str, Dict[str, Any]] = {}
-        self._ensure_sample_tasks_seeded()
+        self._disable_legacy_demo_tasks()
+        self._ensure_pipeline_tasks_seeded()
 
-    def _ensure_sample_tasks_seeded(self):
-        """Seeds default automation tasks if table is empty so user immediately has working examples."""
+    def _disable_legacy_demo_tasks(self):
+        """Disable only the two known auto-seeded inline scripts that print mock transfer success."""
+        demo_markers = {
+            "Oracle XE Staging Buffer Sync": "248 records extracted.",
+            "Weekly Studio Database Vacuum & Ledger Backup": "32 tables verified.",
+        }
         try:
-            tasks = db.list_automation_tasks()
-            if not tasks:
-                now = datetime.now()
-                # 1. Daily Snowflake Data Warehouse Health Check
+            for task in db.list_automation_tasks():
+                marker = demo_markers.get(task.get("name"))
+                if task.get("is_enabled") and task.get("task_type") == "python" and marker and marker in task.get("script_content", ""):
+                    db.update_automation_task(task["id"], {
+                        "is_enabled": 0, "status": "Disabled", "last_status": "Blocked: demo placeholder",
+                        "next_run_at": "",
+                        "description": "Disabled automatically: this legacy example only printed mock success and performed no data transfer. Configure the real Oracle/DMS/S3/Snowflake pipeline instead."
+                    })
+                    log_event(f"Disabled legacy mock scheduler task [{task['name']}].", level="WARNING", component="AutomationScheduler")
+        except Exception as exc:
+            log_event(f"Could not disable legacy demo jobs: {exc}", level="WARNING", component="AutomationScheduler")
+
+    def _ensure_pipeline_tasks_seeded(self):
+        """Register real pipeline schedules, disabled until provider config is supplied."""
+        try:
+            existing = {task.get("name") for task in db.list_automation_tasks()}
+            schedules = [
+                ("ORACLE_DMS_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "daily"),
+                ("ORACLE_DMS_SNOWFLAKE_PIPELINE_FORTNIGHTLY", "fortnightly", "10:00", "fortnightly"),
+                ("ORACLE_DMS_SNOWFLAKE_PIPELINE_MONTHLY", "monthly", "10:00", "monthly"),
+            ]
+            for name, kind, expression, period in schedules:
+                if name in existing:
+                    continue
+                description = (
+                    "Oracle → AWS DMS → S3 → Snowflake L0/L1/L2 plus daily report."
+                    if period == "daily" else f"Snowflake {period} T-1/live comparison report only; ingestion is not repeated."
+                )
                 self.create_task({
-                    "name": "Daily Snowflake Reconciliation & Health Check",
-                    "description": "Executes automated reconciliation query on BANK_DB.L0_STAGING in Snowflake warehouse.",
-                    "task_type": "sql",
-                    "db_connection": "NANO_PRO_SNOWFLAKE",
-                    "script_content": "SELECT CURRENT_TIMESTAMP() as ping, COUNT(*) as raw_transactions FROM BANK_DB.L0_STAGING.RAW_TRANSACTIONS;",
-                    "schedule_type": "daily",
-                    "recurrence_expr": "08:00",
-                    "start_time": (now + timedelta(hours=1)).strftime("%Y-%m-%d 08:00:00"),
-                    "timezone": "Asia/Kolkata",
-                    "timeout_sec": 180,
-                    "retry_policy": {"max_retries": 2, "retry_interval_sec": 60},
+                    "name": name,
+                    "description": description + " Disabled until cloud credentials, DMS task and SQL stages are configured and verified.",
+                    "task_type": "scheduled_job", "schedule_type": kind,
+                    "recurrence_expr": expression, "timezone": "Asia/Kolkata",
+                    "timeout_sec": 7200,
+                    "retry_policy": {"max_retries": 0, "retry_interval_sec": 300},
                     "notification_pref": {"email": True, "telegram": True},
-                    "is_enabled": True
+                    "is_enabled": False,
                 })
+        except Exception as exc:
+            log_event(f"Could not register pipeline schedules: {exc}", level="WARNING", component="AutomationScheduler")
 
-                # 2. Hourly Oracle XE to S3 Buffer Sync
-                self.create_task({
-                    "name": "Oracle XE Staging Buffer Sync",
-                    "description": "Pulls incremental transactions from Oracle XE 192.168.31.240 and buffers into S3 staging.",
-                    "task_type": "python",
-                    "script_content": """import time\nprint('Connecting to Oracle XE on 192.168.31.240:1521/XEPDB1...')\ntime.sleep(1)\nprint('Source extraction completed. 248 records extracted.')\nprint('Staging buffer synced to s3://nanopro-data-lake/raw/')\nprint('Sync status: SUCCESS')""",
-                    "schedule_type": "hourly",
-                    "recurrence_expr": "60",
-                    "start_time": (now + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "timezone": "Asia/Kolkata",
-                    "timeout_sec": 300,
-                    "retry_policy": {"max_retries": 3, "retry_interval_sec": 30},
-                    "notification_pref": {"email": True, "telegram": False},
-                    "is_enabled": True
-                })
-
-                # 3. Weekly System Maintenance & DB Vacuum Batch File
-                self.create_task({
-                    "name": "Weekly Studio Database Vacuum & Ledger Backup",
-                    "description": "Executes SQLite vacuum, archives logs, and creates automated weekly snapshot.",
-                    "task_type": "python",
-                    "script_content": """import os, sqlite3, time\nprint('Starting SQLite WAL checkpoint & vacuum...')\nprint('Studio memory ledger healthy. 32 tables verified.')\nprint('Task completed cleanly.')""",
-                    "schedule_type": "weekly",
-                    "recurrence_expr": "MON@09:00",
-                    "start_time": (now + timedelta(days=1)).strftime("%Y-%m-%d 09:00:00"),
-                    "timezone": "Asia/Kolkata",
-                    "timeout_sec": 600,
-                    "retry_policy": {"max_retries": 1, "retry_interval_sec": 120},
-                    "notification_pref": {"email": True, "telegram": True},
-                    "is_enabled": True
-                })
-        except Exception as e:
-            log_event(f"Error seeding default scheduler tasks: {e}", level="WARNING", component="AutomationScheduler")
-
-    def calculate_next_run(self, schedule_type: str, recurrence_expr: str, from_dt: Optional[datetime] = None) -> str:
-        """Calculates the next execution ISO timestamp based on schedule type and expression."""
-        base = from_dt or datetime.now()
-        schedule_type = (schedule_type or "daily").lower()
-
-        if schedule_type == "once":
+    def calculate_next_run(self, schedule_type: str, recurrence_expr: str, from_dt: Optional[datetime] = None, timezone_name: str = "Asia/Kolkata") -> str:
+        """Calculate calendar-aware local timestamps in the task's configured timezone."""
+        try:
+            zone = ZoneInfo(timezone_name or "Asia/Kolkata")
+        except ZoneInfoNotFoundError:
+            zone = ZoneInfo("Asia/Kolkata")
+        base = from_dt or datetime.now(zone)
+        base = base.replace(tzinfo=zone) if base.tzinfo is None else base.astimezone(zone)
+        kind = (schedule_type or "daily").lower()
+        if kind == "once":
             return ""
-
-        if schedule_type == "minutes":
+        if kind == "minutes":
+            mins = int(recurrence_expr) if recurrence_expr and recurrence_expr.isdigit() else 15
+            return (base + timedelta(minutes=mins)).strftime("%Y-%m-%d %H:%M:%S")
+        if kind == "hourly":
+            return (base + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+        if kind == "daily":
             try:
-                mins = int(recurrence_expr) if recurrence_expr and recurrence_expr.isdigit() else 15
+                hh, mm = map(int, (recurrence_expr or "08:00").split(":")[:2])
             except ValueError:
-                mins = 15
-            next_dt = base + timedelta(minutes=mins)
-            return next_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        if schedule_type == "hourly":
-            next_dt = base + timedelta(hours=1)
-            return next_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        if schedule_type == "daily":
-            target_time = "08:00"
-            if recurrence_expr and ":" in recurrence_expr:
-                target_time = recurrence_expr.strip()
-            try:
-                hh, mm = map(int, target_time.split(":")[:2])
-            except Exception:
                 hh, mm = 8, 0
             candidate = base.replace(hour=hh, minute=mm, second=0, microsecond=0)
             if candidate <= base:
                 candidate += timedelta(days=1)
             return candidate.strftime("%Y-%m-%d %H:%M:%S")
-
-        if schedule_type == "weekly":
-            # e.g. "MON@09:00" or just default 7 days from now
-            next_dt = base + timedelta(days=7)
-            return next_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        if schedule_type == "monthly":
-            next_dt = base + timedelta(days=30)
-            return next_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        if schedule_type == "cron":
-            # Simple cron evaluation fallback
-            next_dt = base + timedelta(hours=1)
-            return next_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        # Default fallback: 24h
+        if kind == "weekly":
+            parts = (recurrence_expr or "").upper().split("@", 1)
+            days = {"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6}
+            day = days.get(parts[0][:3], base.weekday())
+            try:
+                hh, mm = map(int, (parts[1] if len(parts) > 1 else base.strftime("%H:%M")).split(":"))
+            except ValueError:
+                hh, mm = base.hour, base.minute
+            candidate = (base + timedelta(days=(day - base.weekday()) % 7)).replace(hour=hh, minute=mm, second=0, microsecond=0)
+            if candidate <= base:
+                candidate += timedelta(days=7)
+            return candidate.strftime("%Y-%m-%d %H:%M:%S")
+        if kind in {"fortnightly", "biweekly", "every_14_days"}:
+            try:
+                hh, mm = map(int, recurrence_expr.split(":")[:2]) if recurrence_expr and ":" in recurrence_expr else (base.hour, base.minute)
+            except ValueError:
+                hh, mm = base.hour, base.minute
+            return (base + timedelta(days=14)).replace(hour=hh, minute=mm, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+        if kind == "monthly":
+            year, month = (base.year + 1, 1) if base.month == 12 else (base.year, base.month + 1)
+            day = min(base.day, monthrange(year, month)[1])
+            try:
+                hh, mm = map(int, recurrence_expr.split(":")[:2]) if recurrence_expr and ":" in recurrence_expr else (base.hour, base.minute)
+            except ValueError:
+                hh, mm = base.hour, base.minute
+            return base.replace(year=year, month=month, day=day, hour=hh, minute=mm, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+        if kind == "cron":
+            return (base + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
         return (base + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
 
     def create_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -146,7 +145,8 @@ class AutomationScheduler:
         start_time = task_data.get("start_time") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # Calculate next_run_at
-        next_run_at = task_data.get("next_run_at") or self.calculate_next_run(schedule_type, recurrence_expr)
+        timezone_name = task_data.get("timezone", "Asia/Kolkata")
+        next_run_at = task_data.get("next_run_at") or self.calculate_next_run(schedule_type, recurrence_expr, timezone_name=timezone_name)
 
         task_payload = {
             "name": task_data.get("name", "New Automation Job"),
@@ -159,7 +159,7 @@ class AutomationScheduler:
             "recurrence_expr": recurrence_expr,
             "start_time": start_time,
             "end_time": task_data.get("end_time", ""),
-            "timezone": task_data.get("timezone", "Asia/Kolkata"),
+            "timezone": timezone_name,
             "timeout_sec": int(task_data.get("timeout_sec", 300)),
             "retry_policy": task_data.get("retry_policy", {"max_retries": 2, "retry_interval_sec": 60}),
             "working_dir": task_data.get("working_dir", ""),
@@ -183,10 +183,10 @@ class AutomationScheduler:
         if not task:
             return False
         
-        if "schedule_type" in updates or "recurrence_expr" in updates:
+        if "schedule_type" in updates or "recurrence_expr" in updates or "timezone" in updates:
             stype = updates.get("schedule_type", task.get("schedule_type", "daily"))
             rexpr = updates.get("recurrence_expr", task.get("recurrence_expr", ""))
-            updates["next_run_at"] = self.calculate_next_run(stype, rexpr)
+            updates["next_run_at"] = self.calculate_next_run(stype, rexpr, timezone_name=updates.get("timezone", task.get("timezone", "Asia/Kolkata")))
 
         ok = db.update_automation_task(task_id, updates)
         log_event(f"Scheduled automation task updated [{task_id}]", component="AutomationScheduler")
@@ -244,7 +244,10 @@ class AutomationScheduler:
         task_name = task["name"]
         task_type = task.get("task_type", "python").lower()
         timeout_sec = task.get("timeout_sec", 300)
-        start_ts = datetime.now()
+        try:
+            start_ts = datetime.now(ZoneInfo(task.get("timezone") or "Asia/Kolkata"))
+        except ZoneInfoNotFoundError:
+            start_ts = datetime.now(ZoneInfo("Asia/Kolkata"))
         start_time_str = start_ts.strftime("%Y-%m-%d %H:%M:%S")
 
         db.update_automation_task(task_id, {"status": "Running", "last_run_at": start_time_str})
@@ -292,7 +295,10 @@ class AutomationScheduler:
             stderr = str(e)
         finally:
             duration = round(time.time() - t0, 3)
-            end_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                end_time_str = datetime.now(ZoneInfo(task.get("timezone") or "Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
+            except ZoneInfoNotFoundError:
+                end_time_str = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
 
             # Update run history
             db.update_task_run(run_id, {
@@ -308,7 +314,8 @@ class AutomationScheduler:
             # Calculate next run timestamp
             next_run = self.calculate_next_run(
                 task.get("schedule_type", "daily"),
-                task.get("recurrence_expr", "")
+                task.get("recurrence_expr", ""),
+                timezone_name=task.get("timezone", "Asia/Kolkata")
             )
 
             # Update parent task state
@@ -395,26 +402,64 @@ class AutomationScheduler:
         file_path = task.get("file_path", "")
         script_content = task.get("script_content", "")
 
-        # Safe mock/emulation for non-Windows environment or missing files
-        if not file_path and not script_content:
-            return "", "No script file path or content specified.", 1
-
-        out = f"Script execution verified: {file_path or 'Inline Script'}\nTask: {task['name']}\nCompleted with exit code 0."
-        return out, "", 0
+        return "", "Batch/PowerShell execution is not implemented; refusing to report a simulated success.", 1
 
     def _execute_app_job(self, task: Dict[str, Any]) -> (str, str, int):
         """Executes native Nano Pro studio application maintenance jobs."""
         name = task.get("name", "").lower()
-        if "reconciliation" in name or "etl" in name:
+        pipeline_periods = {
+            "oracle_dms_snowflake_pipeline_daily": "daily",
+            "oracle_dms_snowflake_pipeline_fortnightly": "fortnightly",
+            "oracle_dms_snowflake_pipeline_monthly": "monthly",
+        }
+        if name in pipeline_periods:
+            from app.core.data_pipeline_runner import run_configured_pipeline
+            period = pipeline_periods[name]
+            result = run_configured_pipeline(report_period=period, include_ingestion=(period == "daily"))
+            if result.get("status") == "success":
+                return json.dumps(result, default=str), "", 0
+            notifications = self._notify_pipeline_failure(result)
+            result["failure_notifications"] = notifications
+            return "", json.dumps(result, default=str), 1
+        if name == "connection_interoperability_test":
             from app.core.connection_manager import connection_manager
             res = connection_manager.test_cross_pipeline_interoperability()
-            return f"Pipeline Interoperability verified: {res.get('summary')}", "", 0
+            if res.get("success"):
+                return f"Connection checks passed (no data transfer performed): {res.get('message', '')}", "", 0
+            return "", f"Connection interoperability check failed: {res.get('message', 'one or more providers are unavailable')}", 1
         elif "backup" in name:
             from app.core.backup_manager import backup_manager
             res = backup_manager.create_full_backup()
             return f"Full Backup created: {res.get('backup_id')} ({res.get('size_bytes')} bytes)", "", 0
         else:
-            return f"Scheduled Studio job executed successfully: {task['name']}", "", 0
+            return "", f"Unsupported scheduled application job: {task.get('name', 'unnamed task')}", 1
+
+    @staticmethod
+    def _notify_pipeline_failure(result: Dict[str, Any]) -> Dict[str, Any]:
+        """Send bounded stage/run metadata through configured alert providers."""
+        run_id = result.get("run_id", "unknown")
+        stages = ", ".join(stage.get("stage", "unknown") for stage in result.get("stages", []) if stage.get("status") == "failed") or "preflight"
+        message = f"NanoPro data pipeline failed. Run ID: {run_id}. Failed stage: {stages}. Check Task Scheduler run history."
+        outcomes = {}
+        try:
+            from app.core.smtp_client import smtp_client
+            mail = smtp_client.send_email(recipient="nanoproaistudio@gmail.com", subject="NanoPro data pipeline failure", body=message, task_id=run_id, data_source="Oracle AWS DMS S3 Snowflake")
+            outcomes["email"] = "sent" if mail.get("success") and "telegram" not in str(mail.get("provider", "")).lower() else "not_verified"
+        except Exception:
+            outcomes["email"] = "failed"
+        try:
+            from app.core.communication_center import communication_center
+            telegram = communication_center.send_telegram_broadcast(message, process_key="data_engineer_etl")
+            outcomes["telegram"] = "sent" if telegram.get("details", {}).get("success") else "not_configured_or_failed"
+        except Exception:
+            outcomes["telegram"] = "failed"
+        try:
+            from app.core.communication_center import communication_center
+            whatsapp = communication_center.send_whatsapp_cloud_api(phone="918433755448", message=message)
+            outcomes["whatsapp"] = "sent" if whatsapp.get("success") else "not_configured"
+        except Exception:
+            outcomes["whatsapp"] = "failed"
+        return outcomes
 
     def get_dashboard_stats(self) -> Dict[str, Any]:
         """Calculates dashboard health metrics for the Task Scheduler UI."""
@@ -471,13 +516,18 @@ class AutomationScheduler:
         """Continuous polling loop evaluating scheduled tasks every 10 seconds."""
         while self.is_running:
             try:
-                now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                now_utc = datetime.now(timezone.utc)
                 tasks = db.list_automation_tasks()
                 for task in tasks:
                     if not task.get("is_enabled") or task.get("is_paused"):
                         continue
                     next_run = task.get("next_run_at")
-                    if next_run and next_run <= now_str:
+                    try:
+                        zone = ZoneInfo(task.get("timezone") or "Asia/Kolkata")
+                        due_at = datetime.strptime(next_run, "%Y-%m-%d %H:%M:%S").replace(tzinfo=zone) if next_run else None
+                    except (ValueError, ZoneInfoNotFoundError):
+                        due_at = None
+                    if due_at and due_at.astimezone(timezone.utc) <= now_utc:
                         # Task is due for execution
                         task_id = task["id"]
                         with self._lock:

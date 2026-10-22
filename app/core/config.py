@@ -82,19 +82,19 @@ DEFAULT_METADATA_MODELS = [
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
 
 # Bot 1: News & AI Trends (Default Primary)
-TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
+TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "")
 TELEGRAM_NEWS_BOT_USERNAME = "@mangesh_technews_bot"
 
 # Bot 2: Health & System Monitoring
-TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4")
+TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "")
 TELEGRAM_HEALTH_BOT_USERNAME = "@mangesh_health_monitor_bot"
 
 # Bot 3: Career, Jobs & Interview Study
-TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN", "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA")
+TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN", "")
 TELEGRAM_CAREER_BOT_USERNAME = "@mangesh_career_study_bot"
 
 # Bot 4: Executive & Financial Reports
-TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN", "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4")
+TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN", "")
 TELEGRAM_REPORTS_BOT_USERNAME = "@mangesh_reports_bot"
 
 # Global Default Token

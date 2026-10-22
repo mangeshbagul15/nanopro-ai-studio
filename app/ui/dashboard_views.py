@@ -305,6 +305,7 @@ TASK_SCHEDULER_VIEW_HTML = r"""
                     <option value="hourly">Hourly</option>
                     <option value="minutes">Every X Minutes</option>
                     <option value="weekly">Weekly on Selected Day</option>
+                    <option value="fortnightly">Every 14 Days</option>
                     <option value="monthly">Monthly</option>
                     <option value="once">Run Once</option>
                     <option value="cron">Custom Cron Expression</option>

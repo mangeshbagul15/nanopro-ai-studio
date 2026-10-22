@@ -99,7 +99,7 @@ POSTGRES_CONFIGS = {
         "port": 5432,
         "database": "neondb",
         "sslmode": "require",
-        "connection_url": "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+        "connection_url_env": "NEON_DATABASE_URL",
         "notes": "Neon.tech Serverless PostgreSQL 18 (Singapore Region - 100% Lifetime Free Forever)"
     },
     "POSTGRES_RENDER_CLOUD": {
@@ -110,8 +110,7 @@ POSTGRES_CONFIGS = {
         "port": 5432,
         "database": "nanopro_postgres",
         "sslmode": "require",
-        "connection_url_internal": "postgresql://nanopro_postgres_user:cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb@dpg-db89fqm89jmc73cnqd0g-a/nanopro_postgres",
-        "connection_url_external": "postgresql://nanopro_postgres_user:cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb@dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com/nanopro_postgres",
+        "connection_url_env": "RENDER_DATABASE_URL",
         "notes": "Render Cloud PostgreSQL Database (Singapore Region - 30-Day Dev Instance)"
     }
 }
@@ -173,110 +172,22 @@ class ConnectionManager:
             log_event(f"Error initializing connection tables: {e}", component="ConnectionManager", level="WARNING")
 
     def ensure_default_connections(self):
-        """Pre-seeds connection profiles and ensures active passwords from Vault/env/defaults without overwriting user updates."""
-        # 1. Snowflake Connection
-        sf_cred = credentials_vault.get_credential("NANO_PRO_SNOWFLAKE")
-        stored_sf_pw = (sf_cred.get("secret_value") or "").strip() if sf_cred else ""
-        raw_pw = (stored_sf_pw if len(stored_sf_pw) >= 6 else "") or os.environ.get("SNOWFLAKE_PASSWORD") or "Bhaiyyanand@123"
-        sf_pw = str(raw_pw).strip()
-        if any(ord(c) < 32 or ord(c) > 126 for c in sf_pw) or len(sf_pw) < 6:
-            sf_pw = "Bhaiyyanand@123"
-        credentials_vault.store_credential(
-            service_name="NANO_PRO_SNOWFLAKE",
-            credential_type="database",
-            username=SNOWFLAKE_CONFIG["username"],
-            secret_value=sf_pw,
-            host=SNOWFLAKE_CONFIG["account_url"],
-            port="443",
-            database_name=SNOWFLAKE_CONFIG["database"],
-            additional_info=SNOWFLAKE_CONFIG
-        )
-
-        # 2. All Oracle DB Connections (LOCAL, REMOTE, REMOTE_New, ORACLE_APEX_23AI_CLOUD)
-        active_ora_pw = os.environ.get("ORACLE_PASSWORD") or "NanoPro2026"
-        for cname, cinfo in ORACLE_CONFIGS.items():
-            stored_cred = credentials_vault.get_credential(cname)
-            curr_pw = (stored_cred.get("secret_value") or "").strip() if stored_cred else ""
-            if cname == "ORACLE_APEX_23AI_CLOUD":
-                curr_pw = (curr_pw if curr_pw else None) or os.environ.get("ORACLE_APEX_PASSWORD") or "Bhaiyyanand$123"
-            elif curr_pw and curr_pw not in ["Maharashtra@123", "", None]:
-                pass  # Keep user's active password from Vault
-            elif os.environ.get("ORACLE_PASSWORD"):
-                curr_pw = active_ora_pw
-            else:
-                curr_pw = active_ora_pw
-
+        """Register non-secret connection metadata without inventing credentials."""
+        profiles = [
+            ("NANO_PRO_SNOWFLAKE", "database", SNOWFLAKE_CONFIG["username"], SNOWFLAKE_CONFIG["account_url"], "443", SNOWFLAKE_CONFIG["database"], SNOWFLAKE_CONFIG),
+            *[(name, "database", cfg["username"], cfg["hostname"], str(cfg["port"]), cfg["service_name"], cfg) for name, cfg in ORACLE_CONFIGS.items()],
+            *[(name, "database", cfg["username"], cfg["hostname"], str(cfg["port"]), cfg["database"], cfg) for name, cfg in POSTGRES_CONFIGS.items()],
+            ("AWS_S3_DATA_LAKE", "cloud", os.environ.get("AWS_ACCESS_KEY_ID", ""), os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"), "443", os.environ.get("AWS_S3_BUCKET", ""), {"region": os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"), "bucket": os.environ.get("AWS_S3_BUCKET", "")}),
+        ]
+        for name, kind, username, host, port, database_name, metadata in profiles:
             credentials_vault.store_credential(
-                service_name=cname,
-                credential_type="database",
-                username=cinfo["username"],
-                secret_value=curr_pw or active_ora_pw,
-                host=cinfo["hostname"],
-                port=str(cinfo["port"]),
-                database_name=cinfo["service_name"],
-                additional_info=cinfo
-            )
-
-        # 3. Gmail SMTP
-        smtp_pw = os.environ.get("GMAIL_APP_PASSWORD") or os.environ.get("SMTP_PASSWORD") or smtp_client.get_secret_password() or "agunjgvexwcjudbx"
-        smtp_client.save_configuration(
-            host="smtp.gmail.com",
-            port=587,
-            username="mangeshbagul15@gmail.com",
-            password=smtp_pw,
-            sender_email="mangeshbagul15@gmail.com",
-            sender_name="Mangesh AI Studio",
-            security_mode="STARTTLS"
-        )
-
-        # 4. AWS S3 Data Lake & Amazon Bedrock
-        aws_cred = credentials_vault.get_credential("AWS_S3_DATA_LAKE")
-        stored_aws_sec = (aws_cred.get("secret_value") or "").strip() if aws_cred else ""
-        aws_key = (os.environ.get("AWS_ACCESS_KEY_ID") or (aws_cred.get("username") if aws_cred else "") or "mangesh-studio").strip()
-        aws_sec = (stored_aws_sec or os.environ.get("AWS_SECRET_ACCESS_KEY") or "/5XgACux2v974v+b2OAxcHWCucVcR/jIBo6JuQSo").strip()
-        aws_region = (os.environ.get("AWS_DEFAULT_REGION") or "ap-southeast-2").strip()
-        aws_bucket = (os.environ.get("AWS_S3_BUCKET") or "nanopro-data-lake").strip()
-        aws_token = (os.environ.get("AWS_BEARER_TOKEN") or "ABSKbWFuZ2VzaC1zdHVkaW8tYXQtMDc1NDczNzgxODA1OnVyRmdxZzAzdVZERFBKcGtHVkk4YzYzTVliWWp5N3ArclplazJpZGZ2WHhyY2EyRTBKd0RCOEVTMnhjPQ==").strip()
-
-        credentials_vault.store_credential(
-            service_name="AWS_S3_DATA_LAKE",
-            credential_type="cloud",
-            username=aws_key,
-            secret_value=aws_sec,
-            host=aws_region,
-            port="443",
-            database_name=aws_bucket,
-            additional_info={
-                "region": aws_region,
-                "bucket": aws_bucket,
-                "iam_user": "mangesh-studio",
-                "account_id": "075473781805",
-                "bearer_token": aws_token
-            }
-        )
-
-        # 5. PostgreSQL Connections (Local, Neon Lifetime Free, Render Cloud)
-        active_pg_pw = os.environ.get("POSTGRES_PASSWORD") or "Divyam@123"
-        for pg_name, pg_info in POSTGRES_CONFIGS.items():
-            pg_cred = credentials_vault.get_credential(pg_name)
-            stored_pg_pw = (pg_cred.get("secret_value") or "").strip() if pg_cred else ""
-            if stored_pg_pw:
-                curr_pg_pw = stored_pg_pw
-            elif pg_name == "POSTGRES_CLOUD_FREE":
-                curr_pg_pw = os.environ.get("NEON_POSTGRES_PASSWORD") or "npg_VWB8sLHgC3jX"
-            elif pg_name == "POSTGRES_RENDER_CLOUD":
-                curr_pg_pw = os.environ.get("RENDER_POSTGRES_PASSWORD") or "cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb"
-            else:
-                curr_pg_pw = os.environ.get("POSTGRES_PASSWORD") or active_pg_pw
-            credentials_vault.store_credential(
-                service_name=pg_name,
-                credential_type="database",
-                username=pg_info["username"],
-                secret_value=curr_pg_pw,
-                host=pg_info["hostname"],
-                port=str(pg_info["port"]),
-                database_name=pg_info["database"],
-                additional_info=pg_info
+                service_name=name,
+                credential_type=kind,
+                username=username,
+                host=host,
+                port=port,
+                database_name=database_name,
+                additional_info=metadata,
             )
 
     # =========================================================================
@@ -373,9 +284,7 @@ class ConnectionManager:
         account_url = meta.get("account_url") or SNOWFLAKE_CONFIG["account_url"]
         
         # Secret password
-        password = str((cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or os.environ.get("SNOWFLAKE_PASSWORD") or "Bhaiyyanand@123").strip()
-        if any(ord(c) < 32 or ord(c) > 126 for c in password) or len(password) < 6:
-            password = "Bhaiyyanand@123"
+        password = str((cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or os.environ.get("SNOWFLAKE_PASSWORD") or "").strip()
         user = str(user).strip()
 
         if not password:
@@ -458,38 +367,6 @@ class ConnectionManager:
                     )
                 except Exception as first_sf_err:
                     err_txt = str(first_sf_err)
-                    if "Incorrect username or password" in err_txt or "390100" in err_txt or "250001" in err_txt:
-                        # Attempt with verified fallback password if current password differed
-                        fallback_passwords = ["Bhaiyyanand@123"]
-                        for alt_pw in fallback_passwords:
-                            try:
-                                conn = snowflake_connector.connect(
-                                    user=user,
-                                    password=alt_pw,
-                                    account=account,
-                                    warehouse=warehouse,
-                                    database=database,
-                                    schema=schema,
-                                    role=role,
-                                    login_timeout=4
-                                )
-                                break
-                            except Exception:
-                                pass
-                        if not conn and user != user.upper():
-                            try:
-                                conn = snowflake_connector.connect(
-                                    user=user.upper(),
-                                    password="Bhaiyyanand@123",
-                                    account=account,
-                                    warehouse=warehouse,
-                                    database=database,
-                                    schema=schema,
-                                    role=role,
-                                    login_timeout=4
-                                )
-                            except Exception:
-                                raise first_sf_err
                     if not conn:
                         raise first_sf_err
                 cur = conn.cursor()
@@ -634,7 +511,7 @@ class ConnectionManager:
         host = meta.get("hostname") or cfg.get("host") or default_meta.get("hostname", "192.168.31.240")
         port = int(meta.get("port") or cfg.get("port") or default_meta.get("port", 1521))
         user = meta.get("username") or cfg.get("username") or default_meta.get("username", "SYSTEM")
-        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or cfg.get("secret") or cfg.get("password") or meta.get("password") or os.environ.get("ORACLE_PASSWORD", "NanoPro2026")
+        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or os.environ.get("ORACLE_PASSWORD", "")
         service_name = meta.get("service_name") or (cfg.get("database_name") if cfg else "") or cfg.get("service_name") or default_meta.get("service_name", "XEPDB1")
 
         # Dedicated Handler for Official Oracle Cloud 23ai (APEX / ORDS REST)
@@ -664,8 +541,8 @@ class ConnectionManager:
                 if status_code in [200, 301, 302, 401, 403]:
                     res = {
                         "connection_name": conn_name,
-                        "status": "Connected",
-                        "success": True,
+                        "status": "Gateway Reachable; Database Login Unverified",
+                        "success": False,
                         "host": "apex.oracle.com",
                         "port": 443,
                         "username": u_name,
@@ -673,8 +550,9 @@ class ConnectionManager:
                         "service_name": f"Oracle APEX 23ai Cloud ({ws_name})",
                         "response_time_ms": duration,
                         "timestamp": test_ts,
-                        "verified_version": "Oracle Database 23ai Enterprise Cloud Edition (APEX)",
-                        "query_result": f"WORKSPACE: {ws_name} | USER: {u_name} | Gateway Status: {status_code} ACTIVE",
+                        "verified_version": None,
+                        "query_result": f"APEX gateway HTTP status {status_code}; database credentials and SQL access were not verified.",
+                        "error_category": "APEX_GATEWAY_ONLY",
                         "error_message": None
                     }
                     self._record_connection_result(conn_name, "oracle", "Connected", duration, u_name, "Administrator", "23ai", "ORDS", None, res)
@@ -799,9 +677,6 @@ class ConnectionManager:
         try:
             conn = None
             candidate_pws = [password]
-            for alt_pw in [os.environ.get("ORACLE_PASSWORD"), "NanoPro2026", "Divyam@123", os.environ.get("ORACLE_FALLBACK_PASSWORD")]:
-                if alt_pw and alt_pw not in candidate_pws:
-                    candidate_pws.append(alt_pw)
 
             candidate_services = [service_name]
             for alt_srv in ["XEPDB1", "XE"]:
@@ -968,10 +843,7 @@ class ConnectionManager:
         try:
             import psycopg2
             ssl_mode = meta.get("sslmode") or ("require" if "render.com" in host or "neon.tech" in host or "singapore-postgres" in host else "prefer")
-            candidate_pws = [password]
-            for alt_pg_pw in [os.environ.get("POSTGRES_PASSWORD"), "Divyam@123", "postgres", "NanoPro2026"]:
-                if alt_pg_pw and alt_pg_pw not in candidate_pws:
-                    candidate_pws.append(alt_pg_pw)
+            candidate_pws = [password] if password else []
 
             candidate_dbs = [dbname]
             for alt_db in ["nanopro_db", "postgres"]:
@@ -1107,33 +979,23 @@ class ConnectionManager:
         cfg = self.get_connection_config(conn_name, mask=False)
 
         access_key = (os.environ.get("AWS_ACCESS_KEY_ID") or (cfg.get("username") if cfg else "")).strip()
-        secret_key = (os.environ.get("AWS_SECRET_ACCESS_KEY") or (cfg.get("secret_value") if cfg else "") or "/5XgACux2v974v+b2OAxcHWCucVcR/jIBo6JuQSo").strip()
+        secret_key = (os.environ.get("AWS_SECRET_ACCESS_KEY") or (cfg.get("secret_value") if cfg else "")).strip()
         region = (os.environ.get("AWS_DEFAULT_REGION") or (cfg.get("metadata", {}).get("region") if cfg else "") or "ap-southeast-2").strip()
         bucket_name = (os.environ.get("AWS_S3_BUCKET") or (cfg.get("database_name") if cfg else "") or (cfg.get("metadata", {}).get("bucket") if cfg else "") or "nanopro-data-lake").strip()
-        bearer_token = (os.environ.get("AWS_BEARER_TOKEN") or (cfg.get("metadata", {}).get("bearer_token") if cfg else "") or "ABSKbWFuZ2VzaC1zdHVkaW8tYXQtMDc1NDczNzgxODA1OnVyRmdxZzAzdVZERFBKcGtHVkk4YzYzTVliWWp5N3ArclplazJpZGZ2WHhyY2EyRTBKd0RCOEVTMnhjPQ==").strip()
+        bearer_token = (os.environ.get("AWS_BEARER_TOKEN") or (cfg.get("metadata", {}).get("bearer_token") if cfg else "") or "").strip()
 
-        # If full AKIA key is present, attempt real boto3 connection
-        if access_key and (access_key.startswith("AKIA") or access_key.startswith("ASIA")):
+        # Use explicit keys or the standard provider chain (for example an IAM role).
+        if (access_key and secret_key) or os.environ.get("AWS_ROLE_ARN") or os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE") or os.environ.get("AWS_PROFILE") or os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"):
             try:
                 import boto3
-                s3 = boto3.client(
-                    's3',
-                    aws_access_key_id=access_key,
-                    aws_secret_access_key=secret_key,
-                    region_name=region
-                )
-                bucket_list_resp = s3.list_buckets()
-                existing_buckets = [b['Name'] for b in bucket_list_resp.get('Buckets', [])]
-
-                bucket_found = bucket_name in existing_buckets
-                if bucket_found:
-                    try:
-                        s3.head_bucket(Bucket=bucket_name)
-                        bucket_msg = f"Bucket 's3://{bucket_name}' verified and accessible."
-                    except Exception as b_err:
-                        bucket_msg = f"Bucket 's3://{bucket_name}' accessible (status: {b_err})."
-                else:
-                    bucket_msg = f"AWS credentials authenticated. Bucket 's3://{bucket_name}' ready to be created (Available: {', '.join(existing_buckets) if existing_buckets else 'None'})."
+                session_args = {"region_name": region}
+                if access_key and secret_key:
+                    session_args.update(aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+                session = boto3.Session(**session_args)
+                identity = session.client("sts").get_caller_identity()
+                if not bucket_name:
+                    raise ValueError("AWS_S3_BUCKET is not configured; AWS identity was checked but bucket access was not.")
+                session.client("s3").head_bucket(Bucket=bucket_name)
 
                 duration = round((time.time() - start_time) * 1000, 2)
                 res = {
@@ -1143,12 +1005,11 @@ class ConnectionManager:
                     "status": "Connected",
                     "region": region,
                     "bucket": bucket_name,
-                    "account_id": "075473781805",
-                    "iam_user": "mangesh-studio",
-                    "existing_buckets": existing_buckets,
+                    "account_id": identity.get("Account"),
+                    "iam_user": identity.get("Arn"),
                     "response_time_ms": duration,
                     "timestamp": test_ts,
-                    "message": f"AWS S3 live connection verified in region {region}. {bucket_msg}"
+                    "message": f"AWS identity and S3 bucket s3://{bucket_name} verified in {region}."
                 }
                 self._record_connection_result(conn_name, "cloud", "Connected", duration, access_key[:8] + "...", None, bucket_name, None, None, res)
                 return res
@@ -1177,26 +1038,6 @@ class ConnectionManager:
                 return res
 
         # If Secret Key or Bearer Token is configured
-        if secret_key or bearer_token:
-            duration = round((time.time() - start_time) * 1000, 2)
-            has_token = bool(bearer_token)
-            res = {
-                "success": True,
-                "service": "AWS_S3",
-                "connection_name": conn_name,
-                "status": "Connected",
-                "region": region,
-                "bucket": bucket_name,
-                "account_id": "075473781805",
-                "iam_user": "mangesh-studio",
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "message": f"AWS Cloud Profile & Amazon Bedrock Token authenticated for mangesh-studio (Region: {region}). S3 Lake Buffer active at s3://{bucket_name}.",
-                "note": "To bind direct S3 API bucket access, enter your 20-character Access Key ID (starts with AKIA...) from your downloaded CSV file."
-            }
-            self._record_connection_result(conn_name, "cloud", "Connected", duration, "mangesh-studio", None, bucket_name, None, None, res)
-            return res
-
         # Not configured fallback
         duration = round((time.time() - start_time) * 1000, 2)
         res = {
@@ -1223,7 +1064,7 @@ class ConnectionManager:
         conn_name = "TELEGRAM_ALERTS"
         cfg = self.get_connection_config(conn_name, mask=False)
         
-        token = os.environ.get("TELEGRAM_BOT_TOKEN") or (cfg.get("secret_value") if cfg else "") or "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
+        token = os.environ.get("TELEGRAM_BOT_TOKEN") or (cfg.get("secret_value") if cfg else "")
 
         try:
             import urllib.request
@@ -1371,9 +1212,9 @@ class ConnectionManager:
             {
                 "stage": "2. Data Staging & Lake Buffer",
                 "system": "AWS S3 Data Lake (nanopro-data-lake) & Staging Pipeline",
-                "status": aws_status if aws_ok else "Staging Ready",
-                "ready": True,
-                "detail": f"Staging lake buffer active with {len(staged_files)} verified source files ready for automated bulk ingestion."
+                "status": aws_status,
+                "ready": aws_ok,
+                "detail": f"AWS identity/bucket check passed; {len(staged_files)} local staging files detected. No transfer was performed."
             },
             {
                 "stage": "3. Data Warehouse Target",
@@ -1385,16 +1226,16 @@ class ConnectionManager:
             {
                 "stage": "4. Automated Cross-DB ETL Engine",
                 "system": "Data Transfer Engine (connection_manager.py)",
-                "status": "Operational",
-                "ready": True,
-                "detail": "Batch ETL pipeline configured for automated Oracle -> Snowflake L0 -> L1 Harmonisation."
+                "status": "Connectivity Verified" if (ora_ok and aws_ok and sf_ok) else "Not Verified",
+                "ready": ora_ok and aws_ok and sf_ok,
+                "detail": "This check verifies connections only; no Oracle→S3→Snowflake data transfer is performed."
             }
         ]
 
-        all_connected = (ora_ok and sf_ok)
+        all_connected = (ora_ok and aws_ok and sf_ok)
         overall_status = "Fully Interconnected" if all_connected else "Partial"
         message = (
-            "Cross-system interoperability confirmed! Oracle XE, S3 Staging, and Snowflake are ready for automated data transfer."
+            "Oracle, AWS identity/S3 bucket, and Snowflake connection checks passed. This is a connectivity check; no data was transferred."
             if all_connected else
             f"Interoperability Test: Oracle ({ora_status}), S3 ({aws_status}), Snowflake ({sf_status}). Both Oracle and Snowflake must be Connected for live automated sync."
         )
@@ -1461,7 +1302,7 @@ class ConnectionManager:
                 conn.commit()
 
             # Immediate Emergency Telegram & WhatsApp Notification upon connection failure
-            if status not in ["Connected", "Operational", "Fully Interconnected"]:
+            if status not in ["Connected", "Operational", "Fully Interconnected", "Not Configured", "Gateway Reachable; Database Login Unverified"]:
                 from app.core.communication_center import communication_center
                 now_t = time.time()
                 if not hasattr(self, "_last_alert_map"):
@@ -1949,12 +1790,15 @@ class ConnectionManager:
                     }
                     if "CLOUD" in connection_name or "FREE" in connection_name:
                         conn_kwargs["sslmode"] = "require"
-                elif connection_name == "POSTGRES_CLOUD_FREE":
-                    conn_str = "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-                elif connection_name == "POSTGRES_RENDER_CLOUD":
-                    conn_str = "postgresql://nanopro_postgres_user:cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb@dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com/nanopro_postgres"
                 else:
-                    conn_str = "postgresql://postgres:postgres@127.0.0.1:5432/nanopro_db"
+                    url_key = {
+                        "POSTGRES_CLOUD_FREE": "NEON_DATABASE_URL",
+                        "POSTGRES_RENDER_CLOUD": "RENDER_DATABASE_URL",
+                    }.get(connection_name)
+                    conn_str = os.environ.get(url_key, "").strip() if url_key else ""
+
+                if not conn_kwargs and not conn_str:
+                    return {"success": False, "error": f"Connection '{connection_name}' is not configured.", "query_id": query_id}
                 
                 if conn_kwargs:
                     pconn = psycopg2.connect(**conn_kwargs)

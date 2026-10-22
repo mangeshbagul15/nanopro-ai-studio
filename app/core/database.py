@@ -9,6 +9,7 @@ import os
 import sqlite3
 import json
 import time
+import uuid
 import base64
 import hashlib
 import threading
@@ -1881,7 +1882,7 @@ class DatabaseManager:
     def create_automation_task(self, task_data: Dict[str, Any]) -> str:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            tid = task_data.get("id") or f"task_{int(time.time()*1000)}"
+            tid = task_data.get("id") or f"task_{uuid.uuid4().hex}"
             now = time.time()
             cursor.execute("""
             INSERT OR REPLACE INTO scheduled_automation_tasks (
@@ -2515,7 +2516,7 @@ class CredentialsVault:
                 log_event(f"Updated existing credential [{cred_id}] for service '{service_name}' [AES-256-GCM]", component="CredentialsVault")
                 return cred_id
             else:
-                cred_id = f"cred_{credential_type.lower()}_{int(now*1000)}"
+                cred_id = f"cred_{credential_type.lower()}_{uuid.uuid4().hex}"
                 enc_secret = encrypt_value(secret_value.strip()) if secret_value else ""
                 cursor.execute("""
                 INSERT INTO credentials (
