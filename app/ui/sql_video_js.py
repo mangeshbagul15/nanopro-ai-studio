@@ -2763,101 +2763,34 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function drawSceneMotionGraphics(ctx, W, H, stage, stageIndex, progress, t) {
-        const entities = Array.isArray(stage?.entities)
-            ? stage.entities.filter(item => item && (item.label || item.name))
-            : [];
+        const visual = stage?.visual_data || {};
+        const motif = String(visual.background_motif || visual.motif || "").toLowerCase();
+        const accent = Array.isArray(visual.palette) && visual.palette.length ? String(visual.palette[0]) : "#38BDF8";
         ctx.save();
-
-        // HUD corner brackets: the frame reads as a live motion-graphics render.
-        ctx.strokeStyle = "rgba(56,189,248,0.45)";
-        ctx.lineWidth = 3;
-        const inset = 26, arm = 54;
-        [[inset, inset, 1, 1], [W - inset, inset, -1, 1], [inset, H - inset, 1, -1], [W - inset, H - inset, -1, -1]].forEach(([x, y, sx, sy]) => {
-            ctx.beginPath();
-            ctx.moveTo(x, y + sy * arm);
-            ctx.lineTo(x, y);
-            ctx.lineTo(x + sx * arm, y);
-            ctx.stroke();
-        });
-
-        // Streaming packets imply the narrated mechanism is actually running.
-        const streamY = H * 0.665;
-        ctx.strokeStyle = "rgba(56,189,248,0.2)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(W * 0.08, streamY);
-        ctx.bezierCurveTo(W * 0.36, streamY - 44, W * 0.64, streamY + 44, W * 0.92, streamY);
-        ctx.stroke();
-        for (let i = 0; i < 5; i++) {
-            const phase = (t * 0.28 + i / 5) % 1;
-            const px = W * (0.08 + 0.84 * phase);
-            const py = streamY + Math.sin(phase * Math.PI * 2) * 26;
-            ctx.beginPath();
-            ctx.fillStyle = "#7DD3FC";
-            ctx.shadowColor = "#38BDF8";
-            ctx.shadowBlur = 18;
-            ctx.arc(px, py, 4 + 2 * Math.sin(t * 6 + i), 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.shadowBlur = 0;
-
-        // The storyboard's own two subjects become animated chips, so the motion is
-        // about this prompt instead of a generic decoration.
-        if (entities.length >= 2) {
-            const leftText = String(entities[0].label || entities[0].name || "");
-            const rightText = String(entities[1].label || entities[1].name || "");
-            const chipY = H * 0.78;
-            const reveal = Math.min(1, Math.max(0, (t - Number(stage?.start || 0)) / 0.5));
-            ctx.save();
-            ctx.globalAlpha = ctx.globalAlpha * reveal;
-            ctx.font = "700 24px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            const leftW = Math.min(W * 0.4, ctx.measureText(leftText).width + 46);
-            const rightW = Math.min(W * 0.4, ctx.measureText(rightText).width + 46);
-            const gap = 96;
-            const startX = (W - (leftW + rightW + gap)) / 2;
-            const slide = (1 - reveal) * 40;
-            const chips = [
-                { cx: startX + leftW / 2 - slide, cw: leftW, text: leftText, fg: "#BAE6FD" },
-                { cx: startX + leftW + gap + rightW / 2 + slide, cw: rightW, text: rightText, fg: "#DDD6FE" }
-            ];
-            chips.forEach(chip => {
-                ctx.fillStyle = "rgba(8,18,36,0.9)";
-                ctx.strokeStyle = "rgba(56,189,248,0.55)";
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.roundRect(chip.cx - chip.cw / 2, chipY - 28, chip.cw, 56, 16);
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = chip.fg;
-                ctx.fillText(chip.text.length > 26 ? chip.text.slice(0, 25) + "…" : chip.text, chip.cx, chipY + 8);
+        // Only draw the familiar HUD/data stream when the scene's own art direction asks for it.
+        if (motif.includes("hud") || motif.includes("data_stream") || motif.includes("network")) {
+            ctx.strokeStyle = accent + "77"; ctx.lineWidth = 3;
+            const inset = 26, arm = 54;
+            [[inset, inset, 1, 1], [W - inset, inset, -1, 1], [inset, H - inset, 1, -1], [W - inset, H - inset, -1, -1]].forEach(([x, y, sx, sy]) => {
+                ctx.beginPath(); ctx.moveTo(x, y + sy * arm); ctx.lineTo(x, y); ctx.lineTo(x + sx * arm, y); ctx.stroke();
             });
-            const linkPhase = (t * 0.7) % 1;
-            const linkLeft = startX + leftW + 20;
-            const linkRight = startX + leftW + gap - 20;
-            ctx.strokeStyle = "rgba(125,211,252,0.5)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(linkLeft, chipY);
-            ctx.lineTo(linkRight, chipY);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.fillStyle = "#F8FAFC";
-            ctx.shadowColor = "#38BDF8";
-            ctx.shadowBlur = 14;
-            ctx.arc(linkLeft + (linkRight - linkLeft) * linkPhase, chipY, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.restore();
+            if (motif.includes("data_stream") || motif.includes("network")) {
+                const streamY = H * 0.665;
+                ctx.strokeStyle = accent + "44"; ctx.lineWidth = 2; ctx.beginPath();
+                ctx.moveTo(W * 0.08, streamY); ctx.bezierCurveTo(W * 0.36, streamY - 44, W * 0.64, streamY + 44, W * 0.92, streamY); ctx.stroke();
+                for (let i = 0; i < 5; i++) {
+                    const phase = (t * 0.28 + i / 5) % 1, px = W * (0.08 + 0.84 * phase), py = streamY + Math.sin(phase * Math.PI * 2) * 26;
+                    ctx.beginPath(); ctx.fillStyle = accent; ctx.shadowColor = accent; ctx.shadowBlur = 18; ctx.arc(px, py, 4 + 2 * Math.sin(t * 6 + i), 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+            }
         }
-
-        // Thin scene rail keeps the progress readable while watching.
         const railW = W - 120;
         ctx.fillStyle = "rgba(148,163,184,0.28)";
         ctx.beginPath();
         ctx.roundRect(60, H - 96, railW, 6, 3);
         ctx.fill();
-        ctx.fillStyle = "#38BDF8";
+        ctx.fillStyle = accent;
         ctx.beginPath();
         ctx.roundRect(60, H - 96, Math.max(6, railW * Math.min(1, Math.max(0, progress))), 6, 3);
         ctx.fill();
@@ -3943,24 +3876,133 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    function drawPromptChart(ctx, W, H, stage, visual, progress, time) {
+        const spec = visual.chart || stage?.chart || {};
+        const labels = (Array.isArray(spec.labels) ? spec.labels : []).map(String).slice(0, 10);
+        const series = (Array.isArray(spec.series) ? spec.series : []).filter(item => item && Array.isArray(item.values) && item.values.some(value => Number.isFinite(Number(value)))).slice(0, 3);
+        if (labels.length < 2 || !series.length) return false;
+        const x = 116, y = 500, w = W - 232, h = 850, type = String(spec.type || "line").toLowerCase();
+        const color = value => /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : "#F2B84B";
+        ctx.save(); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = color((visual.palette || [])[0]); ctx.font = "750 25px 'Segoe UI', sans-serif";
+        ctx.fillText(String(spec.title || stage?.title || "Data view").slice(0, 64), x, y - 35);
+        const left = x + 74, top = y + 38, plotW = w - 110, plotH = h - 120;
+        const values = series.flatMap(set => set.values.map(Number).filter(Number.isFinite));
+        const min = Math.min(0, ...values), max = Math.max(...values, 1), span = max - min || 1;
+        ctx.strokeStyle = "rgba(226,232,240,0.18)"; ctx.fillStyle = "#94A3B8"; ctx.lineWidth = 1;
+        ctx.font = "16px 'Segoe UI', sans-serif";
+        for (let i = 0; i <= 4; i++) {
+            const gy = top + plotH * i / 4;
+            ctx.beginPath(); ctx.moveTo(left, gy); ctx.lineTo(left + plotW, gy); ctx.stroke();
+            ctx.textAlign = "right"; ctx.fillText((max - span * i / 4).toFixed(max > 100 ? 0 : 1), left - 14, gy + 6);
+        }
+        series.forEach((set, si) => {
+            const vals = set.values.map(Number).filter(Number.isFinite).slice(0, labels.length), c = color(set.color);
+            const revealCount = Math.max(1, Math.ceil(Math.min(1, progress * 1.25) * vals.length));
+            if (type === "bar") {
+                const group = plotW / labels.length, barW = group / Math.max(2, series.length + 1);
+                vals.forEach((v, i) => {
+                    if (i >= revealCount) return;
+                    const bh = Math.max(2, ((v - min) / span) * plotH * Math.min(1, Math.max(0, progress * 1.8 - i / vals.length)));
+                    const bx = left + group * i + group * 0.18 + si * barW;
+                    ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 14;
+                    ctx.fillRect(bx, top + plotH - bh, barW * 0.72, bh); ctx.shadowBlur = 0;
+                });
+            } else {
+                ctx.beginPath();
+                vals.slice(0, revealCount).forEach((v, i) => {
+                    const px = left + plotW * i / Math.max(1, labels.length - 1), py = top + plotH * (1 - (v - min) / span);
+                    if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                });
+                ctx.strokeStyle = c; ctx.lineWidth = type === "area" ? 6 : 4; ctx.shadowColor = c; ctx.shadowBlur = 16; ctx.stroke(); ctx.shadowBlur = 0;
+                vals.slice(0, revealCount).forEach((v, i) => {
+                    const px = left + plotW * i / Math.max(1, labels.length - 1), py = top + plotH * (1 - (v - min) / span);
+                    ctx.beginPath(); ctx.arc(px, py, 7 + 2 * Math.sin(time * 3 + i), 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+                });
+            }
+        });
+        ctx.textAlign = "center"; ctx.fillStyle = "#CBD5E1"; ctx.font = "16px 'Segoe UI', sans-serif";
+        labels.forEach((label, i) => ctx.fillText(label.slice(0, 14), left + plotW * i / Math.max(1, labels.length - 1), top + plotH + 34));
+        ctx.textAlign = "left"; ctx.font = "17px 'Segoe UI', sans-serif";
+        series.forEach((set, i) => {
+            const lx = left + i * Math.min(260, plotW / series.length);
+            ctx.fillStyle = color(set.color); ctx.beginPath(); ctx.arc(lx, top + plotH + 72, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillText(String(set.name || `Series ${i + 1}`).slice(0, 24), lx + 14, top + plotH + 78);
+        });
+        ctx.restore(); return true;
+    }
+
+    function drawPromptTimeline(ctx, W, H, stage, visual, progress, time) {
+        const authored = Array.isArray(visual.events) ? visual.events : (Array.isArray(stage?.sentence_cues) ? stage.sentence_cues : []);
+        const events = authored.slice(0, 7).map((item, index) => ({
+            label: String(item.label || item.speech || item.title || "").replace(/[.!?।]+$/, "").slice(0, 84),
+            detail: String(item.detail || item.state_change || item.emphasis || "").slice(0, 100),
+            color: /^#[0-9a-f]{6}$/i.test(item.color || "") ? item.color : (visual.palette || [])[index % Math.max(1, (visual.palette || []).length)] || "#DDAA55",
+        })).filter(item => item.label);
+        if (events.length < 2) return false;
+        const x = W * 0.26, top = 450, gap = Math.min(220, 980 / Math.max(1, events.length - 1));
+        ctx.save(); ctx.strokeStyle = "rgba(203,213,225,0.32)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + gap * (events.length - 1)); ctx.stroke();
+        events.forEach((event, i) => {
+            const reveal = Math.max(0, Math.min(1, progress * events.length * 1.3 - i)); if (!reveal) return;
+            const y = top + i * gap, pulse = i === Math.min(events.length - 1, Math.floor(progress * events.length)) ? 1 + 0.1 * Math.sin(time * 5) : 1;
+            ctx.save(); ctx.globalAlpha *= reveal; ctx.beginPath(); ctx.arc(x, y, 14 * pulse, 0, Math.PI * 2); ctx.fillStyle = event.color; ctx.shadowColor = event.color; ctx.shadowBlur = 18; ctx.fill(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = event.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 24, y); ctx.lineTo(W * 0.86, y); ctx.stroke();
+            ctx.textAlign = "left"; ctx.fillStyle = event.color; ctx.font = "750 18px 'Segoe UI', sans-serif"; ctx.fillText(String(authored[i]?.time || `0${i + 1}`), x - 96, y + 6);
+            ctx.fillStyle = "#F8FAFC"; ctx.font = "700 25px 'Segoe UI', sans-serif"; wrapCanvasText(ctx, event.label, W * 0.58, 2).forEach((line, j) => ctx.fillText(line, x + 44, y - (event.detail ? 3 : -8) + j * 30));
+            if (event.detail) { ctx.fillStyle = "#AAB6C5"; ctx.font = "18px 'Segoe UI', sans-serif"; wrapCanvasText(ctx, event.detail, W * 0.58, 1).forEach((line, j) => ctx.fillText(line, x + 44, y + 34 + j * 24)); }
+            ctx.restore();
+        });
+        ctx.restore(); return true;
+    }
+
+    function drawPromptEditorial(ctx, W, H, stage, visual, progress, time) {
+        const title = String(visual.headline || stage?.title || "").trim();
+        const takeaway = String(visual.takeaway || visual.visual || stage?.caption || "").trim();
+        const accent = /^#[0-9a-f]{6}$/i.test((visual.palette || [])[0] || "") ? visual.palette[0] : "#E9B949";
+        const reveal = Math.max(0, Math.min(1, progress * 2.5));
+        ctx.save(); ctx.globalAlpha *= reveal; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+        ctx.fillStyle = accent; ctx.fillRect(104, 555, 8, 160 + 80 * Math.sin(time * 0.8));
+        ctx.fillStyle = "#F8FAFC"; ctx.font = "900 68px 'Segoe UI', sans-serif";
+        wrapCanvasText(ctx, title, W - 250, 3).forEach((line, i) => ctx.fillText(line, 146, 560 + i * 82 + (1 - reveal) * 32));
+        if (takeaway) {
+            ctx.fillStyle = accent; ctx.font = "650 30px 'Segoe UI', sans-serif";
+            wrapCanvasText(ctx, takeaway, W - 250, 4).forEach((line, i) => ctx.fillText(line, 146, 940 + i * 48));
+        }
+        const symbol = String(visual.hero_symbol || "").slice(0, 3);
+        if (symbol) { ctx.textAlign = "right"; ctx.font = "180px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif"; ctx.globalAlpha *= 0.18 + reveal * 0.25; ctx.fillText(symbol, W - 100, 1440); }
+        ctx.restore(); return true;
+    }
+
     function drawPromptVisualPlan(ctx, W, H, stage, progress, time, visualOverride, cueIndex = 0, cue = null) {
         const visual = visualOverride || (stage && stage.visual_data) || {};
         const requestedLayout = String(visual.layout || stage?.visual_data?.layout || "").toLowerCase();
+        const visualMode = String(visual.visual_mode || stage?.visual_data?.visual_mode || requestedLayout || "semantic_objects").toLowerCase();
+        if (visualMode === "chart" && drawPromptChart(ctx, W, H, stage, visual, progress, time)) {
+            drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue); drawCueDetailPanel(ctx, W, H, cue, progress, time, cue?.interaction_step); return true;
+        }
+        if (visualMode === "timeline" && drawPromptTimeline(ctx, W, H, stage, visual, progress, time)) {
+            drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue); drawCueDetailPanel(ctx, W, H, cue, progress, time, cue?.interaction_step); return true;
+        }
+        if (visualMode === "editorial" && drawPromptEditorial(ctx, W, H, stage, visual, progress, time)) {
+            drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue); drawCueDetailPanel(ctx, W, H, cue, progress, time, cue?.interaction_step); return true;
+        }
         const supportedLayouts = ["title", "split", "pipeline", "table", "chips", "warning", "cards", "spatial"];
-        if (supportedLayouts.includes(requestedLayout)) {
+        const semanticMode = ["semantic_objects", "illustration", "terminal", "blueprint", "network", "state_machine", "timeline", "chart"].includes(visualMode);
+        if (semanticMode || supportedLayouts.includes(requestedLayout)) {
+            const layoutMode = semanticMode ? "spatial" : requestedLayout;
             const sceneElements = Array.isArray(visual.elements) && visual.elements.length
                 ? visual.elements
                 : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
             const layoutVisual = {
                 ...((stage && stage.visual_data) || {}),
                 ...visual,
-                layout: requestedLayout,
+                layout: layoutMode,
                 visual: String(visual.visual || visual.composition || stage?.visual_data?.composition || ""),
                 labels: Array.isArray(visual.labels) ? visual.labels : sceneElements.map(item => String(item.label || "")).filter(Boolean),
                 steps: Array.isArray(visual.steps) ? visual.steps : sceneElements.map(item => String(item.label || "")).filter(Boolean),
                 rows: Array.isArray(visual.rows) ? visual.rows : (Array.isArray(cue?.table_rows) ? cue.table_rows : (stage?.table_rows || [])),
             };
-            const layout = requestedLayout === "table" && layoutVisual.rows.length < 2 ? "cards" : requestedLayout;
+            const layout = semanticMode ? "spatial" : requestedLayout === "table" && layoutVisual.rows.length < 2 ? "spatial" : requestedLayout;
             const layoutStage = { ...(stage || {}), visual_data: { ...layoutVisual, layout } };
             ctx.save(); ctx.globalAlpha = 1;
             if (layout === "title") drawBriefTitle(ctx, W, H, layoutStage, progress);
@@ -3979,7 +4021,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                         entities: sceneElements.map(item => ({
                             id: String(item.label || ""), label: String(item.label || ""),
                             detail: String(item.detail || ""), shape: String(item.shape || "orb"),
-                            color: String(item.color || "#38BDF8"),
+                            color: String(item.color || "#38BDF8"), glyph: String(item.glyph || item.icon || ""),
+                            x: item.x, y: item.y, motion: String(item.motion || ""),
                         })),
                         relationships: Array.isArray(visual.connectors) ? visual.connectors : (stage?.visual_data?.connectors || []),
                     },
@@ -3989,6 +4032,19 @@ SECOND_HIGHEST_SALARY: 70000`;
                 renderPromptDrivenVisual(ctx, W, H, { title: stage?.title || "", domain: stage?.domain || "" }, spatialStage, progress, 1, time);
             }
             else drawBriefCards(ctx, W, H, layoutStage, progress);
+            ctx.restore();
+            drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue);
+            drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
+            return true;
+        }
+        // Every model-authored mode remains valid. Unrecognized names go to the
+        // open semantic renderer instead of being coerced into a legacy layout.
+        if (visualMode) {
+            const authored = Array.isArray(visual.elements) ? visual.elements : (Array.isArray(visual.entities) ? visual.entities : (Array.isArray(visual.nodes) ? visual.nodes : []));
+            const openStage = { ...(stage || {}), visual_data: { ...((stage && stage.visual_data) || {}), ...visual, entities: authored } };
+            ctx.save();
+            ctx.globalAlpha = Math.max(0.15, Math.min(1, Number(stage?.alpha) || 1));
+            renderPromptDrivenVisual(ctx, W, H, { title: stage?.title || stage?.domain || "" }, openStage, progress, 1, time);
             ctx.restore();
             drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue);
             drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
@@ -4215,27 +4271,16 @@ SECOND_HIGHEST_SALARY: 70000`;
             const scale = enter * (1 + Math.sin(time * 1.7 + index * 0.8) * 0.025);
             const isFocused = focusPoint && focusPoint.index === index;
             if (elements.length > 6) {
-                const chipW = 208, chipH = 76;
                 ctx.save(); ctx.translate(x, y);
-                ctx.globalAlpha *= isFocused ? 0.98 : 0.58;
-                ctx.fillStyle = isFocused ? "rgba(9,34,56,0.96)" : "rgba(8,20,35,0.86)";
-                ctx.strokeStyle = isFocused ? "#E0F2FE" : color;
-                ctx.lineWidth = isFocused ? 3 : 1.5;
-                ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : (isFocused ? 18 : 7);
-                ctx.beginPath(); ctx.roundRect(-chipW / 2, -chipH / 2, chipW, chipH, 18); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                const glyph = String(item.glyph || item.icon || "");
-                if (glyph) { ctx.font = "700 26px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif"; ctx.fillStyle = color; ctx.textAlign = "center"; ctx.fillText(glyph.slice(0, 2), -78, 8, 42); }
-                ctx.font = "700 15px 'Segoe UI', sans-serif"; ctx.fillStyle = "#F8FAFC"; ctx.textAlign = "left";
-                const compactLabel = splitDiagramText(ctx, String(item.label).replace(/[_-]+/g, " "), 132, 2, 18);
-                compactLabel.forEach((line, lineIndex) => ctx.fillText(line, glyph ? -52 : -chipW / 2 + 12, 6 + lineIndex * 18));
-                if (isFocused) {
-                    ctx.globalAlpha = 0.72 + 0.18 * Math.sin(time * 2.4); ctx.strokeStyle = color; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.roundRect(-chipW / 2 - 5, -chipH / 2 - 5, chipW + 10, chipH + 10, 21); ctx.stroke();
-                }
+                ctx.globalAlpha *= isFocused ? 1 : 0.74;
+                drawPromptSemanticShape(ctx, item.shape, isFocused ? 31 : 23, color, time + index * 0.2, item.glyph || item.icon);
+                ctx.shadowBlur = 0; ctx.fillStyle = "#F8FAFC"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+                ctx.font = "650 17px 'Segoe UI', sans-serif";
+                splitDiagramText(ctx, String(item.label).replace(/[_-]+/g, " "), 190, 2, 18).forEach((line, lineIndex) => ctx.fillText(line, 42, lineIndex * 20));
                 ctx.restore();
                 return;
             }
-            if (isFocused) {
+            if (isFocused && /orbit|ring|circular/.test(`${visual.motion_grammar || ""} ${visual.composition || ""} ${item.motion || ""}`.toLowerCase())) {
                 ctx.save(); ctx.translate(x, y); ctx.rotate(-0.12 + Math.sin(time * 0.32) * 0.035);
                 ctx.globalAlpha *= 0.55 + 0.12 * Math.sin(time * 1.8);
                 ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([14, 12]);
@@ -4251,44 +4296,20 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
             ctx.globalAlpha *= elementProgress * (focusPoint && focusPoint.index !== index ? 0.24 : 1);
-            // Extruded isometric shell: three faces, a glassy front panel and
-            // routed circuit traces create depth while remaining browser-native.
-            const cardW = elements.length <= 3 ? 320 : 292, cardH = 292, depthX = 18, depthY = -12;
-            const left = -cardW / 2, right = cardW / 2, topFace = -142, bottom = cardH / 2;
-            ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 24;
-            ctx.beginPath(); ctx.moveTo(right, topFace); ctx.lineTo(right + depthX, topFace + depthY); ctx.lineTo(right + depthX, bottom + depthY); ctx.lineTo(right, bottom); ctx.closePath();
-            ctx.fillStyle = "rgba(9,25,44,0.96)"; ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(left, bottom); ctx.lineTo(right, bottom); ctx.lineTo(right + depthX, bottom + depthY); ctx.lineTo(left + depthX, bottom + depthY); ctx.closePath();
-            ctx.fillStyle = "rgba(12,37,58,0.98)"; ctx.fill(); ctx.strokeStyle = "rgba(125,211,252,0.62)"; ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(left, topFace); ctx.lineTo(left + depthX, topFace + depthY); ctx.lineTo(right + depthX, topFace + depthY); ctx.lineTo(right, topFace); ctx.closePath();
-            const cap = ctx.createLinearGradient(0, topFace, 0, topFace + 28); cap.addColorStop(0, color); cap.addColorStop(1, "rgba(15,35,58,0.96)");
-            ctx.fillStyle = cap; ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.stroke();
-            ctx.beginPath(); ctx.roundRect(left, topFace, cardW, cardH, 26);
-            const body = ctx.createLinearGradient(left, topFace, right, bottom); body.addColorStop(0, "rgba(17,35,58,0.97)"); body.addColorStop(0.55, "rgba(6,15,29,0.97)"); body.addColorStop(1, "rgba(8,24,40,0.97)");
-            ctx.fillStyle = body; ctx.fill(); ctx.strokeStyle = focusPoint && focusPoint.index === index ? "#E0F2FE" : color; ctx.lineWidth = focusPoint && focusPoint.index === index ? 4 : 2; ctx.stroke();
-            ctx.globalAlpha *= 0.34; ctx.strokeStyle = color; ctx.lineWidth = 2;
-            for (let trace = 0; trace < 3; trace++) { ctx.beginPath(); ctx.moveTo(left + 22, topFace + 30 + trace * 17); ctx.lineTo(left + 54 + trace * 9, topFace + 30 + trace * 17); ctx.lineTo(left + 72 + trace * 9, topFace + 48 + trace * 17); ctx.stroke(); }
-            ctx.restore();
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.shadowColor = color; ctx.shadowBlur = 32;
-            ctx.fillStyle = color;
             const glyph = String(item.glyph || item.icon || "");
-            if (glyph) {
-                const glyphSize = elements.length <= 3 ? 88 : elements.length <= 6 ? 78 : 68;
-                ctx.font = `800 ${glyphSize}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`;
-                ctx.shadowBlur = sqlShortState.isExporting ? 0 : 32;
-                ctx.fillText(glyph.slice(0, 2), 0, -58, 200);
-            }
-            ctx.shadowBlur = 0;
+            const shape = String(item.shape || "organic");
+            const radius = elements.length <= 3 ? 78 : elements.length <= 6 ? 68 : 42;
+            drawPromptSemanticShape(ctx, shape, radius, color, time + index * 0.2, glyph);
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
             const labelFont = elements.length <= 3 ? 30 : elements.length <= 6 ? 27 : 24;
             ctx.fillStyle = "#F8FAFC"; ctx.font = `750 ${labelFont}px 'Segoe UI', sans-serif`;
             const displayLabel = String(item.label).replace(/[_-]+/g, " ");
-            const labelLines = splitDiagramText(ctx, displayLabel, cardW - 52, 2, 27);
-            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, glyph ? 8 + lineIndex * 31 : -34 + lineIndex * 31));
+            const labelLines = splitDiagramText(ctx, displayLabel, 250, 2, 27);
+            labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, radius + 42 + lineIndex * 31));
             if (item.detail) {
                 ctx.fillStyle = "#CBD5E1"; ctx.font = "500 19px 'Segoe UI', sans-serif";
-                const detail = splitDiagramText(ctx, item.detail, cardW - 58, 2, 25).slice(0, 2);
-                detail.forEach((line, lineIndex) => ctx.fillText(line, 0, (glyph ? 48 : 10) + labelLines.length * 29 + lineIndex * 24));
+                const detail = splitDiagramText(ctx, item.detail, 260, 2, 25).slice(0, 2);
+                detail.forEach((line, lineIndex) => ctx.fillText(line, 0, radius + 73 + labelLines.length * 28 + lineIndex * 24));
             }
             if (interactionStep === "process" && focusPoint && focusPoint.index === index) {
                 const pulse = 1 + 0.08 * Math.sin(time * 6);
@@ -4489,6 +4510,54 @@ SECOND_HIGHEST_SALARY: 70000`;
         return true;
     }
 
+    function drawPromptSemanticShape(ctx, shape, radius, color, time, glyph) {
+        const kind = String(shape || "organic").toLowerCase();
+        ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.lineCap = "round";
+        ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 22;
+        if (kind.includes("database") || kind.includes("cylinder") || kind.includes("storage")) {
+            ctx.beginPath(); ctx.ellipse(0, -radius * 0.55, radius, radius * 0.3, 0, 0, Math.PI * 2); ctx.fillStyle = "rgba(6,18,34,0.96)"; ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-radius, -radius * 0.55); ctx.lineTo(-radius, radius * 0.6); ctx.quadraticCurveTo(0, radius * 1.05, radius, radius * 0.6); ctx.lineTo(radius, -radius * 0.55); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(0, radius * 0.1, radius, radius * 0.3, 0, 0, Math.PI); ctx.stroke();
+        } else if (kind.includes("cloud")) {
+            ctx.beginPath(); ctx.moveTo(-radius, radius * 0.35); ctx.bezierCurveTo(-radius * 1.35, -radius * 0.2, -radius * 0.7, -radius, -radius * 0.2, -radius * 0.68); ctx.bezierCurveTo(radius * 0.05, -radius * 1.4, radius, -radius * 1.12, radius * 0.92, -radius * 0.38); ctx.bezierCurveTo(radius * 1.48, -radius * 0.2, radius * 1.28, radius * 0.52, radius * 0.78, radius * 0.52); ctx.lineTo(-radius * 0.72, radius * 0.52); ctx.quadraticCurveTo(-radius, radius * 0.52, -radius, radius * 0.35); ctx.closePath(); ctx.fillStyle = "rgba(7,20,36,0.94)"; ctx.fill(); ctx.stroke();
+        } else if (kind.includes("phone") || kind.includes("laptop") || kind.includes("monitor") || kind.includes("device")) {
+            if (kind.includes("laptop") || kind.includes("monitor")) {
+                ctx.beginPath(); ctx.roundRect(-radius * 1.15, -radius * 0.72, radius * 2.3, radius * 1.38, 10); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-radius * 1.35, radius * 0.8); ctx.lineTo(radius * 1.35, radius * 0.8); ctx.lineTo(radius * 1.08, radius); ctx.lineTo(-radius * 1.08, radius); ctx.closePath(); ctx.fill(); ctx.stroke();
+            } else { ctx.beginPath(); ctx.roundRect(-radius * 0.62, -radius, radius * 1.24, radius * 2, 18); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.78, 4, 0, Math.PI * 2); ctx.fill(); }
+            ctx.shadowBlur = 0; ctx.strokeStyle = color + "99"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-radius * 0.4, -radius * 0.38); ctx.lineTo(radius * 0.4, -radius * 0.38); ctx.stroke();
+        } else if (kind.includes("document") || kind.includes("file") || kind.includes("page")) {
+            ctx.beginPath(); ctx.moveTo(-radius * 0.68, -radius); ctx.lineTo(radius * 0.3, -radius); ctx.lineTo(radius * 0.68, -radius * 0.62); ctx.lineTo(radius * 0.68, radius); ctx.lineTo(-radius * 0.68, radius); ctx.closePath(); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(radius * 0.3, -radius); ctx.lineTo(radius * 0.3, -radius * 0.62); ctx.lineTo(radius * 0.68, -radius * 0.62); ctx.moveTo(-radius * 0.42, -radius * 0.12); ctx.lineTo(radius * 0.4, -radius * 0.12); ctx.moveTo(-radius * 0.42, radius * 0.2); ctx.lineTo(radius * 0.4, radius * 0.2); ctx.stroke();
+        } else if (kind.includes("lock") || kind.includes("security")) {
+            ctx.beginPath(); ctx.arc(0, -radius * 0.15, radius * 0.52, Math.PI, 0); ctx.stroke(); ctx.beginPath(); ctx.roundRect(-radius * 0.74, -radius * 0.12, radius * 1.48, radius * 1.05, 12); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.24, 5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, radius * 0.28); ctx.lineTo(0, radius * 0.53); ctx.stroke();
+        } else if (kind.includes("gear") || kind.includes("settings")) {
+            const teeth = 12; ctx.beginPath(); for (let i = 0; i < teeth * 2; i++) { const a = Math.PI * i / teeth + time * 0.12, r = radius * (i % 2 ? 0.78 : 1); const px = Math.cos(a) * r, py = Math.sin(a) * r; if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py); } ctx.closePath(); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2); ctx.stroke();
+        } else if (kind.includes("neuron") || kind.includes("brain")) {
+            for (let i = 0; i < 8; i++) { const a = Math.PI * 2 * i / 8 + time * 0.08, px = Math.cos(a) * radius * 0.76, py = Math.sin(a) * radius * 0.76; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(px, py); ctx.stroke(); ctx.beginPath(); ctx.arc(px, py, radius * 0.12, 0, Math.PI * 2); ctx.fill(); }
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.32, 0, Math.PI * 2); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+        } else if (kind.includes("molecule") || kind.includes("atom") || kind.includes("orbit")) {
+            for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(0, 0, radius, radius * 0.42, i * Math.PI / 3 + time * 0.08, 0, Math.PI * 2); ctx.stroke(); const a = time * 0.65 + i * 2.1; ctx.beginPath(); ctx.arc(Math.cos(a) * radius, Math.sin(a) * radius * 0.42, radius * 0.12, 0, Math.PI * 2); ctx.fill(); }
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.16, 0, Math.PI * 2); ctx.fill();
+        } else if (kind.includes("wave") || kind.includes("signal") || kind.includes("audio")) {
+            ctx.beginPath(); for (let i = 0; i <= 32; i++) { const px = -radius + i * radius * 2 / 32, py = Math.sin(i * 0.57 + time * 1.6) * radius * (0.18 + 0.55 * Math.abs(Math.sin(i * 0.23))); if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py); } ctx.stroke();
+        } else if (kind.includes("warning") || kind.includes("triangle")) {
+            ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(radius * 0.95, radius * 0.78); ctx.lineTo(-radius * 0.95, radius * 0.78); ctx.closePath(); ctx.fillStyle = "rgba(38,20,8,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -radius * 0.38); ctx.lineTo(0, radius * 0.22); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.48, 4, 0, Math.PI * 2); ctx.fill();
+        } else if (kind.includes("person") || kind.includes("user")) {
+            ctx.beginPath(); ctx.arc(0, -radius * 0.45, radius * 0.32, 0, Math.PI * 2); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-radius * 0.76, radius * 0.85); ctx.quadraticCurveTo(-radius * 0.7, -radius * 0.12, 0, -radius * 0.05); ctx.quadraticCurveTo(radius * 0.7, -radius * 0.12, radius * 0.76, radius * 0.85); ctx.closePath(); ctx.fill(); ctx.stroke();
+        } else if (kind.includes("chip") || kind.includes("processor") || kind.includes("server")) {
+            ctx.beginPath(); ctx.roundRect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4, 8); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+            for (let i = -2; i <= 2; i++) { const p = i * radius * 0.24; ctx.beginPath(); ctx.moveTo(p, -radius); ctx.lineTo(p, -radius * 0.7); ctx.moveTo(p, radius * 0.7); ctx.lineTo(p, radius); ctx.moveTo(-radius, p); ctx.lineTo(-radius * 0.7, p); ctx.moveTo(radius * 0.7, p); ctx.lineTo(radius, p); ctx.stroke(); }
+        } else {
+            if (kind.includes("diamond")) { ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(radius, 0); ctx.lineTo(0, radius); ctx.lineTo(-radius, 0); ctx.closePath(); }
+            else if (kind.includes("cube") || kind.includes("block")) { ctx.beginPath(); ctx.moveTo(-radius * 0.7, -radius * 0.42); ctx.lineTo(0, -radius); ctx.lineTo(radius * 0.7, -radius * 0.42); ctx.lineTo(radius * 0.7, radius * 0.55); ctx.lineTo(0, radius); ctx.lineTo(-radius * 0.7, radius * 0.55); ctx.closePath(); }
+            else { ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); }
+            ctx.fillStyle = "rgba(7,17,30,0.88)"; ctx.fill(); ctx.stroke();
+            if (glyph) { ctx.shadowBlur = 0; ctx.fillStyle = color; ctx.font = `700 ${radius}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(glyph).slice(0, 2), 0, 2); }
+        }
+        ctx.restore();
+    }
+
     // Generic semantic diagram remains only for legacy scenes without prompt-specific media.
     function renderPromptDrivenVisual(ctx, W, H, p, stage, progress, alpha, t) {
         const visual = (stage && stage.visual_data) || {};
@@ -4496,18 +4565,22 @@ SECOND_HIGHEST_SALARY: 70000`;
         const description = visual.visual_description || (stage && stage.visual_description) || title;
         const rawEntities = visual.entities || (stage && stage.entities) || visual.nodes || [];
         const entities = (Array.isArray(rawEntities) ? rawEntities : [])
-            .filter(item => item && (item.label || item.name || item.title)).slice(0, 18);
+            .filter(item => item && (item.label || item.name || item.title)).slice(0, 48);
         const fallbackEntities = title.split(/\s+/).filter(word => word.length > 3).slice(0, 3)
             .map((word, i) => ({ label: word, detail: i === 0 ? description : "", color: i % 2 ? "#A78BFA" : "#38BDF8" }));
         const nodes = entities.length ? entities : fallbackEntities;
         const links = visual.relationships || (stage && stage.relationships) || visual.connections || [];
         const composition = String(visual.composition || (stage && stage.composition) || "").toLowerCase();
-        const motion = String(visual.motion || (stage && stage.motion) || "").toLowerCase();
+        const motion = String(visual.motion_grammar || visual.motion || (stage && stage.motion) || "").toLowerCase();
         const top = 720, bottom = 1450;
         const points = nodes.map((node, i) => {
             const count = Math.max(nodes.length, 1);
             let x, y;
-            if (count > 6) {
+            const authoredX = Number(node.x), authoredY = Number(node.y);
+            if (Number.isFinite(authoredX) && Number.isFinite(authoredY)) {
+                x = Math.max(108, Math.min(W - 108, 108 + authoredX * (W - 216)));
+                y = Math.max(455, Math.min(H - 1000, 455 + authoredY * 910));
+            } else if (count > 6) {
                 const columns = Math.min(4, count);
                 const rows = Math.ceil(count / columns);
                 x = 112 + (i % columns) * ((W - 224) / Math.max(1, columns - 1));
@@ -4519,11 +4592,15 @@ SECOND_HIGHEST_SALARY: 70000`;
             } else if (composition.includes("vertical") || composition.includes("cascade") || composition.includes("flow")) {
                 x = W / 2 + Math.sin(i * 1.35 + t * 0.35) * Math.min(150, W * 0.14);
                 y = top + i * ((bottom - top) / Math.max(1, count - 1));
-            } else {
+            } else if (composition.includes("radial") || composition.includes("orbit")) {
                 const angle = (Math.PI * 2 * i / count) - Math.PI / 2 + t * 0.12;
                 const spread = motion.includes("converg") ? 0.45 + progress * 0.55 : (motion.includes("expand") ? 0.55 + progress * 0.65 : 1);
                 x = W / 2 + Math.cos(angle) * Math.min(W * 0.31, 330) * spread;
                 y = (top + bottom) / 2 + Math.sin(angle) * 310 * spread;
+            } else {
+                const col = i % 2, row = Math.floor(i / 2);
+                x = count === 1 ? W / 2 : W * (0.28 + col * 0.44);
+                y = count <= 2 ? (top + bottom) / 2 : top + row * Math.min(250, (bottom - top) / Math.max(1, Math.ceil(count / 2) - 1));
             }
             return { x, y, node };
         });
@@ -5601,6 +5678,47 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.textAlign = "left";
     }
 
+    function drawPromptSceneBackdrop(ctx, W, H, visual, time) {
+        const palette = Array.isArray(visual?.palette) ? visual.palette.filter(value => /^#[0-9a-f]{6}$/i.test(String(value))) : [];
+        const motif = String(visual?.background_motif || visual?.art_direction || "").toLowerCase();
+        const base = palette[1] || "#04070F";
+        const accent = palette[0] || "#38BDF8";
+        const gradient = ctx.createLinearGradient(0, 0, W * (0.35 + 0.12 * Math.sin(time * 0.18)), H);
+        gradient.addColorStop(0, base);
+        gradient.addColorStop(1, "#03050A");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, W, H);
+        ctx.save();
+        ctx.globalAlpha = 0.13;
+        ctx.strokeStyle = accent;
+        ctx.fillStyle = accent;
+        if (/blueprint|grid|schematic/.test(motif)) {
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= W; x += 72) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+            for (let y = 0; y <= H; y += 72) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+        } else if (/wave|audio|signal/.test(motif)) {
+            ctx.lineWidth = 3; ctx.beginPath();
+            for (let x = 0; x <= W; x += 8) {
+                const y = H * 0.48 + Math.sin(x * 0.018 + time * 1.7) * 54 + Math.sin(x * 0.044 - time) * 20;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        } else if (/organic|cell|molecule|nebula|particle/.test(motif)) {
+            for (let i = 0; i < 24; i++) {
+                const x = (i * 173 + Math.sin(time * 0.24 + i) * 42 + W) % W;
+                const y = (i * 317 + Math.cos(time * 0.2 + i * 0.7) * 50 + H) % H;
+                ctx.beginPath(); ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2); ctx.fill();
+            }
+        } else if (/technical|terminal|data|network|hud/.test(motif)) {
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 11; i++) {
+                const y = 160 + i * 148;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W * (0.3 + ((i * 37) % 60) / 100), y); ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
     function renderSqlShortFrame(t) {
         const canvas = document.getElementById("sqlShortCanvas");
         if (!canvas) return;
@@ -5648,8 +5766,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         // Deterministic technical stage: every camera, component and cue motion is
         // derived from the audio-locked scene time for stable seek and export.
-        ctx.fillStyle = "#04070F";
-        ctx.fillRect(0, 0, W, H);
+        drawPromptSceneBackdrop(ctx, W, H, activeStage?.visual_data || {}, t);
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);

@@ -19,6 +19,7 @@ import json
 import sqlite3
 import struct
 import asyncio
+import math
 from typing import Dict, Any, List, Optional, Tuple, Union
 from pathlib import Path
 
@@ -121,7 +122,7 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
         visual_prompt = str(scene.get("title") or scene.get("speech") or "").strip()
     continuity = scene.get("continuity")
     if not isinstance(continuity, str) or not continuity.strip():
-        continuity = "Keep one consistent technical-diagram style across scenes."
+        continuity = "Keep only named subject details consistent; let each scene choose its own composition, medium, palette, and motion."
     overlays = scene.get("overlay_items")
     if not isinstance(overlays, list):
         overlays = []
@@ -132,13 +133,19 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(elements, list) or not elements:
         raise ValueError("Each AI-authored scene must include visual elements.")
     normalized_elements = []
-    for item in elements[:18]:
+    for item_index, item in enumerate(elements[:48]):
         if not isinstance(item, dict) or not str(item.get("label") or "").strip():
             continue
         try:
             x, y = float(item.get("x")), float(item.get("y"))
         except (TypeError, ValueError):
-            continue
+            # Coordinates are rendering metadata, not a reason to discard a
+            # useful model-authored object. Place missing positions in a loose
+            # scene-specific grid; explicit model coordinates always win.
+            columns = min(4, max(1, len(elements)))
+            rows = max(1, math.ceil(len(elements) / columns))
+            x = 0.12 + (item_index % columns) * (0.76 / max(1, columns - 1))
+            y = 0.22 + (item_index // columns) * (0.62 / max(1, rows - 1))
         if 0 <= x <= 1 and 0 <= y <= 1:
             normalized_elements.append({**item, "x": x, "y": y, "label": str(item["label"]).strip()})
     if not normalized_elements:
@@ -182,7 +189,7 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
     state_for_step = {"introduce": "introducing", "highlight": "highlighted", "connect": "connected", "transfer": "connected", "process": "processing", "failure": "failed", "diagnose": "diagnosing", "recover": "recovering", "reprocess": "reprocessing", "output": "output_ready", "verify": "verified", "complete": "completed"}
     camera_moves = {"push_in", "pull_back", "pan_to_source", "pan_to_destination", "pan_to_next", "orbit_left", "orbit_right", "rack_focus", "hold"}
     if isinstance(sentence_cues, list):
-        for cue in sentence_cues[:16]:
+        for cue in sentence_cues[:32]:
             if not isinstance(cue, dict) or not str(cue.get("speech") or "").strip():
                 continue
             cue_speech = str(cue["speech"]).strip()
@@ -193,13 +200,16 @@ def _validate_scene_visual_contract(scene: Dict[str, Any]) -> Dict[str, Any]:
             if not isinstance(cue_elements, list) or not cue_elements:
                 continue
             normalized_cue_elements = []
-            for element in cue_elements[:18]:
+            for element_index, element in enumerate(cue_elements[:48]):
                 if not isinstance(element, dict) or not str(element.get("label") or "").strip():
                     continue
                 try:
                     x, y = float(element.get("x")), float(element.get("y"))
                 except (TypeError, ValueError):
-                    continue
+                    columns = min(4, max(1, len(cue_elements)))
+                    rows = max(1, math.ceil(len(cue_elements) / columns))
+                    x = 0.12 + (element_index % columns) * (0.76 / max(1, columns - 1))
+                    y = 0.22 + (element_index // columns) * (0.62 / max(1, rows - 1))
                 if 0 <= x <= 1 and 0 <= y <= 1:
                     normalized_cue_elements.append({**element, "x": x, "y": y, "label": str(element["label"]).strip()})
             if normalized_cue_elements:
@@ -3741,16 +3751,16 @@ class SqlShortVideoEngine:
                     f"Target narration language: {lang_name}. Every speech value must be written only in this language and its native script, never in English, and never prefixed with a language code. {narration_style}\n\n"
                     f"The input could be: a coding question, an architecture or theory topic, raw code, or a speech script.\n"
                     f"Your task: Design the visuals from the user's subject and directions. Do not default every video or scene to one branded composition, node-card diagram, medallion, orbit, or flowchart. Choose a fitting visual treatment independently for each scene: cinematic environment, split-screen, close-up inspection, spatial/3D scene, animated timeline, data table, code/worksheet, editorial typography, warning/recovery sequence, or connected architecture. Reuse a composition only when continuity or the prompt calls for it. Honor explicit scene-specific layouts and camera directions.\n"
-                    f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
+                    f"1. Invent a scene-specific art direction and palette from the actual subject. Avoid a default blue sci-fi background, HUD corners, glowing cards, orbit rings, and streaming particles unless the concept itself calls for them. Use editorial, tactile, scientific, cinematic, architectural, documentary, hand-drawn, or other fitting visual language.\n"
                     f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Honor an explicitly requested duration exactly within natural speaking pace. If duration is omitted, choose the runtime that fully explains the requested subject without filler and return it as max_duration_seconds; there is no built-in 60-second cap. Preserve scene pauses and pacing requested by the user.\n"
                     + (f"The user supplied a numbered storyboard with {authored_scene_count} scenes. Return exactly {authored_scene_count} scenes in that order; preserve each scene's narration, visual direction, labels, timing, pauses, and technical constraints. Do not merge scenes.\n" if authored_scene_count >= 2 else "")
                     + (f"The user explicitly requested at least {minimum_seconds:g} seconds of video narration; develop enough accurate, useful explanation to meet that minimum without filler.\n" if minimum_seconds else "")
                     + f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, do not use them; choose prompt-specific cinematic, editorial, typographic, or metaphor-driven visuals instead.\n"
-                    f"4. Return scene-authored visual_data with composition, a supported layout (title, split, pipeline, table, chips, warning, cards, or spatial), and up to 18 prompt-relevant elements with label, normalized x/y, shape and color, plus valid directed connectors. Choose layout and composition per scene based on the actual narrated action; adjacent scenes should visibly differ unless the user asks for continuity. Also return 1–3 concise overlay_items per scene, each with kind (label, code, or formula), content, and normalized x/y position. These are required readable on-screen words: use a short scene headline, metric, warning, record value, or takeaway, not empty text. Preserve all named people, devices, systems, environments and data needed to explain the scene. Keep relevant inactive components dimmed and visible. Medallion-flow is a reusable connection motif around active objects, not a mandatory full-screen layout. Do not turn every scene into cards or node diagrams.\n"
+                    f"4. You are the visual director. Freely invent an original visual treatment for each scene from the actual topic; there is no required layout, renderer list, art style, composition, animation vocabulary, or repeated brand motif. Use the most explanatory medium: e.g. charts, timelines, maps, scientific/technical illustrations, objects, typography, code screens, architecture, cross-sections, symbols, or an original visual metaphor. Those are examples, not an allowlist. Per scene, author visual_data with an open-ended visual_mode name, art_direction, palette, background_motif, motion_grammar, composition/camera, exact elements (label/detail/x/y/shape/glyph/motion), and directed connectors when conceptually meaningful. Invent new shape/style/motion descriptors when useful. If a chart is the clearest way to explain actual data, provide chart={type,title,x_label,y_label,labels,series:[{name,color,values}]}; never invent factual data merely to fill a chart. If sequence/time is essential, provide events=[{label,time,detail,color}]. Change composition, dominant object, viewing angle, color/material language, and animation between scenes and between unrelated topics; preserve continuity only for the same subject where needed. Make each visual teach this exact topic. Add 1–3 concise readable overlay_items.\n"
                     f"4a. For Oracle → AWS DMS → Snowflake scenarios, never assume a direct DMS-to-Snowflake target. Show a supported configured ingestion path such as AWS DMS → Amazon S3 → Snowpipe → Snowflake, or another explicitly named intermediary integration, and explain it. Do not invent a specific root cause unless the prompt supplies evidence.\n"
                     f"5. Write speech naturally in {lang_name}, covering the important prompt details. Scene speech in order is the exact narration to synthesize; avoid generic intros/outros unless requested. Add speech_en as a natural English translation for subtitles. Infer fitting delivery from the prompt and assign per-sentence voice_emotion (curious, confident, enthusiastic, thoughtful, calm, urgent), voice_pace (slow, steady, energetic), voice_emphasis (short phrase to emphasize naturally in the spoken line), and pause_after (seconds); honor explicit user directions. Use these cues to guide narration and visual holds without putting direction labels into spoken/subtitle text.\n"
                     f"6. Split narration into sentence_cues in order. Each cue matches one spoken sentence and subtitle, with action, emphasis, interaction_step, component_state, focus_element, camera_move, pause_after, state_change, expected_result, observed_result, code fields, simulated_action, and fresh visual_data when needed. Cue speech must concatenate to exactly match scene speech. Use deterministic scene-time animation for seek and replay. Assign each scene a distinct primary animation suited to its action (for example packet orbit/flow, split reveal, magnifying scan, component morph, particle transfer, row-by-row table reveal, or verification pulse); describe it in action/state_change and use supported camera_move values. Match composition and camera movement to narration; do not repeat the same animation in every scene. When the prompt contains a code block, code snippet, command, configuration, or asks how code works, show the relevant code in a readable editor, type it progressively, then reveal an illustrative simulated output and a plain-language explanation tied to the code. Preserve the user's exact code where practical; otherwise show a short, accurate relevant excerpt. Set code_language, code_snippet, code_explanation, and code_output on the appropriate cue; set simulated_action to run_code for the run/reveal cue. Never execute code or imply output was actually run; if no output was supplied, label it as an illustrative expected output. For SQL, these fields may accompany sql_query and table_rows.\n\n"
-                    f"Output raw JSON with title, domain, content_type, max_duration_seconds, and scenes. If the user specified duration, use that; otherwise choose an appropriate runtime based on complexity. Each scene must include title, speech, speech_en, caption, sentence_cues, visual_data with composition/layout/elements/connectors, and overlay_items containing visible text. Preserve every user-requested scene and constraint. Never leave required overlay text empty.\n"
+                    f"Output raw JSON with title, domain, content_type, max_duration_seconds, and scenes. If the user specified duration, use that; otherwise choose an appropriate runtime based on complexity. Each scene must include title, speech, speech_en, caption, sentence_cues, and visual_data with a freely invented visual_mode, art_direction, palette as an array of colors, background_motif, motion_grammar, composition, elements and connectors. Include accurate visible overlay_items. Preserve every user-requested scene and constraint. Never leave required overlay text empty.\n"
                     f'{{"title":"Topic-specific English title","domain":"Inferred domain","content_type":"tech_topic","scenes":[{{"title":"Scene title","speech":"Narration in {lang_name}.","speech_en":"Narration in English.","caption":"Short on-screen caption","sentence_cues":[{{"speech":"One complete spoken sentence in {lang_name}.","speech_en":"Matching English subtitle sentence.","action":"reveal then transform","emphasis":"key concept","interaction_step":"introduce","component_state":"introducing","focus_element":"Oracle Database","camera_move":"push_in","pause_after":0.4,"state_change":"Current component shows an active CDC record","expected_result":"Source value 8000","observed_result":"Target value 10000","sql_query":"SELECT id, balance FROM accounts WHERE id = 42;","simulated_action":"run_query","table_rows":[["ID","BALANCE"],["42","8000"]],"visual_data":{{"composition":"Visual progression for this exact sentence","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Scene-specific establishing composition","elements":[{{"label":"Prompt-specific visual element","x":0.5,"y":0.5,"shape":"icon","glyph":"↗","color":"#38BDF8","detail":"Short label"}}],"connectors":[]}}}}]}}'
                 )
 
@@ -3815,9 +3825,9 @@ class SqlShortVideoEngine:
                         f"Repair the earlier AI response, which failed parsing or scene-visual validation: {e}. "
                         f"Earlier response: {ai_resp[:12000]}\n\n"
                         f"Use this complete user prompt as the source of truth and create its 9:16 video: {text_input}\n"
-                        f"Write all speech in {lang_name}. Narration style: {narration_style} Return raw JSON only with title, domain, content_type, and scenes. Every scene's visual_data must include a supported, scene-specific layout (title, split, pipeline, table, chips, warning, cards, or spatial) and composition. "
+                        f"Write all speech in {lang_name}. Narration style: {narration_style} Return raw JSON only with title, domain, content_type, and scenes. Preserve or repair each scene's original freely-authored visual direction; the renderer accepts open-ended visual_mode/art_direction/motion descriptions and should not coerce them into a fixed layout. "
                         f"Preserve requested scene count/order, timings, dialogue, captions, duration, and visual constraints. Every sentence_cue maps one exact spoken sentence to its subtitle, action, emphasis, interaction_step, focus_element, camera_move, pause_after, state_change, expected_result, observed_result, code_language, code_snippet, code_explanation, code_output, sql_query, simulated_action, table_rows, and scene-specific visual_data. When user input contains code, show it typing in an editor, then reveal clearly labelled illustrative output and explain its logic in accessible language. Preserve exact user code when practical, never claim it was executed. Use a deterministic frame timeline so seek, pause, replay and export render identical frames. Camera moves are intentional and voice-linked; hold briefly only after meaningful checkpoints. Progressively reveal components, simulate code/SQL, clicks and table expansion, and follow introduce, highlight, connect, transfer, process, failure, recover, output, verify, continue. Preserve failure → diagnosis → recovery → rerun → final verification order and never show success before validation passes. Validate connector endpoints and direction. "
-                        f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, explicitly honor that. Render only editable vector elements; do not request image assets. "
+                    f"Do not substitute a fixed template, generic diagram, box grid, or tree for the user's requested composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, explicitly honor that. Render prompt-specific visuals as native vector artwork; image_asset_prompt may describe a desired subject-specific background or cutaway when a media asset is available, but never put labels/text into generated art. "
                         f'Example scene shape: {{"title":"Scene title","speech":"Line in {lang_name}.","speech_en":"English line.","caption":"Short caption","sentence_cues":[{{"speech":"Line in {lang_name}.","speech_en":"English line.","action":"reveal","emphasis":"key point","interaction_step":"introduce","focus_element":"Source","camera_move":"push_in","pause_after":0.4,"state_change":"Source becomes active","expected_result":"Source row is present","observed_result":"Source row is present","visual_data":{{"composition":"Sentence-specific visual progression","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}],"visual_data":{{"composition":"Composition matching this scene","elements":[{{"label":"Scene element","x":0.35,"y":0.45,"shape":"icon","glyph":"◇","color":"#38BDF8","detail":"Short detail"}}],"connectors":[]}}}}.'
                     )
                     retry_resp, _, _ = await asyncio.to_thread(
