@@ -3784,34 +3784,52 @@ SECOND_HIGHEST_SALARY: 70000`;
     function drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep) {
         if (!cue) return;
         const query = String(cue.sql_query || "").trim();
+        const code = String(cue.code_snippet || query || "").trim();
+        const codeLanguage = String(cue.code_language || (query ? "SQL" : "CODE")).trim().toUpperCase().slice(0, 18);
+        const explanation = String(cue.code_explanation || "").trim();
+        const output = String(cue.code_output || "").trim();
         const rows = Array.isArray(cue.table_rows) ? cue.table_rows.slice(0, 6) : [];
         const state = String(cue.state_change || "").trim();
-        if (!query && !rows.length && !state) return;
-        const x = 96, y = H - 850, w = W - 192, h = 198;
+        if (!code && !rows.length && !state) return;
+        const x = 96, w = W - 192, h = code ? 360 : 198, y = H - h - 652;
         const action = String(cue.simulated_action || "none");
         ctx.save(); ctx.globalAlpha = 0.97;
         ctx.fillStyle = "rgba(4,11,22,0.96)"; ctx.strokeStyle = interactionStep === "verify" ? "rgba(34,197,94,0.9)" : "rgba(56,189,248,0.82)"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.roundRect(x, y, w, h, 20); ctx.fill(); ctx.stroke();
         ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.font = "800 22px 'Segoe UI', sans-serif";
-        ctx.fillStyle = "#7DD3FC"; ctx.fillText(query ? "SQL EDITOR · SIMULATED RUN" : rows.length ? "SIMULATED DATA OUTPUT" : interactionStep === "verify" ? "VALIDATION CHECK" : "PROCESS STATE", x + 22, y + 25);
-        if (query || rows.length) {
+        ctx.fillStyle = "#7DD3FC"; ctx.fillText(code ? `${codeLanguage} EDITOR · TYPE → SIMULATE` : rows.length ? "SIMULATED DATA OUTPUT" : interactionStep === "verify" ? "VALIDATION CHECK" : "PROCESS STATE", x + 22, y + 25);
+        if (code || rows.length) {
             ctx.textAlign = "right"; ctx.font = "800 13px 'Segoe UI', sans-serif"; ctx.fillStyle = "#FBBF24";
             ctx.fillText("ILLUSTRATIVE · NOT EXECUTED", x + w - 142, y + 25);
         }
-        if (query) {
-            const runX = x + w - 125, runY = y + 12;
-            ctx.fillStyle = progress >= 0.76 && action === "run_query" ? "#10B981" : "rgba(14,40,58,0.98)";
+        if (code) {
+            const runX = x + w - 125, runY = y + 12, isSql = Boolean(query);
+            const runAction = isSql ? "run_query" : "run_code";
+            const runProgress = isSql ? 0.76 : 0.68;
+            ctx.fillStyle = progress >= runProgress && action === runAction ? "#10B981" : "rgba(14,40,58,0.98)";
             ctx.beginPath(); ctx.roundRect(runX, runY, 100, 28, 9); ctx.fill();
-            ctx.fillStyle = "#E2E8F0"; ctx.textAlign = "center"; ctx.font = "750 15px 'Segoe UI', sans-serif"; ctx.fillText(progress >= 0.76 && action === "run_query" ? "✓ SIMULATED" : "▶ RUN", runX + 50, runY + 15);
-            const visibleChars = Math.floor(query.length * Math.max(0, Math.min(1, progress / (action === "run_query" ? 0.72 : 0.92))));
-            query.slice(0, visibleChars).split("\n").slice(0, 4).forEach((line, lineIndex) => {
-                ctx.fillStyle = line.trim().startsWith("--") ? "#94A3B8" : "#A7F3D0"; ctx.textAlign = "left"; ctx.font = "600 20px 'Consolas', monospace";
-                ctx.fillText(`${String(lineIndex + 1).padStart(2, "0")}  ${line.slice(0, 78)}`, x + 24, y + 67 + lineIndex * 29);
+            ctx.fillStyle = "#E2E8F0"; ctx.textAlign = "center"; ctx.font = "750 15px 'Segoe UI', sans-serif"; ctx.fillText(progress >= runProgress && action === runAction ? "✓ OUTPUT" : "▶ RUN", runX + 50, runY + 15);
+            const visibleChars = Math.floor(code.length * Math.max(0, Math.min(1, progress / (action === runAction ? 0.62 : 0.92))));
+            const codeLines = code.slice(0, visibleChars).split("\n").slice(0, 5);
+            codeLines.forEach((line, lineIndex) => {
+                const trimmed = line.trim();
+                ctx.fillStyle = /^(#|\/\/|--)/.test(trimmed) ? "#94A3B8" : /\b(def|return|const|let|var|function|SELECT|FROM|WHERE|import|print|if|for)\b/i.test(line) ? "#C4B5FD" : "#A7F3D0";
+                ctx.textAlign = "left"; ctx.font = "600 17px 'Consolas', monospace";
+                ctx.fillText(`${String(lineIndex + 1).padStart(2, "0")}  ${line.slice(0, 74)}`, x + 24, y + 62 + lineIndex * 23, w - 48);
             });
-            if (action === "run_query" && progress >= 0.68 && progress <= 0.82) {
+            if (action === runAction && progress >= 0.58 && progress <= 0.78) {
                 const clickX = runX + 55, clickY = runY + 15, pulse = 1 + 0.35 * Math.sin(time * 18);
                 ctx.save(); ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(clickX, clickY, 12 * pulse, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(clickX - 26, clickY + 10); ctx.lineTo(clickX - 9, clickY + 25); ctx.lineTo(clickX - 13, clickY + 8); ctx.closePath(); ctx.fill(); ctx.restore();
+            }
+            const outputVisible = progress >= (isSql ? 0.82 : 0.72) || ["output", "verify", "complete"].includes(interactionStep);
+            if (explanation) {
+                ctx.textAlign = "left"; ctx.font = "600 15px 'Segoe UI', sans-serif"; ctx.fillStyle = "#BAE6FD";
+                ctx.fillText(`EXPLAIN · ${splitDiagramText(ctx, explanation, w - 48, 1, 18)[0] || explanation}`, x + 24, y + 201, w - 48);
+            }
+            if (output && outputVisible && !rows.length) {
+                ctx.textAlign = "left"; ctx.font = "800 14px 'Segoe UI', sans-serif"; ctx.fillStyle = "#86EFAC";
+                ctx.fillText(`SIMULATED OUTPUT · ${splitDiagramText(ctx, output, w - 220, 1, 18)[0] || output}`, x + 24, y + 239, w - 48);
             }
         } else if (rows.length && ["open_table", "expand_table", "cursor_click"].includes(action)) {
             const openX = x + w - 150, openY = y + 12;
@@ -3825,7 +3843,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
         const revealRows = rows.length && (action === "open_table" || action === "expand_table" ? progress >= 0.38 : action === "run_query" ? progress >= 0.82 : ["output", "verify"].includes(interactionStep));
         if (revealRows) {
-            const rowStart = y + (query ? 154 : 66), count = Math.min(rows.length, 3), cols = Math.max(1, ...rows.slice(0, count).map(row => row.length));
+            const rowStart = y + (query ? (code ? 285 : 154) : 66), count = Math.min(rows.length, 3), cols = Math.max(1, ...rows.slice(0, count).map(row => row.length));
             rows.slice(0, count).forEach((row, rowIndex) => {
                 const cellW = (w - 44) / cols, cellY = rowStart + rowIndex * 25;
                 if (rowIndex === 0) { ctx.fillStyle = "rgba(56,189,248,0.16)"; ctx.fillRect(x + 18, cellY - 12, w - 36, 24); }
