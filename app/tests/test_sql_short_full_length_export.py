@@ -171,6 +171,32 @@ class FullLengthVideoExportTests(unittest.TestCase):
         check = next(item for item in report["checks"] if item["name"] == "Mismatch example value consistency")
         self.assertEqual(check["status"], "PASSED")
 
+    def test_mismatch_allows_initial_failed_comparison_before_recovery(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "sentence_cues": [
+            {"interaction_step": "failure", "component_state": "failed", "speech": "Record 103 is missing."},
+            {"interaction_step": "verify", "speech": "Expected 12000, observed value is missing.", "expected_result": "12000", "observed_result": "missing"},
+            {"interaction_step": "diagnose", "speech": "We inspect the DMS task and find a connection timeout."},
+            {"interaction_step": "recover", "speech": "We fix the connection and resume the task."},
+            {"interaction_step": "verify", "component_state": "verified", "speech": "Record 103 now matches.", "expected_result": "12000", "observed_result": "12000"},
+            {"interaction_step": "complete", "component_state": "completed", "state_change": "pipeline status turns green", "speech": "The pipeline is complete."},
+        ]}]
+        report = validate(stages, 10.0, 60.0, {"nodes": [], "edges": [], "actions": []}, duration_measured=True, mismatch_scenario=True)
+        self.assertTrue(report["render_allowed"], report["critical_failures"])
+        self.assertEqual(report["checks"][7]["status"], "PASSED")
+
+    def test_last_successful_record_label_is_not_pipeline_success(self):
+        validate = load_pre_render_validator()
+        stages = [{"start": 0.0, "end": 10.0, "sentence_cues": [
+            {"interaction_step": "failure", "speech": "Record 103 is missing.", "observed_result": "Last successful record 102"},
+            {"interaction_step": "diagnose", "speech": "We find the cause."},
+            {"interaction_step": "recover", "speech": "We replay the missing batch."},
+            {"interaction_step": "verify", "component_state": "verified", "expected_result": "5", "observed_result": "5", "speech": "The source and target now match."},
+        ]}]
+        report = validate(stages, 10.0, 60.0, {"nodes": [], "edges": [], "actions": []}, duration_measured=True, mismatch_scenario=True)
+        check = next(item for item in report["checks"] if item["name"] == "Success follows verification")
+        self.assertEqual(check["status"], "PASSED")
+
     def test_source_target_parser_reads_account_balance_values(self):
         parse_values = load_source_target_value_parser()
         prompt = "SOURCE:\nAccount 101 = ₹8,000\nTARGET:\nAccount 101 = ₹10,000\n"

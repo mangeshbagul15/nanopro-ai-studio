@@ -491,15 +491,25 @@ def build_pre_render_validation_report(
     failure_i = next((i for i, step in enumerate(steps) if step == "failure"), None)
     diagnose_i = next((i for i, cue in enumerate(cues) if steps[i] == "diagnose" or re.search(r"diagnos|investigat|root cause|जांच|जाँच|कारण", str(cue.get("speech", "")) + " " + str(cue.get("state_change", "")), re.I)), None)
     recover_i = next((i for i, step in enumerate(steps) if step == "recover"), None)
-    verify_i = next((i for i, step in enumerate(steps) if step == "verify"), None)
+    verify_indices = [i for i, step in enumerate(steps) if step == "verify"]
+    # A mismatch lesson may first verify and expose the bad value, then verify
+    # again after recovery. The final verification is the success gate.
+    verify_i = verify_indices[-1] if verify_indices else None
     event_order = failure_i is not None and diagnose_i is not None and recover_i is not None and verify_i is not None and failure_i < diagnose_i < recover_i < verify_i
     if mismatch_scenario:
         add("Failure → diagnosis → recovery → verification", "PASSED" if event_order else "FAILED", "The required event sequence is present in sentence cues." if event_order else "A mismatch prompt needs ordered failure, diagnosis, recovery, and verification cues.", True)
     else:
         add("Failure and recovery order", "NOT_RUN", "This is not a data-mismatch lesson, so mismatch recovery sequencing is not required.")
 
+    success_status_pattern = re.compile(
+        r"(?:status|indicator|badge|pipeline|task).{0,24}(?:success|green|complete|सफल|हरा)|"
+        r"(?:success|green|complete|सफल|हरा).{0,24}(?:status|indicator|badge|pipeline|task)", re.I
+    )
     success_before_verify = any(
-        re.search(r"success|verified|match|सफल|सही", str(cue.get("state_change", "")) + " " + str(cue.get("observed_result", "")), re.I)
+        (
+            str(cue.get("component_state") or "").lower() == "completed"
+            or success_status_pattern.search(str(cue.get("state_change", "")))
+        )
         and (verify_i is None or i < verify_i)
         for i, cue in enumerate(cues)
     )
@@ -508,7 +518,8 @@ def build_pre_render_validation_report(
     add("Success follows verification", success_status, "Success state is not scheduled before verification." if success_status == "PASSED" else "No verification gate is required for this explainer." if success_status == "NOT_RUN" else "A success state appears before verification.", success_gate_failed)
 
     comparisons = [cue for cue in cues if str(cue.get("interaction_step", "")).lower() == "verify"]
-    invalid_comparison = any(cue.get("expected_result") and cue.get("observed_result") and not _comparison_values_match(cue["expected_result"], cue["observed_result"]) for cue in comparisons)
+    final_comparisons = comparisons[-1:]
+    invalid_comparison = any(cue.get("expected_result") and cue.get("observed_result") and not _comparison_values_match(cue["expected_result"], cue["observed_result"]) for cue in final_comparisons)
     add("Expected versus observed output", "FAILED" if invalid_comparison else ("PASSED" if comparisons else "NOT_RUN"), "Verification cue values agree." if comparisons and not invalid_comparison else "No explicit value comparison was provided." if not comparisons else "A verification cue reports different expected and observed values.", invalid_comparison)
 
     required_values = source_target_values or {}
