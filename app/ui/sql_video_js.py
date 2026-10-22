@@ -3849,6 +3849,82 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    function drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue) {
+        const requested = [
+            ...(Array.isArray(stage?.overlay_items) ? stage.overlay_items : []),
+            ...(Array.isArray(visual?.overlay_items) ? visual.overlay_items : []),
+        ];
+        const unique = new Map();
+        requested.forEach(item => {
+            const content = String(item?.content || item?.text || "").trim();
+            if (content && !unique.has(content)) unique.set(content, { ...item, content });
+        });
+        if (!unique.size) {
+            const fallbackText = String(cue?.emphasis || cue?.state_change || stage?.caption || stage?.title || "").trim();
+            if (fallbackText) unique.set(fallbackText, { kind: "label", content: fallbackText, x: 0.5, y: 0.5 });
+        }
+        const overlays = Array.from(unique.values()).slice(0, 4);
+        if (!overlays.length) return;
+        ctx.save();
+        overlays.forEach((item, index) => {
+            const content = String(item.content).slice(0, 110);
+            const rawX = Number(item.x ?? 0.5), rawY = Number(item.y ?? (0.42 + index * 0.08));
+            const x = Math.max(0.12, Math.min(0.88, Number.isFinite(rawX) ? rawX : 0.5)) * W;
+            const y = Math.max(0.24, Math.min(0.76, Number.isFinite(rawY) ? rawY : (0.42 + index * 0.08))) * H;
+            const reveal = Math.max(0, Math.min(1, progress * overlays.length * 2.2 - index));
+            if (!reveal) return;
+            const kind = String(item.kind || "label").toLowerCase();
+            ctx.save();
+            ctx.globalAlpha *= reveal * (index === 0 ? 0.96 : 0.82);
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = kind === "code" ? "700 26px Consolas, monospace" : kind === "formula" ? "700 30px 'Segoe UI', sans-serif" : "800 32px 'Segoe UI', sans-serif";
+            ctx.shadowColor = item.color || "#38BDF8"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 16;
+            ctx.fillStyle = item.color || "#F8FAFC";
+            const lines = wrapCanvasText(ctx, content, W * 0.78, 2);
+            lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * 38 + (1 - reveal) * 14, W * 0.82));
+            ctx.restore();
+        });
+        ctx.restore();
+    }
+
+    function drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue) {
+        const source = Array.isArray(visual?.elements) && visual.elements.length
+            ? visual.elements
+            : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
+        const points = new Map(source.filter(item => item && item.label).map(item => [String(item.label), {
+            x: W * (0.12 + Math.max(0, Math.min(1, Number(item.x ?? 0.5))) * 0.76),
+            y: H * (0.29 + Math.max(0, Math.min(1, Number(item.y ?? 0.5)) * 0.43)),
+        }]));
+        const connectors = Array.isArray(visual?.connectors) ? visual.connectors : [];
+        if (!points.size) return;
+        ctx.save();
+        ctx.globalAlpha *= sqlShortState.isExporting ? 0.16 : 0.29;
+        connectors.slice(0, 12).forEach((edge, index) => {
+            const from = points.get(String(edge?.from || "")), to = points.get(String(edge?.to || ""));
+            if (!from || !to) return;
+            const bend = (index % 2 ? 1 : -1) * Math.min(110, Math.abs(to.x - from.x) * 0.14 + 36);
+            const cx = (from.x + to.x) / 2, cy = (from.y + to.y) / 2 + bend;
+            const color = edge.color || "#67E8F9";
+            ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.quadraticCurveTo(cx, cy, to.x, to.y);
+            ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([10, 12]); ctx.lineDashOffset = -time * 28; ctx.stroke(); ctx.setLineDash([]);
+            const packet = (time * 0.22 + index / Math.max(1, connectors.length)) % 1;
+            const inverse = 1 - packet;
+            const px = inverse * inverse * from.x + 2 * inverse * packet * cx + packet * packet * to.x;
+            const py = inverse * inverse * from.y + 2 * inverse * packet * cy + packet * packet * to.y;
+            ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
+        });
+        const focus = String(cue?.focus_element || "").toLowerCase();
+        const active = source.find(item => focus && String(item.label).toLowerCase().includes(focus)) || source[0];
+        const center = active && points.get(String(active.label));
+        if (center) {
+            ctx.save(); ctx.translate(center.x, center.y); ctx.rotate(time * 0.32);
+            ctx.strokeStyle = active.color || "#67E8F9"; ctx.lineWidth = 2.5; ctx.setLineDash([12, 8]);
+            ctx.beginPath(); ctx.ellipse(0, 0, 72, 42, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+            ctx.beginPath(); ctx.arc(72, 0, 5, 0, Math.PI * 2); ctx.fillStyle = active.color || "#67E8F9"; ctx.fill(); ctx.restore();
+        }
+        ctx.restore();
+    }
+
     function drawPromptVisualPlan(ctx, W, H, stage, progress, time, visualOverride, cueIndex = 0, cue = null) {
         const visual = visualOverride || (stage && stage.visual_data) || {};
         const requestedLayout = String(visual.layout || stage?.visual_data?.layout || "").toLowerCase();
@@ -3875,9 +3951,29 @@ SECOND_HIGHEST_SALARY: 70000`;
             else if (layout === "table") drawBriefTable(ctx, W, H, layoutStage, progress);
             else if (layout === "chips") drawBriefChips(ctx, W, H, layoutStage, progress);
             else if (layout === "warning") drawBriefWarning(ctx, W, H, layoutStage, progress);
-            else if (layout === "spatial") drawBriefSpatial(ctx, W, H, layoutStage, progress, time, stage?.index || 0);
+            else if (layout === "spatial") {
+                const spatialStage = {
+                    ...layoutStage,
+                    overlay_items: [],
+                    visual_data: {
+                        ...layoutVisual,
+                        overlay_items: [],
+                        entities: sceneElements.map(item => ({
+                            id: String(item.label || ""), label: String(item.label || ""),
+                            detail: String(item.detail || ""), shape: String(item.shape || "orb"),
+                            color: String(item.color || "#38BDF8"),
+                        })),
+                        relationships: Array.isArray(visual.connectors) ? visual.connectors : (stage?.visual_data?.connectors || []),
+                    },
+                };
+                // Use the prompt-authored spatial graph. drawBriefSpatial is a
+                // legacy API-gateway demo and must never replace user content.
+                renderPromptDrivenVisual(ctx, W, H, { title: stage?.title || "", domain: stage?.domain || "" }, spatialStage, progress, 1, time);
+            }
             else drawBriefCards(ctx, W, H, layoutStage, progress);
             ctx.restore();
+            drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue);
+            drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
             return true;
         }
         const stageCues = Array.isArray(stage?.sentence_cues) ? stage.sentence_cues : [];
@@ -4183,6 +4279,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             ctx.restore();
         });
+        drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
         drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep);
         if (cue && Number(cue.pause_after) > 0 && progress >= 1 - Math.min(0.18, Number(cue.pause_after) * 0.16)) {
             ctx.save(); ctx.globalAlpha = 0.92; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "750 20px 'Segoe UI', sans-serif";
@@ -4381,7 +4478,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const description = visual.visual_description || (stage && stage.visual_description) || title;
         const rawEntities = visual.entities || (stage && stage.entities) || visual.nodes || [];
         const entities = (Array.isArray(rawEntities) ? rawEntities : [])
-            .filter(item => item && (item.label || item.name || item.title)).slice(0, 6);
+            .filter(item => item && (item.label || item.name || item.title)).slice(0, 18);
         const fallbackEntities = title.split(/\s+/).filter(word => word.length > 3).slice(0, 3)
             .map((word, i) => ({ label: word, detail: i === 0 ? description : "", color: i % 2 ? "#A78BFA" : "#38BDF8" }));
         const nodes = entities.length ? entities : fallbackEntities;
@@ -4392,7 +4489,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         const points = nodes.map((node, i) => {
             const count = Math.max(nodes.length, 1);
             let x, y;
-            if (composition.includes("split") && count > 1) {
+            if (count > 6) {
+                const columns = Math.min(4, count);
+                const rows = Math.ceil(count / columns);
+                x = 112 + (i % columns) * ((W - 224) / Math.max(1, columns - 1));
+                y = 440 + Math.floor(i / columns) * Math.min(178, 700 / Math.max(1, rows - 1));
+            } else if (composition.includes("split") && count > 1) {
                 const half = Math.ceil(count / 2);
                 x = i < half ? W * 0.28 : W * 0.72;
                 y = top + (i % half) * ((bottom - top) / Math.max(1, half - 1));
@@ -4448,7 +4550,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             const color = /^#[0-9a-f]{6}$/i.test(node.color || "") ? node.color : (i % 2 ? "#A78BFA" : "#38BDF8");
             const pulseRate = motion.includes("pulse") || motion.includes("beat") ? 4.2 : 2.4;
             const pulse = 1 + Math.sin(t * pulseRate + i * 1.7) * 0.055;
-            const radius = Math.min(78, 54 + String(node.label || node.name).length * 0.45) * pulse;
+            const radius = (nodes.length > 6 ? 34 : Math.min(78, 54 + String(node.label || node.name).length * 0.45)) * pulse;
             const shape = String(node.shape || "orb").toLowerCase();
             ctx.save();
             ctx.translate(x, y);
@@ -4500,12 +4602,12 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.restore();
             ctx.textAlign = "center";
             ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 24px 'Segoe UI', sans-serif";
+            ctx.font = nodes.length > 6 ? "700 17px 'Segoe UI', sans-serif" : "bold 24px 'Segoe UI', sans-serif";
             wrapCanvasText(ctx, String(node.label || node.name), 250, 2).forEach((line, lineIdx) => ctx.fillText(line, x, y + radius + 42 + lineIdx * 30));
             const detail = String(node.detail || "").trim();
             if (detail) {
                 ctx.fillStyle = "#CBD5E1";
-                ctx.font = "19px 'Segoe UI', sans-serif";
+                ctx.font = nodes.length > 6 ? "15px 'Segoe UI', sans-serif" : "19px 'Segoe UI', sans-serif";
                 wrapCanvasText(ctx, detail, 260, 2).forEach((line, lineIdx) => ctx.fillText(line, x, y + radius + 74 + lineIdx * 26));
             }
         });
@@ -5613,15 +5715,19 @@ SECOND_HIGHEST_SALARY: 70000`;
         const showShortCaption = hasShortCaption && sceneElapsed <= 4;
 
         // Subtitle Text Word-by-Word Highlight (English only, no voice badge)
-        let subtitleText = activeCue ? (activeCue.speech_en || activeCue.speech) : (hasShortCaption ? (showShortCaption ? activeStage.caption : "") : "");
-        if (!activeCue && !hasShortCaption && activeStage) {
-            // On-screen text is always English; only the synthesized voice follows the
-            // selected regional language.
-            subtitleText = activeStage.speech_en || activeStage['speech_en'] || activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || "";
-        } else if (!hasShortCaption && p.scenes && p.scenes.length > 0) {
+        let subtitleText = "";
+        if (activeCue) {
+            subtitleText = activeCue.speech_en || activeCue.speech || activeStage?.speech_en || activeStage?.speech || "";
+        } else if (showShortCaption) {
+            subtitleText = activeStage.caption;
+        } else if (activeStage) {
+            // A short caption must not suppress narration subtitles after its
+            // opening beat, especially when the model cue map was unavailable.
+            subtitleText = activeStage.speech_en || activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || activeStage.caption || "";
+        } else if (p.scenes && p.scenes.length > 0) {
             const sc = p.scenes.find(s => t >= s.start && t < s.end) || p.scenes[p.scenes.length - 1];
             subtitleText = sc.speech_en || sc['speech_en'] || sc['speech_' + sqlShortState.audioLang] || "";
-        } else if (!hasShortCaption) {
+        } else {
             subtitleText = p.explanation_en || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
         }
 
