@@ -625,6 +625,61 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
     }
 
+    async function generateSqlShortBlueprintJob(payload, statusEl) {
+        const queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        const queuedRead = await readVideoJsonResponse(queuedRes);
+        if (!queuedRead.ok || !queuedRes.ok || !queuedRead.data?.job_id) {
+            throw new Error(queuedRead.data?.detail || queuedRead.data?.message || "NanoPro could not queue this video prompt.");
+        }
+
+        const jobId = queuedRead.data.job_id;
+        const deadline = Date.now() + 8 * 60 * 1000;
+        let consecutivePollErrors = 0;
+        while (Date.now() < deadline) {
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            let pollRes;
+            let pollRead;
+            try {
+                pollRes = await fetch(`/api/sql_video/generation_jobs/${encodeURIComponent(jobId)}`, {cache: "no-store"});
+                pollRead = await readVideoJsonResponse(pollRes);
+            } catch (_) {
+                pollRead = {ok: false};
+            }
+            if (!pollRead?.ok || !pollRes?.ok) {
+                consecutivePollErrors += 1;
+                if (consecutivePollErrors >= 5) {
+                    throw new Error("NanoPro job status could not be reached. Please retry; your prompt was not rejected.");
+                }
+                continue;
+            }
+
+            consecutivePollErrors = 0;
+            const job = pollRead.data || {};
+            const jobStatus = String(job.status || "").toLowerCase();
+            if (jobStatus === "done" || jobStatus === "completed") {
+                const result = job.result_data || {};
+                if (result.status !== "success") {
+                    throw new Error(result.message || job.error_message || "NanoPro completed without a usable storyboard.");
+                }
+                return result;
+            }
+            if (jobStatus === "error" || jobStatus === "failed") {
+                throw new Error(job.error_message || "NanoPro could not generate this storyboard. Please retry.");
+            }
+
+            if (statusEl) {
+                const stage = String(job.stage || "storyboard").replaceAll("_", " ");
+                const progress = Number.isFinite(Number(job.progress)) ? ` · ${Math.round(Number(job.progress))}%` : "";
+                statusEl.textContent = `Working on your prompt · ${stage}${progress}`;
+            }
+        }
+        throw new Error("This detailed prompt is taking longer than expected. Retry in a moment; it was not rejected as an unsupported prompt type.");
+    }
+
     async function generateSqlShortBlueprint() {
         const q = document.getElementById("sqlShortQuestion").value.trim();
         const btn = document.getElementById("btnGenerateSqlBlueprint");
@@ -652,26 +707,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (statusEl) statusEl.textContent = "Sending the prompt to the storyboard and narration workflow…";
 
         try {
-            const generationRes = await fetch("/api/sql_video/generate_prompt", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    question: q,
-                    language: sqlShortState.audioLang || "mr",
-                    mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill",
-                    timestamp: Date.now()
-                })
-            });
-            const generationRead = await readVideoJsonResponse(generationRes);
-            if (!generationRead.ok) {
-                throw new Error(generationRead.empty
-                    ? "NanoPro server ने रिकामा response दिला (free-tier memory restart). 30 सेकंद थांबून पुन्हा Generate दाबा."
-                    : "NanoPro server ने अपूर्ण response दिला. पुन्हा Generate दाबा.");
-            }
-            const data = generationRead.data;
-            if (!generationRes.ok || data.status !== "success") {
-                throw new Error(data.detail || data.message || "NanoPro could not create the prompt storyboard.");
-            }
+            const data = await generateSqlShortBlueprintJob({
+                question: q,
+                language: sqlShortState.audioLang || "mr",
+                mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill",
+                timestamp: Date.now()
+            }, statusEl);
             if (data.status === "success") {
                 if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
                 sqlShortState.agentPipeline = data.agent_pipeline || [];

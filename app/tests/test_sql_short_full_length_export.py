@@ -850,12 +850,17 @@ class SceneVisualContractTests(unittest.TestCase):
 
 
 class PromptScenePlayerTests(unittest.TestCase):
-    def test_generate_ui_uses_direct_prompt_api_without_ephemeral_job_polling(self):
+    def test_generate_ui_queues_long_prompts_and_polls_job_progress(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         generation = source.split("async function generateSqlShortBlueprint()", 1)[1].split("function ", 1)[0]
-        self.assertIn('/api/sql_video/generate_prompt', generation)
-        self.assertNotIn('/api/sql_video/generation_jobs/', generation)
-        self.assertIn('const data = generationRead.data', generation)
+        self.assertIn('async function generateSqlShortBlueprintJob(payload, statusEl)', source)
+        self.assertIn('/api/sql_video/generate_prompt_job', source)
+        self.assertIn('/api/sql_video/generation_jobs/', source)
+        self.assertIn('const data = await generateSqlShortBlueprintJob(', generation)
+        self.assertIn('job.result_data', source)
+        self.assertIn('job.error_message', source)
+        self.assertIn('statusEl.textContent = `Working on your prompt', source)
+        self.assertNotIn('/api/sql_video/generate_prompt"', generation)
         self.assertIn('sqlVideoGenerationStatus', source)
 
     def test_architecture_renderer_uses_independent_vector_components(self):
@@ -872,8 +877,9 @@ class PromptScenePlayerTests(unittest.TestCase):
     def test_video_generation_survives_empty_server_responses(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn("async function readVideoJsonResponse", source)
-        self.assertIn("await readVideoJsonResponse(generationRes)", source)
-        self.assertIn("generationRead.empty", source)
+        self.assertIn("await readVideoJsonResponse(queuedRes)", source)
+        self.assertIn("await readVideoJsonResponse(pollRes)", source)
+        self.assertIn("empty: true", source)
 
     def test_narration_loader_accepts_audio_ready_at_timeout(self):
         source = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
