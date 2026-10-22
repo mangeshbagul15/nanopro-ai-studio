@@ -501,9 +501,11 @@ def build_pre_render_validation_report(
     else:
         add("Failure and recovery order", "NOT_RUN", "This is not a data-mismatch lesson, so mismatch recovery sequencing is not required.")
 
+    # Only treat an explicit terminal status transition as success. Narration such
+    # as "pipeline can resume" or "successful record" is not a success state.
     success_status_pattern = re.compile(
-        r"(?:status|indicator|badge|pipeline|task).{0,24}(?:success|green|complete|सफल|हरा)|"
-        r"(?:success|green|complete|सफल|हरा).{0,24}(?:status|indicator|badge|pipeline|task)", re.I
+        r"(?:status|indicator|badge|pipeline|task).{0,20}(?:turns?|changes?\s+to|becomes?|is\s+now)\s*(?:green|successful|complete|सफल|हरा)|"
+        r"(?:green|successful|complete|सफल|हरा)\s+(?:status|indicator|badge|pipeline|task)\s*(?:is\s+)?(?:confirmed|verified|complete|now|✓)?", re.I
     )
     success_before_verify = any(
         (
@@ -3674,6 +3676,7 @@ class SqlShortVideoEngine:
                 from app.core.model_adapter import model_manager
                 target_seconds = _extract_short_video_duration_limit(text_input, default=60.0)
                 minimum_seconds = _extract_short_video_min_duration(text_input)
+                authored_scene_count = len(re.findall(r"(?im)^\s*#{0,3}\s*\**\s*SCENE\s+\d+\b", text_input))
                 max_narration_words = max(24, int(target_seconds * 140 / 60))
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
                 lang_name = {
@@ -3695,6 +3698,7 @@ class SqlShortVideoEngine:
                     f"Your task: Design everything dynamically from scratch! Do NOT force fixed templates, rigid SQL tables, or standard flowcharts unless directly relevant. Use an interactive medallion-flow art direction: a luminous 3D core for the component being taught, a small number of orbiting satellites for related systems, a visible directional route, and restrained real-time telemetry that updates only when the narrated action happens. Avoid a static full-architecture poster.\n"
                     f"1. Choose the best 3D motion background: 'quantum_nebula', 'warp_tunnel', 'neural_synapse', 'silicon_laser', or 'fintech_ledger'.\n"
                     f"2. Choose the number of educational scenes to fit the prompt's complexity and any user-specified storyboard; do not force a fixed scene count or standard format. Keep narration concise and obey any explicit duration limit, while preserving natural speaking pace.\n"
+                    + (f"The user supplied a numbered storyboard with {authored_scene_count} scenes. Return exactly {authored_scene_count} scenes in that order; preserve each scene's narration, visual direction, labels, timing, pauses, and technical constraints. Do not merge scenes.\n" if authored_scene_count >= 2 else "")
                     + (f"The user explicitly requested at least {minimum_seconds:g} seconds of video narration; develop enough accurate, useful explanation to meet that minimum without filler, and stay below {target_seconds:g} seconds.\n" if minimum_seconds else "")
                     + f"3. Follow the user's requested visual art direction exactly. Do not impose an application template or force every scene into the same composition. If the user asks to avoid boxes, cards, node diagrams, or tree layouts, do not use them; choose prompt-specific cinematic, editorial, typographic, or metaphor-driven visuals instead.\n"
                     f"4. Return visual_data authored for that scene with a scene-specific composition: composition (short description), elements (up to 12 objects with label, normalized x/y coordinates, shape, color, and optional detail), and connectors (from/to element labels, style, color, and optional label). Use visual elements and connectors only when appropriate to that scene; use distinct placements/compositions where requested. Shapes may include icon, circle, glyph, text, character, or any simple vector shape. No fixed graph layout is required. Do not request images or image-based slides; the renderer draws editable vector elements.\n"
