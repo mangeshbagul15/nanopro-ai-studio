@@ -106,25 +106,32 @@ class AwsDmsManager:
             import boto3
         except ImportError as exc:
             raise RuntimeError("boto3 is required for live AWS DMS operations") from exc
-        access_key = os.environ.get("AWS_ACCESS_KEY_ID", "").strip()
-        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "").strip()
-        region = os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION")
+        access_key = ""
+        secret_key = ""
+        region = ""
 
         # NanoPro already stores AWS credentials in its encrypted integration vault.
         # Use the same record as the AWS/S3 connection test when env credentials
         # are not present; never return or log the secret itself.
+        try:
+            from app.core.connection_manager import connection_manager
+            cfg = connection_manager.get_connection_config("AWS_S3_DATA_LAKE", mask=False) or {}
+            vault_access = (cfg.get("username") or "").strip()
+            vault_secret = (cfg.get("secret_value") or "").strip()
+            metadata = cfg.get("metadata") or {}
+            region = (metadata.get("region") or "").strip()
+            if vault_access and vault_secret:
+                access_key, secret_key = vault_access, vault_secret
+        except Exception as exc:
+            log_event(f"AWS Vault credential lookup unavailable: {type(exc).__name__}", component="AwsDmsManager", level="WARNING")
+
+        # Fall back to environment credentials only when no complete Vault pair
+        # exists. A stale Render environment key must not shadow the user's
+        # explicitly selected NanoPro Vault identity.
         if not (access_key and secret_key):
-            try:
-                from app.core.connection_manager import connection_manager
-                cfg = connection_manager.get_connection_config("AWS_S3_DATA_LAKE", mask=False) or {}
-                vault_access = (cfg.get("username") or "").strip()
-                vault_secret = (cfg.get("secret_value") or "").strip()
-                metadata = cfg.get("metadata") or {}
-                region = region or metadata.get("region") or ""
-                if vault_access and vault_secret:
-                    access_key, secret_key = vault_access, vault_secret
-            except Exception as exc:
-                log_event(f"AWS Vault credential lookup unavailable: {type(exc).__name__}", component="AwsDmsManager", level="WARNING")
+            access_key = os.environ.get("AWS_ACCESS_KEY_ID", "").strip()
+            secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "").strip()
+        region = region or os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or ""
 
         if access_key and not secret_key or secret_key and not access_key:
             raise RuntimeError("AWS credential pair is incomplete in environment and NanoPro Vault")
