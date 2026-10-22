@@ -3852,7 +3852,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         allVisuals.forEach(source => source.elements.forEach(item => {
             if (item && item.label && !elementByLabel.has(String(item.label))) elementByLabel.set(String(item.label), item);
         }));
-        const elements = Array.from(elementByLabel.values()).slice(0, 12);
+        const elements = Array.from(elementByLabel.values()).slice(0, 18);
         if (!elements.length) return false;
         const interactionStep = String(cue && cue.interaction_step || "introduce").toLowerCase();
         const focusNeedle = String(cue && (cue.focus_element || cue.emphasis) || "").toLowerCase();
