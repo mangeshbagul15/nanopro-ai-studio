@@ -292,6 +292,17 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function setSqlAudioLang(lang) {
+        const generated = sqlShortState.activeVideoSpec;
+        if (generated && Array.isArray(generated.stages) && generated.stages.length) {
+            const generatedLang = generated.language || sqlShortState.audioLang || "mr";
+            if (lang !== generatedLang) {
+                const status = document.getElementById("sqlVideoGenerationStatus");
+                if (status) status.textContent = `This storyboard's voice is ${generatedLang.toUpperCase()}. Select ${lang.toUpperCase()} before generating a new storyboard so narration and scene annotations stay synchronized.`;
+                return;
+            }
+            renderSqlShortFrame(sqlShortState.currentTime);
+            return;
+        }
         sqlShortState.audioLang = lang;
         document.querySelectorAll(".sql-lang-btn").forEach(b => b.classList.remove("active"));
         const btn = document.getElementById("btnAudio" + lang.charAt(0).toUpperCase() + lang.slice(1));
@@ -3812,7 +3823,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const output = String(cue.code_output || "").trim();
         const rows = Array.isArray(cue.table_rows) ? cue.table_rows.slice(0, 6) : [];
         const state = String(cue.state_change || "").trim();
-        if (!code && !rows.length && !state) return;
+        if (!code && !rows.length) return;
         const x = 96, w = W - 192, h = code ? 360 : 198, y = H - h - 652;
         const action = String(cue.simulated_action || "none");
         ctx.save(); ctx.globalAlpha = 0.97;
@@ -3899,29 +3910,99 @@ SECOND_HIGHEST_SALARY: 70000`;
             const content = String(item?.content || item?.text || "").trim();
             if (content && !unique.has(content)) unique.set(content, { ...item, content });
         });
-        if (!unique.size) {
-            const fallbackText = String(cue?.emphasis || cue?.state_change || stage?.caption || stage?.title || "").trim();
+        const hasSceneObjects = [visual?.elements, visual?.entities, visual?.nodes, stage?.visual_data?.elements, stage?.visual_data?.entities]
+            .some(items => Array.isArray(items) && items.length > 0);
+        if (!unique.size && !hasSceneObjects) {
+            const fallbackText = String(cue?.emphasis || cue?.state_change || stage?.caption || "").trim();
             if (fallbackText) unique.set(fallbackText, { kind: "label", content: fallbackText, x: 0.5, y: 0.5 });
         }
         const overlays = Array.from(unique.values());
         if (!overlays.length) return;
-        // Keep callouts clear of the object field and subtitles; reveal one at a time.
-        const index = Math.min(overlays.length - 1, Math.floor(Math.max(0, Math.min(0.999, progress)) * overlays.length));
-        const item = overlays[index];
         ctx.save();
-        const content = String(item.content).replace(/\s+/g, " ").slice(0, 76);
-        const kind = String(item.kind || "label").toLowerCase();
-        const reveal = Math.max(0.25, Math.min(1, progress * overlays.length - index));
-        const x = W / 2, y = H - 548;
-        ctx.save(); ctx.globalAlpha *= reveal; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.font = kind === "code" ? "700 23px Consolas, monospace" : kind === "formula" ? "700 24px 'Segoe UI', sans-serif" : "750 24px 'Segoe UI', sans-serif";
-        const color = item.color || "#38BDF8", line = fitTextToWidth(ctx, content, W - 150);
-        const width = Math.min(W - 92, ctx.measureText(line).width + 48);
-        ctx.fillStyle = "rgba(3,10,24,0.94)"; ctx.strokeStyle = color; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.roundRect(x - width / 2, y - 25, width, 50, 18); ctx.fill(); ctx.stroke();
-        ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 8;
-        ctx.fillStyle = item.color || "#F8FAFC"; ctx.fillText(line, x, y, width - 28);
+        const placed = [];
+        const elementItems = Array.isArray(visual?.elements) ? visual.elements : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
+        const objectRects = elementItems.map(element => {
+            const ex = Math.max(0, Math.min(1, Number(element?.x ?? 0.5)));
+            const ey = Math.max(0, Math.min(1, Number(element?.y ?? 0.5)));
+            const cx = W * (0.17 + ex * 0.66), cy = H * (0.28 + ey * 0.36);
+            return { left: cx - 142, right: cx + 142, top: cy - 116, bottom: cy + 142 };
+        });
+        const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        overlays.forEach((item, index) => {
+            const content = String(item.content || "").trim();
+            if (!content) return;
+            const kind = String(item.kind || "label").toLowerCase();
+            const reveal = Math.max(0, Math.min(1, progress * overlays.length * 1.7 - index));
+            if (!reveal) return;
+            ctx.save(); ctx.globalAlpha *= reveal; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            const fontSize = content.length > 150 ? 18 : content.length > 80 ? 22 : (kind === "code" ? 26 : kind === "formula" ? 30 : 32);
+            ctx.font = `${kind === "label" ? "800" : "700"} ${fontSize}px ${kind === "code" ? "Consolas, monospace" : "'Segoe UI', sans-serif"}`;
+            const maxWidth = W * 0.78;
+            const maxLines = Math.max(4, Math.min(14, Math.ceil(content.length / Math.max(18, Math.floor(maxWidth / (fontSize * 0.58))))));
+            const lines = wrapCanvasText(ctx, content, maxWidth - 28, maxLines);
+            const measuredWidth = Math.max(120, ...lines.map(line => ctx.measureText(line).width + 36));
+            const width = Math.min(W - 64, measuredWidth), lineH = fontSize * 1.22;
+            const height = Math.max(48, lines.length * lineH + 22);
+            const rawX = Number(item.x ?? 0.5), rawY = Number(item.y ?? (0.42 + index * 0.08));
+            const anchorX = Math.max(0.12, Math.min(0.88, Number.isFinite(rawX) ? rawX : 0.5)) * W;
+            const anchorY = Math.max(0.16, Math.min(0.72, Number.isFinite(rawY) ? rawY : 0.5)) * H;
+            const candidates = [
+                [0, 0], [0, -0.10], [0, 0.10], [-0.14, 0], [0.14, 0],
+                [-0.14, -0.10], [0.14, -0.10], [-0.14, 0.10], [0.14, 0.10],
+                [0, -0.20], [0, 0.20],
+            ];
+            let chosen = null;
+            for (const [dx, dy] of candidates) {
+                const x = Math.max(width / 2 + 24, Math.min(W - width / 2 - 24, anchorX + dx * W));
+                const y = Math.max(height / 2 + 196, Math.min(H * 0.72 - height / 2, anchorY + dy * H));
+                const rect = { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+                if (!objectRects.some(obstacle => overlaps(rect, obstacle)) && !placed.some(obstacle => overlaps(rect, obstacle))) {
+                    chosen = { x, y, rect }; break;
+                }
+            }
+            if (!chosen) {
+                const x = anchorX, y = anchorY;
+                chosen = { x, y, rect: { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 } };
+            }
+            placed.push(chosen.rect);
+            const color = item.color || "#38BDF8";
+            ctx.fillStyle = "rgba(3,10,24,0.88)"; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(chosen.rect.left, chosen.rect.top, width, height, 16); ctx.fill(); ctx.stroke();
+            ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 10;
+            ctx.fillStyle = item.color || "#F8FAFC";
+            lines.forEach((line, lineIndex) => ctx.fillText(line, chosen.x, chosen.rect.top + 12 + lineH * (lineIndex + 0.5), width - 28));
+            ctx.restore();
+        });
         ctx.restore();
+    }
+
+    function drawObjectProcessAnnotation(ctx, W, H, point, cue, interactionStep) {
+        if (!point || !cue || cue.code_snippet || cue.sql_query || (Array.isArray(cue.table_rows) && cue.table_rows.length)) return;
+        const explanation = String(cue.state_change || cue.expected_result || cue.emphasis || point.item?.detail || "").trim();
+        if (!explanation) return;
+        const color = String(point.item?.color || "#38BDF8");
+        ctx.save();
+        ctx.font = "650 20px 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        const lines = splitDiagramText(ctx, explanation, 330, 2, 24);
+        const lineHeight = 25, padX = 14, padY = 10;
+        const width = Math.min(360, Math.max(170, ...lines.map(line => ctx.measureText(line).width + padX * 2)));
+        const height = lines.length * lineHeight + padY * 2;
+        const placeAbove = point.y > 680;
+        const boxX = Math.max(28, Math.min(W - width - 28, point.x - width / 2));
+        const boxY = placeAbove
+            ? Math.max(330, point.y - 190 - height)
+            : Math.min(H - 700 - height, point.y + 255);
+        const anchorX = Math.max(boxX + 20, Math.min(boxX + width - 20, point.x));
+        const boxEdgeY = placeAbove ? boxY + height : boxY;
+        ctx.strokeStyle = color; ctx.globalAlpha = 0.82; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(anchorX, boxEdgeY); ctx.lineTo(point.x, point.y + (placeAbove ? -76 : 76)); ctx.stroke();
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(point.x, point.y + (placeAbove ? -76 : 76), 5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.95; ctx.fillStyle = "rgba(3,10,24,0.9)"; ctx.strokeStyle = `${color}CC`; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.roundRect(boxX, boxY, width, height, 12); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = interactionStep === "failure" ? "#FCA5A5" : "#E2E8F0";
+        lines.forEach((line, index) => ctx.fillText(line, boxX + padX, boxY + padY + lineHeight * (index + 0.5), width - padX * 2));
         ctx.restore();
     }
 
@@ -3953,6 +4034,24 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             if (!moved) break;
         }
+    }
+
+    function evaluatePromptEntrance(item, globalMotion, progress, index) {
+        const description = `${globalMotion || ""} ${item?.motion || ""} ${item?.animation || ""}`.toLowerCase();
+        const raw = Math.max(0, Math.min(1, progress * 2.15 - index * 0.045));
+        const eased = raw * raw * (3 - 2 * raw);
+        const travel = (1 - eased) * 92;
+        let dx = 0, dy = 0;
+        if (/from\s*left|enter(?:ing)?\s+left|slide(?:s|ing)?\s+in\s+from\s+left/.test(description)) dx = -travel;
+        else if (/from\s*right|enter(?:ing)?\s+right|slide(?:s|ing)?\s+in\s+from\s+right/.test(description)) dx = travel;
+        else if (/rise|float|lift|ascend|spring up/.test(description)) dy = travel;
+        else if (/drop|fall|descend|enter from above/.test(description)) dy = -travel;
+        const elastic = /bounce|spring|elastic|cartoon|squash|stretch|pop/.test(description);
+        const settle = elastic ? Math.sin(raw * Math.PI * 3) * (1 - raw) * 0.16 : 0;
+        const scale = Math.max(0.72, 0.9 + eased * 0.1 + settle);
+        const rotation = /spin|rotate|twirl|turn/.test(description) ? (1 - eased) * (description.includes("left") ? -0.45 : 0.45) : 0;
+        const float = /float|hover|drift/.test(description) ? Math.sin(progress * Math.PI * 2 + index) * 9 : 0;
+        return { dx, dy: dy + float, scale, rotation };
     }
 
     function drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue) {
@@ -4235,7 +4334,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         const points = new Map();
         const top = 390, usableHeight = 760;
         const scale = elements.length <= 3 ? 1.05 : 0.94;
-        const hasCueDetailPanel = Boolean(cue && (cue.sql_query || cue.code_snippet || (Array.isArray(cue.table_rows) && cue.table_rows.length) || cue.state_change));
+        const hasCueDetailPanel = Boolean(cue && (cue.sql_query || cue.code_snippet || (Array.isArray(cue.table_rows) && cue.table_rows.length)));
         const cuePanelHeight = cue && (cue.sql_query || cue.code_snippet) ? 360 : 198;
         const cuePanelTop = hasCueDetailPanel ? H - cuePanelHeight - 652 : H;
         elements.forEach((item, index) => {
@@ -4250,7 +4349,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             const y = compactGrid
                 ? 480 + Math.floor(index / gridColumns) * Math.min(76, 650 / Math.max(1, gridRows - 1))
                 : Math.max(470, Math.min(H - 1040, top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight));
-            points.set(String(item.label), { x, y, item, index });
+            const entrance = evaluatePromptEntrance(item, visual.motion_grammar || visual.motion || "", progress, index);
+            points.set(String(item.label), { x: x + entrance.dx, y: y + entrance.dy, item, index, entranceScale: entrance.scale, entranceRotation: entrance.rotation });
         });
         resolveVisualPointCollisions(points, W, H, {
             minGap: elements.length > 6 ? 58 : (hasCueDetailPanel ? 170 : 202),
@@ -4313,18 +4413,24 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
         const ease = value => { const v = Math.max(0, Math.min(1, value)); return v * v * (3 - 2 * v); };
         const cameraMove = String(cue && cue.camera_move || "push_in").toLowerCase();
+        const isPullBack = /pull.?back|zoom.?out|dolly.?out|crane.?up|reveal.?wide/.test(cameraMove);
+        const isHold = /hold|static|locked.?off/.test(cameraMove);
+        const isOrbitLeft = /orbit.?left|arc.?left|circle.?left|truck.?left|roll.?left/.test(cameraMove);
+        const isOrbitRight = /orbit.?right|arc.?right|circle.?right|truck.?right|roll.?right/.test(cameraMove);
+        const isCameraTrack = /pan|track|follow|dolly|truck|crane|orbit|arc|rack.?focus|focus.?pull/.test(cameraMove);
         const cueEventText = String(cue && `${cue.speech || ""} ${cue.state_change || ""} ${cue.emphasis || ""}` || "").toLowerCase();
         const failureCue = interactionStep === "failure" || (/failure|failed|mismatch|error|विफल|गलत|त्रुटि/.test(cueEventText) && !/no failure|without failure|not failed|कोई विफलता नहीं/.test(cueEventText));
         const cameraProgress = ease(progress);
         let cameraZoom = 1 + 0.045 * cameraProgress, cameraPanX = 0, cameraPanY = 0, cameraOrbit = 0;
-        if (cameraMove === "pull_back") cameraZoom = 1.055 - 0.055 * cameraProgress;
-        if (cameraMove === "hold" || cameraMove === "rack_focus") cameraZoom = 1.025;
-        if (cameraTargetPoint && (interactionStep === "continue" || ["pan_to_source", "pan_to_destination", "pan_to_next", "rack_focus", "orbit_left", "orbit_right"].includes(cameraMove))) {
+        if (isPullBack) cameraZoom = 1.08 - 0.08 * cameraProgress;
+        if (isHold) cameraZoom = 1.025;
+        if (cameraTargetPoint && (interactionStep === "continue" || isCameraTrack)) {
             cameraPanX = Math.max(-W * 0.16, Math.min(W * 0.16, (W * 0.5 - cameraTargetPoint.x) * 0.28 * cameraProgress));
             cameraPanY = Math.max(-H * 0.16, Math.min(H * 0.16, (H * 0.43 - cameraTargetPoint.y) * 0.36 * cameraProgress));
         }
-        if (cameraMove === "orbit_left") cameraOrbit = -0.012 * cameraProgress;
-        if (cameraMove === "orbit_right") cameraOrbit = 0.012 * cameraProgress;
+        if (isOrbitLeft) cameraOrbit = -0.045 * cameraProgress;
+        if (isOrbitRight) cameraOrbit = 0.045 * cameraProgress;
+        if (/dutch|tilt|roll/.test(cameraMove) && !isOrbitLeft && !isOrbitRight) cameraOrbit = 0.035 * Math.sin(cameraProgress * Math.PI);
         // A deterministic frame-based camera makes seek, pause, replay and export agree.
         ctx.save(); ctx.translate(W * 0.5, H * 0.5); ctx.scale(cameraZoom, cameraZoom); ctx.rotate(cameraOrbit); ctx.translate(-W * 0.5 + cameraPanX, -H * 0.5 + cameraPanY);
         ctx.save(); ctx.globalAlpha = 0.12; ctx.strokeStyle = "rgba(56,189,248,0.34)"; ctx.lineWidth = 1;
@@ -4383,7 +4489,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             ctx.restore();
         });
-        points.forEach(({ x, y, item, index }) => {
+        points.forEach(({ x, y, item, index, entranceScale, entranceRotation }) => {
             if (!visibleLabels.has(String(item.label))) return;
             const color = item.color || "#38BDF8";
             const connectionStep = interactionStep === "connect" || interactionStep === "transfer";
@@ -4393,12 +4499,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 : (progress - 0.03) / 0.34));
             if (elementProgress <= 0) return;
             const enter = 0.82 + 0.18 * Math.sin(elementProgress * Math.PI / 2);
-            const scale = enter * (1 + Math.sin(time * 1.7 + index * 0.8) * 0.025);
+            const scale = enter * (Number(entranceScale) || 1) * (1 + Math.sin(time * 1.7 + index * 0.8) * 0.025);
             const isFocused = focusPoint && focusPoint.index === index;
             if (elements.length > 6) {
-                ctx.save(); ctx.translate(x, y);
+                ctx.save(); ctx.translate(x, y); ctx.rotate(Number(entranceRotation) || 0); ctx.scale(Number(entranceScale) || 1, Number(entranceScale) || 1);
                 ctx.globalAlpha *= isFocused ? 1 : 0.74;
-                drawPromptSemanticShape(ctx, item.shape, isFocused ? 31 : 23, color, time + index * 0.2, item.glyph || item.icon);
+                drawPromptSemanticShape(ctx, item.shape, isFocused ? 31 : 23, color, time + index * 0.2, item.glyph || item.icon, item.motion || item.animation);
                 ctx.shadowBlur = 0; ctx.fillStyle = "#F8FAFC"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
                 ctx.font = "650 17px 'Segoe UI', sans-serif";
                 splitDiagramText(ctx, String(item.label).replace(/[_-]+/g, " "), 190, 2, 18).forEach((line, lineIndex) => ctx.fillText(line, 42, lineIndex * 20));
@@ -4419,12 +4525,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.fillText(interactionStep === "transfer" ? "PACKET IN MOTION" : "CORE · LIVE TELEMETRY", 0, -205);
                 ctx.restore();
             }
-            ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(Number(entranceRotation) || 0); ctx.scale(scale, scale);
             ctx.globalAlpha *= elementProgress * (focusPoint && focusPoint.index !== index ? 0.24 : 1);
             const glyph = String(item.glyph || item.icon || "");
             const shape = String(item.shape || "organic");
             const radius = elements.length <= 3 ? 78 : elements.length <= 6 ? 68 : 42;
-            drawPromptSemanticShape(ctx, shape, radius, color, time + index * 0.2, glyph);
+            drawPromptSemanticShape(ctx, shape, radius, color, time + index * 0.2, glyph, item.motion || item.animation);
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
             const labelFont = elements.length <= 3 ? 30 : elements.length <= 6 ? 27 : 24;
             ctx.fillStyle = "#F8FAFC"; ctx.font = `750 ${labelFont}px 'Segoe UI', sans-serif`;
@@ -4443,6 +4549,7 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
             ctx.restore();
         });
+        if (!hasCueDetailPanel) drawObjectProcessAnnotation(ctx, W, H, focusPoint, cue, interactionStep);
         drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
         drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep);
         if (cue && Number(cue.pause_after) > 0 && progress >= 1 - Math.min(0.18, Number(cue.pause_after) * 0.16)) {
@@ -4635,7 +4742,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         return true;
     }
 
-    function drawPromptSemanticShape(ctx, shape, radius, color, time, glyph) {
+    function drawPromptSemanticShape(ctx, shape, radius, color, time, glyph, motion = "") {
         const kind = String(shape || "organic").toLowerCase();
         ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.lineCap = "round";
         ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 22;
@@ -4669,7 +4776,23 @@ SECOND_HIGHEST_SALARY: 70000`;
         } else if (kind.includes("warning") || kind.includes("triangle")) {
             ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(radius * 0.95, radius * 0.78); ctx.lineTo(-radius * 0.95, radius * 0.78); ctx.closePath(); ctx.fillStyle = "rgba(38,20,8,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -radius * 0.38); ctx.lineTo(0, radius * 0.22); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.48, 4, 0, Math.PI * 2); ctx.fill();
         } else if (kind.includes("person") || kind.includes("user")) {
-            ctx.beginPath(); ctx.arc(0, -radius * 0.45, radius * 0.32, 0, Math.PI * 2); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-radius * 0.76, radius * 0.85); ctx.quadraticCurveTo(-radius * 0.7, -radius * 0.12, 0, -radius * 0.05); ctx.quadraticCurveTo(radius * 0.7, -radius * 0.12, radius * 0.76, radius * 0.85); ctx.closePath(); ctx.fill(); ctx.stroke();
+            const action = String(motion || "").toLowerCase();
+            const walk = /walk|run|jog|march/.test(action), wave = /wave|greet|celebrate/.test(action), point = /point|indicate|present/.test(action);
+            const stride = walk ? Math.sin(time * 6.5) * 0.28 : Math.sin(time * 1.8) * 0.045;
+            const bob = walk ? Math.abs(Math.sin(time * 6.5)) * 0.07 : Math.sin(time * 1.8) * 0.025;
+            const headY = -radius * (0.5 + bob);
+            ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = color; ctx.lineWidth = Math.max(5, radius * 0.12);
+            ctx.beginPath(); ctx.moveTo(-radius * 0.34, radius * 0.05);
+            if (wave) ctx.quadraticCurveTo(-radius * 0.62, -radius * 0.2, -radius * 0.44, -radius * (0.95 + Math.sin(time * 8) * 0.08));
+            else if (point) ctx.quadraticCurveTo(radius * 0.15, -radius * 0.12, radius * 0.94, -radius * 0.28);
+            else ctx.quadraticCurveTo(-radius * 0.65, radius * (0.12 + stride * 0.35), -radius * (0.82 + stride * 0.25), radius * (0.38 - stride * 0.25));
+            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(radius * 0.34, radius * 0.05); ctx.quadraticCurveTo(radius * 0.62, radius * (0.15 - stride * 0.35), radius * (0.82 - stride * 0.25), radius * (0.38 + stride * 0.25)); ctx.stroke();
+            ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.beginPath(); ctx.roundRect(-radius * 0.32, -radius * 0.12, radius * 0.64, radius * 0.76, radius * 0.2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-radius * 0.14, radius * 0.58); ctx.lineTo(-radius * (0.26 + stride * 0.45), radius * 0.98); ctx.moveTo(radius * 0.14, radius * 0.58); ctx.lineTo(radius * (0.26 - stride * 0.45), radius * 0.98); ctx.stroke();
+            ctx.fillStyle = "#F8FAFC"; ctx.beginPath(); ctx.arc(0, headY, radius * 0.28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#0B1220"; ctx.beginPath(); ctx.arc(-radius * 0.09, headY - radius * 0.015, radius * 0.025, 0, Math.PI * 2); ctx.arc(radius * 0.09, headY - radius * 0.015, radius * 0.025, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, headY + radius * 0.06, radius * 0.09, 0.12, Math.PI - 0.12); ctx.strokeStyle = "#0B1220"; ctx.lineWidth = Math.max(2, radius * 0.035); ctx.stroke();
         } else if (kind.includes("chip") || kind.includes("processor") || kind.includes("server")) {
             ctx.beginPath(); ctx.roundRect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4, 8); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
             for (let i = -2; i <= 2; i++) { const p = i * radius * 0.24; ctx.beginPath(); ctx.moveTo(p, -radius); ctx.lineTo(p, -radius * 0.7); ctx.moveTo(p, radius * 0.7); ctx.lineTo(p, radius); ctx.moveTo(-radius, p); ctx.lineTo(-radius * 0.7, p); ctx.moveTo(radius * 0.7, p); ctx.lineTo(radius, p); ctx.stroke(); }
@@ -4734,21 +4857,14 @@ SECOND_HIGHEST_SALARY: 70000`;
             const parallax = depth * 22;
             x += Math.sin(t * 0.32 + i * 0.6) * parallax;
             y += Math.cos(t * 0.24 + i * 0.45) * parallax * 0.55;
-            return { x, y, node, depth };
+            const entrance = evaluatePromptEntrance(node, motion, progress, i);
+            return { x: x + entrance.dx, y: y + entrance.dy, node, depth, entranceScale: entrance.scale, entranceRotation: entrance.rotation };
         });
         points.forEach(point => { point.y = Math.max(535, Math.min(H - 760, point.y)); });
         resolveVisualPointCollisions(new Map(points.map((point, index) => [index, point])), W, H, { minGap: points.length > 6 ? 58 : 198, minY: 535, maxY: H - 760 });
 
         ctx.save();
         ctx.globalAlpha = Math.max(0.15, Math.min(1, alpha));
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#F8FAFC";
-        ctx.font = "800 44px 'Segoe UI', sans-serif";
-        wrapCanvasText(ctx, title, W - 170, 2).forEach((line, i) => ctx.fillText(line, W / 2, 205 + i * 54));
-        ctx.fillStyle = "#CBD5E1";
-        ctx.font = "24px 'Segoe UI', sans-serif";
-        wrapCanvasText(ctx, description, W - 210, 2).forEach((line, i) => ctx.fillText(line, W / 2, 330 + i * 32));
-
         const findPoint = key => points.find(point => String(point.node.id || point.node.label || point.node.name) === String(key));
         const edges = Array.isArray(links) ? links : [];
         edges.forEach((edge, i) => {
@@ -4776,7 +4892,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         });
 
         points.sort((left, right) => left.depth - right.depth);
-        points.forEach(({ x, y, node, depth }, i) => {
+        points.forEach(({ x, y, node, depth, entranceScale, entranceRotation }, i) => {
             const color = /^#[0-9a-f]{6}$/i.test(node.color || "") ? node.color : (i % 2 ? "#A78BFA" : "#38BDF8");
             const pulseRate = motion.includes("pulse") || motion.includes("beat") ? 4.2 : 2.4;
             const pulse = 1 + Math.sin(t * pulseRate + i * 1.7) * 0.055;
@@ -4784,26 +4900,29 @@ SECOND_HIGHEST_SALARY: 70000`;
             const shape = String(node.shape || "orb").toLowerCase();
             ctx.save();
             ctx.translate(x, y);
-            ctx.scale(1, 0.82);
+            ctx.rotate(Number(entranceRotation) || 0);
+            ctx.scale(Number(entranceScale) || 1, Number(entranceScale) || 1);
+            ctx.save(); ctx.scale(1, 0.82);
             ctx.shadowColor = color;
             ctx.shadowBlur = 32;
-            drawPromptSemanticShape(ctx, shape, radius, color, t + i * 0.2, node.glyph || node.icon);
+            drawPromptSemanticShape(ctx, shape, radius, color, t + i * 0.2, node.glyph || node.icon, node.motion || node.animation);
             ctx.shadowBlur = 0;
             ctx.restore();
             ctx.textAlign = nodes.length > 6 ? "left" : "center";
             ctx.fillStyle = "#FFFFFF";
             ctx.font = nodes.length > 6 ? "700 16px 'Segoe UI', sans-serif" : "bold 24px 'Segoe UI', sans-serif";
-            const labelX = nodes.length > 6 ? x + radius + 12 : x;
-            const labelY = nodes.length > 6 ? y - 3 : y + radius + 42;
+            const labelX = nodes.length > 6 ? radius + 12 : 0;
+            const labelY = nodes.length > 6 ? -3 : radius + 42;
             wrapCanvasText(ctx, String(node.label || node.name), nodes.length > 6 ? 190 : 250, 2).forEach((line, lineIdx) => ctx.fillText(line, labelX, labelY + lineIdx * (nodes.length > 6 ? 19 : 30)));
             const detail = String(node.detail || "").trim();
             if (detail) {
                 ctx.fillStyle = "#CBD5E1";
                 ctx.font = nodes.length > 6 ? "13px 'Segoe UI', sans-serif" : "19px 'Segoe UI', sans-serif";
-                const detailX = nodes.length > 6 ? labelX : x;
-                const detailY = nodes.length > 6 ? labelY + 35 : y + radius + 74;
+                const detailX = labelX;
+                const detailY = nodes.length > 6 ? labelY + 35 : radius + 74;
                 wrapCanvasText(ctx, detail, nodes.length > 6 ? 190 : 260, nodes.length > 6 ? 1 : 2).forEach((line, lineIdx) => ctx.fillText(line, detailX, detailY + lineIdx * (nodes.length > 6 ? 16 : 26)));
             }
+            ctx.restore();
         });
         ctx.restore();
     }
@@ -4919,10 +5038,12 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.font = "bold 44px 'Segoe UI', sans-serif";
             ctx.shadowColor = "rgba(56, 189, 248, 0.6)";
             ctx.shadowBlur = 18;
-            const hLines = wrapCanvasText(ctx, headline, W - 200, 3);
-            hLines.forEach((hl, i) => {
-                ctx.fillText(hl, W / 2, 740 + i * 58);
-            });
+            const normalizedHeadline = String(headline).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+            const normalizedTopic = String(p.title || p.question || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+            if (normalizedHeadline && normalizedHeadline !== normalizedTopic) {
+                const hLines = wrapCanvasText(ctx, headline, W - 200, 3);
+                hLines.forEach((hl, i) => ctx.fillText(hl, W / 2, 740 + i * 58));
+            }
             ctx.shadowBlur = 0;
 
             // Subtext
@@ -5897,20 +6018,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
         }
 
-        // Stage title: one clamped line under the header, so a long topic can never
-        // spill outside the 9:16 frame.
-        const stageTitle = String((activeStage && activeStage.title) || "");
-        if (stageTitle && !/^hook$/i.test(stageTitle.trim())) {
-            ctx.save();
-            ctx.textAlign = "center";
-            ctx.textBaseline = "alphabetic";
-            ctx.font = "700 32px 'Segoe UI', sans-serif";
-            ctx.fillStyle = "#E2E8F0";
-            const titleLine = splitDiagramText(ctx, stageTitle, W - 170, 1, 46)[0];
-            if (titleLine) ctx.fillText(titleLine, W / 2, 176);
-            ctx.restore();
-        }
-
         const activeStageIndex = stages.indexOf(activeStage);
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
@@ -5967,94 +6074,9 @@ SECOND_HIGHEST_SALARY: 70000`;
             renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
         }
 
-        // Briefs may explicitly forbid showing the narration at the bottom.
-        if (p.show_subtitles === false) { return; }
-
-        // =========================================================================
-        // CAPCUT-STYLE KINETIC SUBTITLE PILL (Word-by-Word Glowing Karaoke Highlight)
-        // =========================================================================
-        const subPillY = H - 458;
-        const subTextWidth = W - 176;
-
-        const hasShortCaption = Boolean(activeStage && String(activeStage.caption || "").trim());
-        const showShortCaption = hasShortCaption && sceneElapsed <= 4;
-
-        // Subtitle Text Word-by-Word Highlight (English only, no voice badge)
-        let subtitleText = "";
-        if (activeCue) {
-            subtitleText = activeCue.speech_en || activeCue.speech || activeStage?.speech_en || activeStage?.speech || "";
-        } else if (showShortCaption) {
-            subtitleText = activeStage.caption;
-        } else if (activeStage) {
-            // A short caption must not suppress narration subtitles after its
-            // opening beat, especially when the model cue map was unavailable.
-            subtitleText = activeStage.speech_en || activeStage.speech || activeStage['speech_' + sqlShortState.audioLang] || activeStage.speech_mr || activeStage.speech_hi || activeStage.caption || "";
-        } else if (p.scenes && p.scenes.length > 0) {
-            const sc = p.scenes.find(s => t >= s.start && t < s.end) || p.scenes[p.scenes.length - 1];
-            subtitleText = sc.speech_en || sc['speech_en'] || sc['speech_' + sqlShortState.audioLang] || "";
-        } else {
-            subtitleText = p.explanation_en || p['explanation_' + sqlShortState.audioLang] || p.explanation_mr || p.question || "";
-        }
-
-        if (activeCue && activeCue.emphasis && !activeCue.code_snippet && !activeCue.sql_query && !(Array.isArray(activeCue.table_rows) && activeCue.table_rows.length)) {
-            const focusText = String(activeCue.emphasis).trim().slice(0, 64).toUpperCase();
-            if (focusText) {
-                ctx.save();
-                ctx.font = "800 22px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillStyle = "rgba(8, 18, 36, 0.88)";
-                ctx.fillRect(245, H - 650, 590, 46);
-                ctx.strokeStyle = "rgba(56, 189, 248, 0.72)";
-                ctx.lineWidth = 2;
-                ctx.strokeRect(245, H - 650, 590, 46);
-                ctx.fillStyle = "#7DD3FC";
-                ctx.fillText(`FOCUS · ${focusText}`, W / 2, H - 627, 560);
-                ctx.restore();
-            }
-        }
-
-        if (subtitleText) {
-            const words = subtitleText.trim().split(/\s+/).filter(Boolean);
-            const activeWordIdx = Math.min(words.length - 1, Math.floor((activeCue ? cueProgress : stageProg) * words.length));
-            ctx.font = "bold 40px 'Segoe UI', sans-serif";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "alphabetic";
-            const allLines = wrapCanvasText(ctx, words.join(" "), subTextWidth, 6);
-            const maxLines = 3;
-            const subtitleLines = allLines.slice(0, maxLines);
-            if (allLines.length > maxLines && subtitleLines.length) {
-                const last = subtitleLines.length - 1;
-                subtitleLines[last] = fitTextToWidth(ctx, `${subtitleLines[last]}…`, subTextWidth - 12);
-            }
-            const lineH = 48;
-            const blockHeight = subtitleLines.length * lineH + 28;
-            const blockTop = Math.max(H - 340, subPillY - 24);
-            ctx.save();
-            ctx.fillStyle = "rgba(2,6,18,0.82)";
-            ctx.strokeStyle = "rgba(148,163,184,0.24)";
-            ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(54, blockTop, W - 108, blockHeight, 20); ctx.fill(); ctx.stroke();
-            let wordIndex = 0;
-            subtitleLines.forEach((line, lineIndex) => {
-                const lineWords = line.split(/\s+/).filter(Boolean);
-                const lineWidth = lineWords.reduce((sum, word) => sum + ctx.measureText(word).width, 0)
-                    + Math.max(0, lineWords.length - 1) * ctx.measureText(" ").width;
-                let curX = (W - lineWidth) / 2;
-                const curY = blockTop + 22 + lineIndex * lineH;
-                lineWords.forEach(word => {
-                    const isSpoken = wordIndex <= activeWordIdx;
-                    const isCurrent = wordIndex === activeWordIdx;
-                    ctx.fillStyle = isCurrent ? "#FACC15" : isSpoken ? "#FDE047" : "#E2E8F0";
-                    ctx.shadowColor = isCurrent ? "#FACC15" : "transparent";
-                    ctx.shadowBlur = isCurrent && !sqlShortState.isExporting ? 12 : 0;
-                    ctx.fillText(word, curX, curY, subTextWidth);
-                    curX += ctx.measureText(word + " ").width;
-                    wordIndex++;
-                });
-            });
-            ctx.restore();
-        }
+        // Narration stays in the voice track. The renderer places short process
+        // explanations next to their active object instead of repeating the speech
+        // as a karaoke strip across the bottom of the frame.
         ctx.restore();
     }
 
