@@ -16,10 +16,10 @@ class ORDSClient:
         from app.core.connection_manager import connection_manager
 
         cfg = connection_manager.get_connection_config(connection_name, mask=False) or {}
-        oauth_cfg = connection_manager.get_connection_config("NANOPRO_ORDS_REPORTING_CLIENT", mask=False) or cfg
+        oauth_cfg = connection_manager.get_connection_config("NANOPRO_ORDS_REPORTING_CLIENT", mask=False) or {}
         self.meta = cfg.get("metadata") or {}
         oauth_meta = oauth_cfg.get("metadata") or {}
-        self.client_id = (oauth_meta.get("oauth_client_id") or self.meta.get("oauth_client_id") or oauth_cfg.get("username") or "").strip()
+        self.client_id = (oauth_meta.get("oauth_client_id") or oauth_cfg.get("username") or "").strip()
         self.client_secret = (oauth_cfg.get("secret_value") or "").strip()
         self.workspace = (self.meta.get("workspace") or "nanoprostudio").strip("/")
         configured_url = (self.meta.get("environment_url") or "https://apex.oracle.com/ords/").rstrip("/")
@@ -31,7 +31,9 @@ class ORDSClient:
         self.port = endpoint.port or 443
         self.schema_alias = (self.meta.get("schema_alias") or self.workspace).strip("/")
         if not self.client_id or not self.client_secret:
-            raise RuntimeError("NanoPro Vault needs the ORDS OAuth client ID and client secret for the APEX profile.")
+            raise RuntimeError(
+                "Credentials Vault profile NANOPRO_ORDS_REPORTING_CLIENT needs the ORDS OAuth client ID and secret."
+            )
         self.schema_url = f"{self.base_url}/{self.schema_alias}"
 
     def _request(
