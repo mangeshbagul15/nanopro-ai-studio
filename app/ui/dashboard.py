@@ -13135,19 +13135,6 @@ function navigateHistory(direction) {
                 }
 
                 if (d.status === 'stored' || res.ok) {
-                    // Synchronize connection manager & .env if password provided
-                    if (secret && (service.toUpperCase().includes('ORACLE') || service.toUpperCase().includes('SNOWFLAKE'))) {
-                        try {
-                            await fetch('/api/connections/password', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({ connection_name: service, new_password: secret })
-                            });
-                        } catch(pe) {
-                            console.error('Password sync error:', pe);
-                        }
-                    }
-
                     if (typeof showStudioToast === 'function') {
                         showStudioToast('Vault Synchronized', `✅ Credential for '${service}' successfully encrypted with AES-256-GCM and stored in Vault!`, 'success');
                     }
@@ -13251,47 +13238,47 @@ function navigateHistory(direction) {
                 if (hostEl) hostEl.value = 'https://EGPKNWZ-XH53504.snowflakecomputing.com';
                 if (portEl) portEl.value = '443';
                 if (userEl) userEl.value = 'mangeshbagul15';
-                if (secEl) secEl.value = 'Bhaiyyanand@123';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'MY_ORACLE_XE_LOCAL') {
                 if (hostEl) hostEl.value = '127.0.0.1';
                 if (portEl) portEl.value = '1521';
                 if (userEl) userEl.value = 'SYSTEM';
-                if (secEl) secEl.value = 'NanoPro2026';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'MY_ORACLE_XE_REMOTE') {
                 if (hostEl) hostEl.value = '192.168.31.240';
                 if (portEl) portEl.value = '1521';
                 if (userEl) userEl.value = 'SYSTEM';
-                if (secEl) secEl.value = 'NanoPro2026';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'MY_ORACLE_XE_REMOTE_New') {
                 if (hostEl) hostEl.value = '100.112.86.83';
                 if (portEl) portEl.value = '1521';
                 if (userEl) userEl.value = 'SYSTEM';
-                if (secEl) secEl.value = 'NanoPro2026';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'ORACLE_APEX_23AI_CLOUD') {
                 if (hostEl) hostEl.value = 'apex.oracle.com';
                 if (portEl) portEl.value = '443';
                 if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
-                if (secEl) secEl.value = 'Bhaiyyanand$123';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'MY_POSTGRES_LOCAL') {
                 if (hostEl) hostEl.value = '127.0.0.1';
                 if (portEl) portEl.value = '5432';
                 if (userEl) userEl.value = 'postgres';
-                if (secEl) secEl.value = 'Divyam@123';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'POSTGRES_CLOUD_FREE') {
                 if (hostEl) hostEl.value = 'ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech';
                 if (portEl) portEl.value = '5432';
                 if (userEl) userEl.value = 'neondb_owner';
-                if (secEl) secEl.value = 'npg_VWB8sLHgC3jX';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'POSTGRES_RENDER_CLOUD') {
                 if (hostEl) hostEl.value = 'dpg-db89fqm89jmc73cnqd0g-a.singapore-postgres.render.com';
                 if (portEl) portEl.value = '5432';
                 if (userEl) userEl.value = 'nanopro_postgres_user';
-                if (secEl) secEl.value = 'cFSfvQuyCFj7knHA6q2IqVtKK6TS0lhb';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'GMAIL_SMTP') {
                 if (hostEl) hostEl.value = 'smtp.gmail.com';
                 if (portEl) portEl.value = '587';
                 if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
-                if (secEl) secEl.value = 'agunjgvexwcjudbx';
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'RESEND_EMAIL') {
                 if (hostEl) hostEl.value = 'api.resend.com';
                 if (portEl) portEl.value = '443';
@@ -13635,7 +13622,9 @@ function navigateHistory(direction) {
                 resultBox.style.display = 'block';
                 resultBox.style.background = '#0F172A';
                 resultBox.style.border = '1px solid #334155';
-                resultBox.innerHTML = `<span class="spinner-sm"></span> Probing TCP port ${connectionName === 'ORACLE_APEX_23AI_CLOUD' ? '443' : '1521'} at ${targetHost} (${connectionName})...<br>• Validating authenticated session for SYSTEM (Password: NanoPro2026)...<br>• Checking service XEPDB1 with multi-DB failover resilience...`;
+                resultBox.innerHTML = connectionName === 'ORACLE_APEX_23AI_CLOUD'
+                    ? `<span class="spinner-sm"></span> Checking HTTPS gateway and configured APEX/ORDS connection profile (${connectionName})...<br>• Database login and SQL access will be reported only if the configured schema endpoint authenticates.`
+                    : `<span class="spinner-sm"></span> Probing TCP port 1521 at ${targetHost} (${connectionName})...<br>• Validating the saved Oracle connection profile and XEPDB1 service...`;
             }
 
             try {
@@ -13669,7 +13658,9 @@ function navigateHistory(direction) {
                         <div><strong>Target:</strong> ${d.host || targetHost}:${d.port || 1521}/${d.service_name || 'XEPDB1'}</div>
                         <div><strong>User:</strong> ${d.username || 'SYSTEM'}</div>
                         <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
-                        <div><strong>Status Detail:</strong> ${isSuccess ? 'Authenticated Oracle session active' : 'Host unreachable or offline (Multi-DB failover active)'}</div>
+                        <div><strong>Status Detail:</strong> ${d.error_category === 'APEX_GATEWAY_ONLY'
+                            ? 'APEX gateway is reachable; database login and SQL access are unverified. A REST-enabled schema endpoint and database credentials are required.'
+                            : isSuccess ? 'Authenticated Oracle session active' : (d.error_message || 'Oracle connection was not verified.')}</div>
                     </div>`;
 
                     if (d.error_message) {

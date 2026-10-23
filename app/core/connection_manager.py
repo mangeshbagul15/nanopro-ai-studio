@@ -71,13 +71,13 @@ ORACLE_CONFIGS = {
     "ORACLE_APEX_23AI_CLOUD": {
         "connection_name": "ORACLE_APEX_23AI_CLOUD",
         "username": "mangeshbagul15@gmail.com",
-        "hostname": "apex.oracle.com",
+        "hostname": "oracleapex.com",
         "port": 443,
         "connection_type": "ORDS_REST",
         "role": "Administrator",
         "workspace": "nanoprostudio",
         "service_name": "nanoprostudio",
-        "environment_url": "https://apex.oracle.com/ords/",
+        "environment_url": "https://oracleapex.com/ords/",
         "notes": "Oracle Official 23ai Cloud Workspace 'nanoprostudio' (mangeshbagul15@gmail.com - 24/7 Lifetime Free)"
     }
 }
@@ -516,62 +516,49 @@ class ConnectionManager:
 
         # Dedicated Handler for Official Oracle Cloud 23ai (APEX / ORDS REST)
         if conn_name == "ORACLE_APEX_23AI_CLOUD" or meta.get("connection_type") == "ORDS_REST":
-            import urllib.request
-            import urllib.error
             t0 = time.time()
             ws_name = meta.get("workspace", "nanoprostudio")
-            u_name = meta.get("username", "mangeshbagul15@gmail.com")
+            u_name = meta.get("oauth_client_id") or "NanoPro ORDS client"
             try:
-                apex_url = meta.get("environment_url") or "https://apex.oracle.com/ords/"
-                req = urllib.request.Request(
-                    apex_url,
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-                    }
-                )
-                try:
-                    with urllib.request.urlopen(req, timeout=5.0) as resp:
-                        status_code = resp.status
-                except urllib.error.HTTPError as he:
-                    status_code = he.code
-
+                from app.core.ords_client import ORDSClient
+                client = ORDSClient(conn_name)
+                verification = client.verify()
+                u_name = client.client_id
                 duration = round((time.time() - t0) * 1000, 2)
-                # Oracle APEX returns 200, 302 or 403 (security challenge) when the cloud gateway is active
-                if status_code in [200, 301, 302, 401, 403]:
-                    res = {
-                        "connection_name": conn_name,
-                        "status": "Gateway Reachable; Database Login Unverified",
-                        "success": False,
-                        "host": "apex.oracle.com",
-                        "port": 443,
-                        "username": u_name,
-                        "workspace": ws_name,
-                        "service_name": f"Oracle APEX 23ai Cloud ({ws_name})",
-                        "response_time_ms": duration,
-                        "timestamp": test_ts,
-                        "verified_version": None,
-                        "query_result": f"APEX gateway HTTP status {status_code}; database credentials and SQL access were not verified.",
-                        "error_category": "APEX_GATEWAY_ONLY",
-                        "error_message": None
-                    }
-                    self._record_connection_result(conn_name, "oracle", "Connected", duration, u_name, "Administrator", "23ai", "ORDS", None, res)
-                    return res
-                else:
-                    raise Exception(f"HTTP Status {status_code}")
+                res = {
+                    "connection_name": conn_name,
+                    "status": "Connected; OAuth and L2 REST query verified",
+                    "success": True,
+                    "host": "oracleapex.com",
+                    "port": 443,
+                    "username": u_name,
+                    "workspace": ws_name,
+                    "service_name": f"Oracle APEX 23ai Cloud ({ws_name})",
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "verified_version": "ORDS OAuth / REST",
+                    "query_result": f"Authenticated L2 reporting endpoint returned {verification['rows']} rows.",
+                    "error_category": None,
+                    "error_message": None,
+                }
+                self._record_connection_result(conn_name, "oracle", "Connected", duration, u_name, "NANOPRO_L1L2_READ", ws_name, "ORDS OAuth", None, res)
+                return res
             except Exception as e:
                 duration = round((time.time() - t0) * 1000, 2)
                 res = {
                     "connection_name": conn_name,
-                    "status": "Degraded",
+                    "status": "OAuth/REST verification failed",
                     "success": False,
-                    "host": "apex.oracle.com",
+                    "host": "oracleapex.com",
                     "port": 443,
+                    "username": u_name,
+                    "workspace": ws_name,
                     "response_time_ms": duration,
                     "timestamp": test_ts,
-                    "error_message": f"Oracle APEX Cloud endpoint latency or network issue: {e}"
+                    "error_category": "ORDS_AUTH_OR_REST_FAILED",
+                    "error_message": str(e),
                 }
-                self._record_connection_result(conn_name, "oracle", "Degraded", duration, u_name, None, "23ai", None, str(e), res)
+                self._record_connection_result(conn_name, "oracle", res["status"], duration, u_name, None, ws_name, "ORDS OAuth", str(e), res)
                 return res
 
         if not password or not password.strip():

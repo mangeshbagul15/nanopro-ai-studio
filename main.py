@@ -3363,7 +3363,7 @@ async def api_connections_password(req: UpdatePasswordRequest):
     res = connection_manager.update_connection_password(req.connection_name, req.new_password, sync_cloud=req.sync_cloud)
     communication_center.notify_config_change(
         component=f"Vault Connection [{req.connection_name}]",
-        change_details=f"Password updated to '{req.new_password}'.",
+        change_details="Credential updated; secret value redacted.",
         changed_by="Mangesh Bagul (NanoPro Vault API)"
     )
     return JSONResponse(res)

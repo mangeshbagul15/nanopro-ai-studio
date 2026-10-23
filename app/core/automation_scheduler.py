@@ -55,24 +55,43 @@ class AutomationScheduler:
             log_event(f"Could not disable legacy demo jobs: {exc}", level="WARNING", component="AutomationScheduler")
 
     def _ensure_pipeline_tasks_seeded(self):
-        """Register real pipeline schedules, disabled until provider config is supplied."""
+        """Register the direct Oracle→S3 schedule; keep DMS as an optional mode."""
         try:
-            existing = {task.get("name") for task in db.list_automation_tasks()}
+            tasks = db.list_automation_tasks()
+            existing = {task.get("name") for task in tasks}
+            legacy_to_s3 = {
+                "ORACLE_DMS_SNOWFLAKE_PIPELINE_DAILY": "ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY",
+                "ORACLE_DMS_SNOWFLAKE_PIPELINE_FORTNIGHTLY": "ORACLE_S3_SNOWFLAKE_PIPELINE_FORTNIGHTLY",
+                "ORACLE_DMS_SNOWFLAKE_PIPELINE_MONTHLY": "ORACLE_S3_SNOWFLAKE_PIPELINE_MONTHLY",
+            }
+            for task in tasks:
+                old_name = task.get("name")
+                new_name = legacy_to_s3.get(old_name)
+                if new_name and new_name not in existing:
+                    db.update_automation_task(task["id"], {
+                        "name": new_name,
+                        "description": "Daily Snowflake T-1/live comparison report at 10:00 IST; ingestion runs in the separate 15-minute Oracle→S3 job.",
+                    })
+                    existing.discard(old_name)
+                    existing.add(new_name)
             schedules = [
-                ("ORACLE_DMS_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "daily"),
-                ("ORACLE_DMS_SNOWFLAKE_PIPELINE_FORTNIGHTLY", "fortnightly", "10:00", "fortnightly"),
-                ("ORACLE_DMS_SNOWFLAKE_PIPELINE_MONTHLY", "monthly", "10:00", "monthly"),
+                ("ORACLE_S3_SNOWFLAKE_PIPELINE_INCREMENTAL", "minutes", "15", "incremental"),
+                ("ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "daily"),
+                ("ORACLE_S3_SNOWFLAKE_PIPELINE_FORTNIGHTLY", "fortnightly", "10:00", "fortnightly"),
+                ("ORACLE_S3_SNOWFLAKE_PIPELINE_MONTHLY", "monthly", "1@10:00", "monthly"),
             ]
             for name, kind, expression, period in schedules:
                 if name in existing:
                     continue
-                description = (
-                    "Oracle → AWS DMS → S3 → Snowflake L0/L1/L2 plus daily report."
-                    if period == "daily" else f"Snowflake {period} T-1/live comparison report only; ingestion is not repeated."
-                )
+                if period == "incremental":
+                    description = "Oracle watermark incremental polling every 15 minutes → S3 → Snowflake L0/L1/L2. Near-live micro-batch; not Oracle redo-log CDC."
+                elif period == "daily":
+                    description = "Snowflake daily T-1/live comparison report at 10:00 IST; ingestion runs in the separate 15-minute Oracle→S3 job."
+                else:
+                    description = f"Snowflake {period} T-1/live comparison report only; ingestion is not repeated."
                 self.create_task({
                     "name": name,
-                    "description": description + " Disabled until cloud credentials, DMS task and SQL stages are configured and verified.",
+                    "description": description + " Disabled until live Oracle, S3, Snowflake load SQL and report delivery are configured and verified.",
                     "task_type": "scheduled_job", "schedule_type": kind,
                     "recurrence_expr": expression, "timezone": "Asia/Kolkata",
                     "timeout_sec": 7200,
@@ -127,13 +146,23 @@ class AutomationScheduler:
                 hh, mm = base.hour, base.minute
             return (base + timedelta(days=14)).replace(hour=hh, minute=mm, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
         if kind == "monthly":
-            year, month = (base.year + 1, 1) if base.month == 12 else (base.year, base.month + 1)
-            day = min(base.day, monthrange(year, month)[1])
+            parts = (recurrence_expr or "").split("@", 1)
             try:
-                hh, mm = map(int, recurrence_expr.split(":")[:2]) if recurrence_expr and ":" in recurrence_expr else (base.hour, base.minute)
+                day = int(parts[0]) if len(parts) == 2 else base.day
+            except ValueError:
+                day = base.day
+            try:
+                time_expr = parts[1] if len(parts) == 2 else recurrence_expr
+                hh, mm = map(int, time_expr.split(":")[:2]) if time_expr and ":" in time_expr else (base.hour, base.minute)
             except ValueError:
                 hh, mm = base.hour, base.minute
-            return base.replace(year=year, month=month, day=day, hour=hh, minute=mm, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+            year, month = (base.year, base.month)
+            while True:
+                month_last_day = monthrange(year, month)[1]
+                candidate = base.replace(year=year, month=month, day=min(max(day, 1), month_last_day), hour=hh, minute=mm, second=0, microsecond=0)
+                if candidate > base:
+                    return candidate.strftime("%Y-%m-%d %H:%M:%S")
+                year, month = (year + 1, 1) if month == 12 else (year, month + 1)
         if kind == "cron":
             return (base + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
         return (base + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
@@ -411,11 +440,19 @@ class AutomationScheduler:
             "oracle_dms_snowflake_pipeline_daily": "daily",
             "oracle_dms_snowflake_pipeline_fortnightly": "fortnightly",
             "oracle_dms_snowflake_pipeline_monthly": "monthly",
+            "oracle_s3_snowflake_pipeline_daily": "daily",
+            "oracle_s3_snowflake_pipeline_fortnightly": "fortnightly",
+            "oracle_s3_snowflake_pipeline_monthly": "monthly",
+            "oracle_s3_snowflake_pipeline_incremental": "incremental",
         }
         if name in pipeline_periods:
             from app.core.data_pipeline_runner import run_configured_pipeline
             period = pipeline_periods[name]
-            result = run_configured_pipeline(report_period=period, include_ingestion=(period == "daily"))
+            result = run_configured_pipeline(
+                report_period="daily" if period == "incremental" else period,
+                include_ingestion=(period == "incremental"),
+                include_report=(period != "incremental"),
+            )
             if result.get("status") == "success":
                 return json.dumps(result, default=str), "", 0
             notifications = self._notify_pipeline_failure(result)
@@ -436,23 +473,33 @@ class AutomationScheduler:
 
     @staticmethod
     def _notify_pipeline_failure(result: Dict[str, Any]) -> Dict[str, Any]:
-        """Send bounded stage/run metadata through configured alert providers."""
+        """Send run failure and RCA details through configured alert providers."""
         run_id = result.get("run_id", "unknown")
-        stages = ", ".join(stage.get("stage", "unknown") for stage in result.get("stages", []) if stage.get("status") == "failed") or "preflight"
-        message = f"NanoPro data pipeline failed. Run ID: {run_id}. Failed stage: {stages}. Check Task Scheduler run history."
+        failed = [stage for stage in result.get("stages", []) if stage.get("status") == "failed"]
+        rca_lines = [
+            f"- {stage.get('stage', 'unknown')}: {stage.get('error') or stage.get('delivery_status') or 'failure reported; inspect run record'}"
+            for stage in failed
+        ] or [f"- Preflight/configuration: {', '.join(result.get('missing_configuration', [])) or result.get('message', 'unknown cause')}" ]
+        message = (
+            f"NanoPro pipeline FAILURE / RCA\nRun ID: {run_id}\n"
+            f"Cause: {result.get('message', 'Pipeline execution failed')}\n"
+            f"Failed stages:\n" + "\n".join(rca_lines) +
+            "\nAction: check NanoPro Task Scheduler run history and restore the failed provider/configuration before re-running."
+        )
         outcomes = {}
         try:
             from app.core.smtp_client import smtp_client
-            mail = smtp_client.send_email(recipient="nanoproaistudio@gmail.com", subject="NanoPro data pipeline failure", body=message, task_id=run_id, data_source="Oracle AWS DMS S3 Snowflake")
+            mail = smtp_client.send_email(recipient="nanoproaistudio@gmail.com", subject="NanoPro data pipeline failure", body=message, task_id=run_id, data_source="Oracle S3 Snowflake")
             outcomes["email"] = "sent" if mail.get("success") and "telegram" not in str(mail.get("provider", "")).lower() else "not_verified"
         except Exception:
             outcomes["email"] = "failed"
         try:
-            from app.core.communication_center import communication_center
-            telegram = communication_center.send_telegram_broadcast(message, process_key="data_engineer_etl")
-            outcomes["telegram"] = "sent" if telegram.get("details", {}).get("success") else "not_configured_or_failed"
+            from app.core.telegram_router import send_telegram_routed_message
+            telegram = send_telegram_routed_message(category="reports", text=message)
+            outcomes["telegram_rca_recipient"] = "@mangesh_reports_bot"
+            outcomes["telegram_rca"] = "sent" if telegram.get("success") else "not_configured_or_failed"
         except Exception:
-            outcomes["telegram"] = "failed"
+            outcomes["telegram_rca"] = "failed"
         try:
             from app.core.communication_center import communication_center
             whatsapp = communication_center.send_whatsapp_cloud_api(phone="918433755448", message=message)
@@ -532,8 +579,16 @@ class AutomationScheduler:
                         task_id = task["id"]
                         with self._lock:
                             if task_id not in self._running_jobs:
+                                # Reserve the task while still holding the lock. Otherwise each
+                                # daemon poll can start another worker before the first runs.
+                                self._running_jobs[task_id] = {"start_time": time.time()}
                                 log_event(f"Triggering scheduled execution for task [{task['name']}]", component="AutomationScheduler")
-                                threading.Thread(target=self._run_job_worker, args=(task, "Scheduled"), daemon=True).start()
+                                worker = threading.Thread(target=self._run_job_worker, args=(task, "Scheduled"), daemon=True)
+                                try:
+                                    worker.start()
+                                except Exception:
+                                    self._running_jobs.pop(task_id, None)
+                                    raise
             except Exception as e:
                 log_event(f"Error in AutomationScheduler daemon loop: {e}", level="ERROR", component="AutomationScheduler")
             time.sleep(10)
