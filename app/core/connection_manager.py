@@ -71,13 +71,13 @@ ORACLE_CONFIGS = {
     "ORACLE_APEX_23AI_CLOUD": {
         "connection_name": "ORACLE_APEX_23AI_CLOUD",
         "username": "mangeshbagul15@gmail.com",
-        "hostname": "oracleapex.com",
+        "hostname": "apex.oracle.com",
         "port": 443,
         "connection_type": "ORDS_REST",
         "role": "Administrator",
         "workspace": "nanoprostudio",
         "service_name": "nanoprostudio",
-        "environment_url": "https://oracleapex.com/ords/",
+        "environment_url": "https://apex.oracle.com/ords/",
         "notes": "Oracle Official 23ai Cloud Workspace 'nanoprostudio' (mangeshbagul15@gmail.com - 24/7 Lifetime Free)"
     }
 }
@@ -519,6 +519,7 @@ class ConnectionManager:
             t0 = time.time()
             ws_name = meta.get("workspace", "nanoprostudio")
             u_name = meta.get("oauth_client_id") or "NanoPro ORDS client"
+            client = None
             try:
                 from app.core.ords_client import ORDSClient
                 client = ORDSClient(conn_name)
@@ -529,8 +530,9 @@ class ConnectionManager:
                     "connection_name": conn_name,
                     "status": "Connected; OAuth and L2 REST query verified",
                     "success": True,
-                    "host": "oracleapex.com",
-                    "port": 443,
+                    "host": client.hostname,
+                    "port": client.port,
+                    "endpoint": client.schema_url,
                     "username": u_name,
                     "workspace": ws_name,
                     "service_name": f"Oracle APEX 23ai Cloud ({ws_name})",
@@ -549,8 +551,9 @@ class ConnectionManager:
                     "connection_name": conn_name,
                     "status": "OAuth/REST verification failed",
                     "success": False,
-                    "host": "oracleapex.com",
-                    "port": 443,
+                    "host": client.hostname if client else meta.get("hostname", "apex.oracle.com"),
+                    "port": client.port if client else int(meta.get("port", 443)),
+                    "endpoint": client.schema_url if client else meta.get("environment_url", "https://apex.oracle.com/ords/"),
                     "username": u_name,
                     "workspace": ws_name,
                     "response_time_ms": duration,
@@ -2478,4 +2481,3 @@ class ConnectionManager:
             time.sleep(15.0)
 
 connection_manager = ConnectionManager()
-
