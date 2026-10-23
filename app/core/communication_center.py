@@ -528,28 +528,65 @@ class CommunicationCenter:
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=10) as resp:
                 resp_data = json.loads(resp.read().decode("utf-8"))
+                # Check actual delivery — Meta returns messages[0].id on success
+                msg_id   = None
+                wa_id    = None
+                try:
+                    msg_id = resp_data.get("messages", [{}])[0].get("id")
+                    wa_id  = resp_data.get("contacts", [{}])[0].get("wa_id")
+                except Exception:
+                    pass
+                delivered = bool(msg_id)
                 self.record_ledger_entry(
                     channel="whatsapp",
                     process_name="whatsapp_meta_cloud_api",
                     sender=f"Meta WhatsApp Cloud ({phone_id})",
                     recipient=clean_phone,
                     subject="Official WhatsApp Business Notification",
-                    status="sent",
+                    status="sent" if delivered else "failed",
                     summary_text=message[:150],
-                    metadata={"provider": "Meta WhatsApp Cloud API", "response": resp_data}
+                    metadata={"provider": "Meta WhatsApp Cloud API", "response": resp_data,
+                              "message_id": msg_id, "wa_id": wa_id}
                 )
                 return {
-                    "success": True,
-                    "status": "delivered",
+                    "success": delivered,
+                    "status":  "delivered" if delivered else "accepted_not_confirmed",
                     "provider": "Meta WhatsApp Business Cloud API",
                     "recipient": clean_phone,
+                    "message_id": msg_id,
+                    "wa_id": wa_id,
                     "response": resp_data
                 }
         except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8")
-            return {"success": False, "error": f"Meta Graph API error ({e.code}): {err_body}"}
+            err_msg  = f"Meta Graph API error ({e.code}): {err_body}"
+            log_event(f"WhatsApp Cloud API failed: {err_msg}", level="ERROR", component="CommunicationCenter")
+            # Telegram fallback — send via @mangesh_health_monitor_bot
+            try:
+                from app.core.telegram_router import send_telegram_routed_message
+                send_telegram_routed_message(
+                    category="health",
+                    text=f"<b>WhatsApp Fallback Alert</b>\n\n{message[:800]}",
+                    parse_mode="HTML"
+                )
+                log_event("WhatsApp failed — fallback sent via Telegram health bot", component="CommunicationCenter")
+            except Exception:
+                pass
+            return {"success": False, "error": err_msg, "fallback": "telegram"}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            err_msg = str(e)
+            log_event(f"WhatsApp dispatch exception: {err_msg}", level="ERROR", component="CommunicationCenter")
+            # Telegram fallback
+            try:
+                from app.core.telegram_router import send_telegram_routed_message
+                send_telegram_routed_message(
+                    category="health",
+                    text=f"<b>WhatsApp Fallback Alert</b>\n\n{message[:800]}",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+            return {"success": False, "error": err_msg, "fallback": "telegram"}
 
     # =========================================================================
     # Process-Aware Email Dispatch with Full Audit Logging

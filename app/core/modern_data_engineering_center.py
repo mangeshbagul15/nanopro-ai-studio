@@ -470,29 +470,46 @@ def resolve_pipeline_incident(incident_id: str, action: str, custom_remap: Optio
 def get_strict_catalog_databases() -> List[Dict[str, Any]]:
     """Returns the list of distinct active databases across all supported engines."""
     dbs = [
-        {"id": "BANK_DB", "label": "BANK_DB [Snowflake Cloud DW - EGPKNWZ-XH53504 / Medallion]", "engine": "snowflake", "type": "Snowflake Data Cloud"},
-        {"id": "MY_ORACLE_XE_LOCAL", "label": "MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]", "engine": "oracle", "type": "Oracle Database XE / 19c"},
-        {"id": "MY_ORACLE_XE_REMOTE", "label": "MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]", "engine": "oracle", "type": "Oracle Database XE / 19c"},
-        {"id": "MY_ORACLE_XE_REMOTE_New", "label": "MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]", "engine": "oracle", "type": "Oracle Database XE / 19c"},
-        {"id": "ORCL_LAN_240", "label": "ORCL_LAN_240 [Oracle XE Core CBS | 192.168.31.240:1521]", "engine": "oracle", "type": "Oracle Database XE / 19c"},
-        {"id": "ORCL_PROD_CORE", "label": "ORCL_PROD_CORE [Oracle 19c Production CBS]", "engine": "oracle", "type": "Oracle Database XE / 19c"},
-        {"id": "MY_POSTGRES_LOCAL", "label": "MY_POSTGRES_LOCAL [PostgreSQL 127.0.0.1:5432 / nanopro_db]", "engine": "postgres", "type": "PostgreSQL Enterprise"},
-        {"id": "studio_memory.db", "label": "studio_memory.db [SQLite High-Performance Memory]", "engine": "sqlite", "type": "SQLite Embedded"},
-        {"id": "AWS_S3_DATA_LAKE", "label": "AWS_S3_DATA_LAKE [AWS Athena / S3 Lakehouse - ap-southeast-2]", "engine": "aws", "type": "AWS Athena / S3 Lakehouse"}
+        {"id": "BANK_DB",              "label": "BANK_DB [Snowflake Cloud DW - EGPKNWZ-XH53504 / Medallion]",        "engine": "snowflake", "type": "Snowflake Data Cloud"},
+        {"id": "POSTGRES_CLOUD_FREE",  "label": "POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL - ETL L0/L1]",        "engine": "postgres",  "type": "Neon PostgreSQL (Free Cloud)"},
+        {"id": "POSTGRES_RENDER_CLOUD","label": "POSTGRES_RENDER_CLOUD [Render Cloud PostgreSQL]",                     "engine": "postgres",  "type": "Render PostgreSQL"},
+        {"id": "MY_ORACLE_XE_LOCAL",   "label": "MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]",             "engine": "oracle",    "type": "Oracle Database XE / 19c"},
+        {"id": "MY_ORACLE_XE_REMOTE",  "label": "MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]",       "engine": "oracle",    "type": "Oracle Database XE / 19c"},
+        {"id": "MY_ORACLE_XE_REMOTE_New","label":"MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]",   "engine": "oracle",    "type": "Oracle Database XE / 19c"},
+        {"id": "ORCL_LAN_240",         "label": "ORCL_LAN_240 [Oracle XE Core CBS | 192.168.31.240:1521]",             "engine": "oracle",    "type": "Oracle Database XE / 19c"},
+        {"id": "ORCL_PROD_CORE",       "label": "ORCL_PROD_CORE [Oracle 19c Production CBS]",                          "engine": "oracle",    "type": "Oracle Database XE / 19c"},
+        {"id": "MY_POSTGRES_LOCAL",    "label": "MY_POSTGRES_LOCAL [PostgreSQL 127.0.0.1:5432 / nanopro_db]",          "engine": "postgres",  "type": "PostgreSQL Enterprise"},
+        {"id": "studio_memory.db",     "label": "studio_memory.db [SQLite High-Performance Memory]",                   "engine": "sqlite",    "type": "SQLite Embedded"},
+        {"id": "AWS_S3_DATA_LAKE",     "label": "AWS_S3_DATA_LAKE [AWS Athena / S3 Lakehouse - ap-southeast-2]",       "engine": "aws",       "type": "AWS Athena / S3 Lakehouse"},
     ]
     return dbs
 
 def get_strict_catalog_schemas(db_name: str) -> List[str]:
-    """Strictly returns only schemas belonging to the requested database. Zero cache cross-contamination."""
+    """Strictly returns only schemas belonging to the requested database.
+    Auto-reads ETL pipeline source (etl_automation_pipeline.PROJECTS + STAR_SCHEMA)
+    so adding a new project/table there reflects here automatically."""
     db_clean = (db_name or "BANK_DB").strip()
     for eng, cat in CATALOG_METADATA.items():
         dbs = cat.get("databases", {})
         if db_clean in dbs:
             return list(dbs[db_clean].get("schemas", {}).keys())
-    
-    # Specific fallbacks if not matched in metadata
+
     if "BANK_DB" in db_clean or "SNOWFLAKE" in db_clean:
         return ["L0_STAGING", "L1_HARMONIZED", "L2_CURATED", "PUBLIC", "INFORMATION_SCHEMA"]
+    elif "CLOUD_FREE" in db_clean or "NEON" in db_clean:
+        # Dynamically derive Neon schema names from ETL pipeline source
+        try:
+            from app.core.etl_automation_pipeline import PROJECTS
+            has_l0  = any(p.get("neon_l0") for p in PROJECTS.values())
+            has_l1  = any(p.get("neon_l1") for p in PROJECTS.values())
+            schemas = ["public"]
+            if has_l0:  schemas.append("etl_l0_raw")
+            if has_l1:  schemas.append("etl_l1_clean")
+            return schemas
+        except Exception:
+            return ["public", "etl_l0_raw", "etl_l1_clean"]
+    elif "RENDER" in db_clean:
+        return ["public", "analytics", "audit_trail"]
     elif "ORCL_LAN" in db_clean:
         return ["XEPDB1", "SYSTEM", "FINACLE_CBS"]
     elif "PROD_CORE" in db_clean:
@@ -504,6 +521,63 @@ def get_strict_catalog_schemas(db_name: str) -> List[str]:
     elif "AWS" in db_clean:
         return ["aws_glue_lakehouse", "s3_athena_raw", "iceberg_silver", "iceberg_gold"]
     return ["main", "lakehouse_emulation"]
+
+
+def _etl_tables_for_db_schema(db_clean: str, sch_clean: str) -> List[str]:
+    """
+    Single Source of Truth helper.
+    Reads etl_automation_pipeline.PROJECTS + STAR_SCHEMA dynamically.
+    Adding a new project or table there automatically appears in CATLOG,
+    3D Pipeline, Project Portfolio, and Task Monitor.
+    """
+    try:
+        from app.core.etl_automation_pipeline import PROJECTS, STAR_SCHEMA
+    except Exception:
+        return []
+
+    tables = []
+    sch_lower = sch_clean.lower()
+
+    if "CLOUD_FREE" in db_clean or "NEON" in db_clean:
+        # Neon L0 tables
+        if "l0" in sch_lower or sch_lower in ("public", "etl_l0_raw"):
+            for p in PROJECTS.values():
+                t = p.get("neon_l0")
+                if t and t not in tables:
+                    tables.append(t)
+        # Neon L1 tables
+        if "l1" in sch_lower or sch_lower in ("public", "etl_l1_clean"):
+            for p in PROJECTS.values():
+                t = p.get("neon_l1")
+                if t and t not in tables:
+                    tables.append(t)
+        # public → both L0 + L1
+        if sch_lower == "public":
+            for p in PROJECTS.values():
+                for key in ("neon_l0", "neon_l1"):
+                    t = p.get(key)
+                    if t and t not in tables:
+                        tables.append(t)
+
+    elif "BANK_DB" in db_clean or "SNOWFLAKE" in db_clean:
+        if sch_lower == "l2_curated":
+            # Summary tables
+            for p in PROJECTS.values():
+                t = p.get("sf_table")
+                if t and t not in tables:
+                    tables.append(t)
+            # DIM tables from STAR_SCHEMA
+            for proj_schema in STAR_SCHEMA.values():
+                for dim_name in proj_schema.get("dims", {}).keys():
+                    if dim_name not in tables:
+                        tables.append(dim_name)
+            # FACT tables from STAR_SCHEMA
+            for proj_schema in STAR_SCHEMA.values():
+                for fact_name in proj_schema.get("facts", {}).keys():
+                    if fact_name not in tables:
+                        tables.append(fact_name)
+
+    return tables
 
 def get_strict_catalog_tables(db_name: str, schema_name: str) -> List[Dict[str, Any]]:
     """Strictly returns only tables belonging to the requested DB and Schema with engine-accurate row counts."""
@@ -528,17 +602,75 @@ def get_strict_catalog_tables(db_name: str, schema_name: str) -> List[Dict[str, 
                 table_names = schemas[sch_clean]
                 break
 
+    # ── Single Source of Truth: always merge ETL pipeline tables ──────────
+    # _etl_tables_for_db_schema reads PROJECTS + STAR_SCHEMA from
+    # etl_automation_pipeline.py — adding a project/table there
+    # automatically reflects in CATLOG, 3D Pipeline, Portfolio, Task Monitor.
+    etl_tables = _etl_tables_for_db_schema(db_clean, sch_clean)
+    for t in etl_tables:
+        if t not in table_names:
+            table_names.append(t)
+
     if not table_names:
         # Fallbacks by engine and schema
         if engine == "snowflake":
             if sch_clean == "L1_HARMONIZED":
                 table_names = ["DIM_CUSTOMERS", "DIM_ACCOUNTS", "FACT_TRANSACTIONS", "FACT_DAILY_BALANCES", "DIM_BRANCHES", "DIM_PRODUCTS"]
             elif sch_clean == "L2_CURATED":
-                table_names = ["AML_SUSPICIOUS_ALERTS", "CREDIT_RISK_PORTFOLIO", "FINANCIAL_MONTHLY_SUMMARY", "CASA_DEPOSIT_GROWTH", "REGULATORY_RESERVE_MART"]
+                # ETL Pipeline Star Schema tables
+                table_names = [
+                    # Credit Card
+                    "L2_CREDIT_CARD_SUMMARY","DIM_CARD","DIM_MERCHANT","FACT_CC_TRANSACTIONS","FACT_CC_FRAUD_ALERTS","FACT_CC_MONTHLY_STATEMENT","FACT_CC_CHARGEBACK",
+                    # AML
+                    "L2_AML_SUMMARY","FACT_AML_TXN_MONITOR","FACT_AML_STR","FACT_AML_CTR","FACT_AML_WATCHLIST_HITS","FACT_AML_DAILY_SUMMARY",
+                    # ALM
+                    "L2_ALM_SUMMARY","FACT_ALM_CASHFLOWS","FACT_STRUCTURAL_LIQUIDITY","FACT_LCR_DAILY","FACT_NSFR_MONTHLY",
+                    # ADF CIMS
+                    "L2_CIMS_SUMMARY","FACT_CIMS_GL_BALANCES","FACT_CIMS_SUBMISSIONS","FACT_SLR_COMPLIANCE","FACT_CRR_COMPLIANCE",
+                    # CBS
+                    "L2_CBS_SUMMARY","FACT_CBS_TXN_JOURNAL","FACT_CBS_CASA_BALANCE","FACT_CBS_LOAN_ACCOUNT","FACT_CBS_TERM_DEPOSIT",
+                    "FACT_CBS_GL_BALANCE","FACT_CBS_BATCH_PROCESSING","FACT_CBS_PAYMENTS","FACT_CBS_MIGRATION_PARITY",
+                    # Shared Dims
+                    "DIM_CUSTOMER_MASTER","DIM_ACCOUNT_MASTER","DIM_BRANCH_MASTER","DIM_PRODUCT_MASTER",
+                    "DIM_GL_MASTER","DIM_EMPLOYEE_MASTER","DIM_DATE","DIM_CURRENCY","DIM_MIGRATION_BATCH",
+                    # Legacy
+                    "AML_SUSPICIOUS_ALERTS","CREDIT_RISK_PORTFOLIO","FINANCIAL_MONTHLY_SUMMARY",
+                ]
             elif sch_clean == "PUBLIC":
                 table_names = ["CUSTOMER_METRICS", "DAILY_CASA_TOTALS", "AD_HOC_REPORTS", "ACCOUNTS"]
             else:
-                table_names = ["ACCOUNTS", "RAW_CUSTOMERS", "RAW_ACCOUNTS", "RAW_TRANSACTIONS", "RAW_LOANS", "RAW_BRANCHES", "RAW_DEPOSITS", "RAW_CREDIT_CARDS"]
+                table_names = ["ACCOUNTS","RAW_CUSTOMERS","RAW_ACCOUNTS","RAW_TRANSACTIONS","RAW_LOANS","RAW_BRANCHES","RAW_DEPOSITS","RAW_CREDIT_CARDS"]
+
+        elif engine == "postgres" and "CLOUD_FREE" in db_clean:
+            # Neon PostgreSQL — ETL L0 Raw + L1 Clean tables
+            if "l0" in sch_clean.lower() or sch_clean.lower() in ("public","neondb","etl_l0"):
+                table_names = [
+                    # L0 Raw tables
+                    "cc_l0_raw_transactions",
+                    "aml_l0_raw_transactions",
+                    "alm_l0_raw_cashflows",
+                    "cims_l0_raw_gl_data",
+                    "cbs_l0_raw_gl_dump",
+                    "neon_banking_stream",
+                    "data_engineer_records",
+                ]
+            elif "l1" in sch_clean.lower() or sch_clean.lower() == "etl_l1":
+                table_names = [
+                    "cc_l1_clean_transactions",
+                    "aml_l1_clean_transactions",
+                    "alm_l1_bucketed_flows",
+                    "cims_l1_standardized",
+                    "cbs_l1_finacle_recon",
+                ]
+            else:
+                table_names = [
+                    "cc_l0_raw_transactions","cc_l1_clean_transactions",
+                    "aml_l0_raw_transactions","aml_l1_clean_transactions",
+                    "alm_l0_raw_cashflows","alm_l1_bucketed_flows",
+                    "cims_l0_raw_gl_data","cims_l1_standardized",
+                    "cbs_l0_raw_gl_dump","cbs_l1_finacle_recon",
+                    "neon_banking_stream","data_engineer_records",
+                ]
         elif engine == "oracle":
             if "REMOTE" in db_clean:
                 table_names = ["CORE_TRANSACTION_FEED", "CUSTOMER_CIF_REGISTRY", "SAVINGS_LEDGER", "NEFT_RTGS_CLEARING", "DAILY_INTEREST_ACCRUAL", "BRANCH_FLOAT_BALANCES"]

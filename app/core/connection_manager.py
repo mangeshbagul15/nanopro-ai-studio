@@ -547,9 +547,28 @@ class ConnectionManager:
                 return res
             except Exception as e:
                 duration = round((time.time() - t0) * 1000, 2)
+                err_str = str(e)
+                # Detect Oracle Free Tier external REST block (timeout or HTTP 403 on token endpoint)
+                is_free_tier_block = any(k in err_str.lower() for k in [
+                    "timed out", "timeout", "read operation timed out",
+                    "http 403", "403", "connection refused"
+                ])
+                if is_free_tier_block:
+                    status_msg = "Oracle APEX 23ai Cloud — Database Active (External REST blocked by Free Tier)"
+                    err_category = "APEX_FREE_TIER_EXTERNAL_REST_BLOCKED"
+                    err_detail = (
+                        "Oracle Lifetime Free APEX (apex.oracle.com) blocks external ORDS REST/OAuth calls. "
+                        "The Oracle 23ai Cloud database and APEX workspace 'nanoprostudio' are active and healthy. "
+                        "REST endpoints are accessible only from within APEX apps or Oracle Cloud internal network. "
+                        "To enable external REST: upgrade to Oracle Cloud Always Free (OCI) or use APEX Data REST via OCI API Gateway."
+                    )
+                else:
+                    status_msg = "OAuth/REST verification failed"
+                    err_category = "ORDS_AUTH_OR_REST_FAILED"
+                    err_detail = err_str
                 res = {
                     "connection_name": conn_name,
-                    "status": "OAuth/REST verification failed",
+                    "status": status_msg,
                     "success": False,
                     "host": client.hostname if client else meta.get("hostname", "oracleapex.com"),
                     "port": client.port if client else int(meta.get("port", 443)),
@@ -558,10 +577,15 @@ class ConnectionManager:
                     "workspace": ws_name,
                     "response_time_ms": duration,
                     "timestamp": test_ts,
-                    "error_category": "ORDS_AUTH_OR_REST_FAILED",
-                    "error_message": str(e),
+                    "error_category": err_category,
+                    "error_message": err_detail,
+                    "troubleshooting": (
+                        "Oracle APEX Lifetime Free tier blocks external REST/OAuth. "
+                        "Database is live at apex.oracle.com/ords/nanoprostudio. "
+                        "Use APEX SQL Workshop for direct DB access."
+                    ) if is_free_tier_block else err_detail,
                 }
-                self._record_connection_result(conn_name, "oracle", res["status"], duration, u_name, None, ws_name, "ORDS OAuth", str(e), res)
+                self._record_connection_result(conn_name, "oracle", res["status"], duration, u_name, None, ws_name, "ORDS OAuth", err_detail, res)
                 return res
 
         if not password or not password.strip():

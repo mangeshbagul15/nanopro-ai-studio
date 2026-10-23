@@ -4672,8 +4672,47 @@ class BankingBatchTriggerRequest(BaseModel):
 
 @app.get("/api/banking/projects")
 async def api_banking_list_projects():
-    """Returns the full portfolio of enterprise banking pipeline projects."""
-    return JSONResponse({"status": "success", "projects": banking_pipeline_engine.list_projects()})
+    """Returns the full portfolio — banking engine projects + ETL automation projects.
+    Single source: ETL projects read from etl_automation_pipeline.PROJECTS automatically."""
+    base_projects = banking_pipeline_engine.list_projects()
+
+    # Merge ETL pipeline projects (auto-reflect when etl_automation_pipeline.py changes)
+    try:
+        from app.core.etl_automation_pipeline import PROJECTS as ETL_PROJ, STAR_SCHEMA, etl_pipeline
+        existing_ids = {p.get("id") for p in base_projects}
+        for key, p in ETL_PROJ.items():
+            if p["id"] not in existing_ids:
+                star = STAR_SCHEMA.get(key, {})
+                base_projects.append({
+                    "id":               p["id"],
+                    "name":             p["name"],
+                    "code":             p["code"],
+                    "domain":           p["domain"],
+                    "description":      f"Automated ETL pipeline: Neon L0/L1 + Snowflake L2. {len(star.get('dims',{}))} DIM tables, {len(star.get('facts',{}))} FACT tables.",
+                    "status":           "ACTIVE_RUNNING",
+                    "load_mode":        etl_pipeline.detect_load_mode(key),
+                    "watermark":        etl_pipeline.get_watermark(key),
+                    "neon_l0":          p["neon_l0"],
+                    "neon_l1":          p["neon_l1"],
+                    "sf_table":         p["sf_table"],
+                    "cadence":          p["cadence"],
+                    "dim_count":        len(star.get("dims",  {})),
+                    "fact_count":       len(star.get("facts", {})),
+                    "dim_tables":       list(star.get("dims",  {}).keys()),
+                    "fact_tables":      list(star.get("facts", {}).keys()),
+                    "reports":          [{"name": r, "cadence": p["cadence"]} for r in p["reports"]],
+                    "dispatch": {
+                        "email_to":  "nanoproaistudio@gmail.com",
+                        "telegram":  "@mangesh_reports_bot",
+                        "cadence":   p["cadence"],
+                    },
+                    "color":            p["color"],
+                    "source":           "etl_automation_pipeline",
+                })
+    except Exception:
+        pass
+
+    return JSONResponse({"status": "success", "projects": base_projects, "total": len(base_projects)})
 
 @app.post("/api/banking/projects")
 async def api_banking_add_project(req: BankingProjectCreateRequest):
@@ -5198,13 +5237,50 @@ class DeTaskActionReq(BaseModel):
     action: str
     cron_expression: Optional[str] = None
 
-# [TAB 1] 3D Pipeline
+# [TAB 1] 3D Pipeline — ETL-aware (reads from etl_automation_pipeline.PROJECTS)
 @app.get("/api/de_modern/3d_pipeline/telemetry")
 async def api_de_modern_3d_telemetry(project_id: str = "AML_V1"):
     return JSONResponse(modern_de.get_3d_pipeline_telemetry(project_id))
 
+@app.get("/api/de_modern/3d_pipeline/projects")
+async def api_de_modern_3d_projects():
+    """Returns all ETL pipeline projects for the 3D Pipeline project selector.
+    Single source: reads directly from etl_automation_pipeline.PROJECTS."""
+    try:
+        from app.core.etl_automation_pipeline import PROJECTS, STAR_SCHEMA, etl_pipeline
+        projects = []
+        for key, p in PROJECTS.items():
+            star    = STAR_SCHEMA.get(key, {})
+            wm      = etl_pipeline.get_watermark(key)
+            mode    = etl_pipeline.detect_load_mode(key)
+            projects.append({
+                "id":           p["id"],
+                "key":          key,
+                "label":        f"{p['code']} \u2022 {p['name']}",
+                "name":         p["name"],
+                "code":         p["code"],
+                "domain":       p["domain"],
+                "color":        p["color"],
+                "cadence":      p["cadence"],
+                "neon_l0":      p["neon_l0"],
+                "neon_l1":      p["neon_l1"],
+                "sf_table":     p["sf_table"],
+                "sf_schema":    p["sf_schema"],
+                "reports":      p["reports"],
+                "dim_count":    len(star.get("dims",  {})),
+                "fact_count":   len(star.get("facts", {})),
+                "dim_tables":   list(star.get("dims",  {}).keys()),
+                "fact_tables":  list(star.get("facts", {}).keys()),
+                "load_mode":    mode,
+                "watermark":    wm,
+            })
+        return JSONResponse({"status": "success", "projects": projects, "total": len(projects)})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
 @app.get("/api/de_modern/3d_pipeline/node/{node_id}")
 async def api_de_modern_node_inspection(node_id: str):
+    return JSONResponse(modern_de.get_node_inspection_details(node_id))
     return JSONResponse(modern_de.get_node_inspection_details(node_id))
 
 @app.post("/api/de_modern/3d_pipeline/incident/resolve")
@@ -5298,7 +5374,67 @@ async def api_de_modern_maintain_action(req: DeMaintenanceActionReq):
 # [TAB 7] Task Schedule Monitor
 @app.get("/api/de_modern/tasks/matrix")
 async def api_de_modern_tasks_matrix():
-    return JSONResponse(modern_de.get_task_schedule_matrix())
+    """Task schedule matrix — includes ETL automation scheduler tasks.
+    Single source: ETL tasks read from etl_automation_pipeline.PROJECTS automatically."""
+    base = modern_de.get_task_schedule_matrix()
+
+    # Merge ETL pipeline scheduled tasks
+    try:
+        from app.core.etl_automation_pipeline import PROJECTS, etl_pipeline, ETLScheduler
+        etl_tasks = []
+        schedules = [
+            {"id": "BOD",        "time": "06:00 IST", "label": "BOD — Begin of Day"},
+            {"id": "SOD",        "time": "08:00 IST", "label": "SOD — Start of Day"},
+            {"id": "DAILY_10AM", "time": "10:00 IST", "label": "Daily T-1 Report"},
+            {"id": "EOD",        "time": "18:00 IST", "label": "EOD — End of Day"},
+        ]
+        for key, p in PROJECTS.items():
+            wm   = etl_pipeline.get_watermark(key)
+            mode = etl_pipeline.detect_load_mode(key)
+            for sched in schedules:
+                etl_tasks.append({
+                    "task_id":       f"etl_{key}_{sched['id']}",
+                    "task_name":     f"{p['code']} ETL — {sched['label']}",
+                    "project":       p["name"],
+                    "project_code":  p["code"],
+                    "schedule":      sched["time"],
+                    "load_mode":     mode,
+                    "watermark":     wm,
+                    "status":        "SCHEDULED",
+                    "type":          "ETL_AUTOMATION",
+                    "domain":        p["domain"],
+                    "neon_l0":       p["neon_l0"],
+                    "neon_l1":       p["neon_l1"],
+                    "sf_table":      p["sf_table"],
+                    "source":        "etl_automation_pipeline",
+                })
+        # Weekly / Fortnightly / Monthly
+        for key, p in PROJECTS.items():
+            for sched_label, sched_time in [
+                ("Weekly Mon 08:00",   "Monday 08:00 IST"),
+                ("Fortnightly 1st/15th","1st & 15th 08:00 IST"),
+                ("Monthly 1st 07:00",  "1st of Month 07:00 IST"),
+            ]:
+                etl_tasks.append({
+                    "task_id":      f"etl_{key}_{sched_label.replace(' ','_')}",
+                    "task_name":    f"{p['code']} ETL — {sched_label}",
+                    "project_code": p["code"],
+                    "schedule":     sched_time,
+                    "load_mode":    "FULL_LOAD" if "Monthly" in sched_label else "INCREMENTAL",
+                    "status":       "SCHEDULED",
+                    "type":         "ETL_AUTOMATION",
+                    "source":       "etl_automation_pipeline",
+                })
+
+        if isinstance(base, dict):
+            base["etl_tasks"] = etl_tasks
+            base["etl_task_count"] = len(etl_tasks)
+        else:
+            base = {"tasks": base, "etl_tasks": etl_tasks}
+    except Exception:
+        pass
+
+    return JSONResponse(base)
 
 @app.get("/api/de_modern/tasks/{task_id}/logs")
 async def api_de_modern_task_logs(task_id: str):
@@ -6025,6 +6161,279 @@ async def api_admin_emergency_reboot():
     except Exception as exc:
         log_event(f"[EmergencyReboot] Failed: {exc}", level="ERROR", component="EmergencyReboot")
         return JSONResponse({"status": "error", "message": str(exc)}, status_code=500)
+
+
+# ═══════════════════════════════════════════════════════════════
+# ETL AUTOMATION PIPELINE API ROUTES
+# 5 Projects: Credit Card, AML, ALM, ADF CIMS, CBS
+# Full Load + Incremental Load + Scheduler
+# ═══════════════════════════════════════════════════════════════
+
+from app.core.etl_automation_pipeline import etl_pipeline, etl_scheduler, PROJECTS as ETL_PROJECTS, STAR_SCHEMA
+
+class ETLRunRequest(BaseModel):
+    project_key:   Optional[str] = None
+    rows:          int           = 200
+    send_email:    bool          = True
+    send_telegram: bool          = True
+    load_mode:     Optional[str] = None   # FULL_LOAD / INCREMENTAL / None=auto
+
+@app.post("/api/etl/run")
+async def api_etl_run(req: ETLRunRequest):
+    """Run ETL pipeline — one project or all 5."""
+    try:
+        if req.project_key:
+            result = etl_pipeline.run_project_pipeline(
+                project_key=req.project_key, rows=req.rows,
+                send_email=req.send_email, send_telegram=req.send_telegram,
+                load_mode=req.load_mode
+            )
+        else:
+            result = etl_pipeline.run_all_projects(
+                rows_per_project=req.rows,
+                send_email=req.send_email, send_telegram=req.send_telegram
+            )
+        return JSONResponse(result)
+    except Exception as e:
+        log_event(f"ETL run error: {e}", level="ERROR", component="ETLAPI")
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.get("/api/etl/projects")
+async def api_etl_projects():
+    """List all 5 ETL projects with Star Schema info."""
+    projects = []
+    for key, p in ETL_PROJECTS.items():
+        star = STAR_SCHEMA.get(key, {})
+        projects.append({
+            "key": key, "id": p["id"], "name": p["name"],
+            "code": p["code"], "domain": p["domain"],
+            "neon_l0": p["neon_l0"], "neon_l1": p["neon_l1"],
+            "sf_table": p["sf_table"], "reports": p["reports"],
+            "cadence": p["cadence"], "color": p["color"],
+            "dim_count":   len(star.get("dims",  {})),
+            "fact_count":  len(star.get("facts", {})),
+            "dim_tables":  list(star.get("dims",  {}).keys()),
+            "fact_tables": list(star.get("facts", {}).keys()),
+            "load_mode":   etl_pipeline.detect_load_mode(key),
+            "watermark":   etl_pipeline.get_watermark(key),
+        })
+    return JSONResponse({"status": "success", "projects": projects, "total": len(projects)})
+
+@app.get("/api/etl/status")
+async def api_etl_status():
+    """Watermarks and load modes for all projects."""
+    status = {
+        key: {
+            "load_mode": etl_pipeline.detect_load_mode(key),
+            "watermark": etl_pipeline.get_watermark(key),
+            "project":   ETL_PROJECTS[key]["name"],
+        }
+        for key in ETL_PROJECTS
+    }
+    return JSONResponse({"status": "success", "projects": status})
+
+@app.post("/api/etl/reset-watermark")
+async def api_etl_reset_watermark(body: dict = None):
+    """Reset watermark to force Full Load."""
+    project_key = (body or {}).get("project_key")
+    etl_pipeline.reset_watermark(project_key)
+    return JSONResponse({
+        "status": "success",
+        "message": f"Watermark reset: {project_key or 'ALL PROJECTS'}",
+        "next_run": "FULL_LOAD"
+    })
+
+@app.post("/api/etl/scheduler/start")
+async def api_etl_scheduler_start():
+    etl_scheduler.start()
+    return JSONResponse({"status": "started", "schedules": [
+        "BOD 06:00", "SOD 08:00", "Daily 10:00", "EOD 18:00",
+        "Weekly Mon 08:00", "Fortnightly 1st&15th", "Monthly 1st 07:00"
+    ]})
+
+@app.post("/api/etl/scheduler/stop")
+async def api_etl_scheduler_stop():
+    etl_scheduler.stop()
+    return JSONResponse({"status": "stopped"})
+
+# Auto-start ETL Live Data Streamer (30s interval, 8 rows/project/cycle)
+try:
+    from app.core.etl_live_stream import etl_live_streamer
+    etl_live_streamer.start(interval=30)
+    log_event("ETL Live Streamer started (9 projects, 30s interval)", component="ETLLiveStream")
+except Exception as _e:
+    log_event(f"ETL Live Streamer start warning: {_e}", level="WARNING", component="ETLLiveStream")
+
+# Auto-start APK Dispatcher (@mangesh_apk_bot — every 4 hours, 5 APKs)
+try:
+    from app.core.apk_dispatcher import apk_scheduler
+    apk_scheduler.start()
+    log_event("APK Scheduler started (every 4h, 5 APKs) -> @mangesh_apk_bot", component="APKDispatcher")
+except Exception as _e:
+    log_event(f"APK Scheduler start warning: {_e}", level="WARNING", component="APKDispatcher")
+
+@app.get("/api/etl/live-stream/status")
+async def api_etl_live_stream_status():
+    """Live stream stats — rows inserted per project."""
+    try:
+        from app.core.etl_live_stream import etl_live_streamer
+        return JSONResponse({
+            "status":  "running" if etl_live_streamer._thread and etl_live_streamer._thread.is_alive() else "stopped",
+            "interval_sec": etl_live_streamer._interval,
+            "rows_per_batch": etl_live_streamer.ROWS_PER_BATCH,
+            "stats": etl_live_streamer.get_stats()
+        })
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.post("/api/etl/live-stream/start")
+async def api_etl_live_stream_start(body: Optional[dict] = None):
+    from app.core.etl_live_stream import etl_live_streamer
+    interval = (body or {}).get("interval", 30)
+    etl_live_streamer.start(interval=int(interval))
+    return JSONResponse({"status": "started", "interval": interval})
+
+@app.post("/api/etl/live-stream/stop")
+async def api_etl_live_stream_stop():
+    from app.core.etl_live_stream import etl_live_streamer
+    etl_live_streamer.stop()
+    return JSONResponse({"status": "stopped"})
+
+
+# ── APK Dispatcher API (@mangesh_apk_bot) ───────────────────────────────────
+@app.post("/api/apk/send-now")
+async def api_apk_send_now(body: Optional[dict] = None):
+    """Manually trigger APK discovery + send to @mangesh_apk_bot."""
+    try:
+        from app.core.apk_dispatcher import discover_and_send_apks
+        count  = (body or {}).get("count", 5)
+        result = discover_and_send_apks(count=int(count))
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.get("/api/apk/status")
+async def api_apk_status():
+    """APK scheduler status + sent log."""
+    try:
+        from app.core.apk_dispatcher import apk_scheduler, _load_sent_log, APK_SOURCES
+        return JSONResponse({
+            "status":        "running" if apk_scheduler._thread and apk_scheduler._thread.is_alive() else "stopped",
+            "interval_hours": apk_scheduler.INTERVAL_HOURS,
+            "sources_count":  len(APK_SOURCES),
+            "sent_log":       _load_sent_log()
+        })
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.post("/api/apk/reset-sent-log")
+async def api_apk_reset_sent_log():
+    """Reset sent log so all APKs can be re-sent."""
+    try:
+        from app.core.apk_dispatcher import APK_SENT_LOG
+        if APK_SENT_LOG.exists():
+            APK_SENT_LOG.write_text("{}", encoding="utf-8")
+        return JSONResponse({"status": "success", "message": "Sent log cleared"})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+# Auto-start ETL scheduler on boot
+try:
+    etl_scheduler.start()
+    log_event("ETL Scheduler started (BOD/SOD/Daily/EOD/Weekly/Monthly)", component="ETLScheduler")
+except Exception as _e:
+    log_event(f"ETL Scheduler start warning: {_e}", level="WARNING", component="ETLScheduler")
+
+# Auto-start ETL EOD Summary Scheduler (7PM IST daily — WhatsApp + Telegram + Email)
+try:
+    from app.core.etl_eod_summary import etl_eod_scheduler
+    etl_eod_scheduler.start()
+    log_event("ETL EOD Summary Scheduler started (7:00 PM IST daily)", component="ETLEODSummary")
+except Exception as _e:
+    log_event(f"ETL EOD Summary Scheduler start warning: {_e}", level="WARNING", component="ETLEODSummary")
+
+
+@app.post("/api/etl/eod-summary/send")
+async def api_etl_eod_summary_send():
+    """Manually trigger EOD summary (WhatsApp + Telegram + Email)."""
+    try:
+        from app.core.etl_eod_summary import dispatch_eod_summary
+        result = dispatch_eod_summary(force=True)
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.get("/api/etl/eod-summary/preview")
+async def api_etl_eod_summary_preview():
+    """Preview the EOD summary message without sending."""
+    try:
+        from app.core.etl_eod_summary import build_eod_summary
+        return JSONResponse({"status": "success", "summary": build_eod_summary()})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.post("/api/etl/batch-cycle/notify")
+async def api_etl_batch_cycle_notify(body: Optional[dict] = None):
+    """Manually trigger BOD / SOD / EOD Telegram notification."""
+    try:
+        cycle = ((body or {}).get("cycle") or "EOD").upper()
+        if cycle not in ("BOD", "SOD", "EOD"):
+            return JSONResponse({"status": "error", "error": "cycle must be BOD, SOD or EOD"}, status_code=400)
+        from app.core.etl_eod_summary import send_batch_cycle_notification
+        result = send_batch_cycle_notification(cycle)
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+
+# ── NanoPro Manager ETL Prompt API ──────────────────────────────────────────
+# Manager can answer prompts like "Run AML T-1 report" or "UPI settlement yesterday"
+
+class ETLPromptRequest(BaseModel):
+    prompt:         str
+    send_email:     bool = True
+    send_telegram:  bool = True
+
+@app.post("/api/etl/prompt")
+async def api_etl_prompt(req: ETLPromptRequest):
+    """
+    NanoPro Manager entry point: natural language -> ETL pipeline execution.
+    Examples:
+      {"prompt": "Run AML T-1 report"}
+      {"prompt": "Generate all pipelines"}
+      {"prompt": "UPI settlement yesterday"}
+      {"prompt": "Full load credit card"}
+      {"prompt": "Pipeline status"}
+    """
+    try:
+        from app.core.etl_manager_context import execute_etl_from_prompt
+        result = execute_etl_from_prompt(
+            prompt=req.prompt,
+            send_email=req.send_email,
+            send_telegram=req.send_telegram
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        log_event(f"ETL prompt error: {e}", level="ERROR", component="ETLManager")
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.get("/api/etl/context")
+async def api_etl_context():
+    """Returns full ETL system context for NanoPro Manager training."""
+    try:
+        from app.core.etl_manager_context import get_etl_system_context
+        return JSONResponse({"status": "success", "context": get_etl_system_context()})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.get("/api/etl/batch-cycle")
+async def api_etl_batch_cycle():
+    """Returns current BOD/SOD/EOD/INTRADAY cycle and T-1 dates."""
+    try:
+        from app.core.etl_automation_pipeline import _t1_report_dates, _get_batch_cycle
+        return JSONResponse({"status": "success", **_t1_report_dates()})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
 
 
 if __name__ == "__main__":

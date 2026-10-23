@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 _THIS_DIR = Path(__file__).resolve().parent
@@ -406,9 +407,9 @@ class ShapeCalculator:
         self.assertEqual(res_send.status_code, 200)
         self.assertEqual(res_send.json()["status"], "error")
 
-        # 4. Test Telegram Bot API Validation
+        # 4. Test Telegram Bot API Validation (uses env var token; will return 404/error if not configured)
         res_tg = self.client.post("/api/communication/telegram/test", json={
-            "bot_token": "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
+            "bot_token": os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "")
         })
         self.assertEqual(res_tg.status_code, 200)
 

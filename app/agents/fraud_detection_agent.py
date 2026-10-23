@@ -11,9 +11,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 from app.core.connection_manager import connection_manager
 from app.core.logger import log_event
-
-TELEGRAM_BOT_TOKEN = "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs"
-TELEGRAM_CHAT_ID = "1200023268"
+from app.core.config import TELEGRAM_CHAT_ID, TELEGRAM_HEALTH_BOT_TOKEN
 
 class FraudDetectionAgent:
     """Specialized AI Agent for Real-Time Banking Fraud Scoring and Critical Alerting."""

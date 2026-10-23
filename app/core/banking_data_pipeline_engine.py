@@ -73,6 +73,45 @@ class BankingDataPipelineEngine:
     def _get_initial_banking_projects(self) -> List[Dict[str, Any]]:
         return [
             {
+                "id": "proj_credit_card",
+                "name": "Credit Card (Transaction & Fraud Analytics)",
+                "code": "CREDIT_CARD",
+                "domain": "Retail Banking & Fraud",
+                "description": "Real-time credit card transaction monitoring, fraud detection scoring, and spend analytics. Ingests POS, e-commerce, ATM, and contactless payment feeds. Generates daily fraud alerts, weekly spend summaries, and monthly cardholder statements with risk scoring.",
+                "sources": {
+                    "sftp_files_count": 8,
+                    "sftp_files": ["pos_terminal_feed.csv", "ecommerce_txn_log.dat", "atm_withdrawal_feed.csv", "contactless_tap_log.dat", "emi_conversion_feed.csv", "chargeback_log.dat", "reward_points_feed.csv", "international_txn_log.csv"],
+                    "oracle_tables_count": 10,
+                    "oracle_tables": ["ORCL_CARD_MASTER", "ORCL_CARD_TXNS", "ORCL_MERCHANT_MASTER", "ORCL_FRAUD_RULES", "ORCL_CARD_LIMITS", "ORCL_CARD_STATEMENTS", "ORCL_EMI_SCHEDULE", "ORCL_REWARD_POINTS", "ORCL_CHARGEBACK_LOG", "ORCL_CARD_BLOCK_LIST"]
+                },
+                "lakehouse_pipeline": {
+                    "neon_l0": "cc_l0_raw_transactions",
+                    "neon_l1": "cc_l1_clean_transactions",
+                    "snowflake_l2": "BANK_DB.L2_CURATED.L2_CREDIT_CARD_SUMMARY",
+                    "scd_type": "SCD Type 2",
+                    "dedup_rule": "SHA-256 (TXN_ID + CARD_NUMBER_MASKED + TXN_TIMESTAMP + AMOUNT)"
+                },
+                "reports": [
+                    {"name": "Daily Fraud Alert Report", "cadence": "Daily (T-1)", "format": "Excel (.xlsx)", "est_size_mb": 3.2},
+                    {"name": "Weekly Spend Category Summary", "cadence": "Weekly", "format": "Excel (.xlsx)", "est_size_mb": 4.1},
+                    {"name": "Monthly Cardholder Statement", "cadence": "Monthly", "format": "PDF & Excel", "est_size_mb": 8.5}
+                ],
+                "dispatch": {
+                    "cadence": "Daily (T-1 at 10:00 AM IST)",
+                    "email_to": "nanoproaistudio@gmail.com",
+                    "email_cc": "card.operations@bank.com",
+                    "email_bcc": "fraud.monitoring@bank.com",
+                    "sftp_repo_path": "/var/sftp/data/reports/CREDIT_CARD/"
+                },
+                "status": "ACTIVE_RUNNING",
+                "last_run": "2026-10-23 10:00:00 IST",
+                "l0_arrival_time": "2026-10-23 08:00:00 IST",
+                "l1_scd2_completion": "2026-10-23 09:00:00 IST",
+                "l2_gold_completion": "2026-10-23 09:45:00 IST",
+                "records_processed": 542300,
+                "quarantine_count": 7
+            },
+            {
                 "id": "proj_aml",
                 "name": "AML (Anti-Money Laundering & Fraud Surveillance)",
                 "code": "AML_SURVEILLANCE",

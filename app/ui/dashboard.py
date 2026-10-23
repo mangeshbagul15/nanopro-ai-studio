@@ -5530,6 +5530,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                             <option value="FRAUD_02">FRAUD_02 &bull; Credit Card Velocity &amp; Fraud Ring</option>
                             <option value="TREASURY_01">TREASURY_01 &bull; Treasury ALM &amp; Derivative Settlement</option>
                             <option value="C360_01">C360_01 &bull; Enterprise Customer 360 Medallion</option>
+                            <!-- ETL Automation Projects — dynamically populated by loadEtlProjectsIntoSelector() -->
                         </select>
                     </div>
                     <div style="font-size:11.5px; display:flex; align-items:center; gap:8px; margin-top:14px; flex-wrap:wrap;">
@@ -5799,15 +5800,15 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                 <div>
                     <label class="input-label">1. Target Database (DB)</label>
                     <select class="studio-input" id="catlogDbSelect" onchange="onCatlogDbChanged(this.value)" style="width:100%; font-weight:700;">
-                        <option value="BANK_DB" selected>BANK_DB [Snowflake Cloud DW - EGPKNWZ-XH53504 / Medallion]</option>
-                        <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL - Lifetime Free]</option>
+                        <option value="BANK_DB" selected>BANK_DB [Snowflake Cloud DW - L0/L1/L2 Medallion]</option>
+                        <option value="POSTGRES_CLOUD_FREE">&#127381; POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL - ETL L0/L1 Raw]</option>
                         <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD [Oracle 23ai Cloud APEX Workspace]</option>
                         <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]</option>
                         <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]</option>
                         <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]</option>
                         <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle XE Core CBS | 192.168.31.240:1521]</option>
                         <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Production CBS]</option>
-                        <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD [Render PostgreSQL Cloud]</option>
+                        <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD [Render Cloud PostgreSQL]</option>
                         <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL [PostgreSQL 127.0.0.1:5432 / nanopro_db]</option>
                         <option value="studio_memory.db">studio_memory.db [SQLite High-Performance Memory]</option>
                         <option value="AWS_S3_DATA_LAKE">AWS_S3_DATA_LAKE [AWS Athena / S3 Lakehouse - ap-southeast-2]</option>
@@ -8111,7 +8112,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div>
                             <label class="input-label">Bot Token</label>
-                            <input type="password" class="studio-input" id="telegramTokenInput" value="8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs" />
+                            <input type="password" class="studio-input" id="telegramTokenInput" value="" placeholder="Enter bot token from @BotFather" />
                         </div>
                         <div>
                             <label class="input-label">Authorized Chat ID</label>
@@ -20755,6 +20756,41 @@ ${d.preview}`;
 
         let CURRENT_ACTIVE_DE_TAB = '3dPipeline';
 
+        // ── Single Source of Truth: Load ETL projects dynamically ──────────────
+        // Reads from /api/de_modern/3d_pipeline/projects which reads
+        // etl_automation_pipeline.PROJECTS + STAR_SCHEMA.
+        // Adding a project there auto-reflects in 3D Pipeline selector,
+        // CATLOG, Project Portfolio, and Task Monitor.
+        async function loadEtlProjectsIntoSelector() {
+            try {
+                const resp = await fetch('/api/de_modern/3d_pipeline/projects');
+                const data = await resp.json();
+                if (data.status !== 'success') return;
+                const sel = document.getElementById('de3dProjectSelector');
+                if (!sel) return;
+                // Remove previously injected ETL options
+                sel.querySelectorAll('option[data-etl]').forEach(o => o.remove());
+                data.projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.key;
+                    opt.setAttribute('data-etl', '1');
+                    const modeIcon = p.load_mode === 'FULL_LOAD' ? '🔄' : '⚡';
+                    const wm = p.watermark ? p.watermark.substring(0,16) : 'No run yet';
+                    opt.textContent = `${modeIcon} ${p.code} \u2022 ${p.name} (${p.dim_count}D+${p.fact_count}F | ${wm})`;
+                    opt.style.color = p.color || '#38BDF8';
+                    sel.appendChild(opt);
+                });
+                // Also update catlog DB select if needed
+                const catSel = document.getElementById('catlogDbSelect');
+                if (catSel && !catSel.querySelector('option[value="POSTGRES_CLOUD_FREE"]')) {
+                    const neonOpt = document.createElement('option');
+                    neonOpt.value = 'POSTGRES_CLOUD_FREE';
+                    neonOpt.textContent = '\uD83D\uDFE2 POSTGRES_CLOUD_FREE [Neon.tech - ETL L0/L1]';
+                    catSel.insertBefore(neonOpt, catSel.children[1]);
+                }
+            } catch(e) { console.warn('ETL projects load failed:', e); }
+        }
+
         function switchDeTab(tabId) {
             CURRENT_ACTIVE_DE_TAB = tabId;
             Object.keys(DE_TABS_MAP).forEach(k => {
@@ -20791,6 +20827,8 @@ ${d.preview}`;
             } else if (tabId === 'taskMonitor') {
                 loadTaskScheduleMatrix();
             }
+            // Always refresh ETL projects selector (single source of truth)
+            loadEtlProjectsIntoSelector();
         }
 
         // Backward compatibility shim for any external calls to legacy switchDeSubTab
