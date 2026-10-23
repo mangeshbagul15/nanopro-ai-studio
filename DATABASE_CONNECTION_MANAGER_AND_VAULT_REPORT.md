@@ -49,6 +49,6 @@
 3. Open `http://localhost:8000` and navigate to the **Credentials Vault** tab.
 
 ## 5. Oracle APEX / ORDS Cloud Connection
-* The hosted Oracle APEX service uses the HTTPS ORDS base URL `https://apex.oracle.com/ords/`. Its workspace/schema REST routes are separate from Oracle Net database connections: `XEPDB1` and port `1521` are not the APEX cloud endpoint.
+* Oracle's free APEX evaluation service moved to `oracleapex.com` on August 17, 2025. Use the HTTPS ORDS base URL `https://oracleapex.com/ords/`; `apex.oracle.com` is not the current evaluation-service host. Workspace/schema REST routes are separate from Oracle Net database connections: `XEPDB1` and port `1521` are not the APEX cloud endpoint.
 * OAuth verification requires a separate `NANOPRO_ORDS_REPORTING_CLIENT` entry in the Credentials Vault. Store the OAuth client ID as the profile username or `metadata.oauth_client_id`, and the OAuth client secret as the encrypted credential value. The Oracle APEX account password is not an OAuth client secret and is never used as a fallback. No ORDS OAuth secret belongs in a source-controlled environment file.
 * A connection test requests an OAuth token and then reads the configured REST reporting route. A timeout indicates that the ORDS HTTPS endpoint could not be reached within the request timeout; it does not establish that the APEX database itself is unavailable.

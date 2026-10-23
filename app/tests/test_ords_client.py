@@ -30,7 +30,7 @@ class _JsonResponse:
 
 
 class TestORDSClient(unittest.TestCase):
-    def _connection_configs(self, environment_url="https://apex.oracle.com/ords/"):
+    def _connection_configs(self, environment_url="https://oracleapex.com/ords/"):
         return {
             "ORACLE_APEX_23AI_CLOUD": {
                 "metadata": {
@@ -78,12 +78,12 @@ class TestORDSClient(unittest.TestCase):
         self.assertEqual(result["rows"], 0)
         self.assertEqual(
             result["endpoint"],
-            "https://apex.oracle.com/ords/nanoprostudio/nanopro/v1/l2/",
+            "https://oracleapex.com/ords/nanoprostudio/nanopro/v1/l2/",
         )
         requests = [call.args[0] for call in urlopen.call_args_list]
         self.assertEqual(
             requests[0].full_url,
-            "https://apex.oracle.com/ords/nanoprostudio/oauth/token",
+            "https://oracleapex.com/ords/nanoprostudio/oauth/token",
         )
         self.assertEqual(
             requests[1].get_header("Authorization"),
@@ -91,11 +91,19 @@ class TestORDSClient(unittest.TestCase):
         )
 
     def test_rejects_non_https_ords_endpoint(self):
-        configs = self._connection_configs("http://apex.oracle.com/ords/")
+        configs = self._connection_configs("http://oracleapex.com/ords/")
 
         with patch.dict(sys.modules, self._fake_app_modules(configs)):
             with self.assertRaisesRegex(RuntimeError, "must be an HTTPS URL"):
                 ORDSClient()
+
+    def test_migrates_legacy_apex_hostname_to_current_service(self):
+        configs = self._connection_configs("https://apex.oracle.com/ords/")
+
+        with patch.dict(sys.modules, self._fake_app_modules(configs)):
+            client = ORDSClient()
+
+        self.assertEqual(client.base_url, "https://oracleapex.com/ords")
 
     def test_reports_timeout_without_exposing_credentials(self):
         configs = self._connection_configs()

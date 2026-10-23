@@ -9713,7 +9713,7 @@ Ready for message compilation and automated dispatch.
                                 <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (127.0.0.1:1521/XEPDB1)</option>
                                 <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240:1521/XEPDB1)</option>
                                 <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (100.112.86.83:1521/XEPDB1)</option>
-                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (apex.oracle.com:443)</option>
+                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (oracleapex.com:443)</option>
                                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB)</option>
                                 <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL (127.0.0.1:5432)</option>
                                 <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE (Neon Cloud Lifetime Free)</option>
@@ -9844,7 +9844,7 @@ Ready for message compilation and automated dispatch.
                             <span id="badgeOracleApexStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
                         </div>
                         <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-                            <div><strong>Host &amp; Endpoint:</strong> apex.oracle.com:443 (ORDS REST)</div>
+                            <div><strong>Host &amp; Endpoint:</strong> oracleapex.com:443 (ORDS REST)</div>
                             <div><strong>Workspace:</strong> nanoprostudio (Lifetime Free)</div>
                             <div><strong>User / Role:</strong> mangeshbagul15@gmail.com (Cloud DBA)</div>
                             <div style="font-size:11px; color:#F97316;">Oracle Database 23ai Enterprise Cloud Edition &bull; 24/7 Active</div>
@@ -13255,7 +13255,7 @@ function navigateHistory(direction) {
                 if (userEl) userEl.value = 'SYSTEM';
                 if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
             } else if (connName === 'ORACLE_APEX_23AI_CLOUD') {
-                if (hostEl) hostEl.value = 'apex.oracle.com';
+                if (hostEl) hostEl.value = 'oracleapex.com';
                 if (portEl) portEl.value = '443';
                 if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
                 if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
@@ -13608,7 +13608,7 @@ function navigateHistory(direction) {
                 btnId = 'btnTestOracleApex';
                 badgeId = 'badgeOracleApexStatus';
                 resultBoxId = 'oracleApexTestResultBox';
-                targetHost = 'apex.oracle.com';
+                targetHost = 'oracleapex.com';
             }
 
             const btn = document.getElementById(btnId);

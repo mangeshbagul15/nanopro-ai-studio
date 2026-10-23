@@ -71,13 +71,13 @@ ORACLE_CONFIGS = {
     "ORACLE_APEX_23AI_CLOUD": {
         "connection_name": "ORACLE_APEX_23AI_CLOUD",
         "username": "mangeshbagul15@gmail.com",
-        "hostname": "apex.oracle.com",
+        "hostname": "oracleapex.com",
         "port": 443,
         "connection_type": "ORDS_REST",
         "role": "Administrator",
         "workspace": "nanoprostudio",
         "service_name": "nanoprostudio",
-        "environment_url": "https://apex.oracle.com/ords/",
+        "environment_url": "https://oracleapex.com/ords/",
         "notes": "Oracle Official 23ai Cloud Workspace 'nanoprostudio' (mangeshbagul15@gmail.com - 24/7 Lifetime Free)"
     }
 }
@@ -551,9 +551,9 @@ class ConnectionManager:
                     "connection_name": conn_name,
                     "status": "OAuth/REST verification failed",
                     "success": False,
-                    "host": client.hostname if client else meta.get("hostname", "apex.oracle.com"),
+                    "host": client.hostname if client else meta.get("hostname", "oracleapex.com"),
                     "port": client.port if client else int(meta.get("port", 443)),
-                    "endpoint": client.schema_url if client else meta.get("environment_url", "https://apex.oracle.com/ords/"),
+                    "endpoint": client.schema_url if client else meta.get("environment_url", "https://oracleapex.com/ords/"),
                     "username": u_name,
                     "workspace": ws_name,
                     "response_time_ms": duration,
@@ -1361,7 +1361,7 @@ class ConnectionManager:
             {
                 "connection_name": "ORACLE_APEX_23AI_CLOUD",
                 "service_type": "Oracle Database 23ai (APEX Cloud)",
-                "host_identifier": "apex.oracle.com:443 (ORDS REST)",
+                "host_identifier": "oracleapex.com:443 (ORDS REST)",
                 "target": "Workspace: nanoprostudio",
                 "user_role": "mangeshbagul15@gmail.com (Cloud DBA)",
                 "has_credentials": True,
