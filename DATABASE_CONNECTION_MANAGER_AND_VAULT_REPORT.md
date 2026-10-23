@@ -47,3 +47,8 @@
    python main.py
    ```
 3. Open `http://localhost:8000` and navigate to the **Credentials Vault** tab.
+
+## 5. Oracle APEX / ORDS Cloud Connection
+* The hosted Oracle APEX service uses the HTTPS ORDS base URL `https://apex.oracle.com/ords/`. Its workspace/schema REST routes are separate from Oracle Net database connections: `XEPDB1` and port `1521` are not the APEX cloud endpoint.
+* OAuth verification reads the client ID and secret from the `NANOPRO_ORDS_REPORTING_CLIENT` entry in the Credentials Vault. The client ID is stored as the profile username or `metadata.oauth_client_id`; the secret is stored as the encrypted credential value. No ORDS OAuth secret is required in a source-controlled environment file.
+* A connection test requests an OAuth token and then reads the configured REST reporting route. A timeout indicates that the ORDS HTTPS endpoint could not be reached within the request timeout; it does not establish that the APEX database itself is unavailable.

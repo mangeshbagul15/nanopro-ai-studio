@@ -13651,11 +13651,15 @@ function navigateHistory(direction) {
                 }
 
                 if (resultBox) {
+                    const isOrdsConnection = connectionName === 'ORACLE_APEX_23AI_CLOUD';
                     let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : '#F59E0B'}; margin-bottom:6px;">
                         ${isSuccess ? '✅ ' + connectionName + ' Verified & Online' : '⚠️ ' + connectionName + ': ' + (d.status || 'Offline / Standby')}
                     </div>`;
                     html += `<div style="line-height:1.5; color:#CBD5E1;">
-                        <div><strong>Target:</strong> ${d.host || targetHost}:${d.port || 1521}/${d.service_name || 'XEPDB1'}</div>
+                        ${isOrdsConnection
+                            ? `<div><strong>ORDS schema endpoint:</strong> ${d.endpoint || `https://${d.host || targetHost}:${d.port || 443}/ords/`}</div>
+                               <div><strong>Workspace:</strong> ${d.workspace || '—'} (REST API; not an Oracle Net/XEPDB1 service)</div>`
+                            : `<div><strong>Target:</strong> ${d.host || targetHost}:${d.port || 1521}/${d.service_name || 'XEPDB1'}</div>`}
                         <div><strong>User:</strong> ${d.username || 'SYSTEM'}</div>
                         <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
                         <div><strong>Status Detail:</strong> ${d.error_category === 'APEX_GATEWAY_ONLY'

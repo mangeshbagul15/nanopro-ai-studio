@@ -22,12 +22,13 @@ class ORDSClient:
         self.client_id = (oauth_meta.get("oauth_client_id") or self.meta.get("oauth_client_id") or oauth_cfg.get("username") or "").strip()
         self.client_secret = (oauth_cfg.get("secret_value") or "").strip()
         self.workspace = (self.meta.get("workspace") or "nanoprostudio").strip("/")
-        configured_url = (self.meta.get("environment_url") or "https://oracleapex.com/ords/").rstrip("/")
-        # The saved profile may retain the old apex.oracle.com hostname. NanoPro's
-        # active APEX workspace and REST modules are served from oracleapex.com.
-        if configured_url.endswith("apex.oracle.com/ords"):
-            configured_url = "https://oracleapex.com/ords"
+        configured_url = (self.meta.get("environment_url") or "https://apex.oracle.com/ords/").rstrip("/")
         self.base_url = configured_url
+        endpoint = urllib.parse.urlparse(self.base_url)
+        if endpoint.scheme != "https" or not endpoint.hostname:
+            raise RuntimeError("The configured ORDS endpoint must be an HTTPS URL with a hostname.")
+        self.hostname = endpoint.hostname
+        self.port = endpoint.port or 443
         self.schema_alias = (self.meta.get("schema_alias") or self.workspace).strip("/")
         if not self.client_id or not self.client_secret:
             raise RuntimeError("NanoPro Vault needs the ORDS OAuth client ID and client secret for the APEX profile.")
