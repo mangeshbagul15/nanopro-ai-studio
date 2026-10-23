@@ -33,10 +33,6 @@ class ORDSClient:
         self.hostname = endpoint.hostname
         self.port = endpoint.port or 443
         self.schema_alias = (self.meta.get("schema_alias") or self.workspace).strip("/")
-        if not self.client_id or not self.client_secret:
-            raise RuntimeError(
-                "Credentials Vault profile NANOPRO_ORDS_REPORTING_CLIENT needs the ORDS OAuth client ID and secret."
-            )
         self.schema_url = f"{self.base_url}/{self.schema_alias}"
 
     def _request(
@@ -62,6 +58,10 @@ class ORDSClient:
             raise RuntimeError("ORDS returned a non-JSON response; OAuth or REST access may be misconfigured.") from None
 
     def token(self) -> str:
+        if not self.client_id or not self.client_secret:
+            raise RuntimeError(
+                "Credentials Vault profile NANOPRO_ORDS_REPORTING_CLIENT needs the ORDS OAuth client ID and secret."
+            )
         basic = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode("utf-8")).decode("ascii")
         data = urllib.parse.urlencode({"grant_type": "client_credentials"}).encode("ascii")
         result = self._request(

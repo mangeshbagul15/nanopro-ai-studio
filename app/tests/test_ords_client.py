@@ -127,7 +127,7 @@ class TestORDSClient(unittest.TestCase):
                 RuntimeError,
                 "NANOPRO_ORDS_REPORTING_CLIENT needs the ORDS OAuth client ID and secret",
             ):
-                ORDSClient()
+                ORDSClient().verify()
 
         urlopen.assert_not_called()
 
