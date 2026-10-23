@@ -104,7 +104,7 @@ class TestORDSClient(unittest.TestCase):
             patch.dict(sys.modules, self._fake_app_modules(configs)),
             patch("urllib.request.urlopen", side_effect=TimeoutError),
         ):
-            with self.assertRaisesRegex(RuntimeError, "endpoint is unreachable"):
+            with self.assertRaisesRegex(RuntimeError, "OAuth token request failed"):
                 ORDSClient().verify()
 
 

@@ -34,7 +34,14 @@ class ORDSClient:
             raise RuntimeError("NanoPro Vault needs the ORDS OAuth client ID and client secret for the APEX profile.")
         self.schema_url = f"{self.base_url}/{self.schema_alias}"
 
-    def _request(self, url: str, *, headers: dict[str, str], data: bytes | None = None) -> dict[str, Any]:
+    def _request(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str],
+        phase: str,
+        data: bytes | None = None,
+    ) -> dict[str, Any]:
         request = urllib.request.Request(url, data=data, headers=headers, method="POST" if data is not None else "GET")
         try:
             with urllib.request.urlopen(request, timeout=25) as response:
@@ -43,7 +50,7 @@ class ORDSClient:
             # Never include response bodies or authorization material in errors/logs.
             raise RuntimeError(f"ORDS request failed with HTTP {exc.code}.") from None
         except (urllib.error.URLError, TimeoutError) as exc:
-            raise RuntimeError(f"ORDS endpoint is unreachable ({type(exc).__name__}).") from None
+            raise RuntimeError(f"ORDS {phase} failed ({type(exc).__name__}).") from None
         try:
             return json.loads(payload.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
@@ -55,6 +62,7 @@ class ORDSClient:
         result = self._request(
             f"{self.schema_url}/oauth/token",
             headers={"Authorization": f"Basic {basic}", "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
+            phase="OAuth token request",
             data=data,
         )
         access_token = result.get("access_token")
@@ -70,7 +78,11 @@ class ORDSClient:
         url = f"{self.schema_url}/{relative}/"
         items: list[dict[str, Any]] = []
         for _ in range(10000):
-            page = self._request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
+            page = self._request(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+                phase="REST reporting request",
+            )
             page_items = page.get("items")
             if not isinstance(page_items, list):
                 raise RuntimeError("ORDS response is missing the expected items collection.")
