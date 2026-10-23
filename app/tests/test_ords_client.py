@@ -107,6 +107,22 @@ class TestORDSClient(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "OAuth token request failed"):
                 ORDSClient().verify()
 
+    def test_requires_dedicated_oauth_client_credentials(self):
+        configs = self._connection_configs()
+        configs.pop("NANOPRO_ORDS_REPORTING_CLIENT")
+
+        with (
+            patch.dict(sys.modules, self._fake_app_modules(configs)),
+            patch("urllib.request.urlopen") as urlopen,
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "NANOPRO_ORDS_REPORTING_CLIENT needs the ORDS OAuth client ID and secret",
+            ):
+                ORDSClient()
+
+        urlopen.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
