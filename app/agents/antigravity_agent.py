@@ -35,9 +35,7 @@ from app.core.connection_manager import connection_manager, SNOWFLAKE_CONFIG, OR
 from app.database.federated_query_engine import federated_query_engine
 
 SYNC_STATE_FILE = BASE_DIR / "data" / "antigravity_sync_state.json"
-REMOTE_PUSH_URL = "https://mangeshbagul15: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@github.com/mangeshbagul15/nanopro-ai-studio.git"
-
-
+REMOTE_PUSH_URL = "origin"
 class AntigravityAgent:
     """
     Antigravity AI: Autonomous Agentic Coding Assistant & Remote Workspace Engine.

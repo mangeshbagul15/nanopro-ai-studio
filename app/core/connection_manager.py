@@ -2276,7 +2276,7 @@ class ConnectionManager:
             commit_res = subprocess.run(["git", "commit", "-m", msg], cwd=repo_dir, capture_output=True, text=True, timeout=15)
 
             # Authenticated push URL
-            push_url = "https://mangeshbagul15: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@github.com/mangeshbagul15/nanopro-ai-studio.git"
+            push_url = "origin"
             push_res = subprocess.run(["git", "push", push_url, "main"], cwd=repo_dir, capture_output=True, text=True, timeout=30)
 
             duration = round((time.time() - start_t) * 1000, 2)

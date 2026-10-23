@@ -20,7 +20,7 @@ git commit -m "%COMMIT_MSG%"
 
 echo.
 echo [4/4] Pushing to GitHub (Cloud Auto-Deploy)...
-git push https://mangeshbagul15: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@github.com/mangeshbagul15/nanopro-ai-studio.git main
+git push origin main
 
 if %errorlevel% equ 0 (
     echo.
