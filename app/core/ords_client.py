@@ -22,7 +22,10 @@ class ORDSClient:
         self.client_id = (oauth_meta.get("oauth_client_id") or oauth_cfg.get("username") or "").strip()
         self.client_secret = (oauth_cfg.get("secret_value") or "").strip()
         self.workspace = (self.meta.get("workspace") or "nanoprostudio").strip("/")
-        configured_url = (self.meta.get("environment_url") or "https://apex.oracle.com/ords/").rstrip("/")
+        configured_url = (self.meta.get("environment_url") or "https://oracleapex.com/ords/").rstrip("/")
+        if configured_url.lower().endswith("apex.oracle.com/ords"):
+            # Oracle moved the free APEX evaluation service to oracleapex.com.
+            configured_url = "https://oracleapex.com/ords"
         self.base_url = configured_url
         endpoint = urllib.parse.urlparse(self.base_url)
         if endpoint.scheme != "https" or not endpoint.hostname:
