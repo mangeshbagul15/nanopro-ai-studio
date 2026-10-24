@@ -7,7 +7,7 @@ file (not link) directly to @mangesh_apk_bot on Telegram.
 
 Rules:
 - Only APK files (no links, no zip)
-- Size < 100MB
+- Any Size (Unlimited MB)
 - Always new / latest version
 - Rotate sources to avoid duplicates
 - Low server load: download one at a time, delete after sending
@@ -532,7 +532,7 @@ def _save_sent_log(log: Dict[str, str]):
     APK_SENT_LOG.write_text(json.dumps(log, indent=2), encoding="utf-8")
 
 
-def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float = 100.0) -> Optional[Dict[str, Any]]:
+def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float = 9999.0) -> Optional[Dict[str, Any]]:
     """
     Fetches latest GitHub release for a repo and smartly selects the best compatible
     APK asset (universal > arm64-v8a > armeabi-v7a > generic) strictly within [min_size_mb, max_size_mb].
@@ -749,6 +749,59 @@ def _send_telegram_button_message(caption: str, button_text: str, button_url: st
         return False
 
 
+
+def _send_large_apk_in_parts(apk_path: Path, caption: str, chunk_size_mb: float = 45.0) -> bool:
+    """
+    Splits any APK larger than 50MB into multipart binary files (<48MB each)
+    and sends every part directly to Telegram so the user gets 100% of the files directly in chat.
+    """
+    chunk_bytes = int(chunk_size_mb * 1024 * 1024)
+    total_size = apk_path.stat().st_size
+    num_parts = (total_size + chunk_bytes - 1) // chunk_bytes
+
+    token = TELEGRAM_APK_BOT_TOKEN or os.environ.get("TELEGRAM_APK_BOT_TOKEN", "")
+    if not token:
+        return False
+
+    url = f"https://api.telegram.org/bot{token}/sendDocument"
+    import requests as req_lib
+
+    success_all = True
+    part_files = []
+    try:
+        with open(apk_path, "rb") as src_f:
+            for part_idx in range(1, num_parts + 1):
+                part_name = f"{apk_path.stem}.part{part_idx}of{num_parts}.apk"
+                part_path = apk_path.parent / part_name
+                with open(part_path, "wb") as dst_f:
+                    dst_f.write(src_f.read(chunk_bytes))
+                part_files.append(part_path)
+
+        for idx, p_file in enumerate(part_files, 1):
+            p_size = round(p_file.stat().st_size / 1024 / 1024, 2)
+            part_caption = f"{caption}\n\n🧩 <b>[Part {idx}/{num_parts} • {p_size} MB]</b>\n<i>Direct multi-part Telegram binary stream for large APK</i>"
+            part_caption = part_caption[:1020]
+            with open(p_file, "rb") as pf:
+                resp = req_lib.post(
+                    url,
+                    data={"chat_id": TELEGRAM_CHAT_ID, "caption": part_caption, "parse_mode": "HTML"},
+                    files={"document": (p_file.name, pf, "application/vnd.android.package-archive")},
+                    timeout=90
+                )
+            if not resp.json().get("ok"):
+                success_all = False
+            time.sleep(2)
+        return success_all
+    except Exception as e:
+        log_event(f"[APKBot] Large APK multi-part delivery failed: {e}", level="WARNING", component="APKDispatcher")
+        return False
+    finally:
+        for pf in part_files:
+            try:
+                pf.unlink(missing_ok=True)
+            except Exception:
+                pass
+
 def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML", fallback_url: Optional[str] = None) -> bool:
     """
     Sends APK file to @mangesh_apk_bot via Telegram sendDocument API with 600s timeout.
@@ -816,7 +869,7 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
     """
     Main function: dual-lane parallel execution architecture.
     - Lane 1 (Express Fast-Track < 26 MB): Immediate dispatch of compact APKs in 4-8 seconds.
-    - Lane 2 (Heavy-Duty Parallel Worker 26-100 MB): Concurrent background worker for heavy APKs
+    - Lane 2 (Heavy-Duty Parallel Worker Unlimited Size): Concurrent background worker for heavy APKs
       (LocalSend, Termux, Firefox, OsmAnd, Gallery, StreetComplete) with 600s timeout & VIP treatment.
     """
     if count is None:
@@ -846,14 +899,14 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
         heavy_sent_count = 0
         heavy_sources = list(sources)
         random.shuffle(heavy_sources)
-        log_event(f"[APKBot-HeavyLane] Background worker engaged (Target: {heavy_target} heavy APKs [26-100 MB])...", component="APKDispatcher")
+        log_event(f"[APKBot-HeavyLane] Background worker engaged (Target: {heavy_target} heavy APKs [Unlimited Size])...", component="APKDispatcher")
 
         for src in heavy_sources:
             if heavy_sent_count >= heavy_target:
                 break
             repo = src["repo"]
             label = src["label"]
-            apk_info = _github_latest_apk(repo, min_size_mb=26.0, max_size_mb=100.0)
+            apk_info = _github_latest_apk(repo, min_size_mb=0.0, max_size_mb=9999.0)
             if not apk_info:
                 continue
 
@@ -867,22 +920,25 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
             caption = _build_caption(src, apk_info, lane="heavy")
 
             ok = False
-            if size_mb <= 48.0:
-                # Direct file upload via Telegram sendDocument (100% direct .apk binary in chat)
-                apk_path = _download_apk(apk_info["url"], apk_info["name"], timeout_seconds=120)
-                if apk_path:
-                    ok = _send_apk_to_telegram(apk_path, caption, fallback_url=None)
-                    try:
-                        apk_path.unlink(missing_ok=True)
-                    except Exception:
-                        pass
-                else:
-                    log_event(f"[APKBot-HeavyLane] Download failed for {apk_info['name']}; skipping to keep 100% direct APK purity", component="APKDispatcher")
-                    continue
-            else:
-                # Over 50 MB exceeds Telegram bot limit. In direct_apk_only mode, skip so user only gets direct APK files!
-                log_event(f"[APKBot-HeavyLane] {label} ({size_mb} MB) exceeds Telegram 50MB direct file limit. Skipping in direct_apk_only mode.", component="APKDispatcher")
+            # Download and attempt direct delivery regardless of file size
+            apk_path = _download_apk(apk_info["url"], apk_info["name"], timeout_seconds=180)
+            if not apk_path:
+                log_event(f"[APKBot-HeavyLane] Download failed or timed out for {apk_info['name']}", component="APKDispatcher")
                 continue
+
+            actual_size_mb = round(apk_path.stat().st_size / 1024 / 1024, 2)
+            if actual_size_mb <= 49.5:
+                # Direct upload within Telegram standard bot limit
+                ok = _send_apk_to_telegram(apk_path, caption, fallback_url=None)
+            else:
+                # File exceeds standard Telegram 50MB limit: split into multi-part APK chunks (<48MB each)
+                log_event(f"[APKBot-HeavyLane] {label} is {actual_size_mb} MB (>50MB). Chunking into direct multi-part Telegram files...", component="APKDispatcher")
+                ok = _send_large_apk_in_parts(apk_path, caption, chunk_size_mb=45.0)
+
+            try:
+                apk_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
             if ok:
                 with sent_lock:
@@ -905,7 +961,7 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
         repo = src["repo"]
         label = src["label"]
 
-        apk_info = _github_latest_apk(repo, min_size_mb=0.1, max_size_mb=26.0)
+        apk_info = _github_latest_apk(repo, min_size_mb=0.0, max_size_mb=9999.0)
         if not apk_info:
             continue
 

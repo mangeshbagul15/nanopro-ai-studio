@@ -5633,7 +5633,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
         <!-- 3D WebGL / Canvas Container for 6 Medallion Nodes -->
         <div class="panel-card" style="margin-bottom:12px; padding:0; overflow:hidden; border:1px solid #1E293B; background:#020617; position:relative;">
             <div style="position:absolute; top:12px; left:16px; z-index:10; pointer-events:none;">
-                <div style="font-size:11px; font-weight:700; color:#38BDF8; letter-spacing:0.5px;">LIVE 3D LAKEHOUSE TOPOLOGY &bull; INTERACTIVE 6-NODE MEDALLION FLOW</div>
+                <div style="font-size:11px; font-weight:700; color:#38BDF8; letter-spacing:0.5px;">LIVE 3D LAKEHOUSE TOPOLOGY &bull; ENTERPRISE 11-NODE MULTI-CLOUD MEDALLION LAKEHOUSE</div>
                 <div style="font-size:10px; color:#64748B;">Click any node to inspect active tables &bull; Hover for health &amp; throughput HUD</div>
             </div>
             <div style="position:absolute; top:12px; right:16px; z-index:10; display:flex; gap:6px;">
@@ -21864,37 +21864,43 @@ ${d.preview}`;
             ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
             lakehouse3dNodes = [
-                // TIER 1: Heterogeneous Source Databases & Cloud Storage
-                { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.20, r: 23, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
-                { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.40, r: 23, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
-                { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.60, r: 23, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
-                { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 23, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
+                // TIER 1: Heterogeneous Multi-Cloud Source Databases & Storage (5 Sources)
+                { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.16, r: 21, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
+                { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.32, r: 21, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
+                { id: 'node_google', name: 'Google Cloud & BQ', icon: '🌐', layer: 'BigQuery & GCS Lake', color: '#4285F4', x: W * 0.08, y: H * 0.48, r: 21, throughput: '68,400 rec/s', latency: '19.8 ms', health: '100%' },
+                { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.64, r: 21, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
+                { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 21, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
 
                 // TIER 2: Autonomous CDC & AWS DMS
-                { id: 'node_ingestion', name: 'CDC & AWS DMS', icon: '⚡', layer: 'Debezium & Snowpipe', color: '#EC4899', x: W * 0.28, y: H * 0.50, r: 26, throughput: 'Real-Time Sync', latency: '4.5 ms', health: '100%' },
+                { id: 'node_ingestion', name: 'CDC & AWS DMS', icon: '⚡', layer: 'Debezium & Snowpipe', color: '#EC4899', x: W * 0.25, y: H * 0.48, r: 25, throughput: 'Real-Time Sync', latency: '4.5 ms', health: '100%' },
 
                 // TIER 3: Medallion Bronze (L0 Staging)
-                { id: 'node_bronze', name: 'Bronze (L0)', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.46, y: H * 0.50, r: 27, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
+                { id: 'node_bronze', name: 'Bronze (L0)', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.40, y: H * 0.48, r: 25, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
 
                 // TIER 4: Medallion Silver (L1 Harmonized)
-                { id: 'node_silver', name: 'Silver (L1)', icon: '🥈', layer: 'SCD2 & DMF Quality (99.4%)', color: '#38BDF8', x: W * 0.64, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
+                { id: 'node_silver', name: 'Silver (L1)', icon: '🥈', layer: 'SCD2 & DMF Quality (99.4%)', color: '#38BDF8', x: W * 0.55, y: H * 0.48, r: 25, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
 
-                // TIER 5: Medallion Gold (L2) & DuckDB Marts
-                { id: 'node_gold', name: 'Gold & DuckDB', icon: '🥇', layer: 'Star Schema & Marts', color: '#FACC15', x: W * 0.80, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
+                // TIER 5: Medallion Gold (L2 Curated Marts)
+                { id: 'node_gold', name: 'Gold (L2)', icon: '🥇', layer: 'Kimball Star Schema', color: '#FACC15', x: W * 0.69, y: H * 0.48, r: 25, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
 
-                // TIER 6: Omnichannel Dispatch
-                { id: 'node_dispatch', name: 'Omnichannel Dispatch', icon: '📱', layer: 'Telegram & WhatsApp & SMTP', color: '#8B5CF6', x: W * 0.93, y: H * 0.50, r: 25, throughput: 'Instant Push', latency: '22.1 ms', health: '100%' }
+                // TIER 6: DuckDB Embedded OLAP Lakehouse Engine
+                { id: 'node_duckdb', name: 'DuckDB Engine', icon: '🦆', layer: 'gold_marts.duckdb (NVMe)', color: '#10B981', x: W * 0.82, y: H * 0.48, r: 25, throughput: '320,000 rec/s', latency: '0.2 ms', health: '100%' },
+
+                // TIER 7: Omnichannel Dispatch
+                { id: 'node_dispatch', name: 'Omnichannel Dispatch', icon: '📱', layer: 'Telegram & WhatsApp & SMTP', color: '#8B5CF6', x: W * 0.94, y: H * 0.48, r: 24, throughput: 'Instant Push', latency: '22.1 ms', health: '100%' }
             ];
 
             window.lakehouseConduits = [
                 { fromId: 'node_oracle', toId: 'node_ingestion', color: '#F59E0B' },
                 { fromId: 'node_aws_s3', toId: 'node_ingestion', color: '#FF9900' },
+                { fromId: 'node_google', toId: 'node_ingestion', color: '#4285F4' },
                 { fromId: 'node_postgres', toId: 'node_ingestion', color: '#06B6D4' },
                 { fromId: 'node_sftp', toId: 'node_ingestion', color: '#10B981' },
                 { fromId: 'node_ingestion', toId: 'node_bronze', color: '#EC4899' },
                 { fromId: 'node_bronze', toId: 'node_silver', color: '#CD7F32' },
                 { fromId: 'node_silver', toId: 'node_gold', color: '#38BDF8' },
-                { fromId: 'node_gold', toId: 'node_dispatch', color: '#FACC15' }
+                { fromId: 'node_gold', toId: 'node_duckdb', color: '#FACC15' },
+                { fromId: 'node_duckdb', toId: 'node_dispatch', color: '#10B981' }
             ];
 
             lakehouse3dParticles = [];
@@ -21999,45 +22005,51 @@ ${d.preview}`;
                     return;
                 }
 
-                // Recompute coordinates for 9-Node DAG Topology
-                if (lakehouse3dNodes.length !== 9 || !lakehouse3dNodes[8] || Math.abs(lakehouse3dNodes[8].x - W * 0.93) > 15) {
+                // Recompute coordinates for 11-Node DAG Topology
+                if (lakehouse3dNodes.length !== 11 || !lakehouse3dNodes[10] || Math.abs(lakehouse3dNodes[10].x - W * 0.94) > 15) {
                     canvas.width = W * (window.devicePixelRatio || 1);
                     canvas.height = H * (window.devicePixelRatio || 1);
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
                     lakehouse3dNodes = [
-                        // TIER 1: Heterogeneous Source Databases & Cloud Storage
-                        { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.20, r: 23, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
-                        { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.40, r: 23, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
-                        { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.60, r: 23, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
-                        { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 23, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
+                        // TIER 1: Heterogeneous Multi-Cloud Source Databases & Storage (5 Sources)
+                        { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.16, r: 21, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
+                        { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.32, r: 21, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
+                        { id: 'node_google', name: 'Google Cloud & BQ', icon: '🌐', layer: 'BigQuery & GCS Lake', color: '#4285F4', x: W * 0.08, y: H * 0.48, r: 21, throughput: '68,400 rec/s', latency: '19.8 ms', health: '100%' },
+                        { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.64, r: 21, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
+                        { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 21, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
 
                         // TIER 2: Autonomous CDC & AWS DMS
-                        { id: 'node_ingestion', name: 'CDC & AWS DMS', icon: '⚡', layer: 'Debezium & Snowpipe', color: '#EC4899', x: W * 0.28, y: H * 0.50, r: 26, throughput: 'Real-Time Sync', latency: '4.5 ms', health: '100%' },
+                        { id: 'node_ingestion', name: 'CDC & AWS DMS', icon: '⚡', layer: 'Debezium & Snowpipe', color: '#EC4899', x: W * 0.25, y: H * 0.48, r: 25, throughput: 'Real-Time Sync', latency: '4.5 ms', health: '100%' },
 
                         // TIER 3: Medallion Bronze (L0 Staging)
-                        { id: 'node_bronze', name: 'Bronze (L0)', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.46, y: H * 0.50, r: 27, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
+                        { id: 'node_bronze', name: 'Bronze (L0)', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.40, y: H * 0.48, r: 25, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
 
                         // TIER 4: Medallion Silver (L1 Harmonized)
-                        { id: 'node_silver', name: 'Silver (L1)', icon: '🥈', layer: 'SCD2 & DMF Quality (99.4%)', color: '#38BDF8', x: W * 0.64, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
+                        { id: 'node_silver', name: 'Silver (L1)', icon: '🥈', layer: 'SCD2 & DMF Quality (99.4%)', color: '#38BDF8', x: W * 0.55, y: H * 0.48, r: 25, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
 
-                        // TIER 5: Medallion Gold (L2) & DuckDB Marts
-                        { id: 'node_gold', name: 'Gold & DuckDB', icon: '🥇', layer: 'Star Schema & Marts', color: '#FACC15', x: W * 0.80, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
+                        // TIER 5: Medallion Gold (L2 Curated Marts)
+                        { id: 'node_gold', name: 'Gold (L2)', icon: '🥇', layer: 'Kimball Star Schema', color: '#FACC15', x: W * 0.69, y: H * 0.48, r: 25, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
 
-                        // TIER 6: Omnichannel Dispatch
-                        { id: 'node_dispatch', name: 'Omnichannel Dispatch', icon: '📱', layer: 'Telegram & WhatsApp & SMTP', color: '#8B5CF6', x: W * 0.93, y: H * 0.50, r: 25, throughput: 'Instant Push', latency: '22.1 ms', health: '100%' }
+                        // TIER 6: DuckDB Embedded OLAP Lakehouse Engine
+                        { id: 'node_duckdb', name: 'DuckDB Engine', icon: '🦆', layer: 'gold_marts.duckdb (NVMe)', color: '#10B981', x: W * 0.82, y: H * 0.48, r: 25, throughput: '320,000 rec/s', latency: '0.2 ms', health: '100%' },
+
+                        // TIER 7: Omnichannel Dispatch
+                        { id: 'node_dispatch', name: 'Omnichannel Dispatch', icon: '📱', layer: 'Telegram & WhatsApp & SMTP', color: '#8B5CF6', x: W * 0.94, y: H * 0.48, r: 24, throughput: 'Instant Push', latency: '22.1 ms', health: '100%' }
                     ];
 
                     // Seed branching conduits for DAG
                     window.lakehouseConduits = [
                         { fromId: 'node_oracle', toId: 'node_ingestion', color: '#F59E0B' },
                         { fromId: 'node_aws_s3', toId: 'node_ingestion', color: '#FF9900' },
+                        { fromId: 'node_google', toId: 'node_ingestion', color: '#4285F4' },
                         { fromId: 'node_postgres', toId: 'node_ingestion', color: '#06B6D4' },
                         { fromId: 'node_sftp', toId: 'node_ingestion', color: '#10B981' },
                         { fromId: 'node_ingestion', toId: 'node_bronze', color: '#EC4899' },
                         { fromId: 'node_bronze', toId: 'node_silver', color: '#CD7F32' },
                         { fromId: 'node_silver', toId: 'node_gold', color: '#38BDF8' },
-                        { fromId: 'node_gold', toId: 'node_dispatch', color: '#FACC15' }
+                        { fromId: 'node_gold', toId: 'node_duckdb', color: '#FACC15' },
+                        { fromId: 'node_duckdb', toId: 'node_dispatch', color: '#10B981' }
                     ];
 
                     // Re-seed particles across conduits

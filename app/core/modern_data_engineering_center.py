@@ -76,6 +76,21 @@ DEFAULT_3D_PIPELINE_STATE = {
             "description": "High-throughput cloud object landing zone for transactional archives and Parquet partitions."
         },
         {
+            "id": "node_google",
+            "name": "Google BigQuery & Cloud Lake",
+            "icon": "🌐",
+            "layer": "Google Cloud Platform (GCP)",
+            "status": "HEALTHY",
+            "throughput_rec_sec": 68400,
+            "latency_ms": 19.8,
+            "health_pct": 100.0,
+            "active_endpoints": [
+                {"name": "Google BigQuery Analytics Sandbox", "status": "UP", "datasets": 4, "mode": "Serverless Bi-Engine"},
+                {"name": "Google Cloud Storage (GCS) Lake", "status": "UP", "buckets": 2, "format": "Parquet & JSON"}
+            ],
+            "description": "Enterprise cloud analytics warehouse and multi-cloud landing storage."
+        },
+        {
             "id": "node_postgres",
             "name": "PostgreSQL Fabric",
             "icon": "🐘",
@@ -156,7 +171,7 @@ DEFAULT_3D_PIPELINE_STATE = {
         },
         {
             "id": "node_gold",
-            "name": "Gold Layer & DuckDB",
+            "name": "Gold Layer (L2 Curated Marts)",
             "icon": "🥇",
             "layer": "Star Schema & Lakehouse Marts",
             "status": "HEALTHY",
@@ -169,6 +184,21 @@ DEFAULT_3D_PIPELINE_STATE = {
                 {"name": "DuckDB Gold Marts (S3 Synced)", "records": 142500, "engine": "DuckDB Embedded"}
             ],
             "description": "Dimensional star schemas, Facts and Dims curated for AML compliance and executive reporting."
+        },
+        {
+            "id": "node_duckdb",
+            "name": "DuckDB Lakehouse Engine",
+            "icon": "🦆",
+            "layer": "gold_marts.duckdb (Local NVMe)",
+            "status": "HEALTHY",
+            "throughput_rec_sec": 320000,
+            "latency_ms": 0.2,
+            "health_pct": 100.0,
+            "active_endpoints": [
+                {"name": "data/lakehouse/gold_marts.duckdb", "status": "UP", "tables": 49, "mode": "Vectorized In-Process"},
+                {"name": "Parquet Direct SIMD Scan Cache", "status": "ACTIVE", "throughput": "320,000 rec/s"}
+            ],
+            "description": "Ultra-fast embedded columnar OLAP engine querying curated Gold star schemas with microsecond latency."
         },
         {
             "id": "node_dispatch",
@@ -218,6 +248,38 @@ DEFAULT_3D_PIPELINE_STATE = {
 def get_3d_pipeline_telemetry(project_id: str = "AML_V1") -> Dict[str, Any]:
     """Returns real-time 3D telemetry, node metrics, bidirectional health for all DBs, and incident remediation status."""
     db_health = [
+        {
+            "id": "google_bigquery",
+            "name": "GOOGLE_BIGQUERY_SANDBOX [Google Cloud BigQuery & GCS Storage]",
+            "target": "bigquery.googleapis.com / nanopro-ai-gcp",
+            "socket": "bigquery.googleapis.com:443",
+            "status": "ONLINE",
+            "active_tables": 24,
+            "table_count": 24,
+            "active_connections": 5,
+            "ping_ms": 19.8,
+            "engine": "google",
+            "engine_full": "Google BigQuery Serverless Analytics & GCS Lake",
+            "icon": "🌐",
+            "bidirectional_sync": "BigQuery Analytics -> Lakehouse Sync",
+            "bidirectional_flow": "BigQuery Analytics -> Lakehouse Sync"
+        },
+        {
+            "id": "duckdb_lakehouse",
+            "name": "DUCKDB_GOLD_LAKEHOUSE [DuckDB In-Process Vectorized OLAP]",
+            "target": "data/lakehouse/gold_marts.duckdb",
+            "socket": "Local High-Speed NVMe Memory",
+            "status": "ONLINE",
+            "active_tables": 49,
+            "table_count": 49,
+            "active_connections": 8,
+            "ping_ms": 0.2,
+            "engine": "duckdb",
+            "engine_full": "DuckDB Embedded OLAP Lakehouse Engine",
+            "icon": "🦆",
+            "bidirectional_sync": "Gold L2 Marts -> DuckDB Vectorized Query (320,000 rec/s)",
+            "bidirectional_flow": "Gold L2 Marts -> DuckDB Vectorized Query (320,000 rec/s)"
+        },
         {
             "id": "oracle_local",
             "name": "MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]",
@@ -405,6 +467,28 @@ def get_3d_pipeline_telemetry(project_id: str = "AML_V1") -> Dict[str, Any]:
 def get_node_inspection_details(node_id: str) -> Dict[str, Any]:
     """Provides deep-dive inspection data for any selected 3D Medallion node."""
     node_map = {
+        "node_google": {
+            "node_name": "Google Cloud BigQuery & GCS Storage (GOOGLE_BIGQUERY_SANDBOX)",
+            "active_tables": ["gcp_ingestion_lake", "bigquery_analytics_sandbox", "cloud_storage_lake_buckets"],
+            "transformations": ["BigQuery Bi-Engine Acceleration", "GCS Parquet Streaming", "Google IAM Tokenized Validation"],
+            "ast_rules": ["ANSI SQL Compliant Struct Unnesting", "Column Partition Assertion by Day"],
+            "scd_tracking": "Google Cloud Storage Object Versioning & BigQuery Time Travel (7-Day Replay)",
+            "record_count": 68400,
+            "throughput": "68,400 rec/sec",
+            "error_rate": "0.00%",
+            "storage_engine": "Google BigQuery Serverless + Cloud Storage (GCS)"
+        },
+        "node_duckdb": {
+            "node_name": "DuckDB Embedded OLAP Lakehouse Engine (gold_marts.duckdb)",
+            "active_tables": ["data/lakehouse/gold_marts.duckdb", "gold_fact_transactions", "gold_dim_customers", "gold_aml_alerts_mart"],
+            "transformations": ["Zero-Copy Vectorized Execution", "SIMD Columnar Scan Acceleration", "Parquet Direct Read/Write via HTTP/S3"],
+            "ast_rules": ["In-Process Micro-Query Optimization", "Analytical Aggregation Caching"],
+            "scd_tracking": "ACID MVCC Transaction Isolation with Snapshot Reads",
+            "record_count": 141980,
+            "throughput": "320,000 rec/sec",
+            "error_rate": "0.00%",
+            "storage_engine": "DuckDB 1.1 In-Process Columnar OLAP Engine (Local NVMe)"
+        },
         "node_oracle": {
             "node_name": "Oracle XE 21c (Finacle Core Banking CBS)",
             "active_tables": ["CUSTOMERS", "ACCOUNT_MASTER", "TXN_JOURNAL", "BRANCH_MASTER", "GL_ACCOUNTS", "LOAN_SCHEDULE"],
