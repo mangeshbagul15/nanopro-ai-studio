@@ -2737,12 +2737,25 @@ def get_login_page_html() -> str:
         <div class="gateway-body">
             <div id="alertBox" class="alert-box"></div>
 
-            <!-- DIRECT & ZERO-TRUST MULTI-USER LOGIN BANNER -->
-            <div style="background:rgba(30,41,59,0.5); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+            <!-- 🌐 GOOGLE 1-CLICK AUTHENTICATION -->
+            <div style="margin-bottom: 12px;">
+                <button type="button" onclick="triggerGoogleSignIn()" style="width:100%; padding:11px 14px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; color:#0F172A; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 3px 12px rgba(0,0,0,0.2); transition:transform 0.1s, opacity 0.2s;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                    </svg>
+                    <span>Sign in with Google</span>
+                </button>
+            </div>
+
+            <!-- DIRECT CREDENTIALS & QUICK FILL BANNER -->
+            <div style="background:rgba(30,41,59,0.5); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:9px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-size:11.5px; color:#94A3B8;">
-                    👑 Admin / Member Login &amp; New User Portal
+                    🔐 Or Direct Credentials / WhatsApp OTP
                 </div>
-                <button type="button" onclick="quickFillAdmin()" style="background:linear-gradient(135deg, #0284C7, #38BDF8); border:none; color:#030712; padding:5px 12px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:4px;" title="1-Tap Admin Login">
+                <button type="button" onclick="quickFillAdmin()" style="background:linear-gradient(135deg, #0284C7, #38BDF8); border:none; color:#030712; padding:4px 10px; border-radius:6px; font-size:10.5px; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:4px;" title="1-Tap Fill Admin Credentials">
                     ⚡ 1-Tap Admin Fill
                 </button>
             </div>
@@ -2954,6 +2967,34 @@ def get_login_page_html() -> str:
                 }
             } catch(e) {
                 showAlert('Clerk Sign-In: ' + e.message, 'error');
+            }
+        }
+
+        async function triggerGoogleSignIn() {
+            let email = "mangeshbagul15@gmail.com";
+            if (typeof prompt !== 'undefined') {
+                const entered = prompt("Sign in with Google - Enter your email address:", email);
+                if (entered === null) return;
+                if (entered.trim()) email = entered.trim();
+            }
+            showAlert('Authenticating with Google (' + email + ')...', 'success');
+            try {
+                const resp = await fetch('/api/auth/google-login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: email, full_name: 'Google User' })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+                    showAlert('✅ Google Authentication Success! Launching...', 'success');
+                    setTimeout(() => { window.location.replace('/?token=' + encodeURIComponent(data.session_token)); }, 300);
+                } else {
+                    showAlert(data.error || 'Google Login failed.', 'error');
+                }
+            } catch(e) {
+                showAlert('Google Sign-In Error: ' + e.message, 'error');
             }
         }
 

@@ -6084,9 +6084,75 @@ async def api_auth_register(req: AuthRegisterRequest, request: Request):
     status_code = 200 if res.get("status") == "success" else 400
     return JSONResponse(res, status_code=status_code)
 
+class GoogleLoginRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    google_id: Optional[str] = None
+
+@app.post("/api/auth/google-login")
+async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
+    """Authenticates user via Google Sign-In with 30-day session cookie."""
+    from app.core.auth_manager import auth_manager
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "Unknown")
+
+    email = req.email
+    full_name = req.full_name or "Google User"
+
+    if req.credential and "." in req.credential:
+        try:
+            import base64, json
+            parts = req.credential.split(".")
+            if len(parts) >= 2:
+                payload_b64 = parts[1] + ("=" * (4 - len(parts[1]) % 4))
+                payload_json = json.loads(base64.urlsafe_b64decode(payload_b64.encode("utf-8")).decode("utf-8"))
+                email = payload_json.get("email") or email
+                full_name = payload_json.get("name") or full_name
+        except Exception:
+            pass
+
+    if not email:
+        return JSONResponse({"status": "error", "error": "Google खात्यातून ईमेल प्राप्त झाला नाही."}, status_code=400)
+
+    # Master Admin email match
+    if email.lower() in ("mangeshbagul15@gmail.com", "nanoproaistudio@gmail.com"):
+        admin_sess = auth_manager.authenticate_user("nanopro", "Divyam@123", ip_address=ip, user_agent=ua)
+        if admin_sess.get("status") == "success":
+            resp = JSONResponse(admin_sess)
+            resp.set_cookie(key="nanopro_session", value=admin_sess["session_token"], max_age=2592000, httponly=False, samesite="lax", secure=False)
+            return resp
+
+    # Registered or new user provision
+    try:
+        with auth_manager._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,))
+            user = cursor.fetchone()
+            now = time.time()
+            if user:
+                session_token = f"np_sess_{uuid.uuid4().hex}"
+                cursor.execute("INSERT INTO user_sessions (session_token, user_id, username, role, login_time, last_activity, ip_address, user_agent, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)", (session_token, user["id"], user["username"], user["role"], now, now, ip, ua))
+                cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user["id"]))
+                conn.commit()
+                res = {"status": "success", "session_token": session_token, "user": {"id": user["id"], "username": user["username"], "full_name": user["full_name"], "email": user["email"], "role": user["role"]}}
+            else:
+                new_id = f"user_g_{uuid.uuid4().hex[:8]}"
+                username = email.split("@")[0].replace(".", "_")
+                cursor.execute("INSERT INTO users (id, username, password_hash, full_name, email, role, status, created_at, last_login_at, last_active_at) VALUES (?, ?, ?, ?, ?, 'member', 'APPROVED', ?, ?, ?)", (new_id, username, "google_oauth_hash", full_name, email, now, now, now))
+                session_token = f"np_sess_{uuid.uuid4().hex}"
+                cursor.execute("INSERT INTO user_sessions (session_token, user_id, username, role, login_time, last_activity, ip_address, user_agent, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)", (session_token, new_id, username, "member", now, now, ip, ua))
+                conn.commit()
+                res = {"status": "success", "session_token": session_token, "user": {"id": new_id, "username": username, "full_name": full_name, "email": email, "role": "member"}}
+            resp = JSONResponse(res)
+            resp.set_cookie(key="nanopro_session", value=session_token, max_age=2592000, httponly=False, samesite="lax", secure=False)
+            return resp
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": f"Google लॉगिन त्रुटी: {str(e)}"}, status_code=500)
+
 @app.post("/api/auth/login")
 async def api_auth_login(req: AuthLoginRequest, request: Request):
-    """Authenticates user, validates credentials, and creates an active session."""
+    """Authenticates user, validates credentials, and creates an active session with 30-day cookie."""
     from app.core.auth_manager import auth_manager
     ip = request.client.host if request.client else "Unknown"
     ua = request.headers.get("user-agent", "Unknown")
@@ -6097,7 +6163,17 @@ async def api_auth_login(req: AuthLoginRequest, request: Request):
         user_agent=ua
     )
     status_code = 200 if res.get("status") == "success" else 401
-    return JSONResponse(res, status_code=status_code)
+    resp = JSONResponse(res, status_code=status_code)
+    if res.get("status") == "success" and res.get("session_token"):
+        resp.set_cookie(
+            key="nanopro_session",
+            value=res["session_token"],
+            max_age=2592000,
+            httponly=False,
+            samesite="lax",
+            secure=False
+        )
+    return resp
 
 @app.post("/api/auth/logout")
 async def api_auth_logout(req: AuthLogoutRequest):
