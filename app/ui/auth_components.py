@@ -1821,35 +1821,21 @@ async function verifySessionOnStartup() {
         } catch(e) {}
     }
 
-    // 3. Auto-Authenticate as Master Administrator 'nanopro' (Mangesh Bagul): All left features 100% unlocked!
-    try {
-        const autoResp = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ username: 'nanopro', password: 'nanopro' })
-        });
-        const autoData = await autoResp.json();
-        if (autoData.status === 'success') {
-            saveAccountToStore(autoData.user, autoData.session_token, 'nanopro', true);
-            currentSessionToken = autoData.session_token;
-            onAuthSuccess(autoData.user);
-            return;
-        }
-    } catch(err) {
-        console.warn("Auto-login fallback notice:", err);
+    // 3. SECURE AUTHENTICATION GATEWAY:
+    // If no verified active session exists on this device/browser, require login!
+    // Auto-bypass is strictly disabled to prevent unauthorized access from other devices.
+    currentSessionToken = null;
+    currentUser = null;
+    window.currentUser = null;
+    document.body.classList.remove('auth-verified');
+    document.documentElement.classList.remove('auth-verified');
+    
+    // Check if other saved accounts exist to render fast chooser, else show login modal
+    const saved = getSavedAccounts();
+    if (saved.length > 0) {
+        renderAuthSavedAccountsChooser();
     }
-
-    // 4. Guaranteed offline master admin fallback: NEVER block the screen or show blank page!
-    const defaultMasterAdmin = {
-        id: 'user_admin_001',
-        username: 'nanopro',
-        full_name: 'Super Admin (Mangesh Bagul)',
-        email: 'mangeshbagul15@gmail.com',
-        role: 'admin',
-        allowed_views: ['*'],
-        access_mode: 'MODIFY'
-    };
-    onAuthSuccess(defaultMasterAdmin);
+    openAuthGatewayModal('login');
 }
 
 document.addEventListener('DOMContentLoaded', verifySessionOnStartup);
