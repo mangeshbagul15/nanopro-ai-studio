@@ -2737,21 +2737,14 @@ def get_login_page_html() -> str:
         <div class="gateway-body">
             <div id="alertBox" class="alert-box"></div>
 
-            <!-- CLERK 1-CLICK SSO BANNER (ALWAYS VISIBLE FOR QUICK ACCESS) -->
-            <div id="clerkContainer" style="margin-bottom: 14px;">
-                <button type="button" id="clerkBtn" onclick="triggerClerkSignIn()" class="btn-clerk">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.44 4 16.08 4 12C4 7.92 7.05 4.56 11 4.07V19.93ZM13 4.07C16.95 4.56 20 7.92 20 12C20 16.08 16.95 19.44 13 19.93V4.07Z" fill="#FFF"/>
-                    </svg>
-                    ⚡ 1-Click Clerk Login (Google / SMS Passkey)
+            <!-- DIRECT & ZERO-TRUST MULTI-USER LOGIN BANNER -->
+            <div style="background:rgba(30,41,59,0.5); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:11.5px; color:#94A3B8;">
+                    👑 Admin / Member Login &amp; New User Portal
+                </div>
+                <button type="button" onclick="quickFillAdmin()" style="background:linear-gradient(135deg, #0284C7, #38BDF8); border:none; color:#030712; padding:5px 12px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:4px;" title="1-Tap Admin Login">
+                    ⚡ 1-Tap Admin Fill
                 </button>
-                <div id="clerkMountTarget" style="margin-top: 10px;"></div>
-            </div>
-
-            <div class="auth-divider">
-                <div class="auth-divider-line"></div>
-                <span class="auth-divider-text" id="dividerText">OR USE DIRECT CREDENTIALS</span>
-                <div class="auth-divider-line"></div>
             </div>
 
             <!-- TAB 1: DIRECT LOGIN FORM -->
@@ -2962,6 +2955,14 @@ def get_login_page_html() -> str:
             } catch(e) {
                 showAlert('Clerk Sign-In: ' + e.message, 'error');
             }
+        }
+
+        function quickFillAdmin() {
+            switchMainTab('direct');
+            document.getElementById('loginUsername').value = 'nanopro';
+            document.getElementById('loginPassword').value = 'Divyam@123';
+            document.getElementById('rememberMe').checked = true;
+            showAlert('⚡ Admin credentials pre-filled! Tap "Verify & Launch" to log in.', 'success');
         }
 
         function switchMainTab(tab) {

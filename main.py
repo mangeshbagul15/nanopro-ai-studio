@@ -679,12 +679,14 @@ async def startup_event():
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard(request: Request, token: Optional[str] = None):
     """
-    Direct Home Gateway:
-    - Serves the master Mangesh Nano Pro AI Studio Desktop & Mobile UI directly.
-    - Zero login friction for Super Admin 'nanopro' on Mobile & Desktop, exactly as originally configured.
-    - Automatically issues and persists active Admin session cookie (nanopro_session, 30 days).
+    Zero-Trust Security & Multi-User Gateway:
+    - Authenticated users (Admin, team members) receive full dashboard access.
+    - Validates server session token via query (?token=...), cookie (nanopro_session), or Bearer header.
+    - If unauthenticated, serves the Cyber-Luxe Login & Registration Gateway.
+    - New users register via 'Request Access'; existing users log in via Direct Password or WhatsApp OTP.
     """
     from app.core.auth_manager import auth_manager
+    from app.ui.auth_components import get_login_page_html
     from app.ui.dashboard import get_dashboard_html
 
     candidate_token = token or request.cookies.get("nanopro_session")
@@ -693,26 +695,23 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
         if auth_hdr.lower().startswith("bearer "):
             candidate_token = auth_hdr[7:].strip()
 
-    # If missing or invalid session, auto-authenticate Admin 'nanopro'
-    if not candidate_token or not auth_manager.validate_session(candidate_token).get("is_valid"):
-        try:
-            admin_sess = auth_manager.authenticate_user("nanopro", "Divyam@123")
-            if admin_sess.get("status") == "success":
-                candidate_token = admin_sess.get("session_token")
-        except Exception:
-            candidate_token = "np_sess_admin_nanopro_direct"
-
-    resp = HTMLResponse(get_dashboard_html())
+    # Verify session
     if candidate_token:
-        resp.set_cookie(
-            key="nanopro_session",
-            value=candidate_token,
-            max_age=2592000,
-            httponly=False,
-            samesite="lax",
-            secure=False
-        )
-    return resp
+        v_res = auth_manager.validate_session(candidate_token)
+        if v_res.get("is_valid") and v_res.get("user"):
+            resp = HTMLResponse(get_dashboard_html())
+            resp.set_cookie(
+                key="nanopro_session",
+                value=candidate_token,
+                max_age=2592000,
+                httponly=False,
+                samesite="lax",
+                secure=False
+            )
+            return resp
+
+    # If unauthenticated, serve the Login & Registration Gateway
+    return HTMLResponse(get_login_page_html())
 
 @app.get("/login", response_class=HTMLResponse)
 async def serve_login_gateway():
