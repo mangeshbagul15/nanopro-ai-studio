@@ -26,7 +26,10 @@ def get_dashboard_html() -> str:
 
     # Inject SQL Short Video Client-Side JavaScript Engine
     sql_js = get_sql_video_js()
-    processed = processed.replace("</body>", sql_js + "\n</body>")
+    from app.ui.modern_trends_2026 import get_2026_modern_trends_css, get_2026_modern_trends_html, get_2026_modern_trends_js
+    processed = processed.replace("</head>", get_2026_modern_trends_css() + "\n</head>")
+    processed = processed.replace("<body>", "<body>\n" + get_2026_modern_trends_html() + "\n")
+    processed = processed.replace("</body>", sql_js + "\n" + get_2026_modern_trends_js() + "\n</body>")
 
     return processed
 
