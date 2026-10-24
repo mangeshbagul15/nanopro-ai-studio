@@ -770,7 +770,7 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
                 url,
                 data={"chat_id": TELEGRAM_CHAT_ID, "caption": final_caption, "parse_mode": parse_mode},
                 files={"document": (apk_path.name, f, "application/vnd.android.package-archive")},
-                timeout=25
+                timeout=75
             )
         data = resp.json()
         if data.get("ok"):
@@ -792,7 +792,7 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
                     url,
                     data={"chat_id": TELEGRAM_CHAT_ID, "caption": plain_caption},
                     files={"document": (apk_path.name, f2, "application/vnd.android.package-archive")},
-                    timeout=25
+                    timeout=75
                 )
             data2 = resp2.json()
             if data2.get("ok"):
