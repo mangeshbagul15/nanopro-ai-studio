@@ -554,6 +554,121 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
     }
 
+    // =========================================================================
+    // 12 TOP TECH/AI VIDEO PROMPT PRESETS (SEEDANCE / VEO / KLING / RUNWAY)
+    // =========================================================================
+    const TOP_12_TECH_PROMPTS = {
+        architecture: {
+            title: "1. Architecture (3D ISO)",
+            prompt: "Cinematic 3D isometric view of a glowing data architecture, dark background, cyan and violet neon lines connecting cloud servers, database cylinders, and AI agent nodes, camera slowly orbits, nodes light up one by one, 8 seconds.",
+            duration: 8
+        },
+        symbol_reveal: {
+            title: "2. Symbol / Shield Reveal",
+            prompt: "A glowing 3D holographic shield icon assembles from particles in a dark void, metallic rim, cyan light sweeps across the surface, camera pushes in, ends with the logo clear, 6 seconds.",
+            duration: 6
+        },
+        medallion_view: {
+            title: "3. Medallion View (Bronze / Silver / Gold)",
+            prompt: "Three glass tiers stacked vertically: bronze at the bottom, silver in the middle, gold on top, glowing data streams rise through them, particles get cleaner and brighter at each level, camera rotates slowly, dark studio background, 8 seconds.",
+            duration: 8
+        },
+        agent_workflow: {
+            title: "4. Agent Workflow Video",
+            prompt: "Central glowing manager orb sends light beams to six smaller agent spheres, each agent pulses when working, results return as glowing cards to the center, cinematic dark environment, 10 seconds.",
+            duration: 10
+        },
+        dashboard_walkthrough: {
+            title: "5. Dashboard Walkthrough",
+            prompt: "Smooth camera move across a floating holographic dashboard panel with glass cards, animated line charts and gauges, numbers counting up, neon accents, dark background, 8 seconds.",
+            duration: 8
+        },
+        data_pipeline: {
+            title: "6. Data Pipeline Flow",
+            prompt: "Data packets flow from left to right through glowing pipes, passing through transformation nodes, arriving at a dashboard screen, pipes glow brighter with each stage, dark tech environment, 8 seconds.",
+            duration: 8
+        },
+        vault_reveal: {
+            title: "7. Security / Vault Reveal",
+            prompt: "A glowing cube vault inside an energy shield, a green approval light appears, the shield opens with a soft light burst, dark background, cinematic, 6 seconds.",
+            duration: 6
+        },
+        telemetry_monitor: {
+            title: "8. Telemetry / Live Monitoring",
+            prompt: "Holographic gauges and line charts pulse with live data, one chart spikes then stabilises, camera pulls back to show the whole panel, dark neon style, 8 seconds.",
+            duration: 8
+        },
+        multi_agent_network: {
+            title: "9. Multi-Agent Network",
+            prompt: "A vast network of glowing nodes connected by light lines, clusters form and dissolve, camera flies through the network, violet and cyan palette, 10 seconds.",
+            duration: 10
+        },
+        human_approval: {
+            title: "10. Human Approval Moment",
+            prompt: "A notification card slides in with Approve and Reject buttons, a hand taps Approve, the card glows green and the agent begins working, dark UI style, 6 seconds.",
+            duration: 6
+        },
+        brand_intro: {
+            title: "11. Brand Intro / Logo Reveal",
+            prompt: "Logo NANO PRO forms from glowing particles in a dark space, light sweeps across the letters, tagline fades in beneath: 'Mangesh Bagul AI Studio v1', 5 seconds.",
+            duration: 5
+        },
+        before_after: {
+            title: "12. Before & After (Manual vs AI)",
+            prompt: "Split screen: on the left a slow progress bar stuck at 60 percent, on the right the same task finishes in seconds with glowing completion, cinematic dark tone, 8 seconds.",
+            duration: 8
+        }
+    };
+
+    function insert12TechPrompt(key) {
+        const item = TOP_12_TECH_PROMPTS[key];
+        if (!item) return;
+        const input = document.getElementById("sqlShortQuestion");
+        if (input) {
+            input.value = item.prompt;
+            input.focus();
+        }
+        if (typeof showModernToast === 'function') {
+            showModernToast('Template Loaded', item.title + ' (5-10s Prompt Ready)', 'success');
+        }
+    }
+    window.insert12TechPrompt = insert12TechPrompt;
+
+    let selectedModernVideoModel = 'seedance_25';
+
+    function selectModernVideoModel(modelId) {
+        selectedModernVideoModel = modelId;
+        window.selectedModernVideoModel = modelId;
+        const badge = document.getElementById('activeAiVideoEngineBadge');
+        const names = {
+            'seedance_25': 'Seedance 2.5 (ByteDance) ★★★★★',
+            'kling_30': 'Kling 3.0 (Kuaishou) ★★★★★',
+            'veo_31': 'Google Veo 3.1 ★★★★★',
+            'hailuo_h3': 'Hailuo 2.3 / MiniMax H3 ★★★★☆',
+            'wan_27': 'Wan 2.7 (Alibaba Open) ★★★★☆',
+            'runway_gen45': 'Runway Gen-4.5 ★★★★★',
+            'heygen_live': 'HeyGen 3.0 LiveAvatar ★★★★★',
+            'pollinations_free_2026': '100% Free AI Video (Unlimited)'
+        };
+        if (badge) badge.textContent = 'Active: ' + (names[modelId] || modelId);
+        
+        // Update active class on buttons
+        document.querySelectorAll('.active-model-btn').forEach(btn => {
+            btn.style.borderColor = 'rgba(255,255,255,0.12)';
+            btn.style.color = '#CBD5E1';
+        });
+        const activeBtn = document.getElementById('btnModel_' + modelId);
+        if (activeBtn) {
+            activeBtn.style.borderColor = '#38BDF8';
+            activeBtn.style.color = '#38BDF8';
+        }
+
+        if (typeof showModernToast === 'function') {
+            showModernToast('2026 Video AI Engine', names[modelId] || modelId, 'info');
+        }
+    }
+    window.selectModernVideoModel = selectModernVideoModel;
+
     function openAgentBrainModal() {
         const modal = document.getElementById("agentBrainModal");
         if (!modal) return;
@@ -724,7 +839,32 @@ SECOND_HIGHEST_SALARY: 70000`;
         btn.disabled = true;
 
         const statusEl = document.getElementById("sqlVideoGenerationStatus");
-        if (statusEl) statusEl.textContent = "Sending the prompt to the storyboard and narration workflow…";
+        if (statusEl) statusEl.textContent = "Synthesizing 2026 AI Video & Narration concurrently…";
+
+        // Concurrently dispatch 2026 AI Video Generation (Seedance 2.5, Kling 3.0, Veo 3.1)
+        try {
+            fetch('/api/video/generate_2026_video', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    prompt: q,
+                    model_id: window.selectedModernVideoModel || 'seedance_25',
+                    aspect_ratio: '9:16'
+                })
+            }).then(r => r.json()).then(vData => {
+                if (vData && vData.video_url) {
+                    const realVid = document.getElementById('sqlShortRealVideo');
+                    if (realVid) {
+                        realVid.src = vData.video_url;
+                        realVid.style.display = 'block';
+                        realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
+                    }
+                    if (typeof showModernToast === 'function') {
+                        showModernToast('2026 AI Video Active', (vData.provider || 'AI Video Stream') + ' (' + (vData.benchmark_rating || '5★') + ')', 'success');
+                    }
+                }
+            }).catch(e => console.warn('AI Video Cascade notice:', e));
+        } catch(e) {}
 
         try {
             const data = await generateSqlShortBlueprintJob({
@@ -789,6 +929,31 @@ SECOND_HIGHEST_SALARY: 70000`;
                 if (codePreviewEl) {
                     codePreviewEl.value = data.solution_sql || data.syntax_a_code || (data.content_type === "sql_query" ? "-- Query solution" : "-- Topic-specific storyboard");
                 }
+
+                // Trigger October 2026 State-of-the-Art AI Video Generation with Zero-Stop Cascade
+                try {
+                    fetch('/api/video/generate_2026_video', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            prompt: q,
+                            model_id: window.selectedModernVideoModel || 'seedance_25',
+                            aspect_ratio: '9:16'
+                        })
+                    }).then(r => r.json()).then(vData => {
+                        if (vData && vData.video_url) {
+                            const realVid = document.getElementById('sqlShortRealVideo');
+                            if (realVid) {
+                                realVid.src = vData.video_url;
+                                realVid.style.display = 'block';
+                                realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
+                            }
+                            if (typeof showModernToast === 'function') {
+                                showModernToast('2026 AI Video Active', (vData.provider || 'AI Video Stream') + ' (' + (vData.benchmark_rating || '5★') + ')', 'success');
+                            }
+                        }
+                    }).catch(e => console.warn('AI Video Cascade notice:', e));
+                } catch(e) {}
 
                 // Load and play fresh synthesized audio with cache-buster
                 if (data.audio_url) {
@@ -7189,9 +7354,13 @@ SECOND_HIGHEST_SALARY: 70000`;
             currentStageIdx = estIdx;
         }
 
-        // Deterministic technical stage: every camera, component and cue motion is
-        // derived from the audio-locked scene time for stable seek and export.
-        drawPromptSceneBackdrop(ctx, W, H, activeStage?.visual_data || {}, t);
+        // If real generative AI video is playing in the background, clear canvas so it shows through!
+        const realVid = document.getElementById("sqlShortRealVideo");
+        if (realVid && realVid.style.display !== "none") {
+            ctx.clearRect(0, 0, W, H);
+        } else {
+            drawPromptSceneBackdrop(ctx, W, H, activeStage?.visual_data || {}, t);
+        }
 
         // 2. Draw Trending Top Header Pill with Live Stage Tracker
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
@@ -7408,6 +7577,12 @@ SECOND_HIGHEST_SALARY: 70000`;
             audioEl.play().catch(e => console.warn("Audio play prevented:", e));
         }
 
+        // Play real generative AI video in sync
+        const realVid = document.getElementById("sqlShortRealVideo");
+        if (realVid && realVid.style.display !== "none") {
+            realVid.play().catch(e => console.warn("Video play notice:", e));
+        }
+
         let lastTime = performance.now();
 
         function step(now) {
@@ -7451,6 +7626,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         document.getElementById("btnPlayPause").innerText = "▶ Play";
         const audioEl = document.getElementById("sqlVoiceAudio");
         if (audioEl) audioEl.pause();
+        const realVid = document.getElementById("sqlShortRealVideo");
+        if (realVid && realVid.style.display !== "none") realVid.pause();
     }
 
     function restartSqlShortPlay() {

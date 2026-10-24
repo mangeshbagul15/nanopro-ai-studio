@@ -1599,6 +1599,38 @@ async def api_video_cinematic_cascade(req: CinematicCascadeRequest):
     return JSONResponse(res)
 
 
+# --- 2026 STATE-OF-THE-ART ADVANCED AI VIDEO ENGINE (KLING, LUMA, RUNWAY, MINIMAX, POLLINATIONS) ---
+class ModernVideoGenerateRequest(BaseModel):
+    prompt: str
+    model_id: Optional[str] = "auto"
+    aspect_ratio: Optional[str] = "9:16"
+    duration_sec: Optional[int] = 5
+
+@app.get("/api/video/2026_matrix_catalog")
+@app.get("/api/video/modern_models")
+async def api_video_modern_models():
+    """Returns October 2026 AI Video Generation Matrix (Seedance 2.5, Kling 3.0, Veo 3.1, Hailuo H3, Wan 2.7, HeyGen)."""
+    from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
+    return JSONResponse(modern_2026_video_matrix.get_catalog())
+
+@app.post("/api/video/generate_2026_video")
+@app.post("/api/video/generate_advance_video")
+async def api_video_generate_advance_video(req: ModernVideoGenerateRequest):
+    """
+    Autonomous Multi-Tier Multi-Provider Video Engine with Zero-Downtime Cascade:
+    'jevdhe free ahet limit sampli ki lagech dusra, thambaych nahi'
+    Cascades automatically across Seedance 2.5, Kling 3.0, Veo 3.1, Hailuo H3, Wan 2.7, HeyGen, and Free AI Cluster!
+    """
+    from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
+    res = modern_2026_video_matrix.generate_video_with_instant_cascade(
+        prompt=req.prompt,
+        preferred_model_id=req.model_id or "auto",
+        aspect_ratio=req.aspect_ratio or "9:16",
+        duration_sec=req.duration_sec or 5
+    )
+    return JSONResponse(res)
+
+
 @app.post("/api/coding/execute")
 async def api_coding_execute(req: CodingRequest):
     """Handles code generation, explanation, debugging, and testing."""
