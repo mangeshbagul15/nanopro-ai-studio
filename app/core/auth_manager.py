@@ -75,6 +75,21 @@ class AuthManager:
                     cursor.execute("ALTER TABLE users ADD COLUMN access_mode TEXT DEFAULT 'MODIFY'")
                 except Exception:
                     pass
+                try:
+                    cursor.execute("ALTER TABLE users ADD COLUMN phone_number TEXT")
+                except Exception:
+                    pass
+
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS auth_otps (
+                    id TEXT PRIMARY KEY,
+                    identifier TEXT NOT NULL,
+                    otp_code TEXT NOT NULL,
+                    channel TEXT NOT NULL,
+                    created_at REAL NOT NULL,
+                    expires_at REAL NOT NULL,
+                    is_used INTEGER DEFAULT 0
+                )""")
 
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -598,6 +613,200 @@ class AuthManager:
         except Exception as e:
             log_event(f"Error handling verified Clerk session: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": f"Clerk प्रमाणीकरण करताना त्रुटी: {str(e)}"}
+
+    def generate_and_send_otp(self, identifier: str, channel: str = "whatsapp", ip_address: str = "Unknown") -> Dict[str, Any]:
+        """
+        Generates a 6-digit OTP and dispatches it via WhatsApp or Email,
+        also sending an instant backup notification to the Admin Telegram bot.
+        """
+        import random
+        from app.core.communication_center import communication_center
+
+        identifier = identifier.strip()
+        if not identifier:
+            return {"status": "error", "error": "कृपया मोबाईल नंबर किंवा ईमेल प्रविष्ट करा."}
+
+        clean_id = identifier
+        if channel == "whatsapp":
+            clean_digits = "".join(c for c in identifier if c.isdigit())
+            if len(clean_digits) == 10:
+                clean_id = f"+91{clean_digits}"
+            elif not clean_id.startswith("+"):
+                clean_id = f"+{clean_digits}"
+
+        otp_code = f"{random.randint(100000, 999999)}"
+        now = time.time()
+        expires_at = now + 300  # 5 minutes
+
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE identifier = ? AND is_used = 0", (clean_id,))
+                otp_id = f"otp_{uuid.uuid4().hex[:12]}"
+                cursor.execute("""
+                INSERT INTO auth_otps (id, identifier, otp_code, channel, created_at, expires_at, is_used)
+                VALUES (?, ?, ?, ?, ?, ?, 0)
+                """, (otp_id, clean_id, otp_code, channel, now, expires_at))
+                conn.commit()
+
+            wa_link = None
+            if channel == "whatsapp":
+                msg = (
+                    f"🔐 *NanoPro AI Studio Login Verification*\n\n"
+                    f"Your 6-digit verification code is: *{otp_code}*\n\n"
+                    f"⏳ Valid for 5 minutes. Never share this code.\n"
+                    f"🛡️ Zero-Trust Security Sentinel"
+                )
+                res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
+                if not res.get("success"):
+                    res = communication_center.send_whatsapp_free_message(phone=clean_id, message=msg)
+                wa_link = res.get("whatsapp_web_link")
+
+            # Instant Admin Telegram Alert (serves as immediate backup)
+            time_str = time.strftime('%I:%M:%S %p', time.localtime(now))
+            self._notify_telegram(
+                f"📲 <b>NanoPro OTP विनंती (OTP Sent)</b>\n"
+                f"📟 <b>Channel:</b> {channel.upper()}\n"
+                f"🎯 <b>Target:</b> {clean_id}\n"
+                f"🔢 <b>OTP Code:</b> <code>{otp_code}</code>\n"
+                f"🌐 <b>IP:</b> {ip_address}\n"
+                f"🕒 <b>Time:</b> {time_str}"
+            )
+
+            return {
+                "status": "success",
+                "message": f"६-अंकी OTP तुमच्या {channel.upper()} वर पाठवला गेला आहे.",
+                "identifier": clean_id,
+                "whatsapp_link": wa_link,
+                "expires_in_seconds": 300
+            }
+        except Exception as e:
+            log_event(f"Error generating OTP: {e}", component="AuthManager", level="ERROR")
+            return {"status": "error", "error": f"OTP पाठवताना त्रुटी आली: {str(e)}"}
+
+    def verify_otp_and_login(
+        self,
+        identifier: str,
+        otp_code: str,
+        channel: str = "whatsapp",
+        ip_address: str = "Unknown",
+        user_agent: str = "Unknown"
+    ) -> Dict[str, Any]:
+        """
+        Validates OTP, links or provisions user account, and issues active session token.
+        """
+        identifier = identifier.strip()
+        otp_code = otp_code.strip()
+        if not identifier or not otp_code:
+            return {"status": "error", "error": "कृपया फोन नंबर आणि OTP कोड दोन्ही टाका."}
+
+        clean_id = identifier
+        if channel == "whatsapp":
+            clean_digits = "".join(c for c in identifier if c.isdigit())
+            if len(clean_digits) == 10:
+                clean_id = f"+91{clean_digits}"
+            elif not clean_id.startswith("+"):
+                clean_id = f"+{clean_digits}"
+
+        now = time.time()
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT * FROM auth_otps
+                WHERE identifier = ? AND otp_code = ? AND is_used = 0 AND expires_at >= ?
+                ORDER BY created_at DESC LIMIT 1
+                """, (clean_id, otp_code, now))
+                otp_row = cursor.fetchone()
+
+                if not otp_row:
+                    return {"status": "error", "error": "अवैध किंवा कालबाह्य झालेला (Expired) OTP! कृपया पुन्हा प्रयत्न करा."}
+
+                cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE id = ?", (otp_row["id"],))
+
+                is_admin = (
+                    "8433755448" in clean_id or 
+                    "9922" in clean_id or 
+                    clean_id in ["+918433755448", "8433755448"] or
+                    clean_id.lower() in ["mangeshbagul15@gmail.com", "nanopro@gmail.com"]
+                )
+
+                user = None
+                if channel == "whatsapp":
+                    cursor.execute("SELECT * FROM users WHERE phone_number = ? OR email LIKE ?", (clean_id, f"%{clean_id[-10:]}%"))
+                    user = cursor.fetchone()
+                else:
+                    cursor.execute("SELECT * FROM users WHERE email = ?", (clean_id,))
+                    user = cursor.fetchone()
+
+                if is_admin and not user:
+                    cursor.execute("SELECT * FROM users WHERE username = 'nanopro'")
+                    user = cursor.fetchone()
+
+                if user:
+                    user_id = user["id"]
+                    user_role = user["role"]
+                    username = user["username"]
+                    full_name = user["full_name"]
+                    email = user["email"]
+                    allowed_views = self._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user_role)
+                    access_mode = (user["access_mode"] if "access_mode" in user.keys() else "MODIFY") or "MODIFY"
+                    cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ?, status = 'ACTIVE' WHERE id = ?", (now, now, user_id))
+                else:
+                    user_id = f"user_{uuid.uuid4().hex[:12]}"
+                    digits_suffix = "".join(c for c in clean_id if c.isdigit())[-6:]
+                    username = f"wa_{digits_suffix}" if channel == "whatsapp" else clean_id.split("@")[0].lower()
+                    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+                    if cursor.fetchone():
+                        username = f"{username}_{uuid.uuid4().hex[:4]}"
+
+                    user_role = "admin" if is_admin else "user"
+                    full_name = f"WhatsApp User ({clean_id})" if channel == "whatsapp" else clean_id
+                    email = f"{username}@whatsapp.nanopro.ai" if channel == "whatsapp" else clean_id
+                    allowed_views = ["*"] if user_role == "admin" else ["dashboard", "video_studio", "agent_grid"]
+                    access_mode = "MODIFY"
+
+                    cursor.execute("""
+                    INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode)
+                    VALUES (?, ?, ?, ?, ?, 'otp_verified', 'otp_salt', ?, 'ACTIVE', ?, ?, ?, ?, ?)
+                    """, (user_id, username, full_name, email, clean_id, user_role, now, now, now, json.dumps(allowed_views), access_mode))
+
+                session_token = f"np_sess_{uuid.uuid4().hex}"
+                cursor.execute("""
+                INSERT INTO user_sessions (session_token, user_id, username, role, login_time, last_activity, ip_address, user_agent, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """, (session_token, user_id, username, user_role, now, now, ip_address, user_agent))
+
+                conn.commit()
+
+            self._record_audit_log(user_id, username, "OTP_LOGIN", f"OTP login verified via {channel.upper()} (Target: {clean_id})", ip_address, user_agent)
+
+            login_time_str = time.strftime('%d-%m-%Y %I:%M:%S %p', time.localtime(now))
+            self._notify_telegram(
+                f"💬 <b>NanoPro {channel.upper()} OTP लॉगिन (OTP Verified)</b>\n"
+                f"👤 <b>User:</b> {username} ({full_name})\n"
+                f"👑 <b>Role:</b> {user_role.upper()}\n"
+                f"📱 <b>Target:</b> {clean_id}\n"
+                f"🕒 <b>Time:</b> {login_time_str}\n"
+                f"🌐 <b>IP:</b> {ip_address}"
+            )
+
+            return {
+                "status": "success",
+                "session_token": session_token,
+                "user": {
+                    "id": user_id,
+                    "username": username,
+                    "full_name": full_name,
+                    "email": email,
+                    "role": user_role,
+                    "allowed_views": allowed_views,
+                    "access_mode": access_mode
+                }
+            }
+        except Exception as e:
+            log_event(f"Error verifying OTP login: {e}", component="AuthManager", level="ERROR")
+            return {"status": "error", "error": f"OTP प्रमाणीकरण करताना त्रुटी आली: {str(e)}"}
 
     def list_users(self) -> List[Dict[str, Any]]:
         """Returns all registered users with metadata for the Admin Panel."""

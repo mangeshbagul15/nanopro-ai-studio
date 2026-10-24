@@ -2524,7 +2524,7 @@ def get_user_management_view_html() -> str:
 
 
 def get_login_page_html() -> str:
-    """Returns standalone high-tech Cyber-Luxe login page with Clerk & Cloudflare Zero Trust."""
+    """Returns standalone high-tech Cyber-Luxe login page with Clerk, WhatsApp OTP & Cloudflare Zero Trust."""
     return """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2547,8 +2547,8 @@ def get_login_page_html() -> str:
         }
         .gateway-card {
             width: 100%;
-            max-width: 480px;
-            background: rgba(15, 23, 42, 0.88);
+            max-width: 490px;
+            background: rgba(15, 23, 42, 0.90);
             border: 1px solid rgba(56, 189, 248, 0.3);
             border-radius: 20px;
             box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 50px rgba(56, 189, 248, 0.15);
@@ -2556,7 +2556,7 @@ def get_login_page_html() -> str:
             overflow: hidden;
         }
         .gateway-header {
-            padding: 26px 28px 18px;
+            padding: 24px 28px 16px;
             text-align: center;
             background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0) 100%);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2574,7 +2574,7 @@ def get_login_page_html() -> str:
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%; background: #10B981; box-shadow: 0 0 8px #10B981;
@@ -2582,35 +2582,36 @@ def get_login_page_html() -> str:
         }
         @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
         .gateway-title { font-size: 22px; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.5px; }
-        .gateway-sub { font-size: 13px; color: #94A3B8; }
+        .gateway-sub { font-size: 12.5px; color: #94A3B8; }
         .shield-specs {
             display: flex;
             justify-content: center;
-            gap: 16px;
-            margin-top: 12px;
+            gap: 14px;
+            margin-top: 10px;
             font-size: 11px;
             color: #64748B;
         }
         .shield-spec-item { display: flex; align-items: center; gap: 4px; }
-        .tab-bar { display: flex; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 15, 29, 0.5); }
+        .tab-bar { display: flex; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 15, 29, 0.6); }
         .tab-btn {
             flex: 1;
-            padding: 13px 0;
+            padding: 12px 6px;
             background: none;
             border: none;
             color: #94A3B8;
-            font-size: 13.5px;
+            font-size: 12.5px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
+            text-align: center;
         }
         .tab-btn.active { color: #38BDF8; background: rgba(56, 189, 248, 0.08); border-bottom: 2px solid #38BDF8; }
-        .gateway-body { padding: 24px 28px 28px; }
-        .form-group { margin-bottom: 16px; }
+        .gateway-body { padding: 22px 28px 26px; }
+        .form-group { margin-bottom: 15px; }
         .form-label { display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         .form-input {
             width: 100%;
-            padding: 12px 14px;
+            padding: 11px 14px;
             background: rgba(30, 41, 59, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 10px;
@@ -2622,12 +2623,12 @@ def get_login_page_html() -> str:
         .form-input:focus { border-color: #38BDF8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25); }
         .btn-submit {
             width: 100%;
-            padding: 13px;
+            padding: 12px;
             background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
             border: none;
             border-radius: 10px;
             color: #FFF;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 800;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
@@ -2638,37 +2639,52 @@ def get_login_page_html() -> str:
         
         .btn-clerk {
             width: 100%;
-            padding: 13px;
+            padding: 12px;
             background: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #8B5CF6 100%);
             border: 1px solid rgba(167, 139, 250, 0.4);
             border-radius: 10px;
             color: #FFF;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 800;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
             transition: transform 0.1s, opacity 0.2s;
         }
         .btn-clerk:hover { opacity: 0.95; transform: translateY(-1px); }
-        .btn-clerk:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-whatsapp {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #059669 0%, #10B981 50%, #25D366 100%);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-whatsapp:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-whatsapp:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .auth-divider {
             display: flex;
             align-items: center;
-            margin: 18px 0 16px;
+            margin: 16px 0 14px;
             gap: 12px;
         }
-        .auth-divider-line {
-            flex: 1;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .auth-divider-line { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
         .auth-divider-text {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 700;
             color: #64748B;
             letter-spacing: 0.6px;
@@ -2676,16 +2692,23 @@ def get_login_page_html() -> str:
         }
 
         .alert-box {
-            padding: 12px 14px;
+            padding: 11px 13px;
             border-radius: 8px;
-            font-size: 12.5px;
-            margin-bottom: 16px;
+            font-size: 12px;
+            margin-bottom: 14px;
             display: none;
         }
         .alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; color: #FCA5A5; }
         .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #6EE7B7; }
         .alert-warning { background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #FCD34D; }
-        .footer-note { text-align: center; font-size: 11px; color: #64748B; margin-top: 18px; line-height: 1.5; }
+        .footer-note { text-align: center; font-size: 11px; color: #64748B; margin-top: 16px; line-height: 1.5; }
+        .otp-input-box {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 8px;
+            text-align: center;
+            color: #38BDF8;
+        }
     </style>
 </head>
 <body>
@@ -2693,53 +2716,54 @@ def get_login_page_html() -> str:
         <div class="gateway-header">
             <div class="security-badge">
                 <div class="pulse-dot"></div>
-                Cloudflare Zero Trust + Clerk Verified
+                Cloudflare Zero Trust + Clerk + WhatsApp Sentinel
             </div>
             <h1 class="gateway-title">Mangesh Nano Pro AI</h1>
             <p class="gateway-sub">Autonomous Intelligent Operating Center</p>
             <div class="shield-specs">
                 <div class="shield-spec-item">🔒 Session Guard</div>
-                <div class="shield-spec-item">🛡️ Cloudflare Zero-Trust</div>
+                <div class="shield-spec-item">💬 WhatsApp OTP</div>
                 <div class="shield-spec-item">⚡ Zero DOM-Leak</div>
             </div>
         </div>
 
+        <!-- 3 TABS: DIRECT, WHATSAPP OTP, REQUEST ACCESS -->
         <div class="tab-bar">
-            <button type="button" class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
-            <button type="button" class="tab-btn" id="tabRegister" onclick="switchTab('register')">Request Access</button>
+            <button type="button" class="tab-btn active" id="tabDirect" onclick="switchMainTab('direct')">🔐 Direct Login</button>
+            <button type="button" class="tab-btn" id="tabWhatsapp" onclick="switchMainTab('whatsapp')">💬 WhatsApp OTP</button>
+            <button type="button" class="tab-btn" id="tabRegister" onclick="switchMainTab('register')">📝 Request Access</button>
         </div>
 
         <div class="gateway-body">
             <div id="alertBox" class="alert-box"></div>
 
-            <!-- LOGIN VIEW -->
-            <div id="loginView">
-                <!-- CLERK ZERO TRUST 1-CLICK AUTH -->
-                <div id="clerkContainer" style="margin-bottom: 16px;">
-                    <button type="button" id="clerkBtn" onclick="triggerClerkSignIn()" class="btn-clerk">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.44 4 16.08 4 12C4 7.92 7.05 4.56 11 4.07V19.93ZM13 4.07C16.95 4.56 20 7.92 20 12C20 16.08 16.95 19.44 13 19.93V4.07Z" fill="#FFF"/>
-                        </svg>
-                        ⚡ 1-Click Sign In with Clerk
-                    </button>
-                    <div id="clerkMountTarget" style="margin-top: 12px;"></div>
-                </div>
+            <!-- CLERK 1-CLICK SSO BANNER (ALWAYS VISIBLE FOR QUICK ACCESS) -->
+            <div id="clerkContainer" style="margin-bottom: 14px;">
+                <button type="button" id="clerkBtn" onclick="triggerClerkSignIn()" class="btn-clerk">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.44 4 16.08 4 12C4 7.92 7.05 4.56 11 4.07V19.93ZM13 4.07C16.95 4.56 20 7.92 20 12C20 16.08 16.95 19.44 13 19.93V4.07Z" fill="#FFF"/>
+                    </svg>
+                    ⚡ 1-Click Clerk Login (Google / SMS Passkey)
+                </button>
+                <div id="clerkMountTarget" style="margin-top: 10px;"></div>
+            </div>
 
-                <div class="auth-divider">
-                    <div class="auth-divider-line"></div>
-                    <span class="auth-divider-text">OR DIRECT ZERO-TRUST LOGIN</span>
-                    <div class="auth-divider-line"></div>
-                </div>
+            <div class="auth-divider">
+                <div class="auth-divider-line"></div>
+                <span class="auth-divider-text" id="dividerText">OR USE DIRECT CREDENTIALS</span>
+                <div class="auth-divider-line"></div>
+            </div>
 
-                <!-- DIRECT LOGIN FORM -->
-                <form id="loginForm" onsubmit="handleLogin(event)">
+            <!-- TAB 1: DIRECT LOGIN FORM -->
+            <div id="directView">
+                <form id="loginForm" onsubmit="handleDirectLogin(event)">
                     <div class="form-group">
                         <label class="form-label">Username / Admin ID</label>
                         <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" required autofocus>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" required>
                     </div>
                     <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
                         <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94A3B8; cursor:pointer;">
@@ -2750,7 +2774,42 @@ def get_login_page_html() -> str:
                 </form>
             </div>
 
-            <!-- REGISTER FORM -->
+            <!-- TAB 2: WHATSAPP OTP VIEW -->
+            <div id="whatsappView" style="display:none;">
+                <!-- Step 1: Request Phone -->
+                <div id="waStepRequest">
+                    <div class="form-group">
+                        <label class="form-label">WhatsApp Mobile Number</label>
+                        <input type="tel" id="waPhoneNumber" class="form-input" placeholder="+91 8433755448 or 10-digit number" value="+918433755448">
+                        <div style="font-size:11px; color:#94A3B8; margin-top:4px;">
+                            We will send an instant 6-digit OTP to your WhatsApp account.
+                        </div>
+                    </div>
+                    <button type="button" id="waSendBtn" onclick="handleSendWaOtp()" class="btn-whatsapp">
+                        📲 Send WhatsApp OTP
+                    </button>
+                </div>
+
+                <!-- Step 2: Enter & Verify OTP -->
+                <div id="waStepVerify" style="display:none;">
+                    <div style="text-align:center; margin-bottom:12px;">
+                        <span style="font-size:12.5px; color:#38BDF8; font-weight:700;" id="waTargetDisplay"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="text-align:center;">Enter 6-Digit OTP Code</label>
+                        <input type="text" id="waOtpCode" class="form-input otp-input-box" placeholder="123456" maxlength="6" autofocus>
+                    </div>
+                    <button type="button" id="waVerifyBtn" onclick="handleVerifyWaOtp()" class="btn-whatsapp">
+                        🔓 Verify &amp; Launch NanoPro
+                    </button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11.5px;">
+                        <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">← Change Number</a>
+                        <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">Open in WhatsApp ↗</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: REGISTER FORM -->
             <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
                 <div class="form-group">
                     <label class="form-label">Full Name</label>
@@ -2765,7 +2824,11 @@ def get_login_page_html() -> str:
                     <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Password (Min 8 chars, 1 Upper, 1 Special)</label>
+                    <label class="form-label">WhatsApp / Phone Number</label>
+                    <input type="tel" id="regPhone" class="form-input" placeholder="+91 8433755448">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password (Min 8 chars)</label>
                     <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required>
                 </div>
                 <button type="submit" id="regBtn" class="btn-submit" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
@@ -2793,7 +2856,6 @@ def get_login_page_html() -> str:
                     });
                     const d = await resp.json();
                     if (d.is_valid && d.user) {
-                        // Confirmed by server! Redirect to dashboard with session token
                         document.cookie = 'nanopro_session=' + encodeURIComponent(token) + '; path=/; max-age=2592000; SameSite=Lax';
                         window.location.replace('/?token=' + encodeURIComponent(token));
                         return;
@@ -2827,12 +2889,11 @@ def get_login_page_html() -> str:
             } catch(e){}
         });
 
-        // Initialize Clerk when SDK loads
+        // Initialize Clerk SDK
         window.addEventListener('load', async () => {
             if (window.Clerk) {
                 try {
                     await window.Clerk.load();
-                    // Auto-sync if user is already signed in on Clerk
                     if (window.Clerk.user) {
                         syncClerkSession();
                     }
@@ -2886,7 +2947,6 @@ def get_login_page_html() -> str:
             try {
                 if (window.Clerk.openSignIn) {
                     window.Clerk.openSignIn();
-                    // Listen for session completion
                     window.Clerk.addListener(async (e) => {
                         if (e && e.user) {
                             syncClerkSession();
@@ -2904,11 +2964,20 @@ def get_login_page_html() -> str:
             }
         }
 
-        function switchTab(tab) {
-            document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+        function switchMainTab(tab) {
+            document.getElementById('tabDirect').classList.toggle('active', tab === 'direct');
+            document.getElementById('tabWhatsapp').classList.toggle('active', tab === 'whatsapp');
             document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
-            document.getElementById('loginView').style.display = (tab === 'login') ? 'block' : 'none';
+
+            document.getElementById('directView').style.display = (tab === 'direct') ? 'block' : 'none';
+            document.getElementById('whatsappView').style.display = (tab === 'whatsapp') ? 'block' : 'none';
             document.getElementById('registerForm').style.display = (tab === 'register') ? 'block' : 'none';
+
+            const divText = document.getElementById('dividerText');
+            if (tab === 'direct') divText.innerText = 'OR USE DIRECT CREDENTIALS';
+            else if (tab === 'whatsapp') divText.innerText = 'OR LOGIN VIA WHATSAPP OTP';
+            else divText.innerText = 'OR SUBMIT ACCESS REQUEST';
+
             hideAlert();
         }
 
@@ -2923,7 +2992,7 @@ def get_login_page_html() -> str:
             document.getElementById('alertBox').style.display = 'none';
         }
 
-        async function handleLogin(e) {
+        async function handleDirectLogin(e) {
             e.preventDefault();
             const btn = document.getElementById('loginBtn');
             btn.disabled = true;
@@ -2942,7 +3011,6 @@ def get_login_page_html() -> str:
                 });
                 const data = await resp.json();
                 if (data.status === 'success') {
-                    // Save session token in localStorage and cookie
                     localStorage.setItem('nanopro_session_token', data.session_token);
                     localStorage.setItem('nanopro_active_account', data.user.username);
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
@@ -2973,6 +3041,98 @@ def get_login_page_html() -> str:
             }
         }
 
+        // --- WHATSAPP OTP WORKFLOW ---
+        let currentWaTarget = '';
+
+        async function handleSendWaOtp() {
+            const phoneInput = document.getElementById('waPhoneNumber');
+            const phone = phoneInput.value.trim();
+            if (!phone) {
+                showAlert('कृपया वैध WhatsApp नंबर टाका.', 'warning');
+                return;
+            }
+            const btn = document.getElementById('waSendBtn');
+            btn.disabled = true;
+            btn.innerText = 'Sending OTP to WhatsApp...';
+            hideAlert();
+
+            try {
+                const resp = await fetch('/api/auth/otp/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: phone, channel: 'whatsapp' })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    currentWaTarget = data.identifier || phone;
+                    document.getElementById('waTargetDisplay').innerText = '💬 Code sent to: ' + currentWaTarget;
+                    document.getElementById('waStepRequest').style.display = 'none';
+                    document.getElementById('waStepVerify').style.display = 'block';
+
+                    if (data.whatsapp_link) {
+                        const linkBtn = document.getElementById('waWebActionLink');
+                        linkBtn.href = data.whatsapp_link;
+                        linkBtn.style.display = 'inline-block';
+                    }
+
+                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp चेक करा!', 'success');
+                    document.getElementById('waOtpCode').focus();
+                } else {
+                    showAlert(data.error || 'Failed to send WhatsApp OTP.', 'error');
+                }
+            } catch(e) {
+                showAlert('OTP Dispatch Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '📲 Send WhatsApp OTP';
+            }
+        }
+
+        function resetWaStep() {
+            document.getElementById('waStepRequest').style.display = 'block';
+            document.getElementById('waStepVerify').style.display = 'none';
+            document.getElementById('waOtpCode').value = '';
+            hideAlert();
+        }
+
+        async function handleVerifyWaOtp() {
+            const otpCode = document.getElementById('waOtpCode').value.trim();
+            if (!otpCode || otpCode.length < 6) {
+                showAlert('कृपया ६-अंकी OTP प्रविष्ट करा.', 'warning');
+                return;
+            }
+            const btn = document.getElementById('waVerifyBtn');
+            btn.disabled = true;
+            btn.innerText = 'Verifying WhatsApp OTP...';
+            hideAlert();
+
+            try {
+                const resp = await fetch('/api/auth/otp/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: currentWaTarget, otp_code: otpCode, channel: 'whatsapp' })
+                });
+                const data = await resp.json();
+                if (data.status === 'success' && data.session_token) {
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+                    localStorage.setItem('nanopro_active_account', data.user.username);
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+
+                    showAlert('✅ WhatsApp OTP Verified! Launching NanoPro...', 'success');
+                    setTimeout(() => {
+                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+                    }, 400);
+                } else {
+                    showAlert(data.error || 'अवैध OTP कोड. कृपया पुन्हा प्रयत्न करा.', 'error');
+                }
+            } catch(e) {
+                showAlert('OTP Verification Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '🔓 Verify & Launch NanoPro';
+            }
+        }
+
         async function handleRegister(e) {
             e.preventDefault();
             const btn = document.getElementById('regBtn');
@@ -2995,7 +3155,7 @@ def get_login_page_html() -> str:
                 if (data.status === 'success') {
                     showAlert('<b>' + data.message + '</b>', 'warning');
                     document.getElementById('registerForm').reset();
-                    setTimeout(() => switchTab('login'), 3500);
+                    setTimeout(() => switchMainTab('direct'), 3500);
                 } else {
                     showAlert(data.error || 'Registration failed.', 'error');
                 }

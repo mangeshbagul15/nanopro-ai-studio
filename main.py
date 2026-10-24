@@ -525,6 +525,15 @@ class ClerkVerifyRequest(BaseModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
 
+class AuthOtpSendRequest(BaseModel):
+    identifier: str
+    channel: Optional[str] = "whatsapp"
+
+class AuthOtpVerifyRequest(BaseModel):
+    identifier: str
+    otp_code: str
+    channel: Optional[str] = "whatsapp"
+
 class AdminApproveUserRequest(BaseModel):
     user_id: str
     admin_username: Optional[str] = "nanopro"
@@ -6026,6 +6035,35 @@ async def api_auth_clerk_config():
         "publishable_key": pub_key,
         "frontend_api_url": frontend_api
     })
+
+@app.post("/api/auth/otp/send")
+async def api_auth_otp_send(req: AuthOtpSendRequest, request: Request):
+    """Dispatches 6-digit OTP code to WhatsApp or Email."""
+    from app.core.auth_manager import auth_manager
+    ip = request.client.host if request.client else "Unknown"
+    res = auth_manager.generate_and_send_otp(identifier=req.identifier, channel=req.channel or "whatsapp", ip_address=ip)
+    status_code = 200 if res.get("status") == "success" else 400
+    return JSONResponse(res, status_code=status_code)
+
+@app.post("/api/auth/otp/verify")
+async def api_auth_otp_verify(req: AuthOtpVerifyRequest, request: Request):
+    """Verifies 6-digit OTP code and issues active session token."""
+    from app.core.auth_manager import auth_manager
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "Unknown")
+    res = auth_manager.verify_otp_and_login(identifier=req.identifier, otp_code=req.otp_code, channel=req.channel or "whatsapp", ip_address=ip, user_agent=ua)
+    status_code = 200 if res.get("status") == "success" else 401
+    resp = JSONResponse(res, status_code=status_code)
+    if res.get("status") == "success" and res.get("session_token"):
+        resp.set_cookie(
+            key="nanopro_session",
+            value=res["session_token"],
+            max_age=2592000,
+            httponly=False,
+            samesite="lax",
+            secure=False
+        )
+    return resp
 
 @app.post("/api/auth/clerk-verify")
 async def api_auth_clerk_verify(req: ClerkVerifyRequest, request: Request):

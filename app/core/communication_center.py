@@ -425,7 +425,17 @@ class CommunicationCenter:
         clean_phone = "".join(c for c in phone if c.isdigit() or c == "+")
         wa_link = self.generate_whatsapp_web_link(clean_phone, message)
 
-        # Check for free CallMeBot API key in Vault or environment
+        # Priority 1: Meta WhatsApp Business Cloud API (Official Lifetime Token - 1,000 free msg/mo)
+        cloud_cred = credentials_vault.get_credential("WHATSAPP_BUSINESS_CLOUD")
+        if cloud_cred and cloud_cred.get("secret_value") and cloud_cred.get("username"):
+            try:
+                cloud_res = self.send_whatsapp_cloud_api(phone=phone, message=message)
+                if cloud_res.get("success"):
+                    return cloud_res
+            except Exception as ex:
+                log_event(f"Meta WhatsApp Cloud API dispatch fallback: {ex}", component="CommunicationCenter", level="WARNING")
+
+        # Priority 2: Check for free CallMeBot API key in Vault or environment
         cb_key = callmebot_api_key or os.environ.get("CALLMEBOT_API_KEY")
         if not cb_key:
             cb_cred = credentials_vault.get_credential("CALLMEBOT_WHATSAPP")
