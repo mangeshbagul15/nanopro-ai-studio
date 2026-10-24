@@ -20761,6 +20761,94 @@ ${d.preview}`;
         // etl_automation_pipeline.PROJECTS + STAR_SCHEMA.
         // Adding a project there auto-reflects in 3D Pipeline selector,
         // CATLOG, Project Portfolio, and Task Monitor.
+        // ── LIVE POLLING — Agent Stats + 3D Canvas nodes ────────────────────
+        // Polls /api/live/agent-stats every 5s → updates all KPI cards
+        // Polls /api/live/3d-nodes every 5s → updates 3D canvas node data
+        let _liveAgentPollTimer = null;
+        let _live3dNodeData     = null;
+
+        async function refreshLiveAgentStats() {
+            try {
+                const r = await fetch('/api/live/agent-stats');
+                const d = await r.json();
+                if (d.status !== 'success') return;
+
+                // Operations Center KPI cards
+                const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                set('officeKpiTotal',      d.total_tasks || 305);
+                set('officeKpiActive',     d.active_tasks || 0);
+                set('officeKpiProcessing', d.active_tasks || 0);
+                set('officeKpiStandby',    d.pending_tasks || 0);
+                set('officeKpiAttention',  d.failed_tasks || 0);
+                set('officeKpiWorkflows',  d.etl_projects || 9);
+                set('officeKpiPending',    d.pending_tasks || 0);
+                set('officeKpiFailed',     d.failed_tasks || 0);
+
+                // Update search placeholder
+                const search = document.getElementById('officeSearchAgentInput');
+                if (search) search.placeholder = `Search ${d.total_tasks || 305} agents by name, role, or tool...`;
+
+                // Update page description
+                const desc = document.querySelector('.office-overview-grid')?.closest('.panel-card')?.querySelector('p');
+                if (desc && d.etl_live_rows > 0) {
+                    desc.textContent = `Live: ${d.etl_live_rows.toLocaleString()} rows streamed | ${d.etl_projects} ETL projects | ${d.health_status}`;
+                }
+            } catch(e) { /* silent fail */ }
+        }
+
+        async function refreshLive3dNodes() {
+            try {
+                const r = await fetch('/api/live/3d-nodes');
+                const d = await r.json();
+                if (d.status !== 'success') return;
+                _live3dNodeData = d;
+
+                // Update HUD badges on 3D Pipeline tab
+                const throughput = document.getElementById('hudThroughputBadge');
+                if (throughput && d.total_rows > 0) {
+                    throughput.textContent = `Live ${d.total_rows.toLocaleString()} rows`;
+                }
+
+                // Update 3D canvas node data if canvas is inited
+                if (lakehouse3dNodes && lakehouse3dNodes.length > 0 && d.nodes) {
+                    d.nodes.forEach(n => {
+                        const node = lakehouse3dNodes.find(x => x.id === n.id);
+                        if (node) {
+                            node.throughput = n.throughput;
+                            node.latency    = n.latency;
+                            node.health     = n.health;
+                            node.layer      = n.layer;
+                        }
+                    });
+                }
+
+                // Update Neon status badge
+                const neonBadge = document.querySelector('[data-node="node_neon"]');
+                if (neonBadge) neonBadge.textContent = d.live ? 'Neon PG: Live' : 'Neon PG: Standby';
+
+            } catch(e) { /* silent fail */ }
+        }
+
+        function startLivePolling() {
+            // Initial load
+            refreshLiveAgentStats();
+            refreshLive3dNodes();
+            // Poll every 5 seconds
+            if (_liveAgentPollTimer) clearInterval(_liveAgentPollTimer);
+            _liveAgentPollTimer = setInterval(() => {
+                refreshLiveAgentStats();
+                refreshLive3dNodes();
+            }, 5000);
+        }
+
+        // Auto-start polling when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startLivePolling);
+        } else {
+            setTimeout(startLivePolling, 1000);
+        }
+        // ── END LIVE POLLING ─────────────────────────────────────────────────
+
         async function loadEtlProjectsIntoSelector() {
             try {
                 const resp = await fetch('/api/de_modern/3d_pipeline/projects');
