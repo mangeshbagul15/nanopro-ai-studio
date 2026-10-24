@@ -4946,7 +4946,9 @@ SECOND_HIGHEST_SALARY: 70000`;
             normalizedType = "simulation";
         } else if (vtLower.includes("code") || vtLower.includes("syntax") || vtLower.includes("build") || vtLower.includes("query")) {
             normalizedType = "code";
-        } else if (vtLower.includes("diagram") || vtLower.includes("arch") || vtLower.includes("flow") || vtLower.includes("pipeline")) {
+        } else if (vtLower.includes('3d') || vtLower.includes('architect') || vtLower.includes('pipeline') || vtLower.includes('etl') || vtLower.includes('rag') || vtLower.includes('infra')) {
+            normalizedType = "architecture_3d";
+        } else if (vtLower.includes("diagram") || vtLower.includes("arch") || vtLower.includes("flow")) {
             normalizedType = "diagram";
         } else if (vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix") || vtLower.includes("diff")) {
             normalizedType = "comparison";
@@ -5433,62 +5435,312 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // =========================================================================
-        // VISUAL 3: DIAGRAM (Floating 3D System Architecture Nodes & Conduits)
+        // VISUAL 3: ENHANCED 3D ISOMETRIC BRANCHING ARCHITECTURE DIAGRAM
         // =========================================================================
         else if (normalizedType === "diagram") {
-            const diagY = 360;
-            const diagH = 780;
+            const diagY = 340;
+            const diagH = 820;
+
             const rawNodes = vData.nodes || (p.pipeline_stages && p.pipeline_stages.length > 0 ? p.pipeline_stages.map((ps, pi) => ({
                 id: "n" + pi,
                 label: ps.name || ("Stage " + (pi + 1)),
                 icon: ps.icon || "⚙️",
-                sub: ps.sub || "Pipeline execution",
-                color: pi === 0 ? "#38BDF8" : (pi === 1 ? "#A855F7" : (pi === 2 ? "#F59E0B" : "#10B981"))
+                sub: ps.sub || "Pipeline execution phase",
+                color: pi === 0 ? "#38BDF8" : (pi === 1 ? "#A855F7" : (pi === 2 ? "#10B981" : (pi === 3 ? "#F59E0B" : "#EC4899"))),
+                branch: pi === 1 ? "left" : (pi === 2 ? "right" : "center")
             })) : [
-                { id: "client", label: "Client App", icon: "📱", sub: "HTTP API Request", color: "#38BDF8" },
-                { id: "gateway", label: "API Gateway", icon: "🛡️", sub: "Auth & Rate Limit", color: "#A855F7" },
-                { id: "service", label: "Compute Service", icon: "⚙️", sub: "Core Business Logic", color: "#F59E0B" },
-                { id: "database", label: "Distributed DB", icon: "💾", sub: "Persistent Data Store", color: "#10B981" }
+                { id: "client", label: "Client Ingress", icon: "🌐", sub: "100k Req/s HTTP API", color: "#38BDF8", branch: "center" },
+                { id: "cache", label: "Edge Cache / CDN", icon: "⚡", sub: "Redis / In-Memory (<2ms)", color: "#10B981", branch: "left" },
+                { id: "service", label: "Compute Cluster", icon: "⚙️", sub: "Microservices / K8s", color: "#A855F7", branch: "right" },
+                { id: "database", label: "Distributed DB", icon: "💾", sub: "Multi-Region Sharded Store", color: "#F59E0B", branch: "center" }
             ]);
 
-            const nodes = rawNodes.slice(0, 4);
+            const nodes = rawNodes.slice(0, 5);
             const activeNodeIdx = Math.min(nodes.length - 1, Math.floor(stageProg * nodes.length));
 
+            // Header Banner
             ctx.save();
-            ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+            ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
             ctx.beginPath();
-            ctx.roundRect(W / 2 - 240, diagY - 10, 480, 48, 24);
+            ctx.roundRect(W / 2 - 260, diagY - 12, 520, 52, 26);
             ctx.fill();
             ctx.strokeStyle = "#38BDF8";
             ctx.lineWidth = 2;
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = 14;
             ctx.stroke();
+            ctx.shadowBlur = 0;
             ctx.fillStyle = "#38BDF8";
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("⚡ SYSTEM ARCHITECTURE FLOW", W / 2, diagY + 22);
-            ctx.textAlign = "left";
+            ctx.fillText("⚡ 3D ISOMETRIC ARCHITECTURE PIPELINE", W / 2, diagY + 22);
+            ctx.restore();
 
-            const nodeSpacing = Math.floor((diagH - 100) / nodes.length);
-            const nodeW = W - 180;
-            const nodeH = 115;
-            const nodeX = 90;
+            // Compute Branching Layout Positions & Depth
+            const nodePositions = [];
+            if (nodes.length === 4) {
+                // Classic Tree / Diamond Branching Architecture
+                nodePositions.push({ cx: W / 2, cy: diagY + 80, w: 400, h: 90, depthZ: 22 });
+                nodePositions.push({ cx: W / 2 - 240, cy: diagY + 360, w: 320, h: 86, depthZ: 20 });
+                nodePositions.push({ cx: W / 2 + 240, cy: diagY + 360, w: 320, h: 86, depthZ: 20 });
+                nodePositions.push({ cx: W / 2, cy: diagY + 640, w: 400, h: 90, depthZ: 22 });
+            } else if (nodes.length === 3) {
+                nodePositions.push({ cx: W / 2, cy: diagY + 90, w: 400, h: 90, depthZ: 22 });
+                nodePositions.push({ cx: W / 2 - 220, cy: diagY + 380, w: 330, h: 86, depthZ: 20 });
+                nodePositions.push({ cx: W / 2 + 220, cy: diagY + 640, w: 330, h: 86, depthZ: 20 });
+            } else if (nodes.length === 5) {
+                nodePositions.push({ cx: W / 2, cy: diagY + 65, w: 380, h: 80, depthZ: 20 });
+                nodePositions.push({ cx: W / 2, cy: diagY + 230, w: 380, h: 80, depthZ: 20 });
+                nodePositions.push({ cx: W / 2 - 235, cy: diagY + 440, w: 310, h: 80, depthZ: 18 });
+                nodePositions.push({ cx: W / 2 + 235, cy: diagY + 440, w: 310, h: 80, depthZ: 18 });
+                nodePositions.push({ cx: W / 2, cy: diagY + 650, w: 380, h: 80, depthZ: 22 });
+            } else {
+                const count = nodes.length;
+                const rowH = (diagH - 120) / Math.max(1, count);
+                for (let i = 0; i < count; i++) {
+                    const isEven = i % 2 === 0;
+                    const branchX = count > 2 && i > 0 && i < count - 1 ? (isEven ? W / 2 - 210 : W / 2 + 210) : W / 2;
+                    nodePositions.push({ cx: branchX, cy: diagY + 80 + i * rowH, w: 360, h: 85, depthZ: 20 });
+                }
+            }
 
-            nodes.forEach((nd, i) => {
-                const ny = diagY + 70 + i * nodeSpacing;
-                const isActive = (i === activeNodeIdx);
-                const col = nd.color || (i === 0 ? "#38BDF8" : (i === 1 ? "#A855F7" : (i === 2 ? "#F59E0B" : "#10B981")));
+            // Determine Connections (Custom or Branching Tree)
+            let connections = [];
+            if (vData.connections && Array.isArray(vData.connections) && vData.connections.length > 0) {
+                connections = vData.connections.map(c => {
+                    const fromIdx = typeof c.from === 'number' ? c.from : nodes.findIndex(n => n.id === c.from);
+                    const toIdx = typeof c.to === 'number' ? c.to : nodes.findIndex(n => n.id === c.to);
+                    return {
+                        from: Math.max(0, fromIdx >= 0 ? fromIdx : 0),
+                        to: Math.max(0, toIdx >= 0 ? toIdx : 1),
+                        label: c.label || "",
+                        color: c.color || (nodes[Math.max(0, toIdx)] ? nodes[Math.max(0, toIdx)].color : "#38BDF8")
+                    };
+                });
+            } else if (nodes.length === 4) {
+                connections = [
+                    { from: 0, to: 1, label: "FAST PATH", color: nodes[1].color || "#10B981" },
+                    { from: 0, to: 2, label: "ASYNC RPC", color: nodes[2].color || "#A855F7" },
+                    { from: 1, to: 3, label: "CACHE SYNC", color: nodes[3].color || "#F59E0B" },
+                    { from: 2, to: 3, label: "PERSIST", color: nodes[3].color || "#F59E0B" }
+                ];
+            } else if (nodes.length === 5) {
+                connections = [
+                    { from: 0, to: 1, label: "INGRESS", color: "#38BDF8" },
+                    { from: 1, to: 2, label: "WORKER A", color: nodes[2].color || "#A855F7" },
+                    { from: 1, to: 3, label: "WORKER B", color: nodes[3].color || "#10B981" },
+                    { from: 2, to: 4, label: "AGGREGATE", color: nodes[4].color || "#F59E0B" },
+                    { from: 3, to: 4, label: "COMMIT", color: nodes[4].color || "#F59E0B" }
+                ];
+            } else {
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    connections.push({ from: i, to: i + 1, label: "STREAM", color: nodes[i + 1].color || "#38BDF8" });
+                }
+            }
+
+            // 1. RENDER ANIMATED CONNECTION CONDUITS & DATA PARTICLES FIRST (Behind Nodes)
+            connections.forEach((conn) => {
+                if (!nodePositions[conn.from] || !nodePositions[conn.to]) return;
+                const src = nodePositions[conn.from];
+                const dst = nodePositions[conn.to];
+                const x1 = src.cx;
+                const y1 = src.cy + (src.h / 2) + src.depthZ;
+                const x2 = dst.cx;
+                const y2 = dst.cy - (dst.h / 2);
+                const midY = (y1 + y2) / 2;
 
                 ctx.save();
-                const hover = isActive ? Math.sin(t * 5) * 4 : 0;
-                ctx.translate(0, hover);
-
-                ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.90)" : "rgba(10, 16, 32, 0.65)";
+                // Outer subtle conduit aura
+                ctx.strokeStyle = conn.color;
+                ctx.globalAlpha = 0.25;
+                ctx.lineWidth = 6;
                 ctx.beginPath();
-                ctx.roundRect(nodeX, ny, nodeW, nodeH, 18);
+                ctx.moveTo(x1, y1);
+                ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+                ctx.stroke();
+
+                // Core animated dashed laser conduit
+                ctx.globalAlpha = 0.85;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([10, 8]);
+                ctx.lineDashOffset = -t * 38;
+                ctx.shadowColor = conn.color;
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+
+                // Animated Data Flow Particles (Photons traveling source -> destination)
+                const particleCount = 3;
+                for (let pIdx = 0; pIdx < particleCount; pIdx++) {
+                    const u = (t * 0.75 + pIdx * (1.0 / particleCount)) % 1.0;
+                    const pu = 1 - u;
+                    const px = pu * pu * pu * x1 + 3 * pu * pu * u * x1 + 3 * pu * u * u * x2 + u * u * u * x2;
+                    const py = pu * pu * pu * y1 + 3 * pu * pu * u * midY + 3 * pu * u * u * midY + u * u * u * y2;
+
+                    // Particle core & glow
+                    ctx.save();
+                    ctx.shadowColor = conn.color;
+                    ctx.shadowBlur = 14;
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.beginPath();
+                    ctx.arc(px, py, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = conn.color;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 8, 0, Math.PI * 2);
+                    ctx.globalAlpha = 0.45;
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Floating Conduit Protocol Badge
+                if (conn.label) {
+                    const mx = (x1 + x2) / 2;
+                    const my = midY;
+                    ctx.save();
+                    ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+                    ctx.beginPath();
+                    ctx.roundRect(mx - 65, my - 13, 130, 26, 8);
+                    ctx.fill();
+                    ctx.strokeStyle = conn.color;
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = conn.color;
+                    ctx.font = "bold 12px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(conn.label, mx, my + 4);
+                    ctx.restore();
+                }
+                ctx.restore();
+            });
+
+            // 2. RENDER ISOMETRIC 3D NODES (With Depth Perspective & Rotations)
+            nodes.forEach((nd, i) => {
+                const pos = nodePositions[i];
+                if (!pos) return;
+                const isActive = (i === activeNodeIdx);
+                const col = nd.color || "#38BDF8";
+
+                // Depth perspective calculation (nodes further from viewer are slightly smaller & softer)
+                const depthNorm = Math.max(0, Math.min(1, (pos.cy - diagY) / diagH));
+                const depthScale = 0.88 + depthNorm * 0.16; // 0.88 at top, 1.04 at bottom
+                const depthAlpha = 0.82 + depthNorm * 0.18; // 0.82 at top, 1.0 at bottom
+
+                // Stage progress progressive fade-in & slide-up float
+                const revealProg = Math.max(0, Math.min(1, (stageProg * (nodes.length + 0.6) - i)));
+                const nodeAlpha = Math.max(0.2, revealProg);
+                const floatOffset = (1 - revealProg) * 35;
+                const levitate = isActive ? Math.sin(t * 4.5) * 5 : Math.sin(t * 2.2 + i * 1.4) * 3;
+
+                ctx.save();
+                ctx.translate(pos.cx, pos.cy - floatOffset + levitate);
+                ctx.scale(depthScale, depthScale);
+                ctx.globalAlpha = depthAlpha * nodeAlpha;
+
+                const bw = pos.w;
+                const bh = pos.h;
+                const depthZ = pos.depthZ;
+                const hw = bw / 2;
+                const hh = bh / 2;
+
+                // 2A. Perspective Ground Drop Shadow
+                ctx.save();
+                ctx.translate(8, hh + depthZ + 12);
+                ctx.scale(1.0, 0.32);
+                const shadowGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, hw * 1.1);
+                shadowGrad.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+                shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+                ctx.fillStyle = shadowGrad;
+                ctx.beginPath();
+                ctx.arc(0, 0, hw * 1.1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // 2B. Rotating Glow Halo Around Active Node
+                if (isActive) {
+                    ctx.save();
+                    ctx.translate(0, hh + depthZ + 6);
+                    ctx.scale(1.0, 0.36);
+                    ctx.rotate(t * 1.6);
+                    ctx.strokeStyle = col;
+                    ctx.lineWidth = 3.0;
+                    ctx.setLineDash([16, 12, 6, 12]);
+                    ctx.shadowColor = col;
+                    ctx.shadowBlur = 24;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, hw * 1.25, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.shadowBlur = 0;
+
+                    // Orbiting satellite photon spark
+                    const satAngle = t * 3.0;
+                    const satX = Math.cos(satAngle) * (hw * 1.25);
+                    const satY = Math.sin(satAngle) * (hw * 1.25);
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.shadowColor = col;
+                    ctx.shadowBlur = 12;
+                    ctx.beginPath();
+                    ctx.arc(satX, satY, 4.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // 2C. 3D Isometric Front Face (Thickness Extrusion)
+                ctx.beginPath();
+                ctx.moveTo(-hw, hh);
+                ctx.lineTo(hw, hh);
+                ctx.lineTo(hw, hh + depthZ);
+                ctx.lineTo(-hw, hh + depthZ);
+                ctx.closePath();
+                const frontGrad = ctx.createLinearGradient(0, hh, 0, hh + depthZ);
+                frontGrad.addColorStop(0, "rgba(15, 23, 42, 0.96)");
+                frontGrad.addColorStop(1, "rgba(4, 8, 18, 0.98)");
+                ctx.fillStyle = frontGrad;
+                ctx.fill();
+                ctx.strokeStyle = isActive ? col : "rgba(56, 189, 248, 0.35)";
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                // 2D. 3D Isometric Right Face (Side Bevel)
+                ctx.beginPath();
+                ctx.moveTo(hw, -hh);
+                ctx.lineTo(hw + 14, -hh + 8);
+                ctx.lineTo(hw + 14, hh + depthZ + 8);
+                ctx.lineTo(hw, hh + depthZ);
+                ctx.closePath();
+                const sideGrad = ctx.createLinearGradient(hw, 0, hw + 14, 0);
+                sideGrad.addColorStop(0, "rgba(10, 16, 32, 0.92)");
+                sideGrad.addColorStop(1, "rgba(2, 6, 14, 0.98)");
+                ctx.fillStyle = sideGrad;
+                ctx.fill();
+                ctx.strokeStyle = isActive ? col : "rgba(255, 255, 255, 0.12)";
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                // 2E. Isometric Top Face (Interactive Crystal Plate)
+                ctx.beginPath();
+                ctx.roundRect(-hw, -hh, bw, bh, 14);
+                const topGrad = ctx.createLinearGradient(-hw, -hh, hw, hh);
+                if (isActive) {
+                    topGrad.addColorStop(0, "rgba(30, 41, 59, 0.96)");
+                    topGrad.addColorStop(0.5, "rgba(15, 23, 42, 0.98)");
+                    topGrad.addColorStop(1, "rgba(8, 14, 28, 1.0)");
+                } else {
+                    topGrad.addColorStop(0, "rgba(20, 30, 48, 0.88)");
+                    topGrad.addColorStop(1, "rgba(8, 14, 24, 0.92)");
+                }
+                ctx.fillStyle = topGrad;
                 ctx.fill();
 
-                ctx.strokeStyle = isActive ? col : "rgba(255, 255, 255, 0.12)";
-                ctx.lineWidth = isActive ? 3 : 1.5;
+                ctx.strokeStyle = isActive ? col : "rgba(100, 116, 139, 0.4)";
+                ctx.lineWidth = isActive ? 2.8 : 1.5;
                 if (isActive) {
                     ctx.shadowColor = col;
                     ctx.shadowBlur = 22;
@@ -5496,37 +5748,974 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
 
-                ctx.fillStyle = isActive ? col : "rgba(255, 255, 255, 0.1)";
+                // Top Face Specular Glint Line
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+                ctx.lineWidth = 1.2;
                 ctx.beginPath();
-                ctx.arc(nodeX + 65, ny + nodeH / 2, 36, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "34px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(nd.icon || "⚙️", nodeX + 65, ny + nodeH / 2 + 12);
-                ctx.textAlign = "left";
+                ctx.moveTo(-hw + 16, -hh + 3);
+                ctx.lineTo(hw - 16, -hh + 3);
+                ctx.stroke();
 
+                // 2F. Node Icon (Left Cyber Disc)
+                ctx.save();
+                ctx.fillStyle = isActive ? col : "rgba(255, 255, 255, 0.12)";
+                ctx.beginPath();
+                ctx.arc(-hw + 48, 0, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = col;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "28px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(nd.icon || "⚙️", -hw + 48, 10);
+                ctx.restore();
+
+                // 2G. Floating Labels (With Typography Hierarchy)
+                ctx.textAlign = "left";
                 ctx.fillStyle = isActive ? col : "#FFFFFF";
-                ctx.font = "bold 26px 'Segoe UI', sans-serif";
-                ctx.fillText(nd.label || ("Node " + (i + 1)), nodeX + 125, ny + 48);
+                ctx.font = "bold 23px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, nd.label || ("Node " + (i + 1)), bw - 190), -hw + 92, -4);
 
                 ctx.fillStyle = isActive ? "#E2E8F0" : "#64748B";
-                ctx.font = "20px 'Segoe UI', sans-serif";
-                ctx.fillText(nd.sub || "Pipeline execution phase", nodeX + 125, ny + 85);
+                ctx.font = "16px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, nd.sub || "Pipeline execution phase", bw - 190), -hw + 92, 22);
 
+                // 2H. Active Status Indicator & Sparks
                 if (isActive) {
                     ctx.fillStyle = col;
-                    ctx.font = "bold 18px monospace";
-                    ctx.fillText("⚡ ACTIVE", nodeX + nodeW - 130, ny + 64);
-                    drawPhotonSparks(ctx, nodeX + nodeW - 50, ny + nodeH / 2, col, t);
+                    ctx.font = "bold 15px monospace";
+                    ctx.textAlign = "right";
+                    ctx.fillText("⚡ ACTIVE", hw - 24, -hh + 24);
+                    drawPhotonSparks(ctx, hw - 30, 0, col, t);
+                } else if (revealProg >= 0.8) {
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 13px monospace";
+                    ctx.textAlign = "right";
+                    ctx.fillText("● READY", hw - 24, -hh + 24);
+                }
+
+                ctx.restore();
+            });
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // VISUAL 3B: ARCHITECTURE 3D (Full Isometric Multi-Tiered System Topology)
+        // =========================================================================
+        else if (normalizedType === "architecture_3d") {
+            const archY = 330;
+            const archH = 840;
+            const archTitle = vData.title || p.title || "DISTRIBUTED 3D SYSTEM ARCHITECTURE";
+
+            ctx.save();
+            // 1. Sleek Cyber Header Badge
+            ctx.save();
+            ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+            ctx.beginPath();
+            ctx.roundRect(W / 2 - 280, archY - 14, 560, 56, 28);
+            ctx.fill();
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2.2;
+            ctx.shadowColor = "#38BDF8";
+            ctx.shadowBlur = 16;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("⚡ 3D ENTERPRISE ARCHITECTURE TOPOLOGY", W / 2, archY + 12);
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "bold 14px monospace";
+            ctx.fillText(fitTextToWidth(ctx, archTitle, 500), W / 2, archY + 32);
+            ctx.restore();
+
+            // 2. Prepare Architectural Nodes
+            const rawArchNodes = vData.nodes || [
+                { id: "cloud", type: "cloud", label: "Cloud Ingress & CDN", icon: "☁️", sub: "Global Multi-AZ Gateway", color: "#38BDF8" },
+                { id: "process", type: "process", label: "Stream / ETL Engine", icon: "⚙️", sub: "Real-time Event Processor", color: "#A855F7" },
+                { id: "server", type: "server", label: "Compute Cluster", icon: "🖥️", sub: "Microservices & K8s Mesh", color: "#F59E0B" },
+                { id: "database", type: "database", label: "Distributed DB & Lake", icon: "💾", sub: "ACID Persistence & Vector Store", color: "#10B981" }
+            ];
+
+            const archNodes = rawArchNodes.map((nd, idx) => {
+                let inferredType = (nd.type || "").toLowerCase();
+                const text = ((nd.label || "") + " " + (nd.icon || "") + " " + (nd.sub || "")).toLowerCase();
+                if (!inferredType) {
+                    if (text.includes("db") || text.includes("data") || text.includes("lake") || text.includes("sql") || text.includes("💾") || text.includes("persist") || text.includes("store")) {
+                        inferredType = "database";
+                    } else if (text.includes("cloud") || text.includes("cdn") || text.includes("api") || text.includes("gate") || text.includes("☁️") || text.includes("ingress") || text.includes("client")) {
+                        inferredType = "cloud";
+                    } else if (text.includes("stream") || text.includes("etl") || text.includes("process") || text.includes("kafka") || text.includes("flink") || text.includes("⚙️") || text.includes("rag") || text.includes("pipe")) {
+                        inferredType = "process";
+                    } else {
+                        inferredType = "server";
+                    }
+                }
+                return {
+                    id: nd.id || ("arch_n" + idx),
+                    type: inferredType,
+                    label: nd.label || ("Service " + (idx + 1)),
+                    icon: nd.icon || (inferredType === "database" ? "💾" : (inferredType === "cloud" ? "☁️" : (inferredType === "process" ? "⚙️" : "🖥️"))),
+                    sub: nd.sub || (inferredType === "database" ? "Persistent Data Store" : "Execution Node"),
+                    color: nd.color || (inferredType === "database" ? "#10B981" : (inferredType === "cloud" ? "#38BDF8" : (inferredType === "process" ? "#A855F7" : "#F59E0B")))
+                };
+            });
+
+            // 3. Compute Positions for Tiered 3D Architecture
+            const archPositions = {};
+            const cloudNodes = archNodes.filter(n => n.type === "cloud");
+            const processNodes = archNodes.filter(n => n.type === "process");
+            const serverNodes = archNodes.filter(n => n.type === "server");
+            const dbNodes = archNodes.filter(n => n.type === "database");
+
+            if (archNodes.length === 4 && cloudNodes.length === 1 && dbNodes.length === 1) {
+                archPositions[cloudNodes[0].id] = { cx: W / 2, cy: archY + 115, depthScale: 0.88, depthAlpha: 0.88 };
+                archPositions[processNodes[0] ? processNodes[0].id : archNodes[1].id] = { cx: W / 2 - 250, cy: archY + 410, depthScale: 0.96, depthAlpha: 0.94 };
+                archPositions[serverNodes[0] ? serverNodes[0].id : archNodes[2].id] = { cx: W / 2 + 250, cy: archY + 410, depthScale: 0.96, depthAlpha: 0.94 };
+                archPositions[dbNodes[0].id] = { cx: W / 2, cy: archY + 685, depthScale: 1.05, depthAlpha: 1.0 };
+            } else {
+                const t1 = archNodes.filter(n => n.type === "cloud");
+                const t2 = archNodes.filter(n => n.type === "process" || n.type === "server");
+                const t3 = archNodes.filter(n => n.type === "database");
+                const other = archNodes.filter(n => !t1.includes(n) && !t2.includes(n) && !t3.includes(n));
+                const allT2 = t2.concat(other);
+
+                t1.forEach((nd, i) => {
+                    archPositions[nd.id] = { cx: (W / (t1.length + 1)) * (i + 1), cy: archY + 115, depthScale: 0.88, depthAlpha: 0.88 };
+                });
+                allT2.forEach((nd, i) => {
+                    archPositions[nd.id] = { cx: (W / (allT2.length + 1)) * (i + 1), cy: archY + 410, depthScale: 0.96, depthAlpha: 0.94 };
+                });
+                t3.forEach((nd, i) => {
+                    archPositions[nd.id] = { cx: (W / (t3.length + 1)) * (i + 1), cy: archY + 685, depthScale: 1.05, depthAlpha: 1.0 };
+                });
+            }
+
+            archNodes.forEach((nd, i) => {
+                if (!archPositions[nd.id]) {
+                    archPositions[nd.id] = { cx: W / 2, cy: archY + 120 + i * 180, depthScale: 0.95, depthAlpha: 0.95 };
+                }
+            });
+
+            // 4. Resolve Connections
+            let archConnections = [];
+            if (vData.connections && Array.isArray(vData.connections) && vData.connections.length > 0) {
+                archConnections = vData.connections.map(c => {
+                    const fromId = typeof c.from === 'number' ? (archNodes[c.from] ? archNodes[c.from].id : archNodes[0].id) : c.from;
+                    const toId = typeof c.to === 'number' ? (archNodes[c.to] ? archNodes[c.to].id : archNodes[1].id) : c.to;
+                    const targetNode = archNodes.find(n => n.id === toId);
+                    return {
+                        from: fromId,
+                        to: toId,
+                        label: c.label || "",
+                        color: c.color || (targetNode ? targetNode.color : "#38BDF8")
+                    };
+                });
+            } else {
+                const cloudId = cloudNodes[0] ? cloudNodes[0].id : archNodes[0].id;
+                const procId = processNodes[0] ? processNodes[0].id : archNodes[1].id;
+                const srvId = serverNodes[0] ? serverNodes[0].id : archNodes[2].id;
+                const dbId = dbNodes[0] ? dbNodes[0].id : archNodes[archNodes.length - 1].id;
+
+                archConnections = [
+                    { from: cloudId, to: procId, label: "EVENT STREAM", color: "#A855F7" },
+                    { from: cloudId, to: srvId, label: "API RPC", color: "#F59E0B" },
+                    { from: procId, to: dbId, label: "BULK INGEST", color: "#10B981" },
+                    { from: srvId, to: dbId, label: "ACID COMMIT", color: "#10B981" },
+                    { from: procId, to: srvId, label: "PUB / SUB", color: "#38BDF8" }
+                ];
+            }
+
+            const activeNodeIdx = Math.min(archNodes.length - 1, Math.floor(stageProg * archNodes.length));
+
+            // Helper: Draw Rotating Mechanical Gear
+            function drawArchGear(cx, cy, radius, teeth, rotAngle, gearColor, innerCol) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rotAngle);
+                ctx.beginPath();
+                for (let g = 0; g < teeth; g++) {
+                    const a1 = (g * 2 * Math.PI) / teeth;
+                    const a2 = a1 + (Math.PI / teeth) * 0.35;
+                    const a3 = a1 + (Math.PI / teeth) * 0.65;
+                    const a4 = a1 + (Math.PI / teeth);
+                    const rOut = radius;
+                    const rIn = radius * 0.76;
+                    if (g === 0) ctx.moveTo(Math.cos(a1) * rIn, Math.sin(a1) * rIn);
+                    ctx.lineTo(Math.cos(a1) * rOut, Math.sin(a1) * rOut);
+                    ctx.lineTo(Math.cos(a2) * rOut, Math.sin(a2) * rOut);
+                    ctx.lineTo(Math.cos(a3) * rIn, Math.sin(a3) * rIn);
+                    ctx.lineTo(Math.cos(a4) * rIn, Math.sin(a4) * rIn);
+                }
+                ctx.closePath();
+                const gGrad = ctx.createRadialGradient(0, 0, radius * 0.3, 0, 0, radius);
+                gGrad.addColorStop(0, gearColor);
+                gGrad.addColorStop(1, innerCol || "#0F172A");
+                ctx.fillStyle = gGrad;
+                ctx.shadowColor = gearColor;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.beginPath();
+                ctx.arc(0, 0, radius * 0.32, 0, Math.PI * 2);
+                ctx.fillStyle = "#090D1A";
+                ctx.fill();
+                ctx.strokeStyle = gearColor;
+                ctx.lineWidth = 2.0;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Helper: Draw 3D Isometric Database Cylinder
+            function drawArchDBCylinder(cx, cy, label, sub, color, isActive, depthScale) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(depthScale, depthScale);
+
+                const rx = 135;
+                const ry = 42;
+                const platterH = 34;
+                const platterCount = 3;
+
+                // Perspective ground shadow
+                ctx.save();
+                ctx.translate(10, (platterCount * platterH) + 20);
+                ctx.scale(1.0, 0.38);
+                const dbShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, rx * 1.25);
+                dbShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+                dbShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+                ctx.fillStyle = dbShadow;
+                ctx.beginPath();
+                ctx.arc(0, 0, rx * 1.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Rotating halo if active
+                if (isActive) {
+                    ctx.save();
+                    ctx.translate(0, (platterCount * platterH) + 10);
+                    ctx.scale(1.0, 0.38);
+                    ctx.rotate(t * 1.5);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3.0;
+                    ctx.setLineDash([16, 12, 6, 12]);
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 24;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, rx * 1.35, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+
+                // Render Platters from bottom to top
+                for (let pl = platterCount - 1; pl >= 0; pl--) {
+                    const py = pl * platterH;
+
+                    // Platter Cylinder Wall
+                    ctx.beginPath();
+                    ctx.moveTo(-rx, py);
+                    ctx.lineTo(-rx, py + platterH - 6);
+                    ctx.ellipse(0, py + platterH - 6, rx, ry, 0, Math.PI, 0, true);
+                    ctx.lineTo(rx, py);
+                    ctx.ellipse(0, py, rx, ry, 0, 0, Math.PI, false);
+                    ctx.closePath();
+
+                    const wallGrad = ctx.createLinearGradient(-rx, py, rx, py);
+                    wallGrad.addColorStop(0, "rgba(15, 23, 42, 0.96)");
+                    wallGrad.addColorStop(0.25, "rgba(30, 41, 59, 0.98)");
+                    wallGrad.addColorStop(0.55, "rgba(51, 65, 85, 0.92)");
+                    wallGrad.addColorStop(0.85, "rgba(30, 41, 59, 0.98)");
+                    wallGrad.addColorStop(1, "rgba(10, 16, 32, 0.96)");
+                    ctx.fillStyle = wallGrad;
+                    ctx.fill();
+
+                    ctx.strokeStyle = isActive ? color : "rgba(56, 189, 248, 0.35)";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    // Activity LEDs
+                    for (let led = 0; led < 4; led++) {
+                        const ledX = -45 + led * 26;
+                        const ledY = py + 14;
+                        const isOn = Math.sin(t * 8 + pl * 3 + led * 1.7) > -0.2;
+                        ctx.fillStyle = isOn ? color : "rgba(255, 255, 255, 0.15)";
+                        if (isOn) {
+                            ctx.shadowColor = color;
+                            ctx.shadowBlur = 8;
+                        }
+                        ctx.beginPath();
+                        ctx.roundRect(ledX, ledY, 16, 5, 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    // Platter Top Face Ellipse
+                    ctx.beginPath();
+                    ctx.ellipse(0, py, rx, ry, 0, 0, Math.PI * 2);
+                    const topEllGrad = ctx.createRadialGradient(0, py, 10, 0, py, rx);
+                    topEllGrad.addColorStop(0, "rgba(71, 85, 105, 0.85)");
+                    topEllGrad.addColorStop(0.65, "rgba(30, 41, 59, 0.95)");
+                    topEllGrad.addColorStop(1, "rgba(15, 23, 42, 1.0)");
+                    ctx.fillStyle = topEllGrad;
+                    ctx.fill();
+                    ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.25)";
+                    ctx.lineWidth = (pl === 0 && isActive) ? 2.5 : 1.2;
+                    if (pl === 0 && isActive) {
+                        ctx.shadowColor = color;
+                        ctx.shadowBlur = 18;
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Top Face Platter Magnetic Tracks & Scanning Head Beam
+                ctx.save();
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([6, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx * 0.45, ry * 0.45, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+                ctx.stroke();
+
+                // Rotating Read/Write Laser Head
+                const headA = t * 3.6;
+                const hx = Math.cos(headA) * (rx * 0.65);
+                const hy = Math.sin(headA) * (ry * 0.65);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.0;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(hx, hy);
+                ctx.stroke();
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Floating Holographic Label Badge Below Cylinder
+                const lblY = (platterCount * platterH) + 38;
+                ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(-165, lblY - 22, 330, 48, 12);
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.15)";
+                ctx.lineWidth = isActive ? 2.0 : 1.2;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 14;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = isActive ? color : "#FFFFFF";
+                ctx.font = "bold 20px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(fitTextToWidth(ctx, "💾 " + label, 300), 0, lblY);
+
+                ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+                ctx.font = "14px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, sub || "ACID Replicated Persistence", 300), 0, lblY + 18);
+
+                if (isActive) {
+                    drawPhotonSparks(ctx, 130, lblY, color, t);
+                }
+                ctx.restore();
+            }
+
+            // Helper: Draw 3D Isometric Server Box
+            function drawArchServerBox(cx, cy, label, sub, color, isActive, depthScale) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(depthScale, depthScale);
+
+                const sw = 90;
+                const sh = 175;
+                const topH = 40;
+
+                // Perspective ground shadow
+                ctx.save();
+                ctx.translate(10, topH + sh + 12);
+                ctx.scale(1.0, 0.35);
+                const sShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, sw * 1.3);
+                sShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+                sShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+                ctx.fillStyle = sShadow;
+                ctx.beginPath();
+                ctx.arc(0, 0, sw * 1.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Rotating halo if active
+                if (isActive) {
+                    ctx.save();
+                    ctx.translate(0, topH + sh + 6);
+                    ctx.scale(1.0, 0.36);
+                    ctx.rotate(t * 1.6);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3.0;
+                    ctx.setLineDash([14, 10]);
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 22;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, sw * 1.4, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+
+                // TOP FACE
+                ctx.beginPath();
+                ctx.moveTo(0, -topH);
+                ctx.lineTo(sw, 0);
+                ctx.lineTo(0, topH);
+                ctx.lineTo(-sw, 0);
+                ctx.closePath();
+                const topGrad = ctx.createLinearGradient(-sw, -topH, sw, topH);
+                topGrad.addColorStop(0, "rgba(51, 65, 85, 0.95)");
+                topGrad.addColorStop(1, "rgba(30, 41, 59, 0.98)");
+                ctx.fillStyle = topGrad;
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.25)";
+                ctx.lineWidth = isActive ? 2.5 : 1.5;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 16;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // LEFT FACE (Chassis side fins)
+                ctx.beginPath();
+                ctx.moveTo(-sw, 0);
+                ctx.lineTo(0, topH);
+                ctx.lineTo(0, topH + sh);
+                ctx.lineTo(-sw, sh);
+                ctx.closePath();
+                const leftGrad = ctx.createLinearGradient(-sw, 0, 0, topH + sh);
+                leftGrad.addColorStop(0, "rgba(15, 23, 42, 0.98)");
+                leftGrad.addColorStop(1, "rgba(8, 14, 28, 1.0)");
+                ctx.fillStyle = leftGrad;
+                ctx.fill();
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                for (let r = 1; r <= 5; r++) {
+                    const ry = topH + r * 26;
+                    ctx.strokeStyle = "rgba(56, 189, 248, 0.2)";
+                    ctx.beginPath();
+                    ctx.moveTo(-sw + 14, (r * 26) - 6);
+                    ctx.lineTo(-12, ry - 6);
+                    ctx.stroke();
+                }
+
+                // RIGHT FACE (Server Front Panel with Drive Bays & LEDs)
+                ctx.beginPath();
+                ctx.moveTo(0, topH);
+                ctx.lineTo(sw, 0);
+                ctx.lineTo(sw, sh);
+                ctx.lineTo(0, topH + sh);
+                ctx.closePath();
+                const rightGrad = ctx.createLinearGradient(0, topH, sw, sh);
+                rightGrad.addColorStop(0, "rgba(24, 34, 53, 0.96)");
+                rightGrad.addColorStop(1, "rgba(15, 23, 42, 0.98)");
+                ctx.fillStyle = rightGrad;
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.18)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                for (let b = 0; b < 4; b++) {
+                    const bayY = topH + 10 + b * 26;
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+                    ctx.lineWidth = 1.0;
+                    ctx.beginPath();
+                    ctx.moveTo(8, bayY + 3);
+                    ctx.lineTo(sw - 10, bayY - 12);
+                    ctx.lineTo(sw - 10, bayY + 6);
+                    ctx.lineTo(8, bayY + 21);
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    const lOn = Math.sin(t * 10 + b * 2) > -0.1;
+                    ctx.fillStyle = lOn ? color : "#064E3B";
+                    if (lOn) {
+                        ctx.shadowColor = color;
+                        ctx.shadowBlur = 8;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(16, bayY + 11, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // 3D Spinning Cooling Fan
+                const fanX = 45;
+                const fanY = topH + 132;
+                ctx.save();
+                ctx.translate(fanX, fanY);
+                ctx.scale(1.0, 0.65);
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                ctx.stroke();
+                const fanA = t * 15;
+                for (let fa = 0; fa < 4; fa++) {
+                    const a = fanA + (fa * Math.PI / 2);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2.2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16);
+                    ctx.stroke();
                 }
                 ctx.restore();
 
-                if (i < nodes.length - 1) {
-                    const connY1 = ny + nodeH;
-                    const connY2 = connY1 + (nodeSpacing - nodeH);
-                    drawDynamicConnector(ctx, W / 2, connY1, W / 2, connY2, col, t, "");
+                // Floating Holographic Label Badge
+                const sBob = Math.sin(t * 3.2) * 5;
+                ctx.save();
+                ctx.translate(0, -topH - 32 + sBob);
+                ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(-145, -20, 290, 44, 12);
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.15)";
+                ctx.lineWidth = isActive ? 2 : 1.2;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 14;
                 }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = isActive ? color : "#FFFFFF";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(fitTextToWidth(ctx, "🖥️ " + label, 260), 0, 0);
+
+                ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+                ctx.font = "13px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, sub || "Clustered Compute Nodes", 260), 0, 16);
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            // Helper: Draw 3D Processing Node with Rotating Gears
+            function drawArchProcessNode(cx, cy, label, sub, color, isActive, depthScale) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(depthScale, depthScale);
+
+                // Perspective ground shadow
+                ctx.save();
+                ctx.translate(6, 95);
+                ctx.scale(1.0, 0.38);
+                const pShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, 130);
+                pShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+                pShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+                ctx.fillStyle = pShadow;
+                ctx.beginPath();
+                ctx.arc(0, 0, 130, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Hexagonal base platform
+                ctx.save();
+                ctx.translate(0, 75);
+                ctx.scale(1.0, 0.46);
+                ctx.beginPath();
+                const hexR = 100;
+                for (let h = 0; h < 6; h++) {
+                    const ha = (h * Math.PI / 3) + Math.PI / 6;
+                    const hx = Math.cos(ha) * hexR;
+                    const hy = Math.sin(ha) * hexR;
+                    if (h === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                const baseGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, hexR);
+                baseGrad.addColorStop(0, "rgba(168, 85, 247, 0.35)");
+                baseGrad.addColorStop(0.7, "rgba(15, 23, 42, 0.85)");
+                baseGrad.addColorStop(1, "rgba(4, 8, 18, 0.95)");
+                ctx.fillStyle = baseGrad;
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "rgba(168, 85, 247, 0.4)";
+                ctx.lineWidth = isActive ? 2.5 : 1.5;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 18;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Rotating halo if active
+                if (isActive) {
+                    ctx.save();
+                    ctx.translate(0, 78);
+                    ctx.scale(1.0, 0.4);
+                    ctx.rotate(t * 1.5);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3.0;
+                    ctx.setLineDash([14, 10]);
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 22;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 125, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+
+                // Two Interlocking Mechanical Rotating Gears
+                drawArchGear(0, 5, 42, 8, t * 2.2, color, "#4C1D95");
+                drawArchGear(48, -18, 28, 6, -t * 3.0, "#38BDF8", "#0369A1");
+
+                // Central processor badge
+                ctx.save();
+                ctx.translate(0, 5);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 12;
+                ctx.font = "bold 14px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("CPU", 0, 5);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Floating Holographic Label Badge
+                const pBob = Math.sin(t * 3.0) * 5;
+                ctx.save();
+                ctx.translate(0, -65 + pBob);
+                ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(-145, -20, 290, 44, 12);
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.15)";
+                ctx.lineWidth = isActive ? 2 : 1.2;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 14;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = isActive ? color : "#FFFFFF";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(fitTextToWidth(ctx, "⚙️ " + label, 260), 0, 0);
+
+                ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+                ctx.font = "13px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, sub || "Stream / ETL Processing Engine", 260), 0, 16);
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            // Helper: Draw 3D Cloud Architecture Platform
+            function drawArchCloudNode(cx, cy, label, sub, color, isActive, depthScale) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(depthScale, depthScale);
+
+                // Perspective ground shadow
+                ctx.save();
+                ctx.translate(8, 90);
+                ctx.scale(1.0, 0.38);
+                const cShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, 140);
+                cShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+                cShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+                ctx.fillStyle = cShadow;
+                ctx.beginPath();
+                ctx.arc(0, 0, 140, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Radiating auto-scaling expansion waves
+                for (let r = 0; r < 3; r++) {
+                    const p = ((t * 0.45 + r * 0.33) % 1.0);
+                    const radius = 60 + p * 110;
+                    const alpha = (1.0 - p) * 0.35;
+                    ctx.save();
+                    ctx.translate(0, 75);
+                    ctx.scale(1.0, 0.42);
+                    ctx.strokeStyle = `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
+                    ctx.lineWidth = 1.8;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Floating Hexagonal Base Platform
+                ctx.save();
+                ctx.translate(0, 70);
+                ctx.scale(1.0, 0.48);
+                ctx.beginPath();
+                const hexR = 110;
+                for (let h = 0; h < 6; h++) {
+                    const ha = (h * Math.PI / 3) + Math.PI / 6;
+                    const hx = Math.cos(ha) * hexR;
+                    const hy = Math.sin(ha) * hexR;
+                    if (h === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                const baseGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
+                baseGrad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+                baseGrad.addColorStop(0.7, "rgba(168, 85, 247, 0.25)");
+                baseGrad.addColorStop(1, "rgba(15, 23, 42, 0.7)");
+                ctx.fillStyle = baseGrad;
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "#38BDF8";
+                ctx.lineWidth = isActive ? 2.8 : 1.8;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 18;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // 3 Floating AZ Pods
+                const azPods = [
+                    { name: "AZ-1", x: -75, y: -15, col: "#38BDF8" },
+                    { name: "AZ-2", x: 0, y: -50, col: "#C084FC" },
+                    { name: "AZ-3", x: 75, y: -15, col: "#10B981" }
+                ];
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(azPods[0].x, azPods[0].y);
+                ctx.lineTo(azPods[1].x, azPods[1].y);
+                ctx.lineTo(azPods[2].x, azPods[2].y);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                azPods.forEach((pod, pi) => {
+                    const pBob = Math.sin(t * 3.5 + pi * 2) * 4;
+                    ctx.save();
+                    ctx.translate(pod.x, pod.y + pBob);
+                    ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+                    ctx.beginPath();
+                    ctx.roundRect(-24, -16, 48, 32, 6);
+                    ctx.fill();
+                    ctx.strokeStyle = pod.col;
+                    ctx.lineWidth = 1.5;
+                    ctx.shadowColor = pod.col;
+                    ctx.shadowBlur = 8;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = pod.col;
+                    ctx.font = "bold 12px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(pod.name, 0, 4);
+                    ctx.restore();
+                });
+
+                // Center Floating Glowing Cloud Icon
+                const cBob = Math.sin(t * 2.8) * 6;
+                ctx.save();
+                ctx.translate(0, 10 + cBob);
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 24;
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "50px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("☁️", 0, 16);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Floating Holographic Label Above Cloud
+                ctx.save();
+                ctx.translate(0, -85 + cBob);
+                ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(-155, -20, 310, 44, 12);
+                ctx.fill();
+                ctx.strokeStyle = isActive ? color : "#38BDF8";
+                ctx.lineWidth = isActive ? 2.2 : 1.2;
+                if (isActive) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 14;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = isActive ? color : "#38BDF8";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(fitTextToWidth(ctx, "☁️ " + label, 280), 0, 0);
+
+                ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+                ctx.font = "13px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, sub || "Elastic Cloud Ingress Gateway", 280), 0, 16);
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            // 5. RENDER CONDUITS & ANIMATED 3D DATA PACKETS FIRST (Behind Nodes)
+            archConnections.forEach((conn) => {
+                const srcPos = archPositions[conn.from];
+                const dstPos = archPositions[conn.to];
+                if (!srcPos || !dstPos) return;
+
+                let x1 = srcPos.cx;
+                let y1 = srcPos.cy + 75;
+                let x2 = dstPos.cx;
+                let y2 = dstPos.cy - 70;
+
+                if (Math.abs(srcPos.cy - dstPos.cy) < 50) {
+                    if (srcPos.cx < dstPos.cx) {
+                        x1 = srcPos.cx + 100; y1 = srcPos.cy;
+                        x2 = dstPos.cx - 100; y2 = dstPos.cy;
+                    } else {
+                        x1 = srcPos.cx - 100; y1 = srcPos.cy;
+                        x2 = dstPos.cx + 100; y2 = dstPos.cy;
+                    }
+                }
+
+                const midY = (y1 + y2) / 2;
+
+                ctx.save();
+                ctx.strokeStyle = conn.color;
+                ctx.globalAlpha = 0.22;
+                ctx.lineWidth = 7;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+                ctx.stroke();
+
+                ctx.globalAlpha = 0.85;
+                ctx.lineWidth = 2.8;
+                ctx.setLineDash([12, 8]);
+                ctx.lineDashOffset = -t * 42;
+                ctx.shadowColor = conn.color;
+                ctx.shadowBlur = 14;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+
+                // Traveling 3D Animated Data Packets
+                const packetCount = 3;
+                for (let pk = 0; pk < packetCount; pk++) {
+                    const u = (t * 0.7 + pk * (1.0 / packetCount)) % 1.0;
+                    const pu = 1 - u;
+                    const px = pu * pu * pu * x1 + 3 * pu * pu * u * x1 + 3 * pu * u * u * x2 + u * u * u * x2;
+                    const py = pu * pu * pu * y1 + 3 * pu * pu * u * midY + 3 * pu * u * u * midY + u * u * u * y2;
+
+                    const dx = 3 * pu * pu * (x1 - x1) + 6 * pu * u * (x2 - x1) + 3 * u * u * (x2 - x2);
+                    const dy = 3 * pu * pu * (midY - y1) + 6 * pu * u * (midY - midY) + 3 * u * u * (y2 - midY);
+                    const angle = Math.atan2(dy, dx || 1);
+
+                    ctx.save();
+                    ctx.translate(px, py);
+                    ctx.rotate(angle);
+
+                    // Trailing photon sparks
+                    for (let tr = 1; tr <= 3; tr++) {
+                        ctx.fillStyle = conn.color;
+                        ctx.globalAlpha = 0.6 / tr;
+                        ctx.beginPath();
+                        ctx.arc(-tr * 7, 0, Math.max(1.5, 4 - tr), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Main Packet Body
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.shadowColor = conn.color;
+                    ctx.shadowBlur = 14;
+                    ctx.beginPath();
+                    ctx.roundRect(-8, -5, 16, 10, 3);
+                    ctx.fill();
+
+                    ctx.strokeStyle = conn.color;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+
+                // Midpoint Protocol Badge
+                if (conn.label) {
+                    const mx = (x1 + x2) / 2;
+                    const my = midY;
+                    ctx.save();
+                    ctx.fillStyle = "rgba(10, 16, 32, 0.94)";
+                    ctx.beginPath();
+                    ctx.roundRect(mx - 75, my - 14, 150, 28, 8);
+                    ctx.fill();
+                    ctx.strokeStyle = conn.color;
+                    ctx.lineWidth = 1.4;
+                    ctx.shadowColor = conn.color;
+                    ctx.shadowBlur = 8;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = conn.color;
+                    ctx.font = "bold 12px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(conn.label, mx, my + 5);
+                    ctx.restore();
+                }
+                ctx.restore();
+            });
+
+            // 6. RENDER 3D NODES BY TYPE (With Perspective & Shadows)
+            archNodes.forEach((nd, i) => {
+                const pos = archPositions[nd.id];
+                if (!pos) return;
+                const isActive = (i === activeNodeIdx);
+                const col = nd.color || "#38BDF8";
+
+                ctx.save();
+                ctx.globalAlpha = pos.depthAlpha || 1.0;
+
+                if (nd.type === "database") {
+                    drawArchDBCylinder(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+                } else if (nd.type === "server") {
+                    drawArchServerBox(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+                } else if (nd.type === "process") {
+                    drawArchProcessNode(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+                } else if (nd.type === "cloud") {
+                    drawArchCloudNode(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+                } else {
+                    drawArchServerBox(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+                }
+
+                ctx.restore();
             });
             ctx.restore();
         }
