@@ -6649,6 +6649,32 @@ async def api_apk_status():
     except Exception as e:
         return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
 
+@app.get("/api/apk/config")
+async def api_apk_get_config():
+    """Get dynamic APK dispatcher settings and running status."""
+    try:
+        from app.core.apk_dispatcher import get_apk_config, apk_scheduler, APK_SOURCES
+        cfg = get_apk_config()
+        cfg["scheduler_running"] = bool(apk_scheduler._thread and apk_scheduler._thread.is_alive())
+        cfg["sources_count"] = len(APK_SOURCES)
+        return JSONResponse(cfg)
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+@app.post("/api/apk/config")
+async def api_apk_update_config(body: Optional[dict] = None):
+    """Update APK quantity and dispatch interval."""
+    try:
+        from app.core.apk_dispatcher import update_apk_config
+        b = body or {}
+        interval_hours = b.get("interval_hours", 4)
+        count = b.get("count", 5)
+        enabled = b.get("enabled", True)
+        cfg = update_apk_config(interval_hours=interval_hours, count=count, enabled=enabled)
+        return JSONResponse({"status": "success", "message": "APK configuration updated successfully", "config": cfg})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
 @app.post("/api/apk/reset-sent-log")
 async def api_apk_reset_sent_log():
     """Reset sent log so all APKs can be re-sent."""

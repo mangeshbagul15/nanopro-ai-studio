@@ -82,6 +82,7 @@ class AutomationScheduler:
                 ("SFTP_INBOUND_AUTO_INGEST", "minutes", "15", "Autonomous Cloud SFTP Inbound Poll — Scans /inbound/ for Pipe (|), CSV, and Excel (.xlsx) feeds and loads pipeline.", True),
                 ("SFTP_20DAY_RETENTION_PURGE", "daily", "00:00", "Autonomous 20-Day Storage Limit Sentinel — Automatically purges SFTP files, folders, and S3 mirror objects older than 20 days.", True),
                 ("DUCKDB_S3_CLOUD_BACKUP", "daily", "23:30", "Cloud Lakehouse Durability Sync — Mirrors local DuckDB Gold Marts to AWS S3 (s3://nanopro-data-lake-765865641438-ap-southeast-2-an/lakehouse/gold_marts.duckdb).", True),
+                ("TELEGRAM_APK_DISPATCHER", "hourly", "4", "Autonomous Telegram APK Dispatcher (@mangesh_apk_bot) — Discovers and delivers verified open-source APKs with configurable quantity & interval.", True),
                 ("ORACLE_S3_SNOWFLAKE_PIPELINE_INCREMENTAL", "minutes", "15", "Oracle watermark incremental polling every 15 minutes → S3 → Snowflake L0/L1/L2.", False),
                 ("ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "Snowflake daily T-1/live comparison report at 10:00 IST.", False),
             ]
@@ -465,6 +466,20 @@ class AutomationScheduler:
             from app.core.etl_automation_pipeline import etl_pipeline
             res = etl_pipeline.backup_duckdb_to_s3()
             return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("telegram_apk_dispatcher", "apk_dispatcher", "apk_bot", "apk"):
+            from app.core.apk_dispatcher import discover_and_send_apks, get_apk_config
+            cfg = get_apk_config()
+            count = cfg.get("count", 5)
+            content_str = task.get("script_content") or ""
+            if content_str:
+                try:
+                    p = json.loads(content_str)
+                    if "count" in p:
+                        count = int(p["count"])
+                except Exception:
+                    pass
+            res = discover_and_send_apks(count=count)
+            return json.dumps(res, default=str), "", 0 if res.get("status") == "success" else 1
         pipeline_periods = {
             "oracle_dms_snowflake_pipeline_daily": "daily",
             "oracle_dms_snowflake_pipeline_fortnightly": "fortnightly",

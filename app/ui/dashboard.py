@@ -299,6 +299,31 @@ def _get_raw_dashboard_html() -> str:
             border-radius: 4px;
         }
 
+        /* High-Tech Custom Horizontal Scrollable Data Table Container */
+        .custom-horizontal-scroll {
+            overflow-x: auto !important;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #38BDF8 rgba(15, 23, 42, 0.8);
+        }
+        .custom-horizontal-scroll::-webkit-scrollbar {
+            height: 10px;
+        }
+        .custom-horizontal-scroll::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 6px;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        .custom-horizontal-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #0284C7, #38BDF8, #10B981);
+            border-radius: 6px;
+            border: 2px solid rgba(15, 23, 42, 0.8);
+        }
+        .custom-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(90deg, #38BDF8, #06B6D4, #34D399);
+        }
+
         .nav-group {
             display: flex;
             flex-direction: column;
@@ -7554,20 +7579,96 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
         </div>
     </div>
 
-    <!-- Persistent Scheduled Tasks Table -->
+    <!-- Telegram APK Dispatcher Settings Modal Card -->
+    <div class="panel-card" id="apkConfigModal" style="display:none; margin-bottom:14px; border:1px solid #14B8A6; background:linear-gradient(135deg, rgba(15,23,42,0.98), rgba(13,148,136,0.15)); box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(20,184,166,0.3); padding-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:22px;">🤖</span>
+                <div>
+                    <h3 style="margin:0; font-size:14.5px; color:#2DD4BF; font-weight:700;">Telegram APK Dispatcher Configuration (@mangesh_apk_bot)</h3>
+                    <p style="margin:0; font-size:11px; color:#94A3B8;">Customize how many verified open-source APKs are sent, the delivery interval, and trigger manual dispatches.</p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="closeApkConfigModal()" style="font-size:11px; padding:2px 8px;">✕ Close</button>
+        </div>
+        
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-bottom:14px;">
+            <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:8px; padding:12px;">
+                <label class="input-label" style="color:#38BDF8; font-weight:700;">📦 APK Quantity Per Cycle (प्रत्येक वेळेस किती APKs?)</label>
+                <select class="studio-input" id="apkFormCount" style="margin-top:6px; font-weight:700;">
+                    <option value="1">1 APK per cycle</option>
+                    <option value="2">2 APKs per cycle</option>
+                    <option value="3">3 APKs per cycle</option>
+                    <option value="5" selected>5 APKs per cycle (Default)</option>
+                    <option value="8">8 APKs per cycle</option>
+                    <option value="10">10 APKs per cycle (Maximum Batch)</option>
+                </select>
+                <div style="font-size:11px; color:#94A3B8; margin-top:6px;">Telegram वर पाठवल्या जाणाऱ्या APK फाईल्सची संख्या निवडा.</div>
+            </div>
+
+            <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:8px; padding:12px;">
+                <label class="input-label" style="color:#FBBF24; font-weight:700;">⏱️ Interval / Time Frequency (वेळ आणि वारंवारता)</label>
+                <select class="studio-input" id="apkFormInterval" style="margin-top:6px; font-weight:700;">
+                    <option value="1">Every 1 Hour (दर १ तासाला)</option>
+                    <option value="2">Every 2 Hours (दर २ तासाला)</option>
+                    <option value="4" selected>Every 4 Hours (दर ४ तासाला - Default)</option>
+                    <option value="6">Every 6 Hours (दर ६ तासाला)</option>
+                    <option value="8">Every 8 Hours (दर ८ तासाला)</option>
+                    <option value="12">Every 12 Hours (दर १२ तासाला)</option>
+                    <option value="24">Every 24 Hours / Daily (दिवसातून एकदा)</option>
+                </select>
+                <div style="font-size:11px; color:#94A3B8; margin-top:6px;">नवीन APK शोधून पाठवण्याचे अचूक वेळापत्रक ठरवा.</div>
+            </div>
+
+            <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:8px; padding:12px;">
+                <label class="input-label" style="color:#10B981; font-weight:700;">⚡ Bot Automation Status</label>
+                <select class="studio-input" id="apkFormEnabled" style="margin-top:6px; font-weight:700;">
+                    <option value="true" selected>Active &amp; Automated (चालू ठेवा)</option>
+                    <option value="false">Paused / Inactive (तात्पुरते थांबवा)</option>
+                </select>
+                <div style="font-size:11px; color:#94A3B8; margin-top:6px;">Recipient: Telegram @mangesh_apk_bot | Chat ID: 1200023268</div>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+            <div style="font-size:11.5px; color:#CBD5E1;" id="apkStatusText">
+                Loading APK Dispatcher settings...
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeApkConfigModal()">Close</button>
+                <button type="button" class="btn btn-secondary" onclick="triggerApkSendNow()" style="background:#1E293B; border-color:#38BDF8; color:#38BDF8;">🚀 Send Now (1-Click Run)</button>
+                <button type="button" class="btn btn-primary" onclick="saveApkConfig()" style="background:#0D9488; border-color:#14B8A6;">💾 Save &amp; Apply Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Persistent Scheduled Tasks Table with Horizontal Scroll -->
     <div class="panel-card" style="margin-bottom:14px;">
-        <h3 style="font-size:13.5px; color:#F8FAFC; margin-bottom:10px;">Configured Tasks List</h3>
-        <div class="table-scroll-area">
-            <table class="studio-data-table" id="schedTasksTable">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="font-size:14px; color:#F8FAFC; margin:0; font-weight:700;">Configured Tasks List</h3>
+                <span style="font-size:10px; background:rgba(56,189,248,0.12); color:#38BDF8; padding:3px 9px; border-radius:12px; border:1px solid rgba(56,189,248,0.3); display:inline-flex; align-items:center; gap:4px;">
+                    <span>↔️ Horizontal Scroll Bar Active</span>
+                </span>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button type="button" class="btn btn-secondary" onclick="scrollSchedTable('schedTasksScrollArea', 'left')" style="font-size:11px; padding:4px 10px; border-radius:6px; background:#1E293B;" title="Scroll Left">⬅️ Scroll Left</button>
+                <button type="button" class="btn btn-secondary" onclick="scrollSchedTable('schedTasksScrollArea', 'right')" style="font-size:11px; padding:4px 10px; border-radius:6px; background:#1E293B;" title="Scroll Right">Scroll Right ➡️</button>
+                <button type="button" class="btn btn-primary" onclick="openApkConfigModal()" style="font-size:11px; padding:4px 12px; border-radius:6px; background:#0D9488; border-color:#14B8A6;" title="Configure Telegram APK Bot Quantity and Timing">🤖 Telegram APK Settings</button>
+            </div>
+        </div>
+
+        <div class="custom-horizontal-scroll" id="schedTasksScrollArea" style="border:1px solid #334155; border-radius:8px; padding-bottom:6px; margin-bottom:4px;">
+            <table class="studio-data-table" id="schedTasksTable" style="min-width:1150px; width:100%; border-collapse:collapse;">
                 <thead>
-                    <tr>
-                        <th>Task Name</th>
-                        <th>Type</th>
-                        <th>Schedule</th>
-                        <th>Next Run</th>
-                        <th>Last Run</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                    <tr style="background:#0F172A; border-bottom:1px solid #334155;">
+                        <th style="min-width:270px; text-align:left; padding:10px 12px;">Task Name &amp; Description</th>
+                        <th style="min-width:110px; text-align:left; padding:10px 12px;">Type</th>
+                        <th style="min-width:160px; text-align:left; padding:10px 12px;">Schedule</th>
+                        <th style="min-width:150px; text-align:left; padding:10px 12px;">Next Run</th>
+                        <th style="min-width:150px; text-align:left; padding:10px 12px;">Last Run</th>
+                        <th style="min-width:120px; text-align:left; padding:10px 12px;">Status</th>
+                        <th style="min-width:240px; text-align:center; padding:10px 12px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="schedTasksTbody">
@@ -7575,23 +7676,36 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                 </tbody>
             </table>
         </div>
+        <div style="font-size:10.5px; color:#64748B; margin-top:6px; display:flex; justify-content:space-between;">
+            <span>💡 टीप: वरील टेबलवर तुम्ही डावीकडून उजवीकडे (Horizontal) स्क्रोल करून सर्व Action बटने व तपशील पाहू शकता.</span>
+            <span>Columns: 7 | Responsive 3D Grid</span>
+        </div>
     </div>
 
-    <!-- Execution Run History -->
+    <!-- Execution Run History with Horizontal Scroll -->
     <div class="panel-card">
-        <h3 style="font-size:13.5px; color:#F8FAFC; margin-bottom:10px;">Recent Execution Logs &amp; Runs</h3>
-        <div class="table-scroll-area">
-            <table class="studio-data-table" id="schedRunsTable">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="font-size:14px; color:#F8FAFC; margin:0; font-weight:700;">Recent Execution Logs &amp; Runs</h3>
+                <span style="font-size:10px; background:rgba(167,139,250,0.12); color:#A78BFA; padding:3px 9px; border-radius:12px; border:1px solid rgba(167,139,250,0.3);">↔️ Wide Log Scroll Active</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-secondary" onclick="scrollSchedTable('schedRunsScrollArea', 'left')" style="font-size:11px; padding:4px 10px; border-radius:6px; background:#1E293B;" title="Scroll Left">⬅️ Scroll Left</button>
+                <button type="button" class="btn btn-secondary" onclick="scrollSchedTable('schedRunsScrollArea', 'right')" style="font-size:11px; padding:4px 10px; border-radius:6px; background:#1E293B;" title="Scroll Right">Scroll Right ➡️</button>
+            </div>
+        </div>
+        <div class="custom-horizontal-scroll" id="schedRunsScrollArea" style="border:1px solid #334155; border-radius:8px; padding-bottom:6px;">
+            <table class="studio-data-table" id="schedRunsTable" style="min-width:1150px; width:100%; border-collapse:collapse;">
                 <thead>
-                    <tr>
-                        <th>Run ID</th>
-                        <th>Task Name</th>
-                        <th>Trigger</th>
-                        <th>Start Time</th>
-                        <th>Duration</th>
-                        <th>Exit Code</th>
-                        <th>Status</th>
-                        <th>Output</th>
+                    <tr style="background:#0F172A; border-bottom:1px solid #334155;">
+                        <th style="min-width:110px; text-align:left; padding:10px 12px;">Run ID</th>
+                        <th style="min-width:250px; text-align:left; padding:10px 12px;">Task Name</th>
+                        <th style="min-width:120px; text-align:left; padding:10px 12px;">Trigger</th>
+                        <th style="min-width:160px; text-align:left; padding:10px 12px;">Start Time</th>
+                        <th style="min-width:90px; text-align:left; padding:10px 12px;">Duration</th>
+                        <th style="min-width:90px; text-align:left; padding:10px 12px;">Exit Code</th>
+                        <th style="min-width:110px; text-align:left; padding:10px 12px;">Status</th>
+                        <th style="min-width:140px; text-align:center; padding:10px 12px;">Output</th>
                     </tr>
                 </thead>
                 <tbody id="schedRunsTbody">
@@ -17190,6 +17304,96 @@ async function submitTaskEditForm() {
         alert('Network/Update error: ' + e.message);
     }
 }
+
+/* --- HORIZONTAL TASK SCROLL & TELEGRAM APK SETTINGS HELPERS --- */
+function scrollSchedTable(containerId, direction) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const amount = direction === 'left' ? -380 : 380;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+}
+
+async function openApkConfigModal() {
+    const modal = document.getElementById('apkConfigModal');
+    if (!modal) return;
+    modal.style.display = 'block';
+    modal.scrollIntoView({ behavior: 'smooth' });
+    const statusText = document.getElementById('apkStatusText');
+    if (statusText) statusText.innerHTML = '<span style="color:#38BDF8;">Fetching latest APK bot configuration...</span>';
+    try {
+        const res = await fetch('/api/apk/config');
+        const data = await res.json();
+        if (data) {
+            if (data.count) document.getElementById('apkFormCount').value = String(data.count);
+            if (data.interval_hours) document.getElementById('apkFormInterval').value = String(data.interval_hours);
+            if (data.enabled !== undefined) document.getElementById('apkFormEnabled').value = data.enabled ? 'true' : 'false';
+            if (statusText) {
+                const runningStr = data.scheduler_running ? '<span style="color:#10B981; font-weight:700;">● Active</span>' : '<span style="color:#F59E0B;">● Standby</span>';
+                statusText.innerHTML = `Bot: <strong>@mangesh_apk_bot</strong> | Status: ${runningStr} | Current: <strong>${data.count || 5} APKs</strong> every <strong>${data.interval_hours || 4} hrs</strong> | Sources: <strong>${data.sources_count || 30} verified repos</strong>`;
+            }
+        }
+    } catch (e) {
+        if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Error fetching APK config: ${e.message}</span>`;
+    }
+}
+
+function closeApkConfigModal() {
+    const modal = document.getElementById('apkConfigModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function saveApkConfig() {
+    const count = parseInt(document.getElementById('apkFormCount').value, 10) || 5;
+    const interval_hours = parseInt(document.getElementById('apkFormInterval').value, 10) || 4;
+    const enabled = document.getElementById('apkFormEnabled').value === 'true';
+    const statusText = document.getElementById('apkStatusText');
+    if (statusText) statusText.innerHTML = '<span style="color:#38BDF8;">Saving changes & updating scheduler...</span>';
+    try {
+        const res = await fetch('/api/apk/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ count, interval_hours, enabled })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            if (statusText) {
+                statusText.innerHTML = `<span style="color:#10B981; font-weight:700;">✅ Settings Saved! Bot will send ${count} APKs every ${interval_hours} hours to @mangesh_apk_bot.</span>`;
+            }
+            if (typeof refreshSchedulerDashboard === 'function') {
+                refreshSchedulerDashboard();
+            }
+        } else {
+            if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Error: ${data.error || 'Failed to save'}</span>`;
+        }
+    } catch (e) {
+        if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Save failed: ${e.message}</span>`;
+    }
+}
+
+async function triggerApkSendNow() {
+    const count = parseInt(document.getElementById('apkFormCount').value, 10) || 5;
+    const statusText = document.getElementById('apkStatusText');
+    if (statusText) statusText.innerHTML = `<span style="color:#38BDF8; font-weight:700;">🚀 Downloading & dispatching ${count} APKs to Telegram @mangesh_apk_bot now...</span>`;
+    try {
+        const res = await fetch('/api/apk/send-now', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ count })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            const sentNames = (data.sent || []).map(s => s.name).join(', ') || 'APKs';
+            if (statusText) {
+                statusText.innerHTML = `<span style="color:#10B981; font-weight:700;">🎉 Dispatched ${data.sent_count || 0} APKs to @mangesh_apk_bot! (${sentNames})</span>`;
+            }
+        } else {
+            if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Failed: ${data.error || 'Send error'}</span>`;
+        }
+    } catch (e) {
+        if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Dispatch failed: ${e.message}</span>`;
+    }
+}
+
 
 /* --- ADD DATABASE & QUICK PASSWORD MODALS --- */
 function openAddDatabaseModal() {

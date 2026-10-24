@@ -36,6 +36,41 @@ APK_TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 # Sent APK tracking file (avoid re-sending same version)
 APK_SENT_LOG = BASE_DIR / "data" / "banking" / "apk_sent_log.json"
+APK_CONFIG_FILE = BASE_DIR / "data" / "banking" / "apk_config.json"
+
+
+def get_apk_config() -> Dict[str, Any]:
+    """Load configurable APK dispatcher parameters (interval, count, enabled)."""
+    default_cfg = {
+        "interval_hours": 4,
+        "count": 5,
+        "enabled": True,
+        "last_updated": datetime.datetime.now().isoformat(),
+    }
+    try:
+        if APK_CONFIG_FILE.exists():
+            data = json.loads(APK_CONFIG_FILE.read_text(encoding="utf-8"))
+            default_cfg.update(data)
+            return default_cfg
+    except Exception:
+        pass
+    return default_cfg
+
+
+def update_apk_config(interval_hours: int = 4, count: int = 5, enabled: bool = True) -> Dict[str, Any]:
+    """Update and persist APK dispatcher parameters and wake scheduler."""
+    cfg = get_apk_config()
+    cfg["interval_hours"] = max(1, int(interval_hours))
+    cfg["count"] = max(1, min(20, int(count)))
+    cfg["enabled"] = bool(enabled)
+    cfg["last_updated"] = datetime.datetime.now().isoformat()
+    APK_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    APK_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+    global apk_scheduler
+    if apk_scheduler:
+        apk_scheduler.reload_config()
+    return cfg
 
 # ─────────────────────────────────────────────────────────────
 # Open-Source APK Sources (GitHub Releases API)
@@ -191,7 +226,15 @@ def _send_apk_to_telegram(apk_path: Path, caption: str) -> bool:
         return False
 
 
-def discover_and_send_apks(count: int = 5) -> Dict[str, Any]:
+def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Main function: discovers `count` new APKs and sends them to @mangesh_apk_bot.
+    Skips already-sent versions. Downloads one at a time to save memory.
+    Deletes APK file immediately after sending.
+    """
+    if count is None:
+        cfg = get_apk_config()
+        count = cfg.get("count", 5)
     """
     Main function: discovers `count` new APKs and sends them to @mangesh_apk_bot.
     Skips already-sent versions. Downloads one at a time to save memory.
@@ -275,36 +318,59 @@ def discover_and_send_apks(count: int = 5) -> Dict[str, Any]:
 
 
 class APKScheduler:
-    """Runs discover_and_send_apks() every 4 hours."""
-
-    INTERVAL_HOURS = 4
+    """Runs discover_and_send_apks() with configurable interval and quantity."""
 
     def __init__(self):
-        self._stop   = threading.Event()
+        self._stop = threading.Event()
+        self._wake_event = threading.Event()
         self._thread = None
+        self.INTERVAL_HOURS = 4
+        self.COUNT = 5
 
     def start(self):
         if self._thread and self._thread.is_alive():
             return
         self._stop.clear()
+        self._wake_event.clear()
+        cfg = get_apk_config()
+        self.INTERVAL_HOURS = cfg.get("interval_hours", 4)
+        self.COUNT = cfg.get("count", 5)
         self._thread = threading.Thread(target=self._loop, daemon=True, name="APKScheduler")
         self._thread.start()
-        log_event(f"APK Scheduler started (every {self.INTERVAL_HOURS}h, 5 APKs/cycle) → @mangesh_apk_bot", component="APKDispatcher")
+        log_event(f"APK Scheduler started (every {self.INTERVAL_HOURS}h, {self.COUNT} APKs/cycle) → @mangesh_apk_bot", component="APKDispatcher")
 
     def stop(self):
         self._stop.set()
+        self._wake_event.set()
+
+    def reload_config(self):
+        """Immediately loads new interval and quantity and wakes up scheduler loop."""
+        cfg = get_apk_config()
+        self.INTERVAL_HOURS = cfg.get("interval_hours", 4)
+        self.COUNT = cfg.get("count", 5)
+        log_event(f"[APKBot] Config reloaded: every {self.INTERVAL_HOURS}h, quantity: {self.COUNT} APKs", component="APKDispatcher")
+        self._wake_event.set()
 
     def _loop(self):
         # First run after 2 minutes (let server boot)
         self._stop.wait(120)
         while not self._stop.is_set():
-            try:
-                log_event("[APKBot] Starting APK discovery cycle...", component="APKDispatcher")
-                discover_and_send_apks(count=5)
-            except Exception as e:
-                log_event(f"[APKBot] Scheduler error: {e}", level="WARNING", component="APKDispatcher")
-            # Wait 4 hours
-            self._stop.wait(self.INTERVAL_HOURS * 3600)
+            cfg = get_apk_config()
+            enabled = cfg.get("enabled", True)
+            self.INTERVAL_HOURS = cfg.get("interval_hours", 4)
+            self.COUNT = cfg.get("count", 5)
+
+            if enabled:
+                try:
+                    log_event(f"[APKBot] Starting APK discovery cycle (Count: {self.COUNT})...", component="APKDispatcher")
+                    discover_and_send_apks(count=self.COUNT)
+                except Exception as e:
+                    log_event(f"[APKBot] Scheduler error: {e}", level="WARNING", component="APKDispatcher")
+
+            # Wait INTERVAL_HOURS or until reload_config() wakes it
+            self._wake_event.clear()
+            wait_seconds = max(60, self.INTERVAL_HOURS * 3600)
+            self._wake_event.wait(timeout=wait_seconds)
 
 
 # Module-level singletons
