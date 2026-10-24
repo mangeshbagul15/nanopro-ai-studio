@@ -1040,6 +1040,78 @@ def get_admin_mobile_hub_html() -> str:
             </div>
         </div>
 
+        <!-- CAREER & JOB SEARCH COMMAND CENTER (MANGESH BAGUL - 4 YRS EXP) -->
+        <div class="hub-card" style="border: 1px solid #10B981; background: linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(6,78,59,0.3) 100%);">
+            <div class="hub-sec-header">
+                <span class="hub-sec-title" style="color:#34D399; font-weight:800;">💼 Enterprise Career &amp; Job Command Center</span>
+                <span class="hub-sec-action" onclick="switchView('career_hub')" style="color:#38BDF8;">Open Full Center ↗</span>
+            </div>
+
+            <!-- Profile Target Tag -->
+            <div style="font-size:11px; color:#CBD5E1; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+                <span>🎯 Candidate: <b style="color:#38BDF8;">Mangesh Bagul (4 Yrs Exp)</b></span>
+                <span style="color:#10B981; font-weight:700;">₹12-26 LPA Target Band</span>
+            </div>
+
+            <!-- 30-Min Live Sentinel Status Bar -->
+            <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:8px 10px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px;">✉️</span>
+                    <div>
+                        <div style="font-size:11px; font-weight:700; color:#F8FAFC;">30-Min Autonomous HR Email Sentinel</div>
+                        <div style="font-size:9.5px; color:#94A3B8;">Rotates top MNC HRs &bull; CC: nanoproaistudio@gmail.com</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="hub-tile-badge badge-live" id="hubCareerCountdown">🟢 ACTIVE (30-MIN)</span>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="dispatchNextLiveCareerEmailNow()" style="font-size:10px; padding:4px 8px; background:#10B981; border:none; border-radius:6px; font-weight:700;">🚀 Dispatch</button>
+                </div>
+            </div>
+
+            <!-- 2-Column Live Metrics & Features -->
+            <div class="hub-grid-2x" style="margin-bottom:8px;">
+                <div class="hub-tile" onclick="switchView('career_hub')" style="border-left:3px solid #10B981; cursor:pointer;">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🏢</span>
+                        <span class="hub-tile-name">Verified MNC Jobs</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="color:#34D399; font-size:13px;" id="hubJobCountVal">14+ Live Jobs</div>
+                        <div class="hub-tile-sub">Mumbai &bull; Thane &bull; Navi Mumbai</div>
+                    </div>
+                    <span class="hub-tile-badge badge-live">94% SKILL MATCH</span>
+                </div>
+
+                <div class="hub-tile" onclick="switchView('career_hub')" style="border-left:3px solid #38BDF8; cursor:pointer;">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🎯</span>
+                        <span class="hub-tile-name">4-Yr Scenarios</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="color:#38BDF8; font-size:13px;">40+ Scenarios</div>
+                        <div class="hub-tile-sub">Snowflake &bull; AWS &bull; PySpark</div>
+                    </div>
+                    <span class="hub-tile-badge badge-cyan">INTERVIEW READY</span>
+                </div>
+            </div>
+
+            <!-- Quick Action Row -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                <button type="button" class="hub-btn" onclick="if(typeof searchCareerJobs==='function') searchCareerJobs(); switchView('career_hub');" style="padding:6px 4px; font-size:10px;">
+                    <span class="icon" style="font-size:14px;">🔍</span>
+                    <span>Scan Jobs</span>
+                </button>
+                <button type="button" class="hub-btn" onclick="if(typeof broadcastTelegramJobsNow==='function') broadcastTelegramJobsNow();" style="padding:6px 4px; font-size:10px;">
+                    <span class="icon" style="font-size:14px;">📱</span>
+                    <span>Telegram Alert</span>
+                </button>
+                <button type="button" class="hub-btn" onclick="switchView('career_hub'); if(typeof switchCareerTab==='function') switchCareerTab('resume_vault');" style="padding:6px 4px; font-size:10px;">
+                    <span class="icon" style="font-size:14px;">📄</span>
+                    <span>Resume Vault</span>
+                </button>
+            </div>
+        </div>
+
         <!-- 6. KONTE API ATA RUNNING USE CHALU AHE? (LIVE ACTIVE API MATRIX) -->
         <div class="hub-card">
             <div class="hub-sec-header">
@@ -1478,10 +1550,62 @@ def get_admin_mobile_hub_html() -> str:
                     <span class="hub-tile-badge badge-purple" style="font-size:8px;">VAULT 🔑</span>
                 </div>
 
+                <!-- GitHub AI Project Explorer -->
+                <div class="hub-tile" onclick="switchView('github_explorer')" style="border-left:3px solid #38BDF8; background:rgba(56,189,248,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🐙</span>
+                        <span class="hub-tile-name">GitHub AI Explorer</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#38BDF8;">AI &amp; ETL Repos</div>
+                        <div class="hub-tile-sub">Live GitHub Search &amp; Stars</div>
+                    </div>
+                    <span class="hub-tile-badge badge-cyan" style="font-size:8px;">EXPLORE ↗</span>
+                </div>
+
+                <!-- Free API & Resource Finder -->
+                <div class="hub-tile" onclick="switchView('free_apis')" style="border-left:3px solid #10B981; background:rgba(16,185,129,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🌐</span>
+                        <span class="hub-tile-name">Free API Finder</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#34D399;">43+ Verified APIs</div>
+                        <div class="hub-tile-sub">No-Key &bull; Free Quotas</div>
+                    </div>
+                    <span class="hub-tile-badge badge-live" style="font-size:8px;">100% FREE</span>
+                </div>
+
+                <!-- Discovered Issues & Actionable Items -->
+                <div class="hub-tile" onclick="switchView('discovery_dashboard')" style="border-left:3px solid #F59E0B; background:rgba(245,158,11,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🔍</span>
+                        <span class="hub-tile-name">Discovered Issues</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#FBBF24;">100 System Items</div>
+                        <div class="hub-tile-sub">Actionable Governance</div>
+                    </div>
+                    <span class="hub-tile-badge badge-warn" style="font-size:8px;">SENTINEL</span>
+                </div>
+
+                <!-- Device Feature Manager & Mobile Access -->
+                <div class="hub-tile" onclick="switchView('settings'); setTimeout(()=>{const el=document.getElementById('adminDeviceManagerCard');if(el)el.scrollIntoView({behavior:'smooth'});},300);" style="border-left:3px solid #818CF8; background:rgba(129,140,248,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">📱</span>
+                        <span class="hub-tile-name">Device Manager</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#A5B4FC;">Mobile Access</div>
+                        <div class="hub-tile-sub">Control 52+ Features</div>
+                    </div>
+                    <span class="hub-tile-badge badge-purple" style="font-size:8px;">GATING 📱</span>
+                </div>
+
                 <div class="hub-tile" onclick="toggleMobileSidebar(true)" style="border-left:3px solid #EC4899; background:rgba(236,72,153,0.08);">
                     <div class="hub-tile-top">
                         <span class="hub-tile-icon">☰</span>
-                        <span class="hub-tile-name">All 51 Features</span>
+                        <span class="hub-tile-name">All 52+ Features</span>
                     </div>
                     <div class="hub-tile-mid">
                         <div class="hub-tile-val" style="font-size:12px; color:#F472B6;">Open Full Menu</div>

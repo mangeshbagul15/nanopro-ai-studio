@@ -4429,7 +4429,41 @@ def _get_raw_dashboard_html() -> str:
                      ADMIN DEVICE FEATURE MANAGER
                      Control which features appear on Mobile vs Desktop
                      ==================================================== -->
-                <div style="background:#0F172A; border:1px solid #334155; border-radius:10px; padding:16px; margin-bottom:16px;" id="adminDeviceManagerCard">
+                <div style="background:#0F172A; border:1px solid #38BDF8; border-radius:10px; padding:18px; margin-bottom:16px; box-shadow:0 8px 30px rgba(0,0,0,0.5);" id="adminDeviceManagerCard">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+                        <h3 style="font-size:15px; color:#38BDF8; margin:0; display:flex; align-items:center; gap:8px;">
+                            📱 Device Feature Manager &amp; Mobile/Desktop Access Control
+                            <span class="badge" style="background:#0F172A; border:1px solid #10B981; color:#34D399; font-size:10px;">LIVE DYNAMIC TELEMETRY</span>
+                        </h3>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="applyPresetMobileFeatures('recommended')" style="font-size:10.5px; padding:4px 10px; background:#0284C7;">📱 Mobile Recommended (Hub + Chat + Career)</button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="applyPresetMobileFeatures('all')" style="font-size:10.5px; padding:4px 10px;">🌐 All 52+ Unrestricted</button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="resetDeviceFeatureConfig()" style="font-size:10.5px; padding:4px 8px;">🔄 Reset Defaults</button>
+                        </div>
+                    </div>
+                    
+                    <p style="font-size:12px; color:#94A3B8; margin-bottom:12px;">
+                        Control which NanoPro features appear on <b style="color:#38BDF8">Mobile Browsers</b> vs <b style="color:#6366F1">Desktop / Laptop</b>.
+                        Features unchecked for Mobile are automatically hidden in the mobile sidebar and bottom nav to keep the mobile experience clean, fast, and spacious.
+                    </p>
+
+                    <!-- Real-Time Device Telemetry Box -->
+                    <div id="liveDeviceTelemetryBox" style="margin-bottom:14px;">
+                        <!-- Dynamically populated by renderLiveDeviceTelemetryCard() -->
+                    </div>
+
+                    <div class="device-tab-strip" style="max-width:460px; margin-bottom:12px;">
+                        <button class="device-tab-btn active" onclick="switchDeviceTab('mobile', this)">📱 Mobile Features (Adaptive)</button>
+                        <button class="device-tab-btn" onclick="switchDeviceTab('desktop', this)">💻 Desktop Features</button>
+                        <button class="device-tab-btn" onclick="switchDeviceTab('both', this)">🌐 Both (All 52+)</button>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:11.5px; color:#64748B;">
+                        <span>Tap checkboxes to toggle mobile visibility. Changes apply instantly without server restart.</span>
+                        <button type="button" class="btn btn-primary" onclick="saveDeviceFeatureConfig()" style="font-size:11px; padding:5px 14px; background:#10B981; border:none; font-weight:700;">💾 Save &amp; Apply Access Control</button>
+                    </div>
+
+                    <div id="deviceFeatureSaveStatus" style="display:none; padding:8px 12px; background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#34D399; font-size:11.5px; border-radius:6px; margin-bottom:12px;"></div>
                     <h3 style="font-size:14px; color:#38BDF8; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
                         &#128241; Device Feature Manager &amp; Mobile/Desktop Access Control
                     </h3>
@@ -4936,8 +4970,22 @@ def _get_raw_dashboard_html() -> str:
                 </div>
             </div>
 
-            <!-- Free API Grid Wall (Infinite Scroll & Responsive Cards) -->
-            <div id="freeApisContainer" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:14px; margin-top:14px;">
+            <!-- Free API Grid Wall (Infinite Scroll & Responsive Cards - 1-col on mobile, multi-col on desktop) -->
+            <style>
+                #freeApisContainer {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                    gap: 14px;
+                    margin-top: 14px;
+                }
+                @media (max-width: 600px) {
+                    #freeApisContainer {
+                        grid-template-columns: 1fr !important;
+                        gap: 10px !important;
+                    }
+                }
+            </style>
+            <div id="freeApisContainer">
                 <!-- Dynamically populated -->
             </div>
         </div>
@@ -4970,6 +5018,15 @@ def _get_raw_dashboard_html() -> str:
                     </select>
                     <button type="button" class="btn btn-primary" onclick="searchGitHubLive()">&#128025; Search GitHub API</button>
                     <button type="button" class="btn btn-secondary" onclick="loadGitHubProjects()">Browse Verified Repos</button>
+                </div>
+                <!-- 1-Click Trending Filter Chips (Mobile & Desktop) -->
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; align-items:center;">
+                    <span style="font-size:11px; color:#64748B; font-weight:700;">QUICK TOPICS:</span>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="quickFilterGitHub('ai agent marathi voice')" style="font-size:11px; padding:4px 9px;">🗣️ Voice AI &amp; Marathi</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="quickFilterGitHub('snowflake data engineering etl python')" style="font-size:11px; padding:4px 9px;">❄️ Snowflake &amp; ETL</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="quickFilterGitHub('autonomous coding agent llm')" style="font-size:11px; padding:4px 9px;">🤖 Autonomous Agents</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="quickFilterGitHub('local llm ollama whisper')" style="font-size:11px; padding:4px 9px;">⚡ Local LLM &amp; Whisper</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="quickFilterGitHub('fastapi rag langchain vector')" style="font-size:11px; padding:4px 9px;">🔍 RAG &amp; Vector</button>
                 </div>
             </div>
 
@@ -9116,9 +9173,29 @@ Ready for message compilation and automated dispatch.
                 </div>
             </div>
 
-            <!-- Landscape Horizontal Navigation Tabs -->
+            <!-- Landscape Horizontal Navigation Tabs (Smooth Touch Scroll on Mobile) -->
+            <style>
+                #careerNavTabs {
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+                @media (max-width: 768px) {
+                    #careerNavTabs {
+                        flex-wrap: nowrap !important;
+                        overflow-x: auto !important;
+                        -webkit-overflow-scrolling: touch !important;
+                        padding-bottom: 6px !important;
+                        max-width: 100vw !important;
+                    }
+                    #careerNavTabs button {
+                        white-space: nowrap !important;
+                        flex-shrink: 0 !important;
+                    }
+                }
+            </style>
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-                <div style="display:flex; gap:8px; flex-wrap:wrap;" id="careerNavTabs">
+                <div id="careerNavTabs">
                     <button type="button" class="btn btn-primary" id="btnCareerTabJobs" onclick="switchCareerTab('jobs')">&#127970; Verified MNC Jobs</button>
                     <button type="button" class="btn btn-secondary" id="btnCareerTabRadar" onclick="switchCareerTab('radar')">&#128202; Outreach Radar &amp; Metrics</button>
                     <button type="button" class="btn btn-secondary" id="btnCareerTabEvents" onclick="switchCareerTab('events')">&#127914; Mumbai Tech Events</button>
@@ -10747,31 +10824,23 @@ Ready for message compilation and automated dispatch.
 
 </div> <!-- Close #app-shell -->
 
-    <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (NATIVE APP-LIKE EXPERIENCE) -->
+    <!-- MOBILE BOTTOM QUICK NAVIGATION BAR (NATIVE APP-LIKE EXPERIENCE - 4 CORE ANCHORS) -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
-        <button type="button" class="mobile-bottom-nav-item active" id="mobTab-universal_tech_video" onclick="switchView('universal_tech_video')">
-            <span class="nav-icon" style="filter:drop-shadow(0 0 6px #F43F5E);">🎬</span>
-            <span style="font-weight:800; color:#F43F5E;">Video</span>
+        <button type="button" class="mobile-bottom-nav-item active" id="mobTab-admin_mobile_hub" onclick="navigateToHubOrHome()" title="Command Hub (Admin Home / User First Feature)">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 8px rgba(56,189,248,0.9));">⚡</span>
+            <span style="font-weight:800; color:#38BDF8;">Hub</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-dashboard" onclick="switchView('dashboard')">
-            <span class="nav-icon">🏠</span>
-            <span>Studio</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-ai_manager" onclick="switchView('ai_manager')" title="AI Manager Holographic Operating Center">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 8px rgba(168,85,247,0.8));">🤖</span>
+            <span style="font-weight:800; color:#C084FC;">AI Chat</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-ai_manager" onclick="switchView('ai_manager')">
-            <span class="nav-icon">🤖</span>
-            <span>AI Chat</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-career_hub" onclick="switchView('career_hub')" title="Enterprise Career & Job Search Command Center">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 8px rgba(16,185,129,0.8));">💼</span>
+            <span style="font-weight:800; color:#34D399;">Career</span>
         </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-data_engineer" onclick="switchView('data_engineer')">
-            <span class="nav-icon">🗄️</span>
-            <span>Data</span>
-        </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-admin_mobile_hub" onclick="switchView('admin_mobile_hub')">
-            <span class="nav-icon" style="filter:drop-shadow(0 0 6px #38BDF8);">⚡</span>
-            <span style="font-weight:700; color:#38BDF8;">Hub</span>
-        </button>
-        <button type="button" class="mobile-bottom-nav-item" id="mobTab-menu" onclick="toggleMobileSidebar(true)">
-            <span class="nav-icon">☰</span>
-            <span>Menu (51)</span>
+        <button type="button" class="mobile-bottom-nav-item" id="mobTab-menu" onclick="toggleMobileSidebar(true)" title="All 52+ Studio Features">
+            <span class="nav-icon" style="filter:drop-shadow(0 0 6px rgba(255,255,255,0.5));">☰</span>
+            <span style="font-weight:800; color:#F8FAFC;">Menu (52+)</span>
         </button>
     </nav>
 
@@ -11040,25 +11109,117 @@ Ready for message compilation and automated dispatch.
            ===================================================================== */
 
         // All features allowed across all devices (Desktop, Mobile, Tablet)
-        const DEFAULT_MOBILE_ALLOWED = ['*'];
+        // REAL DYNAMIC DEVICE FEATURE MANAGER & PERMISSION GATING (MOBILE VS DESKTOP)
+        const RECOMMENDED_MOBILE_FEATURES = [
+            'admin_mobile_hub', 'ai_manager', 'career_hub', 'dashboard', 'free_apis',
+            'github_explorer', 'news_center', 'amazon_tracker', 'approvals', 'assistant',
+            'communication', 'automation_scheduler', 'monitoring', 'vault'
+        ];
 
         function getMobileAllowedFeatures() {
-            return ['*'];
+            try {
+                const raw = localStorage.getItem('nanopro_mobile_allowed_features');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                }
+            } catch(e) {}
+            return ['*']; // Default to all if not restricted
         }
 
         function saveMobileAllowedFeatures(list) {
-            localStorage.setItem('nanopro_mobile_allowed_features', JSON.stringify(['*']));
+            try {
+                localStorage.setItem('nanopro_mobile_allowed_features', JSON.stringify(list || ['*']));
+            } catch(e) {}
         }
 
-        // Apply device feature gating: Keep all navigation items 100% visible across all devices
+        // Live Real-Time Device Telemetry Detection
+        function getLiveDeviceTelemetry() {
+            const width = window.innerWidth || screen.width || 390;
+            const height = window.innerHeight || screen.height || 844;
+            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const userAgent = navigator.userAgent || '';
+            let os = 'Unknown OS';
+            if (/android/i.test(userAgent)) os = 'Android Mobile';
+            else if (/iphone|ipad|ipod/i.test(userAgent)) os = 'iOS Mobile/Tablet';
+            else if (/windows/i.test(userAgent)) os = 'Windows PC';
+            else if (/macintosh|mac os x/i.test(userAgent)) os = 'macOS';
+            else if (/linux/i.test(userAgent)) os = 'Linux';
+
+            let browser = 'Browser';
+            if (/chrome|crios/i.test(userAgent) && !/edge|opr/i.test(userAgent)) browser = 'Chrome';
+            else if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) browser = 'Safari';
+            else if (/firefox|fxios/i.test(userAgent)) browser = 'Firefox';
+            else if (/edg/i.test(userAgent)) browser = 'Edge';
+
+            const isMobileDevice = width < 768 || /android|iphone|ipad|mobile/i.test(userAgent);
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const netType = connection ? (connection.effectiveType || connection.type || 'High-Speed').toUpperCase() : 'ONLINE';
+
+            return {
+                os,
+                browser,
+                width,
+                height,
+                isTouch,
+                isMobileDevice,
+                netType,
+                orientation: width < height ? 'Portrait' : 'Landscape'
+            };
+        }
+
+        function renderLiveDeviceTelemetryCard() {
+            const telemetryEl = document.getElementById('liveDeviceTelemetryBox');
+            if (!telemetryEl) return;
+            const t = getLiveDeviceTelemetry();
+            telemetryEl.innerHTML = `
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-bottom:12px;">
+                    <div style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:8px 10px;">
+                        <div style="font-size:10px; color:#64748B; font-weight:700;">CONNECTED DEVICE</div>
+                        <div style="font-size:12px; font-weight:700; color:#38BDF8;">${t.isMobileDevice ? '📱' : '💻'} ${t.os}</div>
+                        <div style="font-size:9.5px; color:#94A3B8;">${t.browser} Engine</div>
+                    </div>
+                    <div style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:8px 10px;">
+                        <div style="font-size:10px; color:#64748B; font-weight:700;">SCREEN VIEWPORT</div>
+                        <div style="font-size:12px; font-weight:700; color:#10B981;">${t.width} &times; ${t.height} px</div>
+                        <div style="font-size:9.5px; color:#94A3B8;">${t.orientation} &bull; ${t.isTouch ? 'Touch 👆' : 'Mouse 🖱️'}</div>
+                    </div>
+                    <div style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:8px 10px;">
+                        <div style="font-size:10px; color:#64748B; font-weight:700;">NETWORK &amp; SPEED</div>
+                        <div style="font-size:12px; font-weight:700; color:#F59E0B;">⚡ ${t.netType}</div>
+                        <div style="font-size:9.5px; color:#94A3B8;">Low Latency Active</div>
+                    </div>
+                    <div style="background:#090D16; border:1px solid #1E293B; border-radius:6px; padding:8px 10px;">
+                        <div style="font-size:10px; color:#64748B; font-weight:700;">ACTIVE PROFILE</div>
+                        <div style="font-size:12px; font-weight:700; color:#A855F7;">${t.isMobileDevice ? 'Mobile Adaptive' : 'Desktop Full'}</div>
+                        <div style="font-size:9.5px; color:#94A3B8;">Self-Healing Active</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Apply device feature gating: Hides unchecked features on mobile (<768px)
         function applyMobileFeatureGating() {
+            const allowed = getMobileAllowedFeatures();
+            const isWildcard = allowed.includes('*');
+            const isMobile = window.innerWidth < 768;
+
             const navItems = document.querySelectorAll('#sidebarNavContainer .nav-item[onclick]');
             navItems.forEach(item => {
-                item.style.display = 'flex';
+                const oc = item.getAttribute('onclick') || '';
+                const m = oc.match(/switchView\(['"]([^'"]+)['"]\)/);
+                if (m && m[1]) {
+                    const viewId = m[1];
+                    const isVisible = (!isMobile) || isWildcard || allowed.includes(viewId);
+                    item.style.display = isVisible ? 'flex' : 'none';
+                } else {
+                    item.style.display = 'flex';
+                }
             });
 
-            // Also update mobile bottom nav tabs
-            updateMobileBottomNav(['*']);
+            // Update mobile bottom nav tabs
+            updateMobileBottomNav(allowed);
+            renderLiveDeviceTelemetryCard();
         }
 
         // Dynamically show/hide bottom nav items
@@ -11074,7 +11235,7 @@ Ready for message compilation and automated dispatch.
                     btn.style.display = isSuperAdmin ? '' : 'none';
                     return;
                 }
-                const isAllowed = (allowed && (allowed.includes('*') || allowed.includes(tabId)));
+                const isAllowed = (!allowed) || allowed.includes('*') || allowed.includes(tabId);
                 btn.style.display = isAllowed ? '' : 'none';
             });
         }
@@ -11096,7 +11257,7 @@ Ready for message compilation and automated dispatch.
             if (btnEl) btnEl.classList.add('active');
         }
 
-        // Admin: Save configuration to localStorage
+        // Admin: Save configuration to localStorage and apply
         function saveDeviceFeatureConfig() {
             const mobileGrid = document.getElementById('deviceTab-mobile');
             if (!mobileGrid) return;
@@ -11109,55 +11270,50 @@ Ready for message compilation and automated dispatch.
                     if (match) allowed.push(match[1]);
                 }
             });
-            saveMobileAllowedFeatures(allowed);
+            saveMobileAllowedFeatures(allowed.length > 0 ? allowed : ['*']);
             const status = document.getElementById('deviceFeatureSaveStatus');
             if (status) {
                 status.style.display = 'block';
-                status.textContent = 'Mobile feature config saved! (' + allowed.length + ' features enabled on mobile)';
+                status.innerHTML = '⚡ <b>Device Permissions Applied!</b> (' + allowed.length + ' features active on mobile)';
                 setTimeout(() => { status.style.display = 'none'; }, 3000);
+            }
+            if (typeof showStudioToast === 'function') {
+                showStudioToast('Device Access Control updated successfully!', 'success');
             }
             applyMobileFeatureGating();
         }
 
-        // Admin: Reset to defaults
-        function resetDeviceFeatureConfig() {
-            localStorage.removeItem('nanopro_mobile_allowed_features');
-            // Uncheck all and re-check defaults
+        // Apply 1-Click Presets
+        function applyPresetMobileFeatures(preset) {
+            let list = ['*'];
+            if (preset === 'recommended') {
+                list = RECOMMENDED_MOBILE_FEATURES;
+            }
+            saveMobileAllowedFeatures(list);
+            
+            // Sync checkboxes in UI
             const mobileGrid = document.getElementById('deviceTab-mobile');
             if (mobileGrid) {
                 mobileGrid.querySelectorAll('.device-feature-item').forEach(item => {
                     const onclick = item.getAttribute('onclick') || '';
                     const match = onclick.match(/toggleDeviceFeature\(this,\s*['"]([^'"]+)['"]/);
-                    const isDefault = match && DEFAULT_MOBILE_ALLOWED.includes(match[1]);
+                    const shouldCheck = (list.includes('*') || (match && list.includes(match[1])));
                     const cb = item.querySelector('input[type=checkbox]');
-                    if (cb) cb.checked = isDefault;
-                    item.classList.toggle('checked', isDefault);
+                    if (cb) cb.checked = shouldCheck;
+                    item.classList.toggle('checked', shouldCheck);
                 });
             }
             applyMobileFeatureGating();
-            const status = document.getElementById('deviceFeatureSaveStatus');
-            if (status) {
-                status.style.display = 'block';
-                status.textContent = 'Reset to defaults!';
-                setTimeout(() => { status.style.display = 'none'; }, 2500);
+            if (typeof showStudioToast === 'function') {
+                showStudioToast(`Applied ${preset === 'recommended' ? 'Mobile Recommended' : 'All Features'} preset!`, 'success');
             }
         }
 
-        // Admin: Apply without reloading
-        function applyDeviceFeatureConfig() {
-            applyMobileFeatureGating();
-            const status = document.getElementById('deviceFeatureSaveStatus');
-            if (status) {
-                status.style.display = 'block';
-                status.textContent = 'Applied! Mobile sidebar and bottom nav updated instantly.';
-                setTimeout(() => { status.style.display = 'none'; }, 3000);
-            }
+        // Admin: Reset to defaults
+        function resetDeviceFeatureConfig() {
+            localStorage.removeItem('nanopro_mobile_allowed_features');
+            applyPresetMobileFeatures('all');
         }
-
-        // Run on every page load and resize
-        document.addEventListener('DOMContentLoaded', function() {
-            applyMobileFeatureGating();
-        });
         window.addEventListener('resize', function() {
             applyMobileFeatureGating();
         });
@@ -11372,7 +11528,36 @@ Ready for message compilation and automated dispatch.
                 }
             }
         }
-        window.switchView = switchView;
+        
+        /* --- DYNAMIC MOBILE NAVIGATION & GITHUB HELPERS --- */
+        function navigateToHubOrHome() {
+            const u = window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null);
+            const isAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
+            if (isAdmin) {
+                switchView('admin_mobile_hub');
+            } else {
+                const defaultView = window.nanoproFirstUserFeature || 'universal_tech_video';
+                switchView(defaultView);
+            }
+        }
+        window.navigateToHubOrHome = navigateToHubOrHome;
+
+        function quickFilterGitHub(query) {
+            const inp = document.getElementById('githubSearchInput');
+            if (inp) inp.value = query;
+            searchGitHubLive();
+        }
+        window.quickFilterGitHub = quickFilterGitHub;
+
+        function toggleRepoDetails(cardId) {
+            const el = document.getElementById('repo-details-' + cardId);
+            if (el) {
+                const isHidden = el.style.display === 'none';
+                el.style.display = isHidden ? 'block' : 'none';
+            }
+        }
+        window.toggleRepoDetails = toggleRepoDetails;
+window.switchView = switchView;
 
         function runViewContextualLoader(viewName) {
             try {

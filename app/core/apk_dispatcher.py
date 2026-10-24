@@ -19,6 +19,7 @@ import os
 import re
 import json
 import time
+import html
 import threading
 import datetime
 import urllib.request
@@ -527,11 +528,11 @@ def _save_sent_log(log: Dict[str, str]):
     APK_SENT_LOG.write_text(json.dumps(log, indent=2), encoding="utf-8")
 
 
-def _github_latest_apk(repo: str) -> Optional[Dict[str, Any]]:
+def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float = 100.0) -> Optional[Dict[str, Any]]:
     """
     Fetches latest GitHub release for a repo and smartly selects the best compatible
-    APK asset (preferring universal > arm64-v8a > standard apk) under 100MB.
-    Returns {name, url, size_mb, version, body} or None.
+    APK asset (universal > arm64-v8a > armeabi-v7a > generic) strictly within [min_size_mb, max_size_mb].
+    Returns {repo, name, url, size_mb, version, release_notes} or None.
     """
     try:
         api_url = f"https://api.github.com/repos/{repo}/releases/latest"
@@ -548,23 +549,22 @@ def _github_latest_apk(repo: str) -> Optional[Dict[str, Any]]:
         if not apk_assets:
             return None
 
+        # Filter strictly within requested size range
+        valid_assets = []
+        for a in apk_assets:
+            sz = a.get("size", 0)
+            sz_mb = sz / (1024 * 1024)
+            if min_size_mb <= sz_mb <= max_size_mb:
+                valid_assets.append(a)
+
+        if not valid_assets:
+            return None
+
         # Compatibility scoring: prefer universal > arm64-v8a > armeabi-v7a > general
         def score_asset(asset):
             nm = asset.get("name", "").lower()
             sz = asset.get("size", 0)
-            if sz > 26 * 1024 * 1024 or sz < 2048:
-                return -99999
             score = 50
-            # Strongly prioritize smaller APKs (< 25MB) for 5-10 second upload speed
-            if sz < 15 * 1024 * 1024:
-                score += 200
-            elif sz < 25 * 1024 * 1024:
-                score += 120
-            elif sz < 40 * 1024 * 1024:
-                score += 40
-            else:
-                score -= 30
-
             if "universal" in nm:
                 score += 100
             elif "arm64-v8a" in nm or "arm64" in nm:
@@ -575,13 +575,11 @@ def _github_latest_apk(repo: str) -> Optional[Dict[str, Any]]:
                 score += 5
             return score
 
-        sorted_assets = sorted(apk_assets, key=score_asset, reverse=True)
+        sorted_assets = sorted(valid_assets, key=score_asset, reverse=True)
         best = sorted_assets[0]
         size = best.get("size", 0)
-        if size > 26 * 1024 * 1024 or size < 2048:
-            return None
-
         size_mb = round(size / 1024 / 1024, 2)
+
         return {
             "repo": repo,
             "name": best.get("name", ""),
@@ -596,13 +594,13 @@ def _github_latest_apk(repo: str) -> Optional[Dict[str, Any]]:
 
 
 def _download_apk(url: str, filename: str) -> Optional[Path]:
-    """Downloads APK to temp dir. Returns Path or None on failure."""
+    """Downloads APK to temp dir with chunked 256KB low-memory streaming. Returns Path or None on failure."""
     dest = APK_TEMP_DIR / filename
     try:
         log_event(f"[APKBot] Downloading {filename}...", component="APKDispatcher")
-        req = urllib.request.Request(url, headers={"User-Agent": "NanoProAI-APKBot/1.0"})
-        with urllib.request.urlopen(req, timeout=120) as r, open(dest, "wb") as f:
-            chunk_size = 256 * 1024  # 256KB chunks — low memory usage
+        req = urllib.request.Request(url, headers={"User-Agent": "NanoProAI-APKBot/2.0"})
+        with urllib.request.urlopen(req, timeout=300) as r, open(dest, "wb") as f:
+            chunk_size = 256 * 1024  # 256KB chunks
             while True:
                 chunk = r.read(chunk_size)
                 if not chunk:
@@ -618,11 +616,110 @@ def _download_apk(url: str, filename: str) -> Optional[Path]:
         return None
 
 
-def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML") -> bool:
+def _build_caption(source: Dict[str, Any], apk_info: Dict[str, Any], lane: str = "fast") -> str:
     """
-    Sends APK file to @mangesh_apk_bot via Telegram sendDocument API.
-    Uses HTML formatting, strictly enforces <= 1000 character limit,
-    and automatically falls back to clean plain-text if Telegram returns formatting errors.
+    Constructs a safe, beautifully styled Marathi summary + key features + safety badges.
+    Safely escapes dynamic content to prevent Telegram HTML entity errors (&lt;, &gt;, &amp;).
+    """
+    label_esc = html.escape(str(source.get("label", apk_info.get("name", "Android App"))))
+    ver_esc = html.escape(str(apk_info.get("version", "latest")))
+    cat_esc = html.escape(str(source.get("category", "Open-Source App")))
+    repo_esc = html.escape(str(apk_info.get("repo", "")))
+    name_esc = html.escape(str(apk_info.get("name", "")))
+    size_mb = apk_info.get("size_mb", 0)
+
+    summary_raw = source.get("summary") or f"{label_esc} is an authentic, verified open-source Android app."
+    summary_esc = html.escape(summary_raw)
+
+    features = source.get("features", [])
+    feat_lines = []
+    for f in features[:4]:
+        feat_lines.append(f"• {html.escape(f)}")
+    feat_str = ""
+    if feat_lines:
+        feat_str = "\n✨ <b>मुख्य वैशिष्ट्ये (Features):</b>\n" + "\n".join(feat_lines)
+
+    if lane == "heavy":
+        badge = (
+            f"🚀 <b>[HEAVY-DUTY ENTERPRISE APK • {size_mb} MB]</b>\n"
+            f"⚡ <i>Delivered via NanoPro Parallel High-Capacity Background Worker</i>\n"
+        )
+    else:
+        badge = (
+            f"⚡ <b>[EXPRESS FAST-TRACK APK • {size_mb} MB]</b>\n"
+            f"🚀 <i>Ultra-Fast Lightweight Delivery (&lt;26 MB)</i>\n"
+        )
+
+    caption = (
+        f"{badge}"
+        f"📦 <b>{label_esc}</b> (<code>{ver_esc}</code>)\n"
+        f"🏷️ <i>{cat_esc}</i> • 💾 <b>{size_mb} MB</b>\n"
+        f"📂 <code>{name_esc}</code>\n"
+        f"────────────────────────\n"
+        f"📋 <b>काय आहे हे ॲप? (Summary):</b>\n"
+        f"{summary_esc}\n"
+        f"{feat_str}\n"
+        f"────────────────────────\n"
+        f"🛡️ <b>100% Verified Open Source | Safe &amp; Ad-Free</b>\n"
+        f"🔗 github.com/{repo_esc}\n"
+        f"🤖 @mangesh_apk_bot • NanoPro AI Studio"
+    )
+    return caption[:1020]
+
+
+def _send_telegram_button_message(caption: str, button_text: str, button_url: str, parse_mode: str = "HTML") -> bool:
+    """
+    Sends rich Telegram message with an interactive 1-click Download button.
+    Used for VIP heavy-duty APKs (50-100MB) or when direct file upload is rejected.
+    """
+    token = TELEGRAM_APK_BOT_TOKEN or os.environ.get("TELEGRAM_APK_BOT_TOKEN", "")
+    if not token:
+        log_event("[APKBot] APK bot token not configured", level="WARNING", component="APKDispatcher")
+        return False
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    final_caption = caption if len(caption) <= 4000 else caption[:3950] + "..."
+    try:
+        import requests as req_lib
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": final_caption,
+            "parse_mode": parse_mode,
+            "reply_markup": {
+                "inline_keyboard": [
+                    [{"text": button_text, "url": button_url}]
+                ]
+            }
+        }
+        resp = req_lib.post(url, json=payload, timeout=30)
+        data = resp.json()
+        if data.get("ok"):
+            log_event(f"[APKBot] Delivered VIP Download Package with Button to @mangesh_apk_bot", component="APKDispatcher")
+            return True
+        else:
+            # Fallback to plain text if HTML had entity issue
+            err_desc = data.get("description", "")
+            log_event(f"[APKBot] Button message HTML rejected ({err_desc}), retrying plain-text...", level="INFO", component="APKDispatcher")
+            plain_caption = re.sub(r"<[^>]+>", "", final_caption)
+            plain_caption = plain_caption.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+            payload["text"] = plain_caption
+            payload.pop("parse_mode", None)
+            resp2 = req_lib.post(url, json=payload, timeout=30)
+            data2 = resp2.json()
+            if data2.get("ok"):
+                log_event(f"[APKBot] Delivered VIP Download Package (plain-text fallback)", component="APKDispatcher")
+                return True
+            log_event(f"[APKBot] Button send failed: {data2.get('description')}", level="WARNING", component="APKDispatcher")
+            return False
+    except Exception as e:
+        log_event(f"[APKBot] Button message exception: {e}", level="WARNING", component="APKDispatcher")
+        return False
+
+
+def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML", fallback_url: Optional[str] = None) -> bool:
+    """
+    Sends APK file to @mangesh_apk_bot via Telegram sendDocument API with 600s timeout.
+    If Telegram rejects (e.g. file is too big or 400 error), falls back to plain-text
+    or VIP button message if fallback_url is provided.
     """
     token = TELEGRAM_APK_BOT_TOKEN or os.environ.get("TELEGRAM_APK_BOT_TOKEN", "")
     if not token:
@@ -632,8 +729,6 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
     url = f"https://api.telegram.org/bot{token}/sendDocument"
     try:
         import requests as req_lib
-
-        # Safety: Telegram caption strictly limit is 1024 characters
         final_caption = caption if len(caption) <= 1020 else caption[:1015] + "..."
 
         with open(apk_path, "rb") as f:
@@ -641,135 +736,186 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
                 url,
                 data={"chat_id": TELEGRAM_CHAT_ID, "caption": final_caption, "parse_mode": parse_mode},
                 files={"document": (apk_path.name, f, "application/vnd.android.package-archive")},
-                timeout=300
+                timeout=600
             )
         data = resp.json()
         if data.get("ok"):
             log_event(f"[APKBot] Sent {apk_path.name} to @mangesh_apk_bot with rich summary", component="APKDispatcher")
             return True
         else:
-            # If HTML parsing threw 400 Bad Request (e.g. tag error), retry with stripped plain text
             err_desc = data.get("description", "")
-            log_event(f"[APKBot] HTML delivery rejected ({err_desc}), falling back to plain-text...", level="INFO", component="APKDispatcher")
+            log_event(f"[APKBot] HTML delivery rejected ({err_desc}), trying plain-text...", level="INFO", component="APKDispatcher")
+
+            # Check if Telegram rejected because file exceeds 50MB
+            if "too big" in err_desc.lower() and fallback_url:
+                log_event(f"[APKBot] Telegram 50MB limit reached for {apk_path.name}; engaging VIP 1-click Download Button...", level="INFO", component="APKDispatcher")
+                return _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({round(apk_path.stat().st_size/1024/1024, 1)} MB)", fallback_url)
+
             plain_caption = re.sub(r"<[^>]+>", "", final_caption)
+            plain_caption = plain_caption.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
             with open(apk_path, "rb") as f2:
                 resp2 = req_lib.post(
                     url,
                     data={"chat_id": TELEGRAM_CHAT_ID, "caption": plain_caption},
                     files={"document": (apk_path.name, f2, "application/vnd.android.package-archive")},
-                    timeout=300
+                    timeout=600
                 )
             data2 = resp2.json()
             if data2.get("ok"):
                 log_event(f"[APKBot] Sent {apk_path.name} (plain-text fallback) to @mangesh_apk_bot", component="APKDispatcher")
                 return True
+
+            # If still rejected and we have fallback URL, deliver via VIP Button
+            if fallback_url:
+                log_event(f"[APKBot] Upload rejected completely ({data2.get('description')}); delivering via VIP Download Button...", level="INFO", component="APKDispatcher")
+                return _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({round(apk_path.stat().st_size/1024/1024, 1)} MB)", fallback_url)
+
             log_event(f"[APKBot] Send failed completely: {data2.get('description')}", level="WARNING", component="APKDispatcher")
             return False
     except Exception as e:
         log_event(f"[APKBot] Send exception: {e}", level="WARNING", component="APKDispatcher")
+        if fallback_url:
+            return _send_telegram_button_message(caption, "⬇️ Direct Download APK", fallback_url)
         return False
 
 
 def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
     """
-    Main function: discovers `count` new APKs and sends them to @mangesh_apk_bot.
-    Skips already-sent versions. Downloads one at a time to save memory.
-    Deletes APK file immediately after sending.
+    Main function: dual-lane parallel execution architecture.
+    - Lane 1 (Express Fast-Track < 26 MB): Immediate dispatch of compact APKs in 4-8 seconds.
+    - Lane 2 (Heavy-Duty Parallel Worker 26-100 MB): Concurrent background worker for heavy APKs
+      (LocalSend, Termux, Firefox, OsmAnd, Gallery, StreetComplete) with 600s timeout & VIP treatment.
     """
     if count is None:
         cfg = get_apk_config()
-        count = cfg.get("count", 5)
-    """
-    Main function: discovers `count` new APKs and sends them to @mangesh_apk_bot.
-    Skips already-sent versions. Downloads one at a time to save memory.
-    Deletes APK file immediately after sending.
-    """
-    sent_log  = _load_sent_log()
-    sent      = []
-    skipped   = []
-    failed    = []
+        count = cfg.get("count", 8)
 
-    # Rotate sources so each cycle sends different apps
+    sent_log = _load_sent_log()
+    sent_lock = threading.Lock()
+    sent = []
+    skipped = []
+    failed = []
+
+    # Calculate lane partition
+    if count <= 2:
+        fast_target = count
+        heavy_target = 1
+    else:
+        heavy_target = max(1, count // 4)  # e.g., for 8 -> 2 heavy, 6 fast
+        fast_target = max(1, count - heavy_target)
+
     import random
     sources = list(APK_SOURCES)
     random.shuffle(sources)
 
-    for source in sources:
-        if len(sent) >= count:
+    # Lane 2: Heavy-Duty Background Worker function
+    def _run_heavy_lane():
+        heavy_sent_count = 0
+        heavy_sources = list(sources)
+        random.shuffle(heavy_sources)
+        log_event(f"[APKBot-HeavyLane] Background worker engaged (Target: {heavy_target} heavy APKs [26-100 MB])...", component="APKDispatcher")
+
+        for src in heavy_sources:
+            if heavy_sent_count >= heavy_target:
+                break
+            repo = src["repo"]
+            label = src["label"]
+            apk_info = _github_latest_apk(repo, min_size_mb=26.0, max_size_mb=100.0)
+            if not apk_info:
+                continue
+
+            version = apk_info["version"]
+            with sent_lock:
+                if sent_log.get(repo) == version:
+                    continue
+
+            # Heavy candidate found!
+            size_mb = apk_info["size_mb"]
+            caption = _build_caption(src, apk_info, lane="heavy")
+
+            ok = False
+            if size_mb <= 50.0:
+                # Direct file upload via Telegram sendDocument with extended 600s timeout
+                apk_path = _download_apk(apk_info["url"], apk_info["name"])
+                if apk_path:
+                    ok = _send_apk_to_telegram(apk_path, caption, fallback_url=apk_info["url"])
+                    try:
+                        apk_path.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                else:
+                    # Download failed; provide VIP button package
+                    ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({size_mb} MB)", apk_info["url"])
+            else:
+                # > 50 MB up to 100 MB: VIP High-Capacity 1-Click Download Delivery
+                log_event(f"[APKBot-HeavyLane] Discarding direct 50MB bot upload; dispatching VIP High-Speed direct binary ({size_mb} MB) for {label}", component="APKDispatcher")
+                ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({size_mb} MB)", apk_info["url"])
+
+            if ok:
+                with sent_lock:
+                    sent_log[repo] = version
+                    _save_sent_log(sent_log)
+                    sent.append({"repo": repo, "name": apk_info["name"], "version": version, "size_mb": size_mb, "lane": "heavy"})
+                heavy_sent_count += 1
+                log_event(f"[APKBot-HeavyLane] Delivered Heavy-Duty APK {label} ({size_mb} MB) successfully", component="APKDispatcher")
+                time.sleep(4)
+
+    # Spawn Lane 2 in background thread so it never blocks Lane 1
+    heavy_thread = threading.Thread(target=_run_heavy_lane, daemon=True, name="APKHeavyLaneWorker")
+    heavy_thread.start()
+
+    # Lane 1: Express Fast-Track (< 26 MB) runs immediately on current thread
+    fast_sent_count = 0
+    for src in sources:
+        if fast_sent_count >= fast_target:
             break
+        repo = src["repo"]
+        label = src["label"]
 
-        repo  = source["repo"]
-        label = source["label"]
-
-        # Get latest APK info
-        apk_info = _github_latest_apk(repo)
+        apk_info = _github_latest_apk(repo, min_size_mb=0.1, max_size_mb=26.0)
         if not apk_info:
-            failed.append({"repo": repo, "reason": "No APK found in latest release"})
             continue
 
-        version  = apk_info["version"]
-        sent_key = f"{repo}@{version}"
+        version = apk_info["version"]
+        with sent_lock:
+            if sent_log.get(repo) == version:
+                skipped.append({"repo": repo, "version": version, "reason": "Already sent"})
+                continue
 
-        # Skip if already sent this version
-        if sent_log.get(repo) == version:
-            skipped.append({"repo": repo, "version": version, "reason": "Already sent"})
-            continue
-
-        # Download
+        # Fast candidate found! Download and send immediately
         apk_path = _download_apk(apk_info["url"], apk_info["name"])
         if not apk_path:
             failed.append({"repo": repo, "reason": "Download failed"})
             continue
 
-        # Construct Rich Informative Caption (Marathi Summary + Key Features + Safety Badge)
-        summary_txt = source.get("summary") or f"{label} is an authentic, verified open-source Android app."
-        cat_txt = source.get("category", "Open-Source App")
-        features_list = source.get("features", [])
+        caption = _build_caption(src, apk_info, lane="fast")
+        ok = _send_apk_to_telegram(apk_path, caption, fallback_url=apk_info["url"])
 
-        feat_str = ""
-        if features_list:
-            feat_str = "\n✨ <b>मुख्य वैशिष्ट्ये (Features):</b>\n" + "\n".join([f"• {f}" for f in features_list[:4]])
-
-        caption = (
-            f"📦 <b>{label}</b> (<code>{version}</code>)\n"
-            f"🏷️ <i>{cat_txt}</i> • 💾 <b>{apk_info['size_mb']} MB</b>\n"
-            f"📂 <code>{apk_info['name']}</code>\n"
-            f"────────────────────────\n"
-            f"📋 <b>काय आहे हे ॲप? (Summary):</b>\n"
-            f"{summary_txt}\n"
-            f"{feat_str}\n"
-            f"────────────────────────\n"
-            f"🛡️ <b>100% Verified Open Source | Safe & Ad-Free</b>\n"
-            f"🔗 github.com/{repo}\n"
-            f"🤖 @mangesh_apk_bot • NanoPro AI Studio"
-        )
-
-        # Send to Telegram
-        ok = _send_apk_to_telegram(apk_path, caption)
-
-        # Always delete after attempting send
         try:
             apk_path.unlink(missing_ok=True)
         except Exception:
             pass
 
         if ok:
-            sent_log[repo] = version
-            sent.append({"repo": repo, "name": apk_info["name"], "version": version, "size_mb": apk_info["size_mb"]})
+            with sent_lock:
+                sent_log[repo] = version
+                _save_sent_log(sent_log)
+                sent.append({"repo": repo, "name": apk_info["name"], "version": version, "size_mb": apk_info["size_mb"], "lane": "fast"})
+            fast_sent_count += 1
+            log_event(f"[APKBot-FastLane] Sent {label} ({apk_info['size_mb']} MB) in Express Lane", component="APKDispatcher")
         else:
             failed.append({"repo": repo, "name": apk_info["name"], "reason": "Telegram send failed"})
 
-        # Small delay between sends — be kind to Telegram API
-        time.sleep(3)
+        time.sleep(2)
 
-    _save_sent_log(sent_log)
-    log_event(f"[APKBot] Cycle done: {len(sent)} sent, {len(skipped)} skipped, {len(failed)} failed", component="APKDispatcher")
-
+    log_event(f"[APKBot] Fast lane completed: {fast_sent_count} sent. Heavy lane running in background.", component="APKDispatcher")
     return {
-        "status":   "success",
-        "sent":     sent,
-        "skipped":  skipped,
-        "failed":   failed,
+        "status": "success",
+        "fast_sent": fast_sent_count,
+        "heavy_worker_active": heavy_thread.is_alive(),
+        "sent": sent,
+        "skipped": skipped,
+        "failed": failed,
         "sent_count": len(sent),
     }
 
