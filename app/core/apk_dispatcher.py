@@ -623,19 +623,19 @@ def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float =
     return None
 
 
-def _download_apk(url: str, filename: str) -> Optional[Path]:
-    """Downloads APK to temp dir with chunked 256KB low-memory streaming with strict 20s skip limit."""
+def _download_apk(url: str, filename: str, timeout_seconds: int = 90) -> Optional[Path]:
+    """Downloads APK to temp dir with chunked 256KB low-memory streaming with 90s budget."""
     dest = APK_TEMP_DIR / filename
     start_time = time.time()
     try:
         log_event(f"[APKBot] Downloading {filename} (max 20s budget)...", component="APKDispatcher")
         req = urllib.request.Request(url, headers={"User-Agent": "NanoProAI-APKBot/2.0"})
-        with urllib.request.urlopen(req, timeout=20) as r, open(dest, "wb") as f:
+        with urllib.request.urlopen(req, timeout=timeout_seconds) as r, open(dest, "wb") as f:
             chunk_size = 256 * 1024  # 256KB chunks
             while True:
-                if (time.time() - start_time) > 20:
-                    log_event(f"[APKBot] Download of {filename} exceeded 20s budget, skipping to direct 1-click button", level="INFO", component="APKDispatcher")
-                    raise TimeoutError("Download exceeded 20s budget")
+                if (time.time() - start_time) > timeout_seconds:
+                    log_event(f"[APKBot] Download of {filename} exceeded {timeout_seconds}s budget, skipping", level="INFO", component="APKDispatcher")
+                    raise TimeoutError(f"Download exceeded {timeout_seconds}s budget")
                 chunk = r.read(chunk_size)
                 if not chunk:
                     break
@@ -781,9 +781,9 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
             log_event(f"[APKBot] HTML delivery rejected ({err_desc}), trying plain-text...", level="INFO", component="APKDispatcher")
 
             # Check if Telegram rejected because file exceeds 50MB
-            if "too big" in err_desc.lower() and fallback_url:
-                log_event(f"[APKBot] Telegram 50MB limit reached for {apk_path.name}; engaging VIP 1-click Download Button...", level="INFO", component="APKDispatcher")
-                return _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({round(apk_path.stat().st_size/1024/1024, 1)} MB)", fallback_url)
+            if "too big" in err_desc.lower():
+                log_event(f"[APKBot] Telegram 50MB limit reached for {apk_path.name}; skipping so user receives only 100% direct APK files", level="INFO", component="APKDispatcher")
+                return False
 
             plain_caption = re.sub(r"<[^>]+>", "", final_caption)
             plain_caption = plain_caption.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
@@ -799,10 +799,9 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
                 log_event(f"[APKBot] Sent {apk_path.name} (plain-text fallback) to @mangesh_apk_bot", component="APKDispatcher")
                 return True
 
-            # If still rejected and we have fallback URL, deliver via VIP Button
-            if fallback_url:
-                log_event(f"[APKBot] Upload rejected completely ({data2.get('description')}); delivering via VIP Download Button...", level="INFO", component="APKDispatcher")
-                return _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({round(apk_path.stat().st_size/1024/1024, 1)} MB)", fallback_url)
+            # If still rejected, fail safely without sending external URL links
+            log_event(f"[APKBot] Upload rejected completely ({data2.get('description')}); skipping to next direct APK candidate...", level="INFO", component="APKDispatcher")
+            return False
 
             log_event(f"[APKBot] Send failed completely: {data2.get('description')}", level="WARNING", component="APKDispatcher")
             return False
@@ -868,18 +867,18 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
             caption = _build_caption(src, apk_info, lane="heavy")
 
             ok = False
-            if size_mb <= 50.0:
-                # Direct file upload via Telegram sendDocument with extended 600s timeout
-                apk_path = _download_apk(apk_info["url"], apk_info["name"])
+            if size_mb <= 48.0:
+                # Direct file upload via Telegram sendDocument (100% direct .apk binary in chat)
+                apk_path = _download_apk(apk_info["url"], apk_info["name"], timeout_seconds=120)
                 if apk_path:
-                    ok = _send_apk_to_telegram(apk_path, caption, fallback_url=apk_info["url"])
+                    ok = _send_apk_to_telegram(apk_path, caption, fallback_url=None)
                     try:
                         apk_path.unlink(missing_ok=True)
                     except Exception:
                         pass
                 else:
-                    # Download failed; provide VIP button package
-                    ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({size_mb} MB)", apk_info["url"])
+                    log_event(f"[APKBot-HeavyLane] Download failed for {apk_info['name']}; skipping to keep 100% direct APK purity", component="APKDispatcher")
+                    continue
             else:
                 # Over 50 MB exceeds Telegram bot limit. In direct_apk_only mode, skip so user only gets direct APK files!
                 log_event(f"[APKBot-HeavyLane] {label} ({size_mb} MB) exceeds Telegram 50MB direct file limit. Skipping in direct_apk_only mode.", component="APKDispatcher")
