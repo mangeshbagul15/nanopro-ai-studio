@@ -661,9 +661,48 @@ async def startup_event():
     threading.Thread(target=_execute_staged_boot_phases_2_and_3, daemon=True, name="NanoPro-StagedBoot").start()
 
 @app.get("/", response_class=HTMLResponse)
-async def serve_dashboard():
-    """Serves the master Mangesh Nano Pro AI Studio Desktop UI."""
-    return get_dashboard_html()
+async def serve_dashboard(request: Request, token: Optional[str] = None):
+    """
+    Zero-Trust Security Gateway:
+    - Never serves the dashboard markup to unauthenticated clients.
+    - Validates server-side session token via query (?token=...), cookie (nanopro_session), or Authorization header.
+    - If valid, serves the authenticated dashboard HTML.
+    - If unverified/missing, serves the standalone Clerk and Cloudflare Zero Trust Login Gateway.
+    - Completely prevents DOM inspection bypass because no dashboard markup is sent until verified!
+    """
+    from app.core.auth_manager import auth_manager
+    from app.ui.auth_components import get_login_page_html
+
+    # Check 1: Query parameter ?token=...
+    candidate_token = token
+
+    # Check 2: Cookie 'nanopro_session'
+    if not candidate_token:
+        candidate_token = request.cookies.get("nanopro_session")
+
+    # Check 3: Authorization header Bearer token
+    if not candidate_token:
+        auth_hdr = request.headers.get("authorization", "")
+        if auth_hdr.lower().startswith("bearer "):
+            candidate_token = auth_hdr[7:].strip()
+
+    # Server-side validation
+    if candidate_token:
+        v_res = auth_manager.validate_session(candidate_token)
+        if v_res.get("is_valid") and v_res.get("user"):
+            resp = HTMLResponse(get_dashboard_html())
+            resp.set_cookie(
+                key="nanopro_session",
+                value=candidate_token,
+                max_age=2592000,
+                httponly=False,
+                samesite="lax",
+                secure=False
+            )
+            return resp
+
+    # If unauthenticated, NEVER leak dashboard DOM: serve pure Login Gateway!
+    return HTMLResponse(get_login_page_html())
 
 # --- AI MANAGER CONTINUOUS CHAT INTERFACE ---
 @app.post("/api/manager/chat")

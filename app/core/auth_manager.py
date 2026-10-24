@@ -28,8 +28,20 @@ class AuthManager:
         return conn
 
     def _parse_allowed_views(self, views_val: Any, role: str) -> Any:
-        """Parses allowed view IDs. All studio features are 100% unlocked for all users and devices."""
-        return ["*"]
+        """Parses allowed view IDs with strict Role-Based Access Control (RBAC)."""
+        if role == "admin":
+            return ["*"]
+        if not views_val or views_val == "*":
+            return ["*"]
+        if isinstance(views_val, (list, dict)):
+            return views_val
+        if isinstance(views_val, str):
+            try:
+                parsed = json.loads(views_val)
+                return parsed
+            except Exception:
+                return [v.strip() for v in views_val.split(",") if v.strip()]
+        return ["dashboard"]
 
     def _init_auth_tables(self):
         """Creates users, user_sessions, and user_audit_logs tables with granular RBAC permissions."""

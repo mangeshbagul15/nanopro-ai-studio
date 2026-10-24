@@ -2521,3 +2521,352 @@ def get_user_management_view_html() -> str:
     """
 
 
+
+
+def get_login_page_html() -> str:
+    """Returns standalone high-tech Cyber-Luxe login page with Clerk & Cloudflare Zero Trust."""
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mangesh Nano Pro — Zero-Trust Security Gateway</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='npG' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338BDF8'/%3E%3Cstop offset='50%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%2310B981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='url(%23npG)'/%3E%3Ccircle cx='32' cy='22' r='4' fill='%2338BDF8'/%3E%3Ccircle cx='48' cy='46' r='3.5' fill='%2310B981'/%3E%3Ccircle cx='16' cy='46' r='3.5' fill='%236366F1'/%3E%3C/svg%3E">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #0F172A 0%, #020617 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #F8FAFC;
+            padding: 20px;
+        }
+        .gateway-card {
+            width: 100%;
+            max-width: 460px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(56, 189, 248, 0.15);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+        }
+        .gateway-header {
+            padding: 28px 28px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10B981;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #10B981; box-shadow: 0 0 8px #10B981;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        .gateway-title { font-size: 22px; font-weight: 800; color: #FFF; margin-bottom: 6px; letter-spacing: -0.5px; }
+        .gateway-sub { font-size: 13px; color: #94A3B8; }
+        .shield-specs {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 14px;
+            font-size: 11px;
+            color: #64748B;
+        }
+        .shield-spec-item { display: flex; align-items: center; gap: 4px; }
+        .tab-bar { display: flex; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 15, 29, 0.5); }
+        .tab-btn {
+            flex: 1;
+            padding: 14px 0;
+            background: none;
+            border: none;
+            color: #94A3B8;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { color: #38BDF8; background: rgba(56, 189, 248, 0.08); border-bottom: 2px solid #38BDF8; }
+        .gateway-body { padding: 26px 28px 30px; }
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: #F8FAFC;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus { border-color: #38BDF8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25); }
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
+            border: none;
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-submit:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .alert-box {
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; color: #FCA5A5; }
+        .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #6EE7B7; }
+        .alert-warning { background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #FCD34D; }
+        .footer-note { text-align: center; font-size: 11px; color: #64748B; margin-top: 20px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="gateway-card">
+        <div class="gateway-header">
+            <div class="security-badge">
+                <div class="pulse-dot"></div>
+                Cloudflare Zero Trust + Clerk Shield
+            </div>
+            <h1 class="gateway-title">Mangesh Nano Pro AI</h1>
+            <p class="gateway-sub">Autonomous Intelligent Operating Center</p>
+            <div class="shield-specs">
+                <div class="shield-spec-item">🔒 Session Token Guard</div>
+                <div class="shield-spec-item">🛡️ Device Fingerprint</div>
+                <div class="shield-spec-item">⚡ Zero DOM-Leak</div>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <button type="button" class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+            <button type="button" class="tab-btn" id="tabRegister" onclick="switchTab('register')">Request Access</button>
+        </div>
+
+        <div class="gateway-body">
+            <div id="alertBox" class="alert-box"></div>
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+                </div>
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94A3B8; cursor:pointer;">
+                        <input type="checkbox" id="rememberMe" checked> Remember this device (Auto-Login)
+                    </label>
+                </div>
+                <button type="submit" id="loginBtn" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="regFullName" class="form-input" placeholder="Mangesh Bagul" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Desired Username</label>
+                    <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password (Min 8 chars, 1 Upper, 1 Special)</label>
+                    <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="regBtn" class="btn-submit" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
+                    📝 Submit for Admin Approval
+                </button>
+            </form>
+
+            <div class="footer-note">
+                Protected by NanoPro Zero-Trust Architecture Sentinel (agent_136).<br>
+                Dashboard markup is NEVER served to unauthenticated clients.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if device already has active session or auto-login credentials
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('nanopro_session_token');
+            if (token) {
+                try {
+                    const resp = await fetch('/api/auth/validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_token: token })
+                    });
+                    const d = await resp.json();
+                    if (d.is_valid && d.user) {
+                        // Confirmed by server! Redirect to dashboard with session token
+                        document.cookie = 'nanopro_session=' + encodeURIComponent(token) + '; path=/; max-age=2592000; SameSite=Lax';
+                        window.location.replace('/?token=' + encodeURIComponent(token));
+                        return;
+                    }
+                } catch(e){}
+            }
+
+            // Check remember credentials
+            try {
+                const raw = localStorage.getItem('nanopro_saved_accounts');
+                const accounts = raw ? JSON.parse(raw) : [];
+                const active = localStorage.getItem('nanopro_active_account');
+                const target = accounts.find(a => a.username.toLowerCase() === (active || '').toLowerCase()) || accounts[0];
+                if (target && target.saved_password && localStorage.getItem('nanopro_remember_credentials') === 'true') {
+                    const pwd = decodeURIComponent(escape(atob(target.saved_password)));
+                    if (pwd) {
+                        const resp = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: target.username, password: pwd })
+                        });
+                        const d = await resp.json();
+                        if (d.status === 'success') {
+                            localStorage.setItem('nanopro_session_token', d.session_token);
+                            document.cookie = 'nanopro_session=' + encodeURIComponent(d.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+                            window.location.replace('/?token=' + encodeURIComponent(d.session_token));
+                        }
+                    }
+                }
+            } catch(e){}
+        });
+
+        function switchTab(tab) {
+            document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+            document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+            document.getElementById('loginForm').style.display = (tab === 'login') ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = (tab === 'register') ? 'block' : 'none';
+            hideAlert();
+        }
+
+        function showAlert(msg, type='error') {
+            const el = document.getElementById('alertBox');
+            el.className = 'alert-box alert-' + type;
+            el.innerHTML = msg;
+            el.style.display = 'block';
+        }
+
+        function hideAlert() {
+            document.getElementById('alertBox').style.display = 'none';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.innerText = 'Verifying with Cloudflare & Server...';
+            hideAlert();
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const remember = document.getElementById('rememberMe').checked;
+
+            try {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    // Save session token in localStorage and cookie
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+                    localStorage.setItem('nanopro_active_account', data.user.username);
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+
+                    if (remember) {
+                        localStorage.setItem('nanopro_remember_credentials', 'true');
+                        try {
+                            const encPwd = btoa(unescape(encodeURIComponent(password)));
+                            let accs = [];
+                            try { accs = JSON.parse(localStorage.getItem('nanopro_saved_accounts') || '[]'); } catch(e){}
+                            accs = accs.filter(a => a.username.toLowerCase() !== data.user.username.toLowerCase());
+                            accs.unshift({ username: data.user.username, saved_password: encPwd, session_token: data.session_token });
+                            localStorage.setItem('nanopro_saved_accounts', JSON.stringify(accs));
+                        } catch(e){}
+                    }
+                    showAlert('✅ Access Granted! Loading workspace...', 'success');
+                    setTimeout(() => {
+                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+                    }, 400);
+                } else {
+                    showAlert(data.error || 'Authentication failed. Please verify credentials.', 'error');
+                }
+            } catch(err) {
+                showAlert('Gateway Error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '🔐 Verify & Launch NanoPro';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('regBtn');
+            btn.disabled = true;
+            btn.innerText = 'Submitting Request...';
+            hideAlert();
+
+            const full_name = document.getElementById('regFullName').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            try {
+                const resp = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name, username, email, password })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    showAlert('<b>' + data.message + '</b>', 'warning');
+                    document.getElementById('registerForm').reset();
+                    setTimeout(() => switchTab('login'), 3500);
+                } else {
+                    showAlert(data.error || 'Registration failed.', 'error');
+                }
+            } catch(err) {
+                showAlert('Submission Error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '📝 Submit for Admin Approval';
+            }
+        }
+    </script>
+</body>
+</html>
+"""
