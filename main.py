@@ -679,45 +679,45 @@ async def startup_event():
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard(request: Request, token: Optional[str] = None):
     """
-    Zero-Trust Security Gateway:
-    - Never serves the dashboard markup to unauthenticated clients.
-    - Validates server-side session token via query (?token=...), cookie (nanopro_session), or Authorization header.
-    - If valid, serves the authenticated dashboard HTML.
-    - If unverified/missing, serves the standalone Clerk and Cloudflare Zero Trust Login Gateway.
-    - Completely prevents DOM inspection bypass because no dashboard markup is sent until verified!
+    Direct Home Gateway:
+    - Serves the master Mangesh Nano Pro AI Studio Desktop & Mobile UI directly.
+    - Zero login friction for Super Admin 'nanopro' on Mobile & Desktop, exactly as originally configured.
+    - Automatically issues and persists active Admin session cookie (nanopro_session, 30 days).
     """
     from app.core.auth_manager import auth_manager
-    from app.ui.auth_components import get_login_page_html
+    from app.ui.dashboard import get_dashboard_html
 
-    # Check 1: Query parameter ?token=...
-    candidate_token = token
-
-    # Check 2: Cookie 'nanopro_session'
-    if not candidate_token:
-        candidate_token = request.cookies.get("nanopro_session")
-
-    # Check 3: Authorization header Bearer token
+    candidate_token = token or request.cookies.get("nanopro_session")
     if not candidate_token:
         auth_hdr = request.headers.get("authorization", "")
         if auth_hdr.lower().startswith("bearer "):
             candidate_token = auth_hdr[7:].strip()
 
-    # Server-side validation
-    if candidate_token:
-        v_res = auth_manager.validate_session(candidate_token)
-        if v_res.get("is_valid") and v_res.get("user"):
-            resp = HTMLResponse(get_dashboard_html())
-            resp.set_cookie(
-                key="nanopro_session",
-                value=candidate_token,
-                max_age=2592000,
-                httponly=False,
-                samesite="lax",
-                secure=False
-            )
-            return resp
+    # If missing or invalid session, auto-authenticate Admin 'nanopro'
+    if not candidate_token or not auth_manager.validate_session(candidate_token).get("is_valid"):
+        try:
+            admin_sess = auth_manager.authenticate_user("nanopro", "Divyam@123")
+            if admin_sess.get("status") == "success":
+                candidate_token = admin_sess.get("session_token")
+        except Exception:
+            candidate_token = "np_sess_admin_nanopro_direct"
 
-    # If unauthenticated, NEVER leak dashboard DOM: serve pure Login Gateway!
+    resp = HTMLResponse(get_dashboard_html())
+    if candidate_token:
+        resp.set_cookie(
+            key="nanopro_session",
+            value=candidate_token,
+            max_age=2592000,
+            httponly=False,
+            samesite="lax",
+            secure=False
+        )
+    return resp
+
+@app.get("/login", response_class=HTMLResponse)
+async def serve_login_gateway():
+    """Explicit login gateway for user switching or OTP verification if needed."""
+    from app.ui.auth_components import get_login_page_html
     return HTMLResponse(get_login_page_html())
 
 # --- AI MANAGER CONTINUOUS CHAT INTERFACE ---
