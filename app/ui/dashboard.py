@@ -10845,6 +10845,10 @@ Ready for message compilation and automated dispatch.
     </nav>
 
     <script>
+        // Global Vibration Blocker (Mobile vibration completely disabled per user preference)
+        if (typeof window !== 'undefined' && window.navigator) {
+            try { window.navigator.vibrate = function() { return false; }; } catch(e){}
+        }
 
         /* --- 1. THEME ENGINE & PERSISTENCE --- */
         function initTheme() {

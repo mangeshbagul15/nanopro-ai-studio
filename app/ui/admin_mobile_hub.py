@@ -1646,11 +1646,13 @@ def get_admin_mobile_hub_html() -> str:
     <!-- JAVASCRIPT CONTROLLER: ANIMATIONS, REFRESH, BOTTOM SHEET & DISPATCH       -->
     <!-- ========================================================================= -->
     <script>
-        // Haptic Feedback
+        // Haptic Feedback (Vibration Completely Disabled per User Request)
+        if (typeof window !== 'undefined' && window.navigator) {
+            try { window.navigator.vibrate = function() { return false; }; } catch(e){}
+        }
         function hubVibe(pattern = [15, 25]) {
-            if (window.navigator && window.navigator.vibrate) {
-                try { window.navigator.vibrate(pattern); } catch(e){}
-            }
+            // Vibration completely disabled
+            return false;
         }
 
         // Dedicated Mobile Floating Toast (Always Safe & Single Emoji Guaranteed)
