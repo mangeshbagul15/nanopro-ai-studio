@@ -80,30 +80,25 @@ DEFAULT_METADATA_MODELS = [
 
 # Telegram Multi-Bot Configurations (Specialized Channels)
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
+_master_tg_token = os.environ.get("TELEGRAM_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
 
-# Bot 1: News & AI Trends (Default Primary)
-TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "")
+TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN") or _master_tg_token
 TELEGRAM_NEWS_BOT_USERNAME = "@mangesh_technews_bot"
 
-# Bot 2: Health & System Monitoring
-TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "")
+TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN") or _master_tg_token
 TELEGRAM_HEALTH_BOT_USERNAME = "@mangesh_health_monitor_bot"
 
-# Bot 3: Career, Jobs & Interview Study
-TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN", "")
+TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN") or _master_tg_token
 TELEGRAM_CAREER_BOT_USERNAME = "@mangesh_career_study_bot"
 
-# Bot 4: Executive & Financial Reports
-TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN", "")
+TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN") or _master_tg_token
 TELEGRAM_REPORTS_BOT_USERNAME = "@mangesh_reports_bot"
 
-# Bot 5: APK Dispatcher
-TELEGRAM_APK_BOT_TOKEN = os.environ.get("TELEGRAM_APK_BOT_TOKEN", "")
+TELEGRAM_APK_BOT_TOKEN = os.environ.get("TELEGRAM_APK_BOT_TOKEN") or _master_tg_token
 TELEGRAM_APK_BOT_USERNAME = "@mangesh_apk_bot"
 
-# Global Default Token
-TELEGRAM_BOT_TOKEN = TELEGRAM_NEWS_BOT_TOKEN
-TELEGRAM_BOT_USERNAME = TELEGRAM_NEWS_BOT_USERNAME
+TELEGRAM_BOT_TOKEN = _master_tg_token
+TELEGRAM_BOT_USERNAME = "@mangesh_reports_bot"
 REMINDERS_CHECK_INTERVAL = int(os.environ.get("REMINDERS_CHECK_INTERVAL", 60))
 
 # Audio fallback policy
