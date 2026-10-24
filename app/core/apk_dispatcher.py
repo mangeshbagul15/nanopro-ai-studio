@@ -552,23 +552,33 @@ def _github_latest_apk(repo: str) -> Optional[Dict[str, Any]]:
         def score_asset(asset):
             nm = asset.get("name", "").lower()
             sz = asset.get("size", 0)
-            if sz > 100 * 1024 * 1024 or sz < 2048:
+            if sz > 26 * 1024 * 1024 or sz < 2048:
                 return -99999
             score = 50
+            # Strongly prioritize smaller APKs (< 25MB) for 5-10 second upload speed
+            if sz < 15 * 1024 * 1024:
+                score += 200
+            elif sz < 25 * 1024 * 1024:
+                score += 120
+            elif sz < 40 * 1024 * 1024:
+                score += 40
+            else:
+                score -= 30
+
             if "universal" in nm:
                 score += 100
             elif "arm64-v8a" in nm or "arm64" in nm:
-                score += 80
+                score += 70
             elif "armeabi-v7a" in nm or "armv7" in nm:
-                score += 40
+                score += 30
             elif "x86_64" in nm or "x86" in nm:
-                score += 10
+                score += 5
             return score
 
         sorted_assets = sorted(apk_assets, key=score_asset, reverse=True)
         best = sorted_assets[0]
         size = best.get("size", 0)
-        if size > 100 * 1024 * 1024 or size < 2048:
+        if size > 26 * 1024 * 1024 or size < 2048:
             return None
 
         size_mb = round(size / 1024 / 1024, 2)
@@ -799,25 +809,31 @@ class APKScheduler:
         self._wake_event.set()
 
     def _loop(self):
-        # First run after 2 minutes (let server boot)
-        self._stop.wait(120)
+        # Initial run shortly after server boot (15 seconds) so APKs start flowing immediately
+        self._stop.wait(15)
         while not self._stop.is_set():
             cfg = get_apk_config()
             enabled = cfg.get("enabled", True)
-            self.INTERVAL_HOURS = cfg.get("interval_hours", 4)
-            self.COUNT = cfg.get("count", 5)
+            self.INTERVAL_HOURS = max(1, int(cfg.get("interval_hours", 2)))
+            self.COUNT = max(1, min(20, int(cfg.get("count", 8))))
 
             if enabled:
                 try:
-                    log_event(f"[APKBot] Starting APK discovery cycle (Count: {self.COUNT})...", component="APKDispatcher")
-                    discover_and_send_apks(count=self.COUNT)
+                    log_event(f"[APKBot] NanoPro Watchdog: Starting APK discovery cycle (Count: {self.COUNT}, Interval: {self.INTERVAL_HOURS}h)...", component="APKDispatcher")
+                    res = discover_and_send_apks(count=self.COUNT)
+                    log_event(f"[APKBot] NanoPro Watchdog: Delivered {res.get('sent_count', 0)} APKs to @mangesh_apk_bot successfully.", component="APKDispatcher")
                 except Exception as e:
-                    log_event(f"[APKBot] Scheduler error: {e}", level="WARNING", component="APKDispatcher")
+                    log_event(f"[APKBot] NanoPro Watchdog: Scheduler cycle error: {e}", level="WARNING", component="APKDispatcher")
 
-            # Wait INTERVAL_HOURS or until reload_config() wakes it
-            self._wake_event.clear()
-            wait_seconds = max(60, self.INTERVAL_HOURS * 3600)
-            self._wake_event.wait(timeout=wait_seconds)
+            # Sleep in 60-second intervals to allow dynamic reload without waiting hours
+            target_wait = max(60, self.INTERVAL_HOURS * 3600)
+            elapsed = 0
+            while elapsed < target_wait and not self._stop.is_set():
+                if self._wake_event.is_set():
+                    self._wake_event.clear()
+                    break
+                self._stop.wait(30)
+                elapsed += 30
 
 
 # Module-level singletons

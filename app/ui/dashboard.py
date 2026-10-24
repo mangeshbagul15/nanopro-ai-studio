@@ -7609,10 +7609,14 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
                     </select>
                 </div>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top:1px dashed rgba(20,184,166,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:10px; border-top:1px dashed rgba(20,184,166,0.3); flex-wrap:wrap; gap:8px;">
                 <span style="font-size:11px; color:#A7F3D0;">📝 Each Telegram delivery contains full summary, key features list, and verified APK file.</span>
-                <button type="button" class="btn btn-secondary" onclick="triggerApkSendNow()" style="padding:4px 10px; font-size:11px; color:#38BDF8; border-color:#38BDF8; font-weight:700;">🚀 Send Test APK Now</button>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-primary" onclick="saveSchedEditApkSettings()" style="padding:6px 14px; font-size:11.5px; background:#0D9488; border-color:#14B8A6; font-weight:700;">💾 Save &amp; Apply Settings</button>
+                    <button type="button" class="btn btn-secondary" onclick="triggerApkSendNow()" style="padding:6px 14px; font-size:11.5px; color:#38BDF8; border-color:#38BDF8; font-weight:700;">🚀 Send Test APK Now</button>
+                </div>
             </div>
+            <div id="schedEditApkStatus" style="font-size:12px; margin-top:8px; font-weight:700; min-height:18px;"></div>
         </div>
         <div style="margin-top:10px;">
             <label class="input-label">Script / Query Code or Command</label>
@@ -17441,10 +17445,52 @@ async function saveApkConfig() {
     }
 }
 
+
+/* --- DEDICATED TELEGRAM APK SCHEDULER CONTROLS --- */
+async function saveSchedEditApkSettings() {
+    const intEl = document.getElementById('schedEditApkInterval');
+    const cntEl = document.getElementById('schedEditApkCount');
+    const interval_hours = parseInt(intEl?.value || '4', 10);
+    const count = parseInt(cntEl?.value || '5', 10);
+    const statusEl = document.getElementById('schedEditApkStatus');
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#38BDF8; font-weight:700;">⏳ Saving APK dispatcher settings...</span>';
+    
+    // Sync recurrence parameter field in edit modal
+    const recEl = document.getElementById('schedEditRecurrence');
+    if (recEl) recEl.value = String(interval_hours);
+
+    try {
+        const res = await fetch('/api/apk/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ count, interval_hours, enabled: true })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color:#10B981; font-weight:700;">✅ Settings Saved! Bot will deliver ${count} APKs every ${interval_hours} hours to @mangesh_apk_bot.</span>`;
+            }
+            if (typeof showStudioToast === 'function') {
+                showStudioToast('APK Dispatcher Updated', `${count} APKs scheduled every ${interval_hours} hours`, 'success');
+            }
+            // Auto wake scheduler and refresh dashboard
+            if (typeof refreshSchedulerDashboard === 'function') {
+                refreshSchedulerDashboard();
+            }
+        } else {
+            if (statusEl) statusEl.innerHTML = `<span style="color:#EF4444;">Error: ${data.message || 'Save failed'}</span>`;
+        }
+    } catch (e) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#EF4444;">Save failed: ${e.message}</span>`;
+    }
+}
+
 async function triggerApkSendNow() {
-    const count = parseInt(document.getElementById('apkFormCount').value, 10) || 5;
-    const statusText = document.getElementById('apkStatusText');
-    if (statusText) statusText.innerHTML = `<span style="color:#38BDF8; font-weight:700;">🚀 Downloading & dispatching ${count} APKs to Telegram @mangesh_apk_bot now...</span>`;
+    const countEl = document.getElementById('schedEditApkCount') || document.getElementById('apkFormCount');
+    const count = parseInt(countEl?.value || '5', 10);
+    const statusText = document.getElementById('schedEditApkStatus') || document.getElementById('apkStatusText');
+    if (statusText) statusText.innerHTML = `<span style="color:#38BDF8; font-weight:700;">🚀 Downloading & dispatching ${count} verified APKs to Telegram @mangesh_apk_bot now...</span>`;
     try {
         const res = await fetch('/api/apk/send-now', {
             method: 'POST',
@@ -17453,9 +17499,13 @@ async function triggerApkSendNow() {
         });
         const data = await res.json();
         if (data.status === 'success') {
-            const sentNames = (data.sent || []).map(s => s.name).join(', ') || 'APKs';
+            const sentList = data.sent || [];
+            const sentNames = sentList.map(s => s.name).join(', ') || 'APKs';
             if (statusText) {
-                statusText.innerHTML = `<span style="color:#10B981; font-weight:700;">🎉 Dispatched ${data.sent_count || 0} APKs to @mangesh_apk_bot! (${sentNames})</span>`;
+                statusText.innerHTML = `<span style="color:#10B981; font-weight:700;">🎉 Dispatched ${data.sent_count || sentList.length} APKs to @mangesh_apk_bot! (${sentNames})</span>`;
+            }
+            if (typeof showStudioToast === 'function') {
+                showStudioToast('APK Dispatched', `Sent ${data.sent_count || sentList.length} APKs to @mangesh_apk_bot`, 'success');
             }
         } else {
             if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Failed: ${data.error || 'Send error'}</span>`;
@@ -17464,6 +17514,7 @@ async function triggerApkSendNow() {
         if (statusText) statusText.innerHTML = `<span style="color:#EF4444;">Dispatch failed: ${e.message}</span>`;
     }
 }
+
 
 
 /* --- ADD DATABASE & QUICK PASSWORD MODALS --- */
