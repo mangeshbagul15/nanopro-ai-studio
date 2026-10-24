@@ -11,3 +11,19 @@ tests/__pycache__/
 *.tmp
 backups/*.tar.gz
 backups/*.zip
+
+# Runtime files
+app/database/studio_memory.db
+app/database/studio_memory.db-shm
+app/database/studio_memory.db-wal
+app/temp_apks/
+neon_test.txt
+test_wa2.py
+check_db.py
+
+test_wa2.py
+check_db.py
+check_etl.py
+check_result.txt
+data/banking/etl_watermarks.json
+data/banking/apk_sent_log.json
