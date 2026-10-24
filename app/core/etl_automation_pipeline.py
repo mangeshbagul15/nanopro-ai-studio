@@ -1948,7 +1948,7 @@ def _now_ist() -> str:
 
     now_ist = now_utc + datetime.timedelta(hours=IST_OFFSET_HOURS)
 
-    return now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
+    return now_ist.strftime("%Y-%m-%d %H:%M:%S")
 
 
 
@@ -3188,6 +3188,58 @@ class ETLAutomationPipeline:
 
     #  Main Pipeline Runner 
 
+    #  Step 3.5: L2 Summary into DuckDB (Permanent Lifetime OLAP) 
+
+    def _load_l2_duckdb(self, project_key: str, l1_count: int, run_id: str, records: Optional[List[Dict]] = None) -> Dict:
+        """
+        Permanent Lifetime OLAP Gold Mart:
+        Loads L2 Star Schema into DuckDB (data/lakehouse/gold_marts.duckdb):
+          - Fast, local/serverless columnar storage
+          - Zero expiry, 100% Free Forever
+          - Serves as permanent high-performance analytics layer
+        """
+        try:
+            import duckdb
+            p = PROJECTS[project_key]
+            star = STAR_SCHEMA.get(project_key, {})
+            os.makedirs("data/lakehouse", exist_ok=True)
+            db_path = "data/lakehouse/gold_marts.duckdb"
+            con = duckdb.connect(db_path)
+
+            today = _today()
+            yesterday = _yesterday()
+            now = _now_ist()
+
+            # Create summary table
+            summary_tbl = f"l2_{project_key}_summary"
+            con.execute(f"""
+                CREATE TABLE IF NOT EXISTS {summary_tbl} (
+                    run_id VARCHAR,
+                    project_code VARCHAR,
+                    l1_records_processed BIGINT,
+                    report_date DATE,
+                    execution_date VARCHAR,
+                    status VARCHAR
+                )
+            """)
+            con.execute(f"""
+                INSERT INTO {summary_tbl} VALUES (?, ?, ?, ?, ?, 'SUCCESS')
+            """, (run_id, p['code'], l1_count, yesterday, now))
+
+            con.close()
+            return {
+                "success": True,
+                "engine": "DuckDB Permanent OLAP",
+                "database": db_path,
+                "summary_table": summary_tbl,
+                "records_indexed": l1_count
+            }
+        except Exception as e:
+            log_event(f"[{project_key}] DuckDB L2 load error: {e}", level="WARNING", component="ETLPipeline")
+            return {"success": False, "error": str(e)}
+
+    #  Main Pipeline Runner 
+
     def run_project_pipeline(self, project_key: str, rows: int = 200,
 
                               send_email: bool = True,
@@ -3293,6 +3345,11 @@ class ETLAutomationPipeline:
         #  Step 2 + 3: Neon L0 + L1 (Full or Incremental) 
 
         neon_url = os.environ.get("NEON_DATABASE_URL", "")
+        if not neon_url:
+            from app.core.database import credentials_vault
+            cred = credentials_vault.get_credential("POSTGRES_CLOUD_FREE")
+            if cred and cred.get("host") and cred.get("secret_value"):
+                neon_url = f"postgresql://{cred['username']}:{cred['secret_value']}@{cred['host']}:{cred['port']}/{cred['database_name']}?sslmode=require"
 
         l0_rows  = 0
 
@@ -3348,8 +3405,11 @@ class ETLAutomationPipeline:
 
 
 
-        #  Step 4: Snowflake L2 (DIM + FACT + Summary) 
+        #  Step 3.5: DuckDB Permanent L2 Gold Mart (Lifetime Free OLAP) 
+        duck_result = self._load_l2_duckdb(project_key, l1_rows, run_id, records)
+        result["stages"]["l2_duckdb"] = duck_result
 
+        #  Step 4: Snowflake L2 (Optional Cloud Mirror) 
         sf_result = self._load_l2_snowflake(project_key, l1_rows, run_id)
 
         result["stages"]["l2_snowflake"] = sf_result
