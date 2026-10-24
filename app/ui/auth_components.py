@@ -1227,7 +1227,20 @@ def get_auth_injection() -> str:
 <!-- ========================================================================= -->
 <script>
 let currentUser = null;
-let currentSessionToken = localStorage.getItem('nanopro_session_token');
+let currentSessionToken = (function() {
+    let t = localStorage.getItem('nanopro_session_token');
+    if (!t) {
+        const m = document.cookie.match(/(?:^|;\s*)nanopro_session=([^;]+)/);
+        if (m) t = decodeURIComponent(m[1]);
+    }
+    if (!t) {
+        t = new URLSearchParams(window.location.search).get('token');
+    }
+    if (t) {
+        try { localStorage.setItem('nanopro_session_token', t); } catch(e){}
+    }
+    return t;
+})();
 let idleLogoutTimer = null;
 const IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 Minutes for regular users
 
@@ -1832,6 +1845,25 @@ async function verifySessionOnStartup() {
                     onAuthSuccess(data.user);
                     return;
                 }
+            }
+        } catch(e) {}
+    }
+
+    // 2.5 Localhost developer auto-authenticate (Zero friction on local machine)
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+        try {
+            const resp = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: 'nanopro', password: 'Divyam@123' })
+            });
+            const data = await resp.json();
+            if (data.status === 'success' && data.user) {
+                saveAccountToStore(data.user, data.session_token, 'Divyam@123', true);
+                currentSessionToken = data.session_token;
+                onAuthSuccess(data.user);
+                return;
             }
         } catch(e) {}
     }

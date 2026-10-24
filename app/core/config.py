@@ -113,7 +113,7 @@ AUDIO_FALLBACK_STRETCH = "stretch"
 # Port and server host
 # In container / Hugging Face Spaces environments, bind to 0.0.0.0 and listen on $PORT (default 7860 on HF)
 is_cloud_or_container = bool(os.environ.get("SPACE_ID") or os.environ.get("PORT"))
-default_host = "0.0.0.0" if is_cloud_or_container else "127.0.0.1"
+default_host = "0.0.0.0"
 default_port = int(os.environ.get("PORT", 7860 if os.environ.get("SPACE_ID") else 8000))
 
 SERVER_HOST = os.environ.get("STUDIO_HOST", os.environ.get("HOST", default_host))

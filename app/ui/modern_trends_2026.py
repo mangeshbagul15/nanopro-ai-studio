@@ -373,6 +373,37 @@ def get_2026_modern_trends_css() -> str:
     from { width: 100%; }
     to { width: 0%; }
 }
+
+/* Responsive Ticker & Mobile Nav Alignment */
+@media (max-width: 768px) {
+    .nano-cyber-ticker {
+        bottom: 56px !important;
+        height: 24px !important;
+    }
+    .nano-dynamic-island {
+        top: 6px !important;
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+    }
+    .nano-dynamic-island.expanded {
+        width: 92vw !important;
+    }
+}
+
+/* Header Center Group Optimization so Dynamic Island sits perfectly centered */
+.header-center-group {
+    visibility: hidden !important;
+}
+
+/* Ensure bottom padding so content is never covered by ticker */
+.app-main, .main-content, .workspace-view {
+    padding-bottom: 34px !important;
+}
+@media (max-width: 768px) {
+    .app-main, .main-content, .workspace-view {
+        padding-bottom: 92px !important;
+    }
+}
 </style>
 """
 
@@ -588,32 +619,36 @@ function init3dCardTilt() {
 
 // --- 5. Command Palette (Ctrl+K) Engine (#106) ---
 const PALETTE_COMMANDS = [
-    { title: "Dashboard / Quantum Core", desc: "Open central 3D panoramic control center", icon: "&#128187;", action: () => switchView('dashboard') },
-    { title: "3D Cyber Data Center AI Hub", desc: "305 Enterprise AI Specialists & animated pixel-office", icon: "&#129302;", action: () => switchView('ai_office') },
-    { title: "AI Manager & Delegation Studio", desc: "Command prompt box with multi-agent orchestration", icon: "&#128640;", action: () => switchView('ai_manager') },
-    { title: "SQL Video Maker (9:16 Shorts)", desc: "YouTube metadata & 60 FPS video renderer", icon: "&#127916;", action: () => switchView('sql_video') },
-    { title: "Python Video Maker", desc: "Interactive python concept animation studio", icon: "&#128013;", action: () => switchView('python_video') },
-    { title: "Data Engineering & Lakehouse", desc: "Snowflake, Oracle 23ai, S3 Parquet pipelines", icon: "&#9881;", action: () => switchView('data_engineer') },
-    { title: "Cybersecurity & Defenses Lab", desc: "Nmap port scanner, PCAP analyzer, security audits", icon: "&#128737;", action: () => switchView('cyber_lab') },
-    { title: "Make.com Automation Sync", desc: "Fire high-salary pipeline webhook trigger", icon: "&#9889;", action: () => {
+    { title: "Dashboard / Quantum Core", desc: "Central 3D panoramic control center & mission telemetry", icon: "&#128187;", action: () => switchView('dashboard') },
+    { title: "3D Cyber Data Center AI Hub (Holographic Station)", desc: "305 Enterprise AI Specialists, holographic telemetry & animated pixel-office", icon: "&#129302;", action: () => switchView('ai_office') },
+    { title: "AI Continuous Manager & Chat", desc: "Autonomous orchestration, prompt execution & command discussion", icon: "&#128640;", action: () => switchView('ai_manager') },
+    { title: "Agent Fleet Control Center", desc: "Inspect and control all 305 specialized agents across 19 Pods", icon: "&#128373;", action: () => switchView('agent_control') },
+    { title: "Coding Agent Workspace", desc: "Full-stack code generator, refactoring and live sandbox", icon: "&#128187;", action: () => switchView('coding_agent') },
+    { title: "SQL Video Maker (9:16 Shorts)", desc: "YouTube metadata, voiceover, and 60 FPS video renderer", icon: "&#127916;", action: () => switchView('sql_video') },
+    { title: "Python Video Maker Studio", desc: "Interactive python concept animation studio and renderer", icon: "&#128013;", action: () => switchView('python_video') },
+    { title: "Data Engineering Lakehouse", desc: "Snowflake, Oracle 23ai XE, S3 Parquet pipelines & DuckDB fabric", icon: "&#9881;", action: () => switchView('data_engineer') },
+    { title: "Cybersecurity & Defenses Lab", desc: "Red-teaming, Nmap port scanner, PCAP analyzer, security audits", icon: "&#128737;", action: () => switchView('cyber_lab') },
+    { title: "Make.com Automation Sync", desc: "Fire high-salary pipeline webhook trigger directly to Make.com", icon: "&#9889;", action: () => {
         fetch('/api/fabric/query', { credentials: 'omit' }).catch(() => {});
         showModernToast('Make.com Trigger', 'Dispatched real-time webhook payload to Make.com', 'success');
     }},
-    { title: "Call All 305 Agents to Work", desc: "Recall wandering agents to workstations", icon: "&#9889;", action: () => {
+    { title: "Call All 305 Agents to Work", desc: "Holographic command: recall all wandering agents to workstations", icon: "&#9889;", action: () => {
         if (typeof triggerOfficeCallToWork === 'function') triggerOfficeCallToWork();
         showModernToast('Office Control', 'All 305 agents recalled to active duty', 'success');
     }},
-    { title: "Allow Coffee / Lounge Breaks", desc: "Permit standby agents to roam and rest", icon: "&#9749;", action: () => {
+    { title: "Allow Coffee / Lounge Breaks", desc: "Permit standby agents to roam cafeteria, lounge & espresso bar", icon: "&#9749;", action: () => {
         if (typeof triggerOfficeAllowBreaks === 'function') triggerOfficeAllowBreaks();
         showModernToast('Office Control', 'Standby agents dispatched to lounge & espresso bar', 'info');
     }},
+    { title: "System Monitoring & Sentinel Health", desc: "Active-Active mesh status, 8 Sentinels, Fly.io, PA & Alwaysdata", icon: "&#128200;", action: () => switchView('monitoring') },
+    { title: "Studio Settings & API Integrations", desc: "Configure Groq, Clerk, GitHub, Telegram & database credentials", icon: "&#9881;", action: () => switchView('settings') },
     { title: "Telegram Tech News Dispatch", desc: "Send latest AI trends to @mangesh_technews_bot", icon: "&#128227;", action: () => {
         showModernToast('Telegram Dispatch', 'Morning tech news broadcasted to Telegram', 'success');
     }},
-    { title: "Mute / Unmute Cyber Sound FX", desc: "Toggle synthesized UI interaction sounds", icon: "&#128266;", action: () => toggleCyberSoundFx() }
+    { title: "Mute / Unmute Cyber Sound FX", desc: "Toggle synthesized UI interaction sounds (Clicks & Chimes)", icon: "&#128266;", action: () => toggleCyberSoundFx() }
 ];
 
-let selectedPaletteIndex = 0;
+let modernPaletteIndex = 0;
 
 function openCommandPalette() {
     const backdrop = document.getElementById('nanoCommandPaletteBackdrop');
@@ -621,7 +656,7 @@ function openCommandPalette() {
     if (!backdrop || !input) return;
     backdrop.style.display = 'flex';
     input.value = '';
-    selectedPaletteIndex = 0;
+    modernPaletteIndex = 0;
     renderPaletteResults(PALETTE_COMMANDS);
     setTimeout(() => input.focus(), 50);
     playCyberClickSound();
@@ -637,7 +672,7 @@ function filterCommandPalette() {
     const filtered = PALETTE_COMMANDS.filter(cmd => 
         cmd.title.toLowerCase().includes(q) || cmd.desc.toLowerCase().includes(q)
     );
-    selectedPaletteIndex = 0;
+    modernPaletteIndex = 0;
     renderPaletteResults(filtered);
 }
 
@@ -649,9 +684,9 @@ function renderPaletteResults(list) {
         return;
     }
     container.innerHTML = list.map((cmd, idx) => `
-        <div class="palette-item ${idx === selectedPaletteIndex ? 'selected' : ''}" 
+        <div class="palette-item ${idx === modernPaletteIndex ? 'selected' : ''}" 
              onclick="executePaletteCommand(${idx})" 
-             onmouseenter="selectedPaletteIndex = ${idx}; renderPaletteHighlight(); playCyberHoverSound();">
+             onmouseenter="modernPaletteIndex = ${idx}; renderPaletteHighlight(); playCyberHoverSound();">
             <div class="palette-item-left">
                 <span class="palette-item-icon">${cmd.icon}</span>
                 <div>
@@ -667,7 +702,7 @@ function renderPaletteResults(list) {
 function renderPaletteHighlight() {
     const items = document.querySelectorAll('.palette-item');
     items.forEach((item, idx) => {
-        if (idx === selectedPaletteIndex) item.classList.add('selected');
+        if (idx === modernPaletteIndex) item.classList.add('selected');
         else item.classList.remove('selected');
     });
 }
@@ -676,17 +711,17 @@ function handlePaletteKeydown(e) {
     const items = document.querySelectorAll('.palette-item');
     if (e.key === 'ArrowDown') {
         e.preventDefault();
-        selectedPaletteIndex = (selectedPaletteIndex + 1) % (items.length || 1);
+        modernPaletteIndex = (modernPaletteIndex + 1) % (items.length || 1);
         renderPaletteHighlight();
         playCyberHoverSound();
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        selectedPaletteIndex = (selectedPaletteIndex - 1 + (items.length || 1)) % (items.length || 1);
+        modernPaletteIndex = (modernPaletteIndex - 1 + (items.length || 1)) % (items.length || 1);
         renderPaletteHighlight();
         playCyberHoverSound();
     } else if (e.key === 'Enter') {
         e.preventDefault();
-        executePaletteCommand(selectedPaletteIndex);
+        executePaletteCommand(modernPaletteIndex);
     } else if (e.key === 'Escape') {
         closeCommandPalette();
     }

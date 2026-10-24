@@ -8096,6 +8096,18 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.loadDemoMasterPrompt = loadDemoMasterPrompt;
     window.clearMasterPrompt = clearMasterPrompt;
     window.insertPromptScenario = insertPromptScenario;
+    function openWeightsOptimizerModal() {
+        const m = document.getElementById('weightsOptimizerModal');
+        if (m) m.style.display = 'flex';
+    }
+    function closeWeightsOptimizerModal() {
+        const m = document.getElementById('weightsOptimizerModal');
+        if (m) m.style.display = 'none';
+    }
+    function runWeightsOptimizationStep() {
+        console.log('[WeightsOptimizer] Running weight optimization step...');
+    }
+
     window.openAgentBrainModal = openAgentBrainModal;
     window.closeAgentBrainModal = closeAgentBrainModal;
     window.setSqlCreationMode = setSqlCreationMode;
