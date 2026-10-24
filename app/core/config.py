@@ -80,25 +80,29 @@ DEFAULT_METADATA_MODELS = [
 
 # Telegram Multi-Bot Configurations (Specialized Channels)
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
-_master_tg_token = os.environ.get("TELEGRAM_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
 
-TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN") or _master_tg_token
+# Bot 1: Tech News & AI Trends (@mangesh_technews_bot)
+TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
 TELEGRAM_NEWS_BOT_USERNAME = "@mangesh_technews_bot"
 
-TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN") or _master_tg_token
+# Bot 2: System Health & Infrastructure Sentinel (@mangesh_health_monitor_bot)
+TELEGRAM_HEALTH_BOT_TOKEN = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4")
 TELEGRAM_HEALTH_BOT_USERNAME = "@mangesh_health_monitor_bot"
 
-TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN") or _master_tg_token
+# Bot 3: Career Radar & Senior Interview Practice (@mangesh_career_study_bot)
+TELEGRAM_CAREER_BOT_TOKEN = os.environ.get("TELEGRAM_CAREER_BOT_TOKEN", "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA")
 TELEGRAM_CAREER_BOT_USERNAME = "@mangesh_career_study_bot"
 
-TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN") or _master_tg_token
+# Bot 4: Executive Briefings & Financial Ledger (@mangesh_reports_bot)
+TELEGRAM_REPORTS_BOT_TOKEN = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN", "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4")
 TELEGRAM_REPORTS_BOT_USERNAME = "@mangesh_reports_bot"
 
-TELEGRAM_APK_BOT_TOKEN = os.environ.get("TELEGRAM_APK_BOT_TOKEN") or _master_tg_token
+# Bot 5: Android Open-Source APK Dispatcher (@mangesh_apk_bot)
+TELEGRAM_APK_BOT_TOKEN = os.environ.get("TELEGRAM_APK_BOT_TOKEN", "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs")
 TELEGRAM_APK_BOT_USERNAME = "@mangesh_apk_bot"
 
-TELEGRAM_BOT_TOKEN = _master_tg_token
-TELEGRAM_BOT_USERNAME = "@mangesh_reports_bot"
+TELEGRAM_BOT_TOKEN = TELEGRAM_NEWS_BOT_TOKEN
+TELEGRAM_BOT_USERNAME = TELEGRAM_NEWS_BOT_USERNAME
 REMINDERS_CHECK_INTERVAL = int(os.environ.get("REMINDERS_CHECK_INTERVAL", 60))
 
 # Audio fallback policy

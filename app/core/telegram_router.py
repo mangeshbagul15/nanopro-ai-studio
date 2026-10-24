@@ -19,6 +19,8 @@ from app.core.config import (
     TELEGRAM_CAREER_BOT_USERNAME,
     TELEGRAM_REPORTS_BOT_TOKEN,
     TELEGRAM_REPORTS_BOT_USERNAME,
+    TELEGRAM_APK_BOT_TOKEN,
+    TELEGRAM_APK_BOT_USERNAME,
 )
 from app.core.logger import log_event
 
@@ -170,6 +172,23 @@ BOT_ROUTING_MAP = {
         "token": TELEGRAM_NEWS_BOT_TOKEN,
         "username": TELEGRAM_NEWS_BOT_USERNAME,
         "label": "AI Tech News & Live Trends"
+    },
+
+    # 5. Open-Source Android APK Dispatcher Bot (@mangesh_apk_bot)
+    "apk": {
+        "token": TELEGRAM_APK_BOT_TOKEN,
+        "username": TELEGRAM_APK_BOT_USERNAME,
+        "label": "Open-Source Android APK Dispatcher"
+    },
+    "apks": {
+        "token": TELEGRAM_APK_BOT_TOKEN,
+        "username": TELEGRAM_APK_BOT_USERNAME,
+        "label": "Open-Source Android APK Dispatcher"
+    },
+    "app": {
+        "token": TELEGRAM_APK_BOT_TOKEN,
+        "username": TELEGRAM_APK_BOT_USERNAME,
+        "label": "Open-Source Android APK Dispatcher"
     }
 }
 
@@ -217,11 +236,15 @@ def classify_telegram_message(text: str) -> str:
     if any(k in t_lower for k in reports_keywords):
         return "reports"
 
-    # 4. Amazon Price Watches / Deals
+    # 4. APK / Open-Source Android Apps
+    if any(k in t_lower for k in [".apk", "apk dispatcher", "f-droid", "android app", "foss app", "open-source ॲप"]):
+        return "apk"
+
+    # 5. Amazon Price Watches / Deals
     if any(k in t_lower for k in ["amazon price drop", "price drop alert", "product link:", "target reached"]):
         return "deals"
 
-    # 5. Default: Tech News & AI Trends
+    # 6. Default: Tech News & AI Trends
     return "news"
 
 
