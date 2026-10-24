@@ -75,29 +75,28 @@ class AutomationScheduler:
                     existing.discard(old_name)
                     existing.add(new_name)
             schedules = [
-                ("ORACLE_S3_SNOWFLAKE_PIPELINE_INCREMENTAL", "minutes", "15", "incremental"),
-                ("ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "daily"),
-                ("ORACLE_S3_SNOWFLAKE_PIPELINE_FORTNIGHTLY", "fortnightly", "10:00", "fortnightly"),
-                ("ORACLE_S3_SNOWFLAKE_PIPELINE_MONTHLY", "monthly", "1@10:00", "monthly"),
+                ("BOD_PIPELINE_CYCLE", "daily", "06:00", "Beginning of Day (06:00 AM IST) — System validation & 91-Table Full Load into AWS S3, Snowflake L0-L1-L2, and DuckDB Gold Marts.", True),
+                ("SOD_PIPELINE_CYCLE", "daily", "08:00", "Start of Day (08:00 AM IST) — Account limits, opening positions, and intraday delta synchronization.", True),
+                ("DAILY_T1_INCREMENTAL_PIPELINE", "daily", "10:00", "Daily T-1 Incremental Pipeline — Watermark delta transaction ingestion across all 9 Banking Projects.", True),
+                ("EOD_PIPELINE_CYCLE", "daily", "18:00", "End of Day (06:00 PM IST) — Daily reconciliation, trial balance verification, and multi-channel executive reports.", True),
+                ("SFTP_INBOUND_AUTO_INGEST", "minutes", "15", "Autonomous Cloud SFTP Inbound Poll — Scans /inbound/ for Pipe (|), CSV, and Excel (.xlsx) feeds and loads pipeline.", True),
+                ("SFTP_20DAY_RETENTION_PURGE", "daily", "00:00", "Autonomous 20-Day Storage Limit Sentinel — Automatically purges SFTP files, folders, and S3 mirror objects older than 20 days.", True),
+                ("DUCKDB_S3_CLOUD_BACKUP", "daily", "23:30", "Cloud Lakehouse Durability Sync — Mirrors local DuckDB Gold Marts to AWS S3 (s3://nanopro-data-lake-765865641438-ap-southeast-2-an/lakehouse/gold_marts.duckdb).", True),
+                ("ORACLE_S3_SNOWFLAKE_PIPELINE_INCREMENTAL", "minutes", "15", "Oracle watermark incremental polling every 15 minutes → S3 → Snowflake L0/L1/L2.", False),
+                ("ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "Snowflake daily T-1/live comparison report at 10:00 IST.", False),
             ]
-            for name, kind, expression, period in schedules:
+            for name, kind, expression, description, enabled in schedules:
                 if name in existing:
                     continue
-                if period == "incremental":
-                    description = "Oracle watermark incremental polling every 15 minutes → S3 → Snowflake L0/L1/L2. Near-live micro-batch; not Oracle redo-log CDC."
-                elif period == "daily":
-                    description = "Snowflake daily T-1/live comparison report at 10:00 IST; ingestion runs in the separate 15-minute Oracle→S3 job."
-                else:
-                    description = f"Snowflake {period} T-1/live comparison report only; ingestion is not repeated."
                 self.create_task({
                     "name": name,
-                    "description": description + " Disabled until live Oracle, S3, Snowflake load SQL and report delivery are configured and verified.",
+                    "description": description,
                     "task_type": "scheduled_job", "schedule_type": kind,
                     "recurrence_expr": expression, "timezone": "Asia/Kolkata",
                     "timeout_sec": 7200,
-                    "retry_policy": {"max_retries": 0, "retry_interval_sec": 300},
+                    "retry_policy": {"max_retries": 1, "retry_interval_sec": 300},
                     "notification_pref": {"email": True, "telegram": True},
-                    "is_enabled": False,
+                    "is_enabled": enabled,
                 })
         except Exception as exc:
             log_event(f"Could not register pipeline schedules: {exc}", level="WARNING", component="AutomationScheduler")
@@ -436,6 +435,36 @@ class AutomationScheduler:
     def _execute_app_job(self, task: Dict[str, Any]) -> (str, str, int):
         """Executes native Nano Pro studio application maintenance jobs."""
         name = task.get("name", "").lower()
+        
+        # Enterprise Cloud Lakehouse & SFTP Scheduled Pipelines
+        if name in ("bod_pipeline_cycle", "bod"):
+            from app.core.etl_automation_pipeline import etl_pipeline
+            res = etl_pipeline.run_bod_cycle()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("sod_pipeline_cycle", "sod"):
+            from app.core.etl_automation_pipeline import etl_pipeline
+            res = etl_pipeline.run_sod_cycle()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("daily_t1_incremental_pipeline", "incremental"):
+            from app.core.etl_automation_pipeline import etl_pipeline
+            res = etl_pipeline.run_incremental_cycle()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("eod_pipeline_cycle", "eod"):
+            from app.core.etl_automation_pipeline import etl_pipeline
+            res = etl_pipeline.run_eod_cycle()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("sftp_inbound_auto_ingest", "sftp_ingest"):
+            from app.core.cloud_sftp_hub import cloud_sftp_hub
+            res = cloud_sftp_hub.process_all_inbound_files()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("sftp_20day_retention_purge", "sftp_cleanup"):
+            from app.core.cloud_sftp_hub import cloud_sftp_hub
+            res = cloud_sftp_hub.enforce_retention_policy(retention_days=20, purge_s3=True)
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("duckdb_s3_cloud_backup", "lakehouse_backup"):
+            from app.core.etl_automation_pipeline import etl_pipeline
+            res = etl_pipeline.backup_duckdb_to_s3()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
         pipeline_periods = {
             "oracle_dms_snowflake_pipeline_daily": "daily",
             "oracle_dms_snowflake_pipeline_fortnightly": "fortnightly",

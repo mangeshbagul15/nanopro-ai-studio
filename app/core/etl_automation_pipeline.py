@@ -3323,6 +3323,8 @@ class ETLAutomationPipeline:
             """, (run_id, p["code"], l1_count, dim_count, fact_count, total_loaded, yesterday, now))
 
             con.close()
+            # Automatic S3 Cloud Durability Mirror (Zero Laptop Dependency)
+            s3_backup = self.backup_duckdb_to_s3()
             return {
                 "success": True,
                 "engine": "DuckDB Permanent OLAP (100% Free Forever)",
@@ -3331,11 +3333,67 @@ class ETLAutomationPipeline:
                 "dim_tables": dim_count,
                 "fact_tables": fact_count,
                 "total_tables": dim_count + fact_count,
-                "records_loaded": total_loaded
+                "records_loaded": total_loaded,
+                "s3_mirror": s3_backup.get("s3_uri")
             }
         except Exception as e:
             log_event(f"[{project_key}] DuckDB L2 load error: {e}", level="WARNING", component="ETLPipeline")
             return {"success": False, "error": str(e)}
+
+    def backup_duckdb_to_s3(self) -> Dict[str, Any]:
+        """Mirrors local DuckDB Gold Lakehouse database to AWS S3 (Zero Laptop Dependency)."""
+        db_path = "data/lakehouse/gold_marts.duckdb"
+        if not os.path.exists(db_path):
+            return {"success": False, "error": "DuckDB database file not found locally"}
+        try:
+            from app.core.connection_manager import connection_manager
+            cfg = connection_manager.get_connection_config("AWS_S3_DATA_LAKE", mask=False)
+            access_key = cfg.get("username")
+            secret_key = cfg.get("secret_value")
+            region = cfg.get("metadata", {}).get("region", "ap-southeast-2")
+            bucket = cfg.get("database_name", "nanopro-data-lake-765865641438-ap-southeast-2-an")
+            s3_key = "lakehouse/gold_marts.duckdb"
+
+            if access_key and secret_key:
+                import boto3
+                s3 = boto3.client("s3", region_name=region, aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+                s3.upload_file(db_path, bucket, s3_key)
+                log_event(f"[DuckDB Lakehouse] Synced {db_path} to s3://{bucket}/{s3_key}", component="ETLPipeline")
+                return {
+                    "success": True,
+                    "s3_uri": f"s3://{bucket}/{s3_key}",
+                    "size_bytes": os.path.getsize(db_path),
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+        except Exception as e:
+            log_event(f"[DuckDB Lakehouse] S3 backup notice: {e}", level="WARNING", component="ETLPipeline")
+            return {"success": False, "error": str(e)}
+        return {"success": False, "error": "AWS credentials not configured"}
+
+    def restore_duckdb_from_s3(self) -> bool:
+        """Downloads latest DuckDB Gold Mart snapshot from AWS S3 if missing locally."""
+        db_path = "data/lakehouse/gold_marts.duckdb"
+        if os.path.exists(db_path) and os.path.getsize(db_path) > 1024:
+            return True
+        try:
+            from app.core.connection_manager import connection_manager
+            cfg = connection_manager.get_connection_config("AWS_S3_DATA_LAKE", mask=False)
+            access_key = cfg.get("username")
+            secret_key = cfg.get("secret_value")
+            region = cfg.get("metadata", {}).get("region", "ap-southeast-2")
+            bucket = cfg.get("database_name", "nanopro-data-lake-765865641438-ap-southeast-2-an")
+            s3_key = "lakehouse/gold_marts.duckdb"
+
+            if access_key and secret_key:
+                import boto3
+                os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                s3 = boto3.client("s3", region_name=region, aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+                s3.download_file(bucket, s3_key, db_path)
+                log_event(f"[DuckDB Lakehouse] Restored {db_path} from s3://{bucket}/{s3_key}", component="ETLPipeline")
+                return True
+        except Exception as e:
+            log_event(f"[DuckDB Lakehouse] S3 restore notice: {e}", level="WARNING", component="ETLPipeline")
+        return False
 
     # =========================================================================
     # Executive Multi-Tier Pipeline Report Generator
@@ -3514,6 +3572,18 @@ class ETLAutomationPipeline:
                     result["stages"]["telegram"] = {"status": "sent" if tg_sent else "failed", "bot": "@mangesh_reports_bot"}
                 except Exception as te:
                     result["stages"]["telegram"] = {"status": "failed", "error": str(te)[:100]}
+
+                        # Step 8.5: Export Report to Cloud SFTP & S3 Mirror
+            try:
+                from app.core.cloud_sftp_hub import cloud_sftp_hub
+                cloud_sftp_hub.export_report_to_sftp(
+                    report_name=f"{p['code']}_{cycle}_{_yesterday()}",
+                    content=report_text,
+                    file_format="html",
+                    project_key=project_key
+                )
+            except Exception as sftp_e:
+                log_event(f"[{p['code']}] SFTP export notice: {sftp_e}", level="WARNING", component="ETLPipeline")
 
             # Step 8: Multi-Channel Dispatch (Email)
             email_sent = False
@@ -3738,6 +3808,34 @@ class ETLAutomationPipeline:
         """End of Day (06:00 PM IST) - Daily reconciliation, trial balance, and EOD summary."""
         log_event("Triggering EOD (End of Day) Pipeline Cycle...", component="ETLPipeline")
         return self.run_all_projects(rows_per_project=150, cycle="EOD", load_mode=self.INCREMENTAL_LOAD)
+
+    def run_sftp_pipeline(self, generate_test_files: bool = True, rows: int = 40) -> Dict[str, Any]:
+        """
+        SFTP Bi-directional Ingestion & Delivery Pipeline:
+          1. (Optional) Generates multi-format sample files in SFTP /inbound/ (Pipe '|', CSV, Excel).
+          2. Parses inbound files across all 9 projects.
+          3. Uploads raw batches to AWS S3 Cloud Lakehouse.
+          4. Ingests into Snowflake BANK_DB & DuckDB Permanent Gold Marts.
+          5. Publishes reports to SFTP /reports/ and /outbound/.
+          6. Dispatches confirmations via WhatsApp, Telegram, and Email.
+          7. Safely archives processed inbound files to SFTP /archive/.
+        """
+        from app.core.cloud_sftp_hub import cloud_sftp_hub
+        log_event("Triggering SFTP Bi-directional Ingestion Pipeline...", component="ETLPipeline")
+        generated = {}
+        if generate_test_files:
+            for proj in ["credit_card", "aml", "cbs"]:
+                generated[proj] = cloud_sftp_hub.generate_sample_inbound_files(proj, rows=rows)
+
+        proc_result = cloud_sftp_hub.process_all_inbound_files()
+        return {
+            "success": True,
+            "pipeline": "SFTP Bi-Directional Cloud Ingestion",
+            "files_generated": generated,
+            "processing_result": proc_result,
+            "sftp_status": cloud_sftp_hub.get_status()
+        }
+
 
 
 # =========================================================================

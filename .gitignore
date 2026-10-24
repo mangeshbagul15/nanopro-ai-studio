@@ -31,3 +31,8 @@ data/banking/apk_sent_log.json
 *.duckdb
 data/lakehouse/*.duckdb
 data/lakehouse/*.duckdb.wal
+
+# SFTP Local Storage & Keys
+data/sftp/
+*.key
+integrate_sftp_pipeline.py

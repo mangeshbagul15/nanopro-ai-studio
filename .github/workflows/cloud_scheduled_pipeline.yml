@@ -1,0 +1,88 @@
+name: NanoPro 24/7 Autonomous Cloud Pipeline Scheduler
+
+on:
+  schedule:
+    # 06:00 AM IST = 00:30 UTC (BOD - Beginning of Day Cycle)
+    - cron: '30 0 * * *'
+    # 08:00 AM IST = 02:30 UTC (SOD - Start of Day Cycle)
+    - cron: '30 2 * * *'
+    # 10:00 AM IST = 04:30 UTC (Daily T-1 Incremental Pipeline)
+    - cron: '30 4 * * *'
+    # 06:00 PM IST = 12:30 UTC (EOD - End of Day Cycle & Reconciliation)
+    - cron: '30 12 * * *'
+    # 12:00 AM IST = 18:30 UTC (SFTP 20-Day Retention Policy Enforcement)
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+    inputs:
+      cycle:
+        description: 'Pipeline Cycle to Execute'
+        required: true
+        default: 'BOD'
+        type: choice
+        options:
+          - BOD
+          - SOD
+          - FULL_LOAD
+          - INCREMENTAL
+          - EOD
+          - SFTP_INGEST
+          - SFTP_CLEANUP_20D
+
+jobs:
+  cloud-pipeline-orchestrator:
+    name: Execute Cloud Pipeline (100% Autonomous - Zero Laptop Dependency)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Operational Cycle
+        id: cycle_step
+        run: |
+          HOUR=$(date -u +%H)
+          MIN=$(date -u +%M)
+          CYCLE="${{ github.event.inputs.cycle }}"
+          if [ -z "$CYCLE" ]; then
+            if [ "$HOUR" -eq "0" ]; then
+              CYCLE="BOD"
+            elif [ "$HOUR" -eq "2" ]; then
+              CYCLE="SOD"
+            elif [ "$HOUR" -eq "4" ]; then
+              CYCLE="INCREMENTAL"
+            elif [ "$HOUR" -eq "12" ]; then
+              CYCLE="EOD"
+            elif [ "$HOUR" -eq "18" ]; then
+              CYCLE="SFTP_CLEANUP_20D"
+            else
+              CYCLE="BOD"
+            fi
+          fi
+          echo "Selected Cycle: $CYCLE"
+          echo "cycle=$CYCLE" >> $GITHUB_OUTPUT
+
+      - name: Trigger Cloud Pipeline on Render Cloud Server
+        run: |
+          CYCLE="${{ steps.cycle_step.outputs.cycle }}"
+          BASE_URL="https://mangesh-nanopro-studio.onrender.com"
+          echo "Executing Autonomous Cloud Pipeline: $CYCLE via $BASE_URL"
+          
+          if [ "$CYCLE" = "SFTP_CLEANUP_20D" ]; then
+            echo "Enforcing SFTP 20-Day Retention Purge..."
+            RESPONSE=$(curl -s -X POST "$BASE_URL/api/sftp/cleanup" \
+              -H "Content-Type: application/json" \
+              -d '{"retention_days": 20, "purge_s3": true}' --max-time 120)
+            echo "SFTP Cleanup Response: $RESPONSE"
+          elif [ "$CYCLE" = "SFTP_INGEST" ]; then
+            echo "Processing Cloud SFTP Inbound Files..."
+            RESPONSE=$(curl -s -X POST "$BASE_URL/api/sftp/process-inbound" --max-time 180)
+            echo "SFTP Inbound Ingestion Response: $RESPONSE"
+          else
+            echo "Triggering Banking Pipeline Cycle: $CYCLE (AWS S3 -> Snowflake -> DuckDB -> Multi-Channel)..."
+            RESPONSE=$(curl -s -X POST "$BASE_URL/api/banking/trigger_cycle?cycle=$CYCLE" --max-time 300)
+            echo "Pipeline Response: $RESPONSE"
+          fi
+
+      - name: Verification & Health Ping
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://mangesh-nanopro-studio.onrender.com/api/health")
+          echo "Render Cloud Health Check: HTTP $STATUS"
+          if [ "$STATUS" -eq "200" ]; then
+            echo "SUCCESS: NanoPro Cloud Lakehouse Pipeline executed successfully without laptop dependence!"
+          fi

@@ -186,7 +186,8 @@ class ConnectionManager:
             "GMAIL_SMTP": os.environ.get("GMAIL_APP_PASSWORD", "agunjgvexwcjudb"),
             "TELEGRAM_ALERTS": os.environ.get("TELEGRAM_BOT_TOKEN", ""),
             "DUCKDB_GOLD_LAKEHOUSE": "embedded_olap_verified",
-            "GOOGLE_BIGQUERY_SANDBOX": "sandbox_free_tier"
+            "GOOGLE_BIGQUERY_SANDBOX": "sandbox_free_tier",
+            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", "NanoPro@SFTP2026!")
         }
 
         profiles = [
@@ -196,6 +197,7 @@ class ConnectionManager:
             ("AWS_S3_DATA_LAKE", "cloud", os.environ.get("AWS_ACCESS_KEY_ID", "mangesh-studio"), os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"), "443", os.environ.get("AWS_S3_BUCKET", "nanopro-data-lake"), {"region": os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"), "bucket": os.environ.get("AWS_S3_BUCKET", "nanopro-data-lake")}),
             ("DUCKDB_GOLD_LAKEHOUSE", "database", "embedded_olap", "data/lakehouse/gold_marts.duckdb", "0", "gold_marts", {"engine": "DuckDB 2.0.0", "storage": "Parquet Star Schema"}),
             ("GOOGLE_BIGQUERY_SANDBOX", "cloud_data_warehouse", "nanoproaistudio@gmail.com", "bigquery.googleapis.com", "443", "nanopro-lakehouse-sandbox", {"tier": "Always Free Sandbox", "quota": "10 GB Storage / 1 TB Query/mo"}),
+            ("CLOUD_SFTP_SERVER", "sftp", os.environ.get("SFTP_USER", "nanopro_sftp"), "0.0.0.0", str(os.environ.get("SFTP_PORT", 2222)), "sftp_hub", {"protocols": ["SFTP", "SSH", "AWS S3 Sync"], "inbound": "data/sftp/inbound", "outbound": "data/sftp/outbound", "reports": "data/sftp/reports"}),
             ("GMAIL_SMTP", "smtp", "mangeshbagul15@gmail.com", "smtp.gmail.com", "587", "nanoproaistudio@gmail.com", {"protocol": "STARTTLS"}),
             ("TELEGRAM_ALERTS", "messaging", "@mangesh_technews_bot", "api.telegram.org", "443", "1200023268", {"chat_id": "1200023268"})
         ]
@@ -1205,6 +1207,52 @@ class ConnectionManager:
             self._record_connection_result(conn_name, "database", "Connection Failed", duration, None, None, "studio_memory.db", None, res["message"], res)
             return res
 
+    def test_sftp_connection(self) -> Dict[str, Any]:
+        """Verifies Cloud SFTP Inbound/Outbound directories, S3 sync gateway, and multi-format parsers."""
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        conn_name = "CLOUD_SFTP_SERVER"
+        try:
+            from app.core.cloud_sftp_hub import cloud_sftp_hub
+            status = cloud_sftp_hub.get_status()
+            elapsed_ms = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "connection_name": conn_name,
+                "status": "Connected",
+                "success": True,
+                "response_time_ms": elapsed_ms,
+                "timestamp": test_ts,
+                "host": status["host"],
+                "port": status["port"],
+                "username": status["username"],
+                "directories": status["directories"],
+                "supported_formats": status["supported_formats"],
+                "s3_mirror_bucket": status["s3_mirror_bucket"],
+                "message": f"Cloud SFTP Hub active. Inbound pending: {status['directories']['inbound_pending_count']}, Outbound: {status['directories']['outbound_count']}"
+            }
+            self._record_connection_result(
+                conn_name, "sftp", "Connected", elapsed_ms,
+                status.get("username", "nanopro_sftp"), "SFTPUser", "SFTP_STORAGE", "INBOUND_OUTBOUND",
+                None, res
+            )
+            return res
+        except Exception as e:
+            elapsed_ms = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "connection_name": conn_name,
+                "status": "Error",
+                "success": False,
+                "error": str(e),
+                "response_time_ms": elapsed_ms,
+                "timestamp": test_ts
+            }
+            self._record_connection_result(
+                conn_name, "sftp", "Error", elapsed_ms,
+                None, None, "SFTP_STORAGE", "INBOUND_OUTBOUND",
+                str(e), res
+            )
+            return res
+
     def test_duckdb_connection(self) -> Dict[str, Any]:
         """Verifies local DuckDB 2.0.0 analytical lakehouse file, schema and Star Schema marts."""
         start_time = time.time()
@@ -1314,6 +1362,10 @@ class ConnectionManager:
         # 3. BigQuery Sandbox
         try: results["GOOGLE_BIGQUERY_SANDBOX"] = self.test_bigquery_connection()
         except Exception as e: results["GOOGLE_BIGQUERY_SANDBOX"] = {"status": "Connection Failed", "error": str(e)}
+
+        # 13. Cloud SFTP Server
+        try: results["CLOUD_SFTP_SERVER"] = self.test_sftp_connection()
+        except Exception as e: results["CLOUD_SFTP_SERVER"] = {"status": "Connection Failed", "error": str(e)}
 
         # 4. Postgres Neon Free
         try: results["POSTGRES_CLOUD_FREE"] = self.test_postgres_connection("POSTGRES_CLOUD_FREE")

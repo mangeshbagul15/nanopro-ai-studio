@@ -4868,6 +4868,12 @@ async def api_banking_generate_dispatch_report(req: BankingReportDispatchRequest
     )
     return JSONResponse(res)
 
+@app.post("/api/banking/duckdb/backup_s3")
+async def api_banking_duckdb_backup_s3():
+    """Backs up DuckDB Gold Lakehouse database to AWS S3 (Zero Laptop Dependency)."""
+    from app.core.etl_automation_pipeline import etl_pipeline
+    return JSONResponse(etl_pipeline.backup_duckdb_to_s3())
+
 @app.get("/api/banking/db/space")
 async def api_banking_db_space(target: str = Query("oracle")):
     """Returns database storage space, tablespace allocation, and recommendations."""
@@ -5519,6 +5525,72 @@ async def api_de_modern_task_logs(task_id: str):
 @app.post("/api/de_modern/tasks/{task_id}/action")
 async def api_de_modern_tasks_action(task_id: str, req: DeTaskActionReq):
     return JSONResponse(modern_de.execute_task_schedule_action(task_id, req.action, req.cron_expression))
+
+# =========================================================================
+# CLOUD SFTP HUB & 20-DAY RETENTION SENTINEL ENDPOINTS
+# =========================================================================
+class SFTPSampleGenRequest(BaseModel):
+    project_key: Optional[str] = "credit_card"
+    rows: Optional[int] = 50
+
+    if PYDANTIC_V2:
+        model_config = ConfigDict(extra="allow")
+    else:
+        class Config:
+            extra = "allow"
+
+class SFTPCleanupRequest(BaseModel):
+    retention_days: Optional[int] = 20
+    purge_s3: Optional[bool] = True
+
+    if PYDANTIC_V2:
+        model_config = ConfigDict(extra="allow")
+    else:
+        class Config:
+            extra = "allow"
+
+@app.get("/api/sftp/status")
+async def api_sftp_status():
+    """Returns live Cloud SFTP status, directory counts, pending inbound files, and 20-day retention status."""
+    from app.core.cloud_sftp_hub import cloud_sftp_hub
+    return JSONResponse(cloud_sftp_hub.get_status())
+
+@app.post("/api/sftp/generate-samples")
+async def api_sftp_generate_samples(req: SFTPSampleGenRequest):
+    """Generates synthetic test files in Pipe-delimited (|), CSV, and Excel (.xlsx) formats."""
+    from app.core.cloud_sftp_hub import cloud_sftp_hub
+    res = cloud_sftp_hub.generate_sample_inbound_files(project_key=req.project_key or "credit_card", rows=req.rows or 50)
+    return JSONResponse(res)
+
+@app.post("/api/sftp/process-inbound")
+async def api_sftp_process_inbound():
+    """Processes all pending inbound SFTP files across all projects, pipelines to S3/Snowflake/DuckDB, archives files, and enforces 20-day retention."""
+    from app.core.cloud_sftp_hub import cloud_sftp_hub
+    res = cloud_sftp_hub.process_all_inbound_files()
+    return JSONResponse(res)
+
+@app.post("/api/sftp/cleanup")
+async def api_sftp_cleanup(req: SFTPCleanupRequest = None):
+    """Enforces strict 20-day retention limit on SFTP files and AWS S3 mirror. Older files and directories are permanently purged."""
+    from app.core.cloud_sftp_hub import cloud_sftp_hub
+    days = req.retention_days if (req and req.retention_days is not None) else 20
+    purge_s3 = req.purge_s3 if (req and req.purge_s3 is not None) else True
+    res = cloud_sftp_hub.enforce_retention_policy(retention_days=days, purge_s3=purge_s3)
+    return JSONResponse(res)
+
+@app.post("/api/sftp/start-server")
+async def api_sftp_start_server():
+    """Starts the embedded Paramiko SFTP background server on port 2222."""
+    from app.core.cloud_sftp_hub import cloud_sftp_hub
+    cloud_sftp_hub.start_server()
+    return JSONResponse({"status": "Started", "port": cloud_sftp_hub._server_port, "username": cloud_sftp_hub._server_user})
+
+@app.post("/api/sftp/stop-server")
+async def api_sftp_stop_server():
+    """Stops the embedded SFTP background server."""
+    from app.core.cloud_sftp_hub import cloud_sftp_hub
+    cloud_sftp_hub.stop_server()
+    return JSONResponse({"status": "Stopped"})
 
 # =========================================================================
 # MULTILINGUAL PROMPT MAKER STUDIO API ENDPOINTS
