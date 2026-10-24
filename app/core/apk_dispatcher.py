@@ -43,9 +43,11 @@ APK_CONFIG_FILE = BASE_DIR / "data" / "banking" / "apk_config.json"
 def get_apk_config() -> Dict[str, Any]:
     """Load configurable APK dispatcher parameters (interval, count, enabled)."""
     default_cfg = {
-        "interval_hours": 4,
+        "interval_minutes": 15,
+        "interval_hours": 0.25,
         "count": 5,
         "enabled": True,
+        "direct_apk_only": True,
         "last_updated": datetime.datetime.now().isoformat(),
     }
     try:
@@ -58,12 +60,14 @@ def get_apk_config() -> Dict[str, Any]:
     return default_cfg
 
 
-def update_apk_config(interval_hours: int = 4, count: int = 5, enabled: bool = True) -> Dict[str, Any]:
-    """Update and persist APK dispatcher parameters and wake scheduler."""
+def update_apk_config(interval_minutes: int = 15, count: int = 5, enabled: bool = True, direct_apk_only: bool = True) -> Dict[str, Any]:
+    """Update and persist APK dispatcher parameters: default 15 minutes, 5 APKs direct."""
     cfg = get_apk_config()
-    cfg["interval_hours"] = max(1, int(interval_hours))
+    cfg["interval_minutes"] = max(1, int(interval_minutes))
+    cfg["interval_hours"] = round(cfg["interval_minutes"] / 60.0, 3)
     cfg["count"] = max(1, min(20, int(count)))
     cfg["enabled"] = bool(enabled)
+    cfg["direct_apk_only"] = bool(direct_apk_only)
     cfg["last_updated"] = datetime.datetime.now().isoformat()
     APK_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     APK_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
@@ -535,17 +539,43 @@ def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float =
     Returns {repo, name, url, size_mb, version, release_notes} or None.
     """
     try:
-        api_url = f"https://api.github.com/repos/{repo}/releases/latest"
-        headers = {"User-Agent": "NanoProAI-APKBot/2.0", "Accept": "application/vnd.github.v3+json"}
-        req = urllib.request.Request(api_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=8) as r:
-            release = json.loads(r.read().decode("utf-8"))
+        release = None
+        version = "latest"
+        body_notes = ""
+        apk_assets = []
 
-        version = release.get("tag_name", "latest")
-        body_notes = release.get("body", "") or ""
-        assets = release.get("assets", [])
+        try:
+            api_url = f"https://api.github.com/repos/{repo}/releases/latest"
+            headers = {"User-Agent": "NanoProAI-APKBot/2.0", "Accept": "application/vnd.github.v3+json"}
+            req = urllib.request.Request(api_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as r:
+                release = json.loads(r.read().decode("utf-8"))
+            version = release.get("tag_name", "latest")
+            body_notes = release.get("body", "") or ""
+            assets = release.get("assets", [])
+            apk_assets = [a for a in assets if a.get("name", "").lower().endswith(".apk")]
+        except Exception as api_err:
+            # Fallback without GitHub API rate limit: resolve tag via web redirect and fetch expanded_assets
+            log_event(f"[APKBot] GitHub API rate-limit/timeout for {repo} ({api_err}); engaging zero-limit web resolver...", level="DEBUG", component="APKDispatcher")
+            opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler)
+            req_web = urllib.request.Request(f"https://github.com/{repo}/releases/latest", headers={"User-Agent": "Mozilla/5.0"})
+            with opener.open(req_web, timeout=6) as resp_web:
+                version = resp_web.geturl().split("/")[-1]
 
-        apk_assets = [a for a in assets if a.get("name", "").lower().endswith(".apk")]
+            assets_url = f"https://github.com/{repo}/releases/expanded_assets/{version}"
+            req_assets = urllib.request.Request(assets_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req_assets, timeout=6) as r_ast:
+                html_ast = r_ast.read().decode("utf-8", errors="ignore")
+
+            links = re.findall(r'href="([^"]+\.apk)"', html_ast)
+            for lk in links:
+                nm = lk.split("/")[-1]
+                apk_assets.append({
+                    "name": nm,
+                    "browser_download_url": "https://github.com" + lk,
+                    "size": 15 * 1024 * 1024  # estimated 15MB if header not present
+                })
+
         if not apk_assets:
             return None
 
@@ -851,9 +881,9 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
                     # Download failed; provide VIP button package
                     ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({size_mb} MB)", apk_info["url"])
             else:
-                # > 50 MB up to 100 MB: VIP High-Capacity 1-Click Download Delivery
-                log_event(f"[APKBot-HeavyLane] Discarding direct 50MB bot upload; dispatching VIP High-Speed direct binary ({size_mb} MB) for {label}", component="APKDispatcher")
-                ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({size_mb} MB)", apk_info["url"])
+                # Over 50 MB exceeds Telegram bot limit. In direct_apk_only mode, skip so user only gets direct APK files!
+                log_event(f"[APKBot-HeavyLane] {label} ({size_mb} MB) exceeds Telegram 50MB direct file limit. Skipping in direct_apk_only mode.", component="APKDispatcher")
+                continue
 
             if ok:
                 with sent_lock:
@@ -886,19 +916,20 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
                 skipped.append({"repo": repo, "version": version, "reason": "Already sent"})
                 continue
 
-        # Fast candidate found! Download and send immediately, with instant VIP button fallback
+        # Direct APK candidate found! Download and deliver 100% directly inside Telegram
         caption = _build_caption(src, apk_info, lane="fast")
         apk_path = _download_apk(apk_info["url"], apk_info["name"])
         ok = False
         if apk_path:
-            ok = _send_apk_to_telegram(apk_path, caption, fallback_url=apk_info["url"])
+            ok = _send_apk_to_telegram(apk_path, caption, fallback_url=None)
             try:
                 apk_path.unlink(missing_ok=True)
             except Exception:
                 pass
         else:
-            log_event(f"[APKBot-FastLane] Direct download skipped; delivering VIP 1-Click Package for {label}", component="APKDispatcher")
-            ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({apk_info['size_mb']} MB)", apk_info["url"])
+            # If download timed out or skipped, do not send external URLs. Pick next direct APK candidate!
+            log_event(f"[APKBot-Direct] Download skipped for {label}. Searching next direct APK (<48MB)...", component="APKDispatcher")
+            continue
 
         if ok:
             with sent_lock:
@@ -964,19 +995,18 @@ class APKScheduler:
         while not self._stop.is_set():
             cfg = get_apk_config()
             enabled = cfg.get("enabled", True)
-            self.INTERVAL_HOURS = max(1, int(cfg.get("interval_hours", 2)))
-            self.COUNT = max(1, min(20, int(cfg.get("count", 8))))
+            interval_min = int(cfg.get("interval_minutes") or 15)
+            self.COUNT = max(1, min(20, int(cfg.get("count", 5))))
 
             if enabled:
                 try:
-                    log_event(f"[APKBot] NanoPro Watchdog: Starting APK discovery cycle (Count: {self.COUNT}, Interval: {self.INTERVAL_HOURS}h)...", component="APKDispatcher")
+                    log_event(f"[APKBot] NanoPro AI Manager: Starting 15-min Direct APK cycle (Count: {self.COUNT}, Interval: {interval_min} min)...", component="APKDispatcher")
                     res = discover_and_send_apks(count=self.COUNT)
-                    log_event(f"[APKBot] NanoPro Watchdog: Delivered {res.get('sent_count', 0)} APKs to @mangesh_apk_bot successfully.", component="APKDispatcher")
+                    log_event(f"[APKBot] NanoPro AI Manager: Delivered {res.get('sent_count', 0)} direct APKs to @mangesh_apk_bot successfully.", component="APKDispatcher")
                 except Exception as e:
-                    log_event(f"[APKBot] NanoPro Watchdog: Scheduler cycle error: {e}", level="WARNING", component="APKDispatcher")
+                    log_event(f"[APKBot] NanoPro AI Manager: Scheduler cycle error: {e}", level="WARNING", component="APKDispatcher")
 
-            # Sleep in 60-second intervals to allow dynamic reload without waiting hours
-            target_wait = max(60, self.INTERVAL_HOURS * 3600)
+            target_wait = max(60, interval_min * 60)
             elapsed = 0
             while elapsed < target_wait and not self._stop.is_set():
                 if self._wake_event.is_set():

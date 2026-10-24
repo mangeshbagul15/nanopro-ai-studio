@@ -1,6 +1,8 @@
 {
-  "interval_hours": 2,
-  "count": 8,
+  "interval_minutes": 15,
+  "interval_hours": 0.25,
+  "count": 5,
   "enabled": true,
-  "last_updated": "2026-10-24T17:35:00"
+  "direct_apk_only": true,
+  "last_updated": "2026-10-24T19:52:30.283814"
 }
