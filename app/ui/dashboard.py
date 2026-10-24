@@ -28861,9 +28861,7 @@ async function loadAmazonVsFlipkartDeals() {
         if (cards) cards.innerText = 'Failed to load price comparison: ' + e.message;
     }
 }
-
-
-
+</script>
 
 <!-- ========================================================================= -->
 <!-- DATA WAREHOUSE, DATA LAKE & DATA MART MANAGEMENT MODALS -->
@@ -29220,8 +29218,6 @@ function openSchedulePipelineModal(cycle) {
         if (descInput) descInput.value = `Automated ${cycle || 'BOD'} Cloud Pipeline Execution across AWS S3, Snowflake, and DuckDB`;
     }, 400);
 }
-</script>
-
 </script>
 </body>
 </html>

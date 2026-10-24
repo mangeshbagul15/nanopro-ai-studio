@@ -3016,9 +3016,11 @@ def get_login_page_html() -> str:
             document.getElementById('registerForm').style.display = (tab === 'register') ? 'block' : 'none';
 
             const divText = document.getElementById('dividerText');
-            if (tab === 'direct') divText.innerText = 'OR USE DIRECT CREDENTIALS';
-            else if (tab === 'whatsapp') divText.innerText = 'OR LOGIN VIA WHATSAPP OTP';
-            else divText.innerText = 'OR SUBMIT ACCESS REQUEST';
+            if (divText) {
+                if (tab === 'direct') divText.innerText = 'OR USE DIRECT CREDENTIALS';
+                else if (tab === 'whatsapp') divText.innerText = 'OR LOGIN VIA WHATSAPP OTP';
+                else divText.innerText = 'OR SUBMIT ACCESS REQUEST';
+            }
 
             hideAlert();
         }
