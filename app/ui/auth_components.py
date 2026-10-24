@@ -2532,6 +2532,8 @@ def get_login_page_html() -> str:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mangesh Nano Pro — Zero-Trust Security Gateway</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='npG' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338BDF8'/%3E%3Cstop offset='50%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%2310B981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='url(%23npG)'/%3E%3Ccircle cx='32' cy='22' r='4' fill='%2338BDF8'/%3E%3Ccircle cx='48' cy='46' r='3.5' fill='%2310B981'/%3E%3Ccircle cx='16' cy='46' r='3.5' fill='%236366F1'/%3E%3C/svg%3E">
+    <!-- CLERK OFFICIAL JAVASCRIPT SDK -->
+    <script async crossorigin="anonymous" data-clerk-publishable-key="pk_test_YWRhcHRlZC1tdXNrcmF0LTY4MDEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://adapted-muskrat-6801.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         body {
@@ -2545,16 +2547,16 @@ def get_login_page_html() -> str:
         }
         .gateway-card {
             width: 100%;
-            max-width: 460px;
-            background: rgba(15, 23, 42, 0.85);
+            max-width: 480px;
+            background: rgba(15, 23, 42, 0.88);
             border: 1px solid rgba(56, 189, 248, 0.3);
             border-radius: 20px;
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(56, 189, 248, 0.15);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 50px rgba(56, 189, 248, 0.15);
             backdrop-filter: blur(20px);
             overflow: hidden;
         }
         .gateway-header {
-            padding: 28px 28px 20px;
+            padding: 26px 28px 18px;
             text-align: center;
             background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0) 100%);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2563,8 +2565,8 @@ def get_login_page_html() -> str:
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
             color: #10B981;
             padding: 5px 14px;
             border-radius: 20px;
@@ -2572,20 +2574,20 @@ def get_login_page_html() -> str:
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%; background: #10B981; box-shadow: 0 0 8px #10B981;
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-        .gateway-title { font-size: 22px; font-weight: 800; color: #FFF; margin-bottom: 6px; letter-spacing: -0.5px; }
+        .gateway-title { font-size: 22px; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.5px; }
         .gateway-sub { font-size: 13px; color: #94A3B8; }
         .shield-specs {
             display: flex;
             justify-content: center;
             gap: 16px;
-            margin-top: 14px;
+            margin-top: 12px;
             font-size: 11px;
             color: #64748B;
         }
@@ -2593,7 +2595,7 @@ def get_login_page_html() -> str:
         .tab-bar { display: flex; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 15, 29, 0.5); }
         .tab-btn {
             flex: 1;
-            padding: 14px 0;
+            padding: 13px 0;
             background: none;
             border: none;
             color: #94A3B8;
@@ -2603,8 +2605,8 @@ def get_login_page_html() -> str:
             transition: all 0.2s;
         }
         .tab-btn.active { color: #38BDF8; background: rgba(56, 189, 248, 0.08); border-bottom: 2px solid #38BDF8; }
-        .gateway-body { padding: 26px 28px 30px; }
-        .form-group { margin-bottom: 18px; }
+        .gateway-body { padding: 24px 28px 28px; }
+        .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         .form-input {
             width: 100%;
@@ -2633,6 +2635,46 @@ def get_login_page_html() -> str:
         }
         .btn-submit:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .btn-clerk {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #8B5CF6 100%);
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-clerk:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-clerk:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 18px 0 16px;
+            gap: 12px;
+        }
+        .auth-divider-line {
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .auth-divider-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748B;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
         .alert-box {
             padding: 12px 14px;
             border-radius: 8px;
@@ -2643,7 +2685,7 @@ def get_login_page_html() -> str:
         .alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; color: #FCA5A5; }
         .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #6EE7B7; }
         .alert-warning { background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #FCD34D; }
-        .footer-note { text-align: center; font-size: 11px; color: #64748B; margin-top: 20px; line-height: 1.5; }
+        .footer-note { text-align: center; font-size: 11px; color: #64748B; margin-top: 18px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -2651,13 +2693,13 @@ def get_login_page_html() -> str:
         <div class="gateway-header">
             <div class="security-badge">
                 <div class="pulse-dot"></div>
-                Cloudflare Zero Trust + Clerk Shield
+                Cloudflare Zero Trust + Clerk Verified
             </div>
             <h1 class="gateway-title">Mangesh Nano Pro AI</h1>
             <p class="gateway-sub">Autonomous Intelligent Operating Center</p>
             <div class="shield-specs">
-                <div class="shield-spec-item">🔒 Session Token Guard</div>
-                <div class="shield-spec-item">🛡️ Device Fingerprint</div>
+                <div class="shield-spec-item">🔒 Session Guard</div>
+                <div class="shield-spec-item">🛡️ Cloudflare Zero-Trust</div>
                 <div class="shield-spec-item">⚡ Zero DOM-Leak</div>
             </div>
         </div>
@@ -2670,23 +2712,43 @@ def get_login_page_html() -> str:
         <div class="gateway-body">
             <div id="alertBox" class="alert-box"></div>
 
-            <!-- LOGIN FORM -->
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" required autofocus>
+            <!-- LOGIN VIEW -->
+            <div id="loginView">
+                <!-- CLERK ZERO TRUST 1-CLICK AUTH -->
+                <div id="clerkContainer" style="margin-bottom: 16px;">
+                    <button type="button" id="clerkBtn" onclick="triggerClerkSignIn()" class="btn-clerk">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.44 4 16.08 4 12C4 7.92 7.05 4.56 11 4.07V19.93ZM13 4.07C16.95 4.56 20 7.92 20 12C20 16.08 16.95 19.44 13 19.93V4.07Z" fill="#FFF"/>
+                        </svg>
+                        ⚡ 1-Click Sign In with Clerk
+                    </button>
+                    <div id="clerkMountTarget" style="margin-top: 12px;"></div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+
+                <div class="auth-divider">
+                    <div class="auth-divider-line"></div>
+                    <span class="auth-divider-text">OR DIRECT ZERO-TRUST LOGIN</span>
+                    <div class="auth-divider-line"></div>
                 </div>
-                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-                    <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94A3B8; cursor:pointer;">
-                        <input type="checkbox" id="rememberMe" checked> Remember this device (Auto-Login)
-                    </label>
-                </div>
-                <button type="submit" id="loginBtn" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
-            </form>
+
+                <!-- DIRECT LOGIN FORM -->
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">Username / Admin ID</label>
+                        <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+                    </div>
+                    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94A3B8; cursor:pointer;">
+                            <input type="checkbox" id="rememberMe" checked> Remember this device (Auto-Login)
+                        </label>
+                    </div>
+                    <button type="submit" id="loginBtn" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
+                </form>
+            </div>
 
             <!-- REGISTER FORM -->
             <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
@@ -2712,7 +2774,7 @@ def get_login_page_html() -> str:
             </form>
 
             <div class="footer-note">
-                Protected by NanoPro Zero-Trust Architecture Sentinel (agent_136).<br>
+                Protected by NanoPro Zero-Trust Sentinel (agent_136) &amp; Clerk Identity.<br>
                 Dashboard markup is NEVER served to unauthenticated clients.
             </div>
         </div>
@@ -2758,16 +2820,94 @@ def get_login_page_html() -> str:
                             localStorage.setItem('nanopro_session_token', d.session_token);
                             document.cookie = 'nanopro_session=' + encodeURIComponent(d.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
                             window.location.replace('/?token=' + encodeURIComponent(d.session_token));
+                            return;
                         }
                     }
                 }
             } catch(e){}
         });
 
+        // Initialize Clerk when SDK loads
+        window.addEventListener('load', async () => {
+            if (window.Clerk) {
+                try {
+                    await window.Clerk.load();
+                    // Auto-sync if user is already signed in on Clerk
+                    if (window.Clerk.user) {
+                        syncClerkSession();
+                    }
+                } catch(e) {
+                    console.warn('Clerk initialization note:', e);
+                }
+            }
+        });
+
+        async function syncClerkSession() {
+            if (!window.Clerk || !window.Clerk.user) return;
+            showAlert('⚡ Clerk Zero-Trust Verified. Establishing session...', 'success');
+            try {
+                const email = window.Clerk.user.primaryEmailAddress ? window.Clerk.user.primaryEmailAddress.emailAddress : '';
+                const clerkToken = window.Clerk.session ? await window.Clerk.session.getToken() : null;
+                const sessionId = window.Clerk.session ? window.Clerk.session.id : null;
+                
+                const resp = await fetch('/api/auth/clerk-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: clerkToken,
+                        session_id: sessionId,
+                        user_id: window.Clerk.user.id,
+                        email: email,
+                        full_name: window.Clerk.user.fullName
+                    })
+                });
+                const data = await resp.json();
+                if (data.status === 'success' && data.session_token) {
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+                    localStorage.setItem('nanopro_active_account', data.user.username);
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+                    showAlert('✅ Clerk Authenticated! Launching NanoPro...', 'success');
+                    setTimeout(() => {
+                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+                    }, 400);
+                } else {
+                    showAlert(data.error || 'Clerk verification error.', 'error');
+                }
+            } catch(err) {
+                showAlert('Clerk sync error: ' + err.message, 'error');
+            }
+        }
+
+        async function triggerClerkSignIn() {
+            if (!window.Clerk) {
+                showAlert('Clerk Zero Trust SDK loading... please wait a moment.', 'warning');
+                return;
+            }
+            try {
+                if (window.Clerk.openSignIn) {
+                    window.Clerk.openSignIn();
+                    // Listen for session completion
+                    window.Clerk.addListener(async (e) => {
+                        if (e && e.user) {
+                            syncClerkSession();
+                        }
+                    });
+                } else if (window.Clerk.mountSignIn) {
+                    const node = document.getElementById('clerkMountTarget');
+                    if (node) {
+                        node.innerHTML = '';
+                        window.Clerk.mountSignIn(node);
+                    }
+                }
+            } catch(e) {
+                showAlert('Clerk Sign-In: ' + e.message, 'error');
+            }
+        }
+
         function switchTab(tab) {
             document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
             document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
-            document.getElementById('loginForm').style.display = (tab === 'login') ? 'block' : 'none';
+            document.getElementById('loginView').style.display = (tab === 'login') ? 'block' : 'none';
             document.getElementById('registerForm').style.display = (tab === 'register') ? 'block' : 'none';
             hideAlert();
         }

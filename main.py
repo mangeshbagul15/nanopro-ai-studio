@@ -518,6 +518,13 @@ class AuthLogoutRequest(BaseModel):
 class AuthValidateRequest(BaseModel):
     session_token: str
 
+class ClerkVerifyRequest(BaseModel):
+    token: Optional[str] = None
+    session_id: Optional[str] = None
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+
 class AdminApproveUserRequest(BaseModel):
     user_id: str
     admin_username: Optional[str] = "nanopro"
@@ -6004,6 +6011,49 @@ async def api_auth_validate(req: AuthValidateRequest):
     from app.core.auth_manager import auth_manager
     res = auth_manager.validate_session(req.session_token)
     return JSONResponse(res)
+
+@app.get("/api/auth/clerk-config")
+async def api_auth_clerk_config():
+    """Returns public Clerk credentials and configuration from CredentialsVault."""
+    from app.core.credentials_vault import CredentialsVault
+    vault = CredentialsVault()
+    cred = vault.get_credential("CLERK_AUTH")
+    meta = (cred.get("additional_metadata") if cred else {}) or {}
+    pub_key = meta.get("publishable_key") or "pk_test_YWRhcHRlZC1tdXNrcmF0LTY4MDEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+    frontend_api = meta.get("frontend_api_url") or "https://adapted-muskrat-6801.clerk.accounts.dev"
+    return JSONResponse({
+        "status": "success",
+        "publishable_key": pub_key,
+        "frontend_api_url": frontend_api
+    })
+
+@app.post("/api/auth/clerk-verify")
+async def api_auth_clerk_verify(req: ClerkVerifyRequest, request: Request):
+    """Verifies Clerk session/JWT with Zero-Trust and provisions NanoPro session token."""
+    from app.core.auth_manager import auth_manager
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "Unknown")
+    res = auth_manager.verify_clerk_session(
+        clerk_token=req.token,
+        session_id=req.session_id,
+        clerk_user_id=req.user_id,
+        email=req.email,
+        full_name=req.full_name,
+        ip_address=ip,
+        user_agent=ua
+    )
+    status_code = 200 if res.get("status") == "success" else 401
+    resp = JSONResponse(res, status_code=status_code)
+    if res.get("status") == "success" and res.get("session_token"):
+        resp.set_cookie(
+            key="nanopro_session",
+            value=res["session_token"],
+            max_age=2592000,
+            httponly=False,
+            samesite="lax",
+            secure=False
+        )
+    return resp
 
 @app.get("/api/admin/users/list")
 async def api_admin_users_list():
