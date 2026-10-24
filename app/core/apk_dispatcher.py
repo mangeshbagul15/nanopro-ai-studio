@@ -538,7 +538,7 @@ def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float =
         api_url = f"https://api.github.com/repos/{repo}/releases/latest"
         headers = {"User-Agent": "NanoProAI-APKBot/2.0", "Accept": "application/vnd.github.v3+json"}
         req = urllib.request.Request(api_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as r:
+        with urllib.request.urlopen(req, timeout=8) as r:
             release = json.loads(r.read().decode("utf-8"))
 
         version = release.get("tag_name", "latest")
@@ -594,14 +594,18 @@ def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float =
 
 
 def _download_apk(url: str, filename: str) -> Optional[Path]:
-    """Downloads APK to temp dir with chunked 256KB low-memory streaming. Returns Path or None on failure."""
+    """Downloads APK to temp dir with chunked 256KB low-memory streaming with strict 20s skip limit."""
     dest = APK_TEMP_DIR / filename
+    start_time = time.time()
     try:
-        log_event(f"[APKBot] Downloading {filename}...", component="APKDispatcher")
+        log_event(f"[APKBot] Downloading {filename} (max 20s budget)...", component="APKDispatcher")
         req = urllib.request.Request(url, headers={"User-Agent": "NanoProAI-APKBot/2.0"})
-        with urllib.request.urlopen(req, timeout=300) as r, open(dest, "wb") as f:
+        with urllib.request.urlopen(req, timeout=20) as r, open(dest, "wb") as f:
             chunk_size = 256 * 1024  # 256KB chunks
             while True:
+                if (time.time() - start_time) > 20:
+                    log_event(f"[APKBot] Download of {filename} exceeded 20s budget, skipping to direct 1-click button", level="INFO", component="APKDispatcher")
+                    raise TimeoutError("Download exceeded 20s budget")
                 chunk = r.read(chunk_size)
                 if not chunk:
                     break
@@ -736,7 +740,7 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
                 url,
                 data={"chat_id": TELEGRAM_CHAT_ID, "caption": final_caption, "parse_mode": parse_mode},
                 files={"document": (apk_path.name, f, "application/vnd.android.package-archive")},
-                timeout=600
+                timeout=25
             )
         data = resp.json()
         if data.get("ok"):
@@ -758,7 +762,7 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
                     url,
                     data={"chat_id": TELEGRAM_CHAT_ID, "caption": plain_caption},
                     files={"document": (apk_path.name, f2, "application/vnd.android.package-archive")},
-                    timeout=600
+                    timeout=25
                 )
             data2 = resp2.json()
             if data2.get("ok"):
@@ -882,19 +886,19 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
                 skipped.append({"repo": repo, "version": version, "reason": "Already sent"})
                 continue
 
-        # Fast candidate found! Download and send immediately
-        apk_path = _download_apk(apk_info["url"], apk_info["name"])
-        if not apk_path:
-            failed.append({"repo": repo, "reason": "Download failed"})
-            continue
-
+        # Fast candidate found! Download and send immediately, with instant VIP button fallback
         caption = _build_caption(src, apk_info, lane="fast")
-        ok = _send_apk_to_telegram(apk_path, caption, fallback_url=apk_info["url"])
-
-        try:
-            apk_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+        apk_path = _download_apk(apk_info["url"], apk_info["name"])
+        ok = False
+        if apk_path:
+            ok = _send_apk_to_telegram(apk_path, caption, fallback_url=apk_info["url"])
+            try:
+                apk_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        else:
+            log_event(f"[APKBot-FastLane] Direct download skipped; delivering VIP 1-Click Package for {label}", component="APKDispatcher")
+            ok = _send_telegram_button_message(caption, f"⬇️ Direct Download APK ({apk_info['size_mb']} MB)", apk_info["url"])
 
         if ok:
             with sent_lock:

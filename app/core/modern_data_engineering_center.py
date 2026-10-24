@@ -45,38 +45,85 @@ smtp_client = SMTPClient()
 DEFAULT_3D_PIPELINE_STATE = {
     "nodes": [
         {
-            "id": "node_sources",
-            "name": "Sources",
-            "icon": "🗄️",
-            "layer": "Source Ingestion",
+            "id": "node_oracle",
+            "name": "Oracle XE 21c CBS",
+            "icon": "🏛️",
+            "layer": "Core Banking CBS (Port 1521)",
             "status": "HEALTHY",
             "throughput_rec_sec": 142500,
             "latency_ms": 1.2,
+            "health_pct": 99.9,
+            "active_endpoints": [
+                {"name": "MY_ORACLE_XE_LOCAL (127.0.0.1:1521/XEPDB1)", "status": "UP", "tables": 28, "socket": "CONNECTED"},
+                {"name": "MY_ORACLE_XE_REMOTE (192.168.31.240)", "status": "UP", "tables": 24, "socket": "CONNECTED"},
+                {"name": "Tailscale DR Mirror (100.112.86.83)", "status": "UP", "tables": 22, "socket": "CONNECTED"}
+            ],
+            "description": "Primary Finacle Core Banking System running on Oracle XE 21c with 28 relational tables."
+        },
+        {
+            "id": "node_aws_s3",
+            "name": "AWS S3 Data Lake",
+            "icon": "☁️",
+            "layer": "AWS Lakehouse (ap-southeast-2)",
+            "status": "HEALTHY",
+            "throughput_rec_sec": 142500,
+            "latency_ms": 28.4,
+            "health_pct": 100.0,
+            "active_endpoints": [
+                {"name": "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/", "status": "UP", "buckets": 4, "format": "Parquet Snappy"},
+                {"name": "AWS Athena Federated Query Catalog", "status": "ACTIVE", "tables": 16, "mode": "Serverless"}
+            ],
+            "description": "High-throughput cloud object landing zone for transactional archives and Parquet partitions."
+        },
+        {
+            "id": "node_postgres",
+            "name": "PostgreSQL Fabric",
+            "icon": "🐘",
+            "layer": "Neon Cloud & Local nanopro_db",
+            "status": "HEALTHY",
+            "throughput_rec_sec": 48500,
+            "latency_ms": 1.8,
+            "health_pct": 100.0,
+            "active_endpoints": [
+                {"name": "Neon Serverless Cloud (AWS Singapore)", "status": "UP", "tables": 18, "mode": "Zero-Downtime"},
+                {"name": "Local Enterprise PostgreSQL (127.0.0.1:5432)", "status": "UP", "tables": 18, "mode": "Audit Ledger"}
+            ],
+            "description": "Enterprise transactional logging and real-time ledger synchronization."
+        },
+        {
+            "id": "node_sftp",
+            "name": "Cloud SFTP Hub",
+            "icon": "📁",
+            "layer": "Enterprise Gateway (Port 2222)",
+            "status": "HEALTHY",
+            "throughput_rec_sec": 35000,
+            "latency_ms": 3.4,
             "health_pct": 99.8,
             "active_endpoints": [
-                {"name": "Oracle XE 19c (127.0.0.1:1521/XEPDB1)", "status": "UP", "tables": 28, "socket": "CONNECTED"},
-                {"name": "AWS S3 Staging (ap-southeast-2)", "status": "UP", "buckets": 4, "socket": "CONNECTED"}
+                {"name": "Cloud SFTP Feed Listener (0.0.0.0:2222)", "status": "UP", "format": "Pipe / CSV / Excel"},
+                {"name": "Automated 20-Day Retention Purge Daemon", "status": "ACTIVE", "policy": "Compliant"}
             ],
-            "description": "Live bidirectional connection status, active ping/health indicators and upstream change feeds."
+            "description": "Inbound partner data feeds and clearing files with automated 20-day retention guard."
         },
         {
             "id": "node_ingestion",
-            "name": "Ingestion",
+            "name": "CDC & AWS DMS Engine",
             "icon": "⚡",
-            "layer": "CDC & Snowpipe",
+            "layer": "Real-Time Streaming & Snowpipe",
             "status": "HEALTHY",
             "throughput_rec_sec": 142500,
             "latency_ms": 4.5,
             "health_pct": 100.0,
             "active_endpoints": [
-                {"name": "Snowpipe Streaming Channel", "status": "ACTIVE", "backlog_ms": 12},
-                {"name": "Python Debezium CDC Listener", "status": "ACTIVE", "lag_records": 0}
+                {"name": "AWS Database Migration Service (DMS CDC)", "status": "ACTIVE", "lag_ms": 8},
+                {"name": "Snowpipe Streaming Micro-Batch Channel", "status": "ACTIVE", "backlog_ms": 12},
+                {"name": "Debezium Oracle Redo Log Consumer", "status": "ACTIVE", "lag_records": 0}
             ],
-            "description": "Continuous real-time change data capture and micro-batch stream ingest."
+            "description": "Continuous real-time change data capture and sub-second micro-batch ingestion."
         },
         {
             "id": "node_bronze",
-            "name": "Bronze Layer",
+            "name": "Bronze Layer (L0)",
             "icon": "🥉",
             "layer": "BANK_DB.L0_STAGING",
             "status": "HEALTHY",
@@ -85,16 +132,16 @@ DEFAULT_3D_PIPELINE_STATE = {
             "health_pct": 99.6,
             "active_endpoints": [
                 {"name": "RAW_CUSTOMERS", "records": 142500, "storage": "Immutable Append-Only"},
-                {"name": "RAW_TRANSACTIONS", "records": 894200, "storage": "Parquet Snappy"},
+                {"name": "RAW_TRANSACTIONS", "records": 894200, "storage": "Snappy Parquet"},
                 {"name": "RAW_ACCOUNTS", "records": 142500, "storage": "Compressed Micro-Partitions"}
             ],
-            "description": "Raw immutable ingestion landing zone with append-only audit trail."
+            "description": "Raw immutable landing zone with append-only audit trail and exact upstream lineage."
         },
         {
             "id": "node_silver",
-            "name": "Silver Layer",
+            "name": "Silver Layer (L1)",
             "icon": "🥈",
-            "layer": "L1 Harmonized",
+            "layer": "Harmonized & Cleansed",
             "status": "HEALTHY",
             "throughput_rec_sec": 141980,
             "latency_ms": 12.4,
@@ -105,13 +152,13 @@ DEFAULT_3D_PIPELINE_STATE = {
                 {"name": "FACT_TRANSACTIONS_HARMONIZED", "records": 893100, "dq_gate": "PASSED"},
                 {"name": "DIM_ACCOUNTS_NORMALIZED", "records": 142500, "ast_cleansing": "ACTIVE"}
             ],
-            "description": "Automated data cleaning, AST normalization, SCD Type 1/2 deduplication and Data Quality score of 99.4%."
+            "description": "Automated AST normalization, SCD Type 1/2 historization and DMF quality score of 99.4%."
         },
         {
             "id": "node_gold",
-            "name": "Gold Layer",
+            "name": "Gold Layer & DuckDB",
             "icon": "🥇",
-            "layer": "L2 Star Schema",
+            "layer": "Star Schema & Lakehouse Marts",
             "status": "HEALTHY",
             "throughput_rec_sec": 141980,
             "latency_ms": 16.8,
@@ -119,24 +166,25 @@ DEFAULT_3D_PIPELINE_STATE = {
             "active_endpoints": [
                 {"name": "AML_DAILY_TRANSACTIONS_MART", "records": 141980, "model": "Kimball Star"},
                 {"name": "CORE_BANKING_EOD_BALANCES", "records": 142500, "model": "Fact Daily Balance"},
-                {"name": "BASEL_III_CAPITAL_RESERVE_MART", "records": 142500, "model": "Regulatory Mart"}
+                {"name": "DuckDB Gold Marts (S3 Synced)", "records": 142500, "engine": "DuckDB Embedded"}
             ],
-            "description": "Dimensional models, Facts & Dims curated for AML compliance, core banking, and executive reporting."
+            "description": "Dimensional star schemas, Facts and Dims curated for AML compliance and executive reporting."
         },
         {
             "id": "node_dispatch",
-            "name": "Dispatch",
-            "icon": "📧",
-            "layer": "EOD Delivery & SMTP",
+            "name": "Omnichannel Dispatch",
+            "icon": "📱",
+            "layer": "Telegram, WhatsApp & SMTP",
             "status": "HEALTHY",
             "throughput_rec_sec": 141980,
             "latency_ms": 22.1,
             "health_pct": 100.0,
             "active_endpoints": [
-                {"name": "Gmail SMTP (mangeshbagul15@gmail.com)", "status": "VERIFIED", "mode": "STARTTLS"},
-                {"name": "Automated Excel / CSV T-1 Exporter", "status": "READY", "max_limit": "5MB Enforcement"}
+                {"name": "Telegram Bot Fleet (@mangesh_reports_bot)", "status": "VERIFIED", "mode": "Instant Push"},
+                {"name": "WhatsApp Cloud Gateway (+918433755448)", "status": "READY", "mode": "Two-Way"},
+                {"name": "Gmail SMTP (nanoproaistudio@gmail.com)", "status": "CONNECTED", "mode": "STARTTLS"}
             ],
-            "description": "T-1 Financial reconciliation, regulatory submissions, automated Excel/CSV export and direct Gmail SMTP dispatch."
+            "description": "T-1 Financial reconciliation, regulatory submissions, Excel workbooks and omnichannel alerts."
         }
     ],
     "incidents": [
@@ -357,69 +405,108 @@ def get_3d_pipeline_telemetry(project_id: str = "AML_V1") -> Dict[str, Any]:
 def get_node_inspection_details(node_id: str) -> Dict[str, Any]:
     """Provides deep-dive inspection data for any selected 3D Medallion node."""
     node_map = {
-        "node_sources": {
-            "node_name": "Sources (Oracle XE & AWS S3)",
-            "active_tables": ["CUSTOMERS", "ACCOUNT_MASTER", "TXN_JOURNAL", "BRANCH_MASTER"],
-            "transformations": ["Binary Redo Log Mining", "SFTP Decryption", "AWS S3 Multipart Stream"],
-            "ast_rules": ["Source Field Type Verification", "Encoding Normalization (UTF-8)"],
-            "scd_tracking": "Source System Mutation Logs (CDC Offset: 884,912,044)",
+        "node_oracle": {
+            "node_name": "Oracle XE 21c (Finacle Core Banking CBS)",
+            "active_tables": ["CUSTOMERS", "ACCOUNT_MASTER", "TXN_JOURNAL", "BRANCH_MASTER", "GL_ACCOUNTS", "LOAN_SCHEDULE"],
+            "transformations": ["Binary Redo Log Mining", "Row-Level Timestamp Injection", "Character Encoding Normalization (UTF-8)"],
+            "ast_rules": ["Source Field Type Verification", "Primary Key Constraints Enforcement"],
+            "scd_tracking": "Oracle SCN Redo Log Offset: 884,912,044 (Zero Uncommitted Lag)",
             "record_count": 142500,
             "throughput": "142,500 rec/sec",
-            "error_rate": "0.00%"
+            "error_rate": "0.00%",
+            "storage_engine": "Oracle Database XE 21c Pluggable DB (XEPDB1)"
+        },
+        "node_aws_s3": {
+            "node_name": "AWS S3 Data Lake (ap-southeast-2 Sydney)",
+            "active_tables": ["s3://nanopro-data-lake/raw/", "s3://nanopro-data-lake/sftp/", "s3://nanopro-data-lake/lakehouse/"],
+            "transformations": ["Multipart Gzip Ingestion", "Columnar Parquet Conversion", "Partition Pruning (Year/Month/Day)"],
+            "ast_rules": ["Snappy Compression Validation", "Parquet Schema Header Assertion"],
+            "scd_tracking": "S3 Versioning Enabled with Object Lock & Immutability",
+            "record_count": 142500,
+            "throughput": "142,500 rec/sec",
+            "error_rate": "0.00%",
+            "storage_engine": "AWS S3 Cloud Object Storage + Athena Catalog"
+        },
+        "node_postgres": {
+            "node_name": "PostgreSQL Fabric (Neon Cloud & Local)",
+            "active_tables": ["audit_trail_events", "system_telemetry_logs", "user_access_control", "cdc_replication_ledger"],
+            "transformations": ["JSONB Column Flattening", "WAL Replication Stream Ingestion", "Row-Level Encryption"],
+            "ast_rules": ["ISO-8601 Timestamp Normalization", "Strict Schema-On-Write"],
+            "scd_tracking": "PostgreSQL LSN (Log Sequence Number) Tracking: 0/1A4B89C",
+            "record_count": 48500,
+            "throughput": "48,500 rec/sec",
+            "error_rate": "0.00%",
+            "storage_engine": "PostgreSQL 16 + Neon Cloud Serverless"
+        },
+        "node_sftp": {
+            "node_name": "Cloud SFTP Gateway Hub (Port 2222)",
+            "active_tables": ["sftp_inbound/clearing_batch.txt", "sftp_inbound/partner_txn.csv", "sftp_archive/"],
+            "transformations": ["Pipe-Delimited AST Parsing", "CSV RFC 4180 Parsing", "20-Day Automated File Retention Enforcement"],
+            "ast_rules": ["Checksum SHA-256 File Integrity", "Malformed Row Quarantine"],
+            "scd_tracking": "File Modification Epoch Tracking with Idempotent Ingest Hash",
+            "record_count": 35000,
+            "throughput": "35,000 rec/sec",
+            "error_rate": "0.00%",
+            "storage_engine": "Cloud SFTP Server (Port 2222) + S3 Mirror"
         },
         "node_ingestion": {
-            "node_name": "Ingestion (Snowpipe Streaming & Python CDC)",
-            "active_tables": ["ORCL_CDC_REDO_BUFFER", "UNCOMMITTED_TXN_QUEUE", "SNOWPIPE_STAGING_FEED"],
-            "transformations": ["JSON Payload Flattening", "Micro-batch Serialization", "Timestamp Alignment"],
-            "ast_rules": ["Payload Integrity Checksum", "Anti-Flood Rate Limiting"],
-            "scd_tracking": "Kafka / Snowpipe High-Watermark (Lag: 0 ms)",
+            "node_name": "Autonomous CDC & AWS DMS Engine",
+            "active_tables": ["ORCL_CDC_REDO_BUFFER", "AWS_DMS_REPLICATION_QUEUE", "SNOWPIPE_STREAMING_CHANNEL"],
+            "transformations": ["Sub-Second Micro-Batch Serialization", "Payload Schema Drift Resolution", "Duplicate Deduplication Buffer"],
+            "ast_rules": ["Fuzzy String Schema Matching", "Anti-Flood Rate Limiting"],
+            "scd_tracking": "Kafka / DMS High-Watermark Lag: 0 ms",
             "record_count": 142500,
             "throughput": "142,500 rec/sec",
-            "error_rate": "0.00%"
+            "error_rate": "0.00%",
+            "storage_engine": "AWS DMS CDC + Snowpipe Streaming Engine"
         },
         "node_bronze": {
             "node_name": "Bronze Layer (BANK_DB.L0_STAGING)",
-            "active_tables": ["RAW_CUSTOMERS", "RAW_ACCOUNTS", "RAW_TRANSACTIONS", "RAW_LOANS"],
-            "transformations": ["Immutable Append-Only Commit", "Metadata Column Tagging (_INGESTED_AT, _FILE_SRC)"],
-            "ast_rules": ["Schema-on-Write Validation", "Null Byte Removal"],
-            "scd_tracking": "Immutable Version Snapshots (Delta / Iceberg format)",
+            "active_tables": ["RAW_CUSTOMERS", "RAW_ACCOUNTS", "RAW_TRANSACTIONS", "RAW_LOANS", "RAW_BRANCHES"],
+            "transformations": ["Immutable Append-Only Commit", "Metadata Column Tagging (_INGESTED_AT, _FILE_SRC, _BATCH_ID)"],
+            "ast_rules": ["Schema-on-Write Conformity", "Null Byte Removal", "Raw Audit Preserved"],
+            "scd_tracking": "Immutable Version Snapshots (Snowflake Micro-Partitions)",
             "record_count": 142500,
             "throughput": "142,500 rec/sec",
-            "error_rate": "0.00%"
+            "error_rate": "0.00%",
+            "storage_engine": "Snowflake COMPUTE_WH (BANK_DB.L0_STAGING)"
         },
         "node_silver": {
             "node_name": "Silver Layer (L1 Harmonized)",
-            "active_tables": ["DIM_CUSTOMERS", "DIM_ACCOUNTS", "FACT_TRANSACTIONS"],
+            "active_tables": ["DIM_CUSTOMERS (SCD2)", "DIM_ACCOUNTS_NORMALIZED", "FACT_TRANSACTIONS_HARMONIZED"],
             "transformations": ["SCD Type 2 Historization (START_DATE, END_DATE, IS_CURRENT)", "Customer Deduplication", "PAN/Aadhar Masking"],
-            "ast_rules": ["Regex Validations (Email, Mobile)", "Whitespace Trim & Proper Case Conversion", "Null Replacement to Defaults"],
+            "ast_rules": ["Data Metric Functions (DMF) Quality Gates", "Whitespace Trim & Proper Case Conversion", "Null Replacement to Defaults"],
             "scd_tracking": "Active SCD Type 2 with 1,280 versioned revisions tracked.",
             "record_count": 141980,
             "throughput": "141,980 rec/sec",
             "error_rate": "0.00%",
-            "quality_score": "99.4%"
+            "quality_score": "99.4%",
+            "storage_engine": "Snowflake BANK_DB.L1_HARMONIZED"
         },
         "node_gold": {
-            "node_name": "Gold Layer (L2 Star Schema)",
-            "active_tables": ["AML_DAILY_TRANSACTIONS_MART", "CORE_BANKING_EOD_BALANCES", "BASEL_III_CAPITAL_RESERVE_MART"],
-            "transformations": ["Star Schema Fact / Dimension Joins", "Aggregated Daily Running Balances", "AML High-Risk Anomaly Scoring"],
+            "node_name": "Gold Layer & DuckDB Marts (L2 Curated)",
+            "active_tables": ["AML_DAILY_TRANSACTIONS_MART", "CORE_BANKING_EOD_BALANCES", "BASEL_III_CAPITAL_RESERVE_MART", "DUCKDB_GOLD_LAKEHOUSE"],
+            "transformations": ["Kimball Star Schema Fact / Dimension Joins", "Aggregated Daily Running Balances", "AML High-Risk Anomaly Scoring"],
             "ast_rules": ["Strict Dimensional Foreign Key Integrity", "Financial Precision Decimal Rounding (ROUND 2)"],
             "scd_tracking": "Kimball Conformed Dimensions with Surrogate Key Generation.",
             "record_count": 141980,
             "throughput": "141,980 rec/sec",
-            "error_rate": "0.00%"
+            "error_rate": "0.00%",
+            "storage_engine": "Snowflake BANK_DB.L2_CURATED + DuckDB Local Gold Marts"
         },
         "node_dispatch": {
-            "node_name": "Dispatch (Excel, CSV, Gmail SMTP)",
-            "active_tables": ["AML_DISPATCH_LEDGER", "T1_RECON_AUDIT_LOG"],
-            "transformations": ["Excel .xlsx Styled Header Rendering", "Strict RFC 4180 CSV Quoting", "Automated 5MB File Compression"],
-            "ast_rules": ["PII Redaction prior to Email Delivery", "Delivery Receipt Signature Verification"],
-            "scd_tracking": "Immutable SMTP Transmission Ledger with Message-ID Tracking.",
+            "node_name": "Omnichannel Dispatch & Consumption",
+            "active_tables": ["TELEGRAM_DISPATCH_LEDGER", "WHATSAPP_CLOUD_ALERT_LOG", "SMTP_T1_RECON_REPORTS"],
+            "transformations": ["Excel .xlsx Multi-Tab Workbook Generation", "Strict RFC 4180 CSV Export", "Direct Telegram Bot API Document Dispatch"],
+            "ast_rules": ["PII Redaction prior to Email/Telegram Delivery", "Delivery Receipt Signature Verification"],
+            "scd_tracking": "Immutable Transmission Ledger with Message-ID Tracking.",
             "record_count": 141980,
             "throughput": "141,980 rec/sec",
-            "error_rate": "0.00%"
+            "error_rate": "0.00%",
+            "storage_engine": "Telegram Fleet (@mangesh_reports_bot) + WhatsApp + Gmail SMTP"
         }
     }
-    return node_map.get(node_id, node_map["node_sources"])
+    return node_map.get(node_id, node_map["node_oracle"])
 
 def resolve_pipeline_incident(incident_id: str, action: str, custom_remap: Optional[str] = None) -> Dict[str, Any]:
     """

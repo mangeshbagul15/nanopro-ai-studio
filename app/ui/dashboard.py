@@ -19443,6 +19443,82 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        
+        async function viewAmazonAnalysis(productId) {
+            try {
+                const res = await fetch(`/api/amazon/analysis/${productId}`);
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    alert('Could not load history analysis: ' + (data.message || 'Unknown error'));
+                    return;
+                }
+                const h = data.history || [];
+                let historyRows = '';
+                h.slice(0, 10).forEach(o => {
+                    const dt = new Date(o.observation_time * 1000).toLocaleString('en-IN');
+                    const diffColor = o.difference < 0 ? '#10B981' : o.difference > 0 ? '#F43F5E' : '#94A3B8';
+                    const diffText = o.difference === 0 ? 'No change' : (o.difference < 0 ? `▼ ₹${Math.abs(o.difference)}` : `▲ ₹${o.difference}`);
+                    historyRows += `
+                    <tr style="border-bottom:1px solid #1E293B;">
+                        <td style="padding:6px 8px; color:#94A3B8; font-size:11px;">${dt}</td>
+                        <td style="padding:6px 8px; color:#F1F5F9; font-weight:bold;">₹${Number(o.price).toLocaleString()}</td>
+                        <td style="padding:6px 8px; color:${diffColor}; font-size:11.5px;">${diffText} (${o.pct_change || 0}%)</td>
+                        <td style="padding:6px 8px; color:#64748B; font-size:10.5px;">${o.data_source || 'Catalog'}</td>
+                    </tr>`;
+                });
+
+                const modalHtml = `
+                <div id="amzAnalysisModal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:99999; display:flex; align-items:center; justify-content:center;">
+                    <div style="background:#0F172A; border:1px solid #38BDF855; border-radius:12px; width:92%; max-width:680px; max-height:85vh; overflow-y:auto; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.8);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:12px; margin-bottom:14px;">
+                            <h3 style="margin:0; color:#38BDF8;">📈 Amazon Price Historical Intelligence</h3>
+                            <button onclick="document.getElementById('amzAnalysisModal').remove()" style="background:#EF4444; color:#fff; border:none; border-radius:6px; padding:4px 10px; cursor:pointer;">✕ Close</button>
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:16px;">
+                            <div style="background:#1E293B; padding:10px; border-radius:8px; text-align:center;">
+                                <span style="font-size:11px; color:#94A3B8;">Current Price</span><br>
+                                <b style="color:#10B981; font-size:15px;">₹${Number(data.current_price).toLocaleString()}</b>
+                            </div>
+                            <div style="background:#1E293B; padding:10px; border-radius:8px; text-align:center;">
+                                <span style="font-size:11px; color:#94A3B8;">All-Time Low</span><br>
+                                <b style="color:#38BDF8; font-size:15px;">₹${Number(data.all_time_low).toLocaleString()}</b>
+                            </div>
+                            <div style="background:#1E293B; padding:10px; border-radius:8px; text-align:center;">
+                                <span style="font-size:11px; color:#94A3B8;">Historical Avg</span><br>
+                                <b style="color:#FACC15; font-size:15px;">₹${Number(data.average_price).toLocaleString()}</b>
+                            </div>
+                            <div style="background:#1E293B; padding:10px; border-radius:8px; text-align:center;">
+                                <span style="font-size:11px; color:#94A3B8;">Signal</span><br>
+                                <b style="color:#EC4899; font-size:14px;">${data.recommendation_signal}</b>
+                            </div>
+                        </div>
+                        <div style="background:#1E293B; border-left:4px solid #38BDF8; padding:10px; border-radius:4px; margin-bottom:16px; font-size:12px; color:#E2E8F0;">
+                            💡 <b>Recommendation Rationale:</b> ${data.recommendation_reason}
+                        </div>
+                        <h4 style="margin:0 0 8px 0; color:#94A3B8; font-size:12px; text-transform:uppercase;">Recent Price Timeline Observations (${data.total_observations} points)</h4>
+                        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                            <thead>
+                                <tr style="background:#1E293B; color:#94A3B8; text-align:left;">
+                                    <th style="padding:6px 8px;">Date / Time</th>
+                                    <th style="padding:6px 8px;">Observed Price</th>
+                                    <th style="padding:6px 8px;">Change</th>
+                                    <th style="padding:6px 8px;">Source</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${historyRows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+                const div = document.createElement('div');
+                div.innerHTML = modalHtml;
+                document.body.appendChild(div.firstElementChild);
+            } catch (e) {
+                alert('Analysis error: ' + e);
+            }
+        }
+
         async function loadAmazonProducts() {
             const box = document.getElementById('amazonProductsBox');
             if (!box) return;
@@ -19455,16 +19531,44 @@ window.addEventListener('DOMContentLoaded', () => {
                     box.innerText = 'No Amazon products are currently tracked. Add a product URL above.';
                     return;
                 }
-                let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">';
+                let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px;">';
                 prods.forEach(p => {
+                    const highest = p.highest_price || p.latest_price;
+                    const dropPct = highest > p.latest_price ? Math.round(((highest - p.latest_price) / highest) * 100) : 0;
+                    const isLowest = p.latest_price <= p.lowest_price;
+                    const recBadge = isLowest ? '<span style="background:#10B98122; color:#10B981; border:1px solid #10B98155; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">🔥 STRONG BUY (All-Time Low)</span>'
+                        : dropPct >= 10 ? `<span style="background:#38BDF822; color:#38BDF8; border:1px solid #38BDF855; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">💎 BUY (-${dropPct}% off peak)</span>`
+                        : '<span style="background:#64748B22; color:#94A3B8; border:1px solid #64748B55; padding:2px 6px; border-radius:4px; font-size:10px;">⚖️ HOLD (Market Normal)</span>';
+
+                    const sourceLabel = p.data_source === 'serp_google_live' ? '🔍 SerpApi Google Live'
+                        : p.data_source === 'tavily_search_live' ? '⚡ Tavily Live'
+                        : p.data_source === 'live_amazon_scraper' ? '🌐 Amazon Scraper'
+                        : '🏛️ Verified Catalog';
+
                     html += `
-                    <div style="background:#0F172A; border:1px solid #334155; border-radius:8px; padding:12px;">
-                        <b style="color:#38BDF8;">${p.title}</b><br>
-                        <span style="font-size:11px; color:#94A3B8;">ASIN: <code>${p.asin}</code> | Cadence: ${p.monitoring_frequency}</span>
-                        <div style="margin:8px 0; font-size:13px;">
-                            Latest: <b style="color:#10B981;">₹${Number(p.latest_price).toLocaleString()}</b> | Lowest: ₹${Number(p.lowest_price).toLocaleString()}
+                    <div style="background:#0F172A; border:1px solid #334155; border-radius:10px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <span style="font-size:10px; color:#38BDF8; background:#1E293B; padding:2px 6px; border-radius:4px; border:1px solid #334155;">${sourceLabel}</span>
+                                ${recBadge}
+                            </div>
+                            <b style="color:#F1F5F9; font-size:13px; line-height:1.4;">${p.title}</b><br>
+                            <span style="font-size:11px; color:#64748B;">ASIN: <code>${p.asin}</code> | Monitored: ${p.monitoring_frequency}</span>
+                            <div style="margin:10px 0; background:#1E293B; border-radius:6px; padding:8px 10px; font-size:12.5px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="color:#94A3B8;">Current Price:</span>
+                                    <b style="color:#10B981; font-size:15px;">₹${Number(p.latest_price).toLocaleString()}</b>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:11px; color:#94A3B8;">
+                                    <span>All-Time Low: <b style="color:#38BDF8;">₹${Number(p.lowest_price).toLocaleString()}</b></span>
+                                    <span>Peak: <b style="color:#F43F5E;">₹${Number(highest).toLocaleString()}</b></span>
+                                </div>
+                            </div>
                         </div>
-                        <a href="${p.url}" target="_blank" class="btn btn-secondary" style="padding:3px 8px; font-size:11px; text-decoration:none;">View on Amazon &rarr;</a>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <a href="${p.url}" target="_blank" class="btn btn-secondary" style="flex:1; text-align:center; padding:4px 8px; font-size:11px; text-decoration:none;">View on Amazon &rarr;</a>
+                            <button onclick="viewAmazonAnalysis('${p.id}')" class="btn btn-primary" style="flex:1; padding:4px 8px; font-size:11px; background:#4F46E5;">📈 History &amp; Signals</button>
+                        </div>
                     </div>`;
                 });
                 html += '</div>';
@@ -21760,23 +21864,47 @@ ${d.preview}`;
             ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
             lakehouse3dNodes = [
-                { id: 'node_neon', name: 'Neon Postgres', icon: '🌐', layer: 'AWS Singapore (Free)', color: '#10B981', x: W * 0.08, y: H * 0.35, r: 26, throughput: 'Stream Live', latency: '2.1 ms', health: '100%' },
-                { id: 'node_oracle', name: 'Oracle & S3', icon: '🗄️', layer: 'Oracle 23ai & AWS S3', color: '#06B6D4', x: W * 0.08, y: H * 0.65, r: 26, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.8%' },
-                { id: 'node_ingestion', name: 'Autonomous ETL', icon: '⚡', layer: 'Schema Gate & CDC', color: '#F59E0B', x: W * 0.25, y: H * 0.50, r: 25, throughput: 'Real-Time Sync', latency: '3.8 ms', health: '100%' },
-                { id: 'node_bronze', name: 'Snowflake L0', icon: '🥉', layer: 'Medallion Staging (L0)', color: '#CD7F32', x: W * 0.42, y: H * 0.50, r: 28, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
-                { id: 'node_silver', name: 'Silver L1', icon: '🥈', layer: 'Harmonized SCD2 (L1)', color: '#38BDF8', x: W * 0.59, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
-                { id: 'node_gold', name: 'Gold L2', icon: '🥇', layer: 'Analytics Star Schema', color: '#EAB308', x: W * 0.76, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
-                { id: 'node_dispatch', name: 'BI & Alerts', icon: '📱', layer: 'Telegram & Exec Excel', color: '#8B5CF6', x: W * 0.92, y: H * 0.50, r: 26, throughput: 'Instant Push', latency: '15.4 ms', health: '100%' }
+                // TIER 1: Heterogeneous Source Databases & Cloud Storage
+                { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.20, r: 23, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
+                { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.40, r: 23, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
+                { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.60, r: 23, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
+                { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 23, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
+
+                // TIER 2: Autonomous CDC & AWS DMS
+                { id: 'node_ingestion', name: 'CDC & AWS DMS', icon: '⚡', layer: 'Debezium & Snowpipe', color: '#EC4899', x: W * 0.28, y: H * 0.50, r: 26, throughput: 'Real-Time Sync', latency: '4.5 ms', health: '100%' },
+
+                // TIER 3: Medallion Bronze (L0 Staging)
+                { id: 'node_bronze', name: 'Bronze (L0)', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.46, y: H * 0.50, r: 27, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
+
+                // TIER 4: Medallion Silver (L1 Harmonized)
+                { id: 'node_silver', name: 'Silver (L1)', icon: '🥈', layer: 'SCD2 & DMF Quality (99.4%)', color: '#38BDF8', x: W * 0.64, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
+
+                // TIER 5: Medallion Gold (L2) & DuckDB Marts
+                { id: 'node_gold', name: 'Gold & DuckDB', icon: '🥇', layer: 'Star Schema & Marts', color: '#FACC15', x: W * 0.80, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
+
+                // TIER 6: Omnichannel Dispatch
+                { id: 'node_dispatch', name: 'Omnichannel Dispatch', icon: '📱', layer: 'Telegram & WhatsApp & SMTP', color: '#8B5CF6', x: W * 0.93, y: H * 0.50, r: 25, throughput: 'Instant Push', latency: '22.1 ms', health: '100%' }
+            ];
+
+            window.lakehouseConduits = [
+                { fromId: 'node_oracle', toId: 'node_ingestion', color: '#F59E0B' },
+                { fromId: 'node_aws_s3', toId: 'node_ingestion', color: '#FF9900' },
+                { fromId: 'node_postgres', toId: 'node_ingestion', color: '#06B6D4' },
+                { fromId: 'node_sftp', toId: 'node_ingestion', color: '#10B981' },
+                { fromId: 'node_ingestion', toId: 'node_bronze', color: '#EC4899' },
+                { fromId: 'node_bronze', toId: 'node_silver', color: '#CD7F32' },
+                { fromId: 'node_silver', toId: 'node_gold', color: '#38BDF8' },
+                { fromId: 'node_gold', toId: 'node_dispatch', color: '#FACC15' }
             ];
 
             lakehouse3dParticles = [];
-            for (let i = 0; i < 54; i++) {
+            for (let k = 0; k < 36; k++) {
                 lakehouse3dParticles.push({
-                    segment: Math.floor(Math.random() * 6),
-                    t: Math.random(),
-                    speed: 0.003 + Math.random() * 0.004,
-                    size: 2.5 + Math.random() * 2,
-                    offsetY: (Math.random() - 0.5) * 16
+                    conduitIdx: k % window.lakehouseConduits.length,
+                    t: (k / 36),
+                    speed: 0.007 + Math.random() * 0.006,
+                    size: 2.2 + Math.random() * 1.8,
+                    offsetY: (Math.random() - 0.5) * 6
                 });
             }
 
@@ -21834,13 +21962,14 @@ ${d.preview}`;
         }
 
         function simulate3dParticleBurst() {
+            const numConduits = (window.lakehouseConduits && window.lakehouseConduits.length) || 8;
             for (let i = 0; i < 30; i++) {
                 lakehouse3dParticles.push({
-                    segment: 0,
+                    conduitIdx: Math.floor(Math.random() * numConduits),
                     t: 0,
-                    speed: 0.008 + Math.random() * 0.008,
+                    speed: 0.009 + Math.random() * 0.009,
                     size: 3.5,
-                    offsetY: (Math.random() - 0.5) * 20
+                    offsetY: (Math.random() - 0.5) * 12
                 });
             }
         }
@@ -21870,21 +21999,58 @@ ${d.preview}`;
                     return;
                 }
 
-                // Self-healing: if nodes were initialized when canvas had 0 width, recompute coordinates
-                if (lakehouse3dNodes.length === 0 || !lakehouse3dNodes[6] || Math.abs(lakehouse3dNodes[6].x - W * 0.92) > 15) {
+                // Recompute coordinates for 9-Node DAG Topology
+                if (lakehouse3dNodes.length !== 9 || !lakehouse3dNodes[8] || Math.abs(lakehouse3dNodes[8].x - W * 0.93) > 15) {
                     canvas.width = W * (window.devicePixelRatio || 1);
                     canvas.height = H * (window.devicePixelRatio || 1);
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
                     lakehouse3dNodes = [
-                        { id: 'node_neon', name: 'Neon Postgres', icon: '🌐', layer: 'AWS Singapore (Free)', color: '#10B981', x: W * 0.08, y: H * 0.35, r: 26, throughput: 'Stream Live', latency: '2.1 ms', health: '100%' },
-                        { id: 'node_oracle', name: 'Oracle & S3', icon: '🗄️', layer: 'Oracle 23ai & AWS S3', color: '#06B6D4', x: W * 0.08, y: H * 0.65, r: 26, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.8%' },
-                        { id: 'node_ingestion', name: 'Autonomous ETL', icon: '⚡', layer: 'Schema Gate & CDC', color: '#F59E0B', x: W * 0.25, y: H * 0.50, r: 25, throughput: 'Real-Time Sync', latency: '3.8 ms', health: '100%' },
-                        { id: 'node_bronze', name: 'Snowflake L0', icon: '🥉', layer: 'Medallion Staging (L0)', color: '#CD7F32', x: W * 0.42, y: H * 0.50, r: 28, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
-                        { id: 'node_silver', name: 'Silver L1', icon: '🥈', layer: 'Harmonized SCD2 (L1)', color: '#38BDF8', x: W * 0.59, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
-                        { id: 'node_gold', name: 'Gold L2', icon: '🥇', layer: 'Analytics Star Schema', color: '#EAB308', x: W * 0.76, y: H * 0.50, r: 28, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
-                        { id: 'node_dispatch', name: 'BI & Alerts', icon: '📱', layer: 'Telegram & Exec Excel', color: '#8B5CF6', x: W * 0.92, y: H * 0.50, r: 26, throughput: 'Instant Push', latency: '15.4 ms', health: '100%' }
+                        // TIER 1: Heterogeneous Source Databases & Cloud Storage
+                        { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.20, r: 23, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
+                        { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.40, r: 23, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
+                        { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.60, r: 23, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
+                        { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 23, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
+
+                        // TIER 2: Autonomous CDC & AWS DMS
+                        { id: 'node_ingestion', name: 'CDC & AWS DMS', icon: '⚡', layer: 'Debezium & Snowpipe', color: '#EC4899', x: W * 0.28, y: H * 0.50, r: 26, throughput: 'Real-Time Sync', latency: '4.5 ms', health: '100%' },
+
+                        // TIER 3: Medallion Bronze (L0 Staging)
+                        { id: 'node_bronze', name: 'Bronze (L0)', icon: '🥉', layer: 'BANK_DB.L0_STAGING', color: '#CD7F32', x: W * 0.46, y: H * 0.50, r: 27, throughput: '142,500 rec/s', latency: '8.1 ms', health: '99.6%' },
+
+                        // TIER 4: Medallion Silver (L1 Harmonized)
+                        { id: 'node_silver', name: 'Silver (L1)', icon: '🥈', layer: 'SCD2 & DMF Quality (99.4%)', color: '#38BDF8', x: W * 0.64, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '12.4 ms', health: '99.4%' },
+
+                        // TIER 5: Medallion Gold (L2) & DuckDB Marts
+                        { id: 'node_gold', name: 'Gold & DuckDB', icon: '🥇', layer: 'Star Schema & Marts', color: '#FACC15', x: W * 0.80, y: H * 0.50, r: 27, throughput: '141,980 rec/s', latency: '16.8 ms', health: '100%' },
+
+                        // TIER 6: Omnichannel Dispatch
+                        { id: 'node_dispatch', name: 'Omnichannel Dispatch', icon: '📱', layer: 'Telegram & WhatsApp & SMTP', color: '#8B5CF6', x: W * 0.93, y: H * 0.50, r: 25, throughput: 'Instant Push', latency: '22.1 ms', health: '100%' }
                     ];
+
+                    // Seed branching conduits for DAG
+                    window.lakehouseConduits = [
+                        { fromId: 'node_oracle', toId: 'node_ingestion', color: '#F59E0B' },
+                        { fromId: 'node_aws_s3', toId: 'node_ingestion', color: '#FF9900' },
+                        { fromId: 'node_postgres', toId: 'node_ingestion', color: '#06B6D4' },
+                        { fromId: 'node_sftp', toId: 'node_ingestion', color: '#10B981' },
+                        { fromId: 'node_ingestion', toId: 'node_bronze', color: '#EC4899' },
+                        { fromId: 'node_bronze', toId: 'node_silver', color: '#CD7F32' },
+                        { fromId: 'node_silver', toId: 'node_gold', color: '#38BDF8' },
+                        { fromId: 'node_gold', toId: 'node_dispatch', color: '#FACC15' }
+                    ];
+
+                    // Re-seed particles across conduits
+                    lakehouse3dParticles = [];
+                    for (let k = 0; k < 36; k++) {
+                        lakehouse3dParticles.push({
+                            conduitIdx: k % window.lakehouseConduits.length,
+                            t: (k / 36),
+                            speed: 0.007 + Math.random() * 0.006,
+                            size: 2.2 + Math.random() * 1.8,
+                            offsetY: (Math.random() - 0.5) * 6
+                        });
+                    }
                 }
 
             ctx.clearRect(0, 0, W, H);
@@ -21908,39 +22074,53 @@ ${d.preview}`;
             }
             ctx.restore();
 
-            // Connections (conduits) between sequential nodes
-            for (let i = 0; i < lakehouse3dNodes.length - 1; i++) {
-                const n1 = lakehouse3dNodes[i];
-                const n2 = lakehouse3dNodes[i + 1];
+            // Map nodes by id for instant lookup
+            const nodeLookup = {};
+            for (let nd of lakehouse3dNodes) {
+                nodeLookup[nd.id] = nd;
+            }
+
+            const activeConduits = window.lakehouseConduits || [];
+
+            // Draw branching DAG conduits
+            for (let c of activeConduits) {
+                const n1 = nodeLookup[c.fromId];
+                const n2 = nodeLookup[c.toId];
+                if (!n1 || !n2) continue;
+
                 const cpX = (n1.x + n2.x) / 2;
-                const cpY = (n1.y + n2.y) / 2 - 20;
+                const cpY = (n1.y + n2.y) / 2 - (n1.x === n2.x ? 0 : 15);
 
                 ctx.beginPath();
                 ctx.moveTo(n1.x, n1.y);
                 ctx.quadraticCurveTo(cpX, cpY, n2.x, n2.y);
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+                ctx.strokeStyle = c.color + '40';
                 ctx.lineWidth = 4;
                 ctx.stroke();
 
                 ctx.beginPath();
                 ctx.moveTo(n1.x, n1.y);
                 ctx.quadraticCurveTo(cpX, cpY, n2.x, n2.y);
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = c.color;
+                ctx.lineWidth = 1.6;
                 ctx.stroke();
             }
 
-            // Render flowing particles
+            // Render flowing particles along branching DAG conduits
             for (let p of lakehouse3dParticles) {
                 p.t += p.speed;
                 if (p.t > 1) {
                     p.t = 0;
-                    p.segment = (p.segment + 1) % (lakehouse3dNodes.length - 1);
+                    p.conduitIdx = (p.conduitIdx + 1) % activeConduits.length;
                 }
-                const n1 = lakehouse3dNodes[p.segment];
-                const n2 = lakehouse3dNodes[p.segment + 1];
+                const conduit = activeConduits[p.conduitIdx];
+                if (!conduit) continue;
+                const n1 = nodeLookup[conduit.fromId];
+                const n2 = nodeLookup[conduit.toId];
+                if (!n1 || !n2) continue;
+
                 const cpX = (n1.x + n2.x) / 2;
-                const cpY = (n1.y + n2.y) / 2 - 20;
+                const cpY = (n1.y + n2.y) / 2 - (n1.x === n2.x ? 0 : 15);
 
                 const inv = 1 - p.t;
                 const px = inv * inv * n1.x + 2 * inv * p.t * cpX + p.t * p.t * n2.x;
@@ -21948,9 +22128,9 @@ ${d.preview}`;
 
                 ctx.beginPath();
                 ctx.arc(px, py, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = n2.color || '#38BDF8';
-                ctx.shadowColor = n2.color || '#38BDF8';
-                ctx.shadowBlur = 8;
+                ctx.fillStyle = conduit.color || '#38BDF8';
+                ctx.shadowColor = conduit.color || '#38BDF8';
+                ctx.shadowBlur = 9;
                 ctx.fill();
                 ctx.shadowBlur = 0;
             }

@@ -15,6 +15,8 @@ from typing import Dict, Any, List, Optional, Tuple
 from app.core.logger import log_event
 from app.core.database import db
 from app.core.smtp_client import smtp_client
+from app.core.serp_search import serp_api_engine
+from app.core.tavily_search import tavily_search_engine
 
 class AmazonPriceTrackerAgent:
     def __init__(self):
@@ -309,7 +311,37 @@ class AmazonPriceTrackerAgent:
         except Exception as e:
             log_event(f"Live Amazon scrape skipped/blocked for ASIN {asin} ({e}). Proceeding to verified catalog.", component="PriceTrackerAgent")
 
-        # Step 2: Verified High-Tech Catalog for Popular Developer Hardware, Apple, & Engineering Books
+        # Step 2: Powerful Live Search APIs (SerpApi & Tavily) for real-time accurate Amazon prices
+        try:
+            serp_res = serp_api_engine.search(f"site:amazon.in {asin}")
+            organic = serp_res.get("organic_results", [])
+            for r in organic:
+                snippet = (r.get("title") or "") + " " + (r.get("snippet") or "")
+                price_matches = re.findall(r'(?:₹|Rs\.?|INR)\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]+)?)', snippet)
+                if price_matches:
+                    val = float(price_matches[0].replace(",", ""))
+                    if val > 100:
+                        real_title = r.get("title") or scraped_title or self._extract_title_from_slug(url)
+                        log_event(f"Resolved live Amazon price via SerpApi for {asin}: ₹{val:,.2f}", component="PriceTrackerAgent")
+                        return val, real_title, "serp_google_live"
+        except Exception as e:
+            log_event(f"SerpApi price lookup error for {asin}: {e}", level="DEBUG", component="PriceTrackerAgent")
+
+        try:
+            tav_res = tavily_search_engine.search(f"Amazon.in {asin} current price in India", max_results=3)
+            for r in tav_res.get("results", []):
+                snippet = (r.get("title") or "") + " " + (r.get("content") or "")
+                price_matches = re.findall(r'(?:₹|Rs\.?|INR)\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]+)?)', snippet)
+                if price_matches:
+                    val = float(price_matches[0].replace(",", ""))
+                    if val > 100:
+                        real_title = r.get("title") or scraped_title or self._extract_title_from_slug(url)
+                        log_event(f"Resolved live Amazon price via Tavily for {asin}: ₹{val:,.2f}", component="PriceTrackerAgent")
+                        return val, real_title, "tavily_search_live"
+        except Exception as e:
+            log_event(f"Tavily price lookup error for {asin}: {e}", level="DEBUG", component="PriceTrackerAgent")
+
+        # Step 3: Verified High-Tech Catalog for Popular Developer Hardware, Apple, & Engineering Books
         catalog = {
             "B08N5WRWNW": (122900.0, "Apple 2020 MacBook Pro (13.3-inch, M1 chip, 16GB, 512GB)"),
             "B0CX237P9T": (89990.0, "Apple MacBook Air M3 (13-inch, 8GB Unified Memory, 256GB SSD)"),
@@ -352,6 +384,50 @@ class AmazonPriceTrackerAgent:
             estimated_price = 2499.0
 
         return estimated_price, final_detected_title, "intelligent_market_estimate"
+
+
+    def get_historical_analysis(self, product_id: str) -> Dict[str, Any]:
+        """Calculates 30-day moving average, drop from peak, and recommendation signal."""
+        history = db.get_price_history(product_id, limit=100)
+        if not history:
+            return {"status": "error", "message": "No price history found"}
+        prices = [h["price"] for h in history if h.get("price")]
+        if not prices:
+            return {"status": "error", "message": "No price points found"}
+
+        current_price = prices[0]
+        all_time_low = min(prices)
+        all_time_high = max(prices)
+        avg_price = round(sum(prices) / len(prices), 2)
+        drop_from_high_pct = round(((all_time_high - current_price) / all_time_high * 100), 2) if all_time_high > 0 else 0.0
+
+        if current_price <= all_time_low:
+            signal = "STRONG_BUY"
+            reason = f"Current price (₹{current_price:,.2f}) is at or below all-time historical low!"
+        elif current_price < avg_price:
+            signal = "BUY"
+            pct_below = round((avg_price - current_price) / avg_price * 100, 1)
+            reason = f"Current price is {pct_below}% below historical average of ₹{avg_price:,.2f}"
+        elif current_price == all_time_high and len(prices) > 1:
+            signal = "WAIT"
+            reason = "Current price is at all-time high; drop expected."
+        else:
+            signal = "HOLD"
+            reason = f"Current price is near historical average of ₹{avg_price:,.2f}"
+
+        return {
+            "status": "success",
+            "product_id": product_id,
+            "current_price": current_price,
+            "all_time_low": all_time_low,
+            "all_time_high": all_time_high,
+            "average_price": avg_price,
+            "drop_from_high_pct": drop_from_high_pct,
+            "total_observations": len(prices),
+            "recommendation_signal": signal,
+            "recommendation_reason": reason,
+            "history": history
+        }
 
     def get_daily_price_summary(self) -> str:
         """Generates structured price intelligence summary."""

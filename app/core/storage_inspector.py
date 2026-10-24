@@ -83,9 +83,16 @@ class StorageInspector:
             "used_percentage": used_pct
         }
 
-        # Categories mapping with metadata
+        # Categories mapping with metadata (all operational & analytical DBs)
         cat_defs = {
             "sqlite_database": {"title": "SQLite Studio Database", "path": SQLITE_DB_PATH, "can_cleanup": False},
+            "sqlite_database_wal": {"title": "SQLite WAL Concurrency Journal", "path": Path(str(SQLITE_DB_PATH) + "-wal"), "can_cleanup": False},
+            "duckdb_lakehouse": {"title": "DuckDB Gold Lakehouse & Marts", "path": self.base_dir / "data" / "lakehouse", "can_cleanup": False},
+            "training_memory_db": {"title": "AI Training & Knowledge DB", "path": self.base_dir / "data" / "nanopro_training_memory.db", "can_cleanup": False},
+            "data_ingestion": {"title": "Autonomous Data Ingestion Lake", "path": self.base_dir / "data_ingestion", "can_cleanup": False},
+            "cloud_sftp_storage": {"title": "Cloud SFTP Gateway Storage", "path": self.base_dir / "data" / "sftp_root", "can_cleanup": False},
+            "training_corpus": {"title": "Agent Training Corpus & Grounding", "path": self.base_dir / "data" / "training_corpus", "can_cleanup": False},
+            "temp_apks": {"title": "APK Temp Staging Cache", "path": self.base_dir / "app" / "temp_apks", "can_cleanup": True},
             "temp_caches": {"title": "Temporary Caches & Sessions", "path": self.base_dir / "app" / "cache", "can_cleanup": True},
             "logs": {"title": "System Audit & Operations Logs", "path": LOGS_DIR, "can_cleanup": True},
             "reports": {"title": "Generated Excel & PDF Reports", "path": REPORTS_DIR, "can_cleanup": True},
@@ -130,7 +137,7 @@ class StorageInspector:
         if total_app_bytes == 0:
             total_app_bytes = sum(c["size_bytes"] for k, c in categories.items() if k not in ["main_application", "generated_videos", "generated_images"])
 
-        # Introspect SQLite Database Tables
+        # Introspect SQLite Database Tables + DuckDB Gold Lakehouse Tables
         db_tables = []
         try:
             with db.get_connection() as conn:
@@ -144,9 +151,26 @@ class StorageInspector:
                         cnt = cursor.fetchone()[0]
                     except Exception:
                         cnt = 0
-                    db_tables.append({"table_name": tbl_name, "record_count": cnt})
+                    db_tables.append({"table_name": tbl_name, "record_count": cnt, "engine": "SQLite Relational"})
         except Exception as dbe:
             log_event(f"Error reading SQLite tables for storage inspector: {dbe}", level="WARNING", component="StorageInspector")
+
+        try:
+            duckdb_path = self.base_dir / "data" / "lakehouse" / "gold_marts.duckdb"
+            if duckdb_path.exists():
+                import duckdb
+                con = duckdb.connect(str(duckdb_path), read_only=True)
+                duck_tables = con.execute("SHOW TABLES").fetchall()
+                for dt in duck_tables:
+                    t_name = dt[0]
+                    try:
+                        cnt = con.execute(f"SELECT COUNT(*) FROM {t_name}").fetchone()[0]
+                    except Exception:
+                        cnt = 0
+                    db_tables.append({"table_name": f"🦆 {t_name}", "record_count": cnt, "engine": "DuckDB Lakehouse"})
+                con.close()
+        except Exception as dde:
+            log_event(f"Error reading DuckDB tables for storage inspector: {dde}", level="DEBUG", component="StorageInspector")
 
         # Recommendations
         recommendations = [

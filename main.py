@@ -2385,6 +2385,18 @@ async def api_get_amazon_history(product_id: str):
     history = db.get_price_history(product_id)
     return JSONResponse({"status": "success", "product_id": product_id, "history": history})
 
+@app.get("/api/amazon/analysis/{product_id}")
+async def api_get_amazon_analysis(product_id: str):
+    from app.agents.price_tracker_agent import amazon_price_tracker
+    res = amazon_price_tracker.get_historical_analysis(product_id)
+    return JSONResponse(res)
+
+@app.get("/api/amazon/analysis/{product_id}")
+async def api_get_amazon_analysis(product_id: str):
+    from app.agents.price_tracker_agent import amazon_price_tracker
+    res = amazon_price_tracker.get_historical_analysis(product_id)
+    return JSONResponse(res)
+
 @app.get("/api/amazon/summary")
 async def api_get_amazon_summary():
     from app.agents.price_tracker_agent import amazon_price_tracker
