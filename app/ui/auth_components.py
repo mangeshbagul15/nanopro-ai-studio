@@ -1619,12 +1619,27 @@ window.getUserDeviceAllowedViews = getUserDeviceAllowedViews;
 
 // Universal First Allowed Feature Calculator: Guarantees NO BLANK SCREEN for New/Existing Users
 function getUserFirstAllowedFeature(user) {
-    // 1. Check URL hash first! E.g. #universal_tech_video, #data_engineer, etc.
+    // 1. Check URL hash first! E.g. #universal_tech_video, #admin_mobile_hub, etc.
     const hash = (window.location.hash || '').replace('#', '').trim();
     if (hash && document.getElementById('view-' + hash)) {
         return hash;
     }
-    return 'dashboard';
+    
+    const isMobile = (window.innerWidth <= 768) || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const u = user || window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null);
+    const isSuperAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
+
+    if (isSuperAdmin) {
+        // ADMIN HOME PAGE: 'admin_mobile_hub' (Hub) on Mobile, 'dashboard' on Desktop
+        return isMobile ? 'admin_mobile_hub' : 'dashboard';
+    } else {
+        // NEW USER / MEMBER HOME PAGE: First Allowed Feature (e.g. universal_tech_video)
+        if (u && u.allowed_features && Array.isArray(u.allowed_features) && u.allowed_features.length > 0 && !u.allowed_features.includes('*')) {
+            const first = u.allowed_features[0];
+            if (document.getElementById('view-' + first)) return first;
+        }
+        return 'universal_tech_video';
+    }
 }
 window.getUserFirstAllowedFeature = getUserFirstAllowedFeature;
 

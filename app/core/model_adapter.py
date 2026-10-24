@@ -1408,40 +1408,40 @@ class ModelManager:
         base_list = requested_models or self.task_routing.get(task_type, self.task_routing["general"])
         effective = []
 
-        # 1. Include Claude models if available and circuit not OPEN
-        if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
-            for m in base_list:
-                if ("claude" in m or "sonnet" in m or "haiku" in m) and m not in effective:
-                    effective.append(m)
-
-        # 2. Include OpenAI models if available and circuit not OPEN
-        if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
-            for m in base_list:
-                if ("gpt-4" in m or "4o" in m) and "oss" not in m and m not in effective:
-                    effective.append(m)
-
-        # 2. Include DeepSeek models if available and circuit not OPEN
-        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
-            for m in base_list:
-                if "deepseek" in m and m not in effective:
-                    effective.append(m)
-
-        # 3. Include Mistral & Codestral models if available and circuit not OPEN
-        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
-            for m in base_list:
-                if ("codestral" in m or "mistral" in m) and m not in effective:
-                    effective.append(m)
-
-        # 4. Include Groq models if available and circuit not OPEN
+        # 1. Include Groq models FIRST (Ultra-fast sub-second LPU inference)
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             for m in base_list:
                 if ("gpt-oss" in m or "qwen3.8" in m) and m not in effective:
                     effective.append(m)
 
-        # 5. Include Gemini models if available and circuit not OPEN
+        # 2. Include Google Gemini models (High-context cloud intelligence)
         if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
             for m in base_list:
                 if "gemini" in m and m not in effective:
+                    effective.append(m)
+
+        # 3. Include Claude models if available and circuit not OPEN
+        if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
+            for m in base_list:
+                if ("claude" in m or "sonnet" in m or "haiku" in m) and m not in effective:
+                    effective.append(m)
+
+        # 4. Include OpenAI models if available and circuit not OPEN
+        if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
+            for m in base_list:
+                if ("gpt-4" in m or "4o" in m) and "oss" not in m and m not in effective:
+                    effective.append(m)
+
+        # 5. Include DeepSeek models if available and circuit not OPEN
+        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+            for m in base_list:
+                if "deepseek" in m and m not in effective:
+                    effective.append(m)
+
+        # 6. Include Mistral & Codestral models if available and circuit not OPEN
+        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+            for m in base_list:
+                if ("codestral" in m or "mistral" in m) and m not in effective:
                     effective.append(m)
 
         # 6. Include OpenRouter models if available and circuit not OPEN

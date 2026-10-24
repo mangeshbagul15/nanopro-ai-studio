@@ -1370,7 +1370,7 @@ Data Engineering करिअर आणि आधुनिक लेकहाऊ
             return {"response": ai_reply, "agent_id": agent_id, "status": "COMPLETED", "risk_level": "LOW"}
 
         # Branch 3: Database Actions, Tables, Counts, Transfers & DDL
-        elif has_db_term and (has_query_term or has_transfer_term or has_delete_term):
+        elif (has_delete_term and has_db_term) or (has_transfer_term and has_db_term) or (has_db_term and any(w in p_lower for w in ["database inventory", "table inventory", "list tables", "list all tables", "show tables", "show all tables", "kiti tables ahet", "tables dakhva", "tables list", "connected database inventory", "table count in database"])):
             agent_id = "data_engineer"
             from app.core.connection_manager import connection_manager
 

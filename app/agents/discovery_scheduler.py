@@ -34,7 +34,7 @@ from app.core.logger import log_event
 from app.core.database import db, credentials_vault
 from app.core.storage_inspector import storage_inspector
 from app.core.model_adapter import model_manager
-from app.agents.assistant_agent import personal_assistant_agent, monitoring_agent
+# Note: personal_assistant_agent imported lazily inside methods to prevent circular import
 
 class SystemDiscoveryScheduler:
     def __init__(self):
@@ -207,6 +207,7 @@ class SystemDiscoveryScheduler:
 
             if should_send:
                 try:
+                    from app.agents.assistant_agent import personal_assistant_agent
                     tg_res = personal_assistant_agent.send_telegram_message(summary_report, parse_mode="HTML")
                     if tg_res.get("status") == "success":
                         telegram_sent = True

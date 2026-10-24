@@ -174,11 +174,11 @@ class VoiceAssistant:
         # 3D. Voice Command: Agent Status & Breakdown Query
         if any(w in t_low for w in ["kiti agent", "kon kam kartoy", "kon firtoy", "break", "who is working", "agent status", "workers status", "कती एजंट", "कोण काम करतोय", "कोण फिरतोय"]):
             if detected_lang == "mr-IN":
-                reply = "नॅनोप्रो: आपल्या ३डी सायबर डेटा सेंटरमध्ये एकूण २०७ स्पेशालिस्ट एजंट्स आणि १३ डिपार्टमेंट चीफ्स कार्यरत आहेत. सध्या १५८ एजंट्स प्रत्यक्ष कामावर असून ४९ एजंट्स स्टँडबाय आणि कॉफी लाउंजमध्ये आहेत. सर्व पाईपलाईन्स सुरळीत आहेत."
+                reply = "⚡ अँटीग्रॅव्हिटी AI मॅनेजर: आपल्या ३डी सायबर डेटा सेंटरमध्ये एकूण ३०५ स्पेशालिस्ट एजंट्स आणि १९ डिपार्टमेंट पॉड्स (A ते S) कार्यरत आहेत. सध्या २५४ एजंट्स प्रत्यक्ष कामावर असून ५१ एजंट्स स्टँडबाय आणि कॉफी लाउंजमध्ये आहेत. सर्व पाईपलाईन्स सुरळीत आहेत."
             elif detected_lang == "hi-IN":
                 reply = "नैनोप्रो: हमारे ३डी साइबर डेटा सेंटर में कुल २०७ स्पेशलिस्ट एजेंट्स और १३ डिपार्टमेंट चीफ्स सक्रिय हैं। वर्तमान में १५८ एजेंट्स काम कर रहे हैं और ४९ एजेंट्स स्टैंडबाय पर हैं।"
             else:
-                reply = "NanoPro: In our 3D Cyber Data Center, 207 specialist agents and 13 department chiefs are registered. Currently 158 are active at workstations and 49 are on standby/recharge."
+                reply = "⚡ Antigravity AI Orchestrator: In our 3D Cyber Data Center, 305 specialist enterprise agents across 19 Department Pods (A through S) are registered. Currently 254 are active at workstations and 51 are on autonomous background operations."
             return {
                 "transcript": spoken_text,
                 "response_text": reply,
@@ -190,11 +190,11 @@ class VoiceAssistant:
         # 3E. Voice Command: Call All Agents Back to Work
         if any(w in t_low for w in ["back to work", "kamala lava", "parat bolva", "call to work", "कामावर बोलवा", "काम चालू करा"]):
             if detected_lang == "mr-IN":
-                reply = "नॅनोप्रो: आदेश प्राप्त झाला! सर्व २०७ स्पेशालिस्ट एजंट्सना त्वरित आपापल्या वर्कस्टेशन्सवर कामाला बोलावले आहे. सर्व पाईपलाईन्स हाय-स्पीड मोडमध्ये सुरू आहेत."
+                reply = "नॅनोप्रो: आदेश प्राप्त झाला! सर्व ३०५ स्पेशालिस्ट एजंट्सना त्वरित आपापल्या वर्कस्टेशन्सवर कामाला बोलावले आहे. सर्व पाईपलाईन्स हाय-स्पीड मोडमध्ये सुरू आहेत."
             elif detected_lang == "hi-IN":
                 reply = "नैनोप्रो: आदेश प्राप्त हुआ! सभी २०७ एजेंट्स को तुरंत अपने वर्कस्टेशन पर काम के लिए बुला लिया गया है।"
             else:
-                reply = "NanoPro: Command confirmed! Recalled all 207 specialist agents back to their workstations. Full operational throughput active."
+                reply = "NanoPro: Command confirmed! Recalled all 305 specialist agents back to their workstations. Full operational throughput active."
             return {
                 "transcript": spoken_text,
                 "response_text": reply,

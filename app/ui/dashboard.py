@@ -3976,10 +3976,10 @@ def _get_raw_dashboard_html() -> str:
                     <div class="hologram-avatar" style="font-size:24px;">&#128187;</div>
                     <div>
                         <div style="font-size:14px; font-weight:800; color:#F8FAFC; letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
-                            <span>CENTRAL AI MANAGER HOLOGRAPHIC STATION</span>
+                            <span>CENTRAL AI MANAGER HOLOGRAPHIC STATION — 305 ENTERPRISE AI AGENTS</span>
                             <span style="background:#1E293B; border:1px solid #38BDF8; color:#38BDF8; font-size:10px; padding:2px 8px; border-radius:4px; font-family:monospace;">3D CYBER DATA CENTER AI HUB</span>
                         </div>
-                        <div style="font-size:11.5px; color:#94A3B8;">Nano Pro Central Orchestrator &bull; 13 Department Chiefs &bull; 208 Specialist Workforce &bull; Live Telemetry Stream Active</div>
+                        <div style="font-size:11.5px; color:#94A3B8;">Antigravity AI Master Orchestrator &bull; 19 Executive Pod Leads (A-S) &bull; 305 Specialist Workforce &bull; 21 Autonomous Schedulers Live</div>
                     </div>
                 </div>
                 <div class="station-actions-bar">
@@ -4006,7 +4006,7 @@ def _get_raw_dashboard_html() -> str:
                     </button>
                     <div style="display:flex; flex-direction:column;">
                         <span style="font-size:10px; color:#94A3B8; text-transform:uppercase; font-weight:700;">AI Voice &amp; Chat</span>
-                        <span id="nanoProVoiceStatusText" style="font-size:12px; font-weight:800; color:#38BDF8;">NanoPro Ready</span>
+                        <span id="nanoProVoiceStatusText" style="font-size:12px; font-weight:800; color:#38BDF8;">⚡ Antigravity AI Orchestrator: LIVE &amp; READY</span>
                     </div>
                     <button type="button" class="btn btn-secondary" id="btnStopContinuousVoice" onclick="stopNanoProContinuousVoice()" style="display:none; padding:4px 10px; font-size:10.5px; border-color:#EF4444; color:#F87171; font-weight:700;">⏹ Stop Voice</button>
                 </div>
@@ -7568,6 +7568,51 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
         <div style="margin-top:10px;">
             <label class="input-label">Recurrence Parameter</label>
             <input type="text" class="studio-input" id="schedEditRecurrence" placeholder="08:00" />
+        </div>
+
+        <!-- Dedicated Telegram APK Dispatcher Parameters Box (Auto-shown when editing TELEGRAM_APK_DISPATCHER) -->
+        <div id="schedEditApkBox" style="display:none; margin-top:12px; padding:14px; background:linear-gradient(135deg, rgba(20,184,166,0.15), rgba(15,23,42,0.9)); border:1.5px solid #14B8A6; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.4);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid rgba(20,184,166,0.25); padding-bottom:6px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:20px;">🤖</span>
+                    <div>
+                        <strong style="color:#2DD4BF; font-size:13px;">Telegram APK Dispatcher Settings (@mangesh_apk_bot)</strong>
+                        <div style="font-size:11px; color:#94A3B8;">Configurable delivery interval, APK quantity &amp; direct verified delivery with rich Marathi summaries.</div>
+                    </div>
+                </div>
+                <span class="badge" style="background:rgba(20,184,166,0.3); color:#2DD4BF; border:1px solid #14B8A6; font-size:10px; padding:2px 8px; font-weight:700;">LIVE DISPATCHER</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label class="input-label" style="color:#38BDF8; font-weight:700;">⏱️ Delivery Interval / Frequency (कधी आणि किती वेळाने)</label>
+                    <select class="studio-input" id="schedEditApkInterval" style="font-weight:700; border-color:#38BDF8;" onchange="document.getElementById('schedEditRecurrence').value = this.value;">
+                        <option value="1">Every 1 Hour (दर १ तासाला)</option>
+                        <option value="2">Every 2 Hours (दर २ तासाला)</option>
+                        <option value="3">Every 3 Hours (दर ३ तासाला)</option>
+                        <option value="4" selected>Every 4 Hours (दर ४ तासाला - शिफारस)</option>
+                        <option value="6">Every 6 Hours (दर ६ तासाला)</option>
+                        <option value="8">Every 8 Hours (दर ८ तासाला)</option>
+                        <option value="12">Every 12 Hours (दर १२ तासाला)</option>
+                        <option value="24">Every 24 Hours / Daily (दर २४ तासाला)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="input-label" style="color:#38BDF8; font-weight:700;">📦 APK Quantity Per Cycle (प्रत्येक वेळी किती APKs पाठवायचे)</label>
+                    <select class="studio-input" id="schedEditApkCount" style="font-weight:700; border-color:#38BDF8;">
+                        <option value="1">1 APK per cycle</option>
+                        <option value="2">2 APKs per cycle</option>
+                        <option value="3">3 APKs per cycle</option>
+                        <option value="4">4 APKs per cycle</option>
+                        <option value="5" selected>5 APKs per cycle (डिफॉल्ट)</option>
+                        <option value="8">8 APKs per cycle</option>
+                        <option value="10">10 APKs per cycle</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top:1px dashed rgba(20,184,166,0.3);">
+                <span style="font-size:11px; color:#A7F3D0;">📝 Each Telegram delivery contains full summary, key features list, and verified APK file.</span>
+                <button type="button" class="btn btn-secondary" onclick="triggerApkSendNow()" style="padding:4px 10px; font-size:11px; color:#38BDF8; border-color:#38BDF8; font-weight:700;">🚀 Send Test APK Now</button>
+            </div>
         </div>
         <div style="margin-top:10px;">
             <label class="input-label">Script / Query Code or Command</label>
@@ -17251,6 +17296,21 @@ async function openTaskEditModal(taskId) {
         if (exprEl) exprEl.value = t.recurrence_expr || '';
         if (contEl) contEl.value = t.script_content || '';
 
+        // If editing TELEGRAM_APK_DISPATCHER, display dedicated APK box and load live parameters
+        const isApkTask = (t.name || '').includes('APK');
+        const apkBox = document.getElementById('schedEditApkBox');
+        if (apkBox) {
+            apkBox.style.display = isApkTask ? 'block' : 'none';
+            if (isApkTask) {
+                fetch('/api/apk/config').then(r => r.json()).then(cfg => {
+                    const intEl = document.getElementById('schedEditApkInterval');
+                    const cntEl = document.getElementById('schedEditApkCount');
+                    if (intEl && cfg.interval_hours) intEl.value = String(cfg.interval_hours);
+                    if (cntEl && cfg.count) cntEl.value = String(cfg.count);
+                }).catch(() => {});
+            }
+        }
+
         const modal = document.getElementById('taskEditModal');
         if (modal) {
             modal.style.display = 'block';
@@ -17275,6 +17335,17 @@ async function submitTaskEditForm() {
     const stype = document.getElementById('schedEditScheduleType')?.value || 'daily';
     const rexpr = (document.getElementById('schedEditRecurrence')?.value || '').trim();
     const content = (document.getElementById('schedEditContent')?.value || '').trim();
+
+    const isApkTask = name.includes('APK');
+    if (isApkTask) {
+        const apkInt = parseInt(document.getElementById('schedEditApkInterval')?.value || '4');
+        const apkCnt = parseInt(document.getElementById('schedEditApkCount')?.value || '5');
+        fetch('/api/apk/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ interval_hours: apkInt, count: apkCnt, enabled: true })
+        }).catch(() => {});
+    }
 
     try {
         const res = await fetch('/api/schedules/update', {
@@ -18631,11 +18702,17 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('DOMContentLoaded', () => {
             try { 
                 const hashTarget = (window.location.hash || '').replace('#', '').trim();
-                let initTarget = 'dashboard';
+                let initTarget = '';
                 if (hashTarget && document.getElementById('view-' + hashTarget)) {
                     initTarget = hashTarget;
                 } else if (typeof getUserFirstAllowedFeature === 'function') {
-                    initTarget = getUserFirstAllowedFeature(window.currentUser) || 'dashboard';
+                    initTarget = getUserFirstAllowedFeature(window.currentUser);
+                }
+                if (!initTarget) {
+                    const isMob = (window.innerWidth <= 768) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    const u = window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null);
+                    const isAdmin = !u || (u.role === 'admin' || u.username === 'nanopro');
+                    initTarget = (isMob && isAdmin) ? 'admin_mobile_hub' : (isAdmin ? 'dashboard' : 'universal_tech_video');
                 }
                 switchView(initTarget, true); 
             } catch(e) { console.error('switchView error:', e); }

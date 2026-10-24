@@ -1426,6 +1426,58 @@ def get_admin_mobile_hub_html() -> str:
                     <span class="hub-tile-badge badge-warn" style="font-size:8px;">OPEN ↗</span>
                 </div>
 
+                <!-- Task Scheduler & Automation Manager -->
+                <div class="hub-tile" onclick="switchView('automation_scheduler')" style="border-left:3px solid #14B8A6; background:rgba(20,184,166,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">⏱️</span>
+                        <span class="hub-tile-name">Task Manager</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#2DD4BF;">Scheduler &amp; Crons</div>
+                        <div class="hub-tile-sub">Auto Jobs &amp; Runs History</div>
+                    </div>
+                    <span class="hub-tile-badge badge-live" style="font-size:8px;">SCHEDULE ⏱️</span>
+                </div>
+
+                <!-- User Management & Security Approvals -->
+                <div class="hub-tile" onclick="switchView('user_management')" style="border-left:3px solid #38BDF8; background:rgba(56,189,248,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">👥</span>
+                        <span class="hub-tile-name">User Approvals</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#38BDF8;">Access Control</div>
+                        <div class="hub-tile-sub">Approve New Users &amp; Roles</div>
+                    </div>
+                    <span class="hub-tile-badge badge-cyan" style="font-size:8px;">SECURITY 🛡️</span>
+                </div>
+
+                <!-- Telegram APK Dispatcher Config -->
+                <div class="hub-tile" onclick="openApkConfigModal()" style="border-left:3px solid #F59E0B; background:rgba(245,158,11,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🤖</span>
+                        <span class="hub-tile-name">APK Dispatcher</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#FBBF24;">@mangesh_apk_bot</div>
+                        <div class="hub-tile-sub">Batch Size &amp; Frequency</div>
+                    </div>
+                    <span class="hub-tile-badge badge-warn" style="font-size:8px;">BOT CONFIG ⚙️</span>
+                </div>
+
+                <!-- Credentials Vault -->
+                <div class="hub-tile" onclick="switchView('vault')" style="border-left:3px solid #8B5CF6; background:rgba(139,92,246,0.08);">
+                    <div class="hub-tile-top">
+                        <span class="hub-tile-icon">🔐</span>
+                        <span class="hub-tile-name">Credentials Vault</span>
+                    </div>
+                    <div class="hub-tile-mid">
+                        <div class="hub-tile-val" style="font-size:12px; color:#C084FC;">AES-256 Secrets</div>
+                        <div class="hub-tile-sub">AWS, S3, DBs, Tokens</div>
+                    </div>
+                    <span class="hub-tile-badge badge-purple" style="font-size:8px;">VAULT 🔑</span>
+                </div>
+
                 <div class="hub-tile" onclick="toggleMobileSidebar(true)" style="border-left:3px solid #EC4899; background:rgba(236,72,153,0.08);">
                     <div class="hub-tile-top">
                         <span class="hub-tile-icon">☰</span>
