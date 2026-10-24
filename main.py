@@ -2909,6 +2909,27 @@ async def api_test_cross_interoperability():
     res = connection_manager.test_cross_pipeline_interoperability()
     return JSONResponse(res)
 
+@app.post('/api/connections/test/duckdb')
+async def api_test_duckdb_connection():
+    """Verifies local DuckDB 2.0.0 analytical lakehouse gold marts."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_duckdb_connection()
+    return JSONResponse(res)
+
+@app.post('/api/connections/test/bigquery')
+async def api_test_bigquery_connection():
+    """Verifies Google Cloud BigQuery Sandbox connection and datasets."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_bigquery_connection()
+    return JSONResponse(res)
+
+@app.post('/api/connections/test/all')
+async def api_test_all_connections():
+    """Executes batch verification across all 12 configured databases, lakehouses and messaging services."""
+    from app.core.connection_manager import connection_manager
+    res = connection_manager.test_all_connections()
+    return JSONResponse({"status": "success", "results": res, "connections": connection_manager.get_all_connections_health()})
+
 @app.post('/api/connections/save')
 async def api_save_connection(
     connection_name: str = Body(...),
