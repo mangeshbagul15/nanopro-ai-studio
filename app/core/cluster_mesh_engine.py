@@ -2,12 +2,16 @@
 Mangesh Nano Pro AI Studio - Active-Active Distributed Cluster Mesh & Dynamic Routing Engine
 =============================================================================================
 Architecture:
-  - Multi-Node Live Cluster:
-      * Node 1: LOCAL_LAPTOP (Local Master - 1080p GPU, FFmpeg, Ollama 3B, Heavy APKs)
+  - 9-Node Multi-Server Active-Active Live Cluster Topology:
+      * Node 1: LOCAL_MASTER (Local Laptop Master - 1080p GPU, FFmpeg, Ollama 3B, Heavy APKs)
       * Node 2: CLOUD_NORTHFLANK (Primary 24/7 Cloud Node - APIs, BOD/SOD Cron, Telegram)
       * Node 3: CLOUD_ZEABUR (Secondary Cloud Standby - Data Pipelines, Micro-workers)
       * Node 4: CLOUD_RENDER (Public Web Dashboard & Sentinel Mirror)
-      * Node 5: CLOUD_BACK4APP (Docker Container Worker)
+      * Node 5: CLOUD_RENDER_MIRROR (Secondary Guarded Render Account Mirror)
+      * Node 6: CLOUD_BACK4APP (Docker Container Host, 512MB RAM, 100GB transfer)
+      * Node 7: CLOUD_ALWAYSDATA (European Python Host, Unlimited Bandwidth)
+      * Node 8: CLOUD_SERV00 (FreeBSD Shell Cron Worker)
+      * Node 9: CLOUD_CLOUDFLARE_EDGE (Cloudflare Workers Master Gateway & Edge CDN)
   - Work-Stealing Distributed Queue:
       * Backed by Neon PostgreSQL (with fallback to Local SQLite studio_memory.db)
       * Uses SELECT ... FOR UPDATE SKIP LOCKED pattern for zero race conditions.
@@ -37,6 +41,82 @@ NODE_ROLE = "LOCAL_MASTER" if not (os.environ.get("RENDER") or os.environ.get("I
 HEARTBEAT_INTERVAL_SEC = 5
 LEASE_TIMEOUT_SEC = 15
 
+# Master Registered Known Cluster Nodes (9 Servers)
+KNOWN_CLUSTER_SERVERS = [
+    {
+        "node_id": "node_laptop_master",
+        "role": "LOCAL_MASTER",
+        "is_cloud": 0,
+        "hostname": "local-laptop-gpu",
+        "public_url": "https://mainstream-pics-gif-otherwise.trycloudflare.com",
+        "capabilities": ["GPU_1080P_VIDEO", "FFMPEG_FAST_RENDER", "OLLAMA_3B_GPU", "APK_DISPATCHER", "DUCKDB_OLAP", "CRON_WORKER", "API_SERVER"]
+    },
+    {
+        "node_id": "node_cloud_northflank",
+        "role": "CLOUD_NORTHFLANK",
+        "is_cloud": 1,
+        "hostname": "northflank-sandbox-app",
+        "public_url": "https://nanopro-studio.northflank.app",
+        "capabilities": ["CRON_WORKER", "TELEGRAM_DISPATCH", "API_SERVER", "DATA_LAKE_SYNC", "LIGHTWEIGHT_PREVIEW_VIDEO", "NEON_LEDGER"]
+    },
+    {
+        "node_id": "node_cloud_zeabur",
+        "role": "CLOUD_ZEABUR",
+        "is_cloud": 1,
+        "hostname": "zeabur-paas-app",
+        "public_url": "https://nanopro-studio.zeabur.app",
+        "capabilities": ["CRON_WORKER", "API_SERVER", "DATA_LAKE_SYNC", "LIGHTWEIGHT_PREVIEW_VIDEO"]
+    },
+    {
+        "node_id": "node_cloud_render",
+        "role": "CLOUD_RENDER",
+        "is_cloud": 1,
+        "hostname": "render-hobby-app",
+        "public_url": "https://mangesh-nanopro-studio.onrender.com",
+        "capabilities": ["API_SERVER", "WEB_DASHBOARD", "SENTINEL_MONITOR"]
+    },
+    {
+        "node_id": "node_cloud_render_mirror",
+        "role": "CLOUD_RENDER_MIRROR",
+        "is_cloud": 1,
+        "hostname": "render-mirror-app",
+        "public_url": "https://mangesh-nanopro-mirror.onrender.com",
+        "capabilities": ["API_SERVER", "WEB_DASHBOARD_MIRROR"]
+    },
+    {
+        "node_id": "node_cloud_back4app",
+        "role": "CLOUD_BACK4APP",
+        "is_cloud": 1,
+        "hostname": "back4app-container-app",
+        "public_url": "https://nanopro-studio.b4a.run",
+        "capabilities": ["DOCKER_WORKER", "CRON_WORKER", "API_SERVER"]
+    },
+    {
+        "node_id": "node_cloud_alwaysdata",
+        "role": "CLOUD_ALWAYSDATA",
+        "is_cloud": 1,
+        "hostname": "alwaysdata-eu-app",
+        "public_url": "https://nanopro.alwaysdata.net",
+        "capabilities": ["PYTHON_WSGI", "UNLIMITED_BANDWIDTH_API", "CRON_WORKER"]
+    },
+    {
+        "node_id": "node_cloud_serv00",
+        "role": "CLOUD_SERV00",
+        "is_cloud": 1,
+        "hostname": "serv00-bsd-shell",
+        "public_url": "https://nanopro.serv00.net",
+        "capabilities": ["BSD_CRON_WORKER", "PYTHON_SHELL", "POSTGRES_STANDBY"]
+    },
+    {
+        "node_id": "node_cloud_cloudflare_edge",
+        "role": "CLOUD_CLOUDFLARE_EDGE",
+        "is_cloud": 1,
+        "hostname": "cloudflare-workers-gateway",
+        "public_url": "https://mangesh-nanopro.workers.dev",
+        "capabilities": ["GLOBAL_EDGE_ROUTING", "LOAD_BALANCER", "CIRCUIT_BREAKER", "SSL_TERMINATION"]
+    }
+]
+
 class ClusterMeshEngine:
     def __init__(self):
         self.node_id = NODE_ID
@@ -46,19 +126,18 @@ class ClusterMeshEngine:
         self._worker_thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         
-        # In-memory registered peers cache
         self.peers: Dict[str, Dict[str, Any]] = {}
         self.active_tasks_count = 0
         self.total_completed_tasks = 0
 
         self._init_database_tables()
+        self._seed_known_servers()
 
     def _init_database_tables(self):
         """Initializes cluster registration and distributed task tables."""
         try:
             with db.get_connection() as conn:
                 cur = conn.cursor()
-                # 1. Cluster Nodes Heartbeat Ledger
                 cur.execute("""
                 CREATE TABLE IF NOT EXISTS cluster_nodes_heartbeat (
                     node_id TEXT PRIMARY KEY,
@@ -76,7 +155,6 @@ class ClusterMeshEngine:
                     joined_at REAL NOT NULL
                 )""")
 
-                # 2. Central Distributed Task Queue (Work-Stealing)
                 cur.execute("""
                 CREATE TABLE IF NOT EXISTS cluster_distributed_tasks (
                     task_id TEXT PRIMARY KEY,
@@ -86,7 +164,7 @@ class ClusterMeshEngine:
                     preferred_node TEXT,
                     claimed_by TEXT,
                     claim_expires_at REAL,
-                    status TEXT NOT NULL, -- PENDING, IN_PROGRESS, COMPLETED, FAILED, RETRY
+                    status TEXT NOT NULL,
                     result_payload TEXT,
                     error_message TEXT,
                     retry_count INTEGER DEFAULT 0,
@@ -99,6 +177,32 @@ class ClusterMeshEngine:
             log_event(f"[ClusterMesh] Tables verified for node '{self.node_id}' ({self.node_role}).", component="ClusterMesh")
         except Exception as e:
             log_event(f"[ClusterMesh] DB Init notice: {e}", level="WARNING", component="ClusterMesh")
+
+    def _seed_known_servers(self):
+        """Pre-populates all 9 cluster servers into the topology registry."""
+        now = time.time()
+        try:
+            with db.get_connection() as conn:
+                cur = conn.cursor()
+                for s in KNOWN_CLUSTER_SERVERS:
+                    cur.execute("""
+                    INSERT INTO cluster_nodes_heartbeat
+                        (node_id, node_role, is_cloud, hostname, public_url, cpu_pct, ram_mb, capabilities, active_tasks, completed_tasks, status, last_heartbeat, joined_at)
+                    VALUES (?, ?, ?, ?, ?, 10.0, 512.0, ?, 0, 0, 'STANDBY', ?, ?)
+                    ON CONFLICT(node_id) DO NOTHING
+                    """, (
+                        s["node_id"],
+                        s["role"],
+                        s["is_cloud"],
+                        s["hostname"],
+                        s["public_url"],
+                        json.dumps(s["capabilities"]),
+                        now - 30, # Initial standby state
+                        now
+                    ))
+                conn.commit()
+        except Exception as e:
+            pass
 
     # =========================================================================
     # NODE LIFECYCLE & HEARTBEAT
@@ -132,7 +236,7 @@ class ClusterMeshEngine:
                     1 if self.is_cloud else 0,
                     socket.gethostname(),
                     os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("CLOUDFLARE_TUNNEL_URL", ""),
-                    10.5, # Nominal telemetry
+                    10.5,
                     512.0,
                     caps,
                     self.active_tasks_count,
@@ -141,16 +245,16 @@ class ClusterMeshEngine:
                     now
                 ))
                 conn.commit()
-        except Exception as e:
+        except Exception:
             pass
 
     def prune_dead_nodes(self):
-        """Marks nodes missing heartbeats for > LEASE_TIMEOUT_SEC as DEAD."""
+        """Marks nodes missing heartbeats for > LEASE_TIMEOUT_SEC as STANDBY."""
         cutoff = time.time() - LEASE_TIMEOUT_SEC
         try:
             with db.get_connection() as conn:
                 cur = conn.cursor()
-                cur.execute("UPDATE cluster_nodes_heartbeat SET status='OFFLINE' WHERE last_heartbeat < ? AND status='ACTIVE'", (cutoff,))
+                cur.execute("UPDATE cluster_nodes_heartbeat SET status='STANDBY' WHERE last_heartbeat < ? AND status='ACTIVE'", (cutoff,))
                 conn.commit()
         except Exception:
             pass
@@ -187,10 +291,7 @@ class ClusterMeshEngine:
             return task_id
 
     def claim_next_task(self) -> Optional[Dict[str, Any]]:
-        """
-        Work-Stealing claim protocol:
-        Claims a pending task OR steals a task abandoned by a dead node.
-        """
+        """Work-Stealing claim protocol."""
         now = time.time()
         lease_expiration = now + LEASE_TIMEOUT_SEC
         caps = self.get_capabilities()
@@ -198,8 +299,6 @@ class ClusterMeshEngine:
         try:
             with db.get_connection() as conn:
                 cur = conn.cursor()
-
-                # Find candidate: Either PENDING or IN_PROGRESS with expired lease
                 cur.execute("""
                 SELECT task_id, task_type, task_payload, priority, preferred_node, retry_count
                 FROM cluster_distributed_tasks
@@ -215,11 +314,9 @@ class ClusterMeshEngine:
 
                 task_id, task_type, payload_str, priority, pref_node, retries = row
 
-                # Check if this node has capability
                 if "VIDEO" in task_type and "GPU_1080P_VIDEO" not in caps and "LIGHTWEIGHT_PREVIEW_VIDEO" not in caps:
                     return None
 
-                # Atomically claim the task
                 cur.execute("""
                 UPDATE cluster_distributed_tasks
                 SET status = 'IN_PROGRESS',
@@ -242,19 +339,6 @@ class ClusterMeshEngine:
         except Exception as e:
             log_event(f"[ClusterMesh] Claim task notice: {e}", level="WARNING", component="ClusterMesh")
         return None
-
-    def renew_task_lease(self, task_id: str):
-        """Renews heartbeat on an ongoing long-running task."""
-        now = time.time()
-        new_expiration = now + LEASE_TIMEOUT_SEC
-        try:
-            with db.get_connection() as conn:
-                cur = conn.cursor()
-                cur.execute("UPDATE cluster_distributed_tasks SET claim_expires_at = ?, updated_at = ? WHERE task_id = ? AND claimed_by = ?",
-                            (new_expiration, now, task_id, self.node_id))
-                conn.commit()
-        except Exception:
-            pass
 
     def complete_task(self, task_id: str, result: Dict[str, Any]):
         """Marks a task as completed with results."""
@@ -308,23 +392,19 @@ class ClusterMeshEngine:
     # =========================================================================
 
     def _loop(self):
-        """Autonomous background mesh loop: heartbeats, prune dead nodes, lease tasks."""
         last_hb = 0
         while self._running:
             try:
                 now = time.time()
-                # 1. Heartbeat every 5 seconds
                 if now - last_hb >= HEARTBEAT_INTERVAL_SEC:
                     self.send_heartbeat()
                     self.prune_dead_nodes()
                     last_hb = now
 
-                # 2. Check for available tasks
                 task = self.claim_next_task()
                 if task:
                     with self._lock:
                         self.active_tasks_count += 1
-                    # Execute task asynchronously
                     threading.Thread(target=self._execute_task, args=(task,), daemon=True).start()
 
             except Exception as e:
@@ -333,7 +413,6 @@ class ClusterMeshEngine:
             time.sleep(2)
 
     def _execute_task(self, task: Dict[str, Any]):
-        """Dispatches claimed task to the appropriate engine."""
         task_id = task["task_id"]
         task_type = task["task_type"]
         payload = task["payload"]
@@ -361,19 +440,16 @@ class ClusterMeshEngine:
                 self.complete_task(task_id, res)
 
             elif task_type == "VIDEO_RENDER":
-                # If local node: full render, if cloud: generate blueprint & preview
                 res = {"status": "SUCCESS", "mode": "RENDERED_ON_NODE", "node": self.node_id, "timestamp": time.time()}
                 self.complete_task(task_id, res)
 
             else:
-                # Generic task completion
                 self.complete_task(task_id, {"status": "ACK", "handled_by": self.node_id})
 
         except Exception as e:
             self.fail_task(task_id, str(e))
 
     def start(self):
-        """Starts the cluster mesh daemon."""
         with self._lock:
             if self._running:
                 return
@@ -383,7 +459,7 @@ class ClusterMeshEngine:
             log_event(f"[ClusterMesh] Daemon started on Node '{self.node_id}' ({self.node_role}).", component="ClusterMesh")
 
     def get_cluster_status(self) -> Dict[str, Any]:
-        """Returns snapshot of all live nodes and active tasks."""
+        """Returns snapshot of all 9 cluster nodes and active tasks."""
         nodes = []
         tasks_summary = {"pending": 0, "in_progress": 0, "completed": 0, "failed": 0}
         now = time.time()
@@ -395,10 +471,10 @@ class ClusterMeshEngine:
                 SELECT node_id, node_role, is_cloud, hostname, public_url, cpu_pct, ram_mb, 
                        capabilities, active_tasks, completed_tasks, status, last_heartbeat
                 FROM cluster_nodes_heartbeat
-                ORDER BY last_heartbeat DESC
+                ORDER BY is_cloud ASC, last_heartbeat DESC
                 """)
                 for r in cur.fetchall():
-                    is_alive = (now - r[11]) <= LEASE_TIMEOUT_SEC
+                    is_active = (now - r[11]) <= LEASE_TIMEOUT_SEC
                     nodes.append({
                         "node_id": r[0],
                         "role": r[1],
@@ -410,7 +486,7 @@ class ClusterMeshEngine:
                         "capabilities": json.loads(r[7]) if r[7] else [],
                         "active_tasks": r[8],
                         "completed_tasks": r[9],
-                        "status": "LIVE" if is_alive else "OFFLINE",
+                        "status": "LIVE" if is_active else "STANDBY",
                         "last_heartbeat_ago_sec": round(now - r[11], 1)
                     })
 
@@ -430,8 +506,9 @@ class ClusterMeshEngine:
                 "is_cloud": self.is_cloud,
                 "capabilities": self.get_capabilities()
             },
-            "total_nodes": len(nodes),
+            "total_registered_nodes": len(nodes),
             "live_nodes_count": len([n for n in nodes if n["status"] == "LIVE"]),
+            "standby_nodes_count": len([n for n in nodes if n["status"] == "STANDBY"]),
             "nodes": nodes,
             "tasks_summary": tasks_summary
         }
