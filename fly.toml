@@ -1,26 +1,22 @@
-# fly.toml app configuration file for Mangesh Nano Pro AI Studio
+# fly.toml app configuration file generated for mangesh-nanopro on 2026-10-27T16:39:03Z
+#
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "mangesh-nanopro"
-primary_region = "bom"
+app = 'mangesh-nanopro'
+primary_region = 'sin'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "8000"
-  PYTHONUNBUFFERED = "1"
-  NODE_ROLE = "CLOUD_FLYIO"
-
-[http_service]
-  internal_port = 8000
-  force_https = true
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ["app"]
+  NODE_ROLE = 'CLOUD_FLYIO'
+  PORT = '8000'
+  PYTHONUNBUFFERED = '1'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 512
