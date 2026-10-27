@@ -18,7 +18,7 @@ const CONFIG = {
     
     // Live 24/7 Python Cloud Server (Zero-Card Free)
     CLOUD_PYTHONANYWHERE: "https://mangeshbagul15.pythonanywhere.com",
-    CLOUD_ALWAYSDATA: "https://nanopro.alwaysdata.net",
+    CLOUD_ALWAYSDATA: "https://mangeshbagul15.alwaysdata.net",
     CLOUD_SERV00: "https://nanopro.serv00.net"
   },
   LOCAL_TIMEOUT_MS: 15000,
@@ -32,9 +32,10 @@ export default {
 
     const localTunnel = env?.LOCAL_TUNNEL_URL || CONFIG.UPSTREAMS.LOCAL_LAPTOP;
     const pythonAnywhereUrl = env?.PYTHONANYWHERE_URL || CONFIG.UPSTREAMS.CLOUD_PYTHONANYWHERE;
+    const alwaysdataUrl = env?.ALWAYSDATA_URL || CONFIG.UPSTREAMS.CLOUD_ALWAYSDATA;
 
-    // Upstream candidates in priority order (Local Master -> PythonAnywhere 24/7 Cloud)
-    let candidateUpstreams = [localTunnel, pythonAnywhereUrl];
+    // Upstream candidates in priority order (Local Master -> PythonAnywhere 24/7 Cloud -> Alwaysdata 24/7 Cloud)
+    let candidateUpstreams = [localTunnel, pythonAnywhereUrl, alwaysdataUrl];
     if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
     if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
