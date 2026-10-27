@@ -3,13 +3,12 @@
  * =====================================================================
  * Active-Active Cluster Routing with 100% Autonomous Cloud Edge Fallback
  * 
- * Guarantee:
- * - When Laptop is ON: Routes to Laptop Master for GPU 1080p video, DuckDB, Ollama.
- * - When Laptop is OFF: Cloudflare Edge IMMEDIATELY takes over:
- *     * /api/cron/* returns 200 OK (Keep-Alive, BOD, SOD, T-1, EOD never fail!)
- *     * /api/cluster/* and /api/db/* return 200 OK with live telemetry.
- *     * Web requests serve the live NanoPro Autonomous Cloud Standby UI.
- * - Zero Credit Card Required - 100% Permanently Free.
+ * Resilience Features:
+ * - 12-second timeout for Local Master to allow complete 35KB dashboard HTML streaming.
+ * - Filters out un-deployed/suspended cloud nodes (e.g. Render "no-server" 404/503).
+ * - When Laptop is ON: Seamlessly streams the full dashboard, 305 agents, GPU video.
+ * - When Laptop is OFF: Cloudflare Edge IMMEDIATELY serves the 24/7 Autonomous Sentinel UI.
+ * - /api/cron/* ALWAYS returns 200 OK (Keep-Alive, BOD, SOD, T-1, EOD never fail).
  */
 
 const CONFIG = {
@@ -26,7 +25,8 @@ const CONFIG = {
     CLOUD_ALWAYSDATA: "https://nanopro.alwaysdata.net",
     CLOUD_SERV00: "https://nanopro.serv00.net"
   },
-  TIMEOUT_MS: 3500
+  LOCAL_TIMEOUT_MS: 12000,
+  CLOUD_TIMEOUT_MS: 3000
 };
 
 export default {
@@ -64,9 +64,12 @@ export default {
       const targetUrl = new URL(path + url.search, upstreamBase);
       attemptedNodes.push(upstreamBase);
 
+      const isLocal = (upstreamBase === localTunnel);
+      const timeoutMs = isLocal ? CONFIG.LOCAL_TIMEOUT_MS : CONFIG.CLOUD_TIMEOUT_MS;
+
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         const newHeaders = new Headers(request.headers);
         newHeaders.delete("host");
@@ -84,8 +87,10 @@ export default {
 
         clearTimeout(timeoutId);
 
-        if (response.status >= 502 && response.status <= 504) {
-          lastError = `HTTP ${response.status} from ${upstreamBase}`;
+        // Ignore offline, sleeping, or not-yet-deployed nodes (e.g. Render "no-server" 404, or 502/503/504)
+        const isRenderNoServer = response.headers.get("x-render-routing") === "no-server";
+        if (isRenderNoServer || (response.status >= 500 && response.status <= 504) || (!isLocal && response.status === 404)) {
+          lastError = `HTTP ${response.status} from ${upstreamBase} (skipping offline/un-deployed node)`;
           continue;
         }
 
