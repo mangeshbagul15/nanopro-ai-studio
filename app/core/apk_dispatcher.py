@@ -1045,6 +1045,14 @@ class APKScheduler:
         self._wake_event.set()
 
     def _loop(self):
+        # Cloud Bandwidth Protection Guard:
+        # Render Free tier has a strict 5GB monthly bandwidth cap.
+        # When running in cloud (Render), heavy APK file binary transfers are deferred
+        # to the Local Master Node (which has unlimited home internet bandwidth).
+        if os.environ.get("RENDER") or os.environ.get("IS_CLOUD"):
+            log_event("[APKBot] Cloud Environment (Render) active. Heavy APK binary downloads deferred to Local Master Node to protect 5GB cloud bandwidth cap.", component="APKDispatcher")
+            return
+
         # Initial run shortly after server boot (15 seconds) so APKs start flowing immediately
         self._stop.wait(15)
         while not self._stop.is_set():
