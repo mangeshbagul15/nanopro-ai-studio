@@ -6895,6 +6895,11 @@ async def api_cluster_status():
     from app.core.cluster_mesh_engine import cluster_mesh
     return JSONResponse(cluster_mesh.get_cluster_status())
 
+@app.get("/api/cluster/features")
+async def api_cluster_features():
+    from app.core.feature_mesh_dispatcher import feature_dispatcher
+    return JSONResponse(feature_dispatcher.get_feature_routing_status())
+
 @app.get("/api/fabric/status")
 async def api_fabric_status():
     from app.database.universal_db_fabric import universal_db
