@@ -16,12 +16,13 @@ const CONFIG = {
     // Live Local Laptop Master Tunnel (Active when laptop is open)
     LOCAL_LAPTOP: "https://forgot-delivery-thats-view.trycloudflare.com",
     
-    // Cloud Tiers (Only queried if active / deployed)
+    // Live 24/7 Python Cloud Server (Zero-Card Free)
+    CLOUD_PYTHONANYWHERE: "https://mangeshbagul15.pythonanywhere.com",
     CLOUD_ALWAYSDATA: "https://nanopro.alwaysdata.net",
     CLOUD_SERV00: "https://nanopro.serv00.net"
   },
   LOCAL_TIMEOUT_MS: 15000,
-  CLOUD_TIMEOUT_MS: 3000
+  CLOUD_TIMEOUT_MS: 4000
 };
 
 export default {
@@ -30,9 +31,10 @@ export default {
     const path = url.pathname;
 
     const localTunnel = env?.LOCAL_TUNNEL_URL || CONFIG.UPSTREAMS.LOCAL_LAPTOP;
+    const pythonAnywhereUrl = env?.PYTHONANYWHERE_URL || CONFIG.UPSTREAMS.CLOUD_PYTHONANYWHERE;
 
-    // Upstream candidates in priority order (Only active live endpoints)
-    let candidateUpstreams = [localTunnel];
+    // Upstream candidates in priority order (Local Master -> PythonAnywhere 24/7 Cloud)
+    let candidateUpstreams = [localTunnel, pythonAnywhereUrl];
     if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
     if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
