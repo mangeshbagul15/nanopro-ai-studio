@@ -100,6 +100,14 @@ KNOWN_CLUSTER_SERVERS = [
         "capabilities": ["PYTHON_WSGI", "UNLIMITED_BANDWIDTH_API", "CRON_WORKER"]
     },
     {
+        "node_id": "node_cloud_pythonanywhere",
+        "role": "CLOUD_PYTHONANYWHERE",
+        "is_cloud": 1,
+        "hostname": "mangeshbagul15.pythonanywhere.com",
+        "public_url": "https://mangeshbagul15.pythonanywhere.com",
+        "capabilities": ["API_SERVER", "CRON_WORKER", "PYTHON_WSGI", "SENTINEL_MONITOR", "TELEGRAM_DISPATCH"]
+    },
+    {
         "node_id": "node_cloud_serv00",
         "role": "CLOUD_SERV00",
         "is_cloud": 1,
