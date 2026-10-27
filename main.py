@@ -662,6 +662,17 @@ def _execute_staged_boot_phases_2_and_3():
     except Exception as e:
         log_event(f"Phase 3H notice: {e}", level="WARNING", component="BootSequence")
 
+    # T + 29s: Active-Active Distributed Cluster Mesh & Dynamic Work-Stealing Engine
+    time.sleep(2.0)
+    try:
+        log_event("=== [PHASE 3I] Starting Active-Active Cluster Mesh & Work-Stealing Engine (T + 29s) ===", component="BootSequence")
+        from app.core.cluster_mesh_engine import cluster_mesh
+        cluster_mesh.start()
+        from app.database.db_load_balancer import db_load_balancer
+        db_load_balancer.start()
+    except Exception as e:
+        log_event(f"Phase 3I notice: {e}", level="WARNING", component="BootSequence")
+
     log_event("=== Staged Boot Sequence Complete: All NanoPro Systems Synchronized & Healthy ===", component="BootSequence")
 
 @app.on_event("startup")
@@ -6870,6 +6881,42 @@ async def api_etl_batch_cycle():
         return JSONResponse({"status": "success", **_t1_report_dates()})
     except Exception as e:
         return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
+
+
+# =============================================================================
+# ACTIVE-ACTIVE CLUSTER MESH & CRON-JOB.ORG GATEWAY INTEGRATION
+# =============================================================================
+from app.core.cron_gateway_router import router as cron_gateway_router
+app.include_router(cron_gateway_router)
+
+@app.get("/api/cluster/status")
+async def api_cluster_status():
+    from app.core.cluster_mesh_engine import cluster_mesh
+    return JSONResponse(cluster_mesh.get_cluster_status())
+
+@app.get("/api/fabric/status")
+async def api_fabric_status():
+    from app.database.universal_db_fabric import universal_db
+    return JSONResponse(universal_db.inspect_all_databases())
+
+@app.post("/api/fabric/query")
+async def api_fabric_query(req: Request):
+    from app.database.universal_db_fabric import universal_db
+    body = await req.json()
+    sql = body.get("sql", "SHOW TABLES")
+    return JSONResponse(universal_db.execute_olap_query(sql))
+
+@app.get("/api/db/load-balancer/status")
+async def api_db_load_balancer_status():
+    from app.database.db_load_balancer import db_load_balancer
+    return JSONResponse(db_load_balancer.get_status())
+
+@app.post("/api/db/load-balancer/probe")
+async def api_db_load_balancer_probe():
+    from app.database.db_load_balancer import db_load_balancer
+    db_load_balancer._probe_all_nodes()
+    return JSONResponse(db_load_balancer.get_status())
 
 
 if __name__ == "__main__":
