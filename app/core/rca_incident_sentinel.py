@@ -30,7 +30,7 @@ from app.core.communication_center import communication_center
 
 DEFAULT_ADMIN_PHONE = "+918433755448"
 DEFAULT_ADMIN_EMAIL = "mangeshbagul15@gmail.com"
-RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://mangesh-nanopro-studio.onrender.com")
+RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://mangesh-nanopro.mangeshbagul15.workers.dev")
 
 class RCAIncidentSentinel:
     def __init__(self):
