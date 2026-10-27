@@ -16,16 +16,11 @@ const CONFIG = {
     // Live Local Laptop Master Tunnel (Active when laptop is open)
     LOCAL_LAPTOP: "https://forgot-delivery-thats-view.trycloudflare.com",
     
-    // Cloud Tiers (100% Free / Zero Card)
-    CLOUD_RENDER_MIRROR: "https://mangesh-nanopro-mirror.onrender.com",
-    CLOUD_RENDER: "https://mangesh-nanopro-studio.onrender.com",
-    CLOUD_NORTHFLANK: "https://nanopro-studio.northflank.app",
-    CLOUD_ZEABUR: "https://nanopro-studio.zeabur.app",
-    CLOUD_BACK4APP: "https://nanopro-studio.b4a.run",
+    // Cloud Tiers (Only queried if active / deployed)
     CLOUD_ALWAYSDATA: "https://nanopro.alwaysdata.net",
     CLOUD_SERV00: "https://nanopro.serv00.net"
   },
-  LOCAL_TIMEOUT_MS: 12000,
+  LOCAL_TIMEOUT_MS: 15000,
   CLOUD_TIMEOUT_MS: 3000
 };
 
@@ -35,25 +30,12 @@ export default {
     const path = url.pathname;
 
     const localTunnel = env?.LOCAL_TUNNEL_URL || CONFIG.UPSTREAMS.LOCAL_LAPTOP;
-    const renderMirrorUrl = env?.RENDER_MIRROR_URL || CONFIG.UPSTREAMS.CLOUD_RENDER_MIRROR;
-    const renderUrl = env?.RENDER_URL || CONFIG.UPSTREAMS.CLOUD_RENDER;
-    const northflankUrl = env?.NORTHFLANK_URL || CONFIG.UPSTREAMS.CLOUD_NORTHFLANK;
-    const zeaburUrl = env?.ZEABUR_URL || CONFIG.UPSTREAMS.CLOUD_ZEABUR;
-    const back4appUrl = env?.BACK4APP_URL || CONFIG.UPSTREAMS.CLOUD_BACK4APP;
-    const alwaysdataUrl = env?.ALWAYSDATA_URL || CONFIG.UPSTREAMS.CLOUD_ALWAYSDATA;
-    const serv00Url = env?.SERV00_URL || CONFIG.UPSTREAMS.CLOUD_SERV00;
 
-    // Upstream candidates in priority order
-    let candidateUpstreams = [
-      localTunnel,
-      renderMirrorUrl,
-      renderUrl,
-      northflankUrl,
-      zeaburUrl,
-      back4appUrl,
-      alwaysdataUrl,
-      serv00Url
-    ];
+    // Upstream candidates in priority order (Only active live endpoints)
+    let candidateUpstreams = [localTunnel];
+    if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
+    if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
+    if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
 
     let lastError = null;
     let attemptedNodes = [];
