@@ -238,7 +238,7 @@ export default {
     </div>
 
     <div class="notice">
-      ⚡ <strong>Autonomous Cloud Standby Active:</strong> तुमचे ट्रॅफिक सध्या <strong>Cloudflare Global Edge</strong> आणि Cloud DBs द्वारे २४/७ मोफत सुरक्षित आहे. तुमचा लॅपटॉप बंद असताना सर्व Crons, Keep-Alives, DBs आणि Telemetry अखंड चालू राहतील. लॅपटॉप चालू केल्यावर Dedicated GPU Video आणि APK इंजिन आपोआप पुन्हा जोडले जाईल.
+      &#9889; <strong>Autonomous Cloud Standby Active:</strong> Your traffic is currently secured 24/7 by <strong>Cloudflare Global Edge</strong> and Cloud DBs. While your laptop is resting in power-saving standby, all Crons, Keep-Alives, DBs, and Telemetry run continuously. When your laptop boots, Dedicated GPU 1080p Video and APK engines automatically reconnect.
     </div>
 
     <div class="grid">
@@ -265,10 +265,10 @@ export default {
     </div>
 
     <div class="actions">
-      <a href="/api/cluster/status" class="btn" target="_blank">🔍 Cluster Status</a>
-      <a href="/api/cluster/features" class="btn btn-secondary" target="_blank">📋 52 Features Matrix</a>
-      <a href="/api/db/load-balancer/status" class="btn btn-secondary" target="_blank">🗄️ Database Fabric</a>
-      <a href="/api/cron/keepalive" class="btn btn-secondary" target="_blank">💓 Ping Keep-Alive</a>
+      <a href="/api/cluster/status" class="btn" target="_blank">&#128269; Cluster Status</a>
+      <a href="/api/cluster/features" class="btn btn-secondary" target="_blank">&#128203; 52 Features Matrix</a>
+      <a href="/api/db/load-balancer/status" class="btn btn-secondary" target="_blank">&#128452; Database Fabric</a>
+      <a href="/api/cron/keepalive" class="btn btn-secondary" target="_blank">&#128147; Ping Keep-Alive</a>
     </div>
   </div>
 
