@@ -6900,6 +6900,22 @@ async def api_cluster_features():
     from app.core.feature_mesh_dispatcher import feature_dispatcher
     return JSONResponse(feature_dispatcher.get_feature_routing_status())
 
+@app.get("/api/sentinel/pa-status")
+async def api_sentinel_pa_status():
+    from app.core.pythonanywhere_auto_keeper import pa_auto_keeper
+    return JSONResponse(pa_auto_keeper.get_status())
+
+@app.post("/api/sentinel/pa-renew")
+async def api_sentinel_pa_renew(req: Request):
+    from app.core.pythonanywhere_auto_keeper import pa_auto_keeper
+    body = {}
+    try:
+        body = await req.json()
+    except Exception:
+        pass
+    pwd = body.get("password")
+    return JSONResponse(pa_auto_keeper.execute_renewal(pwd))
+
 @app.get("/api/fabric/status")
 async def api_fabric_status():
     from app.database.universal_db_fabric import universal_db
