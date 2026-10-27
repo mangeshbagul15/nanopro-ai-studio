@@ -26,6 +26,22 @@ router = APIRouter(prefix="/api/cron", tags=["CronJobOrgGateway"])
 
 CRON_AUDIT_LOGS = []
 
+import threading
+
+def _run_in_background(target_func, cron_key, task_id, start_time):
+    def worker():
+        try:
+            res = target_func()
+            duration = round(time.time() - start_time, 2)
+            _record_cron_run(cron_key, "SUCCESS", {"task_id": task_id, "duration_s": duration, "result": str(res)})
+            log_event(f"[CronGateway] {cron_key} background task {task_id} completed in {duration}s.", component="CronGateway")
+        except Exception as e:
+            _record_cron_run(cron_key, "ERROR", {"task_id": task_id, "error": str(e)})
+            log_event(f"[CronGateway] {cron_key} background task {task_id} failed: {e}", component="CronGateway")
+    
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
+
 def _record_cron_run(job_name: str, status: str, details: Dict[str, Any]):
     global CRON_AUDIT_LOGS
     CRON_AUDIT_LOGS.insert(0, {
@@ -67,13 +83,13 @@ async def cron_bod_trigger(request: Request):
     try:
         # Enqueue into cluster mesh for distributed execution
         task_id = cluster_mesh.enqueue_task("BOD_CYCLE", {"source": "cron-job.org", "timestamp": start}, priority=10)
-        res = etl_pipeline.run_bod_cycle()
-        _record_cron_run("BOD_06AM", "SUCCESS", {"task_id": task_id, "duration_s": round(time.time() - start, 2)})
+        _run_in_background(etl_pipeline.run_bod_cycle, "BOD_06AM", task_id, start)
         return JSONResponse(content={
             "success": True,
+            "status": "DISPATCHED_IN_BACKGROUND",
             "cycle": "BOD (Beginning of Day)",
             "task_id": task_id,
-            "result": res
+            "message": "BOD cycle initiated asynchronously across cluster."
         })
     except Exception as e:
         _record_cron_run("BOD_06AM", "ERROR", {"error": str(e)})
@@ -90,13 +106,13 @@ async def cron_sod_trigger(request: Request):
     start = time.time()
     try:
         task_id = cluster_mesh.enqueue_task("SOD_CYCLE", {"source": "cron-job.org", "timestamp": start}, priority=8)
-        res = etl_pipeline.run_sod_cycle()
-        _record_cron_run("SOD_08AM", "SUCCESS", {"task_id": task_id, "duration_s": round(time.time() - start, 2)})
+        _run_in_background(etl_pipeline.run_sod_cycle, "SOD_08AM", task_id, start)
         return JSONResponse(content={
             "success": True,
+            "status": "DISPATCHED_IN_BACKGROUND",
             "cycle": "SOD (Start of Day)",
             "task_id": task_id,
-            "result": res
+            "message": "SOD cycle initiated asynchronously across cluster."
         })
     except Exception as e:
         _record_cron_run("SOD_08AM", "ERROR", {"error": str(e)})
@@ -113,13 +129,13 @@ async def cron_t1_trigger(request: Request):
     start = time.time()
     try:
         task_id = cluster_mesh.enqueue_task("T1_CYCLE", {"source": "cron-job.org", "timestamp": start}, priority=7)
-        res = etl_pipeline.run_incremental_cycle()
-        _record_cron_run("T1_10AM", "SUCCESS", {"task_id": task_id, "duration_s": round(time.time() - start, 2)})
+        _run_in_background(etl_pipeline.run_incremental_cycle, "T1_10AM", task_id, start)
         return JSONResponse(content={
             "success": True,
+            "status": "DISPATCHED_IN_BACKGROUND",
             "cycle": "T-1 (Daily Delta)",
             "task_id": task_id,
-            "result": res
+            "message": "T-1 delta cycle initiated asynchronously across cluster."
         })
     except Exception as e:
         _record_cron_run("T1_10AM", "ERROR", {"error": str(e)})
@@ -136,13 +152,13 @@ async def cron_eod_trigger(request: Request):
     start = time.time()
     try:
         task_id = cluster_mesh.enqueue_task("EOD_CYCLE", {"source": "cron-job.org", "timestamp": start}, priority=10)
-        res = etl_pipeline.run_eod_cycle()
-        _record_cron_run("EOD_06PM", "SUCCESS", {"task_id": task_id, "duration_s": round(time.time() - start, 2)})
+        _run_in_background(etl_pipeline.run_eod_cycle, "EOD_06PM", task_id, start)
         return JSONResponse(content={
             "success": True,
+            "status": "DISPATCHED_IN_BACKGROUND",
             "cycle": "EOD (End of Day)",
             "task_id": task_id,
-            "result": res
+            "message": "EOD cycle initiated asynchronously across cluster."
         })
     except Exception as e:
         _record_cron_run("EOD_06PM", "ERROR", {"error": str(e)})
