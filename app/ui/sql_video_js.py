@@ -1039,6 +1039,14 @@ SECOND_HIGHEST_SALARY: 70000`;
                 }, data);
                 sqlShortState.activeVideoSpec = dynamicSpec;
                 sqlShortState.activePreset = dynamicSpec;
+
+                // Load real photorealistic 9:16 AI scene visuals for each scene immediately
+                if (Array.isArray(data.scene_assets) && data.scene_assets.length > 0) {
+                    loadPromptSceneAssets(data.scene_assets).then(() => {
+                        renderSqlShortFrame(sqlShortState.currentTime || 0);
+                    }).catch(err => console.warn("Notice loading scene assets:", err));
+                }
+
                 const sc = document.getElementById("sqlShortScrubber");
                 if (sc) {
                     sc.max = targetDur.toString();
@@ -4894,15 +4902,19 @@ SECOND_HIGHEST_SALARY: 70000`;
     async function loadPromptSceneAssets(sceneAssets) {
         sqlShortState.sceneAssets = new Map();
         sqlShortState.sceneAssetList = Array.isArray(sceneAssets) ? sceneAssets : [];
-        await Promise.all(sqlShortState.sceneAssetList.map((asset, index) => new Promise((resolve, reject) => {
+        await Promise.all(sqlShortState.sceneAssetList.map((asset, index) => new Promise((resolve) => {
+            if (!asset || !asset.image_url) return resolve();
             const image = new Image();
             image.crossOrigin = "anonymous";
-            const imageTimer = setTimeout(() => reject(new Error(`Scene ${index + 1} image timed out while loading.`)), 20000);
+            const imageTimer = setTimeout(() => resolve(), 12000);
             image.onload = () => {
                 clearTimeout(imageTimer);
                 const scene = { image, video: null, asset };
                 sqlShortState.sceneAssets.set(String(asset.scene_id ?? index), scene);
                 sqlShortState.sceneAssets.set(`index:${index}`, scene);
+                if (sqlShortState.activePreset) {
+                    renderSqlShortFrame(sqlShortState.currentTime || 0);
+                }
                 if (!asset.video_url) return resolve();
                 const video = document.createElement("video");
                 video.crossOrigin = "anonymous";
@@ -4912,11 +4924,14 @@ SECOND_HIGHEST_SALARY: 70000`;
                 video.preload = "auto";
                 const videoTimer = setTimeout(resolve, 7000);
                 video.onloadeddata = () => { clearTimeout(videoTimer); scene.video = video; resolve(); };
-                video.onerror = () => { clearTimeout(videoTimer); resolve(); }; // Image remains the prompt-specific fallback.
+                video.onerror = () => { clearTimeout(videoTimer); resolve(); };
                 video.src = asset.video_url;
                 video.load();
             };
-            image.onerror = () => reject(new Error(`Scene ${index + 1} image could not be loaded.`));
+            image.onerror = () => {
+                clearTimeout(imageTimer);
+                resolve();
+            };
             image.src = asset.image_url;
         })));
     }
@@ -7899,8 +7914,16 @@ SECOND_HIGHEST_SALARY: 70000`;
                 sqlShortState.soundEffectEvents = (Number(sqlShortState.soundEffectEvents) || 0) + 1;
             }
         }
-        // 3. RENDER DYNAMIC 2026 AI SCENE VISUAL (Hook -> 3D Isometric Architecture -> IDE Code -> Benchmarks -> Takeaway)
-        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
+        // 3. RENDER REAL PHOTOREALISTIC 9:16 AI SCENE VISUAL (WITH 3D CAMERA ZOOM & DRIFT)
+        let drewAiVisual = false;
+        try {
+            drewAiVisual = renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, currentStageIdx - 1, stageProg, stageAlpha, t);
+        } catch (_err) {
+            console.warn("Notice rendering AI visual:", _err);
+        }
+        if (!drewAiVisual) {
+            renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
+        }
 
         // 4. DRAW VIRAL KINETIC KARAOKE SUBTITLES (High-Retention Word Highlighting)
         drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t);
