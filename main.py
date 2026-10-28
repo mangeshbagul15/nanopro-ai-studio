@@ -406,6 +406,8 @@ class SqlShortPromptRequest(BaseModel):
     difficulty: Optional[str] = "Medium"
     language: Optional[str] = "mr"
     mode: Optional[str] = "faang_drill"
+    generation_pattern: Optional[str] = "hybrid"
+    selected_model: Optional[str] = "wan_21"
 
 class SqlShortSandboxRequest(BaseModel):
     schema_sql: str
@@ -1225,7 +1227,9 @@ async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
             topic_or_question=req.question,
             difficulty=req.difficulty or "Medium",
             language=req.language or "mr",
-            mode=req.mode or "faang_drill"
+            mode=req.mode or "faang_drill",
+            generation_pattern=req.generation_pattern or "hybrid",
+            selected_model=req.selected_model or "wan_21"
         )
     except RuntimeError as exc:
         return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
@@ -1244,6 +1248,8 @@ async def api_sql_video_generate_prompt_job(req: SqlShortPromptRequest, request:
         difficulty=req.difficulty or "Medium",
         language=req.language or "mr",
         mode=req.mode or "faang_drill",
+        generation_pattern=req.generation_pattern or "hybrid",
+        selected_model=req.selected_model or "wan_21",
     )
     return JSONResponse(queued, status_code=202)
 

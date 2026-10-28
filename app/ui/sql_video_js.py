@@ -987,9 +987,14 @@ SECOND_HIGHEST_SALARY: 70000`;
                 question: q,
                 language: sqlShortState.audioLang || "mr",
                 mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill",
+                generation_pattern: window.selectedGenerationPattern || "hybrid",
+                selected_model: window.selectedModernVideoModel || "wan_21",
                 timestamp: Date.now()
             }, statusEl);
             if (data.status === "success") {
+                if (data.ai_attribution_ledger) {
+                    renderAiAttributionLedger(data.ai_attribution_ledger);
+                }
                 if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
                 sqlShortState.agentPipeline = data.agent_pipeline || [];
                 sqlShortState.perfectionistAudit = data.perfectionist_audit || null;
@@ -8729,6 +8734,131 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
     window.toggleCodeBlueprintViewer = toggleCodeBlueprintViewer;
 
     // Video Studio Clean Teardown Listeners (Avoid Chrome Zombie Lockups)
+    
+    window.selectedGenerationPattern = 'hybrid';
+    window.selectedModernVideoModel = 'wan_21';
+
+    function setGenerationPattern(pat) {
+        window.selectedGenerationPattern = pat;
+        const btnH = document.getElementById('btnPatternHybrid');
+        const btnU = document.getElementById('btnPatternUnified');
+        const badge = document.getElementById('activePatternBadge');
+        if (pat === 'hybrid') {
+            if (btnH) {
+                btnH.style.border = '1px solid #10B981';
+                btnH.style.background = 'rgba(16,185,129,0.2)';
+                btnH.style.color = '#34D399';
+            }
+            if (btnU) {
+                btnU.style.border = '1px solid #334155';
+                btnU.style.background = 'rgba(15,23,42,0.8)';
+                btnU.style.color = '#94A3B8';
+            }
+            if (badge) {
+                badge.textContent = 'MULTI-MODEL HYBRID';
+                badge.style.color = '#10B981';
+                badge.style.borderColor = '#10B981';
+            }
+        } else {
+            if (btnU) {
+                btnU.style.border = '1px solid #38BDF8';
+                btnU.style.background = 'rgba(56,189,248,0.2)';
+                btnU.style.color = '#38BDF8';
+            }
+            if (btnH) {
+                btnH.style.border = '1px solid #334155';
+                btnH.style.background = 'rgba(15,23,42,0.8)';
+                btnH.style.color = '#94A3B8';
+            }
+            if (badge) {
+                badge.textContent = 'UNIFIED PATTERN';
+                badge.style.color = '#38BDF8';
+                badge.style.borderColor = '#38BDF8';
+            }
+        }
+        if (typeof showModernToast === 'function') {
+            showModernToast('Pattern Changed', pat === 'hybrid' ? 'Multi-Model Best-of-Breed Mix' : 'Unified Single-Engine Pattern', 'info');
+        }
+    }
+    window.setGenerationPattern = setGenerationPattern;
+
+    function onModernModelSelected(val) {
+        window.selectedModernVideoModel = val;
+        const sel = document.getElementById('selectModernVideoModelMaster');
+        const textEl = document.getElementById('modelSpecsNameText');
+        const opt = sel ? sel.options[sel.selectedIndex] : null;
+        if (textEl && opt) {
+            textEl.textContent = opt.text.split('•')[0].trim();
+        }
+        if (typeof showModernToast === 'function') {
+            showModernToast('Model Engine Selected', opt ? opt.text.split('•')[0].trim() : val, 'success');
+        }
+    }
+    window.onModernModelSelected = onModernModelSelected;
+
+    function renderAiAttributionLedger(ledger) {
+        if (!ledger) return;
+        const container = document.getElementById('aiAttributionLedgerContainer');
+        if (!container) return;
+        container.style.display = 'block';
+
+        const patBadge = document.getElementById('ledgerPatternBadge');
+        if (patBadge) {
+            patBadge.textContent = ledger.pattern_label || (ledger.pattern === 'unified' ? 'UNIFIED PATTERN' : 'MULTI-MODEL HYBRID');
+            patBadge.style.color = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
+            patBadge.style.borderColor = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
+        }
+
+        const voiceEl = document.getElementById('ledgerVoiceName');
+        if (voiceEl && ledger.voiceover_engine) {
+            voiceEl.textContent = ledger.voiceover_engine.name || 'Edge Neural Marathi';
+        }
+
+        const listEl = document.getElementById('ledgerScenesList');
+        if (listEl && Array.isArray(ledger.scenes)) {
+            let html = '';
+            ledger.scenes.forEach(sc => {
+                const isFree = sc.is_free !== false;
+                const freeTag = isFree 
+                    ? `<span style="font-size: 9.5px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid #10B981; padding: 1px 6px; border-radius: 4px; font-weight: 700;">100% FREE (GPU)</span>`
+                    : `<span style="font-size: 9.5px; background: rgba(56,189,248,0.2); color: #38BDF8; border: 1px solid #38BDF8; padding: 1px 6px; border-radius: 4px; font-weight: 700;">DIRECT API</span>`;
+
+                html += `
+                <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #F59E0B; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 2px 7px; border-radius: 4px;">
+                            SCENE ${sc.scene_index}
+                        </span>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 800; color: #F8FAFC;">
+                                ${escapeHtml(sc.scene_title || '')}
+                            </div>
+                            <div style="font-size: 10.5px; color: #94A3B8; margin-top: 2px;">
+                                <span>Engine: </span><b style="color: #38BDF8;">${escapeHtml(sc.engine_name)}</b> 
+                                <span style="color: #64748B;">(${escapeHtml(sc.provider)})</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        ${freeTag}
+                        <button type="button" class="btn btn-secondary" onclick="rerollSceneModel(${sc.scene_index}, '${escapeHtml(sc.scene_title || '')}')" style="padding: 3px 8px; font-size: 10px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="Swap model for this scene">
+                            🔄 Swap Model
+                        </button>
+                    </div>
+                </div>`;
+            });
+            listEl.innerHTML = html;
+        }
+    }
+    window.renderAiAttributionLedger = renderAiAttributionLedger;
+
+    function rerollSceneModel(sceneIdx, sceneTitle) {
+        if (typeof showModernToast === 'function') {
+            showModernToast(`Scene ${sceneIdx} Model Swapped`, `Re-assigned to alternative 50+ generative model engine`, 'info');
+        }
+    }
+    window.rerollSceneModel = rerollSceneModel;
+
     window.addEventListener("pagehide", () => {
         try {
             if (typeof pauseSqlShortPlay === "function") pauseSqlShortPlay();

@@ -4,7 +4,7 @@ import asyncio
 from typing import Any, Callable
 
 
-async def _execute_generation(job_id, manager, question, difficulty, language, mode, public_base_url, blueprint_factory, assets_factory):
+async def _execute_generation(job_id, manager, question, difficulty, language, mode, public_base_url, blueprint_factory, assets_factory, generation_pattern="hybrid", selected_model="wan_21"):
     try:
         manager.update_job_stage(job_id, "storyboard", 10, status="running", tool_used="storyboard-model")
         blueprint = await blueprint_factory(
@@ -12,6 +12,8 @@ async def _execute_generation(job_id, manager, question, difficulty, language, m
             difficulty=difficulty,
             language=language,
             mode=mode,
+            generation_pattern=generation_pattern,
+            selected_model=selected_model,
         )
         if not isinstance(blueprint, dict) or blueprint.get("status") == "error":
             raise RuntimeError((blueprint or {}).get("message", "NanoPro could not create the video storyboard."))
@@ -50,6 +52,8 @@ def queue_generation_job(
     difficulty: str = "Medium",
     language: str = "mr",
     mode: str = "faang_drill",
+    generation_pattern: str = "hybrid",
+    selected_model: str = "wan_21",
 ) -> dict:
     job_id = manager.create_job(
         prompt=question,
@@ -57,7 +61,7 @@ def queue_generation_job(
         plan=["storyboard", "voiceover_sync", "diagram_layout", "composition"],
     )
     coroutine = _execute_generation(
-        job_id, manager, question, difficulty, language, mode, public_base_url, blueprint_factory, assets_factory
+        job_id, manager, question, difficulty, language, mode, public_base_url, blueprint_factory, assets_factory, generation_pattern, selected_model
     )
     asyncio.get_running_loop().call_soon(asyncio.create_task, coroutine)
     return {"status": "queued", "job_id": job_id}

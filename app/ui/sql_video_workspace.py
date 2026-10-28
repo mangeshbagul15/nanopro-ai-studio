@@ -637,6 +637,92 @@ def get_sql_video_workspace_html() -> str:
                     <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('rag_vector')">🤖 Agentic RAG Vector</span>
                 </div>
 
+                <!-- 🔄 Generation Strategy Pattern Selector (Unified vs Multi-Model Mix) -->
+                <div style="background: rgba(11, 19, 43, 0.9); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #38BDF8; text-transform: uppercase;">
+                            🔄 Generation Pattern Strategy
+                        </span>
+                        <span id="activePatternBadge" style="font-size: 10px; font-weight: 800; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 2px 8px; border-radius: 6px;">
+                            MULTI-MODEL HYBRID
+                        </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button type="button" class="sql-pattern-btn active" id="btnPatternHybrid" onclick="setGenerationPattern('hybrid')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #10B981; background: rgba(16,185,129,0.2); color: #34D399; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
+                            <span>✨ Multi-Model Hybrid</span>
+                            <span style="font-size: 9.5px; opacity: 0.8; font-weight: normal;">Best-of-Breed mixture across scenes</span>
+                        </button>
+                        <button type="button" class="sql-pattern-btn" id="btnPatternUnified" onclick="setGenerationPattern('unified')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #334155; background: rgba(15,23,42,0.8); color: #94A3B8; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
+                            <span>🎯 Unified (Same Engine)</span>
+                            <span style="font-size: 9.5px; opacity: 0.8; font-weight: normal;">Single model for entire 60s video</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ⚡ 50+ AI Video Engine Selector Dock -->
+                <div style="background: rgba(11, 19, 43, 0.9); border: 1.5px solid rgba(168, 85, 247, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #C084FC; text-transform: uppercase;">
+                            ⚡ 50+ AI Video Engine Master Dock
+                        </span>
+                        <span style="font-size: 10px; color: #FBBF24; font-family: monospace;">40 Video + 17 Audio/VFX</span>
+                    </div>
+                    <select id="selectModernVideoModelMaster" class="studio-input" onchange="onModernModelSelected(this.value)" style="width: 100%; background: #070B16; border: 1px solid #334155; color: #F8FAFC; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer;">
+                        <optgroup label="🟢 100% Free Open-Source (Local Laptop GPU Acceleration)">
+                            <option value="wan_21" selected>🟢 Wan 2.1 (Alibaba Open-Source) • 1080p Flagship</option>
+                            <option value="ltx_video">⚡ Lightricks LTX-Video • Real-Time GPU Speed</option>
+                            <option value="hunyuan_video">🎬 Tencent HunyuanVideo 13B • Cinematic 4K</option>
+                            <option value="cogvideox">🧪 CogVideoX (THUDM) • 3D Animation & Shorts</option>
+                            <option value="genmo_mochi1">✨ Genmo Mochi 1 • Fluid High-Motion</option>
+                            <option value="pollinations_free_2026">🌐 Pollinations Free Video • Unlimited Zero-Card</option>
+                            <option value="procedural_3d_webgl">💻 Built-in 60 FPS 3D WebGL / GPU Procedural Engine</option>
+                        </optgroup>
+                        <optgroup label="🔵 Google Gemini Pro & Veo 3.1 (Direct Integration)">
+                            <option value="veo_31">🔵 Google Veo 3.1 & Gemini Pro 4K Engine</option>
+                        </optgroup>
+                        <optgroup label="🟣 Cinematic Generative AI (Cloud APIs & Fast Queues)">
+                            <option value="kling_30">🔥 Kuaishou Kling AI 3.0 Pro • Viral Physics</option>
+                            <option value="hailuo_h3">🌪️ MiniMax Hailuo H3 / Video-01</option>
+                            <option value="runway_gen45">🎥 Runway Gen-4.5 / Gen-4 Turbo</option>
+                            <option value="luma_ray2">💫 Luma Ray-2 Dream Machine</option>
+                            <option value="pika_20">🎨 Pika 2.0 (Pikaffects & SFX)</option>
+                            <option value="pixverse_v6">🌟 PixVerse v6 • 4K Character Consistency</option>
+                            <option value="vidu_ai">⚡ Vidu AI 1.5 • 30s Ultra-Fast</option>
+                            <option value="seaart_ai">🎨 SeaArt AI Creative Video</option>
+                            <option value="haiper_ai">🖌️ Haiper AI 2.0 • Video Repaint</option>
+                            <option value="leonardo_motion">📸 Leonardo AI Motion Studio</option>
+                            <option value="kaiber_ai">🎵 Kaiber AI Reactive Video</option>
+                            <option value="firefly_video">🛡️ Adobe Firefly Video • Commercial Safe</option>
+                            <option value="krea_ai">⚡ Krea AI Real-Time Upscale</option>
+                            <option value="morph_studio">🎞️ Morph Studio Storyboard</option>
+                            <option value="higgsfield_ai">🏢 Higgsfield AI 35+ Production Hub</option>
+                            <option value="dreamina_capcut">🎬 Dreamina / CapCut AI</option>
+                            <option value="pollo_ai">🐣 Pollo AI Multi-Model</option>
+                            <option value="clipfly_ai">✂️ Clipfly AI Video + Editor</option>
+                            <option value="fal_ai_queue">⚡ fal.ai Serverless Unified Queue</option>
+                            <option value="akool_video">🎭 AKOOL Studio Transitions</option>
+                            <option value="openai_sora">🚀 OpenAI Sora Turbo</option>
+                            <option value="seedance_25">🛸 ByteDance Seedance 2.5</option>
+                        </optgroup>
+                        <optgroup label="🟠 Social Media & Script-to-Video (Reels / Shorts Automation)">
+                            <option value="invideo_ai">📱 InVideo AI Full Reels Automation</option>
+                            <option value="fliki_ai">🇮🇳 Fliki AI • Regional Marathi/Hindi Voiceover</option>
+                            <option value="capcut_ai">✂️ CapCut Web/App Auto AI Captions</option>
+                            <option value="veed_io">💬 VEED.io Smart Karaoke Subtitles</option>
+                            <option value="pictory_ai">🎙️ Pictory AI Long-to-Short</option>
+                            <option value="lumen5_ai">📄 Lumen5 Article-to-Video</option>
+                            <option value="steve_ai">🧸 Steve AI 2D/3D Explainers</option>
+                            <option value="canva_video">🎨 Canva AI Video Magic</option>
+                            <option value="google_vids">📊 Google Vids Storyboard</option>
+                            <option value="creatify_ai">📢 Creatify AI Viral Promo</option>
+                        </optgroup>
+                    </select>
+                    <div id="modelSpecsQuickPill" style="font-size: 10.5px; color: #10B981; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span>● Active:</span> <b style="color: #F8FAFC;" id="modelSpecsNameText">Wan 2.1 (Alibaba Open-Source)</b>
+                        <span style="color: #64748B;">• Local Laptop GPU Ready (100% Free)</span>
+                    </div>
+                </div>
+
                 <!-- Master Prompt Textarea -->
                 <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt) इथे टाईप करा:
 
@@ -819,6 +905,50 @@ def get_sql_video_workspace_html() -> str:
                         <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94A3B8; font-family: monospace;">
                             <span id="exportEstTime" style="color: #F59E0B; font-weight: 700;">⏱️ अंदाजे वेळ: मोजत आहे...</span>
                             <span id="exportFrameStats">🎞️ फ्रेम: 0 / narration duration</span>
+                        </div>
+                    </div>
+
+                    <!-- 🧬 AI ENGINES & COMPONENT ATTRIBUTION LEDGER (Post-Generation Report Card) -->
+                    <div id="aiAttributionLedgerContainer" style="display:none; background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 70%), #0A0F1D; border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 18px; margin-top: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #0284C7, #8B5CF6); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                                    🧬
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 13px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">
+                                        AI ENGINES ATTRIBUTION &amp; AUDIT LEDGER
+                                    </h4>
+                                    <div style="font-size: 10.5px; color: #94A3B8;">50+ AI Model Transparency • Full Scene Composition Breakdown</div>
+                                </div>
+                            </div>
+                            <span id="ledgerPatternBadge" style="font-size: 10px; font-weight: 800; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 3px 10px; border-radius: 6px;">
+                                MULTI-MODEL HYBRID (4 AI MODELS)
+                            </span>
+                        </div>
+
+                        <!-- Scene Breakdown Grid -->
+                        <div id="ledgerScenesList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+                            <!-- Dynamically injected scene attribution cards -->
+                        </div>
+
+                        <!-- Hardware & Voice Pipeline Summary -->
+                        <div style="background: rgba(7, 11, 22, 0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                            <div>
+                                <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">🎙️ Voiceover Engine</div>
+                                <div id="ledgerVoiceName" style="font-size: 11.5px; color: #34D399; font-weight: 800; margin-top: 2px;">Edge Neural Marathi</div>
+                                <div style="font-size: 9.5px; color: #94A3B8;">Devanagari Teacher Cadence</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">⚡ Subtitle Engine</div>
+                                <div style="font-size: 11.5px; color: #38BDF8; font-weight: 800; margin-top: 2px;">NanoPro Synced Karaoke</div>
+                                <div style="font-size: 9.5px; color: #94A3B8;">Word-Level Frame Alignment</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">💻 Master Compositor</div>
+                                <div style="font-size: 11.5px; color: #FBBF24; font-weight: 800; margin-top: 2px;">Laptop GPU NVENC FFmpeg</div>
+                                <div style="font-size: 9.5px; color: #94A3B8;">1080×1920 60FPS • Zero-Watermark</div>
+                            </div>
                         </div>
                     </div>
 

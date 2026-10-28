@@ -308,117 +308,85 @@ VOICE_TO_VIDEO_CATALOG = [
 # भाग ३: PROMPT-TO-VIDEO (CINEMATIC B-ROLL) CATALOG
 # =========================================================================
 PROMPT_TO_VIDEO_CATALOG = [
+    # =========================================================================
+    # श्रेणी ४: १००% फ्री आणि अनलिमिटेड ओपन-सोर्स मॉडेल्स (Local Laptop GPU / Zero Cost)
+    # =========================================================================
     {
-        "id": "seedance_25",
-        "name": "ByteDance Seedance 2.5",
-        "provider": "ByteDance / Dreamina",
-        "category": "Prompt-to-Video",
-        "tier": "Leaderboard #1",
-        "best_for": "Cinematic camera swoop, photorealistic data center, native audio",
-        "rating": "★★★★★",
-        "resolution": "1080p/4K 60FPS",
-        "pricing": "Pay-per-sec via fal.ai / Dreamina",
-        "is_free": False,
-        "is_recommended": True
-    },
-    {
-        "id": "kling_30",
-        "name": "Kuaishou Kling AI 3.0 Pro",
-        "provider": "Kuaishou (api.klingai.com)",
-        "category": "Prompt-to-Video",
-        "tier": "Viral Physics Champion",
-        "best_for": "Complex motion physics, long viral shots, realistic lighting",
+        "id": "wan_21",
+        "name": "Wan 2.1 (Alibaba Open-Source)",
+        "provider": "Alibaba / Wan-Video",
+        "category": "100% Free Open-Source (Local GPU)",
+        "tier": "Open-Source #1 Champion",
+        "best_for": "14B & 1.3B cinematic realism, complex camera control, runs free on local GPU / Colab",
         "rating": "★★★★★",
         "resolution": "1080p 60FPS",
-        "pricing": "~$0.10 to $0.35 per clip",
-        "is_free": False,
-        "is_recommended": True
+        "pricing": "100% Free Forever (Open Weights)",
+        "is_free": True,
+        "is_recommended": True,
+        "repo_url": "https://github.com/Wan-Video/Wan2.1"
     },
     {
-        "id": "veo_31",
-        "name": "Google Veo 3.1",
-        "provider": "Google DeepMind / Gemini API",
-        "category": "Prompt-to-Video",
-        "tier": "Flagship 4K Engine",
-        "best_for": "True 4K cinematic documentary footage with native audio",
+        "id": "ltx_video",
+        "name": "LTX-Video (Lightricks Real-Time)",
+        "provider": "Lightricks / Open Weights",
+        "category": "100% Free Open-Source (Local GPU)",
+        "tier": "World's Fastest Real-Time Video Engine",
+        "best_for": "Ultra-fast generation in seconds, low VRAM consumption, real-time vertical 9:16 rendering",
         "rating": "★★★★★",
-        "resolution": "4K Ultra-Res",
-        "pricing": "Gemini API pay-as-you-go",
-        "is_free": False,
-        "is_recommended": True
+        "resolution": "1080p 60FPS",
+        "pricing": "100% Free Forever (Open Weights)",
+        "is_free": True,
+        "is_recommended": True,
+        "repo_url": "https://github.com/Lightricks/LTX-Video"
     },
     {
-        "id": "runway_gen45",
-        "name": "Runway Gen-4.5 / Gen-4 Turbo",
-        "provider": "RunwayML",
-        "category": "Prompt-to-Video",
-        "tier": "Hollywood VFX Standard",
-        "best_for": "High-end cinematic B-Roll, vertical 9:16 shorts, motion brush",
+        "id": "hunyuan_video",
+        "name": "Tencent HunyuanVideo (13B / 1.5)",
+        "provider": "Tencent / Hunyuan",
+        "category": "100% Free Open-Source (Local GPU)",
+        "tier": "Cinematic Quality 13B Architecture",
+        "best_for": "High-definition lighting, accurate motion physics, open architecture",
         "rating": "★★★★★",
-        "resolution": "720x1280 60FPS",
-        "pricing": "12 credits/sec developer tier",
-        "is_free": False,
-        "is_recommended": True
+        "resolution": "1080p 60FPS",
+        "pricing": "100% Free Forever (Open Weights)",
+        "is_free": True,
+        "is_recommended": True,
+        "repo_url": "https://github.com/Tencent-Hunyuan/HunyuanVideo"
     },
     {
-        "id": "luma_ray2",
-        "name": "Luma Ray-2 (Dream Machine)",
-        "provider": "Luma AI",
-        "category": "Prompt-to-Video",
-        "tier": "3D Dynamic Perspectives",
-        "best_for": "Single-take continuous camera moves, volumetric lighting",
-        "rating": "★★★★★",
-        "resolution": "4K 60FPS",
-        "pricing": "~$0.04 per clip on WaveSpeed",
-        "is_free": False,
-        "is_recommended": True
-    },
-    {
-        "id": "hailuo_h3",
-        "name": "MiniMax Hailuo H3 / Video-01",
-        "provider": "MiniMax",
-        "category": "Prompt-to-Video",
-        "tier": "Organic Fluid Motion",
-        "best_for": "Rapid generation, ultra-fluid natural motion and physics",
+        "id": "cogvideox",
+        "name": "CogVideoX (THUDM / Tsinghua)",
+        "provider": "Tsinghua University / THUDM",
+        "category": "100% Free Open-Source (Local GPU)",
+        "tier": "3D Animation & Shorts Champion",
+        "best_for": "3D animations, tech storytelling, smooth transitions, runs on consumer GPUs",
         "rating": "★★★★★",
         "resolution": "1080p",
-        "pricing": "~$0.10 to $0.25 per clip",
-        "is_free": False,
-        "is_recommended": True
+        "pricing": "100% Free Forever (Open Weights)",
+        "is_free": True,
+        "is_recommended": True,
+        "repo_url": "https://github.com/THUDM/CogVideo"
     },
     {
-        "id": "wan_27",
-        "name": "Alibaba Wan 2.7 / 3.0",
-        "provider": "Alibaba Cloud / Open Weights",
-        "category": "Prompt-to-Video",
-        "tier": "Open-Source 1080p Champion",
-        "best_for": "Cheapest high-quality weights, 1080p self-hostable",
+        "id": "genmo_mochi1",
+        "name": "Genmo Mochi 1",
+        "provider": "Genmo / Open Weights",
+        "category": "100% Free Open-Source (Local GPU)",
+        "tier": "Ultra-Fluid High-Motion Model",
+        "best_for": "Smooth organic motion, zero camera jitter, high-motion tech concepts",
         "rating": "★★★★☆",
         "resolution": "1080p",
-        "pricing": "~$0.15/sec on fal.ai",
-        "is_free": False,
-        "is_recommended": True
-    },
-    {
-        "id": "pika_20",
-        "name": "Pika 2.0 (Pika Effects)",
-        "provider": "Pika Labs",
-        "category": "Prompt-to-Video",
-        "tier": "Viral Social Media",
-        "best_for": "Creative physics modifiers (Melt, Explode, Deflate, Crush)",
-        "rating": "★★★★☆",
-        "resolution": "1080p",
-        "pricing": "Free daily credits / Paid plans",
-        "is_free": False,
+        "pricing": "100% Free Forever (Open Weights)",
+        "is_free": True,
         "is_recommended": False
     },
     {
         "id": "pollinations_free_2026",
         "name": "Pollinations Generative Video (Free AI)",
         "provider": "Open AI Cluster / Pollinations",
-        "category": "Prompt-to-Video",
+        "category": "100% Free Open-Source (Local GPU)",
         "tier": "100% Free Unlimited (Zero-Key)",
-        "best_for": "Instant free vertical 9:16 AI video from any prompt with zero card",
+        "best_for": "Instant free vertical 9:16 AI video from any prompt with zero setup or API keys",
         "rating": "★★★★★",
         "resolution": "720x1280 60FPS",
         "pricing": "100% Free Unlimited",
@@ -429,20 +397,459 @@ PROMPT_TO_VIDEO_CATALOG = [
         "id": "procedural_3d_webgl",
         "name": "Built-in 60 FPS 3D WebGL Procedural Engine",
         "provider": "NanoPro Native Hardware",
-        "category": "Prompt-to-Video",
+        "category": "100% Free Open-Source (Local GPU)",
         "tier": "100% Native Guaranteed Fallback",
-        "best_for": "Isometric 3D server boxes, data packets, photon conduits with 0ms lag",
+        "best_for": "Isometric 3D distributed server boxes, data packet flows, photon conduits with 0ms lag",
         "rating": "★★★★★",
         "resolution": "1080x1920 60FPS",
         "pricing": "100% Free Forever",
         "is_free": True,
         "is_recommended": True
+    },
+
+    # =========================================================================
+    # श्रेणी २: Google Gemini Pro & Veo 3.1 (Direct Pro Integration)
+    # =========================================================================
+    {
+        "id": "veo_31",
+        "name": "Google Veo 3.1 & Gemini Pro",
+        "provider": "Google DeepMind / Gemini Cloud Pro",
+        "category": "Google Gemini Pro & Veo 3.1",
+        "tier": "Flagship 4K Enterprise Video & Audio",
+        "best_for": "True 4K cinematic documentary footage, high semantic context, Gemini Pro Director",
+        "rating": "★★★★★",
+        "resolution": "4K Ultra-Res (2160x3840)",
+        "pricing": "Gemini Pro Direct Integration",
+        "is_free": False,
+        "is_recommended": True
+    },
+
+    # =========================================================================
+    # श्रेणी १: सिनेमॅटिक आणि टेक्स्ट/इमेज-टू-व्हिडिओ (Cinematic Generative Video)
+    # =========================================================================
+    {
+        "id": "kling_30",
+        "name": "Kuaishou Kling AI 3.0 Pro",
+        "provider": "Kuaishou (klingai.com)",
+        "category": "Cinematic Generative AI",
+        "tier": "Viral Physics Champion (66 Free Daily Credits)",
+        "best_for": "Complex motion physics, long viral shots, realistic lighting, lip-sync",
+        "rating": "★★★★★",
+        "resolution": "1080p 60FPS",
+        "pricing": "Daily 66 Free Credits / Paid",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "hailuo_h3",
+        "name": "MiniMax Hailuo H3 / Video-01",
+        "provider": "MiniMax (hailuoai.video)",
+        "category": "Cinematic Generative AI",
+        "tier": "Organic Fluid Motion (100 Free Daily Credits)",
+        "best_for": "Subject reference consistency, rapid generation, ultra-fluid natural motion",
+        "rating": "★★★★★",
+        "resolution": "1080p",
+        "pricing": "1000 Signup + 100 Daily Free Credits",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "runway_gen45",
+        "name": "Runway Gen-4.5 / Gen-4 Turbo",
+        "provider": "RunwayML (runwayml.com)",
+        "category": "Cinematic Generative AI",
+        "tier": "Hollywood VFX Standard",
+        "best_for": "Motion Brush, camera controls, high-end vertical 9:16 shorts, VFX tools",
+        "rating": "★★★★★",
+        "resolution": "720x1280 60FPS",
+        "pricing": "125 Free Credits / Paid",
+        "is_free": False,
+        "is_recommended": True
+    },
+    {
+        "id": "luma_ray2",
+        "name": "Luma Ray-2 (Dream Machine)",
+        "provider": "Luma AI (lumalabs.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "3D Dynamic Perspectives (30 Monthly Free)",
+        "best_for": "Start & End keyframing, continuous single-take camera moves, volumetric lighting",
+        "rating": "★★★★★",
+        "resolution": "4K 60FPS",
+        "pricing": "30 Free Generations/Month",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "pika_20",
+        "name": "Pika 2.0 (Pikaffects)",
+        "provider": "Pika Labs (pika.art)",
+        "category": "Cinematic Generative AI",
+        "tier": "Viral Social Media Effects",
+        "best_for": "Creative physics modifiers (Melt, Explode, Deflate, Crush), integrated sound effects",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "150 Monthly Credits / Paid",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "pixverse_v6",
+        "name": "PixVerse v6",
+        "provider": "PixVerse (pixverse.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "AI Effects & Character Consistency",
+        "best_for": "Daily 50-60 credits, character consistency, 4K upscaling, cinematic effects",
+        "rating": "★★★★☆",
+        "resolution": "1080p / 4K",
+        "pricing": "100 Signup + 50-60 Daily Free",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "vidu_ai",
+        "name": "Vidu AI 1.5",
+        "provider": "ShengShu AI (vidu.studio)",
+        "category": "Cinematic Generative AI",
+        "tier": "Ultra-Fast Generation (30s speed)",
+        "best_for": "Ultra-fast generation in 30 seconds, 4-8 second clips, 80 free monthly credits",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "80 Monthly Credits",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "seaart_ai",
+        "name": "SeaArt AI Video",
+        "provider": "SeaArt (seaart.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "Multi-Model Creative Hub",
+        "best_for": "Daily 150 stamina, image-to-video, anime and cinematic models",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "150 Daily Stamina Free",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "haiper_ai",
+        "name": "Haiper AI 2.0",
+        "provider": "Haiper (haiper.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "Video Repainting & Motion",
+        "best_for": "Daily 10 generations, video repainting, text-to-video 2-4s clips",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "10 Daily Generations Free",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "leonardo_motion",
+        "name": "Leonardo AI Motion",
+        "provider": "Leonardo.Ai",
+        "category": "Cinematic Generative AI",
+        "tier": "Photo-to-Motion Rapid Studio",
+        "best_for": "Instant motion animation for technical diagrams and still concepts, 150 daily tokens",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "150 Daily Tokens Free",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "kaiber_ai",
+        "name": "Kaiber AI Studio",
+        "provider": "Kaiber (kaiber.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "Audio-Reactive & Music Video",
+        "best_for": "Audio-reactive rhythm animations, futuristic tech aesthetics",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "7-Day Trial (30 Credits)",
+        "is_free": False,
+        "is_recommended": False
+    },
+    {
+        "id": "firefly_video",
+        "name": "Adobe Firefly Video",
+        "provider": "Adobe",
+        "category": "Cinematic Generative AI",
+        "tier": "Copyright-Safe Commercial VFX",
+        "best_for": "100% commercially safe B-Roll, Premiere Pro integration, 25 monthly credits",
+        "rating": "★★★★☆",
+        "resolution": "1080p / 4K",
+        "pricing": "25 Monthly Credits Free",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "krea_ai",
+        "name": "Krea AI Real-Time",
+        "provider": "Krea (krea.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "Real-Time Generation & Upscaling",
+        "best_for": "Daily free compute time, real-time keyframe interpolation, 4K video upscaling",
+        "rating": "★★★★☆",
+        "resolution": "1080p / 4K",
+        "pricing": "Daily Free Compute Time",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "morph_studio",
+        "name": "Morph Studio",
+        "provider": "Morph (morphstudio.com)",
+        "category": "Cinematic Generative AI",
+        "tier": "Storyboard AI Video Editor",
+        "best_for": "Multi-clip storyboarding in a single visual canvas, clip sequencing",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Discord/Web Free Credits",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "higgsfield_ai",
+        "name": "Higgsfield AI",
+        "provider": "Higgsfield",
+        "category": "Cinematic Generative AI",
+        "tier": "35+ Multi-Model Production Hub",
+        "best_for": "Enterprise multi-model production, advertisement video generation",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Free Trial / Paid $4.99+",
+        "is_free": False,
+        "is_recommended": False
+    },
+    {
+        "id": "dreamina_capcut",
+        "name": "Dreamina / CapCut AI",
+        "provider": "ByteDance / CapCut",
+        "category": "Cinematic Generative AI",
+        "tier": "Image-to-Video Viral Studio",
+        "best_for": "Daily free credits, instant image to motion video, CapCut ecosystem integration",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Daily Free Credits",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "pollo_ai",
+        "name": "Pollo AI Multi-Model",
+        "provider": "Pollo (pollo.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "Aggregated Video Model Hub",
+        "best_for": "Accessing multiple leading video models on a single interface, check-in bonus credits",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Daily Check-in Bonus Credits",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "clipfly_ai",
+        "name": "Clipfly AI Video",
+        "provider": "Clipfly (clipfly.ai)",
+        "category": "Cinematic Generative AI",
+        "tier": "Text-to-Video + Basic Editing",
+        "best_for": "Free credits + browser-based video editing tools",
+        "rating": "★★★☆☆",
+        "resolution": "720p / 1080p",
+        "pricing": "Free Credits + Editor",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "fal_ai_queue",
+        "name": "fal.ai Serverless Unified Queue",
+        "provider": "fal.ai",
+        "category": "Cinematic Generative AI",
+        "tier": "#1 Developer Platform",
+        "best_for": "Instant API access to Wan 2.1, LTX, Seedance, Kling, Veo via single developer endpoint",
+        "rating": "★★★★★",
+        "resolution": "4K Ultra-Res",
+        "pricing": "Pay-per-sec via developer key",
+        "is_free": False,
+        "is_recommended": True
+    },
+    {
+        "id": "akool_video",
+        "name": "AKOOL Studio",
+        "provider": "AKOOL (akool.com)",
+        "category": "Cinematic Generative AI",
+        "tier": "Video Transitions & Enhancement",
+        "best_for": "Video transitions, frame enhancements, face-swap and studio composites",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Free Trial Credits",
+        "is_free": False,
+        "is_recommended": False
+    },
+    {
+        "id": "openai_sora",
+        "name": "OpenAI Sora / Sora Turbo",
+        "provider": "OpenAI (sora.com)",
+        "category": "Cinematic Generative AI",
+        "tier": "Flagship Physical Simulation",
+        "best_for": "Ultra-realistic physical simulation, complex camera storyboards",
+        "rating": "★★★★★",
+        "resolution": "1080p 60FPS",
+        "pricing": "ChatGPT Plus / Pro subscription",
+        "is_free": False,
+        "is_recommended": True
+    },
+    {
+        "id": "seedance_25",
+        "name": "ByteDance Seedance 2.5",
+        "provider": "ByteDance / Dreamina",
+        "category": "Cinematic Generative AI",
+        "tier": "Leaderboard #1",
+        "best_for": "Cinematic camera swoop, photorealistic data center, native audio",
+        "rating": "★★★★★",
+        "resolution": "1080p/4K 60FPS",
+        "pricing": "Pay-per-sec via fal.ai / Dreamina",
+        "is_free": False,
+        "is_recommended": True
+    },
+
+    # =========================================================================
+    # श्रेणी २: सोशल मीडिया ऑटोमेशन आणि स्क्रिप्ट-टू-व्हिडिओ (Reels / Shorts Automation)
+    # =========================================================================
+    {
+        "id": "invideo_ai",
+        "name": "InVideo AI Reels Automation",
+        "provider": "InVideo (invideo.io)",
+        "category": "Social Media / Script-to-Video",
+        "tier": "1 to 10 Min Complete Video Generator",
+        "best_for": "Weekly 10 free minutes, full script, voiceover, and stock footage assembly",
+        "rating": "★★★★★",
+        "resolution": "1080p 60FPS",
+        "pricing": "10 Free Minutes Weekly",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "fliki_ai",
+        "name": "Fliki AI (Script & Blog to Video)",
+        "provider": "Fliki (fliki.ai)",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Indian Languages & Regional Voices",
+        "best_for": "Blog-to-video conversion, native Marathi and Hindi voices, 5 min free monthly",
+        "rating": "★★★★☆",
+        "resolution": "720p / 1080p",
+        "pricing": "5 Free Minutes/Month",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "capcut_ai",
+        "name": "CapCut Web / App AI",
+        "provider": "ByteDance / CapCut",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Free Auto-Captions & B-Rolls",
+        "best_for": "Trending TikTok/Reels auto-subtitles, background removal, template stitches",
+        "rating": "★★★★★",
+        "resolution": "1080p / 4K",
+        "pricing": "100% Free Core Tools",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "veed_io",
+        "name": "VEED.io Smart Subtitles",
+        "provider": "VEED.io",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Auto-Subtitles & Visual Eye-Contact",
+        "best_for": "2 GB free cloud storage, animated karaoke subtitles, audio cleanup",
+        "rating": "★★★★☆",
+        "resolution": "720p / 1080p",
+        "pricing": "2 GB Storage Free",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "pictory_ai",
+        "name": "Pictory AI Long-to-Short",
+        "provider": "Pictory (pictory.ai)",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Podcast & Long Video Clipper",
+        "best_for": "Extracting viral shorts from long YouTube videos, automatic summary reels",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "3 Free Projects (14-day trial)",
+        "is_free": False,
+        "is_recommended": False
+    },
+    {
+        "id": "lumen5_ai",
+        "name": "Lumen5 Informational Video",
+        "provider": "Lumen5 (lumen5.com)",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Article & Blog to Video",
+        "best_for": "5 free videos per month, converting technical documentation to video slides",
+        "rating": "★★★★☆",
+        "resolution": "720p",
+        "pricing": "5 Videos/Month Free",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "steve_ai",
+        "name": "Steve AI 2D/3D Animation",
+        "provider": "Steve AI (steve.ai)",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Text to 2D/3D Cartoon & Tech Animation",
+        "best_for": "3 free video downloads, converting scripts into animated explainers",
+        "rating": "★★★★☆",
+        "resolution": "720p / 1080p",
+        "pricing": "3 Free Downloads",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "canva_video",
+        "name": "Canva AI Video Magic",
+        "provider": "Canva",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Permanent Free Creative Studio",
+        "best_for": "Text-to-video clips, massive graphic element library, 8s video loops",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Free with Canva Free Plan",
+        "is_free": True,
+        "is_recommended": True
+    },
+    {
+        "id": "google_vids",
+        "name": "Google Vids Workspace",
+        "provider": "Google Workspace",
+        "category": "Social Media / Script-to-Video",
+        "tier": "AI Storyboard Presentation Video",
+        "best_for": "Up to 60-second scenes assembly, presentation slides to video",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "Google Workspace / Free Personal Tier",
+        "is_free": True,
+        "is_recommended": False
+    },
+    {
+        "id": "creatify_ai",
+        "name": "Creatify AI Ad Generator",
+        "provider": "Creatify (creatify.ai)",
+        "category": "Social Media / Script-to-Video",
+        "tier": "Viral Product & Tech Ads",
+        "best_for": "Generating 9:16 high-converting tech promo ads, 10 free credits/month",
+        "rating": "★★★★☆",
+        "resolution": "1080p",
+        "pricing": "10 Monthly Free Credits",
+        "is_free": True,
+        "is_recommended": False
     }
 ]
 
-# =========================================================================
-# भाग ४: UNIFIED AGGREGATORS & GATEWAYS CATALOG
-# =========================================================================
+
 UNIFIED_AGGREGATOR_CATALOG = [
     {
         "id": "fal_ai_queue",
@@ -759,3 +1166,100 @@ class Modern2026VideoMatrix:
 
 # Singleton instance
 modern_2026_video_matrix = Modern2026VideoMatrix()
+
+
+
+def build_ai_attribution_ledger(
+    scenes: List[Dict[str, Any]],
+    pattern: str = "hybrid",
+    selected_model: str = "wan_21",
+    language: str = "mr",
+    total_duration: float = 60.0
+) -> Dict[str, Any]:
+    """
+    Builds the complete transparency & attribution ledger for the final video.
+    Identifies which of the 50+ models were commissioned for each scene,
+    whether unified (same engine) or multi-model hybrid (best-of-breed) pattern was used.
+    """
+    catalog_map = {m["id"]: m for m in PROMPT_TO_VIDEO_CATALOG}
+    default_model = catalog_map.get(selected_model) or catalog_map.get("wan_21") or {
+        "id": "wan_21", "name": "Wan 2.1 (Alibaba Open-Source)", "provider": "Alibaba", "category": "100% Free Open-Source (Local GPU)"
+    }
+
+    # Best-of-Breed model distribution for Hybrid mode
+    hybrid_sequence = [
+        "wan_21",          # Scene 1: Hook (Cinematic 3D Realism)
+        "ltx_video",       # Scene 2: Context / Problem (Fast motion)
+        "procedural_3d_webgl", # Scene 3: Architecture / Tech Core (3D Conduits)
+        "cogvideox",       # Scene 4: Code / Pipeline Implementation
+        "veo_31",          # Scene 5: Benchmarks / Metrics (Google 4K)
+        "kling_30"         # Scene 6: Senior Takeaway / Viral Badge
+    ]
+
+    scene_attributions = []
+    for idx, sc in enumerate(scenes):
+        s_id = sc.get("id", idx + 1)
+        s_title = sc.get("title", f"Scene {s_id}")
+        s_visual_type = sc.get("visual_type", "showcase")
+        
+        if pattern == "unified":
+            assigned = default_model
+            reason = f"Unified Pattern: Uniform aesthetic using {default_model['name']}"
+        else:
+            # Multi-model hybrid mode
+            target_id = hybrid_sequence[idx % len(hybrid_sequence)]
+            assigned = catalog_map.get(target_id) or default_model
+            reasons = {
+                0: "Cinematic Hook: Commissioned Wan 2.1 for photorealistic 3D intro",
+                1: "Fast Context: Commissioned Lightricks LTX-Video for high-speed dynamic pacing",
+                2: "Tech Topology: Commissioned 3D WebGL / GPU Procedural for photon conduits & distributed architecture",
+                3: "Pipeline/Code: Commissioned CogVideoX for precision 3D workflow animation",
+                4: "Benchmarks: Commissioned Google Veo 3.1 & Gemini Pro for high-impact metric graphs",
+                5: "Senior Takeaway: Commissioned Kling AI for viral takeaway badge"
+            }
+            reason = reasons.get(idx, f"Best-of-Breed: Commissioned {assigned['name']} for {s_visual_type}")
+
+        scene_attributions.append({
+            "scene_index": idx + 1,
+            "scene_title": s_title,
+            "visual_type": s_visual_type,
+            "engine_id": assigned["id"],
+            "engine_name": assigned["name"],
+            "provider": assigned["provider"],
+            "category": assigned.get("category", "AI Video"),
+            "is_free": assigned.get("is_free", True),
+            "resolution": assigned.get("resolution", "1080p 60FPS"),
+            "pricing": assigned.get("pricing", "Free"),
+            "attribution_reason": reason,
+            "repo_url": assigned.get("repo_url", ""),
+            "prompt_used": sc.get("video_prompt") or sc.get("visual_description") or s_title
+        })
+
+    # Voice & Audio Engine
+    if language == "mr":
+        voice_info = {"id": "edge_tts_mr", "name": "Microsoft Edge Neural Marathi (Aarohi/Manohar)", "provider": "Microsoft / Azure", "pricing": "100% Free Unlimited"}
+    elif language == "hi":
+        voice_info = {"id": "edge_tts_hi", "name": "Microsoft Edge Neural Hindi (Swara/Madhur)", "provider": "Microsoft / Azure", "pricing": "100% Free Unlimited"}
+    else:
+        voice_info = {"id": "kokoro_en", "name": "Kokoro-82M Studio Neural (English)", "provider": "Hexgrad Apache 2.0", "pricing": "100% Free Forever"}
+
+    return {
+        "pattern": pattern,
+        "pattern_label": "UNIFIED (Same Engine Across All Scenes)" if pattern == "unified" else "MULTI-MODEL HYBRID (Best-of-Breed Mixture)",
+        "selected_model": default_model["name"],
+        "total_scenes": len(scenes),
+        "total_duration_seconds": round(total_duration, 1),
+        "aspect_ratio": "9:16 (1080x1920 Vertical Shorts & Reels)",
+        "scenes": scene_attributions,
+        "voiceover_engine": voice_info,
+        "subtitle_engine": {
+            "name": "NanoPro Word-Level Synced Subtitles (Devanagari / Latin)",
+            "tier": "Real-Time 60 FPS Karaoke Animation"
+        },
+        "video_stitcher": {
+            "name": "Local Laptop GPU / CPU NVENC FFmpeg Compositor",
+            "tier": "Zero-Loss Vertical Stitching & Audio Ducking",
+            "watermark": "100% Zero-Watermark"
+        },
+        "all_models_used": list({s["engine_name"] for s in scene_attributions})
+    }

@@ -1648,7 +1648,9 @@ class SqlShortVideoEngine:
         topic_or_question: str,
         difficulty: str = "Medium",
         language: str = "mr",
-        mode: str = "faang_drill"
+        mode: str = "faang_drill",
+        generation_pattern: str = "hybrid",
+        selected_model: str = "wan_21"
     ) -> Dict[str, Any]:
         """
         Asynchronously generates a synchronized, viral 50-55s video creation blueprint:
@@ -2046,6 +2048,21 @@ class SqlShortVideoEngine:
         res["synaptic_weights"] = {}
         res["weights_optimizer"] = {}
         res["perfectionist_audit"] = perfectionist_audit
+
+        # Attach 50+ Models AI Attribution Ledger & Multi-Engine Blueprint
+        try:
+            from app.video_maker.modern_2026_video_matrix import build_ai_attribution_ledger
+            attribution_ledger = build_ai_attribution_ledger(
+                scenes=calibrated_stages,
+                pattern=generation_pattern or "hybrid",
+                selected_model=selected_model or "wan_21",
+                language=lang_key,
+                total_duration=final_dur
+            )
+            res["ai_attribution_ledger"] = attribution_ledger
+        except Exception as _attr_err:
+            log_event(f"Notice generating AI attribution ledger: {_attr_err}", level="DEBUG", component="SqlShortEngine")
+
         return res
 
     def generate_short_prompt(
