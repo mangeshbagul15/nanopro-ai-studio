@@ -3864,6 +3864,14 @@ class ScheduleEditRequest(BaseModel):
     recurrence_expr: Optional[str] = None
     is_paused: Optional[bool] = None
     parameters: Optional[Dict[str, Any]] = None
+    script_content: Optional[str] = None
+    timezone: Optional[str] = None
+    timeout_sec: Optional[int] = None
+    is_enabled: Optional[bool] = None
+    task_type: Optional[str] = None
+
+    class Config:
+        extra = "allow"
 
 @app.post('/api/schedules/update')
 async def api_schedules_update(req: ScheduleEditRequest):
@@ -6810,11 +6818,15 @@ async def api_apk_get_config():
         return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
 
 @app.post("/api/apk/config")
-async def api_apk_update_config(body: Optional[dict] = None):
+async def api_apk_update_config(req: Request):
     """Update APK quantity and dispatch interval."""
     try:
         from app.core.apk_dispatcher import update_apk_config
-        b = body or {}
+        b = {}
+        try:
+            b = await req.json()
+        except Exception:
+            pass
         interval_hours = b.get("interval_hours", 4)
         count = b.get("count", 5)
         enabled = b.get("enabled", True)

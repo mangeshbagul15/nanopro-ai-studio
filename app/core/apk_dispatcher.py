@@ -60,11 +60,15 @@ def get_apk_config() -> Dict[str, Any]:
     return default_cfg
 
 
-def update_apk_config(interval_minutes: int = 15, count: int = 5, enabled: bool = True, direct_apk_only: bool = True) -> Dict[str, Any]:
-    """Update and persist APK dispatcher parameters: default 15 minutes, 5 APKs direct."""
+def update_apk_config(interval_minutes: Optional[int] = None, interval_hours: Optional[float] = None, count: int = 5, enabled: bool = True, direct_apk_only: bool = True) -> Dict[str, Any]:
+    """Update and persist APK dispatcher parameters (supports both interval_hours and interval_minutes)."""
     cfg = get_apk_config()
-    cfg["interval_minutes"] = max(1, int(interval_minutes))
-    cfg["interval_hours"] = round(cfg["interval_minutes"] / 60.0, 3)
+    if interval_hours is not None:
+        cfg["interval_hours"] = float(interval_hours)
+        cfg["interval_minutes"] = max(1, int(float(interval_hours) * 60))
+    elif interval_minutes is not None:
+        cfg["interval_minutes"] = max(1, int(interval_minutes))
+        cfg["interval_hours"] = round(cfg["interval_minutes"] / 60.0, 3)
     cfg["count"] = max(1, min(20, int(count)))
     cfg["enabled"] = bool(enabled)
     cfg["direct_apk_only"] = bool(direct_apk_only)
