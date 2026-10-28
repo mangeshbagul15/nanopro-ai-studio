@@ -14,7 +14,7 @@
 const CONFIG = {
   UPSTREAMS: {
     // Live Local Laptop Master Tunnel (Active when laptop is open)
-    LOCAL_LAPTOP: "https://forgot-delivery-thats-view.trycloudflare.com",
+    LOCAL_LAPTOP: "https://survive-asset-commands-mls.trycloudflare.com",
     
     // Live Cloud Infrastructure Nodes (Multi-Cloud Active-Active Standby)
     CLOUD_FLYIO: "https://mangesh-nanopro.fly.dev",
@@ -22,7 +22,7 @@ const CONFIG = {
     CLOUD_PYTHONANYWHERE: "https://mangeshbagul15.pythonanywhere.com",
     CLOUD_SERV00: "https://nanopro.serv00.net"
   },
-  LOCAL_TIMEOUT_MS: 15000,
+  LOCAL_TIMEOUT_MS: 5000,
   CLOUD_TIMEOUT_MS: 4000
 };
 
@@ -38,7 +38,7 @@ export default {
 
     // Upstream candidates in priority order:
     // 1. Local Laptop Master -> 2. Fly.io Singapore -> 3. Alwaysdata Europe -> 4. PythonAnywhere
-    let candidateUpstreams = [localTunnel, flyioUrl, alwaysdataUrl, pythonAnywhereUrl];
+    let candidateUpstreams = [localTunnel, alwaysdataUrl, pythonAnywhereUrl, flyioUrl];
     if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
     if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
@@ -75,10 +75,16 @@ export default {
 
         clearTimeout(timeoutId);
 
-        // Ignore offline, sleeping, or not-yet-deployed nodes (e.g. Render "no-server" 404, or 502/503/504)
+        // STRICT FAILOVER GUARD:
+        // Automatically skip offline nodes, Cloudflare 520-530 errors (Error 1016 Origin DNS error),
+        // 5xx errors, or dead local tunnels (>= 400). Always cascade to cloud peers!
         const isRenderNoServer = response.headers.get("x-render-routing") === "no-server";
-        if (isRenderNoServer || (response.status >= 500 && response.status <= 504) || (!isLocal && response.status === 404)) {
-          lastError = `HTTP ${response.status} from ${upstreamBase} (skipping offline/un-deployed node)`;
+        const isCloudflareError = [520, 521, 522, 523, 524, 525, 526, 530].includes(response.status);
+        const is5xx = response.status >= 500;
+        const isLocalError = isLocal && (response.status >= 400);
+
+        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError) {
+          lastError = `HTTP ${response.status} from ${upstreamBase} (triggering automatic peer failover)`;
           continue;
         }
 
