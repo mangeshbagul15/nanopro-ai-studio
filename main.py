@@ -4652,15 +4652,20 @@ class WhatsAppSendRequest(BaseModel):
     api_key: Optional[str] = None
 
 @app.get("/api/communication/whatsapp/status")
+@app.get("/api/whatsapp/diagnostics")
 async def api_whatsapp_status():
+    from app.core.whatsapp_webhook_handler import whatsapp_webhook_handler
     from app.core.communication_center import communication_center
+    health = whatsapp_webhook_handler.get_whatsapp_health()
+    quick_link = communication_center.generate_whatsapp_click_link("+918433755448", "Nano Pro Studio Online Alert")
     return JSONResponse({
         "status": "success",
         "phone_configured": "+91 84337 55448",
         "owner": "Mangesh Bagul",
-        "gateway_mode": "CallMeBot API + Click-to-Chat Direct wa.me Link",
+        "gateway_mode": "Meta WhatsApp Cloud API (Primary) + Cloudflare Worker + wa.me Protocol",
         "service_state": "ONLINE",
-        "quick_link": communication_center.generate_whatsapp_click_link("+918433755448", "Nano Pro Studio Online Alert")
+        "diagnostics": health,
+        "quick_link": quick_link
     })
 
 @app.post("/api/communication/whatsapp/send_message")
@@ -4668,18 +4673,61 @@ async def api_whatsapp_status():
 async def api_whatsapp_send(req: WhatsAppSendRequest):
     from app.core.communication_center import communication_center
     phone = req.phone_number or "+918433755448"
-    res = communication_center.send_whatsapp_callmebot(
-        phone=phone,
-        api_key=req.api_key or "",
-        message=req.message
-    )
+    
+    # 1. Primary: Official Meta WhatsApp Business Cloud API
+    cloud_res = communication_center.send_whatsapp_cloud_api(phone=phone, message=req.message)
+    if cloud_res.get("success"):
+        click_url = communication_center.generate_whatsapp_click_link(phone, req.message)
+        return JSONResponse({
+            "status": "success",
+            "provider": "Meta WhatsApp Business Cloud API",
+            "delivered": True,
+            "gateway_response": cloud_res,
+            "direct_click_url": click_url,
+            "phone": phone
+        })
+    
+    # 2. Secondary fallback: CallMeBot if API key configured
+    if req.api_key:
+        cb_res = communication_center.send_whatsapp_callmebot(
+            phone=phone,
+            api_key=req.api_key,
+            message=req.message
+        )
+        if cb_res.get("delivered_via_api"):
+            click_url = communication_center.generate_whatsapp_click_link(phone, req.message)
+            return JSONResponse({
+                "status": "success",
+                "provider": "CallMeBot API",
+                "delivered": True,
+                "gateway_response": cb_res,
+                "direct_click_url": click_url,
+                "phone": phone
+            })
+
+    # 3. Protocol fallback: Generate 1-click wa.me instant link
     click_url = communication_center.generate_whatsapp_click_link(phone, req.message)
     return JSONResponse({
-        "status": res.get("status", "success"),
-        "gateway_response": res,
+        "status": "partial_success",
+        "provider": "WhatsApp Web Protocol (1-Click wa.me)",
+        "delivered": False,
+        "meta_cloud_error": cloud_res.get("error"),
+        "gateway_response": cloud_res,
         "direct_click_url": click_url,
-        "phone": phone
+        "phone": phone,
+        "note": "Meta 24h window might be closed or awaiting user re-engagement. 1-click link generated."
     })
+
+@app.post("/api/whatsapp/send_template_ping")
+async def api_whatsapp_template_ping():
+    """Dispatches official Meta approved hello_world template to verify reachability outside 24h window."""
+    from app.core.communication_center import communication_center
+    res = communication_center.send_whatsapp_cloud_api(
+        phone="+918433755448",
+        message="Hello World Verification",
+        template_name="hello_world"
+    )
+    return JSONResponse(res)
 
 # ==========================================
 # 18. MULTI-SENDER EMAIL PROFILES

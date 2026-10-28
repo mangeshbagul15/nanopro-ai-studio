@@ -11536,11 +11536,9 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
 
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="toggleServerManagerZenMode()" id="smZenToggleBtn" style="font-size:11.5px; padding:5px 12px; background:#1E293B; border-color:#38BDF8; color:#38BDF8;" title="Toggle Panoramic Fullscreen Workspace">
-
-                            &#9974; Panoramic Zen View
-
-                        </button>
+                        <a href="https://mangesh-nanopro.mangeshbagul15.workers.dev" target="_blank" class="btn btn-sm" style="font-size:11.5px; padding:5px 12px; background:rgba(245,158,11,0.15); border:1px solid #F59E0B; color:#FBBF24; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;" title="Cloudflare Global Anycast Edge Gateway">
+                            <span>☁️</span> Cloudflare Edge Gateway (310+ PoPs)
+                        </a>
 
                         <button type="button" class="btn btn-sm" onclick="openLiveExecutionLogsModal()" style="font-size:11.5px; padding:5px 13px; background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#34D399; font-weight:700; border-radius:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="Popup Live Execution &amp; System Event Logs Window">
 
@@ -12000,10 +11998,42 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
 
 
-                    <div id="smTelegramBotsList" style="display:grid; grid-template-columns:1fr; gap:6px; max-height:220px; overflow-y:auto; margin-bottom:10px;">
+                    <div id="smTelegramBotsList" style="display:grid; grid-template-columns:1fr; gap:6px; max-height:160px; overflow-y:auto; margin-bottom:10px;">
 
                         <!-- Injected via renderServerManagerComms() -->
 
+                    </div>
+
+                    <!-- WhatsApp Two-Way Cloud API & Webhook Sentinel -->
+                    <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:10px; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:15px;">📱</span>
+                                <strong style="font-size:12px; color:#34D399;">Meta WhatsApp Business Cloud API &amp; Webhook</strong>
+                            </div>
+                            <span id="smWaStatusBadge" style="font-size:10px; background:#064E3B; color:#34D399; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid #059669;">
+                                ● 24/7 CLOUD ACTIVE
+                            </span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:10.5px; color:#94A3B8; margin-bottom:8px;">
+                            <div>Target Mobile: <strong style="color:#F8FAFC;">+91 84337 55448</strong></div>
+                            <div>Bot Number: <strong style="color:#38BDF8;">+1 555-673-7622</strong></div>
+                            <div style="grid-column: span 2; font-family:monospace; font-size:10px; color:#64748B; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                Webhook: <span style="color:#38BDF8;">mangesh-nanopro.workers.dev/api/whatsapp/webhook</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <a href="https://wa.me/15556737622?text=Hi%20NanoPro" target="_blank" class="btn btn-sm" style="font-size:10.5px; padding:4px 9px; background:linear-gradient(135deg, #10B981, #059669); color:#000; font-weight:800; border-radius:6px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                                💬 WhatsApp वर 'Hi' पाठवा
+                            </a>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="testServerManagerWaCloudPing()" style="font-size:10.5px; padding:4px 9px; border-color:#10B981; color:#34D399; font-weight:700;">
+                                ⚡ Send Test Msg
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="testServerManagerWaTemplatePing()" style="font-size:10.5px; padding:4px 9px; border-color:#38BDF8; color:#38BDF8; font-weight:700;" title="Send Meta official hello_world template to verify outside 24h window">
+                                📡 Template Ping
+                            </button>
+                        </div>
+                        <div id="smWaResultLog" style="display:none; margin-top:6px; font-size:10px; font-family:monospace; padding:6px; background:#060A14; border:1px solid #1E293B; border-radius:6px; color:#34D399;"></div>
                     </div>
 
 
@@ -62097,6 +62127,40 @@ if (typeof document !== 'undefined') {
     }
 }
 
+async function testServerManagerWaCloudPing() {
+    const log = document.getElementById('smWaResultLog');
+    if (log) { log.style.display = 'block'; log.innerText = 'Meta Cloud API द्वारे +918433755448 ला मेसेज पाठवत आहे...'; }
+    try {
+        const res = await fetch('/api/communication/whatsapp/send_cloud_api', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({phone_number: '+918433755448', message: '⚡ [NanoPro Server Manager] Live WhatsApp Cloud Heartbeat Verified!'})
+        });
+        const d = await res.json();
+        if (log) {
+            log.innerText = d.success ? '✅ मेसेज यशस्वीरित्या पाठवला! (Msg ID: ' + (d.message_id || 'OK') + ')' : '⚠️ त्रुटी: ' + (d.error || JSON.stringify(d));
+            log.style.color = d.success ? '#34D399' : '#F87171';
+        }
+    } catch (e) {
+        if (log) { log.innerText = '❌ नेटवर्क एरर: ' + e.message; log.style.color = '#F87171'; }
+    }
+}
+
+async function testServerManagerWaTemplatePing() {
+    const log = document.getElementById('smWaResultLog');
+    if (log) { log.style.display = 'block'; log.innerText = 'Meta official hello_world template पाठवत आहे...'; }
+    try {
+        const res = await fetch('/api/whatsapp/send_template_ping', { method: 'POST' });
+        const d = await res.json();
+        if (log) {
+            log.innerText = d.success ? '✅ Template Ping यशस्वी! 24h विंडो बाहेरही डिलिव्हरी शक्य. (Msg ID: ' + (d.message_id || 'OK') + ')' : '⚠️ त्रुटी: ' + (d.error || JSON.stringify(d));
+            log.style.color = d.success ? '#34D399' : '#F87171';
+        }
+    } catch (e) {
+        if (log) { log.innerText = '❌ एरर: ' + e.message; log.style.color = '#F87171'; }
+    }
+}
+
 function init3DCardTilt() {
 
     document.querySelectorAll('.sm-card-3d').forEach(card => {
@@ -62134,4 +62198,3 @@ function init3DCardTilt() {
 </html>
 
 '''
-

@@ -29,6 +29,11 @@ PROCESSED_LOCK = threading.Lock()
 class WhatsAppWebhookHandler:
     def __init__(self):
         self.verify_token = os.environ.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN", DEFAULT_VERIFY_TOKEN)
+        self.last_inbound_time: float = 0.0
+        self.last_inbound_text: str = ""
+        self.last_inbound_sender: str = ""
+        self.last_outbound_time: float = 0.0
+        self.last_outbound_status: str = ""
 
     def verify_webhook(self, mode: Optional[str], token: Optional[str], challenge: Optional[str]) -> Tuple[bool, Optional[str]]:
         """
@@ -106,6 +111,11 @@ class WhatsAppWebhookHandler:
 
                         log_event(f"Incoming WhatsApp from {from_number} ({sender_name}): type={msg_type}, text='{text_content[:60]}'", component="WhatsAppWebhook")
 
+                        # Record inbound telemetry for 24h window tracking
+                        self.last_inbound_time = time.time()
+                        self.last_inbound_text = text_content
+                        self.last_inbound_sender = f"{sender_name} ({from_number})"
+
                         # Spawn background processing so webhook responds to Meta in < 100ms
                         threading.Thread(
                             target=self._handle_message_async,
@@ -114,6 +124,31 @@ class WhatsAppWebhookHandler:
                             name=f"WhatsAppAI-{msg_id[:10]}"
                         ).start()
                         dispatched += 1
+
+                    # Process Status Events (sent, delivered, read, failed, 24h window closure)
+                    statuses = value.get("statuses", [])
+                    for st in statuses:
+                        st_id = st.get("id")
+                        st_val = st.get("status")
+                        recipient_id = st.get("recipient_id")
+                        errors = st.get("errors", [])
+                        if errors:
+                            err_str = "; ".join(f"[{e.get('code')}] {e.get('title')}: {e.get('message')}" for e in errors)
+                            log_event(f"WhatsApp dispatch {st_id} to {recipient_id} FAILED: {err_str}", level="WARNING", component="WhatsAppWebhook")
+                            is_24h = any(e.get("code") == 131047 for e in errors)
+                            if is_24h:
+                                log_event(f"WhatsApp 24-hour window EXPIRED for recipient {recipient_id}. Bot awaits user 'Hi' or template message.", level="WARNING", component="WhatsAppWebhook")
+                                try:
+                                    from app.core.telegram_router import send_telegram_routed_message
+                                    send_telegram_routed_message(
+                                        category="health",
+                                        text=f"⚠️ <b>WhatsApp 24h Window Alert</b>\n\nRecipient <code>{recipient_id}</code> च्या 24-तासांची विंडो संपली आहे.\nकृपया व्हॉट्सॲप बॉटला (+1 555-673-7622) <b>'Hi'</b> पाठवून विंडो पुन्हा सक्रिय करा.",
+                                        parse_mode="HTML"
+                                    )
+                                except Exception:
+                                    pass
+                        else:
+                            log_event(f"WhatsApp delivery confirmation for {st_id}: {st_val}", component="WhatsAppWebhook")
 
             return {"status": "accepted", "messages_dispatched": dispatched}
         except Exception as e:
@@ -388,6 +423,35 @@ Instructions:
             "sender_name": sender_name,
             "reply": reply,
             "whatsapp_dispatch": res
+        }
+
+    def get_whatsapp_health(self) -> Dict[str, Any]:
+        """Provides real-time health, 24-hour conversational window status, and webhook configuration."""
+        cred = credentials_vault.get_credential("WHATSAPP_BUSINESS_CLOUD") or {}
+        phone_id = cred.get("username", "1355864990944215")
+        meta = cred.get("additional_metadata") or {}
+        test_number = meta.get("verified_phone", "+1 555-673-7622")
+        target_number = cred.get("mobile_number", "+918433755448")
+        clean_bot = re.sub(r"[^\d]", "", test_number)
+        
+        now = time.time()
+        is_window_open = (self.last_inbound_time > 0) and ((now - self.last_inbound_time) < 86400)
+        hours_since = (now - self.last_inbound_time) / 3600.0 if self.last_inbound_time > 0 else 999.0
+        
+        return {
+            "status": "healthy" if is_window_open else "dormant_24h_window",
+            "provider": "Meta WhatsApp Business Cloud API",
+            "phone_number_id": phone_id,
+            "test_bot_number": test_number,
+            "target_user_phone": target_number,
+            "permanent_webhook_url": "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/whatsapp/webhook",
+            "verify_token": self.verify_token,
+            "two_way_window_open": is_window_open,
+            "hours_since_last_inbound": round(hours_since, 1),
+            "last_inbound_text": self.last_inbound_text or "No inbound messages received in this session",
+            "last_inbound_sender": self.last_inbound_sender,
+            "direct_wa_bot_link": f"https://wa.me/{clean_bot}?text=Hi%20NanoPro",
+            "reconnect_instructions": "Send 'Hi' or any query to the WhatsApp bot (+1 555-673-7622) to activate the 24-hour two-way AI dialogue window."
         }
 
 whatsapp_webhook_handler = WhatsAppWebhookHandler()
