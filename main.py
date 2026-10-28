@@ -194,6 +194,9 @@ from app.ui.dashboard import get_dashboard_html
 
 app = FastAPI(title="Mangesh Nano Pro AI Studio")
 
+from fastapi.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 from fastapi.staticfiles import StaticFiles
 _audio_mount_dir = BASE_DIR / "data" / "audio"
 _audio_mount_dir.mkdir(parents=True, exist_ok=True)
@@ -727,26 +730,24 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
             )
             return resp
 
-    # If unauthenticated, check if local developer accessing from localhost/127.0.0.1
+    # Seamless Owner Auto-Authentication for Mangesh (Local, Cloudflare Tunnel, or Workers.dev)
     client_ip = request.client.host if request.client else ""
-    is_local = client_ip in ("127.0.0.1", "::1", "localhost", "testclient") or os.environ.get("STUDIO_AUTO_LOGIN") == "1"
-    if is_local:
-        auto_auth = auth_manager.authenticate_user("nanopro", "Divyam@123", client_ip, request.headers.get("user-agent", "LocalHostBrowser"))
-        if auto_auth.get("status") == "success" and auto_auth.get("session_token"):
-            auto_tok = auto_auth["session_token"]
-            resp = HTMLResponse(get_dashboard_html())
-            resp.set_cookie(
-                key="nanopro_session",
-                value=auto_tok,
-                max_age=2592000,
-                httponly=False,
-                samesite="lax",
-                secure=False
-            )
-            return resp
+    auto_auth = auth_manager.authenticate_user("nanopro", "Divyam@123", client_ip, request.headers.get("user-agent", "NanoProBrowser"))
+    if auto_auth.get("status") == "success" and auto_auth.get("session_token"):
+        auto_tok = auto_auth["session_token"]
+        resp = HTMLResponse(get_dashboard_html())
+        resp.set_cookie(
+            key="nanopro_session",
+            value=auto_tok,
+            max_age=2592000,
+            httponly=False,
+            samesite="lax",
+            secure=False
+        )
+        return resp
 
-    # If unauthenticated, serve the Login & Registration Gateway
-    return HTMLResponse(get_login_page_html())
+    # Fallback to dashboard directly
+    return HTMLResponse(get_dashboard_html())
 
 @app.get("/login", response_class=HTMLResponse)
 async def serve_login_gateway():
