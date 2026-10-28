@@ -4911,7 +4911,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 clearTimeout(imageTimer);
                 const scene = { image, video: null, asset };
                 sqlShortState.sceneAssets.set(String(asset.scene_id ?? index), scene);
+                sqlShortState.sceneAssets.set(String(index), scene);
+                sqlShortState.sceneAssets.set(String(index + 1), scene);
                 sqlShortState.sceneAssets.set(`index:${index}`, scene);
+                if (asset.title) {
+                    sqlShortState.sceneAssets.set(String(asset.title).toLowerCase().trim(), scene);
+                }
                 if (sqlShortState.activePreset) {
                     renderSqlShortFrame(sqlShortState.currentTime || 0);
                 }
@@ -4937,13 +4942,27 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = true) {
-        const scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
-            sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex));
-        if (!scene) return false;
+        if (!sqlShortState.sceneAssets || sqlShortState.sceneAssets.size === 0) return false;
+        let scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
+                    sqlShortState.sceneAssets.get(String(stageIndex)) ||
+                    sqlShortState.sceneAssets.get(String(stageIndex + 1)) ||
+                    sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex));
+        if (!scene && stage?.title) {
+            scene = sqlShortState.sceneAssets.get(String(stage.title).toLowerCase().trim());
+        }
+        if (!scene && sqlShortState.sceneAssets.size > 0) {
+            const vals = Array.from(sqlShortState.sceneAssets.values());
+            scene = vals[Math.max(0, stageIndex) % vals.length];
+        }
+        if (!scene || !scene.image) return false;
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         const localTime = Math.max(0, t - Number(stage?.start || 0));
         const media = scene.video && scene.video.readyState >= 2 ? scene.video : scene.image;
+        if (!media || (media.tagName === 'IMG' && (!media.complete || media.naturalWidth === 0))) {
+            ctx.restore();
+            return false;
+        }
         if (scene.video && scene.video.readyState >= 2) {
             const expected = scene.video.duration ? localTime % scene.video.duration : localTime;
             if (Math.abs(scene.video.currentTime - expected) > 0.65) {
@@ -7850,9 +7869,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             drawPromptSceneBackdrop(ctx, W, H, activeStage?.visual_data || {}, t);
         }
 
-        // 2. Draw Trending Top Header Pill with Live Stage Tracker
-        drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
-
         let stageProg = 0.5;
         let stageAlpha = 1.0;
         if (activeStage && activeStage.end > activeStage.start) {
@@ -7924,6 +7940,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (!drewAiVisual) {
             renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
         }
+
+        // 3.5. DRAW TOP HEADER STATUS & STAGE TRACKER (Overlay on top of visual)
+        drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
 
         // 4. DRAW VIRAL KINETIC KARAOKE SUBTITLES (High-Retention Word Highlighting)
         drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t);
