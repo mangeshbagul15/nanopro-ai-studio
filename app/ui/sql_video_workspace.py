@@ -843,6 +843,7 @@ def get_sql_video_workspace_html() -> str:
         </div>
 
     </div>
+    </div> <!-- Close vfxHorizontalScrollContainer -->
 
     <!-- Interactive Helper Functions for Prompt Chips and Model Docks -->
     <script>
