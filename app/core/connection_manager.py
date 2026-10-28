@@ -1555,7 +1555,7 @@ class ConnectionManager:
                 if not hasattr(self, "_last_alert_map"):
                     self._last_alert_map = {}
                 # Debounce to once per 10 minutes per connection unless critical
-                if (now_t - self._last_alert_map.get(conn_name, 0)) > 600:
+                if (now_t - self._last_alert_map.get(conn_name, 0)) > 3600:
                     self._last_alert_map[conn_name] = now_t
                     try:
                         communication_center.send_emergency_connection_failure_alert(

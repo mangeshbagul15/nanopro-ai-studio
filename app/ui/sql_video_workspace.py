@@ -240,101 +240,122 @@ def get_sql_video_workspace_html() -> str:
         </div>
 
         <!-- =========================================================================
-             THE 4-TIER MULTI-STAGE API ENGINE DOCKS (VFX MODULAR DOCK SYSTEM)
+             🤖 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (100% AUTO-PILOT)
+             User inputs ONLY Prompt + Language. NanoPro Director decides all APIs & VFX.
              ========================================================================= -->
-        <div class="vfx-dock-grid">
-            
-            <!-- DOCK 1: PROMPT-TO-VOICE -->
-            <div class="vfx-dock-card" style="border-top: 2px solid #10B981;">
-                <div>
-                    <div class="vfx-dock-title" style="color: #10B981;">
-                        <span>🎙️</span> <span>भाग १: Prompt-to-Voice (TTS)</span>
+        <div class="vfx-glow-box" style="padding: 16px 20px; margin-bottom: 18px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.95)); border: 1.5px solid #10B981; box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #10B981, #06B6D4); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #000; font-weight: 900; box-shadow: 0 0 15px rgba(16,185,129,0.5);">
+                        🤖
                     </div>
-                    <select id="selectVoiceEngine" class="vfx-dock-select" onchange="onVoiceEngineChange(this.value)">
-                        <option value="kokoro_free" selected>🟢 Kokoro-82M (100% Free CPU • Zero Cost)</option>
-                        <option value="edge_tts_free">🟢 Microsoft Edge Neural (Free Native Mr/Hi/En)</option>
-                        <option value="elevenlabs_v3">👑 ElevenLabs v3 Multilingual Studio</option>
-                        <option value="cartesia_sonic">⚡ Cartesia Sonic (40ms Low Latency)</option>
-                        <option value="fish_audio_s2">🧬 Fish Audio S2 (Zero-Shot Clone)</option>
-                        <option value="f5_tts_free">🔓 F5-TTS Open Diffusion (Self-Host)</option>
-                        <option value="openai_tts_hd">🎙️ OpenAI TTS-1 HD Studio</option>
-                        <option value="deepgram_aura">📡 Deepgram Aura Fast Streaming</option>
-                        <option value="browser_speech_free">🌐 In-Browser Web Speech (0ms Offline)</option>
-                    </select>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3 style="margin: 0; font-size: 15px; color: #34D399; font-weight: 900; letter-spacing: 0.5px;">
+                                NanoPro Manager &amp; Autonomous AI Video Director
+                            </h3>
+                            <span style="font-size: 10px; background: rgba(16,185,129,0.2); border: 1px solid #10B981; color: #34D399; padding: 2px 8px; border-radius: 12px; font-weight: 800;">
+                                ● AUTO-PILOT ACTIVE
+                            </span>
+                        </div>
+                        <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
+                            Zero Manual Hassle: फक्त तुमचा प्रॉम्प्ट द्या आणि भाषा निवडा — NanoPro मॅनेजर आपोआप योग्य Voice, 3D Scene आणि Lip-Sync सिलेक्ट करून 9:16 व्हिडिओ बनवेल.
+                        </div>
+                    </div>
                 </div>
-                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
-                    <span>Speech Engine</span>
-                    <span id="voiceLatencyBadge" style="color: #10B981; font-weight: 700;">Zero-Cost CPU Active</span>
+
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; color: #64748B;">Director Mode:</span>
+                    <span style="font-size: 11px; color: #FBBF24; font-weight: 800; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 3px 10px; border-radius: 6px;">
+                        ⚡ Prompt-Aware Orchestration (31+ APIs)
+                    </span>
                 </div>
             </div>
 
-            <!-- DOCK 2: VOICE-TO-VIDEO & LIP-SYNC -->
-            <div class="vfx-dock-card" style="border-top: 2px solid #38BDF8;">
-                <div>
-                    <div class="vfx-dock-title" style="color: #38BDF8;">
-                        <span>👤</span> <span>भाग २: Voice-to-Video (Lip-Sync)</span>
+            <!-- Live Autonomous Decision Badges -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px;">
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
+                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">🎙️ Auto Voice Engine</div>
+                    <div id="aiDirectorVoiceDecision" style="font-size: 12px; font-weight: 800; color: #34D399; margin-top: 2px;">
+                        Kokoro-82M / Edge Neural Teacher
                     </div>
-                    <select id="selectAvatarEngine" class="vfx-dock-select" onchange="onAvatarEngineChange(this.value)">
-                        <option value="hedra_char3" selected>🔥 Hedra Character-3 API (#1 Trending Dev)</option>
-                        <option value="liveportrait_free">🟢 LivePortrait (100% Free Landmark Sync)</option>
-                        <option value="synclabs_sync3">🎬 SyncLabs sync-3 (Real Video Dubbing)</option>
-                        <option value="simli_realtime">⚡ Simli WebRTC Real-Time Avatar</option>
-                        <option value="heygen_live">👑 HeyGen 3.0 Interactive LiveAvatar (4K)</option>
-                        <option value="did_creative">🎭 D-ID Creative Reality Studio (12 Credits)</option>
-                        <option value="sadtalker_free">🔓 SadTalker / Hallo (Open Source)</option>
-                        <option value="client_cyber_canvas">🛡️ Client-Side 3D Cyber Presenter (Zero-Drop)</option>
-                    </select>
+                    <div style="font-size: 9.5px; color: #64748B;">Native Human Tone • Zero Delay</div>
                 </div>
-                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
-                    <span>Avatar Lip-Sync</span>
-                    <span id="avatarFpsBadge" style="color: #38BDF8; font-weight: 700;">60 FPS Expressive</span>
+
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
+                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">👤 Auto Avatar Lip-Sync</div>
+                    <div id="aiDirectorAvatarDecision" style="font-size: 12px; font-weight: 800; color: #38BDF8; margin-top: 2px;">
+                        Hedra Character-3 / 3D Presenter
+                    </div>
+                    <div style="font-size: 9.5px; color: #64748B;">60 FPS Expressive • Lip-Locked</div>
+                </div>
+
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
+                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">🎬 Auto 3D Scene &amp; B-Roll</div>
+                    <div id="aiDirectorBrollDecision" style="font-size: 12px; font-weight: 800; color: #C084FC; margin-top: 2px;">
+                        ByteDance Seedance 2.5 + 3D WebGL
+                    </div>
+                    <div style="font-size: 9.5px; color: #64748B;">4K Cinematic • Particle Waves</div>
+                </div>
+
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
+                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">🛡️ Auto-Cascade Hub</div>
+                    <div id="aiDirectorGatewayDecision" style="font-size: 12px; font-weight: 800; color: #FBBF24; margin-top: 2px;">
+                        Zero-Stop Multi-Cloud Failover
+                    </div>
+                    <div style="font-size: 9.5px; color: #64748B;">Auto-Retries if any API throttles</div>
                 </div>
             </div>
 
-            <!-- DOCK 3: PROMPT-TO-VIDEO B-ROLL -->
-            <div class="vfx-dock-card" style="border-top: 2px solid #C084FC;">
-                <div>
-                    <div class="vfx-dock-title" style="color: #C084FC;">
-                        <span>🎬</span> <span>भाग ३: Prompt-to-Video (B-Roll)</span>
+            <!-- Optional Collapsible Manual Override (Hidden by default so users don't have to fiddle) -->
+            <details style="margin-top: 10px; font-size: 11px; color: #64748B;">
+                <summary style="cursor: pointer; color: #38BDF8; font-weight: 700;">
+                    ⚙️ Advanced API Overrides (Optional / Manual Tuning)
+                </summary>
+                <div class="vfx-dock-grid" style="margin-top: 10px;">
+                    <div class="vfx-dock-card">
+                        <label style="font-size: 10px; color: #94A3B8;">Voice Engine:</label>
+                        <select id="selectVoiceEngine" class="vfx-dock-select" onchange="onVoiceEngineChange(this.value)">
+                            <option value="kokoro_free" selected>🟢 Kokoro-82M (100% Free CPU • Zero Cost)</option>
+                            <option value="edge_tts_free">🟢 Microsoft Edge Neural (Free Native Mr/Hi/En)</option>
+                            <option value="elevenlabs_v3">👑 ElevenLabs v3 Multilingual Studio</option>
+                            <option value="cartesia_sonic">⚡ Cartesia Sonic (40ms Low Latency)</option>
+                            <option value="browser_speech_free">🌐 In-Browser Web Speech (0ms Offline)</option>
+                        </select>
+                        <span id="voiceLatencyBadge" style="display:none;"></span>
                     </div>
-                    <select id="selectBrollEngine" class="vfx-dock-select" onchange="onBrollEngineChange(this.value)">
-                        <option value="seedance_25" selected>🏆 ByteDance Seedance 2.5 (Leaderboard #1)</option>
-                        <option value="kling_30">🌌 Kuaishou Kling AI 3.0 Pro (Viral Physics)</option>
-                        <option value="veo_31">⚡ Google Veo 3.1 (Gemini 4K Cinematic Audio)</option>
-                        <option value="runway_gen45">🎥 Runway Gen-4.5 / Gen-4 Turbo (Hollywood VFX)</option>
-                        <option value="luma_ray2">🔭 Luma Ray-2 Dream Machine (Photon 3D)</option>
-                        <option value="hailuo_h3">🌊 MiniMax Hailuo H3 (Organic Fluid Motion)</option>
-                        <option value="wan_27">🇨🇳 Alibaba Wan 2.7 / 3.0 (Open 1080p)</option>
-                        <option value="pika_20">⚡ Pika 2.0 (Viral Physics Effects)</option>
-                        <option value="pollinations_free_2026">🟢 Pollinations Generative Video (100% Free)</option>
-                        <option value="procedural_3d_webgl">🛡️ Built-in 60 FPS 3D WebGL (Zero-Lag)</option>
-                    </select>
-                </div>
-                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
-                    <span>Cinematic Scene</span>
-                    <span id="brollResBadge" style="color: #C084FC; font-weight: 700;">4K Cinematic Audio</span>
-                </div>
-            </div>
 
-            <!-- DOCK 4: UNIFIED AGGREGATORS & GATEWAYS -->
-            <div class="vfx-dock-card" style="border-top: 2px solid #F59E0B;">
-                <div>
-                    <div class="vfx-dock-title" style="color: #F59E0B;">
-                        <span>⚡</span> <span>भाग ४: Unified Aggregator &amp; Hub</span>
+                    <div class="vfx-dock-card">
+                        <label style="font-size: 10px; color: #94A3B8;">Avatar Engine:</label>
+                        <select id="selectAvatarEngine" class="vfx-dock-select" onchange="onAvatarEngineChange(this.value)">
+                            <option value="hedra_char3" selected>🔥 Hedra Character-3 API (#1 Trending Dev)</option>
+                            <option value="liveportrait_free">🟢 LivePortrait (100% Free Landmark Sync)</option>
+                            <option value="client_cyber_canvas">🛡️ Client-Side 3D Cyber Presenter (Zero-Drop)</option>
+                        </select>
+                        <span id="avatarFpsBadge" style="display:none;"></span>
                     </div>
-                    <select id="selectAggregatorEngine" class="vfx-dock-select" onchange="onAggregatorEngineChange(this.value)">
-                        <option value="nanopro_auto_cascade" selected>🛡️ NanoPro Autonomous Zero-Stop Cascade</option>
-                        <option value="fal_ai_queue">⚡ fal.ai Serverless Unified Queue</option>
-                        <option value="replicate_hub">🌐 Replicate Universal Model Hub</option>
-                        <option value="wavespeed_router">🚀 WaveSpeed / Kie.ai Fast Router</option>
-                    </select>
-                </div>
-                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
-                    <span>Failover Gateway</span>
-                    <span id="gatewayStatusBadge" style="color: #F59E0B; font-weight: 700;">Auto-Cascade Armed</span>
-                </div>
-            </div>
 
+                    <div class="vfx-dock-card">
+                        <label style="font-size: 10px; color: #94A3B8;">B-Roll Scene Engine:</label>
+                        <select id="selectBrollEngine" class="vfx-dock-select" onchange="onBrollEngineChange(this.value)">
+                            <option value="seedance_25" selected>🏆 ByteDance Seedance 2.5 (Leaderboard #1)</option>
+                            <option value="kling_30">🌌 Kuaishou Kling AI 3.0 Pro (Viral Physics)</option>
+                            <option value="veo_31">⚡ Google Veo 3.1 (Gemini 4K Cinematic Audio)</option>
+                            <option value="procedural_3d_webgl">🛡️ Built-in 60 FPS 3D WebGL (Zero-Lag)</option>
+                        </select>
+                        <span id="brollResBadge" style="display:none;"></span>
+                    </div>
+
+                    <div class="vfx-dock-card">
+                        <label style="font-size: 10px; color: #94A3B8;">Failover Router:</label>
+                        <select id="selectAggregatorEngine" class="vfx-dock-select" onchange="onAggregatorEngineChange(this.value)">
+                            <option value="nanopro_auto_cascade" selected>🛡️ NanoPro Autonomous Zero-Stop Cascade</option>
+                            <option value="fal_ai_queue">⚡ fal.ai Serverless Unified Queue</option>
+                        </select>
+                        <span id="gatewayStatusBadge" style="display:none;"></span>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <!-- =========================================================================

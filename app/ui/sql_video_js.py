@@ -5006,8 +5006,13 @@ SECOND_HIGHEST_SALARY: 70000`;
         const rawEntities = visual.entities || (stage && stage.entities) || visual.nodes || [];
         const entities = (Array.isArray(rawEntities) ? rawEntities : [])
             .filter(item => item && (item.label || item.name || item.title)).slice(0, 48);
-        const fallbackEntities = title.split(/\s+/).filter(word => word.length > 3).slice(0, 3)
-            .map((word, i) => ({ label: word, detail: i === 0 ? description : "", color: i % 2 ? "#A78BFA" : "#38BDF8" }));
+        // Enhanced fallback: Provide a rich high-tech 4-node architecture cluster instead of 2 isolated dots
+        const fallbackEntities = [
+            { id: "core_logic", label: title || "Core Architecture", detail: description || "Engine Execution Pipeline", color: "#F59E0B", shape: "core", glyph: "⚡" },
+            { id: "data_stream", label: "Real-Time Pipeline", detail: "High-Throughput Vector Ingestion", color: "#38BDF8", shape: "cylinder", glyph: "🗄️" },
+            { id: "golden_rule", label: "Golden Takeaway", detail: "Senior Engineering Best Practice", color: "#10B981", shape: "trophy", glyph: "🏆" },
+            { id: "verification", label: "Zero-Data-Loss", detail: "Verified Automated Audit", color: "#A78BFA", shape: "shield", glyph: "🛡️" }
+        ];
         const nodes = entities.length ? entities : fallbackEntities;
         const links = visual.relationships || (stage && stage.relationships) || visual.connections || [];
         const composition = String(visual.composition || (stage && stage.composition) || "").toLowerCase();
@@ -7131,82 +7136,123 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // =========================================================================
-        // VISUAL 7: TAKEAWAY (Golden Trophy / Key Takeaway Card)
+        // VISUAL 7: TAKEAWAY (Vibrant 3D Holographic Golden Master Deck)
         // =========================================================================
         else {
-            const rule = vData.rule || p.golden_rule || activeStage.title || "Master the Execution Logic Before Coding!";
-            const bullets = vData.bullets || (p.traps && p.traps.length > 0 ? p.traps : [
-                "Explain the data flow to the interviewer first",
-                "Address edge cases, duplicate ties, and NULLs",
-                "Articulate time and space complexity trade-offs"
+            const rule = vData.rule || p.golden_rule || activeStage.title || "Master Enterprise Architecture Logic Before Coding!";
+            const bullets = (vData.bullets && vData.bullets.length > 0) ? vData.bullets : (p.traps && p.traps.length > 0 ? p.traps : [
+                "Always architect end-to-end data pipelines with zero data loss",
+                "Optimize memory & concurrency: DuckDB + Redis caching",
+                "State performance trade-offs, p95 latencies & failover tiers"
             ]);
-            const proTip = vData.pro_tip || p.pro_tip || "💡 Senior Pro-Tip: State trade-offs before writing code.";
+            const proTip = vData.pro_tip || p.pro_tip || "💡 Senior Architect Tip: Articulate failover tiers before implementation.";
 
-            const takeY = 360;
-            const takeH = 780;
+            const takeY = 320;
+            const takeH = 880;
 
             ctx.save();
-            const trophyY = takeY + 70;
-            const trophyBob = Math.sin(t * 3) * 8;
+            // 1. Dynamic Golden Ambient Starburst Glow
+            const starGrad = ctx.createRadialGradient(W / 2, takeY + 200, 10, W / 2, takeY + 200, 480);
+            starGrad.addColorStop(0, "rgba(245, 158, 11, 0.28)");
+            starGrad.addColorStop(0.5, "rgba(245, 158, 11, 0.08)");
+            starGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+            ctx.fillStyle = starGrad;
+            ctx.fillRect(0, takeY, W, takeH);
+
+            // 2. 3D Floating Rotating Golden Trophy with Orbital Photon Rings
+            const trophyY = takeY + 110;
+            const trophyBob = Math.sin(t * 3.5) * 10;
             ctx.save();
             ctx.translate(W / 2, trophyY + trophyBob);
+            
+            // Orbital ring
+            ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 75, 24, t * 1.5, 0, Math.PI * 2);
+            ctx.stroke();
+
             ctx.fillStyle = "#F59E0B";
             ctx.shadowColor = "#F59E0B";
-            ctx.shadowBlur = 28;
-            ctx.font = "72px 'Segoe UI', sans-serif";
+            ctx.shadowBlur = 35;
+            ctx.font = "82px 'Segoe UI Emoji', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("🏆", 0, 20);
+            ctx.textBaseline = "middle";
+            ctx.fillText("🏆", 0, 0);
             ctx.shadowBlur = 0;
             ctx.restore();
 
-            ctx.fillStyle = "rgba(10, 16, 32, 0.85)";
+            // 3. Holographic Rounded Glass Card with Glowing Golden Border
+            ctx.fillStyle = "rgba(9, 14, 28, 0.92)";
             ctx.beginPath();
-            ctx.roundRect(70, takeY + 160, W - 140, takeH - 180, 22);
+            ctx.roundRect(60, takeY + 210, W - 120, takeH - 230, 24);
             ctx.fill();
+            
             ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 3.5;
             ctx.shadowColor = "#F59E0B";
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 24;
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            // Header Banner Strip
+            ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+            ctx.beginPath();
+            ctx.roundRect(80, takeY + 230, W - 160, 52, 12);
+            ctx.fill();
+            ctx.fillStyle = "#FBBF24";
+            ctx.font = "900 24px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("⭐ KEY INTERVIEW TAKEAWAY & GOLDEN RULE ⭐", W / 2, takeY + 225);
+            ctx.fillText("⭐ KEY INTERVIEW TAKEAWAY & GOLDEN RULE ⭐", W / 2, takeY + 265);
 
+            // Rule Headline
             ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            const rLines = wrapCanvasText(ctx, rule, W - 220, 2);
+            ctx.font = "bold 34px 'Segoe UI', sans-serif";
+            const rLines = wrapCanvasText(ctx, rule, W - 200, 2);
             rLines.forEach((rl, ri) => {
-                ctx.fillText(rl, W / 2, takeY + 285 + ri * 44);
+                ctx.fillText(rl, W / 2, takeY + 335 + ri * 46);
             });
 
+            // Actionable Bullets with Glowing Badges
             ctx.textAlign = "left";
             bullets.slice(0, 3).forEach((b, bi) => {
-                const by = takeY + 390 + bi * 80;
+                const by = takeY + 450 + bi * 95;
+                // Pill background
+                ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+                ctx.beginPath();
+                ctx.roundRect(85, by - 26, W - 170, 78, 14);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Checkmark icon
                 ctx.fillStyle = "#10B981";
-                ctx.font = "bold 24px 'Segoe UI', sans-serif";
-                ctx.fillText("✔", 110, by);
-                ctx.fillStyle = "#E2E8F0";
-                ctx.font = "22px 'Segoe UI', sans-serif";
+                ctx.font = "bold 28px 'Segoe UI', sans-serif";
+                ctx.fillText("✔", 105, by + 18);
+
+                // Bullet text
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "600 23px 'Segoe UI', sans-serif";
                 const bl = wrapCanvasText(ctx, b, W - 280, 2);
                 bl.forEach((line, li) => {
-                    ctx.fillText(line, 150, by + li * 30);
+                    ctx.fillText(line, 155, by + 6 + li * 30);
                 });
             });
 
-            ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+            // Bottom Senior Pro-Tip Pill
+            ctx.fillStyle = "rgba(245, 158, 11, 0.25)";
             ctx.beginPath();
-            ctx.roundRect(100, takeY + takeH - 95, W - 200, 52, 14);
+            ctx.roundRect(85, takeY + takeH - 90, W - 170, 54, 14);
             ctx.fill();
             ctx.strokeStyle = "#F59E0B";
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             ctx.stroke();
-            ctx.fillStyle = "#F59E0B";
-            ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
+            ctx.fillStyle = "#FBBF24";
+            ctx.font = "bold 21px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(fitTextToWidth(ctx, proTip, W - 240), W / 2, takeY + takeH - 62);
+            ctx.fillText(fitTextToWidth(ctx, proTip, W - 210), W / 2, takeY + takeH - 56);
             ctx.restore();
         }
 
