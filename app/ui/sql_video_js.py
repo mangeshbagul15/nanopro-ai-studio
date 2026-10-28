@@ -1104,7 +1104,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 alert("Blueprint generation error: " + (data.message || "Failed"));
             }
         } catch (e) {
-            console.error("Prompt-driven video generation failed:", e);
+            console.error("AI Video generation failed:", e);
             const statusEl = document.getElementById("sqlVideoGenerationStatus");
             if (statusEl) statusEl.textContent = e.message || String(e);
             alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
@@ -2118,7 +2118,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
-    // Master 3D AI Motion Engine Dispatcher (Dynamic Online Prompt-Driven)
+    // Master 3D AI Motion Engine Dispatcher (Dynamic 2026 AI Engines)
     function draw3DAIMotionEngine(ctx, W, H, t) {
         let bgType = sqlShortState.motionBgType;
         const p = sqlShortState.activePreset;
@@ -3137,7 +3137,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     /* ==========================================================================
        DYNAMIC SCENE VISUAL RENDERER (1080 x 1920 9:16 VERTICAL REEL FORMAT)
-       Zero Rigid Templates • Zero Multi-Card Stacking • 100% Prompt-Driven
+       Zero Rigid Templates • 60 FPS Procedural AI Motion
        ========================================================================== */
     function drawPromptMotionBackground(ctx, W, H, t) {
         const bg = ctx.createLinearGradient(0, 0, W * 0.8, H);
@@ -5257,142 +5257,162 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // =========================================================================
-        // UNIVERSAL PROMPT-DRIVEN SHOWCASE (100% Dynamic Content: Any Topic, Any Domain)
+        // UNIVERSAL 2026 60 FPS PROCEDURAL MOTION GRAPHIC VISUAL (ZERO SLIDE CARDS)
         // =========================================================================
         if (normalizedType === "showcase" || normalizedType === "key_points") {
-            const headline = vData.headline || activeStage.title || p.title || "Key Insight";
+            const headline = vData.headline || activeStage.title || p.title || "Core Architecture";
             const subtext = vData.subtext || "";
             const bullets = Array.isArray(vData.bullets) ? vData.bullets : (Array.isArray(vData.points) ? vData.points : []);
-            const badge = vData.badge || (p.domain ? p.domain.toUpperCase() : "KEY INSIGHT");
+            const badge = vData.badge || (p.domain ? p.domain.toUpperCase() : "SYSTEM ARCHITECTURE");
             const themeCol = vData.theme_color || vData.color || p.accent_color || "#38BDF8";
 
-            const cardX = 70;
-            const cardW = W - 140; // 940px wide
-            const cardY = 320;
-            const cardH = 920;
+            const realVid = document.getElementById("sqlShortRealVideo");
+            const hasRealVideo = realVid && realVid.style.display !== "none" && realVid.readyState >= 2 && !realVid.error;
 
             ctx.save();
 
-            // 1. Sleek Frosted Glass Container with Dynamic Glow
-            const glassGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-            glassGrad.addColorStop(0, "rgba(10, 16, 32, 0.88)");
-            glassGrad.addColorStop(1, "rgba(5, 9, 20, 0.94)");
-            ctx.fillStyle = glassGrad;
-            ctx.beginPath();
-            ctx.roundRect(cardX, cardY, cardW, cardH, 28);
-            ctx.fill();
+            // 1. Sleek Floating Upper HUD Badge & Scene Title
+            const topBadgeY = 310;
+            ctx.save();
+            ctx.textAlign = "center";
 
+            // Glowing category pill
+            ctx.fillStyle = "rgba(10, 18, 38, 0.85)";
+            ctx.beginPath();
+            ctx.roundRect(W / 2 - 130, topBadgeY, 260, 36, 18);
+            ctx.fill();
             ctx.strokeStyle = themeCol;
-            ctx.lineWidth = 1.8;
+            ctx.lineWidth = 1.5;
             ctx.shadowColor = themeCol;
-            ctx.shadowBlur = 18;
+            ctx.shadowBlur = 12;
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // 2. Animated Category / Stage Badge
             ctx.fillStyle = themeCol;
-            ctx.beginPath();
-            ctx.roundRect(cardX + 36, cardY + 36, 180, 36, 12);
-            ctx.fill();
+            ctx.font = "bold 13px 'Segoe UI', system-ui, sans-serif";
+            ctx.fillText(badge, W / 2, topBadgeY + 23);
 
-            ctx.fillStyle = "#020617";
-            ctx.font = "bold 15px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText(badge, cardX + 126, cardY + 60);
-
-            // 3. Dynamic Scene Headline (Multi-line wrap)
+            // Bold Kinetic Scene Headline
             ctx.fillStyle = "#FFFFFF";
             ctx.font = "bold 38px 'Segoe UI', system-ui, sans-serif";
-            ctx.textAlign = "left";
-            const headlineLines = wrapCanvasText(ctx, headline, cardW - 72, 3);
-            headlineLines.forEach((hLine, hIdx) => {
-                ctx.fillText(hLine, cardX + 36, cardY + 120 + hIdx * 48);
+            ctx.shadowColor = "rgba(56, 189, 248, 0.6)";
+            ctx.shadowBlur = 20;
+            const hLines = wrapCanvasText(ctx, headline, W - 160, 2);
+            hLines.forEach((hl, i) => {
+                ctx.fillText(hl, W / 2, topBadgeY + 80 + (i * 46));
             });
+            ctx.shadowBlur = 0;
 
-            let curY = cardY + 120 + headlineLines.length * 48 + 15;
-
-            // 4. Subtext / Concept Explanation
-            if (subtext) {
-                ctx.fillStyle = "rgba(226, 232, 240, 0.82)";
-                ctx.font = "22px 'Segoe UI', sans-serif";
-                const subLines = wrapCanvasText(ctx, subtext, cardW - 72, 2);
-                subLines.forEach((sLine, sIdx) => {
-                    ctx.fillText(sLine, cardX + 36, curY + sIdx * 32);
-                });
-                curY += subLines.length * 32 + 25;
+            // Subtext line (if present)
+            if (subtext && hLines.length < 2) {
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "20px 'Segoe UI', sans-serif";
+                ctx.fillText(fitTextToWidth(ctx, subtext, W - 200), W / 2, topBadgeY + 130);
             }
+            ctx.restore();
 
-            // Divider line with glowing specular highlight
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(cardX + 36, curY);
-            ctx.lineTo(cardX + cardW - 36, curY);
-            ctx.stroke();
-            curY += 30;
+            // 2. Center 3D Isometric Hologram & Particle Mesh (Rendered when no external video covers it)
+            if (!hasRealVideo) {
+                const centerY = 820;
+                const corePulse = 1.0 + Math.sin(t * 3.8) * 0.07;
 
-            // 5. Dynamic Bullet Cards (Key Takeaways / Facts)
-            if (bullets.length > 0) {
-                const bulletLimit = Math.min(bullets.length, 4);
-                const bulletSpacing = Math.min(130, Math.floor((cardY + cardH - curY - 30) / bulletLimit));
+                ctx.save();
+                ctx.translate(W / 2, centerY);
+                ctx.scale(corePulse, corePulse);
 
-                bullets.slice(0, bulletLimit).forEach((bText, bIdx) => {
-                    const bY = curY + bIdx * bulletSpacing;
-                    const bH = bulletSpacing - 18;
-
-                    // Bullet card backdrop
-                    ctx.fillStyle = "rgba(15, 23, 42, 0.65)";
+                // Volumetric light rays
+                for (let ray = 0; ray < 6; ray++) {
+                    const rayAngle = (t * 0.4) + (ray * Math.PI / 3);
+                    const rx = Math.cos(rayAngle) * 360;
+                    const ry = Math.sin(rayAngle) * 220;
+                    const rayGrad = ctx.createLinearGradient(0, 0, rx, ry);
+                    rayGrad.addColorStop(0, "rgba(56, 189, 248, 0.22)");
+                    rayGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+                    ctx.strokeStyle = rayGrad;
+                    ctx.lineWidth = 14;
                     ctx.beginPath();
-                    ctx.roundRect(cardX + 36, bY, cardW - 72, bH, 16);
-                    ctx.fill();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(rx, ry);
+                    ctx.stroke();
+                }
 
-                    ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
-                    ctx.lineWidth = 1;
+                // 3D Isometric Cyber Grid Ground Rings
+                for (let r = 0; r < 3; r++) {
+                    const ringRadius = 140 + (r * 75);
+                    const ringAlpha = 0.4 - (r * 0.1);
+                    ctx.save();
+                    ctx.scale(1.0, 0.45); // Isometric elliptical tilt
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = r === 0 ? themeCol : "rgba(99, 102, 241, " + ringAlpha + ")";
+                    ctx.lineWidth = 2.5;
                     ctx.stroke();
 
-                    // Bullet icon / number tag
-                    ctx.fillStyle = themeCol;
-                    ctx.beginPath();
-                    ctx.arc(cardX + 66, bY + bH / 2, 14, 0, Math.PI * 2);
-                    ctx.fill();
+                    // Rotating node markers along rings
+                    const nodeCount = 4 + r * 2;
+                    for (let n = 0; n < nodeCount; n++) {
+                        const nAngle = (t * (0.8 - r * 0.2)) + (n * (Math.PI * 2 / nodeCount));
+                        const nx = Math.cos(nAngle) * ringRadius;
+                        const ny = Math.sin(nAngle) * ringRadius;
+                        ctx.fillStyle = themeCol;
+                        ctx.beginPath();
+                        ctx.arc(nx, ny, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
 
-                    ctx.fillStyle = "#020617";
-                    ctx.font = "bold 14px 'Segoe UI', sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText(String(bIdx + 1), cardX + 66, bY + bH / 2 + 5);
-
-                    // Bullet text
-                    ctx.fillStyle = "#F1F5F9";
-                    ctx.font = "21px 'Segoe UI', sans-serif";
-                    ctx.textAlign = "left";
-                    const bLines = wrapCanvasText(ctx, String(bText), cardW - 140, 2);
-                    bLines.forEach((line, lIdx) => {
-                        ctx.fillText(line, cardX + 96, bY + (bH / 2) - ((bLines.length - 1) * 12) + (lIdx * 26) + 4);
-                    });
-                });
-            } else {
-                // If no bullets, render dynamic visual aura with particles
-                const auraY = curY + 140;
-                const auraPulse = 1.0 + Math.sin(t * 3) * 0.06;
-                ctx.save();
-                ctx.translate(W / 2, auraY);
-                ctx.scale(auraPulse, auraPulse);
-
-                const rad = ctx.createRadialGradient(0, 0, 10, 0, 0, 180);
-                rad.addColorStop(0, themeCol + "44");
-                rad.addColorStop(1, "rgba(0,0,0,0)");
-                ctx.fillStyle = rad;
+                // Central Glowing Quantum Core Orb
+                const coreGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
+                coreGrad.addColorStop(0, "#FFFFFF");
+                coreGrad.addColorStop(0.25, themeCol);
+                coreGrad.addColorStop(0.65, "rgba(14, 165, 233, 0.6)");
+                coreGrad.addColorStop(1, "rgba(2, 6, 23, 0)");
+                ctx.fillStyle = coreGrad;
                 ctx.beginPath();
-                ctx.arc(0, 0, 180, 0, Math.PI * 2);
+                ctx.arc(0, 0, 110, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.strokeStyle = themeCol;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(0, 0, 90, 0, Math.PI * 2);
-                ctx.stroke();
+                // Tech Hologram Icon inside Core
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "52px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                const centerIcon = (p.domain && p.domain.toLowerCase().includes("sql")) ? "⚡" : (vData.icon || "💎");
+                ctx.fillText(centerIcon, 0, 18);
 
                 ctx.restore();
+
+                // 3. Floating Kinetic Concept Tags (Orbiting pills, NOT a vertical slide deck!)
+                if (bullets.length > 0) {
+                    const tagLimit = Math.min(bullets.length, 3);
+                    const tagYStart = 1140;
+                    ctx.save();
+                    ctx.textAlign = "center";
+
+                    for (let b = 0; b < tagLimit; b++) {
+                        const tagText = String(bullets[b]).replace(/^[0-9•\-\s]+/, "").trim();
+                        const tagY = tagYStart + (b * 68);
+                        const tagW = Math.min(W - 140, ctx.measureText(tagText).width + 60);
+
+                        ctx.fillStyle = "rgba(10, 17, 36, 0.75)";
+                        ctx.beginPath();
+                        ctx.roundRect(W / 2 - tagW / 2, tagY, tagW, 52, 26);
+                        ctx.fill();
+
+                        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+
+                        ctx.fillStyle = "#38BDF8";
+                        ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                        ctx.fillText("⚡", W / 2 - tagW / 2 + 26, tagY + 32);
+
+                        ctx.fillStyle = "#F1F5F9";
+                        ctx.font = "600 20px 'Segoe UI', sans-serif";
+                        ctx.fillText(fitTextToWidth(ctx, tagText, tagW - 65), W / 2 + 12, tagY + 33);
+                    }
+                    ctx.restore();
+                }
             }
 
             ctx.restore();
@@ -7492,10 +7512,10 @@ SECOND_HIGHEST_SALARY: 70000`;
        CANVAS RENDERING ENGINE (1080 x 1920 9:16 VERTICAL REEL FORMAT)
        ========================================================================== */
     /* ==========================================================================
-       PROMPT-DRIVEN AWAITING STATE (NO STATIC TEMPLATES)
+       AI STUDIO STANDBY STATE
        ========================================================================== */
     function renderPromptStandbyScreen(ctx, W, H, t) {
-        // Pure Neat & Clean Blank Dark Canvas (Prompt-Driven AI)
+        // Pure Neat & Clean Blank Dark Canvas (50+ AI Engines)
         ctx.fillStyle = "#040711";
         ctx.fillRect(0, 0, W, H);
 
@@ -7545,7 +7565,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         ctx.fillStyle = "#38BDF8";
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
-        ctx.fillText("100% PROMPT-DRIVEN • ZERO STATIC TEMPLATES", W / 2, H / 2 + 125);
+        ctx.fillText("READY TO GENERATE • 50+ AI ENGINES", W / 2, H / 2 + 125);
 
         ctx.fillStyle = "#64748B";
         ctx.font = "18px 'Segoe UI', sans-serif";
@@ -8049,8 +8069,15 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
 
             if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
-                sqlShortState.currentTime = sqlShortState.maxDuration;
                 pauseSqlShortPlay();
+                sqlShortState.currentTime = 0.0;
+                const aud = document.getElementById("sqlVoiceAudio");
+                if (aud) aud.currentTime = 0;
+                const vid = document.getElementById("sqlShortRealVideo");
+                if (vid && vid.style.display !== "none") vid.currentTime = 0;
+                updatePlayerScrubberUI(0);
+                renderSqlShortFrame(0);
+                return;
             }
 
             renderSqlShortFrame(sqlShortState.currentTime);

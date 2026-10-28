@@ -3,7 +3,7 @@
 Mangesh Nano Pro AI Studio - 2026 VFX-Style Universal Tech AI Video Maker
 State-of-the-art 9:16 Shorts & Reels Studio:
 - 4-Tier Multi-Stage API Docks: Prompt-to-Voice • Voice-to-Video Lip-Sync • Prompt-to-Video B-Roll • Unified Aggregators
-- 100% Prompt-Driven, Live Dynamic APIs, Titanium Smartphone Preview, and VFX 1-Click Export!
+- 100% AI Generated, Live Dynamic APIs, Titanium Smartphone Preview, and VFX 1-Click Export!
 """
 
 def get_sql_video_workspace_html() -> str:
@@ -357,257 +357,28 @@ def get_sql_video_workspace_html() -> str:
     <div class="vfx-horizontal-scroll-container" id="vfxHorizontalScrollContainer">
     <div class="vfx-video-root" style="margin-bottom: 28px;">
 
-        <!-- =========================================================================
-             VFX STUDIO TOP HUD BANNER
-             ========================================================================= -->
-        <div class="vfx-glow-box" style="padding: 16px 22px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 70%), #0A0F1D;">
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #0284C7, #8B5CF6); display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);">
+                <!-- CLEAN MASTER STUDIO HEADER -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding: 12px 18px; background: rgba(10, 15, 29, 0.95); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #0284C7, #8B5CF6); display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
                     🎬
                 </div>
                 <div>
-                    <h2 style="margin: 0; font-size: 18px; color: #38BDF8; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
+                    <h2 style="margin: 0; font-size: 17px; color: #38BDF8; font-weight: 900; letter-spacing: 0.5px;">
                         UNIVERSAL TECH AI VIDEO MAKER (9:16 SHORTS &amp; REELS)
                     </h2>
-                    <div style="font-size: 11.5px; color: #94A3B8; margin-top: 3px; display: flex; align-items: center; gap: 8px;">
-                        <span>VFX-Grade Multi-Stage Pipeline:</span>
-                        <b style="color: #F8FAFC;">Prompt ➔ Voice ➔ Lip-Sync Avatar ➔ 4K B-Roll ➔ 1-Click Export</b>
+                    <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
+                        50+ AI Video Models Engine • 9:16 Ultra HD Vertical Studio
                     </div>
                 </div>
             </div>
-
-            <!-- Kokonut UI & Blacklist UI Telemetry Badges -->
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <span class="kokonut-badge">
-                    <span class="kokonut-pulse-dot"></span>
-                    <span style="color: #10B981;">AUTO-PILOT ACTIVE</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 4px 10px; border-radius: 6px; font-weight: 700;">
+                    ⚡ 50+ AI MODELS LOADED
                 </span>
-                <span class="kokonut-badge" style="border-color: rgba(56,189,248,0.4);">
-                    <span style="color: #38BDF8; font-family: monospace;">⚡ 49+ APIS LIVE</span>
+                <span style="font-size: 11px; color: #38BDF8; background: rgba(56,189,248,0.15); border: 1px solid #38BDF8; padding: 4px 10px; border-radius: 6px; font-weight: 700;">
+                    💻 LOCAL GPU ACCELERATION
                 </span>
-                <span class="kokonut-badge" style="border-color: rgba(168,85,247,0.4);">
-                    <span style="color: #C084FC;">✨ ANIME.JS &amp; MOTION.DEV</span>
-                </span>
-                <span class="kokonut-badge" style="border-color: rgba(245,158,11,0.4);">
-                    <span style="color: #FBBF24;">🛡️ ZERO WATERMARK • 60 FPS</span>
-                </span>
-            </div>
-        </div>
-
-        <!-- =========================================================================
-             🎯 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (100% AUTO-PILOT)
-             Executive Manager Role: Does NOT manually render video; instead commissions
-             and orchestrates external APIs, Internet Trends, and Prompts on Auto-Pilot!
-             ========================================================================= -->
-        <div class="kokonut-card" style="padding: 18px 22px; margin-bottom: 20px; border-color: rgba(16, 185, 129, 0.45); background: linear-gradient(135deg, rgba(6, 78, 59, 0.15), rgba(10, 16, 32, 0.95));">
-            
-            <!-- Director Header Strip -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg, #10B981, #06B6D4); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; font-weight: 900; box-shadow: 0 0 20px rgba(16,185,129,0.5);">
-                        🎯
-                    </div>
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <h3 style="margin: 0; font-size: 16px; color: #34D399; font-weight: 900; letter-spacing: 0.5px;">
-                                NanoPro Manager &amp; Autonomous AI Video Director
-                            </h3>
-                            <span class="kokonut-badge" style="background: rgba(16,185,129,0.2); border-color: #10B981; color: #34D399;">
-                                <span class="kokonut-pulse-dot"></span>
-                                AUTO-PILOT EXECUTIVE ACTIVE
-                            </span>
-                            <span class="blacklist-tag" style="background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 2px 8px; border-radius: 4px;">
-                                [API_ORCHESTRATOR_V3]
-                            </span>
-                        </div>
-                        <div style="font-size: 11.5px; color: #94A3B8; margin-top: 4px; line-height: 1.5;">
-                            <strong style="color: #F8FAFC;">💡 Auto-Pilot Protocol:</strong> NanoPro Manager स्वतः व्हिडिओ मॅन्युअली बनवत नाही — तर तो <span style="color: #38BDF8; font-weight: 700;">इंटरनेट ट्रेंड्स</span>, <span style="color: #FBBF24; font-weight: 700;">प्रॉम्प्ट इंटेलिजन्स</span> आणि जगभरातील <span style="color: #34D399; font-weight: 700;">४९+ Generative APIs</span> (TTS, Lip-Sync Avatars, 4K Diffusion, SFX) चा वापर करून ऑटो-पायलटवर व्हिडिओ <b>कमिशन (Commission)</b> आणि <b>सिंक्रोनाइझ (Assemble)</b> करतो!
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 11px; color: #64748B;">Executive Mode:</span>
-                    <span style="font-size: 11px; color: #FBBF24; font-weight: 800; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 4px 12px; border-radius: 8px;">
-                        ⚡ 100% Autonomous (Prompt &rarr; Internet &rarr; APIs)
-                    </span>
-                </div>
-            </div>
-
-            <!-- 5 Live Auto-Pilot Commissioning Cards (Kokonut UI & Blacklist HUD) -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px;">
-                
-                <!-- 1. Internet & Viral Trend Scout -->
-                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="blacklist-tag">[INTERNET_TRENDS]</span>
-                        <span style="font-size: 12px;">🌐</span>
-                    </div>
-                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Viral Trend Scout</div>
-                    <div id="aiDirectorTrendDecision" style="font-size: 12px; font-weight: 800; color: #FBBF24; margin-top: 2px;">
-                        YouTube &amp; Insta Reels 2026 Pacing
-                    </div>
-                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">3s Curiosity Hook &bull; High Retention</div>
-                </div>
-
-                <!-- 2. Auto Voice Engine API -->
-                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="blacklist-tag">[TTS_API]</span>
-                        <span style="font-size: 12px;">🎙️</span>
-                    </div>
-                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Auto Voice Commissioned</div>
-                    <div id="aiDirectorVoiceDecision" style="font-size: 12px; font-weight: 800; color: #34D399; margin-top: 2px;">
-                        Edge Neural (Marathi/Hindi) / Kokoro
-                    </div>
-                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Native Human Cadence &bull; Zero Delay</div>
-                </div>
-
-                <!-- 3. Pure Tech 3D Architecture (STRICTLY NO HUMAN FACES) -->
-                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="blacklist-tag">[PURE_TECH_ENGINE]</span>
-                        <span style="font-size: 12px;">🛡️</span>
-                    </div>
-                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Pure Tech Visuals</div>
-                    <div id="aiDirectorAvatarDecision" style="font-size: 12px; font-weight: 800; color: #38BDF8; margin-top: 2px;">
-                        3D Isometric Systems &bull; No Human Faces
-                    </div>
-                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Code &bull; Conduits &bull; Zero Avatars/Faces</div>
-                </div>
-
-                <!-- 4. Auto 3D & 4K B-Roll Scene API -->
-                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="blacklist-tag">[DIFFUSION_API]</span>
-                        <span style="font-size: 12px;">🎬</span>
-                    </div>
-                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Auto 4K B-Roll Scene</div>
-                    <div id="aiDirectorBrollDecision" style="font-size: 12px; font-weight: 800; color: #C084FC; margin-top: 2px;">
-                        ByteDance Seedance 2.5 + Kling 3.0
-                    </div>
-                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">4K Camera Swoop &bull; Data Centers</div>
-                </div>
-
-                <!-- 5. VFX, 3D Engine & Anime.js / Motion.dev -->
-                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="blacklist-tag">[ANIMEJS_MOTION]</span>
-                        <span style="font-size: 12px;">✨</span>
-                    </div>
-                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">VFX &amp; Physics Engine</div>
-                    <div id="aiDirectorGatewayDecision" style="font-size: 12px; font-weight: 800; color: #F472B6; margin-top: 2px;">
-                        Isometric 3D + Kinetic Typography
-                    </div>
-                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Spring Physics &bull; Web Audio SFX Cues</div>
-                </div>
-            </div>
-
-            <!-- 👥 Autonomous AI Video Task Force (Group T Agents 306-320 Active) -->
-            <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-                    <span style="font-size: 11px; font-weight: 800; color: #38BDF8; display: flex; align-items: center; gap: 6px;">
-                        <span>👥</span> Dedicated Autonomous AI Video Task Force (15 Active Specialists):
-                    </span>
-                    <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 1px 8px; border-radius: 10px; font-weight: 700;">
-                        ● Full Creative Agency Access Granted
-                    </span>
-                </div>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #FBBF24;">
-                        🔥 Agent-306: Viral Shorts Trend Scout
-                    </span>
-                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #38BDF8;">
-                        🎨 Agent-307: 3D Isometric &amp; VFX Architect
-                    </span>
-                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #34D399;">
-                        🎙️ Agent-308: Voice &amp; Web Audio SFX Director
-                    </span>
-                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #C084FC;">
-                        🧠 Agent-309: Continuous Global Video API Learner
-                    </span>
-                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #F472B6;">
-                        📊 Agent-310: Dynamic Metric &amp; Chart Visualizer
-                    </span>
-                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #A78BFA;">
-                        ✍️ Agent-311: Kinetic Typography Stylist
-                    </span>
-                </div>
-            </div>
-
-            <!-- Optional Collapsible Manual Override (Discreetly tucked away so user doesn't have to fiddle) -->
-            <details style="margin-top: 10px; font-size: 11px; color: #64748B;">
-                <summary style="cursor: pointer; color: #38BDF8; font-weight: 700;">
-                    ⚙️ Advanced API Overrides (Optional / Manual Tuning)
-                </summary>
-                <div class="vfx-dock-grid" style="margin-top: 10px;">
-                    <div class="vfx-dock-card">
-                        <label style="font-size: 10px; color: #94A3B8;">Voice Engine:</label>
-                        <select id="selectVoiceEngine" class="vfx-dock-select" onchange="onVoiceEngineChange(this.value)">
-                            <option value="auto" selected>✨ Auto-Pilot Autonomous Selection</option>
-                            <option value="kokoro_free">🟢 Kokoro-82M (100% Free CPU • Zero Cost)</option>
-                            <option value="edge_tts_free">⚡ Microsoft Edge Neural (Free Native Mr/Hi/En)</option>
-                            <option value="elevenlabs_v3">🔥 ElevenLabs v3 Multilingual Studio</option>
-                            <option value="cartesia_sonic">⚡ Cartesia Sonic (40ms Low Latency)</option>
-                            <option value="browser_speech_free">🎙️ In-Browser Web Speech (0ms Offline)</option>
-                        </select>
-                        <span id="voiceLatencyBadge" style="display:none;"></span>
-                    </div>
-
-                    <div class="vfx-dock-card">
-                        <label style="font-size: 10px; color: #94A3B8;">Avatar Engine:</label>
-                        <select id="selectAvatarEngine" class="vfx-dock-select" onchange="onAvatarEngineChange(this.value)">
-                            <option value="auto" selected>✨ Auto-Pilot Autonomous Selection</option>
-                            <option value="hedra_char3">🔥 Hedra Character-3 API (#1 Trending Dev)</option>
-                            <option value="liveportrait_free">🟢 LivePortrait (100% Free Landmark Sync)</option>
-                            <option value="client_cyber_canvas">🛡️ Client-Side 3D Cyber Presenter (Zero-Drop)</option>
-                        </select>
-                        <span id="avatarFpsBadge" style="display:none;"></span>
-                    </div>
-
-                    <div class="vfx-dock-card">
-                        <label style="font-size: 10px; color: #94A3B8;">B-Roll Scene Engine:</label>
-                        <select id="selectBrollEngine" class="vfx-dock-select" onchange="onBrollEngineChange(this.value)">
-                            <option value="auto" selected>✨ Auto-Pilot Autonomous Selection</option>
-                            <option value="seedance_25">🏆 ByteDance Seedance 2.5 (Leaderboard #1)</option>
-                            <option value="kling_30">🔥 Kuaishou Kling AI 3.0 Pro (Viral Physics)</option>
-                            <option value="veo_31">⚡ Google Veo 3.1 (Gemini 4K Cinematic Audio)</option>
-                            <option value="procedural_3d_webgl">🛡️ Built-in 60 FPS 3D WebGL (Zero-Lag)</option>
-                        </select>
-                        <span id="brollResBadge" style="display:none;"></span>
-                    </div>
-
-                    <div class="vfx-dock-card">
-                        <label style="font-size: 10px; color: #94A3B8;">Failover Router:</label>
-                        <select id="selectAggregatorEngine" class="vfx-dock-select" onchange="onAggregatorEngineChange(this.value)">
-                            <option value="nanopro_auto_cascade" selected>🛡️ NanoPro Autonomous Zero-Stop Cascade</option>
-                            <option value="fal_ai_queue">⚡ fal.ai Serverless Unified Queue</option>
-                        </select>
-                        <span id="gatewayStatusBadge" style="display:none;"></span>
-                    </div>
-                </div>
-            </details>
-        </div>
-
-                <!-- ↔️ Complete Horizontal Scroll Navigation Bar (Fast Jump) -->
-        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(10,16,32,0.92); border: 1.5px solid rgba(56,189,248,0.4); border-radius: 12px; padding: 10px 18px; margin-bottom: 16px; backdrop-filter: blur(14px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 16px;">↔️</span>
-                <span style="font-size: 12px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">
-                    HORIZONTAL SCROLL DECK ACTIVE (1360px FULL STUDIO)
-                </span>
-                <span style="font-size: 11px; color: #94A3B8;">&bull; Use scrollbar below or click fast jump buttons:</span>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn btn-secondary motion-spring-btn" onclick="scrollVfxStudio('left')" style="padding: 5px 12px; font-size: 11px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;">
-                    ⬅️ 1. Master Prompt Console
-                </button>
-                <button type="button" class="btn btn-secondary motion-spring-btn" onclick="scrollVfxStudio('center')" style="padding: 5px 12px; font-size: 11px; border-color: #10B981; color: #10B981; font-weight: 700;">
-                    📱 2. 9:16 Smartphone Preview
-                </button>
-                <button type="button" class="btn btn-secondary motion-spring-btn" onclick="scrollVfxStudio('right')" style="padding: 5px 12px; font-size: 11px; border-color: #C084FC; color: #C084FC; font-weight: 700;">
-                    ➡️ 3. 1-Click Video Export
-                </button>
             </div>
         </div>
 
@@ -628,14 +399,7 @@ def get_sql_video_workspace_html() -> str:
                     </span>
                 </div>
 
-                <!-- 1-Click Prompt Preset Chips -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
-                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('sql_window')">🔥 SQL Window Ranking</span>
-                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('python_asyncio')">⚡ Python Asyncio</span>
-                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('snowflake_medallion')">☁️ Snowflake Medallion</span>
-                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('docker_k8s')">🐳 Docker &amp; K8s</span>
-                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('rag_vector')">🤖 Agentic RAG Vector</span>
-                </div>
+
 
                 <!-- 🔄 Generation Strategy Pattern Selector (Unified vs Multi-Model Mix) -->
                 <div style="background: rgba(11, 19, 43, 0.9); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;">
@@ -725,12 +489,9 @@ def get_sql_video_workspace_html() -> str:
 
                 <!-- Master Prompt Textarea -->
                 <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt) इथे टाईप करा:
+उदा. 'Explain Quantum Computing in Marathi' किंवा 'Microservices vs Monolith Architecture'
 
-१. थेट प्रश्न (Question): 'Explain Dense_Rank vs Rank in SQL' किंवा 'Kafka vs RabbitMQ'
-२. व्हॉईस स्क्रिप्ट (TTS Script): 'नमस्कार मित्रांनो, आज आपण पाहणार आहोत की...'
-३. आर्किटेक्चर (Topic): 'Cloud Data Lakehouse Medallion Architecture with DuckDB'
-
-✨ तुमच्या prompt नुसार निवडलेले Voice, Avatar आणि 4K B-Roll APIs थेट कॉल होऊन 9:16 Shorts व्हिडिओ तयार होईल." style="width: 100%; margin-bottom: 14px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 12.5px; font-family: 'Fira Code', monospace; border-radius: 10px; padding: 12px; line-height: 1.6; resize: vertical; box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);"></textarea>
+✨ तुमच्या prompt नुसार 50+ AI Video मॉडेल्स द्वारे थेट 9:16 Shorts / Reels व्हिडिओ तयार होईल." style="width: 100%; margin-bottom: 14px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 12.5px; font-family: 'Fira Code', monospace; border-radius: 10px; padding: 12px; line-height: 1.6; resize: vertical; box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);"></textarea>
 
                 <!-- Natural Teacher Voice Language Selection with Audio Wave -->
                 <div style="background: rgba(11, 19, 43, 0.8); border: 1px solid #1E2D4A; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
@@ -762,15 +523,10 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <!-- Launch Action Button with Motion.dev & Kokonut UI Shimmer -->
-                <button type="button" class="btn btn-primary vfx-laser-btn motion-spring-btn" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 16px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #10B981); border: none; border-radius: 12px; cursor: pointer; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 6px 25px rgba(2,132,199,0.55);">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 20px;">🚀</span>
-                        <span style="letter-spacing: 0.5px;">LAUNCH AUTONOMOUS AUTO-PILOT VIDEO (1-CLICK)</span>
-                    </div>
-                    <span style="font-size: 11px; font-weight: 600; color: #BAE6FD; opacity: 0.9;">
-                        ⚡ NanoPro Director Commissions Internet + 31+ APIs on Auto-Pilot
-                    </span>
+                <!-- Launch Action Button -->
+                <button type="button" class="btn btn-primary vfx-laser-btn motion-spring-btn" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #10B981); border: none; border-radius: 10px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 25px rgba(2,132,199,0.55);">
+                    <span style="font-size: 18px;">🚀</span>
+                    <span>GENERATE 9:16 AI REEL (1-CLICK)</span>
                 </button>
                 <div id="sqlVideoGenerationStatus" role="status" aria-live="polite" style="margin-top: 8px; min-height: 18px; color: #7DD3FC; font-size: 11.5px; text-align: center; font-weight: 600;"></div>
             </div>
@@ -778,7 +534,7 @@ def get_sql_video_workspace_html() -> str:
             <!-- COLUMN 2: 9:16 TITANIUM SMARTPHONE PREVIEW -->
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <div style="margin-bottom: 10px; display: flex; justify-content: space-between; width: 100%; max-width: 340px; align-items: center;">
-                    <span style="font-size: 11.5px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">2. 9:16 SMARTPHONE PREVIEW (PROMPT-DRIVEN)</span>
+                    <span style="font-size: 12px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">📱 9:16 SMARTPHONE PREVIEW</span>
                     <span id="playerTimer" style="font-size: 11px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 0:00</span>
                 </div>
 
@@ -844,51 +600,30 @@ def get_sql_video_workspace_html() -> str:
             <!-- COLUMN 3: 1-CLICK 9:16 VIDEO EXPORT STATION -->
             <div id="exportCardContainer" style="display: flex; flex-direction: column; gap: 16px;">
                 
-                <div class="vfx-glow-box" style="padding: 20px; border-color: rgba(16, 185, 129, 0.45); background: radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.12), transparent 70%), #0A0F1D;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-size: 13.5px; font-weight: 900; color: #10B981; display: flex; align-items: center; gap: 6px;">
-                            <span>🎬</span> <span>CLICK 9:16 VIDEO EXPORT</span>
+                <div class="vfx-glow-box" style="padding: 16px; border-color: rgba(16, 185, 129, 0.45); background: #0A0F1D;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 13px; font-weight: 900; color: #10B981; display: flex; align-items: center; gap: 6px;">
+                            <span>🎬</span> <span>1-CLICK 9:16 VIDEO EXPORT</span>
                         </span>
-                        <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 800;">
-                            🛡️ 100% Zero-Watermark
-                        </span>
-                    </div>
-
-                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 14px; line-height: 1.55;">
-                        Multi-Stage Composite: निवडलेले <b>Voice Engine</b>, <b>Lip-Sync Avatar</b> आणि <b>4K B-Roll Scene</b> एकत्र कम्पोझिट होऊन तुमच्या डिव्हाइसवर 1080×1920 60 FPS व्हिडिओ थेट सेव्ह होतो.
-                    </div>
-
-                    <!-- Local Device Hardware Check -->
-                    <div style="background:rgba(7,11,22,.72);border:1px solid #1E2D4A;border-radius:8px;padding:10px;margin-bottom:12px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                            <strong style="font-size:11px;color:#BAE6FD;">💻 HARDWARE ACCELERATION</strong>
-                            <button type="button" class="btn btn-secondary" onclick="checkSqlVideoDevice()" style="padding:4px 9px;font-size:10px;border-color:#38BDF8;color:#7DD3FC;font-weight:700;">Check GPU &amp; WebGL</button>
-                        </div>
-                        <div id="sqlVideoDeviceStatus" role="status" aria-live="polite" style="margin-top:6px;color:#94A3B8;font-size:10px;line-height:1.5;">60 FPS WebGL Hardware Compositor Ready. Zero CPU bottleneck.</div>
-                    </div>
-
-                    <!-- Export Resolution -->
-                    <label for="sqlExportResolution" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(7,11,22,.72);border:1px solid #1E2D4A;border-radius:8px;padding:10px;margin-bottom:14px;color:#CBD5E1;font-size:11px;">
-                        <span><strong style="color:#BAE6FD;">📺 Export Resolution</strong><br><span style="color:#94A3B8;">Ultra-crisp 9:16 Shorts &amp; Reels format</span></span>
-                        <select id="sqlExportResolution" aria-label="Video export resolution" style="background:#0B1120;color:#F8FAFC;border:1px solid #334155;border-radius:6px;padding:7px 9px;font-size:11px;font-weight:700;">
-                            <option value="1080">1080p Full HD · 1080×1920 (Fast)</option>
-                            <option value="4k">4K UHD · 2160×3840 (Ultra VFX)</option>
+                        <select id="sqlExportResolution" aria-label="Resolution" style="background:#0B1120;color:#F8FAFC;border:1px solid #334155;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;">
+                            <option value="1080">1080×1920 (Full HD)</option>
+                            <option value="4k">2160×3840 (4K UHD)</option>
                         </select>
-                    </label>
+                    </div>
 
                     <!-- Direct Download Button Group -->
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 13px 12px; font-weight: 900; font-size: 12.5px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(16,185,129,0.4);">
-                            <span style="font-size: 18px; flex-shrink: 0;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD FULL 9:16 VIDEO (VOICE &amp; B-ROLL SYNCED)</span>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px; font-weight: 900; font-size: 13px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(16,185,129,0.4);">
+                            <span style="font-size: 18px;">📥</span>
+                            <span id="exportBtnLabel">DOWNLOAD 60S 9:16 REEL (MP4)</span>
                         </button>
 
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1 1 90px; padding: 7px 6px; font-size: 10.5px; font-weight: 700; border-color: #10B981; color: #10B981;" title="Download Teacher Audio (.mp3)">
-                                🎵 Save Voice (.mp3)
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1; padding: 7px; font-size: 11px; font-weight: 700; border-color: #10B981; color: #10B981;">
+                                🎵 Voice (.mp3)
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1 1 90px; padding: 7px 6px; font-size: 10.5px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;" title="Save current frame as HD PNG">
-                                📸 Save Frame (.png)
+                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1; padding: 7px; font-size: 11px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;">
+                                📸 Frame (.png)
                             </button>
                         </div>
                     </div>
