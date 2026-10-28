@@ -600,6 +600,30 @@ class AgentRegistry:
         for aid, name, role, desc, tools, mdl, ico in group_s:
             agents_def.append((aid, name, "S", "Media & Omnichannel", role, desc, tools, mdl, ico))
 
+        # =========================================================================
+        # Group T: Autonomous AI Video Director & Viral Media Production Deck (Agents 306-320, 15 Agents)
+        # =========================================================================
+        group_t = [
+            ("agent_306", "Viral Shorts & Reels Trend Scout", "High-Retention Hook & Viral Formatter", "Monitors YouTube Shorts, Reels, and TikTok algorithms for viral retention curves, fast 3s curiosity gaps, and trending formats.", ["trend_radar_scraper", "viral_hook_synthesizer", "retention_curve_optimizer"], "qwen2.5-coder:7b", "fire"),
+            ("agent_307", "Autonomous 3D Isometric & Kinetic VFX Architect", "3D WebGL Pipeline & Component Map Designer", "Designs 3D isometric cloud pipelines, rotating cyber nodes, traveling photon conduits, and interactive component maps.", ["webgl_3d_architect", "isometric_pipeline_builder", "photon_particle_streamer"], "qwen2.5-coder:7b", "cube"),
+            ("agent_308", "Multi-Model Neural Voice & SFX Sound Director", "Vocal Expression & Web Audio SFX Synthesis", "Directs natural human vocal pacing and synthesizes dynamic Web Audio SFX (whoosh, laser, ding, riser).", ["neural_voice_director", "web_audio_sfx_synth", "pacing_modulator"], "phi4-mini:latest", "music"),
+            ("agent_309", "Continuous Global Video API Learning Engine", "Autonomous Video Model Benchmark & Discoverer", "Scans the web for modern generative video APIs (Seedance 2.5, Veo 3.1, Kling 3.0, Hedra 3, Luma Ray-2) and auto-tunes parameters.", ["video_api_crawler", "model_quality_benchmarker", "prompt_optimizer"], "qwen2.5-coder:7b", "brain"),
+            ("agent_310", "Dynamic Chart, Graph & Financial Metric Animator", "Real-Time Animated Charts & Latency Meters", "Renders live animated sparklines, comparative bar graphs, latency counters, and financial/data flows on canvas.", ["live_chart_animator", "metric_counter_renderer", "graph_flow_composer"], "phi4-mini:latest", "chart-line"),
+            ("agent_311", "Kinetic Typography & Neon Highlighter Stylist", "Viral Text Overlays & Subtitle Animation", "Renders high-contrast kinetic typography with glowing neon drop-shadows, emoji bursts, and attention heatmaps.", ["kinetic_text_animator", "neon_glow_styler", "emoji_burst_engine"], "phi4-mini:latest", "font"),
+            ("agent_312", "Interactive Architecture Flow & Component Mapper", "Multi-Service Flow & Node Mapping", "Orchestrates microservice diagrams, API Gateways, Kafka queues, and database connections into animated flows.", ["service_flow_mapper", "architecture_graph_builder", "node_connection_animator"], "qwen2.5-coder:7b", "project-diagram"),
+            ("agent_313", "Dark-Mode Terminal & Code IDE Simulator", "Cinematic Code IDE & Syntax Simulation", "Renders dark-mode IDE windows with typing effects, laser pointers, syntax highlighting, and diff comparisons.", ["code_typing_simulator", "syntax_highlighter_engine", "ide_window_animator"], "phi4-mini:latest", "terminal"),
+            ("agent_314", "Golden Takeaway & Certification Badge Architect", "3D Trophy & Senior Retention Summary", "Builds 3D rotating golden trophies, glowing glassmorphism summary cards, and senior architect best practices.", ["holographic_trophy_builder", "glassmorphism_card_renderer", "golden_takeaway_synthesizer"], "phi4-mini:latest", "trophy"),
+            ("agent_315", "Autonomous Video Quality & Rendering QA Inspector", "60 FPS Frame Integrity & Audio Sync Auditor", "Audits every generated 9:16 frame for visual richness, contrast, zero-clipping, and sub-millisecond audio sync.", ["video_qa_auditor", "frame_contrast_inspector", "audio_video_sync_guard"], "qwen2.5-coder:7b", "check-double"),
+            ("agent_316", "Viral Emoji & B-Roll Bouncer Director", "Visual Punctuation & Reaction Animation", "Inserts contextual 3D animated emojis, explosion sparks, warning hazard signs, and animated tech badges.", ["emoji_bouncer_engine", "visual_punctuation_director", "attention_magnet_styler"], "phi4-mini:latest", "smile"),
+            ("agent_317", "Interactive Map & Geographic Data Visualizer", "Multi-Region Cloud & Edge Latency Maps", "Renders global maps with pulsing Anycast edge points, data packet trajectories, and regional latency rings.", ["geo_map_renderer", "anycast_edge_mapper", "packet_trajectory_tracer"], "phi4-mini:latest", "globe"),
+            ("agent_318", "Soundtrack & Ambient Cyber Beat Modulator", "Non-Intrusive Lo-Fi & Cyber Ambient Audio", "Synthesizes low-volume dynamic cyber basslines, hi-hat sync, and ambient frequency carpets for tech reels.", ["ambient_beat_synth", "lofi_cyber_generator", "audio_ducking_controller"], "phi4-mini:latest", "headphones"),
+            ("agent_319", "Multi-Platform Aspect Ratio & Codec Optimizer", "9:16 Shorts, 1:1 Feed & 16:9 Landscape Conforming", "Optimizes video containers, H.264/AAC bitrates, color profiles, and aspect ratio crop boundaries for YouTube/Insta/TikTok.", ["aspect_ratio_optimizer", "video_codec_conformer", "bitrate_ladder_tuner"], "phi4-mini:latest", "expand"),
+            ("agent_320", "Master Autonomous AI Video Studio Orchestrator", "End-to-End Autonomous Video Production Director", "Chief executive agent leading Agents 306-319, executing 100% prompt-to-video production with zero human intervention.", ["video_studio_director", "viral_pipeline_coordinator", "autonomous_media_lead"], "qwen2.5-coder:7b", "video")
+        ]
+        for aid, name, role, desc, tools, mdl, ico in group_t:
+            agents_def.append((aid, name, "T", "AI Video & Viral Media", role, desc, tools, mdl, ico))
+
+
         # Register all 305 specialized agents into dictionary
         for item in agents_def:
             agent = SpecializedAgent(
@@ -615,7 +639,7 @@ class AgentRegistry:
             )
             self._agents[agent.agent_id] = agent
 
-        log_event(f"Registered all {len(self._agents)} Specialized Enterprise AI Agents across 19 Groups (A-S)", component="AgentRegistry")
+        log_event(f"Registered all {len(self._agents)} Specialized Enterprise AI Agents across 20 Groups (A-T)", component="AgentRegistry")
 
     def get_agent(self, agent_id: str) -> Optional[SpecializedAgent]:
         return self._agents.get(agent_id)
@@ -628,6 +652,9 @@ class AgentRegistry:
 
     def list_all_agents(self) -> List[Dict[str, Any]]:
         return [a.to_dict() for a in self._agents.values()]
+
+    def get_all_agents(self) -> List[Dict[str, Any]]:
+        return self.list_all_agents()
 
     def list_agents_by_group(self, group: str) -> List[Dict[str, Any]]:
         return [a.to_dict() for a in self._agents.values() if a.group.upper() == group.upper()]
@@ -652,7 +679,8 @@ class AgentRegistry:
             "P": {"name": "Career & Global Outreach", "count": 0, "active": 0},
             "Q": {"name": "Price & Crypto Assets", "count": 0, "active": 0},
             "R": {"name": "Hardware Edge & IoT", "count": 0, "active": 0},
-            "S": {"name": "Media & Omnichannel", "count": 0, "active": 0}
+            "S": {"name": "Media & Omnichannel", "count": 0, "active": 0},
+            "T": {"name": "AI Video Director & Viral Media", "count": 0, "active": 0}
         }
         for a in self._agents.values():
             g = a.group

@@ -824,6 +824,73 @@ SECOND_HIGHEST_SALARY: 70000`;
         throw new Error("This detailed prompt is taking longer than expected. Retry in a moment; it was not rejected as an unsupported prompt type.");
     }
 
+    
+    // =========================================================================
+    // 🎯 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (AUTO-PILOT) CONTROLLER
+    // =========================================================================
+    async function directorAutopilotPreview(prompt, lang) {
+        if (!prompt || prompt.trim().length < 3) return;
+        try {
+            const targetLang = lang || sqlShortState.audioLang || 'mr';
+            const res = await fetch('/api/video/director/autopilot_commission', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ prompt: prompt.trim(), language: targetLang })
+            });
+            const data = await res.json();
+            if (data && data.decision) {
+                const d = data.decision;
+                const vEl = document.getElementById('aiDirectorVoiceDecision');
+                const aEl = document.getElementById('aiDirectorAvatarDecision');
+                const bEl = document.getElementById('aiDirectorBrollDecision');
+                const gEl = document.getElementById('aiDirectorGatewayDecision');
+                if (vEl && d.voice_name) vEl.textContent = d.voice_name;
+                if (aEl && d.avatar_name) aEl.textContent = d.avatar_name;
+                if (bEl && d.broll_name) bEl.textContent = d.broll_name;
+                if (gEl && d.aggregator_name) gEl.textContent = d.aggregator_name;
+
+                // Anime.js Elastic Spring Stagger on Director Commission Cards
+                if (typeof anime !== 'undefined') {
+                    anime({
+                        targets: '.kokonut-director-card',
+                        translateY: [-6, 0],
+                        borderColor: ['#38BDF8', 'rgba(56, 189, 248, 0.28)'],
+                        delay: anime.stagger(90),
+                        duration: 700,
+                        easing: 'easeOutElastic(1, .7)'
+                    });
+                }
+            }
+        } catch(e) {
+            console.warn('Director autopilot preview notice:', e);
+        }
+    }
+
+    function applyQuickPromptPreset(presetKey) {
+        const presets = {
+            'sql_window': 'Explain DENSE_RANK() vs RANK() with partition over salary in SQL',
+            'python_asyncio': 'Explain Python Asyncio Event Loop vs Multi-threading with latency benchmarks',
+            'snowflake_medallion': 'Cloud Data Lakehouse Medallion Architecture (Bronze -> Silver -> Gold) with DuckDB',
+            'docker_k8s': 'Docker Container vs Kubernetes Pod Orchestration & Service Mesh',
+            'rag_vector': 'Agentic RAG with Vector Search Embeddings, Semantic Reranking & LLM Guardrails'
+        };
+        const text = presets[presetKey] || presetKey;
+        const inputEl = document.getElementById('sqlShortQuestion');
+        if (inputEl) {
+            inputEl.value = text;
+            inputEl.focus();
+            directorAutopilotPreview(text, sqlShortState.audioLang || 'mr');
+            if (typeof anime !== 'undefined') {
+                anime({
+                    targets: '#sqlShortQuestion',
+                    borderColor: ['#10B981', '#38BDF8', '#1E2D4A'],
+                    duration: 600,
+                    easing: 'easeOutQuad'
+                });
+            }
+        }
+    }
+
     async function generateSqlShortBlueprint() {
         const q = document.getElementById("sqlShortQuestion").value.trim();
         const btn = document.getElementById("btnGenerateSqlBlueprint");
@@ -8329,7 +8396,9 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.setSqlTextStyle = setSqlTextStyle;
     window.toggleSqlAvatar = toggleSqlAvatar;
     window.setSqlAvatarPresenter = setSqlAvatarPresenter;
-    window.generateSqlShortBlueprint = generateSqlShortBlueprint;
+    window.directorAutopilotPreview = directorAutopilotPreview;
+window.applyQuickPromptPreset = applyQuickPromptPreset;
+window.generateSqlShortBlueprint = generateSqlShortBlueprint;
     window.renderAiAvatarVideo = renderAiAvatarVideo;
     window.renderCinematicBackgroundVideo = renderCinematicBackgroundVideo;
     window.seekSqlShortPlayer = seekSqlShortPlayer;

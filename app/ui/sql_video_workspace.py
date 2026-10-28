@@ -9,6 +9,107 @@ State-of-the-art 9:16 Shorts & Reels Studio:
 def get_sql_video_workspace_html() -> str:
     return """
     <style>
+    /* =========================================================================
+       KOKONUT UI, BLACKLIST UI & MOTION.DEV MODERN STYLING
+       ========================================================================= */
+    :root {
+        --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+        --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --kokonut-glow: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.25), transparent 70%);
+        --blacklist-dark: #050811;
+        --blacklist-card: rgba(10, 16, 32, 0.88);
+        --blacklist-border: rgba(56, 189, 248, 0.28);
+    }
+
+    /* Kokonut UI Frosted Glass Card with Hover Sheen */
+    .kokonut-card {
+        background: var(--blacklist-card);
+        border: 1.5px solid var(--blacklist-border);
+        border-radius: 16px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.35s var(--motion-smooth);
+    }
+    .kokonut-card:hover {
+        border-color: rgba(56, 189, 248, 0.65);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.25);
+        transform: translateY(-2px);
+    }
+
+    /* Kokonut UI Shimmering Conic Glow Sheen */
+    .kokonut-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #38BDF8, #10B981, #8B5CF6, transparent);
+        opacity: 0.8;
+    }
+
+    /* Kokonut UI Pill Badge with Pulsing Neon Dot */
+    .kokonut-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        color: #F8FAFC;
+    }
+    .kokonut-pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #10B981;
+        box-shadow: 0 0 8px #10B981;
+        animation: kokonutDotPulse 2s infinite ease-in-out;
+    }
+    @keyframes kokonutDotPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    /* Blacklist UI Cyber Dark HUD Container */
+    .blacklist-hud {
+        background: var(--blacklist-dark);
+        border: 1.5px solid #1E293B;
+        border-radius: 12px;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        position: relative;
+    }
+    .blacklist-tag {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #38BDF8;
+    }
+
+    /* Motion.dev Tactile Spring Button Feedback */
+    .motion-spring-btn {
+        transition: transform 0.2s var(--spring-bounce), box-shadow 0.2s var(--spring-smooth);
+        cursor: pointer;
+    }
+    .motion-spring-btn:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 8px 24px rgba(56, 189, 248, 0.35);
+    }
+    .motion-spring-btn:active {
+        transform: translateY(1px) scale(0.97);
+    }
+
+    /* Anime.js Kinetic Typography Highlights */
+    .kinetic-subtitle-glow {
+        text-shadow: 0 0 16px rgba(56, 189, 248, 0.8), 0 2px 4px rgba(0, 0, 0, 0.9);
+    }
+
     /* 2026 VFX Holographic Cyber Studio Styling */
     .vfx-video-root {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -201,6 +302,18 @@ def get_sql_video_workspace_html() -> str:
     <input type="hidden" id="directVideoEngineSelect" value="pollinations_ultra_api" />
     <input type="hidden" id="selectedModernVideoModel" value="seedance_25" />
 
+        <!-- 🎬 Anime.js Animation Engine & Motion Physics CDN with Offline Fallback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+    if (typeof anime === 'undefined') {
+        window.anime = function(opts) {
+            if (opts && typeof opts.complete === 'function') setTimeout(opts.complete, opts.duration || 300);
+            return { pause: function(){}, play: function(){}, restart: function(){} };
+        };
+        window.anime.stagger = function(val) { return function(el, i) { return i * (val || 100); }; };
+    }
+    </script>
+
     <div class="vfx-video-root" style="margin-bottom: 28px;">
 
         <!-- =========================================================================
@@ -222,92 +335,166 @@ def get_sql_video_workspace_html() -> str:
                 </div>
             </div>
 
-            <!-- Telemetry Badges -->
+            <!-- Kokonut UI & Blacklist UI Telemetry Badges -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
-                    🟢 4-STAGE PIPELINE ARMED
+                <span class="kokonut-badge">
+                    <span class="kokonut-pulse-dot"></span>
+                    <span style="color: #10B981;">AUTO-PILOT ACTIVE</span>
                 </span>
-                <span style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
-                    ⚡ 31 ADVANCED APIS LIVE
+                <span class="kokonut-badge" style="border-color: rgba(56,189,248,0.4);">
+                    <span style="color: #38BDF8; font-family: monospace;">⚡ 49+ APIS LIVE</span>
                 </span>
-                <span style="background: rgba(168, 85, 247, 0.15); border: 1px solid #A855F7; color: #C084FC; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
-                    🛡️ ZERO WATERMARK
+                <span class="kokonut-badge" style="border-color: rgba(168,85,247,0.4);">
+                    <span style="color: #C084FC;">✨ ANIME.JS &amp; MOTION.DEV</span>
                 </span>
-                <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
-                    📱 1080×1920 60FPS
+                <span class="kokonut-badge" style="border-color: rgba(245,158,11,0.4);">
+                    <span style="color: #FBBF24;">🛡️ ZERO WATERMARK • 60 FPS</span>
                 </span>
             </div>
         </div>
 
         <!-- =========================================================================
-             🤖 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (100% AUTO-PILOT)
-             User inputs ONLY Prompt + Language. NanoPro Director decides all APIs & VFX.
+             🎯 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (100% AUTO-PILOT)
+             Executive Manager Role: Does NOT manually render video; instead commissions
+             and orchestrates external APIs, Internet Trends, and Prompts on Auto-Pilot!
              ========================================================================= -->
-        <div class="vfx-glow-box" style="padding: 16px 20px; margin-bottom: 18px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.95)); border: 1.5px solid #10B981; box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #10B981, #06B6D4); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #000; font-weight: 900; box-shadow: 0 0 15px rgba(16,185,129,0.5);">
-                        🤖
+        <div class="kokonut-card" style="padding: 18px 22px; margin-bottom: 20px; border-color: rgba(16, 185, 129, 0.45); background: linear-gradient(135deg, rgba(6, 78, 59, 0.15), rgba(10, 16, 32, 0.95));">
+            
+            <!-- Director Header Strip -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg, #10B981, #06B6D4); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; font-weight: 900; box-shadow: 0 0 20px rgba(16,185,129,0.5);">
+                        🎯
                     </div>
                     <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <h3 style="margin: 0; font-size: 15px; color: #34D399; font-weight: 900; letter-spacing: 0.5px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; font-size: 16px; color: #34D399; font-weight: 900; letter-spacing: 0.5px;">
                                 NanoPro Manager &amp; Autonomous AI Video Director
                             </h3>
-                            <span style="font-size: 10px; background: rgba(16,185,129,0.2); border: 1px solid #10B981; color: #34D399; padding: 2px 8px; border-radius: 12px; font-weight: 800;">
-                                ● AUTO-PILOT ACTIVE
+                            <span class="kokonut-badge" style="background: rgba(16,185,129,0.2); border-color: #10B981; color: #34D399;">
+                                <span class="kokonut-pulse-dot"></span>
+                                AUTO-PILOT EXECUTIVE ACTIVE
+                            </span>
+                            <span class="blacklist-tag" style="background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 2px 8px; border-radius: 4px;">
+                                [API_ORCHESTRATOR_V3]
                             </span>
                         </div>
-                        <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
-                            Zero Manual Hassle: फक्त तुमचा प्रॉम्प्ट द्या आणि भाषा निवडा — NanoPro मॅनेजर आपोआप योग्य Voice, 3D Scene आणि Lip-Sync सिलेक्ट करून 9:16 व्हिडिओ बनवेल.
+                        <div style="font-size: 11.5px; color: #94A3B8; margin-top: 4px; line-height: 1.5;">
+                            <strong style="color: #F8FAFC;">💡 Auto-Pilot Protocol:</strong> NanoPro Manager स्वतः व्हिडिओ मॅन्युअली बनवत नाही — तर तो <span style="color: #38BDF8; font-weight: 700;">इंटरनेट ट्रेंड्स</span>, <span style="color: #FBBF24; font-weight: 700;">प्रॉम्प्ट इंटेलिजन्स</span> आणि जगभरातील <span style="color: #34D399; font-weight: 700;">४९+ Generative APIs</span> (TTS, Lip-Sync Avatars, 4K Diffusion, SFX) चा वापर करून ऑटो-पायलटवर व्हिडिओ <b>कमिशन (Commission)</b> आणि <b>सिंक्रोनाइझ (Assemble)</b> करतो!
                         </div>
                     </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 11px; color: #64748B;">Director Mode:</span>
-                    <span style="font-size: 11px; color: #FBBF24; font-weight: 800; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 3px 10px; border-radius: 6px;">
-                        ⚡ Prompt-Aware Orchestration (31+ APIs)
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: #64748B;">Executive Mode:</span>
+                    <span style="font-size: 11px; color: #FBBF24; font-weight: 800; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 4px 12px; border-radius: 8px;">
+                        ⚡ 100% Autonomous (Prompt &rarr; Internet &rarr; APIs)
                     </span>
                 </div>
             </div>
 
-            <!-- Live Autonomous Decision Badges -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px;">
-                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
-                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">🎙️ Auto Voice Engine</div>
+            <!-- 5 Live Auto-Pilot Commissioning Cards (Kokonut UI & Blacklist HUD) -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px;">
+                
+                <!-- 1. Internet & Viral Trend Scout -->
+                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="blacklist-tag">[INTERNET_TRENDS]</span>
+                        <span style="font-size: 12px;">🌐</span>
+                    </div>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Viral Trend Scout</div>
+                    <div id="aiDirectorTrendDecision" style="font-size: 12px; font-weight: 800; color: #FBBF24; margin-top: 2px;">
+                        YouTube &amp; Insta Reels 2026 Pacing
+                    </div>
+                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">3s Curiosity Hook &bull; High Retention</div>
+                </div>
+
+                <!-- 2. Auto Voice Engine API -->
+                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="blacklist-tag">[TTS_API]</span>
+                        <span style="font-size: 12px;">🎙️</span>
+                    </div>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Auto Voice Commissioned</div>
                     <div id="aiDirectorVoiceDecision" style="font-size: 12px; font-weight: 800; color: #34D399; margin-top: 2px;">
-                        Kokoro-82M / Edge Neural Teacher
+                        Edge Neural (Marathi/Hindi) / Kokoro
                     </div>
-                    <div style="font-size: 9.5px; color: #64748B;">Native Human Tone • Zero Delay</div>
+                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Native Human Cadence &bull; Zero Delay</div>
                 </div>
 
-                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
-                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">👤 Auto Avatar Lip-Sync</div>
+                <!-- 3. Auto Avatar Lip-Sync API -->
+                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="blacklist-tag">[LIP_SYNC_API]</span>
+                        <span style="font-size: 12px;">👤</span>
+                    </div>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Auto Avatar Commissioned</div>
                     <div id="aiDirectorAvatarDecision" style="font-size: 12px; font-weight: 800; color: #38BDF8; margin-top: 2px;">
-                        Hedra Character-3 / 3D Presenter
+                        Hedra Character-3 / Cyber Presenter
                     </div>
-                    <div style="font-size: 9.5px; color: #64748B;">60 FPS Expressive • Lip-Locked</div>
+                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">60 FPS Expressive &bull; Audio-Driven</div>
                 </div>
 
-                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
-                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">🎬 Auto 3D Scene &amp; B-Roll</div>
+                <!-- 4. Auto 3D & 4K B-Roll Scene API -->
+                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="blacklist-tag">[DIFFUSION_API]</span>
+                        <span style="font-size: 12px;">🎬</span>
+                    </div>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Auto 4K B-Roll Scene</div>
                     <div id="aiDirectorBrollDecision" style="font-size: 12px; font-weight: 800; color: #C084FC; margin-top: 2px;">
-                        ByteDance Seedance 2.5 + 3D WebGL
+                        ByteDance Seedance 2.5 + Kling 3.0
                     </div>
-                    <div style="font-size: 9.5px; color: #64748B;">4K Cinematic • Particle Waves</div>
+                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">4K Camera Swoop &bull; Data Centers</div>
                 </div>
 
-                <div style="background: rgba(15,23,42,0.8); border: 1px solid #1E2D4A; border-radius: 8px; padding: 8px 12px;">
-                    <div style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase;">🛡️ Auto-Cascade Hub</div>
-                    <div id="aiDirectorGatewayDecision" style="font-size: 12px; font-weight: 800; color: #FBBF24; margin-top: 2px;">
-                        Zero-Stop Multi-Cloud Failover
+                <!-- 5. VFX, 3D Engine & Anime.js / Motion.dev -->
+                <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="blacklist-tag">[ANIMEJS_MOTION]</span>
+                        <span style="font-size: 12px;">✨</span>
                     </div>
-                    <div style="font-size: 9.5px; color: #64748B;">Auto-Retries if any API throttles</div>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">VFX &amp; Physics Engine</div>
+                    <div id="aiDirectorGatewayDecision" style="font-size: 12px; font-weight: 800; color: #F472B6; margin-top: 2px;">
+                        Isometric 3D + Kinetic Typography
+                    </div>
+                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Spring Physics &bull; Web Audio SFX Cues</div>
                 </div>
             </div>
 
-            <!-- Optional Collapsible Manual Override (Hidden by default so users don't have to fiddle) -->
+            <!-- 👥 Autonomous AI Video Task Force (Group T Agents 306-320 Active) -->
+            <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 800; color: #38BDF8; display: flex; align-items: center; gap: 6px;">
+                        <span>👥</span> Dedicated Autonomous AI Video Task Force (15 Active Specialists):
+                    </span>
+                    <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 1px 8px; border-radius: 10px; font-weight: 700;">
+                        ● Full Creative Agency Access Granted
+                    </span>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #FBBF24;">
+                        🔥 Agent-306: Viral Shorts Trend Scout
+                    </span>
+                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #38BDF8;">
+                        🎨 Agent-307: 3D Isometric &amp; VFX Architect
+                    </span>
+                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #34D399;">
+                        🎙️ Agent-308: Voice &amp; Web Audio SFX Director
+                    </span>
+                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #C084FC;">
+                        🧠 Agent-309: Continuous Global Video API Learner
+                    </span>
+                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #F472B6;">
+                        📊 Agent-310: Dynamic Metric &amp; Chart Visualizer
+                    </span>
+                    <span style="font-size: 10px; background: rgba(15,23,42,0.9); border: 1px solid #334155; padding: 3px 8px; border-radius: 6px; color: #A78BFA;">
+                        ✍️ Agent-311: Kinetic Typography Stylist
+                    </span>
+                </div>
+            </div>
+
+            <!-- Optional Collapsible Manual Override (Discreetly tucked away so user doesn't have to fiddle) -->
             <details style="margin-top: 10px; font-size: 11px; color: #64748B;">
                 <summary style="cursor: pointer; color: #38BDF8; font-weight: 700;">
                     ⚙️ Advanced API Overrides (Optional / Manual Tuning)
@@ -316,11 +503,12 @@ def get_sql_video_workspace_html() -> str:
                     <div class="vfx-dock-card">
                         <label style="font-size: 10px; color: #94A3B8;">Voice Engine:</label>
                         <select id="selectVoiceEngine" class="vfx-dock-select" onchange="onVoiceEngineChange(this.value)">
-                            <option value="kokoro_free" selected>🟢 Kokoro-82M (100% Free CPU • Zero Cost)</option>
-                            <option value="edge_tts_free">🟢 Microsoft Edge Neural (Free Native Mr/Hi/En)</option>
-                            <option value="elevenlabs_v3">👑 ElevenLabs v3 Multilingual Studio</option>
+                            <option value="auto" selected>✨ Auto-Pilot Autonomous Selection</option>
+                            <option value="kokoro_free">🟢 Kokoro-82M (100% Free CPU • Zero Cost)</option>
+                            <option value="edge_tts_free">⚡ Microsoft Edge Neural (Free Native Mr/Hi/En)</option>
+                            <option value="elevenlabs_v3">🔥 ElevenLabs v3 Multilingual Studio</option>
                             <option value="cartesia_sonic">⚡ Cartesia Sonic (40ms Low Latency)</option>
-                            <option value="browser_speech_free">🌐 In-Browser Web Speech (0ms Offline)</option>
+                            <option value="browser_speech_free">🎙️ In-Browser Web Speech (0ms Offline)</option>
                         </select>
                         <span id="voiceLatencyBadge" style="display:none;"></span>
                     </div>
@@ -328,7 +516,8 @@ def get_sql_video_workspace_html() -> str:
                     <div class="vfx-dock-card">
                         <label style="font-size: 10px; color: #94A3B8;">Avatar Engine:</label>
                         <select id="selectAvatarEngine" class="vfx-dock-select" onchange="onAvatarEngineChange(this.value)">
-                            <option value="hedra_char3" selected>🔥 Hedra Character-3 API (#1 Trending Dev)</option>
+                            <option value="auto" selected>✨ Auto-Pilot Autonomous Selection</option>
+                            <option value="hedra_char3">🔥 Hedra Character-3 API (#1 Trending Dev)</option>
                             <option value="liveportrait_free">🟢 LivePortrait (100% Free Landmark Sync)</option>
                             <option value="client_cyber_canvas">🛡️ Client-Side 3D Cyber Presenter (Zero-Drop)</option>
                         </select>
@@ -338,8 +527,9 @@ def get_sql_video_workspace_html() -> str:
                     <div class="vfx-dock-card">
                         <label style="font-size: 10px; color: #94A3B8;">B-Roll Scene Engine:</label>
                         <select id="selectBrollEngine" class="vfx-dock-select" onchange="onBrollEngineChange(this.value)">
-                            <option value="seedance_25" selected>🏆 ByteDance Seedance 2.5 (Leaderboard #1)</option>
-                            <option value="kling_30">🌌 Kuaishou Kling AI 3.0 Pro (Viral Physics)</option>
+                            <option value="auto" selected>✨ Auto-Pilot Autonomous Selection</option>
+                            <option value="seedance_25">🏆 ByteDance Seedance 2.5 (Leaderboard #1)</option>
+                            <option value="kling_30">🔥 Kuaishou Kling AI 3.0 Pro (Viral Physics)</option>
                             <option value="veo_31">⚡ Google Veo 3.1 (Gemini 4K Cinematic Audio)</option>
                             <option value="procedural_3d_webgl">🛡️ Built-in 60 FPS 3D WebGL (Zero-Lag)</option>
                         </select>
@@ -423,10 +613,15 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <!-- Launch Action Button -->
-                <button type="button" class="btn btn-primary vfx-laser-btn" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13.5px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #8B5CF6); border: none; border-radius: 10px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(2,132,199,0.5);">
-                    <span style="font-size: 18px;">⚡</span>
-                    <span>GENERATE VFX AI VIDEO &amp; VOICE (MULTI-STAGE PIPELINE)</span>
+                <!-- Launch Action Button with Motion.dev & Kokonut UI Shimmer -->
+                <button type="button" class="btn btn-primary vfx-laser-btn motion-spring-btn" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 16px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #10B981); border: none; border-radius: 12px; cursor: pointer; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 6px 25px rgba(2,132,199,0.55);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">🚀</span>
+                        <span style="letter-spacing: 0.5px;">LAUNCH AUTONOMOUS AUTO-PILOT VIDEO (1-CLICK)</span>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: #BAE6FD; opacity: 0.9;">
+                        ⚡ NanoPro Director Commissions Internet + 31+ APIs on Auto-Pilot
+                    </span>
                 </button>
                 <div id="sqlVideoGenerationStatus" role="status" aria-live="polite" style="margin-top: 8px; min-height: 18px; color: #7DD3FC; font-size: 11.5px; text-align: center; font-weight: 600;"></div>
             </div>

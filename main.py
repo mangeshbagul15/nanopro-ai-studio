@@ -1636,6 +1636,10 @@ async def api_video_generate_advance_video(req: ModernVideoGenerateRequest):
     )
     return JSONResponse(res)
 
+class DirectorCommissionRequest(BaseModel):
+    prompt: str
+    language: Optional[str] = "mr"
+
 class MultiStagePipelineRequest(BaseModel):
     prompt: str
     voice_engine: Optional[str] = "kokoro_free"
@@ -1651,15 +1655,25 @@ async def api_video_matrix_full_catalog():
     from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
     return JSONResponse(modern_2026_video_matrix.get_full_catalog())
 
+@app.post("/api/video/director/autopilot_commission")
+async def api_video_director_autopilot_commission(req: DirectorCommissionRequest):
+    """
+    NanoPro Manager & Autonomous AI Video Director (Auto-Pilot):
+    Autonomously evaluates prompt and language, and commissions optimal APIs.
+    """
+    from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
+    decision = modern_2026_video_matrix.auto_pilot_decide_and_commission(req.prompt, req.language or "mr")
+    return JSONResponse({"status": "success", "decision": decision})
+
 @app.post("/api/video/pipeline/generate_multistage")
 async def api_video_pipeline_generate_multistage(req: MultiStagePipelineRequest):
     """Executes the complete Prompt-to-Voice -> Voice-to-Video -> Prompt-to-Video multi-stage generation pipeline."""
     from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
     res = modern_2026_video_matrix.generate_multistage_pipeline(
         prompt=req.prompt,
-        voice_engine=req.voice_engine or "kokoro_free",
-        avatar_engine=req.avatar_engine or "client_cyber_canvas",
-        broll_engine=req.broll_engine or "seedance_25",
+        voice_engine=req.voice_engine or "auto",
+        avatar_engine=req.avatar_engine or "auto",
+        broll_engine=req.broll_engine or "auto",
         aggregator_engine=req.aggregator_engine or "nanopro_auto_cascade",
         language=req.language or "mr",
         aspect_ratio=req.aspect_ratio or "9:16"
