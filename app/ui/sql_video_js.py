@@ -960,11 +960,15 @@ SECOND_HIGHEST_SALARY: 70000`;
                 })
             }).then(r => r.json()).then(vData => {
                 if (vData && vData.video_url) {
+                    const isMp4 = typeof vData.video_url === 'string' && (vData.video_url.toLowerCase().includes('.mp4') || vData.video_url.toLowerCase().includes('.webm'));
                     const realVid = document.getElementById('sqlShortRealVideo');
-                    if (realVid) {
+                    if (realVid && isMp4) {
                         realVid.src = vData.video_url;
                         realVid.style.display = 'block';
                         realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
+                    } else if (realVid) {
+                        realVid.style.display = 'none';
+                        realVid.removeAttribute('src');
                     }
                     // 100% Pure Tech Mode: STRICTLY ZERO HUMAN FACES, GIRLS, BOYS, OR AVATAR IMAGES
                     const pipEl = document.getElementById('phoneAvatarPip');
@@ -1054,11 +1058,15 @@ SECOND_HIGHEST_SALARY: 70000`;
                         })
                     }).then(r => r.json()).then(vData => {
                         if (vData && vData.video_url) {
+                            const isMp4 = typeof vData.video_url === 'string' && (vData.video_url.toLowerCase().includes('.mp4') || vData.video_url.toLowerCase().includes('.webm'));
                             const realVid = document.getElementById('sqlShortRealVideo');
-                            if (realVid) {
+                            if (realVid && isMp4) {
                                 realVid.src = vData.video_url;
                                 realVid.style.display = 'block';
                                 realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
+                            } else if (realVid) {
+                                realVid.style.display = 'none';
+                                realVid.removeAttribute('src');
                             }
                             if (typeof showModernToast === 'function') {
                                 showModernToast('2026 AI Video Active', (vData.provider || 'AI Video Stream') + ' (' + (vData.benchmark_rating || '5★') + ')', 'success');
@@ -7413,15 +7421,25 @@ SECOND_HIGHEST_SALARY: 70000`;
     function drawPromptSceneBackdrop(ctx, W, H, visual, time) {
         const palette = Array.isArray(visual?.palette) ? visual.palette.filter(value => /^#[0-9a-f]{6}$/i.test(String(value))) : [];
         const motif = String(visual?.background_motif || visual?.art_direction || "").toLowerCase();
-        const base = palette[1] || "#04070F";
+        const base = palette[1] || "#080E21";
         const accent = palette[0] || "#38BDF8";
         const gradient = ctx.createLinearGradient(0, 0, W * (0.35 + 0.12 * Math.sin(time * 0.18)), H);
         gradient.addColorStop(0, base);
-        gradient.addColorStop(1, "#03050A");
+        gradient.addColorStop(0.5, "#060A17");
+        gradient.addColorStop(1, "#020409");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, W, H);
+
+        // Radiant Top Center Ambient Glow
+        const radGrad = ctx.createRadialGradient(W / 2, 220, 20, W / 2, 220, 680);
+        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
+        radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.05)");
+        radGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = radGrad;
+        ctx.fillRect(0, 0, W, H);
+
         ctx.save();
-        ctx.globalAlpha = 0.13;
+        ctx.globalAlpha = 0.15;
         ctx.strokeStyle = accent;
         ctx.fillStyle = accent;
         if (/blueprint|grid|schematic/.test(motif)) {
@@ -7441,11 +7459,16 @@ SECOND_HIGHEST_SALARY: 70000`;
                 const y = (i * 317 + Math.cos(time * 0.2 + i * 0.7) * 50 + H) % H;
                 ctx.beginPath(); ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2); ctx.fill();
             }
-        } else if (/technical|terminal|data|network|hud/.test(motif)) {
-            ctx.lineWidth = 2;
+        } else {
+            ctx.lineWidth = 1;
             for (let i = 0; i < 11; i++) {
                 const y = 160 + i * 148;
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W * (0.3 + ((i * 37) % 60) / 100), y); ctx.stroke();
+            }
+            for (let i = 0; i < 16; i++) {
+                const x = (i * 197 + Math.sin(time * 0.3 + i) * 35 + W) % W;
+                const y = (i * 263 + Math.cos(time * 0.25 + i * 0.8) * 45 + H) % H;
+                ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
             }
         }
         ctx.restore();
@@ -7465,12 +7488,147 @@ SECOND_HIGHEST_SALARY: 70000`;
         return !!ctx;
     }
 
+    // =========================================================================
+    // VIRAL KINETIC KARAOKE SUBTITLES ENGINE (High-Retention Word Highlighting)
+    // =========================================================================
+    function drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t) {
+        if (!activeStage) return;
+
+        const speech = (
+            activeStage.speech_mr ||
+            activeStage.speech_hi ||
+            activeStage.speech_en ||
+            activeStage.speech ||
+            activeStage.narration ||
+            activeStage.title ||
+            ""
+        ).trim();
+
+        if (!speech) return;
+
+        ctx.save();
+        const boxX = 60;
+        const boxW = W - 120;
+        const boxH = 150;
+        const boxY = H - 340;
+
+        // Subtle glowing frosted glass capsule
+        const bgGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxH);
+        bgGrad.addColorStop(0, "rgba(8, 14, 30, 0.92)");
+        bgGrad.addColorStop(1, "rgba(4, 7, 18, 0.95)");
+
+        ctx.fillStyle = bgGrad;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 24);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Language indicator badge
+        const activeLang = (sqlShortState.audioLang || "mr").toUpperCase();
+        ctx.fillStyle = "#38BDF8";
+        ctx.beginPath();
+        ctx.roundRect(boxX + 16, boxY + 16, 68, 28, 8);
+        ctx.fill();
+        ctx.fillStyle = "#020617";
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("AI " + activeLang, boxX + 50, boxY + 35);
+
+        // Audio visualizer bars next to lang pill
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.8)";
+        ctx.lineWidth = 2.5;
+        for (let b = 0; b < 4; b++) {
+            const bh = 6 + Math.abs(Math.sin(t * 8 + b * 1.2)) * 14;
+            const bx = boxX + 96 + b * 7;
+            ctx.beginPath();
+            ctx.moveTo(bx, boxY + 30 - bh / 2);
+            ctx.lineTo(bx, boxY + 30 + bh / 2);
+            ctx.stroke();
+        }
+
+        // Split speech into words
+        const words = speech.split(/\s+/).filter(Boolean);
+        if (words.length === 0) {
+            ctx.restore();
+            return;
+        }
+
+        const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
+        const WINDOW_SIZE = 8;
+        const windowStart = Math.floor(activeWordIdx / WINDOW_SIZE) * WINDOW_SIZE;
+        const windowWords = words.slice(windowStart, windowStart + WINDOW_SIZE);
+        const localActiveIdx = activeWordIdx - windowStart;
+
+        ctx.font = "bold 32px 'Segoe UI', system-ui, sans-serif";
+        ctx.textAlign = "left";
+
+        const spaceW = ctx.measureText(" ").width;
+        let line1 = [];
+        let line2 = [];
+        let curW = 0;
+        const maxLineW = boxW - 50;
+
+        for (let i = 0; i < windowWords.length; i++) {
+            const wText = windowWords[i];
+            const wWidth = ctx.measureText(wText).width;
+            if (line1.length === 0 || (curW + spaceW + wWidth < maxLineW && line2.length === 0 && line1.length < 4)) {
+                line1.push({ text: wText, isCurrent: (i === localActiveIdx), isDone: (i < localActiveIdx) });
+                curW += (line1.length > 1 ? spaceW : 0) + wWidth;
+            } else {
+                line2.push({ text: wText, isCurrent: (i === localActiveIdx), isDone: (i < localActiveIdx) });
+            }
+        }
+
+        const renderLine = (tokens, lineY) => {
+            let totalW = 0;
+            tokens.forEach((tk, idx) => {
+                totalW += ctx.measureText(tk.text).width;
+                if (idx < tokens.length - 1) totalW += spaceW;
+            });
+            let curX = boxX + (boxW - totalW) / 2;
+
+            tokens.forEach(tk => {
+                const tw = ctx.measureText(tk.text).width;
+                if (tk.isCurrent) {
+                    ctx.save();
+                    ctx.fillStyle = "#FBBF24";
+                    ctx.shadowColor = "rgba(251, 191, 36, 0.8)";
+                    ctx.shadowBlur = 12;
+                    ctx.fillText(tk.text, curX, lineY);
+                    ctx.restore();
+                } else if (tk.isDone) {
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.shadowBlur = 0;
+                    ctx.fillText(tk.text, curX, lineY);
+                } else {
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+                    ctx.shadowBlur = 0;
+                    ctx.fillText(tk.text, curX, lineY);
+                }
+                curX += tw + spaceW;
+            });
+        };
+
+        if (line2.length === 0) {
+            renderLine(line1, boxY + 95);
+        } else {
+            renderLine(line1, boxY + 75);
+            renderLine(line2, boxY + 120);
+        }
+
+        ctx.restore();
+    }
+
     function renderSqlShortFrame(t) {
         const canvas = document.getElementById("sqlShortCanvas");
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         const renderScale = Math.max(1, Number(sqlShortState.renderScale) || 1);
         ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+        ctx.save();
         const W = 1080;
         const H = 1920;
         const p = sqlShortState.activePreset;
@@ -7512,9 +7670,10 @@ SECOND_HIGHEST_SALARY: 70000`;
             currentStageIdx = estIdx;
         }
 
-        // If real generative AI video is playing in the background, clear canvas so it shows through!
+        // Only clear canvas if live MP4 video element is actually playing and ready (never clear on broken or image URLs)
         const realVid = document.getElementById("sqlShortRealVideo");
-        if (realVid && realVid.style.display !== "none") {
+        const hasLiveVideo = realVid && realVid.style.display !== "none" && realVid.readyState >= 2 && !realVid.error;
+        if (hasLiveVideo) {
             ctx.clearRect(0, 0, W, H);
         } else {
             drawPromptSceneBackdrop(ctx, W, H, activeStage?.visual_data || {}, t);
@@ -7584,15 +7743,12 @@ SECOND_HIGHEST_SALARY: 70000`;
                 sqlShortState.soundEffectEvents = (Number(sqlShortState.soundEffectEvents) || 0) + 1;
             }
         }
-        const sceneVisualRendered = drawPromptVisualPlan(ctx, W, H, activeStage, activeCue ? cueProgress : stageProg, t, activeCue && activeCue.visual_data, activeCueIndex, activeCue);
-        const graphRendered = !sceneVisualRendered && drawTechnicalArchitectureGraph(ctx, W, H, p.architecture_graph, t, activeStageIndex, maxDur, activeStage);
-        if (!graphRendered && !sceneVisualRendered) {
-            renderArchitectureScene(ctx, W, H, p, activeStage, activeStageIndex, stageProg, stageAlpha, t);
-        }
+        // 3. RENDER DYNAMIC 2026 AI SCENE VISUAL (Hook -> 3D Isometric Architecture -> IDE Code -> Benchmarks -> Takeaway)
+        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
 
-        // Narration stays in the voice track. The renderer places short process
-        // explanations next to their active object instead of repeating the speech
-        // as a karaoke strip across the bottom of the frame.
+        // 4. DRAW VIRAL KINETIC KARAOKE SUBTITLES (High-Retention Word Highlighting)
+        drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t);
+
         ctx.restore();
     }
 
