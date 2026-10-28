@@ -1440,7 +1440,7 @@ async def api_sql_video_direct_workspace():
     {get_sql_video_js()}
 </body>
 </html>'''
-    return HTMLResponse(content)
+    return HTMLResponse(content, headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"})
 
 # --- HEYGEN AI AVATAR ENDPOINTS (API #19) ---
 from app.core.heygen_avatar import heygen_avatar_engine

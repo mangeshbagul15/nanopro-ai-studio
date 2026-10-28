@@ -10832,295 +10832,585 @@ SECOND_HIGHEST_SALARY: 70000`;
         const accentCol = spec.accentCol || "#10B981";
         const stageIdx = Number(currentStageIdx) || 1;
         const stageTitle = String(activeStage?.title || "").toLowerCase();
+        const promptText = String(p?.question || p?.title || "").toLowerCase();
 
         ctx.save();
 
-        // ---------------------------------------------------------------------
-        // SCENE 2 or "HOW IT WORKS" / "ARCHITECTURE" / "PIPELINE":
-        // 3D SOURCE DB -> REPLICATION INSTANCE -> TARGET DATA WAREHOUSE PIPELINE
-        // ---------------------------------------------------------------------
-        if (stageIdx === 2 || stageTitle.includes("kaise") || stageTitle.includes("work") || stageTitle.includes("flow") || stageTitle.includes("pipe") || stageTitle.includes("load") || stageTitle.includes("cdc")) {
+        const isS3 = promptText.includes("s3") || promptText.includes("bucket") || promptText.includes("storage") || promptText.includes("object") || promptText.includes("blob") || stageTitle.includes("s3") || stageTitle.includes("bucket");
+        const isDms = promptText.includes("dms") || promptText.includes("migrat") || promptText.includes("cdc") || stageTitle.includes("dms");
+
+        // =====================================================================
+        // TOPIC A: AMAZON S3 BUCKET & CLOUD OBJECT STORAGE 3D SUITE
+        // =====================================================================
+        if (isS3) {
+            const centerY = 820;
+
+            // SCENE 1: 3D HOLOGRAPHIC AMAZON S3 BUCKET & STREAMING OBJECT CUBES
+            if (stageIdx === 1 || stageTitle.includes("kya") || stageTitle.includes("overview") || stageTitle.includes("intro")) {
+                const bucketY = centerY + 40;
+                const bob = Math.sin(t * 3.0) * 8;
+
+                // Orbiting 3D Data Objects (Files, Images, Parquet, Tar) Plunging into Bucket
+                const fileTypes = [
+                    {name: "image.png", icon: "🖼️", col: "#38BDF8", delay: 0},
+                    {name: "data.parquet", icon: "📊", col: "#10B981", delay: 1.2},
+                    {name: "backup.tar", icon: "🗄️", col: "#F59E0B", delay: 2.4},
+                    {name: "video.mp4", icon: "🎬", col: "#EC4899", delay: 3.6}
+                ];
+
+                fileTypes.forEach((f, fi) => {
+                    const prog = ((t * 0.7 + fi * 0.25) % 1.0);
+                    // 3D Parabolic entry trajectory
+                    const orbitAngle = t * 1.8 + fi * (Math.PI / 2);
+                    const fx = W / 2 + Math.cos(orbitAngle) * (260 * (1.0 - prog * 0.6));
+                    const fy = bucketY - 240 + Math.sin(prog * Math.PI) * -60 + prog * 200;
+                    const fScale = 1.0 - prog * 0.35;
+
+                    ctx.save();
+                    ctx.translate(fx, fy);
+                    ctx.scale(fScale, fScale);
+                    // Glowing Cube Card
+                    ctx.fillStyle = "rgba(10, 24, 48, 0.95)";
+                    ctx.beginPath();
+                    ctx.roundRect(-60, -24, 120, 48, 10);
+                    ctx.fill();
+                    ctx.strokeStyle = f.col;
+                    ctx.lineWidth = 2.0;
+                    ctx.shadowColor = f.col;
+                    ctx.shadowBlur = 14;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 13px 'Segoe UI', monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(f.icon + " " + f.name, 0, 5);
+                    ctx.restore();
+                });
+
+                // Main 3D Isometric Amazon S3 Storage Bucket
+                ctx.save();
+                ctx.translate(W / 2, bucketY + bob);
+
+                const bW = 280;
+                const bH = 220;
+                const bR = bW / 2;
+
+                // Bucket Body Gradient (Metallic Brushed AWS Titanium)
+                const bodyGrad = ctx.createLinearGradient(-bR, 0, bR, 0);
+                bodyGrad.addColorStop(0, "rgba(6, 20, 40, 0.96)");
+                bodyGrad.addColorStop(0.3, "rgba(14, 40, 75, 0.98)");
+                bodyGrad.addColorStop(0.7, "rgba(22, 60, 110, 0.98)");
+                bodyGrad.addColorStop(1, "rgba(4, 16, 32, 0.96)");
+
+                // Draw Tapered Bucket Body
+                ctx.beginPath();
+                ctx.moveTo(-bR, -bH / 2);
+                ctx.lineTo(-bR * 0.82, bH / 2);
+                ctx.quadraticCurveTo(0, bH / 2 + 50, bR * 0.82, bH / 2);
+                ctx.lineTo(bR, -bH / 2);
+                ctx.closePath();
+                ctx.fillStyle = bodyGrad;
+                ctx.fill();
+                ctx.strokeStyle = "#FF9900"; // AWS S3 Amber
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = "#FF9900";
+                ctx.shadowBlur = 28;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Top Bucket Rim (Isometric Ellipse)
+                ctx.save();
+                ctx.translate(0, -bH / 2);
+                ctx.scale(1.0, 0.38);
+                const rimGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, bR);
+                rimGrad.addColorStop(0, "#FF9900");
+                rimGrad.addColorStop(0.6, "rgba(22, 60, 110, 0.9)");
+                rimGrad.addColorStop(1, "rgba(6, 20, 40, 0.95)");
+                ctx.fillStyle = rimGrad;
+                ctx.beginPath();
+                ctx.arc(0, 0, bR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 3.0;
+                ctx.stroke();
+                ctx.restore();
+
+                // Glowing AWS S3 Emblem on Bucket Front
+                ctx.fillStyle = "#FF9900";
+                ctx.font = "bold 44px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🪣", 0, 10);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 20px 'Segoe UI', sans-serif";
+                ctx.fillText("AMAZON S3", 0, 52);
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("OBJECT STORAGE ENGINE", 0, 74);
+
+                ctx.restore();
+
+                // Bottom Real-Time Telemetry Pill
+                const pillY = bucketY + 180;
+                ctx.save();
+                ctx.fillStyle = "rgba(4, 12, 28, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(W / 2 - 250, pillY, 500, 46, 23);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255, 153, 0, 0.65)";
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                ctx.fillStyle = "#FF9900";
+                ctx.font = "bold 14px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("⚡ 100+ TRILLION OBJECTS • EXABYTE SCALE • 100% UNLIMITED", W / 2, pillY + 28);
+                ctx.restore();
+            }
+
+            // SCENE 2: OBJECT ANATOMY & 3-AZ REPLICATION (11 9s DURABILITY)
+            else if (stageIdx === 2 || stageTitle.includes("work") || stageTitle.includes("mechan") || stageTitle.includes("kaise")) {
+                const topY = centerY - 140;
+
+                // 3D Object Anatomy Card
+                ctx.save();
+                ctx.translate(W / 2, topY);
+                ctx.fillStyle = "rgba(6, 18, 38, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(-280, -70, 560, 140, 16);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 18;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Card Header
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 15px monospace";
+                ctx.textAlign = "left";
+                ctx.fillText("📦 ANATOMY OF AN S3 OBJECT", -255, -38);
+
+                // 4 Pillars
+                const pillars = [
+                    {k: "KEY", v: "data/users.parquet", col: "#38BDF8"},
+                    {k: "VALUE", v: "Binary Data Stream", col: "#10B981"},
+                    {k: "METADATA", v: "Content-Type, Tags", col: "#F59E0B"},
+                    {k: "VERSION ID", v: "v3.19.8 (Locked)", col: "#EC4899"}
+                ];
+                pillars.forEach((pil, pi) => {
+                    const px = -255 + (pi % 2) * 260;
+                    const py = -8 + Math.floor(pi / 2) * 36;
+                    ctx.fillStyle = pil.col;
+                    ctx.font = "bold 12px monospace";
+                    ctx.fillText(pil.k + ":", px, py);
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "12px 'Segoe UI', monospace";
+                    ctx.fillText(pil.v, px + 95, py);
+                });
+                ctx.restore();
+
+                // 3 Replicated Availability Zones (Multi-AZ Mesh)
+                const azY = centerY + 110;
+                const azNodes = [
+                    {x: W / 2 - 270, name: "AZ-1 (us-east-1a)", status: "REPLICATED", col: "#10B981"},
+                    {x: W / 2, name: "AZ-2 (us-east-1b)", status: "REPLICATED", col: "#38BDF8"},
+                    {x: W / 2 + 270, name: "AZ-3 (us-east-1c)", status: "REPLICATED", col: "#F59E0B"}
+                ];
+
+                // Photon Cables from Anatomy to all 3 AZs
+                ctx.save();
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 6]);
+                ctx.lineDashOffset = -t * 30;
+                ctx.beginPath();
+                azNodes.forEach(az => {
+                    ctx.moveTo(W / 2, topY + 70);
+                    ctx.lineTo(az.x, azY - 45);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                // Draw AZ Nodes
+                azNodes.forEach((az, azi) => {
+                    const abob = Math.sin(t * 3.0 + azi * 1.5) * 5;
+                    ctx.save();
+                    ctx.translate(az.x, azY + abob);
+                    ctx.fillStyle = "rgba(8, 20, 42, 0.94)";
+                    ctx.beginPath();
+                    ctx.roundRect(-100, -45, 200, 90, 14);
+                    ctx.fill();
+                    ctx.strokeStyle = az.col;
+                    ctx.lineWidth = 2.0;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("🏢 " + az.name, 0, -10);
+                    ctx.fillStyle = az.col;
+                    ctx.font = "bold 12px monospace";
+                    ctx.fillText("● " + az.status, 0, 15);
+                    ctx.restore();
+                });
+
+                // Durability Banner
+                const durY = azY + 105;
+                ctx.save();
+                ctx.fillStyle = "rgba(4, 16, 32, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(W / 2 - 250, durY, 500, 44, 22);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 2.0;
+                ctx.stroke();
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 14px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("🛡️ 99.999999999% (11 9s) ANNUAL DURABILITY GUARANTEE", W / 2, durY + 27);
+                ctx.restore();
+            }
+
+            // SCENE 3: SECURITY, BUCKET POLICIES & ENCRYPTION SHIELD
+            else if (stageIdx === 3 || stageTitle.includes("access") || stageTitle.includes("secur") || stageTitle.includes("iam") || stageTitle.includes("policy")) {
+                const shieldY = centerY;
+
+                // Central 3D KMS Vault Key Cylinder
+                ctx.save();
+                ctx.translate(W / 2, shieldY);
+
+                // Rotating 3D Security Shield Ring
+                for (let r = 0; r < 3; r++) {
+                    const sR = 90 + r * 50;
+                    const rot = (t * (r % 2 ? 0.8 : -0.8));
+                    ctx.save();
+                    ctx.rotate(rot);
+                    ctx.strokeStyle = r === 0 ? "rgba(16, 185, 129, 0.6)" : (r === 1 ? "rgba(56, 189, 248, 0.45)" : "rgba(245, 158, 11, 0.35)");
+                    ctx.lineWidth = 3.0 - r * 0.5;
+                    ctx.setLineDash([14, 10]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, sR, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Core KMS Shield Hub
+                ctx.fillStyle = "rgba(6, 18, 38, 0.98)";
+                ctx.beginPath();
+                ctx.arc(0, 0, 75, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 3.0;
+                ctx.shadowColor = "#10B981";
+                ctx.shadowBlur = 24;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "40px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🔐", 0, 8);
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("AWS KMS", 0, 36);
+                ctx.fillText("SSE-KMS ENCRYPTED", 0, 52);
+                ctx.restore();
+
+                // 3 Outer Security Sentinel Nodes
+                const sentinels = [
+                    {x: W / 2 - 270, y: shieldY - 120, title: "BLOCK PUBLIC ACCESS", sub: "Global Account Safety", icon: "🚫", col: "#EF4444"},
+                    {x: W / 2 + 270, y: shieldY - 120, title: "BUCKET POLICIES", sub: "Resource-Based JSON", icon: "📜", col: "#38BDF8"},
+                    {x: W / 2, y: shieldY + 160, title: "IAM ROLE RESTRICTION", sub: "Least Privilege Principle", icon: "🛡️", col: "#10B981"}
+                ];
+
+                sentinels.forEach(sen => {
+                    ctx.save();
+                    ctx.translate(sen.x, sen.y);
+                    ctx.fillStyle = "rgba(8, 20, 42, 0.94)";
+                    ctx.beginPath();
+                    ctx.roundRect(-100, -38, 200, 76, 14);
+                    ctx.fill();
+                    ctx.strokeStyle = sen.col;
+                    ctx.lineWidth = 2.0;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(sen.icon + " " + sen.title, 0, -6);
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "11px 'Segoe UI', monospace";
+                    ctx.fillText(sen.sub, 0, 16);
+                    ctx.restore();
+                });
+            }
+
+            // SCENE 4: STORAGE CLASSES (STANDARD -> IA -> GLACIER TIERS)
+            else if (stageIdx === 4 || stageTitle.includes("tier") || stageTitle.includes("class") || stageTitle.includes("fayde") || stageTitle.includes("win")) {
+                const tiersY = centerY;
+                const tiers = [
+                    {x: W / 2 - 270, name: "S3 STANDARD", sub: "Frequently Accessed", latency: "Milliseconds", cost: "$$$", col: "#38BDF8", icon: "⚡"},
+                    {x: W / 2, name: "STANDARD-IA", sub: "Infrequent Access", latency: "Milliseconds", cost: "$$ (50% Off)", col: "#F59E0B", icon: "📁"},
+                    {x: W / 2 + 270, name: "GLACIER DEEP", sub: "Long-Term Archive", latency: "12 Hours", cost: "$ (95% Off)", col: "#A855F7", icon: "🧊"}
+                ];
+
+                // Lifecycle Transition Arrows (Standard -> IA -> Glacier)
+                ctx.save();
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+                ctx.lineWidth = 3.0;
+                ctx.setLineDash([8, 8]);
+                ctx.lineDashOffset = -t * 30;
+                ctx.beginPath();
+                ctx.moveTo(W / 2 - 170, tiersY);
+                ctx.lineTo(W / 2 - 100, tiersY);
+                ctx.moveTo(W / 2 + 100, tiersY);
+                ctx.lineTo(W / 2 + 170, tiersY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                // Draw Tier Pods
+                tiers.forEach((tr, tri) => {
+                    const tbob = Math.sin(t * 3.0 + tri * 1.5) * 6;
+                    ctx.save();
+                    ctx.translate(tr.x, tiersY + tbob);
+
+                    ctx.fillStyle = "rgba(6, 18, 38, 0.95)";
+                    ctx.beginPath();
+                    ctx.roundRect(-95, -95, 190, 190, 16);
+                    ctx.fill();
+                    ctx.strokeStyle = tr.col;
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = tr.col;
+                    ctx.shadowBlur = 18;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "32px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(tr.icon, 0, -42);
+
+                    ctx.fillStyle = tr.col;
+                    ctx.font = "bold 14px 'Segoe UI', sans-serif";
+                    ctx.fillText(tr.name, 0, -8);
+
+                    ctx.fillStyle = "#E2E8F0";
+                    ctx.font = "12px 'Segoe UI', sans-serif";
+                    ctx.fillText(tr.sub, 0, 18);
+
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "11px monospace";
+                    ctx.fillText("Latency: " + tr.latency, 0, 42);
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 13px monospace";
+                    ctx.fillText("Cost: " + tr.cost, 0, 68);
+
+                    ctx.restore();
+                });
+
+                // Automated Lifecycle Strip
+                const ruleY = tiersY + 145;
+                ctx.save();
+                ctx.fillStyle = "rgba(4, 12, 28, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(W / 2 - 240, ruleY, 480, 44, 22);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 13px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("🔄 AUTOMATED S3 LIFECYCLE RULES (TIER MIGRATION)", W / 2, ruleY + 28);
+                ctx.restore();
+            }
+
+            // SCENE 5+: PRO-TIP & ENTERPRISE ARCHITECTURE SUMMARY
+            else {
+                const centerY5 = centerY;
+                const gauges = [
+                    {x: W / 2 - 270, val: "5 TB", label: "MAX OBJECT SIZE", sub: "Single S3 Key", col: "#38BDF8"},
+                    {x: W / 2, val: "11 9s", label: "DURABILITY", sub: "Multi-AZ Sentinel", col: "#10B981"},
+                    {x: W / 2 + 270, val: "3,500+", label: "PUT REQ / SEC", sub: "Per Prefix Scale", col: "#F59E0B"}
+                ];
+
+                gauges.forEach((g, gi) => {
+                    const gbob = Math.sin(t * 3.0 + gi * 2) * 6;
+                    ctx.save();
+                    ctx.translate(g.x, centerY5 + gbob);
+
+                    // Circular Progress Gauge
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+                    ctx.lineWidth = 8;
+                    ctx.beginPath();
+                    ctx.arc(0, -25, 68, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // Glowing Arc
+                    ctx.strokeStyle = g.col;
+                    ctx.lineWidth = 8;
+                    ctx.lineCap = "round";
+                    ctx.shadowColor = g.col;
+                    ctx.shadowBlur = 16;
+                    ctx.beginPath();
+                    const startA = -Math.PI / 2;
+                    const endA = startA + (Math.PI * 1.6);
+                    ctx.arc(0, -25, 68, startA, endA);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Center Value
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 26px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(g.val, 0, -16);
+
+                    // Labels
+                    ctx.fillStyle = g.col;
+                    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                    ctx.fillText(g.label, 0, 72);
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "12px 'Segoe UI', sans-serif";
+                    ctx.fillText(g.sub, 0, 92);
+                    ctx.restore();
+                });
+
+                // Pro-Tip Golden Banner
+                const tipY = centerY5 + 150;
+                ctx.save();
+                ctx.fillStyle = "rgba(18, 12, 4, 0.94)";
+                ctx.beginPath();
+                ctx.roundRect(W / 2 - 260, tipY, 520, 48, 24);
+                ctx.fill();
+                ctx.strokeStyle = "#F59E0B";
+                ctx.lineWidth = 2.0;
+                ctx.shadowColor = "#F59E0B";
+                ctx.shadowBlur = 18;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 13px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("💡 PRO-TIP: ENABLE S3 VERSIONING & LIFECYCLE RULES ON DAY 1", W / 2, tipY + 29);
+                ctx.restore();
+            }
+        }
+
+        // =====================================================================
+        // TOPIC B: AWS DMS & DATA MIGRATION CDC ENGINE
+        // =====================================================================
+        else if (isDms) {
             const centerY = 800;
 
-            // Connecting Conduit Cable (Source to DMS)
-            ctx.save();
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
-            ctx.lineWidth = 4;
-            ctx.setLineDash([8, 8]);
-            ctx.lineDashOffset = -t * 40;
-            ctx.beginPath();
-            ctx.moveTo(220, centerY);
-            ctx.lineTo(540, centerY);
-            ctx.stroke();
-
-            // Connecting Conduit Cable (DMS to Target)
-            ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
-            ctx.beginPath();
-            ctx.moveTo(540, centerY);
-            ctx.lineTo(860, centerY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-
-            // Animated Traveling Photon Packets (Source -> DMS -> Target)
-            const packetCount = 6;
-            for (let i = 0; i < packetCount; i++) {
-                const prog = ((t * 0.9 + i * (1.0 / packetCount)) % 1.0);
-                let px, py, pcol;
-                if (prog < 0.5) {
-                    const localP = prog / 0.5;
-                    px = 220 + localP * 320;
-                    py = centerY + Math.sin(localP * Math.PI) * -15;
-                    pcol = "#38BDF8";
-                } else {
-                    const localP = (prog - 0.5) / 0.5;
-                    px = 540 + localP * 320;
-                    py = centerY + Math.sin(localP * Math.PI) * -15;
-                    pcol = "#10B981";
-                }
+            if (stageIdx === 2 || stageTitle.includes("kaise") || stageTitle.includes("work") || stageTitle.includes("flow")) {
+                // Connecting Conduit Cable (Source to DMS)
                 ctx.save();
-                ctx.fillStyle = pcol;
-                ctx.shadowColor = pcol;
-                ctx.shadowBlur = 12;
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+                ctx.lineWidth = 4;
+                ctx.setLineDash([8, 8]);
+                ctx.lineDashOffset = -t * 40;
                 ctx.beginPath();
-                ctx.arc(px, py, 6, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.moveTo(220, centerY);
+                ctx.lineTo(540, centerY);
+                ctx.stroke();
+
+                // Connecting Conduit Cable (DMS to Target)
+                ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+                ctx.beginPath();
+                ctx.moveTo(540, centerY);
+                ctx.lineTo(860, centerY);
+                ctx.stroke();
+                ctx.setLineDash([]);
                 ctx.restore();
-            }
 
-            // NODE 1: SOURCE DATABASE (Left)
-            const bob1 = Math.sin(t * 3.2) * 6;
-            ctx.save();
-            ctx.translate(220, centerY + bob1);
-            // 3D Database Cylinder
-            draw3DDatabaseCylinder(ctx, 0, 0, 85, 95, "#38BDF8", "SOURCE DB", "Postgres/Oracle");
-            ctx.restore();
-
-            // NODE 2: AWS DMS REPLICATION ENGINE (Center)
-            const bob2 = Math.sin(t * 3.2 + 1.5) * 6;
-            ctx.save();
-            ctx.translate(540, centerY + bob2);
-            // Glowing Engine Chassis
-            ctx.fillStyle = "rgba(6, 18, 38, 0.94)";
-            ctx.beginPath();
-            ctx.roundRect(-100, -75, 200, 150, 18);
-            ctx.fill();
-            ctx.strokeStyle = themeCol;
-            ctx.lineWidth = 2.5;
-            ctx.shadowColor = themeCol;
-            ctx.shadowBlur = 20;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            // Spinning Turbine in Center
-            const spin = t * 6;
-            ctx.save();
-            ctx.translate(0, -10);
-            ctx.strokeStyle = accentCol;
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, 32, 0, Math.PI * 2);
-            ctx.stroke();
-            for (let b = 0; b < 4; b++) {
-                const ba = spin + b * (Math.PI / 2);
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(ba) * 28, Math.sin(ba) * 28);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // Engine Label
-            ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 15px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("⚡ AWS DMS", 0, 42);
-            ctx.fillStyle = accentCol;
-            ctx.font = "bold 11px monospace";
-            ctx.fillText("CDC ENGINE", 0, 58);
-            ctx.restore();
-
-            // NODE 3: TARGET DATA WAREHOUSE (Right)
-            const bob3 = Math.sin(t * 3.2 + 3.0) * 6;
-            ctx.save();
-            ctx.translate(860, centerY + bob3);
-            draw3DDatabaseCylinder(ctx, 0, 0, 85, 95, "#10B981", "TARGET DW", "Redshift/S3");
-            ctx.restore();
-
-            // Bottom Live Telemetry Pill
-            ctx.save();
-            const telY = centerY + 130;
-            ctx.fillStyle = "rgba(4, 12, 28, 0.88)";
-            ctx.beginPath();
-            ctx.roundRect(W / 2 - 210, telY, 420, 44, 22);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(16, 185, 129, 0.6)";
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            // Pulsing Green Dot
-            const dotPulse = Math.sin(t * 8) > 0;
-            ctx.fillStyle = dotPulse ? "#10B981" : "#047857";
-            ctx.beginPath();
-            ctx.arc(W / 2 - 180, telY + 22, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = "#E2E8F0";
-            ctx.font = "bold 13px 'Segoe UI', sans-serif";
-            ctx.textAlign = "left";
-            ctx.fillText("CONTINUOUS CDC REPLICATION • 0 DOWNTIME", W / 2 - 165, telY + 27);
-            ctx.restore();
-        }
-
-        // ---------------------------------------------------------------------
-        // SCENE 3 or "SUPPORTED DATABASES" / "CONNECTIVITY":
-        // 4 FLOATING 3D ISOMETRIC NODES IN AN ACTIVE MESH
-        // ---------------------------------------------------------------------
-        else if (stageIdx === 3 || stageTitle.includes("support") || stageTitle.includes("database") || stageTitle.includes("hetero") || stageTitle.includes("homo")) {
-            const centerY = 810;
-            const meshNodes = [
-                {x: W / 2, y: centerY - 130, name: "ORACLE / SQL", icon: "🏢", col: "#38BDF8"},
-                {x: W / 2 - 260, y: centerY + 30, name: "POSTGRES / MYSQL", icon: "🐘", col: "#10B981"},
-                {x: W / 2 + 260, y: centerY + 30, name: "AWS REDSHIFT", icon: "☁️", col: "#F59E0B"},
-                {x: W / 2, y: centerY + 160, name: "AMAZON S3 / LAKE", icon: "🪣", col: "#A855F7"}
-            ];
-
-            // Connectors
-            ctx.save();
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6, 6]);
-            ctx.beginPath();
-            for (let i = 0; i < meshNodes.length; i++) {
-                for (let j = i + 1; j < meshNodes.length; j++) {
-                    ctx.moveTo(meshNodes[i].x, meshNodes[i].y);
-                    ctx.lineTo(meshNodes[j].x, meshNodes[j].y);
+                // Traveling Photon Packets
+                const packetCount = 6;
+                for (let i = 0; i < packetCount; i++) {
+                    const prog = ((t * 0.9 + i * (1.0 / packetCount)) % 1.0);
+                    let px, py, pcol;
+                    if (prog < 0.5) {
+                        const localP = prog / 0.5;
+                        px = 220 + localP * 320;
+                        py = centerY + Math.sin(localP * Math.PI) * -15;
+                        pcol = "#38BDF8";
+                    } else {
+                        const localP = (prog - 0.5) / 0.5;
+                        px = 540 + localP * 320;
+                        py = centerY + Math.sin(localP * Math.PI) * -15;
+                        pcol = "#10B981";
+                    }
+                    ctx.save();
+                    ctx.fillStyle = pcol;
+                    ctx.shadowColor = pcol;
+                    ctx.shadowBlur = 12;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
                 }
-            }
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
 
-            // Center Hub
-            ctx.save();
-            ctx.translate(W / 2, centerY + 15);
-            ctx.fillStyle = "rgba(6, 16, 36, 0.95)";
-            ctx.beginPath();
-            ctx.arc(0, 0, 52, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = themeCol;
-            ctx.lineWidth = 2.5;
-            ctx.shadowColor = themeCol;
-            ctx.shadowBlur = 18;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 13px 'Segoe UI', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("HOMO &", 0, -4);
-            ctx.fillText("HETERO", 0, 14);
-            ctx.restore();
-
-            // Draw Nodes
-            meshNodes.forEach((n, ni) => {
-                const nbob = Math.sin(t * 3.5 + ni * 1.5) * 6;
+                // NODE 1: SOURCE DATABASE
                 ctx.save();
-                ctx.translate(n.x, n.y + nbob);
+                ctx.translate(220, centerY + Math.sin(t * 3.2) * 6);
+                draw3DDatabaseCylinder(ctx, 0, 0, 85, 95, "#38BDF8", "SOURCE DB", "Postgres/Oracle");
+                ctx.restore();
 
-                ctx.fillStyle = "rgba(8, 18, 38, 0.92)";
+                // NODE 2: AWS DMS ENGINE
+                ctx.save();
+                ctx.translate(540, centerY + Math.sin(t * 3.2 + 1.5) * 6);
+                ctx.fillStyle = "rgba(6, 18, 38, 0.94)";
                 ctx.beginPath();
-                ctx.roundRect(-90, -32, 180, 64, 14);
+                ctx.roundRect(-100, -75, 200, 150, 18);
                 ctx.fill();
-                ctx.strokeStyle = n.col;
-                ctx.lineWidth = 2;
-                ctx.shadowColor = n.col;
-                ctx.shadowBlur = 12;
+                ctx.strokeStyle = themeCol;
+                ctx.lineWidth = 2.5;
                 ctx.stroke();
-                ctx.shadowBlur = 0;
+
+                // Spinning Turbine
+                ctx.save();
+                ctx.translate(0, -10);
+                ctx.rotate(t * 6);
+                ctx.strokeStyle = accentCol;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, 32, 0, Math.PI * 2);
+                ctx.stroke();
+                for (let b = 0; b < 4; b++) {
+                    const ba = b * (Math.PI / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(ba) * 28, Math.sin(ba) * 28);
+                    ctx.stroke();
+                }
+                ctx.restore();
 
                 ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                ctx.font = "bold 15px 'Segoe UI', sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText(n.icon + " " + n.name, 0, 5);
+                ctx.fillText("⚡ AWS DMS", 0, 42);
+                ctx.fillStyle = accentCol;
+                ctx.font = "bold 11px monospace";
+                ctx.fillText("CDC ENGINE", 0, 58);
                 ctx.restore();
-            });
-        }
 
-        // ---------------------------------------------------------------------
-        // SCENE 4+ or "BENEFITS" / "WHY CHOOSE" / "METRICS":
-        // 3 FLOATING 3D HOLOGRAPHIC TELEMETRY GAUGES
-        // ---------------------------------------------------------------------
-        else if (stageIdx >= 4 || stageTitle.includes("fayde") || stageTitle.includes("benefit") || stageTitle.includes("why") || stageTitle.includes("start")) {
-            const centerY = 810;
-            const gauges = [
-                {x: W / 2 - 270, val: "0 ms", label: "DOWNTIME", sub: "Live Switchover", col: "#10B981"},
-                {x: W / 2, val: "99.99%", label: "HIGH AVAILABILITY", sub: "Multi-AZ Sentinel", col: "#38BDF8"},
-                {x: W / 2 + 270, val: "100%", label: "DATA ACCURACY", sub: "CDC Verification", col: "#F59E0B"}
-            ];
-
-            gauges.forEach((g, gi) => {
-                const gbob = Math.sin(t * 3.0 + gi * 2) * 6;
+                // NODE 3: TARGET DATA WAREHOUSE
                 ctx.save();
-                ctx.translate(g.x, centerY + gbob);
-
-                // Circular Progress Gauge
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-                ctx.lineWidth = 8;
-                ctx.beginPath();
-                ctx.arc(0, -25, 68, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Glowing Arc
-                ctx.strokeStyle = g.col;
-                ctx.lineWidth = 8;
-                ctx.lineCap = "round";
-                ctx.shadowColor = g.col;
-                ctx.shadowBlur = 16;
-                ctx.beginPath();
-                const startA = -Math.PI / 2;
-                const endA = startA + (Math.PI * 1.6);
-                ctx.arc(0, -25, 68, startA, endA);
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                // Center Value
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 26px monospace";
-                ctx.textAlign = "center";
-                ctx.fillText(g.val, 0, -16);
-
-                // Labels
-                ctx.fillStyle = g.col;
-                ctx.font = "bold 13px 'Segoe UI', sans-serif";
-                ctx.fillText(g.label, 0, 72);
-                ctx.fillStyle = "#94A3B8";
-                ctx.font = "12px 'Segoe UI', sans-serif";
-                ctx.fillText(g.sub, 0, 92);
-
+                ctx.translate(860, centerY + Math.sin(t * 3.2 + 3.0) * 6);
+                draw3DDatabaseCylinder(ctx, 0, 0, 85, 95, "#10B981", "TARGET DW", "Redshift/S3");
                 ctx.restore();
-            });
-
-            // Live Performance Telemetry Strip
-            ctx.save();
-            const stripY = centerY + 145;
-            ctx.fillStyle = "rgba(4, 12, 28, 0.90)";
-            ctx.beginPath();
-            ctx.roundRect(W / 2 - 230, stripY, 460, 42, 21);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-            ctx.fillStyle = "#38BDF8";
-            ctx.font = "bold 13px monospace";
-            ctx.textAlign = "center";
-            ctx.fillText("⚡ AWS NATIVE • MINIMAL COST • SECURE MIGRATION", W / 2, stripY + 26);
-            ctx.restore();
+            } else {
+                renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId);
+            }
         }
 
-        // ---------------------------------------------------------------------
-        // SCENE 1 / DEFAULT:
-        // CINEMATIC 3D PERSPECTIVE HIGHWAY & FLOATING SERVER CORE
-        // ---------------------------------------------------------------------
+        // =====================================================================
+        // TOPIC C: UNIVERSAL 50+ AI MODEL PROCEDURAL ENGINE
+        // =====================================================================
         else {
             renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId);
         }
@@ -11142,7 +11432,6 @@ SECOND_HIGHEST_SALARY: 70000`;
         bodyGrad.addColorStop(0.5, "rgba(8, 28, 55, 0.95)");
         bodyGrad.addColorStop(1, "rgba(3, 10, 22, 0.95)");
 
-        // 3 Layers / Disks
         const layers = 3;
         const layerH = bodyH / layers;
 
@@ -11151,7 +11440,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillStyle = bodyGrad;
             ctx.fillRect(-r, ly, w, layerH);
 
-            // Elliptical bottom edge
             ctx.save();
             ctx.translate(0, ly + layerH);
             ctx.scale(1.0, 0.38);
@@ -11164,7 +11452,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.stroke();
             ctx.restore();
 
-            // LED Status Light on each layer
             const ledOn = Math.sin(Date.now() * 0.008 + l * 2) > 0;
             ctx.fillStyle = ledOn ? col : "rgba(255, 255, 255, 0.2)";
             ctx.beginPath();
@@ -11172,7 +11459,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fill();
         }
 
-        // Top Ellipse Cap
         ctx.save();
         ctx.translate(0, -bodyH / 2);
         ctx.scale(1.0, 0.38);
@@ -11191,7 +11477,6 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.shadowBlur = 0;
         ctx.restore();
 
-        // Labels
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "bold 13px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
@@ -11202,7 +11487,6 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         ctx.restore();
     }
-
     function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
 
         ctx.save();
@@ -15703,113 +15987,93 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function drawPromptSceneBackdrop(ctx, W, H, visual, time) {
-
-        const palette = Array.isArray(visual?.palette) ? visual.palette.filter(value => /^#[0-9a-f]{6}$/i.test(String(value))) : [];
-
-        const motif = String(visual?.background_motif || visual?.art_direction || "").toLowerCase();
-
-        const base = palette[1] || "#080E21";
-
-        const accent = palette[0] || "#38BDF8";
-
-        const gradient = ctx.createLinearGradient(0, 0, W * (0.35 + 0.12 * Math.sin(time * 0.18)), H);
-
-        gradient.addColorStop(0, base);
-
-        gradient.addColorStop(0.5, "#060A17");
-
-        gradient.addColorStop(1, "#020409");
-
-        ctx.fillStyle = gradient;
-
-        ctx.fillRect(0, 0, W, H);
-
-
-
-        // Radiant Top Center Ambient Glow
-
-        const radGrad = ctx.createRadialGradient(W / 2, 220, 20, W / 2, 220, 680);
-
-        radGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
-
-        radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.05)");
-
-        radGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-        ctx.fillStyle = radGrad;
-
-        ctx.fillRect(0, 0, W, H);
-
-
-
         ctx.save();
 
-        ctx.globalAlpha = 0.15;
+        // 1. Deep Space Cosmic Sky Gradient
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+        skyGrad.addColorStop(0, "#020617");
+        skyGrad.addColorStop(0.38, "#050D24");
+        skyGrad.addColorStop(0.65, "#0A1633");
+        skyGrad.addColorStop(1, "#030816");
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, W, H);
 
-        ctx.strokeStyle = accent;
+        // 2. Dynamic 3D Volumetric Horizon Glow
+        const horizonY = H * 0.42;
+        const beamGrad = ctx.createRadialGradient(W / 2, horizonY, 20, W / 2, horizonY, W * 0.75);
+        beamGrad.addColorStop(0, "rgba(56, 189, 248, 0.28)");
+        beamGrad.addColorStop(0.35, "rgba(99, 102, 241, 0.14)");
+        beamGrad.addColorStop(0.7, "rgba(236, 72, 153, 0.05)");
+        beamGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = beamGrad;
+        ctx.fillRect(0, 0, W, H);
 
-        ctx.fillStyle = accent;
-
-        if (/blueprint|grid|schematic/.test(motif)) {
-
-            ctx.lineWidth = 1;
-
-            for (let x = 0; x <= W; x += 72) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-
-            for (let y = 0; y <= H; y += 72) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-
-        } else if (/wave|audio|signal/.test(motif)) {
-
-            ctx.lineWidth = 3; ctx.beginPath();
-
-            for (let x = 0; x <= W; x += 8) {
-
-                const y = H * 0.48 + Math.sin(x * 0.018 + time * 1.7) * 54 + Math.sin(x * 0.044 - time) * 20;
-
-                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-
-            }
-
-            ctx.stroke();
-
-        } else if (/organic|cell|molecule|nebula|particle/.test(motif)) {
-
-            for (let i = 0; i < 24; i++) {
-
-                const x = (i * 173 + Math.sin(time * 0.24 + i) * 42 + W) % W;
-
-                const y = (i * 317 + Math.cos(time * 0.2 + i * 0.7) * 50 + H) % H;
-
-                ctx.beginPath(); ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2); ctx.fill();
-
-            }
-
-        } else {
-
-            ctx.lineWidth = 1;
-
-            for (let i = 0; i < 11; i++) {
-
-                const y = 160 + i * 148;
-
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W * (0.3 + ((i * 37) % 60) / 100), y); ctx.stroke();
-
-            }
-
-            for (let i = 0; i < 16; i++) {
-
-                const x = (i * 197 + Math.sin(time * 0.3 + i) * 35 + W) % W;
-
-                const y = (i * 263 + Math.cos(time * 0.25 + i * 0.8) * 45 + H) % H;
-
-                ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
-
-            }
-
-        }
-
+        // Horizon Laser Line
+        ctx.save();
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.65)";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        ctx.lineTo(W, horizonY);
+        ctx.stroke();
         ctx.restore();
 
+        // 3. Infinite 3D Perspective Cyber Highway Grid
+        ctx.save();
+        const fov = 380;
+        const gridSpeed = (time * 140) % 180;
+
+        // Radiating Perspective Vanishing Rays
+        const numRays = 18;
+        for (let i = -numRays; i <= numRays; i++) {
+            const bottomX = W / 2 + i * 95;
+            const rayAlpha = Math.max(0.08, 0.42 - Math.abs(i) * 0.018);
+            ctx.strokeStyle = `rgba(56, 189, 248, ${rayAlpha})`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(W / 2 + i * 4, horizonY);
+            ctx.lineTo(bottomX, H);
+            ctx.stroke();
+        }
+
+        // Horizontal Grid Rungs Moving Forward at 60 FPS
+        const numRungs = 14;
+        for (let r = 0; r < numRungs; r++) {
+            const z = ((r * 65 + gridSpeed) % 800) + 20;
+            const rungY = horizonY + (fov * (H - horizonY)) / (fov + z);
+            if (rungY >= horizonY && rungY <= H) {
+                const depthAlpha = Math.min(0.55, ((rungY - horizonY) / (H - horizonY)) * 0.65);
+                ctx.strokeStyle = `rgba(56, 189, 248, ${depthAlpha})`;
+                ctx.lineWidth = 1.2 + (rungY - horizonY) / (H - horizonY) * 2.0;
+                ctx.beginPath();
+                ctx.moveTo(0, rungY);
+                ctx.lineTo(W, rungY);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
+        // 4. Floating 3D Starfield & Photon Particles with Parallax Depth
+        ctx.save();
+        const pCount = 36;
+        for (let i = 0; i < pCount; i++) {
+            const pSpeed = 0.15 + (i % 5) * 0.08;
+            const px = (Math.sin(i * 19.3 + time * pSpeed * 0.4) * 0.5 + 0.5) * W;
+            const py = (Math.cos(i * 29.7 + time * pSpeed * 0.3) * 0.5 + 0.5) * horizonY;
+            const pSize = 1.2 + (i % 4) * 1.2;
+            const pAlpha = 0.25 + Math.sin(time * 3 + i) * 0.2;
+            ctx.fillStyle = i % 2 === 0 ? `rgba(56, 189, 248, ${pAlpha})` : `rgba(245, 158, 11, ${pAlpha})`;
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(px, py, pSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        ctx.restore();
     }
 
 
