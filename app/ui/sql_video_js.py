@@ -850,14 +850,23 @@ SECOND_HIGHEST_SALARY: 70000`;
         const statusEl = document.getElementById("sqlVideoGenerationStatus");
         if (statusEl) statusEl.textContent = "Synthesizing 2026 AI Video & Narration concurrently…";
 
-        // Concurrently dispatch 2026 AI Video Generation (Seedance 2.5, Kling 3.0, Veo 3.1)
+        // Concurrently dispatch 4-Stage Multi-Stage AI Video Pipeline
         try {
-            fetch('/api/video/generate_2026_video', {
+            const vEngine = document.getElementById('selectVoiceEngine')?.value || 'kokoro_free';
+            const aEngine = document.getElementById('selectAvatarEngine')?.value || 'client_cyber_canvas';
+            const bEngine = document.getElementById('selectBrollEngine')?.value || window.selectedModernVideoModel || 'seedance_25';
+            const gEngine = document.getElementById('selectAggregatorEngine')?.value || 'nanopro_auto_cascade';
+
+            fetch('/api/video/pipeline/generate_multistage', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     prompt: q,
-                    model_id: window.selectedModernVideoModel || 'seedance_25',
+                    voice_engine: vEngine,
+                    avatar_engine: aEngine,
+                    broll_engine: bEngine,
+                    aggregator_engine: gEngine,
+                    language: sqlShortState.audioLang || 'mr',
                     aspect_ratio: '9:16'
                 })
             }).then(r => r.json()).then(vData => {
@@ -868,8 +877,17 @@ SECOND_HIGHEST_SALARY: 70000`;
                         realVid.style.display = 'block';
                         realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
                     }
+                    // If avatar step active
+                    const pipEl = document.getElementById('phoneAvatarPip');
+                    const imgEl = document.getElementById('phoneAvatarImg');
+                    if (pipEl && imgEl && aEngine !== 'client_cyber_canvas') {
+                        imgEl.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(aEngine + ' realistic talking teacher presenter face studio lighting')}?width=160&height=200&nologo=true`;
+                        pipEl.style.display = 'block';
+                    }
                     if (typeof showModernToast === 'function') {
-                        showModernToast('2026 AI Video Active', (vData.provider || 'AI Video Stream') + ' (' + (vData.benchmark_rating || '5★') + ')', 'success');
+                        const bName = vData.pipeline_stages?.step3_broll?.engine_name || 'AI Video Stream';
+                        const vName = vData.pipeline_stages?.step1_voice?.engine_name || 'Voice Engine';
+                        showModernToast('VFX Video Pipeline Active', `${bName} + ${vName}`, 'success');
                     }
                 }
             }).catch(e => console.warn('AI Video Cascade notice:', e));

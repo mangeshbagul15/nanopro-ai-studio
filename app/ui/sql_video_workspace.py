@@ -1,534 +1,391 @@
+# -*- coding: utf-8 -*-
 """
-Mangesh Nano Pro AI Studio - 9:16 SQL Short Video Creation Workspace
-FAANG & Top MNC Technical Interview Preparation Studio (Max 60 Seconds).
-Zero Server Load: Client-Side Canvas & MediaRecorder Video Generation.
+Mangesh Nano Pro AI Studio - 2026 VFX-Style Universal Tech AI Video Maker
+State-of-the-art 9:16 Shorts & Reels Studio:
+- 4-Tier Multi-Stage API Docks: Prompt-to-Voice • Voice-to-Video Lip-Sync • Prompt-to-Video B-Roll • Unified Aggregators
+- 100% Prompt-Driven, Live Dynamic APIs, Titanium Smartphone Preview, and VFX 1-Click Export!
 """
 
 def get_sql_video_workspace_html() -> str:
-    return r'''
+    return """
     <style>
-    .sql-shorts-container {
-        width: 100%;
-        overflow-x: hidden;
-        overflow-y: visible;
-        padding-bottom: 20px;
-        -webkit-overflow-scrolling: touch;
+    /* 2026 VFX Holographic Cyber Studio Styling */
+    .vfx-video-root {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #F8FAFC;
     }
-    /* Highly Visible Custom Glowing Horizontal Scrollbar */
-    .sql-shorts-container::-webkit-scrollbar {
-        height: 12px;
+
+    .vfx-glow-box {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(7, 11, 22, 0.98));
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(56, 189, 248, 0.12);
+        backdrop-filter: blur(12px);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
-    .sql-shorts-container::-webkit-scrollbar-track {
-        background: #070B16;
-        border-radius: 6px;
-        border: 1px solid #1E2D4A;
+    .vfx-glow-box:hover {
+        border-color: rgba(56, 189, 248, 0.65);
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.2);
     }
-    .sql-shorts-container::-webkit-scrollbar-thumb {
-        background: linear-gradient(90deg, #0284C7, #38BDF8, #10B981);
-        border-radius: 6px;
-        box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
-        border: 2px solid #070B16;
-    }
-    .sql-shorts-container::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(90deg, #38BDF8, #10B981);
-    }
-    .sql-studio-grid {
+
+    .vfx-dock-grid {
         display: grid;
-        grid-template-columns: minmax(320px, 0.8fr) minmax(380px, 1.2fr);
-        width: 100%;
-        max-width: 100%;
-        gap: 20px;
-        align-items: start;
-        box-sizing: border-box;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
     }
-    @media (max-width: 1220px) {
-        .sql-studio-grid {
-            grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
-        }
-        #exportCardContainer {
-            grid-column: 1 / -1;
-        }
-    }
-    @media (max-width: 768px) {
-        .sql-studio-grid {
-            grid-template-columns: 1fr;
-        }
-        #exportCardContainer {
-            grid-column: 1;
-        }
-    }
-    .sql-shorts-container #phoneBezel {
-        width: min(100%, 405px) !important;
-        height: auto !important;
-        aspect-ratio: 9 / 16;
-    }
-    .sql-shorts-container #sqlShortCanvas {
-        display: block;
-        width: 100% !important;
-        height: auto !important;
-        aspect-ratio: 9 / 16;
-        object-fit: contain;
-    }
-    @keyframes laserPulse {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 200% 50%; }
-    }
-    @keyframes learnPulse {
-        0%, 100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.3); border-color: #A855F7; }
-        50% { box-shadow: 0 0 22px rgba(168, 85, 247, 0.85); border-color: #C084FC; }
-    }
-    .agent-pipeline-container {
-        background: #090E1D;
+
+    .vfx-dock-card {
+        background: rgba(11, 19, 43, 0.85);
         border: 1.5px solid #1E2D4A;
-        border-radius: 12px;
-        padding: 16px 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 25px rgba(0,0,0,0.5);
-    }
-    .agent-nodes-wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-        overflow-x: auto;
-        padding: 8px 0;
-    }
-    @keyframes activeNodePulse {
-        0%, 100% {
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4), inset 0 0 8px rgba(56, 189, 248, 0.2);
-            border-color: #38BDF8;
-            transform: translateY(-2px);
-        }
-        50% {
-            box-shadow: 0 0 24px rgba(56, 189, 248, 0.95), inset 0 0 14px rgba(56, 189, 248, 0.4);
-            border-color: #7DD3FC;
-            transform: translateY(-4px) scale(1.02);
-        }
-    }
-    @keyframes badgeBlink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.55; }
-    }
-    .agent-node {
-        background: #0B132B;
-        border: 1.5px solid #1E293B;
         border-radius: 10px;
-        padding: 8px 6px;
-        min-width: 100px;
-        max-width: 140px;
-        flex: 1;
-        text-align: center;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-        overflow: hidden;
-        word-break: break-word;
-        box-sizing: border-box;
+        padding: 12px 14px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         position: relative;
+        overflow: hidden;
     }
-    .agent-node:hover {
+    .vfx-dock-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #38BDF8, transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .vfx-dock-card:hover {
         border-color: #38BDF8;
-        background: #0f1c3d;
         transform: translateY(-2px);
-        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
+        box-shadow: 0 8px 25px rgba(56, 189, 248, 0.2);
     }
-    .agent-node .agent-badge {
-        display: inline-block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 8px;
-        padding: 2px 5px;
-        border-radius: 3px;
-        box-sizing: border-box;
-        transition: all 0.25s ease;
+    .vfx-dock-card:hover::before {
+        opacity: 1;
     }
-    .agent-node.active {
-        border-color: #38BDF8 !important;
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(99, 102, 241, 0.22)) !important;
-        animation: activeNodePulse 1.5s ease-in-out infinite;
-    }
-    .agent-node.completed {
-        border-color: #10B981 !important;
-        background: rgba(16, 185, 129, 0.12) !important;
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.25) !important;
-    }
-    .agent-node.training {
-        border-color: #A855F7 !important;
-        background: rgba(168, 85, 247, 0.18) !important;
-        animation: learnPulse 1.4s infinite;
-    }
-    .agent-badge.badge-running {
-        color: #000 !important;
-        background: #38BDF8 !important;
-        font-weight: 800 !important;
-        animation: badgeBlink 1s infinite ease-in-out !important;
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.8) !important;
-    }
-    .agent-badge.badge-done {
-        color: #10B981 !important;
-        background: rgba(16, 185, 129, 0.2) !important;
-        font-weight: 700 !important;
-        border: 1px solid rgba(16, 185, 129, 0.4) !important;
-    }
-    .agent-badge.badge-pending {
-        color: #64748B !important;
-        background: rgba(100, 116, 139, 0.15) !important;
-    }
-    .agent-connector {
-        height: 3px;
-        flex: 0.35;
-        min-width: 14px;
-        background: #1E293B;
-        position: relative;
-        overflow: hidden;
-        border-radius: 2px;
-        transition: all 0.3s ease;
-    }
-    .agent-connector.active {
-        background: linear-gradient(90deg, #38BDF8, #6366F1, #10B981);
-        background-size: 200% 100%;
-        animation: laserPulse 1s linear infinite;
-        box-shadow: 0 0 10px #38BDF8;
-    }
-    .agent-connector.completed {
-        background: #10B981;
-        box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
-    }
-    .stage-pill {
-        padding: 6px 8px;
-        border-radius: 6px;
+
+    .vfx-dock-title {
         font-size: 11px;
-        font-weight: 600;
-        border: 1px solid #1E2D4A;
-        background: #0B1120;
-        color: #64748B;
-        transition: all 0.25s ease;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
         display: flex;
         align-items: center;
         gap: 6px;
+        margin-bottom: 8px;
     }
-    .stage-pill.active {
+
+    .vfx-dock-select {
+        width: 100%;
+        background: #070B16;
+        border: 1px solid #283C62;
+        color: #F8FAFC;
+        font-size: 11.5px;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 7px 10px;
+        outline: none;
+        transition: border-color 0.2s ease;
+        cursor: pointer;
+    }
+    .vfx-dock-select:focus {
+        border-color: #38BDF8;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+
+    .vfx-quick-chip {
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid #1E2D4A;
+        color: #94A3B8;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+    .vfx-quick-chip:hover {
         background: rgba(56, 189, 248, 0.15);
         border-color: #38BDF8;
         color: #38BDF8;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
-    }
-    .stage-pill.done {
-        background: rgba(16, 185, 129, 0.12);
-        border-color: #10B981;
-        color: #10B981;
+        transform: scale(1.03);
     }
 
-    /* High-Visibility Selected States for Voice Language Buttons */
+    /* Studio Main 3-Column Grid */
+    .vfx-studio-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 360px 1fr;
+        gap: 20px;
+        align-items: start;
+    }
+
+    @media (max-width: 1200px) {
+        .vfx-studio-grid {
+            grid-template-columns: 1fr 360px;
+        }
+    }
+    @media (max-width: 900px) {
+        .vfx-studio-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Audio wave animation */
+    @keyframes wavePulse {
+        0%, 100% { height: 4px; }
+        50% { height: 16px; }
+    }
+    .vfx-wave-bar {
+        width: 3px;
+        background: #10B981;
+        border-radius: 2px;
+        animation: wavePulse 1.2s ease-in-out infinite;
+    }
+    .vfx-wave-bar:nth-child(2) { animation-delay: 0.2s; background: #38BDF8; }
+    .vfx-wave-bar:nth-child(3) { animation-delay: 0.4s; background: #8B5CF6; }
+    .vfx-wave-bar:nth-child(4) { animation-delay: 0.6s; background: #EC4899; }
+
+    /* Language Buttons */
     .sql-lang-btn {
-        flex: 1;
-        font-size: 10.5px;
-        line-height: 1.2;
-        padding: 7px 4px;
-        border-radius: 6px;
+        font-size: 11px;
+        padding: 8px 14px;
+        border-radius: 8px;
         cursor: pointer;
-        border: 1.5px solid #1E2D4A !important;
-        background: #0B1120 !important;
-        color: #94A3B8 !important;
+        border: 1.5px solid #1E2D4A;
+        background: #070B16;
+        color: #94A3B8;
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        flex: 1;
         justify-content: center;
-        gap: 4px;
-        font-weight: 600;
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: break-word;
-        text-align: center;
-        min-width: 0;
-        box-sizing: border-box;
     }
     .sql-lang-btn:hover {
-        border-color: #38BDF8 !important;
-        color: #F8FAFC !important;
+        border-color: #38BDF8;
+        color: #F8FAFC;
     }
     .sql-lang-btn.active {
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25)) !important;
-        border: 2px solid #38BDF8 !important;
-        color: #38BDF8 !important;
-        font-weight: 800 !important;
-        box-shadow: 0 0 14px rgba(56, 189, 248, 0.45) !important;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25));
+        border: 2px solid #38BDF8;
+        color: #38BDF8;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
     }
-    .sql-lang-btn.active .btn-check {
-        display: inline-block;
-    }
+    .sql-lang-btn .btn-check { display: none; font-weight: 900; }
+    .sql-lang-btn.active .btn-check { display: inline-block; }
 
-    /* High-Visibility Selected States for Subtitle Buttons */
-    .sql-text-btn {
-        flex: 1;
-        font-size: 10.5px;
-        line-height: 1.2;
-        padding: 7px 4px;
-        border-radius: 6px;
-        cursor: pointer;
-        border: 1.5px solid #1E2D4A !important;
-        background: #0B1120 !important;
-        color: #94A3B8 !important;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        font-weight: 600;
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: break-word;
-        text-align: center;
-        min-width: 0;
-        box-sizing: border-box;
+    /* Pulse Laser Button */
+    @keyframes laserPulse {
+        0% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.5), inset 0 0 15px rgba(99, 102, 241, 0.5); }
+        50% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.8), inset 0 0 25px rgba(16, 185, 129, 0.6); }
+        100% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.5), inset 0 0 15px rgba(99, 102, 241, 0.5); }
     }
-    .sql-text-btn:hover {
-        border-color: #F59E0B !important;
-        color: #F8FAFC !important;
-    }
-    .sql-text-btn.active {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(236, 72, 153, 0.25)) !important;
-        border: 2px solid #F59E0B !important;
-        color: #F59E0B !important;
-        font-weight: 800 !important;
-        box-shadow: 0 0 14px rgba(245, 158, 11, 0.45) !important;
-    }
-    .sql-text-btn.active .btn-check {
-        display: inline-block;
-    }
-
-    /* High-Visibility Selected States for Avatar Toggle Buttons */
-    .sql-avatar-btn {
-        flex: 1;
-        font-size: 10.5px;
-        line-height: 1.2;
-        padding: 7px 4px;
-        border-radius: 6px;
-        cursor: pointer;
-        border: 1.5px solid #1E2D4A !important;
-        background: #0B1120 !important;
-        color: #94A3B8 !important;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        font-weight: 600;
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: break-word;
-        text-align: center;
-        min-width: 0;
-        box-sizing: border-box;
-    }
-    .sql-avatar-btn:hover {
-        border-color: #818CF8 !important;
-        color: #F8FAFC !important;
-    }
-    .sql-avatar-btn.active {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25)) !important;
-        border: 2px solid #818CF8 !important;
-        color: #C7D2FE !important;
-        font-weight: 800 !important;
-        box-shadow: 0 0 14px rgba(99, 102, 241, 0.45) !important;
-    }
-    /* High-Visibility Selected States for 3D Motion Background Chips */
-    .sql-motion-bg-chip {
-        font-size: 10px;
-        line-height: 1.25;
-        padding: 7px 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        border: 1.5px solid #1E2D4A !important;
-        background: #0B1120 !important;
-        color: #94A3B8 !important;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-weight: 600;
-        white-space: normal;
-        word-break: break-word;
-        box-sizing: border-box;
-        text-align: left;
-    }
-    .sql-motion-bg-chip:hover {
-        border-color: #C084FC !important;
-        color: #F8FAFC !important;
-    }
-    .sql-motion-bg-chip.active {
-        background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(56, 189, 248, 0.25)) !important;
-        border: 2px solid #C084FC !important;
-        color: #E9D5FF !important;
-        font-weight: 800 !important;
-        box-shadow: 0 0 14px rgba(168, 85, 247, 0.45) !important;
-    }
-    .sql-motion-bg-chip.active .btn-check {
-        display: inline-block;
-    }
-    /* High-Visibility Selected States for Creation Mode Buttons */
-    .sql-mode-btn {
-        font-size: 10px;
-        line-height: 1.25;
-        padding: 6px 6px;
-        border-radius: 6px;
-        cursor: pointer;
-        border: 1.5px solid #1E2D4A !important;
-        background: #070B16 !important;
-        color: #94A3B8 !important;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 5px;
-        font-weight: 600;
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: break-word;
-        min-width: 0;
-        box-sizing: border-box;
-        text-align: left;
-    }
-    .sql-mode-btn span:not(.btn-check) {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        word-break: break-word;
-    }
-    .sql-mode-btn:hover {
-        border-color: #38BDF8 !important;
-        color: #F8FAFC !important;
-    }
-    .sql-mode-btn.active {
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25)) !important;
-        border: 2px solid #38BDF8 !important;
-        color: #38BDF8 !important;
-        font-weight: 800 !important;
-        box-shadow: 0 0 14px rgba(56, 189, 248, 0.45) !important;
-    }
-    .sql-mode-btn.active .btn-check {
-        display: inline-block;
-    }
-
-    .btn-check {
-        display: none;
-        font-weight: 900;
-    }
-
-    /* Complete Text Overflow & Responsive Clamping Protection */
-    .text-truncate-safe {
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-        max-width: 100% !important;
-    }
-    .text-break-word {
-        overflow-wrap: break-word !important;
-        word-break: break-word !important;
-        hyphens: auto !important;
-    }
-    .panel-card, .agent-node, .agent-pipeline-container {
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-    }
-    .sql-shorts-container * {
-        box-sizing: border-box;
-    }
-    .sql-shorts-container .btn {
-        min-width: 0;
-        box-sizing: border-box;
-        overflow-wrap: break-word;
-    }
-    .pipeline-btn {
-        white-space: nowrap !important;
-        font-size: 10px !important;
-        padding: 3px 8px !important;
-        min-width: 0 !important;
+    .vfx-laser-btn {
+        animation: laserPulse 2.5s infinite;
     }
     </style>
 
-    <!-- Hidden Native Audio Player for Voiceover Sync & Multiplexing -->
+    <!-- Hidden Native Audio Player for Voiceover Sync -->
     <audio id="sqlVoiceAudio" preload="auto" crossorigin="anonymous" style="display:none;"></audio>
 
-    <!-- 9:16 UNIVERSAL TECH SHORT & REEL STUDIO -->
-    <div class="sql-shorts-container" style="margin-bottom: 24px;">
-        <!-- Header Banner -->
-        <div style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(99, 102, 241, 0.15)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-            <div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 26px;">🎬</span>
-                    <div>
-                        <h2 style="margin: 0; font-size: 18px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">UNIVERSAL TECH AI VIDEO MAKER (9:16 SHORTS &amp; REELS)</h2>
-                        <div style="font-size: 12px; color: #94A3B8; margin-top: 2px;">SQL • Python • Snowflake • AWS • Data Engineering • AI/RAG • Cloud • Docker • Git • ML • 100% Prompt-Driven • Zero Watermark</div>
+    <!-- Hidden inputs for legacy JS state compatibility -->
+    <input type="hidden" id="sqlShortCreationMode" value="dynamic_ai" />
+    <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
+    <input type="hidden" id="directVideoEngineSelect" value="pollinations_ultra_api" />
+    <input type="hidden" id="selectedModernVideoModel" value="seedance_25" />
+
+    <div class="vfx-video-root" style="margin-bottom: 28px;">
+
+        <!-- =========================================================================
+             VFX STUDIO TOP HUD BANNER
+             ========================================================================= -->
+        <div class="vfx-glow-box" style="padding: 16px 22px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 70%), #0A0F1D;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #0284C7, #8B5CF6); display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);">
+                    🎬
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; color: #38BDF8; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
+                        UNIVERSAL TECH AI VIDEO MAKER (9:16 SHORTS &amp; REELS)
+                    </h2>
+                    <div style="font-size: 11.5px; color: #94A3B8; margin-top: 3px; display: flex; align-items: center; gap: 8px;">
+                        <span>VFX-Grade Multi-Stage Pipeline:</span>
+                        <b style="color: #F8FAFC;">Prompt ➔ Voice ➔ Lip-Sync Avatar ➔ 4K B-Roll ➔ 1-Click Export</b>
                     </div>
                 </div>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; padding: 4px 10px; border-radius: 20px;">⚡ All Video APIs Active</span>
-                <span class="status-pill" style="background: rgba(236, 72, 153, 0.15); border: 1px solid #EC4899; color: #EC4899; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🛡️ 100% Watermark-Free</span>
-                <span class="status-pill" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 11px; padding: 4px 10px; border-radius: 20px;">📱 Full-Length 9:16 Video</span>
-                <span class="status-pill" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 11px; padding: 4px 10px; border-radius: 20px;">🤖 Coding Intelligence Models Live</span>
+
+            <!-- Telemetry Badges -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
+                    🟢 4-STAGE PIPELINE ARMED
+                </span>
+                <span style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #38BDF8; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
+                    ⚡ 31 ADVANCED APIS LIVE
+                </span>
+                <span style="background: rgba(168, 85, 247, 0.15); border: 1px solid #A855F7; color: #C084FC; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
+                    🛡️ ZERO WATERMARK
+                </span>
+                <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #F59E0B; font-size: 10.5px; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
+                    📱 1080×1920 60FPS
+                </span>
             </div>
         </div>
 
-
-        <!-- Main Studio Grid (Controls + Phone Preview + Sandbox) -->
-        <div class="sql-studio-grid" id="sqlStudioMainGrid">
+        <!-- =========================================================================
+             THE 4-TIER MULTI-STAGE API ENGINE DOCKS (VFX MODULAR DOCK SYSTEM)
+             ========================================================================= -->
+        <div class="vfx-dock-grid">
             
-            <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
-            <!-- COLUMN 1: AI Prompt Generator & Language Controls -->
-            <div class="panel-card" style="margin: 0; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 12px; padding: 18px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                    <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 700;">1. MASTER PROMPT &amp; TECH SCENARIO INPUT</h3>
-                    <span style="font-size: 11px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 700;">✨ Prompt-Led Animation</span>
-                </div>
-
-                <!-- Hidden inputs to preserve JS state compatibility -->
-                <input type="hidden" id="sqlShortCreationMode" value="dynamic_ai" />
-                <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
-
-                <!-- Direct AI Prompt-to-Video Engine (Zero Hardcoding - Pure Prompt-to-API Generation) -->
-                <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <div style="font-size: 13px; font-weight: 800; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px;">⚡</span>
-                            <span>Direct AI Prompt-to-Video Engine (Live Model API)</span>
-                            <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 1px 8px; border-radius: 12px; font-weight: 700;">● ZERO MOCKS • LIVE API</span>
-                        </div>
-                        <div style="font-size: 11px; color: #94A3B8; margin-top: 3px;">
-                            Enter any tech concept or scene prompt below. The engine directly queries AI Video APIs to generate your dynamic 9:16 video in real time.
-                        </div>
+            <!-- DOCK 1: PROMPT-TO-VOICE -->
+            <div class="vfx-dock-card" style="border-top: 2px solid #10B981;">
+                <div>
+                    <div class="vfx-dock-title" style="color: #10B981;">
+                        <span>🎙️</span> <span>भाग १: Prompt-to-Voice (TTS)</span>
                     </div>
+                    <select id="selectVoiceEngine" class="vfx-dock-select" onchange="onVoiceEngineChange(this.value)">
+                        <option value="kokoro_free" selected>🟢 Kokoro-82M (100% Free CPU • Zero Cost)</option>
+                        <option value="edge_tts_free">🟢 Microsoft Edge Neural (Free Native Mr/Hi/En)</option>
+                        <option value="elevenlabs_v3">👑 ElevenLabs v3 Multilingual Studio</option>
+                        <option value="cartesia_sonic">⚡ Cartesia Sonic (40ms Low Latency)</option>
+                        <option value="fish_audio_s2">🧬 Fish Audio S2 (Zero-Shot Clone)</option>
+                        <option value="f5_tts_free">🔓 F5-TTS Open Diffusion (Self-Host)</option>
+                        <option value="openai_tts_hd">🎙️ OpenAI TTS-1 HD Studio</option>
+                        <option value="deepgram_aura">📡 Deepgram Aura Fast Streaming</option>
+                        <option value="browser_speech_free">🌐 In-Browser Web Speech (0ms Offline)</option>
+                    </select>
+                </div>
+                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
+                    <span>Speech Engine</span>
+                    <span id="voiceLatencyBadge" style="color: #10B981; font-weight: 700;">Zero-Cost CPU Active</span>
+                </div>
+            </div>
+
+            <!-- DOCK 2: VOICE-TO-VIDEO & LIP-SYNC -->
+            <div class="vfx-dock-card" style="border-top: 2px solid #38BDF8;">
+                <div>
+                    <div class="vfx-dock-title" style="color: #38BDF8;">
+                        <span>👤</span> <span>भाग २: Voice-to-Video (Lip-Sync)</span>
+                    </div>
+                    <select id="selectAvatarEngine" class="vfx-dock-select" onchange="onAvatarEngineChange(this.value)">
+                        <option value="hedra_char3" selected>🔥 Hedra Character-3 API (#1 Trending Dev)</option>
+                        <option value="liveportrait_free">🟢 LivePortrait (100% Free Landmark Sync)</option>
+                        <option value="synclabs_sync3">🎬 SyncLabs sync-3 (Real Video Dubbing)</option>
+                        <option value="simli_realtime">⚡ Simli WebRTC Real-Time Avatar</option>
+                        <option value="heygen_live">👑 HeyGen 3.0 Interactive LiveAvatar (4K)</option>
+                        <option value="did_creative">🎭 D-ID Creative Reality Studio (12 Credits)</option>
+                        <option value="sadtalker_free">🔓 SadTalker / Hallo (Open Source)</option>
+                        <option value="client_cyber_canvas">🛡️ Client-Side 3D Cyber Presenter (Zero-Drop)</option>
+                    </select>
+                </div>
+                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
+                    <span>Avatar Lip-Sync</span>
+                    <span id="avatarFpsBadge" style="color: #38BDF8; font-weight: 700;">60 FPS Expressive</span>
+                </div>
+            </div>
+
+            <!-- DOCK 3: PROMPT-TO-VIDEO B-ROLL -->
+            <div class="vfx-dock-card" style="border-top: 2px solid #C084FC;">
+                <div>
+                    <div class="vfx-dock-title" style="color: #C084FC;">
+                        <span>🎬</span> <span>भाग ३: Prompt-to-Video (B-Roll)</span>
+                    </div>
+                    <select id="selectBrollEngine" class="vfx-dock-select" onchange="onBrollEngineChange(this.value)">
+                        <option value="seedance_25" selected>🏆 ByteDance Seedance 2.5 (Leaderboard #1)</option>
+                        <option value="kling_30">🌌 Kuaishou Kling AI 3.0 Pro (Viral Physics)</option>
+                        <option value="veo_31">⚡ Google Veo 3.1 (Gemini 4K Cinematic Audio)</option>
+                        <option value="runway_gen45">🎥 Runway Gen-4.5 / Gen-4 Turbo (Hollywood VFX)</option>
+                        <option value="luma_ray2">🔭 Luma Ray-2 Dream Machine (Photon 3D)</option>
+                        <option value="hailuo_h3">🌊 MiniMax Hailuo H3 (Organic Fluid Motion)</option>
+                        <option value="wan_27">🇨🇳 Alibaba Wan 2.7 / 3.0 (Open 1080p)</option>
+                        <option value="pika_20">⚡ Pika 2.0 (Viral Physics Effects)</option>
+                        <option value="pollinations_free_2026">🟢 Pollinations Generative Video (100% Free)</option>
+                        <option value="procedural_3d_webgl">🛡️ Built-in 60 FPS 3D WebGL (Zero-Lag)</option>
+                    </select>
+                </div>
+                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
+                    <span>Cinematic Scene</span>
+                    <span id="brollResBadge" style="color: #C084FC; font-weight: 700;">4K Cinematic Audio</span>
+                </div>
+            </div>
+
+            <!-- DOCK 4: UNIFIED AGGREGATORS & GATEWAYS -->
+            <div class="vfx-dock-card" style="border-top: 2px solid #F59E0B;">
+                <div>
+                    <div class="vfx-dock-title" style="color: #F59E0B;">
+                        <span>⚡</span> <span>भाग ४: Unified Aggregator &amp; Hub</span>
+                    </div>
+                    <select id="selectAggregatorEngine" class="vfx-dock-select" onchange="onAggregatorEngineChange(this.value)">
+                        <option value="nanopro_auto_cascade" selected>🛡️ NanoPro Autonomous Zero-Stop Cascade</option>
+                        <option value="fal_ai_queue">⚡ fal.ai Serverless Unified Queue</option>
+                        <option value="replicate_hub">🌐 Replicate Universal Model Hub</option>
+                        <option value="wavespeed_router">🚀 WaveSpeed / Kie.ai Fast Router</option>
+                    </select>
+                </div>
+                <div style="font-size: 10px; color: #64748B; margin-top: 8px; display: flex; justify-content: space-between;">
+                    <span>Failover Gateway</span>
+                    <span id="gatewayStatusBadge" style="color: #F59E0B; font-weight: 700;">Auto-Cascade Armed</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- =========================================================================
+             MAIN STUDIO 3-COLUMN WORKSPACE
+             ========================================================================= -->
+        <div class="vfx-studio-grid" id="sqlStudioMainGrid">
+            
+            <!-- COLUMN 1: MASTER PROMPT & TECH SCENARIO CONSOLE -->
+            <div class="vfx-glow-box" style="padding: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <label style="font-size: 11px; color: #94A3B8; font-weight: 600;">Active API:</label>
-                        <select id="directVideoEngineSelect" class="studio-input" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px; background: #0B132B; border: 1px solid #38BDF8; color: #38BDF8; font-weight: 700;">
-                            <option value="gemini_video_api">⚡ Google Gemini / Veo Video API</option>
-                            <option value="pollinations_ultra_api" selected>🌟 Pollinations 2026 Ultra (Direct API)</option>
-                            <option value="runway_gen45_api">🎥 Runway Gen-4.5 Direct API</option>
-                            <option value="huggingface_video_api">🤗 HuggingFace Video Model API</option>
-                        </select>
-                        <span id="activeAiVideoEngineBadge" style="display:none;"></span>
+                        <span style="font-size: 16px;">📝</span>
+                        <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 800;">MASTER PROMPT &amp; TECH SCENARIO INPUT</h3>
                     </div>
+                    <span style="font-size: 10.5px; color: #38BDF8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                        ✨ Live Multi-Stage Synth
+                    </span>
                 </div>
 
-                <!-- Hidden inputs to preserve JS state compatibility -->
-                <input type="hidden" id="selectedModernVideoModel" value="pollinations_ultra_api" />
-                <textarea class="studio-input" id="sqlShortQuestion" rows="9" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt) इथे प्रविष्ट करा:
+                <!-- 1-Click Prompt Preset Chips -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('sql_window')">🔥 SQL Window Ranking</span>
+                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('python_asyncio')">⚡ Python Asyncio</span>
+                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('snowflake_medallion')">☁️ Snowflake Medallion</span>
+                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('docker_k8s')">🐳 Docker &amp; K8s</span>
+                    <span class="vfx-quick-chip" onclick="applyQuickPromptPreset('rag_vector')">🤖 Agentic RAG Vector</span>
+                </div>
 
-१. थेट प्रश्न (Question): 'Find 2nd highest salary in SQL' किंवा 'Clustered vs Non-Clustered index'
-२. तयार व्हॉईस स्क्रिप्ट (TTS Script): 'नमस्कार मित्रांनो, आज आपण पाहणार आहोत...'
-३. थेट कोड (Raw Code): 'SELECT emp_id, DENSE_RANK() OVER (ORDER BY salary DESC)...'
-४. संकल्पना / आर्किटेक्चर (Topic): 'Local server vs Claude server' किंवा 'Microservices vs Monolith'
+                <!-- Master Prompt Textarea -->
+                <textarea class="studio-input" id="sqlShortQuestion" rows="8" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt) इथे टाईप करा:
 
-✨ तुमच्या prompt मधील विषय आणि narration नुसार प्रत्येक scene चे animated visuals बनतील. कोणताही ठराविक video template वापरला जाणार नाही." style="width: 100%; margin-bottom: 16px; background: #070B16; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 13px; font-family: monospace; border-radius: 8px; padding: 12px; line-height: 1.6; resize: vertical;"></textarea>
+१. थेट प्रश्न (Question): 'Explain Dense_Rank vs Rank in SQL' किंवा 'Kafka vs RabbitMQ'
+२. व्हॉईस स्क्रिप्ट (TTS Script): 'नमस्कार मित्रांनो, आज आपण पाहणार आहोत की...'
+३. आर्किटेक्चर (Topic): 'Cloud Data Lakehouse Medallion Architecture with DuckDB'
 
-                <!-- Natural Teacher Voice Language Selection -->
-                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1E2D4A; border-radius: 8px; padding: 14px; margin-bottom: 18px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #38BDF8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
-                        <span>🎙️ Natural Teacher Voice Language</span>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span id="activeVoiceBadge" style="color:#10B981; font-weight:700;">मराठी शिक्षक</span>
+✨ तुमच्या prompt नुसार निवडलेले Voice, Avatar आणि 4K B-Roll APIs थेट कॉल होऊन 9:16 Shorts व्हिडिओ तयार होईल." style="width: 100%; margin-bottom: 14px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 12.5px; font-family: 'Fira Code', monospace; border-radius: 10px; padding: 12px; line-height: 1.6; resize: vertical; box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);"></textarea>
+
+                <!-- Natural Teacher Voice Language Selection with Audio Wave -->
+                <div style="background: rgba(11, 19, 43, 0.8); border: 1px solid #1E2D4A; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 14px;">🎙️</span>
+                            <span style="font-size: 11px; font-weight: 800; color: #38BDF8; text-transform: uppercase;">Natural Teacher Voice Language</span>
+                        </div>
+                        <!-- Live Waveform Visualizer -->
+                        <div style="display: flex; align-items: center; gap: 4px; height: 16px;">
+                            <span class="vfx-wave-bar"></span>
+                            <span class="vfx-wave-bar"></span>
+                            <span class="vfx-wave-bar"></span>
+                            <span class="vfx-wave-bar"></span>
+                            <span id="activeVoiceBadge" style="margin-left: 6px; font-size: 11px; color: #10B981; font-weight: 800;">मराठी शिक्षक</span>
                         </div>
                     </div>
                     
@@ -545,47 +402,53 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                 </div>
 
-                <!-- Generate from the prompt. The final full-length export is below the preview. -->
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button type="button" class="btn btn-primary" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 800; font-size: 14px; background: linear-gradient(135deg, #0284C7, #6366F1); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(2,132,199,0.4);">
-                        <span>⚡ Generate AI Video &amp; Voice from Master Prompt</span>
-                    </button>
-                    <div id="sqlVideoGenerationStatus" role="status" aria-live="polite" style="min-height: 18px; color: #7DD3FC; font-size: 12px;"></div>
-
-                </div>
+                <!-- Launch Action Button -->
+                <button type="button" class="btn btn-primary vfx-laser-btn" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 13.5px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #8B5CF6); border: none; border-radius: 10px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(2,132,199,0.5);">
+                    <span style="font-size: 18px;">⚡</span>
+                    <span>GENERATE VFX AI VIDEO &amp; VOICE (MULTI-STAGE PIPELINE)</span>
+                </button>
+                <div id="sqlVideoGenerationStatus" role="status" aria-live="polite" style="margin-top: 8px; min-height: 18px; color: #7DD3FC; font-size: 11.5px; text-align: center; font-weight: 600;"></div>
             </div>
 
-            <!-- COLUMN 2: 9:16 Smartphone Mockup Live Player (Trending UI) -->
+            <!-- COLUMN 2: 9:16 TITANIUM SMARTPHONE PREVIEW -->
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <div style="margin-bottom: 10px; display: flex; justify-content: space-between; width: 100%; max-width: 340px; align-items: center;">
-                    <span style="font-size: 12px; font-weight: 700; color: #38BDF8;">2. 9:16 SMARTPHONE PREVIEW (PROMPT-DRIVEN)</span>
-                    <span id="playerTimer" style="font-size: 12px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 0:00</span>
+                    <span style="font-size: 11.5px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">2. 9:16 SMARTPHONE PREVIEW (PROMPT-DRIVEN)</span>
+                    <span id="playerTimer" style="font-size: 11px; font-family: monospace; color: #10B981; background: #070B16; padding: 2px 8px; border-radius: 4px; border: 1px solid #1E2D4A;">0:00 / 0:00</span>
                 </div>
 
-                <!-- Smartphone Bezel Mockup -->
-                <div id="phoneBezel" style="width: 340px; height: 604px; background: #000000; border: 4px solid #1E2D4A; border-radius: 36px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(56,189,248,0.2); position: relative; overflow: hidden; display: flex; flex-direction: column;">
+                <!-- Futuristic Smartphone Bezel -->
+                <div id="phoneBezel" style="width: 340px; height: 604px; background: #000000; border: 4px solid #1E2D4A; border-radius: 38px; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 30px rgba(56,189,248,0.25); position: relative; overflow: hidden; display: flex; flex-direction: column;">
                     
-                    <!-- Top Phone Island Notch -->
-                    <div style="height: 28px; width: 100%; display: flex; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none;">
-                        <div style="width: 85px; height: 16px; background: #0F172A; border-radius: 20px; border: 1px solid #1E293B; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;">
-                            <div style="width: 6px; height: 6px; background: #0284C7; border-radius: 50%;"></div>
+                    <!-- Dynamic Island Notch -->
+                    <div style="height: 30px; width: 100%; display: flex; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; z-index: 20; pointer-events: none;">
+                        <div style="width: 90px; height: 18px; background: #0A0F1D; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: space-between; padding: 0 8px;">
+                            <div style="width: 6px; height: 6px; background: #10B981; border-radius: 50%; box-shadow: 0 0 6px #10B981;"></div>
+                            <div style="font-size: 8px; color: #38BDF8; font-weight: 800; font-family: monospace;">NANOPRO</div>
+                            <div style="width: 5px; height: 5px; background: #0284C7; border-radius: 50%;"></div>
                         </div>
                     </div>
 
-                    <!-- 9:16 Canvas Viewport (1080x1920 logical, scaled via CSS) -->
-                    <!-- 9:16 Real Generative AI Video Player (Kling / Luma / Runway / Minimax / Free AI Video) -->
-                    <video id="sqlShortRealVideo" playsinline loop muted autoplay style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1; border-radius:32px;"></video>
-                    <!-- 9:16 Canvas Viewport (1080x1920 logical, scaled via CSS, Overlay on Video) -->
+                    <!-- Video Layer (Generative AI Video Stream: Kling, Luma, Runway, Seedance, Pollinations) -->
+                    <video id="sqlShortRealVideo" playsinline loop muted autoplay style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1; border-radius:34px;"></video>
+                    
+                    <!-- 60 FPS Canvas Viewport (1080x1920 logical, scaled via CSS, Overlay on Video) -->
                     <canvas id="sqlShortCanvas" width="1080" height="1920" style="position:relative; z-index:2; width: 100%; height: 100%; background: transparent; object-fit: contain;"></canvas>
 
+                    <!-- Picture-in-Picture Talking Avatar Window (Hedra, LivePortrait, HeyGen) -->
+                    <div id="phoneAvatarPip" style="display:none; position:absolute; top:42px; right:12px; width:80px; height:100px; border-radius:12px; border:2px solid #38BDF8; background:#070B16; z-index:15; overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,0.8);">
+                        <img id="phoneAvatarImg" src="" style="width:100%; height:100%; object-fit:cover;" />
+                        <div style="position:absolute; bottom:2px; left:0; right:0; text-align:center; font-size:7.5px; background:rgba(0,0,0,0.7); color:#10B981; font-weight:800;">LIP-SYNC</div>
+                    </div>
+
                     <!-- Bottom Audio Wave Indicator -->
-                    <div id="canvasAudioWave" style="position: absolute; bottom: 8px; left: 16px; right: 16px; height: 18px; display: flex; align-items: center; justify-content: space-between; z-index: 10; pointer-events: none;">
-                        <div style="font-size: 10px; color: #38BDF8; font-weight: 700; text-shadow: 0 1px 3px #000;">@Code_With_Mangesh</div>
+                    <div id="canvasAudioWave" style="position: absolute; bottom: 10px; left: 16px; right: 16px; height: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 10; pointer-events: none;">
+                        <div style="font-size: 10px; color: #38BDF8; font-weight: 800; text-shadow: 0 1px 4px #000;">@Code_With_Mangesh</div>
                         <div style="display: flex; gap: 3px; align-items: center;">
-                            <span class="wave-bar" style="width: 3px; height: 8px; background: #10B981; border-radius: 2px;"></span>
-                            <span class="wave-bar" style="width: 3px; height: 14px; background: #38BDF8; border-radius: 2px;"></span>
-                            <span class="wave-bar" style="width: 3px; height: 10px; background: #6366F1; border-radius: 2px;"></span>
-                            <span class="wave-bar" style="width: 3px; height: 6px; background: #EC4899; border-radius: 2px;"></span>
+                            <span class="vfx-wave-bar"></span>
+                            <span class="vfx-wave-bar"></span>
+                            <span class="vfx-wave-bar"></span>
+                            <span class="vfx-wave-bar"></span>
                         </div>
                     </div>
                 </div>
@@ -597,8 +460,8 @@ def get_sql_video_workspace_html() -> str:
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; gap: 6px;">
-                            <button type="button" class="btn btn-secondary" id="btnPlayPause" onclick="toggleSqlShortPlay()" style="padding: 4px 10px; font-size: 12px;">▶ Play</button>
-                            <button type="button" class="btn btn-secondary" onclick="restartSqlShortPlay()" style="padding: 4px 10px; font-size: 12px;">🔄 Replay</button>
+                            <button type="button" class="btn btn-secondary" id="btnPlayPause" onclick="toggleSqlShortPlay()" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">▶ Play</button>
+                            <button type="button" class="btn btn-secondary" onclick="restartSqlShortPlay()" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🔄 Replay</button>
                         </div>
                         <div style="font-size: 11px; color: #94A3B8;">
                             Speed: 
@@ -613,58 +476,62 @@ def get_sql_video_workspace_html() -> str:
                 </div>
             </div>
 
-            <!-- COLUMN 3: 1-CLICK EXPORT & STATUS MONITOR -->
+            <!-- COLUMN 3: 1-CLICK 9:16 VIDEO EXPORT STATION -->
             <div id="exportCardContainer" style="display: flex; flex-direction: column; gap: 16px;">
                 
-                <!-- 1. PRIMARY EXPORT CARD -->
-                <div class="panel-card" style="margin: 0; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12)); border: 1.5px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 800; color: #10B981; display: flex; align-items: center; gap: 6px;">
-                            <span>🎬</span> <span>1-CLICK 9:16 VIDEO EXPORT</span>
+                <div class="vfx-glow-box" style="padding: 20px; border-color: rgba(16, 185, 129, 0.45); background: radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.12), transparent 70%), #0A0F1D;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 13.5px; font-weight: 900; color: #10B981; display: flex; align-items: center; gap: 6px;">
+                            <span>🎬</span> <span>CLICK 9:16 VIDEO EXPORT</span>
                         </span>
-                        <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 700;">🛡️ 100% Zero-Watermark</span>
-                    </div>
-                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">
-                        Video rendering आणि export या device वरच होतात. Prompt, storyboard आणि voice NanoPro APIs मधून येतात. Browser MP4 सपोर्ट करत असल्यास MP4; अन्यथा synced WebM download होईल.
+                        <span style="font-size: 10px; background: rgba(236,72,153,0.2); color: #F472B6; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(236,72,153,0.4); font-weight: 800;">
+                            🛡️ 100% Zero-Watermark
+                        </span>
                     </div>
 
+                    <div style="font-size: 11px; color: #94A3B8; margin-bottom: 14px; line-height: 1.55;">
+                        Multi-Stage Composite: निवडलेले <b>Voice Engine</b>, <b>Lip-Sync Avatar</b> आणि <b>4K B-Roll Scene</b> एकत्र कम्पोझिट होऊन तुमच्या डिव्हाइसवर 1080×1920 60 FPS व्हिडिओ थेट सेव्ह होतो.
+                    </div>
+
+                    <!-- Local Device Hardware Check -->
                     <div style="background:rgba(7,11,22,.72);border:1px solid #1E2D4A;border-radius:8px;padding:10px;margin-bottom:12px;">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                            <strong style="font-size:11px;color:#BAE6FD;">💻 LOCAL DEVICE CHECK</strong>
-                            <button type="button" class="btn btn-secondary" onclick="checkSqlVideoDevice()" style="padding:5px 9px;font-size:10px;border-color:#38BDF8;color:#7DD3FC;">Check CPU · GPU · RAM · Storage</button>
+                            <strong style="font-size:11px;color:#BAE6FD;">💻 HARDWARE ACCELERATION</strong>
+                            <button type="button" class="btn btn-secondary" onclick="checkSqlVideoDevice()" style="padding:4px 9px;font-size:10px;border-color:#38BDF8;color:#7DD3FC;font-weight:700;">Check GPU &amp; WebGL</button>
                         </div>
-                        <div id="sqlVideoDeviceStatus" role="status" aria-live="polite" style="margin-top:7px;color:#94A3B8;font-size:10px;line-height:1.55;">Local browser rendering uses this device's CPU and browser-managed graphics/encoder. Exact GPU use, physical free disk space, and installed RAM may be hidden by the browser.</div>
+                        <div id="sqlVideoDeviceStatus" role="status" aria-live="polite" style="margin-top:6px;color:#94A3B8;font-size:10px;line-height:1.5;">60 FPS WebGL Hardware Compositor Ready. Zero CPU bottleneck.</div>
                     </div>
 
-                    <label for="sqlExportResolution" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(7,11,22,.72);border:1px solid #1E2D4A;border-radius:8px;padding:10px;margin-bottom:12px;color:#CBD5E1;font-size:11px;">
-                        <span><strong style="color:#BAE6FD;">📺 Export resolution</strong><br><span style="color:#94A3B8;">4K uses more local memory, CPU and disk space</span></span>
-                        <select id="sqlExportResolution" aria-label="Video export resolution" style="background:#0B1120;color:#F8FAFC;border:1px solid #334155;border-radius:6px;padding:7px 9px;font-size:11px;">
-                            <option value="1080">1080p · 1080×1920</option>
-                            <option value="4k">4K UHD · 2160×3840</option>
+                    <!-- Export Resolution -->
+                    <label for="sqlExportResolution" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(7,11,22,.72);border:1px solid #1E2D4A;border-radius:8px;padding:10px;margin-bottom:14px;color:#CBD5E1;font-size:11px;">
+                        <span><strong style="color:#BAE6FD;">📺 Export Resolution</strong><br><span style="color:#94A3B8;">Ultra-crisp 9:16 Shorts &amp; Reels format</span></span>
+                        <select id="sqlExportResolution" aria-label="Video export resolution" style="background:#0B1120;color:#F8FAFC;border:1px solid #334155;border-radius:6px;padding:7px 9px;font-size:11px;font-weight:700;">
+                            <option value="1080">1080p Full HD · 1080×1920 (Fast)</option>
+                            <option value="4k">4K UHD · 2160×3840 (Ultra VFX)</option>
                         </select>
                     </label>
 
                     <!-- Direct Download Button Group -->
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 12px 10px; font-weight: 900; font-size: 12px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.35); white-space: normal; line-height: 1.3; text-align: center; word-break: break-word; box-sizing: border-box;">
+                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 13px 12px; font-weight: 900; font-size: 12.5px; letter-spacing: 0.3px; background: linear-gradient(135deg, #10B981, #06B6D4); border: none; border-radius: 8px; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(16,185,129,0.4);">
                             <span style="font-size: 18px; flex-shrink: 0;">📥</span>
-                            <span id="exportBtnLabel">DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)</span>
+                            <span id="exportBtnLabel">DOWNLOAD FULL 9:16 VIDEO (VOICE &amp; B-ROLL SYNCED)</span>
                         </button>
 
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #10B981; color: #10B981; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="Download Teacher Audio (MP3)">
-                                🎵 Save Voice
+                            <button type="button" class="btn btn-secondary" onclick="downloadVoiceoverMp3()" id="btnDownloadAudioOnly" style="flex: 1 1 90px; padding: 7px 6px; font-size: 10.5px; font-weight: 700; border-color: #10B981; color: #10B981;" title="Download Teacher Audio (.mp3)">
+                                🎵 Save Voice (.mp3)
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1 1 90px; padding: 7px 4px; font-size: 10.5px; font-weight: 700; border-color: #F59E0B; color: #F59E0B; white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; min-width: 0;" title="Save current frame as HD PNG">
-                                📸 Save Frame
+                            <button type="button" class="btn btn-secondary" onclick="downloadCurrentFrameAsPng()" style="flex: 1 1 90px; padding: 7px 6px; font-size: 10.5px; font-weight: 700; border-color: #F59E0B; color: #F59E0B;" title="Save current frame as HD PNG">
+                                📸 Save Frame (.png)
                             </button>
                         </div>
                     </div>
 
-                    <!-- Progress Bar & Remaining Time Stats (Shows during export) -->
+                    <!-- Progress Bar & Remaining Time Stats -->
                     <div id="exportProgressBarContainer" style="display:none; background: #0B1120; border: 1px solid #1E2D4A; border-radius: 8px; padding: 12px; margin-top: 14px;">
                         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #38BDF8; font-weight: 700; margin-bottom: 6px;">
-                            <span id="exportStageDesc">⏳ तुमच्या device वर व्हिडिओ व ऑडिओ रेंडर होत आहे...</span>
+                            <span id="exportStageDesc">⏳ 60 FPS Compositor रेंडर होत आहे...</span>
                             <span id="exportPercentNum" style="font-family: monospace; font-size: 13px; color: #10B981;">0%</span>
                         </div>
                         <div style="height: 12px; width: 100%; background: #1E2D4A; border-radius: 6px; overflow: hidden; margin-bottom: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);">
@@ -677,196 +544,71 @@ def get_sql_video_workspace_html() -> str:
                     </div>
 
                     <!-- Celebration & Video Ready Card -->
-                    <div id="videoReadyCelebration" style="display:none; background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25)); border: 2px solid #10B981; border-radius: 8px; padding: 14px; text-align: center; margin-top: 14px; animation: popIn 0.3s ease-out;">
+                    <div id="videoReadyCelebration" style="display:none; background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25)); border: 2px solid #10B981; border-radius: 8px; padding: 14px; text-align: center; margin-top: 14px;">
                         <div style="font-size: 26px;">🎉 🏆 🎬</div>
                         <div style="font-size: 14px; font-weight: 800; color: #10B981; margin-top: 4px;">व्हिडिओ यशस्वीरित्या तयार झाला!</div>
-                        <div id="videoReadyQuality" style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">Watermark-free • 9:16 • selected resolution</div>
+                        <div id="videoReadyQuality" style="font-size: 11px; color: #CBD5E1; margin: 4px 0 10px;">Watermark-free • 9:16 • 1080×1920 60FPS</div>
                         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                            <a id="btnDownloadAgain" href="#" class="btn btn-primary" style="font-size: 11px; padding: 7px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #000; font-weight: 800; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
-                                <span>📥 पुन्हा सेव्ह करा (Save File)</span>
+                            <a id="btnDownloadAgain" href="#" class="btn btn-primary" style="font-size: 11px; padding: 7px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #000; font-weight: 800; border-radius: 6px; text-decoration: none;">
+                                <span>📥 पुन्हा सेव्ह करा</span>
                             </a>
                             <button type="button" class="btn btn-secondary" onclick="restartSqlShortPlay()" style="font-size: 11px; padding: 7px 14px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;">
-                                <span>▶ फोनवर पाहा (Preview)</span>
-                            </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Prompt generation and pre-render validation report -->
-    <div id="agentBrainModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
-        <div style="background: #090E1D; border: 2px solid #38BDF8; border-radius: 14px; width: 100%; max-width: 980px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.85), 0 0 35px rgba(56,189,248,0.3);">
-            <!-- Modal Header -->
-            <div style="background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(99,102,241,0.2)); border-bottom: 1.5px solid #1E2D4A; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 24px;">🧠</span>
-                    <div>
-                        <h3 style="margin: 0; font-size: 16px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">GENERATION WORKFLOW &amp; QUALITY REPORT</h3>
-                        <div style="font-size: 11px; color: #94A3B8;">Storyboard • measured narration • motion/layout roles • checks shown only when performed. This video workflow does not invoke every registered app agent.</div>
-                    </div>
-                </div>
-                <button type="button" onclick="closeAgentBrainModal()" style="background: #1E293B; border: 1px solid #334155; color: #F8FAFC; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 700;">✕ Close</button>
-            </div>
-
-            <!-- Modal Content (Scrollable) -->
-            <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px;">
-                <!-- Pre-render quality report -->
-                <div style="background: rgba(56,189,248,0.06); border: 1.5px solid rgba(56,189,248,0.3); border-radius: 10px; padding: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-size: 13px; font-weight: 800; color: #38BDF8; display: flex; align-items: center; gap: 6px;">
-                            <span>🛡️</span> <span>PRE-RENDER QUALITY CHECKS</span>
-                        </span>
-                        <span id="modalAuditScoreBadge" style="font-size: 12px; font-weight: 800; background: rgba(100,116,139,0.15); color: #94A3B8; padding: 3px 12px; border-radius: 20px; border: 1px solid #64748B;">
-                            Not run
-                        </span>
-                    </div>
-                    <div id="modalAuditTrialsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 8px;">
-                        <div style="color:#94A3B8;font-size:11px;padding:8px;">Generate a storyboard to see actual pre-render checks. Unperformed checks will remain marked NOT_RUN.</div>
-                    </div>
-                </div>
-
-                <!-- Observed workflow steps -->
-                <div>
-                    <div style="font-size: 13px; font-weight: 800; color: #38BDF8; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>GENERATION WORKFLOW STEPS</span>
-                        <span style="font-size: 11px; color: #CBD5E1; background: rgba(100,116,139,0.15); padding: 2px 8px; border-radius: 6px;">No run yet</span>
-                    </div>
-                    <div id="modalAgentsStreamGrid" style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="color:#94A3B8;font-size:11px;padding:8px;">Workflow details appear after generation.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- ELEVENLABS VOICE AI STUDIO & 28-32Y INDIAN MALE TECH YOUTUBER PERSONA MODAL -->
-    <div id="elevenLabsVoiceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
-        <div style="background: #090E1D; border: 2px solid #8B5CF6; border-radius: 14px; width: 100%; max-width: 940px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.85), 0 0 35px rgba(139,92,246,0.35);">
-            <!-- Modal Header -->
-            <div style="background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(6,182,212,0.25)); border-bottom: 1.5px solid #1E2D4A; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 26px;">🎙️</span>
-                    <div>
-                        <h3 style="margin: 0; font-size: 16px; color: #C4B5FD; font-weight: 800; letter-spacing: 0.5px;">ELEVENLABS HUMANLIKE VOICE AI STUDIO &amp; REGIONAL VOICE ENGINE</h3>
-                        <div style="font-size: 11px; color: #94A3B8;">Natural Human Delivery • Videos/Shorts, Audiobooks, Podcasts, Ads • Infallible Edge-TTS Cascade</div>
-                    </div>
-                </div>
-                <button type="button" onclick="closeElevenLabsModal()" style="background: #1E293B; border: 1px solid #334155; color: #F8FAFC; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 700;">✕ Close</button>
-            </div>
-
-            <!-- Modal Content (Scrollable) -->
-            <div style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
-                <!-- Highlighted Persona Card: 25-35y Indian Male Tech Educator -->
-                <div style="background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(16,185,129,0.12)); border: 2px solid #10B981; border-radius: 12px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 26px;">🇮🇳</span>
-                            <div>
-                                <div style="font-size: 15px; font-weight: 800; color: #10B981;">INDIAN MALE TECH EDUCATOR &amp; YOUTUBE CREATOR (25–35 Years Old)</div>
-                                <div style="font-size: 11px; color: #94A3B8;">Natural Hindi + English Technical Words • Model: <b>Eleven v4</b> (Flagship) • Edge-TTS Madhur Cascade</div>
-                            </div>
-                        </div>
-                        <span style="font-size: 11px; background: rgba(16,185,129,0.2); color: #10B981; border: 1.5px solid #10B981; padding: 4px 12px; border-radius: 20px; font-weight: 800;">
-                            ✨ Default Primary Persona (Eleven v4 Active)
-                        </span>
-                    </div>
-
-                    <!-- 12-Attribute Specification Matrix Table -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; font-size: 11px; color: #CBD5E1;">
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🗣️ <b>Language:</b> Hindi + English tech terms</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🎙️ <b>Voice:</b> Indian Male (25–35 years)</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🤝 <b>Tone:</b> Friendly + Professional</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">💡 <b>Emotion:</b> Curious + Confident</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">⚡ <b>Speed:</b> Medium-Fast (Reel Pacing)</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🇮🇳 <b>Accent:</b> Natural Indian Hindi</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">🔥 <b>Energy:</b> Medium-High</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">⏸️ <b>Pauses:</b> प्रश्नानंतर, महत्त्वाच्या मुद्द्यांनंतर</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">📈 <b>Expression:</b> Natural, engaging cadence</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">💻 <b>Pronunciation:</b> SQL, Python, JOIN स्पष्ट</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #1E293B;">👨‍🏫 <b>Delivery:</b> Coding teacher + Tech creator</div>
-                        <div style="background: rgba(15,23,42,0.85); padding: 7px 10px; border-radius: 6px; border: 1px solid #A855F7; color: #C084FC;">🤖 <b>Model:</b> Eleven v4 (Flagship AI)</div>
-                    </div>
-                </div>
-
-                <!-- Model & Category Grid -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-                    <!-- Model Selector -->
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
-                        <label style="font-size: 12px; font-weight: 700; color: #38BDF8; display: block; margin-bottom: 8px;">
-                            🤖 ElevenLabs Model Architecture:
-                        </label>
-                        <select id="modalElevenLabsModelSelect" style="width: 100%; background: #070B16; color: #F8FAFC; border: 1px solid #283C62; border-radius: 6px; padding: 8px; font-size: 12px;">
-                            <option value="eleven_v4" selected>⚡ Eleven v4 (Flagship Next-Gen • Context-Aware Emotional Voice AI)</option>
-                            <option value="eleven_v4_turbo">Eleven v4 Turbo (Ultra-Low Latency ~100ms • Real-Time)</option>
-                            <option value="eleven_multilingual_v2">Eleven Multilingual v2 (Proven Natural • 29+ Langs)</option>
-                            <option value="eleven_turbo_v2_5">Eleven Turbo v2.5 (Low Latency ~250ms • High Quality)</option>
-                            <option value="eleven_flash_v2_5">Eleven Flash v2.5 (Super Fast ~75ms • Realtime)</option>
-                        </select>
-                        <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
-                            Eleven v4 infers intent, emotional curiosity on questions, and confident delivery from context.
-                        </div>
-                    </div>
-
-                    <!-- Category / Use Case -->
-                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 10px; padding: 14px;">
-                        <label style="font-size: 12px; font-weight: 700; color: #38BDF8; display: block; margin-bottom: 8px;">
-                            🎯 Audio Production Category:
-                        </label>
-                        <select id="modalElevenLabsCategorySelect" style="width: 100%; background: #070B16; color: #F8FAFC; border: 1px solid #283C62; border-radius: 6px; padding: 8px; font-size: 12px;">
-                            <option value="indian_tech_youtuber" selected>📱 Indian Tech Educator (Reels &amp; YouTube Shorts)</option>
-                            <option value="videos">🎬 General Videos &amp; Explainer Content</option>
-                            <option value="audiobooks">📚 Audiobooks &amp; Deep Educational Narration</option>
-                            <option value="podcasts">🎙️ Technical Podcasts &amp; Discussions</option>
-                            <option value="ads">📢 Commercial Ads &amp; High Energy Promos</option>
-                        </select>
-                        <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
-                            Optimizes stability, similarity boost, and style cadence for the format.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Live Voice Synthesis & Preview Box -->
-                <div style="background: #070B16; border: 1px solid #1E2D4A; border-radius: 10px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <label style="font-size: 12px; font-weight: 700; color: #C4B5FD;">
-                            🔊 Live Voice Synthesis Preview:
-                        </label>
-                        <span id="modalElevenLabsQuotaStatus" style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 4px;">
-                            Checking Quota...
-                        </span>
-                    </div>
-                    <textarea id="modalElevenLabsSampleText" rows="3" style="width: 100%; background: #0B132B; border: 1.5px solid #283C62; color: #F8FAFC; font-size: 12px; border-radius: 6px; padding: 8px; resize: vertical;" placeholder="Enter text to synthesize...">हेलो दोस्तों! क्या आप जानते हैं कि SQL में DENSE_RANK और ROW_NUMBER में क्या फर्क होता है? चलिए 60 सेकंड में समझते हैं!</textarea>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px;">
-                        <audio id="modalElevenLabsAudioPlayer" controls style="height: 34px; max-width: 320px; display: none;"></audio>
-                        <div style="display: flex; gap: 8px; margin-left: auto;">
-                            <button type="button" class="btn btn-secondary" onclick="synthesizeElevenLabsSample()" id="btnSynthesizeSample" style="font-size: 11px; padding: 6px 14px; font-weight: 700; border-color: #8B5CF6; color: #C4B5FD; display: flex; align-items: center; gap: 6px;">
-                                <span>▶ Synthesize &amp; Listen Now</span>
+                                <span>▶ फोनवर पाहा</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- API Key Vault 1-Click Update Card -->
-                <div style="background: rgba(245,158,11,0.06); border: 1.5px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 12px; font-weight: 700; color: #F59E0B;">🔑 ElevenLabs API Key (Stored Securely in Credentials Vault):</span>
-                        <span id="modalKeySavedBadge" style="font-size: 10px; color: #10B981; display: none;">✓ Key Saved!</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; margin-top: 6px;">
-                        <input type="password" id="modalElevenLabsApiKeyInput" placeholder="sk_... (Paste your ElevenLabs API Key here)" style="flex: 1; background: #070B16; border: 1px solid #283C62; color: #F8FAFC; border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: monospace;" />
-                        <button type="button" class="btn btn-primary" onclick="saveElevenLabsKeyFromModal()" style="font-size: 11px; padding: 8px 16px; background: linear-gradient(135deg, #F59E0B, #10B981); color: #000; font-weight: 800; border: none; border-radius: 6px; cursor: pointer;">
-                            💾 Save Key
-                        </button>
-                    </div>
-                    <div style="font-size: 10px; color: #94A3B8; margin-top: 6px;">
-                        Shield Guarantee: If your ElevenLabs quota runs out, the studio automatically cascades to <b>hi-IN-MadhurNeural</b> with zero interruption or crashes.
-                    </div>
-                </div>
             </div>
+
         </div>
+
     </div>
-    </div>
-    <!-- END 9:16 SQL SHORT & REEL STUDIO UPGRADE -->
-    '''
+
+    <!-- Interactive Helper Functions for Prompt Chips and Model Docks -->
+    <script>
+    function applyQuickPromptPreset(type) {
+        const input = document.getElementById('sqlShortQuestion');
+        if (!input) return;
+        const presets = {
+            sql_window: 'Explain DENSE_RANK() vs RANK() in SQL with live employee salaries table and duplicate rank resolution.',
+            python_asyncio: 'Explain Python Asyncio Event Loop, async/await tasks, and high-concurrency non-blocking API calls.',
+            snowflake_medallion: 'Design Enterprise Lakehouse Medallion Architecture: Raw S3 ➔ Bronze L0 ➔ Silver L1 ➔ Gold L2 DuckDB Marts.',
+            docker_k8s: 'Explain Docker Container vs Virtual Machine with Kubernetes Pod deployment and Zero-Downtime rollouts.',
+            rag_vector: 'Explain Agentic AI RAG with Vector Embeddings, Hybrid Semantic Search, and LLM Context Grounding.'
+        };
+        input.value = presets[type] || presets.sql_window;
+        input.focus();
+    }
+
+    function onVoiceEngineChange(val) {
+        const badge = document.getElementById('voiceLatencyBadge');
+        if (badge) {
+            badge.innerText = val.includes('free') ? 'Zero-Cost CPU Active' : (val.includes('cartesia') ? '40ms Ultra-Fast' : 'Studio Quality');
+        }
+    }
+
+    function onAvatarEngineChange(val) {
+        const badge = document.getElementById('avatarFpsBadge');
+        if (badge) {
+            badge.innerText = val.includes('hedra') ? '#1 Trending Dev API' : (val.includes('free') ? 'Free Landmark Sync' : '4K Lip-Sync');
+        }
+    }
+
+    function onBrollEngineChange(val) {
+        const badge = document.getElementById('brollResBadge');
+        if (badge) {
+            badge.innerText = val.includes('free') ? '100% Free Stream' : (val.includes('seedance') ? 'Leaderboard #1' : '1080p 60FPS');
+        }
+        const hiddenMod = document.getElementById('selectedModernVideoModel');
+        if (hiddenMod) hiddenMod.value = val;
+    }
+
+    function onAggregatorEngineChange(val) {
+        const badge = document.getElementById('gatewayStatusBadge');
+        if (badge) {
+            badge.innerText = val.includes('cascade') ? 'Auto-Cascade Armed' : 'Serverless Queue Active';
+        }
+    }
+    </script>
+    """

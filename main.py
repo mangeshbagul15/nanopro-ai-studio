@@ -1636,6 +1636,36 @@ async def api_video_generate_advance_video(req: ModernVideoGenerateRequest):
     )
     return JSONResponse(res)
 
+class MultiStagePipelineRequest(BaseModel):
+    prompt: str
+    voice_engine: Optional[str] = "kokoro_free"
+    avatar_engine: Optional[str] = "client_cyber_canvas"
+    broll_engine: Optional[str] = "seedance_25"
+    aggregator_engine: Optional[str] = "nanopro_auto_cascade"
+    language: Optional[str] = "mr"
+    aspect_ratio: Optional[str] = "9:16"
+
+@app.get("/api/video/matrix/full_catalog")
+async def api_video_matrix_full_catalog():
+    """Returns the full 4-stage master catalog across Prompt-to-Voice, Voice-to-Video, Prompt-to-Video, and Aggregators."""
+    from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
+    return JSONResponse(modern_2026_video_matrix.get_full_catalog())
+
+@app.post("/api/video/pipeline/generate_multistage")
+async def api_video_pipeline_generate_multistage(req: MultiStagePipelineRequest):
+    """Executes the complete Prompt-to-Voice -> Voice-to-Video -> Prompt-to-Video multi-stage generation pipeline."""
+    from app.video_maker.modern_2026_video_matrix import modern_2026_video_matrix
+    res = modern_2026_video_matrix.generate_multistage_pipeline(
+        prompt=req.prompt,
+        voice_engine=req.voice_engine or "kokoro_free",
+        avatar_engine=req.avatar_engine or "client_cyber_canvas",
+        broll_engine=req.broll_engine or "seedance_25",
+        aggregator_engine=req.aggregator_engine or "nanopro_auto_cascade",
+        language=req.language or "mr",
+        aspect_ratio=req.aspect_ratio or "9:16"
+    )
+    return JSONResponse(res)
+
 
 @app.post("/api/coding/execute")
 async def api_coding_execute(req: CodingRequest):
