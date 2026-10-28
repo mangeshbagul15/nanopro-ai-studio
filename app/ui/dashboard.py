@@ -2287,30 +2287,9 @@ def _get_raw_dashboard_html() -> str:
 
 
         @media (min-width: 769px) and (max-width: 1024px) {
-
-            #sidebar {
-
-                width: var(--sidebar-collapsed-width) !important;
-
-                min-width: var(--sidebar-collapsed-width) !important;
-
-                max-width: var(--sidebar-collapsed-width) !important;
-
-            }
-
-            .brand-text { display: none !important; }
-
-            .sidebar-search-box { display: none !important; }
-
-            .nav-group-header { display: none !important; }
-
-            .nav-item { justify-content: center !important; padding: 10px 0 !important; }
-
-            .nav-item-label { display: none !important; }
-
-            .sidebar-footer { display: none !important; }
-
+            /* 100% Manual User Control: NEVER auto-collapse sidebar or hide nav labels */
             .main-content-viewport { padding: 14px 16px !important; }
+        }
 
         }
 
@@ -22874,35 +22853,20 @@ Ready for message compilation and automated dispatch.
         /* --- 2. SIDEBAR COLLAPSE & EXPAND --- */
 
         function initSidebarState() {
-
             const shell = document.getElementById('app-shell');
-
             if (!shell) return;
-
             if (window.innerWidth <= 768) {
-
                 shell.classList.remove('sidebar-collapsed');
-
                 shell.classList.remove('mobile-sidebar-open');
-
                 return;
-
             }
-
-            // Default to fully open sidebar on desktop so all left features are visible!
-
-            const isExplicitlyCollapsed = localStorage.getItem('nanopro_sidebar_collapsed') === 'force_collapsed';
-
-            if (isExplicitlyCollapsed) {
-
-                shell.classList.add('sidebar-collapsed');
-
-            } else {
-
-                shell.classList.remove('sidebar-collapsed');
-
-            }
-
+            // 100% Manual User Control: NEVER auto-minimize sidebar! Always keep fully open unless manually toggled.
+            localStorage.removeItem('nanopro_sidebar_collapsed');
+            shell.classList.remove('sidebar-collapsed');
+            document.querySelectorAll('.nav-item-label').forEach(el => {
+                el.style.display = 'inline-block';
+                el.style.opacity = '1';
+            });
         }
 
         function toggleMobileSidebar(forceState) {
