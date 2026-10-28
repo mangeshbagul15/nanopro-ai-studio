@@ -1157,11 +1157,8 @@ class Modern2026VideoMatrix:
             return {"status": "error", "message": str(e)}
 
     def _generate_pollinations_video_url(self, prompt: str, aspect_ratio: str, model_id: str) -> str:
-        w, h = (720, 1280) if aspect_ratio == "9:16" else (1280, 720)
-        enhanced = f"Cinematic 9:16 vertical video reel, {prompt}, photorealistic 8k, masterwork composition, Unreal Engine 5 render, cinematic lighting, 60fps"
-        encoded = urllib.parse.quote(enhanced)
-        seed = int(time.time() * 1000) % 10000000
-        return f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true"
+        # Zero rate-limit placeholders; procedural 60 FPS GPU engine is the primary compositor
+        return ""
 
 
 # Singleton instance

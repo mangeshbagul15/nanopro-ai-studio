@@ -9949,251 +9949,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = true) {
-
-        if (!sqlShortState.sceneAssets || sqlShortState.sceneAssets.size === 0) return false;
-
-        let scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
-
-                    sqlShortState.sceneAssets.get(String(stageIndex)) ||
-
-                    sqlShortState.sceneAssets.get(String(stageIndex + 1)) ||
-
-                    sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex));
-
-        if (!scene && stage?.title) {
-
-            scene = sqlShortState.sceneAssets.get(String(stage.title).toLowerCase().trim());
-
-        }
-
-        if (!scene && sqlShortState.sceneAssets.size > 0) {
-
-            const vals = Array.from(sqlShortState.sceneAssets.values());
-
-            scene = vals[Math.max(0, stageIndex) % vals.length];
-
-        }
-
-        if (!scene || !scene.image) return false;
-
-        ctx.save();
-
-        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-
-        const localTime = Math.max(0, t - Number(stage?.start || 0));
-
-        const media = scene.video && scene.video.readyState >= 2 ? scene.video : scene.image;
-
-        if (!media || (media.tagName === 'IMG' && (!media.complete || media.naturalWidth === 0))) {
-
-            ctx.restore();
-
-            return false;
-
-        }
-
-        if (scene.video && scene.video.readyState >= 2) {
-
-            const expected = scene.video.duration ? localTime % scene.video.duration : localTime;
-
-            if (Math.abs(scene.video.currentTime - expected) > 0.65) {
-
-                try { scene.video.currentTime = expected; } catch (_) {}
-
-            }
-
-            if (scene.video.paused) scene.video.play().catch(() => {});
-
-        }
-
-        // Slow push-in plus a gentle drifting sway keeps the frame alive without
-
-        // cropping the subject out of the 9:16 safe area.
-
-        const zoom = 1.02 + 0.05 * progress + 0.006 * Math.sin(t * 0.55);
-
-        const width = W * zoom, height = H * zoom;
-
-        const driftX = Math.sin(t * 0.42) * W * 0.004;
-
-        const driftY = Math.cos(t * 0.37) * H * 0.003;
-
-        // Filmic grade: a touch more saturation and contrast makes generated
-
-        // keyframes read like graded footage instead of flat illustrations.
-
-        const previousFilter = ctx.filter;
-
-        ctx.filter = "saturate(1.14) contrast(1.07) brightness(1.02)";
-
-        ctx.drawImage(media, (W - width) / 2 + driftX, (H - height) / 2 + driftY, width, height);
-
-        ctx.filter = previousFilter;
-
-
-
-        // Scrims stay transparent across the subject and only darken the bands that
-
-        // actually carry captions, so the artwork keeps its punch.
-
-        const shade = ctx.createLinearGradient(0, 0, 0, H);
-
-        shade.addColorStop(0, "rgba(2,6,23,0.55)");
-
-        shade.addColorStop(0.2, "rgba(2,6,23,0.06)");
-
-        shade.addColorStop(0.66, "rgba(2,6,23,0.02)");
-
-        shade.addColorStop(0.88, "rgba(2,6,23,0.5)");
-
-        shade.addColorStop(1, "rgba(2,6,23,0.88)");
-
-        ctx.fillStyle = shade;
-
-        ctx.fillRect(0, 0, W, H);
-
-
-
-        const vignette = ctx.createRadialGradient(W / 2, H * 0.46, W * 0.3, W / 2, H * 0.46, W * 0.95);
-
-        vignette.addColorStop(0, "rgba(0,0,0,0)");
-
-        vignette.addColorStop(1, "rgba(0,0,0,0.38)");
-
-        ctx.fillStyle = vignette;
-
-        ctx.fillRect(0, 0, W, H);
-
-
-
-        // Previous-scene passes reuse this renderer for the plate only, so the HUD,
-
-        // title and overlays belong exclusively to the incoming scene.
-
-        if (drawText) {
-
-            drawSceneMotionGraphics(ctx, W, H, stage, stageIndex, progress, t);
-
-
-
-            const visual = stage?.visual_data || {};
-
-            const title = String(stage?.title || p.title || p.question || "");
-
-            ctx.textAlign = "center";
-
-            ctx.font = "800 44px 'Segoe UI', sans-serif";
-
-            const titleLines = wrapCanvasText(ctx, title, W - 190, 2);
-
-            const titleTextWidth = titleLines.reduce((widest, line) => Math.max(widest, ctx.measureText(line).width), 0);
-
-            const titleBoxWidth = Math.min(W - 140, Math.max(320, titleTextWidth + 68));
-
-            const titleBoxHeight = titleLines.length * 54 + 30;
-
-            if (titleLines.length) {
-
-                const titleBox = ctx.createLinearGradient(0, 196, 0, 196 + titleBoxHeight);
-
-                titleBox.addColorStop(0, "rgba(4,10,26,0.86)");
-
-                titleBox.addColorStop(1, "rgba(4,10,26,0.58)");
-
-                ctx.fillStyle = titleBox;
-
-                ctx.beginPath();
-
-                ctx.roundRect((W - titleBoxWidth) / 2, 196, titleBoxWidth, titleBoxHeight, 20);
-
-                ctx.fill();
-
-                ctx.strokeStyle = "rgba(56,189,248,0.28)";
-
-                ctx.lineWidth = 1.5;
-
-                ctx.stroke();
-
-                ctx.fillStyle = "#FFFFFF";
-
-                ctx.shadowColor = "rgba(0,0,0,0.7)";
-
-                ctx.shadowBlur = 12;
-
-                titleLines.forEach((line, index) => ctx.fillText(line, W / 2, 232 + index * 54));
-
-                ctx.shadowBlur = 0;
-
-            }
-
-
-
-            const overlays = visual.overlay_items || stage?.overlay_items || [];
-
-            overlays.forEach(item => {
-
-                if (!item || !item.content) return;
-
-                let x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
-
-                let y = Math.max(0.08, Math.min(0.82, Number(item.y ?? 0.66))) * H;
-
-                const code = item.kind === "code" || item.kind === "formula";
-
-                const overlayFont = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
-
-                // Set the font BEFORE wrapping and measuring, otherwise the label box is
-
-                // sized from whichever font was set last and the text spills off frame.
-
-                ctx.font = overlayFont;
-
-                const lines = wrapCanvasText(ctx, String(item.content), W * 0.78, code ? 3 : 2);
-
-                const lineHeight = code ? 34 : 30;
-
-                const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
-
-                const boxHeight = lines.length * lineHeight + 32;
-
-                x = Math.max(boxWidth / 2 + 24, Math.min(W - boxWidth / 2 - 24, x));
-
-                y = Math.max(300 + boxHeight / 2, Math.min(H - 550 - boxHeight / 2, y));
-
-                ctx.fillStyle = code ? "rgba(3,10,25,0.9)" : "rgba(8,18,36,0.84)";
-
-                ctx.strokeStyle = code ? "rgba(56,189,248,0.8)" : "rgba(255,255,255,0.4)";
-
-                ctx.lineWidth = 2;
-
-                ctx.beginPath();
-
-                ctx.roundRect(x - boxWidth / 2, y - 24, boxWidth, boxHeight, 18);
-
-                ctx.fill();
-
-                ctx.stroke();
-
-                ctx.fillStyle = code ? "#BAE6FD" : "#FFFFFF";
-
-                ctx.font = overlayFont;
-
-                ctx.shadowColor = "rgba(0,0,0,0.55)";
-
-                ctx.shadowBlur = 6;
-
-                lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * lineHeight));
-
-                ctx.shadowBlur = 0;
-
-            });
-
-        }
-
-        ctx.restore();
-
-        return true;
-
+        // Zero static/rate-limited images: Hardware-accelerated 60 FPS 3D GPU Engine handles all visual stages
+        return false;
     }
 
 
@@ -11065,6 +10822,387 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
+    
+    // =========================================================================
+    // 🚀 DYNAMIC 3D TECH ARCHITECTURE PROCEDURAL ENGINE (60 FPS REAL-TIME)
+    // =========================================================================
+    function renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId) {
+        const spec = resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx);
+        const themeCol = spec.themeCol || "#38BDF8";
+        const accentCol = spec.accentCol || "#10B981";
+        const stageIdx = Number(currentStageIdx) || 1;
+        const stageTitle = String(activeStage?.title || "").toLowerCase();
+
+        ctx.save();
+
+        // ---------------------------------------------------------------------
+        // SCENE 2 or "HOW IT WORKS" / "ARCHITECTURE" / "PIPELINE":
+        // 3D SOURCE DB -> REPLICATION INSTANCE -> TARGET DATA WAREHOUSE PIPELINE
+        // ---------------------------------------------------------------------
+        if (stageIdx === 2 || stageTitle.includes("kaise") || stageTitle.includes("work") || stageTitle.includes("flow") || stageTitle.includes("pipe") || stageTitle.includes("load") || stageTitle.includes("cdc")) {
+            const centerY = 800;
+
+            // Connecting Conduit Cable (Source to DMS)
+            ctx.save();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+            ctx.lineWidth = 4;
+            ctx.setLineDash([8, 8]);
+            ctx.lineDashOffset = -t * 40;
+            ctx.beginPath();
+            ctx.moveTo(220, centerY);
+            ctx.lineTo(540, centerY);
+            ctx.stroke();
+
+            // Connecting Conduit Cable (DMS to Target)
+            ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+            ctx.beginPath();
+            ctx.moveTo(540, centerY);
+            ctx.lineTo(860, centerY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // Animated Traveling Photon Packets (Source -> DMS -> Target)
+            const packetCount = 6;
+            for (let i = 0; i < packetCount; i++) {
+                const prog = ((t * 0.9 + i * (1.0 / packetCount)) % 1.0);
+                let px, py, pcol;
+                if (prog < 0.5) {
+                    const localP = prog / 0.5;
+                    px = 220 + localP * 320;
+                    py = centerY + Math.sin(localP * Math.PI) * -15;
+                    pcol = "#38BDF8";
+                } else {
+                    const localP = (prog - 0.5) / 0.5;
+                    px = 540 + localP * 320;
+                    py = centerY + Math.sin(localP * Math.PI) * -15;
+                    pcol = "#10B981";
+                }
+                ctx.save();
+                ctx.fillStyle = pcol;
+                ctx.shadowColor = pcol;
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(px, py, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // NODE 1: SOURCE DATABASE (Left)
+            const bob1 = Math.sin(t * 3.2) * 6;
+            ctx.save();
+            ctx.translate(220, centerY + bob1);
+            // 3D Database Cylinder
+            draw3DDatabaseCylinder(ctx, 0, 0, 85, 95, "#38BDF8", "SOURCE DB", "Postgres/Oracle");
+            ctx.restore();
+
+            // NODE 2: AWS DMS REPLICATION ENGINE (Center)
+            const bob2 = Math.sin(t * 3.2 + 1.5) * 6;
+            ctx.save();
+            ctx.translate(540, centerY + bob2);
+            // Glowing Engine Chassis
+            ctx.fillStyle = "rgba(6, 18, 38, 0.94)";
+            ctx.beginPath();
+            ctx.roundRect(-100, -75, 200, 150, 18);
+            ctx.fill();
+            ctx.strokeStyle = themeCol;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = themeCol;
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Spinning Turbine in Center
+            const spin = t * 6;
+            ctx.save();
+            ctx.translate(0, -10);
+            ctx.strokeStyle = accentCol;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 32, 0, Math.PI * 2);
+            ctx.stroke();
+            for (let b = 0; b < 4; b++) {
+                const ba = spin + b * (Math.PI / 2);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(ba) * 28, Math.sin(ba) * 28);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Engine Label
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 15px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("⚡ AWS DMS", 0, 42);
+            ctx.fillStyle = accentCol;
+            ctx.font = "bold 11px monospace";
+            ctx.fillText("CDC ENGINE", 0, 58);
+            ctx.restore();
+
+            // NODE 3: TARGET DATA WAREHOUSE (Right)
+            const bob3 = Math.sin(t * 3.2 + 3.0) * 6;
+            ctx.save();
+            ctx.translate(860, centerY + bob3);
+            draw3DDatabaseCylinder(ctx, 0, 0, 85, 95, "#10B981", "TARGET DW", "Redshift/S3");
+            ctx.restore();
+
+            // Bottom Live Telemetry Pill
+            ctx.save();
+            const telY = centerY + 130;
+            ctx.fillStyle = "rgba(4, 12, 28, 0.88)";
+            ctx.beginPath();
+            ctx.roundRect(W / 2 - 210, telY, 420, 44, 22);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(16, 185, 129, 0.6)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Pulsing Green Dot
+            const dotPulse = Math.sin(t * 8) > 0;
+            ctx.fillStyle = dotPulse ? "#10B981" : "#047857";
+            ctx.beginPath();
+            ctx.arc(W / 2 - 180, telY + 22, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "bold 13px 'Segoe UI', sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText("CONTINUOUS CDC REPLICATION • 0 DOWNTIME", W / 2 - 165, telY + 27);
+            ctx.restore();
+        }
+
+        // ---------------------------------------------------------------------
+        // SCENE 3 or "SUPPORTED DATABASES" / "CONNECTIVITY":
+        // 4 FLOATING 3D ISOMETRIC NODES IN AN ACTIVE MESH
+        // ---------------------------------------------------------------------
+        else if (stageIdx === 3 || stageTitle.includes("support") || stageTitle.includes("database") || stageTitle.includes("hetero") || stageTitle.includes("homo")) {
+            const centerY = 810;
+            const meshNodes = [
+                {x: W / 2, y: centerY - 130, name: "ORACLE / SQL", icon: "🏢", col: "#38BDF8"},
+                {x: W / 2 - 260, y: centerY + 30, name: "POSTGRES / MYSQL", icon: "🐘", col: "#10B981"},
+                {x: W / 2 + 260, y: centerY + 30, name: "AWS REDSHIFT", icon: "☁️", col: "#F59E0B"},
+                {x: W / 2, y: centerY + 160, name: "AMAZON S3 / LAKE", icon: "🪣", col: "#A855F7"}
+            ];
+
+            // Connectors
+            ctx.save();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            for (let i = 0; i < meshNodes.length; i++) {
+                for (let j = i + 1; j < meshNodes.length; j++) {
+                    ctx.moveTo(meshNodes[i].x, meshNodes[i].y);
+                    ctx.lineTo(meshNodes[j].x, meshNodes[j].y);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // Center Hub
+            ctx.save();
+            ctx.translate(W / 2, centerY + 15);
+            ctx.fillStyle = "rgba(6, 16, 36, 0.95)";
+            ctx.beginPath();
+            ctx.arc(0, 0, 52, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = themeCol;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = themeCol;
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 13px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("HOMO &", 0, -4);
+            ctx.fillText("HETERO", 0, 14);
+            ctx.restore();
+
+            // Draw Nodes
+            meshNodes.forEach((n, ni) => {
+                const nbob = Math.sin(t * 3.5 + ni * 1.5) * 6;
+                ctx.save();
+                ctx.translate(n.x, n.y + nbob);
+
+                ctx.fillStyle = "rgba(8, 18, 38, 0.92)";
+                ctx.beginPath();
+                ctx.roundRect(-90, -32, 180, 64, 14);
+                ctx.fill();
+                ctx.strokeStyle = n.col;
+                ctx.lineWidth = 2;
+                ctx.shadowColor = n.col;
+                ctx.shadowBlur = 12;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(n.icon + " " + n.name, 0, 5);
+                ctx.restore();
+            });
+        }
+
+        // ---------------------------------------------------------------------
+        // SCENE 4+ or "BENEFITS" / "WHY CHOOSE" / "METRICS":
+        // 3 FLOATING 3D HOLOGRAPHIC TELEMETRY GAUGES
+        // ---------------------------------------------------------------------
+        else if (stageIdx >= 4 || stageTitle.includes("fayde") || stageTitle.includes("benefit") || stageTitle.includes("why") || stageTitle.includes("start")) {
+            const centerY = 810;
+            const gauges = [
+                {x: W / 2 - 270, val: "0 ms", label: "DOWNTIME", sub: "Live Switchover", col: "#10B981"},
+                {x: W / 2, val: "99.99%", label: "HIGH AVAILABILITY", sub: "Multi-AZ Sentinel", col: "#38BDF8"},
+                {x: W / 2 + 270, val: "100%", label: "DATA ACCURACY", sub: "CDC Verification", col: "#F59E0B"}
+            ];
+
+            gauges.forEach((g, gi) => {
+                const gbob = Math.sin(t * 3.0 + gi * 2) * 6;
+                ctx.save();
+                ctx.translate(g.x, centerY + gbob);
+
+                // Circular Progress Gauge
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.arc(0, -25, 68, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Glowing Arc
+                ctx.strokeStyle = g.col;
+                ctx.lineWidth = 8;
+                ctx.lineCap = "round";
+                ctx.shadowColor = g.col;
+                ctx.shadowBlur = 16;
+                ctx.beginPath();
+                const startA = -Math.PI / 2;
+                const endA = startA + (Math.PI * 1.6);
+                ctx.arc(0, -25, 68, startA, endA);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Center Value
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 26px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(g.val, 0, -16);
+
+                // Labels
+                ctx.fillStyle = g.col;
+                ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                ctx.fillText(g.label, 0, 72);
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "12px 'Segoe UI', sans-serif";
+                ctx.fillText(g.sub, 0, 92);
+
+                ctx.restore();
+            });
+
+            // Live Performance Telemetry Strip
+            ctx.save();
+            const stripY = centerY + 145;
+            ctx.fillStyle = "rgba(4, 12, 28, 0.90)";
+            ctx.beginPath();
+            ctx.roundRect(W / 2 - 230, stripY, 460, 42, 21);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            ctx.fillStyle = "#38BDF8";
+            ctx.font = "bold 13px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("⚡ AWS NATIVE • MINIMAL COST • SECURE MIGRATION", W / 2, stripY + 26);
+            ctx.restore();
+        }
+
+        // ---------------------------------------------------------------------
+        // SCENE 1 / DEFAULT:
+        // CINEMATIC 3D PERSPECTIVE HIGHWAY & FLOATING SERVER CORE
+        // ---------------------------------------------------------------------
+        else {
+            renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId);
+        }
+
+        ctx.restore();
+    }
+
+    // Helper: 3D Isometric Cylinder Database
+    function draw3DDatabaseCylinder(ctx, cx, cy, w, h, col, mainLabel, subLabel) {
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        const r = w / 2;
+        const bodyH = h * 0.7;
+
+        // Base Body Gradient
+        const bodyGrad = ctx.createLinearGradient(-r, 0, r, 0);
+        bodyGrad.addColorStop(0, "rgba(4, 14, 30, 0.95)");
+        bodyGrad.addColorStop(0.5, "rgba(8, 28, 55, 0.95)");
+        bodyGrad.addColorStop(1, "rgba(3, 10, 22, 0.95)");
+
+        // 3 Layers / Disks
+        const layers = 3;
+        const layerH = bodyH / layers;
+
+        for (let l = 0; l < layers; l++) {
+            const ly = -bodyH / 2 + l * layerH;
+            ctx.fillStyle = bodyGrad;
+            ctx.fillRect(-r, ly, w, layerH);
+
+            // Elliptical bottom edge
+            ctx.save();
+            ctx.translate(0, ly + layerH);
+            ctx.scale(1.0, 0.38);
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 2.0;
+            ctx.stroke();
+            ctx.restore();
+
+            // LED Status Light on each layer
+            const ledOn = Math.sin(Date.now() * 0.008 + l * 2) > 0;
+            ctx.fillStyle = ledOn ? col : "rgba(255, 255, 255, 0.2)";
+            ctx.beginPath();
+            ctx.arc(-r + 18, ly + layerH / 2, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Top Ellipse Cap
+        ctx.save();
+        ctx.translate(0, -bodyH / 2);
+        ctx.scale(1.0, 0.38);
+        const topGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, r);
+        topGrad.addColorStop(0, col);
+        topGrad.addColorStop(0.7, "rgba(8, 28, 55, 0.95)");
+        ctx.fillStyle = topGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // Labels
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(mainLabel, 0, bodyH / 2 + 26);
+        ctx.fillStyle = col;
+        ctx.font = "bold 11px monospace";
+        ctx.fillText(subLabel, 0, bodyH / 2 + 42);
+
+        ctx.restore();
+    }
+
     function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
 
         ctx.save();
@@ -11243,218 +11381,11 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-            // 2. Center 3D Isometric Hologram & Particle Mesh (Rendered when no external video covers it)
-
+            // 2. Dynamic 3D Tech Architecture Scene (60 FPS Procedural GPU Engine)
             if (!hasRealVideo) {
-                renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
-                renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
-
-                const centerY = 820;
-
-                const corePulse = 1.0 + Math.sin(t * 3.8) * 0.07;
-
-
-
-                ctx.save();
-
-                ctx.translate(W / 2, centerY);
-
-                ctx.scale(corePulse, corePulse);
-
-
-
-                // Volumetric light rays
-
-                for (let ray = 0; ray < 6; ray++) {
-
-                    const rayAngle = (t * 0.4) + (ray * Math.PI / 3);
-
-                    const rx = Math.cos(rayAngle) * 360;
-
-                    const ry = Math.sin(rayAngle) * 220;
-
-                    const rayGrad = ctx.createLinearGradient(0, 0, rx, ry);
-
-                    rayGrad.addColorStop(0, "rgba(56, 189, 248, 0.22)");
-
-                    rayGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
-
-                    ctx.strokeStyle = rayGrad;
-
-                    ctx.lineWidth = 14;
-
-                    ctx.beginPath();
-
-                    ctx.moveTo(0, 0);
-
-                    ctx.lineTo(rx, ry);
-
-                    ctx.stroke();
-
-                }
-
-
-
-                // 3D Isometric Cyber Grid Ground Rings
-
-                for (let r = 0; r < 3; r++) {
-
-                    const ringRadius = 140 + (r * 75);
-
-                    const ringAlpha = 0.4 - (r * 0.1);
-
-                    ctx.save();
-
-                    ctx.scale(1.0, 0.45); // Isometric elliptical tilt
-
-                    ctx.beginPath();
-
-                    ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
-
-                    ctx.strokeStyle = r === 0 ? themeCol : "rgba(99, 102, 241, " + ringAlpha + ")";
-
-                    ctx.lineWidth = 2.5;
-
-                    ctx.stroke();
-
-
-
-                    // Rotating node markers along rings
-
-                    const nodeCount = 4 + r * 2;
-
-                    for (let n = 0; n < nodeCount; n++) {
-
-                        const nAngle = (t * (0.8 - r * 0.2)) + (n * (Math.PI * 2 / nodeCount));
-
-                        const nx = Math.cos(nAngle) * ringRadius;
-
-                        const ny = Math.sin(nAngle) * ringRadius;
-
-                        ctx.fillStyle = themeCol;
-
-                        ctx.beginPath();
-
-                        ctx.arc(nx, ny, 5, 0, Math.PI * 2);
-
-                        ctx.fill();
-
-                    }
-
-                    ctx.restore();
-
-                }
-
-
-
-                // Central Glowing Quantum Core Orb
-
-                const coreGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
-
-                coreGrad.addColorStop(0, "#FFFFFF");
-
-                coreGrad.addColorStop(0.25, themeCol);
-
-                coreGrad.addColorStop(0.65, "rgba(14, 165, 233, 0.6)");
-
-                coreGrad.addColorStop(1, "rgba(2, 6, 23, 0)");
-
-                ctx.fillStyle = coreGrad;
-
-                ctx.beginPath();
-
-                ctx.arc(0, 0, 110, 0, Math.PI * 2);
-
-                ctx.fill();
-
-
-
-                // Tech Hologram Icon inside Core
-
-                ctx.fillStyle = "#FFFFFF";
-
-                ctx.font = "52px 'Segoe UI', sans-serif";
-
-                ctx.textAlign = "center";
-
-                const centerIcon = (p.domain && p.domain.toLowerCase().includes("sql")) ? "⚡" : (vData.icon || "💎");
-
-                ctx.fillText(centerIcon, 0, 18);
-
-
-
-                ctx.restore();
-
-
-
-                // 3. Floating Kinetic Concept Tags (Orbiting pills, NOT a vertical slide deck!)
-
-                if (bullets.length > 0) {
-
-                    const tagLimit = Math.min(bullets.length, 3);
-
-                    const tagYStart = 1140;
-
-                    ctx.save();
-
-                    ctx.textAlign = "center";
-
-
-
-                    for (let b = 0; b < tagLimit; b++) {
-
-                        const tagText = String(bullets[b]).replace(/^[0-9•\-\s]+/, "").trim();
-
-                        const tagY = tagYStart + (b * 68);
-
-                        const tagW = Math.min(W - 140, ctx.measureText(tagText).width + 60);
-
-
-
-                        ctx.fillStyle = "rgba(10, 17, 36, 0.75)";
-
-                        ctx.beginPath();
-
-                        ctx.roundRect(W / 2 - tagW / 2, tagY, tagW, 52, 26);
-
-                        ctx.fill();
-
-
-
-                        ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-
-                        ctx.lineWidth = 1.2;
-
-                        ctx.stroke();
-
-
-
-                        ctx.fillStyle = "#38BDF8";
-
-                        ctx.font = "bold 15px 'Segoe UI', sans-serif";
-
-                        ctx.fillText("⚡", W / 2 - tagW / 2 + 26, tagY + 32);
-
-
-
-                        ctx.fillStyle = "#F1F5F9";
-
-                        ctx.font = "600 20px 'Segoe UI', sans-serif";
-
-                        ctx.fillText(fitTextToWidth(ctx, tagText, tagW - 65), W / 2 + 12, tagY + 33);
-
-                    }
-
-                    ctx.restore();
-
-                }
-
+                renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
             }
-
-
-
             ctx.restore();
-
         }
 
         else         // =========================================================================
