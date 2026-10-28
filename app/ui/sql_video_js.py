@@ -828,6 +828,28 @@ SECOND_HIGHEST_SALARY: 70000`;
     // =========================================================================
     // 🎯 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (AUTO-PILOT) CONTROLLER
     // =========================================================================
+    
+    // =========================================================================
+    // ↔️ HORIZONTAL SCROLL STUDIO NAVIGATION HELPER
+    // =========================================================================
+    function scrollVfxStudio(pos) {
+        const container = document.getElementById('vfxHorizontalScrollContainer') 
+            || document.querySelector('.main-content-viewport')
+            || document.getElementById('view-universal_tech_video');
+        if (!container) return;
+        
+        let targetX = 0;
+        if (pos === 'left') {
+            targetX = 0;
+        } else if (pos === 'center') {
+            targetX = 460;
+        } else if (pos === 'right') {
+            targetX = container.scrollWidth || 1360;
+        }
+        
+        container.scrollTo({ left: targetX, behavior: 'smooth' });
+    }
+
     async function directorAutopilotPreview(prompt, lang) {
         if (!prompt || prompt.trim().length < 3) return;
         try {
@@ -944,13 +966,9 @@ SECOND_HIGHEST_SALARY: 70000`;
                         realVid.style.display = 'block';
                         realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
                     }
-                    // If avatar step active
+                    // 100% Pure Tech Mode: STRICTLY ZERO HUMAN FACES, GIRLS, BOYS, OR AVATAR IMAGES
                     const pipEl = document.getElementById('phoneAvatarPip');
-                    const imgEl = document.getElementById('phoneAvatarImg');
-                    if (pipEl && imgEl && aEngine !== 'client_cyber_canvas') {
-                        imgEl.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(aEngine + ' realistic talking teacher presenter face studio lighting')}?width=160&height=200&nologo=true`;
-                        pipEl.style.display = 'block';
-                    }
+                    if (pipEl) pipEl.style.display = 'none';
                     if (typeof showModernToast === 'function') {
                         const bName = vData.pipeline_stages?.step3_broll?.engine_name || 'AI Video Stream';
                         const vName = vData.pipeline_stages?.step1_voice?.engine_name || 'Voice Engine';
@@ -8398,6 +8416,7 @@ SECOND_HIGHEST_SALARY: 70000`;
     window.setSqlAvatarPresenter = setSqlAvatarPresenter;
     window.directorAutopilotPreview = directorAutopilotPreview;
 window.applyQuickPromptPreset = applyQuickPromptPreset;
+window.scrollVfxStudio = scrollVfxStudio;
 window.generateSqlShortBlueprint = generateSqlShortBlueprint;
     window.renderAiAvatarVideo = renderAiAvatarVideo;
     window.renderCinematicBackgroundVideo = renderCinematicBackgroundVideo;

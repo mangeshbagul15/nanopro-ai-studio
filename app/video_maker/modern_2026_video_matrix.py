@@ -645,7 +645,7 @@ class Modern2026VideoMatrix:
         voice_label = next((v["name"] for v in PROMPT_TO_VOICE_CATALOG if v["id"] == voice_engine), "Kokoro-82M (Free CPU)")
 
         # Step 2: Avatar Lip-Sync
-        avatar_label = next((a["name"] for a in VOICE_TO_VIDEO_CATALOG if a["id"] == avatar_engine), "Hedra Character-3 API")
+        avatar_label = "Pure Tech 3D Architecture (Zero Faces)"
         avatar_stream = f"avatar_stream_{avatar_engine}"
 
         # Step 3: B-Roll Video Generation (with fallback to Pollinations free cluster)

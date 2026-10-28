@@ -10,6 +10,46 @@ def get_sql_video_workspace_html() -> str:
     return """
     <style>
     /* =========================================================================
+       ↔️ FULL VIEW HORIZONTAL SCROLLBAR & TECH CONTAINER
+       ========================================================================= */
+    .vfx-horizontal-scroll-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto !important;
+        overflow-y: visible;
+        padding-bottom: 24px;
+        box-sizing: border-box;
+        scroll-behavior: smooth;
+    }
+    .vfx-horizontal-scroll-container::-webkit-scrollbar {
+        height: 12px;
+        background: #070B16;
+        border-radius: 8px;
+    }
+    .vfx-horizontal-scroll-container::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 8px;
+    }
+    .vfx-horizontal-scroll-container::-webkit-scrollbar-thumb {
+        background: linear-gradient(90deg, #0284C7, #38BDF8, #10B981);
+        border-radius: 8px;
+        border: 2px solid #070B16;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+    }
+    .vfx-horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(90deg, #38BDF8, #818CF8, #34D399);
+    }
+
+    .vfx-video-root {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #F8FAFC;
+        min-width: 1360px; /* guarantees full 3-column deck with zero clipping */
+        width: 1360px;
+        box-sizing: border-box;
+    }
+
+    /* =========================================================================
        KOKONUT UI, BLACKLIST UI & MOTION.DEV MODERN STYLING
        ========================================================================= */
     :root {
@@ -314,6 +354,7 @@ def get_sql_video_workspace_html() -> str:
     }
     </script>
 
+    <div class="vfx-horizontal-scroll-container" id="vfxHorizontalScrollContainer">
     <div class="vfx-video-root" style="margin-bottom: 28px;">
 
         <!-- =========================================================================
@@ -422,17 +463,17 @@ def get_sql_video_workspace_html() -> str:
                     <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Native Human Cadence &bull; Zero Delay</div>
                 </div>
 
-                <!-- 3. Auto Avatar Lip-Sync API -->
+                <!-- 3. Pure Tech 3D Architecture (STRICTLY NO HUMAN FACES) -->
                 <div class="kokonut-card kokonut-director-card" style="padding: 10px 14px; background: rgba(15,23,42,0.85); border-color: #1E2D4A;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="blacklist-tag">[LIP_SYNC_API]</span>
-                        <span style="font-size: 12px;">👤</span>
+                        <span class="blacklist-tag">[PURE_TECH_ENGINE]</span>
+                        <span style="font-size: 12px;">🛡️</span>
                     </div>
-                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Auto Avatar Commissioned</div>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 700; text-transform: uppercase; margin-top: 4px;">Pure Tech Visuals</div>
                     <div id="aiDirectorAvatarDecision" style="font-size: 12px; font-weight: 800; color: #38BDF8; margin-top: 2px;">
-                        Hedra Character-3 / Cyber Presenter
+                        3D Isometric Systems &bull; No Human Faces
                     </div>
-                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">60 FPS Expressive &bull; Audio-Driven</div>
+                    <div style="font-size: 9.5px; color: #64748B; margin-top: 2px;">Code &bull; Conduits &bull; Zero Avatars/Faces</div>
                 </div>
 
                 <!-- 4. Auto 3D & 4K B-Roll Scene API -->
@@ -548,6 +589,28 @@ def get_sql_video_workspace_html() -> str:
             </details>
         </div>
 
+                <!-- ↔️ Complete Horizontal Scroll Navigation Bar (Fast Jump) -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(10,16,32,0.92); border: 1.5px solid rgba(56,189,248,0.4); border-radius: 12px; padding: 10px 18px; margin-bottom: 16px; backdrop-filter: blur(14px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 16px;">↔️</span>
+                <span style="font-size: 12px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">
+                    HORIZONTAL SCROLL DECK ACTIVE (1360px FULL STUDIO)
+                </span>
+                <span style="font-size: 11px; color: #94A3B8;">&bull; Use scrollbar below or click fast jump buttons:</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary motion-spring-btn" onclick="scrollVfxStudio('left')" style="padding: 5px 12px; font-size: 11px; border-color: #38BDF8; color: #38BDF8; font-weight: 700;">
+                    ⬅️ 1. Master Prompt Console
+                </button>
+                <button type="button" class="btn btn-secondary motion-spring-btn" onclick="scrollVfxStudio('center')" style="padding: 5px 12px; font-size: 11px; border-color: #10B981; color: #10B981; font-weight: 700;">
+                    📱 2. 9:16 Smartphone Preview
+                </button>
+                <button type="button" class="btn btn-secondary motion-spring-btn" onclick="scrollVfxStudio('right')" style="padding: 5px 12px; font-size: 11px; border-color: #C084FC; color: #C084FC; font-weight: 700;">
+                    ➡️ 3. 1-Click Video Export
+                </button>
+            </div>
+        </div>
+
         <!-- =========================================================================
              MAIN STUDIO 3-COLUMN WORKSPACE
              ========================================================================= -->
@@ -652,7 +715,7 @@ def get_sql_video_workspace_html() -> str:
                     <canvas id="sqlShortCanvas" width="1080" height="1920" style="position:relative; z-index:2; width: 100%; height: 100%; background: transparent; object-fit: contain;"></canvas>
 
                     <!-- Picture-in-Picture Talking Avatar Window (Hedra, LivePortrait, HeyGen) -->
-                    <div id="phoneAvatarPip" style="display:none; position:absolute; top:42px; right:12px; width:80px; height:100px; border-radius:12px; border:2px solid #38BDF8; background:#070B16; z-index:15; overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,0.8);">
+                    <div id="phoneAvatarPip" style="display:none !important; position:absolute; top:42px; right:12px; width:80px; height:100px; border-radius:12px; border:2px solid #38BDF8; background:#070B16; z-index:15; overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,0.8);">
                         <img id="phoneAvatarImg" src="" style="width:100%; height:100%; object-fit:cover;" />
                         <div style="position:absolute; bottom:2px; left:0; right:0; text-align:center; font-size:7.5px; background:rgba(0,0,0,0.7); color:#10B981; font-weight:800;">LIP-SYNC</div>
                     </div>

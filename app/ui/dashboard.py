@@ -1283,14 +1283,10 @@ def _get_raw_dashboard_html() -> str:
         /* --- 5. MAIN CONTENT VIEWPORT (SCROLLS NATURALLY) --- */
 
         .main-content-viewport {
-
             flex: 1 1 0% !important;
-
             min-height: 0 !important;
-
             overflow-y: auto !important;
-
-            overflow-x: hidden !important;
+            overflow-x: auto !important;
 
             padding: 20px 24px 60px 24px;
 
