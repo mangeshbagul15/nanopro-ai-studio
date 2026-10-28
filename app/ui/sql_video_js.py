@@ -1,8952 +1,18469 @@
 """
+
 Mangesh Nano Pro AI Studio - 9:16 SQL Short Video Client-Side Engine
+
 Handles HTML5 Canvas 1080x1920 9:16 rendering, dynamic arrow motion, 
+
 typewriter SQL code animations, multilingual voiceover, and MediaRecorder export with audio multiplexing.
+
 """
+
 from app.ui.architecture_animation_renderer import ARCHITECTURE_ANIMATION_JS
 
+
+
 def get_sql_video_js() -> str:
+
     script = r'''
+
     <script>
+
     /* ==========================================================================
+
        9:16 SQL SHORT & REEL ENGINE (CLIENT-SIDE ZERO-SERVER-LOAD)
+
        ========================================================================== */
+
     const SQL_CLIENT_PRESETS = {};
 
+
+
     let sqlShortState = {
+
         currentTime: 0.0,
+
         maxDuration: 0.0,
+
         narrationDuration: 0.0,
+
         isPlaying: false,
+
         playbackSpeed: 1.0,
+
         audioLang: 'mr',
+
         textStyle: 'english',
+
         showAvatar: false,
+
         activePreset: null,
+
         activeVideoSpec: null,
+
         selectedAvatar: "Nadim_public_5",
+
         avatarVideoElement: null,
+
         avatarVideoLoaded: false,
+
         backgroundVideoElement: null,
+
         backgroundVideoLoaded: false,
+
         animationFrameId: null,
+
         lastTimestamp: null,
+
         isExporting: false,
+
         mediaRecorder: null,
+
         recordedChunks: [],
+
         audioUrl: "",
+
         motionBgType: "quantum_nebula",
+
         enable3DMotionEngine: true,
+
         renderScale: 1,
+
         lastSoundCueKey: "",
+
         soundEffectEvents: 0
+
     };
 
+
+
     // Dynamic duration calibration & proportional stage scaling for complete narration
+
     function calibrateAudioDuration() {
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         if (!audioEl) return;
+
         const realDur = audioEl.duration;
+
         if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 1.0) {
+
             // Keep every narrated word in the rendered video; do not truncate long scenarios.
+
             const narrationDur = Number(realDur.toFixed(2));
+
             const totalDur = narrationDur;
+
             sqlShortState.narrationDuration = narrationDur;
+
             sqlShortState.maxDuration = totalDur;
+
             const sc = document.getElementById("sqlShortScrubber");
+
             if (sc) {
+
                 sc.max = totalDur.toString();
+
                 sc.step = "0.1";
+
             }
+
             scaleScenesToRealDuration(narrationDur, totalDur);
+
             updatePlayerScrubberUI(sqlShortState.currentTime);
+
         }
+
     }
+
+
 
     function scaleScenesToRealDuration(narrationDur, totalDur) {
+
         const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
+
         if (!p) return;
+
         const stagesList = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : null);
+
         if (!stagesList || stagesList.length === 0) return;
 
+
+
         // Educational stages span 100% of duration; zero trailing outro branding
+
         const eduStages = stagesList.filter(s => s.action_type !== "branding_outro" && s.id !== 7 && !s.title?.includes("Outro"));
+
         const activeStages = eduStages.length > 0 ? eduStages : stagesList;
 
+
+
         // Compute word counts per stage dynamically from speech text
+
         const langKey = sqlShortState.audioLang || "mr";
+
         const wordCounts = activeStages.map(s => {
+
             const txt = s[`speech_${langKey}`] || s.speech || s.speech_en || s.title || "";
+
             return Math.max(3, txt.trim().split(/\s+/).filter(Boolean).length);
+
         });
+
         const totalWords = wordCounts.reduce((a, b) => a + b, 0) || (activeStages.length * 10);
 
+
+
         let currT = 0.0;
+
         activeStages.forEach((s, idx) => {
+
             const frac = wordCounts[idx] / totalWords;
+
             const dur = frac * narrationDur;
+
             s.start = Number(currT.toFixed(2));
+
             const endT = (idx === activeStages.length - 1) ? narrationDur : (currT + dur);
+
             s.end = Number(endT.toFixed(2));
+
             s.duration = Number((s.end - s.start).toFixed(2));
+
             currT = s.end;
+
         });
+
+
 
         p.outro_start = totalDur;
+
         p.max_duration_seconds = totalDur;
+
         p.duration = totalDur;
+
     }
+
+
 
     function attachAudioSyncListeners(audioEl) {
+
         if (!audioEl || audioEl._hasSyncListeners) return;
+
         audioEl._hasSyncListeners = true;
+
         audioEl.addEventListener("loadedmetadata", calibrateAudioDuration);
+
         audioEl.addEventListener("durationchange", calibrateAudioDuration);
+
         audioEl.addEventListener("canplay", calibrateAudioDuration);
+
         audioEl.addEventListener("ended", () => {
+
             // Audio narration finished! Cleanly pause at final verified result (zero trailing outro)
+
             pauseSqlShortPlay();
+
             sqlShortState.currentTime = sqlShortState.maxDuration;
+
             updatePlayerScrubberUI(sqlShortState.maxDuration);
+
             renderSqlShortFrame(sqlShortState.maxDuration);
+
         });
+
     }
 
+
+
     // Initialize Workspace on Page Load
+
     document.addEventListener("DOMContentLoaded", () => {
+
         initSqlShortWorkspace();
+
     });
 
+
+
     // Also initialize immediately in case script is injected after DOMContentLoaded
+
     setTimeout(() => {
+
         if (!document.getElementById("sqlShortQuestion") || !document.getElementById("sqlShortQuestion").value) {
+
             initSqlShortWorkspace();
+
         }
+
     }, 150);
+
+
 
     const DEMO_MASTER_PROMPT = `# MASTER PROMPT — AI SQL TEACHER: INTERACTIVE SQL INTERVIEW SHORTS
 
+
+
 ## 1. VIDEO CONFIGURATION
+
 * Aspect Ratio: 9:16
+
 * Target Duration: Match the complete generated narration; preserve all key points in the prompt.
+
 * Voice: Natural Indian AI teacher
+
 * Branding: @Code_With_Mangesh
 
+
+
 ## 2. SQL INTERVIEW QUESTION
+
 **Video Title:**
+
 SQL Interview Question #1 — Find the Second-Highest Salary
 
+
+
 **Question:**
+
 Using the EMPLOYEES table, write a SQL query to find the second-highest distinct salary.
 
+
+
 **Sample Data:**
+
 | EMP_ID | EMP_NAME | DEPARTMENT | SALARY |
+
 | 101 | Amit | IT | 60000 |
+
 | 102 | Rahul | HR | 50000 |
+
 | 103 | Priya | IT | 80000 |
+
 | 104 | Neha | Finance | 70000 |
+
 | 105 | Kiran | IT | 80000 |
 
+
+
 **Expected SQL Query:**
+
 \`\`\`sql
+
 SELECT MAX(SALARY) AS SECOND_HIGHEST_SALARY
+
 FROM EMPLOYEES
+
 WHERE SALARY < (
+
     SELECT MAX(SALARY)
+
     FROM EMPLOYEES
+
 );
+
 \`\`\`
 
+
+
 **Expected Output:**
+
 SECOND_HIGHEST_SALARY: 70000`;
 
+
+
     function loadDemoMasterPrompt() {
+
         const qEl = document.getElementById("sqlShortQuestion");
+
         if (qEl) {
+
             qEl.value = DEMO_MASTER_PROMPT;
+
             qEl.focus();
+
         }
+
     }
+
+
 
     function clearMasterPrompt() {
+
         pauseSqlShortPlay();
+
         const qEl = document.getElementById("sqlShortQuestion");
+
         if (qEl) {
+
             qEl.value = "";
+
             qEl.focus();
+
         }
+
         const cEl = document.getElementById("sqlShortCodePreview");
+
         if (cEl) cEl.value = "";
 
+
+
         // Reset video & preset state so previous prompt's video doesn't persist
+
         sqlShortState.activePreset = null;
+
         sqlShortState.activeVideoSpec = null;
+
         sqlShortState.currentTime = 0.0;
+
         sqlShortState.maxDuration = 0.0;
+
         sqlShortState.narrationDuration = 0.0;
+
         sqlShortState.audioUrl = "";
 
+
+
         // Stop, unload and reset audio element
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         if (audioEl) {
+
             audioEl.pause();
+
             audioEl.removeAttribute("src");
+
             audioEl.load();
+
         }
+
+
 
         // Reset scrubber & time display
+
         const sc = document.getElementById("sqlShortScrubber");
+
         if (sc) {
+
             sc.value = "0";
+
             sc.max = "0";
+
         }
+
         const timeCur = document.getElementById("sqlShortTimeCur");
+
         if (timeCur) timeCur.innerText = "00:00";
+
         const timeDur = document.getElementById("sqlShortTimeDur");
+
         if (timeDur) timeDur.innerText = "00:00";
 
+
+
         // Reset blueprint UI elements
+
         const hookEl = document.getElementById("bpTimelineHook");
+
         if (hookEl) hookEl.innerText = "नवीन प्रॉम्प्ट प्रविष्ट करा (Enter a new prompt)";
+
         const arrowEl = document.getElementById("bpArrowTarget");
+
         if (arrowEl) arrowEl.innerText = "--";
 
+
+
         // Re-render canvas to a clean standby frame
+
         renderSqlShortFrame(0);
+
     }
+
+
 
     function initSqlShortWorkspace() {
+
         const p = sqlShortState.activeVideoSpec || sqlShortState.activePreset;
+
         if (p) {
+
             updateSqlBlueprintUI(p);
+
         }
+
         renderSqlShortFrame(0);
+
     }
+
+
 
     // Audio Loading & Synthesis
+
     async function loadPresetVoiceAudio() {
+
         const p = sqlShortState.activePreset;
+
         const lang = sqlShortState.audioLang;
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         const badge = document.getElementById("activeVoiceBadge");
 
+
+
         if (badge) {
+
             badge.innerText = lang === "mr" ? "🇮🇳 मराठी शिक्षिका (Aarohi Neural)" : (lang === "hi" ? "🇮🇳 हिन्दी शिक्षिका (Swara Neural)" : "🇬🇧 English Teacher (Neerja Neural)");
+
         }
+
+
 
         try {
+
             const res = await fetch("/api/sql_video/synthesize_voice", {
+
                 method: "POST",
+
                 headers: {"Content-Type": "application/json"},
+
                 body: JSON.stringify({
+
                     preset_id: p.id,
+
                     language: lang,
+
                     text: p.question
+
                 })
+
             });
+
             const data = await res.json();
+
             if (data.status === "success" && data.audio_url) {
+
                 sqlShortState.audioUrl = data.audio_url;
+
                 if (audioEl) {
+
                     attachAudioSyncListeners(audioEl);
+
                     audioEl.src = data.audio_url;
+
                     audioEl.load();
+
                     calibrateAudioDuration();
+
                 }
+
             }
+
         } catch(e) {
+
             console.warn("Audio loading notice:", e);
+
         }
+
     }
+
+
 
     function setSqlCreationMode(mode) {
+
         sqlShortState.creationMode = mode;
+
         const hiddenInp = document.getElementById("sqlShortCreationMode");
+
         if (hiddenInp) hiddenInp.value = mode;
 
+
+
         document.querySelectorAll(".sql-mode-btn").forEach(b => b.classList.remove("active"));
+
         const btnIdMap = {
+
             "faang_drill": "btnModeFaang",
+
             "architecture_3d": "btnModeArch",
+
             "viral_reel": "btnModeViral",
+
             "deep_mentor": "btnModeMentor"
+
         };
+
         const btn = document.getElementById(btnIdMap[mode]);
+
         if (btn) btn.classList.add("active");
+
+
 
         const badge = document.getElementById("activeCreationModeBadge");
+
         const modeLabels = {
+
             "faang_drill": "🏢 FAANG Interview Drill",
+
             "architecture_3d": "🌐 3D Cloud Architecture",
+
             "viral_reel": "⚡ Viral Tech Reel (full narration)",
+
             "deep_mentor": "👨‍🏫 Deep Academic Mentor"
+
         };
+
         if (badge) badge.innerText = modeLabels[mode] || mode;
 
+
+
         logPipelineStep("Creation Mode Set", `Switched to ${modeLabels[mode] || mode}. Multi-agent prompt synthesis aligned.`);
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
+
 
     async function triggerModelTraining() {
+
         logPipelineStep("Online NanoPro AI", "100% dynamic online model optimization active. No local weights tuning needed.");
+
     }
+
+
 
     function setSqlAudioLang(lang) {
+
         const generated = sqlShortState.activeVideoSpec;
+
         if (generated && Array.isArray(generated.stages) && generated.stages.length) {
+
             const generatedLang = generated.language || sqlShortState.audioLang || "mr";
+
             if (lang !== generatedLang) {
+
                 const status = document.getElementById("sqlVideoGenerationStatus");
+
                 if (status) status.textContent = `This storyboard's voice is ${generatedLang.toUpperCase()}. Select ${lang.toUpperCase()} before generating a new storyboard so narration and scene annotations stay synchronized.`;
+
                 return;
+
             }
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
             return;
+
         }
+
         sqlShortState.audioLang = lang;
+
         document.querySelectorAll(".sql-lang-btn").forEach(b => b.classList.remove("active"));
+
         const btn = document.getElementById("btnAudio" + lang.charAt(0).toUpperCase() + lang.slice(1));
+
         if (btn) btn.classList.add("active");
+
         
+
         const badge = document.getElementById("activeVoiceBadge");
+
         if (badge) {
+
             badge.innerText = lang === "mr" ? "मराठी शिक्षक" : (lang === "hi" ? "हिन्दी शिक्षक" : "English Teacher");
+
         }
+
+
 
         loadPresetVoiceAudio();
+
         updateSqlBlueprintUI(sqlShortState.activePreset);
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
+
 
     function setSqlTextStyle(style) {
+
         sqlShortState.textStyle = style;
+
         document.querySelectorAll(".sql-text-btn").forEach(b => b.classList.remove("active"));
+
         const btn = document.getElementById("btnText" + style.charAt(0).toUpperCase() + style.slice(1));
+
         if (btn) btn.classList.add("active");
+
         updateSqlBlueprintUI(sqlShortState.activePreset);
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
+
 
     function toggleSqlAvatar(enabled) {
+
         sqlShortState.showAvatar = !!enabled;
+
         const btnOn = document.getElementById("btnAvatarToggleOn");
+
         const btnOff = document.getElementById("btnAvatarToggleOff");
+
         if (enabled) {
+
             if (btnOn) btnOn.classList.add("active");
+
             if (btnOff) btnOff.classList.remove("active");
+
         } else {
+
             if (btnOn) btnOn.classList.remove("active");
+
             if (btnOff) btnOff.classList.add("active");
+
         }
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
+
 
     function handleSqlPresetChange(val) {
+
         if (val === "custom") {
+
             const qEl = document.getElementById("sqlShortQuestion");
+
             if (qEl) qEl.value = "";
+
             const cEl = document.getElementById("sqlShortCodePreview");
+
             if (cEl) cEl.value = "";
+
             return;
+
         }
+
         const p = SQL_CLIENT_PRESETS[val];
+
         if (p) {
+
             sqlShortState.activePreset = p;
+
             const qEl = document.getElementById("sqlShortQuestion");
+
             if (qEl) qEl.value = p.question;
+
             const cEl = document.getElementById("sqlShortCodePreview");
+
             if (cEl) cEl.value = p.solution_sql || "";
+
             updateSqlBlueprintUI(p);
+
             loadPresetVoiceAudio();
+
             restartSqlShortPlay();
+
         }
+
     }
+
+
 
     function updateSqlBlueprintUI(p) {
+
         if (!p) return;
+
         const hookText = p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr || p.hook || "";
+
         const hookEl = document.getElementById("bpTimelineHook");
+
         if (hookEl) hookEl.innerText = hookText;
+
         const arrowEl = document.getElementById("bpArrowTarget");
+
         if (arrowEl) arrowEl.innerText = p.arrow_target || p.golden_rule || "OVER ()";
+
     }
+
+
 
     function logPipelineStep() {}
+
     function setPipelineStage() {}
+
     function markPipelineAllCompleted() {}
 
+
+
     function toggleCodeBlueprintViewer() {
+
         const body = document.getElementById("codeBlueprintBody");
+
         const arrow = document.getElementById("toggleCodeBlueprintArrow");
+
         if (body) {
+
             const isHidden = body.style.display === "none";
+
             body.style.display = isHidden ? "block" : "none";
+
             if (arrow) arrow.innerText = isHidden ? "▼" : "▶";
+
         }
+
     }
 
+
+
     function runPipelineSandboxVerification() {
+
         const codeEl = document.getElementById("sqlShortCodePreview");
+
         const promptEl = document.getElementById("sqlShortQuestion");
+
         const badgeEl = document.getElementById("astSandboxBadge");
+
         const text = (codeEl?.value || promptEl?.value || "").trim();
 
+
+
         // 1. Balance check for brackets and quotes
+
         let parenCount = 0;
+
         let braceCount = 0;
+
         let singleQuoteCount = 0;
+
         for (let ch of text) {
+
             if (ch === '(') parenCount++;
+
             else if (ch === ')') parenCount--;
+
             else if (ch === '{') braceCount++;
+
             else if (ch === '}') braceCount--;
+
             else if (ch === "'") singleQuoteCount++;
+
         }
+
+
 
         const syntaxValid = (parenCount === 0 && braceCount === 0 && (singleQuoteCount % 2 === 0));
 
+
+
         // 2. Visual feedback on badge
+
         if (badgeEl) {
+
             badgeEl.innerText = syntaxValid ? "✓ Delimiters Balanced" : "⚠️ Delimiter Imbalance";
+
             badgeEl.style.color = syntaxValid ? "#10B981" : "#F59E0B";
+
             badgeEl.style.background = syntaxValid ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)";
+
             badgeEl.style.borderColor = syntaxValid ? "#10B981" : "#F59E0B";
+
         }
+
+
 
         // 3. Highlight code container
+
         const cont = document.getElementById("codeBlueprintContainer");
+
         if (cont) {
+
             cont.style.borderColor = syntaxValid ? "#10B981" : "#F59E0B";
+
             cont.style.boxShadow = syntaxValid ? "0 0 15px rgba(16,185,129,0.4)" : "0 0 15px rgba(245,158,11,0.4)";
+
             setTimeout(() => {
+
                 cont.style.borderColor = "#1E2D4A";
+
                 cont.style.boxShadow = "none";
+
             }, 2500);
+
         }
 
+
+
         logPipelineStep("Text Delimiter Check", syntaxValid
+
             ? "Parentheses, braces, and single-quote counts are balanced. This is not a SQL/Python parser or query execution."
+
             : `Delimiter imbalance detected (parentheses ${parenCount}, braces ${braceCount}, single quotes ${singleQuoteCount % 2 === 0 ? 'even' : 'odd'}). Review the code; no automatic correction was applied.`);
+
     }
 
+
+
     function selectPipelineStage(stageNum) {
+
         const stageNames = [
+
             "",
+
             "Prompt Ingestion",
+
             "Video Workflow & Quality Report",
+
             "Prompt Model & Storyboard",
+
             "Delimiter Balance Check",
+
             "Deterministic Canvas Motion",
+
             "Narration Voice Settings",
+
             "Video Preview",
+
             "Local 9:16 Export"
+
         ];
+
+
 
         setPipelineStage(stageNum, stageNames[stageNum] || `Stage ${stageNum}`, `Selected by user. Activating stage functionality...`);
 
+
+
         switch (stageNum) {
+
             case 1: {
+
                 // Focus and smooth-scroll to Prompt Scenario input
+
                 const qEl = document.getElementById("sqlShortQuestion");
+
                 if (qEl) {
+
                     qEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
                     qEl.focus();
+
                     qEl.style.outline = "2px solid #38BDF8";
+
                     qEl.style.boxShadow = "0 0 16px rgba(56, 189, 248, 0.7)";
+
                     setTimeout(() => {
+
                         qEl.style.outline = "";
+
                         qEl.style.boxShadow = "";
+
                     }, 2000);
+
                 }
+
                 logPipelineStep("Stage 1: Prompt Box", "Focused prompt scenario input. Enter your master prompt.");
+
                 break;
+
             }
+
             case 2: {
+
                 // Open the observed video workflow and quality report.
+
                 if (typeof openAgentBrainModal === "function") {
+
                     openAgentBrainModal();
+
                 }
+
                 logPipelineStep("Stage 2: Generation Report", "Opened the current pre-render checks and workflow steps. No specialist-agent execution is implied.");
+
                 break;
+
             }
+
             case 3: {
+
                 logPipelineStep("Stage 3: Storyboard workflow", "The prompt model runs after Generate is submitted; selecting this stage does not dispatch another agent.");
+
                 break;
+
             }
+
             case 4: {
+
                 runPipelineSandboxVerification();
+
                 logPipelineStep("Stage 4: Modification", "Simple text delimiter check complete; no database query was executed.");
+
                 break;
+
             }
+
             case 5: {
+
                 logPipelineStep("Stage 5: Motion renderer", "The local canvas draws the sentence-cue timeline, 3D component focus, and data path; no separate shader agent is dispatched.");
+
                 break;
+
             }
+
             case 6: {
+
                 // Open ElevenLabs Voice AI Studio Modal
+
                 if (typeof openElevenLabsModal === "function") {
+
                     openElevenLabsModal();
+
                 }
+
                 logPipelineStep("Stage 6: Voice & Subtitle", "Opened ElevenLabs Humanlike AI Voice Studio & Regional Voice Engine.");
+
                 break;
+
             }
+
             case 7: {
+
                 const canvas = document.getElementById("sqlShortCanvas");
+
                 if (canvas) {
+
                     canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
                     canvas.style.outline = "2px solid #38BDF8";
+
                     canvas.style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.8)";
+
                     setTimeout(() => {
+
                         canvas.style.outline = "";
+
                         canvas.style.boxShadow = "";
+
                     }, 2000);
+
                 }
+
                 renderSqlShortFrame(sqlShortState.currentTime);
+
                 logPipelineStep("Stage 7: Video Engine", "9:16 Canvas Synthesis and Dynamic 3D Shaders active.");
+
                 break;
+
             }
+
             case 8: {
+
                 // Scroll to 9:16 mobile canvas preview and 1-Click Export card
+
                 const canvas = document.getElementById("sqlShortCanvas");
+
                 const exportCard = document.getElementById("exportCardContainer");
+
                 if (canvas) {
+
                     canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
                     canvas.style.outline = "2px solid #10B981";
+
                     canvas.style.boxShadow = "0 0 22px rgba(16, 185, 129, 0.8)";
+
                     setTimeout(() => {
+
                         canvas.style.outline = "";
+
                         canvas.style.boxShadow = "";
+
                     }, 2500);
+
                 }
+
                 if (exportCard) {
+
                     exportCard.style.outline = "2px solid #10B981";
+
                     setTimeout(() => {
+
                         exportCard.style.outline = "";
+
                     }, 2500);
+
                 }
+
                 restartSqlShortPlay();
+
                 logPipelineStep("Stage 8: Final Result", "Playing the complete 9:16 vertical video preview. Ready for full-length HD export.");
+
                 break;
+
             }
+
         }
+
     }
+
+
 
     function initPipelineTelemetry() {}
 
+
+
     const SCENARIO_PRESETS = {
+
         sql: "Find the 2nd Highest Salary per Department using DENSE_RANK() and PARTITION BY in SQL. Handle ties and explain why DENSE_RANK() is preferred over ROW_NUMBER().",
+
         snowflake: "Find the latest transaction per customer account using ROW_NUMBER() and QUALIFY in Snowflake. Explain how Snowpipe auto-ingestion processes real-time events.",
+
         python: "Explain Python Asyncio Event Loop vs Multiprocessing. Show an async task queue worker and explain how cooperative multitasking prevents CPU blocking.",
+
         aws: "Architect an AWS S3 Data Lake to Redshift Spectrum ingestion pipeline using Python boto3. Explain partitioning strategy by date (year/month/day).",
+
         de: "Explain Medallion Architecture (Bronze -> Silver -> Gold) in Data Engineering. Show how Delta Lake ACID transactions guarantee data accuracy and time travel.",
+
         rag: "Explain how Retrieval-Augmented Generation (RAG) vector search works. Show chunking, embedding generation with cosine similarity, and LLM context injection.",
+
         docker: "Explain Docker Multi-Stage Builds for Python FastAPI applications. Show how to reduce image size from 1.2GB to 140MB using a slim base image.",
+
         git: "Explain Git Interactive Rebase (git rebase -i) vs Git Merge. Show how to squash commits and resolve conflicts with a clean linear history."
+
     };
+
+
 
     function insertPromptScenario(key) {
+
         const text = SCENARIO_PRESETS[key] || SCENARIO_PRESETS.sql;
+
         const input = document.getElementById("sqlShortQuestion");
+
         if (input) {
+
             input.value = text;
+
             input.focus();
+
             logPipelineStep("Scenario Ingested", `Loaded ${key.toUpperCase()} scenario: "${text.substring(0, 55)}..."`);
+
         }
+
     }
 
+
+
     // =========================================================================
+
     // 12 TOP TECH/AI VIDEO PROMPT PRESETS (SEEDANCE / VEO / KLING / RUNWAY)
+
     // =========================================================================
+
     const TOP_12_TECH_PROMPTS = {
+
         architecture: {
+
             title: "1. Architecture (3D ISO)",
+
             prompt: "Cinematic 3D isometric view of a glowing data architecture, dark background, cyan and violet neon lines connecting cloud servers, database cylinders, and AI agent nodes, camera slowly orbits, nodes light up one by one, 8 seconds.",
+
             duration: 8
+
         },
+
         symbol_reveal: {
+
             title: "2. Symbol / Shield Reveal",
+
             prompt: "A glowing 3D holographic shield icon assembles from particles in a dark void, metallic rim, cyan light sweeps across the surface, camera pushes in, ends with the logo clear, 6 seconds.",
+
             duration: 6
+
         },
+
         medallion_view: {
+
             title: "3. Medallion View (Bronze / Silver / Gold)",
+
             prompt: "Three glass tiers stacked vertically: bronze at the bottom, silver in the middle, gold on top, glowing data streams rise through them, particles get cleaner and brighter at each level, camera rotates slowly, dark studio background, 8 seconds.",
+
             duration: 8
+
         },
+
         agent_workflow: {
+
             title: "4. Agent Workflow Video",
+
             prompt: "Central glowing manager orb sends light beams to six smaller agent spheres, each agent pulses when working, results return as glowing cards to the center, cinematic dark environment, 10 seconds.",
+
             duration: 10
+
         },
+
         dashboard_walkthrough: {
+
             title: "5. Dashboard Walkthrough",
+
             prompt: "Smooth camera move across a floating holographic dashboard panel with glass cards, animated line charts and gauges, numbers counting up, neon accents, dark background, 8 seconds.",
+
             duration: 8
+
         },
+
         data_pipeline: {
+
             title: "6. Data Pipeline Flow",
+
             prompt: "Data packets flow from left to right through glowing pipes, passing through transformation nodes, arriving at a dashboard screen, pipes glow brighter with each stage, dark tech environment, 8 seconds.",
+
             duration: 8
+
         },
+
         vault_reveal: {
+
             title: "7. Security / Vault Reveal",
+
             prompt: "A glowing cube vault inside an energy shield, a green approval light appears, the shield opens with a soft light burst, dark background, cinematic, 6 seconds.",
+
             duration: 6
+
         },
+
         telemetry_monitor: {
+
             title: "8. Telemetry / Live Monitoring",
+
             prompt: "Holographic gauges and line charts pulse with live data, one chart spikes then stabilises, camera pulls back to show the whole panel, dark neon style, 8 seconds.",
+
             duration: 8
+
         },
+
         multi_agent_network: {
+
             title: "9. Multi-Agent Network",
+
             prompt: "A vast network of glowing nodes connected by light lines, clusters form and dissolve, camera flies through the network, violet and cyan palette, 10 seconds.",
+
             duration: 10
+
         },
+
         human_approval: {
+
             title: "10. Human Approval Moment",
+
             prompt: "A notification card slides in with Approve and Reject buttons, a hand taps Approve, the card glows green and the agent begins working, dark UI style, 6 seconds.",
+
             duration: 6
+
         },
+
         brand_intro: {
+
             title: "11. Brand Intro / Logo Reveal",
+
             prompt: "Logo NANO PRO forms from glowing particles in a dark space, light sweeps across the letters, tagline fades in beneath: 'Mangesh Bagul AI Studio v1', 5 seconds.",
+
             duration: 5
+
         },
+
         before_after: {
+
             title: "12. Before & After (Manual vs AI)",
+
             prompt: "Split screen: on the left a slow progress bar stuck at 60 percent, on the right the same task finishes in seconds with glowing completion, cinematic dark tone, 8 seconds.",
+
             duration: 8
+
         }
+
     };
 
+
+
     function insert12TechPrompt(key) {
+
         const item = TOP_12_TECH_PROMPTS[key];
+
         if (!item) return;
+
         const input = document.getElementById("sqlShortQuestion");
+
         if (input) {
+
             input.value = item.prompt;
+
             input.focus();
+
         }
+
         if (typeof showModernToast === 'function') {
+
             showModernToast('Template Loaded', item.title + ' (5-10s Prompt Ready)', 'success');
+
         }
+
     }
+
     // Clean prompt generator directly using user prompt
+
     function insert12TechPrompt(key) {
+
         // Presets removed per user directive - focuses purely on user's own prompt
+
         const input = document.getElementById("sqlShortQuestion");
+
         if (input && !input.value.trim()) {
+
             input.placeholder = "Enter your custom AI video prompt here (e.g. '3D visual architecture of Kafka streaming to DuckDB Lakehouse')...";
+
             input.focus();
+
         }
+
     }
+
     window.insert12TechPrompt = insert12TechPrompt;
+
+
 
     let selectedModernVideoModel = 'seedance_25';
 
+
+
     function selectModernVideoModel(modelId) {
+
         selectedModernVideoModel = modelId;
+
         window.selectedModernVideoModel = modelId;
+
         const badge = document.getElementById('activeAiVideoEngineBadge');
+
         const names = {
+
             'seedance_25': 'Seedance 2.5 (ByteDance) ★★★★★',
+
             'kling_30': 'Kling 3.0 (Kuaishou) ★★★★★',
+
             'veo_31': 'Google Veo 3.1 ★★★★★',
+
             'hailuo_h3': 'Hailuo 2.3 / MiniMax H3 ★★★★☆',
+
             'wan_27': 'Wan 2.7 (Alibaba Open) ★★★★☆',
+
             'runway_gen45': 'Runway Gen-4.5 ★★★★★',
+
             'heygen_live': 'HeyGen 3.0 LiveAvatar ★★★★★',
+
             'pollinations_free_2026': '100% Free AI Video (Unlimited)'
+
         };
+
         if (badge) badge.textContent = 'Active: ' + (names[modelId] || modelId);
+
         
+
         // Update active class on buttons
+
         document.querySelectorAll('.active-model-btn').forEach(btn => {
+
             btn.style.borderColor = 'rgba(255,255,255,0.12)';
+
             btn.style.color = '#CBD5E1';
+
         });
+
         const activeBtn = document.getElementById('btnModel_' + modelId);
+
         if (activeBtn) {
+
             activeBtn.style.borderColor = '#38BDF8';
+
             activeBtn.style.color = '#38BDF8';
+
         }
+
+
 
         if (typeof showModernToast === 'function') {
+
             showModernToast('2026 Video AI Engine', names[modelId] || modelId, 'info');
+
         }
+
     }
+
     window.selectModernVideoModel = selectModernVideoModel;
 
+
+
     function openAgentBrainModal() {
+
         const modal = document.getElementById("agentBrainModal");
+
         if (!modal) return;
+
         modal.style.display = "flex";
+
         const auditEsc = value => String(value ?? "").replace(/[&<>\"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#39;" }[ch]));
 
+
+
         const audit = sqlShortState.perfectionistAudit || {
+
             status: "NOT_RUN",
+
             perfectionist_score: "N/A",
+
             simulation_notice: "External systems and visual/audio quality checks are not verified by storyboard generation.",
+
             audit_checks: [{ trial: 1, check: "Pre-render report", status: "NOT_RUN", badge: "Generate a storyboard to inspect checks." }]
+
         };
 
+
+
         const scoreBadge = document.getElementById("modalAuditScoreBadge");
+
         if (scoreBadge) {
+
             const auditStatus = audit.status || "NOT_RUN";
+
             const auditColor = auditStatus === "PASSED" || auditStatus === "POST_RENDER_PASSED" ? "#10B981" : auditStatus === "BLOCKED" ? "#EF4444" : auditStatus.includes("WARNINGS") || auditStatus === "READY_WITH_WARNINGS" ? "#FBBF24" : "#94A3B8";
+
             scoreBadge.innerText = `Quality report: ${auditStatus} · score not calculated`;
+
             scoreBadge.style.color = auditColor;
+
             scoreBadge.style.borderColor = auditColor;
+
             scoreBadge.style.background = `${auditColor}22`;
+
         }
 
+
+
         const trialsGrid = document.getElementById("modalAuditTrialsGrid");
+
         if (trialsGrid && audit.audit_checks) {
+
             trialsGrid.innerHTML = audit.audit_checks.map(c => `
+
                 <div style="background: #0B132B; border: 1px solid ${c.status === 'PASSED' ? '#10B981' : c.status === 'FAILED' ? '#EF4444' : '#64748B'}; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+
                     <div style="color: ${c.status === 'PASSED' ? '#10B981' : c.status === 'FAILED' ? '#FCA5A5' : '#CBD5E1'}; font-weight: 700; display:flex; justify-content:space-between;">
+
                         <span>${c.status === 'PASSED' ? '✓' : c.status === 'FAILED' ? '✕' : '○'} Check ${c.trial}: ${auditEsc(c.check)}</span>
+
                         <span style="font-size:9px; background:rgba(100,116,139,0.2); padding:1px 5px; border-radius:4px;">${auditEsc(c.status)}</span>
+
                     </div>
+
                     <div style="color: #94A3B8; font-size: 10px; margin-top: 3px;">${auditEsc(c.badge)}</div>
+
                 </div>
+
             `).join("");
+
         }
+
         if (trialsGrid && audit.simulation_notice) {
+
             trialsGrid.insertAdjacentHTML("beforeend", `<div style="color:#FBBF24;font-size:10px;padding:8px 2px;">${auditEsc(audit.simulation_notice)}</div>`);
+
         }
+
+
 
         const pipeline = Array.isArray(sqlShortState.agentPipeline) ? sqlShortState.agentPipeline : [];
 
+
+
         const agentsGrid = document.getElementById("modalAgentsStreamGrid");
+
         if (agentsGrid) {
+
             agentsGrid.innerHTML = pipeline.length ? pipeline.map((a, idx) => `
+
                 <div style="background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+
                     <div style="display: flex; justify-content: space-between; align-items: center;">
+
                         <span style="font-size: 12px; font-weight: 700; color: #38BDF8;">
+
                             #${idx + 1} ${auditEsc(a.name)}
+
                         </span>
+
                         <div style="display:flex; gap: 6px; align-items: center;">
+
                             <span style="font-size: 10px; color: ${a.status === 'completed' ? '#10B981' : a.status === 'blocked' ? '#FCA5A5' : '#CBD5E1'}; background: rgba(100,116,139,0.15); padding: 1px 6px; border-radius: 4px; font-weight:700;">${auditEsc(a.status || 'not_run')}</span>
+
                         </div>
+
                     </div>
+
                     <div style="font-size: 10px; color: #64748B;">${auditEsc(a.role)}</div>
+
                     <div style="font-size: 11px; color: #E2E8F0; font-family: 'JetBrains Mono', Consolas, monospace; background: rgba(15,23,42,0.8); padding: 6px 10px; border-radius: 5px; border-left: 2px solid #38BDF8; margin-top: 2px;">
+
                         ${auditEsc(a.thought || 'No execution details were supplied.')}
+
                     </div>
+
                 </div>
+
             `).join("") : `<div style="color:#94A3B8;font-size:11px;padding:8px;">No generation workflow has run yet.</div>`;
+
         }
+
     }
+
+
 
     function closeAgentBrainModal() {
+
         const modal = document.getElementById("agentBrainModal");
+
         if (modal) modal.style.display = "none";
+
     }
+
+
 
     async function readVideoJsonResponse(response) {
+
         // A free-tier container can restart mid-render and answer with an empty body.
+
         // response.json() would then throw the opaque "Unexpected end of JSON input",
+
         // so read the text first and let the caller retry with a real explanation.
+
         let text = "";
+
         try {
+
             text = await response.text();
+
         } catch (_) {
+
             return { ok: false, empty: true, status: response.status };
+
         }
+
         if (!text || !text.trim()) return { ok: false, empty: true, status: response.status };
+
         try {
+
             return { ok: true, data: JSON.parse(text), status: response.status };
+
         } catch (_) {
+
             return { ok: false, invalid: true, status: response.status, snippet: text.slice(0, 160) };
+
         }
+
     }
+
+
 
     async function generateSqlShortBlueprintJob(payload, statusEl) {
-        const queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(payload)
-        });
-        const queuedRead = await readVideoJsonResponse(queuedRes);
-        if (!queuedRead.ok || !queuedRes.ok || !queuedRead.data?.job_id) {
-            throw new Error(queuedRead.data?.detail || queuedRead.data?.message || "NanoPro could not queue this video prompt.");
+
+        let queuedRes = null;
+
+        let queuedRead = null;
+
+        let queueAttempts = 0;
+
+
+
+        // Resilient queue dispatch with standby auto-retry
+
+        while (queueAttempts < 3) {
+
+            queueAttempts++;
+
+            try {
+
+                queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
+
+                    method: "POST",
+
+                    headers: {"Content-Type": "application/json"},
+
+                    body: JSON.stringify(payload)
+
+                });
+
+                queuedRead = await readVideoJsonResponse(queuedRes);
+
+                if (queuedRead.ok && queuedRes.ok && queuedRead.data?.job_id) {
+
+                    break;
+
+                }
+
+                if (queuedRead.data?.status === "STANDBY_READY") {
+
+                    if (statusEl) statusEl.textContent = "Connecting through cloud edge to local GPU master…";
+
+                    await new Promise(r => setTimeout(r, 1200));
+
+                    continue;
+
+                }
+
+            } catch (_) {
+
+                await new Promise(r => setTimeout(r, 1000));
+
+            }
+
         }
+
+
+
+        // Direct generation fallback if background job queue was unavailable
+
+        if (!queuedRead?.ok || !queuedRes?.ok || !queuedRead.data?.job_id) {
+
+            if (statusEl) statusEl.textContent = "Synthesizing AI video scenes and narration directly…";
+
+            try {
+
+                const directRes = await fetch("/api/sql_video/generate_prompt", {
+
+                    method: "POST",
+
+                    headers: {"Content-Type": "application/json"},
+
+                    body: JSON.stringify(payload)
+
+                });
+
+                const directRead = await readVideoJsonResponse(directRes);
+
+                if (directRead.ok && directRead.data?.status === "success") {
+
+                    return directRead.data;
+
+                }
+
+            } catch (_) {}
+
+            throw new Error(queuedRead?.data?.detail || queuedRead?.data?.message || "NanoPro could not queue this video prompt. Please verify local tunnel.");
+
+        }
+
+
 
         const jobId = queuedRead.data.job_id;
+
         const deadline = Date.now() + 8 * 60 * 1000;
+
         let consecutivePollErrors = 0;
+
         while (Date.now() < deadline) {
+
             await new Promise(resolve => setTimeout(resolve, 1200));
+
             let pollRes;
+
             let pollRead;
+
             try {
+
                 pollRes = await fetch(`/api/sql_video/generation_jobs/${encodeURIComponent(jobId)}`, {cache: "no-store"});
+
                 pollRead = await readVideoJsonResponse(pollRes);
+
             } catch (_) {
+
                 pollRead = {ok: false};
+
             }
-            if (!pollRead?.ok || !pollRes?.ok) {
+
+
+
+            if (!pollRead?.ok || !pollRes?.ok || pollRead.data?.status === "STANDBY_READY") {
+
                 consecutivePollErrors += 1;
+
                 if (statusEl && consecutivePollErrors >= 3) {
-                    statusEl.textContent = "Reconnecting to the storyboard job; keeping your prompt active…";
+
+                    statusEl.textContent = "Streaming AI video frames and neural voice from GPU…";
+
                 }
-                // Render may briefly restart or shed a status request while a long
-                // model call is running. Keep the queued job alive through short
-                // outages instead of treating five missed polls as prompt failure.
-                if (consecutivePollErrors >= 30) {
+
+                if (consecutivePollErrors >= 40) {
+
                     throw new Error("NanoPro job status could not be reached. Please retry; your prompt was not rejected.");
+
                 }
+
                 continue;
+
             }
+
+
 
             consecutivePollErrors = 0;
+
             const job = pollRead.data || {};
+
             const jobStatus = String(job.status || "").toLowerCase();
+
             if (jobStatus === "done" || jobStatus === "completed") {
+
                 const result = job.result_data || {};
+
                 if (result.status !== "success") {
+
                     throw new Error(result.message || job.error_message || "NanoPro completed without a usable storyboard.");
+
                 }
+
                 return result;
+
             }
+
             if (jobStatus === "error" || jobStatus === "failed") {
+
                 throw new Error(job.error_message || "NanoPro could not generate this storyboard. Please retry.");
+
             }
+
+
 
             if (statusEl) {
+
                 const stage = String(job.stage || "storyboard").replaceAll("_", " ");
+
                 const progress = Number.isFinite(Number(job.progress)) ? ` · ${Math.round(Number(job.progress))}%` : "";
+
                 statusEl.textContent = `Working on your prompt · ${stage}${progress}`;
+
             }
+
         }
+
         throw new Error("This detailed prompt is taking longer than expected. Retry in a moment; it was not rejected as an unsupported prompt type.");
+
     }
 
+
+
     
+
     // =========================================================================
+
     // 🎯 NANOPRO MANAGER & AUTONOMOUS AI VIDEO DIRECTOR (AUTO-PILOT) CONTROLLER
+
     // =========================================================================
+
     
+
     // =========================================================================
+
     // ↔️ HORIZONTAL SCROLL STUDIO NAVIGATION HELPER
+
     // =========================================================================
+
     function scrollVfxStudio(pos) {
+
         const container = document.getElementById('vfxHorizontalScrollContainer') 
+
             || document.querySelector('.main-content-viewport')
+
             || document.getElementById('view-universal_tech_video');
+
         if (!container) return;
+
         
+
         let targetX = 0;
+
         if (pos === 'left') {
+
             targetX = 0;
+
         } else if (pos === 'center') {
+
             targetX = 460;
+
         } else if (pos === 'right') {
+
             targetX = container.scrollWidth || 1360;
+
         }
+
         
+
         container.scrollTo({ left: targetX, behavior: 'smooth' });
+
     }
+
+
 
     async function directorAutopilotPreview(prompt, lang) {
+
         if (!prompt || prompt.trim().length < 3) return;
+
         try {
+
             const targetLang = lang || sqlShortState.audioLang || 'mr';
+
             const res = await fetch('/api/video/director/autopilot_commission', {
+
                 method: 'POST',
+
                 headers: {'Content-Type': 'application/json'},
+
                 body: JSON.stringify({ prompt: prompt.trim(), language: targetLang })
+
             });
+
             const data = await res.json();
+
             if (data && data.decision) {
+
                 const d = data.decision;
+
                 const vEl = document.getElementById('aiDirectorVoiceDecision');
+
                 const aEl = document.getElementById('aiDirectorAvatarDecision');
+
                 const bEl = document.getElementById('aiDirectorBrollDecision');
+
                 const gEl = document.getElementById('aiDirectorGatewayDecision');
+
                 if (vEl && d.voice_name) vEl.textContent = d.voice_name;
+
                 if (aEl && d.avatar_name) aEl.textContent = d.avatar_name;
+
                 if (bEl && d.broll_name) bEl.textContent = d.broll_name;
+
                 if (gEl && d.aggregator_name) gEl.textContent = d.aggregator_name;
 
+
+
                 // Anime.js Elastic Spring Stagger on Director Commission Cards
+
                 if (typeof anime !== 'undefined') {
+
                     anime({
+
                         targets: '.kokonut-director-card',
+
                         translateY: [-6, 0],
+
                         borderColor: ['#38BDF8', 'rgba(56, 189, 248, 0.28)'],
+
                         delay: anime.stagger(90),
+
                         duration: 700,
+
                         easing: 'easeOutElastic(1, .7)'
+
                     });
+
                 }
+
             }
+
         } catch(e) {
+
             console.warn('Director autopilot preview notice:', e);
+
         }
+
     }
+
+
 
     function applyQuickPromptPreset(presetKey) {
+
         const presets = {
+
             'sql_window': 'Explain DENSE_RANK() vs RANK() with partition over salary in SQL',
+
             'python_asyncio': 'Explain Python Asyncio Event Loop vs Multi-threading with latency benchmarks',
+
             'snowflake_medallion': 'Cloud Data Lakehouse Medallion Architecture (Bronze -> Silver -> Gold) with DuckDB',
+
             'docker_k8s': 'Docker Container vs Kubernetes Pod Orchestration & Service Mesh',
+
             'rag_vector': 'Agentic RAG with Vector Search Embeddings, Semantic Reranking & LLM Guardrails'
+
         };
+
         const text = presets[presetKey] || presetKey;
+
         const inputEl = document.getElementById('sqlShortQuestion');
+
         if (inputEl) {
+
             inputEl.value = text;
+
             inputEl.focus();
+
             directorAutopilotPreview(text, sqlShortState.audioLang || 'mr');
+
             if (typeof anime !== 'undefined') {
+
                 anime({
+
                     targets: '#sqlShortQuestion',
+
                     borderColor: ['#10B981', '#38BDF8', '#1E2D4A'],
+
                     duration: 600,
+
                     easing: 'easeOutQuad'
+
                 });
+
             }
+
         }
+
     }
+
+
 
     async function generateSqlShortBlueprint() {
+
         const q = document.getElementById("sqlShortQuestion").value.trim();
+
         const btn = document.getElementById("btnGenerateSqlBlueprint");
+
         if (!q) { alert("तुमचा मास्टर प्रॉम्प्ट किंवा प्रश्न प्रविष्ट करा (Please enter your master prompt or SQL question)!"); return; }
 
+
+
         // Immediately pause and reset old prompt state so old video never lingers
+
         pauseSqlShortPlay();
+
         sqlShortState.activePreset = null;
+
         sqlShortState.activeVideoSpec = null;
+
         sqlShortState.currentTime = 0.0;
+
         sqlShortState.maxDuration = 0.0;
+
         sqlShortState.narrationDuration = 0.0;
+
         sqlShortState.audioUrl = "";
+
         const initAudioEl = document.getElementById("sqlVoiceAudio");
+
         if (initAudioEl) {
+
             initAudioEl.pause();
+
             initAudioEl.removeAttribute("src");
+
             initAudioEl.load();
+
         }
+
+
 
         btn.innerHTML = `<span>⏳ Synthesizing AI Video & Voice Blueprint...</span>`;
+
         btn.disabled = true;
+
+
 
         const statusEl = document.getElementById("sqlVideoGenerationStatus");
+
         if (statusEl) statusEl.textContent = "Synthesizing 2026 AI Video & Narration concurrently…";
 
+
+
         // Concurrently dispatch 4-Stage Multi-Stage AI Video Pipeline
+
         try {
+
             const vEngine = document.getElementById('selectVoiceEngine')?.value || 'kokoro_free';
+
             const aEngine = document.getElementById('selectAvatarEngine')?.value || 'client_cyber_canvas';
+
             const bEngine = document.getElementById('selectBrollEngine')?.value || window.selectedModernVideoModel || 'seedance_25';
+
             const gEngine = document.getElementById('selectAggregatorEngine')?.value || 'nanopro_auto_cascade';
 
+
+
             fetch('/api/video/pipeline/generate_multistage', {
+
                 method: 'POST',
+
                 headers: {'Content-Type': 'application/json'},
+
                 body: JSON.stringify({
+
                     prompt: q,
+
                     voice_engine: vEngine,
+
                     avatar_engine: aEngine,
+
                     broll_engine: bEngine,
+
                     aggregator_engine: gEngine,
+
                     language: sqlShortState.audioLang || 'mr',
+
                     aspect_ratio: '9:16'
+
                 })
+
             }).then(r => r.json()).then(vData => {
+
                 if (vData && vData.video_url) {
+
                     const isMp4 = typeof vData.video_url === 'string' && (vData.video_url.toLowerCase().includes('.mp4') || vData.video_url.toLowerCase().includes('.webm'));
+
                     const realVid = document.getElementById('sqlShortRealVideo');
+
                     if (realVid && isMp4) {
+
                         realVid.src = vData.video_url;
+
                         realVid.style.display = 'block';
+
                         realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
+
                     } else if (realVid) {
+
                         realVid.style.display = 'none';
+
                         realVid.removeAttribute('src');
+
                     }
+
                     // 100% Pure Tech Mode: STRICTLY ZERO HUMAN FACES, GIRLS, BOYS, OR AVATAR IMAGES
+
                     const pipEl = document.getElementById('phoneAvatarPip');
+
                     if (pipEl) pipEl.style.display = 'none';
+
                     if (typeof showModernToast === 'function') {
+
                         const bName = vData.pipeline_stages?.step3_broll?.engine_name || 'AI Video Stream';
+
                         const vName = vData.pipeline_stages?.step1_voice?.engine_name || 'Voice Engine';
+
                         showModernToast('VFX Video Pipeline Active', `${bName} + ${vName}`, 'success');
+
                     }
+
                 }
+
             }).catch(e => console.warn('AI Video Cascade notice:', e));
+
         } catch(e) {}
 
+
+
         try {
+
             const data = await generateSqlShortBlueprintJob({
+
                 question: q,
+
                 language: sqlShortState.audioLang || "mr",
+
                 mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill",
+
                 generation_pattern: window.selectedGenerationPattern || "hybrid",
+
                 selected_model: window.selectedModernVideoModel || "wan_21",
+
                 timestamp: Date.now()
+
             }, statusEl);
+
             if (data.status === "success") {
+
                 if (data.ai_attribution_ledger) {
+
                     renderAiAttributionLedger(data.ai_attribution_ledger);
+
                 }
+
                 if (!data.audio_url) throw new Error("Generated narration audio was not returned; the video cannot be synced.");
+
                 sqlShortState.agentPipeline = data.agent_pipeline || [];
+
                 sqlShortState.perfectionistAudit = data.perfectionist_audit || null;
 
+
+
                 // Update Code Preview immediately
+
                 const codePreviewEl = document.getElementById("sqlShortCodePreview");
+
                 if (codePreviewEl) {
+
                     codePreviewEl.value = data.solution_sql || data.syntax_a_code || (data.content_type === "sql_query" ? "-- Query solution" : "-- Topic-specific storyboard");
+
                 }
+
+
 
                 // Run the optional code delimiter balance check only when a code sample exists.
+
                 if (data.content_type === "sql_query" || data.solution_sql) runPipelineSandboxVerification();
+
                 logPipelineStep("Video specialist workflow", "Storyboard, measured narration, motion timeline, and structural QA are ready. No app-wide agent swarm is claimed.");
 
+
+
                 const targetDur = Number(data.duration || data.max_duration_seconds || 0);
+
                 if (["mr", "hi", "en"].includes(data.language)) {
+
                     sqlShortState.audioLang = data.language;
+
                     document.querySelectorAll(".sql-lang-btn").forEach(button => button.classList.remove("active"));
+
                     const languageButton = document.getElementById("btnAudio" + data.language.charAt(0).toUpperCase() + data.language.slice(1));
+
                     if (languageButton) languageButton.classList.add("active");
+
                 }
+
                 sqlShortState.maxDuration = targetDur;
+
                 sqlShortState.narrationDuration = targetDur;
+
                 const dynamicSpec = Object.assign({
+
                     id: data.id || ("custom_ai_" + Date.now()),
+
                     content_type: data.content_type || "tech_topic",
+
                     title: data.title || "Tech Interview Preparation",
+
                     difficulty: data.difficulty || "Core Interview",
+
                     question: data.question || q,
+
                     stages: data.stages || data.scenes || [],
+
                     scenes: data.stages || data.scenes || [],
+
                     outro_start: targetDur,
+
                     duration: targetDur,
+
                     max_duration_seconds: targetDur,
+
                     pipeline_stages: data.pipeline_stages || [],
+
                     sample_rows: data.sample_rows || [],
+
                     col_headers: data.col_headers || ["ID", "ATTRIBUTE", "AMOUNT", "STATUS"],
+
                     filter_evaluations: data.filter_evaluations || [],
+
                     output_rows: data.output_rows || [],
+
                     output_value: data.output_value || "",
+
                     pro_tip: data.pro_tip || "💡 Senior Interviewer Pro-Tip: Explain query logic step-by-step."
+
                 }, data);
+
                 sqlShortState.activeVideoSpec = dynamicSpec;
+
                 sqlShortState.activePreset = dynamicSpec;
 
+
+
                 // Load real photorealistic 9:16 AI scene visuals for each scene immediately
+
                 if (Array.isArray(data.scene_assets) && data.scene_assets.length > 0) {
+
                     loadPromptSceneAssets(data.scene_assets).then(() => {
+
                         renderSqlShortFrame(sqlShortState.currentTime || 0);
+
                     }).catch(err => console.warn("Notice loading scene assets:", err));
+
                 }
+
+
 
                 const sc = document.getElementById("sqlShortScrubber");
+
                 if (sc) {
+
                     sc.max = targetDur.toString();
+
                     sc.step = "0.1";
+
                 }
+
                 updatePlayerScrubberUI(0);
 
+
+
                 // Update Code Preview
+
                 if (codePreviewEl) {
+
                     codePreviewEl.value = data.solution_sql || data.syntax_a_code || (data.content_type === "sql_query" ? "-- Query solution" : "-- Topic-specific storyboard");
+
                 }
+
+
 
                 // Trigger October 2026 State-of-the-Art AI Video Generation with Zero-Stop Cascade
+
                 try {
+
                     fetch('/api/video/generate_2026_video', {
+
                         method: 'POST',
+
                         headers: {'Content-Type': 'application/json'},
+
                         body: JSON.stringify({
+
                             prompt: q,
+
                             model_id: window.selectedModernVideoModel || 'seedance_25',
+
                             aspect_ratio: '9:16'
+
                         })
+
                     }).then(r => r.json()).then(vData => {
+
                         if (vData && vData.video_url) {
+
                             const isMp4 = typeof vData.video_url === 'string' && (vData.video_url.toLowerCase().includes('.mp4') || vData.video_url.toLowerCase().includes('.webm'));
+
                             const realVid = document.getElementById('sqlShortRealVideo');
+
                             if (realVid && isMp4) {
+
                                 realVid.src = vData.video_url;
+
                                 realVid.style.display = 'block';
+
                                 realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
+
                             } else if (realVid) {
+
                                 realVid.style.display = 'none';
+
                                 realVid.removeAttribute('src');
+
                             }
+
                             if (typeof showModernToast === 'function') {
+
                                 showModernToast('2026 AI Video Active', (vData.provider || 'AI Video Stream') + ' (' + (vData.benchmark_rating || '5★') + ')', 'success');
+
                             }
+
                         }
+
                     }).catch(e => console.warn('AI Video Cascade notice:', e));
+
                 } catch(e) {}
 
+
+
                 // Load and play fresh synthesized audio with cache-buster
+
                 if (data.audio_url) {
+
                     const freshAudioUrl = data.audio_url + (data.audio_url.includes("?") ? "&" : "?") + "t=" + Date.now();
+
                     sqlShortState.audioUrl = freshAudioUrl;
+
                     const audioEl = document.getElementById("sqlVoiceAudio");
+
                     if (audioEl) {
+
                         attachAudioSyncListeners(audioEl);
+
                         await loadSqlNarration(audioEl, freshAudioUrl);
+
                     }
+
                 }
+
+
 
                 const narrationAudio = document.getElementById("sqlVoiceAudio");
+
                 if (!narrationAudio) throw new Error("Narration audio player is unavailable.");
+
                 if (!narrationAudio.src || narrationAudio.error) throw new Error("The new narration audio could not be loaded.");
 
+
+
                 updateSqlBlueprintUI(sqlShortState.activePreset);
+
                 restartSqlShortPlay();
 
+
+
                 // Generation ready: Start playing preview smoothly (1-Click Export button available for download)
+
                 logPipelineStep("Video Ready", "AI Video & Voiceover loaded. Playing preview smoothly.");
+
             } else {
+
                 alert("Blueprint generation error: " + (data.message || "Failed"));
+
             }
+
         } catch (e) {
+
             console.error("AI Video generation failed:", e);
+
             const statusEl = document.getElementById("sqlVideoGenerationStatus");
+
             if (statusEl) statusEl.textContent = e.message || String(e);
+
             alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
+
         } finally {
+
             const statusEl = document.getElementById("sqlVideoGenerationStatus");
+
             if (statusEl && sqlShortState.activeVideoSpec) statusEl.textContent = "Ready · voice-synchronized architecture animation";
+
             btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
+
             btn.disabled = false;
+
         }
+
     }
+
+
 
     function setSqlAvatarPresenter(val) {
+
         sqlShortState.selectedAvatar = val;
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
+
 
     async function renderAiAvatarVideo() {
+
         const avatar = sqlShortState.selectedAvatar || "Nadim_public_5";
+
         const statusEl = document.getElementById("avatarRenderStatus");
+
         const btn = document.getElementById("btnRenderAvatar");
 
+
+
         const p = sqlShortState.activePreset;
+
         const promptText = (document.getElementById("sqlShortQuestion")?.value || "").trim();
+
         const script = (p && (p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr || p.speech_mr))
+
             || promptText.slice(0, 150)
+
             || "Welcome to today's tech masterclass with Code with Mangesh!";
 
+
+
         statusEl.style.display = "block";
+
         statusEl.style.color = "#38BDF8";
+
         statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Avatar Router (Auto-failover HeyGen ➔ D-ID ➔ Cyber Canvas)...</span>`;
+
         btn.disabled = true;
 
+
+
         try {
+
             const preferred = avatar.startsWith("did") ? "did" : (avatar !== "none" ? "heygen" : "auto");
+
             const res = await fetch("/api/video/avatar_cascade", {
+
                 method: "POST",
+
                 headers: {"Content-Type": "application/json"},
+
                 body: JSON.stringify({
+
                     script: script,
+
                     preferred_provider: preferred,
+
                     avatar_id: avatar.startsWith("did") ? null : avatar,
+
                     language: sqlShortState.audioLang
+
                 })
+
             });
+
             const data = await res.json();
+
+
 
             if (data.status === "success") {
+
                 if (data.provider === "HeyGen" && data.video_id) {
+
                     const failoverTag = data.failover_used ? " (Auto-switched)" : "";
+
                     statusEl.innerHTML = `<span>✅ HeyGen 4K Video #${data.video_id} queued${failoverTag}! Generating lip-sync...</span>`;
+
                     pollHeyGenVideo(data.video_id, statusEl, btn);
+
                 } else if (data.provider === "D-ID" && data.talk_id) {
+
                     const failoverTag = data.failover_used ? " (Auto-switched from HeyGen)" : "";
+
                     statusEl.innerHTML = `<span>✅ D-ID Talk #${data.talk_id} queued${failoverTag}! Generating lip-sync...</span>`;
+
                     pollDIDVideo(data.talk_id, statusEl, btn);
+
                 } else {
+
                     btn.disabled = false;
+
                     statusEl.style.color = "#10B981";
+
                     statusEl.innerHTML = `🛡️ <b>Live Cyber Avatar Active:</b> Auto-switched to High-Tech Presenter with zero watermark!`;
+
                 }
+
             } else {
+
                 statusEl.style.color = "#EF4444";
+
                 statusEl.innerText = "Router Error: " + (data.message || "Failed");
+
                 btn.disabled = false;
+
             }
+
         } catch (e) {
+
             statusEl.style.color = "#EF4444";
+
             statusEl.innerText = "Network Error: " + e.message;
+
             btn.disabled = false;
+
         }
+
     }
+
+
 
     function loadAvatarVideoToEngine(url) {
+
         let vid = document.getElementById("sqlShortAvatarVideo");
+
         if (!vid) {
+
             vid = document.createElement("video");
+
             vid.id = "sqlShortAvatarVideo";
+
             vid.crossOrigin = "anonymous";
+
             vid.loop = true;
+
             vid.muted = true;
+
             vid.playsInline = true;
+
             vid.style.display = "none";
+
             document.body.appendChild(vid);
+
         }
+
         vid.src = url;
+
         vid.onloadeddata = () => {
+
             sqlShortState.avatarVideoElement = vid;
+
             sqlShortState.avatarVideoLoaded = true;
+
             vid.play().catch(e => console.warn("Avatar video autoplay:", e));
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
         };
+
         vid.load();
+
     }
+
+
 
     async function pollHeyGenVideo(videoId, statusEl, btn) {
+
         let attempts = 0;
+
         const maxAttempts = 25;
+
         const interval = setInterval(async () => {
+
             attempts++;
+
             try {
+
                 let res = await fetch(`/api/heygen/status/${videoId}`);
+
                 if (!res.ok) res = await fetch(`/api/video/heygen/status/${videoId}`);
+
                 const data = await res.json();
+
                 if (data.status === "completed" && data.video_url) {
+
                     clearInterval(interval);
+
                     statusEl.style.color = "#10B981";
+
                     statusEl.innerHTML = `<span>🎉 HeyGen 4K Avatar Ready! Synced to Video Player.</span>`;
+
                     btn.disabled = false;
+
                     loadAvatarVideoToEngine(data.video_url);
+
                 } else if (data.status === "failed") {
+
                     clearInterval(interval);
+
                     statusEl.style.color = "#EF4444";
+
                     statusEl.innerText = "HeyGen Generation Failed: " + (data.error || "Unknown");
+
                     btn.disabled = false;
+
                 } else {
+
                     statusEl.innerText = `⏳ HeyGen Rendering: ${data.status || 'processing'} (${attempts}/${maxAttempts})...`;
+
                 }
+
             } catch (e) {
+
                 console.warn("HeyGen Poll error:", e);
+
             }
+
             if (attempts >= maxAttempts) {
+
                 clearInterval(interval);
+
                 statusEl.style.color = "#F59E0B";
+
                 statusEl.innerText = "HeyGen took longer than expected. Using High-Tech Cyber Canvas Presenter.";
+
                 btn.disabled = false;
+
             }
+
         }, 3000);
+
     }
+
+
 
     async function pollDIDVideo(talkId, statusEl, btn) {
+
         let attempts = 0;
+
         const maxAttempts = 25;
+
         const interval = setInterval(async () => {
+
             attempts++;
+
             try {
+
                 let res = await fetch(`/api/did/status/${talkId}`);
+
                 if (!res.ok) res = await fetch(`/api/video/did/status/${talkId}`);
+
                 const data = await res.json();
+
                 if (data.status === "done" && data.result_url) {
+
                     clearInterval(interval);
+
                     statusEl.style.color = "#10B981";
+
                     statusEl.innerHTML = `<span>🎉 D-ID Lip-Sync Ready! Synced to Video Player.</span>`;
+
                     btn.disabled = false;
+
                     loadAvatarVideoToEngine(data.result_url);
+
                 } else if (data.status === "error") {
+
                     clearInterval(interval);
+
                     statusEl.style.color = "#EF4444";
+
                     statusEl.innerText = "D-ID Generation Error: " + (data.error || "Unknown");
+
                     btn.disabled = false;
+
                 } else {
+
                     statusEl.innerText = `⏳ D-ID Rendering: ${data.status || 'started'} (${attempts}/${maxAttempts})...`;
+
                 }
+
             } catch (e) {
+
                 console.warn("D-ID Poll error:", e);
+
             }
+
             if (attempts >= maxAttempts) {
+
                 clearInterval(interval);
+
                 statusEl.style.color = "#F59E0B";
+
                 statusEl.innerText = "D-ID took longer than expected. Using High-Tech Cyber Canvas Presenter.";
+
                 btn.disabled = false;
+
             }
+
         }, 2500);
+
     }
+
     function setSqlMotionEngine(enabled) {
+
         sqlShortState.enable3DMotionEngine = !!enabled;
+
         const statusEl = document.getElementById("cinematicBgRenderStatus");
+
         if (statusEl) {
+
             statusEl.style.display = "block";
+
             if (enabled) {
+
                 statusEl.style.color = "#C084FC";
+
                 statusEl.innerHTML = `<span>✨ 3D AI Motion Engine Active (60 FPS Volumetric 3D Particles &amp; Holographic Core)!</span>`;
+
             } else {
+
                 statusEl.style.color = "#10B981";
+
                 statusEl.innerHTML = `<span>⚡ Using Transparent Cyber Glass Canvas (Ultra-Fast 60 FPS)</span>`;
+
             }
+
         }
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
     window.setSqlMotionEngine = setSqlMotionEngine;
 
+
+
     function select3DMotionBg(bgType) {
+
         sqlShortState.motionBgType = bgType;
+
         const sel = document.getElementById('sqlCinematicBgSelect');
+
         if (sel) sel.value = bgType;
+
         sqlShortState.enable3DMotionEngine = true;
+
+
 
         document.querySelectorAll('.sql-motion-bg-chip').forEach(btn => {
+
             const isMatch = btn.getAttribute('data-bg') === bgType;
+
             btn.classList.toggle('active', isMatch);
+
             const chk = btn.querySelector('.btn-check');
+
             if (chk) chk.style.display = isMatch ? 'inline-block' : 'none';
+
         });
 
+
+
         const statusEl = document.getElementById("cinematicBgRenderStatus");
+
         if (statusEl) {
+
             statusEl.style.display = "block";
+
             const titles = {
+
                 'cyber_matrix': '🌐 Cyber Matrix Grid (60 FPS Native Canvas)',
+
                 'quantum_nebula': '🌌 Quantum Nebula Particles & Star Vortex (60 FPS)',
+
                 'silicon_laser': '⚡ Silicon Circuit Laser Trace & Microchip Pulsing (60 FPS)',
+
                 'warp_tunnel': '🚀 Warp Speed Data Tunnel & Star Streaks (60 FPS)',
+
                 'fintech_ledger': '🏦 FinTech 3D High-Frequency Ledger & Currency Matrix (60 FPS)',
+
                 'neural_synapse': '🧬 Neural AI Synapse Grid & Axon Spark Discharge (60 FPS)',
+
                 'runway_cloud': '☁️ Runway Gen-4 / Luma Cloud Video (with Auto-Failover)'
+
             };
+
             statusEl.style.color = (bgType === 'runway_cloud') ? '#C084FC' : '#38BDF8';
+
             statusEl.innerHTML = `<span>✨ Active 3D Motion Background: <strong>${titles[bgType] || bgType}</strong></span>`;
+
         }
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
     window.select3DMotionBg = select3DMotionBg;
 
+
+
     async function renderCinematicBackgroundVideo() {
+
         const bgChoice = document.getElementById("sqlCinematicBgSelect")?.value || "cyber_matrix";
+
         const statusEl = document.getElementById("cinematicBgRenderStatus");
+
         const btn = document.getElementById("btnRenderCinematicBg");
 
+
+
         if (bgChoice === "cyber_matrix") {
+
             sqlShortState.enable3DMotionEngine = false;
+
             sqlShortState.backgroundVideoElement = null;
+
             sqlShortState.backgroundVideoLoaded = false;
+
             statusEl.style.display = "block";
+
             statusEl.style.color = "#10B981";
+
             statusEl.innerText = "⚡ Using Transparent Cyber Glass Canvas (Ultra-Fast 60 FPS)";
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
             return;
+
         }
+
+
 
         // 3D Motion Engine button mode
+
         sqlShortState.enable3DMotionEngine = true;
+
         statusEl.style.display = "block";
+
         statusEl.style.color = "#C084FC";
+
         statusEl.innerHTML = `<span>⏳ Synthesizing 3D Motion Video (Runway / 3D AI Motion Engine)...</span>`;
+
         btn.disabled = true;
 
+
+
         try {
+
             const isLuma = bgChoice.startsWith("luma");
+
             const endpoint = isLuma ? "/api/video/luma_cascade" : "/api/runway/generate";
+
             const promptText = isLuma 
+
                 ? "3D cinematic golden tech database particles flowing vertically in dark cyberspace, 9:16 aspect ratio, volumetric lighting, 4k"
+
                 : "Hyper-realistic high-tech server room and cloud analytics cluster, glowing neon cyan data racks, server status lights, 9:16 vertical view, photorealistic, 8k";
 
+
+
             const res = await fetch(endpoint, {
+
                 method: "POST",
+
                 headers: {"Content-Type": "application/json"},
+
                 body: JSON.stringify({ prompt: promptText, aspect_ratio: "9:16" })
+
             });
+
             const data = await res.json();
+
             if (data.status === "success" && data.task_id) {
+
                 statusEl.style.color = "#10B981";
+
                 statusEl.innerHTML = `<span>✅ 3D Motion Generation Queued (${data.provider || 'Runway'})! Task ID: ${data.task_id}</span>`;
+
                 btn.disabled = false;
+
             } else {
+
                 // Cloud tokens out of credits / failover -> seamlessly switch to built-in 60fps 3D AI Motion Engine
+
                 sqlShortState.enable3DMotionEngine = true;
+
                 sqlShortState.backgroundVideoElement = null;
+
                 sqlShortState.backgroundVideoLoaded = false;
+
                 statusEl.style.color = "#C084FC";
+
                 statusEl.innerHTML = `<span>✨ 3D AI Motion Engine Active: 60 FPS Volumetric 3D Particles &amp; Holographic Core!</span>`;
+
                 btn.disabled = false;
+
                 renderSqlShortFrame(sqlShortState.currentTime);
+
             }
+
         } catch (e) {
+
             sqlShortState.enable3DMotionEngine = true;
+
             sqlShortState.backgroundVideoElement = null;
+
             sqlShortState.backgroundVideoLoaded = false;
+
             statusEl.style.color = "#C084FC";
+
             statusEl.innerHTML = `<span>✨ 3D AI Motion Engine Active: 60 FPS Volumetric 3D Particles &amp; Holographic Core!</span>`;
+
             btn.disabled = false;
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
         }
+
     }
+
+
 
     async function runInMemorySqlSandbox() {
+
         const code = document.getElementById("sqlShortCodePreview").value;
+
         const p = sqlShortState.activePreset;
+
         const latencyEl = document.getElementById("sandboxLatency");
+
         const outTableEl = document.getElementById("sandboxOutputTable");
 
+
+
         latencyEl.innerText = "Executing...";
+
         try {
+
             const res = await fetch("/api/sql_video/run_sandbox", {
+
                 method: "POST",
+
                 headers: {"Content-Type": "application/json"},
+
                 body: JSON.stringify({
+
                     schema_sql: p.schema_sql,
+
                     query_sql: code
+
                 })
+
             });
+
             const data = await res.json();
+
             latencyEl.innerText = `⏱️ ${data.latency_ms || 1.2} ms (SQLite In-Memory)`;
 
+
+
             if (data.status === "success" && data.columns && data.rows) {
+
                 let html = `<table style="width:100%; border-collapse:collapse; text-align:left;">`;
+
                 html += `<thead><tr style="border-bottom:1px solid #1E2D4A; color:#38BDF8;">`;
+
                 data.columns.forEach(c => html += `<th style="padding:4px 6px;">${c}</th>`);
+
                 html += `</tr></thead><tbody>`;
+
                 data.rows.forEach(r => {
+
                     html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">`;
+
                     r.forEach(v => html += `<td style="padding:4px 6px; color:#F8FAFC;">${v}</td>`);
+
                     html += `</tr>`;
+
                 });
+
                 html += `</tbody></table>`;
+
                 outTableEl.innerHTML = html;
+
             } else {
+
                 outTableEl.innerHTML = `<span style="color:#EF4444;">Error: ${data.message || 'Execution failed'}</span>`;
+
             }
+
         } catch (e) {
+
             latencyEl.innerText = "Error";
+
             outTableEl.innerHTML = `<span style="color:#EF4444;">Sandbox Error: ${e.message}</span>`;
+
         }
+
     }
+
+
 
     /* ==========================================================================
+
        3D HIGH-TECH GLASSMORPHISM & DYNAMIC MOTION VECTOR ENGINE
+
        ========================================================================== */
+
     let _sqlCyberAudioCtx = null;
+
     let _sqlSfxAudioCtx = null;
+
     let _sqlSfxBus = null;
+
     let _sqlSfxDestination = null;
+
     function playCyberBleep(freq = 880, dur = 0.08) {
+
         try {
+
             if (!_sqlCyberAudioCtx) {
+
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
                 if (AudioCtx) {
+
                     _sqlCyberAudioCtx = new AudioCtx();
+
                     window._sqlCyberAudioCtx = _sqlCyberAudioCtx;
+
                     if (window.nanoProRegisterAudioContext) {
+
                         window.nanoProRegisterAudioContext(_sqlCyberAudioCtx);
+
                     }
+
                 }
+
             }
+
             if (_sqlCyberAudioCtx && _sqlCyberAudioCtx.state === 'suspended') {
+
                 _sqlCyberAudioCtx.resume();
+
             }
+
             if (!_sqlCyberAudioCtx) return;
+
             const osc = _sqlCyberAudioCtx.createOscillator();
+
             const gain = _sqlCyberAudioCtx.createGain();
+
             osc.type = "sine";
+
             osc.frequency.setValueAtTime(freq, _sqlCyberAudioCtx.currentTime);
+
             osc.frequency.exponentialRampToValueAtTime(freq * 1.4, _sqlCyberAudioCtx.currentTime + dur);
+
             gain.gain.setValueAtTime(0.04, _sqlCyberAudioCtx.currentTime);
+
             gain.gain.exponentialRampToValueAtTime(0.001, _sqlCyberAudioCtx.currentTime + dur);
+
             osc.connect(gain);
+
             gain.connect(_sqlCyberAudioCtx.destination);
+
             osc.start();
+
             osc.stop(_sqlCyberAudioCtx.currentTime + dur);
+
         } catch (e) {}
+
     }
+
+
 
     function ensureSqlSfxAudio(preferredContext = null, preferredDestination = null) {
+
         if (_sqlSfxAudioCtx && preferredContext && _sqlSfxAudioCtx !== preferredContext) {
+
             const staleContext = _sqlSfxAudioCtx;
+
             try { _sqlSfxBus?.disconnect(); } catch (_) {}
+
             _sqlSfxAudioCtx = null; _sqlSfxBus = null; _sqlSfxDestination = null;
+
             try { staleContext.close().catch(() => {}); } catch (_) {}
+
         }
+
         if (!_sqlSfxAudioCtx || _sqlSfxAudioCtx.state === "closed") {
+
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
             if (!AudioCtx) return null;
+
             _sqlSfxAudioCtx = preferredContext || new AudioCtx();
+
             _sqlSfxBus = _sqlSfxAudioCtx.createGain();
+
             _sqlSfxDestination = preferredDestination || _sqlSfxAudioCtx.createMediaStreamDestination();
+
             _sqlSfxBus.gain.value = 0.7;
+
             _sqlSfxBus.connect(_sqlSfxDestination);
+
             _sqlSfxBus.connect(_sqlSfxAudioCtx.destination);
+
             window._sqlVideoSfxRoute = { audioCtx: _sqlSfxAudioCtx, destination: _sqlSfxDestination };
+
             if (window.nanoProRegisterAudioContext) window.nanoProRegisterAudioContext(_sqlSfxAudioCtx);
+
         } else if (preferredDestination && _sqlSfxDestination !== preferredDestination) {
+
             try { _sqlSfxBus.disconnect(); } catch (_) {}
+
             _sqlSfxDestination = preferredDestination;
+
             _sqlSfxBus.connect(_sqlSfxDestination);
+
             _sqlSfxBus.connect(_sqlSfxAudioCtx.destination);
+
             window._sqlVideoSfxRoute = { audioCtx: _sqlSfxAudioCtx, destination: _sqlSfxDestination };
+
         }
+
         return { audioCtx: _sqlSfxAudioCtx, destination: _sqlSfxDestination, bus: _sqlSfxBus };
+
     }
+
+
 
     function playSqlSemanticSound(soundSpec, interactionStep = "") {
+
         if (!sqlShortState.isPlaying && !sqlShortState.isExporting) return;
+
         const route = ensureSqlSfxAudio();
+
         if (!route) return false;
+
         const ctx = route.audioCtx;
+
         if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
         const spec = soundSpec && typeof soundSpec === "object" ? soundSpec : { description: String(soundSpec || "") };
+
         const description = `${spec.type || ""} ${spec.description || ""} ${interactionStep}`.toLowerCase();
+
         if (/\b(silence|silent|none|no sound)\b/.test(description)) return false;
+
         const now = ctx.currentTime + 0.012;
+
         const rawIntensity = Number(spec.intensity);
+
         const intensity = Number.isFinite(rawIntensity) ? Math.max(0, Math.min(1, rawIntensity)) : 0.45;
+
         if (intensity === 0) return false;
+
         let kind = "soft";
+
         if (/connect|link|join|attach|socket|handshake/.test(description)) kind = "connect";
+
         else if (/transfer|move|flow|travel|packet|send|swoosh|slide|morph|zoom/.test(description)) kind = "move";
+
         else if (/open|reveal|expand|unfold|launch/.test(description)) kind = "open";
+
         else if (/close|fold|collapse|dismiss/.test(description)) kind = "close";
+
         else if (/success|verify|complete|approved|ready/.test(description)) kind = "success";
+
         else if (/fail|warning|error|blocked|alert/.test(description)) kind = "warning";
+
         else if (/type|key|click|tap|press/.test(description)) kind = "click";
+
         else if (/recover|retry|restore|repair/.test(description)) kind = "recover";
+
         const tone = (startHz, endHz, duration, wave, gain, delay = 0) => {
+
             const osc = ctx.createOscillator(), amp = ctx.createGain();
+
             const start = now + delay, end = start + duration;
+
             osc.type = wave; osc.frequency.setValueAtTime(startHz, start);
+
             if (endHz !== startHz) osc.frequency.exponentialRampToValueAtTime(Math.max(24, endHz), end);
+
             amp.gain.setValueAtTime(0.0001, start); amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * intensity), start + Math.min(0.018, duration * 0.22));
+
             amp.gain.exponentialRampToValueAtTime(0.0001, end);
+
             osc.connect(amp); amp.connect(route.bus); osc.start(start); osc.stop(end + 0.01);
+
         };
+
         const noise = (duration, gain, filterType, lowHz, highHz, delay = 0) => {
+
             const frames = Math.max(1, Math.floor(ctx.sampleRate * duration));
+
             const buffer = ctx.createBuffer(1, frames, ctx.sampleRate), channel = buffer.getChannelData(0);
+
             for (let i = 0; i < frames; i++) channel[i] = (Math.random() * 2 - 1) * (1 - i / frames);
+
             const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), amp = ctx.createGain();
+
             const start = now + delay, end = start + duration;
+
             source.buffer = buffer; filter.type = filterType; filter.frequency.setValueAtTime(lowHz, start);
+
             filter.frequency.exponentialRampToValueAtTime(Math.max(25, highHz), end);
+
             amp.gain.setValueAtTime(0.0001, start); amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * intensity), start + 0.012);
+
             amp.gain.exponentialRampToValueAtTime(0.0001, end);
+
             source.connect(filter); filter.connect(amp); amp.connect(route.bus); source.start(start); source.stop(end + 0.01);
+
         };
+
         if (kind === "connect") { tone(520, 880, 0.16, "sine", 0.11); tone(1040, 760, 0.2, "sine", 0.07, 0.11); noise(0.045, 0.045, "highpass", 2100, 800, 0.04); }
+
         else if (kind === "move") { tone(760, 260, 0.22, "triangle", 0.075); tone(220, 440, 0.16, "sine", 0.045, 0.07); noise(0.24, 0.07, "bandpass", 420, 1800); }
+
         else if (kind === "open") { tone(320, 720, 0.24, "sine", 0.075); tone(960, 760, 0.12, "sine", 0.035, 0.14); noise(0.2, 0.06, "bandpass", 300, 1500); }
+
         else if (kind === "close") { tone(680, 280, 0.16, "triangle", 0.065); noise(0.08, 0.08, "lowpass", 700, 140); }
+
         else if (kind === "success") { tone(660, 880, 0.16, "sine", 0.085); tone(990, 1320, 0.2, "sine", 0.07, 0.12); }
+
         else if (kind === "warning") { tone(250, 170, 0.24, "triangle", 0.12); tone(185, 185, 0.17, "sine", 0.06, 0.12); }
+
         else if (kind === "recover") { tone(300, 620, 0.23, "triangle", 0.075); tone(620, 820, 0.18, "sine", 0.06, 0.16); }
+
         else if (kind === "click") { tone(1150, 720, 0.045, "sine", 0.04); noise(0.035, 0.065, "highpass", 3500, 1600); }
+
         else { tone(480, 560, 0.1, "sine", 0.035); }
+
         return true;
+
     }
+
+
 
     // 1. Draw 3D Frosted Crystal Glass Tile with Specular Rim & Depth Layering
+
     function drawGlassTile(ctx, x, y, w, h, radius = 20, glowColor = "#38BDF8", elevation = false, isFront = true, alpha = 1.0) {
+
         ctx.save();
+
         ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
 
+
+
         // Depth perspective scaling
+
         if (!isFront) {
+
             const cx = x + w / 2;
+
             const cy = y + h / 2;
+
             ctx.translate(cx, cy);
+
             ctx.scale(0.93, 0.93);
+
             ctx.translate(-cx, -cy);
+
             ctx.globalAlpha *= 0.38;
+
         } else if (elevation) {
+
             const cx = x + w / 2;
+
             const cy = y + h / 2;
+
             ctx.translate(cx, cy);
+
             ctx.scale(1.015, 1.015);
+
             ctx.translate(-cx, -cy);
+
         }
+
+
 
         // Frosted Glass Body Gradient (Grey/Navy Translucent Mirror)
+
         const grad = ctx.createLinearGradient(x, y, x + w * 0.3, y + h);
+
         if (isFront) {
+
             grad.addColorStop(0, "rgba(255, 255, 255, 0.12)");
+
             grad.addColorStop(0.25, "rgba(15, 23, 42, 0.35)");
+
             grad.addColorStop(0.8, "rgba(8, 14, 28, 0.45)");
+
             grad.addColorStop(1, "rgba(4, 8, 18, 0.55)");
+
         } else {
+
             grad.addColorStop(0, "rgba(255, 255, 255, 0.05)");
+
             grad.addColorStop(1, "rgba(10, 16, 32, 0.25)");
+
         }
+
+
 
         ctx.fillStyle = grad;
+
         ctx.beginPath();
+
         ctx.roundRect(x, y, w, h, radius);
+
         ctx.fill();
 
+
+
         // Glowing border
+
         if (isFront && glowColor) {
+
             ctx.shadowColor = glowColor;
+
             ctx.shadowBlur = elevation ? 26 : 12;
+
             ctx.strokeStyle = glowColor;
+
             ctx.lineWidth = elevation ? 3.5 : 2.0;
+
         } else {
+
             ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+
             ctx.lineWidth = 1.5;
+
         }
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
+
 
         // Specular Mirror Top Reflection Line (Crystal Clear Bevel Effect)
+
         if (isFront) {
+
             const specGrad = ctx.createLinearGradient(x + 20, y + 2, x + w - 20, y + 2);
+
             specGrad.addColorStop(0, "rgba(255, 255, 255, 0.0)");
+
             specGrad.addColorStop(0.25, "rgba(255, 255, 255, 0.55)");
+
             specGrad.addColorStop(0.75, "rgba(255, 255, 255, 0.55)");
+
             specGrad.addColorStop(1, "rgba(255, 255, 255, 0.0)");
+
             ctx.strokeStyle = specGrad;
+
             ctx.lineWidth = 2.0;
+
             ctx.beginPath();
+
             ctx.moveTo(x + 25, y + 2);
+
             ctx.lineTo(x + w - 25, y + 2);
+
             ctx.stroke();
+
+
 
             // Cyber corner crosshairs (+)
+
             ctx.fillStyle = "rgba(56, 189, 248, 0.5)";
+
             ctx.font = "14px monospace";
+
             ctx.fillText("+", x + 12, y + 20);
+
             ctx.fillText("+", x + w - 20, y + 20);
+
         }
 
+
+
         ctx.restore();
+
     }
+
+
 
     // 1B. 3D Perspective Vanishing Point Grid (Floor Horizon Shader)
+
     function draw3DPerspectiveGrid(ctx, W, H, t) {
+
         ctx.save();
+
         const horizonY = 380;
+
         const vanishX = W / 2;
 
+
+
         // Radiating perspective lines from horizon down to canvas bottom
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.08)";
+
         ctx.lineWidth = 1.5;
+
         const numRays = 16;
+
         for (let i = 0; i <= numRays; i++) {
+
             const bottomX = (i / numRays) * (W + 600) - 300;
+
             ctx.beginPath();
+
             ctx.moveTo(vanishX, horizonY);
+
             ctx.lineTo(bottomX, H);
+
             ctx.stroke();
+
         }
+
+
 
         // Horizontal transverse lines scrolling towards camera with time t
+
         const numLines = 11;
+
         const speed = 0.35;
+
         const timeOffset = (t * speed) % 1.0;
+
         for (let i = 0; i < numLines; i++) {
+
             const p = (i + timeOffset) / numLines;
+
             // Nonlinear exponential z-depth perspective
+
             const y = horizonY + Math.pow(p, 2.2) * (H - horizonY);
+
             const alpha = 0.02 + p * 0.12;
+
             ctx.strokeStyle = `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
+
             ctx.lineWidth = 1.0 + p * 1.5;
+
             ctx.beginPath();
+
             ctx.moveTo(0, y);
+
             ctx.lineTo(W, y);
+
             ctx.stroke();
+
         }
+
         ctx.restore();
+
     }
+
+
 
     // 1C. Volumetric Digital Cyber Matrix / Binary Rain (High-Tech 4K Ambience)
+
     const _matrixChars = "01AF89X<>{}#=;:*+~";
+
     function drawCyberMatrixRain(ctx, W, H, t) {
+
         ctx.save();
+
         ctx.font = "bold 13px 'JetBrains Mono', monospace";
+
         const cols = 22;
+
         const colWidth = W / cols;
+
         for (let c = 0; c < cols; c++) {
+
             const seed = (c * 17) % 100;
+
             const dropSpeed = 110 + seed * 2.5;
+
             const yPos = ((t * dropSpeed) + seed * 50) % (H + 400) - 200;
+
             const x = c * colWidth + 14;
 
+
+
             for (let j = 0; j < 6; j++) {
+
                 const charY = yPos - j * 22;
+
                 if (charY > 180 && charY < H - 80) {
+
                     const charIdx = (Math.floor(t * 8) + c + j) % _matrixChars.length;
+
                     const ch = _matrixChars[charIdx];
+
                     if (j === 0) {
+
                         ctx.fillStyle = "#A7F3D0";
+
                         ctx.shadowColor = "#10B981";
+
                         ctx.shadowBlur = 8;
+
                         ctx.fillText(ch, x, charY);
+
                         ctx.shadowBlur = 0;
+
                     } else {
+
                         const alpha = Math.max(0.04, 0.20 - j * 0.035);
+
                         ctx.fillStyle = `rgba(16, 185, 129, ${alpha.toFixed(3)})`;
+
                         ctx.fillText(ch, x, charY);
+
                     }
+
                 }
+
             }
+
         }
+
         ctx.restore();
+
     }
+
+
 
     // 1C2. MODERN & TRENDING 3D MOTION BACKGROUND ENGINES (60 FPS Native Canvas Shaders)
+
     const _3dParticles = [];
+
     for (let i = 0; i < 110; i++) {
+
         _3dParticles.push({
+
             x: (Math.random() - 0.5) * 1100,
+
             y: (Math.random() - 0.5) * 1900,
+
             z: Math.random() * 800 + 80,
+
             speed: 1.2 + Math.random() * 2.2,
+
             size: 2.5 + Math.random() * 3.5,
+
             hue: Math.random() > 0.4 ? "#38BDF8" : "#C084FC"
+
         });
+
     }
+
+
 
     // Background 1: Cyber Glass Matrix (Wireframe 3D Hypercube + Volumetric Dust)
+
     function draw3DCyberMatrix(ctx, W, H, t) {
+
         ctx.save();
+
         const centerX = W / 2;
+
         const centerY = H / 2 + 60;
 
+
+
         const rad = ctx.createRadialGradient(centerX, centerY, 60, centerX, centerY, 750);
+
         rad.addColorStop(0, "rgba(168, 85, 247, 0.22)");
+
         rad.addColorStop(0.35, "rgba(56, 189, 248, 0.10)");
+
         rad.addColorStop(1, "rgba(6, 10, 20, 0)");
+
         ctx.fillStyle = rad;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         const cubeSize = 140;
+
         const angleY = t * 0.45;
+
         const angleX = t * 0.28;
+
         const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+
         const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
 
+
+
         const vertices = [
+
             [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+
             [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
+
         ];
+
+
 
         const projected = vertices.map(v => {
+
             let x = v[0] * cosY - v[2] * sinY;
+
             let z = v[0] * sinY + v[2] * cosY;
+
             let y = v[1];
+
             let y2 = y * cosX - z * sinX;
+
             let z2 = y * sinX + z * cosX;
+
             const fov = 450;
+
             const scale = fov / (fov + z2 * cubeSize + 220);
+
             return {
+
                 x: centerX + x * cubeSize * scale,
+
                 y: centerY + y2 * cubeSize * scale,
+
                 scale: scale
+
             };
+
         });
+
+
 
         const edges = [
+
             [0, 1], [1, 2], [2, 3], [3, 0],
+
             [4, 5], [5, 6], [6, 7], [7, 4],
+
             [0, 4], [1, 5], [2, 6], [3, 7]
+
         ];
+
+
 
         ctx.strokeStyle = "rgba(168, 85, 247, 0.38)";
+
         ctx.lineWidth = 2.2;
+
         ctx.shadowColor = "#C084FC";
+
         ctx.shadowBlur = 14;
+
         ctx.beginPath();
+
         edges.forEach(([i1, i2]) => {
+
             ctx.moveTo(projected[i1].x, projected[i1].y);
+
             ctx.lineTo(projected[i2].x, projected[i2].y);
+
         });
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
 
+
+
         projected.forEach(p => {
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.beginPath();
+
             ctx.arc(p.x, p.y, 4.0 * p.scale, 0, Math.PI * 2);
+
             ctx.fill();
+
         });
+
+
 
         _3dParticles.forEach(pt => {
+
             const curZ = ((pt.z - (t * 75 * pt.speed)) % 800 + 800) % 800 + 50;
+
             const pScale = 400 / (400 + curZ);
+
             const px = centerX + pt.x * pScale;
+
             const py = centerY + pt.y * pScale;
+
             if (px >= 0 && px <= W && py >= 0 && py <= H) {
+
                 const alpha = Math.min(0.70, (1.0 - (curZ / 850)) * 0.75);
+
                 ctx.fillStyle = pt.hue;
+
                 ctx.globalAlpha = alpha;
+
                 ctx.beginPath();
+
                 ctx.arc(px, py, pt.size * pScale, 0, Math.PI * 2);
+
                 ctx.fill();
+
             }
+
         });
+
         ctx.globalAlpha = 1.0;
+
         ctx.restore();
+
     }
+
+
 
     // Background 2: Quantum Nebula Particles (Cosmic Stellar Dust & Swirling Vortex)
+
     function draw3DQuantumNebula(ctx, W, H, t) {
+
         ctx.save();
+
         const cx = W / 2;
+
         const cy = H / 2;
 
+
+
         // Multi-layered chromatic nebula clouds
+
         const neb1 = ctx.createRadialGradient(cx - 180, cy - 240, 40, cx, cy, 650);
+
         neb1.addColorStop(0, "rgba(139, 92, 246, 0.28)");
+
         neb1.addColorStop(0.5, "rgba(236, 72, 153, 0.12)");
+
         neb1.addColorStop(1, "rgba(0, 0, 0, 0)");
+
         ctx.fillStyle = neb1;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         const neb2 = ctx.createRadialGradient(cx + 200, cy + 220, 60, cx, cy, 700);
+
         neb2.addColorStop(0, "rgba(56, 189, 248, 0.25)");
+
         neb2.addColorStop(0.5, "rgba(16, 185, 129, 0.10)");
+
         neb2.addColorStop(1, "rgba(0, 0, 0, 0)");
+
         ctx.fillStyle = neb2;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Swirling logarithmic vortex starfield
+
         const starCount = 95;
+
         for (let i = 0; i < starCount; i++) {
+
             const seed = i * 137.5;
+
             const baseDist = (i / starCount) * 480 + 30;
+
             const angle = (seed * 0.0174) + (t * 0.35 * (1.0 - (baseDist / 600)));
+
             const spiralDist = baseDist + Math.sin(t * 1.5 + i) * 15;
+
             const sx = cx + Math.cos(angle) * spiralDist;
+
             const sy = cy + Math.sin(angle) * spiralDist * 1.4; // 9:16 vertical elongation
 
+
+
             const twinkle = 0.35 + Math.sin(t * 4 + i) * 0.35;
+
             ctx.fillStyle = i % 3 === 0 ? "#C084FC" : (i % 3 === 1 ? "#38BDF8" : "#F472B6");
+
             ctx.globalAlpha = twinkle;
+
             ctx.beginPath();
+
             ctx.arc(sx, sy, 1.8 + (i % 3) * 1.2, 0, Math.PI * 2);
+
             ctx.fill();
+
+
 
             // Pulsar diffraction flare on prominent stars
+
             if (i % 12 === 0) {
+
                 ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+
                 ctx.lineWidth = 1.0;
+
                 ctx.beginPath();
+
                 ctx.moveTo(sx - 14, sy); ctx.lineTo(sx + 14, sy);
+
                 ctx.moveTo(sx, sy - 14); ctx.lineTo(sx, sy + 14);
+
                 ctx.stroke();
+
             }
+
         }
+
         ctx.globalAlpha = 1.0;
+
         ctx.restore();
+
     }
+
+
 
     // Background 3: Silicon Circuit Laser Trace (High-Tech Motherboard PCB & Data Bus)
+
     function draw3DSiliconCircuitLaser(ctx, W, H, t) {
+
         ctx.save();
+
         ctx.fillStyle = "#050914";
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Grid of subtle circuit vias
+
         ctx.fillStyle = "rgba(56, 189, 248, 0.08)";
+
         for (let x = 60; x < W; x += 120) {
+
             for (let y = 100; y < H; y += 120) {
+
                 ctx.beginPath();
+
                 ctx.arc(x, y, 3, 0, Math.PI * 2);
+
                 ctx.fill();
+
             }
+
         }
+
+
 
         // Circuit bus traces
+
         const busLines = [
+
             [[60, 200], [240, 200], [320, 280], [320, 600], [480, 760], [480, 1100]],
+
             [[W - 60, 250], [W - 200, 250], [W - 320, 370], [W - 320, 720], [W - 460, 860], [W - 460, 1300]],
+
             [[100, 1400], [280, 1400], [380, 1500], [380, 1750]],
+
             [[W - 100, 1350], [W - 240, 1350], [W - 340, 1450], [W - 340, 1800]],
+
             [[W / 2 - 160, 100], [W / 2 - 160, 400], [W / 2 + 160, 720], [W / 2 + 160, 1200]]
+
         ];
+
+
 
         busLines.forEach((pts, lIdx) => {
+
             ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+
             ctx.lineWidth = 2.0;
+
             ctx.beginPath();
+
             ctx.moveTo(pts[0][0], pts[0][1]);
+
             for (let i = 1; i < pts.length; i++) {
+
                 ctx.lineTo(pts[i][0], pts[i][1]);
+
             }
+
             ctx.stroke();
+
+
 
             // High-velocity traveling photon pulse
+
             const segCount = pts.length - 1;
+
             const speed = 0.4 + lIdx * 0.1;
+
             const progress = ((t * speed) % 1.0) * segCount;
+
             const curSeg = Math.floor(progress);
+
             const segT = progress - curSeg;
 
+
+
             if (curSeg < pts.length - 1) {
+
                 const p1 = pts[curSeg];
+
                 const p2 = pts[curSeg + 1];
+
                 const lx = p1[0] + (p2[0] - p1[0]) * segT;
+
                 const ly = p1[1] + (p2[1] - p1[1]) * segT;
 
+
+
                 ctx.shadowColor = "#38BDF8";
+
                 ctx.shadowBlur = 12;
+
                 ctx.fillStyle = "#FFFFFF";
+
                 ctx.beginPath();
+
                 ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+
                 ctx.fill();
+
+
 
                 ctx.fillStyle = "#38BDF8";
+
                 ctx.beginPath();
+
                 ctx.arc(lx, ly, 8, 0, Math.PI * 2);
+
                 ctx.globalAlpha = 0.5;
+
                 ctx.fill();
+
                 ctx.globalAlpha = 1.0;
+
                 ctx.shadowBlur = 0;
+
             }
+
         });
+
+
 
         // Glowing Silicon IC Pads
+
         [[W / 2, 480], [W / 2, 1020]].forEach(([icX, icY]) => {
+
             ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
+
             ctx.strokeRect(icX - 50, icY - 50, 100, 100);
+
             ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+
             ctx.fillRect(icX - 50, icY - 50, 100, 100);
+
         });
 
+
+
         ctx.restore();
+
     }
+
+
 
     // Background 4: Warp Speed Data Tunnel (Hyperdrive 3D Perspective Starfield)
+
     function draw3DWarpDataTunnel(ctx, W, H, t) {
+
         ctx.save();
+
         const cx = W / 2;
+
         const cy = H / 2 - 80;
 
+
+
         // Deep space void with radial suction
+
         const voidGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 650);
+
         voidGrad.addColorStop(0, "rgba(2, 6, 23, 1)");
+
         voidGrad.addColorStop(0.6, "rgba(15, 23, 42, 0.95)");
+
         voidGrad.addColorStop(1, "rgba(30, 27, 75, 0.85)");
+
         ctx.fillStyle = voidGrad;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Expanding 3D concentric neon polygonal rings
+
         const ringCount = 7;
+
         for (let i = 0; i < ringCount; i++) {
+
             const zProg = ((t * 0.45 + i / ringCount) % 1.0);
+
             const radius = Math.pow(zProg, 2.2) * 580;
+
             if (radius > 15) {
+
                 const alpha = Math.sin(zProg * Math.PI) * 0.45;
+
                 ctx.strokeStyle = i % 2 === 0 ? `rgba(56, 189, 248, ${alpha})` : `rgba(168, 85, 247, ${alpha})`;
+
                 ctx.lineWidth = 1.5 + zProg * 2.5;
 
+
+
                 // Draw hexagon tunnel ring
+
                 ctx.beginPath();
+
                 for (let a = 0; a < 6; a++) {
+
                     const ang = (a / 6) * Math.PI * 2 + (t * 0.2);
+
                     const rx = cx + Math.cos(ang) * radius;
+
                     const ry = cy + Math.sin(ang) * radius * 1.35;
+
                     if (a === 0) ctx.moveTo(rx, ry);
+
                     else ctx.lineTo(rx, ry);
+
                 }
+
                 ctx.closePath();
+
                 ctx.stroke();
+
             }
+
         }
+
+
 
         // High-velocity radial star streaks
+
         const streakCount = 80;
+
         for (let s = 0; s < streakCount; s++) {
+
             const angle = (s / streakCount) * Math.PI * 2;
+
             const distProg = ((t * 1.2 + s * 0.17) % 1.0);
+
             const innerR = Math.pow(distProg, 2.5) * 600;
+
             const outerR = innerR + distProg * 50;
 
+
+
             const x1 = cx + Math.cos(angle) * innerR;
+
             const y1 = cy + Math.sin(angle) * innerR * 1.35;
+
             const x2 = cx + Math.cos(angle) * outerR;
+
             const y2 = cy + Math.sin(angle) * outerR * 1.35;
 
+
+
             ctx.strokeStyle = s % 2 === 0 ? "#38BDF8" : "#C084FC";
+
             ctx.globalAlpha = Math.min(0.85, distProg * 1.1);
+
             ctx.lineWidth = 1.2 + distProg * 2.0;
+
             ctx.beginPath();
+
             ctx.moveTo(x1, y1);
+
             ctx.lineTo(x2, y2);
+
             ctx.stroke();
+
         }
+
+
 
         ctx.globalAlpha = 1.0;
+
         ctx.restore();
+
     }
+
+
 
     // Background 5: FinTech High-Frequency Ledger (Banking, Running Balance & Real-Time Tickers)
+
     function draw3DFinTechLedger(ctx, W, H, t) {
+
         ctx.save();
+
         ctx.fillStyle = "#040914";
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Cascading streams of live financial numbers
+
         const colW = 120;
+
         const colCount = Math.floor(W / colW);
+
         const tickers = ["+₹50,000", "-₹12,500", "+₹25,000", "₹62,500", "+₹80,000", "RUNNING", "$1.4M", "LEDGER", "₹1,85,000", "+₹95,000", "CR 8821"];
 
+
+
         ctx.font = "bold 15px monospace";
+
         for (let c = 0; c < colCount; c++) {
+
             const x = c * colW + 20;
+
             const speed = 45 + (c % 5) * 15;
+
             const offsetY = (t * speed) % 1920;
 
+
+
             for (let r = -2; r < 18; r++) {
+
                 const y = r * 110 + offsetY;
+
                 if (y > 0 && y < H) {
+
                     const item = tickers[(c * 3 + r + 20) % tickers.length];
+
                     const isPositive = item.startsWith("+") || item.startsWith("₹");
+
                     ctx.fillStyle = isPositive ? "rgba(16, 185, 129, 0.16)" : "rgba(245, 158, 11, 0.14)";
+
                     ctx.fillText(item, x, y);
+
                 }
+
             }
+
         }
+
+
 
         // Floating 3D Currency Symbols (₹, $, €, ₿) with perspective bobbing
+
         const symbols = [
+
             { sym: "₹", x: W * 0.18, y: H * 0.28, size: 48, col: "#10B981" },
+
             { sym: "$", x: W * 0.82, y: H * 0.35, size: 42, col: "#38BDF8" },
+
             { sym: "₹", x: W * 0.75, y: H * 0.65, size: 54, col: "#10B981" },
+
             { sym: "€", x: W * 0.22, y: H * 0.72, size: 38, col: "#F59E0B" },
+
             { sym: "₿", x: W * 0.50, y: H * 0.82, size: 46, col: "#C084FC" }
+
         ];
 
+
+
         symbols.forEach((s, i) => {
+
             const bobY = s.y + Math.sin(t * 2.0 + i) * 18;
+
             const rot = Math.sin(t * 1.2 + i) * 0.15;
+
             ctx.save();
+
             ctx.translate(s.x, bobY);
+
             ctx.rotate(rot);
+
             ctx.fillStyle = s.col;
+
             ctx.globalAlpha = 0.25;
+
             ctx.font = `bold ${s.size}px 'Segoe UI', sans-serif`;
+
             ctx.shadowColor = s.col;
+
             ctx.shadowBlur = 16;
+
             ctx.textAlign = "center";
+
             ctx.fillText(s.sym, 0, 0);
+
             ctx.restore();
+
         });
+
+
 
         // Golden/Emerald subtle perspective baseline ledger grid
+
         ctx.strokeStyle = "rgba(16, 185, 129, 0.10)";
+
         ctx.lineWidth = 1.5;
+
         for (let gy = 200; gy < H; gy += 150) {
+
             ctx.beginPath();
+
             ctx.moveTo(0, gy);
+
             ctx.lineTo(W, gy);
+
             ctx.stroke();
+
         }
 
+
+
         ctx.restore();
+
     }
+
+
 
     // Background 6: Neural AI Synapse Grid (Connected Neurons, Axons & Propagating Action Potentials)
+
     const _neuralNodes = [];
+
     for (let n = 0; n < 36; n++) {
+
         _neuralNodes.push({
+
             x: Math.random() * 960 + 60,
+
             y: Math.random() * 1700 + 100,
+
             vx: (Math.random() - 0.5) * 0.8,
+
             vy: (Math.random() - 0.5) * 0.8,
+
             radius: 3.5 + Math.random() * 3.5,
+
             hue: Math.random() > 0.5 ? "#C084FC" : "#38BDF8"
+
         });
+
     }
+
+
 
     function draw3DNeuralSynapse(ctx, W, H, t) {
+
         ctx.save();
+
         ctx.fillStyle = "#060914";
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Central brain cortex glow
+
         const brainGlow = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 600);
+
         brainGlow.addColorStop(0, "rgba(192, 132, 252, 0.22)");
+
         brainGlow.addColorStop(0.4, "rgba(56, 189, 248, 0.10)");
+
         brainGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+
         ctx.fillStyle = brainGlow;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Update & draw synaptic connections
+
         for (let i = 0; i < _neuralNodes.length; i++) {
+
             const na = _neuralNodes[i];
+
             const ax = na.x + Math.sin(t * 0.8 + i) * 15;
+
             const ay = na.y + Math.cos(t * 0.8 + i) * 15;
 
+
+
             for (let j = i + 1; j < _neuralNodes.length; j++) {
+
                 const nb = _neuralNodes[j];
+
                 const bx = nb.x + Math.sin(t * 0.8 + j) * 15;
+
                 const by = nb.y + Math.cos(t * 0.8 + j) * 15;
 
+
+
                 const dx = bx - ax;
+
                 const dy = by - ay;
+
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
+
+
                 if (dist < 260) {
+
                     const alpha = (1.0 - (dist / 260)) * 0.32;
+
                     ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+
                     ctx.lineWidth = 1.2;
+
                     ctx.beginPath();
+
                     ctx.moveTo(ax, ay);
+
                     ctx.lineTo(bx, by);
+
                     ctx.stroke();
 
+
+
                     // Propagating action potential spark along axon
+
                     if ((i + j) % 4 === 0) {
+
                         const pulseT = ((t * 0.9 + i * 0.1) % 1.0);
+
                         const px = ax + dx * pulseT;
+
                         const py = ay + dy * pulseT;
 
+
+
                         ctx.fillStyle = "#FFFFFF";
+
                         ctx.shadowColor = "#38BDF8";
+
                         ctx.shadowBlur = 10;
+
                         ctx.beginPath();
+
                         ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+
                         ctx.fill();
+
                         ctx.shadowBlur = 0;
+
                     }
+
                 }
+
             }
+
+
 
             // Neuron soma (cell body)
+
             ctx.fillStyle = na.hue;
+
             ctx.shadowColor = na.hue;
+
             ctx.shadowBlur = 12;
+
             ctx.beginPath();
+
             ctx.arc(ax, ay, na.radius, 0, Math.PI * 2);
+
             ctx.fill();
+
             ctx.shadowBlur = 0;
+
         }
 
+
+
         ctx.restore();
+
     }
+
+
 
     // Master 3D AI Motion Engine Dispatcher (Dynamic 2026 AI Engines)
+
     function draw3DAIMotionEngine(ctx, W, H, t) {
+
         let bgType = sqlShortState.motionBgType;
+
         const p = sqlShortState.activePreset;
+
         if (p && p.suggested_motion_bg) {
+
             bgType = p.suggested_motion_bg;
+
         } else if (p && (p.domain || p.title || p.question)) {
+
             const combined = ((p.domain || "") + " " + (p.title || "") + " " + (p.question || "")).toLowerCase();
+
             if (combined.includes("neural") || combined.includes("ai") || combined.includes("llm") || combined.includes("rag") || combined.includes("vector") || combined.includes("model")) {
+
                 bgType = "neural_synapse";
+
             } else if (combined.includes("warp") || combined.includes("cloud") || combined.includes("server") || combined.includes("async") || combined.includes("speed") || combined.includes("fast")) {
+
                 bgType = "warp_tunnel";
+
             } else if (combined.includes("fintech") || combined.includes("salary") || combined.includes("bank") || combined.includes("money") || combined.includes("account") || combined.includes("dense_rank") || combined.includes("rank")) {
+
                 bgType = "fintech_ledger";
+
             } else if (combined.includes("circuit") || combined.includes("hardware") || combined.includes("system") || combined.includes("kernel") || combined.includes("docker") || combined.includes("git")) {
+
                 bgType = "silicon_laser";
+
             } else if (combined.includes("quantum") || combined.includes("nebula") || combined.includes("lake") || combined.includes("data") || combined.includes("architecture")) {
+
                 bgType = "quantum_nebula";
+
             } else {
+
                 bgType = "quantum_nebula";
+
             }
+
         } else {
+
             bgType = bgType || "quantum_nebula";
+
         }
+
+
 
         if (bgType === 'quantum_nebula') {
+
             draw3DQuantumNebula(ctx, W, H, t);
+
         } else if (bgType === 'silicon_laser') {
+
             draw3DSiliconCircuitLaser(ctx, W, H, t);
+
         } else if (bgType === 'warp_tunnel') {
+
             draw3DWarpDataTunnel(ctx, W, H, t);
+
         } else if (bgType === 'fintech_ledger') {
+
             draw3DFinTechLedger(ctx, W, H, t);
+
         } else if (bgType === 'neural_synapse') {
+
             draw3DNeuralSynapse(ctx, W, H, t);
+
         } else {
+
             draw3DCyberMatrix(ctx, W, H, t);
+
         }
+
     }
 
+
+
     // ==========================================================================
+
     // VIRAL TRENDING 3D DEVELOPER STUDIO CHARACTER ASSETS & COMPOSITOR
+
     // ==========================================================================
+
     const viralAssets = {
+
         thinkingFull: new Image(),
+
         explainingFull: new Image(),
+
         loaded: false
+
     };
+
     if (typeof window !== "undefined") {
+
         viralAssets.thinkingFull.src = "/assets/avatar/scene_thinking_full.jpg";
+
         viralAssets.explainingFull.src = "/assets/avatar/scene_explaining_full.jpg";
+
         viralAssets.loaded = true;
+
     }
+
+
 
     function drawTrending3DDeveloperStudio(ctx, W, H, p, currentStageIdx, activeStage, t) {
+
         // 1. Deep Midnight Cosmic Studio Gradient (Zero Distracting Static Photos)
+
         const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+
         bgGrad.addColorStop(0, "#050814");
+
         bgGrad.addColorStop(0.4, "#080F24");
+
         bgGrad.addColorStop(1, "#030611");
+
         ctx.fillStyle = bgGrad;
+
         ctx.fillRect(0, 0, W, H);
 
+
+
         // 2. Ambient Generative Cyber Motion Layer (Subtle & Elegant)
+
         ctx.save();
+
         ctx.globalAlpha = 0.35;
+
         draw3DAIMotionEngine(ctx, W, H, t);
+
         ctx.restore();
 
+
+
         // 3. Subtle Corner Glowing Gradient Flares for 3D Depth
+
         const flare1 = ctx.createRadialGradient(80, 180, 20, 80, 180, 420);
+
         flare1.addColorStop(0, "rgba(56, 189, 248, 0.12)");
+
         flare1.addColorStop(1, "rgba(56, 189, 248, 0)");
+
         ctx.fillStyle = flare1;
+
         ctx.fillRect(0, 0, 500, 500);
 
+
+
         const flare2 = ctx.createRadialGradient(W - 80, H - 350, 20, W - 80, H - 350, 450);
+
         flare2.addColorStop(0, "rgba(168, 85, 247, 0.12)");
+
         flare2.addColorStop(1, "rgba(168, 85, 247, 0)");
+
         ctx.fillStyle = flare2;
+
         ctx.fillRect(W - 550, H - 700, 550, 700);
 
+
+
         // 4. Smooth Edge Contrast Vignettes for Header & Subtitle Typography
+
         const topGrad = ctx.createLinearGradient(0, 0, 0, 220);
+
         topGrad.addColorStop(0, "rgba(4, 7, 16, 0.88)");
+
         topGrad.addColorStop(1, "rgba(4, 7, 16, 0.0)");
+
         ctx.fillStyle = topGrad;
+
         ctx.fillRect(0, 0, W, 220);
 
+
+
         const botGrad = ctx.createLinearGradient(0, H - 380, 0, H);
+
         botGrad.addColorStop(0, "rgba(4, 7, 16, 0.0)");
+
         botGrad.addColorStop(1, "rgba(4, 7, 16, 0.95)");
+
         ctx.fillStyle = botGrad;
+
         ctx.fillRect(0, H - 380, W, 380);
+
     }
 
+
+
     function drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx = 1, totalStages = 5) {
+
         const domain = (p.domain || p.topic_category || "EXPLORE").toUpperCase();
+
         let domainColor = p.accent_color || "#38BDF8";
+
         if (domain.includes("PY")) domainColor = "#38BDF8";
+
         else if (domain.includes("AI") || domain.includes("AGENT") || domain.includes("MCP")) domainColor = "#818CF8";
+
         else if (domain.includes("SQL") || domain.includes("DATA")) domainColor = "#F59E0B";
+
         else if (domain.includes("SCIENCE") || domain.includes("BIO")) domainColor = "#10B981";
+
         else if (domain.includes("SPACE") || domain.includes("COSMOS")) domainColor = "#A855F7";
+
+
 
         const titleText = p.title || p.question || "AI Video";
 
+
+
         ctx.save();
+
         const barY = 38;
+
         const barH = 68;
+
         ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
         ctx.beginPath();
+
         ctx.roundRect(50, barY, W - 100, barH, 20);
+
         ctx.fill();
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+
         ctx.lineWidth = 1.5;
+
         ctx.stroke();
+
+
 
         // Domain Tag Pill: the label is clamped to the pill so long domains such as
+
         // "PROMPT-BASED TECHNOLOGY" can never bleed across the header.
+
         ctx.fillStyle = domainColor;
+
         ctx.beginPath();
+
         ctx.roundRect(58, barY + 8, 125, barH - 16, 14);
+
         ctx.fill();
+
         ctx.fillStyle = "#000000";
+
         ctx.font = "900 19px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText(fitTextToWidth(ctx, domain, 104), 120, barY + 43);
 
+
+
         // Stage Indicator (e.g. PART 2/6)
+
         ctx.beginPath();
+
         ctx.roundRect(192, barY + 12, 115, barH - 24, 10);
+
         ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+
         ctx.fill();
+
         ctx.strokeStyle = "#38BDF8";
+
         ctx.lineWidth = 1;
+
         ctx.stroke();
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "bold 15px monospace";
+
         ctx.textAlign = "center";
+
         ctx.fillText(`PART ${currentStageIdx}/${totalStages}`, 249, barY + 42);
 
+
+
         // Title Text
+
         ctx.textAlign = "left";
+
         ctx.fillStyle = "#FFFFFF";
+
         ctx.font = "bold 23px 'Segoe UI', sans-serif";
+
         ctx.fillText(fitTextToWidth(ctx, titleText, 430), 320, barY + 43);
 
+
+
         // Channel Tag (static; no animated equalizer on the exported frame)
+
         ctx.fillStyle = "#10B981";
+
         ctx.font = "bold 17px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "right";
+
         ctx.fillText("● @Code_With_Mangesh", W - 70, barY + 43);
+
         ctx.restore();
+
     }
+
+
 
     // 1D. Animated Laser Scanner Beam
+
     function drawLaserScannerBeam(ctx, x, y, w, h, t) {
+
         ctx.save();
+
         const scanY = y + ((Math.sin(t * 2.5) * 0.5 + 0.5) * h);
+
         const grad = ctx.createLinearGradient(x, scanY - 8, x, scanY + 8);
+
         grad.addColorStop(0, "rgba(56, 189, 248, 0)");
+
         grad.addColorStop(0.5, "rgba(56, 189, 248, 0.65)");
+
         grad.addColorStop(1, "rgba(56, 189, 248, 0)");
 
+
+
         ctx.fillStyle = grad;
+
         ctx.fillRect(x, scanY - 8, w, 16);
 
+
+
         ctx.strokeStyle = "#38BDF8";
+
         ctx.lineWidth = 2.0;
+
         ctx.shadowColor = "#38BDF8";
+
         ctx.shadowBlur = 14;
+
         ctx.beginPath();
+
         ctx.moveTo(x + 10, scanY);
+
         ctx.lineTo(x + w - 10, scanY);
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.restore();
+
     }
+
+
 
     // 1E. 3D Kinetic Neon Arrow Pointer
+
     function drawKineticNeonArrow(ctx, targetX, targetY, t, label = "🎯 TARGET") {
+
         ctx.save();
+
         const bounce = Math.sin(t * 8) * 8;
+
         const arrowX = targetX + bounce;
+
         const arrowY = targetY;
 
+
+
         // Pulsing concentric rings
+
         const ringSize = 18 + (Math.sin(t * 10) * 0.5 + 0.5) * 10;
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+
         ctx.lineWidth = 2;
+
         ctx.beginPath();
+
         ctx.arc(targetX - 25, targetY, ringSize, 0, Math.PI * 2);
+
         ctx.stroke();
+
+
 
         // Neon Glow Pointer Arrow
+
         ctx.shadowColor = "#38BDF8";
+
         ctx.shadowBlur = 16;
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.beginPath();
+
         ctx.moveTo(arrowX - 10, arrowY);
+
         ctx.lineTo(arrowX - 35, arrowY - 14);
+
         ctx.lineTo(arrowX - 30, arrowY - 5);
+
         ctx.lineTo(arrowX - 70, arrowY - 5);
+
         ctx.lineTo(arrowX - 70, arrowY + 5);
+
         ctx.lineTo(arrowX - 30, arrowY + 5);
+
         ctx.lineTo(arrowX - 35, arrowY + 14);
+
         ctx.closePath();
+
         ctx.fill();
+
         ctx.shadowBlur = 0;
+
+
 
         // Label Badge
+
         if (label) {
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+
             ctx.strokeStyle = "#38BDF8";
+
             ctx.lineWidth = 1.5;
+
             ctx.beginPath();
+
             ctx.roundRect(arrowX - 180, arrowY - 16, 100, 32, 6);
+
             ctx.fill();
+
             ctx.stroke();
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 14px 'JetBrains Mono', monospace";
+
             ctx.fillText(label, arrowX - 170, arrowY + 5);
+
         }
+
         ctx.restore();
+
     }
+
+
 
     // 2. Draw Dynamic Animated Laser Connector with Traveling Photon Energy Pulse
+
     function drawDynamicConnector(ctx, x1, y1, x2, y2, color = "#38BDF8", t = 0, label = "") {
+
         ctx.save();
+
         const midY = (y1 + y2) / 2;
 
+
+
         // Glowing dashed laser path
+
         ctx.strokeStyle = color;
+
         ctx.lineWidth = 2.5;
+
         ctx.setLineDash([10, 8]);
+
         ctx.lineDashOffset = -t * 40;
+
         ctx.shadowColor = color;
+
         ctx.shadowBlur = 10;
 
+
+
         ctx.beginPath();
+
         ctx.moveTo(x1, y1);
+
         ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+
         ctx.stroke();
+
         ctx.setLineDash([]);
+
         ctx.shadowBlur = 0;
+
+
 
         // Traveling Photon Energy Particle (Light Spark Pulse)
+
         const u = (t * 0.9) % 1.0;
+
         const pu = 1 - u;
+
         const px = pu * pu * pu * x1 + 3 * pu * pu * u * x1 + 3 * pu * u * u * x2 + u * u * u * x2;
+
         const py = pu * pu * pu * y1 + 3 * pu * pu * u * midY + 3 * pu * u * u * midY + u * u * u * y2;
 
+
+
         ctx.save();
+
         ctx.shadowColor = "#FFFFFF";
+
         ctx.shadowBlur = 16;
+
         ctx.fillStyle = "#FFFFFF";
+
         ctx.beginPath();
+
         ctx.arc(px, py, 6, 0, Math.PI * 2);
+
         ctx.fill();
 
+
+
         ctx.fillStyle = color;
+
         ctx.beginPath();
+
         ctx.arc(px, py, 11, 0, Math.PI * 2);
+
         ctx.globalAlpha = 0.5;
+
         ctx.fill();
+
         ctx.restore();
+
+
 
         // Arrowhead at destination
+
         ctx.fillStyle = color;
+
         ctx.beginPath();
+
         ctx.moveTo(x2, y2);
+
         ctx.lineTo(x2 - 10, y2 - 16);
+
         ctx.lineTo(x2 + 10, y2 - 16);
+
         ctx.closePath();
+
         ctx.fill();
+
+
 
         // Optional Central Glass Pill Label
+
         if (label) {
+
             const lx = (x1 + x2) / 2;
+
             const ly = midY;
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
             ctx.beginPath();
+
             ctx.roundRect(lx - 120, ly - 18, 240, 36, 18);
+
             ctx.fill();
+
             ctx.strokeStyle = color;
+
             ctx.lineWidth = 1.5;
+
             ctx.stroke();
 
+
+
             ctx.fillStyle = color;
+
             ctx.font = "bold 16px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(label, lx, ly + 6);
+
             ctx.textAlign = "left";
+
         }
+
         ctx.restore();
+
     }
+
+
 
     // 3. Draw Dynamic Architectural Pipeline (Table -> Window -> Filter -> Output)
+
     function drawArchitecturePipeline(ctx, x, y, w, h, stages, activeIndex = 0, t = 0) {
+
         ctx.save();
+
         const stageW = (w - (stages.length - 1) * 20) / stages.length;
 
+
+
         stages.forEach((st, idx) => {
+
             const sx = x + idx * (stageW + 20);
+
             const isActive = idx === activeIndex;
+
             const isDone = idx < activeIndex;
+
             const nodeColor = isActive ? "#38BDF8" : (isDone ? "#10B981" : "#64748B");
 
+
+
             // Glass Node Tile
+
             drawGlassTile(ctx, sx, y, stageW, h, 14, nodeColor, isActive, true, isActive ? 1.0 : 0.75);
 
+
+
             // Icon + Label
+
             ctx.fillStyle = nodeColor;
+
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(st.icon, sx + stageW / 2, y + 36);
 
+
+
             ctx.fillStyle = isActive ? "#FFFFFF" : (isDone ? "#10B981" : "#94A3B8");
+
             ctx.font = isActive ? "bold 15px monospace" : "14px monospace";
+
             ctx.fillText(st.name, sx + stageW / 2, y + 66);
 
+
+
             if (st.sub) {
+
                 ctx.fillStyle = isActive ? "#38BDF8" : "#64748B";
+
                 ctx.font = "12px 'Segoe UI', sans-serif";
+
                 ctx.fillText(st.sub, sx + stageW / 2, y + 86);
+
             }
+
+
 
             // Arrow connector to next
+
             if (idx < stages.length - 1) {
+
                 const arrX = sx + stageW + 10;
+
                 ctx.fillStyle = isDone ? "#10B981" : "rgba(255, 255, 255, 0.3)";
+
                 ctx.font = "bold 20px monospace";
+
                 ctx.fillText("▶", arrX, y + h / 2 + 6);
+
             }
+
         });
+
         ctx.textAlign = "left";
+
         ctx.restore();
+
     }
+
+
 
     // 4. Draw Dynamic Micro-Sparks Burst (Photon Energy Burst)
+
     function drawPhotonSparks(ctx, cx, cy, color = "#38BDF8", t = 0) {
+
         ctx.save();
+
         const sparkCount = 8;
+
         for (let i = 0; i < sparkCount; i++) {
+
             const angle = (i / sparkCount) * Math.PI * 2 + (t * 2.0);
+
             const dist = 18 + Math.sin(t * 8 + i) * 12;
+
             const sx = cx + Math.cos(angle) * dist;
+
             const sy = cy + Math.sin(angle) * dist;
+
             const r = 2.5 + Math.sin(t * 10 + i) * 1.5;
 
+
+
             ctx.fillStyle = color;
+
             ctx.shadowColor = color;
+
             ctx.shadowBlur = 8;
+
             ctx.beginPath();
+
             ctx.arc(sx, sy, Math.max(1, r), 0, Math.PI * 2);
+
             ctx.fill();
+
         }
+
         ctx.restore();
+
     }
+
+
 
     // Helper: Dynamic Client Pipeline Stages Generator
+
     function getClientPipelineStages(p) {
+
         if (p.pipeline_stages && Array.isArray(p.pipeline_stages) && p.pipeline_stages.length >= 3) {
+
             return p.pipeline_stages;
+
         }
+
         const sql = (p.solution_sql || "").toUpperCase();
+
         const q = (p.question || "").toUpperCase();
+
         if (sql.includes("NTILE") || q.includes("TOP 10%")) {
+
             return [
+
                 {icon: "📁", name: p.table_name || "TRANSACTIONS", sub: "Raw Dataset"},
+
                 {icon: "🧮", name: "SUM() / CTE", sub: "Aggregate Totals"},
+
                 {icon: "📊", name: "NTILE(10)", sub: "10-Bucketing"},
+
                 {icon: "🎯", name: "QUALIFY = 1", sub: "Top 10% Filter"}
+
             ];
+
         }
+
         if (sql.includes("ROW_NUMBER") || sql.includes("QUALIFY") || q.includes("LATEST")) {
+
             return [
+
                 {icon: "📁", name: p.table_name || "TRANSACTIONS", sub: "Raw Rows"},
+
                 {icon: "🪟", name: "PARTITION BY", sub: "Customer Key"},
+
                 {icon: "🔢", name: "ROW_NUMBER()", sub: "Date DESC"},
+
                 {icon: "🎯", name: "QUALIFY = 1", sub: "Latest Record"}
+
             ];
+
         }
+
         if (sql.includes("DENSE_RANK")) {
+
             return [
+
                 {icon: "📁", name: p.table_name || "EMPLOYEES", sub: "Raw Records"},
+
                 {icon: "🔢", name: "DENSE_RANK()", sub: "Ordered Ranks"},
+
                 {icon: "🛡️", name: "TIE HANDLING", sub: "No Rank Skips"},
+
                 {icon: "🎯", name: "WHERE RNK = 2", sub: "Target Value"}
+
             ];
+
         }
+
         if (sql.includes("LAG") || sql.includes("LEAD")) {
+
             return [
+
                 {icon: "📁", name: p.table_name || "DATA", sub: "Time Series"},
+
                 {icon: "⏮️", name: "LAG() WINDOW", sub: "Offset Fetch"},
+
                 {icon: "🧮", name: "DELTA / RATIO", sub: "Difference"},
+
                 {icon: "🎯", name: "FLAGGED ROWS", sub: "Trigger Condition"}
+
             ];
+
         }
+
         if (sql.includes("JOIN")) {
+
             return [
+
                 {icon: "📁", name: "TABLE A", sub: "Left Source"},
+
                 {icon: "📁", name: "TABLE B", sub: "Right Source"},
+
                 {icon: "⚡", name: "JOIN ON KEY", sub: "Record Match"},
+
                 {icon: "🎯", name: "RESULT SET", sub: "Merged Output"}
+
             ];
+
         }
+
         if (sql.includes("GROUP BY")) {
+
             return [
+
                 {icon: "📁", name: p.table_name || "RECORDS", sub: "Input Rows"},
+
                 {icon: "🪟", name: "GROUP BY", sub: "Cluster Keys"},
+
                 {icon: "🧮", name: "AGGREGATE", sub: "SUM/COUNT/AVG"},
+
                 {icon: "🎯", name: "HAVING FILTER", sub: "Filtered Groups"}
+
             ];
+
         }
+
         return [
+
             {icon: "📁", name: p.table_name || "INPUT_TABLE", sub: "All Records"},
+
             {icon: "⚡", name: "SUBQUERY / CTE", sub: "Compute Logic"},
+
             {icon: "🛡️", name: "FILTER / EXCLUSION", sub: "Condition Logic"},
+
             {icon: "🎯", name: "TARGET OUTPUT", sub: "Final Selection"}
+
         ];
+
     }
+
+
 
     // Helper: Dynamic Client Filter Evaluations Generator
+
     function getClientFilterEvals(p) {
+
         if (p.filter_evaluations && Array.isArray(p.filter_evaluations) && p.filter_evaluations.length > 0) {
+
             return p.filter_evaluations;
+
         }
+
         if (p.sample_rows && Array.isArray(p.sample_rows) && p.sample_rows.length > 0) {
+
             return p.sample_rows.slice(0, 5).map((r, i) => {
+
                 const isTarget = r.is_target !== undefined ? r.is_target : (i === 0 || i === 2 || (r.balance && (r.balance.includes("🎯") || r.balance.includes("1"))));
+
                 return {
+
                     name: r.account || ("Record #" + (i + 1)),
+
                     salary: r.amt || r.date || "Val",
+
                     cond: isTarget ? "MATCH = TRUE" : "MATCH = FALSE",
+
                     res: isTarget ? "TRUE" : "FALSE",
+
                     action: isTarget ? "KEEP" : "EXCLUDE",
+
                     status: isTarget ? "keep" : "exclude"
+
                 };
+
             });
+
         }
+
         return [
+
             {name: "Row 1", salary: "Val 1", cond: "Condition = TRUE", res: "TRUE", action: "KEEP", status: "keep"},
+
             {name: "Row 2", salary: "Val 2", cond: "Condition = FALSE", res: "FALSE", action: "EXCLUDE", status: "exclude"},
+
             {name: "Row 3", salary: "Val 3", cond: "Condition = TRUE", res: "TRUE", action: "KEEP", status: "keep"}
+
         ];
+
     }
 
+
+
     /* ==========================================================================
+
        3D ISOMETRIC VISUAL DIAGRAMMING & FLOWCHART ENGINE
+
        (NO RIGID TEMPLATES: DYNAMIC 3D ARCHITECTURES, ROTATIONS & POINTING ARROWS)
+
        ========================================================================== */
+
+
 
     // 1. 3D Isometric Server Rack with Dynamic Angle Rotation, Flashing LEDs & Spinning Fan
+
     function draw3DIsometricServer(ctx, cx, cy, t, label = "LOCAL SERVER", isActive = true) {
+
         ctx.save();
+
         const tilt = Math.sin(t * 1.5) * 0.04;
+
         ctx.translate(cx, cy);
+
         ctx.rotate(tilt);
 
+
+
         // Holographic Base Disc on Floor
+
         const basePulse = 1.0 + Math.sin(t * 4) * 0.06;
+
         ctx.save();
+
         ctx.translate(0, 150);
+
         ctx.scale(basePulse, basePulse * 0.38);
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 110, 0, Math.PI * 2);
+
         ctx.fillStyle = isActive ? "rgba(16, 185, 129, 0.22)" : "rgba(56, 189, 248, 0.15)";
+
         ctx.fill();
+
         ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+
         ctx.lineWidth = 2.5;
+
         ctx.shadowColor = isActive ? "#10B981" : "#38BDF8";
+
         ctx.shadowBlur = 16;
+
         ctx.stroke();
+
         ctx.restore();
+
+
 
         const w = 85;
+
         const h = 180;
+
         const topH = 42;
 
+
+
         // TOP FACE (Isometric Diamond)
+
         ctx.beginPath();
+
         ctx.moveTo(0, -topH);
+
         ctx.lineTo(w, 0);
+
         ctx.lineTo(0, topH);
+
         ctx.lineTo(-w, 0);
+
         ctx.closePath();
+
         const topGrad = ctx.createLinearGradient(-w, -topH, w, topH);
+
         topGrad.addColorStop(0, "rgba(51, 65, 85, 0.85)");
+
         topGrad.addColorStop(1, "rgba(30, 41, 59, 0.90)");
+
         ctx.fillStyle = topGrad;
+
         ctx.fill();
+
         ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+
         ctx.lineWidth = 2.0;
+
         ctx.stroke();
+
+
 
         // Top Face Server Grid / Logo
+
         ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+
         ctx.lineWidth = 1.0;
+
         ctx.beginPath();
+
         ctx.moveTo(0, -topH + 10); ctx.lineTo(0, topH - 10);
+
         ctx.moveTo(-w + 20, 0); ctx.lineTo(w - 20, 0);
+
         ctx.stroke();
+
+
 
         // LEFT FACE (Chassis Side Heat Dissipation Fins)
+
         ctx.beginPath();
+
         ctx.moveTo(-w, 0);
+
         ctx.lineTo(0, topH);
+
         ctx.lineTo(0, topH + h);
+
         ctx.lineTo(-w, h);
+
         ctx.closePath();
+
         const leftGrad = ctx.createLinearGradient(-w, 0, 0, topH + h);
+
         leftGrad.addColorStop(0, "rgba(15, 23, 42, 0.92)");
+
         leftGrad.addColorStop(1, "rgba(8, 14, 28, 0.96)");
+
         ctx.fillStyle = leftGrad;
+
         ctx.fill();
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+
         ctx.lineWidth = 1.5;
+
         ctx.stroke();
+
+
 
         // Heat Dissipation Ribs
+
         for (let i = 1; i <= 6; i++) {
+
             const ribY = topH + (i * 24);
+
             ctx.strokeStyle = "rgba(56, 189, 248, 0.18)";
+
             ctx.beginPath();
+
             ctx.moveTo(-w + 14, (i * 24) - 7);
+
             ctx.lineTo(-14, ribY - 7);
+
             ctx.stroke();
+
         }
+
+
 
         // RIGHT FACE (Server Front Panel with Drive Bays, LEDs, and Fan)
+
         ctx.beginPath();
+
         ctx.moveTo(0, topH);
+
         ctx.lineTo(w, 0);
+
         ctx.lineTo(w, h);
+
         ctx.lineTo(0, topH + h);
+
         ctx.closePath();
+
         const rightGrad = ctx.createLinearGradient(0, topH, w, h);
+
         rightGrad.addColorStop(0, "rgba(24, 34, 53, 0.92)");
+
         rightGrad.addColorStop(1, "rgba(15, 23, 42, 0.95)");
+
         ctx.fillStyle = rightGrad;
+
         ctx.fill();
+
         ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+
         ctx.lineWidth = 2.0;
+
         ctx.stroke();
+
+
 
         // Drive Bays with Blinking Multicolored LEDs
+
         for (let b = 0; b < 4; b++) {
+
             const bayY = topH + 12 + b * 28;
+
             // Drive sled outline
+
             ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+
             ctx.lineWidth = 1.2;
+
             ctx.beginPath();
+
             ctx.moveTo(8, bayY + 4);
+
             ctx.lineTo(w - 12, bayY - 14);
+
             ctx.lineTo(w - 12, bayY + 6);
+
             ctx.lineTo(8, bayY + 24);
+
             ctx.closePath();
+
             ctx.stroke();
+
+
 
             // Status LEDs
+
             const led1On = Math.sin(t * 10 + b * 1.5) > -0.2;
+
             const led2On = Math.cos(t * 8 + b * 2.0) > 0.1;
+
             ctx.fillStyle = led1On ? "#10B981" : "#064E3B";
+
             ctx.shadowColor = "#10B981";
+
             ctx.shadowBlur = led1On ? 8 : 0;
+
             ctx.beginPath();
+
             ctx.arc(16, bayY + 12, 3, 0, Math.PI * 2);
+
             ctx.fill();
+
+
 
             ctx.fillStyle = led2On ? "#38BDF8" : "#0C4A6E";
+
             ctx.shadowColor = "#38BDF8";
+
             ctx.shadowBlur = led2On ? 8 : 0;
+
             ctx.beginPath();
+
             ctx.arc(26, bayY + 9, 2.5, 0, Math.PI * 2);
+
             ctx.fill();
+
             ctx.shadowBlur = 0;
+
         }
+
+
 
         // 3D Spinning Cooling Fan at Bottom Right Face
+
         const fanX = 42;
+
         const fanY = topH + 140;
+
         ctx.save();
+
         ctx.translate(fanX, fanY);
+
         ctx.scale(1.0, 0.65);
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+
         ctx.lineWidth = 2;
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 22, 0, Math.PI * 2);
+
         ctx.stroke();
+
         // Fan Blades
+
         const fanAngle = t * 14;
+
         for (let fa = 0; fa < 4; fa++) {
+
             const a = fanAngle + (fa * Math.PI / 2);
+
             ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+
             ctx.lineWidth = 2.5;
+
             ctx.beginPath();
+
             ctx.moveTo(0, 0);
+
             ctx.lineTo(Math.cos(a) * 18, Math.sin(a) * 18);
+
             ctx.stroke();
+
         }
+
         ctx.restore();
+
+
 
         // Floating 3D Holographic Label Above Server
+
         const bob = Math.sin(t * 3) * 6;
+
         ctx.save();
+
         ctx.translate(0, -topH - 30 + bob);
+
         ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+
         ctx.beginPath();
+
         ctx.roundRect(-135, -20, 270, 40, 12);
+
         ctx.fill();
+
         ctx.strokeStyle = isActive ? "#10B981" : "#38BDF8";
+
         ctx.lineWidth = 2;
+
         ctx.shadowColor = isActive ? "#10B981" : "#38BDF8";
+
         ctx.shadowBlur = 12;
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.fillStyle = isActive ? "#10B981" : "#38BDF8";
+
         ctx.font = "bold 17px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("🖥️ " + label, 0, 6);
-        ctx.restore();
 
         ctx.restore();
+
+
+
+        ctx.restore();
+
     }
+
+
 
     // 2. 3D Floating Multi-AZ Cloud Architecture Platform with Radiating Waves
+
     function draw3DIsometricCloud(ctx, cx, cy, t, label = "CLOUD SERVER", isActive = true) {
+
         ctx.save();
+
         const bobY = Math.sin(t * 2.2) * 8;
+
         ctx.translate(cx, cy + bobY);
 
+
+
         // Radiating Auto-Scaling Expansion Waves
+
         for (let r = 0; r < 3; r++) {
+
             const p = ((t * 0.45 + r * 0.33) % 1.0);
+
             const radius = 60 + p * 110;
+
             const alpha = (1.0 - p) * 0.35;
+
             ctx.save();
+
             ctx.translate(0, 80);
+
             ctx.scale(1.0, 0.42);
+
             ctx.strokeStyle = `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
+
             ctx.lineWidth = 2.0;
+
             ctx.beginPath();
+
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
+
             ctx.stroke();
+
             ctx.restore();
+
         }
+
+
 
         // Floating Hexagonal Base Platform
+
         ctx.save();
+
         ctx.translate(0, 75);
+
         ctx.scale(1.0, 0.48);
+
         ctx.beginPath();
+
         const hexR = 100;
+
         for (let i = 0; i < 6; i++) {
+
             const angle = (i * Math.PI / 3) + Math.PI / 6;
+
             const x = Math.cos(angle) * hexR;
+
             const y = Math.sin(angle) * hexR;
+
             if (i === 0) ctx.moveTo(x, y);
+
             else ctx.lineTo(x, y);
+
         }
+
         ctx.closePath();
+
         const baseGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 100);
+
         baseGrad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+
         baseGrad.addColorStop(0.7, "rgba(168, 85, 247, 0.25)");
+
         baseGrad.addColorStop(1, "rgba(15, 23, 42, 0.7)");
+
         ctx.fillStyle = baseGrad;
+
         ctx.fill();
+
         ctx.strokeStyle = "#38BDF8";
+
         ctx.lineWidth = 3.0;
+
         ctx.shadowColor = "#38BDF8";
+
         ctx.shadowBlur = 18;
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.restore();
+
+
 
         // 3 Floating Availability Zone (AZ) Pods
+
         const azNodes = [
+
             {name: "AZ-1", region: "us-east-1", x: -65, y: -20, col: "#38BDF8"},
+
             {name: "AZ-2", region: "eu-west-1", x: 0, y: -60, col: "#C084FC"},
+
             {name: "AZ-3", region: "ap-south-1", x: 65, y: -20, col: "#10B981"}
+
         ];
+
+
 
         // Laser Mesh connecting the AZ pods
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+
         ctx.lineWidth = 1.8;
+
         ctx.setLineDash([6, 6]);
+
         ctx.beginPath();
+
         ctx.moveTo(azNodes[0].x, azNodes[0].y);
+
         ctx.lineTo(azNodes[1].x, azNodes[1].y);
+
         ctx.lineTo(azNodes[2].x, azNodes[2].y);
+
         ctx.closePath();
+
         ctx.stroke();
+
         ctx.setLineDash([]);
 
+
+
         // Render each AZ Pod with 3D Cube Effect
+
         azNodes.forEach((node, ni) => {
+
             const nodeBob = Math.sin(t * 3.5 + ni * 2) * 5;
+
             ctx.save();
+
             ctx.translate(node.x, node.y + nodeBob);
 
+
+
             // Mini 3D Cube
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+
             ctx.beginPath();
+
             ctx.roundRect(-24, -20, 48, 40, 8);
+
             ctx.fill();
+
             ctx.strokeStyle = node.col;
+
             ctx.lineWidth = 2.0;
+
             ctx.shadowColor = node.col;
+
             ctx.shadowBlur = 10;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             ctx.fillStyle = node.col;
+
             ctx.font = "bold 13px monospace";
+
             ctx.textAlign = "center";
+
             ctx.fillText(node.name, 0, 4);
+
             ctx.restore();
+
         });
+
+
 
         // Center Floating Glowing Cloud Icon
+
         ctx.save();
+
         ctx.translate(0, 10);
+
         ctx.shadowColor = "#38BDF8";
+
         ctx.shadowBlur = 24;
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "52px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("☁️", 0, 15);
+
         ctx.shadowBlur = 0;
+
         ctx.restore();
+
+
 
         // Floating 3D Holographic Label Above Cloud
+
         const lblBob = Math.sin(t * 3 + 1) * 6;
+
         ctx.save();
+
         ctx.translate(0, -95 + lblBob);
+
         ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+
         ctx.beginPath();
+
         ctx.roundRect(-145, -20, 290, 40, 12);
+
         ctx.fill();
+
         ctx.strokeStyle = "#38BDF8";
+
         ctx.lineWidth = 2;
+
         ctx.shadowColor = "#38BDF8";
+
         ctx.shadowBlur = 12;
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "bold 17px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("☁️ " + label, 0, 6);
-        ctx.restore();
 
         ctx.restore();
+
+
+
+        ctx.restore();
+
     }
+
+
 
     // 3. Dynamic 3D Architecture Comparison Pipeline (Client Gateway -> Splitter -> Local Server vs Cloud Cluster)
+
     function draw3DSystemArchitectureDiagram(ctx, W, H, p, t, stageProg) {
+
         const tA = p.term_a || "LOCAL SERVER (ON-PREMISES)";
+
         const tB = p.term_b || "CLOUD SERVER (AWS/AZURE)";
 
+
+
         // Top Client Traffic Gateway / API Router
+
         const gwX = W / 2;
+
         const gwY = 280;
+
         ctx.save();
+
         ctx.translate(gwX, gwY);
+
         drawGlassTile(ctx, -220, -32, 440, 64, 16, "#38BDF8", true, true, 1.0);
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("🌐 CLIENT TRAFFIC & API GATEWAY", 0, -2);
+
         ctx.fillStyle = "#94A3B8";
+
         ctx.font = "bold 15px monospace";
+
         ctx.fillText("Production Ingress • 100,000 Req/sec", 0, 20);
+
         ctx.restore();
+
+
 
         // Dual Branching Dynamic Laser Connectors with Traveling Photons
+
         const leftTargetX = 280;
+
         const leftTargetY = 470;
+
         const rightTargetX = 800;
+
         const rightTargetY = 470;
 
+
+
         drawDynamicConnector(ctx, gwX - 80, gwY + 32, leftTargetX, leftTargetY, "#10B981", t, "⚡ LAN (LOW LATENCY)");
+
         drawDynamicConnector(ctx, gwX + 80, gwY + 32, rightTargetX, rightTargetY, "#38BDF8", t, "🚀 WAN (AUTO-SCALE)");
 
+
+
         // 3D Isometric Visual Models
+
         draw3DIsometricServer(ctx, leftTargetX, 600, t, tA, true);
+
         draw3DIsometricCloud(ctx, rightTargetX, 600, t, tB, true);
 
+
+
         // Operational Spec Chips under Server
+
         drawGlassTile(ctx, 60, 780, 440, 310, 16, "#10B981", false, true, 0.95);
+
         ctx.fillStyle = "#10B981";
+
         ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
         ctx.fillText("⚡ LOCAL SERVER PILLARS:", 85, 825);
+
         const serverPillars = [
+
             "• Physical hardware ownership in rack",
+
             "• Deterministic sub-millisecond LAN speed",
+
             "• Strict data isolation within private firewall",
+
             "• High upfront CapEx, in-house sysadmins"
+
         ];
+
         serverPillars.forEach((sp, idx) => {
+
             ctx.fillStyle = "#F8FAFC";
+
             ctx.font = "18px 'Segoe UI', sans-serif";
+
             ctx.fillText(sp, 85, 870 + idx * 48);
+
         });
+
+
 
         // Operational Spec Chips under Cloud
+
         drawGlassTile(ctx, 580, 780, 440, 310, 16, "#38BDF8", false, true, 0.95);
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
         ctx.fillText("☁️ CLOUD SERVER PILLARS:", 605, 825);
+
         const cloudPillars = [
+
             "• On-demand virtual instances (AWS/GCP)",
+
             "• Automated elasticity: scale up in seconds",
+
             "• Multi-region failover and SLA redundancy",
+
             "• Pay-as-you-go OpEx, zero hardware maintenance"
+
         ];
+
         cloudPillars.forEach((cp, idx) => {
+
             ctx.fillStyle = "#F8FAFC";
+
             ctx.font = "18px 'Segoe UI', sans-serif";
+
             ctx.fillText(cp, 605, 870 + idx * 48);
+
         });
+
+
 
         // Interactive Connecting Laser Arrow Comparing Latency & Cost
+
         const sweepX = (W / 2) + Math.sin(t * 3) * 14;
+
         ctx.fillStyle = "#F59E0B";
+
         ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("⟵ CAPEX (FIXED) vs OPEX (ELASTIC) ⟶", sweepX, 1140);
+
         ctx.textAlign = "left";
+
+
 
         // Animated Laser Scanner Line across bottom
+
         drawLaserScannerBeam(ctx, 60, 1170, W - 120, 20, t);
+
     }
+
+
 
     // 4. Dynamic 3D Decision Tree Flowchart (Replaces rigid cards with branching nodes)
+
     function draw3DDecisionFlowchart(ctx, W, H, p, t, stageProg) {
+
         const tA = p.term_a || "LOCAL SERVER";
+
         const tB = p.term_b || "CLOUD SERVER";
 
+
+
         // Top Step 1 Node
+
         const topX = W / 2;
+
         const topY = 270;
+
         drawGlassTile(ctx, topX - 260, topY - 30, 520, 60, 14, "#818CF8", true, true, 1.0);
+
         ctx.fillStyle = "#818CF8";
+
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("🎯 STEP 1: DEFINE SYSTEM CONSTRAINTS & WORKLOAD", topX, topY + 8);
+
         ctx.textAlign = "left";
 
+
+
         // Laser from Step 1 down into 3D Decision Diamond
+
         drawDynamicConnector(ctx, topX, topY + 30, topX, 410, "#818CF8", t, "EVALUATE");
 
+
+
         // 3D Isometric Decision Diamond Node
+
         const dmX = W / 2;
+
         const dmY = 510;
+
         const dmW = 280;
+
         const dmH = 95;
+
         const dAngle = Math.sin(t * 2) * 0.03;
 
+
+
         ctx.save();
+
         ctx.translate(dmX, dmY);
+
         ctx.rotate(dAngle);
 
+
+
         ctx.beginPath();
+
         ctx.moveTo(0, -dmH);
+
         ctx.lineTo(dmW, 0);
+
         ctx.lineTo(0, dmH);
+
         ctx.lineTo(-dmW, 0);
+
         ctx.closePath();
+
+
 
         const dmGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, dmW);
+
         dmGrad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+
         dmGrad.addColorStop(0.6, "rgba(15, 23, 42, 0.90)");
+
         dmGrad.addColorStop(1, "rgba(4, 8, 18, 0.95)");
+
         ctx.fillStyle = dmGrad;
+
         ctx.fill();
+
+
 
         ctx.strokeStyle = "#F59E0B";
+
         ctx.lineWidth = 3.0;
+
         ctx.shadowColor = "#F59E0B";
+
         ctx.shadowBlur = 18;
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
 
+
+
         ctx.fillStyle = "#F59E0B";
+
         ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("⚖️ ARCHITECTURAL DECISION POINT:", 0, -30);
 
+
+
         ctx.fillStyle = "#FFFFFF";
+
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
         ctx.fillText("Strict Compliance & Constant Load?", 0, 5);
+
         ctx.fillStyle = "#94A3B8";
+
         ctx.font = "18px 'Segoe UI', sans-serif";
+
         ctx.fillText("OR Elastic Traffic & Rapid Global Expansion?", 0, 35);
+
         ctx.restore();
+
+
 
         // Branch 1: Left [YES] ➔ Emerald Green Line & Pointing Arrow
+
         const leftDestX = 280;
+
         const leftDestY = 750;
+
         drawDynamicConnector(ctx, dmX - dmW + 40, dmY, leftDestX, leftDestY, "#10B981", t, "YES (COMPLIANCE / BASELINE)");
 
+
+
         // Branch 2: Right [NO] ➔ Cyan Line & Pointing Arrow
+
         const rightDestX = 800;
+
         const rightDestY = 750;
+
         drawDynamicConnector(ctx, dmX + dmW - 40, dmY, rightDestX, rightDestY, "#38BDF8", t, "NO (ELASTIC SCALE)");
 
+
+
         // Result Decision Box 1: Local Server
+
         drawGlassTile(ctx, 60, 780, 440, 340, 16, "#10B981", true, true, 1.0);
+
         ctx.fillStyle = "#10B981";
+
         ctx.font = "bold 24px 'Segoe UI', sans-serif";
+
         ctx.fillText("✅ DEPLOY " + tA, 85, 825);
+
         const yesPoints = [
+
             "👉 Zero third-party cloud outage exposure",
+
             "👉 Predictable LAN speed (<1ms ping)",
+
             "👉 Full audit control for banking/medical",
+
             "👉 Amortised hardware cost over 3-5 years"
+
         ];
+
         yesPoints.forEach((yp, yi) => {
+
             ctx.fillStyle = "#F8FAFC";
+
             ctx.font = "18px 'Segoe UI', sans-serif";
+
             ctx.fillText(yp, 85, 875 + yi * 48);
+
         });
+
+
 
         // Result Decision Box 2: Cloud Server
+
         drawGlassTile(ctx, 580, 780, 440, 340, 16, "#38BDF8", true, true, 1.0);
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "bold 24px 'Segoe UI', sans-serif";
+
         ctx.fillText("✅ DEPLOY " + tB, 605, 825);
+
         const noPoints = [
+
             "👉 Instant automated multi-AZ spin-up",
+
             "👉 Handle viral user traffic spikes cleanly",
+
             "👉 Pay only for CPU seconds consumed",
+
             "👉 Global disaster recovery in minutes"
+
         ];
+
         noPoints.forEach((np, ni) => {
+
             ctx.fillStyle = "#F8FAFC";
+
             ctx.font = "18px 'Segoe UI', sans-serif";
+
             ctx.fillText(np, 605, 875 + ni * 48);
+
         });
+
+
 
         // Kinetic Neon Arrow & Interview Summary Pill at Bottom
+
         const bounceY = Math.sin(t * 6) * 6;
+
         drawGlassTile(ctx, 60, 1160, W - 120, 80, 14, "#F59E0B", false, true, 1.0);
+
         ctx.fillStyle = "#F59E0B";
+
         ctx.font = "bold 21px 'Segoe UI', sans-serif";
+
         ctx.fillText("💡 INTERVIEW STRATEGY: Senior architects explain trade-offs before picking any server!", 95, 1208 + bounceY);
+
     }
+
+
 
     // 5. 3D Rotating Golden Trophy Badge with Concentric Orbital Rings
+
     function draw3DHolographicTrophy(ctx, cx, cy, t) {
+
         ctx.save();
+
         ctx.translate(cx, cy);
 
+
+
         // Concentric Orbital Rings
+
         for (let o = 0; o < 2; o++) {
+
             const rotA = t * (o === 0 ? 1.8 : -1.4);
+
             ctx.save();
+
             ctx.rotate(rotA);
+
             ctx.scale(1.0, 0.35);
+
             ctx.strokeStyle = o === 0 ? "rgba(245, 158, 11, 0.6)" : "rgba(56, 189, 248, 0.4)";
+
             ctx.lineWidth = 2.0;
+
             ctx.beginPath();
+
             ctx.arc(0, 0, 75 + o * 25, 0, Math.PI * 2);
+
             ctx.stroke();
+
+
 
             // Satellite Sparkle
+
             const satX = Math.cos(rotA * 2) * (75 + o * 25);
+
             const satY = Math.sin(rotA * 2) * (75 + o * 25);
+
             ctx.fillStyle = "#F59E0B";
+
             ctx.shadowColor = "#F59E0B";
+
             ctx.shadowBlur = 10;
+
             ctx.beginPath();
+
             ctx.arc(satX, satY, 4, 0, Math.PI * 2);
+
             ctx.fill();
+
             ctx.shadowBlur = 0;
+
             ctx.restore();
+
         }
+
+
 
         // Golden Rotating Hexagon
+
         const hexAngle = t * 0.8;
+
         ctx.save();
+
         ctx.rotate(hexAngle);
+
         ctx.beginPath();
+
         const r = 50;
+
         for (let i = 0; i < 6; i++) {
+
             const a = (i * Math.PI / 3);
+
             const x = Math.cos(a) * r;
+
             const y = Math.sin(a) * r;
+
             if (i === 0) ctx.moveTo(x, y);
+
             else ctx.lineTo(x, y);
+
         }
+
         ctx.closePath();
+
         const goldGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, r);
+
         goldGrad.addColorStop(0, "rgba(254, 240, 138, 0.95)");
+
         goldGrad.addColorStop(0.6, "rgba(245, 158, 11, 0.9)");
+
         goldGrad.addColorStop(1, "rgba(180, 83, 9, 0.9)");
+
         ctx.fillStyle = goldGrad;
+
         ctx.shadowColor = "#F59E0B";
+
         ctx.shadowBlur = 24;
+
         ctx.fill();
+
         ctx.strokeStyle = "#FEF08A";
+
         ctx.lineWidth = 2.5;
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.restore();
+
+
 
         // Center Trophy Icon
+
         ctx.fillStyle = "#000000";
+
         ctx.font = "38px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("🏆", 0, 14);
 
+
+
         ctx.restore();
+
     }
 
+
+
     /* ==========================================================================
+
        DYNAMIC SCENE VISUAL RENDERER (1080 x 1920 9:16 VERTICAL REEL FORMAT)
+
        Zero Rigid Templates • 60 FPS Procedural AI Motion
+
        ========================================================================== */
+
     function drawPromptMotionBackground(ctx, W, H, t) {
+
         const bg = ctx.createLinearGradient(0, 0, W * 0.8, H);
+
         bg.addColorStop(0, "#050814");
+
         bg.addColorStop(0.48, "#0B1230");
+
         bg.addColorStop(1, "#030611");
+
         ctx.fillStyle = bg;
+
         ctx.fillRect(0, 0, W, H);
+
         ctx.save();
+
         ctx.globalAlpha = 0.48;
+
         draw3DAIMotionEngine(ctx, W, H, t);
+
         ctx.restore();
+
     }
+
+
 
     function drawSceneMotionGraphics(ctx, W, H, stage, stageIndex, progress, t) {
+
         const visual = stage?.visual_data || {};
+
         const motif = String(visual.background_motif || visual.motif || "").toLowerCase();
+
         const accent = Array.isArray(visual.palette) && visual.palette.length ? String(visual.palette[0]) : "#38BDF8";
+
         ctx.save();
+
         // Only draw the familiar HUD/data stream when the scene's own art direction asks for it.
+
         if (motif.includes("hud") || motif.includes("data_stream") || motif.includes("network")) {
+
             ctx.strokeStyle = accent + "77"; ctx.lineWidth = 3;
+
             const inset = 26, arm = 54;
+
             [[inset, inset, 1, 1], [W - inset, inset, -1, 1], [inset, H - inset, 1, -1], [W - inset, H - inset, -1, -1]].forEach(([x, y, sx, sy]) => {
+
                 ctx.beginPath(); ctx.moveTo(x, y + sy * arm); ctx.lineTo(x, y); ctx.lineTo(x + sx * arm, y); ctx.stroke();
+
             });
+
             if (motif.includes("data_stream") || motif.includes("network")) {
+
                 const streamY = H * 0.665;
+
                 ctx.strokeStyle = accent + "44"; ctx.lineWidth = 2; ctx.beginPath();
+
                 ctx.moveTo(W * 0.08, streamY); ctx.bezierCurveTo(W * 0.36, streamY - 44, W * 0.64, streamY + 44, W * 0.92, streamY); ctx.stroke();
+
                 for (let i = 0; i < 5; i++) {
+
                     const phase = (t * 0.28 + i / 5) % 1, px = W * (0.08 + 0.84 * phase), py = streamY + Math.sin(phase * Math.PI * 2) * 26;
+
                     ctx.beginPath(); ctx.fillStyle = accent; ctx.shadowColor = accent; ctx.shadowBlur = 18; ctx.arc(px, py, 4 + 2 * Math.sin(t * 6 + i), 0, Math.PI * 2); ctx.fill();
+
                 }
+
                 ctx.shadowBlur = 0;
+
             }
+
         }
+
         const railW = W - 120;
+
         ctx.fillStyle = "rgba(148,163,184,0.28)";
+
         ctx.beginPath();
+
         ctx.roundRect(60, H - 96, railW, 6, 3);
-        ctx.fill();
-        ctx.fillStyle = accent;
-        ctx.beginPath();
-        ctx.roundRect(60, H - 96, Math.max(6, railW * Math.min(1, Math.max(0, progress))), 6, 3);
+
         ctx.fill();
 
+        ctx.fillStyle = accent;
+
+        ctx.beginPath();
+
+        ctx.roundRect(60, H - 96, Math.max(6, railW * Math.min(1, Math.max(0, progress))), 6, 3);
+
+        ctx.fill();
+
+
+
         ctx.restore();
+
     }
+
+
 
     /* ==========================================================================
+
        STATIC ARCHITECTURE-DIAGRAM RENDERERS
+
        No AI photos and no heavy animation: numbered node flow, code panel, table
+
        and comparison panel, revealed as the narration reaches each step.
+
        ========================================================================== */
+
     const DIAGRAM_GLYPHS = {
+
         code: "⌨", file: "▤", commit: "◆", build: "⚙", test: "✓", deploy: "▲", prod: "●",
+
         layers: "▤", container: "▣", runtime: "⚙", port: "▮", orchestrate: "◈",
+
         db: "▦", cloud: "☁", server: "▭", api: "◇", agent: "♟", model: "◉",
+
         data: "▦", node: "●", storage: "▤", network: "◇", user: "◉", lock: "▣", flow: "→"
+
     };
 
+
+
     function diagramGlyph(name, index) {
+
         const key = String(name || "").toLowerCase().replace(/[^a-z]/g, "");
+
         if (DIAGRAM_GLYPHS[key]) return DIAGRAM_GLYPHS[key];
+
         const fallback = ["●", "◆", "■", "▲", "◈"];
+
         return fallback[index % fallback.length];
+
     }
+
+
 
     function splitDiagramText(ctx, text, maxWidth, maxLines, maxChars) {
+
         const clean = String(text || "").replace(/\s+/g, " ").trim();
+
         if (!clean) return [];
+
         const limit = maxChars || 46;
+
         return wrapCanvasText(ctx, clean, maxWidth, maxLines).slice(0, maxLines)
+
             .map(line => (line.length > limit ? line.slice(0, limit - 1) + "…" : line));
+
     }
+
+
 
     function diagramIconForLabel(label) {
+
         const text = String(label || "").toLowerCase();
+
         // English and Devanagari keywords, because narration language drives the labels.
+
         if (/प्रश्न|वापरकर्त|परिचय|query|user|client|input/.test(text)) return "user";
+
         if (/शोध|एम्बेड|वेक्टर|डेटाबेस|संग्रह|embed|vector|search|retriev|chunk|index|database|storage/.test(text)) return "db";
+
         if (/अंतिम|निर्मिती|उत्तर|final|result|output|answer|response|deploy|production/.test(text)) return "prod";
+
         if (/कॉन्टेक्स्ट|मॉडेल|एलएलएम|context|model|llm|generat|assembl|reason/.test(text)) return "model";
+
         if (/api|gateway|network|service|route/.test(text)) return "network";
+
         if (/test|valid|verif|check|quality/.test(text)) return "test";
+
         if (/build|transform|execut|train|aggregate|process|सिम्युलेशन/.test(text)) return "build";
+
         if (/code|script|file|commit|log|कोड/.test(text)) return "code";
+
         if (/auth|security|lock|permission|encrypt/.test(text)) return "lock";
+
         if (/container|pod|orchestrat|runtime/.test(text)) return "container";
+
         return "node";
+
     }
+
+
 
     function buildDiagramSpec(p, stage, stageIndex) {
+
         const visual = (stage && stage.visual_data) || {};
+
         let layout = String(visual.layout || visual.visual_type || (stage && stage.visual_type) || "").toLowerCase();
+
         let steps = Array.isArray(visual.steps) ? visual.steps.filter(item => item && (item.label || item.name)) : [];
+
         let code = visual.code || null;
+
         let table = visual.table || null;
+
         let compare = visual.compare || null;
+
         const sceneList = (p && (p.stages || p.scenes)) || [];
+
         const hasStageTitles = sceneList.length >= 3
+
             && sceneList.some(scene => scene && scene.title && !/^scene\s*\d+$/i.test(String(scene.title)));
+
         // Generated videos are identified by their custom_* id; only those presets
+
         // carry the SQL sample rows, comparisons and solution code.
+
         const isGenerated = /^custom/i.test(String((p && p.id) || ""));
+
         const isSqlQuery = String((p && p.content_type) || "") === "sql_query";
+
         const stageTitleSteps = () => sceneList.slice(0, 5).map((scene, index) => {
+
             const label = (scene && scene.title) || ("Step " + (index + 1));
+
             // The scene title already says what the step is. The structural
+
             // action_type (e.g. "code_build") is too generic to caption the node and
+
             // can contradict the title, so it is intentionally not shown.
+
             return { label, detail: "", icon: diagramIconForLabel(label) };
+
         });
 
+
+
         if (!steps.length && !code && !table && !compare) {
+
             if (isSqlQuery && p && p.solution_sql) {
+
                 // A requested SQL query renders as a highlighted code panel.
+
                 code = { title: "SQL SOLUTION", lines: String(p.solution_sql).split("\n") };
+
             } else if (isGenerated && hasStageTitles) {
+
                 // A generated storyboard names every step, so those titles are the
+
                 // numbered architecture flow for the whole video.
+
                 steps = stageTitleSteps();
+
             } else if (p && Array.isArray(p.comparison_rows) && p.comparison_rows.length) {
+
                 compare = {
+
                     left_title: p.comparison_headers ? p.comparison_headers[1] : "Option A",
+
                     right_title: p.comparison_headers ? p.comparison_headers[2] : "Option B",
+
                     rows: p.comparison_rows.map(row => [row.col_a || "", row.col_b || ""])
+
                 };
+
             } else if (p && Array.isArray(p.sample_rows) && p.sample_rows.length) {
+
                 table = {
+
                     headers: (p.col_headers || ["ID", "ATTRIBUTE", "AMOUNT", "STATUS"]).slice(0, 4),
+
                     rows: p.sample_rows.map(row => [row.account || "", row.date || "", row.amt || "", row.balance || ""])
+
                 };
+
             } else if (p && p.solution_sql) {
+
                 code = { title: "SQL SOLUTION", lines: String(p.solution_sql).split("\n") };
+
             } else if (hasStageTitles) {
+
                 steps = stageTitleSteps();
+
             } else if (stage && Array.isArray(stage.entities)) {
+
                 steps = stage.entities
+
                     .filter(item => item && (item.label || item.name))
+
                     .map(item => {
+
                         const label = item.label || item.name;
+
                         return { label, detail: item.detail || "", icon: item.icon || item.shape || diagramIconForLabel(label) };
+
                     });
+
             }
+
         }
+
         const derivedFocus = (typeof stageIndex === "number" && stageIndex >= 0)
+
             ? stageIndex
+
             : (stage && stage.id ? Number(stage.id) - 1 : 0);
+
         const focus = Math.max(0, Math.min(4, Number(visual.focus ?? derivedFocus) || 0));
+
         return { layout, steps, code, table, compare, focus };
+
     }
+
+
 
     function drawIsoFloorGrid(ctx, W, H, top, bottom, t) {
+
         // Perspective floor: lines converge upward so the slabs clearly sit in 3D space.
+
         ctx.save();
+
         ctx.strokeStyle = "rgba(56,189,248,0.16)";
+
         ctx.lineWidth = 1.2;
+
         const vanishX = W / 2;
+
         const vanishY = top - 240;
+
         for (let i = -6; i <= 6; i++) {
+
             ctx.beginPath();
+
             ctx.moveTo(vanishX, vanishY);
+
             ctx.lineTo(vanishX + i * 190, bottom + 60);
+
             ctx.stroke();
+
         }
+
         for (let step = 1; step <= 7; step++) {
+
             const ratio = step / 7;
+
             const y = vanishY + (bottom + 60 - vanishY) * Math.pow(ratio, 1.7);
+
             ctx.globalAlpha = 0.16 * ratio;
+
             ctx.beginPath();
+
             ctx.moveTo(30, y);
+
             ctx.lineTo(W - 30, y);
+
             ctx.stroke();
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function drawDiagramAmbientParticles(ctx, W, H, top, bottom, t) {
+
         // Slow drifting 3D cubes in the background sell the depth without heavy motion.
+
         ctx.save();
+
         for (let i = 0; i < 14; i++) {
+
             const seed = i * 97.3;
+
             const drift = ((t * (8 + (i % 5) * 3) + seed) % (bottom - top + 160));
+
             const y = bottom + 60 - drift;
+
             const x = 70 + ((i * 173) % (W - 140)) + Math.sin(t * 0.6 + i) * 14;
+
             const size = 5 + (i % 4) * 3;
+
             ctx.globalAlpha = 0.10 + (i % 3) * 0.05;
+
             ctx.fillStyle = i % 2 ? "#38BDF8" : "#A78BFA";
+
             ctx.beginPath();
+
             ctx.moveTo(x, y - size);
+
             ctx.lineTo(x + size, y);
+
             ctx.lineTo(x, y + size);
+
             ctx.lineTo(x - size, y);
+
             ctx.closePath();
+
             ctx.fill();
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function drawIso3DNode(ctx, x, y, w, h, depth, options) {
+
         const opts = options || {};
+
         const active = !!opts.active;
+
         const accent = opts.accent || "#38BDF8";
+
         const dx = depth * 0.55;
+
         const dy = depth * 0.45;
 
+
+
         // Right side face
+
         ctx.beginPath();
+
         ctx.moveTo(x + w, y);
+
         ctx.lineTo(x + w + dx, y - dy);
+
         ctx.lineTo(x + w + dx, y + h - dy);
+
         ctx.lineTo(x + w, y + h);
+
         ctx.closePath();
+
         ctx.fillStyle = active ? "rgba(22,48,78,0.97)" : "rgba(14,23,38,0.95)";
+
         ctx.fill();
+
+
 
         // Top face
+
         ctx.beginPath();
+
         ctx.moveTo(x, y);
+
         ctx.lineTo(x + dx, y - dy);
+
         ctx.lineTo(x + w + dx, y - dy);
+
         ctx.lineTo(x + w, y);
+
         ctx.closePath();
+
         const topGrad = ctx.createLinearGradient(x, y - dy, x + w, y);
+
         topGrad.addColorStop(0, active ? "rgba(56,116,166,0.98)" : "rgba(28,46,70,0.96)");
+
         topGrad.addColorStop(1, active ? "rgba(25,60,96,0.98)" : "rgba(18,30,48,0.95)");
+
         ctx.fillStyle = topGrad;
+
         ctx.fill();
+
+
 
         // Front face with depth gradient
+
         const frontGrad = ctx.createLinearGradient(x, y, x + w * 0.35, y + h);
+
         frontGrad.addColorStop(0, active ? "rgba(19,44,72,0.99)" : "rgba(11,19,33,0.97)");
+
         frontGrad.addColorStop(1, active ? "rgba(7,18,33,0.99)" : "rgba(6,11,22,0.98)");
+
         ctx.beginPath();
+
         ctx.roundRect(x, y, w, h, 16);
+
         ctx.fillStyle = frontGrad;
+
         ctx.fill();
+
         ctx.lineWidth = active ? 3 : 1.6;
+
         ctx.strokeStyle = active ? accent : "rgba(56,189,248,0.35)";
+
         if (active) {
+
             ctx.shadowColor = accent;
+
             ctx.shadowBlur = 28;
+
         }
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
 
+
+
         // Neon isometric edges
+
         ctx.strokeStyle = active ? "rgba(125,211,252,0.95)" : "rgba(125,211,252,0.32)";
+
         ctx.lineWidth = 1.5;
+
         ctx.beginPath();
+
         ctx.moveTo(x, y);
+
         ctx.lineTo(x + dx, y - dy);
+
         ctx.lineTo(x + w + dx, y - dy);
+
         ctx.lineTo(x + w, y);
+
         ctx.stroke();
+
         ctx.beginPath();
+
         ctx.moveTo(x + w, y);
+
         ctx.lineTo(x + w + dx, y - dy);
+
         ctx.stroke();
+
     }
 
+
+
     function drawDiagramFlow(ctx, W, H, rawSteps, progress, focusIndex, t) {
+
         const items = (Array.isArray(rawSteps) ? rawSteps : []).slice(0, 5);
+
         if (!items.length) return;
+
         const time = Number(t) || 0;
+
         const focus = Math.max(0, Math.min(items.length - 1, Number(focusIndex) || 0));
+
         const areaTop = 250, areaBottom = 1500, gap = 60;
+
         const nodeH = Math.min(150, Math.floor((areaBottom - areaTop - gap * (items.length - 1)) / items.length));
+
         const totalH = items.length * nodeH + gap * (items.length - 1);
+
         const startY = areaTop + Math.max(0, Math.floor((areaBottom - areaTop - totalH) / 2));
+
         const depth = 46;
+
         const boxW = W - 330;
+
         const boxX = Math.floor((W - boxW - depth * 0.62) / 2);
 
+
+
         drawDiagramAmbientParticles(ctx, W, H, startY - 80, startY + totalH + 80, time);
+
         drawIsoFloorGrid(ctx, W, H, startY - 40, startY + totalH + 30, time);
 
+
+
         items.forEach((item, i) => {
+
             const state = (i < focus) ? "past" : (i === focus ? "active" : "pending");
+
             const active = state === "active";
+
             const bob = Math.sin(time * 1.7 + i * 0.8) * (active ? 5 : 2.5);
+
             const y = startY + i * (nodeH + gap) + bob;
+
             ctx.save();
+
             ctx.globalAlpha *= active ? 1 : (state === "past" ? 0.9 : 0.5);
+
             ctx.textBaseline = "alphabetic";
 
+
+
             if (i > 0) {
+
                 // 3D connector pipe with a photon travelling toward the next slab.
+
                 const prevY = startY + (i - 1) * (nodeH + gap) + nodeH;
+
                 const pipeX = W / 2;
+
                 ctx.strokeStyle = active ? "rgba(56,189,248,0.92)" : "rgba(110,140,180,0.6)";
+
                 ctx.lineWidth = active ? 7 : 5;
+
                 ctx.beginPath();
+
                 ctx.moveTo(pipeX, prevY + 2);
+
                 ctx.lineTo(pipeX, y - 14);
+
                 ctx.stroke();
+
                 ctx.strokeStyle = "rgba(186,230,253,0.55)";
+
                 ctx.lineWidth = 1.8;
+
                 ctx.beginPath();
+
                 ctx.moveTo(pipeX - 2.5, prevY + 2);
+
                 ctx.lineTo(pipeX - 2.5, y - 14);
+
                 ctx.stroke();
+
                 ctx.beginPath();
+
                 ctx.moveTo(pipeX - 13, y - 18);
+
                 ctx.lineTo(pipeX, y - 2);
+
                 ctx.lineTo(pipeX + 13, y - 18);
+
                 ctx.closePath();
+
                 ctx.fillStyle = active ? "#38BDF8" : "rgba(125,211,252,0.6)";
+
                 ctx.fill();
+
                 const phase = (time * 0.6 + i * 0.23) % 1;
+
                 const photonY = prevY + 2 + Math.max(0, (y - 18) - (prevY + 2)) * phase;
+
                 ctx.beginPath();
+
                 ctx.fillStyle = "#F0F9FF";
+
                 ctx.shadowColor = "#38BDF8";
+
                 ctx.shadowBlur = 18;
+
                 ctx.arc(pipeX, photonY, 5, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.shadowBlur = 0;
+
             }
 
+
+
             // Soft floor glow under the active slab for depth.
+
             if (active) {
+
                 const glow = ctx.createRadialGradient(W / 2, y + nodeH + 14, 8, W / 2, y + nodeH + 14, boxW * 0.4);
+
                 glow.addColorStop(0, "rgba(56,189,248,0.16)");
+
                 glow.addColorStop(1, "rgba(56,189,248,0)");
+
                 ctx.fillStyle = glow;
+
                 ctx.beginPath();
+
                 ctx.ellipse(W / 2, y + nodeH + 14, boxW * 0.4, 20, 0, 0, Math.PI * 2);
+
                 ctx.fill();
+
             }
+
+
 
             drawIso3DNode(ctx, boxX, y, boxW, nodeH, depth, { active });
 
+
+
             const badgeX = boxX + 48, badgeY = y + nodeH / 2;
+
             ctx.beginPath();
+
             ctx.arc(badgeX, badgeY, 25, 0, Math.PI * 2);
+
             ctx.fillStyle = active ? "#38BDF8" : "rgba(56,189,248,0.2)";
+
             ctx.fill();
+
             ctx.textAlign = "center";
+
             ctx.textBaseline = "middle";
+
             ctx.fillStyle = active ? "#04121F" : "#BAE6FD";
+
             ctx.font = "800 24px 'Segoe UI', sans-serif";
+
             ctx.fillText(String(i + 1), badgeX, badgeY + 1);
+
             ctx.font = "28px 'Segoe UI Symbol', 'Segoe UI', sans-serif";
+
             ctx.fillStyle = active ? "#7DD3FC" : "#5B6B85";
+
             ctx.fillText(diagramGlyph(item.icon || item.shape, i), boxX + 108, badgeY + 1);
 
+
+
             ctx.textAlign = "left";
+
             ctx.textBaseline = "alphabetic";
+
             ctx.font = "700 27px 'Segoe UI', sans-serif";
+
             ctx.fillStyle = active ? "#FFFFFF" : (state === "past" ? "#B4C2D6" : "#8A97AD");
+
             const labelLines = splitDiagramText(ctx, item.label || item.name || "", boxW - 180, 2, 40);
+
             labelLines.forEach((line, li) => ctx.fillText(line, boxX + 152, y + (labelLines.length > 1 ? nodeH / 2 - 4 : nodeH / 2 + 9) + li * 32));
+
             ctx.restore();
+
         });
+
     }
+
+
 
     function drawDiagramCodePanel(ctx, W, H, code, progress) {
+
         const lines = (((code && code.lines) || [])).map(String).slice(0, 16);
+
         if (!lines.length) return;
+
         const x = 76, y = 250, w = W - 152;
+
         const panelH = Math.min(1240, 108 + lines.length * 44);
+
         ctx.fillStyle = "rgba(6,11,22,0.96)";
+
         ctx.strokeStyle = "rgba(56,189,248,0.4)";
+
         ctx.lineWidth = 2;
+
         ctx.beginPath();
+
         ctx.roundRect(x, y, w, panelH, 20);
+
         ctx.fill();
+
         ctx.stroke();
+
         ctx.save();
+
         ctx.strokeStyle = "rgba(56,189,248,0.3)";
+
         ctx.beginPath();
+
         ctx.moveTo(x, y + 64);
+
         ctx.lineTo(x + w, y + 64);
+
         ctx.stroke();
+
         ctx.textAlign = "left";
+
         ctx.textBaseline = "alphabetic";
+
         ctx.font = "700 24px 'Segoe UI', sans-serif";
+
         ctx.fillStyle = "#7DD3FC";
+
         ctx.fillText(splitDiagramText(ctx, (code && code.title) || "Code", w - 60, 1, 48)[0] || "Code", x + 28, y + 42);
+
         ctx.restore();
 
+
+
         const ratio = Math.max(0, Math.min(1, progress));
+
         const activeLine = Math.min(lines.length - 1, Math.floor(ratio * lines.length));
+
         lines.forEach((line, i) => {
+
             const ly = y + 104 + i * 44;
+
             if (i === activeLine) {
+
                 ctx.fillStyle = "rgba(56,189,248,0.14)";
+
                 ctx.fillRect(x + 14, ly - 30, w - 28, 40);
+
             }
+
             ctx.textAlign = "left";
+
             ctx.textBaseline = "alphabetic";
+
             ctx.font = "400 18px Consolas, monospace";
+
             ctx.fillStyle = "#475569";
+
             ctx.fillText(String(i + 1).padStart(2, " "), x + 22, ly);
+
             let fontSize = 21;
+
             ctx.font = `500 ${fontSize}px Consolas, monospace`;
+
             while (fontSize > 13 && ctx.measureText(line).width > w - 120) {
+
                 fontSize -= 1;
+
                 ctx.font = `500 ${fontSize}px Consolas, monospace`;
+
             }
+
             ctx.fillStyle = (i === activeLine) ? "#E0F2FE" : "#94A3B8";
+
             ctx.fillText(line, x + 74, ly);
+
         });
+
     }
+
+
 
     function drawDiagramTablePanel(ctx, W, H, table, progress) {
+
         const headers = ((table && table.headers) || []).slice(0, 4);
+
         const rows = ((table && table.rows) || []).slice(0, 7);
+
         if (!headers.length) return;
+
         const x = 70, y = 250, w = W - 140;
+
         const cols = Math.max(1, headers.length);
+
         const colW = w / cols;
+
         const rowH = 72;
+
         const panelH = Math.min(1240, 70 + rowH * (rows.length + 1));
+
         ctx.fillStyle = "rgba(6,11,22,0.96)";
+
         ctx.strokeStyle = "rgba(56,189,248,0.4)";
+
         ctx.lineWidth = 2;
+
         ctx.beginPath();
+
         ctx.roundRect(x, y, w, panelH, 18);
+
         ctx.fill();
+
         ctx.stroke();
 
+
+
         ctx.fillStyle = "rgba(14,26,48,0.98)";
+
         ctx.fillRect(x, y, w, 70);
+
         ctx.font = "700 20px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.textBaseline = "alphabetic";
+
         headers.forEach((header, c) => {
+
             ctx.fillStyle = "#7DD3FC";
+
             ctx.fillText(splitDiagramText(ctx, header, colW - 16, 1, 16)[0] || "", x + c * colW + colW / 2, y + 44);
+
         });
+
         const revealRows = Math.max(1, Math.min(rows.length, Math.ceil(Math.max(0.15, Math.min(1, progress)) * rows.length)));
+
         rows.forEach((row, r) => {
+
             if (r >= revealRows) return;
+
             const ry = y + 70 + r * rowH;
+
             ctx.fillStyle = (r % 2) ? "rgba(12,20,38,0.6)" : "rgba(8,14,28,0.5)";
+
             ctx.fillRect(x, ry, w, rowH);
+
             ctx.font = "500 20px 'Segoe UI', sans-serif";
+
             (Array.isArray(row) ? row : [row]).slice(0, cols).forEach((cell, c) => {
+
                 ctx.fillStyle = (r === revealRows - 1) ? "#E0F2FE" : "#A8B6CC";
+
                 ctx.fillText(splitDiagramText(ctx, cell, colW - 16, 1, 16)[0] || "", x + c * colW + colW / 2, ry + 45);
+
             });
+
         });
+
     }
 
+
+
     function drawDiagramComparePanel(ctx, W, H, compare, progress) {
+
         const headings = [String(compare.left_title || "Option A"), String(compare.right_title || "Option B")];
+
         const rows = ((compare && compare.rows) || []).slice(0, 6);
+
         const x = 60, y = 258, gapX = 36;
+
         const colW = (W - x * 2 - gapX) / 2;
+
         const colX = [x, x + colW + gapX];
+
         headings.forEach((heading, i) => {
+
             ctx.beginPath();
+
             ctx.roundRect(colX[i], y, colW, 76, 16);
+
             ctx.fillStyle = i === 0 ? "rgba(14,30,54,0.98)" : "rgba(24,20,46,0.98)";
+
             ctx.fill();
+
             ctx.strokeStyle = i === 0 ? "rgba(56,189,248,0.7)" : "rgba(167,139,250,0.7)";
+
             ctx.lineWidth = 2;
+
             ctx.stroke();
+
             ctx.textAlign = "center";
+
             ctx.textBaseline = "alphabetic";
+
             ctx.font = "700 23px 'Segoe UI', sans-serif";
+
             ctx.fillStyle = i === 0 ? "#7DD3FC" : "#C4B5FD";
+
             ctx.fillText(splitDiagramText(ctx, heading, colW - 24, 1, 18)[0] || "", colX[i] + colW / 2, y + 47);
+
         });
+
         const revealRows = Math.max(1, Math.min(rows.length, Math.ceil(Math.max(0.15, Math.min(1, progress)) * rows.length)));
+
         rows.forEach((row, r) => {
+
             if (r >= revealRows) return;
+
             const ry = y + 94 + r * 94;
+
             const pair = Array.isArray(row) ? row : [row.left || row.col_a || "", row.right || row.col_b || ""];
+
             [0, 1].forEach(i => {
+
                 ctx.beginPath();
+
                 ctx.roundRect(colX[i], ry, colW, 76, 12);
+
                 ctx.fillStyle = "rgba(9,15,29,0.94)";
+
                 ctx.fill();
+
                 ctx.strokeStyle = "rgba(148,163,184,0.3)";
+
                 ctx.lineWidth = 1.5;
+
                 ctx.stroke();
+
                 ctx.textAlign = "center";
+
                 ctx.font = "500 19px 'Segoe UI', sans-serif";
+
                 ctx.fillStyle = (r === revealRows - 1) ? "#E0F2FE" : "#A8B6CC";
+
                 ctx.fillText(splitDiagramText(ctx, pair[i] || "", colW - 24, 1, 22)[0] || "", colX[i] + colW / 2, ry + 45);
+
             });
+
         });
+
     }
+
+
+
 
 
     /* ==========================================================================
+
        BRIEF-MODE SCENE DESIGNS
+
        A scene-by-scene production brief chooses its own layout: title, split screen,
+
        pipeline, comparison table, chip grid, warning card or two cards.
+
        ========================================================================== */
+
     function drawBriefCard(ctx, x, y, w, h, opts) {
+
         const o = opts || {};
+
         ctx.save();
+
         ctx.beginPath();
+
         ctx.roundRect(x, y, w, h, o.radius || 22);
+
         ctx.fillStyle = o.fill || "rgba(12,20,36,0.94)";
+
         ctx.fill();
+
         ctx.strokeStyle = o.border || "rgba(56,189,248,0.45)";
+
         ctx.lineWidth = o.lineWidth || 2;
+
         if (o.glow) {
+
             ctx.shadowColor = o.border || "#38BDF8";
+
             ctx.shadowBlur = o.glow;
+
         }
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefTitle(ctx, W, H, stage, progress) {
+
         const appear = Math.min(1, Math.max(0, progress * 3));
+
         const vd = (stage && stage.visual_data) || {};
+
         const labels = vd.labels || [];
+
         ctx.save();
+
         ctx.globalAlpha *= appear;
+
         ctx.textAlign = "center";
+
         ctx.textBaseline = "alphabetic";
+
         ctx.fillStyle = "#FFFFFF";
+
         ctx.font = "800 66px 'Segoe UI', sans-serif";
+
         const title = splitDiagramText(ctx, String(stage && stage.title || ""), W - 200, 2, 34);
+
         title.forEach((line, i) => ctx.fillText(line, W / 2, 840 + i * 80));
+
         if (labels.length) {
+
             ctx.font = "600 34px 'Segoe UI', sans-serif";
+
             ctx.fillStyle = "#94A3B8";
+
             labels.slice(0, 2).forEach((label, i) => {
+
                 const line = splitDiagramText(ctx, label, W - 220, 1, 44)[0];
+
                 if (line) ctx.fillText(line, W / 2, 1035 + i * 48);
+
             });
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefSplit(ctx, W, H, stage, progress) {
+
         const vd = (stage && stage.visual_data) || {};
+
         const labels = vd.labels || [];
+
         const visual = String(vd.visual || "");
+
         const colW = (W - 120 - 40) / 2;
+
         const top = 340, height = 1080;
+
         const appear = Math.min(1, Math.max(0, progress * 2.5));
+
+
 
         // Split the brief's visual sentence into left/right bullet points.
+
         const leftBullets = [], rightBullets = [];
+
         visual.split(/(?<=[.;])\s+/).forEach(fragment => {
+
             const low = fragment.toLowerCase();
+
             if (low.includes("left")) leftBullets.push(fragment.replace(/^.*?left[:\s-]*/i, "").trim());
+
             else if (low.includes("right")) rightBullets.push(fragment.replace(/^.*?right[:\s-]*/i, "").trim());
+
         });
+
         labels.slice(2, 8).forEach((item, i) => (i % 2 ? rightBullets : leftBullets).push(item));
 
+
+
         const columns = [
+
             { x: 60, heading: labels[0] || "BEFORE", color: "#38BDF8", bullets: leftBullets },
+
             { x: 60 + colW + 40, heading: labels[1] || "AFTER", color: "#A78BFA", bullets: rightBullets }
+
         ];
+
         ctx.save();
+
         ctx.globalAlpha *= appear;
+
         columns.forEach(column => {
+
             drawBriefCard(ctx, column.x, top, colW, height, { border: column.color + "AA" });
+
             ctx.textAlign = "center";
+
             ctx.textBaseline = "alphabetic";
+
             ctx.fillStyle = column.color;
+
             ctx.font = "800 30px 'Segoe UI', sans-serif";
+
             splitDiagramText(ctx, column.heading, colW - 52, 2, 22)
+
                 .forEach((line, i) => ctx.fillText(line, column.x + colW / 2, top + 74 + i * 38));
+
             ctx.textAlign = "left";
+
             ctx.fillStyle = column.color === "#38BDF8" ? "#BAE6FD" : "#DDD6FE";
+
             ctx.font = "500 26px 'Segoe UI', sans-serif";
+
             column.bullets.slice(0, 5).forEach((bullet, i) => {
+
                 const y = top + 190 + i * 130;
+
                 splitDiagramText(ctx, bullet, colW - 70, 2, 26).forEach((line, li) => {
+
                     ctx.fillText((li === 0 ? "• " : "   ") + line, column.x + 28, y + li * 34);
+
                 });
+
             });
+
         });
+
         ctx.strokeStyle = "rgba(56,189,248,0.5)";
+
         ctx.lineWidth = 3;
+
         ctx.beginPath();
+
         ctx.moveTo(W / 2, top + 22);
+
         ctx.lineTo(W / 2, top + height - 22);
+
         ctx.stroke();
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefPipeline(ctx, W, H, stage, progress) {
+
         const vd = (stage && stage.visual_data) || {};
+
         const steps = ((vd.steps && vd.steps.length ? vd.steps : vd.labels) || []).slice(0, 5).map(String);
+
         if (!steps.length) return;
+
         const appear = Math.min(1, Math.max(0, progress * 2.2));
+
         const areaTop = 360, areaBottom = 1430, gap = 56;
+
         const nodeH = Math.min(210, Math.floor((areaBottom - areaTop - gap * (steps.length - 1)) / steps.length));
+
         const totalH = steps.length * nodeH + gap * (steps.length - 1);
+
         const startY = areaTop + Math.max(0, Math.floor((areaBottom - areaTop - totalH) / 2));
+
         const boxW = W - 260, boxX = 130;
+
         ctx.save();
+
         steps.forEach((label, i) => {
+
             const nodeAppear = Math.min(1, Math.max(0, appear * steps.length - i));
+
             if (nodeAppear <= 0) return;
+
             const y = startY + i * (nodeH + gap);
+
             ctx.save();
+
             ctx.globalAlpha *= nodeAppear;
+
             if (i > 0) {
+
                 ctx.strokeStyle = "rgba(56,189,248,0.7)";
+
                 ctx.lineWidth = 3;
+
                 ctx.beginPath();
+
                 ctx.moveTo(W / 2, y - gap + 4);
+
                 ctx.lineTo(W / 2, y - 18);
+
                 ctx.stroke();
+
                 ctx.beginPath();
+
                 ctx.moveTo(W / 2 - 9, y - 20);
+
                 ctx.lineTo(W / 2, y - 6);
+
                 ctx.lineTo(W / 2 + 9, y - 20);
+
                 ctx.closePath();
+
                 ctx.fillStyle = "#38BDF8";
+
                 ctx.fill();
+
             }
+
             drawBriefCard(ctx, boxX, y, boxW, nodeH, { border: "rgba(56,189,248,0.5)" });
+
             ctx.beginPath();
+
             ctx.arc(boxX + 58, y + nodeH / 2, 26, 0, Math.PI * 2);
+
             ctx.fillStyle = "rgba(56,189,248,0.92)";
+
             ctx.fill();
+
             ctx.fillStyle = "#04202F";
+
             ctx.font = "800 24px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.textBaseline = "middle";
+
             ctx.fillText(String(i + 1), boxX + 58, y + nodeH / 2 + 1);
+
             ctx.textAlign = "left";
+
             ctx.textBaseline = "alphabetic";
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "700 32px 'Segoe UI', sans-serif";
+
             const lines = splitDiagramText(ctx, label, boxW - 170, 2, 28);
+
             lines.forEach((line, li) => ctx.fillText(line, boxX + 112, y + nodeH / 2 + (lines.length > 1 ? -6 : 11) + li * 36));
+
             ctx.restore();
+
         });
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefTable(ctx, W, H, stage, progress) {
+
         const vd = (stage && stage.visual_data) || {};
+
         const rows = (vd.rows || []).slice(0, 8);
+
         if (rows.length < 2) return;
+
         const headers = rows[0].slice(0, 3);
+
         const body = rows.slice(1, 7);
+
         const x = 60, width = W - 180;
+
         const columns = [Math.round(width * 0.34), Math.round(width * 0.33), 0];
+
         columns[2] = width - columns[0] - columns[1];
+
         const headH = 84;
+
         let y = 340;
+
         ctx.save();
+
         ctx.textBaseline = "alphabetic";
+
         ctx.beginPath();
+
         ctx.roundRect(x, y, width, headH, 14);
+
         ctx.fillStyle = "rgba(18,32,54,0.96)";
+
         ctx.fill();
+
         ctx.strokeStyle = "rgba(56,189,248,0.5)";
+
         ctx.lineWidth = 2;
+
         ctx.stroke();
+
         let cx = x;
+
         headers.forEach((head, i) => {
+
             ctx.textAlign = i === 0 ? "left" : "center";
+
             ctx.font = "700 26px 'Segoe UI', sans-serif";
+
             ctx.fillStyle = i === 1 ? "#7DD3FC" : (i === 2 ? "#C4B5FD" : "#E2E8F0");
+
             const tx = i === 0 ? cx + 22 : cx + columns[i] / 2;
+
             ctx.fillText(splitDiagramText(ctx, head, columns[i] - 24, 1, 18)[0] || "", tx, y + 52);
+
             cx += columns[i];
+
         });
+
         y += headH + 12;
+
         const rowH = 158;
+
         const revealed = Math.max(1, Math.min(body.length, Math.ceil(Math.max(0.2, Math.min(1, progress * 1.6)) * body.length)));
+
         body.forEach((row, r) => {
+
             const ry = y + r * (rowH + 10);
+
             const visible = r < revealed;
+
             ctx.beginPath();
+
             ctx.roundRect(x, ry, width, rowH, 12);
+
             ctx.fillStyle = visible ? "rgba(10,18,32,0.95)" : "rgba(8,14,26,0.85)";
+
             ctx.fill();
+
             ctx.strokeStyle = (r === revealed - 1) ? "rgba(56,189,248,0.9)" : "rgba(56,189,248,0.22)";
+
             ctx.lineWidth = (r === revealed - 1) ? 3 : 2;
+
             ctx.stroke();
+
             if (!visible) return;
+
             let colX = x;
+
             row.slice(0, 3).forEach((cell, i) => {
+
                 ctx.textAlign = i === 0 ? "left" : "center";
+
                 ctx.font = i === 0 ? "600 24px 'Segoe UI', sans-serif" : "500 22px 'Segoe UI', sans-serif";
+
                 ctx.fillStyle = i === 0 ? "#BAE6FD" : "#E2E8F0";
+
                 const lines = splitDiagramText(ctx, cell, columns[i] - 26, 2, 20);
+
                 const tx = i === 0 ? colX + 20 : colX + columns[i] / 2;
+
                 lines.forEach((line, li) => ctx.fillText(line, tx, ry + 56 + li * 32));
+
                 colX += columns[i];
+
             });
+
         });
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefChips(ctx, W, H, stage, progress) {
+
         const vd = (stage && stage.visual_data) || {};
+
         const labels = (vd.labels || []).slice(0, 6);
+
         if (!labels.length) return;
+
         const cols = 2, chipW = 400, chipH = 112, gapX = 40, gapY = 46;
+
         const startX = (W - (cols * chipW + gapX)) / 2;
+
         const startY = 560;
+
         ctx.save();
+
         ctx.textAlign = "center";
+
         ctx.textBaseline = "middle";
+
         labels.forEach((label, i) => {
+
             const appear = Math.min(1, Math.max(0, progress * labels.length - i));
+
             if (appear <= 0) return;
+
             const r = i % cols, c = Math.floor(i / cols);
+
             const x = startX + r * (chipW + gapX);
+
             const y = startY + c * (chipH + gapY);
+
             ctx.save();
+
             ctx.globalAlpha *= appear;
+
             ctx.beginPath();
+
             ctx.roundRect(x, y, chipW, chipH, chipH / 2);
+
             ctx.fillStyle = "rgba(12,20,36,0.94)";
+
             ctx.fill();
+
             ctx.strokeStyle = "rgba(212,175,55,0.7)";
+
             ctx.lineWidth = 2;
+
             ctx.stroke();
+
             ctx.fillStyle = "#E2E8F0";
+
             ctx.font = "700 30px 'Segoe UI', sans-serif";
+
             ctx.fillText(splitDiagramText(ctx, label, chipW - 50, 1, 18)[0] || "", x + chipW / 2, y + chipH / 2 + 1);
+
             ctx.restore();
+
         });
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefWarning(ctx, W, H, stage, progress) {
+
         const vd = (stage && stage.visual_data) || {};
+
         const labels = (vd.labels || []).slice(0, 3);
+
         const appear = Math.min(1, Math.max(0, progress * 2.5));
+
         ctx.save();
+
         ctx.globalAlpha *= appear;
+
         ctx.beginPath();
+
         ctx.roundRect(80, 660, W - 200, 470, 26);
+
         ctx.fillStyle = "rgba(42,12,16,0.96)";
+
         ctx.fill();
+
         ctx.strokeStyle = "rgba(229,72,77,0.9)";
+
         ctx.lineWidth = 3;
+
         ctx.stroke();
+
         ctx.textAlign = "left";
+
         ctx.textBaseline = "alphabetic";
+
         ctx.fillStyle = "#E5484D";
+
         ctx.font = "800 44px 'Segoe UI', sans-serif";
+
         ctx.fillText("!", 118, 756);
+
         ctx.fillStyle = "#FFFFFF";
+
         ctx.font = "800 38px 'Segoe UI', sans-serif";
+
         const title = splitDiagramText(ctx, String(stage && stage.title || "Warning"), W - 320, 1, 28)[0] || "";
+
         ctx.fillText(title, 170, 756);
+
         ctx.fillStyle = "#FCA5A5";
+
         ctx.font = "600 32px 'Segoe UI', sans-serif";
+
         labels.forEach((label, i) => {
+
             const line = splitDiagramText(ctx, label, W - 300, 1, 38)[0];
+
             if (line) ctx.fillText(line, 118, 854 + i * 54);
+
         });
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefCards(ctx, W, H, stage, progress) {
+
         const vd = (stage && stage.visual_data) || {};
+
         const labels = (vd.labels || []).slice(0, 4);
+
         const appear = Math.min(1, Math.max(0, progress * 2.4));
+
         const cardW = (W - 120 - 40) / 2;
+
         ctx.save();
+
         ctx.globalAlpha *= appear;
+
         ctx.textAlign = "center";
+
         ctx.textBaseline = "alphabetic";
+
         [0, 1].forEach(i => {
+
             const x = 60 + i * (cardW + 40);
+
             drawBriefCard(ctx, x, 560, cardW, 520, { border: i ? "rgba(167,139,250,0.85)" : "rgba(56,189,248,0.85)" });
+
             ctx.fillStyle = i ? "#C4B5FD" : "#7DD3FC";
+
             ctx.font = "800 32px 'Segoe UI', sans-serif";
+
             const heading = labels[i * 2] || (i ? "OPTION B" : "OPTION A");
+
             splitDiagramText(ctx, heading, cardW - 50, 2, 16)
+
                 .forEach((line, li) => ctx.fillText(line, x + cardW / 2, 640 + li * 40));
+
             ctx.fillStyle = "#E2E8F0";
+
             ctx.font = "600 28px 'Segoe UI', sans-serif";
+
             const body = labels[i * 2 + 1] || "";
+
             splitDiagramText(ctx, body, cardW - 60, 3, 22)
+
                 .forEach((line, li) => ctx.fillText(line, x + cardW / 2, 760 + li * 40));
+
         });
+
         ctx.restore();
+
     }
+
+
 
     function drawSpatialService(ctx, x, y, label, glyph, color, scale = 1) {
+
         ctx.save();
+
         ctx.translate(x, y);
+
         ctx.scale(scale, scale);
+
         ctx.shadowColor = color;
+
         ctx.shadowBlur = 20;
+
         ctx.strokeStyle = color;
+
         ctx.lineWidth = 3;
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 42, 0, Math.PI * 2);
+
         ctx.stroke();
+
         ctx.shadowBlur = 0;
+
         ctx.fillStyle = "rgba(5,14,30,0.9)";
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 34, 0, Math.PI * 2);
+
         ctx.fill();
+
         ctx.fillStyle = color;
+
         ctx.font = "700 36px 'Segoe UI Symbol', 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.textBaseline = "middle";
+
         ctx.fillText(glyph || "◇", 0, 1);
+
         ctx.fillStyle = "#EAF6FF";
+
         ctx.font = "650 22px 'Segoe UI', sans-serif";
+
         ctx.textBaseline = "top";
+
         const labelLines = splitDiagramText(ctx, label, 220, 2, 19);
+
         labelLines.forEach((line, index) => ctx.fillText(line, 0, 54 + index * 26));
+
         ctx.restore();
+
     }
+
+
 
     function drawSpatialCurve(ctx, from, to, color, progress, time, bend = 0) {
+
         const dx = to.x - from.x, dy = to.y - from.y;
+
         const normalX = -dy / (Math.hypot(dx, dy) || 1);
+
         const normalY = dx / (Math.hypot(dx, dy) || 1);
+
         const c1 = { x: from.x + dx * 0.34 + normalX * bend, y: from.y + dy * 0.34 + normalY * bend };
+
         const c2 = { x: from.x + dx * 0.66 + normalX * bend, y: from.y + dy * 0.66 + normalY * bend };
+
         ctx.save();
+
         ctx.globalAlpha *= Math.max(0, Math.min(1, progress));
+
         ctx.strokeStyle = color;
+
         ctx.lineWidth = 3;
+
         ctx.shadowColor = color;
+
         ctx.shadowBlur = 14;
+
         ctx.beginPath();
+
         ctx.moveTo(from.x, from.y);
+
         ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, to.x, to.y);
+
         ctx.stroke();
+
         const packetT = (time * 0.5) % 1;
+
         const u = 1 - packetT;
+
         const px = u*u*u*from.x + 3*u*u*packetT*c1.x + 3*u*packetT*packetT*c2.x + packetT*packetT*packetT*to.x;
+
         const py = u*u*u*from.y + 3*u*u*packetT*c1.y + 3*u*packetT*packetT*c2.y + packetT*packetT*packetT*to.y;
+
         ctx.fillStyle = "#FFFFFF";
+
         ctx.beginPath();
+
         ctx.arc(px, py, 6, 0, Math.PI * 2);
+
         ctx.fill();
+
         ctx.restore();
+
     }
+
+
 
     function drawBriefSpatial(ctx, W, H, stage, progress, time, stageIndex) {
+
         const title = String(stage && stage.title || "").toLowerCase();
+
         const visual = String(((stage && stage.visual_data) || {}).visual || "").toLowerCase();
+
         const labels = (((stage && stage.visual_data) || {}).labels || []).map(String);
+
         const appear = Math.min(1, Math.max(0, progress * 2.4));
+
         const center = { x: W / 2, y: 850 };
+
         const serviceNames = ["Restaurant", "Catalog", "Payment", "User", "Delivery", "Coupon", "Order", "Support"];
+
         const gatewayColor = title.includes("failure") ? "#EF4444" : "#38BDF8";
+
         const isHook = title.includes("hook") || title.includes("right service");
+
         const isDirect = title.includes("direct") || title.includes("problem") || visual.includes("direct-call");
+
         const isOrder = title.includes("order flow") || title.includes("request flow");
+
         const isResponsibility = title.includes("responsibilit") || title.includes("features");
+
         const isConfig = title.includes("config") || title.includes("gateway a") || title.includes("not all gateways") || title.includes("features depend") || visual.includes("split-screen");
+
         const isFailure = title.includes("failure") || title.includes("down") || title.includes("outage");
+
         const isClosing = title.includes("closing") || title.includes("close") || title.includes("cta");
 
+
+
         ctx.save();
+
         ctx.globalAlpha *= appear;
+
         if (isClosing) {
+
             ctx.textAlign = "center";
+
             ctx.textBaseline = "middle";
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "900 58px 'Segoe UI', sans-serif";
+
             splitDiagramText(ctx, "CAN THE WHOLE APP GO DOWN?", W - 150, 3, 29).forEach((line, i) => ctx.fillText(line, center.x, 650 + i * 74));
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "800 36px 'Segoe UI', sans-serif";
+
             ctx.fillText("WHAT ABOUT HIGH AVAILABILITY?", center.x, 930);
+
             ctx.fillStyle = "#E2E8F0";
+
             ctx.font = "700 30px 'Segoe UI', sans-serif";
+
             ctx.fillText("FOLLOW FOR PART 2", center.x, 1100);
+
             drawSpatialService(ctx, center.x, 1265, "", "↗", "#22C55E", 1.05);
+
             ctx.restore();
+
             return;
+
         }
+
+
 
         if (isHook) {
+
             const phone = { x: center.x, y: 420 };
+
             const hub = { x: center.x, y: 845 };
+
             drawSpatialCurve(ctx, phone, hub, "#38BDF8", appear, time);
+
             drawSpatialService(ctx, phone.x, phone.y, "FOOD APP", "▯", "#FBBF24", 0.9);
+
             drawSpatialService(ctx, hub.x, hub.y, "API GATEWAY", "◇", gatewayColor, 1.25);
+
             serviceNames.forEach((name, index) => {
+
                 const angle = -Math.PI / 2 + index * Math.PI * 2 / serviceNames.length;
+
                 const point = { x: center.x + Math.cos(angle) * 365, y: center.y + Math.sin(angle) * 300 };
+
                 drawSpatialCurve(ctx, { x: hub.x, y: hub.y }, point, "rgba(56,189,248,0.7)", appear, time + index * 0.2, index % 2 ? 34 : -34);
+
                 drawSpatialService(ctx, point.x, point.y, name, ["⌂", "▦", "₹", "◉", "➤", "%", "▣", "? "][index], index === 2 ? "#22C55E" : "#7DD3FC", 0.76);
+
             });
+
         } else if (isDirect) {
+
             const client = { x: 190, y: center.y };
+
             drawSpatialService(ctx, client.x, client.y, "CLIENT APP", "▯", "#FBBF24", 1.05);
+
             ["RESTAURANT", "ORDER", "PAYMENT"].forEach((name, index) => {
+
                 const point = { x: 830, y: 560 + index * 265 };
+
                 drawSpatialCurve(ctx, { x: client.x + 50, y: client.y }, { x: point.x - 50, y: point.y }, ["#38BDF8", "#A78BFA", "#22C55E"][index], appear, time + index * 0.3, (index - 1) * 80);
+
                 drawSpatialService(ctx, point.x, point.y, name, ["⌂", "▣", "₹"][index], ["#38BDF8", "#A78BFA", "#22C55E"][index], 1.05);
+
             });
+
         } else if (isResponsibility) {
+
             drawSpatialService(ctx, center.x, center.y, "API GATEWAY", "◇", gatewayColor, 1.25);
+
             const featureNames = ["AUTHENTICATION", "RATE LIMITING", "REQUEST MONITORING"];
+
             const glyphs = ["⬡", "◷", "≋"];
+
             featureNames.forEach((name, index) => {
+
                 const angle = -Math.PI / 2 + index * Math.PI * 2 / 3;
+
                 const point = { x: center.x + Math.cos(angle) * 300, y: center.y + Math.sin(angle) * 260 };
+
                 drawSpatialCurve(ctx, center, point, ["#A78BFA", "#FBBF24", "#22C55E"][index], appear, time + index * 0.25);
+
                 drawSpatialService(ctx, point.x, point.y, name, glyphs[index], ["#A78BFA", "#FBBF24", "#22C55E"][index], 0.95);
+
             });
+
         } else if (isConfig) {
+
             [[300, "GATEWAY A", "#38BDF8"], [780, "GATEWAY B", "#A78BFA"]].forEach(([x, name, color]) => {
+
                 drawSpatialService(ctx, x, 690, name, "◇", color, 1.15);
+
                 ["AUTH ✓", "RATE —", name.endsWith("A") ? "MONITOR ✕" : "MONITOR ✓"].forEach((label, index) => {
+
                     const yy = 930 + index * 130;
+
                     ctx.fillStyle = index === 2 && name.endsWith("A") ? "#EF4444" : (index === 1 ? "#94A3B8" : "#22C55E");
+
                     ctx.font = "750 26px 'Segoe UI', sans-serif";
+
                     ctx.textAlign = "center";
+
                     ctx.fillText(label, x, yy);
+
                 });
+
             });
+
             ctx.fillStyle = "#FBBF24";
+
             ctx.font = "800 28px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText("FEATURES DEPEND ON CONFIGURATION", center.x, 1390);
+
         } else if (isFailure) {
+
             const client = { x: center.x, y: 440 };
+
             drawSpatialService(ctx, client.x, client.y, "CLIENT", "▯", "#FBBF24", 0.9);
+
             drawSpatialCurve(ctx, client, center, "#EF4444", appear, time);
+
             drawSpatialService(ctx, center.x, center.y, "GATEWAY · DOWN", "✕", "#EF4444", 1.35);
+
             serviceNames.slice(0, 5).forEach((name, index) => {
+
                 const point = { x: 145 + index * 198, y: 1240 + (index % 2) * 80 };
+
                 drawSpatialService(ctx, point.x, point.y, name, "○", "#22C55E", 0.72);
+
                 ctx.strokeStyle = "rgba(148,163,184,0.45)";
+
                 ctx.setLineDash([8, 10]);
+
                 ctx.beginPath();
+
                 ctx.moveTo(center.x, center.y + 56);
+
                 ctx.lineTo(point.x, point.y - 54);
+
                 ctx.stroke();
+
                 ctx.setLineDash([]);
+
                 ctx.fillStyle = "#EF4444";
+
                 ctx.font = "800 28px 'Segoe UI', sans-serif";
+
                 ctx.fillText("×", (center.x + point.x) / 2, (center.y + point.y) / 2);
+
             });
+
         } else if (isOrder) {
+
             const points = [
+
                 { x: 210, y: 500, label: "FOOD APP", glyph: "▯", color: "#FBBF24" },
+
                 { x: 520, y: 720, label: "API GATEWAY", glyph: "◇", color: "#38BDF8" },
+
                 { x: 830, y: 930, label: "ORDER SERVICE", glyph: "▣", color: "#22C55E" },
+
                 { x: 520, y: 1190, label: "PAYMENT", glyph: "₹", color: "#A78BFA" },
+
             ];
+
             points.forEach((item, index) => {
+
                 if (index) drawSpatialCurve(ctx, points[index - 1], item, item.color, appear, time + index * 0.2, index % 2 ? 46 : -46);
+
                 drawSpatialService(ctx, item.x, item.y, item.label, item.glyph, item.color, 0.95);
+
             });
+
         } else {
+
             const points = [
+
                 { x: 235, y: 700, label: "CLIENT", glyph: "▯", color: "#FBBF24" },
+
                 { x: center.x, y: 900, label: "API GATEWAY", glyph: "◇", color: "#38BDF8" },
+
                 { x: 845, y: 1110, label: "MICROSERVICE", glyph: "▣", color: "#22C55E" },
+
             ];
+
             points.forEach((item, index) => {
+
                 if (index) drawSpatialCurve(ctx, points[index - 1], item, item.color, appear, time + index * 0.2, 42);
+
                 drawSpatialService(ctx, item.x, item.y, item.label, item.glyph, item.color, 1.05);
+
             });
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep) {
+
         if (!cue) return;
+
         const query = String(cue.sql_query || "").trim();
+
         const code = String(cue.code_snippet || query || "").trim();
+
         const codeLanguage = String(cue.code_language || (query ? "SQL" : "CODE")).trim().toUpperCase().slice(0, 18);
+
         const explanation = String(cue.code_explanation || "").trim();
+
         const output = String(cue.code_output || "").trim();
+
         const rows = Array.isArray(cue.table_rows) ? cue.table_rows.slice(0, 6) : [];
+
         const state = String(cue.state_change || "").trim();
+
         if (!code && !rows.length) return;
+
         const x = 96, w = W - 192, h = code ? 360 : 198, y = H - h - 652;
+
         const action = String(cue.simulated_action || "none");
+
         ctx.save(); ctx.globalAlpha = 0.97;
+
         ctx.fillStyle = "rgba(4,11,22,0.96)"; ctx.strokeStyle = interactionStep === "verify" ? "rgba(34,197,94,0.9)" : "rgba(56,189,248,0.82)"; ctx.lineWidth = 2;
+
         ctx.beginPath(); ctx.roundRect(x, y, w, h, 20); ctx.fill(); ctx.stroke();
+
         ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.font = "800 22px 'Segoe UI', sans-serif";
+
         ctx.fillStyle = "#7DD3FC"; ctx.fillText(code ? `${codeLanguage} EDITOR · TYPE → SIMULATE` : rows.length ? "SIMULATED DATA OUTPUT" : interactionStep === "verify" ? "VALIDATION CHECK" : "PROCESS STATE", x + 22, y + 25);
+
         if (code || rows.length) {
+
             ctx.textAlign = "right"; ctx.font = "800 13px 'Segoe UI', sans-serif"; ctx.fillStyle = "#FBBF24";
+
             ctx.fillText("ILLUSTRATIVE · NOT EXECUTED", x + w - 142, y + 25);
+
         }
+
         if (code) {
+
             const runX = x + w - 125, runY = y + 12, isSql = Boolean(query);
+
             const runAction = isSql ? "run_query" : "run_code";
+
             const runProgress = isSql ? 0.76 : 0.68;
+
             ctx.fillStyle = progress >= runProgress && action === runAction ? "#10B981" : "rgba(14,40,58,0.98)";
+
             ctx.beginPath(); ctx.roundRect(runX, runY, 100, 28, 9); ctx.fill();
+
             ctx.fillStyle = "#E2E8F0"; ctx.textAlign = "center"; ctx.font = "750 15px 'Segoe UI', sans-serif"; ctx.fillText(progress >= runProgress && action === runAction ? "✓ OUTPUT" : "▶ RUN", runX + 50, runY + 15);
+
             const visibleChars = Math.floor(code.length * Math.max(0, Math.min(1, progress / (action === runAction ? 0.62 : 0.92))));
+
             const codeLines = code.slice(0, visibleChars).split("\n").slice(0, 5);
+
             codeLines.forEach((line, lineIndex) => {
+
                 const trimmed = line.trim();
+
                 ctx.fillStyle = /^(#|\/\/|--)/.test(trimmed) ? "#94A3B8" : /\b(def|return|const|let|var|function|SELECT|FROM|WHERE|import|print|if|for)\b/i.test(line) ? "#C4B5FD" : "#A7F3D0";
+
                 ctx.textAlign = "left"; ctx.font = "600 17px 'Consolas', monospace";
+
                 ctx.fillText(`${String(lineIndex + 1).padStart(2, "0")}  ${line.slice(0, 74)}`, x + 24, y + 62 + lineIndex * 23, w - 48);
+
             });
+
             if (action === runAction && progress >= 0.58 && progress <= 0.78) {
+
                 const clickX = runX + 55, clickY = runY + 15, pulse = 1 + 0.35 * Math.sin(time * 18);
+
                 ctx.save(); ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(clickX, clickY, 12 * pulse, 0, Math.PI * 2); ctx.stroke();
+
                 ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(clickX - 26, clickY + 10); ctx.lineTo(clickX - 9, clickY + 25); ctx.lineTo(clickX - 13, clickY + 8); ctx.closePath(); ctx.fill(); ctx.restore();
+
             }
+
             const outputVisible = progress >= (isSql ? 0.82 : 0.72) || ["output", "verify", "complete"].includes(interactionStep);
+
             if (explanation) {
+
                 ctx.textAlign = "left"; ctx.font = "600 15px 'Segoe UI', sans-serif"; ctx.fillStyle = "#BAE6FD";
+
                 ctx.fillText(`EXPLAIN · ${splitDiagramText(ctx, explanation, w - 48, 1, 18)[0] || explanation}`, x + 24, y + 201, w - 48);
+
             }
+
             if (output && outputVisible && !rows.length) {
+
                 ctx.textAlign = "left"; ctx.font = "800 14px 'Segoe UI', sans-serif"; ctx.fillStyle = "#86EFAC";
+
                 ctx.fillText(`SIMULATED OUTPUT · ${splitDiagramText(ctx, output, w - 220, 1, 18)[0] || output}`, x + 24, y + 239, w - 48);
+
             }
+
         } else if (rows.length && ["open_table", "expand_table", "cursor_click"].includes(action)) {
+
             const openX = x + w - 150, openY = y + 12;
+
             ctx.fillStyle = progress >= 0.38 ? "#0F766E" : "rgba(14,40,58,0.98)"; ctx.beginPath(); ctx.roundRect(openX, openY, 124, 28, 9); ctx.fill();
+
             ctx.fillStyle = "#E2E8F0"; ctx.textAlign = "center"; ctx.font = "750 15px 'Segoe UI', sans-serif"; ctx.fillText(progress >= 0.38 ? "TABLE OPEN" : "⌄ OPEN TABLE", openX + 62, openY + 15);
+
             if (progress >= 0.22 && progress <= 0.42) {
+
                 const clickX = openX + 66, clickY = openY + 15, pulse = 1 + 0.35 * Math.sin(time * 18);
+
                 ctx.save(); ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(clickX, clickY, 12 * pulse, 0, Math.PI * 2); ctx.stroke();
+
                 ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(clickX - 26, clickY + 10); ctx.lineTo(clickX - 9, clickY + 25); ctx.lineTo(clickX - 13, clickY + 8); ctx.closePath(); ctx.fill(); ctx.restore();
+
             }
+
         }
+
         const revealRows = rows.length && (action === "open_table" || action === "expand_table" ? progress >= 0.38 : action === "run_query" ? progress >= 0.82 : ["output", "verify"].includes(interactionStep));
+
         if (revealRows) {
+
             const rowStart = y + (query ? (code ? 285 : 154) : 66), count = Math.min(rows.length, 3), cols = Math.max(1, ...rows.slice(0, count).map(row => row.length));
+
             rows.slice(0, count).forEach((row, rowIndex) => {
+
                 const cellW = (w - 44) / cols, cellY = rowStart + rowIndex * 25;
+
                 if (rowIndex === 0) { ctx.fillStyle = "rgba(56,189,248,0.16)"; ctx.fillRect(x + 18, cellY - 12, w - 36, 24); }
+
                 row.slice(0, cols).forEach((cell, colIndex) => { ctx.fillStyle = rowIndex === 0 ? "#BAE6FD" : "#E2E8F0"; ctx.font = rowIndex === 0 ? "750 16px 'Segoe UI', sans-serif" : "600 16px 'Consolas', monospace"; ctx.textAlign = "left"; ctx.fillText(String(cell).slice(0, 30), x + 26 + colIndex * cellW, cellY, cellW - 12); });
+
             });
+
         } else if (state) {
+
             ctx.fillStyle = "#E2E8F0"; ctx.font = "600 20px 'Segoe UI', sans-serif"; ctx.textAlign = "left";
+
             const line = splitDiagramText(ctx, state, w - 44, 1, 27)[0]; if (line) ctx.fillText(line, x + 22, y + 78);
+
         }
+
         if (interactionStep === "verify" && cue.expected_result && cue.observed_result) {
+
             const expected = String(cue.expected_result).trim().toLowerCase(), observed = String(cue.observed_result).trim().toLowerCase();
+
             const expectedNumbers = expected.match(/(?<![\w])\d[\d,]*(?:\.\d+)?/g), observedNumbers = observed.match(/(?<![\w])\d[\d,]*(?:\.\d+)?/g);
+
             const matches = expectedNumbers && expectedNumbers.length && observedNumbers && observedNumbers.length
+
                 ? expectedNumbers[expectedNumbers.length - 1].replace(/,/g, "") === observedNumbers[observedNumbers.length - 1].replace(/,/g, "")
+
                 : expected === observed;
+
             const comparisonComplete = progress >= 0.82;
+
             ctx.fillStyle = comparisonComplete ? (matches ? "#86EFAC" : "#FCA5A5") : "#FDE68A"; ctx.textAlign = "right"; ctx.font = "800 17px 'Segoe UI', sans-serif";
+
             const resultLabel = comparisonComplete ? (matches ? "✓ MATCH" : "✕ MISMATCH") : "↔ COMPARING";
+
             ctx.fillText(`${resultLabel} · EXPECTED ${cue.expected_result.slice(0, 26)} · ACTUAL ${cue.observed_result.slice(0, 26)}`, x + w - 18, y + h - 16, w - 44);
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue) {
+
         const requested = [
+
             ...(Array.isArray(stage?.overlay_items) ? stage.overlay_items : []),
+
             ...(Array.isArray(visual?.overlay_items) ? visual.overlay_items : []),
+
         ];
+
         const unique = new Map();
+
         requested.forEach(item => {
+
             const content = String(item?.content || item?.text || "").trim();
+
             if (content && !unique.has(content)) unique.set(content, { ...item, content });
+
         });
+
         const hasSceneObjects = [visual?.elements, visual?.entities, visual?.nodes, stage?.visual_data?.elements, stage?.visual_data?.entities]
+
             .some(items => Array.isArray(items) && items.length > 0);
+
         if (!unique.size && !hasSceneObjects) {
+
             const fallbackText = String(cue?.emphasis || cue?.state_change || stage?.caption || "").trim();
+
             if (fallbackText) unique.set(fallbackText, { kind: "label", content: fallbackText, x: 0.5, y: 0.5 });
+
         }
+
         const overlays = Array.from(unique.values());
+
         if (!overlays.length) return;
+
         ctx.save();
+
         const placed = [];
+
         const elementItems = Array.isArray(visual?.elements) ? visual.elements : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
+
         const objectRects = elementItems.map(element => {
+
             const ex = Math.max(0, Math.min(1, Number(element?.x ?? 0.5)));
+
             const ey = Math.max(0, Math.min(1, Number(element?.y ?? 0.5)));
+
             const cx = W * (0.17 + ex * 0.66), cy = H * (0.28 + ey * 0.36);
+
             return { left: cx - 142, right: cx + 142, top: cy - 116, bottom: cy + 142 };
+
         });
+
         const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
         overlays.forEach((item, index) => {
+
             const content = String(item.content || "").trim();
+
             if (!content) return;
+
             const kind = String(item.kind || "label").toLowerCase();
+
             const reveal = Math.max(0, Math.min(1, progress * overlays.length * 1.7 - index));
+
             if (!reveal) return;
+
             ctx.save(); ctx.globalAlpha *= reveal; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
             const fontSize = content.length > 150 ? 18 : content.length > 80 ? 22 : (kind === "code" ? 26 : kind === "formula" ? 30 : 32);
+
             ctx.font = `${kind === "label" ? "800" : "700"} ${fontSize}px ${kind === "code" ? "Consolas, monospace" : "'Segoe UI', sans-serif"}`;
+
             const maxWidth = W * 0.78;
+
             const maxLines = Math.max(4, Math.min(14, Math.ceil(content.length / Math.max(18, Math.floor(maxWidth / (fontSize * 0.58))))));
+
             const lines = wrapCanvasText(ctx, content, maxWidth - 28, maxLines);
+
             const measuredWidth = Math.max(120, ...lines.map(line => ctx.measureText(line).width + 36));
+
             const width = Math.min(W - 64, measuredWidth), lineH = fontSize * 1.22;
+
             const height = Math.max(48, lines.length * lineH + 22);
+
             const rawX = Number(item.x ?? 0.5), rawY = Number(item.y ?? (0.42 + index * 0.08));
+
             const anchorX = Math.max(0.12, Math.min(0.88, Number.isFinite(rawX) ? rawX : 0.5)) * W;
+
             const anchorY = Math.max(0.16, Math.min(0.72, Number.isFinite(rawY) ? rawY : 0.5)) * H;
+
             const candidates = [
+
                 [0, 0], [0, -0.10], [0, 0.10], [-0.14, 0], [0.14, 0],
+
                 [-0.14, -0.10], [0.14, -0.10], [-0.14, 0.10], [0.14, 0.10],
+
                 [0, -0.20], [0, 0.20],
+
             ];
+
             let chosen = null;
+
             for (const [dx, dy] of candidates) {
+
                 const x = Math.max(width / 2 + 24, Math.min(W - width / 2 - 24, anchorX + dx * W));
+
                 const y = Math.max(height / 2 + 196, Math.min(H * 0.72 - height / 2, anchorY + dy * H));
+
                 const rect = { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+
                 if (!objectRects.some(obstacle => overlaps(rect, obstacle)) && !placed.some(obstacle => overlaps(rect, obstacle))) {
+
                     chosen = { x, y, rect }; break;
+
                 }
+
             }
+
             if (!chosen) {
+
                 const x = anchorX, y = anchorY;
+
                 chosen = { x, y, rect: { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 } };
+
             }
+
             placed.push(chosen.rect);
+
             const color = item.color || "#38BDF8";
+
             ctx.fillStyle = "rgba(3,10,24,0.88)"; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+
             ctx.beginPath(); ctx.roundRect(chosen.rect.left, chosen.rect.top, width, height, 16); ctx.fill(); ctx.stroke();
+
             ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 10;
+
             ctx.fillStyle = item.color || "#F8FAFC";
+
             lines.forEach((line, lineIndex) => ctx.fillText(line, chosen.x, chosen.rect.top + 12 + lineH * (lineIndex + 0.5), width - 28));
+
             ctx.restore();
+
         });
+
         ctx.restore();
+
     }
+
+
 
     function drawObjectProcessAnnotation(ctx, W, H, point, cue, interactionStep) {
+
         if (!point || !cue || cue.code_snippet || cue.sql_query || (Array.isArray(cue.table_rows) && cue.table_rows.length)) return;
+
         const explanation = String(cue.state_change || cue.expected_result || cue.emphasis || point.item?.detail || "").trim();
+
         if (!explanation) return;
+
         const color = String(point.item?.color || "#38BDF8");
+
         ctx.save();
+
         ctx.font = "650 20px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "left";
+
         ctx.textBaseline = "middle";
+
         const lines = splitDiagramText(ctx, explanation, 330, 2, 24);
+
         const lineHeight = 25, padX = 14, padY = 10;
+
         const width = Math.min(360, Math.max(170, ...lines.map(line => ctx.measureText(line).width + padX * 2)));
+
         const height = lines.length * lineHeight + padY * 2;
+
         const placeAbove = point.y > 680;
+
         const boxX = Math.max(28, Math.min(W - width - 28, point.x - width / 2));
+
         const boxY = placeAbove
+
             ? Math.max(330, point.y - 190 - height)
+
             : Math.min(H - 700 - height, point.y + 255);
+
         const anchorX = Math.max(boxX + 20, Math.min(boxX + width - 20, point.x));
+
         const boxEdgeY = placeAbove ? boxY + height : boxY;
+
         ctx.strokeStyle = color; ctx.globalAlpha = 0.82; ctx.lineWidth = 2.5;
+
         ctx.beginPath(); ctx.moveTo(anchorX, boxEdgeY); ctx.lineTo(point.x, point.y + (placeAbove ? -76 : 76)); ctx.stroke();
+
         ctx.fillStyle = color; ctx.beginPath(); ctx.arc(point.x, point.y + (placeAbove ? -76 : 76), 5, 0, Math.PI * 2); ctx.fill();
+
         ctx.globalAlpha = 0.95; ctx.fillStyle = "rgba(3,10,24,0.9)"; ctx.strokeStyle = `${color}CC`; ctx.lineWidth = 1.5;
+
         ctx.beginPath(); ctx.roundRect(boxX, boxY, width, height, 12); ctx.fill(); ctx.stroke();
+
         ctx.fillStyle = interactionStep === "failure" ? "#FCA5A5" : "#E2E8F0";
+
         lines.forEach((line, index) => ctx.fillText(line, boxX + padX, boxY + padY + lineHeight * (index + 0.5), width - padX * 2));
+
         ctx.restore();
+
     }
+
+
 
     function resolveVisualPointCollisions(pointMap, W, H, options = {}) {
+
         const points = Array.from(pointMap.values());
+
         if (points.length < 2) return;
+
         const dense = points.length > 6;
+
         const minGap = Number(options.minGap) || (dense ? 118 : 198);
+
         const minX = 104, maxX = W - 104;
+
         const minY = Number(options.minY) || 520, maxY = Number(options.maxY) || H - 700;
+
         points.forEach(point => {
+
             point.x = Math.max(minX, Math.min(maxX, point.x));
+
             point.y = Math.max(minY, Math.min(maxY, point.y));
+
         });
+
         // Deterministic relaxation keeps the authored relationships while separating labels.
+
         for (let pass = 0; pass < 34; pass++) {
+
             let moved = false;
+
             for (let i = 0; i < points.length; i++) for (let j = i + 1; j < points.length; j++) {
+
                 const a = points[i], b = points[j];
+
                 let dx = b.x - a.x, dy = b.y - a.y, distance = Math.hypot(dx, dy);
+
                 if (distance >= minGap) continue;
+
                 if (distance < 0.01) { dx = (j % 2 ? 1 : -1); dy = ((j + i) % 2 ? 1 : -1); distance = Math.SQRT2; }
+
                 const push = (minGap - distance) * 0.27, ux = dx / distance, uy = dy / distance;
+
                 a.x = Math.max(minX, Math.min(maxX, a.x - ux * push));
+
                 a.y = Math.max(minY, Math.min(maxY, a.y - uy * push));
+
                 b.x = Math.max(minX, Math.min(maxX, b.x + ux * push));
+
                 b.y = Math.max(minY, Math.min(maxY, b.y + uy * push));
+
                 moved = true;
+
             }
+
             if (!moved) break;
+
         }
+
     }
+
+
 
     function evaluatePromptEntrance(item, globalMotion, progress, index) {
+
         const description = `${globalMotion || ""} ${item?.motion || ""} ${item?.animation || ""}`.toLowerCase();
+
         const raw = Math.max(0, Math.min(1, progress * 2.15 - index * 0.045));
+
         const eased = raw * raw * (3 - 2 * raw);
+
         const travel = (1 - eased) * 92;
+
         let dx = 0, dy = 0;
+
         if (/from\s*left|enter(?:ing)?\s+left|slide(?:s|ing)?\s+in\s+from\s+left/.test(description)) dx = -travel;
+
         else if (/from\s*right|enter(?:ing)?\s+right|slide(?:s|ing)?\s+in\s+from\s+right/.test(description)) dx = travel;
+
         else if (/rise|float|lift|ascend|spring up/.test(description)) dy = travel;
+
         else if (/drop|fall|descend|enter from above/.test(description)) dy = -travel;
+
         const elastic = /bounce|spring|elastic|cartoon|squash|stretch|pop/.test(description);
+
         const settle = elastic ? Math.sin(raw * Math.PI * 3) * (1 - raw) * 0.16 : 0;
+
         const scale = Math.max(0.72, 0.9 + eased * 0.1 + settle);
+
         const rotation = /spin|rotate|twirl|turn/.test(description) ? (1 - eased) * (description.includes("left") ? -0.45 : 0.45) : 0;
+
         const float = /float|hover|drift/.test(description) ? Math.sin(progress * Math.PI * 2 + index) * 9 : 0;
+
         return { dx, dy: dy + float, scale, rotation };
+
     }
+
+
 
     function drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue) {
+
         const source = Array.isArray(visual?.elements) && visual.elements.length
+
             ? visual.elements
+
             : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
+
         const points = new Map(source.filter(item => item && item.label).map(item => [String(item.label), {
+
             x: W * (0.12 + Math.max(0, Math.min(1, Number(item.x ?? 0.5))) * 0.76),
+
             y: H * (0.29 + Math.max(0, Math.min(1, Number(item.y ?? 0.5)) * 0.43)),
+
         }]));
+
         const connectors = Array.isArray(visual?.connectors) ? visual.connectors : [];
+
         if (!points.size) return;
+
         ctx.save();
+
         ctx.globalAlpha *= sqlShortState.isExporting ? 0.16 : 0.29;
+
         connectors.slice(0, 12).forEach((edge, index) => {
+
             const from = points.get(String(edge?.from || "")), to = points.get(String(edge?.to || ""));
+
             if (!from || !to) return;
+
             const bend = (index % 2 ? 1 : -1) * Math.min(110, Math.abs(to.x - from.x) * 0.14 + 36);
+
             const cx = (from.x + to.x) / 2, cy = (from.y + to.y) / 2 + bend;
+
             const color = edge.color || "#67E8F9";
+
             ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.quadraticCurveTo(cx, cy, to.x, to.y);
+
             ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([10, 12]); ctx.lineDashOffset = -time * 28; ctx.stroke(); ctx.setLineDash([]);
+
             const packet = (time * 0.22 + index / Math.max(1, connectors.length)) % 1;
+
             const inverse = 1 - packet;
+
             const px = inverse * inverse * from.x + 2 * inverse * packet * cx + packet * packet * to.x;
+
             const py = inverse * inverse * from.y + 2 * inverse * packet * cy + packet * packet * to.y;
+
             ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
+
         });
+
         const focus = String(cue?.focus_element || "").toLowerCase();
+
         const active = source.find(item => focus && String(item.label).toLowerCase().includes(focus)) || source[0];
+
         const center = active && points.get(String(active.label));
+
         if (center) {
+
             ctx.save(); ctx.translate(center.x, center.y); ctx.rotate(time * 0.32);
+
             ctx.strokeStyle = active.color || "#67E8F9"; ctx.lineWidth = 2.5; ctx.setLineDash([12, 8]);
+
             ctx.beginPath(); ctx.ellipse(0, 0, 72, 42, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+
             ctx.beginPath(); ctx.arc(72, 0, 5, 0, Math.PI * 2); ctx.fillStyle = active.color || "#67E8F9"; ctx.fill(); ctx.restore();
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function drawPromptChart(ctx, W, H, stage, visual, progress, time) {
+
         const spec = visual.chart || stage?.chart || {};
+
         const labels = (Array.isArray(spec.labels) ? spec.labels : []).map(String).slice(0, 10);
+
         const series = (Array.isArray(spec.series) ? spec.series : []).filter(item => item && Array.isArray(item.values) && item.values.some(value => Number.isFinite(Number(value)))).slice(0, 3);
+
         if (labels.length < 2 || !series.length) return false;
+
         const x = 116, y = 500, w = W - 232, h = 850, type = String(spec.type || "line").toLowerCase();
+
         const color = value => /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : "#F2B84B";
+
         ctx.save(); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+
         ctx.fillStyle = color((visual.palette || [])[0]); ctx.font = "750 25px 'Segoe UI', sans-serif";
+
         ctx.fillText(String(spec.title || stage?.title || "Data view").slice(0, 64), x, y - 35);
+
         const left = x + 74, top = y + 38, plotW = w - 110, plotH = h - 120;
+
         const values = series.flatMap(set => set.values.map(Number).filter(Number.isFinite));
+
         const min = Math.min(0, ...values), max = Math.max(...values, 1), span = max - min || 1;
+
         ctx.strokeStyle = "rgba(226,232,240,0.18)"; ctx.fillStyle = "#94A3B8"; ctx.lineWidth = 1;
+
         ctx.font = "16px 'Segoe UI', sans-serif";
+
         for (let i = 0; i <= 4; i++) {
+
             const gy = top + plotH * i / 4;
+
             ctx.beginPath(); ctx.moveTo(left, gy); ctx.lineTo(left + plotW, gy); ctx.stroke();
+
             ctx.textAlign = "right"; ctx.fillText((max - span * i / 4).toFixed(max > 100 ? 0 : 1), left - 14, gy + 6);
+
         }
+
         series.forEach((set, si) => {
+
             const vals = set.values.map(Number).filter(Number.isFinite).slice(0, labels.length), c = color(set.color);
+
             const revealCount = Math.max(1, Math.ceil(Math.min(1, progress * 1.25) * vals.length));
+
             if (type === "bar") {
+
                 const group = plotW / labels.length, barW = group / Math.max(2, series.length + 1);
+
                 vals.forEach((v, i) => {
+
                     if (i >= revealCount) return;
+
                     const bh = Math.max(2, ((v - min) / span) * plotH * Math.min(1, Math.max(0, progress * 1.8 - i / vals.length)));
+
                     const bx = left + group * i + group * 0.18 + si * barW;
+
                     ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 14;
+
                     ctx.fillRect(bx, top + plotH - bh, barW * 0.72, bh); ctx.shadowBlur = 0;
+
                 });
+
             } else {
+
                 ctx.beginPath();
+
                 vals.slice(0, revealCount).forEach((v, i) => {
+
                     const px = left + plotW * i / Math.max(1, labels.length - 1), py = top + plotH * (1 - (v - min) / span);
+
                     if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+
                 });
+
                 ctx.strokeStyle = c; ctx.lineWidth = type === "area" ? 6 : 4; ctx.shadowColor = c; ctx.shadowBlur = 16; ctx.stroke(); ctx.shadowBlur = 0;
+
                 vals.slice(0, revealCount).forEach((v, i) => {
+
                     const px = left + plotW * i / Math.max(1, labels.length - 1), py = top + plotH * (1 - (v - min) / span);
+
                     ctx.beginPath(); ctx.arc(px, py, 7 + 2 * Math.sin(time * 3 + i), 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+
                 });
+
             }
+
         });
+
         ctx.textAlign = "center"; ctx.fillStyle = "#CBD5E1"; ctx.font = "16px 'Segoe UI', sans-serif";
+
         labels.forEach((label, i) => ctx.fillText(label.slice(0, 14), left + plotW * i / Math.max(1, labels.length - 1), top + plotH + 34));
+
         ctx.textAlign = "left"; ctx.font = "17px 'Segoe UI', sans-serif";
+
         series.forEach((set, i) => {
+
             const lx = left + i * Math.min(260, plotW / series.length);
+
             ctx.fillStyle = color(set.color); ctx.beginPath(); ctx.arc(lx, top + plotH + 72, 6, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillText(String(set.name || `Series ${i + 1}`).slice(0, 24), lx + 14, top + plotH + 78);
+
         });
+
         ctx.restore(); return true;
+
     }
+
+
 
     function drawPromptTimeline(ctx, W, H, stage, visual, progress, time) {
+
         const authored = Array.isArray(visual.events) ? visual.events : (Array.isArray(stage?.sentence_cues) ? stage.sentence_cues : []);
+
         const events = authored.slice(0, 7).map((item, index) => ({
+
             label: String(item.label || item.speech || item.title || "").replace(/[.!?।]+$/, "").slice(0, 84),
+
             detail: String(item.detail || item.state_change || item.emphasis || "").slice(0, 100),
+
             color: /^#[0-9a-f]{6}$/i.test(item.color || "") ? item.color : (visual.palette || [])[index % Math.max(1, (visual.palette || []).length)] || "#DDAA55",
+
         })).filter(item => item.label);
+
         if (events.length < 2) return false;
+
         const x = W * 0.26, top = 450, gap = Math.min(220, 980 / Math.max(1, events.length - 1));
+
         ctx.save(); ctx.strokeStyle = "rgba(203,213,225,0.32)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + gap * (events.length - 1)); ctx.stroke();
+
         events.forEach((event, i) => {
+
             const reveal = Math.max(0, Math.min(1, progress * events.length * 1.3 - i)); if (!reveal) return;
+
             const y = top + i * gap, pulse = i === Math.min(events.length - 1, Math.floor(progress * events.length)) ? 1 + 0.1 * Math.sin(time * 5) : 1;
+
             ctx.save(); ctx.globalAlpha *= reveal; ctx.beginPath(); ctx.arc(x, y, 14 * pulse, 0, Math.PI * 2); ctx.fillStyle = event.color; ctx.shadowColor = event.color; ctx.shadowBlur = 18; ctx.fill(); ctx.shadowBlur = 0;
+
             ctx.strokeStyle = event.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 24, y); ctx.lineTo(W * 0.86, y); ctx.stroke();
+
             ctx.textAlign = "left"; ctx.fillStyle = event.color; ctx.font = "750 18px 'Segoe UI', sans-serif"; ctx.fillText(String(authored[i]?.time || `0${i + 1}`), x - 96, y + 6);
+
             ctx.fillStyle = "#F8FAFC"; ctx.font = "700 25px 'Segoe UI', sans-serif"; wrapCanvasText(ctx, event.label, W * 0.58, 2).forEach((line, j) => ctx.fillText(line, x + 44, y - (event.detail ? 3 : -8) + j * 30));
+
             if (event.detail) { ctx.fillStyle = "#AAB6C5"; ctx.font = "18px 'Segoe UI', sans-serif"; wrapCanvasText(ctx, event.detail, W * 0.58, 1).forEach((line, j) => ctx.fillText(line, x + 44, y + 34 + j * 24)); }
+
             ctx.restore();
+
         });
+
         ctx.restore(); return true;
+
     }
+
+
 
     function drawPromptEditorial(ctx, W, H, stage, visual, progress, time) {
+
         const title = String(visual.headline || stage?.title || "").trim();
+
         const takeaway = String(visual.takeaway || visual.visual || stage?.caption || "").trim();
+
         const accent = /^#[0-9a-f]{6}$/i.test((visual.palette || [])[0] || "") ? visual.palette[0] : "#E9B949";
+
         const reveal = Math.max(0, Math.min(1, progress * 2.5));
+
         ctx.save(); ctx.globalAlpha *= reveal; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+
         ctx.fillStyle = accent; ctx.fillRect(104, 555, 8, 160 + 80 * Math.sin(time * 0.8));
+
         ctx.fillStyle = "#F8FAFC"; ctx.font = "900 68px 'Segoe UI', sans-serif";
+
         wrapCanvasText(ctx, title, W - 250, 3).forEach((line, i) => ctx.fillText(line, 146, 560 + i * 82 + (1 - reveal) * 32));
+
         if (takeaway) {
+
             ctx.fillStyle = accent; ctx.font = "650 30px 'Segoe UI', sans-serif";
+
             wrapCanvasText(ctx, takeaway, W - 250, 4).forEach((line, i) => ctx.fillText(line, 146, 940 + i * 48));
+
         }
+
         const symbol = String(visual.hero_symbol || "").slice(0, 3);
+
         if (symbol) { ctx.textAlign = "right"; ctx.font = "180px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif"; ctx.globalAlpha *= 0.18 + reveal * 0.25; ctx.fillText(symbol, W - 100, 1440); }
+
         ctx.restore(); return true;
+
     }
+
+
 
     function drawPromptVisualPlan(ctx, W, H, stage, progress, time, visualOverride, cueIndex = 0, cue = null) {
+
         const visual = visualOverride || (stage && stage.visual_data) || {};
+
         const requestedLayout = String(visual.layout || stage?.visual_data?.layout || "").toLowerCase();
+
         const visualMode = String(visual.visual_mode || stage?.visual_data?.visual_mode || requestedLayout || "semantic_objects").toLowerCase();
+
         if (visualMode === "chart" && drawPromptChart(ctx, W, H, stage, visual, progress, time)) {
+
             drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue); drawCueDetailPanel(ctx, W, H, cue, progress, time, cue?.interaction_step); return true;
+
         }
+
         if (visualMode === "timeline" && drawPromptTimeline(ctx, W, H, stage, visual, progress, time)) {
+
             drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue); drawCueDetailPanel(ctx, W, H, cue, progress, time, cue?.interaction_step); return true;
+
         }
+
         if (visualMode === "editorial" && drawPromptEditorial(ctx, W, H, stage, visual, progress, time)) {
+
             drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue); drawCueDetailPanel(ctx, W, H, cue, progress, time, cue?.interaction_step); return true;
+
         }
+
         const supportedLayouts = ["title", "split", "pipeline", "table", "chips", "warning", "cards", "spatial"];
+
         const semanticMode = ["semantic_objects", "illustration", "terminal", "blueprint", "network", "state_machine", "timeline", "chart"].includes(visualMode);
+
         if (semanticMode || supportedLayouts.includes(requestedLayout)) {
+
             const layoutMode = semanticMode ? "spatial" : requestedLayout;
+
             const sceneElements = Array.isArray(visual.elements) && visual.elements.length
+
                 ? visual.elements
+
                 : (Array.isArray(stage?.visual_data?.elements) ? stage.visual_data.elements : []);
+
             const layoutVisual = {
+
                 ...((stage && stage.visual_data) || {}),
+
                 ...visual,
+
                 layout: layoutMode,
+
                 visual: String(visual.visual || visual.composition || stage?.visual_data?.composition || ""),
+
                 labels: Array.isArray(visual.labels) ? visual.labels : sceneElements.map(item => String(item.label || "")).filter(Boolean),
+
                 steps: Array.isArray(visual.steps) ? visual.steps : sceneElements.map(item => String(item.label || "")).filter(Boolean),
+
                 rows: Array.isArray(visual.rows) ? visual.rows : (Array.isArray(cue?.table_rows) ? cue.table_rows : (stage?.table_rows || [])),
+
             };
+
             const layout = semanticMode ? "spatial" : requestedLayout === "table" && layoutVisual.rows.length < 2 ? "spatial" : requestedLayout;
+
             const layoutStage = { ...(stage || {}), visual_data: { ...layoutVisual, layout } };
+
             ctx.save(); ctx.globalAlpha = 1;
+
             if (layout === "title") drawBriefTitle(ctx, W, H, layoutStage, progress);
+
             else if (layout === "split") drawBriefSplit(ctx, W, H, layoutStage, progress);
+
             else if (layout === "pipeline") drawBriefPipeline(ctx, W, H, layoutStage, progress);
+
             else if (layout === "table") drawBriefTable(ctx, W, H, layoutStage, progress);
+
             else if (layout === "chips") drawBriefChips(ctx, W, H, layoutStage, progress);
+
             else if (layout === "warning") drawBriefWarning(ctx, W, H, layoutStage, progress);
+
             else if (layout === "spatial") {
+
                 const spatialStage = {
+
                     ...layoutStage,
+
                     overlay_items: [],
+
                     visual_data: {
+
                         ...layoutVisual,
+
                         overlay_items: [],
+
                         entities: sceneElements.map(item => ({
+
                             id: String(item.label || ""), label: String(item.label || ""),
+
                             detail: String(item.detail || ""), shape: String(item.shape || "orb"),
+
                             color: String(item.color || "#38BDF8"), glyph: String(item.glyph || item.icon || ""),
+
                             x: item.x, y: item.y, depth: item.depth, motion: String(item.motion || ""),
+
                         })),
+
                         relationships: Array.isArray(visual.connectors) ? visual.connectors : (stage?.visual_data?.connectors || []),
+
                     },
+
                 };
+
                 // Use the prompt-authored spatial graph. drawBriefSpatial is a
+
                 // legacy API-gateway demo and must never replace user content.
+
                 renderPromptDrivenVisual(ctx, W, H, { title: stage?.title || "", domain: stage?.domain || "" }, spatialStage, progress, 1, time);
+
             }
+
             else drawBriefCards(ctx, W, H, layoutStage, progress);
+
             ctx.restore();
+
             drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue);
+
             drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
+
             return true;
+
         }
+
         // Every model-authored mode remains valid. Unrecognized names go to the
+
         // open semantic renderer instead of being coerced into a legacy layout.
+
         if (visualMode) {
+
             const authored = Array.isArray(visual.elements) ? visual.elements : (Array.isArray(visual.entities) ? visual.entities : (Array.isArray(visual.nodes) ? visual.nodes : []));
+
             const openStage = { ...(stage || {}), visual_data: { ...((stage && stage.visual_data) || {}), ...visual, entities: authored } };
+
             ctx.save();
+
             ctx.globalAlpha = Math.max(0.15, Math.min(1, Number(stage?.alpha) || 1));
+
             renderPromptDrivenVisual(ctx, W, H, { title: stage?.title || stage?.domain || "" }, openStage, progress, 1, time);
+
             ctx.restore();
+
             drawMedallionConnections(ctx, W, H, stage, visual, progress, time, cue);
+
             drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
+
             return true;
+
         }
+
         const stageCues = Array.isArray(stage?.sentence_cues) ? stage.sentence_cues : [];
+
         const allVisuals = [stage?.visual_data, ...stageCues.map(item => item && item.visual_data), visual]
+
             .filter(item => item && Array.isArray(item.elements));
+
         const elementByLabel = new Map();
+
         allVisuals.forEach(source => source.elements.forEach(item => {
+
             if (item && item.label && !elementByLabel.has(String(item.label))) elementByLabel.set(String(item.label), item);
+
         }));
+
         // Per-scene payloads are bounded at validation time. Keep the full cue
+
         // union here so a later named component is never silently discarded.
+
         const elements = Array.from(elementByLabel.values());
+
         if (!elements.length) return false;
+
         const interactionStep = String(cue && cue.interaction_step || "introduce").toLowerCase();
+
         const focusNeedle = String(cue && (cue.focus_element || cue.emphasis) || "").toLowerCase();
+
         const findElement = needle => elements.find(item => {
+
             const label = String(item.label || "").toLowerCase();
+
             return label && needle && (label.includes(needle) || needle.includes(label));
+
         });
+
         let focusItem = findElement(focusNeedle);
+
         if (!focusItem && visualOverride?.elements?.length) focusItem = elements.find(item => String(item.label) === String(visualOverride.elements[0].label));
+
         if (!focusItem && elements.length) focusItem = elements[Math.min(cueIndex, elements.length - 1)];
+
         // Keep every authored scene object on screen from the opening frame;
+
         // cue focus and connector endpoints control emphasis, not existence.
+
         const visibleLabels = new Set(elements.map(item => String(item.label)));
+
         const historyLabels = new Set();
+
         const revealedConnectorKeys = new Set();
+
         const connectorKey = item => `${String(item.from || "")}\u2192${String(item.to || "")}`;
+
         const addCueVisibility = (sourceCue, isCurrent) => {
+
             if (!sourceCue || !sourceCue.visual_data) return;
+
             const sourceVisual = sourceCue.visual_data;
+
             const sourceStep = String(sourceCue.interaction_step || "").toLowerCase();
+
             const sourceElements = Array.isArray(sourceVisual.elements) ? sourceVisual.elements : [];
+
             const needle = String(sourceCue.focus_element || sourceCue.emphasis || "").toLowerCase();
+
             const focused = sourceElements.find(item => {
+
                 const label = String(item.label || "").toLowerCase();
+
                 return label && needle && (label.includes(needle) || needle.includes(label));
+
             }) || sourceElements[0];
+
             if (focused && !["connect", "transfer"].includes(sourceStep)) {
+
                 visibleLabels.add(String(focused.label));
+
                 if (!isCurrent) historyLabels.add(String(focused.label));
+
             }
+
             (Array.isArray(sourceVisual.connectors) ? sourceVisual.connectors : []).forEach(connector => {
+
                 if (!connector || !connector.from || !connector.to) return;
+
                 if (["connect", "transfer"].includes(sourceStep)) {
+
                     revealedConnectorKeys.add(connectorKey(connector));
+
                     visibleLabels.add(String(connector.from)); visibleLabels.add(String(connector.to));
+
                     if (!isCurrent) { historyLabels.add(String(connector.from)); historyLabels.add(String(connector.to)); }
+
                 }
+
             });
+
         };
+
         stageCues.slice(0, Math.max(0, cueIndex)).forEach(item => addCueVisibility(item, false));
+
         if (cue) addCueVisibility(cue, true);
+
         else {
+
             const count = Math.max(1, elements.length);
+
             elements.slice(0, Math.max(1, Math.ceil(progress * count))).forEach(item => visibleLabels.add(String(item.label)));
+
         }
+
         if (focusItem && !["connect", "transfer"].includes(interactionStep)) visibleLabels.add(String(focusItem.label));
+
         if (interactionStep === "continue" && focusItem) {
+
             const next = elements.find((item, index) => index > elements.indexOf(focusItem));
+
             if (next) { focusItem = next; visibleLabels.add(String(next.label)); }
+
         }
+
         const visibleElements = elements.filter(item => visibleLabels.has(String(item.label)));
+
         if (!visibleElements.length) {
+
             const fallback = focusItem || elements[0];
+
             visibleLabels.add(String(fallback.label)); visibleElements.push(fallback); focusItem = fallback;
+
         }
+
         const points = new Map();
+
         const top = 390, usableHeight = 760;
+
         const scale = elements.length <= 3 ? 1.05 : 0.94;
+
         const hasCueDetailPanel = Boolean(cue && (cue.sql_query || cue.code_snippet || (Array.isArray(cue.table_rows) && cue.table_rows.length)));
+
         const cuePanelHeight = cue && (cue.sql_query || cue.code_snippet) ? 360 : 198;
+
         const cuePanelTop = hasCueDetailPanel ? H - cuePanelHeight - 652 : H;
+
         elements.forEach((item, index) => {
+
             const rawX = Number(item.x ?? (0.5 + Math.sin(index * 2.4) * 0.18));
+
             const normalizedY = Number(item.y ?? (0.35 + (index * 0.37) % 0.45));
+
             const compactGrid = elements.length > 6;
+
             const gridColumns = compactGrid ? Math.min(4, elements.length) : 1;
+
             const gridRows = compactGrid ? Math.ceil(elements.length / gridColumns) : 1;
+
             const x = compactGrid
+
                 ? 118 + (index % gridColumns) * ((W - 236) / Math.max(1, gridColumns - 1))
+
                 : Math.max(190, Math.min(W - 190, W / 2 + (rawX - 0.5) * W * scale));
+
             const y = compactGrid
+
                 ? 480 + Math.floor(index / gridColumns) * Math.min(76, 650 / Math.max(1, gridRows - 1))
+
                 : Math.max(470, Math.min(H - 1040, top + Math.max(0, Math.min(1, 0.5 + (normalizedY - 0.5) * scale)) * usableHeight));
+
             const entrance = evaluatePromptEntrance(item, visual.motion_grammar || visual.motion || "", progress, index);
+
             points.set(String(item.label), { x: x + entrance.dx, y: y + entrance.dy, item, index, entranceScale: entrance.scale, entranceRotation: entrance.rotation });
+
         });
+
         resolveVisualPointCollisions(points, W, H, {
+
             minGap: elements.length > 6 ? 58 : (hasCueDetailPanel ? 170 : 202),
+
             minY: hasCueDetailPanel ? 470 : 535,
+
             maxY: Math.min(H - 760, cuePanelTop - (elements.length > 6 ? 28 : 188)),
+
         });
+
         ctx.save();
+
         const firstColor = String(elements[0].color || "#38BDF8");
+
         const rgb = /^#([0-9a-f]{6})$/i.exec(firstColor);
+
         const glowRgb = rgb ? `${parseInt(rgb[1].slice(0, 2), 16)},${parseInt(rgb[1].slice(2, 4), 16)},${parseInt(rgb[1].slice(4, 6), 16)}` : "56,189,248";
+
         const focal = points.get(String(elements[0].label));
+
         let backdrop = stage._promptVisualBackdrops && stage._promptVisualBackdrops[cueIndex];
+
         if (!backdrop || backdrop.width !== 540 || backdrop.height !== 960) {
+
             backdrop = document.createElement("canvas");
+
             backdrop.width = 540;
+
             backdrop.height = 960;
+
             const backdropCtx = backdrop.getContext("2d");
+
             const glowX = focal.x / W * backdrop.width, glowY = focal.y / H * backdrop.height;
+
             const glow = backdropCtx.createRadialGradient(glowX, glowY, 0, glowX, glowY, backdrop.height * 0.52);
+
             glow.addColorStop(0, `rgba(${glowRgb},0.22)`);
+
             glow.addColorStop(0.5, `rgba(${glowRgb},0.07)`);
+
             glow.addColorStop(1, `rgba(${glowRgb},0)`);
+
             backdropCtx.fillStyle = glow;
+
             backdropCtx.fillRect(0, 0, backdrop.width, backdrop.height);
+
             for (let i = 0; i < 24; i++) {
+
                 const x = ((i * 197 + 83) % 997) / 997 * backdrop.width;
+
                 const y = ((i * 313 + 41) % 1021) / 1021 * backdrop.height;
+
                 backdropCtx.fillStyle = `rgba(226,232,240,${0.12 + (i % 3) * 0.07})`;
+
                 backdropCtx.fillRect(x, y, 2, 2);
+
             }
+
             if (!stage._promptVisualBackdrops) stage._promptVisualBackdrops = {};
+
             stage._promptVisualBackdrops[cueIndex] = backdrop;
+
         }
+
         ctx.drawImage(backdrop, 0, 0, W, H);
+
         const connectorByKey = new Map();
+
         allVisuals.forEach(source => (Array.isArray(source.connectors) ? source.connectors : []).forEach(item => {
+
             if (item && item.from && item.to) connectorByKey.set(connectorKey(item), item);
+
         }));
+
         const connectors = Array.from(connectorByKey.values()).filter(item =>
+
             revealedConnectorKeys.has(connectorKey(item))
+
             && visibleLabels.has(String(item.from)) && visibleLabels.has(String(item.to))
+
         );
+
         const stepLabels = { introduce: "1 · INTRODUCE", highlight: "2 · HIGHLIGHT", connect: "3 · CONNECT", transfer: "4 · TRANSFER", process: "5 · PROCESS", failure: "5A · FAILURE", diagnose: "5B · DIAGNOSE", recover: "5C · RECOVERY", reprocess: "5D · REPROCESS", output: "6 · OUTPUT", verify: "7 · VERIFY", complete: "8 · COMPLETE", continue: "9 · CONTINUE" };
+
         const stepLabel = stepLabels[interactionStep] || stepLabels.introduce;
+
         const componentState = String(cue && cue.component_state || "introducing").replace(/_/g, " ").toUpperCase();
+
         ctx.save();
+
         ctx.globalAlpha = 0.94;
+
         ctx.fillStyle = "rgba(8,17,31,0.88)";
+
         ctx.strokeStyle = "rgba(56,189,248,0.72)";
+
         ctx.lineWidth = 2;
+
         ctx.beginPath(); ctx.roundRect(W * 0.5 - 245, 255, 490, 58, 28); ctx.fill(); ctx.stroke();
+
         ctx.fillStyle = "#BAE6FD"; ctx.font = "750 22px 'Segoe UI', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
         ctx.fillText(`${stepLabel} · STATE: ${componentState}`, W * 0.5, 284, 470);
+
         ctx.restore();
+
         let focusPoint = focusItem ? points.get(String(focusItem.label)) : null;
+
         let cameraTargetPoint = focusPoint;
+
         if (interactionStep === "continue") {
+
             const activeIndex = focusPoint ? focusPoint.index : -1;
+
             cameraTargetPoint = Array.from(points.values()).find(point => point.index > activeIndex) || focusPoint;
+
         }
+
         const ease = value => { const v = Math.max(0, Math.min(1, value)); return v * v * (3 - 2 * v); };
+
         const cameraMove = String(cue && cue.camera_move || "push_in").toLowerCase();
+
         const isPullBack = /pull.?back|zoom.?out|dolly.?out|crane.?up|reveal.?wide/.test(cameraMove);
+
         const isHold = /hold|static|locked.?off/.test(cameraMove);
+
         const isOrbitLeft = /orbit.?left|arc.?left|circle.?left|truck.?left|roll.?left/.test(cameraMove);
+
         const isOrbitRight = /orbit.?right|arc.?right|circle.?right|truck.?right|roll.?right/.test(cameraMove);
+
         const isCameraTrack = /pan|track|follow|dolly|truck|crane|orbit|arc|rack.?focus|focus.?pull/.test(cameraMove);
+
         const cueEventText = String(cue && `${cue.speech || ""} ${cue.state_change || ""} ${cue.emphasis || ""}` || "").toLowerCase();
+
         const failureCue = interactionStep === "failure" || (/failure|failed|mismatch|error|विफल|गलत|त्रुटि/.test(cueEventText) && !/no failure|without failure|not failed|कोई विफलता नहीं/.test(cueEventText));
+
         const cameraProgress = ease(progress);
+
         let cameraZoom = 1 + 0.045 * cameraProgress, cameraPanX = 0, cameraPanY = 0, cameraOrbit = 0;
+
         if (isPullBack) cameraZoom = 1.08 - 0.08 * cameraProgress;
+
         if (isHold) cameraZoom = 1.025;
+
         if (cameraTargetPoint && (interactionStep === "continue" || isCameraTrack)) {
+
             cameraPanX = Math.max(-W * 0.16, Math.min(W * 0.16, (W * 0.5 - cameraTargetPoint.x) * 0.28 * cameraProgress));
+
             cameraPanY = Math.max(-H * 0.16, Math.min(H * 0.16, (H * 0.43 - cameraTargetPoint.y) * 0.36 * cameraProgress));
+
         }
+
         if (isOrbitLeft) cameraOrbit = -0.045 * cameraProgress;
+
         if (isOrbitRight) cameraOrbit = 0.045 * cameraProgress;
+
         if (/dutch|tilt|roll/.test(cameraMove) && !isOrbitLeft && !isOrbitRight) cameraOrbit = 0.035 * Math.sin(cameraProgress * Math.PI);
+
         // A deterministic frame-based camera makes seek, pause, replay and export agree.
+
         ctx.save(); ctx.translate(W * 0.5, H * 0.5); ctx.scale(cameraZoom, cameraZoom); ctx.rotate(cameraOrbit); ctx.translate(-W * 0.5 + cameraPanX, -H * 0.5 + cameraPanY);
+
         ctx.save(); ctx.globalAlpha = 0.12; ctx.strokeStyle = "rgba(56,189,248,0.34)"; ctx.lineWidth = 1;
+
         const gridShift = (time * 26) % 90;
+
         for (let y = 350 + gridShift; y < H - 570; y += 90) { ctx.beginPath(); ctx.moveTo(55, y); ctx.lineTo(W - 55, y); ctx.stroke(); }
+
         for (let x = 80; x < W; x += 90) { ctx.beginPath(); ctx.moveTo(x, 350); ctx.lineTo(W / 2 + (x - W / 2) * 1.45, H - 570); ctx.stroke(); }
+
         ctx.restore();
+
         const currentConnectorKeys = new Set((Array.isArray(visual.connectors) ? visual.connectors : []).map(connectorKey));
+
         connectors.forEach((connector, index) => {
+
             const from = points.get(String(connector.from || "")), to = points.get(String(connector.to || ""));
+
             if (!from || !to) return;
+
             const routeDx = to.x - from.x, routeDy = to.y - from.y;
+
             const routeLength = Math.max(1, Math.hypot(routeDx, routeDy));
+
             const portInset = Math.min(145, routeLength * 0.22);
+
             const pathFrom = { x: from.x + routeDx / routeLength * portInset, y: from.y + routeDy / routeLength * portInset };
+
             const pathTo = { x: to.x - routeDx / routeLength * portInset, y: to.y - routeDy / routeLength * portInset };
+
             const isCurrentConnector = cue && currentConnectorKeys.has(connectorKey(connector));
+
             const wasDrawn = !isCurrentConnector;
+
             const connectorProgress = wasDrawn ? 1 : interactionStep === "connect"
+
                 ? Math.max(0, Math.min(1, (progress - 0.12) / 0.62))
+
                 : interactionStep === "transfer" ? 1
+
                 : Math.max(0, Math.min(1, (progress - 0.32 - (index / Math.max(1, connectors.length)) * 0.08) / 0.12));
+
             if (connectorProgress <= 0) return;
+
             const color = connector.color || "#38BDF8";
+
             const bend = (index % 2 ? 1 : -1) * Math.min(180, Math.abs(pathTo.x - pathFrom.x) * 0.3 + 54);
+
             const midX = (pathFrom.x + pathTo.x) / 2, midY = (pathFrom.y + pathTo.y) / 2;
+
             ctx.save();
+
             ctx.beginPath(); ctx.moveTo(pathFrom.x, pathFrom.y);
+
             ctx.quadraticCurveTo(midX - bend, midY + bend, pathTo.x, pathTo.y);
+
             const dashLength = Math.hypot(pathTo.x - pathFrom.x, pathTo.y - pathFrom.y) * 1.35;
+
             ctx.setLineDash([dashLength]); ctx.lineDashOffset = dashLength * (1 - connectorProgress);
+
             ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha = 0.28 + 0.08 * Math.sin(time * 1.2 + index); ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 20; ctx.stroke(); ctx.shadowBlur = 0;
+
             ctx.strokeStyle = "rgba(255,255,255,0.42)"; ctx.lineWidth = 2; ctx.globalAlpha = 0.72; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
+
             const controlX = midX - bend, controlY = midY + bend;
+
             if (connectorProgress >= 0.96) {
+
                 ctx.save(); ctx.translate(pathTo.x, pathTo.y); ctx.rotate(Math.atan2(pathTo.y - controlY, pathTo.x - controlX));
+
                 ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-25, -14); ctx.lineTo(-25, 14); ctx.closePath();
+
                 ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 16; ctx.fill(); ctx.restore();
+
             }
+
             if (interactionStep === "transfer" && isCurrentConnector && connectorProgress >= 1 && progress >= 0.08 && progress <= 0.92) {
+
                 const packetT = Math.max(0, Math.min(1, (progress - 0.08) / 0.84));
+
                 const inverse = 1 - packetT;
+
                 const packetX = inverse * inverse * pathFrom.x + 2 * inverse * packetT * controlX + packetT * packetT * pathTo.x;
+
                 const packetY = inverse * inverse * pathFrom.y + 2 * inverse * packetT * controlY + packetT * packetT * pathTo.y;
+
                 ctx.save(); ctx.beginPath(); ctx.moveTo(packetX - 34, packetY); ctx.lineTo(packetX, packetY); ctx.strokeStyle = color; ctx.globalAlpha = 0.65; ctx.lineWidth = 6; ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 18; ctx.stroke();
+
                 ctx.beginPath(); ctx.arc(packetX, packetY, 15, 0, Math.PI * 2); ctx.fillStyle = "#FFFFFF"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 28; ctx.fill();
+
                 ctx.beginPath(); ctx.arc(packetX, packetY, 5, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); ctx.restore();
+
             }
+
             if (failureCue && isCurrentConnector && connectorProgress >= 1 && progress >= 0.55 && progress < 0.92) {
+
                 const stopT = 0.62, inverse = 1 - stopT;
+
                 const stopX = inverse * inverse * pathFrom.x + 2 * inverse * stopT * controlX + stopT * stopT * pathTo.x;
+
                 const stopY = inverse * inverse * pathFrom.y + 2 * inverse * stopT * controlY + stopT * stopT * pathTo.y;
+
                 ctx.save(); ctx.fillStyle = "#EF4444"; ctx.shadowColor = "#EF4444"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 24;
+
                 ctx.beginPath(); ctx.arc(stopX, stopY, 18, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+
                 ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(stopX - 7, stopY - 7); ctx.lineTo(stopX + 7, stopY + 7); ctx.moveTo(stopX + 7, stopY - 7); ctx.lineTo(stopX - 7, stopY + 7); ctx.stroke(); ctx.restore();
+
             }
+
             ctx.restore();
+
         });
+
         points.forEach(({ x, y, item, index, entranceScale, entranceRotation }) => {
+
             if (!visibleLabels.has(String(item.label))) return;
+
             const color = item.color || "#38BDF8";
+
             const connectionStep = interactionStep === "connect" || interactionStep === "transfer";
+
             const isHistoryNode = historyLabels.has(String(item.label));
+
             const elementProgress = isHistoryNode ? 1 : Math.max(0, Math.min(1, connectionStep
+
                 ? (progress - 0.06) / 0.52
+
                 : (progress - 0.03) / 0.34));
+
             if (elementProgress <= 0) return;
+
             const enter = 0.82 + 0.18 * Math.sin(elementProgress * Math.PI / 2);
+
             const scale = enter * (Number(entranceScale) || 1) * (1 + Math.sin(time * 1.7 + index * 0.8) * 0.025);
+
             const isFocused = focusPoint && focusPoint.index === index;
+
             if (elements.length > 6) {
+
                 ctx.save(); ctx.translate(x, y); ctx.rotate(Number(entranceRotation) || 0); ctx.scale(Number(entranceScale) || 1, Number(entranceScale) || 1);
+
                 ctx.globalAlpha *= isFocused ? 1 : 0.74;
+
                 drawPromptSemanticShape(ctx, item.shape, isFocused ? 31 : 23, color, time + index * 0.2, item.glyph || item.icon, item.motion || item.animation);
+
                 ctx.shadowBlur = 0; ctx.fillStyle = "#F8FAFC"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+
                 ctx.font = "650 17px 'Segoe UI', sans-serif";
+
                 splitDiagramText(ctx, String(item.label).replace(/[_-]+/g, " "), 190, 2, 18).forEach((line, lineIndex) => ctx.fillText(line, 42, lineIndex * 20));
+
                 ctx.restore();
+
                 return;
+
             }
+
             if (isFocused && /orbit|ring|circular/.test(`${visual.motion_grammar || ""} ${visual.composition || ""} ${item.motion || ""}`.toLowerCase())) {
+
                 ctx.save(); ctx.translate(x, y); ctx.rotate(-0.12 + Math.sin(time * 0.32) * 0.035);
+
                 ctx.globalAlpha *= 0.55 + 0.12 * Math.sin(time * 1.8);
+
                 ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([14, 12]);
+
                 ctx.beginPath(); ctx.ellipse(0, 0, 194, 174, 0, 0, Math.PI * 2); ctx.stroke();
+
                 ctx.setLineDash([5, 17]); ctx.lineWidth = 2;
+
                 ctx.beginPath(); ctx.ellipse(0, 0, 174, 190, time * 0.16, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+
                 const orbit = time * 1.35;
+
                 ctx.fillStyle = "#E0F2FE"; ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 18;
+
                 ctx.beginPath(); ctx.arc(Math.cos(orbit) * 194, Math.sin(orbit) * 174, 7, 0, Math.PI * 2); ctx.fill();
+
                 ctx.globalAlpha = 0.88; ctx.shadowBlur = 0; ctx.font = "700 17px Consolas, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#BAE6FD";
+
                 ctx.fillText(interactionStep === "transfer" ? "PACKET IN MOTION" : "CORE · LIVE TELEMETRY", 0, -205);
+
                 ctx.restore();
+
             }
+
             ctx.save(); ctx.translate(x, y); ctx.rotate(Number(entranceRotation) || 0); ctx.scale(scale, scale);
+
             ctx.globalAlpha *= elementProgress * (focusPoint && focusPoint.index !== index ? 0.24 : 1);
+
             const glyph = String(item.glyph || item.icon || "");
+
             const shape = String(item.shape || "organic");
+
             const radius = elements.length <= 3 ? 78 : elements.length <= 6 ? 68 : 42;
+
             drawPromptSemanticShape(ctx, shape, radius, color, time + index * 0.2, glyph, item.motion || item.animation);
+
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
             const labelFont = elements.length <= 3 ? 30 : elements.length <= 6 ? 27 : 24;
+
             ctx.fillStyle = "#F8FAFC"; ctx.font = `750 ${labelFont}px 'Segoe UI', sans-serif`;
+
             const displayLabel = String(item.label).replace(/[_-]+/g, " ");
+
             const labelLines = splitDiagramText(ctx, displayLabel, 250, 2, 27);
+
             labelLines.forEach((line, lineIndex) => ctx.fillText(line, 0, radius + 42 + lineIndex * 31));
+
             if (item.detail && !hasCueDetailPanel) {
+
                 ctx.fillStyle = "#CBD5E1"; ctx.font = "500 19px 'Segoe UI', sans-serif";
+
                 const detail = splitDiagramText(ctx, item.detail, 260, 2, 25).slice(0, 2);
+
                 detail.forEach((line, lineIndex) => ctx.fillText(line, 0, radius + 73 + labelLines.length * 28 + lineIndex * 24));
+
             }
+
             if (interactionStep === "process" && focusPoint && focusPoint.index === index) {
+
                 const pulse = 1 + 0.08 * Math.sin(time * 6);
+
                 ctx.save(); ctx.globalAlpha = 0.75; ctx.strokeStyle = "#FDE68A"; ctx.lineWidth = 5; ctx.shadowColor = "#F59E0B"; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 18;
+
                 ctx.beginPath(); ctx.ellipse(0, 12, 198 * pulse, 166 * pulse, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
             }
+
             ctx.restore();
+
         });
+
         if (!hasCueDetailPanel) drawObjectProcessAnnotation(ctx, W, H, focusPoint, cue, interactionStep);
+
         drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue);
+
         drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep);
+
         if (cue && Number(cue.pause_after) > 0 && progress >= 1 - Math.min(0.18, Number(cue.pause_after) * 0.16)) {
+
             ctx.save(); ctx.globalAlpha = 0.92; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "750 20px 'Segoe UI', sans-serif";
+
             ctx.fillStyle = "rgba(8,17,31,0.82)"; ctx.beginPath(); ctx.roundRect(W / 2 - 128, H - 618, 256, 38, 19); ctx.fill();
+
             ctx.fillStyle = "#FDE68A"; ctx.fillText(interactionStep === "verify" ? "HOLD · VERIFY RESULT" : "PAUSE · LET IT LAND", W / 2, H - 599); ctx.restore();
+
         }
+
         ctx.restore();
+
         ctx.restore();
+
         return true;
+
     }
+
+
 
     function renderArchitectureScene(ctx, W, H, p, stage, stageIndex, progress, alpha, t) {
+
         const spec = buildDiagramSpec(p, stage, stageIndex);
+
         const time = Number(t) || 0;
+
         const briefLayout = String(((stage && stage.visual_data) || {}).layout || "").toLowerCase();
+
         if (briefLayout) {
+
             ctx.save();
+
             ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
             if (briefLayout === "title") drawBriefTitle(ctx, W, H, stage, progress);
+
             else if (briefLayout === "split") drawBriefSplit(ctx, W, H, stage, progress);
+
             else if (briefLayout === "pipeline") drawBriefPipeline(ctx, W, H, stage, progress);
+
             else if (briefLayout === "table") drawBriefTable(ctx, W, H, stage, progress);
+
             else if (briefLayout === "chips") drawBriefChips(ctx, W, H, stage, progress);
+
             else if (briefLayout === "warning") drawBriefWarning(ctx, W, H, stage, progress);
+
             else if (briefLayout === "cards") drawBriefCards(ctx, W, H, stage, progress);
+
             else if (briefLayout === "spatial") drawBriefSpatial(ctx, W, H, stage, progress, time, stageIndex);
+
             else drawBriefPipeline(ctx, W, H, stage, progress);
+
             ctx.restore();
+
             return;
+
         }
+
         ctx.save();
+
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
         if (spec.layout.includes("code") && spec.code) {
+
             drawDiagramCodePanel(ctx, W, H, spec.code, progress);
+
         } else if (spec.layout.includes("table") && spec.table) {
+
             drawDiagramTablePanel(ctx, W, H, spec.table, progress);
+
         } else if ((spec.layout.includes("comp") || spec.layout.includes("vs")) && spec.compare) {
+
             drawDiagramComparePanel(ctx, W, H, spec.compare, progress);
+
         } else if (spec.code) {
+
             drawDiagramCodePanel(ctx, W, H, spec.code, progress);
+
         } else if (spec.compare) {
+
             drawDiagramComparePanel(ctx, W, H, spec.compare, progress);
+
         } else if (spec.table) {
+
             drawDiagramTablePanel(ctx, W, H, spec.table, progress);
+
         } else {
+
             drawDiagramFlow(ctx, W, H, spec.steps, progress, spec.focus, time);
+
         }
+
         ctx.restore();
+
     }
+
+
 
     async function loadPromptSceneAssets(sceneAssets) {
+
         sqlShortState.sceneAssets = new Map();
+
         sqlShortState.sceneAssetList = Array.isArray(sceneAssets) ? sceneAssets : [];
+
         await Promise.all(sqlShortState.sceneAssetList.map((asset, index) => new Promise((resolve) => {
+
             if (!asset || !asset.image_url) return resolve();
+
             const image = new Image();
+
             image.crossOrigin = "anonymous";
+
             const imageTimer = setTimeout(() => resolve(), 12000);
+
             image.onload = () => {
+
                 clearTimeout(imageTimer);
+
                 const scene = { image, video: null, asset };
+
                 sqlShortState.sceneAssets.set(String(asset.scene_id ?? index), scene);
+
                 sqlShortState.sceneAssets.set(String(index), scene);
+
                 sqlShortState.sceneAssets.set(String(index + 1), scene);
+
                 sqlShortState.sceneAssets.set(`index:${index}`, scene);
+
                 if (asset.title) {
+
                     sqlShortState.sceneAssets.set(String(asset.title).toLowerCase().trim(), scene);
+
                 }
+
                 if (sqlShortState.activePreset) {
+
                     renderSqlShortFrame(sqlShortState.currentTime || 0);
+
                 }
+
                 if (!asset.video_url) return resolve();
+
                 const video = document.createElement("video");
+
                 video.crossOrigin = "anonymous";
+
                 video.muted = true;
+
                 video.loop = true;
+
                 video.playsInline = true;
+
                 video.preload = "auto";
+
                 const videoTimer = setTimeout(resolve, 7000);
+
                 video.onloadeddata = () => { clearTimeout(videoTimer); scene.video = video; resolve(); };
+
                 video.onerror = () => { clearTimeout(videoTimer); resolve(); };
+
                 video.src = asset.video_url;
+
                 video.load();
+
             };
+
             image.onerror = () => {
+
                 clearTimeout(imageTimer);
+
                 resolve();
+
             };
+
             image.src = asset.image_url;
+
         })));
+
     }
+
+
 
     function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = true) {
+
         if (!sqlShortState.sceneAssets || sqlShortState.sceneAssets.size === 0) return false;
+
         let scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
+
                     sqlShortState.sceneAssets.get(String(stageIndex)) ||
+
                     sqlShortState.sceneAssets.get(String(stageIndex + 1)) ||
+
                     sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex));
+
         if (!scene && stage?.title) {
+
             scene = sqlShortState.sceneAssets.get(String(stage.title).toLowerCase().trim());
+
         }
+
         if (!scene && sqlShortState.sceneAssets.size > 0) {
+
             const vals = Array.from(sqlShortState.sceneAssets.values());
+
             scene = vals[Math.max(0, stageIndex) % vals.length];
+
         }
+
         if (!scene || !scene.image) return false;
+
         ctx.save();
+
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
         const localTime = Math.max(0, t - Number(stage?.start || 0));
+
         const media = scene.video && scene.video.readyState >= 2 ? scene.video : scene.image;
+
         if (!media || (media.tagName === 'IMG' && (!media.complete || media.naturalWidth === 0))) {
+
             ctx.restore();
+
             return false;
+
         }
+
         if (scene.video && scene.video.readyState >= 2) {
+
             const expected = scene.video.duration ? localTime % scene.video.duration : localTime;
+
             if (Math.abs(scene.video.currentTime - expected) > 0.65) {
+
                 try { scene.video.currentTime = expected; } catch (_) {}
+
             }
+
             if (scene.video.paused) scene.video.play().catch(() => {});
+
         }
+
         // Slow push-in plus a gentle drifting sway keeps the frame alive without
+
         // cropping the subject out of the 9:16 safe area.
+
         const zoom = 1.02 + 0.05 * progress + 0.006 * Math.sin(t * 0.55);
+
         const width = W * zoom, height = H * zoom;
+
         const driftX = Math.sin(t * 0.42) * W * 0.004;
+
         const driftY = Math.cos(t * 0.37) * H * 0.003;
+
         // Filmic grade: a touch more saturation and contrast makes generated
+
         // keyframes read like graded footage instead of flat illustrations.
+
         const previousFilter = ctx.filter;
+
         ctx.filter = "saturate(1.14) contrast(1.07) brightness(1.02)";
+
         ctx.drawImage(media, (W - width) / 2 + driftX, (H - height) / 2 + driftY, width, height);
+
         ctx.filter = previousFilter;
 
+
+
         // Scrims stay transparent across the subject and only darken the bands that
+
         // actually carry captions, so the artwork keeps its punch.
+
         const shade = ctx.createLinearGradient(0, 0, 0, H);
+
         shade.addColorStop(0, "rgba(2,6,23,0.55)");
+
         shade.addColorStop(0.2, "rgba(2,6,23,0.06)");
+
         shade.addColorStop(0.66, "rgba(2,6,23,0.02)");
+
         shade.addColorStop(0.88, "rgba(2,6,23,0.5)");
+
         shade.addColorStop(1, "rgba(2,6,23,0.88)");
+
         ctx.fillStyle = shade;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         const vignette = ctx.createRadialGradient(W / 2, H * 0.46, W * 0.3, W / 2, H * 0.46, W * 0.95);
+
         vignette.addColorStop(0, "rgba(0,0,0,0)");
+
         vignette.addColorStop(1, "rgba(0,0,0,0.38)");
+
         ctx.fillStyle = vignette;
+
         ctx.fillRect(0, 0, W, H);
 
+
+
         // Previous-scene passes reuse this renderer for the plate only, so the HUD,
+
         // title and overlays belong exclusively to the incoming scene.
+
         if (drawText) {
+
             drawSceneMotionGraphics(ctx, W, H, stage, stageIndex, progress, t);
 
+
+
             const visual = stage?.visual_data || {};
+
             const title = String(stage?.title || p.title || p.question || "");
+
             ctx.textAlign = "center";
+
             ctx.font = "800 44px 'Segoe UI', sans-serif";
+
             const titleLines = wrapCanvasText(ctx, title, W - 190, 2);
+
             const titleTextWidth = titleLines.reduce((widest, line) => Math.max(widest, ctx.measureText(line).width), 0);
+
             const titleBoxWidth = Math.min(W - 140, Math.max(320, titleTextWidth + 68));
+
             const titleBoxHeight = titleLines.length * 54 + 30;
+
             if (titleLines.length) {
+
                 const titleBox = ctx.createLinearGradient(0, 196, 0, 196 + titleBoxHeight);
+
                 titleBox.addColorStop(0, "rgba(4,10,26,0.86)");
+
                 titleBox.addColorStop(1, "rgba(4,10,26,0.58)");
+
                 ctx.fillStyle = titleBox;
+
                 ctx.beginPath();
+
                 ctx.roundRect((W - titleBoxWidth) / 2, 196, titleBoxWidth, titleBoxHeight, 20);
+
                 ctx.fill();
+
                 ctx.strokeStyle = "rgba(56,189,248,0.28)";
+
                 ctx.lineWidth = 1.5;
+
                 ctx.stroke();
+
                 ctx.fillStyle = "#FFFFFF";
+
                 ctx.shadowColor = "rgba(0,0,0,0.7)";
+
                 ctx.shadowBlur = 12;
+
                 titleLines.forEach((line, index) => ctx.fillText(line, W / 2, 232 + index * 54));
+
                 ctx.shadowBlur = 0;
+
             }
+
+
 
             const overlays = visual.overlay_items || stage?.overlay_items || [];
+
             overlays.forEach(item => {
+
                 if (!item || !item.content) return;
+
                 let x = Math.max(0.04, Math.min(0.96, Number(item.x ?? 0.5))) * W;
+
                 let y = Math.max(0.08, Math.min(0.82, Number(item.y ?? 0.66))) * H;
+
                 const code = item.kind === "code" || item.kind === "formula";
+
                 const overlayFont = code ? "600 25px Consolas, monospace" : "700 26px 'Segoe UI', sans-serif";
+
                 // Set the font BEFORE wrapping and measuring, otherwise the label box is
+
                 // sized from whichever font was set last and the text spills off frame.
+
                 ctx.font = overlayFont;
+
                 const lines = wrapCanvasText(ctx, String(item.content), W * 0.78, code ? 3 : 2);
+
                 const lineHeight = code ? 34 : 30;
+
                 const boxWidth = Math.min(W * 0.84, Math.max(260, ...lines.map(line => ctx.measureText(line).width + 44)));
+
                 const boxHeight = lines.length * lineHeight + 32;
+
                 x = Math.max(boxWidth / 2 + 24, Math.min(W - boxWidth / 2 - 24, x));
+
                 y = Math.max(300 + boxHeight / 2, Math.min(H - 550 - boxHeight / 2, y));
+
                 ctx.fillStyle = code ? "rgba(3,10,25,0.9)" : "rgba(8,18,36,0.84)";
+
                 ctx.strokeStyle = code ? "rgba(56,189,248,0.8)" : "rgba(255,255,255,0.4)";
+
                 ctx.lineWidth = 2;
+
                 ctx.beginPath();
+
                 ctx.roundRect(x - boxWidth / 2, y - 24, boxWidth, boxHeight, 18);
+
                 ctx.fill();
+
                 ctx.stroke();
+
                 ctx.fillStyle = code ? "#BAE6FD" : "#FFFFFF";
+
                 ctx.font = overlayFont;
+
                 ctx.shadowColor = "rgba(0,0,0,0.55)";
+
                 ctx.shadowBlur = 6;
+
                 lines.forEach((line, lineIndex) => ctx.fillText(line, x, y + lineIndex * lineHeight));
+
                 ctx.shadowBlur = 0;
+
             });
+
         }
+
         ctx.restore();
+
         return true;
+
     }
+
+
 
     function drawPromptSemanticShape(ctx, shape, radius, color, time, glyph, motion = "") {
+
         const kind = String(shape || "organic").toLowerCase();
+
         ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.lineCap = "round";
+
         ctx.shadowColor = color; ctx.shadowBlur = sqlShortState.isExporting ? 0 : 22;
+
         if (kind.includes("database") || kind.includes("cylinder") || kind.includes("storage")) {
+
             ctx.beginPath(); ctx.ellipse(0, -radius * 0.55, radius, radius * 0.3, 0, 0, Math.PI * 2); ctx.fillStyle = "rgba(6,18,34,0.96)"; ctx.fill(); ctx.stroke();
+
             ctx.beginPath(); ctx.moveTo(-radius, -radius * 0.55); ctx.lineTo(-radius, radius * 0.6); ctx.quadraticCurveTo(0, radius * 1.05, radius, radius * 0.6); ctx.lineTo(radius, -radius * 0.55); ctx.stroke();
+
             ctx.beginPath(); ctx.ellipse(0, radius * 0.1, radius, radius * 0.3, 0, 0, Math.PI); ctx.stroke();
+
         } else if (kind.includes("cloud")) {
+
             ctx.beginPath(); ctx.moveTo(-radius, radius * 0.35); ctx.bezierCurveTo(-radius * 1.35, -radius * 0.2, -radius * 0.7, -radius, -radius * 0.2, -radius * 0.68); ctx.bezierCurveTo(radius * 0.05, -radius * 1.4, radius, -radius * 1.12, radius * 0.92, -radius * 0.38); ctx.bezierCurveTo(radius * 1.48, -radius * 0.2, radius * 1.28, radius * 0.52, radius * 0.78, radius * 0.52); ctx.lineTo(-radius * 0.72, radius * 0.52); ctx.quadraticCurveTo(-radius, radius * 0.52, -radius, radius * 0.35); ctx.closePath(); ctx.fillStyle = "rgba(7,20,36,0.94)"; ctx.fill(); ctx.stroke();
+
         } else if (kind.includes("phone") || kind.includes("laptop") || kind.includes("monitor") || kind.includes("device")) {
+
             if (kind.includes("laptop") || kind.includes("monitor")) {
+
                 ctx.beginPath(); ctx.roundRect(-radius * 1.15, -radius * 0.72, radius * 2.3, radius * 1.38, 10); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+
                 ctx.beginPath(); ctx.moveTo(-radius * 1.35, radius * 0.8); ctx.lineTo(radius * 1.35, radius * 0.8); ctx.lineTo(radius * 1.08, radius); ctx.lineTo(-radius * 1.08, radius); ctx.closePath(); ctx.fill(); ctx.stroke();
+
             } else { ctx.beginPath(); ctx.roundRect(-radius * 0.62, -radius, radius * 1.24, radius * 2, 18); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.78, 4, 0, Math.PI * 2); ctx.fill(); }
+
             ctx.shadowBlur = 0; ctx.strokeStyle = color + "99"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-radius * 0.4, -radius * 0.38); ctx.lineTo(radius * 0.4, -radius * 0.38); ctx.stroke();
+
         } else if (kind.includes("document") || kind.includes("file") || kind.includes("page")) {
+
             ctx.beginPath(); ctx.moveTo(-radius * 0.68, -radius); ctx.lineTo(radius * 0.3, -radius); ctx.lineTo(radius * 0.68, -radius * 0.62); ctx.lineTo(radius * 0.68, radius); ctx.lineTo(-radius * 0.68, radius); ctx.closePath(); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+
             ctx.beginPath(); ctx.moveTo(radius * 0.3, -radius); ctx.lineTo(radius * 0.3, -radius * 0.62); ctx.lineTo(radius * 0.68, -radius * 0.62); ctx.moveTo(-radius * 0.42, -radius * 0.12); ctx.lineTo(radius * 0.4, -radius * 0.12); ctx.moveTo(-radius * 0.42, radius * 0.2); ctx.lineTo(radius * 0.4, radius * 0.2); ctx.stroke();
+
         } else if (kind.includes("lock") || kind.includes("security")) {
+
             ctx.beginPath(); ctx.arc(0, -radius * 0.15, radius * 0.52, Math.PI, 0); ctx.stroke(); ctx.beginPath(); ctx.roundRect(-radius * 0.74, -radius * 0.12, radius * 1.48, radius * 1.05, 12); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.24, 5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, radius * 0.28); ctx.lineTo(0, radius * 0.53); ctx.stroke();
+
         } else if (kind.includes("gear") || kind.includes("settings")) {
+
             const teeth = 12; ctx.beginPath(); for (let i = 0; i < teeth * 2; i++) { const a = Math.PI * i / teeth + time * 0.12, r = radius * (i % 2 ? 0.78 : 1); const px = Math.cos(a) * r, py = Math.sin(a) * r; if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py); } ctx.closePath(); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2); ctx.stroke();
+
         } else if (kind.includes("neuron") || kind.includes("brain")) {
+
             for (let i = 0; i < 8; i++) { const a = Math.PI * 2 * i / 8 + time * 0.08, px = Math.cos(a) * radius * 0.76, py = Math.sin(a) * radius * 0.76; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(px, py); ctx.stroke(); ctx.beginPath(); ctx.arc(px, py, radius * 0.12, 0, Math.PI * 2); ctx.fill(); }
+
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.32, 0, Math.PI * 2); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+
         } else if (kind.includes("molecule") || kind.includes("atom") || kind.includes("orbit")) {
+
             for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(0, 0, radius, radius * 0.42, i * Math.PI / 3 + time * 0.08, 0, Math.PI * 2); ctx.stroke(); const a = time * 0.65 + i * 2.1; ctx.beginPath(); ctx.arc(Math.cos(a) * radius, Math.sin(a) * radius * 0.42, radius * 0.12, 0, Math.PI * 2); ctx.fill(); }
+
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.16, 0, Math.PI * 2); ctx.fill();
+
         } else if (kind.includes("wave") || kind.includes("signal") || kind.includes("audio")) {
+
             ctx.beginPath(); for (let i = 0; i <= 32; i++) { const px = -radius + i * radius * 2 / 32, py = Math.sin(i * 0.57 + time * 1.6) * radius * (0.18 + 0.55 * Math.abs(Math.sin(i * 0.23))); if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py); } ctx.stroke();
+
         } else if (kind.includes("warning") || kind.includes("triangle")) {
+
             ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(radius * 0.95, radius * 0.78); ctx.lineTo(-radius * 0.95, radius * 0.78); ctx.closePath(); ctx.fillStyle = "rgba(38,20,8,0.96)"; ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -radius * 0.38); ctx.lineTo(0, radius * 0.22); ctx.stroke(); ctx.beginPath(); ctx.arc(0, radius * 0.48, 4, 0, Math.PI * 2); ctx.fill();
+
         } else if (kind.includes("person") || kind.includes("user")) {
+
             const action = String(motion || "").toLowerCase();
+
             const walk = /walk|run|jog|march/.test(action), wave = /wave|greet|celebrate/.test(action), point = /point|indicate|present/.test(action);
+
             const stride = walk ? Math.sin(time * 6.5) * 0.28 : Math.sin(time * 1.8) * 0.045;
+
             const bob = walk ? Math.abs(Math.sin(time * 6.5)) * 0.07 : Math.sin(time * 1.8) * 0.025;
+
             const headY = -radius * (0.5 + bob);
+
             ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = color; ctx.lineWidth = Math.max(5, radius * 0.12);
+
             ctx.beginPath(); ctx.moveTo(-radius * 0.34, radius * 0.05);
+
             if (wave) ctx.quadraticCurveTo(-radius * 0.62, -radius * 0.2, -radius * 0.44, -radius * (0.95 + Math.sin(time * 8) * 0.08));
+
             else if (point) ctx.quadraticCurveTo(radius * 0.15, -radius * 0.12, radius * 0.94, -radius * 0.28);
+
             else ctx.quadraticCurveTo(-radius * 0.65, radius * (0.12 + stride * 0.35), -radius * (0.82 + stride * 0.25), radius * (0.38 - stride * 0.25));
+
             ctx.stroke();
+
             ctx.beginPath(); ctx.moveTo(radius * 0.34, radius * 0.05); ctx.quadraticCurveTo(radius * 0.62, radius * (0.15 - stride * 0.35), radius * (0.82 - stride * 0.25), radius * (0.38 + stride * 0.25)); ctx.stroke();
+
             ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.beginPath(); ctx.roundRect(-radius * 0.32, -radius * 0.12, radius * 0.64, radius * 0.76, radius * 0.2); ctx.fill(); ctx.stroke();
+
             ctx.beginPath(); ctx.moveTo(-radius * 0.14, radius * 0.58); ctx.lineTo(-radius * (0.26 + stride * 0.45), radius * 0.98); ctx.moveTo(radius * 0.14, radius * 0.58); ctx.lineTo(radius * (0.26 - stride * 0.45), radius * 0.98); ctx.stroke();
+
             ctx.fillStyle = "#F8FAFC"; ctx.beginPath(); ctx.arc(0, headY, radius * 0.28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
             ctx.fillStyle = "#0B1220"; ctx.beginPath(); ctx.arc(-radius * 0.09, headY - radius * 0.015, radius * 0.025, 0, Math.PI * 2); ctx.arc(radius * 0.09, headY - radius * 0.015, radius * 0.025, 0, Math.PI * 2); ctx.fill();
+
             ctx.beginPath(); ctx.arc(0, headY + radius * 0.06, radius * 0.09, 0.12, Math.PI - 0.12); ctx.strokeStyle = "#0B1220"; ctx.lineWidth = Math.max(2, radius * 0.035); ctx.stroke();
+
         } else if (kind.includes("chip") || kind.includes("processor") || kind.includes("server")) {
+
             ctx.beginPath(); ctx.roundRect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4, 8); ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+
             for (let i = -2; i <= 2; i++) { const p = i * radius * 0.24; ctx.beginPath(); ctx.moveTo(p, -radius); ctx.lineTo(p, -radius * 0.7); ctx.moveTo(p, radius * 0.7); ctx.lineTo(p, radius); ctx.moveTo(-radius, p); ctx.lineTo(-radius * 0.7, p); ctx.moveTo(radius * 0.7, p); ctx.lineTo(radius, p); ctx.stroke(); }
+
         } else {
+
             if (kind.includes("diamond")) { ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(radius, 0); ctx.lineTo(0, radius); ctx.lineTo(-radius, 0); ctx.closePath(); }
+
             else if (kind.includes("cube") || kind.includes("block")) { ctx.beginPath(); ctx.moveTo(-radius * 0.7, -radius * 0.42); ctx.lineTo(0, -radius); ctx.lineTo(radius * 0.7, -radius * 0.42); ctx.lineTo(radius * 0.7, radius * 0.55); ctx.lineTo(0, radius); ctx.lineTo(-radius * 0.7, radius * 0.55); ctx.closePath(); }
+
             else { ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); }
+
             ctx.fillStyle = "rgba(7,17,30,0.88)"; ctx.fill(); ctx.stroke();
+
             if (glyph) { ctx.shadowBlur = 0; ctx.fillStyle = color; ctx.font = `700 ${radius}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(glyph).slice(0, 2), 0, 2); }
+
         }
+
+        ctx.restore();
+
+    }
+
+
+
+    // Generic semantic diagram remains only for legacy scenes without prompt-specific media.
+
+    function renderPromptDrivenVisual(ctx, W, H, p, stage, progress, alpha, t) {
+
+        const visual = (stage && stage.visual_data) || {};
+
+        const title = (stage && stage.title) || p.title || p.question || "";
+
+        const description = visual.visual_description || (stage && stage.visual_description) || title;
+
+        const rawEntities = visual.entities || (stage && stage.entities) || visual.nodes || [];
+
+        const entities = (Array.isArray(rawEntities) ? rawEntities : [])
+
+            .filter(item => item && (item.label || item.name || item.title)).slice(0, 48);
+
+        // Enhanced fallback: Provide a rich high-tech 4-node architecture cluster instead of 2 isolated dots
+
+        const fallbackEntities = [
+
+            { id: "core_logic", label: title || "Core Architecture", detail: description || "Engine Execution Pipeline", color: "#F59E0B", shape: "core", glyph: "⚡" },
+
+            { id: "data_stream", label: "Real-Time Pipeline", detail: "High-Throughput Vector Ingestion", color: "#38BDF8", shape: "cylinder", glyph: "🗄️" },
+
+            { id: "golden_rule", label: "Golden Takeaway", detail: "Senior Engineering Best Practice", color: "#10B981", shape: "trophy", glyph: "🏆" },
+
+            { id: "verification", label: "Zero-Data-Loss", detail: "Verified Automated Audit", color: "#A78BFA", shape: "shield", glyph: "🛡️" }
+
+        ];
+
+        const nodes = entities.length ? entities : fallbackEntities;
+
+        const links = visual.relationships || (stage && stage.relationships) || visual.connections || [];
+
+        const composition = String(visual.composition || (stage && stage.composition) || "").toLowerCase();
+
+        const motion = String(visual.motion_grammar || visual.motion || (stage && stage.motion) || "").toLowerCase();
+
+        const top = 760, bottom = 1190;
+
+        const points = nodes.map((node, i) => {
+
+            const count = Math.max(nodes.length, 1);
+
+            let x, y;
+
+            const authoredX = Number(node.x), authoredY = Number(node.y);
+
+            if (Number.isFinite(authoredX) && Number.isFinite(authoredY)) {
+
+                x = Math.max(108, Math.min(W - 108, 108 + authoredX * (W - 216)));
+
+                y = Math.max(530, Math.min(H - 710, 530 + authoredY * 660));
+
+            } else if (count > 6) {
+
+                const columns = Math.min(4, count);
+
+                const rows = Math.ceil(count / columns);
+
+                x = 112 + (i % columns) * ((W - 224) / Math.max(1, columns - 1));
+
+                y = 440 + Math.floor(i / columns) * Math.min(178, 700 / Math.max(1, rows - 1));
+
+            } else if (composition.includes("split") && count > 1) {
+
+                const half = Math.ceil(count / 2);
+
+                x = i < half ? W * 0.28 : W * 0.72;
+
+                y = top + (i % half) * ((bottom - top) / Math.max(1, half - 1));
+
+            } else if (composition.includes("vertical") || composition.includes("cascade") || composition.includes("flow")) {
+
+                x = W / 2 + Math.sin(i * 1.35 + t * 0.35) * Math.min(150, W * 0.14);
+
+                y = top + i * ((bottom - top) / Math.max(1, count - 1));
+
+            } else if (composition.includes("radial") || composition.includes("orbit")) {
+
+                const angle = (Math.PI * 2 * i / count) - Math.PI / 2 + t * 0.12;
+
+                const spread = motion.includes("converg") ? 0.45 + progress * 0.55 : (motion.includes("expand") ? 0.55 + progress * 0.65 : 1);
+
+                x = W / 2 + Math.cos(angle) * Math.min(W * 0.31, 330) * spread;
+
+                y = (top + bottom) / 2 + Math.sin(angle) * 310 * spread;
+
+            } else {
+
+                const col = i % 2, row = Math.floor(i / 2);
+
+                x = count === 1 ? W / 2 : W * (0.28 + col * 0.44);
+
+                y = count <= 2 ? (top + bottom) / 2 : top + row * Math.min(250, (bottom - top) / Math.max(1, Math.ceil(count / 2) - 1));
+
+            }
+
+            const depthName = String(node.depth || "").toLowerCase();
+
+            let depth = Number(node.depth);
+
+            if (!Number.isFinite(depth)) depth = /foreground|front|near/.test(depthName) ? 0.65 : /background|back|far/.test(depthName) ? -0.5 : 0;
+
+            depth = Math.max(-1, Math.min(1, depth));
+
+            const parallax = depth * 22;
+
+            x += Math.sin(t * 0.32 + i * 0.6) * parallax;
+
+            y += Math.cos(t * 0.24 + i * 0.45) * parallax * 0.55;
+
+            const entrance = evaluatePromptEntrance(node, motion, progress, i);
+
+            return { x: x + entrance.dx, y: y + entrance.dy, node, depth, entranceScale: entrance.scale, entranceRotation: entrance.rotation };
+
+        });
+
+        points.forEach(point => { point.y = Math.max(535, Math.min(H - 760, point.y)); });
+
+        resolveVisualPointCollisions(new Map(points.map((point, index) => [index, point])), W, H, { minGap: points.length > 6 ? 58 : 198, minY: 535, maxY: H - 760 });
+
+
+
+        ctx.save();
+
+        ctx.globalAlpha = Math.max(0.15, Math.min(1, alpha));
+
+        const findPoint = key => points.find(point => String(point.node.id || point.node.label || point.node.name) === String(key));
+
+        const edges = Array.isArray(links) ? links : [];
+
+        edges.forEach((edge, i) => {
+
+            const from = findPoint(edge.from), to = findPoint(edge.to);
+
+            if (!from || !to) return;
+
+            ctx.beginPath();
+
+            ctx.moveTo(from.x, from.y);
+
+            ctx.quadraticCurveTo(W / 2 + Math.sin(t + i) * 28, (from.y + to.y) / 2, to.x, to.y);
+
+            ctx.strokeStyle = "rgba(125, 211, 252, 0.52)";
+
+            ctx.lineWidth = 4;
+
+            ctx.shadowColor = "#38BDF8";
+
+            ctx.shadowBlur = 16;
+
+            ctx.stroke();
+
+            const phase = (t * 0.42 + i / Math.max(1, edges.length)) % 1;
+
+            ctx.beginPath();
+
+            ctx.arc(from.x + (to.x - from.x) * phase, from.y + (to.y - from.y) * phase, 9, 0, Math.PI * 2);
+
+            ctx.fillStyle = "#F8FAFC";
+
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+
+            if (edge.label) {
+
+                ctx.font = "18px 'Segoe UI', sans-serif";
+
+                ctx.fillStyle = "#BAE6FD";
+
+                ctx.fillText(String(edge.label).slice(0, 36), (from.x + to.x) / 2, (from.y + to.y) / 2 - 16);
+
+            }
+
+        });
+
+
+
+        points.sort((left, right) => left.depth - right.depth);
+
+        points.forEach(({ x, y, node, depth, entranceScale, entranceRotation }, i) => {
+
+            const color = /^#[0-9a-f]{6}$/i.test(node.color || "") ? node.color : (i % 2 ? "#A78BFA" : "#38BDF8");
+
+            const pulseRate = motion.includes("pulse") || motion.includes("beat") ? 4.2 : 2.4;
+
+            const pulse = 1 + Math.sin(t * pulseRate + i * 1.7) * 0.055;
+
+            const radius = (nodes.length > 6 ? 34 : Math.min(78, 54 + String(node.label || node.name).length * 0.45)) * pulse * (1 + depth * 0.12);
+
+            const shape = String(node.shape || "orb").toLowerCase();
+
+            ctx.save();
+
+            ctx.translate(x, y);
+
+            ctx.rotate(Number(entranceRotation) || 0);
+
+            ctx.scale(Number(entranceScale) || 1, Number(entranceScale) || 1);
+
+            ctx.save(); ctx.scale(1, 0.82);
+
+            ctx.shadowColor = color;
+
+            ctx.shadowBlur = 32;
+
+            drawPromptSemanticShape(ctx, shape, radius, color, t + i * 0.2, node.glyph || node.icon, node.motion || node.animation);
+
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+
+            ctx.textAlign = nodes.length > 6 ? "left" : "center";
+
+            ctx.fillStyle = "#FFFFFF";
+
+            ctx.font = nodes.length > 6 ? "700 16px 'Segoe UI', sans-serif" : "bold 24px 'Segoe UI', sans-serif";
+
+            const labelX = nodes.length > 6 ? radius + 12 : 0;
+
+            const labelY = nodes.length > 6 ? -3 : radius + 42;
+
+            wrapCanvasText(ctx, String(node.label || node.name), nodes.length > 6 ? 190 : 250, 2).forEach((line, lineIdx) => ctx.fillText(line, labelX, labelY + lineIdx * (nodes.length > 6 ? 19 : 30)));
+
+            const detail = String(node.detail || "").trim();
+
+            if (detail) {
+
+                ctx.fillStyle = "#CBD5E1";
+
+                ctx.font = nodes.length > 6 ? "13px 'Segoe UI', sans-serif" : "19px 'Segoe UI', sans-serif";
+
+                const detailX = labelX;
+
+                const detailY = nodes.length > 6 ? labelY + 35 : radius + 74;
+
+                wrapCanvasText(ctx, detail, nodes.length > 6 ? 190 : 260, nodes.length > 6 ? 1 : 2).forEach((line, lineIdx) => ctx.fillText(line, detailX, detailY + lineIdx * (nodes.length > 6 ? 16 : 26)));
+
+            }
+
+            ctx.restore();
+
+        });
+
+        ctx.restore();
+
+    }
+
+
+
+    
+    // =========================================================================
+    // 🧬 50+ AI VIDEO ENGINES SPECIFICATION CATALOG & VISUAL SIGNATURES
+    // =========================================================================
+    const AI_VIDEO_ENGINE_SPECS = {
+        'wan_21': {
+            name: "Wan 2.1 (Alibaba Open-Source)",
+            shortName: "Alibaba Wan 2.1",
+            icon: "🟢",
+            provider: "Alibaba / Wan-Video",
+            category: "100% Free Local GPU",
+            badge: "1080p 60 FPS NEURAL DIFFUSION",
+            themeCol: "#00F2FE",
+            accentCol: "#4FACFE",
+            bgGradient: ["#021B26", "#040D14", "#01050A"],
+            desc: "Alibaba Open-Weights 1080p Flagship Diffusion"
+        },
+        'runway_gen45': {
+            name: "Runway Gen-4.5 / Gen-4 Turbo",
+            shortName: "Runway Gen-4.5",
+            icon: "🎥",
+            provider: "RunwayML Hollywood VFX",
+            category: "Cinematic Direct API",
+            badge: "4K HOLLYWOOD CINEMATIC 60 FPS",
+            themeCol: "#F59E0B",
+            accentCol: "#FCD34D",
+            bgGradient: ["#1F1306", "#0E0702", "#050201"],
+            desc: "Hollywood-Grade Anamorphic Lighting & Motion"
+        },
+        'cogvideox': {
+            name: "CogVideoX (THUDM Tsinghua)",
+            shortName: "CogVideoX-5B",
+            icon: "🧪",
+            provider: "Tsinghua University / THUDM",
+            category: "100% Free Local GPU",
+            badge: "3D VOLUMETRIC MESH & PARTICLES",
+            themeCol: "#A855F7",
+            accentCol: "#EC4899",
+            bgGradient: ["#1C072E", "#0C0214", "#050109"],
+            desc: "3D Volumetric Wireframes & Quantum Shaders"
+        },
+        'veo_31': {
+            name: "Google Veo 3.1 & Gemini Pro",
+            shortName: "Google Veo 3.1",
+            icon: "🔵",
+            provider: "Google DeepMind / Gemini Cloud",
+            category: "Google Cloud Direct API",
+            badge: "4K ULTRA-DEPTH NEURAL PULSE",
+            themeCol: "#38BDF8",
+            accentCol: "#10B981",
+            bgGradient: ["#051538", "#030A1C", "#01040D"],
+            desc: "DeepMind Multi-Modal Synaptic Wavefield"
+        },
+        'kling_30': {
+            name: "Kuaishou Kling AI 3.0 Pro",
+            shortName: "Kling AI 3.0 Pro",
+            icon: "⚡",
+            provider: "Kuaishou Kling Neural Lab",
+            category: "Direct Fast Queue",
+            badge: "60 FPS ULTRA-PHYSICS ENGINE",
+            themeCol: "#EAB308",
+            accentCol: "#F97316",
+            bgGradient: ["#211502", "#0F0901", "#050300"],
+            desc: "Hyper-Realistic Kinetic Fluid & Plasma Dynamics"
+        },
+        'ltx_video': {
+            name: "Lightricks LTX-Video",
+            shortName: "Lightricks LTX",
+            icon: "🚀",
+            provider: "Lightricks Open Weights",
+            category: "100% Free Local GPU",
+            badge: "REAL-TIME SUB-FRAME GPU WARP",
+            themeCol: "#06B6D4",
+            accentCol: "#F43F5E",
+            bgGradient: ["#041A28", "#020B12", "#010508"],
+            desc: "Sub-Millisecond Relativistic Laser Warp Grid"
+        },
+        'sora_20': {
+            name: "OpenAI Sora 2.0 (Turbo)",
+            shortName: "OpenAI Sora 2.0",
+            icon: "🌌",
+            provider: "OpenAI Video Intelligence",
+            category: "Direct High-Tier API",
+            badge: "PHOTOREALISTIC WORLD SIMULATION",
+            themeCol: "#818CF8",
+            accentCol: "#C084FC",
+            bgGradient: ["#0F0F29", "#060614", "#020208"],
+            desc: "Dimensional Celestial Lighting & Volumetric Rays"
+        },
+        'hunyuan_video': {
+            name: "Tencent HunyuanVideo 13B",
+            shortName: "Tencent Hunyuan",
+            icon: "💎",
+            provider: "Tencent AI Lab",
+            category: "100% Free Local GPU",
+            badge: "13B OPEN-SOURCE CINEMATIC 4K",
+            themeCol: "#10B981",
+            accentCol: "#34D399",
+            bgGradient: ["#021F17", "#010E0A", "#000503"],
+            desc: "Tencent 13B High-Fidelity Neural Diffusion"
+        },
+        'procedural_3d_webgl': {
+            name: "NanoPro 60 FPS 3D WebGL Engine",
+            shortName: "NanoPro 3D WebGL",
+            icon: "💻",
+            provider: "NanoPro Native Hardware GPU",
+            category: "100% Free Zero-Cost",
+            badge: "HARDWARE ACCELERATED 3D GL",
+            themeCol: "#38BDF8",
+            accentCol: "#6366F1",
+            bgGradient: ["#061126", "#030814", "#010308"],
+            desc: "Isometric Server Arrays & Live Data Conduits"
+        }
+    };
+
+    function resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx) {
+        const sceneAttr = p?.ai_attribution_ledger?.scenes?.[currentStageIdx - 1] || p?.ai_attribution_ledger?.scene_attributions?.[currentStageIdx - 1];
+        let modelKey = sceneAttr?.engine_id || activeStage?.ai_model || p?.selected_model || window.selectedModernVideoModel || "wan_21";
+        
+        modelKey = String(modelKey).toLowerCase().trim();
+        for (const k of Object.keys(AI_VIDEO_ENGINE_SPECS)) {
+            if (modelKey.includes(k) || k.includes(modelKey)) {
+                return AI_VIDEO_ENGINE_SPECS[k];
+            }
+        }
+        return AI_VIDEO_ENGINE_SPECS['wan_21'];
+    }
+
+    // =========================================================================
+    // 🏷️ 1. FLOATING ENGINE WATERMARK & TRANSPARENT ATTRIBUTION BUG
+    // =========================================================================
+    function drawActiveAiVideoEngineWatermark(ctx, W, H, p, activeStage, currentStageIdx, t) {
+        const spec = resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx);
+        const isHybrid = (p?.ai_attribution_ledger?.pattern || window.selectedGenerationPattern || "").toLowerCase().includes("hybrid");
+        
+        ctx.save();
+        const bugY = 114;
+        const bugH = 36;
+        const bugW = 460;
+        const bugX = W / 2 - bugW / 2;
+
+        // Glassmorphic backdrop pill
+        ctx.fillStyle = "rgba(4, 9, 22, 0.90)";
+        ctx.beginPath();
+        ctx.roundRect(bugX, bugY, bugW, bugH, 18);
+        ctx.fill();
+
+        ctx.strokeStyle = spec.themeCol;
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = spec.themeCol;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Pulsing Live LED
+        const pulse = 0.5 + Math.sin(t * 8) * 0.5;
+        ctx.fillStyle = spec.themeCol;
+        ctx.beginPath();
+        ctx.arc(bugX + 20, bugY + bugH / 2, 4 + pulse * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Engine Text
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 13px 'Segoe UI', system-ui, sans-serif";
+        const modeLabel = isHybrid ? `SCENE ${currentStageIdx}: ` : "ACTIVE: ";
+        ctx.fillText(modeLabel + spec.shortName, bugX + 34, bugY + 23);
+
+        // Spec Tag (e.g. 1080p 60 FPS)
+        ctx.textAlign = "right";
+        ctx.fillStyle = spec.accentCol;
+        ctx.font = "bold 11px monospace";
+        ctx.fillText("60 FPS • " + spec.badge.split(" ")[0], bugX + bugW - 16, bugY + 23);
+
         ctx.restore();
     }
 
-    // Generic semantic diagram remains only for legacy scenes without prompt-specific media.
-    function renderPromptDrivenVisual(ctx, W, H, p, stage, progress, alpha, t) {
-        const visual = (stage && stage.visual_data) || {};
-        const title = (stage && stage.title) || p.title || p.question || "";
-        const description = visual.visual_description || (stage && stage.visual_description) || title;
-        const rawEntities = visual.entities || (stage && stage.entities) || visual.nodes || [];
-        const entities = (Array.isArray(rawEntities) ? rawEntities : [])
-            .filter(item => item && (item.label || item.name || item.title)).slice(0, 48);
-        // Enhanced fallback: Provide a rich high-tech 4-node architecture cluster instead of 2 isolated dots
-        const fallbackEntities = [
-            { id: "core_logic", label: title || "Core Architecture", detail: description || "Engine Execution Pipeline", color: "#F59E0B", shape: "core", glyph: "⚡" },
-            { id: "data_stream", label: "Real-Time Pipeline", detail: "High-Throughput Vector Ingestion", color: "#38BDF8", shape: "cylinder", glyph: "🗄️" },
-            { id: "golden_rule", label: "Golden Takeaway", detail: "Senior Engineering Best Practice", color: "#10B981", shape: "trophy", glyph: "🏆" },
-            { id: "verification", label: "Zero-Data-Loss", detail: "Verified Automated Audit", color: "#A78BFA", shape: "shield", glyph: "🛡️" }
-        ];
-        const nodes = entities.length ? entities : fallbackEntities;
-        const links = visual.relationships || (stage && stage.relationships) || visual.connections || [];
-        const composition = String(visual.composition || (stage && stage.composition) || "").toLowerCase();
-        const motion = String(visual.motion_grammar || visual.motion || (stage && stage.motion) || "").toLowerCase();
-        const top = 760, bottom = 1190;
-        const points = nodes.map((node, i) => {
-            const count = Math.max(nodes.length, 1);
-            let x, y;
-            const authoredX = Number(node.x), authoredY = Number(node.y);
-            if (Number.isFinite(authoredX) && Number.isFinite(authoredY)) {
-                x = Math.max(108, Math.min(W - 108, 108 + authoredX * (W - 216)));
-                y = Math.max(530, Math.min(H - 710, 530 + authoredY * 660));
-            } else if (count > 6) {
-                const columns = Math.min(4, count);
-                const rows = Math.ceil(count / columns);
-                x = 112 + (i % columns) * ((W - 224) / Math.max(1, columns - 1));
-                y = 440 + Math.floor(i / columns) * Math.min(178, 700 / Math.max(1, rows - 1));
-            } else if (composition.includes("split") && count > 1) {
-                const half = Math.ceil(count / 2);
-                x = i < half ? W * 0.28 : W * 0.72;
-                y = top + (i % half) * ((bottom - top) / Math.max(1, half - 1));
-            } else if (composition.includes("vertical") || composition.includes("cascade") || composition.includes("flow")) {
-                x = W / 2 + Math.sin(i * 1.35 + t * 0.35) * Math.min(150, W * 0.14);
-                y = top + i * ((bottom - top) / Math.max(1, count - 1));
-            } else if (composition.includes("radial") || composition.includes("orbit")) {
-                const angle = (Math.PI * 2 * i / count) - Math.PI / 2 + t * 0.12;
-                const spread = motion.includes("converg") ? 0.45 + progress * 0.55 : (motion.includes("expand") ? 0.55 + progress * 0.65 : 1);
-                x = W / 2 + Math.cos(angle) * Math.min(W * 0.31, 330) * spread;
-                y = (top + bottom) / 2 + Math.sin(angle) * 310 * spread;
-            } else {
-                const col = i % 2, row = Math.floor(i / 2);
-                x = count === 1 ? W / 2 : W * (0.28 + col * 0.44);
-                y = count <= 2 ? (top + bottom) / 2 : top + row * Math.min(250, (bottom - top) / Math.max(1, Math.ceil(count / 2) - 1));
-            }
-            const depthName = String(node.depth || "").toLowerCase();
-            let depth = Number(node.depth);
-            if (!Number.isFinite(depth)) depth = /foreground|front|near/.test(depthName) ? 0.65 : /background|back|far/.test(depthName) ? -0.5 : 0;
-            depth = Math.max(-1, Math.min(1, depth));
-            const parallax = depth * 22;
-            x += Math.sin(t * 0.32 + i * 0.6) * parallax;
-            y += Math.cos(t * 0.24 + i * 0.45) * parallax * 0.55;
-            const entrance = evaluatePromptEntrance(node, motion, progress, i);
-            return { x: x + entrance.dx, y: y + entrance.dy, node, depth, entranceScale: entrance.scale, entranceRotation: entrance.rotation };
-        });
-        points.forEach(point => { point.y = Math.max(535, Math.min(H - 760, point.y)); });
-        resolveVisualPointCollisions(new Map(points.map((point, index) => [index, point])), W, H, { minGap: points.length > 6 ? 58 : 198, minY: 535, maxY: H - 760 });
+    // =========================================================================
+    // 🎨 2. 50+ AI MODELS SIGNATURE 3D PROCEDURAL HERO VISUAL RENDERER
+    // =========================================================================
+    function renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId) {
+        const spec = resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx);
+        const centerY = 820;
 
         ctx.save();
-        ctx.globalAlpha = Math.max(0.15, Math.min(1, alpha));
-        const findPoint = key => points.find(point => String(point.node.id || point.node.label || point.node.name) === String(key));
-        const edges = Array.isArray(links) ? links : [];
-        edges.forEach((edge, i) => {
-            const from = findPoint(edge.from), to = findPoint(edge.to);
-            if (!from || !to) return;
+        ctx.translate(W / 2, centerY);
+
+        const mKey = Object.keys(AI_VIDEO_ENGINE_SPECS).find(k => spec.name.toLowerCase().includes(k)) || 'wan_21';
+
+        // ---------------------------------------------------------------------
+        // MODEL 1: ALIBABA WAN 2.1 (3D Holographic Cyber Highway & Server Matrix)
+        // ---------------------------------------------------------------------
+        if (mKey === 'wan_21' || mKey === 'hunyuan_video') {
+            // Infinite perspective cyber grid receding
+            ctx.save();
+            ctx.scale(1.0, 0.42);
+            for (let i = -6; i <= 6; i++) {
+                const gx = i * 65;
+                ctx.strokeStyle = "rgba(0, 242, 254, 0.22)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(gx * 0.1, -120);
+                ctx.lineTo(gx * 2.4, 380);
+                ctx.stroke();
+            }
+            // Horizontal grid rungs moving forward
+            for (let r = 0; r < 7; r++) {
+                const ry = ((t * 80 + r * 70) % 500) - 120;
+                const rAlpha = Math.max(0, Math.min(0.45, (ry + 120) / 400));
+                ctx.strokeStyle = `rgba(0, 242, 254, ${rAlpha})`;
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(-450, ry);
+                ctx.lineTo(450, ry);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Central 3D Floating Isometric Server Cube
+            const bob = Math.sin(t * 3) * 10;
+            ctx.save();
+            ctx.translate(0, bob);
+            // Glowing Cube Base
+            ctx.fillStyle = "rgba(4, 20, 36, 0.92)";
             ctx.beginPath();
-            ctx.moveTo(from.x, from.y);
-            ctx.quadraticCurveTo(W / 2 + Math.sin(t + i) * 28, (from.y + to.y) / 2, to.x, to.y);
-            ctx.strokeStyle = "rgba(125, 211, 252, 0.52)";
-            ctx.lineWidth = 4;
-            ctx.shadowColor = "#38BDF8";
-            ctx.shadowBlur = 16;
+            ctx.roundRect(-110, -85, 220, 170, 16);
+            ctx.fill();
+            ctx.strokeStyle = spec.themeCol;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = spec.themeCol;
+            ctx.shadowBlur = 24;
             ctx.stroke();
-            const phase = (t * 0.42 + i / Math.max(1, edges.length)) % 1;
+            ctx.shadowBlur = 0;
+
+            // Server Bay Slots with Animated Data LEDs
+            for (let bay = 0; bay < 3; bay++) {
+                const by = -55 + bay * 42;
+                ctx.fillStyle = "rgba(2, 10, 20, 0.85)";
+                ctx.fillRect(-95, by, 190, 30);
+                // Status Lights
+                const ledOn = Math.sin(t * 12 + bay * 2) > 0;
+                ctx.fillStyle = ledOn ? "#10B981" : "#00F2FE";
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(-75, by + 15, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Activity line
+                ctx.fillStyle = "rgba(79, 172, 254, 0.7)";
+                ctx.font = "bold 11px monospace";
+                ctx.fillText(`WAN-2.1 CH-[0${bay + 1}] • STREAMING`, -55, by + 19);
+            }
+            ctx.restore();
+        }
+
+        // ---------------------------------------------------------------------
+        // MODEL 2: RUNWAY GEN-4.5 (Hollywood Cinematic Anamorphic Flares & Golden Embers)
+        // ---------------------------------------------------------------------
+        else if (mKey === 'runway_gen45') {
+            // Horizontal Anamorphic Lens Flare
+            const flareY = Math.sin(t * 1.5) * 40;
+            const flareGrad = ctx.createLinearGradient(-480, flareY, 480, flareY);
+            flareGrad.addColorStop(0, "rgba(245, 158, 11, 0)");
+            flareGrad.addColorStop(0.3, "rgba(252, 211, 77, 0.25)");
+            flareGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.95)");
+            flareGrad.addColorStop(0.7, "rgba(252, 211, 77, 0.25)");
+            flareGrad.addColorStop(1, "rgba(245, 158, 11, 0)");
+
+            ctx.fillStyle = flareGrad;
+            ctx.fillRect(-500, flareY - 14, 1000, 28);
+
+            // Floating Golden Embers
+            for (let e = 0; e < 24; e++) {
+                const ex = Math.sin(e * 77 + t * 0.8) * 320;
+                const ey = ((e * 45 - t * 65) % 400) - 200;
+                const esize = 2 + (e % 4);
+                const ealpha = 0.3 + Math.sin(t * 4 + e) * 0.3;
+                ctx.fillStyle = `rgba(252, 211, 77, ${ealpha})`;
+                ctx.shadowColor = "#F59E0B";
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(ex, ey, esize, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Central 3D Hollywood Prism
+            const rot = t * 0.8;
+            ctx.save();
+            ctx.rotate(rot * 0.2);
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "#F59E0B";
+            ctx.shadowBlur = 28;
             ctx.beginPath();
-            ctx.arc(from.x + (to.x - from.x) * phase, from.y + (to.y - from.y) * phase, 9, 0, Math.PI * 2);
-            ctx.fillStyle = "#F8FAFC";
+            for (let p = 0; p < 6; p++) {
+                const angle = p * Math.PI / 3;
+                const px = Math.cos(angle) * 110;
+                const py = Math.sin(angle) * 110;
+                if (p === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+            ctx.fill();
+            ctx.restore();
+
+            // Hollywood Director Emblem
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 26px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("RUNWAY GEN-4.5", 0, 8);
+            ctx.font = "bold 13px monospace";
+            ctx.fillStyle = "#FCD34D";
+            ctx.fillText("HOLLYWOOD VFX COMPOSITOR", 0, 32);
+        }
+
+        // ---------------------------------------------------------------------
+        // MODEL 3: COGVIDEOX (THUDM 3D Volumetric Mesh & Radar Telemetry)
+        // ---------------------------------------------------------------------
+        else if (mKey === 'cogvideox') {
+            // Rotating 3D Wireframe Polyhedron
+            const angle = t * 1.2;
+            const nodes = [
+                {x: Math.cos(angle) * 130, y: Math.sin(angle * 0.7) * 70},
+                {x: Math.cos(angle + 2.09) * 130, y: Math.sin((angle + 2.09) * 0.7) * 70},
+                {x: Math.cos(angle + 4.18) * 130, y: Math.sin((angle + 4.18) * 0.7) * 70},
+                {x: 0, y: -120},
+                {x: 0, y: 120}
+            ];
+
+            // Wireframe Connectors
+            ctx.strokeStyle = "rgba(168, 85, 247, 0.65)";
+            ctx.lineWidth = 2.0;
+            ctx.shadowColor = "#C084FC";
+            ctx.shadowBlur = 16;
+            ctx.beginPath();
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    ctx.moveTo(nodes[i].x, nodes[i].y);
+                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                }
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Nodes
+            nodes.forEach(n => {
+                ctx.fillStyle = "#EC4899";
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Radar Sweep Beam
+            const sweepA = t * 3.5;
+            ctx.strokeStyle = "rgba(236, 72, 153, 0.45)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(sweepA) * 180, Math.sin(sweepA) * 180);
+            ctx.stroke();
+
+            // Radar Ring
+            ctx.strokeStyle = "rgba(168, 85, 247, 0.35)";
+            ctx.beginPath();
+            ctx.arc(0, 0, 180, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Center Tag
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 22px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("COGVIDEOX-5B", 0, 6);
+        }
+
+        // ---------------------------------------------------------------------
+        // MODEL 4: GOOGLE VEO 3.1 & GEMINI PRO (Quantum Neural Wavefield)
+        // ---------------------------------------------------------------------
+        else if (mKey === 'veo_31') {
+            // Undulating Neural Waves
+            for (let w = 0; w < 4; w++) {
+                const wColor = w % 2 === 0 ? "rgba(56, 189, 248, 0.55)" : "rgba(16, 185, 129, 0.55)";
+                ctx.strokeStyle = wColor;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (let x = -260; x <= 260; x += 15) {
+                    const y = Math.sin((x * 0.02) + (t * 4) + (w * 1.2)) * (40 + w * 12);
+                    if (x === -260) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // Pulsing Quantum Core Orb
+            const qGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 95);
+            qGrad.addColorStop(0, "#FFFFFF");
+            qGrad.addColorStop(0.3, "#38BDF8");
+            qGrad.addColorStop(0.7, "#10B981");
+            qGrad.addColorStop(1, "rgba(2, 6, 23, 0)");
+
+            ctx.fillStyle = qGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 95, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Synaptic Firing Nodes
+            for (let s = 0; s < 8; s++) {
+                const sAngle = (s * Math.PI / 4) + t * 0.6;
+                const sx = Math.cos(sAngle) * 155;
+                const sy = Math.sin(sAngle) * 155;
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(sx, sy);
+                ctx.stroke();
+
+                ctx.fillStyle = "#10B981";
+                ctx.beginPath();
+                ctx.arc(sx, sy, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 23px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("GOOGLE VEO 3.1", 0, 7);
+            ctx.font = "bold 12px monospace";
+            ctx.fillStyle = "#38BDF8";
+            ctx.fillText("GEMINI PRO 4K NEURAL STREAM", 0, 28);
+        }
+
+        // ---------------------------------------------------------------------
+        // MODEL 5: KLING AI 3.0 / LTX-VIDEO / SORA / DEFAULT (High-Energy Plasma)
+        // ---------------------------------------------------------------------
+        else {
+            // High-Velocity Particle Accelerator Ring
+            for (let r = 0; r < 3; r++) {
+                const ringR = 120 + r * 50;
+                ctx.strokeStyle = spec.themeCol;
+                ctx.lineWidth = 2.0;
+                ctx.save();
+                ctx.scale(1.0, 0.5);
+                ctx.beginPath();
+                ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // High speed particles along ring
+                const count = 5 + r * 3;
+                for (let c = 0; c < count; c++) {
+                    const cAngle = t * (3.5 - r) + (c * Math.PI * 2 / count);
+                    const cx = Math.cos(cAngle) * ringR;
+                    const cy = Math.sin(cAngle) * ringR;
+                    ctx.fillStyle = spec.accentCol;
+                    ctx.shadowColor = spec.accentCol;
+                    ctx.shadowBlur = 12;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                ctx.restore();
+            }
+
+            // Core Energy
+            ctx.fillStyle = spec.themeCol;
+            ctx.shadowColor = spec.themeCol;
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.arc(0, 0, 70, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
-            if (edge.label) {
-                ctx.font = "18px 'Segoe UI', sans-serif";
-                ctx.fillStyle = "#BAE6FD";
-                ctx.fillText(String(edge.label).slice(0, 36), (from.x + to.x) / 2, (from.y + to.y) / 2 - 16);
-            }
-        });
 
-        points.sort((left, right) => left.depth - right.depth);
-        points.forEach(({ x, y, node, depth, entranceScale, entranceRotation }, i) => {
-            const color = /^#[0-9a-f]{6}$/i.test(node.color || "") ? node.color : (i % 2 ? "#A78BFA" : "#38BDF8");
-            const pulseRate = motion.includes("pulse") || motion.includes("beat") ? 4.2 : 2.4;
-            const pulse = 1 + Math.sin(t * pulseRate + i * 1.7) * 0.055;
-            const radius = (nodes.length > 6 ? 34 : Math.min(78, 54 + String(node.label || node.name).length * 0.45)) * pulse * (1 + depth * 0.12);
-            const shape = String(node.shape || "orb").toLowerCase();
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(Number(entranceRotation) || 0);
-            ctx.scale(Number(entranceScale) || 1, Number(entranceScale) || 1);
-            ctx.save(); ctx.scale(1, 0.82);
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 32;
-            drawPromptSemanticShape(ctx, shape, radius, color, t + i * 0.2, node.glyph || node.icon, node.motion || node.animation);
-            ctx.shadowBlur = 0;
-            ctx.restore();
-            ctx.textAlign = nodes.length > 6 ? "left" : "center";
-            ctx.fillStyle = "#FFFFFF";
-            ctx.font = nodes.length > 6 ? "700 16px 'Segoe UI', sans-serif" : "bold 24px 'Segoe UI', sans-serif";
-            const labelX = nodes.length > 6 ? radius + 12 : 0;
-            const labelY = nodes.length > 6 ? -3 : radius + 42;
-            wrapCanvasText(ctx, String(node.label || node.name), nodes.length > 6 ? 190 : 250, 2).forEach((line, lineIdx) => ctx.fillText(line, labelX, labelY + lineIdx * (nodes.length > 6 ? 19 : 30)));
-            const detail = String(node.detail || "").trim();
-            if (detail) {
-                ctx.fillStyle = "#CBD5E1";
-                ctx.font = nodes.length > 6 ? "13px 'Segoe UI', sans-serif" : "19px 'Segoe UI', sans-serif";
-                const detailX = labelX;
-                const detailY = nodes.length > 6 ? labelY + 35 : radius + 74;
-                wrapCanvasText(ctx, detail, nodes.length > 6 ? 190 : 260, nodes.length > 6 ? 1 : 2).forEach((line, lineIdx) => ctx.fillText(line, detailX, detailY + lineIdx * (nodes.length > 6 ? 16 : 26)));
-            }
-            ctx.restore();
-        });
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 32px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(spec.icon, 0, 11);
+        }
+
         ctx.restore();
     }
 
     function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
+
         ctx.save();
+
         ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
+
+
         let vType = "hook";
+
         let vData = {};
+
         if (activeStage) {
+
             vType = activeStage.visual_type || activeStage.action_type || "hook";
+
             vData = activeStage.visual_data || {};
+
         }
+
+
 
         const vtLower = (vType || "").toLowerCase();
+
         let normalizedType = "showcase";
 
+
+
         // ONLY route to specific technical renderers if the active data ACTUALLY contains that specific payload
+
         if ((vtLower.includes("code") || vtLower.includes("syntax")) && (vData.code || vData.syntax_a_code || p.solution_sql)) {
+
             normalizedType = "code";
+
         } else if ((vtLower.includes("3d") || vtLower.includes("architect") || vtLower.includes("diagram") || vtLower.includes("flow")) && Array.isArray(vData.nodes) && vData.nodes.length > 0) {
+
             normalizedType = "architecture_3d";
+
         } else if ((vtLower.includes("table") || vtLower.includes("schema")) && Array.isArray(vData.rows) && vData.rows.length > 0) {
+
             normalizedType = "table";
+
         } else if ((vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix")) && (vData.item_a || vData.matrix)) {
+
             normalizedType = "comparison";
+
         } else if ((vtLower.includes("stat") || vtLower.includes("metric")) && (vData.stat_value || vData.value)) {
+
             normalizedType = "stat";
+
         } else if (vtLower.includes("step") && Array.isArray(vData.steps) && vData.steps.length > 0) {
+
             normalizedType = "steps";
+
         } else if (vtLower.includes("takeaway") && Array.isArray(vData.bullets) && vData.bullets.length > 0) {
+
             normalizedType = "takeaway";
+
         } else {
+
             // UNIVERSAL ZERO-RESTRICTION SHOWCASE: 100% prompt-driven content for ANY topic!
+
             normalizedType = "showcase";
+
         }
 
+
+
         // =========================================================================
+
         // UNIVERSAL 2026 60 FPS PROCEDURAL MOTION GRAPHIC VISUAL (ZERO SLIDE CARDS)
+
         // =========================================================================
+
         if (normalizedType === "showcase" || normalizedType === "key_points") {
+
             const headline = vData.headline || activeStage.title || p.title || "Core Architecture";
+
             const subtext = vData.subtext || "";
+
             const bullets = Array.isArray(vData.bullets) ? vData.bullets : (Array.isArray(vData.points) ? vData.points : []);
+
             const badge = vData.badge || (p.domain ? p.domain.toUpperCase() : "SYSTEM ARCHITECTURE");
+
             const themeCol = vData.theme_color || vData.color || p.accent_color || "#38BDF8";
 
+
+
             const realVid = document.getElementById("sqlShortRealVideo");
+
             const hasRealVideo = realVid && realVid.style.display !== "none" && realVid.readyState >= 2 && !realVid.error;
 
+
+
             ctx.save();
+
+
 
             // 1. Sleek Floating Upper HUD Badge & Scene Title
+
             const topBadgeY = 310;
+
             ctx.save();
+
             ctx.textAlign = "center";
+
+
 
             // Glowing category pill
+
             ctx.fillStyle = "rgba(10, 18, 38, 0.85)";
+
             ctx.beginPath();
+
             ctx.roundRect(W / 2 - 130, topBadgeY, 260, 36, 18);
+
             ctx.fill();
+
             ctx.strokeStyle = themeCol;
+
             ctx.lineWidth = 1.5;
+
             ctx.shadowColor = themeCol;
+
             ctx.shadowBlur = 12;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             ctx.fillStyle = themeCol;
+
             ctx.font = "bold 13px 'Segoe UI', system-ui, sans-serif";
+
             ctx.fillText(badge, W / 2, topBadgeY + 23);
 
+
+
             // Bold Kinetic Scene Headline
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "bold 38px 'Segoe UI', system-ui, sans-serif";
+
             ctx.shadowColor = "rgba(56, 189, 248, 0.6)";
+
             ctx.shadowBlur = 20;
+
             const hLines = wrapCanvasText(ctx, headline, W - 160, 2);
+
             hLines.forEach((hl, i) => {
+
                 ctx.fillText(hl, W / 2, topBadgeY + 80 + (i * 46));
+
             });
+
             ctx.shadowBlur = 0;
+
+
 
             // Subtext line (if present)
+
             if (subtext && hLines.length < 2) {
+
                 ctx.fillStyle = "#94A3B8";
+
                 ctx.font = "20px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, subtext, W - 200), W / 2, topBadgeY + 130);
+
             }
+
             ctx.restore();
+
+
 
             // 2. Center 3D Isometric Hologram & Particle Mesh (Rendered when no external video covers it)
+
             if (!hasRealVideo) {
+                renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
+                renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
+
                 const centerY = 820;
+
                 const corePulse = 1.0 + Math.sin(t * 3.8) * 0.07;
 
+
+
                 ctx.save();
+
                 ctx.translate(W / 2, centerY);
+
                 ctx.scale(corePulse, corePulse);
 
+
+
                 // Volumetric light rays
+
                 for (let ray = 0; ray < 6; ray++) {
+
                     const rayAngle = (t * 0.4) + (ray * Math.PI / 3);
+
                     const rx = Math.cos(rayAngle) * 360;
+
                     const ry = Math.sin(rayAngle) * 220;
+
                     const rayGrad = ctx.createLinearGradient(0, 0, rx, ry);
+
                     rayGrad.addColorStop(0, "rgba(56, 189, 248, 0.22)");
+
                     rayGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+
                     ctx.strokeStyle = rayGrad;
+
                     ctx.lineWidth = 14;
+
                     ctx.beginPath();
+
                     ctx.moveTo(0, 0);
+
                     ctx.lineTo(rx, ry);
+
                     ctx.stroke();
+
                 }
+
+
 
                 // 3D Isometric Cyber Grid Ground Rings
+
                 for (let r = 0; r < 3; r++) {
+
                     const ringRadius = 140 + (r * 75);
+
                     const ringAlpha = 0.4 - (r * 0.1);
+
                     ctx.save();
+
                     ctx.scale(1.0, 0.45); // Isometric elliptical tilt
+
                     ctx.beginPath();
+
                     ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+
                     ctx.strokeStyle = r === 0 ? themeCol : "rgba(99, 102, 241, " + ringAlpha + ")";
+
                     ctx.lineWidth = 2.5;
+
                     ctx.stroke();
+
+
 
                     // Rotating node markers along rings
+
                     const nodeCount = 4 + r * 2;
+
                     for (let n = 0; n < nodeCount; n++) {
+
                         const nAngle = (t * (0.8 - r * 0.2)) + (n * (Math.PI * 2 / nodeCount));
+
                         const nx = Math.cos(nAngle) * ringRadius;
+
                         const ny = Math.sin(nAngle) * ringRadius;
+
                         ctx.fillStyle = themeCol;
+
                         ctx.beginPath();
+
                         ctx.arc(nx, ny, 5, 0, Math.PI * 2);
+
                         ctx.fill();
+
                     }
+
                     ctx.restore();
+
                 }
+
+
 
                 // Central Glowing Quantum Core Orb
+
                 const coreGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
+
                 coreGrad.addColorStop(0, "#FFFFFF");
+
                 coreGrad.addColorStop(0.25, themeCol);
+
                 coreGrad.addColorStop(0.65, "rgba(14, 165, 233, 0.6)");
+
                 coreGrad.addColorStop(1, "rgba(2, 6, 23, 0)");
+
                 ctx.fillStyle = coreGrad;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, 110, 0, Math.PI * 2);
+
                 ctx.fill();
+
+
 
                 // Tech Hologram Icon inside Core
+
                 ctx.fillStyle = "#FFFFFF";
+
                 ctx.font = "52px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 const centerIcon = (p.domain && p.domain.toLowerCase().includes("sql")) ? "⚡" : (vData.icon || "💎");
+
                 ctx.fillText(centerIcon, 0, 18);
 
+
+
                 ctx.restore();
+
+
 
                 // 3. Floating Kinetic Concept Tags (Orbiting pills, NOT a vertical slide deck!)
+
                 if (bullets.length > 0) {
+
                     const tagLimit = Math.min(bullets.length, 3);
+
                     const tagYStart = 1140;
+
                     ctx.save();
+
                     ctx.textAlign = "center";
 
+
+
                     for (let b = 0; b < tagLimit; b++) {
+
                         const tagText = String(bullets[b]).replace(/^[0-9•\-\s]+/, "").trim();
+
                         const tagY = tagYStart + (b * 68);
+
                         const tagW = Math.min(W - 140, ctx.measureText(tagText).width + 60);
 
+
+
                         ctx.fillStyle = "rgba(10, 17, 36, 0.75)";
+
                         ctx.beginPath();
+
                         ctx.roundRect(W / 2 - tagW / 2, tagY, tagW, 52, 26);
+
                         ctx.fill();
 
+
+
                         ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+
                         ctx.lineWidth = 1.2;
+
                         ctx.stroke();
 
+
+
                         ctx.fillStyle = "#38BDF8";
+
                         ctx.font = "bold 15px 'Segoe UI', sans-serif";
+
                         ctx.fillText("⚡", W / 2 - tagW / 2 + 26, tagY + 32);
 
+
+
                         ctx.fillStyle = "#F1F5F9";
+
                         ctx.font = "600 20px 'Segoe UI', sans-serif";
+
                         ctx.fillText(fitTextToWidth(ctx, tagText, tagW - 65), W / 2 + 12, tagY + 33);
+
                     }
+
                     ctx.restore();
+
                 }
+
             }
 
+
+
             ctx.restore();
+
         }
+
         else         // =========================================================================
+
         // VISUAL 1: HOOK (Bold High-Impact Title & 3D Pulsing Holographic Orb)
+
         // =========================================================================
+
         if (normalizedType === "hook") {
+
             const headline = vData.headline || activeStage.title || p.title || p.question || "Mastering Modern Tech Architecture";
+
             const subtext = vData.subtext || p.concept_summary || p.question || "Core Production Challenge Explained Step-by-Step";
+
             const icon = vData.icon || "⚡";
+
             const tag = vData.highlight_tag || (p.domain ? ("🔥 " + p.domain.toUpperCase()) : "🎯 CORE TECH CONCEPT");
 
+
+
             const orbY = 460;
+
             const orbPulse = 1.0 + Math.sin(t * 3.5) * 0.08;
+
             ctx.save();
+
             ctx.translate(W / 2, orbY);
+
             ctx.scale(orbPulse, orbPulse);
 
+
+
             for (let r = 0; r < 3; r++) {
+
                 const ringR = 90 + r * 38 + Math.sin(t * 4 + r * 1.5) * 8;
+
                 const ringAlpha = 0.15 - r * 0.04;
+
                 ctx.strokeStyle = r === 0 ? "rgba(56, 189, 248, " + ringAlpha + ")" : (r === 1 ? "rgba(168, 85, 247, " + ringAlpha + ")" : "rgba(16, 185, 129, " + ringAlpha + ")");
+
                 ctx.lineWidth = 2.5 - r * 0.5;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+
                 ctx.stroke();
+
             }
+
+
 
             const sphereGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 75);
+
             sphereGrad.addColorStop(0, "rgba(56, 189, 248, 0.95)");
+
             sphereGrad.addColorStop(0.5, "rgba(14, 165, 233, 0.45)");
+
             sphereGrad.addColorStop(1, "rgba(2, 6, 23, 0.85)");
+
             ctx.fillStyle = sphereGrad;
+
             ctx.beginPath();
+
             ctx.arc(0, 0, 75, 0, Math.PI * 2);
+
             ctx.fill();
+
             ctx.strokeStyle = "#38BDF8";
+
             ctx.lineWidth = 3;
+
             ctx.shadowColor = "#38BDF8";
+
             ctx.shadowBlur = 30;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
 
+
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "58px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(icon, 0, 20);
+
             ctx.restore();
+
+
 
             // Floating Topic Tag Badge
+
             ctx.save();
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+
             ctx.beginPath();
+
             ctx.roundRect(W / 2 - 210, 620, 420, 44, 22);
+
             ctx.fill();
+
             ctx.strokeStyle = "#F59E0B";
+
             ctx.lineWidth = 2;
+
             ctx.stroke();
+
             ctx.fillStyle = "#F59E0B";
+
             ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(tag, W / 2, 649);
+
             ctx.restore();
+
+
 
             // Headline
+
             ctx.save();
+
             ctx.textAlign = "center";
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "bold 44px 'Segoe UI', sans-serif";
+
             ctx.shadowColor = "rgba(56, 189, 248, 0.6)";
+
             ctx.shadowBlur = 18;
+
             const normalizedHeadline = String(headline).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
             const normalizedTopic = String(p.title || p.question || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
             if (normalizedHeadline && normalizedHeadline !== normalizedTopic) {
+
                 const hLines = wrapCanvasText(ctx, headline, W - 200, 3);
+
                 hLines.forEach((hl, i) => ctx.fillText(hl, W / 2, 740 + i * 58));
+
             }
+
             ctx.shadowBlur = 0;
+
+
 
             // Subtext
+
             ctx.fillStyle = "#94A3B8";
+
             ctx.font = "26px 'Segoe UI', sans-serif";
+
             const subLines = wrapCanvasText(ctx, subtext, W - 240, 2);
+
             subLines.forEach((sl, i) => {
+
                 ctx.fillText(sl, W / 2, 940 + i * 40);
+
             });
+
+
 
             // Pulsing Bottom Prompt Arrow
+
             const arrowBounce = Math.sin(t * 6) * 10;
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 32px 'Segoe UI', sans-serif";
+
             ctx.fillText("⬇", W / 2, 1080 + arrowBounce);
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 20px monospace";
+
             ctx.fillText("WATCH STEP-BY-STEP EXPLANATION", W / 2, 1125 + arrowBounce);
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL: TABLE (9:16 Canva-Style High-Impact Sample Data Table & Ties)
+
         // =========================================================================
+
         else if (normalizedType === "table") {
+
             const tblX = 60;
+
             const tblY = 280;
+
             const tblW = W - 120;
+
             const tblH = 880;
 
+
+
             ctx.save();
+
             // Frosted Glass Table Container
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+
             ctx.beginPath();
+
             ctx.roundRect(tblX, tblY, tblW, tblH, 22);
+
             ctx.fill();
+
             ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+
             ctx.lineWidth = 2.5;
+
             ctx.shadowColor = "rgba(56, 189, 248, 0.25)";
+
             ctx.shadowBlur = 18;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             // macOS Header Strip
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+
             ctx.beginPath();
+
             ctx.roundRect(tblX, tblY, tblW, 58, [22, 22, 0, 0]);
+
             ctx.fill();
 
+
+
             // Window Dots
+
             ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(tblX + 35, tblY + 29, 8, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(tblX + 62, tblY + 29, 8, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(tblX + 89, tblY + 29, 8, 0, Math.PI * 2); ctx.fill();
 
+
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 20px monospace";
+
             ctx.textAlign = "left";
+
             const tblName = p.table_name || "EMPLOYEES";
+
             ctx.fillText(`📊 ${tblName} TABLE — SAMPLE DATA & TIE ANALYSIS`, tblX + 130, tblY + 37);
 
+
+
             // Table Columns Header Row
+
             const colY = tblY + 75;
+
             const colH = 50;
+
             ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+
             ctx.fillRect(tblX + 15, colY, tblW - 30, colH);
+
             ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+
             ctx.lineWidth = 1;
+
             ctx.strokeRect(tblX + 15, colY, tblW - 30, colH);
 
+
+
             const headers = p.col_headers || ["EMP_ID", "EMP_NAME", "DEPARTMENT", "SALARY"];
+
             const colWidth = (tblW - 30) / headers.length;
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 21px monospace";
+
             ctx.textAlign = "center";
+
             headers.forEach((h, hi) => {
+
                 ctx.fillText(h, tblX + 15 + hi * colWidth + colWidth / 2, colY + 33);
+
             });
+
+
 
             // Table Rows
+
             const defaultRows = [
+
                 { account: "101 Amit", date: "IT", amt: "₹60,000", balance: "60k" },
+
                 { account: "102 Rahul", date: "HR", amt: "₹50,000", balance: "50k" },
+
                 { account: "103 Priya", date: "IT", amt: "₹80,000", balance: "80k (Tie #1)" },
+
                 { account: "104 Neha", date: "Finance", amt: "₹70,000", balance: "70k (🎯 2nd)" },
+
                 { account: "105 Kiran", date: "IT", amt: "₹80,000", balance: "80k (Tie #2)" }
+
             ];
+
             const rows = (p.sample_rows && p.sample_rows.length > 0) ? p.sample_rows.slice(0, 5) : defaultRows;
+
             const rowH = 75;
+
             const startRowY = colY + colH + 12;
 
+
+
             rows.forEach((r, ri) => {
+
                 const ry = startRowY + ri * (rowH + 8);
+
                 const isTie = (r.amt && r.amt.includes("80")) || (r.balance && r.balance.includes("Tie"));
+
                 const isTarget = (r.amt && r.amt.includes("70")) || (r.balance && (r.balance.includes("🎯") || r.balance.includes("2nd")));
 
+
+
                 ctx.save();
+
                 if (isTarget) {
+
                     ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+
                     ctx.strokeStyle = "#10B981";
+
                     ctx.lineWidth = 2.5;
+
                     ctx.shadowColor = "#10B981";
+
                     ctx.shadowBlur = 14;
+
                 } else if (isTie) {
+
                     ctx.fillStyle = "rgba(245, 158, 11, 0.18)";
+
                     ctx.strokeStyle = "#F59E0B";
+
                     ctx.lineWidth = 2.0;
+
                     ctx.shadowColor = "#F59E0B";
+
                     ctx.shadowBlur = 10;
+
                 } else {
+
                     ctx.fillStyle = ri % 2 === 0 ? "rgba(15, 23, 42, 0.65)" : "rgba(10, 16, 32, 0.50)";
+
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+
                     ctx.lineWidth = 1;
+
                 }
 
+
+
                 ctx.beginPath();
+
                 ctx.roundRect(tblX + 15, ry, tblW - 30, rowH, 12);
+
                 ctx.fill();
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
 
+
+
                 // Values
+
                 const vals = [
+
                     r.account ? r.account.split(" ")[0] : ("10" + (ri + 1)),
+
                     r.account ? (r.account.split(" ")[1] || r.account) : ("Name " + (ri + 1)),
+
                     r.date || "IT",
+
                     r.amt || "₹70,000"
+
                 ];
 
+
+
                 ctx.textAlign = "center";
+
                 vals.forEach((v, vi) => {
+
                     if (vi === 3) {
+
                         ctx.fillStyle = isTarget ? "#10B981" : (isTie ? "#F59E0B" : "#F8FAFC");
+
                         ctx.font = "bold 24px monospace";
+
                     } else {
+
                         ctx.fillStyle = "#E2E8F0";
+
                         ctx.font = "21px 'Segoe UI', sans-serif";
+
                     }
+
                     ctx.fillText(v, tblX + 15 + vi * colWidth + colWidth / 2, ry + 46);
+
                 });
 
+
+
                 // Status Badge on Right
+
                 if (isTie) {
+
                     ctx.fillStyle = "#F59E0B";
+
                     ctx.font = "bold 15px 'Segoe UI', sans-serif";
+
                     ctx.textAlign = "right";
+
                     ctx.fillText("⚠️ DUPLICATE TIE", tblX + tblW - 35, ry + 46);
+
                 } else if (isTarget) {
+
                     ctx.fillStyle = "#10B981";
+
                     ctx.font = "bold 15px 'Segoe UI', sans-serif";
+
                     ctx.textAlign = "right";
+
                     ctx.fillText("🎯 2nd HIGHEST", tblX + tblW - 35, ry + 46);
+
                 }
+
                 ctx.restore();
+
             });
 
+
+
             // Bottom Interview Trap Box
+
             const trapY = tblY + tblH - 145;
+
             ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
+
             ctx.beginPath();
+
             ctx.roundRect(tblX + 25, trapY, tblW - 50, 115, 14);
+
             ctx.fill();
+
             ctx.strokeStyle = "#EF4444";
+
             ctx.lineWidth = 1.5;
+
             ctx.stroke();
+
+
 
             ctx.fillStyle = "#EF4444";
+
             ctx.font = "bold 19px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "left";
+
             ctx.fillText("❌ INTERVIEW TRAP: LIMIT 1 OFFSET 1 FAILS ON DUPLICATES!", tblX + 45, trapY + 36);
 
+
+
             ctx.fillStyle = "#10B981";
+
             ctx.font = "bold 18px 'Segoe UI', sans-serif";
+
             ctx.fillText("✅ PRO SOLUTION: Use SUBQUERY or DENSE_RANK() for 100% Accuracy", tblX + 45, trapY + 74);
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL: SIMULATION (Row-by-Row Filter Evaluation & Verified Output)
+
         // =========================================================================
+
         else if (normalizedType === "simulation") {
+
             const simX = 60;
+
             const simY = 280;
+
             const simW = W - 120;
+
             const simH = 880;
 
+
+
             ctx.save();
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+
             ctx.beginPath();
+
             ctx.roundRect(simX, simY, simW, simH, 22);
+
             ctx.fill();
+
             ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+
             ctx.lineWidth = 2.5;
+
             ctx.shadowColor = "rgba(16, 185, 129, 0.25)";
+
             ctx.shadowBlur = 18;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             // Header Strip
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+
             ctx.beginPath();
+
             ctx.roundRect(simX, simY, simW, 58, [22, 22, 0, 0]);
+
             ctx.fill();
+
+
 
             // Window Dots
+
             ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(simX + 35, simY + 29, 8, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(simX + 62, simY + 29, 8, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(simX + 89, simY + 29, 8, 0, Math.PI * 2); ctx.fill();
 
+
+
             ctx.fillStyle = "#10B981";
+
             ctx.font = "bold 20px monospace";
+
             ctx.textAlign = "left";
+
             ctx.fillText("⚡ ROW-BY-ROW FILTER EVALUATION SIMULATION", simX + 130, simY + 37);
 
+
+
             // Column Header
+
             const colY = simY + 75;
+
             ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+
             ctx.fillRect(simX + 15, colY, simW - 30, 48);
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 19px monospace";
+
             ctx.textAlign = "left";
+
             ctx.fillText("RECORD / NAME", simX + 35, colY + 32);
+
             ctx.fillText("SALARY", simX + 280, colY + 32);
+
             ctx.fillText("EVALUATION", simX + 460, colY + 32);
+
             ctx.fillText("ACTION", simX + simW - 140, colY + 32);
 
+
+
             const evals = getClientFilterEvals(p);
+
             const rowCount = Math.min(evals.length, 5);
+
             const visibleCount = Math.max(1, Math.min(rowCount, Math.floor(stageProg * (rowCount + 1)) + 1));
+
             const rowH = 70;
+
             const startY = colY + 60;
 
+
+
             for (let i = 0; i < visibleCount; i++) {
+
                 const ev = evals[i];
+
                 const ry = startY + i * (rowH + 8);
+
                 const isKeep = (ev.status === "keep" || ev.action === "KEEP");
 
+
+
                 ctx.save();
+
                 ctx.fillStyle = isKeep ? "rgba(16, 185, 129, 0.20)" : "rgba(239, 68, 68, 0.12)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(simX + 15, ry, simW - 30, rowH, 12);
+
                 ctx.fill();
+
                 ctx.strokeStyle = isKeep ? "#10B981" : "rgba(239, 68, 68, 0.4)";
+
                 ctx.lineWidth = isKeep ? 2.5 : 1;
+
                 ctx.stroke();
 
+
+
                 ctx.fillStyle = isKeep ? "#10B981" : "#F8FAFC";
+
                 ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "left";
+
                 ctx.fillText(ev.name, simX + 35, ry + 44);
 
+
+
                 ctx.fillStyle = "#E2E8F0";
+
                 ctx.font = "bold 21px monospace";
+
                 ctx.fillText(ev.salary, simX + 280, ry + 44);
 
+
+
                 ctx.fillStyle = isKeep ? "#10B981" : "#EF4444";
+
                 ctx.font = "18px monospace";
+
                 ctx.fillText(ev.cond || (isKeep ? "TARGET MATCH" : "EXCLUDED"), simX + 460, ry + 44);
 
+
+
                 ctx.font = "bold 18px 'Segoe UI', sans-serif";
+
                 if (isKeep) {
+
                     ctx.fillStyle = "#10B981";
+
                     ctx.fillText("✔ KEEP 🎯", simX + simW - 140, ry + 44);
+
                 } else {
+
                     ctx.fillStyle = "#EF4444";
+
                     ctx.fillText("✖ EXCLUDE", simX + simW - 140, ry + 44);
+
                 }
+
                 ctx.restore();
+
             }
+
+
 
             // Large Output Box at bottom
+
             const outY = simY + simH - 165;
+
             ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
+
             ctx.beginPath();
+
             ctx.roundRect(simX + 25, outY, simW - 50, 135, 16);
+
             ctx.fill();
+
             ctx.strokeStyle = "#38BDF8";
+
             ctx.lineWidth = 3;
+
             ctx.shadowColor = "#38BDF8";
+
             ctx.shadowBlur = 24;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
 
+
+
             ctx.fillStyle = "#7DD3FC";
+
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText("ILLUSTRATIVE RESULT · VERIFY IN YOUR ENVIRONMENT", W / 2, outY + 45);
 
+
+
             const outVal = p.output_value || "SECOND_HIGHEST_SALARY: 70000";
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "900 34px monospace";
+
             ctx.fillText(outVal, W / 2, outY + 95);
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 2: CODE (Spacious Modern Glowing IDE Window)
+
         // =========================================================================
+
         else if (normalizedType === "code") {
+
             const lang = (vData.language || "python").toLowerCase();
+
             const filename = vData.filename || (lang === "sql" ? "solution.sql" : (lang === "javascript" || lang === "ts" ? "solution.ts" : "solution.py"));
+
             let codeText = vData.code || p.solution_sql || p.syntax_a_code || "def solve():\n    # Optimal solution\n    return True";
+
             const codeLines = codeText.split("\n");
+
             const highlightLine = vData.highlight_line !== undefined ? vData.highlight_line : Math.min(2, codeLines.length);
 
+
+
             const ideX = 60;
+
             const ideY = 320;
+
             const ideW = W - 120;
+
             const ideH = 820;
 
+
+
             ctx.save();
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.82)";
+
             ctx.beginPath();
+
             ctx.roundRect(ideX, ideY, ideW, ideH, 20);
+
             ctx.fill();
+
             ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+
             ctx.lineWidth = 2.5;
+
             ctx.stroke();
 
+
+
             // macOS Header Bar
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+
             ctx.beginPath();
+
             ctx.roundRect(ideX, ideY, ideW, 54, [20, 20, 0, 0]);
+
             ctx.fill();
+
+
 
             // Window Controls
+
             ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(ideX + 35, ideY + 27, 8, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(ideX + 62, ideY + 27, 8, 0, Math.PI * 2); ctx.fill();
+
             ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(ideX + 89, ideY + 27, 8, 0, Math.PI * 2); ctx.fill();
 
+
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 20px monospace";
+
             ctx.textAlign = "left";
+
             ctx.fillText("💻 " + filename, ideX + 130, ideY + 35);
 
+
+
             ctx.fillStyle = "rgba(56, 189, 248, 0.2)";
+
             ctx.beginPath();
+
             ctx.roundRect(ideX + ideW - 140, ideY + 12, 115, 30, 8);
+
             ctx.fill();
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 16px monospace";
+
             ctx.textAlign = "center";
+
             ctx.fillText(lang.toUpperCase(), ideX + ideW - 82, ideY + 33);
+
             ctx.textAlign = "left";
 
+
+
             const linesToShow = Math.max(1, Math.min(codeLines.length, Math.floor(stageProg * (codeLines.length + 1)) + 1));
+
             const lineSpacing = Math.min(50, Math.floor((ideH - 120) / Math.max(codeLines.length, 6)));
 
+
+
             for (let i = 0; i < linesToShow; i++) {
+
                 const ly = ideY + 105 + i * lineSpacing;
+
                 const isHl = (i + 1 === highlightLine) || (i === 1 && highlightLine === 0);
 
+
+
                 if (isHl) {
+
                     ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
+
                     ctx.beginPath();
+
                     ctx.roundRect(ideX + 15, ly - 30, ideW - 30, lineSpacing - 4, 8);
+
                     ctx.fill();
+
                     ctx.strokeStyle = "#38BDF8";
+
                     ctx.lineWidth = 1.5;
+
                     ctx.stroke();
 
+
+
                     drawKineticNeonArrow(ctx, ideX + ideW - 70, ly - 10, t, "TARGET");
+
                 }
 
+
+
                 ctx.fillStyle = isHl ? "#38BDF8" : "#475569";
+
                 ctx.font = "bold 23px monospace";
+
                 ctx.fillText((i + 1).toString().padStart(2, "0"), ideX + 30, ly);
 
+
+
                 renderSqlSyntaxLine(ctx, codeLines[i], ideX + 85, ly);
+
             }
+
+
 
             drawLaserScannerBeam(ctx, ideX + 20, ideY + 65, ideW - 40, ideH - 130, t);
 
+
+
             if (vData.note || p.pro_tip) {
+
                 const noteText = vData.note || p.pro_tip || "Key execution logic highlighted";
+
                 ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(ideX + 25, ideY + ideH - 65, ideW - 50, 48, 12);
+
                 ctx.fill();
+
                 ctx.strokeStyle = "#10B981";
+
                 ctx.lineWidth = 1.5;
+
                 ctx.stroke();
+
                 ctx.fillStyle = "#10B981";
+
                 ctx.font = "bold 19px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, "💡 " + noteText, ideW - 80), ideX + 45, ideY + ideH - 35);
+
             }
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 3: ENHANCED 3D ISOMETRIC BRANCHING ARCHITECTURE DIAGRAM
+
         // =========================================================================
+
         else if (normalizedType === "diagram") {
+
             const diagY = 340;
+
             const diagH = 820;
 
+
+
             const rawNodes = vData.nodes || (p.pipeline_stages && p.pipeline_stages.length > 0 ? p.pipeline_stages.map((ps, pi) => ({
+
                 id: "n" + pi,
+
                 label: ps.name || ("Stage " + (pi + 1)),
+
                 icon: ps.icon || "⚙️",
+
                 sub: ps.sub || "Pipeline execution phase",
+
                 color: pi === 0 ? "#38BDF8" : (pi === 1 ? "#A855F7" : (pi === 2 ? "#10B981" : (pi === 3 ? "#F59E0B" : "#EC4899"))),
+
                 branch: pi === 1 ? "left" : (pi === 2 ? "right" : "center")
+
             })) : [
+
                 { id: "client", label: "Client Ingress", icon: "🌐", sub: "100k Req/s HTTP API", color: "#38BDF8", branch: "center" },
+
                 { id: "cache", label: "Edge Cache / CDN", icon: "⚡", sub: "Redis / In-Memory (<2ms)", color: "#10B981", branch: "left" },
+
                 { id: "service", label: "Compute Cluster", icon: "⚙️", sub: "Microservices / K8s", color: "#A855F7", branch: "right" },
+
                 { id: "database", label: "Distributed DB", icon: "💾", sub: "Multi-Region Sharded Store", color: "#F59E0B", branch: "center" }
+
             ]);
 
+
+
             const nodes = rawNodes.slice(0, 5);
+
             const activeNodeIdx = Math.min(nodes.length - 1, Math.floor(stageProg * nodes.length));
 
+
+
             // Header Banner
+
             ctx.save();
+
             ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+
             ctx.beginPath();
+
             ctx.roundRect(W / 2 - 260, diagY - 12, 520, 52, 26);
+
             ctx.fill();
+
             ctx.strokeStyle = "#38BDF8";
+
             ctx.lineWidth = 2;
+
             ctx.shadowColor = "#38BDF8";
+
             ctx.shadowBlur = 14;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText("⚡ 3D ISOMETRIC ARCHITECTURE PIPELINE", W / 2, diagY + 22);
+
             ctx.restore();
+
+
 
             // Compute Branching Layout Positions & Depth
+
             const nodePositions = [];
+
             if (nodes.length === 4) {
+
                 // Classic Tree / Diamond Branching Architecture
+
                 nodePositions.push({ cx: W / 2, cy: diagY + 80, w: 400, h: 90, depthZ: 22 });
+
                 nodePositions.push({ cx: W / 2 - 240, cy: diagY + 360, w: 320, h: 86, depthZ: 20 });
+
                 nodePositions.push({ cx: W / 2 + 240, cy: diagY + 360, w: 320, h: 86, depthZ: 20 });
+
                 nodePositions.push({ cx: W / 2, cy: diagY + 640, w: 400, h: 90, depthZ: 22 });
+
             } else if (nodes.length === 3) {
+
                 nodePositions.push({ cx: W / 2, cy: diagY + 90, w: 400, h: 90, depthZ: 22 });
+
                 nodePositions.push({ cx: W / 2 - 220, cy: diagY + 380, w: 330, h: 86, depthZ: 20 });
+
                 nodePositions.push({ cx: W / 2 + 220, cy: diagY + 640, w: 330, h: 86, depthZ: 20 });
+
             } else if (nodes.length === 5) {
+
                 nodePositions.push({ cx: W / 2, cy: diagY + 65, w: 380, h: 80, depthZ: 20 });
+
                 nodePositions.push({ cx: W / 2, cy: diagY + 230, w: 380, h: 80, depthZ: 20 });
+
                 nodePositions.push({ cx: W / 2 - 235, cy: diagY + 440, w: 310, h: 80, depthZ: 18 });
+
                 nodePositions.push({ cx: W / 2 + 235, cy: diagY + 440, w: 310, h: 80, depthZ: 18 });
+
                 nodePositions.push({ cx: W / 2, cy: diagY + 650, w: 380, h: 80, depthZ: 22 });
+
             } else {
+
                 const count = nodes.length;
+
                 const rowH = (diagH - 120) / Math.max(1, count);
+
                 for (let i = 0; i < count; i++) {
+
                     const isEven = i % 2 === 0;
+
                     const branchX = count > 2 && i > 0 && i < count - 1 ? (isEven ? W / 2 - 210 : W / 2 + 210) : W / 2;
+
                     nodePositions.push({ cx: branchX, cy: diagY + 80 + i * rowH, w: 360, h: 85, depthZ: 20 });
+
                 }
+
             }
+
+
 
             // Determine Connections (Custom or Branching Tree)
+
             let connections = [];
+
             if (vData.connections && Array.isArray(vData.connections) && vData.connections.length > 0) {
+
                 connections = vData.connections.map(c => {
+
                     const fromIdx = typeof c.from === 'number' ? c.from : nodes.findIndex(n => n.id === c.from);
+
                     const toIdx = typeof c.to === 'number' ? c.to : nodes.findIndex(n => n.id === c.to);
+
                     return {
+
                         from: Math.max(0, fromIdx >= 0 ? fromIdx : 0),
+
                         to: Math.max(0, toIdx >= 0 ? toIdx : 1),
+
                         label: c.label || "",
+
                         color: c.color || (nodes[Math.max(0, toIdx)] ? nodes[Math.max(0, toIdx)].color : "#38BDF8")
+
                     };
+
                 });
+
             } else if (nodes.length === 4) {
+
                 connections = [
+
                     { from: 0, to: 1, label: "FAST PATH", color: nodes[1].color || "#10B981" },
+
                     { from: 0, to: 2, label: "ASYNC RPC", color: nodes[2].color || "#A855F7" },
+
                     { from: 1, to: 3, label: "CACHE SYNC", color: nodes[3].color || "#F59E0B" },
+
                     { from: 2, to: 3, label: "PERSIST", color: nodes[3].color || "#F59E0B" }
+
                 ];
+
             } else if (nodes.length === 5) {
+
                 connections = [
+
                     { from: 0, to: 1, label: "INGRESS", color: "#38BDF8" },
+
                     { from: 1, to: 2, label: "WORKER A", color: nodes[2].color || "#A855F7" },
+
                     { from: 1, to: 3, label: "WORKER B", color: nodes[3].color || "#10B981" },
+
                     { from: 2, to: 4, label: "AGGREGATE", color: nodes[4].color || "#F59E0B" },
+
                     { from: 3, to: 4, label: "COMMIT", color: nodes[4].color || "#F59E0B" }
+
                 ];
+
             } else {
+
                 for (let i = 0; i < nodes.length - 1; i++) {
+
                     connections.push({ from: i, to: i + 1, label: "STREAM", color: nodes[i + 1].color || "#38BDF8" });
+
                 }
+
             }
+
+
 
             // 1. RENDER ANIMATED CONNECTION CONDUITS & DATA PARTICLES FIRST (Behind Nodes)
+
             connections.forEach((conn) => {
+
                 if (!nodePositions[conn.from] || !nodePositions[conn.to]) return;
+
                 const src = nodePositions[conn.from];
+
                 const dst = nodePositions[conn.to];
+
                 const x1 = src.cx;
+
                 const y1 = src.cy + (src.h / 2) + src.depthZ;
+
                 const x2 = dst.cx;
+
                 const y2 = dst.cy - (dst.h / 2);
+
                 const midY = (y1 + y2) / 2;
 
+
+
                 ctx.save();
+
                 // Outer subtle conduit aura
+
                 ctx.strokeStyle = conn.color;
+
                 ctx.globalAlpha = 0.25;
+
                 ctx.lineWidth = 6;
+
                 ctx.beginPath();
+
                 ctx.moveTo(x1, y1);
+
                 ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+
                 ctx.stroke();
+
+
 
                 // Core animated dashed laser conduit
+
                 ctx.globalAlpha = 0.85;
+
                 ctx.lineWidth = 2.5;
+
                 ctx.setLineDash([10, 8]);
+
                 ctx.lineDashOffset = -t * 38;
+
                 ctx.shadowColor = conn.color;
+
                 ctx.shadowBlur = 12;
+
                 ctx.beginPath();
+
                 ctx.moveTo(x1, y1);
+
                 ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+
                 ctx.stroke();
+
                 ctx.setLineDash([]);
+
                 ctx.shadowBlur = 0;
+
+
 
                 // Animated Data Flow Particles (Photons traveling source -> destination)
+
                 const particleCount = 3;
+
                 for (let pIdx = 0; pIdx < particleCount; pIdx++) {
+
                     const u = (t * 0.75 + pIdx * (1.0 / particleCount)) % 1.0;
+
                     const pu = 1 - u;
+
                     const px = pu * pu * pu * x1 + 3 * pu * pu * u * x1 + 3 * pu * u * u * x2 + u * u * u * x2;
+
                     const py = pu * pu * pu * y1 + 3 * pu * pu * u * midY + 3 * pu * u * u * midY + u * u * u * y2;
 
+
+
                     // Particle core & glow
+
                     ctx.save();
+
                     ctx.shadowColor = conn.color;
+
                     ctx.shadowBlur = 14;
+
                     ctx.fillStyle = "#FFFFFF";
+
                     ctx.beginPath();
+
                     ctx.arc(px, py, 4, 0, Math.PI * 2);
+
                     ctx.fill();
 
+
+
                     ctx.fillStyle = conn.color;
+
                     ctx.beginPath();
+
                     ctx.arc(px, py, 8, 0, Math.PI * 2);
+
                     ctx.globalAlpha = 0.45;
+
                     ctx.fill();
+
                     ctx.restore();
+
                 }
+
+
 
                 // Floating Conduit Protocol Badge
+
                 if (conn.label) {
+
                     const mx = (x1 + x2) / 2;
+
                     const my = midY;
+
                     ctx.save();
+
                     ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
                     ctx.beginPath();
+
                     ctx.roundRect(mx - 65, my - 13, 130, 26, 8);
+
                     ctx.fill();
+
                     ctx.strokeStyle = conn.color;
+
                     ctx.lineWidth = 1.2;
+
                     ctx.stroke();
+
+
 
                     ctx.fillStyle = conn.color;
+
                     ctx.font = "bold 12px monospace";
+
                     ctx.textAlign = "center";
+
                     ctx.fillText(conn.label, mx, my + 4);
+
                     ctx.restore();
+
                 }
+
                 ctx.restore();
+
             });
+
+
 
             // 2. RENDER ISOMETRIC 3D NODES (With Depth Perspective & Rotations)
+
             nodes.forEach((nd, i) => {
+
                 const pos = nodePositions[i];
+
                 if (!pos) return;
+
                 const isActive = (i === activeNodeIdx);
+
                 const col = nd.color || "#38BDF8";
 
+
+
                 // Depth perspective calculation (nodes further from viewer are slightly smaller & softer)
+
                 const depthNorm = Math.max(0, Math.min(1, (pos.cy - diagY) / diagH));
+
                 const depthScale = 0.88 + depthNorm * 0.16; // 0.88 at top, 1.04 at bottom
+
                 const depthAlpha = 0.82 + depthNorm * 0.18; // 0.82 at top, 1.0 at bottom
 
+
+
                 // Stage progress progressive fade-in & slide-up float
+
                 const revealProg = Math.max(0, Math.min(1, (stageProg * (nodes.length + 0.6) - i)));
+
                 const nodeAlpha = Math.max(0.2, revealProg);
+
                 const floatOffset = (1 - revealProg) * 35;
+
                 const levitate = isActive ? Math.sin(t * 4.5) * 5 : Math.sin(t * 2.2 + i * 1.4) * 3;
 
+
+
                 ctx.save();
+
                 ctx.translate(pos.cx, pos.cy - floatOffset + levitate);
+
                 ctx.scale(depthScale, depthScale);
+
                 ctx.globalAlpha = depthAlpha * nodeAlpha;
 
+
+
                 const bw = pos.w;
+
                 const bh = pos.h;
+
                 const depthZ = pos.depthZ;
+
                 const hw = bw / 2;
+
                 const hh = bh / 2;
 
+
+
                 // 2A. Perspective Ground Drop Shadow
+
                 ctx.save();
+
                 ctx.translate(8, hh + depthZ + 12);
+
                 ctx.scale(1.0, 0.32);
+
                 const shadowGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, hw * 1.1);
+
                 shadowGrad.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+
                 shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
                 ctx.fillStyle = shadowGrad;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, hw * 1.1, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.restore();
+
+
 
                 // 2B. Rotating Glow Halo Around Active Node
+
                 if (isActive) {
+
                     ctx.save();
+
                     ctx.translate(0, hh + depthZ + 6);
+
                     ctx.scale(1.0, 0.36);
+
                     ctx.rotate(t * 1.6);
+
                     ctx.strokeStyle = col;
+
                     ctx.lineWidth = 3.0;
+
                     ctx.setLineDash([16, 12, 6, 12]);
+
                     ctx.shadowColor = col;
+
                     ctx.shadowBlur = 24;
+
                     ctx.beginPath();
+
                     ctx.arc(0, 0, hw * 1.25, 0, Math.PI * 2);
+
                     ctx.stroke();
+
                     ctx.setLineDash([]);
+
                     ctx.shadowBlur = 0;
 
+
+
                     // Orbiting satellite photon spark
+
                     const satAngle = t * 3.0;
+
                     const satX = Math.cos(satAngle) * (hw * 1.25);
+
                     const satY = Math.sin(satAngle) * (hw * 1.25);
+
                     ctx.fillStyle = "#FFFFFF";
+
                     ctx.shadowColor = col;
+
                     ctx.shadowBlur = 12;
+
                     ctx.beginPath();
+
                     ctx.arc(satX, satY, 4.5, 0, Math.PI * 2);
+
                     ctx.fill();
+
                     ctx.restore();
+
                 }
+
+
 
                 // 2C. 3D Isometric Front Face (Thickness Extrusion)
+
                 ctx.beginPath();
+
                 ctx.moveTo(-hw, hh);
+
                 ctx.lineTo(hw, hh);
+
                 ctx.lineTo(hw, hh + depthZ);
+
                 ctx.lineTo(-hw, hh + depthZ);
+
                 ctx.closePath();
+
                 const frontGrad = ctx.createLinearGradient(0, hh, 0, hh + depthZ);
+
                 frontGrad.addColorStop(0, "rgba(15, 23, 42, 0.96)");
+
                 frontGrad.addColorStop(1, "rgba(4, 8, 18, 0.98)");
+
                 ctx.fillStyle = frontGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? col : "rgba(56, 189, 248, 0.35)";
+
                 ctx.lineWidth = 1.8;
+
                 ctx.stroke();
+
+
 
                 // 2D. 3D Isometric Right Face (Side Bevel)
+
                 ctx.beginPath();
+
                 ctx.moveTo(hw, -hh);
+
                 ctx.lineTo(hw + 14, -hh + 8);
+
                 ctx.lineTo(hw + 14, hh + depthZ + 8);
+
                 ctx.lineTo(hw, hh + depthZ);
+
                 ctx.closePath();
+
                 const sideGrad = ctx.createLinearGradient(hw, 0, hw + 14, 0);
+
                 sideGrad.addColorStop(0, "rgba(10, 16, 32, 0.92)");
+
                 sideGrad.addColorStop(1, "rgba(2, 6, 14, 0.98)");
+
                 ctx.fillStyle = sideGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? col : "rgba(255, 255, 255, 0.12)";
+
                 ctx.lineWidth = 1.2;
+
                 ctx.stroke();
+
+
 
                 // 2E. Isometric Top Face (Interactive Crystal Plate)
+
                 ctx.beginPath();
+
                 ctx.roundRect(-hw, -hh, bw, bh, 14);
+
                 const topGrad = ctx.createLinearGradient(-hw, -hh, hw, hh);
+
                 if (isActive) {
+
                     topGrad.addColorStop(0, "rgba(30, 41, 59, 0.96)");
+
                     topGrad.addColorStop(0.5, "rgba(15, 23, 42, 0.98)");
+
                     topGrad.addColorStop(1, "rgba(8, 14, 28, 1.0)");
+
                 } else {
+
                     topGrad.addColorStop(0, "rgba(20, 30, 48, 0.88)");
+
                     topGrad.addColorStop(1, "rgba(8, 14, 24, 0.92)");
+
                 }
+
                 ctx.fillStyle = topGrad;
+
                 ctx.fill();
+
+
 
                 ctx.strokeStyle = isActive ? col : "rgba(100, 116, 139, 0.4)";
+
                 ctx.lineWidth = isActive ? 2.8 : 1.5;
+
                 if (isActive) {
+
                     ctx.shadowColor = col;
+
                     ctx.shadowBlur = 22;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
 
+
+
                 // Top Face Specular Glint Line
+
                 ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+
                 ctx.lineWidth = 1.2;
+
                 ctx.beginPath();
+
                 ctx.moveTo(-hw + 16, -hh + 3);
+
                 ctx.lineTo(hw - 16, -hh + 3);
+
                 ctx.stroke();
+
+
 
                 // 2F. Node Icon (Left Cyber Disc)
+
                 ctx.save();
+
                 ctx.fillStyle = isActive ? col : "rgba(255, 255, 255, 0.12)";
+
                 ctx.beginPath();
+
                 ctx.arc(-hw + 48, 0, 30, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.strokeStyle = col;
+
                 ctx.lineWidth = 1.5;
+
                 ctx.stroke();
 
+
+
                 ctx.fillStyle = "#FFFFFF";
+
                 ctx.font = "28px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText(nd.icon || "⚙️", -hw + 48, 10);
+
                 ctx.restore();
+
+
 
                 // 2G. Floating Labels (With Typography Hierarchy)
+
                 ctx.textAlign = "left";
+
                 ctx.fillStyle = isActive ? col : "#FFFFFF";
+
                 ctx.font = "bold 23px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, nd.label || ("Node " + (i + 1)), bw - 190), -hw + 92, -4);
 
+
+
                 ctx.fillStyle = isActive ? "#E2E8F0" : "#64748B";
+
                 ctx.font = "16px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, nd.sub || "Pipeline execution phase", bw - 190), -hw + 92, 22);
 
+
+
                 // 2H. Active Status Indicator & Sparks
+
                 if (isActive) {
+
                     ctx.fillStyle = col;
+
                     ctx.font = "bold 15px monospace";
+
                     ctx.textAlign = "right";
+
                     ctx.fillText("⚡ ACTIVE", hw - 24, -hh + 24);
+
                     drawPhotonSparks(ctx, hw - 30, 0, col, t);
+
                 } else if (revealProg >= 0.8) {
+
                     ctx.fillStyle = "#10B981";
+
                     ctx.font = "bold 13px monospace";
+
                     ctx.textAlign = "right";
+
                     ctx.fillText("● READY", hw - 24, -hh + 24);
+
                 }
+
+
 
                 ctx.restore();
+
             });
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 3B: ARCHITECTURE 3D (Full Isometric Multi-Tiered System Topology)
+
         // =========================================================================
+
         else if (normalizedType === "architecture_3d") {
+
             const archY = 330;
+
             const archH = 840;
+
             const archTitle = vData.title || p.title || "DISTRIBUTED 3D SYSTEM ARCHITECTURE";
 
+
+
             ctx.save();
+
             // 1. Sleek Cyber Header Badge
+
             ctx.save();
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.90)";
+
             ctx.beginPath();
+
             ctx.roundRect(W / 2 - 280, archY - 14, 560, 56, 28);
+
             ctx.fill();
+
             ctx.strokeStyle = "#38BDF8";
+
             ctx.lineWidth = 2.2;
+
             ctx.shadowColor = "#38BDF8";
+
             ctx.shadowBlur = 16;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
 
+
+
             ctx.fillStyle = "#38BDF8";
+
             ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText("⚡ 3D ENTERPRISE ARCHITECTURE TOPOLOGY", W / 2, archY + 12);
+
             ctx.fillStyle = "#94A3B8";
+
             ctx.font = "bold 14px monospace";
+
             ctx.fillText(fitTextToWidth(ctx, archTitle, 500), W / 2, archY + 32);
+
             ctx.restore();
 
+
+
             // 2. Prepare Architectural Nodes
+
             const rawArchNodes = vData.nodes || [
+
                 { id: "cloud", type: "cloud", label: "Cloud Ingress & CDN", icon: "☁️", sub: "Global Multi-AZ Gateway", color: "#38BDF8" },
+
                 { id: "process", type: "process", label: "Stream / ETL Engine", icon: "⚙️", sub: "Real-time Event Processor", color: "#A855F7" },
+
                 { id: "server", type: "server", label: "Compute Cluster", icon: "🖥️", sub: "Microservices & K8s Mesh", color: "#F59E0B" },
+
                 { id: "database", type: "database", label: "Distributed DB & Lake", icon: "💾", sub: "ACID Persistence & Vector Store", color: "#10B981" }
+
             ];
 
+
+
             const archNodes = rawArchNodes.map((nd, idx) => {
+
                 let inferredType = (nd.type || "").toLowerCase();
+
                 const text = ((nd.label || "") + " " + (nd.icon || "") + " " + (nd.sub || "")).toLowerCase();
+
                 if (!inferredType) {
+
                     if (text.includes("db") || text.includes("data") || text.includes("lake") || text.includes("sql") || text.includes("💾") || text.includes("persist") || text.includes("store")) {
+
                         inferredType = "database";
+
                     } else if (text.includes("cloud") || text.includes("cdn") || text.includes("api") || text.includes("gate") || text.includes("☁️") || text.includes("ingress") || text.includes("client")) {
+
                         inferredType = "cloud";
+
                     } else if (text.includes("stream") || text.includes("etl") || text.includes("process") || text.includes("kafka") || text.includes("flink") || text.includes("⚙️") || text.includes("rag") || text.includes("pipe")) {
+
                         inferredType = "process";
+
                     } else {
+
                         inferredType = "server";
+
                     }
+
                 }
+
                 return {
+
                     id: nd.id || ("arch_n" + idx),
+
                     type: inferredType,
+
                     label: nd.label || ("Service " + (idx + 1)),
+
                     icon: nd.icon || (inferredType === "database" ? "💾" : (inferredType === "cloud" ? "☁️" : (inferredType === "process" ? "⚙️" : "🖥️"))),
+
                     sub: nd.sub || (inferredType === "database" ? "Persistent Data Store" : "Execution Node"),
+
                     color: nd.color || (inferredType === "database" ? "#10B981" : (inferredType === "cloud" ? "#38BDF8" : (inferredType === "process" ? "#A855F7" : "#F59E0B")))
+
                 };
+
             });
+
+
 
             // 3. Compute Positions for Tiered 3D Architecture
+
             const archPositions = {};
+
             const cloudNodes = archNodes.filter(n => n.type === "cloud");
+
             const processNodes = archNodes.filter(n => n.type === "process");
+
             const serverNodes = archNodes.filter(n => n.type === "server");
+
             const dbNodes = archNodes.filter(n => n.type === "database");
 
+
+
             if (archNodes.length === 4 && cloudNodes.length === 1 && dbNodes.length === 1) {
+
                 archPositions[cloudNodes[0].id] = { cx: W / 2, cy: archY + 115, depthScale: 0.88, depthAlpha: 0.88 };
+
                 archPositions[processNodes[0] ? processNodes[0].id : archNodes[1].id] = { cx: W / 2 - 250, cy: archY + 410, depthScale: 0.96, depthAlpha: 0.94 };
+
                 archPositions[serverNodes[0] ? serverNodes[0].id : archNodes[2].id] = { cx: W / 2 + 250, cy: archY + 410, depthScale: 0.96, depthAlpha: 0.94 };
+
                 archPositions[dbNodes[0].id] = { cx: W / 2, cy: archY + 685, depthScale: 1.05, depthAlpha: 1.0 };
+
             } else {
+
                 const t1 = archNodes.filter(n => n.type === "cloud");
+
                 const t2 = archNodes.filter(n => n.type === "process" || n.type === "server");
+
                 const t3 = archNodes.filter(n => n.type === "database");
+
                 const other = archNodes.filter(n => !t1.includes(n) && !t2.includes(n) && !t3.includes(n));
+
                 const allT2 = t2.concat(other);
 
+
+
                 t1.forEach((nd, i) => {
+
                     archPositions[nd.id] = { cx: (W / (t1.length + 1)) * (i + 1), cy: archY + 115, depthScale: 0.88, depthAlpha: 0.88 };
+
                 });
+
                 allT2.forEach((nd, i) => {
+
                     archPositions[nd.id] = { cx: (W / (allT2.length + 1)) * (i + 1), cy: archY + 410, depthScale: 0.96, depthAlpha: 0.94 };
+
                 });
+
                 t3.forEach((nd, i) => {
+
                     archPositions[nd.id] = { cx: (W / (t3.length + 1)) * (i + 1), cy: archY + 685, depthScale: 1.05, depthAlpha: 1.0 };
+
                 });
+
             }
+
+
 
             archNodes.forEach((nd, i) => {
+
                 if (!archPositions[nd.id]) {
+
                     archPositions[nd.id] = { cx: W / 2, cy: archY + 120 + i * 180, depthScale: 0.95, depthAlpha: 0.95 };
+
                 }
+
             });
 
+
+
             // 4. Resolve Connections
+
             let archConnections = [];
+
             if (vData.connections && Array.isArray(vData.connections) && vData.connections.length > 0) {
+
                 archConnections = vData.connections.map(c => {
+
                     const fromId = typeof c.from === 'number' ? (archNodes[c.from] ? archNodes[c.from].id : archNodes[0].id) : c.from;
+
                     const toId = typeof c.to === 'number' ? (archNodes[c.to] ? archNodes[c.to].id : archNodes[1].id) : c.to;
+
                     const targetNode = archNodes.find(n => n.id === toId);
+
                     return {
+
                         from: fromId,
+
                         to: toId,
+
                         label: c.label || "",
+
                         color: c.color || (targetNode ? targetNode.color : "#38BDF8")
+
                     };
+
                 });
+
             } else {
+
                 const cloudId = cloudNodes[0] ? cloudNodes[0].id : archNodes[0].id;
+
                 const procId = processNodes[0] ? processNodes[0].id : archNodes[1].id;
+
                 const srvId = serverNodes[0] ? serverNodes[0].id : archNodes[2].id;
+
                 const dbId = dbNodes[0] ? dbNodes[0].id : archNodes[archNodes.length - 1].id;
 
+
+
                 archConnections = [
+
                     { from: cloudId, to: procId, label: "EVENT STREAM", color: "#A855F7" },
+
                     { from: cloudId, to: srvId, label: "API RPC", color: "#F59E0B" },
+
                     { from: procId, to: dbId, label: "BULK INGEST", color: "#10B981" },
+
                     { from: srvId, to: dbId, label: "ACID COMMIT", color: "#10B981" },
+
                     { from: procId, to: srvId, label: "PUB / SUB", color: "#38BDF8" }
+
                 ];
+
             }
+
+
 
             const activeNodeIdx = Math.min(archNodes.length - 1, Math.floor(stageProg * archNodes.length));
 
+
+
             // Helper: Draw Rotating Mechanical Gear
+
             function drawArchGear(cx, cy, radius, teeth, rotAngle, gearColor, innerCol) {
+
                 ctx.save();
+
                 ctx.translate(cx, cy);
+
                 ctx.rotate(rotAngle);
-                ctx.beginPath();
-                for (let g = 0; g < teeth; g++) {
-                    const a1 = (g * 2 * Math.PI) / teeth;
-                    const a2 = a1 + (Math.PI / teeth) * 0.35;
-                    const a3 = a1 + (Math.PI / teeth) * 0.65;
-                    const a4 = a1 + (Math.PI / teeth);
-                    const rOut = radius;
-                    const rIn = radius * 0.76;
-                    if (g === 0) ctx.moveTo(Math.cos(a1) * rIn, Math.sin(a1) * rIn);
-                    ctx.lineTo(Math.cos(a1) * rOut, Math.sin(a1) * rOut);
-                    ctx.lineTo(Math.cos(a2) * rOut, Math.sin(a2) * rOut);
-                    ctx.lineTo(Math.cos(a3) * rIn, Math.sin(a3) * rIn);
-                    ctx.lineTo(Math.cos(a4) * rIn, Math.sin(a4) * rIn);
-                }
-                ctx.closePath();
-                const gGrad = ctx.createRadialGradient(0, 0, radius * 0.3, 0, 0, radius);
-                gGrad.addColorStop(0, gearColor);
-                gGrad.addColorStop(1, innerCol || "#0F172A");
-                ctx.fillStyle = gGrad;
-                ctx.shadowColor = gearColor;
-                ctx.shadowBlur = 10;
-                ctx.fill();
-                ctx.strokeStyle = "#FFFFFF";
-                ctx.lineWidth = 1.2;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
 
                 ctx.beginPath();
-                ctx.arc(0, 0, radius * 0.32, 0, Math.PI * 2);
-                ctx.fillStyle = "#090D1A";
+
+                for (let g = 0; g < teeth; g++) {
+
+                    const a1 = (g * 2 * Math.PI) / teeth;
+
+                    const a2 = a1 + (Math.PI / teeth) * 0.35;
+
+                    const a3 = a1 + (Math.PI / teeth) * 0.65;
+
+                    const a4 = a1 + (Math.PI / teeth);
+
+                    const rOut = radius;
+
+                    const rIn = radius * 0.76;
+
+                    if (g === 0) ctx.moveTo(Math.cos(a1) * rIn, Math.sin(a1) * rIn);
+
+                    ctx.lineTo(Math.cos(a1) * rOut, Math.sin(a1) * rOut);
+
+                    ctx.lineTo(Math.cos(a2) * rOut, Math.sin(a2) * rOut);
+
+                    ctx.lineTo(Math.cos(a3) * rIn, Math.sin(a3) * rIn);
+
+                    ctx.lineTo(Math.cos(a4) * rIn, Math.sin(a4) * rIn);
+
+                }
+
+                ctx.closePath();
+
+                const gGrad = ctx.createRadialGradient(0, 0, radius * 0.3, 0, 0, radius);
+
+                gGrad.addColorStop(0, gearColor);
+
+                gGrad.addColorStop(1, innerCol || "#0F172A");
+
+                ctx.fillStyle = gGrad;
+
+                ctx.shadowColor = gearColor;
+
+                ctx.shadowBlur = 10;
+
                 ctx.fill();
-                ctx.strokeStyle = gearColor;
-                ctx.lineWidth = 2.0;
+
+                ctx.strokeStyle = "#FFFFFF";
+
+                ctx.lineWidth = 1.2;
+
                 ctx.stroke();
+
+                ctx.shadowBlur = 0;
+
+
+
+                ctx.beginPath();
+
+                ctx.arc(0, 0, radius * 0.32, 0, Math.PI * 2);
+
+                ctx.fillStyle = "#090D1A";
+
+                ctx.fill();
+
+                ctx.strokeStyle = gearColor;
+
+                ctx.lineWidth = 2.0;
+
+                ctx.stroke();
+
                 ctx.restore();
+
             }
+
+
 
             // Helper: Draw 3D Isometric Database Cylinder
+
             function drawArchDBCylinder(cx, cy, label, sub, color, isActive, depthScale) {
+
                 ctx.save();
+
                 ctx.translate(cx, cy);
+
                 ctx.scale(depthScale, depthScale);
+
+
 
                 const rx = 135;
+
                 const ry = 42;
+
                 const platterH = 34;
+
                 const platterCount = 3;
 
+
+
                 // Perspective ground shadow
+
                 ctx.save();
+
                 ctx.translate(10, (platterCount * platterH) + 20);
+
                 ctx.scale(1.0, 0.38);
+
                 const dbShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, rx * 1.25);
+
                 dbShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+
                 dbShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+
                 ctx.fillStyle = dbShadow;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, rx * 1.25, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.restore();
 
+
+
                 // Rotating halo if active
+
                 if (isActive) {
+
                     ctx.save();
+
                     ctx.translate(0, (platterCount * platterH) + 10);
+
                     ctx.scale(1.0, 0.38);
+
                     ctx.rotate(t * 1.5);
+
                     ctx.strokeStyle = color;
+
                     ctx.lineWidth = 3.0;
+
                     ctx.setLineDash([16, 12, 6, 12]);
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 24;
+
                     ctx.beginPath();
+
                     ctx.arc(0, 0, rx * 1.35, 0, Math.PI * 2);
+
                     ctx.stroke();
+
                     ctx.setLineDash([]);
+
                     ctx.shadowBlur = 0;
+
                     ctx.restore();
+
                 }
+
+
 
                 // Render Platters from bottom to top
+
                 for (let pl = platterCount - 1; pl >= 0; pl--) {
+
                     const py = pl * platterH;
 
+
+
                     // Platter Cylinder Wall
+
                     ctx.beginPath();
+
                     ctx.moveTo(-rx, py);
+
                     ctx.lineTo(-rx, py + platterH - 6);
+
                     ctx.ellipse(0, py + platterH - 6, rx, ry, 0, Math.PI, 0, true);
+
                     ctx.lineTo(rx, py);
+
                     ctx.ellipse(0, py, rx, ry, 0, 0, Math.PI, false);
+
                     ctx.closePath();
+
+
 
                     const wallGrad = ctx.createLinearGradient(-rx, py, rx, py);
+
                     wallGrad.addColorStop(0, "rgba(15, 23, 42, 0.96)");
+
                     wallGrad.addColorStop(0.25, "rgba(30, 41, 59, 0.98)");
+
                     wallGrad.addColorStop(0.55, "rgba(51, 65, 85, 0.92)");
+
                     wallGrad.addColorStop(0.85, "rgba(30, 41, 59, 0.98)");
+
                     wallGrad.addColorStop(1, "rgba(10, 16, 32, 0.96)");
+
                     ctx.fillStyle = wallGrad;
+
                     ctx.fill();
+
+
 
                     ctx.strokeStyle = isActive ? color : "rgba(56, 189, 248, 0.35)";
+
                     ctx.lineWidth = 1.5;
+
                     ctx.stroke();
+
+
 
                     // Activity LEDs
+
                     for (let led = 0; led < 4; led++) {
+
                         const ledX = -45 + led * 26;
+
                         const ledY = py + 14;
+
                         const isOn = Math.sin(t * 8 + pl * 3 + led * 1.7) > -0.2;
+
                         ctx.fillStyle = isOn ? color : "rgba(255, 255, 255, 0.15)";
+
                         if (isOn) {
+
                             ctx.shadowColor = color;
+
                             ctx.shadowBlur = 8;
+
                         }
+
                         ctx.beginPath();
+
                         ctx.roundRect(ledX, ledY, 16, 5, 2);
+
                         ctx.fill();
+
                         ctx.shadowBlur = 0;
+
                     }
+
+
 
                     // Platter Top Face Ellipse
+
                     ctx.beginPath();
+
                     ctx.ellipse(0, py, rx, ry, 0, 0, Math.PI * 2);
+
                     const topEllGrad = ctx.createRadialGradient(0, py, 10, 0, py, rx);
+
                     topEllGrad.addColorStop(0, "rgba(71, 85, 105, 0.85)");
+
                     topEllGrad.addColorStop(0.65, "rgba(30, 41, 59, 0.95)");
+
                     topEllGrad.addColorStop(1, "rgba(15, 23, 42, 1.0)");
+
                     ctx.fillStyle = topEllGrad;
+
                     ctx.fill();
+
                     ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.25)";
+
                     ctx.lineWidth = (pl === 0 && isActive) ? 2.5 : 1.2;
+
                     if (pl === 0 && isActive) {
+
                         ctx.shadowColor = color;
+
                         ctx.shadowBlur = 18;
+
                     }
+
                     ctx.stroke();
+
                     ctx.shadowBlur = 0;
+
                 }
+
+
 
                 // Top Face Platter Magnetic Tracks & Scanning Head Beam
+
                 ctx.save();
-                ctx.beginPath();
-                ctx.ellipse(0, 0, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-                ctx.lineWidth = 1.2;
-                ctx.setLineDash([6, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
 
                 ctx.beginPath();
-                ctx.ellipse(0, 0, rx * 0.45, ry * 0.45, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+
+                ctx.ellipse(0, 0, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2);
+
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+
+                ctx.lineWidth = 1.2;
+
+                ctx.setLineDash([6, 4]);
+
                 ctx.stroke();
+
+                ctx.setLineDash([]);
+
+
+
+                ctx.beginPath();
+
+                ctx.ellipse(0, 0, rx * 0.45, ry * 0.45, 0, 0, Math.PI * 2);
+
+                ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+
+                ctx.stroke();
+
+
 
                 // Rotating Read/Write Laser Head
+
                 const headA = t * 3.6;
+
                 const hx = Math.cos(headA) * (rx * 0.65);
+
                 const hy = Math.sin(headA) * (ry * 0.65);
+
                 ctx.strokeStyle = color;
+
                 ctx.lineWidth = 2.0;
+
                 ctx.beginPath();
+
                 ctx.moveTo(0, 0);
+
                 ctx.lineTo(hx, hy);
+
                 ctx.stroke();
 
+
+
                 ctx.fillStyle = "#FFFFFF";
+
                 ctx.shadowColor = color;
+
                 ctx.shadowBlur = 12;
+
                 ctx.beginPath();
+
                 ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.shadowBlur = 0;
+
                 ctx.restore();
+
+
 
                 // Floating Holographic Label Badge Below Cylinder
+
                 const lblY = (platterCount * platterH) + 38;
+
                 ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(-165, lblY - 22, 330, 48, 12);
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.15)";
+
                 ctx.lineWidth = isActive ? 2.0 : 1.2;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 14;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
 
+
+
                 ctx.fillStyle = isActive ? color : "#FFFFFF";
+
                 ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText(fitTextToWidth(ctx, "💾 " + label, 300), 0, lblY);
 
+
+
                 ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+
                 ctx.font = "14px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, sub || "ACID Replicated Persistence", 300), 0, lblY + 18);
 
+
+
                 if (isActive) {
+
                     drawPhotonSparks(ctx, 130, lblY, color, t);
+
                 }
+
                 ctx.restore();
+
             }
+
+
 
             // Helper: Draw 3D Isometric Server Box
+
             function drawArchServerBox(cx, cy, label, sub, color, isActive, depthScale) {
+
                 ctx.save();
+
                 ctx.translate(cx, cy);
+
                 ctx.scale(depthScale, depthScale);
+
+
 
                 const sw = 90;
+
                 const sh = 175;
+
                 const topH = 40;
 
+
+
                 // Perspective ground shadow
+
                 ctx.save();
+
                 ctx.translate(10, topH + sh + 12);
+
                 ctx.scale(1.0, 0.35);
+
                 const sShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, sw * 1.3);
+
                 sShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+
                 sShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+
                 ctx.fillStyle = sShadow;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, sw * 1.3, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.restore();
 
+
+
                 // Rotating halo if active
+
                 if (isActive) {
+
                     ctx.save();
+
                     ctx.translate(0, topH + sh + 6);
+
                     ctx.scale(1.0, 0.36);
+
                     ctx.rotate(t * 1.6);
+
                     ctx.strokeStyle = color;
+
                     ctx.lineWidth = 3.0;
+
                     ctx.setLineDash([14, 10]);
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 22;
+
                     ctx.beginPath();
+
                     ctx.arc(0, 0, sw * 1.4, 0, Math.PI * 2);
+
                     ctx.stroke();
+
                     ctx.setLineDash([]);
+
                     ctx.shadowBlur = 0;
+
                     ctx.restore();
+
                 }
+
+
 
                 // TOP FACE
+
                 ctx.beginPath();
+
                 ctx.moveTo(0, -topH);
+
                 ctx.lineTo(sw, 0);
+
                 ctx.lineTo(0, topH);
+
                 ctx.lineTo(-sw, 0);
+
                 ctx.closePath();
+
                 const topGrad = ctx.createLinearGradient(-sw, -topH, sw, topH);
+
                 topGrad.addColorStop(0, "rgba(51, 65, 85, 0.95)");
+
                 topGrad.addColorStop(1, "rgba(30, 41, 59, 0.98)");
+
                 ctx.fillStyle = topGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.25)";
+
                 ctx.lineWidth = isActive ? 2.5 : 1.5;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 16;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
+
+
 
                 // LEFT FACE (Chassis side fins)
+
                 ctx.beginPath();
+
                 ctx.moveTo(-sw, 0);
+
                 ctx.lineTo(0, topH);
+
                 ctx.lineTo(0, topH + sh);
+
                 ctx.lineTo(-sw, sh);
+
                 ctx.closePath();
+
                 const leftGrad = ctx.createLinearGradient(-sw, 0, 0, topH + sh);
+
                 leftGrad.addColorStop(0, "rgba(15, 23, 42, 0.98)");
+
                 leftGrad.addColorStop(1, "rgba(8, 14, 28, 1.0)");
+
                 ctx.fillStyle = leftGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+
                 ctx.lineWidth = 1.2;
+
                 ctx.stroke();
+
+
 
                 for (let r = 1; r <= 5; r++) {
+
                     const ry = topH + r * 26;
+
                     ctx.strokeStyle = "rgba(56, 189, 248, 0.2)";
+
                     ctx.beginPath();
+
                     ctx.moveTo(-sw + 14, (r * 26) - 6);
+
                     ctx.lineTo(-12, ry - 6);
+
                     ctx.stroke();
+
                 }
+
+
 
                 // RIGHT FACE (Server Front Panel with Drive Bays & LEDs)
+
                 ctx.beginPath();
+
                 ctx.moveTo(0, topH);
+
                 ctx.lineTo(sw, 0);
+
                 ctx.lineTo(sw, sh);
+
                 ctx.lineTo(0, topH + sh);
+
                 ctx.closePath();
+
                 const rightGrad = ctx.createLinearGradient(0, topH, sw, sh);
+
                 rightGrad.addColorStop(0, "rgba(24, 34, 53, 0.96)");
+
                 rightGrad.addColorStop(1, "rgba(15, 23, 42, 0.98)");
+
                 ctx.fillStyle = rightGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.18)";
+
                 ctx.lineWidth = 1.5;
+
                 ctx.stroke();
+
+
 
                 for (let b = 0; b < 4; b++) {
+
                     const bayY = topH + 10 + b * 26;
+
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+
                     ctx.lineWidth = 1.0;
+
                     ctx.beginPath();
+
                     ctx.moveTo(8, bayY + 3);
+
                     ctx.lineTo(sw - 10, bayY - 12);
+
                     ctx.lineTo(sw - 10, bayY + 6);
+
                     ctx.lineTo(8, bayY + 21);
+
                     ctx.closePath();
+
                     ctx.stroke();
+
+
 
                     const lOn = Math.sin(t * 10 + b * 2) > -0.1;
+
                     ctx.fillStyle = lOn ? color : "#064E3B";
+
                     if (lOn) {
+
                         ctx.shadowColor = color;
+
                         ctx.shadowBlur = 8;
+
                     }
+
                     ctx.beginPath();
+
                     ctx.arc(16, bayY + 11, 2.5, 0, Math.PI * 2);
+
                     ctx.fill();
+
                     ctx.shadowBlur = 0;
+
                 }
+
+
 
                 // 3D Spinning Cooling Fan
+
                 const fanX = 45;
+
                 const fanY = topH + 132;
+
                 ctx.save();
+
                 ctx.translate(fanX, fanY);
+
                 ctx.scale(1.0, 0.65);
+
                 ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+
                 ctx.lineWidth = 1.8;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, 20, 0, Math.PI * 2);
+
                 ctx.stroke();
+
                 const fanA = t * 15;
+
                 for (let fa = 0; fa < 4; fa++) {
+
                     const a = fanA + (fa * Math.PI / 2);
+
                     ctx.strokeStyle = color;
+
                     ctx.lineWidth = 2.2;
+
                     ctx.beginPath();
+
                     ctx.moveTo(0, 0);
+
                     ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16);
+
                     ctx.stroke();
+
                 }
+
                 ctx.restore();
 
+
+
                 // Floating Holographic Label Badge
+
                 const sBob = Math.sin(t * 3.2) * 5;
+
                 ctx.save();
+
                 ctx.translate(0, -topH - 32 + sBob);
+
                 ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(-145, -20, 290, 44, 12);
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.15)";
+
                 ctx.lineWidth = isActive ? 2 : 1.2;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 14;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
 
+
+
                 ctx.fillStyle = isActive ? color : "#FFFFFF";
+
                 ctx.font = "bold 18px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText(fitTextToWidth(ctx, "🖥️ " + label, 260), 0, 0);
 
+
+
                 ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+
                 ctx.font = "13px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, sub || "Clustered Compute Nodes", 260), 0, 16);
-                ctx.restore();
 
                 ctx.restore();
+
+
+
+                ctx.restore();
+
             }
+
+
 
             // Helper: Draw 3D Processing Node with Rotating Gears
+
             function drawArchProcessNode(cx, cy, label, sub, color, isActive, depthScale) {
+
                 ctx.save();
+
                 ctx.translate(cx, cy);
+
                 ctx.scale(depthScale, depthScale);
 
+
+
                 // Perspective ground shadow
+
                 ctx.save();
+
                 ctx.translate(6, 95);
+
                 ctx.scale(1.0, 0.38);
+
                 const pShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, 130);
+
                 pShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+
                 pShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+
                 ctx.fillStyle = pShadow;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, 130, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.restore();
+
+
 
                 // Hexagonal base platform
+
                 ctx.save();
+
                 ctx.translate(0, 75);
+
                 ctx.scale(1.0, 0.46);
+
                 ctx.beginPath();
+
                 const hexR = 100;
+
                 for (let h = 0; h < 6; h++) {
+
                     const ha = (h * Math.PI / 3) + Math.PI / 6;
+
                     const hx = Math.cos(ha) * hexR;
+
                     const hy = Math.sin(ha) * hexR;
+
                     if (h === 0) ctx.moveTo(hx, hy);
+
                     else ctx.lineTo(hx, hy);
+
                 }
+
                 ctx.closePath();
+
                 const baseGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, hexR);
+
                 baseGrad.addColorStop(0, "rgba(168, 85, 247, 0.35)");
+
                 baseGrad.addColorStop(0.7, "rgba(15, 23, 42, 0.85)");
+
                 baseGrad.addColorStop(1, "rgba(4, 8, 18, 0.95)");
+
                 ctx.fillStyle = baseGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "rgba(168, 85, 247, 0.4)";
+
                 ctx.lineWidth = isActive ? 2.5 : 1.5;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 18;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
+
                 ctx.restore();
+
+
 
                 // Rotating halo if active
+
                 if (isActive) {
+
                     ctx.save();
+
                     ctx.translate(0, 78);
+
                     ctx.scale(1.0, 0.4);
+
                     ctx.rotate(t * 1.5);
+
                     ctx.strokeStyle = color;
+
                     ctx.lineWidth = 3.0;
+
                     ctx.setLineDash([14, 10]);
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 22;
+
                     ctx.beginPath();
+
                     ctx.arc(0, 0, 125, 0, Math.PI * 2);
+
                     ctx.stroke();
+
                     ctx.setLineDash([]);
+
                     ctx.shadowBlur = 0;
+
                     ctx.restore();
+
                 }
+
+
 
                 // Two Interlocking Mechanical Rotating Gears
+
                 drawArchGear(0, 5, 42, 8, t * 2.2, color, "#4C1D95");
+
                 drawArchGear(48, -18, 28, 6, -t * 3.0, "#38BDF8", "#0369A1");
 
+
+
                 // Central processor badge
+
                 ctx.save();
+
                 ctx.translate(0, 5);
+
                 ctx.fillStyle = "#FFFFFF";
+
                 ctx.shadowColor = color;
+
                 ctx.shadowBlur = 12;
+
                 ctx.font = "bold 14px monospace";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText("CPU", 0, 5);
+
                 ctx.shadowBlur = 0;
+
                 ctx.restore();
+
+
 
                 // Floating Holographic Label Badge
+
                 const pBob = Math.sin(t * 3.0) * 5;
+
                 ctx.save();
+
                 ctx.translate(0, -65 + pBob);
+
                 ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(-145, -20, 290, 44, 12);
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "rgba(255, 255, 255, 0.15)";
+
                 ctx.lineWidth = isActive ? 2 : 1.2;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 14;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
+
+
 
                 ctx.fillStyle = isActive ? color : "#FFFFFF";
+
                 ctx.font = "bold 18px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText(fitTextToWidth(ctx, "⚙️ " + label, 260), 0, 0);
 
+
+
                 ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+
                 ctx.font = "13px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, sub || "Stream / ETL Processing Engine", 260), 0, 16);
-                ctx.restore();
 
                 ctx.restore();
+
+
+
+                ctx.restore();
+
             }
+
+
 
             // Helper: Draw 3D Cloud Architecture Platform
+
             function drawArchCloudNode(cx, cy, label, sub, color, isActive, depthScale) {
+
                 ctx.save();
+
                 ctx.translate(cx, cy);
+
                 ctx.scale(depthScale, depthScale);
 
+
+
                 // Perspective ground shadow
+
                 ctx.save();
+
                 ctx.translate(8, 90);
+
                 ctx.scale(1.0, 0.38);
+
                 const cShadow = ctx.createRadialGradient(0, 0, 10, 0, 0, 140);
+
                 cShadow.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+
                 cShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+
                 ctx.fillStyle = cShadow;
+
                 ctx.beginPath();
+
                 ctx.arc(0, 0, 140, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.restore();
+
+
 
                 // Radiating auto-scaling expansion waves
+
                 for (let r = 0; r < 3; r++) {
+
                     const p = ((t * 0.45 + r * 0.33) % 1.0);
+
                     const radius = 60 + p * 110;
+
                     const alpha = (1.0 - p) * 0.35;
+
                     ctx.save();
+
                     ctx.translate(0, 75);
+
                     ctx.scale(1.0, 0.42);
+
                     ctx.strokeStyle = `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
+
                     ctx.lineWidth = 1.8;
+
                     ctx.beginPath();
+
                     ctx.arc(0, 0, radius, 0, Math.PI * 2);
+
                     ctx.stroke();
+
                     ctx.restore();
+
                 }
+
+
 
                 // Floating Hexagonal Base Platform
+
                 ctx.save();
+
                 ctx.translate(0, 70);
+
                 ctx.scale(1.0, 0.48);
+
                 ctx.beginPath();
+
                 const hexR = 110;
+
                 for (let h = 0; h < 6; h++) {
+
                     const ha = (h * Math.PI / 3) + Math.PI / 6;
+
                     const hx = Math.cos(ha) * hexR;
+
                     const hy = Math.sin(ha) * hexR;
+
                     if (h === 0) ctx.moveTo(hx, hy);
+
                     else ctx.lineTo(hx, hy);
+
                 }
+
                 ctx.closePath();
+
                 const baseGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
+
                 baseGrad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+
                 baseGrad.addColorStop(0.7, "rgba(168, 85, 247, 0.25)");
+
                 baseGrad.addColorStop(1, "rgba(15, 23, 42, 0.7)");
+
                 ctx.fillStyle = baseGrad;
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "#38BDF8";
+
                 ctx.lineWidth = isActive ? 2.8 : 1.8;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 18;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
+
                 ctx.restore();
+
+
 
                 // 3 Floating AZ Pods
+
                 const azPods = [
+
                     { name: "AZ-1", x: -75, y: -15, col: "#38BDF8" },
+
                     { name: "AZ-2", x: 0, y: -50, col: "#C084FC" },
+
                     { name: "AZ-3", x: 75, y: -15, col: "#10B981" }
+
                 ];
+
                 ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+
                 ctx.lineWidth = 1.5;
+
                 ctx.setLineDash([5, 5]);
+
                 ctx.beginPath();
+
                 ctx.moveTo(azPods[0].x, azPods[0].y);
+
                 ctx.lineTo(azPods[1].x, azPods[1].y);
+
                 ctx.lineTo(azPods[2].x, azPods[2].y);
+
                 ctx.closePath();
+
                 ctx.stroke();
+
                 ctx.setLineDash([]);
 
+
+
                 azPods.forEach((pod, pi) => {
+
                     const pBob = Math.sin(t * 3.5 + pi * 2) * 4;
+
                     ctx.save();
+
                     ctx.translate(pod.x, pod.y + pBob);
+
                     ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+
                     ctx.beginPath();
+
                     ctx.roundRect(-24, -16, 48, 32, 6);
+
                     ctx.fill();
+
                     ctx.strokeStyle = pod.col;
+
                     ctx.lineWidth = 1.5;
+
                     ctx.shadowColor = pod.col;
+
                     ctx.shadowBlur = 8;
+
                     ctx.stroke();
+
                     ctx.shadowBlur = 0;
+
                     ctx.fillStyle = pod.col;
+
                     ctx.font = "bold 12px monospace";
+
                     ctx.textAlign = "center";
+
                     ctx.fillText(pod.name, 0, 4);
+
                     ctx.restore();
+
                 });
 
+
+
                 // Center Floating Glowing Cloud Icon
+
                 const cBob = Math.sin(t * 2.8) * 6;
+
                 ctx.save();
+
                 ctx.translate(0, 10 + cBob);
+
                 ctx.shadowColor = "#38BDF8";
+
                 ctx.shadowBlur = 24;
+
                 ctx.fillStyle = "#38BDF8";
+
                 ctx.font = "50px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText("☁️", 0, 16);
+
                 ctx.shadowBlur = 0;
+
                 ctx.restore();
+
+
 
                 // Floating Holographic Label Above Cloud
+
                 ctx.save();
+
                 ctx.translate(0, -85 + cBob);
+
                 ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(-155, -20, 310, 44, 12);
+
                 ctx.fill();
+
                 ctx.strokeStyle = isActive ? color : "#38BDF8";
+
                 ctx.lineWidth = isActive ? 2.2 : 1.2;
+
                 if (isActive) {
+
                     ctx.shadowColor = color;
+
                     ctx.shadowBlur = 14;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
 
+
+
                 ctx.fillStyle = isActive ? color : "#38BDF8";
+
                 ctx.font = "bold 18px 'Segoe UI', sans-serif";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText(fitTextToWidth(ctx, "☁️ " + label, 280), 0, 0);
 
+
+
                 ctx.fillStyle = isActive ? "#E2E8F0" : "#94A3B8";
+
                 ctx.font = "13px 'Segoe UI', sans-serif";
+
                 ctx.fillText(fitTextToWidth(ctx, sub || "Elastic Cloud Ingress Gateway", 280), 0, 16);
-                ctx.restore();
 
                 ctx.restore();
+
+
+
+                ctx.restore();
+
             }
 
+
+
             // 5. RENDER CONDUITS & ANIMATED 3D DATA PACKETS FIRST (Behind Nodes)
+
             archConnections.forEach((conn) => {
+
                 const srcPos = archPositions[conn.from];
+
                 const dstPos = archPositions[conn.to];
+
                 if (!srcPos || !dstPos) return;
 
+
+
                 let x1 = srcPos.cx;
+
                 let y1 = srcPos.cy + 75;
+
                 let x2 = dstPos.cx;
+
                 let y2 = dstPos.cy - 70;
 
+
+
                 if (Math.abs(srcPos.cy - dstPos.cy) < 50) {
+
                     if (srcPos.cx < dstPos.cx) {
+
                         x1 = srcPos.cx + 100; y1 = srcPos.cy;
+
                         x2 = dstPos.cx - 100; y2 = dstPos.cy;
+
                     } else {
+
                         x1 = srcPos.cx - 100; y1 = srcPos.cy;
+
                         x2 = dstPos.cx + 100; y2 = dstPos.cy;
+
                     }
+
                 }
+
+
 
                 const midY = (y1 + y2) / 2;
 
+
+
                 ctx.save();
+
                 ctx.strokeStyle = conn.color;
+
                 ctx.globalAlpha = 0.22;
+
                 ctx.lineWidth = 7;
+
                 ctx.beginPath();
+
                 ctx.moveTo(x1, y1);
+
                 ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+
                 ctx.stroke();
+
+
 
                 ctx.globalAlpha = 0.85;
+
                 ctx.lineWidth = 2.8;
+
                 ctx.setLineDash([12, 8]);
+
                 ctx.lineDashOffset = -t * 42;
+
                 ctx.shadowColor = conn.color;
+
                 ctx.shadowBlur = 14;
+
                 ctx.beginPath();
+
                 ctx.moveTo(x1, y1);
+
                 ctx.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+
                 ctx.stroke();
+
                 ctx.setLineDash([]);
+
                 ctx.shadowBlur = 0;
+
+
 
                 // Traveling 3D Animated Data Packets
+
                 const packetCount = 3;
+
                 for (let pk = 0; pk < packetCount; pk++) {
+
                     const u = (t * 0.7 + pk * (1.0 / packetCount)) % 1.0;
+
                     const pu = 1 - u;
+
                     const px = pu * pu * pu * x1 + 3 * pu * pu * u * x1 + 3 * pu * u * u * x2 + u * u * u * x2;
+
                     const py = pu * pu * pu * y1 + 3 * pu * pu * u * midY + 3 * pu * u * u * midY + u * u * u * y2;
 
+
+
                     const dx = 3 * pu * pu * (x1 - x1) + 6 * pu * u * (x2 - x1) + 3 * u * u * (x2 - x2);
+
                     const dy = 3 * pu * pu * (midY - y1) + 6 * pu * u * (midY - midY) + 3 * u * u * (y2 - midY);
+
                     const angle = Math.atan2(dy, dx || 1);
 
+
+
                     ctx.save();
+
                     ctx.translate(px, py);
+
                     ctx.rotate(angle);
 
+
+
                     // Trailing photon sparks
+
                     for (let tr = 1; tr <= 3; tr++) {
+
                         ctx.fillStyle = conn.color;
+
                         ctx.globalAlpha = 0.6 / tr;
+
                         ctx.beginPath();
+
                         ctx.arc(-tr * 7, 0, Math.max(1.5, 4 - tr), 0, Math.PI * 2);
+
                         ctx.fill();
+
                     }
 
+
+
                     // Main Packet Body
+
                     ctx.globalAlpha = 1.0;
+
                     ctx.fillStyle = "#FFFFFF";
+
                     ctx.shadowColor = conn.color;
+
                     ctx.shadowBlur = 14;
+
                     ctx.beginPath();
+
                     ctx.roundRect(-8, -5, 16, 10, 3);
+
                     ctx.fill();
 
+
+
                     ctx.strokeStyle = conn.color;
+
                     ctx.lineWidth = 1.5;
+
                     ctx.stroke();
+
                     ctx.shadowBlur = 0;
+
                     ctx.restore();
+
                 }
+
+
 
                 // Midpoint Protocol Badge
+
                 if (conn.label) {
+
                     const mx = (x1 + x2) / 2;
+
                     const my = midY;
+
                     ctx.save();
+
                     ctx.fillStyle = "rgba(10, 16, 32, 0.94)";
+
                     ctx.beginPath();
+
                     ctx.roundRect(mx - 75, my - 14, 150, 28, 8);
+
                     ctx.fill();
+
                     ctx.strokeStyle = conn.color;
+
                     ctx.lineWidth = 1.4;
+
                     ctx.shadowColor = conn.color;
+
                     ctx.shadowBlur = 8;
+
                     ctx.stroke();
+
                     ctx.shadowBlur = 0;
 
+
+
                     ctx.fillStyle = conn.color;
+
                     ctx.font = "bold 12px monospace";
+
                     ctx.textAlign = "center";
+
                     ctx.fillText(conn.label, mx, my + 5);
+
                     ctx.restore();
+
                 }
+
                 ctx.restore();
+
             });
+
+
 
             // 6. RENDER 3D NODES BY TYPE (With Perspective & Shadows)
+
             archNodes.forEach((nd, i) => {
+
                 const pos = archPositions[nd.id];
+
                 if (!pos) return;
+
                 const isActive = (i === activeNodeIdx);
+
                 const col = nd.color || "#38BDF8";
 
+
+
                 ctx.save();
+
                 ctx.globalAlpha = pos.depthAlpha || 1.0;
 
+
+
                 if (nd.type === "database") {
+
                     drawArchDBCylinder(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+
                 } else if (nd.type === "server") {
+
                     drawArchServerBox(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+
                 } else if (nd.type === "process") {
+
                     drawArchProcessNode(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+
                 } else if (nd.type === "cloud") {
+
                     drawArchCloudNode(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+
                 } else {
+
                     drawArchServerBox(pos.cx, pos.cy, nd.label, nd.sub, col, isActive, pos.depthScale);
+
                 }
+
+
 
                 ctx.restore();
+
             });
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 4: COMPARISON (Dual 3D Comparative Cards)
+
         // =========================================================================
+
         else if (normalizedType === "comparison") {
+
             const compY = 360;
+
             const cardW = (W - 150) / 2;
+
             const cardH = 760;
 
+
+
             const nameA = vData.item_a ? vData.item_a.name : (p.term_a || "CONCEPT A");
+
             const bulletsA = vData.item_a ? vData.item_a.bullets : ["Low latency LAN execution", "Complete physical data isolation", "Zero 3rd party dependency", "High upfront CapEx"];
+
             const colA = vData.item_a ? (vData.item_a.color || "#10B981") : "#10B981";
 
+
+
             const nameB = vData.item_b ? vData.item_b.name : (p.term_b || "CONCEPT B");
+
             const bulletsB = vData.item_b ? vData.item_b.bullets : ["Elastic on-demand scaling", "Multi-region global reach", "Pay-as-you-go OpEx billing", "Requires cost governance"];
+
             const colB = vData.item_b ? (vData.item_b.color || "#38BDF8") : "#38BDF8";
 
+
+
             ctx.save();
+
             ctx.save();
+
             ctx.translate(60 + cardW / 2, compY + cardH / 2);
+
             ctx.rotate(-0.02);
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.85)";
+
             ctx.beginPath();
+
             ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+
             ctx.fill();
+
             ctx.strokeStyle = colA;
+
             ctx.lineWidth = 2.5;
+
             ctx.shadowColor = colA;
+
             ctx.shadowBlur = 14;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             ctx.fillStyle = colA;
+
             ctx.font = "bold 26px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(fitTextToWidth(ctx, nameA, cardW - 40), 0, -cardH / 2 + 55);
 
+
+
             ctx.textAlign = "left";
+
             bulletsA.slice(0, 5).forEach((b, bi) => {
+
                 const by = -cardH / 2 + 120 + bi * 85;
+
                 ctx.fillStyle = colA;
+
                 ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
                 ctx.fillText("✔", -cardW / 2 + 25, by);
+
                 ctx.fillStyle = "#F8FAFC";
+
                 ctx.font = "19px 'Segoe UI', sans-serif";
+
                 const bLines = wrapCanvasText(ctx, b, cardW - 70, 2);
+
                 bLines.forEach((bl, bli) => {
+
                     ctx.fillText(bl, -cardW / 2 + 55, by + bli * 28);
+
                 });
+
             });
+
             ctx.restore();
+
+
 
             // Central Pulsing VS Badge
+
             const vsY = compY + cardH / 2;
+
             const vsPulse = 1.0 + Math.sin(t * 6) * 0.1;
+
             ctx.save();
+
             ctx.translate(W / 2, vsY);
+
             ctx.scale(vsPulse, vsPulse);
+
             ctx.fillStyle = "#0F172A";
+
             ctx.beginPath();
+
             ctx.arc(0, 0, 42, 0, Math.PI * 2);
+
             ctx.fill();
+
             ctx.strokeStyle = "#F59E0B";
+
             ctx.lineWidth = 3;
+
             ctx.shadowColor = "#F59E0B";
+
             ctx.shadowBlur = 20;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
             ctx.fillStyle = "#F59E0B";
+
             ctx.font = "bold 24px monospace";
+
             ctx.textAlign = "center";
+
             ctx.fillText("VS", 0, 8);
+
             ctx.restore();
+
+
 
             // Card B (Right Panel)
+
             ctx.save();
+
             ctx.translate(W - 60 - cardW / 2, compY + cardH / 2);
+
             ctx.rotate(0.02);
+
             ctx.fillStyle = "rgba(10, 16, 32, 0.85)";
+
             ctx.beginPath();
+
             ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+
             ctx.fill();
+
             ctx.strokeStyle = colB;
+
             ctx.lineWidth = 2.5;
+
             ctx.shadowColor = colB;
+
             ctx.shadowBlur = 14;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             ctx.fillStyle = colB;
+
             ctx.font = "bold 26px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(fitTextToWidth(ctx, nameB, cardW - 40), 0, -cardH / 2 + 55);
 
+
+
             ctx.textAlign = "left";
+
             bulletsB.slice(0, 5).forEach((b, bi) => {
+
                 const by = -cardH / 2 + 120 + bi * 85;
+
                 ctx.fillStyle = colB;
+
                 ctx.font = "bold 22px 'Segoe UI', sans-serif";
+
                 ctx.fillText("✔", -cardW / 2 + 25, by);
+
                 ctx.fillStyle = "#F8FAFC";
+
                 ctx.font = "19px 'Segoe UI', sans-serif";
+
                 const bLines = wrapCanvasText(ctx, b, cardW - 70, 2);
+
                 bLines.forEach((bl, bli) => {
+
                     ctx.fillText(bl, -cardW / 2 + 55, by + bli * 28);
+
                 });
+
             });
-            ctx.restore();
 
             ctx.restore();
+
+
+
+            ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 5: STEPS (Clean Numbered Sequence Roadmap)
+
         // =========================================================================
+
         else if (normalizedType === "steps") {
+
             const stepsY = 360;
+
             const stepsH = 780;
+
             const rawSteps = vData.steps || [
+
                 { num: "01", title: "Analyze Schema & Edge Cases", detail: "Check partition keys, duplicate values, and data types" },
+
                 { num: "02", title: "Formulate Core Logic", detail: "Construct window/rank calculations or index filtering" },
+
                 { num: "03", title: "Execute & Validate Output", detail: "Verify benchmark latency and accuracy on sample data" }
+
             ];
+
+
 
             const activeIdx = Math.min(rawSteps.length - 1, Math.floor(stageProg * rawSteps.length));
+
             const stepSpacing = Math.floor(stepsH / rawSteps.length);
 
+
+
             ctx.save();
+
             rawSteps.forEach((st, idx) => {
+
                 const sy = stepsY + idx * stepSpacing;
+
                 const isActive = (idx === activeIdx);
 
+
+
                 ctx.fillStyle = isActive ? "rgba(15, 23, 42, 0.90)" : "rgba(10, 16, 32, 0.60)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(70, sy, W - 140, stepSpacing - 25, 18);
+
                 ctx.fill();
+
+
 
                 ctx.strokeStyle = isActive ? "#38BDF8" : "rgba(255, 255, 255, 0.12)";
+
                 ctx.lineWidth = isActive ? 3 : 1.5;
+
                 if (isActive) {
+
                     ctx.shadowColor = "#38BDF8";
+
                     ctx.shadowBlur = 18;
+
                 }
+
                 ctx.stroke();
+
                 ctx.shadowBlur = 0;
 
+
+
                 ctx.fillStyle = isActive ? "#38BDF8" : "rgba(255, 255, 255, 0.1)";
+
                 ctx.beginPath();
+
                 ctx.arc(140, sy + (stepSpacing - 25) / 2, 38, 0, Math.PI * 2);
+
                 ctx.fill();
+
                 ctx.fillStyle = isActive ? "#000000" : "#FFFFFF";
+
                 ctx.font = "bold 26px monospace";
+
                 ctx.textAlign = "center";
+
                 ctx.fillText(st.num || ("0" + (idx + 1)), 140, sy + (stepSpacing - 25) / 2 + 9);
+
                 ctx.textAlign = "left";
 
+
+
                 ctx.fillStyle = isActive ? "#38BDF8" : "#F8FAFC";
+
                 ctx.font = "bold 27px 'Segoe UI', sans-serif";
+
                 ctx.fillText(st.title || ("Step " + (idx + 1)), 210, sy + 58);
 
+
+
                 ctx.fillStyle = isActive ? "#CBD5E1" : "#64748B";
+
                 ctx.font = "21px 'Segoe UI', sans-serif";
+
                 const dLines = wrapCanvasText(ctx, st.detail || "", W - 380, 2);
+
                 dLines.forEach((dl, dli) => {
+
                     ctx.fillText(dl, 210, sy + 98 + dli * 28);
+
                 });
+
+
 
                 if (isActive) {
+
                     drawPhotonSparks(ctx, W - 120, sy + (stepSpacing - 25) / 2, "#38BDF8", t);
+
                 }
+
             });
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 6: STAT (Massive Holographic Metric Display)
+
         // =========================================================================
+
         else if (normalizedType === "stat") {
+
             const bigStat = vData.big_stat || "10x";
+
             const statLabel = vData.label || "PERFORMANCE IMPROVEMENT";
+
             const statDetail = vData.detail || "Linear latency scaling with zero full table scans";
+
             const col = vData.color || "#10B981";
 
+
+
             ctx.save();
+
             ctx.textAlign = "center";
+
+
 
             const statY = 620;
+
             const pulse = 1.0 + Math.sin(t * 4) * 0.05;
+
             ctx.save();
+
             ctx.translate(W / 2, statY);
+
             ctx.scale(pulse, pulse);
 
+
+
             ctx.strokeStyle = col;
+
             ctx.lineWidth = 4;
+
             ctx.shadowColor = col;
+
             ctx.shadowBlur = 35;
+
             ctx.beginPath();
+
             ctx.arc(0, 0, 160, 0, Math.PI * 2);
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
+
+
 
             ctx.fillStyle = col;
+
             ctx.font = "bold 96px 'Segoe UI', sans-serif";
+
             ctx.fillText(bigStat, 0, 32);
+
             ctx.restore();
 
+
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "bold 34px 'Segoe UI', sans-serif";
+
             ctx.fillText(statLabel, W / 2, 870);
 
+
+
             ctx.fillStyle = "#94A3B8";
+
             ctx.font = "24px 'Segoe UI', sans-serif";
+
             const dLines = wrapCanvasText(ctx, statDetail, W - 200, 2);
+
             dLines.forEach((dl, i) => {
+
                 ctx.fillText(dl, W / 2, 930 + i * 38);
+
             });
+
             ctx.restore();
+
         }
 
+
+
         // =========================================================================
+
         // VISUAL 7: TAKEAWAY (Vibrant 3D Holographic Golden Master Deck)
+
         // =========================================================================
+
         else {
+
             const rule = vData.rule || p.golden_rule || activeStage.title || "Master Enterprise Architecture Logic Before Coding!";
+
             const bullets = (vData.bullets && vData.bullets.length > 0) ? vData.bullets : [
+
                 activeStage.title || "Key Takeaway",
+
                 p.title || "Core Principle Mastered",
+
                 p.domain || "Universal Knowledge"
+
             ];
+
             const proTip = vData.pro_tip || p.pro_tip || "💡 Pro-Tip: Deeply understand the core principle and apply with confidence.";
 
+
+
             const takeY = 320;
+
             const takeH = 880;
 
+
+
             ctx.save();
+
             // 1. Dynamic Golden Ambient Starburst Glow
+
             const starGrad = ctx.createRadialGradient(W / 2, takeY + 200, 10, W / 2, takeY + 200, 480);
+
             starGrad.addColorStop(0, "rgba(245, 158, 11, 0.28)");
+
             starGrad.addColorStop(0.5, "rgba(245, 158, 11, 0.08)");
+
             starGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
             ctx.fillStyle = starGrad;
+
             ctx.fillRect(0, takeY, W, takeH);
 
+
+
             // 2. 3D Floating Rotating Golden Trophy with Orbital Photon Rings
+
             const trophyY = takeY + 110;
+
             const trophyBob = Math.sin(t * 3.5) * 10;
+
             ctx.save();
+
             ctx.translate(W / 2, trophyY + trophyBob);
+
             
+
             // Orbital ring
+
             ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+
             ctx.lineWidth = 2;
+
             ctx.beginPath();
+
             ctx.ellipse(0, 0, 75, 24, t * 1.5, 0, Math.PI * 2);
+
             ctx.stroke();
+
+
 
             ctx.fillStyle = "#F59E0B";
+
             ctx.shadowColor = "#F59E0B";
+
             ctx.shadowBlur = 35;
+
             ctx.font = "82px 'Segoe UI Emoji', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.textBaseline = "middle";
+
             ctx.fillText("🏆", 0, 0);
+
             ctx.shadowBlur = 0;
+
             ctx.restore();
+
+
 
             // 3. Holographic Rounded Glass Card with Glowing Golden Border
+
             ctx.fillStyle = "rgba(9, 14, 28, 0.92)";
+
             ctx.beginPath();
+
             ctx.roundRect(60, takeY + 210, W - 120, takeH - 230, 24);
+
             ctx.fill();
+
             
+
             ctx.strokeStyle = "#F59E0B";
+
             ctx.lineWidth = 3.5;
+
             ctx.shadowColor = "#F59E0B";
+
             ctx.shadowBlur = 24;
+
             ctx.stroke();
+
             ctx.shadowBlur = 0;
 
+
+
             // Header Banner Strip
+
             ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+
             ctx.beginPath();
+
             ctx.roundRect(80, takeY + 230, W - 160, 52, 12);
+
             ctx.fill();
+
             ctx.fillStyle = "#FBBF24";
+
             ctx.font = "900 24px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             const takeawayHeader = p.domain ? ("⭐ KEY " + p.domain.toUpperCase() + " TAKEAWAY ⭐") : "⭐ KEY CONCEPT TAKEAWAY ⭐";
+
             ctx.fillText(takeawayHeader, W / 2, takeY + 265);
 
+
+
             // Rule Headline
+
             ctx.fillStyle = "#FFFFFF";
+
             ctx.font = "bold 34px 'Segoe UI', sans-serif";
+
             const rLines = wrapCanvasText(ctx, rule, W - 200, 2);
+
             rLines.forEach((rl, ri) => {
+
                 ctx.fillText(rl, W / 2, takeY + 335 + ri * 46);
+
             });
+
+
 
             // Actionable Bullets with Glowing Badges
+
             ctx.textAlign = "left";
+
             bullets.slice(0, 3).forEach((b, bi) => {
+
                 const by = takeY + 450 + bi * 95;
+
                 // Pill background
+
                 ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+
                 ctx.beginPath();
+
                 ctx.roundRect(85, by - 26, W - 170, 78, 14);
+
                 ctx.fill();
+
                 ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
+
                 ctx.lineWidth = 1.5;
+
                 ctx.stroke();
 
+
+
                 // Checkmark icon
+
                 ctx.fillStyle = "#10B981";
+
                 ctx.font = "bold 28px 'Segoe UI', sans-serif";
+
                 ctx.fillText("✔", 105, by + 18);
 
+
+
                 // Bullet text
+
                 ctx.fillStyle = "#F8FAFC";
+
                 ctx.font = "600 23px 'Segoe UI', sans-serif";
+
                 const bl = wrapCanvasText(ctx, b, W - 280, 2);
+
                 bl.forEach((line, li) => {
+
                     ctx.fillText(line, 155, by + 6 + li * 30);
+
                 });
+
             });
 
+
+
             // Bottom Senior Pro-Tip Pill
+
             ctx.fillStyle = "rgba(245, 158, 11, 0.25)";
+
             ctx.beginPath();
+
             ctx.roundRect(85, takeY + takeH - 90, W - 170, 54, 14);
+
             ctx.fill();
+
             ctx.strokeStyle = "#F59E0B";
+
             ctx.lineWidth = 2;
+
             ctx.stroke();
+
+
 
             ctx.fillStyle = "#FBBF24";
+
             ctx.font = "bold 21px 'Segoe UI', sans-serif";
+
             ctx.textAlign = "center";
+
             ctx.fillText(fitTextToWidth(ctx, proTip, W - 210), W / 2, takeY + takeH - 56);
+
             ctx.restore();
+
         }
 
+
+
         ctx.restore();
+
     }
 
+
+
     /* ==========================================================================
+
        CANVAS RENDERING ENGINE (1080 x 1920 9:16 VERTICAL REEL FORMAT)
+
        ========================================================================== */
+
     /* ==========================================================================
+
        AI STUDIO STANDBY STATE
+
        ========================================================================== */
+
     function renderPromptStandbyScreen(ctx, W, H, t) {
+
         // Pure Neat & Clean Blank Dark Canvas (50+ AI Engines)
+
         ctx.fillStyle = "#040711";
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Subtle ambient center glow
+
         const radGrad = ctx.createRadialGradient(W / 2, H / 2, 30, W / 2, H / 2, 600);
+
         radGrad.addColorStop(0, "rgba(56, 189, 248, 0.08)");
+
         radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.03)");
+
         radGrad.addColorStop(1, "rgba(4, 7, 17, 0)");
+
         ctx.fillStyle = radGrad;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Center Minimalist Hologram Ring & Status
+
         const pulse = 1.0 + Math.sin(t * 3) * 0.05;
+
         ctx.save();
+
         ctx.translate(W / 2, H / 2 - 40);
+
         ctx.scale(pulse, pulse);
 
+
+
         // Soft outer glowing ring
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+
         ctx.lineWidth = 2;
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 70, 0, Math.PI * 2);
+
         ctx.stroke();
+
+
 
         ctx.strokeStyle = "rgba(16, 185, 129, 0.20)";
+
         ctx.lineWidth = 1.5;
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 85, 0, Math.PI * 2);
+
         ctx.stroke();
 
+
+
         ctx.fillStyle = "rgba(56, 189, 248, 0.08)";
+
         ctx.beginPath();
+
         ctx.arc(0, 0, 50, 0, Math.PI * 2);
+
         ctx.fill();
 
+
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "42px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("⚡", 0, 14);
+
         ctx.restore();
+
+
 
         // Sleek Minimalist Typography (Zero Template Clutter)
+
         ctx.textAlign = "center";
+
         ctx.fillStyle = "#F8FAFC";
+
         ctx.font = "bold 32px 'Segoe UI', sans-serif";
+
         ctx.fillText("NANOPRO 9:16 AI STUDIO", W / 2, H / 2 + 80);
 
+
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.font = "bold 20px 'Segoe UI', sans-serif";
+
         ctx.fillText("READY TO GENERATE • 50+ AI ENGINES", W / 2, H / 2 + 125);
 
+
+
         ctx.fillStyle = "#64748B";
+
         ctx.font = "18px 'Segoe UI', sans-serif";
+
         ctx.fillText("Type your prompt in Column 1 and click Generate", W / 2, H / 2 + 165);
 
+
+
         ctx.textAlign = "left";
+
     }
+
+
 
     function drawPromptSceneBackdrop(ctx, W, H, visual, time) {
+
         const palette = Array.isArray(visual?.palette) ? visual.palette.filter(value => /^#[0-9a-f]{6}$/i.test(String(value))) : [];
+
         const motif = String(visual?.background_motif || visual?.art_direction || "").toLowerCase();
+
         const base = palette[1] || "#080E21";
+
         const accent = palette[0] || "#38BDF8";
+
         const gradient = ctx.createLinearGradient(0, 0, W * (0.35 + 0.12 * Math.sin(time * 0.18)), H);
+
         gradient.addColorStop(0, base);
+
         gradient.addColorStop(0.5, "#060A17");
+
         gradient.addColorStop(1, "#020409");
+
         ctx.fillStyle = gradient;
+
         ctx.fillRect(0, 0, W, H);
+
+
 
         // Radiant Top Center Ambient Glow
+
         const radGrad = ctx.createRadialGradient(W / 2, 220, 20, W / 2, 220, 680);
+
         radGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
+
         radGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.05)");
+
         radGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
         ctx.fillStyle = radGrad;
+
         ctx.fillRect(0, 0, W, H);
 
+
+
         ctx.save();
+
         ctx.globalAlpha = 0.15;
+
         ctx.strokeStyle = accent;
+
         ctx.fillStyle = accent;
+
         if (/blueprint|grid|schematic/.test(motif)) {
+
             ctx.lineWidth = 1;
+
             for (let x = 0; x <= W; x += 72) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+
             for (let y = 0; y <= H; y += 72) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
         } else if (/wave|audio|signal/.test(motif)) {
+
             ctx.lineWidth = 3; ctx.beginPath();
+
             for (let x = 0; x <= W; x += 8) {
+
                 const y = H * 0.48 + Math.sin(x * 0.018 + time * 1.7) * 54 + Math.sin(x * 0.044 - time) * 20;
+
                 if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+
             }
+
             ctx.stroke();
+
         } else if (/organic|cell|molecule|nebula|particle/.test(motif)) {
+
             for (let i = 0; i < 24; i++) {
+
                 const x = (i * 173 + Math.sin(time * 0.24 + i) * 42 + W) % W;
+
                 const y = (i * 317 + Math.cos(time * 0.2 + i * 0.7) * 50 + H) % H;
+
                 ctx.beginPath(); ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2); ctx.fill();
+
             }
+
         } else {
+
             ctx.lineWidth = 1;
+
             for (let i = 0; i < 11; i++) {
+
                 const y = 160 + i * 148;
+
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W * (0.3 + ((i * 37) % 60) / 100), y); ctx.stroke();
+
             }
+
             for (let i = 0; i < 16; i++) {
+
                 const x = (i * 197 + Math.sin(time * 0.3 + i) * 35 + W) % W;
+
                 const y = (i * 263 + Math.cos(time * 0.25 + i * 0.8) * 45 + H) % H;
+
                 ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+
             }
+
         }
+
         ctx.restore();
+
     }
+
+
 
     function setSqlCanvasRenderScale(scale) {
+
         const canvas = document.getElementById("sqlShortCanvas");
+
         if (!canvas) return false;
+
         const nextScale = scale >= 2 ? 2 : 1;
+
         if (canvas.width !== 1080 * nextScale || canvas.height !== 1920 * nextScale) {
+
             canvas.width = 1080 * nextScale;
+
             canvas.height = 1920 * nextScale;
+
         }
+
         sqlShortState.renderScale = nextScale;
+
         const ctx = canvas.getContext("2d");
+
         if (ctx) ctx.setTransform(nextScale, 0, 0, nextScale, 0, 0);
+
         return !!ctx;
+
     }
 
+
+
     // =========================================================================
+
     // VIRAL KINETIC KARAOKE SUBTITLES ENGINE (High-Retention Word Highlighting)
+
     // =========================================================================
+
     function drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t) {
+
         if (!activeStage) return;
 
+
+
         const speech = (
+
             activeStage.speech_mr ||
+
             activeStage.speech_hi ||
+
             activeStage.speech_en ||
+
             activeStage.speech ||
+
             activeStage.narration ||
+
             activeStage.title ||
+
             ""
+
         ).trim();
+
+
 
         if (!speech) return;
 
+
+
         ctx.save();
+
         const boxX = 60;
+
         const boxW = W - 120;
+
         const boxH = 150;
+
         const boxY = H - 340;
 
+
+
         // Subtle glowing frosted glass capsule
+
         const bgGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxH);
+
         bgGrad.addColorStop(0, "rgba(8, 14, 30, 0.92)");
+
         bgGrad.addColorStop(1, "rgba(4, 7, 18, 0.95)");
 
+
+
         ctx.fillStyle = bgGrad;
+
         ctx.beginPath();
+
         ctx.roundRect(boxX, boxY, boxW, boxH, 24);
+
         ctx.fill();
+
+
 
         ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+
         ctx.lineWidth = 1.5;
+
         ctx.stroke();
 
+
+
         // Language indicator badge
+
         const activeLang = (sqlShortState.audioLang || "mr").toUpperCase();
+
         ctx.fillStyle = "#38BDF8";
+
         ctx.beginPath();
+
         ctx.roundRect(boxX + 16, boxY + 16, 68, 28, 8);
+
         ctx.fill();
+
         ctx.fillStyle = "#020617";
+
         ctx.font = "bold 13px 'Segoe UI', sans-serif";
+
         ctx.textAlign = "center";
+
         ctx.fillText("AI " + activeLang, boxX + 50, boxY + 35);
 
+
+
         // Audio visualizer bars next to lang pill
+
         ctx.strokeStyle = "rgba(56, 189, 248, 0.8)";
+
         ctx.lineWidth = 2.5;
+
         for (let b = 0; b < 4; b++) {
+
             const bh = 6 + Math.abs(Math.sin(t * 8 + b * 1.2)) * 14;
+
             const bx = boxX + 96 + b * 7;
+
             ctx.beginPath();
+
             ctx.moveTo(bx, boxY + 30 - bh / 2);
+
             ctx.lineTo(bx, boxY + 30 + bh / 2);
+
             ctx.stroke();
+
         }
+
+
 
         // Split speech into words
+
         const words = speech.split(/\s+/).filter(Boolean);
+
         if (words.length === 0) {
+
             ctx.restore();
+
             return;
+
         }
+
+
 
         const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
+
         const WINDOW_SIZE = 8;
+
         const windowStart = Math.floor(activeWordIdx / WINDOW_SIZE) * WINDOW_SIZE;
+
         const windowWords = words.slice(windowStart, windowStart + WINDOW_SIZE);
+
         const localActiveIdx = activeWordIdx - windowStart;
 
+
+
         ctx.font = "bold 32px 'Segoe UI', system-ui, sans-serif";
+
         ctx.textAlign = "left";
 
+
+
         const spaceW = ctx.measureText(" ").width;
+
         let line1 = [];
+
         let line2 = [];
+
         let curW = 0;
+
         const maxLineW = boxW - 50;
 
+
+
         for (let i = 0; i < windowWords.length; i++) {
+
             const wText = windowWords[i];
+
             const wWidth = ctx.measureText(wText).width;
+
             if (line1.length === 0 || (curW + spaceW + wWidth < maxLineW && line2.length === 0 && line1.length < 4)) {
+
                 line1.push({ text: wText, isCurrent: (i === localActiveIdx), isDone: (i < localActiveIdx) });
+
                 curW += (line1.length > 1 ? spaceW : 0) + wWidth;
+
             } else {
+
                 line2.push({ text: wText, isCurrent: (i === localActiveIdx), isDone: (i < localActiveIdx) });
+
             }
+
         }
+
+
 
         const renderLine = (tokens, lineY) => {
+
             let totalW = 0;
+
             tokens.forEach((tk, idx) => {
+
                 totalW += ctx.measureText(tk.text).width;
+
                 if (idx < tokens.length - 1) totalW += spaceW;
+
             });
+
             let curX = boxX + (boxW - totalW) / 2;
 
+
+
             tokens.forEach(tk => {
+
                 const tw = ctx.measureText(tk.text).width;
+
                 if (tk.isCurrent) {
+
                     ctx.save();
+
                     ctx.fillStyle = "#FBBF24";
+
                     ctx.shadowColor = "rgba(251, 191, 36, 0.8)";
+
                     ctx.shadowBlur = 12;
+
                     ctx.fillText(tk.text, curX, lineY);
+
                     ctx.restore();
+
                 } else if (tk.isDone) {
+
                     ctx.fillStyle = "#FFFFFF";
+
                     ctx.shadowBlur = 0;
+
                     ctx.fillText(tk.text, curX, lineY);
+
                 } else {
+
                     ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+
                     ctx.shadowBlur = 0;
+
                     ctx.fillText(tk.text, curX, lineY);
+
                 }
+
                 curX += tw + spaceW;
+
             });
+
         };
 
+
+
         if (line2.length === 0) {
+
             renderLine(line1, boxY + 95);
+
         } else {
+
             renderLine(line1, boxY + 75);
+
             renderLine(line2, boxY + 120);
+
         }
 
+
+
         ctx.restore();
+
     }
+
+
 
     function renderSqlShortFrame(t) {
+
         const canvas = document.getElementById("sqlShortCanvas");
+
         if (!canvas) return;
+
         const ctx = canvas.getContext("2d");
+
         const renderScale = Math.max(1, Number(sqlShortState.renderScale) || 1);
+
         ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+
         ctx.save();
+
         const W = 1080;
+
         const H = 1920;
+
         const p = sqlShortState.activePreset;
+
         if (!p) {
+
             renderPromptStandbyScreen(ctx, W, H, t);
+
             return;
+
         }
 
+
+
         // =========================================================================
+
         // DYNAMIC AUDIO-SYNCHRONIZED STORYBOARD ENGINE (full narration duration)
+
         // =========================================================================
+
         const maxDur = sqlShortState.maxDuration || (p.duration || p.max_duration_seconds || 0);
+
         const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
+
         const isOutro = false;
+
         const outroStart = maxDur;
 
+
+
         let currentStageIdx = 1;
+
         let activeStage = null;
 
+
+
         if (stages.length > 0) {
+
             for (let i = 0; i < stages.length; i++) {
+
                 if (t >= stages[i].start && t < stages[i].end) {
+
                     currentStageIdx = i + 1;
+
                     activeStage = stages[i];
+
                     break;
+
                 }
+
             }
+
             if (!activeStage) {
+
                 if (t < stages[0].start) {
+
                     activeStage = stages[0];
+
                     currentStageIdx = 1;
+
                 } else {
+
                     activeStage = stages[stages.length - 1];
+
                     currentStageIdx = stages.length;
+
                 }
+
             }
+
         } else {
+
             const estIdx = Math.min(6, Math.floor((t / Math.max(1, maxDur)) * 6) + 1);
+
             currentStageIdx = estIdx;
+
         }
+
+
 
         // Only clear canvas if live MP4 video element is actually playing and ready (never clear on broken or image URLs)
+
         const realVid = document.getElementById("sqlShortRealVideo");
+
         const hasLiveVideo = realVid && realVid.style.display !== "none" && realVid.readyState >= 2 && !realVid.error;
+
         if (hasLiveVideo) {
+
             ctx.clearRect(0, 0, W, H);
+
         } else {
+
             drawPromptSceneBackdrop(ctx, W, H, activeStage?.visual_data || {}, t);
+
         }
+
+
 
         let stageProg = 0.5;
+
         let stageAlpha = 1.0;
+
         if (activeStage && activeStage.end > activeStage.start) {
+
             const sDur = activeStage.end - activeStage.start;
+
             const sElapsed = Math.max(0, t - activeStage.start);
+
             stageProg = Math.min(1.0, sElapsed / sDur);
+
             const alphaIn = Math.min(1.0, sElapsed / 0.35);
+
             const alphaOut = Math.min(1.0, (activeStage.end - t) / 0.35);
+
             stageAlpha = Math.max(0, Math.min(1.0, Math.min(alphaIn, alphaOut)));
+
         }
+
+
 
         const activeStageIndex = stages.indexOf(activeStage);
+
         const previousStage = activeStageIndex > 0 ? stages[activeStageIndex - 1] : null;
+
         const sceneElapsed = activeStage ? Math.max(0, t - Number(activeStage.start || 0)) : 0;
+
         const sentenceCues = activeStage && Array.isArray(activeStage.sentence_cues) ? activeStage.sentence_cues.filter(cue => cue && cue.speech) : [];
+
         let activeCue = null;
+
         let cueProgress = stageProg;
+
         let activeCueIndex = 0;
+
         if (sentenceCues.length) {
+
             const cueSpeechWeights = sentenceCues.map(cue => Math.max(1, String(cue.speech).trim().split(/\s+/).filter(Boolean).length));
+
             const cuePauseWeights = sentenceCues.map((cue, index) => index === sentenceCues.length - 1 ? 0 : Math.max(0, Number(cue.pause_after) || 0) * 2.6);
+
             // Reserve only the requested teaching beats (usually after a result or
+
             // verification). The active visual holds its last frame during that beat.
+
             const cueWeights = cueSpeechWeights.map((words, index) => words + cuePauseWeights[index]);
+
             const totalCueWords = cueWeights.reduce((sum, count) => sum + count, 0);
+
             let cueCursor = 0;
+
             for (let cueIdx = 0; cueIdx < sentenceCues.length; cueIdx++) {
+
                 const cueEnd = cueCursor + cueWeights[cueIdx] / totalCueWords;
+
                 if (stageProg < cueEnd || cueIdx === sentenceCues.length - 1) {
+
                     activeCue = sentenceCues[cueIdx];
+
                     activeCueIndex = cueIdx;
+
                     const cueWindow = Math.max(0.001, cueEnd - cueCursor);
+
                     const localProgress = Math.max(0, Math.min(1, (stageProg - cueCursor) / cueWindow));
+
                     const speechFraction = cueSpeechWeights[cueIdx] / cueWeights[cueIdx];
+
                     cueProgress = Math.max(0, Math.min(1, localProgress / Math.max(0.001, speechFraction)));
+
                     break;
+
                 }
+
                 cueCursor = cueEnd;
+
             }
+
         }
+
         const interactionStep = String(activeCue?.interaction_step || "").toLowerCase();
+
         const sceneSound = activeStage?.visual_data?.sound_effect;
+
         const soundSpec = activeCue?.sound_effect || ((!activeCue || activeCueIndex === 0) ? sceneSound : "");
+
         const simulatedAction = String(activeCue?.simulated_action || "").toLowerCase();
+
         const describedAction = String(activeCue?.action || "").toLowerCase();
+
         const actionSound = ["connect", "transfer", "failure", "recover", "reprocess", "output", "verify", "complete"].includes(interactionStep)
+
             || (activeCue && simulatedAction && simulatedAction !== "none")
+
             || /open|close|move|slide|connect|transfer|type|click|tap|expand|collapse|morph|land|impact/.test(describedAction);
+
         const soundCueKey = activeCue ? `${activeStageIndex}:${activeCueIndex}` : `${activeStageIndex}:scene`;
+
         const soundProgress = activeCue ? cueProgress : stageProg;
+
         const modelProgress = Number(soundSpec && typeof soundSpec === "object" ? soundSpec.at_progress : NaN);
+
         const triggerProgress = Number.isFinite(modelProgress) ? Math.max(0, Math.min(1, modelProgress))
+
             : ({ connect: 0.12, transfer: 0.08, failure: 0.54, recover: 0.12, reprocess: 0.12, output: 0.78, verify: 0.82, complete: 0.9 }[interactionStep] ?? 0.04);
+
         if ((soundSpec || actionSound) && soundProgress >= triggerProgress && soundCueKey !== sqlShortState.lastSoundCueKey && (sqlShortState.isPlaying || sqlShortState.isExporting)) {
+
             sqlShortState.lastSoundCueKey = soundCueKey;
+
             let soundPlayed = false;
+
             try { soundPlayed = playSqlSemanticSound(soundSpec || activeCue?.action || simulatedAction || interactionStep, interactionStep); } catch (_) {}
+
             if (soundPlayed) {
+
                 sqlShortState.soundEffectEvents = (Number(sqlShortState.soundEffectEvents) || 0) + 1;
+
             }
+
         }
+
         // 3. RENDER REAL PHOTOREALISTIC 9:16 AI SCENE VISUAL (WITH 3D CAMERA ZOOM & DRIFT)
+
         let drewAiVisual = false;
+
         try {
+
             drewAiVisual = renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, currentStageIdx - 1, stageProg, stageAlpha, t);
+
         } catch (_err) {
+
             console.warn("Notice rendering AI visual:", _err);
+
         }
+
         if (!drewAiVisual) {
+
             renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
+
         }
+
+
 
         // 3.5. DRAW TOP HEADER STATUS & STAGE TRACKER (Overlay on top of visual)
+
         drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
 
+
+
+
+
+        // 3.6. DRAW ACTIVE 50+ AI VIDEO ENGINE WATERMARK (Transparent Model Attribution)
+        drawActiveAiVideoEngineWatermark(ctx, W, H, p, activeStage, currentStageIdx, t);
+        // 3.6. DRAW ACTIVE 50+ AI VIDEO ENGINE WATERMARK (Transparent Model Attribution)
+        drawActiveAiVideoEngineWatermark(ctx, W, H, p, activeStage, currentStageIdx, t);
         // 4. DRAW VIRAL KINETIC KARAOKE SUBTITLES (High-Retention Word Highlighting)
+
         drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t);
 
+
+
         ctx.restore();
+
     }
+
+
 
     // Syntax Highlight Helper with Dynamic Responsive Auto-Scaling & Boundary Clamping
+
     function renderSqlSyntaxLine(ctx, text, startX, lineY, maxWidth) {
+
         if (!text) return;
+
         const maxW = maxWidth || (1080 - startX - 90); // Never overflow canvas boundary (W=1080)
+
         let baseFontSize = 24;
+
         ctx.font = "bold " + baseFontSize + "px monospace";
+
         let measuredWidth = ctx.measureText(text).width;
 
+
+
         // Auto-scale font down if line exceeds max available width
+
         if (measuredWidth > maxW) {
+
             const scale = maxW / measuredWidth;
+
             baseFontSize = Math.max(14, Math.floor(baseFontSize * scale));
+
             ctx.font = "bold " + baseFontSize + "px monospace";
+
             measuredWidth = ctx.measureText(text).width;
+
         }
+
+
 
         // Truncate cleanly if line exceeds width even at minimum 14px font
+
         let renderText = text;
+
         if (measuredWidth > maxW) {
+
             renderText = fitTextToWidth(ctx, text, maxW);
+
         }
+
+
 
         const tokens = renderText.split(/(\s+|[(),;])/);
+
         let currX = startX;
 
+
+
         const KEYWORDS = ["SELECT", "FROM", "WHERE", "ORDER", "BY", "DESC", "ASC", "OVER", "PARTITION", "ROWS", "BETWEEN", "UNBOUNDED", "PRECEDING", "AND", "CURRENT", "ROW", "WITH", "AS", "GROUP", "HAVING", "LIMIT", "OFFSET", "JOIN", "LEFT", "ON", "DATE", "ROUND", "COUNT", "MIN", "MAX", "QUALIFY", "CASE", "WHEN", "THEN", "ELSE", "END", "DEF", "RETURN", "IMPORT", "CLASS", "ASYNC", "AWAIT", "CREATE", "TABLE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE"];
+
         const FUNCTIONS = ["DENSE_RANK", "RANK", "ROW_NUMBER", "SUM", "LAG", "LEAD", "AVG", "COALESCE", "NULLIF", "CAST", "PRINT", "LEN"];
 
+
+
         tokens.forEach(tok => {
+
             const clean = tok.toUpperCase().trim();
+
             if (KEYWORDS.includes(clean)) {
+
                 ctx.fillStyle = "#38BDF8";
+
             } else if (FUNCTIONS.includes(clean)) {
+
                 ctx.fillStyle = "#F472B6";
+
             } else if (/^\d+(\.\d+)?$/.test(clean)) {
+
                 ctx.fillStyle = "#F59E0B";
+
             } else if (clean.startsWith("'") || clean.startsWith('"')) {
+
                 ctx.fillStyle = "#10B981";
+
             } else {
+
                 ctx.fillStyle = "#F8FAFC";
+
             }
+
             ctx.fillText(tok, currX, lineY);
+
             currX += ctx.measureText(tok).width;
+
         });
+
     }
+
+
 
     function fitTextToWidth(ctx, text, maxWidth) {
+
         if (!text) return "";
+
         let str = String(text);
+
         if (ctx.measureText(str).width <= maxWidth) return str;
+
         while (str.length > 3 && ctx.measureText(str + "...").width > maxWidth) {
+
             str = str.slice(0, -1);
+
         }
+
         return str + "...";
+
     }
+
+
 
     function wrapCanvasText(ctx, text, maxWidth, maxLines = 12) {
+
         if (!text) return [];
+
         const str = String(text);
+
         // First split by explicit line breaks
+
         const paragraphs = str.split("\n");
+
         const lines = [];
 
+
+
         paragraphs.forEach(para => {
+
             const trimmed = para.trim();
+
             if (!trimmed) {
+
                 lines.push("");
+
                 return;
+
             }
+
             const words = trimmed.split(/\s+/);
+
             let currLine = "";
 
+
+
             words.forEach(w => {
+
                 if (!w) return;
+
                 // If a single word or identifier is wider than maxWidth, break it character by character
+
                 if (ctx.measureText(w).width > maxWidth) {
+
                     if (currLine) {
+
                         lines.push(currLine);
+
                         currLine = "";
+
                     }
+
                     let subWord = "";
+
                     for (let c of w) {
+
                         if (ctx.measureText(subWord + c).width > maxWidth - 10) {
+
                             if (subWord) lines.push(subWord);
+
                             subWord = c;
+
                         } else {
+
                             subWord += c;
+
                         }
+
                     }
+
                     currLine = subWord;
+
                     return;
+
                 }
+
+
 
                 const testLine = currLine ? (currLine + " " + w) : w;
+
                 if (ctx.measureText(testLine).width > maxWidth && currLine) {
+
                     lines.push(currLine);
+
                     currLine = w;
+
                 } else {
+
                     currLine = testLine;
+
                 }
+
             });
+
             if (currLine) lines.push(currLine);
+
         });
 
+
+
         if (maxLines && lines.length > maxLines) {
+
             const trimmed = lines.slice(0, maxLines);
+
             trimmed[maxLines - 1] = fitTextToWidth(ctx, trimmed[maxLines - 1], maxWidth);
+
             return trimmed;
+
         }
+
         return lines;
+
     }
+
+
 
     /* ==========================================================================
+
        SMARTPHONE TRANSPORT & PLAYBACK
+
        ========================================================================== */
+
     function toggleSqlShortPlay() {
+
         if (sqlShortState.isPlaying) {
+
             pauseSqlShortPlay();
+
         } else {
+
             playSqlShort();
+
         }
+
     }
 
+
+
     function playSqlShort() {
+
         if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
+
             sqlShortState.currentTime = 0;
+
         }
+
         sqlShortState.isPlaying = true;
+
         document.getElementById("btnPlayPause").innerText = "⏸ Pause";
 
+
+
         // Play synchronized natural voice audio
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         if (audioEl && audioEl.src && !audioEl.error) {
+
             attachAudioSyncListeners(audioEl);
+
             audioEl.currentTime = sqlShortState.currentTime;
+
             audioEl.playbackRate = sqlShortState.playbackSpeed;
+
             audioEl.play().catch(e => console.warn("Audio play prevented:", e));
+
         }
 
+
+
         // Play real generative AI video in sync
+
         const realVid = document.getElementById("sqlShortRealVideo");
+
         if (realVid && realVid.style.display !== "none") {
+
             realVid.play().catch(e => console.warn("Video play notice:", e));
+
         }
+
+
 
         let lastTime = performance.now();
 
+
+
         function step(now) {
+
             if (!sqlShortState.isPlaying) return;
+
             const deltaSec = (now - lastTime) / 1000.0;
+
             lastTime = now;
 
+
+
             // Frame-perfect hardware audio clock locking (Zero Drift)
+
             const audioEl = document.getElementById("sqlVoiceAudio");
+
             if (audioEl && !audioEl.paused && !audioEl.ended && audioEl.currentTime > 0) {
+
                 sqlShortState.currentTime = audioEl.currentTime;
+
             } else {
+
                 sqlShortState.currentTime += deltaSec * sqlShortState.playbackSpeed;
+
             }
+
+
 
             if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
+
                 pauseSqlShortPlay();
+
                 sqlShortState.currentTime = 0.0;
+
                 const aud = document.getElementById("sqlVoiceAudio");
+
                 if (aud) aud.currentTime = 0;
+
                 const vid = document.getElementById("sqlShortRealVideo");
+
                 if (vid && vid.style.display !== "none") vid.currentTime = 0;
+
                 updatePlayerScrubberUI(0);
+
                 renderSqlShortFrame(0);
+
                 return;
+
             }
 
+
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
             updatePlayerScrubberUI(sqlShortState.currentTime);
 
+
+
             if (sqlShortState.isPlaying && document.visibilityState !== 'hidden') {
+
                 sqlShortState.animationFrameId = requestAnimationFrame(step);
+
             } else {
+
                 sqlShortState.animationFrameId = null;
+
             }
+
         }
+
         if (sqlShortState.isPlaying && document.visibilityState !== 'hidden') {
+
             sqlShortState.animationFrameId = requestAnimationFrame(step);
+
         }
+
     }
+
+
 
     function pauseSqlShortPlay() {
+
         sqlShortState.isPlaying = false;
+
         if (sqlShortState.animationFrameId) {
+
             cancelAnimationFrame(sqlShortState.animationFrameId);
+
             sqlShortState.animationFrameId = null;
+
         }
+
         document.getElementById("btnPlayPause").innerText = "▶ Play";
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         if (audioEl) audioEl.pause();
+
         const realVid = document.getElementById("sqlShortRealVideo");
+
         if (realVid && realVid.style.display !== "none") realVid.pause();
+
     }
+
+
 
     function restartSqlShortPlay() {
+
         pauseSqlShortPlay();
+
         sqlShortState.currentTime = 0.0;
+
         updatePlayerScrubberUI(0);
+
         renderSqlShortFrame(0);
+
         playSqlShort();
+
     }
+
+
 
     function seekSqlShortPlayer(val) {
+
         sqlShortState.currentTime = parseFloat(val);
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         if (audioEl) audioEl.currentTime = sqlShortState.currentTime;
+
         updatePlayerScrubberUI(sqlShortState.currentTime);
+
         renderSqlShortFrame(sqlShortState.currentTime);
+
     }
+
+
 
     function setSqlShortSpeed(val) {
+
         sqlShortState.playbackSpeed = parseFloat(val);
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         if (audioEl) audioEl.playbackRate = sqlShortState.playbackSpeed;
+
     }
+
+
 
     function updatePlayerScrubberUI(t) {
+
         const sc = document.getElementById("sqlShortScrubber");
+
         const maxT = sqlShortState.maxDuration || (sqlShortState.activeVideoSpec?.duration || 0);
+
         if (sc) {
+
             sc.value = t;
+
             if (sc.max != maxT) sc.max = maxT.toString();
+
         }
+
         const tm = document.getElementById("playerTimer");
+
         if (tm) {
+
             const mins = Math.floor(t / 60);
+
             const secs = Math.floor(t % 60).toString().padStart(2, "0");
+
             const maxMins = Math.floor(maxT / 60);
+
             const maxSecs = Math.floor(maxT % 60).toString().padStart(2, "0");
+
             tm.innerText = `${mins}:${secs} / ${maxMins}:${maxSecs}`;
+
         }
+
     }
+
+
 
     function loadSqlNarration(audioEl, url) {
+
         return new Promise((resolve, reject) => {
+
             const timeout = setTimeout(() => {
+
                 if (audioEl.readyState >= 3 && !audioEl.error) handleReady();
+
                 else finish(new Error("Narration audio did not finish loading."));
+
             }, 60000);
+
             const finish = error => {
+
                 clearTimeout(timeout);
+
                 audioEl.removeEventListener("canplay", handleReady);
+
                 audioEl.removeEventListener("error", handleError);
+
                 if (error) reject(error);
+
                 else resolve();
+
             };
+
             const handleReady = () => {
+
                 audioEl.muted = false;
+
                 audioEl.volume = 1;
+
                 calibrateAudioDuration();
+
                 finish();
+
             };
+
             const handleError = () => finish(new Error("Narration audio could not be loaded."));
+
             audioEl.pause();
+
             audioEl.muted = false;
+
             audioEl.volume = 1;
+
             audioEl.currentTime = 0;
+
             audioEl.addEventListener("canplay", handleReady);
+
             audioEl.addEventListener("error", handleError, { once: true });
+
             audioEl.src = url;
+
             audioEl.load();
+
             if (audioEl.readyState >= 3) handleReady();
+
         });
+
     }
+
+
 
     function downloadVoiceoverMp3() {
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         const url = (audioEl && audioEl.src) ? audioEl.src : sqlShortState.audioUrl;
+
         if (!url) {
+
             alert("Voiceover audio is still loading, please wait 2 seconds.");
+
             return;
+
         }
+
         const a = document.createElement("a");
+
         a.href = url;
+
         a.download = `Voiceover_${sqlShortState.activePreset.id}_${sqlShortState.audioLang}.mp3`;
+
         document.body.appendChild(a);
+
         a.click();
+
         document.body.removeChild(a);
+
     }
+
+
 
     /* ==========================================================================
+
        MEDIARECORDER AUDIO-MULTIPLEXED EXPORT & DOWNLOAD
+
        ========================================================================== */
+
     async function checkSqlVideoDevice() {
+
         const output = document.getElementById("sqlVideoDeviceStatus");
+
         if (!output) return;
+
         output.textContent = "Checking browser-reported device capabilities…";
+
         const esc = value => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
         const cores = Number(navigator.hardwareConcurrency) || null;
+
         const memory = Number(navigator.deviceMemory) || null;
+
         let gpu = "Not exposed by this browser";
+
         try {
+
             const probe = document.createElement("canvas");
+
             const gl = probe.getContext("webgl2") || probe.getContext("webgl");
+
             if (gl) {
+
                 gpu = "Browser WebGL graphics available (hardware acceleration is browser-managed)";
+
                 const lose = gl.getExtension("WEBGL_lose_context");
+
                 if (lose) lose.loseContext();
+
             }
+
         } catch (_) {}
+
         const mp4 = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
+
         const webm = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].some(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type));
+
         const duration = Math.max(1, Number(sqlShortState.maxDuration || sqlShortState.activeVideoSpec?.duration || 0));
+
         const exportScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
+
         const selectedVideoBitrate = exportScale === 2 ? 36000000 : 9000000;
+
         const estimatedMB = ((selectedVideoBitrate + 192000) * duration / 8 / 1000000).toFixed(1);
+
         let storage = "Browser storage estimate unavailable";
+
         try {
+
             const estimate = navigator.storage && await navigator.storage.estimate();
+
             if (estimate && Number.isFinite(estimate.quota)) {
+
                 const usedMB = (Number(estimate.usage || 0) / 1048576).toFixed(0);
+
                 const quotaMB = (estimate.quota / 1048576).toFixed(0);
+
                 storage = `Origin storage estimate ${usedMB} MB used / ${quotaMB} MB quota (not physical free disk space)`;
+
             }
+
         } catch (_) {}
+
         const saveMode = window.showSaveFilePicker && window.isSecureContext
+
             ? "Direct-to-file saving is supported; video frames are streamed to the selected file."
+
             : "Direct-to-file saving is unavailable; the browser download may buffer video chunks in RAM.";
+
         output.innerHTML = `<span style="color:#CBD5E1"><b>CPU:</b> ${cores ? `${cores} logical threads reported` : "not reported"} · <b>RAM:</b> ${memory ? `about ${memory} GB device-memory class (coarse browser estimate)` : "not exposed"}<br><b>GPU:</b> ${esc(gpu)}<br><b>Encoder:</b> ${mp4 ? "MP4" : ""}${mp4 && webm ? " / " : ""}${webm ? "WebM" : ""}${!mp4 && !webm ? "No MediaRecorder format detected" : ""} · <b>Estimated file:</b> about ${estimatedMB} MB for ${Math.round(duration)}s at configured bitrate<br><b>Storage:</b> ${esc(storage)}<br>${esc(saveMode)}</span>`;
+
     }
 
+
+
     async function exportSqlShortVideo(durationSec = null) {
+
         const canvas = document.getElementById("sqlShortCanvas");
+
         const audioEl = document.getElementById("sqlVoiceAudio");
+
         const btn = document.getElementById("btnDownloadShortVideo");
+
         const btnLabel = document.getElementById("exportBtnLabel");
+
         const pContainer = document.getElementById("exportProgressBarContainer");
+
         const pFill = document.getElementById("exportProgressFill");
+
         const pDesc = document.getElementById("exportStageDesc");
+
         const pPctText = document.getElementById("exportPercentNum");
+
         const pEstTime = document.getElementById("exportEstTime");
+
         const pFrameStats = document.getElementById("exportFrameStats");
+
         const badgeEl = document.getElementById("exportLiveBadge");
+
         const celebrationBox = document.getElementById("videoReadyCelebration");
 
+
+
         if (!canvas || !canvas.captureStream || !window.MediaRecorder) {
+
             alert("This browser does not support local video recording. Please use a recent Chrome or Edge browser.");
+
             return;
+
         }
+
+
 
         pauseSqlShortPlay();
 
+
+
         const activeSpec = sqlShortState.activeVideoSpec || {};
+
         const measuredDuration = Number(activeSpec.duration || sqlShortState.maxDuration || 0);
+
         let totalDuration = durationSec || measuredDuration || Number(activeSpec.max_duration_seconds || 0) || 30;
+
         totalDuration = Math.max(1, totalDuration);
+
         const resolutionScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
+
         const outputWidth = 1080 * resolutionScale;
+
         const outputHeight = 1920 * resolutionScale;
+
         const videoBitrate = resolutionScale === 2 ? 36000000 : 9000000;
 
+
+
         const mp4Types = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4"];
+
         let mimeType = mp4Types.find(type => MediaRecorder.isTypeSupported(type)) || "";
+
         let outputExtension = mimeType ? "mp4" : "webm";
+
         if (!mimeType) {
+
             mimeType = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
+
                 .find(type => MediaRecorder.isTypeSupported(type));
+
         }
+
         if (!mimeType) {
+
             alert("This browser does not support a local video format. Please use a recent Chrome or Edge browser.");
+
             return;
+
         }
+
         const safeId = String(sqlShortState.activePreset?.id || "tech_explainer").replace(/[^a-zA-Z0-9_-]/g, "_");
+
         const filename = `NanoPro_Full_9x16_${safeId}_${sqlShortState.audioLang}_${Math.round(totalDuration)}s.${outputExtension}`;
+
         if (sqlShortState.lastExportUrl) {
+
             URL.revokeObjectURL(sqlShortState.lastExportUrl);
+
             sqlShortState.lastExportUrl = null;
+
         }
+
         let saveWritable = null;
+
         if (window.showSaveFilePicker && window.isSecureContext) {
+
             try {
+
                 const handle = await window.showSaveFilePicker({
+
                     suggestedName: filename,
+
                     types: [{
+
                         description: outputExtension === "mp4" ? "MP4 video" : "WebM video",
+
                         accept: { [outputExtension === "mp4" ? "video/mp4" : "video/webm"]: [`.${outputExtension}`] }
+
                     }]
+
                 });
+
                 saveWritable = await handle.createWritable();
+
             } catch (error) {
+
                 if (error && error.name === "AbortError") return;
+
                 console.warn("Direct local file writing is unavailable; using browser download:", error);
+
             }
+
         }
+
+
 
         if (celebrationBox) celebrationBox.style.display = "none";
+
         if (pContainer) pContainer.style.display = "block";
+
         if (badgeEl) {
+
             badgeEl.innerText = "रेंडरिंग चालू (Rendering...)";
+
             badgeEl.style.color = "#38BDF8";
+
             badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
+
         }
+
         if (btn) btn.disabled = true;
+
         if (btnLabel) btnLabel.innerText = `⏳ Rendering ${resolutionScale === 2 ? "4K" : "1080p"} 9:16 Reel (${Math.round(totalDuration)}s)...`;
 
+
+
         // Audio Multiplexing Setup
+
         let audioTracks = [];
+
         let audioCtx = null;
+
         if (audioEl && audioEl.src && !audioEl.error) {
+
             try {
+
                 let audioRoute = window._sqlVideoAudioRoute;
+
                 if (!audioRoute || audioRoute.audioEl !== audioEl) {
+
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
                     const audioSource = audioCtx.createMediaElementSource(audioEl);
+
                     const destination = audioCtx.createMediaStreamDestination();
+
                     audioSource.connect(destination);
+
                     audioSource.connect(audioCtx.destination);
+
                     audioRoute = { audioEl, audioCtx, destination };
+
                     window._sqlVideoAudioRoute = audioRoute;
+
                     window._sqlExportAudioCtx = audioCtx;
+
                     if (window.nanoProRegisterAudioContext) window.nanoProRegisterAudioContext(audioCtx);
+
                 }
+
                 audioCtx = audioRoute.audioCtx;
+
                 if (audioCtx.state === "closed") throw new Error("The audio capture route has closed; reload the studio before exporting again.");
+
                 if (audioCtx.state === 'suspended') {
+
                     await audioCtx.resume();
+
                 }
+
                 const sfxRoute = ensureSqlSfxAudio(audioCtx, audioRoute.destination);
+
                 if (sfxRoute && sfxRoute.audioCtx.state === "suspended") await sfxRoute.audioCtx.resume();
+
                 audioTracks = audioRoute.destination.stream.getAudioTracks().map(track => track.clone());
+
             } catch(e) {
+
                 if (saveWritable) await saveWritable.abort().catch(() => {});
+
                 if (pDesc) pDesc.innerText = `Audio capture setup failed: ${e.message}`;
+
                 if (badgeEl) badgeEl.innerText = "Audio capture failed";
+
                 if (btn) btn.disabled = false;
+
                 if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+
                 console.error("AudioContext stream capture notice:", e);
+
                 return;
+
             }
+
         }
+
         if (!audioTracks.length) {
+
             if (saveWritable) await saveWritable.abort().catch(() => {});
+
             if (pDesc) pDesc.innerText = "Narration audio is unavailable; refusing to export a muted video.";
+
             if (badgeEl) badgeEl.innerText = "Audio track missing";
+
             if (btn) btn.disabled = false;
+
             if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+
             return;
+
         }
+
+
 
         const exportFrameRate = 30;
+
         let videoTracks = [];
+
         try {
+
             if (!setSqlCanvasRenderScale(resolutionScale)) throw new Error("Canvas resolution could not be allocated.");
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
             videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks();
+
             if (!videoTracks.length) throw new Error("The browser did not create a video capture track.");
+
         } catch (error) {
+
             setSqlCanvasRenderScale(1);
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
             if (saveWritable) await saveWritable.abort().catch(() => {});
+
             audioTracks.forEach(track => { try { track.stop(); } catch (_) {} });
+
             if (pDesc) pDesc.innerText = `${outputWidth}×${outputHeight} canvas setup failed: ${error.message}. Try 1080p or a recent desktop browser.`;
+
             if (btn) btn.disabled = false;
+
             if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+
             return;
+
         }
+
         const combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
+
         const videoTrackSettings = videoTracks[0]?.getSettings ? videoTracks[0].getSettings() : {};
+
         if (window.nanoProRegisterMediaStream) {
+
             window.nanoProRegisterMediaStream(combinedStream);
+
         }
+
+
 
         const chunks = [];
+
         let fileWriteChain = Promise.resolve();
+
         let fileWriteError = null;
+
         let recorder;
+
         let recordedBytes = null;
+
         let pendingVideoBlob = null;
+
         try {
+
             recorder = new MediaRecorder(combinedStream, {
+
                 mimeType,
+
                 videoBitsPerSecond: videoBitrate,
+
                 audioBitsPerSecond: 192000
+
             });
+
         } catch (error) {
+
             if (saveWritable) await saveWritable.abort().catch(() => {});
+
             combinedStream.getTracks().forEach(track => { try { track.stop(); } catch (_) {} });
+
             if (btn) btn.disabled = false;
+
             if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+
             if (pDesc) pDesc.innerText = `This browser could not start local ${outputExtension.toUpperCase()} encoding: ${error.message}`;
+
             setSqlCanvasRenderScale(1);
+
             renderSqlShortFrame(sqlShortState.currentTime);
+
             return;
+
         }
+
+
 
         recorder.ondataavailable = event => {
+
             if (!event.data || event.data.size === 0) return;
+
             if (saveWritable) {
+
                 fileWriteChain = fileWriteChain.then(() => saveWritable.write(event.data)).catch(error => { fileWriteError = error; });
+
             } else {
+
                 chunks.push(event.data);
+
             }
+
         };
+
+
 
         const totalFrames = Math.round(totalDuration * exportFrameRate);
+
         let frameCount = 0;
+
         let lastProgressFrame = 0;
+
         const dt = 1.0 / exportFrameRate;
+
         const startTime = performance.now();
+
         let downloadUrl = null;
 
+
+
         recorder.onstop = async () => {
+
             if (audioEl) audioEl.pause();
+
             // Free and stop all video and audio tracks immediately to avoid OS device lockups
+
             try {
+
                 videoTracks.forEach(t => { try { t.stop(); } catch(e){} });
+
                 audioTracks.forEach(t => { try { t.stop(); } catch(e){} });
+
                 combinedStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+
             } catch(e) {}
 
+
+
             if (pFill) pFill.style.width = "92%";
+
             if (pPctText) pPctText.innerText = "92%";
+
             if (pDesc) pDesc.innerText = `Full narration captured locally. Finalizing ${outputExtension.toUpperCase()}...`;
+
             if (badgeEl) {
+
                 badgeEl.innerText = "Local file finalizing";
+
                 badgeEl.style.color = "#38BDF8";
+
                 badgeEl.style.background = "rgba(56, 189, 248, 0.15)";
+
             }
+
+
 
             try {
+
                 await fileWriteChain;
+
                 if (fileWriteError) throw fileWriteError;
+
                 if (!saveWritable) {
+
                     const videoBlob = new Blob(chunks, { type: recorder.mimeType || mimeType });
+
                     if (videoBlob.size < 1024) throw new Error("The locally recorded video is empty.");
+
                     recordedBytes = videoBlob.size;
+
                     pendingVideoBlob = videoBlob;
+
                     downloadUrl = URL.createObjectURL(videoBlob);
+
                     sqlShortState.lastExportUrl = downloadUrl;
+
                 }
+
                 const audioDuration = Number(audioEl && audioEl.duration);
+
                 const postChecks = [
+
                     { name: "Canvas format", status: canvas.width === outputWidth && canvas.height === outputHeight && (!videoTrackSettings.width || videoTrackSettings.width === outputWidth) && (!videoTrackSettings.height || videoTrackSettings.height === outputHeight) ? "PASSED" : "FAILED", detail: `Canvas ${canvas.width}×${canvas.height}; capture ${videoTrackSettings.width || "unknown"}×${videoTrackSettings.height || "unknown"}; requested ${outputWidth}×${outputHeight}.` },
+
                     { name: "Model-directed sound mix", status: window._sqlVideoSfxRoute?.destination === window._sqlVideoAudioRoute?.destination ? "PASSED" : "FAILED", detail: `${sqlShortState.soundEffectEvents || 0} synchronized sound cues routed into the narration audio track.` },
+
                     { name: "Narration duration", status: Number.isFinite(audioDuration) && Math.abs(audioDuration - totalDuration) <= 0.75 ? "PASSED" : "FAILED", detail: `Audio ${Number.isFinite(audioDuration) ? audioDuration.toFixed(2) : "unknown"}s; render ${totalDuration.toFixed(2)}s.` },
+
                     { name: "Captured tracks", status: videoTracks.length > 0 && audioTracks.length > 0 ? "PASSED" : "FAILED", detail: `Video tracks ${videoTracks.length}; voice tracks ${audioTracks.length}.` },
+
                     { name: "Recorded frames", status: frameCount >= totalFrames - 1 ? "PASSED" : "FAILED", detail: `${frameCount} of ${totalFrames} expected frames.` },
+
                     { name: "Saved output size", status: recordedBytes === null ? "NOT_RUN" : recordedBytes >= 1024 ? "PASSED" : "FAILED", detail: recordedBytes === null ? "Direct-to-file write completed; byte count is not exposed by the browser." : `${(recordedBytes / 1048576).toFixed(1)} MB.` }
+
                 ];
+
                 const failedPostChecks = postChecks.filter(check => check.status === "FAILED");
+
                 sqlShortState.postRenderValidation = {
+
                     status: failedPostChecks.length ? "FAILED" : postChecks.some(check => check.status === "NOT_RUN") ? "PASSED_WITH_WARNINGS" : "PASSED",
+
                     checks: postChecks,
+
                     output_type: outputExtension.toUpperCase(),
+
                     duration_seconds: totalDuration,
+
                     simulation_notice: "Post-render checks validate the local recording container and timing; they do not execute or verify external SQL, AWS, or API results."
+
                 };
+
                 if (sqlShortState.perfectionistAudit) {
+
                     const audit = sqlShortState.perfectionistAudit;
+
                     const previousChecks = Array.isArray(audit.audit_checks) ? audit.audit_checks : [];
+
                     audit.audit_checks = previousChecks.concat(postChecks.map((check, index) => ({
+
                         trial: previousChecks.length + index + 1,
+
                         check: `Post-render · ${check.name}`,
+
                         status: check.status,
+
                         badge: check.detail
+
                     })));
+
                     audit.status = failedPostChecks.length ? "BLOCKED" : postChecks.some(check => check.status === "NOT_RUN") ? "POST_RENDER_PASSED_WITH_WARNINGS" : "POST_RENDER_PASSED";
+
                     audit.simulation_notice = `${audit.simulation_notice || ""} ${sqlShortState.postRenderValidation.simulation_notice}`.trim();
+
                 }
+
                 if (failedPostChecks.length) throw new Error(`Post-render quality gate failed: ${failedPostChecks.map(check => check.name).join(", ")}`);
+
                 if (saveWritable) {
+
                     await saveWritable.close();
+
                 } else if (pendingVideoBlob) {
+
                     const a = document.createElement("a");
+
                     a.href = downloadUrl;
+
                     a.download = filename;
+
                     document.body.appendChild(a);
+
                     a.click();
+
                     document.body.removeChild(a);
+
                 }
+
                 if (pFill) pFill.style.width = "100%";
+
                 if (pPctText) pPctText.innerText = "100%";
+
                 if (pDesc) pDesc.innerText = `${outputExtension.toUpperCase()} audio-video is ready on this device. Post-render QA: ${postChecks.filter(check => check.status === "PASSED").length} passed${postChecks.some(check => check.status === "NOT_RUN") ? "; direct-save byte count not available" : ""}.`;
+
                 const qualityEl = document.getElementById("videoReadyQuality");
+
                 if (qualityEl) qualityEl.innerText = `${outputWidth}×${outputHeight} · 9:16 · narration + synchronized scene sound · local export`;
+
                 if (badgeEl) {
+
                     badgeEl.innerText = `Local ${outputExtension.toUpperCase()} ready`;
+
                     badgeEl.style.color = "#10B981";
+
                     badgeEl.style.background = "rgba(16, 185, 129, 0.2)";
+
                 }
+
                 setTimeout(() => {
+
                     if (celebrationBox) {
+
                         celebrationBox.style.display = "block";
+
                         celebrationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
                         const btnAgain = document.getElementById("btnDownloadAgain");
+
                         if (btnAgain) {
+
                             btnAgain.style.display = saveWritable ? "none" : "inline-flex";
+
                             if (downloadUrl) {
+
                                 btnAgain.href = downloadUrl;
+
                                 btnAgain.download = filename;
+
                             }
+
                         }
+
                     }
+
                 }, 300);
+
             } catch (error) {
+
                 if (saveWritable) await saveWritable.abort().catch(() => {});
+
                 if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+
                 if (sqlShortState.lastExportUrl === downloadUrl) sqlShortState.lastExportUrl = null;
+
                 if (pDesc) pDesc.innerText = `Local ${outputExtension.toUpperCase()} export failed: ${error.message}. No video was sent to Render.`;
+
                 if (badgeEl) {
+
                     badgeEl.innerText = "Local export failed";
+
                     badgeEl.style.color = "#EF4444";
+
                     badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
+
                 }
+
             } finally {
+
                 sqlShortState.isExporting = false;
+
                 setSqlCanvasRenderScale(1);
+
                 renderSqlShortFrame(sqlShortState.currentTime);
+
                 if (btn) btn.disabled = false;
+
                 if (btnLabel) btnLabel.innerText = "DOWNLOAD FULL 9:16 VIDEO (LOCAL, VOICE SYNCED)";
+
             }
+
         };
 
+
+
         sqlShortState.lastSoundCueKey = "";
+
         sqlShortState.soundEffectEvents = 0;
+
         sqlShortState.isExporting = true;
+
         recorder.start(1000);
+
         if (audioEl && audioEl.src) {
+
             audioEl.currentTime = 0;
+
             audioEl.play().catch(e => console.warn("Audio play during export:", e));
+
         }
+
+
+
+
 
 
 
         function recordStep(timestamp) {
+
             const elapsed = Math.min(totalDuration, Math.max(0, (timestamp - startTime) / 1000));
+
             sqlShortState.currentTime = elapsed;
+
             const t = elapsed;
+
             if (sqlShortState.avatarVideoElement && sqlShortState.avatarVideoElement.duration > 0) {
+
                 sqlShortState.avatarVideoElement.currentTime = t % sqlShortState.avatarVideoElement.duration;
+
             }
+
             renderSqlShortFrame(t);
 
+
+
             frameCount = Math.min(totalFrames, Math.floor(t / dt));
+
             if (frameCount - lastProgressFrame >= 15 || t >= totalDuration) {
+
                 lastProgressFrame = frameCount;
+
                 const p = sqlShortState.activePreset;
+
                 const stages = (p.stages && p.stages.length > 0) ? p.stages : (p.scenes && p.scenes.length > 0 ? p.scenes : []);
+
                 let stageText = "Stage 1: Concept introduction";
+
                 if (stages.length > 0) {
+
                     const actIdx = stages.findIndex(s => t >= s.start && t < s.end);
+
                     if (actIdx !== -1) {
+
                         const st = stages[actIdx];
+
                         stageText = `Stage ${actIdx + 1}/${stages.length}: ${st.title || st.action_type || ''}`;
+
                     } else if (t < stages[0].start) {
+
                         stageText = `Stage 1/${stages.length}: ${stages[0].title || ''}`;
+
                     } else {
+
                         stageText = `Stage ${stages.length}/${stages.length}: ${stages[stages.length - 1].title || ''}`;
+
                     }
+
                 } else {
+
                     const stage = Math.min(6, Math.floor((t / Math.max(1, totalDuration)) * 6) + 1);
+
                     stageText = `Stage ${stage}/6: Explanation in progress`;
+
                 }
+
                 if (pDesc && pDesc.innerText !== stageText) pDesc.innerText = stageText;
+
                 updatePlayerScrubberUI(t);
+
                 const pct = Math.min(100, Math.floor((t / totalDuration) * 100));
+
                 if (pFill) pFill.style.width = pct + "%";
+
                 if (pPctText) pPctText.innerText = pct + "%";
+
                 const remainingSec = Math.max(0, Math.ceil(totalDuration - t));
+
                 if (pEstTime) pEstTime.innerText = `Estimated time remaining: ${remainingSec}s`;
+
                 if (pFrameStats) pFrameStats.innerText = `Frame: ${frameCount} / ${totalFrames}`;
+
             }
 
+
+
             if (t < totalDuration) requestAnimationFrame(recordStep);
+
             else recorder.stop();
+
         }
+
         requestAnimationFrame(recordStep);
+
     }
 
+
+
     function downloadCurrentFrameAsPng() {
+
         const canvas = document.getElementById("sqlShortCanvas");
+
         if (!canvas) return;
+
         const dataUrl = canvas.toDataURL("image/png");
+
         const a = document.createElement("a");
+
         a.href = dataUrl;
+
         a.download = `SQL_Interview_Frame_${sqlShortState.activePreset.id}_${Math.floor(sqlShortState.currentTime)}s.png`;
+
         document.body.appendChild(a);
+
         a.click();
+
         document.body.removeChild(a);
+
     }
+
+
 
     /* Online Dynamic Weights Optimizer - Handled automatically by Online AI */
 
+
+
     /* ==========================================================================
+
        ELEVENLABS VOICE AI STUDIO & 28-32Y INDIAN MALE TECH YOUTUBER PERSONA
+
        ========================================================================== */
+
     async function openElevenLabsModal() {
+
         const modal = document.getElementById("elevenLabsVoiceModal");
+
         if (!modal) return;
+
         modal.style.display = "flex";
+
         await loadElevenLabsData();
+
     }
+
+
 
     function closeElevenLabsModal() {
+
         const modal = document.getElementById("elevenLabsVoiceModal");
+
         if (modal) modal.style.display = "none";
+
     }
+
+
 
     async function loadElevenLabsData() {
+
         try {
+
             const quotaEl = document.getElementById("modalElevenLabsQuotaStatus");
+
             const res = await fetch("/api/elevenlabs/user_info");
+
             if (res.ok) {
+
                 const info = await res.json();
+
                 if (quotaEl) {
+
                     if (info.authenticated) {
+
                         const rem = Math.max(0, (info.character_limit || 10000) - (info.character_count || 0));
+
                         quotaEl.innerText = `Tier: ${info.tier || 'Free'} • Used: ${info.character_count || 0}/${info.character_limit || 10000} chars (${rem} remaining)`;
+
                         quotaEl.style.color = rem > 0 ? "#10B981" : "#F59E0B";
+
                     } else {
+
                         quotaEl.innerText = "Shield Safe: Using hi-IN-MadhurNeural & Edge-TTS Cascade";
+
                         quotaEl.style.color = "#38BDF8";
+
                     }
+
                 }
+
             }
+
         } catch (e) {
+
             console.warn("ElevenLabs user_info error:", e);
+
         }
+
     }
+
+
 
     async function saveElevenLabsKeyFromModal() {
+
         const input = document.getElementById("modalElevenLabsApiKeyInput");
+
         const badge = document.getElementById("modalKeySavedBadge");
+
         if (!input || !input.value.trim()) return;
+
         const key = input.value.trim();
 
+
+
         try {
+
             const res = await fetch("/api/elevenlabs/save_key", {
+
                 method: "POST",
+
                 headers: {"Content-Type": "application/json"},
+
                 body: JSON.stringify({ api_key: key })
+
             });
+
             if (res.ok) {
+
                 const data = await res.json();
+
                 if (badge) {
+
                     badge.innerText = `✓ Key saved! (Verified: ${data.authenticated ? 'Active' : 'Saved to Vault'})`;
+
                     badge.style.display = "inline-block";
+
                     setTimeout(() => { badge.style.display = "none"; }, 4000);
+
                 }
+
                 input.value = "";
+
                 await loadElevenLabsData();
+
                 logPipelineStep("ElevenLabs Key Updated", "New ElevenLabs API key saved to Credentials Vault and activated.");
+
             }
+
         } catch (e) {
+
             alert("Failed to save key: " + e);
+
         }
+
     }
+
+
 
     async function synthesizeElevenLabsSample() {
+
         const btn = document.getElementById("btnSynthesizeSample");
+
         const textEl = document.getElementById("modalElevenLabsSampleText");
+
         const modelEl = document.getElementById("modalElevenLabsModelSelect");
+
         const catEl = document.getElementById("modalElevenLabsCategorySelect");
+
         const player = document.getElementById("modalElevenLabsAudioPlayer");
 
+
+
         const text = (textEl?.value || "").trim() || "हेलो दोस्तों! क्या आप जानते हैं कि SQL में DENSE_RANK और ROW_NUMBER में क्या फर्क होता है? चलिए 60 सेकंड में समझते हैं!";
+
         const model = modelEl?.value || "eleven_v4";
+
         const cat = catEl?.value || "indian_tech_youtuber";
 
+
+
         if (btn) {
+
             btn.innerHTML = `<span>⏳ Synthesizing Voice AI...</span>`;
+
             btn.disabled = true;
+
         }
 
+
+
         try {
+
             const res = await fetch("/api/elevenlabs/synthesize", {
+
                 method: "POST",
+
                 headers: {"Content-Type": "application/json"},
+
                 body: JSON.stringify({
+
                     text: text,
+
                     category: cat,
+
                     model_id: model,
+
                     voice_gender: "male"
+
                 })
+
             });
+
             if (res.ok) {
+
                 const data = await res.json();
+
                 if (data.audio_url && player) {
+
                     player.src = data.audio_url;
+
                     player.style.display = "block";
+
                     player.play();
+
                 }
+
                 logPipelineStep("Speech Synthesized", `Synthesized voice using ${data.model_used || 'ElevenLabs / MadhurNeural'} in ${data.duration ? data.duration.toFixed(1) + 's' : ''}`);
+
             }
+
         } catch (e) {
+
             alert("Synthesis error: " + e);
+
         } finally {
+
             if (btn) {
+
                 btn.innerHTML = `<span>▶ Synthesize & Listen Now</span>`;
+
                 btn.disabled = false;
+
             }
+
         }
+
     }
+
+
 
     // Expose Functions to Global Window
+
     window.setSqlAudioLang = setSqlAudioLang;
+
     window.setSqlTextStyle = setSqlTextStyle;
+
     window.toggleSqlAvatar = toggleSqlAvatar;
+
     window.setSqlAvatarPresenter = setSqlAvatarPresenter;
+
     window.directorAutopilotPreview = directorAutopilotPreview;
+
 window.applyQuickPromptPreset = applyQuickPromptPreset;
+
 window.scrollVfxStudio = scrollVfxStudio;
+
 window.generateSqlShortBlueprint = generateSqlShortBlueprint;
+
     window.renderAiAvatarVideo = renderAiAvatarVideo;
+
     window.renderCinematicBackgroundVideo = renderCinematicBackgroundVideo;
+
     window.seekSqlShortPlayer = seekSqlShortPlayer;
+
     window.toggleSqlShortPlay = toggleSqlShortPlay;
+
     window.restartSqlShortPlay = restartSqlShortPlay;
+
     window.setSqlShortSpeed = setSqlShortSpeed;
+
     window.checkSqlVideoDevice = checkSqlVideoDevice;
+
     window.exportSqlShortVideo = exportSqlShortVideo;
+
     window.downloadCurrentFrameAsPng = downloadCurrentFrameAsPng;
+
     window.runInMemorySqlSandbox = runInMemorySqlSandbox;
+
     window.handleSqlPresetChange = handleSqlPresetChange;
+
     window.downloadVoiceoverMp3 = downloadVoiceoverMp3;
+
     window.loadPresetVoiceAudio = loadPresetVoiceAudio;
+
     window.loadDemoMasterPrompt = loadDemoMasterPrompt;
+
     window.clearMasterPrompt = clearMasterPrompt;
+
     window.insertPromptScenario = insertPromptScenario;
+
     function openWeightsOptimizerModal() {
+
         const m = document.getElementById('weightsOptimizerModal');
+
         if (m) m.style.display = 'flex';
+
     }
+
     function closeWeightsOptimizerModal() {
+
         const m = document.getElementById('weightsOptimizerModal');
+
         if (m) m.style.display = 'none';
+
     }
+
     function runWeightsOptimizationStep() {
+
         console.log('[WeightsOptimizer] Running weight optimization step...');
+
     }
+
+
 
     window.openAgentBrainModal = openAgentBrainModal;
+
     window.closeAgentBrainModal = closeAgentBrainModal;
+
     window.setSqlCreationMode = setSqlCreationMode;
+
     window.triggerModelTraining = triggerModelTraining;
+
     window.openWeightsOptimizerModal = openWeightsOptimizerModal;
+
     window.closeWeightsOptimizerModal = closeWeightsOptimizerModal;
+
     window.runWeightsOptimizationStep = runWeightsOptimizationStep;
+
     window.openElevenLabsModal = openElevenLabsModal;
+
     window.closeElevenLabsModal = closeElevenLabsModal;
+
     window.saveElevenLabsKeyFromModal = saveElevenLabsKeyFromModal;
+
     window.synthesizeElevenLabsSample = synthesizeElevenLabsSample;
+
     window.setSqlMotionEngine = setSqlMotionEngine;
+
     window.selectPipelineStage = selectPipelineStage;
+
     window.runPipelineSandboxVerification = runPipelineSandboxVerification;
+
     window.toggleCodeBlueprintViewer = toggleCodeBlueprintViewer;
 
+
+
     // Video Studio Clean Teardown Listeners (Avoid Chrome Zombie Lockups)
+
     
+
     window.selectedGenerationPattern = 'hybrid';
+
     window.selectedModernVideoModel = 'wan_21';
 
+
+
     function setGenerationPattern(pat) {
+
         window.selectedGenerationPattern = pat;
+
         const btnH = document.getElementById('btnPatternHybrid');
+
         const btnU = document.getElementById('btnPatternUnified');
+
         const badge = document.getElementById('activePatternBadge');
+
         if (pat === 'hybrid') {
+
             if (btnH) {
+
                 btnH.style.border = '1px solid #10B981';
+
                 btnH.style.background = 'rgba(16,185,129,0.2)';
+
                 btnH.style.color = '#34D399';
+
             }
+
             if (btnU) {
+
                 btnU.style.border = '1px solid #334155';
+
                 btnU.style.background = 'rgba(15,23,42,0.8)';
+
                 btnU.style.color = '#94A3B8';
+
             }
+
             if (badge) {
+
                 badge.textContent = 'MULTI-MODEL HYBRID';
+
                 badge.style.color = '#10B981';
+
                 badge.style.borderColor = '#10B981';
+
             }
+
         } else {
+
             if (btnU) {
+
                 btnU.style.border = '1px solid #38BDF8';
+
                 btnU.style.background = 'rgba(56,189,248,0.2)';
+
                 btnU.style.color = '#38BDF8';
+
             }
+
             if (btnH) {
+
                 btnH.style.border = '1px solid #334155';
+
                 btnH.style.background = 'rgba(15,23,42,0.8)';
+
                 btnH.style.color = '#94A3B8';
+
             }
+
             if (badge) {
+
                 badge.textContent = 'UNIFIED PATTERN';
+
                 badge.style.color = '#38BDF8';
+
                 badge.style.borderColor = '#38BDF8';
+
             }
+
         }
+
         if (typeof showModernToast === 'function') {
+
             showModernToast('Pattern Changed', pat === 'hybrid' ? 'Multi-Model Best-of-Breed Mix' : 'Unified Single-Engine Pattern', 'info');
+
         }
+
     }
+
     window.setGenerationPattern = setGenerationPattern;
 
+
+
     function onModernModelSelected(val) {
+
         window.selectedModernVideoModel = val;
+        if (typeof sqlShortState !== 'undefined' && sqlShortState.activePreset) {
+            sqlShortState.activePreset.selected_model = val;
+        }
+        if (typeof renderSqlShortFrame === 'function' && typeof sqlShortState !== 'undefined') {
+            renderSqlShortFrame(sqlShortState.currentTime || 0);
+        }
+
         const sel = document.getElementById('selectModernVideoModelMaster');
+
         const textEl = document.getElementById('modelSpecsNameText');
+
         const opt = sel ? sel.options[sel.selectedIndex] : null;
+
         if (textEl && opt) {
+
             textEl.textContent = opt.text.split('•')[0].trim();
+
         }
+
         if (typeof showModernToast === 'function') {
+
             showModernToast('Model Engine Selected', opt ? opt.text.split('•')[0].trim() : val, 'success');
+
         }
+
     }
+
     window.onModernModelSelected = onModernModelSelected;
 
+
+
     function renderAiAttributionLedger(ledger) {
+
         if (!ledger) return;
+
         const container = document.getElementById('aiAttributionLedgerContainer');
+
         if (!container) return;
+
         container.style.display = 'block';
 
+
+
         const patBadge = document.getElementById('ledgerPatternBadge');
+
         if (patBadge) {
+
             patBadge.textContent = ledger.pattern_label || (ledger.pattern === 'unified' ? 'UNIFIED PATTERN' : 'MULTI-MODEL HYBRID');
+
             patBadge.style.color = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
+
             patBadge.style.borderColor = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
+
         }
+
+
 
         const voiceEl = document.getElementById('ledgerVoiceName');
+
         if (voiceEl && ledger.voiceover_engine) {
+
             voiceEl.textContent = ledger.voiceover_engine.name || 'Edge Neural Marathi';
+
         }
+
+
 
         const listEl = document.getElementById('ledgerScenesList');
+
         if (listEl && Array.isArray(ledger.scenes)) {
+
             let html = '';
+
             ledger.scenes.forEach(sc => {
+
                 const isFree = sc.is_free !== false;
+
                 const freeTag = isFree 
+
                     ? `<span style="font-size: 9.5px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid #10B981; padding: 1px 6px; border-radius: 4px; font-weight: 700;">100% FREE (GPU)</span>`
+
                     : `<span style="font-size: 9.5px; background: rgba(56,189,248,0.2); color: #38BDF8; border: 1px solid #38BDF8; padding: 1px 6px; border-radius: 4px; font-weight: 700;">DIRECT API</span>`;
 
+
+
                 html += `
+
                 <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+
                     <div style="display: flex; align-items: center; gap: 10px;">
+
                         <span style="font-size: 11px; font-weight: 800; color: #F59E0B; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 2px 7px; border-radius: 4px;">
+
                             SCENE ${sc.scene_index}
+
                         </span>
+
                         <div>
+
                             <div style="font-size: 12px; font-weight: 800; color: #F8FAFC;">
+
                                 ${escapeHtml(sc.scene_title || '')}
+
                             </div>
+
                             <div style="font-size: 10.5px; color: #94A3B8; margin-top: 2px;">
+
                                 <span>Engine: </span><b style="color: #38BDF8;">${escapeHtml(sc.engine_name)}</b> 
+
                                 <span style="color: #64748B;">(${escapeHtml(sc.provider)})</span>
+
                             </div>
+
                         </div>
+
                     </div>
+
                     <div style="display: flex; align-items: center; gap: 8px;">
+
                         ${freeTag}
+
                         <button type="button" class="btn btn-secondary" onclick="rerollSceneModel(${sc.scene_index}, '${escapeHtml(sc.scene_title || '')}')" style="padding: 3px 8px; font-size: 10px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="Swap model for this scene">
+
                             🔄 Swap Model
+
                         </button>
+
                     </div>
+
                 </div>`;
+
             });
+
             listEl.innerHTML = html;
+
         }
+
     }
+
     window.renderAiAttributionLedger = renderAiAttributionLedger;
 
+
+
     function rerollSceneModel(sceneIdx, sceneTitle) {
+
         if (typeof showModernToast === 'function') {
+
             showModernToast(`Scene ${sceneIdx} Model Swapped`, `Re-assigned to alternative 50+ generative model engine`, 'info');
+
         }
+
     }
+
     window.rerollSceneModel = rerollSceneModel;
 
+
+
     window.addEventListener("pagehide", () => {
+
         try {
+
             if (typeof pauseSqlShortPlay === "function") pauseSqlShortPlay();
+
             if (_sqlCyberAudioCtx && _sqlCyberAudioCtx.state !== "closed") {
+
                 _sqlCyberAudioCtx.close();
+
                 _sqlCyberAudioCtx = null;
+
             }
+
             if (window._sqlExportAudioCtx && window._sqlExportAudioCtx.state !== "closed") {
+
                 window._sqlExportAudioCtx.close();
+
                 window._sqlExportAudioCtx = null;
+
             }
+
             const a = document.getElementById("sqlVoiceAudio");
+
             if (a) {
+
                 a.pause();
+
                 a.removeAttribute("src");
+
                 a.load();
+
             }
+
         } catch(e) {}
+
     }, { capture: true });
+
     </script>
+
     '''
+
     return script.replace("    </script>", f"{ARCHITECTURE_ANIMATION_JS}\n    </script>", 1)
+

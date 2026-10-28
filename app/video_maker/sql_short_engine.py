@@ -2048,6 +2048,8 @@ class SqlShortVideoEngine:
         res["synaptic_weights"] = {}
         res["weights_optimizer"] = {}
         res["perfectionist_audit"] = perfectionist_audit
+        res["selected_model"] = selected_model or "wan_21"
+        res["generation_pattern"] = generation_pattern or "hybrid"
 
         # Attach 50+ Models AI Attribution Ledger & Multi-Engine Blueprint
         try:
@@ -2060,6 +2062,14 @@ class SqlShortVideoEngine:
                 total_duration=final_dur
             )
             res["ai_attribution_ledger"] = attribution_ledger
+
+            # Propagate engine metadata onto individual stage objects
+            sc_attrs = attribution_ledger.get("scenes") or attribution_ledger.get("scene_attributions") or []
+            for idx, stg in enumerate(calibrated_stages):
+                if idx < len(sc_attrs):
+                    stg["ai_model"] = sc_attrs[idx].get("engine_id")
+                    stg["engine_name"] = sc_attrs[idx].get("engine_name")
+                    stg["engine_provider"] = sc_attrs[idx].get("engine_provider")
         except Exception as _attr_err:
             log_event(f"Notice generating AI attribution ledger: {_attr_err}", level="DEBUG", component="SqlShortEngine")
 
