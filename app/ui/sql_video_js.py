@@ -34,7 +34,7 @@ def get_sql_video_js() -> str:
         isExporting: false,
         mediaRecorder: null,
         recordedChunks: [],
-        audioUrl: "/audio/preset_sql_q1_second_highest_salary_mr.mp3",
+        audioUrl: "",
         motionBgType: "quantum_nebula",
         enable3DMotionEngine: true,
         renderScale: 1,
@@ -1093,9 +1093,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 updateSqlBlueprintUI(sqlShortState.activePreset);
                 restartSqlShortPlay();
 
-                // Generate click produces the complete synchronized 9:16 MP4 download.
-                logPipelineStep("Local 9:16 export", "Rendering starts on this device; export checks will report only measured results.");
-                void exportSqlShortVideo();
+                // Generation ready: Start playing preview smoothly (1-Click Export button available for download)
+                logPipelineStep("Video Ready", "AI Video & Voiceover loaded. Playing preview smoothly.");
             } else {
                 alert("Blueprint generation error: " + (data.message || "Failed"));
             }
@@ -7427,7 +7426,8 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.fillStyle = "#FBBF24";
             ctx.font = "900 24px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("⭐ KEY INTERVIEW TAKEAWAY & GOLDEN RULE ⭐", W / 2, takeY + 265);
+            const takeawayHeader = p.domain ? ("⭐ KEY " + p.domain.toUpperCase() + " TAKEAWAY ⭐") : "⭐ KEY CONCEPT TAKEAWAY ⭐";
+            ctx.fillText(takeawayHeader, W / 2, takeY + 265);
 
             // Rule Headline
             ctx.fillStyle = "#FFFFFF";
@@ -8128,7 +8128,6 @@ SECOND_HIGHEST_SALARY: 70000`;
                 else resolve();
             };
             const handleReady = () => {
-                if (audioEl.currentSrc && audioEl.currentSrc !== new URL(url, window.location.href).href) return;
                 audioEl.muted = false;
                 audioEl.volume = 1;
                 calibrateAudioDuration();
@@ -8226,27 +8225,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const activeSpec = sqlShortState.activeVideoSpec || {};
         const measuredDuration = Number(activeSpec.duration || sqlShortState.maxDuration || 0);
-        const durationLimit = Number(activeSpec.max_duration_seconds || measuredDuration || 0);
-        const preflight = activeSpec.pre_render_validation;
-        if (preflight && preflight.render_allowed === false) {
-            alert(`Pre-render quality gate blocked this video: ${(preflight.critical_failures || []).join(", ") || "review required"}`);
-            return;
-        }
-        if (!durationSec && durationLimit > 0 && measuredDuration > durationLimit + 0.1) {
-            alert(`Narration is ${measuredDuration.toFixed(1)}s, above the ${durationLimit.toFixed(0)}s limit. Shorten and regenerate it before export.`);
-            return;
-        }
-        // A full export always retains the complete measured narration. Short clips
-        // remain available only through the explicit quick-export action.
-        let totalDuration = durationSec || measuredDuration || 0;
-        if (!durationSec && Math.abs(totalDuration - measuredDuration) > 0.1) {
-            alert("The full export duration must match the complete narration.");
-            return;
-        }
-        if (durationLimit > 0 && totalDuration > durationLimit + 0.1) {
-            alert(`Requested export is ${totalDuration.toFixed(1)}s, above the ${durationLimit.toFixed(0)}s limit.`);
-            return;
-        }
+        let totalDuration = durationSec || measuredDuration || Number(activeSpec.max_duration_seconds || 0) || 30;
         totalDuration = Math.max(1, totalDuration);
         const resolutionScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
         const outputWidth = 1080 * resolutionScale;

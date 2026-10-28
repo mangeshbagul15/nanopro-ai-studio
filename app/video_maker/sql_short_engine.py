@@ -225,7 +225,7 @@ def compute_audio_synchronized_stages(
         stage_dict.update({
             "id": idx + 1,
             "action_type": s.get("action_type") or s.get("visual_type") or _infer_action_type(idx, len(edu_stages)),
-            "visual_type": s.get("visual_type") or s.get("action_type") or ("hook" if idx == 0 else ("takeaway" if idx == len(edu_stages) - 1 else "diagram")),
+            "visual_type": s.get("visual_type") or s.get("action_type") or "showcase",
             "visual_data": s.get("visual_data") or {},
             "title": s.get("title") or f"Scene {idx + 1}",
             "speech": s.get(f"speech_{lang_key}") or s.get("speech") or s.get("speech_en") or "",
@@ -1292,1105 +1292,192 @@ class SqlShortVideoEngine:
                 clean_existing.append(item)
             return clean_existing
 
-        title = matched.get("title", "Tech Architecture & Coding")
-        tbl = matched.get("table_name", "TRANSACTIONS")
-        pro_tip = matched.get("pro_tip", "💡 Senior Interviewer Pro-Tip: Explain system logic step-by-step.")
+        title = matched.get("title") or matched.get("question", "Universal Topic")[:50]
+        domain = matched.get("domain", "General Knowledge")
+        accent = matched.get("accent_color", "#38BDF8")
+        pro_tip = matched.get("pro_tip") or f"💡 Key Insight: Master the fundamental principles of {title}."
 
-        # Human Cognitive Anchors based on mode
-        if mode == "viral_reel":
-            hook_prefix_en = f"Stop scrolling! 95% of engineers get this wrong in tech interviews: {title}!"
-            hook_prefix_mr = f"थांबा! ९५% इंजिनिअर्स या प्रश्नात फसतात: {title}! चला ३० सेकंदात समजून घेऊया!"
-            hook_prefix_hi = f"रुकिए! ९५% डेवलपर्स इस सवाल में गलती करते हैं: {title}! आइए ३० सेकंड में समझते हैं!"
-        elif mode == "architecture_3d":
-            hook_prefix_en = f"Production System Architecture Breakdown: {title}! How modern cloud systems scale."
-            hook_prefix_mr = f"प्रोडक्शन क्लाउड सिस्टिम आर्किटेक्चर: {title}! हाय-थ्रूपुट सिस्टिम कशी काम करते पाहा."
-            hook_prefix_hi = f"प्रोडक्शन क्लाउड आर्किटेक्चर ब्रेकडाउन: {title}! हाई-स्केल सिस्टम कैसे काम करती है देखिए."
-        elif mode == "deep_mentor":
-            hook_prefix_en = f"Welcome to today's deep concept masterclass: {title}. Let's build your mental model from scratch."
-            hook_prefix_mr = f"आजच्या डीप टेक मास्टरक्लासमध्ये स्वागत: {title}. चला मुळापासून ही संकल्पना समजून घेऊया."
-            hook_prefix_hi = f"आज के डीप कॉन्सेप्ट मास्टरक्लास में स्वागत है: {title}. आइए बुनियादी सिद्धांतों से सीखते हैं."
-        else:  # faang_drill
-            hook_prefix_en = f"High-frequency FAANG interview drill: {title}! Watch how to handle every edge case cleanly."
-            hook_prefix_mr = f"टॉप टेक कंपन्यांचा आवडता इंटरव्ह्यू प्रश्न: {title}! सर्व एज केसेस आणि अचूक लॉजिक पाहा."
-            hook_prefix_hi = f"टॉप कंपनी इंटरव्यू का सबसे जरूरी सवाल: {title}! सभी एज केसेज और सही लॉजिक देखिए."
-
-        if content_type == "theory":
-            concept = matched.get("concept_summary", "Understand the core structural differences between system operations.")
-            term_a = matched.get("term_a") or "Concept A"
-            term_b = matched.get("term_b") or "Concept B"
-            golden = matched.get("golden_rule") or f"Choose {term_a} for localized control, choose {term_b} for scalable operations."
-            return [
-                {
-                    "id": 1, "action_type": "problem_intro", "title": "Theory Question & Core Objective",
-                    "speech_en": hook_prefix_en,
-                    "speech_mr": hook_prefix_mr,
-                    "speech_hi": hook_prefix_hi
+        return [
+            {
+                "id": 1,
+                "action_type": "showcase",
+                "visual_type": "showcase",
+                "title": f"{title} - Overview",
+                "visual_data": {
+                    "headline": title,
+                    "subtext": f"Introduction and core context of {title}",
+                    "bullets": [f"Overview of {title}", "Core principles explained simply", "Everyday relevance and importance"],
+                    "badge": "INTRO",
+                    "theme_color": accent
                 },
-                {
-                    "id": 2, "action_type": "data_inspection", "title": "Core Distinction & Misconception",
-                    "speech_en": f"Why do candidates stumble? {concept}. Let's examine the internal architectural difference.",
-                    "speech_mr": f"उमेदवार इथे का अडखळतात? {concept}. चला यातील तांत्रिक फरक नीट समजून घेऊया.",
-                    "speech_hi": f"कैंडिडेट्स अक्सर यहाँ क्यों गलती करते हैं? {concept}. आइए इसका इंटरनल अंतर देखते हैं."
+                "speech_mr": f"आज आपण जाणून घेणार आहोत: {title}! यातील मुख्य रहस्य आणि अचूक माहिती आपण सोप्या भाषेत समजून घेऊया.",
+                "speech_hi": f"आज हम बात करेंगे: {title}! इसके मुख्य बिंदु और जरूरी बातें हम आसान भाषा में समझेंगे.",
+                "speech_en": f"Welcome! Today we are exploring: {title}! Let's examine the essential concepts in clear, direct terms."
+            },
+            {
+                "id": 2,
+                "action_type": "showcase",
+                "visual_type": "key_points",
+                "title": "Core Mechanism",
+                "visual_data": {
+                    "headline": "How It Works",
+                    "subtext": "Underlying principles and primary dynamics",
+                    "bullets": ["Step-by-step mechanism", "Key operational factors", "Core functional workflow"],
+                    "badge": "MECHANISM",
+                    "theme_color": "#EC4899"
                 },
-                {
-                    "id": 3, "action_type": "logic_flowchart", "visual_type": "architecture_3d", "title": "System & Lifecycle Architecture",
-                    "visual_data": {
-                        "title": f"{term_a} ➔ {term_b} 3D ARCHITECTURE",
-                        "nodes": [
-                            {"id": "ingress", "label": "Client & Ingress Gateway", "icon": "🌐", "sub": "API Gateway & Router", "color": "#38BDF8", "type": "cloud"},
-                            {"id": "comp_a", "label": term_a, "icon": "⚙️", "sub": "Primary Execution Tier", "color": "#10B981", "type": "process"},
-                            {"id": "comp_b", "label": term_b, "icon": "🖥️", "sub": "Distributed Infrastructure", "color": "#F59E0B", "type": "server"},
-                            {"id": "storage", "label": "Persistent Data Core", "icon": "💾", "sub": "ACID Data Storage", "color": "#A855F7", "type": "database"}
-                        ],
-                        "connections": [
-                            {"from": "ingress", "to": "comp_a", "label": "DISPATCH", "color": "#38BDF8"},
-                            {"from": "comp_a", "to": "comp_b", "label": "PIPELINE", "color": "#10B981"},
-                            {"from": "comp_b", "to": "storage", "label": "COMMIT", "color": "#F59E0B"}
-                        ]
-                    },
-                    "speech_en": f"Look at the system lifecycle: {term_a} operates at the baseline hardware level, while {term_b} manages elastic distribution.",
-                    "speech_mr": f"सिस्टिम लाइफसायकल पाहा: {term_a} बेसलाइन स्तरावर काम करते, तर {term_b} लवचिक डिस्ट्रीब्यूशन हाताळते.",
-                    "speech_hi": f"सिस्टम लाइफसाइकिल देखिए: {term_a} बेसलाइन लेवल पर काम करता है, जबकि {term_b} इलास्टिक डिस्ट्रीब्यूशन संभालता है."
+                "speech_mr": "यामागील मुख्य कार्यपद्धती पाहा: जेव्हा आपण मुळापासून विचार करतो, तेव्हा ही प्रक्रिया कशी घडते ते स्पष्टपणे समोर येते.",
+                "speech_hi": "इसकी कार्यप्रणाली को देखिए: जब हम इसके मूल कारणों को देखते हैं, तो पूरी प्रक्रिया साफ तौर पर समझ आती है.",
+                "speech_en": "Here is how it actually works. Breaking down the core mechanism shows how all the pieces interact together."
+            },
+            {
+                "id": 3,
+                "action_type": "showcase",
+                "visual_type": "stat",
+                "title": "Real-World Impact",
+                "visual_data": {
+                    "headline": "Practical Significance",
+                    "subtext": "Real-world effects and practical consequences",
+                    "bullets": ["Measurable consequences", "Direct influence on outcomes", "Practical relevance"],
+                    "badge": "IMPACT",
+                    "theme_color": "#10B981"
                 },
-                {
-                    "id": 4, "action_type": "code_build", "title": "Syntax & Implementation Placement",
-                    "speech_en": f"Here is the configuration and syntax side-by-side. Notice how {term_a} and {term_b} solve the problem differently.",
-                    "speech_mr": f"इथे दोन्हीचे कॉन्फिगरेशन आणि सिंटॅक्स शेजारी-शेजारी बघा. {term_a} आणि {term_b} यातील स्पष्ट फरक लक्षात येतो.",
-                    "speech_hi": f"यहाँ दोनों का कॉन्फिगरेशन और सिंटैक्स साथ-साथ देखिए. {term_a} और {term_b} की कार्यशैली का अंतर समझिए."
+                "speech_mr": "प्रत्यक्ष व्यवहारात याचा काय प्रभाव पडतो? यातील महत्त्वाचे बदल थेट परिणाम घडवून आणतात.",
+                "speech_hi": "वास्तविक जीवन में इसका क्या प्रभाव होता है? ये मुख्य बदलाव सीधे हमारे अनुभवों को प्रभावित करते हैं.",
+                "speech_en": "What is the real-world impact? Understanding these consequences gives you practical clarity on the outcome."
+            },
+            {
+                "id": 4,
+                "action_type": "showcase",
+                "visual_type": "takeaway",
+                "title": "Key Takeaway",
+                "visual_data": {
+                    "headline": "Summary & Takeaway",
+                    "subtext": "Essential conclusion to remember",
+                    "bullets": ["Remember the fundamental rule", "Apply this insight in practice", "Continuous learning and observation"],
+                    "badge": "TAKEAWAY",
+                    "theme_color": "#F59E0B"
                 },
-                {
-                    "id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix & Traps",
-                    "speech_en": f"Memorize this comparison matrix: Compare latency, cost, and maintenance before making production choices.",
-                    "speech_mr": "हा तुलना मॅट्रिक्स लक्षात ठेवा: प्रोडक्शनमध्ये निर्णय घेताना लेटन्सी, खर्च आणि मेंटेनन्सचा नीट विचार करा!",
-                    "speech_hi": "यह कंपैरिजन मैट्रिक्स याद रखें: प्रोडक्शन डिप्लॉयमेंट से पहले लेटेंसी, लागत और मेंटेनेंस को जरूर जांचें!"
-                },
-                {
-                    "id": 6, "action_type": "final_result", "title": "Interview Golden Takeaway",
-                    "speech_en": f"Remember this golden interview rule: {golden}. Explain this clearly to impress senior hiring managers!",
-                    "speech_mr": f"नेहमी लक्षात ठेवा हा सुवर्ण नियम: {golden}. हे स्पष्टपणे समजावून सांगितल्यास इंटरव्ह्यूमध्ये पूर्ण गुण मिळतात!",
-                    "speech_hi": f"हमेशा याद रखें यह गोल्डन रूल: {golden}. इंटरव्यूअर को यह समझाते ही आपका उत्तर सबसे प्रभावी बनेगा!"
-                }
-            ]
-        else:
-            arrow = matched.get("arrow_target", "OVER ()")
-            return [
-                {
-                    "id": 1, "action_type": "problem_intro", "title": "Question Statement & Target",
-                    "speech_en": hook_prefix_en,
-                    "speech_mr": hook_prefix_mr,
-                    "speech_hi": hook_prefix_hi
-                },
-                {
-                    "id": 2, "action_type": "data_inspection", "title": "Data Inspection & Schema",
-                    "speech_en": f"Inspect our {tbl} schema. Notice how duplicate values, ties, and group partitions can trap naive solutions.",
-                    "speech_mr": f"आपला {tbl} टेबल तपासा. डुप्लिकेट नोंदी, टाय होणारे गुण आणि ग्रुप पार्टिशन्स कशा अडचणी निर्माण करतात ते पाहा.",
-                    "speech_hi": f"हमारे {tbl} टेबल को देखिए. डुप्लिकेट रिकॉर्ड्स, टाई और ग्रुप पार्टिशन्स पर ध्यान देना बहुत जरूरी है."
-                },
-                {
-                    "id": 3, "action_type": "logic_flowchart", "title": "Algorithm & Flowchart Pipeline",
-                    "speech_en": "Here is our execution pipeline: First partition and order the records, apply our window or filter condition, then pick target rows.",
-                    "speech_mr": "आपली एक्झिक्युशन पाइपलाइन: प्रथम योग्य ग्रुप्स आणि ऑर्डरिंग लावा, विंडो किंवा फिल्टर कंडिशन अप्लाय करा, आणि अचूक टार्गेट रो निवडा.",
-                    "speech_hi": "हमारा एग्जीक्यूशन पाइपलाइन: पहले ग्रुप्स और आर्डर तय करें, फिर विंडो या फिल्टर कंडीशन लगाएं, और सही टारगेट रो चुनें."
-                },
-                {
-                    "id": 4, "action_type": "code_build", "title": "Code Construction & Arrow Focus",
-                    "speech_en": f"Writing the production query. Pay special attention to {arrow}, which isolates the exact target rows directly.",
-                    "speech_mr": f"चला क्वेरी लिहूया: विशेष लक्ष द्या {arrow} वर, जे थेट आपल्या टार्गेट नोंदी वेगळ्या करते.",
-                    "speech_hi": f"आइए प्रोडक्शन क्वेरी लिखते हैं: खास ध्यान दीजिए {arrow} पर, जो सीधे हमारे टारगेट रिकॉर्ड्स को चुनता है."
-                },
-                {
-                    "id": 5, "action_type": "simulation_execution", "title": "Database Row-by-Row Simulation",
-                    "speech_en": "The database engine evaluates rows one by one. Qualifying rows are kept, and older or non-matching records are cleanly eliminated.",
-                    "speech_mr": "डेटाबेस इंजिन प्रत्येक ओळ तपासून पाहते. अट पूर्ण करणाऱ्या नोंदी राहतात आणि जुन्या किंवा मॅच न होणाऱ्या नोंदी वगळल्या जातात.",
-                    "speech_hi": "डेटाबेस इंजन एक-एक करके सभी रो चेक करता है. जो कंडीशन पूरी करते हैं वो बचते हैं, बाकी रिकॉर्ड्स बाहर हो जाते हैं."
-                },
-                {
-                    "id": 6, "action_type": "final_result", "title": "Verified Output & Complexity",
-                    "speech_en": "Look at the verified final result! Clean, optimized, and 100% production-ready for top engineering interviews.",
-                    "speech_mr": "फायनल रिझल्ट पाहा! अचूक, वेगवान आणि इंटरव्ह्यूसाठी १०० टक्के रेडी क्वेरी!",
-                    "speech_hi": "फाइनल रिजल्ट देखिए! एकदम क्लीन, फास्ट और टॉप कंपनी इंटरव्यू के लिए तैयार क्वेरी!"
-                }
-            ]
+                "speech_mr": "महत्त्वाचा अंतिम निष्कर्ष: ही मुख्य गोष्ट नेहमी लक्षात ठेवा आणि ही माहिती नक्की शेअर करा!",
+                "speech_hi": "मुख्य अंतिम निष्कर्ष: यह खास बात हमेशा याद रखिए और इसे आगे जरूर साझा कीजिए!",
+                "speech_en": "Key takeaway: Keep this fundamental principle in mind, and apply this insight with complete confidence!"
+            }
+        ]
 
     def _dynamic_analyze_prompt(self, text: str, lang_key: str = "mr") -> Dict[str, Any]:
         """
-        Dynamically analyzes any SQL question, code snippet, or theory topic.
-        Never forces into static templates or hardcoded question presets.
+        Dynamically analyzes ANY prompt topic (Space, History, Science, Nature, Technology, Business, Coding, AI).
+        100% prompt-faithful; zero hardcoded SQL or FAANG interview templates.
         """
         text_clean = text.strip()
-        is_theory = self._detect_content_type(text_clean) == "theory"
-        q_up = text_clean.upper()
-        low = text_clean.lower()
         first_line = text_clean.split("\n")[0].strip()
-
-        # =====================================================================
-        # 1. THEORY & SYSTEM ARCHITECTURE TOPICS (Zero Hardcoded Presets)
-        # =====================================================================
-        if is_theory:
-            # Topic A: Server Architecture / Local Server vs Cloud Server / Claude Server
-            if ("SERVER" in q_up or "LOCAL" in q_up) and ("CLOUD" in q_up or "CLAUDE" in q_up or "ON-PREM" in q_up or "HOST" in q_up or "AWS" in q_up):
-                suggested_motion_bg = "silicon_laser"
-                title = "Local Server vs Cloud Server: Architecture & Deployment"
-                concept_summary = "Local (On-Premises) servers provide full hardware control and ultra-low LAN latency, while Cloud servers deliver instant auto-scaling, global disaster recovery, and zero hardware maintenance."
-                term_a = "LOCAL SERVER (ON-PREMISES)"
-                term_b = "CLOUD SERVER (AWS / CLOUD)"
-                comp_title = "LOCAL SERVER vs CLOUD SERVER ARCHITECTURE MATRIX"
-                comp_headers = ["CRITERIA", "LOCAL SERVER (ON-PREM)", "CLOUD SERVER (AWS/AZURE)"]
-                comp_rows = [
-                    {"feature": "Capital & Cost Model", "col_a": "High initial CapEx (Hardware & Facilities)", "col_b": "Pay-as-you-go OpEx (Usage-based)"},
-                    {"feature": "Elasticity & Scalability", "col_a": "Slow (Requires procurement & racking)", "col_b": "Instant Auto-Scaling in seconds"},
-                    {"feature": "Maintenance Overhead", "col_a": "In-house IT team for disks, cooling, OS", "col_b": "100% managed by cloud provider"},
-                    {"feature": "Data Sovereignty & Security", "col_a": "Physical data isolation within firewall", "col_b": "Shared responsibility & compliance"}
-                ]
-                syntax_a_title = "LOCAL SERVER HOSTING (SYSTEMD / BARE-METAL)"
-                syntax_a_code = "[Unit]\nDescription=Production API on Bare Metal\nAfter=network.target\n\n[Service]\nExecStart=/usr/local/bin/server_app\nRestart=always\nUser=sysadmin\nMemoryMax=64G"
-                syntax_a_note = "Direct hardware access, zero virtualization overhead, deterministic LAN latency."
-                syntax_b_title = "CLOUD SERVER HOSTING (TERRAFORM / AWS EC2)"
-                syntax_b_code = "resource \"aws_instance\" \"cloud_cluster\" {\n  ami           = \"ami-0c55b159cbfafe1f0\"\n  instance_type = \"t4g.xlarge\"\n  monitoring    = true\n  tags = { Tier = \"Elastic-Cloud-Prod\" }\n}"
-                syntax_b_note = "Elastic cloud provisioning, managed hypervisor, dynamic multi-AZ redundancy."
-                traps_title = "FATAL ARCHITECTURAL MISTAKES TO AVOID"
-                traps = [
-                    "❌ Trap: Assuming Cloud is always cheaper — unmonitored idle cloud instances cause massive bill shock!",
-                    "✅ Rule: Use Local for constant predictable loads & strict compliance; use Cloud for elastic traffic & rapid scaling!"
-                ]
-                golden_rule = "Choose Local Servers for complete physical ownership, zero third-party dependency, and constant baseline workloads. Choose Cloud Servers for elastic scaling, zero hardware overhead, and worldwide high availability."
-                pitch_to_interviewer = "In interviews: State that Local On-Premises is optimal for strict compliance and steady-state compute, while Cloud provides unmatched elasticity and geographic disaster recovery."
-                pro_tip = "💡 Senior Architect Pro-Tip: Evaluate CapEx vs OpEx, SLA latency requirements, and compliance before committing to an architecture!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "title": "Architecture Overview",
-                        "speech_mr": "सिस्टिम आर्किटेक्चर आणि क्लाउड इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: लोकल सर्व्हर विरुद्ध क्लाउड सर्व्हर! यात नेमका फरक काय आहे?",
-                        "speech_hi": "सिस्टम आर्किटेक्चर और क्लाउड इंटरव्यू का पसंदीदा सवाल: लोकल सर्वर बनाम क्लाउड सर्वर! आइए समझते हैं कि प्रोडक्शन में किसे कब चुनना चाहिए.",
-                        "speech_en": "Top system architecture interview question: Local Server vs Cloud Server! When should you deploy on-prem, and when should you scale to the cloud?"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "title": "Physical Control vs Elasticity",
-                        "speech_mr": "लोकल सर्व्हर म्हणजे ऑन-प्रिमिसेस हार्डवेअर, जिथे पूर्ण फिजिकल कंट्रोल असतो. तर क्लाउड सर्व्हर म्हणजे ॲमेझॉन एडब्ल्यूएस किंवा अझ्युरवरील ऑन-डिमांड व्हर्च्युअल इन्स्टन्स.",
-                        "speech_hi": "लोकल सर्वर मतलब ऑन-प्रिमाइसेस हार्डवेयर, जहाँ पूरा फिजिकल कंट्रोल आपके पास होता है. जबकि क्लाउड सर्वर ऑन-डिमांड रिसोर्सेस हैं जिन्हें कभी भी बढ़ाया जा सकता है.",
-                        "speech_en": "Local server means physical on-premises hardware with complete control. Cloud server provides elastic virtual instances on AWS or Azure managed entirely by the vendor."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "architecture_3d", "title": "System Architecture & Cost Model",
-                        "visual_data": {
-                            "title": "LOCAL ON-PREM vs CLOUD ARCHITECTURE",
-                            "nodes": [
-                                {"id": "client", "label": "Client Traffic & Ingress", "icon": "🌐", "sub": "100k Req/sec Global API Gateway", "color": "#38BDF8", "type": "cloud"},
-                                {"id": "local", "label": "Local Bare-Metal Server", "icon": "🖥️", "sub": "Deterministic <1ms LAN Latency", "color": "#10B981", "type": "server"},
-                                {"id": "cloud", "label": "AWS / Azure Cloud Cluster", "icon": "☁️", "sub": "Multi-Region Elastic Auto-Scaling", "color": "#F59E0B", "type": "cloud"},
-                                {"id": "db", "label": "Enterprise Data Core", "icon": "💾", "sub": "Hybrid Storage & Replication", "color": "#A855F7", "type": "database"}
-                            ],
-                            "connections": [
-                                {"from": "client", "to": "local", "label": "LOW LATENCY LAN", "color": "#10B981"},
-                                {"from": "client", "to": "cloud", "label": "ELASTIC WAN", "color": "#F59E0B"},
-                                {"from": "local", "to": "db", "label": "DIRECT BUS", "color": "#10B981"},
-                                {"from": "cloud", "to": "db", "label": "SECURE VPN", "color": "#F59E0B"}
-                            ]
-                        },
-                        "speech_mr": "कॅपिटल कॉस्ट आणि मेंटेनन्स: लोकल सर्व्हरमध्ये आधी मोठा खर्च आणि आयटी टीम लागते, तर क्लाउडमध्ये पे-ॲज-यू-गो मॉडेल असते.",
-                        "speech_hi": "कैपेक्स बनाम ऑपेक्स: लोकल सर्वर में भारी इनिशियल हार्डवेयर इनवेस्टमेंट लगती है, जबकि क्लाउड में केवल यूज किए गए रिसोर्स का मंथली बिल आता है.",
-                        "speech_en": "Look at the cost model: Local requires heavy upfront capital expenditure for hardware and cooling, whereas Cloud operates on a flexible pay-as-you-go operational expense."
-                    },
-                    {
-                        "id": 4, "action_type": "code_build", "title": "Deployment & Scale Speed",
-                        "speech_mr": "डिप्लॉयमेंट आणि स्केलेबिलिटी: लोकल सर्व्हर वाढवायला आठवडे लागतात, तर क्लाउडवर ऑटो-स्केलिंगने ट्रॅफिकनुसार सेकंदात नवीन सर्व्हर्स सुरू होतात.",
-                        "speech_hi": "स्केलिंग स्पीड: लोकल सर्वर को स्केल करने में हफ्ते लग सकते हैं, जबकि क्लाउड ऑटो-स्केलिंग सेकंड्स में नए सर्वर स्पिन अप कर देती है.",
-                        "speech_en": "Comparing deployment speed: Bare-metal local servers require physical racking and setup, while Cloud Terraform templates spin up multi-region clusters in seconds."
-                    },
-                    {
-                        "id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix & Traps",
-                        "speech_mr": "हा तुलना मॅट्रिक्स लक्षात ठेवा: डेटा सिक्युरिटी व स्थिर ट्रॅफिकसाठी लोकल सर्व्हर उत्तम; तर हाय स्केलेबिलिटी व ग्लोबल रिचसाठी क्लाउड सर्व्हर!",
-                        "speech_hi": "यह कंपैरिजन मैट्रिक्स याद रखें: प्रेडिक्टेबल वर्कलोड और डेटा सॉवरेन्टी के लिए लोकल; इलास्टिक स्केलिंग और जीरो हार्डवेयर हेडेक के लिए क्लाउड!",
-                        "speech_en": "Memorize this matrix: Local excels for constant workloads and data isolation. Cloud dominates for sudden traffic spikes and global fault tolerance."
-                    },
-                    {
-                        "id": 6, "action_type": "final_result", "title": "Golden Rule & Takeaway",
-                        "speech_mr": "गोल्डन रुल: इंटरव्ह्यूमध्ये सांगा, कॉस्ट, लेटन्सी आणि कम्प्लायन्स या तीन घटकांवरून आर्किटेक्चर निवडले जाते!",
-                        "speech_hi": "गोल्डन रूल: इंटरव्यू में समझाएं कि कॉस्ट, लेटेंसी और स्केलेबिलिटी के ट्रेड-ऑफ पर ही सही सर्वर आर्किटेक्चर चुना जाता है!",
-                        "speech_en": "Universal Golden Rule: Choose Local for data sovereignty and baseline loads; choose Cloud for rapid innovation, elastic scale, and high availability!"
-                    }
-                ]
-            # Topic B: WHERE vs HAVING
-            elif "WHERE" in q_up and "HAVING" in q_up:
-                suggested_motion_bg = "quantum_nebula"
-                title = "SQL Theory: WHERE vs HAVING Clause"
-                concept_summary = "WHERE prunes individual rows before grouping (leveraging B-Tree indexes); HAVING evaluates aggregated metrics after GROUP BY has assembled row clusters."
-                term_a = "WHERE CLAUSE (ROW FILTER)"
-                term_b = "HAVING CLAUSE (GROUP FILTER)"
-                comp_title = "WHERE vs HAVING COMPARISON MATRIX"
-                comp_headers = ["FEATURE / ASPECT", "WHERE CLAUSE", "HAVING CLAUSE"]
-                comp_rows = [
-                    {"feature": "Execution Order", "col_a": "Step 2: Pre-Filter (Before GROUP BY)", "col_b": "Step 4: Post-Filter (After GROUP BY)"},
-                    {"feature": "Aggregate Functions", "col_a": "❌ CANNOT use (SUM, COUNT, AVG)", "col_b": "✅ CAN use (e.g. COUNT(*) > 5)"},
-                    {"feature": "Target Scope", "col_a": "Individual table rows", "col_b": "Aggregated bucket groups"},
-                    {"feature": "Index Optimization", "col_a": "⚡ Uses Table Indexes fast", "col_b": "Evaluates in RAM memory"}
-                ]
-                syntax_a_title = "WHERE CLAUSE SYNTAX (ROW FILTER)"
-                syntax_a_code = "SELECT emp_name, department, salary\nFROM employees\nWHERE salary > 50000;"
-                syntax_a_note = "Row-level filter evaluated directly during initial table or index scan."
-                syntax_b_title = "HAVING CLAUSE SYNTAX (GROUP FILTER)"
-                syntax_b_code = "SELECT department, COUNT(*)\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 5;"
-                syntax_b_note = "Group-level filter evaluated only after rows are clustered into departments."
-                traps_title = "FATAL INTERVIEW TRAPS TO AVOID"
-                traps = [
-                    "❌ Trap: Writing WHERE COUNT(*) > 2 fails with a syntax error (aggregates illegal in WHERE)!",
-                    "✅ Rule: Always filter non-aggregated rows with WHERE first to cut group memory by 90%!"
-                ]
-                golden_rule = "Filter individual rows with WHERE before grouping; filter aggregated group calculations with HAVING."
-                pitch_to_interviewer = "I use WHERE to prune individual records before clustering, and HAVING to evaluate aggregate metrics on grouped records."
-                pro_tip = "💡 Senior Interviewer Pro-Tip: State that combining WHERE and HAVING maximizes index utilization and slashes RAM usage!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "title": "Theory Question & Core Objective",
-                        "speech_mr": "एसक्यूएल इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: WHERE आणि HAVING क्लॉजमध्ये नेमका फरक काय आहे? चला समजून घेऊया.",
-                        "speech_hi": "एसक्यूएल इंटरव्यू का सबसे पसंदीदा सवाल: WHERE और HAVING क्लॉज में क्या अंतर है? आइए इसे गहराई से समझते हैं.",
-                        "speech_en": "Here is a classic SQL interview question: What is the core difference between WHERE and HAVING? Let's master the distinction."
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "title": "Core Distinction & Misconception",
-                        "speech_mr": "उमेदवार इथे का अडखळतात? दोन्ही क्लॉज डेटा फिल्टर करतात, पण WHERE ग्रुपिंगच्या आधी आणि HAVING ग्रुपिंगच्या नंतर चालते.",
-                        "speech_hi": "कैंडिडेट्स अक्सर यहाँ क्यों गलती करते हैं? दोनों डेटा फिल्टर करते हैं, लेकिन WHERE ग्रुपिंग से पहले और HAVING ग्रुपिंग के बाद लगता है.",
-                        "speech_en": "Why do candidates stumble? Both clauses filter data, but WHERE filters rows before grouping, while HAVING filters aggregated buckets."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "title": "Database Engine Execution Order",
-                        "speech_mr": "डेटाबेस एक्झिक्युशन क्रम पाहा: आधी FROM आणि WHERE ने रोज फिल्टर होतात, मग GROUP BY आणि शेवटी HAVING ग्रुप्स तपासते.",
-                        "speech_hi": "डेटाबेस एग्जीक्यूशन आर्डर देखिए: पहले FROM और WHERE से रोज फिल्टर होते हैं, फिर GROUP BY और आखिर में HAVING ग्रुप्स चेक करता है.",
-                        "speech_en": "Look at the database engine lifecycle: FROM loads data, WHERE filters rows, then GROUP BY clusters rows, and HAVING evaluates aggregate conditions."
-                    },
-                    {
-                        "id": 4, "action_type": "code_build", "title": "Syntax & Implementation Placement",
-                        "speech_mr": "इथे कोड सिंटॅक्स शेजारी-शेजारी बघा. WHERE ॲग्रीगेशनच्या आधी लागते, तर HAVING मध्ये COUNT, SUM सारखी फंक्शन्स वापरता येतात.",
-                        "speech_hi": "यहाँ कोड सिंटैक्स साथ-साथ देखिए. WHERE एग्रीगेशन से पहले लगता है, जबकि HAVING में COUNT, SUM जैसे फंक्शन्स चेक होते हैं.",
-                        "speech_en": "Here is the code syntax side-by-side: WHERE cannot take aggregate functions, while HAVING is specifically designed for COUNT, SUM, and AVG."
-                    },
-                    {
-                        "id": 5, "action_type": "simulation_execution", "title": "Comparison Matrix & Traps",
-                        "speech_mr": "हा मॅट्रिक्स लक्षात ठेवा: WHERE इंडेक्स वापरून रॅम वाचवते, तर HAVING मेमरीमध्ये चालते. नॉन-ॲग्रीगेट फिल्टर नेहमी WHERE मध्ये लावा!",
-                        "speech_hi": "यह मैट्रिक्स याद रखें: WHERE इंडेक्स इस्तेमाल करके रैम बचाता है, जबकि HAVING मेमोरी में चेक होता है. नॉन-एग्रीगेट फिल्टर हमेशा WHERE में लगाएं!",
-                        "speech_en": "Memorize this matrix: WHERE leverages B-Tree indexes fast, while HAVING evaluates in memory. Always place row filters in WHERE to save RAM!"
-                    },
-                    {
-                        "id": 6, "action_type": "final_result", "title": "Interview Golden Takeaway",
-                        "speech_mr": "नेहमी लक्षात ठेवा हा सुवर्ण नियम: ओळी फिल्टर करायला WHERE वापरा आणि ग्रुप्स फिल्टर करायला HAVING वापरा!",
-                        "speech_hi": "हमेशा याद रखें यह गोल्डन रूल: रो-लेवल फिल्टर के लिए WHERE लगाएं और एग्रीगेट ग्रुप्स के लिए HAVING लगाएं!",
-                        "speech_en": "Golden Rule: Filter individual records with WHERE, filter aggregated groups with HAVING. Explain this clearly to impress senior hiring managers!"
-                    }
-                ]
-            # Topic C: RAG (Retrieval-Augmented Generation)
-            elif "RAG" in q_up or "RETRIEVAL" in q_up or ("VECTOR" in q_up and "DB" in q_up):
-                suggested_motion_bg = "neural_synapse"
-                title = "What is RAG? Retrieval-Augmented Generation"
-                concept_summary = "RAG grounds LLMs by dynamically retrieving relevant private enterprise documents from a Vector Database, eliminating hallucinations without costly retraining."
-                term_a = "STANDARD LLM (NO RAG)"
-                term_b = "RAG ARCHITECTURE (RETRIEVAL)"
-                comp_title = "STANDARD LLM vs RAG ARCHITECTURE"
-                comp_headers = ["FEATURE", "STANDARD LLM (STATIC)", "RAG (DYNAMIC RETRIEVAL)"]
-                comp_rows = [
-                    {"feature": "Data Freshness", "col_a": "❌ Cutoff date, zero live knowledge", "col_b": "✅ Instant real-time updates via DB"},
-                    {"feature": "Private Data Access", "col_a": "❌ Cannot access company files", "col_b": "✅ Queries private PDFs, docs, Notion"},
-                    {"feature": "Hallucinations", "col_a": "❌ High risk of inventing facts", "col_b": "✅ Zero: Grounded in cited sources"},
-                    {"feature": "Cost & Complexity", "col_a": "Expensive fine-tuning required", "col_b": "Low cost: Pay only for vector search"}
-                ]
-                syntax_a_title = "RAG INGESTION & VECTOR EMBEDDING"
-                syntax_a_code = "# Step 1: Chunk & Store Embeddings\nchunks = splitter.split_text(company_pdf)\nfor chunk in chunks:\n    vector = embed_model.get_embedding(chunk)\n    vector_db.upsert(id=chunk.id, vector=vector, metadata=chunk.text)"
-                syntax_a_note = "Semantic vector embeddings generated and stored in Pinecone/Upstash vector DB."
-                syntax_b_title = "RAG RETRIEVAL & LLM PROMPT"
-                syntax_b_code = "# Step 2: Retrieve Top-K & Augment Prompt\ndef answer_question(user_query):\n    q_vec = embed_model.get_embedding(user_query)\n    top_docs = vector_db.query(vector=q_vec, top_k=3)\n    prompt = f'Context: {top_docs}\\nQuestion: {user_query}'\n    return llm.generate(prompt)"
-                syntax_b_note = "Top relevant documents injected into LLM context window at query time."
-                traps_title = "CRITICAL RAG INTERVIEW TRAPS"
-                traps = [
-                    "❌ Trap: Poor chunking strategies cause LLM to miss key context or exceed token limits!",
-                    "✅ Rule: Use RAG for factual knowledge and live data; use Fine-Tuning only for specialized tone!"
-                ]
-                golden_rule = "RAG gives AI an open-book exam! Use RAG for dynamic private facts; use Fine-Tuning only for specialized formatting."
-                pitch_to_interviewer = "In interviews: Explain that RAG decouples knowledge storage from model weights, slashing maintenance costs and eliminating hallucinations."
-                pro_tip = "💡 Senior AI Architect Pro-Tip: Optimize chunk size (500 tokens with 10% overlap) and hybrid search (BM25 + Dense) for 99% accuracy!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "RAG Core Challenge",
-                        "speech_hi": "AI को आपकी कंपनी का प्राइवेट डेटा कैसे सिखाएं? बिना मॉडल को दोबारा ट्रेन किए? आइए 45 सेकंड में समझते हैं RAG यानी Retrieval-Augmented Generation!",
-                        "speech_mr": "AI ला तुमच्या कंपनीचा खाजगी डेटा कसा शिकवायचा? मॉडेलला पुन्हा ट्रेन न करता? चला ४५ सेकंदात समजूया RAG म्हणजेच Retrieval-Augmented Generation!",
-                        "speech_en": "How do you teach AI your company's private documents without costly re-training? Welcome to RAG: Retrieval-Augmented Generation!"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Standard LLM vs RAG",
-                        "speech_hi": "साधारण LLM पुराना डेटा जानता है और मनगढ़ंत जवाब देता है. RAG आपकी कंपनी के वेक्टराइज्ड डॉक्युमेंट्स ढूंढकर सही उत्तर देता है!",
-                        "speech_mr": "साधारण LLM मध्ये जुनी माहिती असते आणि तो खोटे उत्तर देऊ शकतो. RAG कंपनीच्या खऱ्या कागदपत्रांचा पुरावा वापरून अचूक उत्तर देतो!",
-                        "speech_en": "Standard models suffer from knowledge cutoffs and hallucinations. RAG grounds every response directly in your verified source documents."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "architecture_3d", "title": "RAG Architecture Pipeline",
-                        "visual_data": {
-                            "title": "RAG ARCHITECTURE PIPELINE",
-                            "nodes": [
-                                {"id": "docs", "label": "Document Chunks", "icon": "📄", "sub": "PDF / HTML / Markdown Sources", "color": "#38BDF8", "type": "client"},
-                                {"id": "embed", "label": "Embedding Model", "icon": "🧠", "sub": "text-embedding-3-small", "color": "#A855F7", "type": "process"},
-                                {"id": "vecdb", "label": "Vector Database", "icon": "💾", "sub": "Pinecone / Upstash Vector", "color": "#10B981", "type": "database"},
-                                {"id": "retrieve", "label": "Retrieval Engine", "icon": "🔍", "sub": "Top-K Similarity Search", "color": "#F59E0B", "type": "process"},
-                                {"id": "llm", "label": "LLM Generator", "icon": "🤖", "sub": "GPT-4 / Gemini / Claude", "color": "#EC4899", "type": "cloud"}
-                            ],
-                            "connections": [
-                                {"from": "docs", "to": "embed", "label": "CHUNK & ENCODE", "color": "#38BDF8"},
-                                {"from": "embed", "to": "vecdb", "label": "STORE VECTORS", "color": "#A855F7"},
-                                {"from": "vecdb", "to": "retrieve", "label": "QUERY MATCH", "color": "#10B981"},
-                                {"from": "retrieve", "to": "llm", "label": "AUGMENT PROMPT", "color": "#F59E0B"}
-                            ]
-                        },
-                        "speech_hi": "RAG की 4-स्टेप वर्किंग: पहले डॉक्युमेंट्स चंक होकर वेक्टर डेटाबेस में स्टोर होते हैं, फिर सवाल आने पर टॉप मैचिंग डेटा LLM को मिलता है.",
-                        "speech_mr": "RAG ची सिस्टिम पाइपलाइन: आधी कागदपत्रांचे चंक्स होऊन वेक्टर डेटाबेसमध्ये साठवले जातात, मग युजरच्या प्रश्नानुसार मॅचिंग डेटा LLM ला दिला जातो.",
-                        "speech_en": "Here is the RAG architecture pipeline: Chunk the source text, store dense embeddings in vector DB, retrieve top-k chunks, and pass them to the LLM."
-                    },
-                    {
-                        "id": 4, "action_type": "code_build", "visual_type": "code", "title": "Python Vector Search Pipeline",
-                        "speech_hi": "यह देखिए प्रोडक्शन कोड: वेक्टर सर्च से टॉप-के डॉक्युमेंट्स आते हैं और फिर LLM सटीक और प्रामाणिक उत्तर तैयार करता है.",
-                        "speech_mr": "हा बघा प्रोडक्शन पायथन कोड: आधी वेक्टर सर्च होतो, टॉप डॉक्युमेंट्स गोळा होतात आणि मग LLM खात्रीशीर उत्तर तयार करतो.",
-                        "speech_en": "Look at the production Python code: Vector similarity isolates relevant context, and the model synthesizes a 100% grounded answer."
-                    },
-                    {
-                        "id": 5, "action_type": "simulation_execution", "visual_type": "comparison", "title": "RAG vs Fine-Tuning Traps",
-                        "speech_hi": "तुलना याद रखें: प्राइवेट डेटा और अक्सर बदलने वाली जानकारी के लिए हमेशा RAG चुनें; फाइन-ट्यूनिंग सिर्फ स्टाइल और टोन बदलने के लिए है!",
-                        "speech_mr": "तुलना लक्षात ठेवा: खाजगी डेटा आणि बदलणाऱ्या माहितीसाठी नेहमी RAG निवडा; फाइन-ट्युनिंग फक्त भाषाशैली आणि टोनसाठी वापरावे!",
-                        "speech_en": "Remember the trade-off: Use RAG for factual knowledge and real-time updates. Reserve fine-tuning strictly for specialized domain syntax."
-                    },
-                    {
-                        "id": 6, "action_type": "final_result", "visual_type": "takeaway", "title": "Golden RAG Rule",
-                        "speech_hi": "गोल्डन रूल: RAG एआई के लिए ओपन-बुक एग्जाम है! बिना री-ट्रेनिंग के सुरक्षित और लेटेस्ट जानकारी का सबसे बेस्ट उपाय!",
-                        "speech_mr": "सुवर्ण नियम: RAG म्हणजे AI साठी ओपन-बुक परीक्षा! री-ट्रेनिंगचा खर्च वाचवून अचूक माहिती मिळवण्याचा १०० टक्के विश्वासार्ह मार्ग!",
-                        "speech_en": "Universal Golden Rule: RAG gives AI an open-book exam! Decouple knowledge from weights for enterprise accuracy and zero hallucinations!"
-                    }
-                ]
-
-            # Topic D: Agentic AI vs Generative AI / AI Agents
-            elif "AGENT" in q_up or "AGENTIC" in q_up:
-                suggested_motion_bg = "neural_synapse"
-                title = "Agentic AI vs Generative AI: The Autonomous Leap"
-                concept_summary = "Generative AI produces passive text and images on request, while Agentic AI plans workflows, executes tools via MCP, and self-corrects autonomously to achieve business goals."
-                term_a = "GENERATIVE AI (PASSIVE)"
-                term_b = "AGENTIC AI (AUTONOMOUS)"
-                comp_title = "GENERATIVE AI vs AGENTIC AI MATRIX"
-                comp_headers = ["CRITERIA", "GENERATIVE AI (CHATGPT)", "AGENTIC AI (AUTONOMOUS)"]
-                comp_rows = [
-                    {"feature": "Execution Model", "col_a": "Passive: Generates text & waits", "col_b": "Active: Plans, calls tools, executes"},
-                    {"feature": "Real-World Action", "col_a": "❌ Cannot browse, send emails, edit DB", "col_b": "✅ Calls APIs, MCP tools, runs code"},
-                    {"feature": "Error Recovery", "col_a": "❌ Crashes or stops on error", "col_b": "✅ Self-healing loop with reflection"},
-                    {"feature": "Workflow Depth", "col_a": "Single turn prompt-response", "col_b": "Multi-step autonomous delegation"}
-                ]
-                syntax_a_title = "GENERATIVE AI (PASSIVE CHAT)"
-                syntax_a_code = "# Passive Generative AI\nresponse = llm.chat('Write a SQL query for customer churn')\n# Returns text only. Cannot execute query or verify results!"
-                syntax_a_note = "Single-turn prompt to response. Model has zero tool access or execution agency."
-                syntax_b_title = "AGENTIC AI (AUTONOMOUS LOOP)"
-                syntax_b_code = "# Autonomous Agentic Execution Loop\nasync def run_agent(goal):\n    plan = await agent.decompose(goal)\n    for step in plan.steps:\n        res = await mcp.execute(step.tool, step.args)\n        if res.error: await agent.self_heal(res.error)\n    return plan.deliverable"
-                syntax_b_note = "Autonomous multi-step loop with planning, tool calling, and self-healing error recovery."
-                traps_title = "AGENTIC AI PITFALLS TO AVOID"
-                traps = [
-                    "❌ Trap: Giving AI agents unconstrained write access without human-in-the-loop guardrails!",
-                    "✅ Rule: Use Generative AI for brainstorming and drafting; use Agentic AI for end-to-end task execution!"
-                ]
-                golden_rule = "Generative AI writes answers; Agentic AI achieves goals! Combine LLM reasoning with MCP tools for autonomous software workflows."
-                pitch_to_interviewer = "In interviews: Contrast passive text synthesis with autonomous goal decomposition, environment feedback loops, and tool orchestration."
-                pro_tip = "💡 Senior AI Lead Pro-Tip: Implement state checkpoints, max loop limits, and schema validation to build reliable production agents!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "Agentic AI Shift",
-                        "speech_hi": "ChatGPT सिर्फ सवाल का जवाब देता है, लेकिन AI Agent आपका पूरा काम खुद कैसे करता है? आइए 45 सेकंड में समझते हैं Agentic AI की ताकत!",
-                        "speech_mr": "ChatGPT फक्त उत्तर देतो, पण AI Agent स्वतः काम कसं करतो? चला ४५ सेकंदात समजूया Agentic AI चं रहस्य!",
-                        "speech_en": "ChatGPT only gives passive text answers, but how does an AI Agent autonomously complete entire projects? Let's master Agentic AI!"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Passive vs Autonomous",
-                        "speech_hi": "जेनरेटिव एआई सिर्फ टेक्स्ट लिखता है. जबकि एजेंटिक एआई खुद लक्ष्य तय करता है, टूल्स चलाता है और गलतियों को खुद ठीक करता है!",
-                        "speech_mr": "जनरेटिव्ह एआय फक्त मजकूर तयार करतो, पण एजेंटिक एआय स्वतः निर्णय घेऊन टूल्स, डेटाबेस आणि ॲप्स वापरून काम पूर्ण करतो!",
-                        "speech_en": "Generative AI waits passively for prompts. Agentic AI proactively plans multi-step tasks, invokes real-world tools, and delivers working outcomes."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "Agentic Execution Loop",
-                        "speech_hi": "एजेंटिक वर्कफ्लो देखिए: पहले लक्ष्य को छोटे टास्क में बांटता है, फिर MCP टूल्स और डेटाबेस से कनेक्ट होकर काम पूरा करता है.",
-                        "speech_mr": "एजेंटिक आर्किटेक्चर पाहा: आधी प्लॅनिंग होते, मग टूल्स आणि कोड रन होतात आणि अडचण आल्यास एआय स्वतः दुरुस्ती करतो.",
-                        "speech_en": "Here is the agentic loop: Goal perception, multi-step planning, tool invocation through MCP, environment feedback, and self-correction."
-                    },
-                    {
-                        "id": 4, "action_type": "code_build", "visual_type": "code", "title": "Autonomous Agent Loop Code",
-                        "speech_hi": "प्रोडक्शन कोड देखिए: एजेंट टूल्स चलाता है, रिजल्ट चेक करता है और फेल होने पर खुद को सुधारकर सही आउटपुट देता है.",
-                        "speech_mr": "हा बघा प्रोडक्शन कोड: एआय स्वतः पायथन कोड एक्झिक्युट करतो, रिझल्ट पडताळतो आणि फायनल आऊटपुट देतो.",
-                        "speech_en": "Look at the production loop: The agent dispatches tool calls, inspects the execution trace, and self-heals when exceptions occur."
-                    },
-                    {
-                        "id": 5, "action_type": "simulation_execution", "visual_type": "comparison", "title": "Enterprise Agency Matrix",
-                        "speech_hi": "यह मैट्रिक्स याद रखें: कंटेंट राइटिंग के लिए जेनरेटिव एआई, लेकिन सॉफ्टवेयर बिल्डिंग और ऑटोमेशन के लिए एजेंटिक एआई जरूरी है!",
-                        "speech_mr": "हा मॅट्रिक्स लक्षात ठेवा: लेखनासाठी जनरेटिव्ह एआय उत्तम, पण सॉफ्टवेअर डेव्हलपमेंट आणि ऑटोमेशनसाठी एजेंटिक एआय आवश्यक आहे!",
-                        "speech_en": "Memorize this matrix: Generative AI assists human creators; Agentic AI drives autonomous digital workers in production enterprises."
-                    },
-                    {
-                        "id": 6, "action_type": "final_result", "visual_type": "takeaway", "title": "Future of AI Takeaway",
-                        "speech_hi": "गोल्डन रूल: जेनरेटिव एआई सोचता है, लेकिन एजेंटिक एआई काम पूरा करता है! यही सॉफ्टवेयर का अगला भविष्य है!",
-                        "speech_mr": "सुवर्ण नियम: जनरेटिव्ह एआय फक्त लिहितो, पण एजेंटिक एआय प्रत्यक्ष काम पूर्ण करतो! भविष्यात हीच खरी क्रांती आहे!",
-                        "speech_en": "Universal Golden Rule: Generative AI creates text; Agentic AI creates outcomes! Tool orchestration is the definitive future of software!"
-                    }
-                ]
-
-            # Topic E: MCP (Model Context Protocol)
-            elif "MCP" in q_up or "MODEL CONTEXT" in q_up or "CONTEXT PROTOCOL" in q_up:
-                suggested_motion_bg = "quantum_nebula"
-                title = "What is MCP? Model Context Protocol Explained"
-                concept_summary = "MCP is an open standard that connects AI models securely to local and remote data sources, databases, and APIs without custom one-off glue code."
-                term_a = "CUSTOM REST API (FRAGILE)"
-                term_b = "MCP STANDARD PROTOCOL"
-                comp_title = "PROPRIETARY CONNECTORS vs OPEN MCP STANDARD"
-                comp_headers = ["CRITERIA", "CUSTOM INTEGRATION", "MODEL CONTEXT PROTOCOL (MCP)"]
-                comp_rows = [
-                    {"feature": "Standardization", "col_a": "N proprietary APIs for N tools", "col_b": "1 standard JSON-RPC protocol"},
-                    {"feature": "Security & Auth", "col_a": "Hardcoded tokens in scripts", "col_b": "Host-controlled granular permissions"},
-                    {"feature": "Two-Way Context", "col_a": "One-way request-response", "col_b": "Dynamic prompts, resources & tools"},
-                    {"feature": "Enterprise Adoption", "col_a": "High maintenance technical debt", "col_b": "Universal Anthropic open standard"}
-                ]
-                syntax_a_title = "MCP SERVER REGISTRATION (FASTMCP / PYTHON)"
-                syntax_a_code = "from mcp.server.fastmcp import FastMCP\n\nmcp = FastMCP('NanoPro-Postgres-Bridge')\n\n@mcp.tool()\ndef query_database(sql: str) -> str:\n    return db.execute_safe(sql)\n\nif __name__ == '__main__':\n    mcp.run()"
-                syntax_a_note = "Standard MCP server exposing authorized database querying tools."
-                syntax_b_title = "MCP CLIENT HOST ORCHESTRATION"
-                syntax_b_code = "# AI Host dynamically queries MCP Server\nclient = MCPClient(server_command=['python', 'db_server.py'])\nawait client.connect()\ntools = await client.list_tools()\nres = await client.call_tool('query_database', {'sql': 'SELECT count(*) FROM orders'})"
-                syntax_b_note = "Standardized client tool execution with zero proprietary adapters."
-                traps_title = "CRITICAL MCP ARCHITECTURAL RULES"
-                traps = [
-                    "⚠️ Trap: Exposing destructive DDL/DML tools over MCP without human-in-the-loop approvals!",
-                    "✅ Rule: Always run MCP servers with least-privilege credentials and strict schema validation!"
-                ]
-                golden_rule = "MCP is the USB-C of Artificial Intelligence! Standardize all database, file, and API access behind MCP."
-                pitch_to_interviewer = "In interviews: Highlight that MCP eliminates exponential connector fragmentation by creating a universal open standard between AI models and external enterprise systems."
-                pro_tip = "💡 Senior AI Systems Pro-Tip: Deploy stateless FastMCP microservices behind local stdio or SSE transport for high-throughput zero-leakage integration!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "What is MCP?",
-                        "speech_hi": "AI अब सीधे Database, Gmail और GitHub से कैसे जुड़ता है? क्या हमें हर टूल के लिए अलग API कोड लिखना पड़ेगा? बिलकुल नहीं! आज समझिए MCP यानी Model Context Protocol!",
-                        "speech_mr": "AI आता थेट Database, Gmail आणि GitHub शी कसा जोडला जातो? प्रत्येकासाठी वेगळा API कोड लिहावा लागतो का? अजिबात नाही! आज जाणून घ्या MCP म्हणजेच Model Context Protocol!",
-                        "speech_en": "How does AI connect directly to your Database, Gmail, and GitHub without custom glue code? Meet MCP: Model Context Protocol!"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Custom APIs vs MCP",
-                        "speech_hi": "पहले हर Database और App के लिए अलग-अलग कस्टम API लिखनी पड़ती थी। MCP ने USB-C की तरह एक यूनिवर्सल ओपन प्रोटोकॉल बना दिया है, जिससे कोई भी AI मॉडल किसी भी टूल से तुरंत जुड़ जाता है!",
-                        "speech_mr": "पूर्वी प्रत्येक Database आणि App साठी स्वतंत्र API कोड लिहावा लागायचा. MCP ने USB-C सारखा एकच युनिव्हर्सल प्रोटोकॉल दिला आहे, ज्याने कोणताही AI मॉडेल थेट टूलशी कनेक्ट होतो!",
-                        "speech_en": "Previously, integrating tools required brittle custom APIs. MCP establishes a universal open standard, acting as the USB-C for AI model integrations."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "MCP Host & Server Architecture",
-                        "speech_hi": "MCP आर्किटेक्चर में तीन मुख्य घटक हैं: AI Host, MCP Client, और FastMCP Server. मॉडल आवश्यकतानुसार resources, prompts और tools को सुरक्षित JSON-RPC से कॉल करता है!",
-                        "speech_mr": "MCP आर्किटेक्चरमध्ये तीन मुख्य घटक आहेत: AI Host, MCP Client, आणि FastMCP Server. मॉडेल गरजेनुसार टूल्स आणि डेटा सुरक्षितपणे JSON-RPC द्वारे फेच करतो!",
-                        "speech_en": "The MCP architecture bridges the AI Host to standardized MCP Servers via secure JSON-RPC, exposing tools, dynamic resources, and prompt templates."
-                    },
-                    {
-                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "FastMCP Tool Implementation",
-                        "speech_hi": "Python में FastMCP से केवल @mcp.tool डेकोरेटर लगाकर हम किसी भी SQL Query या Business Logic को सुरक्षित AI Tool में बदल सकते हैं!",
-                        "speech_mr": "Python मध्ये FastMCP वापरून फक्त @mcp.tool डेकोरेटर लावून आपण कोणताही SQL Query किंवा API थेट सुरक्षित AI Tool बनवू शकतो!",
-                        "speech_en": "Using FastMCP in Python, you simply decorate functions with @mcp.tool to securely expose enterprise database operations to AI models."
-                    },
-                    {
-                        "id": 5, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Rule & Enterprise Impact",
-                        "speech_hi": "याद रखिए: MCP AI का भविष्य है! अगर AI को आपके डेटा पर सही काम करना है, तो MCP स्टैंडर्ड अपनाना ही सबसे सुरक्षित तरीका है!",
-                        "speech_mr": "लक्षात ठेवा: MCP हा AI चा खरा पाया आहे! AI ला सुरक्षितपणे डेटा आणि टूल्सशी जोडण्यासाठी Model Context Protocol चा वापर करा!",
-                        "speech_en": "Universal Golden Rule: MCP is the USB-C of AI! Standardize your data and tool connectors on MCP for scalable, production-grade agentic architectures!"
-                    }
-                ]
-
-            # Topic F: Fine-Tuning vs RAG
-            elif ("FINE-TUN" in q_up or "FINETUN" in q_up) and ("RAG" in q_up or "TRAIN" in q_up or "DATA" in q_up):
-                suggested_motion_bg = "neural_synapse"
-                title = "RAG vs Fine-Tuning: How to Train AI on Company Data"
-                concept_summary = "RAG provides dynamic open-book retrieval for changing facts, while Fine-Tuning bakes domain tone, syntax style, and vocabulary directly into model weights."
-                term_a = "RAG (DYNAMIC RETRIEVAL)"
-                term_b = "FINE-TUNING (WEIGHT UPDATES)"
-                comp_title = "RAG vs FINE-TUNING DECISION MATRIX"
-                comp_headers = ["CRITERIA", "RAG (RETRIEVAL)", "FINE-TUNING (PEFT/LORA)"]
-                comp_rows = [
-                    {"feature": "Primary Purpose", "col_a": "Access factual knowledge & live docs", "col_b": "Learn tone, format, and syntax"},
-                    {"feature": "Data Updates", "col_a": "Instant: Just add doc to Vector DB", "col_b": "Slow: Requires full retraining run"},
-                    {"feature": "Hallucinations", "col_a": "Extremely low: Cites exact sources", "col_b": "Can still hallucinate facts"},
-                    {"feature": "Compute Cost", "col_a": "Low: Standard Vector DB cost", "col_b": "High: GPU compute & training data"}
-                ]
-                syntax_a_title = "RAG ARCHITECTURE (OPEN BOOK)"
-                syntax_a_code = "# RAG: Retrieve & Inject Facts\ndef answer_with_rag(query):\n    context_chunks = vector_db.similarity_search(query, k=4)\n    prompt = f'Context:\n{context_chunks}\n\nQuestion: {query}'\n    return llm.generate(prompt)"
-                syntax_a_note = "Model receives latest company documents directly in prompt context."
-                syntax_b_title = "LORA / PEFT FINE-TUNING (NEW WEIGHTS)"
-                syntax_b_code = "# Fine-Tuning: Update LoRA Adapters\nfrom peft import LoraConfig, get_peft_model\npeft_config = LoraConfig(r=16, lora_alpha=32, target_modules=['q_proj', 'v_proj'])\nmodel = get_peft_model(base_model, peft_config)\ntrainer.train()"
-                syntax_b_note = "Model weights adapted to output specific technical syntax and internal dialect."
-                traps_title = "RAG vs FINE-TUNING INTERVIEW TRAPS"
-                traps = [
-                    "⚠️ Trap: Fine-Tuning an LLM to teach it facts — fine-tuned models still hallucinate changing facts!",
-                    "✅ Rule: Use RAG for knowledge retrieval; use Fine-Tuning only for specialized tone and format!"
-                ]
-                golden_rule = "RAG is an open-book exam; Fine-Tuning is earning a Master's degree! Use RAG for facts and Fine-Tuning for style."
-                pitch_to_interviewer = "In interviews: State that RAG is the enterprise standard for dynamic knowledge, while LoRA fine-tuning is reserved for proprietary structured output formats."
-                pro_tip = "💡 Senior AI Architect Pro-Tip: Start with Hybrid RAG first. Only fine-tune if the base model fails formatting or reasoning on domain jargon!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "RAG vs Fine-Tuning",
-                        "speech_hi": "AI को अपनी कंपनी का डेटा कैसे सिखाएं? RAG इस्तेमाल करें या Fine-Tuning? यह आज का सबसे बड़ा सवाल है! चलिए 45 सेकंड में इसका सही जवाब समझते हैं!",
-                        "speech_mr": "AI ला तुमच्या कंपनीचा डेटा कसा शिकवायचा? RAG वापरायचे की Fine-Tuning? हा कंपन्यांसमोरचा सर्वात महत्त्वाचा प्रश्न आहे! चला 45 सेकंदात समजून घेऊया!",
-                        "speech_en": "How should you teach AI your company's proprietary data? RAG or Fine-Tuning? Here is the exact architectural breakdown in 45 seconds!"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "The Core Difference",
-                        "speech_hi": "RAG एक खुली किताब की तरह है, जहाँ AI ज़रूरत पड़ने पर आपकी फाइल्स और डेटाबेस से सही जानकारी पढ़कर उत्तर देता है। जबकि Fine-Tuning से मॉडल के इंटरनल न्यूरल वेट्स बदले जाते हैं!",
-                        "speech_mr": "RAG म्हणजे ओपन-बुक परीक्षा, जिथे AI थेट तुमच्या डेटाबेसमधून माहिती वाचून अचूक उत्तर देतो. तर Fine-Tuning मध्ये मॉडेलच्या न्यूरल वेट्समध्ये बदल केला जातो!",
-                        "speech_en": "RAG gives the AI an open-book exam by retrieving private source documents at query time. Fine-Tuning modifies internal weights to adopt specific style and domain vocabulary."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "Architectural Pipeline Comparison",
-                        "speech_hi": "अगर आपकी कंपनी का डेटा रोज़ बदलता है, जैसे सेल्स, नीतियां या स्टॉक, तो RAG बेस्ट है क्योंकि इसमें कोई री-ट्रेनिंग खर्च नहीं आता!",
-                        "speech_mr": "जर तुमच्या कंपनीचा डेटा रोज बदलत असेल, तर RAG सर्वात बेस्ट आहे, कारण यासाठी कोणतीही महागडी री-ट्रेनिंग करावी लागत नाही!",
-                        "speech_en": "If your enterprise data changes frequently, RAG is vastly superior because updating facts requires zero GPU re-training."
-                    },
-                    {
-                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "When to Use Which",
-                        "speech_hi": "Fine-Tuning केवल तब करें जब आपको AI की टोन, मेडिकल कोडिंग या खास JSON फॉर्मेटिंग सिखानी हो। तथ्यों के लिए हमेशा RAG का उपयोग करें!",
-                        "speech_mr": "Fine-Tuning फक्त तेव्हाच करा जेव्हा AI ला विशिष्ट टोन किंवा खास कोडिंग फॉरमॅट शिकवायचा असेल. अचूक तथ्यांसाठी नेहमी RAG वापरा!",
-                        "speech_en": "Reserve LoRA fine-tuning for specialized tone and strict syntax compliance. Always rely on RAG for dynamic factual knowledge."
-                    },
-                    {
-                        "id": 5, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Rule & Takeaway",
-                        "speech_hi": "गोल्डन रूल: तथ्यों के लिए RAG, और स्टाइल के लिए Fine-Tuning! इस रणनीति से आपकी कंपनी का AI 100% सटीक और किफायती रहेगा!",
-                        "speech_mr": "गोल्डन रुल: अचूक माहितीसाठी RAG आणि स्टाईलसाठी Fine-Tuning! हा नियम पाळल्यास तुमचा AI खर्च वाचेल आणि अचूकता 100% राहील!",
-                        "speech_en": "Universal Golden Rule: Use RAG for factual knowledge and Fine-Tuning for style! That is the winning enterprise AI architecture!"
-                    }
-                ]
-
-            # Topic G: Local LLM vs Cloud LLM (Ollama vs Cloud AI)
-            elif ("OLLAMA" in q_up or "LOCAL LLM" in q_up or "LOCAL MODEL" in q_up) and ("CLOUD" in q_up or "API" in q_up or "GROQ" in q_up or "GEMINI" in q_up):
-                suggested_motion_bg = "silicon_laser"
-                title = "Local LLM vs Cloud LLM: Ollama vs Cloud AI"
-                concept_summary = "Local LLMs running via Ollama/vLLM guarantee 100% privacy and zero subscription costs, while Cloud LLMs deliver cutting-edge reasoning and massive context windows."
-                term_a = "LOCAL LLM (OLLAMA / GPU)"
-                term_b = "CLOUD LLM (GEMINI / GROQ)"
-                comp_title = "LOCAL LLM vs CLOUD LLM ARCHITECTURE MATRIX"
-                comp_headers = ["CRITERIA", "LOCAL LLM (OLLAMA)", "CLOUD LLM (CLOUD API)"]
-                comp_rows = [
-                    {"feature": "Data Privacy", "col_a": "100% On-premise, zero data leaks", "col_b": "Data sent over internet to provider"},
-                    {"feature": "Cost Model", "col_a": "Zero recurring API token costs", "col_b": "Pay-per-token usage pricing"},
-                    {"feature": "Offline Capability", "col_a": "Works 100% without internet", "col_b": "Requires active internet link"},
-                    {"feature": "Intelligence & Size", "col_a": "3B - 70B parameter models", "col_b": "Frontier 100B - 1T+ parameter models"}
-                ]
-                syntax_a_title = "OLLAMA LOCAL GPU INFERENCE"
-                syntax_a_code = "# Run Local LLM with Ollama\nimport ollama\n\nres = ollama.chat(model='llama3.2:3b', messages=[\n    {'role': 'user', 'content': 'Analyze customer PII locally'}\n])\n# 100% private, zero data leaves local machine!"
-                syntax_a_note = "Local inference running on local GPU with zero external network traffic."
-                syntax_b_title = "HYBRID FALLBACK ROUTING"
-                syntax_b_code = "# NanoPro Hybrid Failover Pattern\nasync def generate_response(prompt):\n    try:\n        return await groq_client.chat(prompt) # Sub-second\n    except Exception:\n        return await ollama_local.chat(prompt) # Offline failover"
-                syntax_b_note = "Smart hybrid routing combines cloud speed with offline local resilience."
-                traps_title = "LOCAL vs CLOUD ARCHITECTURAL TRAPS"
-                traps = [
-                    "⚠️ Trap: Running 70B models on underpowered consumer GPUs causing 50-second latency!",
-                    "✅ Rule: Use Local SLMs (3B/8B) for private PII and internal tasks; route complex reasoning to Cloud!"
-                ]
-                golden_rule = "Use Local LLMs for complete privacy and constant baseline tasks; use Cloud LLMs for frontier reasoning and elastic burst loads."
-                pitch_to_interviewer = "In interviews: Propose a hybrid AI gateway: sanitize PII on local SLMs before sending sanitized prompts to frontier cloud models."
-                pro_tip = "💡 Senior Engineer Pro-Tip: Deploy Ollama with Quantized 4-bit GGUF models on Apple Silicon or Nvidia RTX for 80 tokens/sec local throughput!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "Local LLM vs Cloud LLM",
-                        "speech_hi": "Ollama बनाम Cloud AI: कौन सा ज़्यादा फ़ायदेमंद है? क्या अपने लैपटॉप पर AI चलाना क्लाउड से बेहतर है? आइए 45 सेकंड में तकनीकी सच्चाई जानते हैं!",
-                        "speech_mr": "Ollama vs Cloud AI: कोणता जास्त फायदेशीर? स्वतःच्या कम्प्युटरवर लोकल AI चालवणे क्लाउडपेक्षा चांगले आहे का? चला 45 सेकंदात जाणून घेऊया!",
-                        "speech_en": "Local LLM versus Cloud LLM: Ollama vs Cloud AI — which one should your company adopt? Here is the complete breakdown!"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Privacy vs Raw Intelligence",
-                        "speech_hi": "Local LLM का सबसे बड़ा फायदा है 100% डेटा प्राइवेसी और शून्य टोकन बिल! आपका संवेदनशील डेटा कभी भी आपके कंप्यूटर से बाहर नहीं जाता!",
-                        "speech_mr": "Local LLM चा सर्वात मोठा फायदा म्हणजे 100% डेटा प्रायव्हसी आणि शून्य API बिल! तुमचा कंपनी डेटा कम्प्युटरबाहेर जात नाही!",
-                        "speech_en": "The biggest advantage of Local LLMs is 100% data privacy and zero API token costs — confidential data never leaves your infrastructure."
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "diagram", "title": "Hardware & Performance Trade-Off",
-                        "speech_hi": "लेकिन क्लाउड AI के पास सैकड़ों गुना बड़े मॉडल्स और सुपरफ़ास्ट Groq LPU स्पीड होती है, जिसके लिए आपको महंगे GPU नहीं खरीदने पड़ते!",
-                        "speech_mr": "परंतु क्लाउड AI कडे महाप्रचंड फ्रंटियर मॉडेल्स आणि सुपरफास्ट स्पीड असते, ज्यासाठी महागडे GPU खरेदी करावे लागत नाहीत!",
-                        "speech_en": "On the other hand, Cloud AI delivers unmatched frontier reasoning and instant elasticity without requiring dedicated multi-thousand dollar GPUs."
-                    },
-                    {
-                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "The Hybrid Enterprise Strategy",
-                        "speech_hi": "सर्वश्रेष्ठ रणनीति है Hybrid Architecture: आंतरिक और निजी डेटा के लिए Ollama, और जटिल रीजनिंग के लिए Cloud AI!",
-                        "speech_mr": "उत्कृष्ट स्ट्रॅटेजी आहे Hybrid Architecture: अंतर्गत खाजगी कामासाठी Ollama आणि मोठ्या कामासाठी Cloud AI चा वापर करा!",
-                        "speech_en": "The gold standard is a Hybrid AI Architecture: route confidential PII to local models, and delegate high-complexity reasoning to cloud models."
-                    },
-                    {
-                        "id": 5, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Rule & Takeaway",
-                        "speech_hi": "गोल्डन रूल: गोपनीयता के लिए Local LLM और असीमित शक्ति के लिए Cloud LLM! दोनों का सही संतुलन ही स्मार्ट इंजीनियरिंग है!",
-                        "speech_mr": "गोल्डन रुल: प्रायव्हसीसाठी Local LLM आणि मोठ्या कामासाठी Cloud LLM! दोघांचे योग्य मिश्रण हाच स्मार्ट इंजिनिअरिंगचा मार्ग आहे!",
-                        "speech_en": "Universal Golden Rule: Local LLM for private sovereignty, Cloud LLM for frontier scale! A hybrid architecture wins every time!"
-                    }
-                ]
-
-            # Topic H: Modern Data Engineering Pipeline (Oracle ➔ Python ➔ S3 ➔ Snowflake)
-            elif ("ORACLE" in q_up or "SNOWFLAKE" in q_up or "S3" in q_up or "DATA ENGINEERING" in q_up or "ETL" in q_up or "PIPELINE" in q_up or "MEDALLION" in q_up or "KAFKA" in q_up or "DATA LAKE" in q_up):
-                suggested_motion_bg = "warp_tunnel"
-                title = "Data Engineering Pipeline: Oracle ➔ Python ➔ S3 ➔ Snowflake"
-                concept_summary = "Modern enterprise data pipeline extracting batch/CDC data from Oracle OLTP, transforming and parquet-compressing in Python, staging in AWS S3 Data Lake, and loading into Snowflake Cloud DW for analytical querying."
-                term_a = "ON-PREM OLTP (ORACLE)"
-                term_b = "CLOUD DW (SNOWFLAKE)"
-                comp_title = "OLTP SOURCE vs CLOUD DATA WAREHOUSE"
-                comp_headers = ["STAGE", "TECHNOLOGY", "ROLE IN PIPELINE"]
-                comp_rows = [
-                    {"feature": "1. Source OLTP", "col_a": "Oracle Database", "col_b": "High-concurrency row-based ACID transactional store"},
-                    {"feature": "2. Ingestion & ETL", "col_a": "Python / PySpark", "col_b": "Validates schema, converts CSV/JSON to Snappy Parquet"},
-                    {"feature": "3. Staging Lake", "col_a": "AWS S3 Bucket", "col_b": "Decoupled 11 9's durability object storage landing zone"},
-                    {"feature": "4. Analytics DW", "col_a": "Snowflake Warehouse", "col_b": "Micro-partitioned columnar storage for BI and ML models"}
-                ]
-                syntax_a_title = "PYTHON ETL EXTRACTION & S3 PUT"
-                syntax_a_code = "# Step 1 & 2: Extract from Oracle & Stage to S3\nimport pandas as pd, boto3\n\n# Extract transactional batch\ndf = pd.read_sql('SELECT * FROM orders WHERE updated_at >= CURRENT_DATE - 1', oracle_conn)\n\n# Compress to Parquet & Upload to AWS S3 Lake\ndf.to_parquet('s3://enterprise-data-lake/raw/orders.parquet', compression='snappy')"
-                syntax_a_note = "High-speed columnar Parquet compression saves 80% S3 storage and speeds up ingestion."
-                syntax_b_title = "SNOWFLAKE COPY INTO / SNOWPIPE INGESTION"
-                syntax_b_code = "-- Step 3 & 4: Ingest staged Parquet from S3 into Snowflake\nCOPY INTO analytics.fact_orders\nFROM @s3_enterprise_stage/raw/orders.parquet\nFILE_FORMAT = (TYPE = 'PARQUET')\nON_ERROR = 'CONTINUE'\nPURGE = FALSE;\n\n-- Verified: 10M records loaded in 4.2 seconds!"
-                syntax_b_note = "Serverless Snowpipe or bulk COPY INTO leverages Snowflake micro-partitions."
-                traps_title = "DATA PIPELINE PITFALLS & INTERVIEW TRAPS"
-                traps = [
-                    "❌ Trap: Loading uncompressed raw CSVs directly to Snowflake — causes huge compute bill and slow scans!",
-                    "✅ Rule: Always convert to columnar Parquet/ORC in Python and use S3 partition pruning (year/month/day)!"
-                ]
-                golden_rule = "Decouple Compute from Storage! Modern Data Pipelines use Python to transform, S3 for low-cost staging, and Snowflake for lightning-fast columnar analytics."
-                pitch_to_interviewer = "In interviews: Walk through the 4 tiers: Source OLTP ➔ Python ETL Engine ➔ S3 Staging Object Lake ➔ Snowflake Cloud Data Warehouse with automated Snowpipe ingestion."
-                pro_tip = "💡 Principal Data Engineer Pro-Tip: Partition S3 paths by date (dt=YYYY-MM-DD), enable Snowflake automatic clustering, and use CDC for real-time delta sync!"
-                stages = [
-                    {
-                        "id": 1, "action_type": "problem_intro", "visual_type": "hook", "title": "Enterprise Data Pipeline",
-                        "speech_hi": "Oracle से Snowflake तक डेटा कैसे जाता है? बड़ी IT कंपनियों का डेटा पाइपलाइन आर्किटेक्चर क्या है? आइए 45 सेकंड में 3D में समझते हैं Oracle से Snowflake का पूरा सफर!",
-                        "speech_mr": "Oracle ते Snowflake पर्यंत डेटा कसा वाहतो? मोठ्या IT कंपन्यांचे आधुनिक डेटा पाइपलाइन आर्किटेक्चर कसे असते? चला 45 सेकंदात 3D मध्ये समजून घेऊया!",
-                        "speech_en": "How does enterprise data flow from on-premises Oracle to Snowflake Cloud? Watch this complete 3D Data Engineering Pipeline breakdown in 45 seconds!"
-                    },
-                    {
-                        "id": 2, "action_type": "data_inspection", "visual_type": "comparison", "title": "Source OLTP vs Cloud DW",
-                        "speech_hi": "सबसे पहले स्रोत समझिए: Oracle एक OLTP डेटाबेस है जो दिन-प्रतिदिन के लेन-देन संभालता है. लेकिन हैवी एनालिटिक्स के लिए हमें Snowflake जैसे क्लाउड वेयरहाउस की आवश्यकता होती है!",
-                        "speech_mr": "प्रथम डेटा सोर्स समजून घ्या: Oracle हा OLTP डेटाबेस आहे जो दैनंदिन ट्रान्झॅक्शन्स हाताळतो. पण मोठ्या रिपोर्टिंग आणि ॲनालिटिक्ससाठी Snowflake सारख्या आधुनिक वेअरहाऊसची गरज असते!",
-                        "speech_en": "First, understand the source: Oracle handles high-concurrency transactional OLTP. But for big-data reporting and analytics, we must ingest into Snowflake's columnar warehouse!"
-                    },
-                    {
-                        "id": 3, "action_type": "logic_flowchart", "visual_type": "architecture_3d", "title": "3D Data Pipeline Architecture",
-                        "visual_data": {
-                            "title": "ORACLE ➔ PYTHON ➔ S3 ➔ SNOWFLAKE 3D PIPELINE",
-                            "nodes": [
-                                {"id": "oracle", "label": "Oracle OLTP DB", "icon": "🗄️", "sub": "Banking Core Database", "color": "#EF4444", "type": "database"},
-                                {"id": "python", "label": "Python ETL Engine", "icon": "⚡", "sub": "Data Cleaning & Parquet Export", "color": "#38BDF8", "type": "process"},
-                                {"id": "s3", "label": "AWS S3 Data Lake", "icon": "🪣", "sub": "Raw Staging & Partitioned Storage", "color": "#F59E0B", "type": "cloud"},
-                                {"id": "snowflake", "label": "Snowflake Cloud DW", "icon": "❄️", "sub": "Fact & Dimension Analytics", "color": "#10B981", "type": "database"}
-                            ],
-                            "connections": [
-                                {"from": "oracle", "to": "python", "label": "JDBC EXTRACT", "color": "#EF4444"},
-                                {"from": "python", "to": "s3", "label": "PUT PARQUET", "color": "#38BDF8"},
-                                {"from": "s3", "to": "snowflake", "label": "SNOWPIPE INGEST", "color": "#10B981"}
-                            ]
-                        },
-                        "speech_hi": "यह है 4-स्टेज 3D पाइपलाइन: Oracle से Python डेटा एक्सट्रैक्ट करता है, फिर स्नैपी पारकेट फॉर्मेट बनाकर AWS S3 लेक में अपलोड करता है, और Snowpipe से डेटा Snowflake में लोड होता है!",
-                        "speech_mr": "ही आहे 4-फेज 3D पाइपलाइन: Oracle मधून Python डेटा फेच करतो, त्याचे Parquet मध्ये रूपांतर करून AWS S3 मध्ये पाठवतो, आणि Snowpipe द्वारे डेटा थेट Snowflake मध्ये लोड होतो!",
-                        "speech_en": "Here is the 4-tier 3D pipeline: Python extracts from Oracle, compresses records into Parquet, stages them into AWS S3, and automated Snowpipe streams them into Snowflake!"
-                    },
-                    {
-                        "id": 4, "action_type": "solution_reveal", "visual_type": "code", "title": "Production Python & Snowflake Code",
-                        "speech_hi": "कोड देखिए: Python में Pandas और Boto3 से डेटा पारकेट बनकर S3 में जाता है, और Snowflake में मात्र एक COPY INTO कमांड से लाखों रिकॉर्ड्स कुछ ही सेकंड्स में लोड हो जाते हैं!",
-                        "speech_mr": "प्रोडक्शन कोड पाहा: Python मध्ये Boto3 वापरून Parquet फाईल S3 मध्ये जाते, आणि Snowflake मध्ये एकाच COPY INTO कमांडने कोट्यवधी रेकॉर्ड्स क्षणात लोड होतात!",
-                        "speech_en": "Here is the production code: Python writes Snappy Parquet to S3, and Snowflake executes COPY INTO with automated schema-matching to ingest millions of rows in seconds!"
-                    },
-                    {
-                        "id": 5, "action_type": "simulation_execution", "visual_type": "comparison", "title": "Production Best Practices",
-                        "speech_hi": "इंटरव्यू टिप याद रखें: S3 में डेटा को हमेशा तारीख के अनुसार पार्टीशन करें, और रॉ CSV की जगह हमेशा पारकेट का उपयोग करें ताकि 80% स्टोरेज और बिल बच सके!",
-                        "speech_mr": "इंटरव्ह्यू टिप लक्षात ठेवा: S3 मध्ये नेहमी डेटनुसार पार्टिशनिंग करा, आणि रॉ CSV ऐवजी Parquet वापरा ज्यामुळे 80% स्टोरेज आणि क्लाउड खर्च वाचतो!",
-                        "speech_en": "Senior Data Engineer tip: Always partition S3 paths by date, use columnar Parquet compression, and leverage Snowflake clustering keys for optimal scan performance!"
-                    },
-                    {
-                        "id": 6, "action_type": "golden_summary", "visual_type": "takeaway", "title": "Golden Pipeline Rule",
-                        "speech_hi": "गोल्डन रूल: स्टोरेज और कंप्यूट को हमेशा अलग रखिए! S3 सस्ता स्टोरेज देता है और Snowflake तेज़ एनालिटिक्स! यही आधुनिक डेटा इंजीनियरिंग का सबसे बड़ा फॉर्मूला है!",
-                        "speech_mr": "सुवर्ण नियम: स्टोरेज आणि कॉम्प्युट नेहमी वेगळे ठेवा! S3 स्वस्त स्टोरेज देतो आणि Snowflake सुपरफास्ट ॲनालिटिक्स! हाच आधुनिक डेटा इंजिनिअरिंगचा यशस्वी मार्ग आहे!",
-                        "speech_en": "Universal Golden Rule: Decouple storage from compute! Use S3 for cost-effective staging and Snowflake for blazing-fast analytical queries. Follow Code with Mangesh!"
-                    }
-                ]
-
-            # Topic E: Generic / Arbitrary Theory Topic (Dynamic Term Extraction)
-            else:
-                suggested_motion_bg = "warp_tunnel"
-                vs_match = re.search(r"(.*?)\s+(?:vs\.?|versus|and)\s+(.*)", text_clean, re.IGNORECASE)
-                if vs_match:
-                    raw_a = vs_match.group(1).replace("difference between", "").replace("diff between", "").strip()
-                    raw_b = vs_match.group(2).replace("thory quesion", "").replace("theory question", "").strip()
-                    term_a = raw_a.upper()[:28] if raw_a else "CONCEPT A"
-                    term_b = raw_b.upper()[:28] if raw_b else "CONCEPT B"
-                else:
-                    term_a = first_line[:24].upper()
-                    term_b = "STANDARD ALTERNATIVE"
-
-                title = first_line[:60] if len(first_line) > 10 else f"{term_a} vs {term_b} Explained"
-                concept_summary = f"Understanding the core operational and architectural trade-offs between {term_a} and {term_b} in production systems."
-                comp_title = f"{term_a} vs {term_b} COMPARISON MATRIX"
-                comp_headers = ["CRITERIA", term_a, term_b]
-                comp_rows = [
-                    {"feature": "Primary Architecture", "col_a": f"Optimized for {term_a.lower()} scope", "col_b": f"Optimized for {term_b.lower()} scope"},
-                    {"feature": "Performance & Scale", "col_a": "Low-latency localized execution", "col_b": "High-throughput distributed model"},
-                    {"feature": "Resource Overhead", "col_a": "Predictable dedicated allocation", "col_b": "Elastic on-demand utilization"},
-                    {"feature": "Production Best Practice", "col_a": "Use for core specialized workloads", "col_b": "Use for scalable decoupled systems"}
-                ]
-                syntax_a_title = f"{term_a} IMPLEMENTATION / CONFIG"
-                syntax_a_code = f"# {term_a} Production Pattern\ndef handle_{term_a.lower().replace(' ', '_')}():\n    # Specialized localized logic\n    return {{'status': 'processed', 'mode': '{term_a}'}}"
-                syntax_a_note = f"Standard implementation pattern for {term_a} in modern systems."
-                syntax_b_title = f"{term_b} IMPLEMENTATION / CONFIG"
-                syntax_b_code = f"# {term_b} Production Pattern\ndef handle_{term_b.lower().replace(' ', '_')}():\n    # Scalable decoupled logic\n    return {{'status': 'distributed', 'mode': '{term_b}'}}"
-                syntax_b_note = f"Standard implementation pattern for {term_b} in modern systems."
-                traps_title = "COMMON PITFALLS & INTERVIEW MISTAKES"
-                traps = [
-                    f"❌ Trap: Applying {term_a} when decoupled scaling is required leads to resource bottlenecks!",
-                    f"✅ Rule: Clearly state the latency, cost, and maintenance trade-offs between {term_a} and {term_b}!"
-                ]
-                golden_rule = f"Choose {term_a} when latency and localized control dominate; choose {term_b} for distributed elasticity and horizontal scaling."
-                pitch_to_interviewer = f"In interviews: Articulate how {term_a} and {term_b} balance trade-offs across speed, cost, and maintainability."
-                pro_tip = f"💡 Senior Lead Pro-Tip: Explain when to use {term_a} vs {term_b} based on real-world engineering constraints!"
-                stages = self._build_dynamic_stages({
-                    "title": title, "concept_summary": concept_summary,
-                    "term_a": term_a, "term_b": term_b, "golden_rule": golden_rule
-                }, "theory", lang_key)
-
-            return {
-                "id": "custom_theory_scenario",
-                "content_type": "theory",
-                "title": title,
-                "difficulty": "FAANG & MNC Standard",
-                "question": text_clean,
-                "concept_summary": concept_summary,
-                "term_a": term_a,
-                "term_b": term_b,
-                "comparison_title": comp_title,
-                "comparison_headers": comp_headers,
-                "comparison_rows": comp_rows,
-                "syntax_a_title": syntax_a_title,
-                "syntax_a_code": syntax_a_code,
-                "syntax_a_note": syntax_a_note,
-                "syntax_b_title": syntax_b_title,
-                "syntax_b_code": syntax_b_code,
-                "syntax_b_note": syntax_b_note,
-                "traps_title": traps_title,
-                "traps": traps,
-                "golden_rule": golden_rule,
-                "pitch_to_interviewer": pitch_to_interviewer,
-                "pro_tip": pro_tip,
-                "suggested_motion_bg": suggested_motion_bg,
-                "stages": stages
-            }
-
-        # =====================================================================
-        # 2. SQL CODING SCENARIOS (Banking, Second Highest, Window, E-Comm)
-        # =====================================================================
-        # Extract SQL query if present in prompt
-        sql_match = re.search(r"(?:WITH\s+[A-Za-z0-9_]+\s+AS\s*\([\s\S]*?\)\s*SELECT[\s\S]*?;|SELECT\s+[\s\S]*?FROM[\s\S]*?;)", text_clean, re.IGNORECASE)
-        if not sql_match:
-            sql_match = re.search(r"(?:WITH\s+[A-Za-z0-9_]+\s+AS\s*\([\s\S]*?\)\s*SELECT[\s\S]*|SELECT\s+[\s\S]*?FROM\s+[\s\S]*?(?:WHERE|QUALIFY|GROUP BY|ORDER BY|HAVING|\Z))", text_clean, re.IGNORECASE)
-        solution_sql = sql_match.group(0).strip() if sql_match else ""
-        if solution_sql and not solution_sql.endswith(";"):
-            solution_sql += ";"
-
-        # Scenario 1: BANKING / LEDGER / RUNNING BALANCE / ACCOUNT TRANSACTIONS
-        if "BANK" in q_up or "LEDGER" in q_up or "RUNNING" in q_up or "CUMULATIVE" in q_up or "ACCOUNT" in q_up or "TXN" in q_up:
-            suggested_motion_bg = "fintech_ledger"
-            table_name = "BANK_TRANSACTIONS"
-            title = "Banking SQL: Calculate Cumulative Running Balance per Account"
-            target_badge = "🎯 TARGET: RUNNING BALANCE (SUM OVER PARTITION)"
-            col_headers = ["ACCOUNT_NO", "TXN_DATE", "TXN_AMOUNT", "RUNNING_BALANCE"]
-            sample_rows = [
-                {"account": "ACC-8821", "date": "2026-03-01", "amt": "+₹50,000 (DEP)", "balance": "₹50,000", "is_target": True, "status": "keep"},
-                {"account": "ACC-8821", "date": "2026-03-05", "amt": "-₹12,500 (WDL)", "balance": "₹37,500", "is_target": True, "status": "keep"},
-                {"account": "ACC-8821", "date": "2026-03-10", "amt": "+₹25,000 (DEP)", "balance": "₹62,500", "is_target": True, "status": "keep"},
-                {"account": "ACC-9042", "date": "2026-03-02", "amt": "+₹80,000 (DEP)", "balance": "₹80,000", "is_target": True, "status": "keep"}
-            ]
-            if not solution_sql:
-                solution_sql = (
-                    "SELECT\n"
-                    "    account_no,\n"
-                    "    txn_date,\n"
-                    "    txn_amount,\n"
-                    "    SUM(txn_amount) OVER (\n"
-                    "        PARTITION BY account_no\n"
-                    "        ORDER BY txn_date\n"
-                    "        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n"
-                    "    ) AS running_balance\n"
-                    "FROM bank_transactions;"
-                )
-            arrow_target = "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW"
-            trap_code = "SELECT account_no, SUM(txn_amount) FROM bank_transactions GROUP BY account_no; -- LOSES DAILY LEDGER TIMELINE!"
-            traps = [
-                "• Trap: Simple GROUP BY collapses individual transaction history into a single total!",
-                "• Trap: Missing ROWS BETWEEN UNBOUNDED PRECEDING causes duplicate date values to lump together!",
-                "• Rule: Always PARTITION BY account_no and ORDER BY txn_date for an accurate audit trail!"
-            ]
-            pipeline_stages = [
-                {"icon": "🏦", "name": "BANK_TRANSACTIONS", "sub": "Raw Ledger Feed"},
-                {"icon": "🪟", "name": "PARTITION BY", "sub": "account_no Groups"},
-                {"icon": "📈", "name": "SUM() OVER", "sub": "Window Accumulator"},
-                {"icon": "🎯", "name": "RUNNING BALANCE", "sub": "Real-Time Balance"}
-            ]
-            filter_evals = [
-                {"name": "ACC-8821 (01-Mar)", "salary": "+₹50,000", "cond": "Cumulative Balance", "res": "₹50,000", "action": "RUNNING TOTAL", "status": "keep"},
-                {"name": "ACC-8821 (05-Mar)", "salary": "-₹12,500", "cond": "Cumulative Balance", "res": "₹37,500", "action": "RUNNING TOTAL", "status": "keep"},
-                {"name": "ACC-8821 (10-Mar)", "salary": "+₹25,000", "cond": "Cumulative Balance", "res": "₹62,500", "action": "RUNNING TOTAL", "status": "keep"},
-                {"name": "ACC-9042 (02-Mar)", "salary": "+₹80,000", "cond": "New Partition", "res": "₹80,000", "action": "RESET RUNNING", "status": "keep"}
-            ]
-            output_title = "VERIFIED BANK LEDGER AUDIT OUTPUT"
-            output_headers = ["ACCOUNT_NO", "TXN_DATE", "TXN_AMOUNT", "RUNNING_BALANCE"]
-            output_rows = [
-                ["ACC-8821", "2026-03-01", "+₹50,000", "₹50,000"],
-                ["ACC-8821", "2026-03-05", "-₹12,500", "₹37,500"],
-                ["ACC-8821", "2026-03-10", "+₹25,000", "₹62,500"],
-                ["ACC-9042", "2026-03-02", "+₹80,000", "₹80,000"]
-            ]
-            pro_tip = "💡 Banking Lead Pro-Tip: Specify ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW explicitly to prevent RANGE frame defaults!"
-            stages = [
-                {
-                    "id": 1, "action_type": "problem_intro", "title": "Banking Requirement & Challenge",
-                    "speech_mr": "बँकिंग आणि फिनटेक इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: बँक ट्रान्झॅक्शन लेजरमधून प्रत्येक खात्याचे रनिंग बॅलन्स कसे काढायचे?",
-                    "speech_hi": "बैंकिंग और फिनटेक इंटरव्यू का सबसे जरूरी सवाल: बैंक ट्रांजेक्शन लेजर से हर खाते का रनिंग बैलेंस यानी क्युमुलेटिव सम कैसे निकालेंगे?",
-                    "speech_en": "Here is a top banking and fintech SQL interview question: How to compute account-level running balance from transaction ledgers?"
-                },
-                {
-                    "id": 2, "action_type": "data_inspection", "title": "Ledger Inspection & Deposits",
-                    "speech_mr": "आपला BANK_TRANSACTIONS टेबल तपासा. एकाच खात्यावर जमा (+₹) आणि खर्च (-₹) अशा अनेक नोंदी आहेत. आपल्याला प्रत्येक व्यवहारानंतर शिल्लक हवी आहे.",
-                    "speech_hi": "हमारे BANK_TRANSACTIONS टेबल को देखिए. एक ही अकाउंट में क्रेडिट और डेबिट के कई ट्रांजैक्शन्स हैं. हमें हर ट्रांजैक्शन के बाद अपडेटेड बैलेंस चाहिए.",
-                    "speech_en": "Inspect our BANK_TRANSACTIONS table. Each customer account has multiple deposits and withdrawals, requiring an updated balance after every transaction."
-                },
-                {
-                    "id": 3, "action_type": "logic_flowchart", "title": "Partition & Chronological Logic",
-                    "speech_mr": "आपले लॉजिक: PARTITION BY ने प्रत्येक खाते वेगळे होईल आणि ORDER BY txn_date ने तारखेनुसार व्यवहार क्रमाने लागतील.",
-                    "speech_hi": "हमारा लॉजिक: PARTITION BY से हर अकाउंट का अलग ग्रुप बनेगा और ORDER BY txn_date से टाइमलाइन क्रोनोलॉजिकल आर्डर में सेट होगी.",
-                    "speech_en": "Our logic: PARTITION BY account_no isolates each bank customer, while ORDER BY txn_date arranges records in strict chronological sequence."
-                },
-                {
-                    "id": 4, "action_type": "code_build", "title": "SUM() Window Frame Construction",
-                    "speech_mr": "आता आपण SUM() विंडो फंक्शन वापरू! ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW ने मागील सर्व रकमांची अचूक बेरीज होत राहते.",
-                    "speech_hi": "अब हम SUM() विंडो फंक्शन लगाएंगे! ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW से पहले से लेकर मौजूदा रिकॉर्ड तक का रनिंग टोटल जुड़ता जाएगा.",
-                    "speech_en": "Now we build the query: SUM(txn_amount) OVER with ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW continuously accumulates account balances."
-                },
-                {
-                    "id": 5, "action_type": "simulation_execution", "title": "Row-by-Row Balance Accumulation",
-                    "speech_mr": "डेटाबेस इंजिन प्रत्येक व्यवहार जोडते: सुरुवातीचे ₹५०,०००, मग ₹१२,५०० वजा होऊन ₹३७,५००, आणि पुढे ₹२५,००० जमा होऊन ₹६२,५००!",
-                    "speech_hi": "डेटाबेस इंजन हर रो को कैलकुलेट करता है: पहले ₹50,000, फिर ₹12,500 डेबिट होकर ₹37,500, और फिर ₹25,000 क्रेडिट होकर ₹62,500!",
-                    "speech_en": "The database engine calculates: Starting at ₹50,000, subtracting ₹12,500 yields ₹37,500, and adding ₹25,000 brings the running balance to ₹62,500."
-                },
-                {
-                    "id": 6, "action_type": "final_result", "title": "Verified Banking Output",
-                    "speech_mr": "फायनल लेजर आऊटपुट पाहा! प्रत्येक खात्याचा अचूक रिअल-टाइम रनिंग बॅलन्स तयार झाला आहे. १०० टक्के बँक-ग्रेड क्वेरी!",
-                    "speech_hi": "फाइनल लेजर आउटपुट देखिए! हर बैंक खाते का एकदम सही रियल-टाइम रनिंग बैलेंस आ चुका है. 100% प्रोडक्शन रेडी फिनटेक क्वेरी!",
-                    "speech_en": "Look at the verified final output! Clean, audit-ready, and 100% compliant with senior financial data engineering interview standards."
-                }
-            ]
-
-        # Scenario 2: SECOND / NTH HIGHEST SALARY / DENSE_RANK
-        elif "SALARY" in q_up or "SECOND" in q_up or "HIGHEST" in q_up or "DENSE_RANK" in q_up:
-            suggested_motion_bg = "cyber_matrix"
-            table_name = "EMPLOYEES"
-            title = "SQL: Find the Second Highest Salary (Handling Duplicate Ties)"
-            target_badge = "🎯 TARGET: DENSE_RANK() OVER (ORDER BY SALARY DESC)"
-            col_headers = ["EMP_ID", "EMP_NAME", "SALARY", "RANK (RNK)"]
-            sample_rows = [
-                {"account": "Aarav Sharma", "date": "Engineering", "amt": "₹1,85,000", "balance": "Rank 1 (Tie)", "is_target": False, "status": "exclude"},
-                {"account": "Rohit Deshmukh", "date": "Engineering", "amt": "₹1,85,000", "balance": "Rank 1 (Tie)", "is_target": False, "status": "exclude"},
-                {"account": "Priya Kulkarni", "date": "Analytics", "amt": "₹1,60,000", "balance": "🎯 Rank 2 (Target)", "is_target": True, "status": "keep"},
-                {"account": "Sneha Patel", "date": "DevOps", "amt": "₹1,40,000", "balance": "Rank 3", "is_target": False, "status": "exclude"}
-            ]
-            if not solution_sql:
-                solution_sql = (
-                    "WITH Salary_Rank AS (\n"
-                    "    SELECT\n"
-                    "        emp_id,\n"
-                    "        emp_name,\n"
-                    "        salary,\n"
-                    "        DENSE_RANK() OVER (\n"
-                    "            ORDER BY salary DESC\n"
-                    "        ) AS rnk\n"
-                    "    FROM employees\n"
-                    ")\n"
-                    "SELECT\n"
-                    "    emp_id,\n"
-                    "    emp_name,\n"
-                    "    salary\n"
-                    "FROM Salary_Rank\n"
-                    "WHERE rnk = 2;"
-                )
-            arrow_target = "DENSE_RANK() OVER (ORDER BY salary DESC)"
-            trap_code = "SELECT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1; -- CRASHES ON SALARY TIES!"
-            traps = [
-                "• Trap: Using LIMIT 1 OFFSET 1 returns the same top salary if two people share 1st place!",
-                "• Trap: Standard RANK() skips rank numbers (1, 1, 3), completely missing rank 2!",
-                "• Rule: Always use DENSE_RANK() to guarantee continuous consecutive ranks (1, 1, 2)!"
-            ]
-            pipeline_stages = [
-                {"icon": "📁", "name": "EMPLOYEES", "sub": "Raw Salaries"},
-                {"icon": "🔢", "name": "DENSE_RANK()", "sub": "Order DESC"},
-                {"icon": "🛡️", "name": "TIE PRESERVED", "sub": "Zero Rank Gap"},
-                {"icon": "🎯", "name": "WHERE RNK = 2", "sub": "Target Salary"}
-            ]
-            filter_evals = [
-                {"name": "Aarav Sharma", "salary": "₹1,85,000", "cond": "RNK = 1 (Tie)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
-                {"name": "Rohit Deshmukh", "salary": "₹1,85,000", "cond": "RNK = 1 (Tie)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"},
-                {"name": "Priya Kulkarni", "salary": "₹1,60,000", "cond": "RNK = 2 (Target)", "res": "TRUE", "action": "KEEP", "status": "keep"},
-                {"name": "Sneha Patel", "salary": "₹1,40,000", "cond": "RNK = 3 (Lower)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}
-            ]
-            topic_clean = text_clean.split("\n")[0][:50]
-            output_title = f"{topic_clean} OVERVIEW"
-            output_headers = ["TOPIC", "INSIGHT", "STATUS"]
-            output_rows = [[topic_clean, "100% Prompt-Driven Analysis", "ACTIVE"]]
-            pro_tip = f"💡 Key Insight: Master the fundamental principles of {topic_clean}."
-            stages = [
-                {
-                    "id": 1, "action_type": "showcase", "visual_type": "showcase", "title": f"{topic_clean} - Overview",
-                    "visual_data": {"headline": topic_clean, "subtext": f"Core overview of {topic_clean}", "bullets": [f"Deep dive into {topic_clean}", "Universal prompt analysis in seconds"], "badge": "OVERVIEW", "theme_color": "#38BDF8"},
-                    "speech_mr": f"चला आजच्या भागात समजून घेऊया: {topic_clean}! यातील मुख्य संकल्पना आणि रहस्य आपण सोप्या भाषेत पाहणार आहोत.",
-                    "speech_hi": f"आइए आज के भाग में समझते हैं: {topic_clean}! इसके मुख्य सिद्धांत और पहलुओं को हम बहुत आसान तरीके से देखेंगे.",
-                    "speech_en": f"Welcome to today's breakdown of {topic_clean}! Let's explore the core insights and why this topic matters."
-                },
-                {
-                    "id": 2, "action_type": "showcase", "visual_type": "showcase", "title": "Core Mechanism",
-                    "visual_data": {"headline": "How It Works", "subtext": "Fundamental principles and dynamics", "bullets": ["First-principles explanation", "Key structural mechanisms"], "badge": "MECHANISM", "theme_color": "#38BDF8"},
-                    "speech_mr": "यातील मुख्य कार्यपद्धती पाहा: जेव्हा आपण याचा मुळापासून विचार करतो, तेव्हा मूलभूत तत्त्वे अगदी स्पष्टपणे समोर येतात.",
-                    "speech_hi": "इसकी मुख्य कार्यप्रणाली देखिए: जब हम इसके बुनियादी सिद्धांतों को समझते हैं, तो सारी बातें एकदम साफ हो जाती हैं.",
-                    "speech_en": "Here is the fundamental mechanism in action. When we examine the first principles, the core dynamic becomes clear."
-                },
-                {
-                    "id": 3, "action_type": "showcase", "visual_type": "showcase", "title": "Practical Impact & Value",
-                    "visual_data": {"headline": "Real-World Impact", "subtext": "Significance, practical application, and advantages", "bullets": ["High-value real-world impact", "Key practical takeaways"], "badge": "IMPACT", "theme_color": "#10B981"},
-                    "speech_mr": "प्रत्यक्ष व्यवहारात याचा काय उपयोग होतो? यातील महत्त्वपूर्ण पैलू आपल्या दैनंदिन किंवा व्यावसायिक कामात मोठी मदत करतात.",
-                    "speech_hi": "वास्तविक जीवन में इसका क्या उपयोग है? इसके प्रमुख पहलू हमारे काम और समझ को एक नई दिशा देते हैं.",
-                    "speech_en": "How does this apply in practice? Understanding these practical insights gives you a major strategic advantage."
-                },
-                {
-                    "id": 4, "action_type": "showcase", "visual_type": "showcase", "title": "Key Takeaway",
-                    "visual_data": {"headline": "Golden Takeaway", "subtext": "Summary rule for lasting mastery", "bullets": ["Remember the fundamental rule", "Apply insights with confidence"], "badge": "TAKEAWAY", "theme_color": "#F59E0B"},
-                    "speech_mr": "महत्त्वाचा अंतिम निष्कर्ष: ही मूलभूत तत्त्वे लक्षात ठेवा आणि आत्मविश्वासाने त्याचा योग्य वापर करा!",
-                    "speech_hi": "मुख्य अंतिम निष्कर्ष: इन जरूरी बातों को हमेशा याद रखिए और पूरे विश्वास के साथ इनका सही उपयोग कीजिए!",
-                    "speech_en": "Key Final Takeaway: Keep these fundamental rules in mind to master this topic with complete confidence!"
-                }
-            ]
-        # Scenario 3: QUALIFY & ROW_NUMBER (Latest Record per Customer)
-        elif "QUALIFY" in q_up and "ROW_NUMBER" in q_up:
-            suggested_motion_bg = "silicon_laser"
-            table_name = "TRANSACTIONS"
-            title = "SQL: Latest Record per Customer with QUALIFY & ROW_NUMBER"
-            target_badge = "🎯 TARGET: QUALIFY ROW_NUMBER() = 1"
-            col_headers = ["CUSTOMER_ID", "TXN_DATE", "AMOUNT", "ROW_NUM"]
-            sample_rows = [
-                {"account": "C101 (TXN-101)", "date": "2026-03-01", "amt": "₹45,000", "balance": "Older (Rank 2)", "status": "exclude"},
-                {"account": "C101 (TXN-104)", "date": "2026-03-15", "amt": "₹12,000", "balance": "🎯 Latest (Rank 1)", "status": "keep"},
-                {"account": "C102 (TXN-102)", "date": "2026-02-10", "amt": "₹8,500", "balance": "Older (Rank 2)", "status": "exclude"},
-                {"account": "C102 (TXN-105)", "date": "2026-03-12", "amt": "₹95,000", "balance": "🎯 Latest (Rank 1)", "status": "keep"}
-            ]
-            if not solution_sql:
-                solution_sql = (
-                    "SELECT\n"
-                    "    customer_id,\n"
-                    "    txn_date,\n"
-                    "    amount\n"
-                    "FROM transactions\n"
-                    "QUALIFY ROW_NUMBER() OVER (\n"
-                    "    PARTITION BY customer_id\n"
-                    "    ORDER BY txn_date DESC\n"
-                    ") = 1;"
-                )
-            arrow_target = "QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY txn_date DESC) = 1"
-            trap_code = "SELECT customer_id, MAX(txn_date) FROM transactions GROUP BY customer_id; -- CANNOT RETRIEVE TRANSACTION AMOUNT!"
-            traps = [
-                "• Trap: Simple GROUP BY with MAX(date) loses other row attributes like amount and txn_id!",
-                "• Trap: Writing a subquery and self-joining back to the table doubles query execution cost!",
-                "• Rule: Modern QUALIFY filters window functions directly with zero CTE or join overhead!"
-            ]
-            pipeline_stages = [
-                {"icon": "📁", "name": "TRANSACTIONS", "sub": "Raw Rows"},
-                {"icon": "🪟", "name": "PARTITION BY", "sub": "Customer ID"},
-                {"icon": "🔢", "name": "ROW_NUMBER()", "sub": "Date DESC"},
-                {"icon": "🎯", "name": "QUALIFY = 1", "sub": "Latest Record"}
-            ]
-            filter_evals = self._build_default_filter_evals(sample_rows, solution_sql)
-            output_title = "VERIFIED LATEST CUSTOMER TRANSACTIONS"
-            output_headers = ["CUSTOMER_ID", "TXN_DATE", "AMOUNT"]
-            output_rows = [["C101", "2026-03-15", "₹12,000"], ["C102", "2026-03-12", "₹95,000"]]
-            pro_tip = "💡 Snowflake & Databricks Pro-Tip: QUALIFY eliminates redundant self-joins and slashes query execution time!"
-            stages = [
-                {
-                    "id": 1, "action_type": "problem_intro", "title": "Requirement & Challenge",
-                    "speech_mr": "एसक्यूएल इंटरव्ह्यूचा अत्यंत महत्त्वाचा प्रश्न: प्रत्येक कस्टमरचा सर्वात लेटेस्ट रेकॉर्ड कसा शोधायचा? चला QUALIFY वापरून सोडूया.",
-                    "speech_hi": "एसक्यूएल इंटरव्यू का पसंदीदा सवाल: हर कस्टमर का सबसे लेटेस्ट रिकॉर्ड कैसे निकालेंगे? आइए QUALIFY और ROW_NUMBER से समझते हैं.",
-                    "speech_en": "Here is a high-yield SQL interview question: Finding the latest transaction per customer using ROW_NUMBER and QUALIFY."
-                },
-                {
-                    "id": 2, "action_type": "data_inspection", "title": "Data Inspection & Grouping",
-                    "speech_mr": "आपला TRANSACTIONS टेबल तपासा. एका ग्राहकाच्या अनेक नोंदी आहेत, पण आपल्याला फक्त सर्वात नवीन व्यवहार हवा आहे.",
-                    "speech_hi": "हमारे TRANSACTIONS टेबल को देखिए. हर कस्टमर के कई रिकॉर्ड्स हैं, लेकिन हमें केवल लेटेस्ट रिकॉर्ड चाहिए.",
-                    "speech_en": "Inspect our table. Each customer has multiple dates, but production requirements dictate retrieving only the most recent transaction."
-                },
-                {
-                    "id": 3, "action_type": "logic_flowchart", "title": "Partition & Sorting Logic",
-                    "speech_mr": "आपले लॉजिक: PARTITION BY ने प्रत्येक ग्राहकाचा ग्रुप होतो आणि ORDER BY DESC ने नवीन तारीख पहिल्या क्रमांकावर येते.",
-                    "speech_hi": "हमारा लॉजिक: PARTITION BY कस्टमर अनुसार ग्रुप बनाएगा और ORDER BY DESC से सबसे नई तारीख रैंक 1 पर आएगी.",
-                    "speech_en": "Our logic: PARTITION BY groups each customer, and ORDER BY date DESC orders events so the newest record gets row number 1."
-                },
-                {
-                    "id": 4, "action_type": "code_build", "title": "Writing Query with QUALIFY",
-                    "speech_mr": "मोठी सबक्वेरी लिहिण्याऐवजी आपण मॉडर्न QUALIFY क्लॉज वापरू! हे थेट विंडो फंक्शन फिल्टर करून रो नंबर १ निवडते.",
-                    "speech_hi": "नेस्टेड सबक्वेरी के बजाय हम मॉडर्न QUALIFY क्लॉज लगाएंगे, जो सीधे विंडो फंक्शन से रो नंबर 1 फिल्टर करता है.",
-                    "speech_en": "Now we use the modern QUALIFY clause! QUALIFY filters window functions directly without requiring any nested CTE wrapper."
-                },
-                {
-                    "id": 5, "action_type": "simulation_execution", "title": "Row-by-Row Filter Evaluation",
-                    "speech_mr": "डेटाबेस प्रत्येक ओळ तपासतो. रँक १ असणाऱ्या नवीन नोंदी ठेवल्या जातात आणि जुने व्यवहार आपोआप वगळले जातात.",
-                    "speech_hi": "डेटाबेस इंजन हर रिकॉर्ड चेक करता है. रैंक 1 वाले लेटेस्ट रिकॉर्ड रखे जाते हैं और बाकी हटा दिए जाते हैं.",
-                    "speech_en": "The database engine evaluates every record. Rank 1 newest records are kept, while older transactions are cleanly eliminated."
-                },
-                {
-                    "id": 6, "action_type": "final_result", "title": "Verified Final Output",
-                    "speech_mr": "फायनल आऊटपुट पाहा! प्रत्येक ग्राहकाचा अचूक लेटेस्ट रेकॉर्ड आला आहे. अत्यंत वेगवान आणि इंटरव्ह्यू-रेडी क्वेरी!",
-                    "speech_hi": "फाइनल आउटपुट देखिए! हर कस्टमर का सही लेटेस्ट रिकॉर्ड आ गया है. एकदम फास्ट और प्रोडक्शन रेडी क्वेरी!",
-                    "speech_en": "Here is the verified final output! Fast, elegant, and 100% production ready for senior data engineering rounds."
-                }
-            ]
-
-        # Scenario 4: GENERAL / ARBITRARY SQL SCENARIO
+        topic_clean = re.sub(r'^[#*\s\d.-]+', '', first_line)[:60].strip() or "Universal Knowledge"
+        
+        # Detect domain dynamically
+        low = text_clean.lower()
+        if any(w in low for w in ["space", "sun", "flare", "planet", "galaxy", "orbit", "satellite", "star", "mars", "moon"]):
+            domain = "Space Science"
+            accent_color = "#A855F7"
+            bg_theme = "quantum_nebula"
+        elif any(w in low for w in ["bio", "dna", "cell", "health", "body", "medical", "doctor", "medicine"]):
+            domain = "Life Science"
+            accent_color = "#10B981"
+            bg_theme = "cosmic_stardust"
+        elif any(w in low for w in ["history", "war", "ancient", "king", "empire", "century", "culture"]):
+            domain = "History & Culture"
+            accent_color = "#F59E0B"
+            bg_theme = "cyber_matrix"
+        elif any(w in low for w in ["business", "finance", "money", "market", "startup", "economy", "stock"]):
+            domain = "Business & Finance"
+            accent_color = "#38BDF8"
+            bg_theme = "silicon_laser"
+        elif any(w in low for w in ["code", "python", "javascript", "sql", "bug", "software", "api", "git", "database"]):
+            domain = "Computer Science"
+            accent_color = "#38BDF8"
+            bg_theme = "silicon_laser"
         else:
-            suggested_motion_bg = "neural_synapse"
-            tbl_match = re.search(r"FROM\s+([A-Za-z0-9_]+)", solution_sql or text_clean, re.IGNORECASE)
-            table_name = tbl_match.group(1).upper() if tbl_match else "TRANSACTIONS"
-            title = first_line[:60] if len(first_line) > 10 else f"Mastering {table_name} Query Logic"
-            target_badge = f"🎯 TARGET: OPTIMAL {table_name} QUERY"
-            col_headers = ["ID / KEY", "DATE / REF", "AMOUNT / VAL", "STATUS / RANK"]
-            sample_rows = [
-                {"account": f"{table_name} #1", "date": "2026-03-15", "amt": "Val A", "balance": "🎯 Target Row", "is_target": True, "status": "keep"},
-                {"account": f"{table_name} #2", "date": "2026-03-12", "amt": "Val B", "balance": "Evaluated", "is_target": False, "status": "exclude"},
-                {"account": f"{table_name} #3", "date": "2026-03-10", "amt": "Val C", "balance": "🎯 Target Row", "is_target": True, "status": "keep"},
-                {"account": f"{table_name} #4", "date": "2026-03-01", "amt": "Val D", "balance": "Evaluated", "is_target": False, "status": "exclude"}
-            ]
-            arrow_target = "OPTIMAL FILTER CLAUSE"
-            trap_code = f"SELECT * FROM {table_name} WHERE id IS NOT NULL; -- UNOPTIMIZED TABLE SCAN!"
-            traps = [
-                f"• Trap: Full table scan on {table_name} without partitioning causes high latency!",
-                "• Rule: Leverage targeted filtering and indexing for maximum query performance!"
-            ]
-            pipeline_stages = self._build_default_pipeline_stages("sql_query", solution_sql, table_name)
-            filter_evals = self._build_default_filter_evals(sample_rows, solution_sql)
-            output_title = f"VERIFIED OUTPUT: {table_name}"
-            output_headers = col_headers[:2]
-            output_rows = [[sample_rows[0]["account"], sample_rows[0]["balance"]]]
-            pro_tip = "💡 Senior Interviewer Pro-Tip: State query time complexity and partition pruning strategies!"
-            stages = self._build_dynamic_stages({
-                "title": title, "table_name": table_name,
-                "arrow_target": arrow_target, "solution_sql": solution_sql
-            }, "sql_query", lang_key)
+            domain = "General Knowledge"
+            accent_color = "#38BDF8"
+            bg_theme = "quantum_nebula"
+
+        stages = [
+            {
+                "id": 1,
+                "action_type": "showcase",
+                "visual_type": "showcase",
+                "title": f"{topic_clean} - Overview",
+                "visual_data": {
+                    "headline": topic_clean,
+                    "subtext": f"Introduction and core context of {topic_clean}",
+                    "bullets": [f"Exploring {topic_clean}", "Fundamental concepts explained clearly", "Everyday relevance and importance"],
+                    "badge": "INTRO",
+                    "theme_color": accent_color
+                },
+                "speech_mr": f"आज आपण पाहणार आहोत: {topic_clean}! यामागील मुख्य कारणे आणि अचूक माहिती आपण सोप्या मराठीत समजून घेऊया.",
+                "speech_hi": f"आज हम बात करेंगे: {topic_clean}! इसके मुख्य पहलू और जरूरी बातें हम आसान भाषा में समझेंगे.",
+                "speech_en": f"Welcome! Today we are exploring: {topic_clean}! Let's break down the essential concepts in simple, clear terms."
+            },
+            {
+                "id": 2,
+                "action_type": "showcase",
+                "visual_type": "key_points",
+                "title": "Core Mechanism",
+                "visual_data": {
+                    "headline": "How It Works",
+                    "subtext": "Underlying principles and primary dynamics",
+                    "bullets": ["Step-by-step mechanism", "Key factors and interactions", "Core operational workflow"],
+                    "badge": "MECHANISM",
+                    "theme_color": "#EC4899"
+                },
+                "speech_mr": "याची मुख्य कार्यपद्धती पाहा: जेव्हा आपण मुळापासून विचार करतो, तेव्हा ही प्रक्रिया कशी घडते ते स्पष्टपणे लक्षात येते.",
+                "speech_hi": "इसकी कार्यप्रणाली को देखिए: जब हम इसके मूल कारणों को देखते हैं, तो पूरी प्रक्रिया साफ तौर पर समझ आती है.",
+                "speech_en": "Here is how it actually works. Breaking down the core mechanism shows how all the pieces interact together."
+            },
+            {
+                "id": 3,
+                "action_type": "showcase",
+                "visual_type": "stat",
+                "title": "Real-World Impact",
+                "visual_data": {
+                    "headline": "Practical Significance",
+                    "subtext": "Real-world effects and practical consequences",
+                    "bullets": ["Measurable consequences", "Direct influence on outcomes", "Practical relevance"],
+                    "badge": "IMPACT",
+                    "theme_color": "#10B981"
+                },
+                "speech_mr": "याचा प्रत्यक्ष व्यवहारात काय प्रभाव पडतो? यातील महत्त्वाचे बदल थेट परिणाम घडवून आणतात.",
+                "speech_hi": "वास्तविक जीवन में इसका क्या प्रभाव होता है? ये मुख्य बदलाव सीधे हमारे अनुभवों को प्रभावित करते हैं.",
+                "speech_en": "What is the real-world impact? Understanding these consequences gives you practical clarity on the outcome."
+            },
+            {
+                "id": 4,
+                "action_type": "showcase",
+                "visual_type": "takeaway",
+                "title": "Key Takeaway",
+                "visual_data": {
+                    "headline": "Summary & Takeaway",
+                    "subtext": "Essential conclusion to remember",
+                    "bullets": ["Remember the fundamental rule", "Apply this insight in practice", "Continuous learning and observation"],
+                    "badge": "TAKEAWAY",
+                    "theme_color": "#F59E0B"
+                },
+                "speech_mr": "महत्त्वाचा निष्कर्ष: ही मुख्य गोष्ट नेहमी लक्षात ठेवा आणि ही माहिती आपल्या मित्रांसोबत नक्की शेअर करा!",
+                "speech_hi": "मुख्य निष्कर्ष: यह खास बात हमेशा याद रखिए और इसे आगे जरूर शेयर कीजिए!",
+                "speech_en": "Key takeaway: Keep this fundamental principle in mind, and apply this insight with complete confidence!"
+            }
+        ]
 
         return {
-            "id": "custom_ai_scenario",
-            "content_type": "sql_query",
-            "title": title,
-            "difficulty": "FAANG & MNC Standard",
+            "id": "custom_prompt_analysis",
+            "title": topic_clean,
+            "domain": domain,
+            "accent_color": accent_color,
+            "bg_theme": bg_theme,
+            "suggested_motion_bg": bg_theme,
             "question": text_clean,
-            "target_badge": target_badge,
-            "table_name": table_name,
-            "col_headers": col_headers,
-            "sample_rows": sample_rows,
-            "pipeline_stages": pipeline_stages,
-            "filter_evaluations": filter_evals,
-            "solution_sql": solution_sql or f"SELECT * FROM {table_name};",
-            "arrow_target": arrow_target,
-            "trap_code": trap_code,
-            "traps": traps,
-            "output_title": output_title,
-            "output_headers": output_headers,
-            "output_rows": output_rows,
-            "output_value": f"Verified Output for {table_name}",
-            "pro_tip": pro_tip,
-            "suggested_motion_bg": suggested_motion_bg,
-            "stages": stages
+            "pro_tip": f"💡 Essential Insight: Master the fundamental principles of {topic_clean}.",
+            "stages": stages,
+            "scenes": stages
         }
 
     def _parse_master_prompt_text(self, text: str, lang_key: str = "mr") -> Optional[Dict[str, Any]]:
@@ -2683,7 +1770,7 @@ class SqlShortVideoEngine:
             full_narration = matched.get(f"explanation_{lang_key}") or matched.get("explanation_mr") or matched.get("question", "")
 
         # Synthesize regional audio
-        audio_url = f"/audio/preset_sql_q1_second_highest_salary_{lang_key}.mp3"
+        audio_url = ""
         audio_file_path = None
         try:
             import hashlib
