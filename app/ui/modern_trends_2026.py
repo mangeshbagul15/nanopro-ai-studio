@@ -139,60 +139,7 @@ def get_2026_modern_trends_css() -> str:
     border-top: 1px solid rgba(38, 51, 84, 0.6);
 }
 
-/* --- Cyber Marquee Ticker Strip (#22) --- */
-.nano-cyber-ticker {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    height: 26px;
-    background: rgba(6, 10, 20, 0.94);
-    backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(56, 189, 248, 0.25);
-    z-index: 99980;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    white-space: nowrap;
-    user-select: none;
-}
-.ticker-badge {
-    background: linear-gradient(135deg, #0284C7, #06B6D4);
-    color: #FFFFFF;
-    font-size: 9.5px;
-    font-weight: 800;
-    padding: 3px 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    flex-shrink: 0;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.ticker-track {
-    display: flex;
-    align-items: center;
-    animation: marqueeScroll 45s linear infinite;
-    gap: 32px;
-    padding-left: 20px;
-}
-.ticker-track:hover {
-    animation-play-state: paused;
-}
-@keyframes marqueeScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
-.ticker-item {
-    font-size: 11px;
-    font-weight: 600;
-    color: #CBD5E1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: monospace;
-}
+/* Cyber Marquee Ticker removed per user request */
 .ticker-item .live-dot {
     width: 6px;
     height: 6px;
@@ -376,10 +323,6 @@ def get_2026_modern_trends_css() -> str:
 
 /* Responsive Ticker & Mobile Nav Alignment */
 @media (max-width: 768px) {
-    .nano-cyber-ticker {
-        bottom: 56px !important;
-        height: 24px !important;
-    }
     .nano-dynamic-island {
         top: 6px !important;
         padding: 4px 10px !important;
@@ -481,33 +424,6 @@ def get_2026_modern_trends_html() -> str:
 <!-- Modern Toast Container (#35) -->
 <div class="nano-toast-container" id="nanoToastContainer"></div>
 
-<!-- Infinite Cyber Marquee Strip (#22) -->
-<div class="nano-cyber-ticker" id="nanoCyberTicker">
-    <div class="ticker-badge">&#9889; 2026 CLUSTER</div>
-    <div class="ticker-track">
-        <span class="ticker-item"><span class="live-dot"></span> FLY.IO SINGAPORE: 100% ONLINE (200 OK)</span>
-        <span class="ticker-item"><span class="live-dot"></span> ALWAYSDATA SENTINEL: ACTIVE</span>
-        <span class="ticker-item"><span class="live-dot"></span> PYTHONANYWHERE: STANDBY READY</span>
-        <span class="ticker-item"><span class="live-dot"></span> 305 ENTERPRISE AI AGENTS: SYNCHRONIZED</span>
-        <span class="ticker-item"><span class="live-dot"></span> SNOWFLAKE WAREHOUSE: EGPKNWZ-XH53504 CONNECTED</span>
-        <span class="ticker-item"><span class="live-dot"></span> ORACLE 23AI XE: XEPDB1 SYNCED</span>
-        <span class="ticker-item"><span class="live-dot"></span> MAKE.COM WEBHOOK: ARMED (HTTP 200)</span>
-        <span class="ticker-item"><span class="live-dot"></span> LOCAL GPU: RTX 3050 CUDA 12 ACTIVE</span>
-        <span class="ticker-item"><span class="live-dot"></span> GROQ LPU: 194 TPS (24ms SLA)</span>
-        <span class="ticker-item"><span class="live-dot"></span> TELEGRAM BOTS: 4 CHANNELS DISPATCHING</span>
-        <!-- Repeated for seamless infinite loop -->
-        <span class="ticker-item"><span class="live-dot"></span> FLY.IO SINGAPORE: 100% ONLINE (200 OK)</span>
-        <span class="ticker-item"><span class="live-dot"></span> ALWAYSDATA SENTINEL: ACTIVE</span>
-        <span class="ticker-item"><span class="live-dot"></span> PYTHONANYWHERE: STANDBY READY</span>
-        <span class="ticker-item"><span class="live-dot"></span> 305 ENTERPRISE AI AGENTS: SYNCHRONIZED</span>
-        <span class="ticker-item"><span class="live-dot"></span> SNOWFLAKE WAREHOUSE: EGPKNWZ-XH53504 CONNECTED</span>
-        <span class="ticker-item"><span class="live-dot"></span> ORACLE 23AI XE: XEPDB1 SYNCED</span>
-        <span class="ticker-item"><span class="live-dot"></span> MAKE.COM WEBHOOK: ARMED (HTTP 200)</span>
-        <span class="ticker-item"><span class="live-dot"></span> LOCAL GPU: RTX 3050 CUDA 12 ACTIVE</span>
-        <span class="ticker-item"><span class="live-dot"></span> GROQ LPU: 194 TPS (24ms SLA)</span>
-        <span class="ticker-item"><span class="live-dot"></span> TELEGRAM BOTS: 4 CHANNELS DISPATCHING</span>
-    </div>
-</div>
 """
 
 def get_2026_modern_trends_js() -> str:
