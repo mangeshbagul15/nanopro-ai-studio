@@ -488,81 +488,32 @@ def get_sql_video_workspace_html() -> str:
                 <input type="hidden" id="sqlShortCreationMode" value="dynamic_ai" />
                 <input type="hidden" id="sqlCinematicBgSelect" value="cyber_matrix" />
 
-                <!-- 2026 Advanced AI Video Model Selector (Seedance 2.5, Kling 3.0, Veo 3.1, Hailuo H3, Wan 2.7, Runway 4.5, HeyGen) -->
-                <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
-                    <div style="font-size: 11px; font-weight: 800; color: #38BDF8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px;">
-                        <span>⚡ 2026 ADVANCED AI VIDEO ENGINE (PROMPT-TO-VIDEO)</span>
-                        <span id="activeAiVideoEngineBadge" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10B981; color: #10B981; font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 700;">Active: Seedance 2.5 (ByteDance) ★★★★★</span>
+                <!-- Direct AI Prompt-to-Video Engine (Zero Hardcoding - Pure Prompt-to-API Generation) -->
+                <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-size: 13px; font-weight: 800; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">⚡</span>
+                            <span>Direct AI Prompt-to-Video Engine (Live Model API)</span>
+                            <span style="font-size: 10px; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 1px 8px; border-radius: 12px; font-weight: 700;">● ZERO MOCKS • LIVE API</span>
+                        </div>
+                        <div style="font-size: 11px; color: #94A3B8; margin-top: 3px;">
+                            Enter any tech concept or scene prompt below. The engine directly queries AI Video APIs to generate your dynamic 9:16 video in real time.
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <button type="button" id="btnModel_seedance_25" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('seedance_25')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(56,189,248,0.2); border: 1px solid #38BDF8; color: #38BDF8; border-radius: 6px; cursor: pointer; font-weight: 800;">🌟 Seedance 2.5 (ByteDance)</button>
-                        <button type="button" id="btnModel_kling_30" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('kling_30')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">🎬 Kling 3.0 (Kuaishou)</button>
-                        <button type="button" id="btnModel_veo_31" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('veo_31')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">⚡ Google Veo 3.1</button>
-                        <button type="button" id="btnModel_hailuo_h3" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('hailuo_h3')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">🌊 Hailuo 2.3 / MiniMax H3</button>
-                        <button type="button" id="btnModel_wan_27" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('wan_27')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">🌐 Wan 2.7 (Alibaba Open)</button>
-                        <button type="button" id="btnModel_runway_gen45" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('runway_gen45')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">🎥 Runway Gen-4.5</button>
-                        <button type="button" id="btnModel_heygen_live" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('heygen_live')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">🗣️ HeyGen 3.0 LiveAvatar</button>
-                        <button type="button" id="btnModel_pollinations_free_2026" class="btn btn-secondary active-model-btn" onclick="selectModernVideoModel('pollinations_free_2026')" style="font-size: 10.5px; padding: 4px 10px; background: rgba(30,41,59,0.6); border: 1px solid rgba(255,255,255,0.12); color: #CBD5E1; border-radius: 6px; cursor: pointer; font-weight: 700;">⚡ 100% Free AI Video (Cascade)</button>
-                    </div>
-                </div>
-
-                <!-- Master Prompt Input Textarea -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <label class="input-label" style="font-size: 12px; color: #38BDF8; font-weight: 700; margin: 0;">
-                        📝 Tech Concept / Master Prompt Input:
-                    </label>
-                    <div style="display: flex; gap: 6px;">
-                        <button type="button" class="btn btn-secondary" onclick="clearMasterPrompt()" style="font-size: 10px; padding: 4px 10px; border-color: #EF4444; color: #EF4444; font-weight: 700;" title="Clear prompt input">
-                            🧹 Clear Prompt
-                        </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 11px; color: #94A3B8; font-weight: 600;">Active API:</label>
+                        <select id="directVideoEngineSelect" class="studio-input" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px; background: #0B132B; border: 1px solid #38BDF8; color: #38BDF8; font-weight: 700;">
+                            <option value="gemini_video_api">⚡ Google Gemini / Veo Video API</option>
+                            <option value="pollinations_ultra_api" selected>🌟 Pollinations 2026 Ultra (Direct API)</option>
+                            <option value="runway_gen45_api">🎥 Runway Gen-4.5 Direct API</option>
+                            <option value="huggingface_video_api">🤗 HuggingFace Video Model API</option>
+                        </select>
+                        <span id="activeAiVideoEngineBadge" style="display:none;"></span>
                     </div>
                 </div>
 
-                                <!-- 🎬 12 CORE TECH/AI VIDEO PROMPT PRESETS (SEEDANCE / VEO / KLING / RUNWAY) -->
-                <div style="background: rgba(11, 17, 32, 0.8); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
-                    <div style="font-size: 11px; font-weight: 800; color: #38BDF8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>🎬 12 TOP TECH/AI VIDEO PROMPT PRESETS (1-CLICK LOAD)</span>
-                        <span style="font-size: 10px; color: #94A3B8;">5-10s Cinematic Seedance/Veo/Kling/Runway Prompts</span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('architecture')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            🏗️ 1. Architecture (3D ISO)
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('symbol_reveal')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            🛡️ 2. Symbol / Shield Reveal
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('medallion_view')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            🥉🥈🥇 3. Medallion View
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('agent_workflow')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            🤖 4. Agent Workflow
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('dashboard_walkthrough')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            📊 5. Dashboard Walkthrough
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('data_pipeline')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            ⚡ 6. Data Pipeline Flow
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('vault_reveal')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            🔐 7. Security Vault Reveal
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('telemetry_monitor')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            📈 8. Telemetry Monitoring
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('multi_agent_network')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            🌐 9. Multi-Agent Network
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('human_approval')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            ✅ 10. Human Approval
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('brand_intro')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            ✨ 11. NANO PRO Brand Intro
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="insert12TechPrompt('before_after')" style="font-size: 10px; padding: 5px 8px; text-align: left; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); color: #E2E8F0; border-radius: 6px; cursor: pointer;">
-                            ⚖️ 12. Before & After (AI vs Manual)
-                        </button>
-                    </div>
-                </div>
+                <!-- Hidden inputs to preserve JS state compatibility -->
+                <input type="hidden" id="selectedModernVideoModel" value="pollinations_ultra_api" />
                 <textarea class="studio-input" id="sqlShortQuestion" rows="9" placeholder="तुमचा कोणताही मास्टर प्रॉम्प्ट (Master Prompt) इथे प्रविष्ट करा:
 
 १. थेट प्रश्न (Question): 'Find 2nd highest salary in SQL' किंवा 'Clustered vs Non-Clustered index'

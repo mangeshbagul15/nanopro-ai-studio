@@ -632,6 +632,15 @@ SECOND_HIGHEST_SALARY: 70000`;
             showModernToast('Template Loaded', item.title + ' (5-10s Prompt Ready)', 'success');
         }
     }
+    // Clean prompt generator directly using user prompt
+    function insert12TechPrompt(key) {
+        // Presets removed per user directive - focuses purely on user's own prompt
+        const input = document.getElementById("sqlShortQuestion");
+        if (input && !input.value.trim()) {
+            input.placeholder = "Enter your custom AI video prompt here (e.g. '3D visual architecture of Kafka streaming to DuckDB Lakehouse')...";
+            input.focus();
+        }
+    }
     window.insert12TechPrompt = insert12TechPrompt;
 
     let selectedModernVideoModel = 'seedance_25';

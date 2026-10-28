@@ -24408,6 +24408,18 @@ window.switchView = switchView;
 
                     if (typeof initMediaDiscovery === 'function') initMediaDiscovery();
 
+
+                if (viewName === 'server_manager_agents') {
+
+                    if (typeof refreshServerManagerOverview === 'function') refreshServerManagerOverview();
+
+                }
+
+                if (viewName === 'de_modern_pipeline' || viewName === 'data_engineer') {
+
+                    if (typeof load3dPipelineTelemetry === 'function') load3dPipelineTelemetry();
+
+                }
                 }
 
                 if (viewName === 'learning_hub') {
@@ -60759,6 +60771,8 @@ s3://nanopro-data-lake-765865641438-ap-southeast-2-an/
                 <button type="button" class="btn btn-secondary" onclick="backupDuckDbToS3UI()" style="font-size:11px; padding:4px 10px; color:#F59E0B;">☁️ Sync DuckDB Snapshot</button>
 
             </div>
+            <div id="dataLakeKeysContainer" style="margin-top:14px; max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
+
 
         </div>
 
@@ -60829,6 +60843,8 @@ s3://nanopro-data-lake-765865641438-ap-southeast-2-an/
                 Query results will appear here...
 
             </div>
+            <div id="dataMartGridContainer" style="margin-top:14px;"></div>
+
 
         </div>
 
@@ -61226,35 +61242,142 @@ async function backupDuckDbToS3UI() {
 
 
 
-function openDwManagerModal() {
+async function openDwManagerModal() {
 
-    const modal = document.getElementById('dwManagerModal');
+    const modal = document.getElementById("dwManagerModal");
 
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.style.display = "flex";
+
+    const container = document.getElementById("dwTableListContainer");
+
+    if (!container) return;
+
+    container.innerHTML = '<div style="color:#38BDF8; font-size:12px; padding:14px;"><span class="spinner-border spinner-border-sm"></span> Loading live Snowflake & DuckDB Warehouse tables...</div>';
+
+    try {
+
+        const res = await fetch("/api/de_modern/dw/tables");
+
+        const data = await res.json();
+
+        if (data.status === "success" && Array.isArray(data.tables)) {
+
+            container.innerHTML = data.tables.map(t => {
+
+                const badgeColor = t.type === "FACT" ? "#065F46" : (t.schema === "L0_STAGING" ? "#78350F" : "#075985");
+
+                const rowsStr = (t.rows || 0).toLocaleString();
+
+                return `<div style="padding:10px; background:#020617; border-radius:6px; border:1px solid #1E293B; display:flex; flex-direction:column; justify-content:space-between; gap:4px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="color:#38BDF8; font-size:11.5px;">${t.name}</b>
+                        <span class="badge" style="font-size:9px; background:${badgeColor};">${t.schema}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; color:#94A3B8; font-size:10px;">
+                        <span>${t.domain || "Core Banking"} &bull; ${t.type}</span>
+                        <span style="color:#10B981; font-weight:600;">${rowsStr} rows</span>
+                    </div>
+                </div>`;
+
+            }).join("");
+
+        }
+
+    } catch (e) {
+
+        container.innerHTML = `<div style="color:#EF4444; font-size:11.5px; padding:10px;">Failed to load live tables: ${e.message}</div>`;
+
+    }
 
 }
 
 
 
-function openDataLakeModal() {
+async function openDataLakeModal() {
 
-    const modal = document.getElementById('dataLakeModal');
+    const modal = document.getElementById("dataLakeModal");
 
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.style.display = "flex";
+
+    const c = document.getElementById("dataLakeKeysContainer");
+
+    if (!c) return;
+
+    c.innerHTML = '<div style="color:#F59E0B; font-size:11.5px; padding:8px;"><span class="spinner-border spinner-border-sm"></span> Fetching live Cloud Data Lake objects...</div>';
+
+    try {
+
+        const res = await fetch("/api/de_modern/lake/keys");
+
+        const data = await res.json();
+
+        if (data.status === "success" && Array.isArray(data.keys)) {
+
+            c.innerHTML = `<div style="font-size:11.5px; color:#F59E0B; font-weight:600; margin-bottom:6px;">Live Partitioned S3 & SFTP Parquet Objects (${data.count} Available):</div>` +
+                data.keys.map(k => `
+                    <div style="background:#020617; border:1px solid #1E293B; border-radius:6px; padding:7px 10px; display:flex; justify-content:space-between; align-items:center; font-size:11px;">
+                        <span style="font-family:monospace; color:#38BDF8;">${k.key}</span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span class="badge" style="font-size:9px; background:#0284C7;">${k.format}</span>
+                            <span style="color:#94A3B8; font-size:10px;">${k.partition}</span>
+                            <span style="color:#10B981; font-weight:600;">${(k.size_bytes / 1024).toFixed(1)} KB</span>
+                        </div>
+                    </div>
+                `).join("");
+
+        }
+
+    } catch(e) {
+
+        c.innerHTML = `<div style="color:#EF4444; font-size:11px; padding:8px;">Failed to load lake objects: ${e.message}</div>`;
+
+    }
 
 }
 
 
 
-function openDataMartModal() {
+async function openDataMartModal() {
 
-    const modal = document.getElementById('dataMartModal');
+    const modal = document.getElementById("dataMartModal");
 
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.style.display = "flex";
+
+    const mg = document.getElementById("dataMartGridContainer");
+
+    if (!mg) return;
+
+    mg.innerHTML = '<div style="color:#C084FC; font-size:11.5px; padding:8px;"><span class="spinner-border spinner-border-sm"></span> Loading DuckDB 49 Gold Marts with real table counts...</div>';
+
+    try {
+
+        const res = await fetch("/api/de_modern/marts/list");
+
+        const data = await res.json();
+
+        if (data.status === "success" && Array.isArray(data.marts)) {
+
+            mg.innerHTML = `<div style="font-size:11.5px; color:#C084FC; font-weight:600; margin-bottom:6px;">DuckDB Gold Marts Schema Directory (${data.count} Real Star Schema Tables):</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:6px; max-height:220px; overflow-y:auto; padding-right:4px;">` +
+                data.marts.map(m => `
+                    <div onclick="document.getElementById('duckDbQueryInput').value=\'SELECT * FROM ${m.table_name} LIMIT 10;\'; runDuckDbQueryUI();" style="cursor:pointer; background:#020617; border:1px solid #1E293B; border-radius:6px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center; transition:border-color 0.2s;" onmouseenter="this.style.borderColor=\'#8B5CF6\'" onmouseleave="this.style.borderColor=\'#1E293B\'">
+                        <div>
+                            <b style="color:#A78BFA; font-size:11px;">${m.table_name}</b>
+                            <div style="color:#64748B; font-size:9.5px;">${m.columns_count} columns &bull; 1-click preview</div>
+                        </div>
+                        <span class="badge" style="font-size:9.5px; background:#4C1D95; color:#E9D5FF;">${(m.row_count || 0).toLocaleString()} rows</span>
+                    </div>
+                `).join("") + `</div>`;
+
+        }
+
+    } catch(e) {
+
+        mg.innerHTML = `<div style="color:#EF4444; font-size:11px; padding:8px;">Failed to load data marts: ${e.message}</div>`;
+
+    }
 
 }
-
-
 
 async function runDuckDbQueryUI() {
 
@@ -61949,6 +62072,30 @@ function migrateHostToNode(nodeId) {
 }
 
 
+
+let nanoLivePulseTimer = null;
+function startNanoAutonomousLivePulse() {
+    if (nanoLivePulseTimer) clearInterval(nanoLivePulseTimer);
+    nanoLivePulseTimer = setInterval(() => {
+        try {
+            if (typeof currentActiveView !== 'undefined') {
+                if (currentActiveView === 'server_manager_agents') {
+                    if (typeof refreshServerManagerOverview === 'function') refreshServerManagerOverview(false);
+                } else if (currentActiveView === 'de_modern_pipeline' || currentActiveView === 'data_engineer') {
+                    if (typeof load3dPipelineTelemetry === 'function') load3dPipelineTelemetry();
+                }
+            }
+        } catch(e){}
+    }, 3500);
+}
+
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startNanoAutonomousLivePulse);
+    } else {
+        startNanoAutonomousLivePulse();
+    }
+}
 
 function init3DCardTilt() {
 
