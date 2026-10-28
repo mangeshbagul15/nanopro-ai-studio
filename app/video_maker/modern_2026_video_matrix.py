@@ -751,19 +751,7 @@ class Modern2026VideoMatrix:
 
     def _generate_pollinations_video_url(self, prompt: str, aspect_ratio: str, model_id: str) -> str:
         w, h = (720, 1280) if aspect_ratio == "9:16" else (1280, 720)
-        style_tag = "photorealistic tech server room, neon cyan and violet volumetric lasers, 8k cinematic lighting"
-        if "seedance" in model_id:
-            style_tag = "ByteDance Seedance 2.5 cinematic single take, dynamic camera swoop, high fidelity data center"
-        elif "kling" in model_id:
-            style_tag = "Kling 3.0 realistic physical simulation, intricate moving cloud architecture, raytraced glass and neon"
-        elif "veo" in model_id:
-            style_tag = "Google Veo 3.1 4k cinematic documentary footage, deep tech engineering, hyper detailed"
-        elif "runway" in model_id:
-            style_tag = "Runway Gen-4 Hollywood VFX cinematic lighting, volumetric smoke and glowing conduits"
-        elif "luma" in model_id:
-            style_tag = "Luma Ray-2 3D continuous camera pan, holographic particles"
-
-        enhanced = f"9:16 vertical video reel, {prompt}, {style_tag}, Unreal Engine 5 render, motion graphics, 60fps"
+        enhanced = f"Cinematic 9:16 vertical video reel, {prompt}, photorealistic 8k, masterwork composition, Unreal Engine 5 render, cinematic lighting, 60fps"
         encoded = urllib.parse.quote(enhanced)
         seed = int(time.time() * 1000) % 10000000
         return f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true"

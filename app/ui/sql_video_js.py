@@ -2211,14 +2211,15 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
     function drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx = 1, totalStages = 5) {
-        const domain = (p.domain || (p.solution_sql ? "SQL" : "AI TECH")).toUpperCase();
-        let domainColor = "#F59E0B";
+        const domain = (p.domain || p.topic_category || "EXPLORE").toUpperCase();
+        let domainColor = p.accent_color || "#38BDF8";
         if (domain.includes("PY")) domainColor = "#38BDF8";
         else if (domain.includes("AI") || domain.includes("AGENT") || domain.includes("MCP")) domainColor = "#818CF8";
-        else if (domain.includes("SQL")) domainColor = "#F59E0B";
-        else domainColor = "#10B981";
+        else if (domain.includes("SQL") || domain.includes("DATA")) domainColor = "#F59E0B";
+        else if (domain.includes("SCIENCE") || domain.includes("BIO")) domainColor = "#10B981";
+        else if (domain.includes("SPACE") || domain.includes("COSMOS")) domainColor = "#A855F7";
 
-        const titleText = p.title || p.question || "Mastering Modern Tech";
+        const titleText = p.title || p.question || "AI Video";
 
         ctx.save();
         const barY = 38;
@@ -5229,40 +5230,170 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         const vtLower = (vType || "").toLowerCase();
-        let normalizedType = "hook";
-        if (vtLower.includes("table") || vtLower.includes("schema") || vtLower.includes("inspect") || vtLower.includes("data")) {
-            normalizedType = "table";
-        } else if (vtLower.includes("simul") || vtLower.includes("eval") || vtLower.includes("exec") || vtLower.includes("filter")) {
-            normalizedType = "simulation";
-        } else if (vtLower.includes("code") || vtLower.includes("syntax") || vtLower.includes("build") || vtLower.includes("query")) {
+        let normalizedType = "showcase";
+
+        // ONLY route to specific technical renderers if the active data ACTUALLY contains that specific payload
+        if ((vtLower.includes("code") || vtLower.includes("syntax")) && (vData.code || vData.syntax_a_code || p.solution_sql)) {
             normalizedType = "code";
-        } else if (vtLower.includes('3d') || vtLower.includes('architect') || vtLower.includes('pipeline') || vtLower.includes('etl') || vtLower.includes('rag') || vtLower.includes('infra')) {
+        } else if ((vtLower.includes("3d") || vtLower.includes("architect") || vtLower.includes("diagram") || vtLower.includes("flow")) && Array.isArray(vData.nodes) && vData.nodes.length > 0) {
             normalizedType = "architecture_3d";
-        } else if (vtLower.includes("diagram") || vtLower.includes("arch") || vtLower.includes("flow")) {
-            normalizedType = "diagram";
-        } else if (vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix") || vtLower.includes("diff")) {
+        } else if ((vtLower.includes("table") || vtLower.includes("schema")) && Array.isArray(vData.rows) && vData.rows.length > 0) {
+            normalizedType = "table";
+        } else if ((vtLower.includes("comp") || vtLower.includes("vs") || vtLower.includes("matrix")) && (vData.item_a || vData.matrix)) {
             normalizedType = "comparison";
-        } else if (vtLower.includes("step") || vtLower.includes("road")) {
-            normalizedType = "steps";
-        } else if (vtLower.includes("stat") || vtLower.includes("metric") || vtLower.includes("num")) {
+        } else if ((vtLower.includes("stat") || vtLower.includes("metric")) && (vData.stat_value || vData.value)) {
             normalizedType = "stat";
-        } else if (vtLower.includes("takeaway") || vtLower.includes("result") || vtLower.includes("final") || vtLower.includes("rule")) {
+        } else if (vtLower.includes("step") && Array.isArray(vData.steps) && vData.steps.length > 0) {
+            normalizedType = "steps";
+        } else if (vtLower.includes("takeaway") && Array.isArray(vData.bullets) && vData.bullets.length > 0) {
             normalizedType = "takeaway";
-        } else if (currentStageIdx === 1) {
-            normalizedType = "hook";
-        } else if (currentStageIdx === 2) {
-            normalizedType = (p.sample_rows && p.sample_rows.length > 0) ? "table" : (p.solution_sql ? "diagram" : "comparison");
-        } else if (currentStageIdx === 3) {
-            normalizedType = "diagram";
-        } else if (currentStageIdx === 4) {
-            normalizedType = "code";
-        } else if (currentStageIdx === 5) {
-            normalizedType = (p.sample_rows && p.sample_rows.length > 0) ? "simulation" : "takeaway";
         } else {
-            normalizedType = "takeaway";
+            // UNIVERSAL ZERO-RESTRICTION SHOWCASE: 100% prompt-driven content for ANY topic!
+            normalizedType = "showcase";
         }
 
         // =========================================================================
+        // UNIVERSAL PROMPT-DRIVEN SHOWCASE (100% Dynamic Content: Any Topic, Any Domain)
+        // =========================================================================
+        if (normalizedType === "showcase" || normalizedType === "key_points") {
+            const headline = vData.headline || activeStage.title || p.title || "Key Insight";
+            const subtext = vData.subtext || "";
+            const bullets = Array.isArray(vData.bullets) ? vData.bullets : (Array.isArray(vData.points) ? vData.points : []);
+            const badge = vData.badge || (p.domain ? p.domain.toUpperCase() : "KEY INSIGHT");
+            const themeCol = vData.theme_color || vData.color || p.accent_color || "#38BDF8";
+
+            const cardX = 70;
+            const cardW = W - 140; // 940px wide
+            const cardY = 320;
+            const cardH = 920;
+
+            ctx.save();
+
+            // 1. Sleek Frosted Glass Container with Dynamic Glow
+            const glassGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+            glassGrad.addColorStop(0, "rgba(10, 16, 32, 0.88)");
+            glassGrad.addColorStop(1, "rgba(5, 9, 20, 0.94)");
+            ctx.fillStyle = glassGrad;
+            ctx.beginPath();
+            ctx.roundRect(cardX, cardY, cardW, cardH, 28);
+            ctx.fill();
+
+            ctx.strokeStyle = themeCol;
+            ctx.lineWidth = 1.8;
+            ctx.shadowColor = themeCol;
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 2. Animated Category / Stage Badge
+            ctx.fillStyle = themeCol;
+            ctx.beginPath();
+            ctx.roundRect(cardX + 36, cardY + 36, 180, 36, 12);
+            ctx.fill();
+
+            ctx.fillStyle = "#020617";
+            ctx.font = "bold 15px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(badge, cardX + 126, cardY + 60);
+
+            // 3. Dynamic Scene Headline (Multi-line wrap)
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 38px 'Segoe UI', system-ui, sans-serif";
+            ctx.textAlign = "left";
+            const headlineLines = wrapCanvasText(ctx, headline, cardW - 72, 3);
+            headlineLines.forEach((hLine, hIdx) => {
+                ctx.fillText(hLine, cardX + 36, cardY + 120 + hIdx * 48);
+            });
+
+            let curY = cardY + 120 + headlineLines.length * 48 + 15;
+
+            // 4. Subtext / Concept Explanation
+            if (subtext) {
+                ctx.fillStyle = "rgba(226, 232, 240, 0.82)";
+                ctx.font = "22px 'Segoe UI', sans-serif";
+                const subLines = wrapCanvasText(ctx, subtext, cardW - 72, 2);
+                subLines.forEach((sLine, sIdx) => {
+                    ctx.fillText(sLine, cardX + 36, curY + sIdx * 32);
+                });
+                curY += subLines.length * 32 + 25;
+            }
+
+            // Divider line with glowing specular highlight
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cardX + 36, curY);
+            ctx.lineTo(cardX + cardW - 36, curY);
+            ctx.stroke();
+            curY += 30;
+
+            // 5. Dynamic Bullet Cards (Key Takeaways / Facts)
+            if (bullets.length > 0) {
+                const bulletLimit = Math.min(bullets.length, 4);
+                const bulletSpacing = Math.min(130, Math.floor((cardY + cardH - curY - 30) / bulletLimit));
+
+                bullets.slice(0, bulletLimit).forEach((bText, bIdx) => {
+                    const bY = curY + bIdx * bulletSpacing;
+                    const bH = bulletSpacing - 18;
+
+                    // Bullet card backdrop
+                    ctx.fillStyle = "rgba(15, 23, 42, 0.65)";
+                    ctx.beginPath();
+                    ctx.roundRect(cardX + 36, bY, cardW - 72, bH, 16);
+                    ctx.fill();
+
+                    ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    // Bullet icon / number tag
+                    ctx.fillStyle = themeCol;
+                    ctx.beginPath();
+                    ctx.arc(cardX + 66, bY + bH / 2, 14, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = "#020617";
+                    ctx.font = "bold 14px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(String(bIdx + 1), cardX + 66, bY + bH / 2 + 5);
+
+                    // Bullet text
+                    ctx.fillStyle = "#F1F5F9";
+                    ctx.font = "21px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "left";
+                    const bLines = wrapCanvasText(ctx, String(bText), cardW - 140, 2);
+                    bLines.forEach((line, lIdx) => {
+                        ctx.fillText(line, cardX + 96, bY + (bH / 2) - ((bLines.length - 1) * 12) + (lIdx * 26) + 4);
+                    });
+                });
+            } else {
+                // If no bullets, render dynamic visual aura with particles
+                const auraY = curY + 140;
+                const auraPulse = 1.0 + Math.sin(t * 3) * 0.06;
+                ctx.save();
+                ctx.translate(W / 2, auraY);
+                ctx.scale(auraPulse, auraPulse);
+
+                const rad = ctx.createRadialGradient(0, 0, 10, 0, 0, 180);
+                rad.addColorStop(0, themeCol + "44");
+                rad.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = rad;
+                ctx.beginPath();
+                ctx.arc(0, 0, 180, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = themeCol;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 90, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+        else         // =========================================================================
         // VISUAL 1: HOOK (Bold High-Impact Title & 3D Pulsing Holographic Orb)
         // =========================================================================
         if (normalizedType === "hook") {
@@ -7233,12 +7364,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         // =========================================================================
         else {
             const rule = vData.rule || p.golden_rule || activeStage.title || "Master Enterprise Architecture Logic Before Coding!";
-            const bullets = (vData.bullets && vData.bullets.length > 0) ? vData.bullets : (p.traps && p.traps.length > 0 ? p.traps : [
-                "Always architect end-to-end data pipelines with zero data loss",
-                "Optimize memory & concurrency: DuckDB + Redis caching",
-                "State performance trade-offs, p95 latencies & failover tiers"
-            ]);
-            const proTip = vData.pro_tip || p.pro_tip || "💡 Senior Architect Tip: Articulate failover tiers before implementation.";
+            const bullets = (vData.bullets && vData.bullets.length > 0) ? vData.bullets : [
+                activeStage.title || "Key Takeaway",
+                p.title || "Core Principle Mastered",
+                p.domain || "Universal Knowledge"
+            ];
+            const proTip = vData.pro_tip || p.pro_tip || "💡 Pro-Tip: Deeply understand the core principle and apply with confidence.";
 
             const takeY = 320;
             const takeH = 880;

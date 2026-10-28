@@ -1276,7 +1276,7 @@ class SqlShortVideoEngine:
             for i, s in enumerate(existing):
                 item = dict(s)
                 explicit_visual = (s.get("visual_type") or "").strip()
-                fallback_visual = "hook" if i == 0 else ("takeaway" if i == len(existing) - 1 else "diagram")
+                fallback_visual = explicit_visual or s.get("visual_type") or "showcase"
                 speech_core = s.get(f"speech_{lang_key}") or s.get("speech") or s.get("speech_en") or ""
                 item.update({
                     "id": i + 1,
@@ -2220,49 +2220,41 @@ class SqlShortVideoEngine:
                 {"name": "Priya Kulkarni", "salary": "₹1,60,000", "cond": "RNK = 2 (Target)", "res": "TRUE", "action": "KEEP", "status": "keep"},
                 {"name": "Sneha Patel", "salary": "₹1,40,000", "cond": "RNK = 3 (Lower)", "res": "FALSE", "action": "EXCLUDE", "status": "exclude"}
             ]
-            output_title = "VERIFIED SECOND HIGHEST SALARY"
-            output_headers = ["EMP_ID", "EMP_NAME", "SALARY", "RNK"]
-            output_rows = [["EMP-103", "Priya Kulkarni", "₹1,60,000", "2"]]
-            pro_tip = "💡 Senior Interviewer Pro-Tip: Always explain why DENSE_RANK() handles duplicate ties correctly whereas LIMIT 1 OFFSET 1 fails!"
+            topic_clean = text_clean.split("\n")[0][:50]
+            output_title = f"{topic_clean} OVERVIEW"
+            output_headers = ["TOPIC", "INSIGHT", "STATUS"]
+            output_rows = [[topic_clean, "100% Prompt-Driven Analysis", "ACTIVE"]]
+            pro_tip = f"💡 Key Insight: Master the fundamental principles of {topic_clean}."
             stages = [
                 {
-                    "id": 1, "action_type": "problem_intro", "title": "SQL Interview Challenge",
-                    "speech_mr": "एसक्यूएल इंटरव्ह्यूमध्ये नेहमी विचारला जाणारा प्रश्न: टेबलमधून सेकंड हायेस्ट सॅलरी कशी काढायची? चला सर्वात अचूक पद्धत पाहूया.",
-                    "speech_hi": "एसक्यूएल इंटरव्यू का सबसे कॉमन सवाल: टेबल से सेकंड हाईएस्ट सैलरी कैसे निकालेंगे? आइए इसकी सही और टाई-सेफ टेक्नीक समझते हैं.",
-                    "speech_en": "Here is a must-know SQL interview question: How to find the second highest salary handling duplicate ties cleanly with DENSE_RANK?"
+                    "id": 1, "action_type": "showcase", "visual_type": "showcase", "title": f"{topic_clean} - Overview",
+                    "visual_data": {"headline": topic_clean, "subtext": f"Core overview of {topic_clean}", "bullets": [f"Deep dive into {topic_clean}", "Universal prompt analysis in seconds"], "badge": "OVERVIEW", "theme_color": "#38BDF8"},
+                    "speech_mr": f"चला आजच्या भागात समजून घेऊया: {topic_clean}! यातील मुख्य संकल्पना आणि रहस्य आपण सोप्या भाषेत पाहणार आहोत.",
+                    "speech_hi": f"आइए आज के भाग में समझते हैं: {topic_clean}! इसके मुख्य सिद्धांत और पहलुओं को हम बहुत आसान तरीके से देखेंगे.",
+                    "speech_en": f"Welcome to today's breakdown of {topic_clean}! Let's explore the core insights and why this topic matters."
                 },
                 {
-                    "id": 2, "action_type": "data_inspection", "title": "Salary Inspection & Duplicate Ties",
-                    "speech_mr": "आपला टेबल तपासा. जर दोन एम्प्लॉईजची सॅलरी सारखीच १ लाख ८५ हजार असेल, तर LIMIT १ OFFSET १ वापरल्यास उत्तर चुकते!",
-                    "speech_hi": "हमारे टेबल को देखिए. अगर दो लोगों की सैलरी बराबर एक लाख 85 हजार है, तो LIMIT 1 OFFSET 1 लगाने पर गलत जवाब आ जाएगा!",
-                    "speech_en": "Inspect our table. If multiple employees share the top salary of ₹1,85,000, naive LIMIT 1 OFFSET 1 returns the first place salary again!"
+                    "id": 2, "action_type": "showcase", "visual_type": "showcase", "title": "Core Mechanism",
+                    "visual_data": {"headline": "How It Works", "subtext": "Fundamental principles and dynamics", "bullets": ["First-principles explanation", "Key structural mechanisms"], "badge": "MECHANISM", "theme_color": "#38BDF8"},
+                    "speech_mr": "यातील मुख्य कार्यपद्धती पाहा: जेव्हा आपण याचा मुळापासून विचार करतो, तेव्हा मूलभूत तत्त्वे अगदी स्पष्टपणे समोर येतात.",
+                    "speech_hi": "इसकी मुख्य कार्यप्रणाली देखिए: जब हम इसके बुनियादी सिद्धांतों को समझते हैं, तो सारी बातें एकदम साफ हो जाती हैं.",
+                    "speech_en": "Here is the fundamental mechanism in action. When we examine the first principles, the core dynamic becomes clear."
                 },
                 {
-                    "id": 3, "action_type": "logic_flowchart", "title": "Dense Rank Logic Pipeline",
-                    "speech_mr": "आपले लॉजिक: सॅलरी डिसेंडिंग ऑर्डरमध्ये लावून DENSE_RANK फंक्शन वापरू. यामुळे दोघांना रँक १ मिळून पुढील वेगळ्या सॅलरीला रँक २ मिळतो.",
-                    "speech_hi": "हमारा लॉजिक: सैलरी को डिसेंडिंग आर्डर में करके DENSE_RANK लगाएंगे. इससे टाई होने पर भी अगला अलग नंबर रैंक 2 पर ही आएगा.",
-                    "speech_en": "Our logic: DENSE_RANK orders salaries descending. Tied top earners both get rank 1, and the next distinct salary receives rank 2 without skipping."
+                    "id": 3, "action_type": "showcase", "visual_type": "showcase", "title": "Practical Impact & Value",
+                    "visual_data": {"headline": "Real-World Impact", "subtext": "Significance, practical application, and advantages", "bullets": ["High-value real-world impact", "Key practical takeaways"], "badge": "IMPACT", "theme_color": "#10B981"},
+                    "speech_mr": "प्रत्यक्ष व्यवहारात याचा काय उपयोग होतो? यातील महत्त्वपूर्ण पैलू आपल्या दैनंदिन किंवा व्यावसायिक कामात मोठी मदत करतात.",
+                    "speech_hi": "वास्तविक जीवन में इसका क्या उपयोग है? इसके प्रमुख पहलू हमारे काम और समझ को एक नई दिशा देते हैं.",
+                    "speech_en": "How does this apply in practice? Understanding these practical insights gives you a major strategic advantage."
                 },
                 {
-                    "id": 4, "action_type": "code_build", "title": "CTE & Window Query Construction",
-                    "speech_mr": "आता आपण CTE तयार करू: WITH Salary_Rank मध्ये DENSE_RANK काढू आणि बाहेरील मेन क्वेरीमध्ये WHERE rnk = २ चा फिल्टर लावू.",
-                    "speech_hi": "अब हम CTE बनाएंगे: WITH Salary_Rank के अंदर DENSE_RANK निकालेंगे और आउटर क्वेरी में WHERE rnk = 2 का सटीक फिल्टर लगाएंगे.",
-                    "speech_en": "Now we construct the production CTE: Wrap DENSE_RANK inside a clean subquery and filter for rnk equals 2 in the outer query."
-                },
-                {
-                    "id": 5, "action_type": "simulation_execution", "title": "Row-by-Row Filter Evaluation",
-                    "speech_mr": "डेटाबेस इंजिन प्रत्येक ओळ तपासते: रँक १ वगळले जातात, आणि अचूक रँक २ असणारी प्रिया कुलकर्णीची ₹१,६०,००० सॅलरी निवडली जाते.",
-                    "speech_hi": "डेटाबेस इंजन हर रो चेक करता है: रैंक 1 वाले दोनों रिकॉर्ड हटते हैं, और रैंक 2 पर मौजूद प्रिया कुलकर्णी की ₹1,60,000 सैलरी चुनी जाती है.",
-                    "speech_en": "The database engine evaluates rows: Rank 1 ties are eliminated, and Priya Kulkarni's distinct second highest salary of ₹1,60,000 is isolated."
-                },
-                {
-                    "id": 6, "action_type": "final_result", "title": "Verified Production Result",
-                    "speech_mr": "फायनल रिझल्ट पाहा! डुप्लिकेट टाय असतानाही अचूक सेकंड हायेस्ट सॅलरी मिळाली आहे. १०० टक्के इंटरव्ह्यू-रेडी क्वेरी!",
-                    "speech_hi": "फाइनल रिजल्ट देखिए! डुप्लिकेट सैलरी होने पर भी एकदम सही सेकंड हाईएस्ट सैलरी आ चुकी है. 100% इंटरव्यू-रेडी क्वेरी!",
-                    "speech_en": "Here is our verified final result! Fast, tie-safe, and 100% production ready for top tech company coding rounds."
+                    "id": 4, "action_type": "showcase", "visual_type": "showcase", "title": "Key Takeaway",
+                    "visual_data": {"headline": "Golden Takeaway", "subtext": "Summary rule for lasting mastery", "bullets": ["Remember the fundamental rule", "Apply insights with confidence"], "badge": "TAKEAWAY", "theme_color": "#F59E0B"},
+                    "speech_mr": "महत्त्वाचा अंतिम निष्कर्ष: ही मूलभूत तत्त्वे लक्षात ठेवा आणि आत्मविश्वासाने त्याचा योग्य वापर करा!",
+                    "speech_hi": "मुख्य अंतिम निष्कर्ष: इन जरूरी बातों को हमेशा याद रखिए और पूरे विश्वास के साथ इनका सही उपयोग कीजिए!",
+                    "speech_en": "Key Final Takeaway: Keep these fundamental rules in mind to master this topic with complete confidence!"
                 }
             ]
-
         # Scenario 3: QUALIFY & ROW_NUMBER (Latest Record per Customer)
         elif "QUALIFY" in q_up and "ROW_NUMBER" in q_up:
             suggested_motion_bg = "silicon_laser"
@@ -2608,76 +2600,47 @@ class SqlShortVideoEngine:
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
 
                 ai_prompt = (
-                    f"You are the Master Autonomous AI Video Director (Agent-320) commanding the Group T Viral Media Task Force (Agents 306-319).\n"
-                    f"Target: Produce an ultra-modern, high-retention 50-55s 9:16 vertical video (YouTube Shorts / Instagram Reels / TikTok).\n"
-                    f"Master Input Prompt: {text_input}\n"
-                    f"Selected Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
-                    f"Autonomous Directing & Pacing Rules:\n"
-                    f"1. Continuous Viral Learning: Emulate top 2026 tech shorts—crisp 3-second hook, visual transitions every 4-6 seconds, and human-friendly analogies.\n"
-                    f"2. Rich Visual Types Allowed:\n"
-                    f"   - 'hook': Punchy curiosity headline, pulsing glowing 3D core orb/particle (Scene 1)\n"
-                    f"   - 'architecture_3d': Full 3D isometric cloud architecture, cyber conduits, databases, microservices & photon packets\n"
-                    f"   - 'stat': Live animated latency/throughput metric comparison bar charts (e.g., '12ms vs 450ms', '10x Speedup')\n"
-                    f"   - 'code': Dark-mode developer IDE terminal window with syntax highlighting and active line pulse\n"
-                    f"   - 'comparison': Interactive side-by-side trade-off cards with check/cross badges\n"
-                    f"   - 'takeaway': Holographic golden trophy with senior architect summary rule\n"
-                    f"3. SFX Audio Cues: Assign 'sound_effect' to each scene: 'whoosh', 'laser', 'ding', or 'pop'.\n"
-                    f"4. Voice Script: Keep speech natural and engaging in {lang_key}, strictly ~20 words per scene (total 100-115 words across 5 scenes).\n\n"
+                    f"You are NanoPro Autonomous Universal AI Video Director.\n"
+                    f"Generate a captivating, viral 9:16 vertical video script & visual storyboard tailored 100% to the user's prompt.\n"
+                    f"User Prompt: {text_input}\n"
+                    f"Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
+                    f"DIRECTOR DIRECTIVES (ZERO RESTRICTIONS):\n"
+                    f"1. Zero Domain Limits: The topic can be ANYTHING (Tech, Science, Coding, Nature, Business, Culture, Health, History, Life, Space, News, AI, etc.). Create content 100% faithful to the prompt.\n"
+                    f"2. Language: Write the speech for all scenes naturally in {lang_key}. For Marathi ('mr'), use authentic Marathi in Devanagari script. For Hindi ('hi'), use natural conversational Hindi. For English ('en'), use crisp English.\n"
+                    f"3. Timing: Exactly 4 to 5 scenes, total narration script ~100-115 words (~45-55 seconds), perfectly paced for 9:16 vertical Shorts & Reels.\n"
+                    f"4. Scene Visual Content:\n"
+                    f"   - 'title': Scene title/headline\n"
+                    f"   - 'speech': Spoken script in {lang_key} (strictly 18-24 words per scene)\n"
+                    f"   - 'visual_description': Vivid description of the visual scene\n"
+                    f"   - 'video_prompt': High-definition 9:16 text-to-video prompt matching the scene\n"
+                    f"   - 'visual_type': 'showcase' | 'key_points' | 'stat' | 'comparison' | 'diagram' | 'code' | 'takeaway'\n"
+                    f"     (NOTE: Use 'code' ONLY if the user specifically asked for coding/programming. Use 'diagram' ONLY if the user specifically asked for system architecture. Otherwise use 'showcase', 'key_points', 'stat', or 'comparison').\n"
+                    f"   - 'visual_data': {{\n"
+                    f"       'headline': 'Punchy headline for the on-screen card',\n"
+                    f"       'subtext': 'One sentence explanation',\n"
+                    f"       'bullets': ['Key takeaway 1', 'Key takeaway 2', 'Key takeaway 3'],\n"
+                    f"       'badge': 'Topic or stage badge text',\n"
+                    f"       'theme_color': '#38BDF8' or '#10B981' or '#F59E0B' or '#EC4899' or '#8B5CF6'\n"
+                    f"     }}\n\n"
                     f"Output strictly raw valid JSON with no markdown wrapping:\n"
                     f"{{\n"
-                    f'  "title": "Clear punchy video title",\n'
-                    f'  "domain": "SQL | Python | Cloud | Architecture | DevOps | AI",\n'
-                    f'  "suggested_motion_bg": "quantum_nebula | warp_tunnel | neural_synapse | silicon_laser | fintech_ledger",\n'
-                    f'  "pro_tip": "One key senior engineer pro-tip",\n'
+                    f'  "title": "Compelling Title",\n'
+                    f'  "domain": "Topic Domain or Category",\n'
+                    f'  "accent_color": "#38BDF8",\n'
                     f'  "scenes": [\n'
                     f'    {{\n'
                     f'      "id": 1,\n'
-                    f'      "title": "Problem Hook",\n'
-                    f'      "speech": "Natural teacher speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "hook",\n'
+                    f'      "title": "Scene 1 Title",\n'
+                    f'      "speech": "Natural spoken script in {lang_key}",\n'
+                    f'      "visual_description": "Vivid visual description",\n'
+                    f'      "video_prompt": "Cinematic 9:16 vertical video of ...",\n'
+                    f'      "visual_type": "showcase",\n'
                     f'      "visual_data": {{\n'
-                    f'        "headline": "Punchy Question or Concept",\n'
-                    f'        "subtext": "Core challenge to solve",\n'
-                    f'        "icon": "⚡",\n'
-                    f'        "highlight_tag": "TOP INTERVIEW QUESTION"\n'
-                    f'      }}\n'
-                    f'    }},\n'
-                    f'    {{\n'
-                    f'      "id": 2,\n'
-                    f'      "title": "Core Mechanism",\n'
-                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "diagram",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "nodes": [\n'
-                    f'          {{"id": "n1", "label": "Client", "icon": "📱", "sub": "Request"}},\n'
-                    f'          {{"id": "n2", "label": "Engine", "icon": "⚙️", "sub": "Compute"}},\n'
-                    f'          {{"id": "n3", "label": "Output", "icon": "🎯", "sub": "Result"}}\n'
-                    f'        ],\n'
-                    f'        "connections": [{{"from": "n1", "to": "n2", "label": "Call"}}, {{"from": "n2", "to": "n3", "label": "Data"}}]\n'
-                    f'      }}\n'
-                    f'    }},\n'
-                    f'    {{\n'
-                    f'      "id": 3,\n'
-                    f'      "title": "Solution Implementation",\n'
-                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "code",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "language": "python",\n'
-                    f'        "filename": "solution.py",\n'
-                    f'        "code": "def solve():\\n    # solution logic\\n    return True",\n'
-                    f'        "highlight_line": 2,\n'
-                    f'        "note": "Core logic"\n'
-                    f'      }}\n'
-                    f'    }},\n'
-                    f'    {{\n'
-                    f'      "id": 4,\n'
-                    f'      "title": "Golden Takeaway",\n'
-                    f'      "speech": "Speech in {lang_key} (18-22 words)",\n'
-                    f'      "visual_type": "takeaway",\n'
-                    f'      "visual_data": {{\n'
-                    f'        "rule": "Golden takeaway rule",\n'
+                    f'        "headline": "Core Insight",\n'
+                    f'        "subtext": "Explanation sentence",\n'
                     f'        "bullets": ["Key point 1", "Key point 2"],\n'
-                    f'        "pro_tip": "Senior engineer tip"\n'
+                    f'        "badge": "INTRO",\n'
+                    f'        "theme_color": "#38BDF8"\n'
                     f'      }}\n'
                     f'    }}\n'
                     f'  ]\n'

@@ -216,9 +216,9 @@ class ModernVideoAIEngine:
         """
         w, h = (720, 1280) if aspect_ratio == "9:16" else (1280, 720)
         enhanced_prompt = (
-            f"Cinematic tech video, 9:16 vertical shorts, {prompt}, "
-            f"ultra high detail, neon blue and cyan glowing circuits, 3D volumetric lighting, "
-            f"futuristic server data center, Unreal Engine 5 render, motion graphics, 60fps"
+            f"Cinematic 9:16 vertical video reel, {prompt}, "
+            f"ultra high detail, 8k photorealistic, masterwork composition, "
+            f"cinematic volumetric lighting, Unreal Engine 5 render, 60fps"
         )
         encoded = urllib.parse.quote(enhanced_prompt)
         seed = int(time.time() * 1000) % 1000000
