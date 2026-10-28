@@ -171,72 +171,118 @@ class NeuralTTSEngine:
         self.output_dir = Path(__file__).resolve().parents[2] / "data" / "audio"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.voice_map = {
-            "hi": "hi-IN-MadhurNeural",       # 28-32y Indian Male Hindi Tech Educator (Default)
-            "hi_male": "hi-IN-MadhurNeural",  # 28-32y Indian Male Hindi Tech Educator
-            "hi_female": "hi-IN-SwaraNeural", # Indian Female Hindi
-            "en": "en-IN-PrabhatNeural",      # 28-32y Indian Male English Tech Educator
-            "en_male": "en-IN-PrabhatNeural", # 28-32y Indian Male English Tech Educator
-            "en_female": "en-IN-NeerjaNeural",# Indian Female English
-            "mr": "mr-IN-ManoharNeural",      # 28-32y Indian Male Marathi Tech Educator
-            "mr_male": "mr-IN-ManoharNeural", # 28-32y Indian Male Marathi Tech Educator
-            "mr_female": "mr-IN-AarohiNeural" # Indian Female Marathi
+            "hi": "hi-IN-SwaraNeural",         # 🇮🇳 Indian Hindi Tech Educator (Swara Neural) - Human Warmth, Clarity & Care
+            "hi_female": "hi-IN-SwaraNeural",  # 🇮🇳 Swara Neural (Default Female Teacher)
+            "hi_male": "hi-IN-MadhurNeural",   # 🇮🇳 Madhur Neural (Male Teacher)
+            "en": "en-IN-NeerjaNeural",        # 🇬🇧 Indian English Tech Educator (Neerja Neural) - Clear & Expressive
+            "en_female": "en-IN-NeerjaNeural", # 🇬🇧 Neerja Neural (Default Female Teacher)
+            "en_male": "en-IN-PrabhatNeural",  # 🇬🇧 Prabhat Neural (Male Teacher)
+            "mr": "mr-IN-AarohiNeural",        # 🇮🇳 Indian Marathi Tech Educator (Aarohi Neural) - Human Warmth & Understanding
+            "mr_female": "mr-IN-AarohiNeural", # 🇮🇳 Aarohi Neural (Default Female Teacher)
+            "mr_male": "mr-IN-ManoharNeural"   # 🇮🇳 Manohar Neural (Male Teacher)
         }
+
+    def _format_natural_teacher_ssml(self, text: str, voice: str, locale: str = "hi-IN") -> str:
+        """
+        Formats text into valid SSML with natural human breathing breaks and patient teacher prosody.
+        - Rate: -2% (calm, warm, articulate human teacher pace)
+        - Pauses:
+          * 450ms between scenes/paragraphs
+          * 350ms after rhetorical/teaching questions to let the concept sink in
+          * 280ms after explanation colons
+          * 220ms after full stops
+        """
+        import html
+        clean = html.escape(text.strip())
+        clean = re.sub(r'(\r?\n){2,}', '<break time="450ms"/>\n', clean)
+        clean = re.sub(r'(\r?\n)', ' <break time="250ms"/> ', clean)
+        clean = re.sub(r'\?\s*', '? <break time="350ms"/> ', clean)
+        clean = re.sub(r':\s*', ': <break time="280ms"/> ', clean)
+        clean = re.sub(r'!\s*', '! <break time="250ms"/> ', clean)
+        clean = re.sub(r'\.\s+', '. <break time="220ms"/> ', clean)
+        clean = re.sub(r'\|\s*', '<break time="220ms"/> ', clean)
+
+        return (
+            f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='{locale}'>\n"
+            f"  <voice name='{voice}'>\n"
+            f"    <prosody rate='-2%' pitch='+0Hz'>\n"
+            f"      {clean}\n"
+            f"    </prosody>\n"
+            f"  </voice>\n"
+            f"</speak>"
+        )
 
     def _prepare_conversational_text(self, text: str, for_eleven_v4: bool = False) -> str:
         """
         Enhances text with natural conversational pauses and crystal-clear technical pronunciation:
-        - Persona: 25-35y Indian Male Tech Educator & YouTube Shorts Creator
-        - Language: Natural Hindi + English technical words
-        - Emotion: Curious on problem introduction, Confident on solution explanation
-        - Pauses: Natural breath after questions (? ... ) and key explanations (: ... )
-        - Pronunciation: Crystal-clear SQL, Python, JOIN, DENSE_RANK, Snowflake terms
+        - Persona: Indian Tech Educator & Mentor
+        - Language: Natural Hindi / Marathi + English technical words
+        - Pauses: Natural breath after questions (, ... ) and key explanations
+        - Pronunciation: Crystal-clear AWS, DMS, CDC, SQL, Python, Snowflake terms
         """
         if not text:
             return ""
         t = text.strip()
 
-        # Natural pauses:
-        # After questions: brief curious pause
-        t = re.sub(r'\?\s*', '? ... ', t)
-        # After explanation colons: teaching emphasis pause
-        t = re.sub(r':\s*', ': ... ', t)
-        # After exclamations: energetic pause
-        t = re.sub(r'!\s*', '! ', t)
-        # After full stops: clean conversational cadence
-        t = re.sub(r'\.\s+', '. ', t)
+        # Natural conversational commas around key explanatory discourse markers:
+        t = re.sub(r'\b(yaani|yani|matlab)\b', ', yaani,', t, flags=re.IGNORECASE)
+        t = re.sub(r'\b(dekhiye|dhyan se suniye)\b', ', dekhiye,', t, flags=re.IGNORECASE)
+        t = re.sub(r'\b(chaliye|sabse pehle)\b', 'chaliye,', t, flags=re.IGNORECASE)
+        t = re.sub(r'\b(म्हणजेच|म्हणजे)\b', ', म्हणजेच,', t)
+        t = re.sub(r'\b(बघा|लक्ष द्या)\b', ', बघा,', t)
+        t = re.sub(r'\b(चला|सर्वप्रथम)\b', 'चला,', t)
 
-        # For non-v4 models or Edge-TTS, strip bracket tags so they are not read aloud
+        # Natural pauses:
+        t = re.sub(r'\?\s*', '? , ', t)
+        t = re.sub(r':\s*', ': , ', t)
+        t = re.sub(r'!\s*', '! ', t)
+        t = re.sub(r'\.\s+', '. ', t)
+        t = re.sub(r'\s{2,}', ' ', t)
+
         if not for_eleven_v4:
             t = re.sub(r'\[(curious|confident|enthusiastic|whispering|thoughtful)\]\s*', '', t, flags=re.IGNORECASE)
 
         return t
 
     async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
-        """Synthesizes speech via Microsoft Edge Neural TTS with short retries.
-
-        The Edge endpoint intermittently resets the socket, especially on shared
-        free-tier hosts, so one flaky connection must not fail a whole video.
-        """
+        """Synthesizes speech via Microsoft Edge Neural TTS with natural SSML and short retries."""
         import asyncio
         import edge_tts
-        formatted = self._prepare_conversational_text(text, for_eleven_v4=False)
+
+        locale = "hi-IN"
+        if "mr-" in voice or "mr_IN" in voice:
+            locale = "mr-IN"
+        elif "en-" in voice or "en_IN" in voice:
+            locale = "en-IN"
+
         last_error = None
         for attempt in range(3):
             try:
-                # +8% rate keeps the lively YouTube Shorts pacing while staying clear.
-                communicate = edge_tts.Communicate(formatted, voice=voice, rate="+8%", pitch="+0Hz")
+                # Attempt 1: Rich SSML with natural human breathing breaks & educator prosody
+                ssml = self._format_natural_teacher_ssml(text, voice, locale)
+                communicate = edge_tts.Communicate(ssml, voice=voice)
                 await asyncio.wait_for(communicate.save(str(output_path)), timeout=60)
                 if output_path.exists() and output_path.stat().st_size > 1000:
                     return
-                last_error = RuntimeError("Edge Neural TTS returned an empty audio file.")
-            except Exception as exc:
-                last_error = exc
-                log_event(f"Edge Neural TTS attempt {attempt + 1}/3 failed: {exc}", level="WARNING", component="NeuralTTS")
+            except Exception as ssml_exc:
+                log_event(f"SSML synthesis notice: {ssml_exc}. Falling back to conversational prosody text.", level="DEBUG", component="NeuralTTS")
+                try:
+                    # Fallback: Natural conversational text at calm teacher rate (-2%)
+                    formatted = self._prepare_conversational_text(text, for_eleven_v4=False)
+                    communicate = edge_tts.Communicate(formatted, voice=voice, rate="-2%", pitch="+0Hz")
+                    await asyncio.wait_for(communicate.save(str(output_path)), timeout=60)
+                    if output_path.exists() and output_path.stat().st_size > 1000:
+                        return
+                    last_error = RuntimeError("Edge Neural TTS returned an empty audio file.")
+                except Exception as exc:
+                    last_error = exc
+                    log_event(f"Edge Neural TTS attempt {attempt + 1}/3 failed: {exc}", level="WARNING", component="NeuralTTS")
+
             if attempt < 2:
-                await asyncio.sleep(1.5 * (attempt + 1))
+                await asyncio.sleep(1.2 * (attempt + 1))
         raise RuntimeError(f"Edge Neural TTS failed after 3 attempts: {last_error}")
 
-    async def synthesize_async(self, text: str, language: str = "hi", voice_gender: str = "male", custom_filename: Optional[str] = None) -> Dict[str, Any]:
+    async def synthesize_async(self, text: str, language: str = "hi", voice_gender: str = "female", custom_filename: Optional[str] = None) -> Dict[str, Any]:
         """
         Asynchronously synthesizes text into natural human speech.
         Implements the 25-35y Indian Male Tech Educator Persona across Eleven v4 & Microsoft Neural TTS.
@@ -245,12 +291,12 @@ class NeuralTTSEngine:
         if lang not in ["mr", "hi", "en"]:
             lang = "hi"
 
-        # Resolve voice: Default to Indian Male Educator (25-35 years)
-        if voice_gender == "female":
-            voice_key = f"{lang}_female"
+        # Resolve voice: Default to Indian Female Educator (Swara / Aarohi / Neerja)
+        if voice_gender == "male":
+            voice_key = f"{lang}_male"
         else:
-            voice_key = f"{lang}_male" if f"{lang}_male" in self.voice_map else lang
-        edge_voice = self.voice_map.get(voice_key, self.voice_map.get(lang, "hi-IN-MadhurNeural"))
+            voice_key = f"{lang}_female" if f"{lang}_female" in self.voice_map else lang
+        edge_voice = self.voice_map.get(voice_key, self.voice_map.get(lang, "hi-IN-SwaraNeural"))
 
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()[:12]
         if not custom_filename or "scenario" in custom_filename or "master_prompt" in custom_filename:
@@ -297,16 +343,16 @@ class NeuralTTSEngine:
 
         # 2. Microsoft Edge Neural TTS Cascade (hi-IN-MadhurNeural / en-IN-PrabhatNeural / mr-IN-ManoharNeural)
         try:
-            log_event(f"Synthesizing via Indian Male Neural TTS [{edge_voice}]...", component="NeuralTTS")
+            log_event(f"Synthesizing via Natural Indian Educator Neural TTS [{edge_voice}]...", component="NeuralTTS")
             await self._synthesize_edge_tts(text, edge_voice, out_path)
             if out_path.exists() and out_path.stat().st_size > 1000:
-                log_event(f"Indian Male Neural TTS synthesized successfully: {out_path.name} ({out_path.stat().st_size} bytes)", component="NeuralTTS")
+                log_event(f"Natural Indian Educator Neural TTS synthesized successfully: {out_path.name} ({out_path.stat().st_size} bytes)", component="NeuralTTS")
                 return {
                     "status": "success",
                     "audio_url": f"/audio/{fname}",
                     "file_path": str(out_path),
                     "provider": f"Microsoft Neural TTS ({edge_voice})",
-                    "voice_persona": "Premium Indian Male Tech Educator (25-35y • Madhur Neural)",
+                    "voice_persona": "Natural Indian Tech Educator (Swara/Aarohi Neural • Human Understanding)",
                     "language": lang
                 }
         except Exception as e:
@@ -315,7 +361,7 @@ class NeuralTTSEngine:
         return {
             "status": "fallback",
             "message": "Cloud voice synthesis unavailable. Falling back to browser speech.",
-            "voice_persona": "Premium Indian Male Tech Educator (28-32y)",
+            "voice_persona": "Natural Indian Tech Educator (Human Understanding)",
             "language": lang
         }
 

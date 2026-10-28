@@ -1693,13 +1693,19 @@ class SqlShortVideoEngine:
                     f"Generate a captivating, viral 9:16 vertical video script & visual storyboard tailored 100% to the user's prompt.\n"
                     f"User Prompt: {text_input}\n"
                     f"Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
-                    f"DIRECTOR DIRECTIVES (ZERO RESTRICTIONS):\n"
-                    f"1. Zero Domain Limits: The topic can be ANYTHING (Tech, Science, Coding, Nature, Business, Culture, Health, History, Life, Space, News, AI, etc.). Create content 100% faithful to the prompt.\n"
-                    f"2. Language: Write the speech for all scenes naturally in {lang_key}. For Marathi ('mr'), use authentic Marathi in Devanagari script. For Hindi ('hi'), use natural conversational Hindi. For English ('en'), use crisp English.\n"
-                    f"3. Timing: Exactly 4 to 5 scenes, total narration script ~100-115 words (~45-55 seconds), perfectly paced for 9:16 vertical Shorts & Reels.\n"
-                    f"4. Scene Visual Content:\n"
+                    f"HUMAN INDIAN TEACHER & PEDAGOGY DIRECTIVES (ZERO MONOTONE / ZERO ROBOTIC TONE):\n"
+                    f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy).\n"
+                    f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hinglish/Hindi with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. In Marathi ('mr'), use authentic Marathi teacher phrasing. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses.\n"
+                    f"3. Cognitive Flow Across 4-5 Scenes:\n"
+                    f"   - Scene 1: Friendly curiosity hook (e.g., 'Kya aapko pata hai...', 'Agar aap apne database ko AWS par shift karna chahte hain...').\n"
+                    f"   - Scene 2: How it Works step-by-step (e.g., 'Dekhiye, sabse pehle source se data read hota hai...').\n"
+                    f"   - Scene 3: Deep dive mechanism or architecture.\n"
+                    f"   - Scene 4: Key practical benefits and real-world impact (e.g., 'Iska sabse bada fayda kya hai? Zero downtime!').\n"
+                    f"   - Scene 5: Actionable takeaway or career pro-tip.\n"
+                    f"4. Timing: Exactly 4 to 5 scenes, total narration script ~80-100 words (~38-48 seconds), perfectly paced for 9:16 vertical Shorts & Reels.\n"
+                    f"5. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
-                    f"   - 'speech': Spoken script in {lang_key} (strictly 18-24 words per scene)\n"
+                    f"   - 'speech': Spoken human teacher narration in {lang_key} (strictly 16-22 words per scene, natural punctuation)\n"
                     f"   - 'visual_description': Vivid description of the visual scene\n"
                     f"   - 'video_prompt': High-definition 9:16 text-to-video prompt matching the scene\n"
                     f"   - 'visual_type': 'showcase' | 'key_points' | 'stat' | 'comparison' | 'diagram' | 'code' | 'takeaway'\n"
@@ -1786,6 +1792,7 @@ class SqlShortVideoEngine:
             tts_res = await neural_tts.synthesize_async(
                 text=full_narration,
                 language=lang_key,
+                voice_gender="female",
                 custom_filename=custom_filename
             )
             if tts_res.get("status") == "success" and tts_res.get("audio_url"):
@@ -2102,10 +2109,10 @@ class SqlShortVideoEngine:
 
         return asyncio.run(self.generate_short_prompt_async(topic_or_question, difficulty, language))
 
-    def synthesize_voiceover(self, text: str, language: str = "mr") -> Optional[str]:
-        """Synthesizes voiceover using Neural TTS Engine."""
+    def synthesize_voiceover(self, text: str, language: str = "mr", voice_gender: str = "female") -> Optional[str]:
+        """Synthesizes voiceover using Neural TTS Engine (Swara/Aarohi Female Teacher by default)."""
         from app.core.neural_tts import neural_tts
-        res = neural_tts.synthesize(text=text, language=language)
+        res = neural_tts.synthesize(text=text, language=language, voice_gender=voice_gender)
         if res.get("status") == "success":
             return res.get("file_path")
         return None
