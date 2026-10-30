@@ -750,9 +750,10 @@ const REPORT_CFG = {
 
 async function groqReport(cycle, mode) {
   const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";
-  const prompt = `You are NanoPro AI Studio's executive reporting engine. Write a concise ${cycle} report (mode: ${mode}) for Mangesh, timestamp ${istNow}.
-Cover: cloud cluster status, scheduled-pipeline status (AWS S3 → Snowflake, DuckDB/Neon/Turso), telegram bot health, pending items, and 3 actionable next steps. Max 180 words, crisp bullets, English.
-Real ingested data (news/crypto/weather): ${mode}`;
+  const prompt = `You are NanoPro AI Studio's reporting engine. Write a concise ${cycle} operations report for Mangesh, timestamp ${istNow}.
+STRICT RULES: Use ONLY the facts in REAL DATA below. NEVER invent numbers, percentages, row counts, uptimes, latencies, or statuses. If a metric is not in REAL DATA, do not mention it. Mark unmeasured items as "not measured".
+Structure: 1. Live infrastructure (real health+latency) 2. Real ingested data (news/crypto/weather) 3. Delivery targets 4. 2-3 realistic next steps based only on the facts. Max 160 words, crisp bullets, English.
+REAL DATA: ${mode}`;
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
@@ -818,7 +819,7 @@ async function sfSql(statement) {
     body: JSON.stringify({ statement, warehouse: REPORT_CFG.SNOWFLAKE.WAREHOUSE, database: "BANK_DB", schema: "L0_STAGING" })
   });
   const d = await r.json();
-  return { ok: r.ok, code: d.code || null, message: d.message || null };
+  return { ok: r.ok, code: d.code || null, message: d.message || null, rows: d.data || [], cols: (d.resultSetMetaData?.rowType || []).map(c => c.name) };
 }
 
 async function _sendEmailGmailImpl(subject, text, attachmentName, attachmentText) {
@@ -904,14 +905,50 @@ function istStamp(iso) {
 async function runReportCycle(cycle) {
   const result = { cycle, at: new Date().toISOString(), sent: {}, saved: false, report: null };
   // 1. real health check of upstreams
-  const health = {};
+  const health = {}; const latency = {};
   for (const [name, url] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
-    try { const r = await fetch(url + "/api/cluster/status", { signal: AbortSignal.timeout(6000) }); health[name] = r.status; }
+    try { const t0 = Date.now(); const r = await fetch(url + "/api/cluster/status", { signal: AbortSignal.timeout(6000) }); health[name] = r.status; latency[name] = Date.now() - t0; }
     catch (e) { health[name] = "down"; }
   }
-  // 2. generate report via Groq
+  // 2. generate report via Groq (real facts only)
   const liveData = await ingestLiveData();
-  const report = await groqReport(cycle, JSON.stringify({ health, live: liveData.summary }));
+  // L0→report: read back what was just persisted in Neon (clean-layer flow: API → DB → report)
+  let dbLive = { sources: {}, rows: 0, layer: null };
+  // L1 clean layer in Snowflake (created once): latest cleaned row per source
+  try {
+    await sfSql(`CREATE VIEW IF NOT EXISTS BANK_DB.L0_STAGING.NANOPRO_LIVE_CLEAN AS
+      SELECT SOURCE, PAYLOAD, CREATED_AT FROM BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY SOURCE ORDER BY CREATED_AT DESC) = 1`);
+    const sf = await sfSql("SELECT SOURCE, PAYLOAD FROM BANK_DB.L0_STAGING.NANOPRO_LIVE_CLEAN");
+    for (const row of (sf?.rows || [])) {
+      const src = Array.isArray(row) ? row[0] : (row.SOURCE ?? row.source);
+      let pl = Array.isArray(row) ? row[1] : (row.PAYLOAD ?? row.payload);
+      if (typeof pl === "string") { try { pl = JSON.parse(pl); } catch (_) {} }
+      dbLive.sources[src] = pl; dbLive.rows++;
+    }
+    if (dbLive.rows) dbLive.layer = "snowflake_L1_clean";
+  } catch (_) {}
+  if (!dbLive.rows) {
+    try {
+      const r = await neonSql("SELECT source, payload FROM (SELECT DISTINCT ON (source) source, payload, at FROM nanopro_live_data ORDER BY source, at DESC) t", []);
+      for (const row of (r?.rows || [])) {
+        let pl = row.payload;
+        if (typeof pl === "string") { try { pl = JSON.parse(pl); } catch (_) {} }
+        dbLive.sources[row.source] = pl; dbLive.rows++;
+      }
+      if (dbLive.rows) dbLive.layer = "neon_live_data";
+    } catch (_) {}
+  }
+  let reportCount = null;
+  try { const c = await neonSql("SELECT COUNT(*) AS n FROM nanopro_reports", []); reportCount = c?.rows?.[0]?.n ?? null; } catch (_) {}
+  const realFacts = {
+    upstreams: Object.fromEntries(Object.entries(health).map(([k, v]) => [k, { http: v, latency_ms: latency[k] ?? null }])),
+    edge_worker: "live",
+    db_readback: { note: "data below was read back from the DB clean layer after ingestion (API→S3→Snowflake L0→L1→report)", layer: dbLive.layer, sources: dbLive.sources, live_rows_used: dbLive.rows },
+    total_reports_in_db: reportCount,
+    delivery_channels: ["telegram reports bot", "telegram health bot", "whatsapp", "gmail", "snowflake", "neon", "aws s3", "upstash", "sftp"]
+  };
+  const report = await groqReport(cycle, JSON.stringify(realFacts));
   if (!report) { result.sent.reports = { ok: false, error: "groq_failed" }; return result; }
   result.report = report;
   const stamp = istStamp(result.at);
@@ -977,11 +1014,28 @@ async function ingestLiveData() {
     ));
     data.news = items.filter(i => i && i.title).map(i => ({ title: i.title, url: i.url || `https://news.ycombinator.com/item?id=${i.id}`, score: i.score || 0 }));
   } catch (_) {}
-  // crypto — CoinGecko free
+  // crypto — CoinGecko free, Binance fallback
   try {
-    const c = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true", { signal: AbortSignal.timeout(8000) })).json();
-    data.crypto = c;
-  } catch (_) {}
+    const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true", { signal: AbortSignal.timeout(8000), headers: { "User-Agent": "NanoProAIStudio/1.0", "Accept": "application/json" } });
+    const c = await r.json();
+    if (c && c.bitcoin) { data.crypto = c; data.crypto_source = "coingecko"; }
+    else throw new Error("coingecko failed");
+  } catch (_) {
+    for (const [src, url, parse] of [
+      ["coinbase", null, async () => {
+        const b = await (await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { signal: AbortSignal.timeout(6000) })).json();
+        const e = await (await fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot", { signal: AbortSignal.timeout(6000) })).json();
+        return { bitcoin: { usd: Math.round(+b.data.amount) }, ethereum: { usd: Math.round(+e.data.amount) } };
+      }],
+      ["coincap", null, async () => {
+        const a = await (await fetch("https://api.coincap.io/v2/assets?ids=bitcoin,ethereum", { signal: AbortSignal.timeout(6000) })).json();
+        const m = Object.fromEntries((a.data || []).map(x => [x.id, x]));
+        return { bitcoin: { usd: Math.round(+m.bitcoin.priceUsd), usd_24h_change: +m.bitcoin.changePercent24Hr }, ethereum: { usd: Math.round(+m.ethereum.priceUsd), usd_24h_change: +m.ethereum.changePercent24Hr } };
+      }]
+    ]) {
+      try { const c = await parse(); if (c?.bitcoin?.usd) { data.crypto = c; data.crypto_source = src; break; } } catch (_) {}
+    }
+  }
   // weather — wttr.in (free)
   try {
     const w = await (await fetch("https://wttr.in/Pune?format=j1", { signal: AbortSignal.timeout(8000) })).json();
@@ -998,6 +1052,13 @@ async function ingestLiveData() {
   try {
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_live_data`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: JSON.stringify(data) });
   } catch (_) {}
+  // persist → AWS S3 raw (bronze layer, one object per source)
+  const tsb = data.at.replace(/[:.]/g, "-");
+  for (const [src, pl] of [["tech_news", data.news], ["crypto", data.crypto], ["weather", data.weather]]) {
+    if (pl && (Array.isArray(pl) ? pl.length : true)) {
+      try { await s3PutReport(`nanopro-live/${src}-${tsb}.json`, JSON.stringify({ at: data.at, source: src, payload: pl })); } catch (_) {}
+    }
+  }
   // persist → Snowflake pipeline (one row per source)
   try {
     const esc = (x) => JSON.stringify(x).replace(/'/g, "''").slice(0, 6000);
