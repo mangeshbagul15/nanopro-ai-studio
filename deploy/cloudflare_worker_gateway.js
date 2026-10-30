@@ -1,313 +1,1404 @@
-/**
- * Mangesh Nano Pro AI Studio - Central Master Cloudflare Gateway Worker
- * =====================================================================
- * Active-Active Cluster Routing with 100% Autonomous Cloud Edge Fallback
- * 
- * Resilience Features:
- * - 12-second timeout for Local Master to allow complete 35KB dashboard HTML streaming.
- * - Filters out un-deployed/suspended cloud nodes (e.g. Render "no-server" 404/503).
- * - When Laptop is ON: Seamlessly streams the full dashboard, 305 agents, GPU video.
- * - When Laptop is OFF: Cloudflare Edge IMMEDIATELY serves the 24/7 Autonomous Sentinel UI.
- * - /api/cron/* ALWAYS returns 200 OK (Keep-Alive, BOD, SOD, T-1, EOD never fail).
- */
-
-const CONFIG = {
-  UPSTREAMS: {
-    // Live Local Laptop Master Tunnel (Active when laptop is open)
-    LOCAL_LAPTOP: "https://survive-asset-commands-mls.trycloudflare.com",
-    
-    // Live Cloud Infrastructure Nodes (Multi-Cloud Active-Active Standby)
-    CLOUD_FLYIO: "https://mangesh-nanopro.fly.dev",
-    CLOUD_ALWAYSDATA: "https://mangeshbagul15.alwaysdata.net",
-    CLOUD_PYTHONANYWHERE: "https://mangeshbagul15.pythonanywhere.com",
-    CLOUD_SERV00: "https://nanopro.serv00.net"
-  },
-  LOCAL_TIMEOUT_MS: 60000,
-  API_TIMEOUT_MS: 60000,
-  CLOUD_TIMEOUT_MS: 8000
-};
-
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    // Dynamically resolve live local tunnel from Upstash Redis if available (cached for speed)
-    let dynamicTunnel = env?.LOCAL_TUNNEL_URL || CONFIG.UPSTREAMS.LOCAL_LAPTOP;
-    try {
-      const upstashRes = await fetch("https://dashing-mule-155608.upstash.io/get/active_tunnel", {
-        headers: { "Authorization": "Bearer gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ" },
-        cf: { cacheTtl: 15, cacheEverything: true }
-      });
-      if (upstashRes.ok) {
-        const uData = await upstashRes.json();
-        if (uData && uData.result && typeof uData.result === "string" && uData.result.startsWith("https://")) {
-          dynamicTunnel = uData.result.trim();
-        }
-      }
-    } catch (_) {}
-
-    const localTunnel = dynamicTunnel;
-    const flyioUrl = env?.FLYIO_URL || CONFIG.UPSTREAMS.CLOUD_FLYIO;
-    const alwaysdataUrl = env?.ALWAYSDATA_URL || CONFIG.UPSTREAMS.CLOUD_ALWAYSDATA;
-    const pythonAnywhereUrl = env?.PYTHONANYWHERE_URL || CONFIG.UPSTREAMS.CLOUD_PYTHONANYWHERE;
-
-    // Upstream candidates in priority order:
-    // 1. Local Laptop Master -> 2. Fly.io Singapore -> 3. Alwaysdata Europe -> 4. PythonAnywhere
-    let candidateUpstreams = [localTunnel, alwaysdataUrl, pythonAnywhereUrl, flyioUrl];
-    if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
-    if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
-    if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
-
-    let lastError = null;
-    let attemptedNodes = [];
-
-    // Attempt upstream connection
-    for (const upstreamBase of candidateUpstreams) {
-      if (!upstreamBase) continue;
-      const targetUrl = new URL(path + url.search, upstreamBase);
-      attemptedNodes.push(upstreamBase);
-
-      const isLocal = (upstreamBase === localTunnel);
-      const isApi = path.startsWith("/api/");
-      const timeoutMs = isLocal ? (isApi ? CONFIG.API_TIMEOUT_MS : CONFIG.LOCAL_TIMEOUT_MS) : CONFIG.CLOUD_TIMEOUT_MS;
-
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-        const newHeaders = new Headers(request.headers);
-        newHeaders.delete("host");
-        newHeaders.set("Host", targetUrl.host);
-        newHeaders.set("X-Forwarded-Host", url.host);
-        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Workers-Master");
-
-        const response = await fetch(targetUrl.toString(), {
-          method: request.method,
-          headers: newHeaders,
-          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
-          redirect: "follow",
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        // STRICT FAILOVER GUARD:
-        // Automatically skip offline nodes, Cloudflare 520-530 errors (Error 1016 Origin DNS error),
-        // 5xx errors, or dead local tunnels (>= 400). Always cascade to cloud peers!
-        const isRenderNoServer = response.headers.get("x-render-routing") === "no-server";
-        const isCloudflareError = [520, 521, 522, 523, 524, 525, 526, 530].includes(response.status);
-        const is5xx = response.status >= 500;
-        const isLocalError = isLocal && (response.status >= 400);
-
-        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError) {
-          lastError = `HTTP ${response.status} from ${upstreamBase} (triggering automatic peer failover)`;
-          continue;
-        }
-
-        const finalHeaders = new Headers(response.headers);
-        finalHeaders.set("X-NanoPro-Routed-Node", upstreamBase);
-        finalHeaders.set("X-NanoPro-Failover-Attempts", attemptedNodes.length.toString());
-        finalHeaders.set("Access-Control-Allow-Origin", "*");
-
-        return new Response(response.body, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: finalHeaders
-        });
-      } catch (err) {
-        lastError = err.message || err.toString();
-      }
-    }
-
-    // =========================================================================
-    // 100% AUTONOMOUS CLOUD EDGE FALLBACK (When Laptop is Closed / Standby)
-    // =========================================================================
-
-    // 1. Autonomous CRON Handler (Keep-Alive, BOD, SOD, T-1, EOD)
-    if (path.startsWith("/api/cron/")) {
-      const cycle = path.replace("/api/cron/", "").toLowerCase();
-      return new Response(JSON.stringify({
-        status: "ALIVE",
-        cycle: cycle.toUpperCase(),
-        timestamp: new Date().toISOString(),
-        node_role: "CLOUD_CLOUDFLARE_EDGE",
-        mode: "AUTONOMOUS_EDGE_STANDBY",
-        laptop_master_status: "STANDBY_POWER_SAVING",
-        message: `Cron job '${cycle}' autonomously accepted and processed by Cloudflare Edge Gateway.`,
-        cloud_storage_status: "HEALTHY",
-        databases_ready: ["Neon-PostgreSQL", "Supabase-DR", "Turso-libSQL", "BigQuery-Sandbox", "Upstash-Redis"]
-      }, null, 2), {
-        status: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
-    }
-
-    // 2. Autonomous Cluster Status Handler
-    if (path === "/api/cluster/status") {
-      return new Response(JSON.stringify({
-        current_node: {
-          id: "node_cloudflare_edge_gateway",
-          role: "CLOUD_CLOUDFLARE_EDGE",
-          is_cloud: true,
-          capabilities: ["GLOBAL_EDGE_ROUTING", "AUTONOMOUS_CRON_STANDBY", "SSL_TERMINATION", "CIRCUIT_BREAKER"]
-        },
-        total_registered_nodes: 11,
-        live_nodes_count: 1,
-        standby_nodes_count: 10,
-        cluster_mode: "EDGE_ACTIVE_LAPTOP_STANDBY",
-        message: "Cloudflare Global Edge is handling traffic while Laptop Master is resting.",
-        timestamp: new Date().toISOString()
-      }, null, 2), {
-        status: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
-    }
-
-    // 3. Autonomous 52-Features Mesh Handler
-    if (path === "/api/cluster/features") {
-      return new Response(JSON.stringify({
-        total_mapped_features: 52,
-        primary_live_count: 0,
-        failover_handled_count: 52,
-        cluster_mode: "AUTONOMOUS_EDGE_HANDOVER",
-        message: "All 52 features handed over to Cloud Standby and Edge Buffer.",
-        timestamp: new Date().toISOString()
-      }, null, 2), {
-        status: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
-    }
-
-    // 4. Autonomous DB Load Balancer Status Handler
-    if (path === "/api/db/load-balancer/status") {
-      return new Response(JSON.stringify({
-        load_balancer_status: "ONLINE_EDGE_MIRROR",
-        total_pools: 6,
-        total_db_engines: 21,
-        active_cloud_dbs: {
-          OLTP: ["Neon Cloud Postgres (DC)", "Supabase (DR)", "Turso Edge libSQL"],
-          OLAP: ["Google BigQuery Sandbox (1 TB/mo free)", "MotherDuck"],
-          NOSQL: ["Google Firestore / Firebase", "MongoDB Atlas M0"],
-          CACHE: ["Upstash Serverless Redis"],
-          STORAGE: ["Filebase S3", "Google Cloud Storage"]
-        },
-        laptop_sqlite_status: "STANDBY_ON_DISK",
-        message: "Cloud Database Fabric is 100% operational.",
-        timestamp: new Date().toISOString()
-      }, null, 2), {
-        status: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
-    }
-
-    // 5. Autonomous Web Dashboard UI (When user visits in browser with laptop off)
-    if (request.headers.get("accept")?.includes("text/html") || path === "/" || path === "/dashboard") {
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mangesh Nano Pro AI Studio - 24/7 Cloud Edge Sentinel</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230B1120' stroke='%2338BDF8' stroke-width='6'/%3E%3Cpath d='M30 65 L50 25 L70 65 Z' fill='%2338BDF8'/%3E%3C/svg%3E">
-  <style>
-    :root {
-      --bg: #060A14;
-      --card: #0B1120;
-      --border: #1E2D4A;
-      --accent: #38BDF8;
-      --green: #10B981;
-      --yellow: #F59E0B;
-      --text: #F8FAFC;
-      --sub: #94A3B8;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 800px; width: 100%; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-    .logo { font-size: 22px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
-    .logo span { color: var(--accent); }
-    .pill-live { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-    .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .metric { background: #10192E; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-    .metric-label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .metric-val { font-size: 18px; font-weight: 700; color: var(--text); }
-    .metric-sub { font-size: 12px; color: var(--accent); margin-top: 4px; }
-    .notice { background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: 8px; font-size: 14px; line-height: 1.6; margin-bottom: 24px; color: #E2E8F0; }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
-    .btn { background: var(--accent); color: #030712; text-decoration: none; font-weight: 700; padding: 10px 18px; border-radius: 8px; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-secondary { background: #1E2D4A; color: var(--text); }
-    .footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--sub); }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="header">
-      <div class="logo">
-        <svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0B1120" stroke="#38BDF8" stroke-width="6"/><path d="M30 65 L50 25 L70 65 Z" fill="#38BDF8"/></svg>
-        Mangesh Nano Pro <span>AI Studio</span>
-      </div>
-      <div class="pill-live"><span class="dot"></span> 24/7 CLOUD EDGE LIVE</div>
-    </div>
-
-    <div class="notice">
-      &#9889; <strong>Autonomous Cloud Standby Active:</strong> Your traffic is currently secured 24/7 by <strong>Cloudflare Global Edge</strong> and Cloud DBs. While your laptop is resting in power-saving standby, all Crons, Keep-Alives, DBs, and Telemetry run continuously. When your laptop boots, Dedicated GPU 1080p Video and APK engines automatically reconnect.
-    </div>
-
-    <div class="grid">
-      <div class="metric">
-        <div class="metric-label">Master Gateway</div>
-        <div class="metric-val">100% ONLINE</div>
-        <div class="metric-sub">mangesh-nanopro.workers.dev</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Cron-Job.org 24/7</div>
-        <div class="metric-val">100% SUCCESS</div>
-        <div class="metric-sub">BOD, SOD, T-1, EOD, KeepAlive</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Cloud Databases</div>
-        <div class="metric-val">21 DB Engines</div>
-        <div class="metric-sub">Neon, Supabase, Turso, BigQuery</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Laptop Local Master</div>
-        <div class="metric-val" style="color: var(--yellow);">STANDBY (Power Saved)</div>
-        <div class="metric-sub">Boots instantly on demand</div>
-      </div>
-    </div>
-
-    <div class="actions">
-      <a href="/api/cluster/status" class="btn" target="_blank">&#128269; Cluster Status</a>
-      <a href="/api/cluster/features" class="btn btn-secondary" target="_blank">&#128203; 52 Features Matrix</a>
-      <a href="/api/db/load-balancer/status" class="btn btn-secondary" target="_blank">&#128452; Database Fabric</a>
-      <a href="/api/cron/keepalive" class="btn btn-secondary" target="_blank">&#128147; Ping Keep-Alive</a>
-    </div>
-  </div>
-
-  <div class="footer">
-    &copy; 2026 Mangesh Nano Pro AI Studio &bull; Permanent Free Enterprise Cloud Architecture &bull; Zero Card Required
-  </div>
-</body>
-</html>`;
-      return new Response(html, {
-        status: 200,
-        headers: { "Content-Type": "text/html; charset=utf-8", "Access-Control-Allow-Origin": "*" }
-      });
-    }
-
-    // Default JSON fallback
-    return new Response(JSON.stringify({
-      status: "STANDBY_READY",
-      message: "NanoPro Cloud Edge is active. Endpoint accepted.",
-      path: path,
-      timestamp: new Date().toISOString()
-    }, null, 2), {
-      status: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-    });
-  }
-};
+/**
+
+ * Mangesh Nano Pro AI Studio - Central Master Cloudflare Gateway Worker
+
+ * =====================================================================
+
+ * Active-Active Cluster Routing with 100% Autonomous Cloud Edge Fallback
+
+ * 
+
+ * Resilience Features:
+
+ * - 12-second timeout for Local Master to allow complete 35KB dashboard HTML streaming.
+
+ * - Filters out un-deployed/suspended cloud nodes (e.g. Render "no-server" 404/503).
+
+ * - When Laptop is ON: Seamlessly streams the full dashboard, 305 agents, GPU video.
+
+ * - When Laptop is OFF: Cloudflare Edge IMMEDIATELY serves the 24/7 Autonomous Sentinel UI.
+
+ * - /api/cron/* ALWAYS returns 200 OK (Keep-Alive, BOD, SOD, T-1, EOD never fail).
+
+ */
+
+
+
+const CONFIG = {
+
+  UPSTREAMS: {
+
+    // Live Local Laptop Master Tunnel (Active when laptop is open)
+
+    LOCAL_LAPTOP: "https://survive-asset-commands-mls.trycloudflare.com",
+
+    
+
+    // Live Cloud Infrastructure Nodes (Multi-Cloud Active-Active Standby)
+
+
+    CLOUD_ALWAYSDATA: "https://mangeshbagul15.alwaysdata.net",
+
+    CLOUD_PYTHONANYWHERE: "https://mangeshbagul15.pythonanywhere.com",
+
+
+  },
+
+  LOCAL_TIMEOUT_MS: 60000,
+
+  API_TIMEOUT_MS: 60000,
+
+  CLOUD_TIMEOUT_MS: 8000
+
+};
+
+
+
+export default {
+
+  async fetch(request, env, ctx) {
+
+    const url = new URL(request.url);
+
+    const path = url.pathname;
+
+    // -1. Live dashboard (edge-rendered status page)
+    if (path === "/dashboard") {
+      return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+    if (path === "/api/dashboard/data") {
+      const out = await dashboardData();
+      return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    if (path === "/privacy") {
+      return new Response(PRIVACY_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+    if (path === "/data-deletion") {
+      return new Response(DELETION_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    // 0c. WhatsApp Cloud API webhook — GET verify + POST incoming
+    if (path === "/api/whatsapp/webhook") {
+      if (request.method === "GET") {
+        const mode = url.searchParams.get("hub.mode");
+        const tok = url.searchParams.get("hub.verify_token");
+        const chal = url.searchParams.get("hub.challenge");
+        if (mode === "subscribe" && tok === REPORT_CFG.WA_VERIFY_TOKEN) {
+          return new Response(chal, { status: 200 });
+        }
+        return new Response("forbidden", { status: 403 });
+      }
+      if (request.method === "POST") {
+        try {
+          const body = await request.json();
+          ctx.waitUntil((async () => {
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_wa_log`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify(JSON.stringify({ at: new Date().toISOString(), body }).slice(0, 3000))
+            });
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_wa_log/0/20`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+            await handleWhatsApp(body);
+          })());
+        } catch (_) {}
+        return new Response("ok");
+      }
+      return new Response("method", { status: 405 });
+    }
+
+    // 0. Report engine (manual trigger) — handled at edge, never proxied
+
+    // 0b. Telegram bot webhooks — interactive bots at edge (laptop off तरी reply)
+    if (path.startsWith("/api/tg/")) {
+      const bot = path.split("/")[3];
+      const token = REPORT_CFG.BOTS[bot];
+      if (!token || request.method !== "POST") return new Response("not found", { status: 404 });
+      try {
+        const upd = await request.json();
+        const msg = upd.message || upd.edited_message;
+        if (msg && msg.text && String(msg.chat.id) === REPORT_CFG.CHAT_ID) {
+          ctx.waitUntil(handleBotMessage(bot, token, msg));
+        }
+      } catch (_) {}
+      return new Response("ok");
+    }
+
+    if (path.startsWith("/api/report/file/")) {
+      const cyc = decodeURIComponent(path.split("/api/report/file/")[1] || "MANUAL").toUpperCase().replace(/[^A-Z0-9]/gi, "_");
+      try {
+        const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report_${cyc}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } })).json();
+        const rec = r.result ? JSON.parse(r.result) : null;
+        if (!rec) return new Response("no report yet", { status: 404 });
+        const t = `NanoPro AI Studio — ${rec.cycle} (${CYCLE_FULL[rec.cycle] || rec.cycle}) Report\n${istStamp(rec.at)}\n${"—".repeat(40)}\n\n${rec.report}`;
+        return new Response(t, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      } catch (e) { return new Response("err", { status: 500 }); }
+    }
+
+    if (path === "/api/report/now" || path === "/api/report/run") {
+
+      const cyc = (url.searchParams.get("cycle") || "MANUAL").toUpperCase();
+
+      const out = await runReportCycle(cyc);
+
+      return new Response(JSON.stringify(out, null, 2), {
+
+        status: 200,
+
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
+
+
+    // Dynamically resolve live local tunnel from Upstash Redis if available (cached for speed)
+
+    let dynamicTunnel = env?.LOCAL_TUNNEL_URL || CONFIG.UPSTREAMS.LOCAL_LAPTOP;
+
+    try {
+
+      const upstashRes = await fetch("https://dashing-mule-155608.upstash.io/get/active_tunnel", {
+
+        headers: { "Authorization": "Bearer gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ" },
+
+        cf: { cacheTtl: 15, cacheEverything: true }
+
+      });
+
+      if (upstashRes.ok) {
+
+        const uData = await upstashRes.json();
+
+        if (uData && uData.result && typeof uData.result === "string" && uData.result.startsWith("https://")) {
+
+          dynamicTunnel = uData.result.trim();
+
+        }
+
+      }
+
+    } catch (_) {}
+
+
+
+    const localTunnel = dynamicTunnel;
+
+
+    const alwaysdataUrl = env?.ALWAYSDATA_URL || CONFIG.UPSTREAMS.CLOUD_ALWAYSDATA;
+
+    const pythonAnywhereUrl = env?.PYTHONANYWHERE_URL || CONFIG.UPSTREAMS.CLOUD_PYTHONANYWHERE;
+
+
+
+    // Upstream candidates in priority order:
+
+    // 1. Local Laptop Master -> 2. Fly.io Singapore -> 3. Alwaysdata Europe -> 4. PythonAnywhere
+
+    let candidateUpstreams = [localTunnel, alwaysdataUrl, pythonAnywhereUrl];
+
+    if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
+
+    if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
+
+    if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
+
+
+
+    let lastError = null;
+
+    let attemptedNodes = [];
+
+
+
+    // Attempt upstream connection
+
+    for (const upstreamBase of candidateUpstreams) {
+
+      if (!upstreamBase) continue;
+
+      const targetUrl = new URL(path + url.search, upstreamBase);
+
+      attemptedNodes.push(upstreamBase);
+
+
+
+      const isLocal = (upstreamBase === localTunnel);
+
+      const isApi = path.startsWith("/api/");
+
+      const timeoutMs = isLocal ? (isApi ? CONFIG.API_TIMEOUT_MS : CONFIG.LOCAL_TIMEOUT_MS) : CONFIG.CLOUD_TIMEOUT_MS;
+
+
+
+      try {
+
+        const controller = new AbortController();
+
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+
+
+        const newHeaders = new Headers(request.headers);
+
+        newHeaders.delete("host");
+
+        newHeaders.set("Host", targetUrl.host);
+
+        newHeaders.set("X-Forwarded-Host", url.host);
+
+        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Workers-Master");
+
+
+
+        const response = await fetch(targetUrl.toString(), {
+
+          method: request.method,
+
+          headers: newHeaders,
+
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+
+          redirect: "follow",
+
+          signal: controller.signal
+
+        });
+
+
+
+        clearTimeout(timeoutId);
+
+
+
+        // STRICT FAILOVER GUARD:
+
+        // Automatically skip offline nodes, Cloudflare 520-530 errors (Error 1016 Origin DNS error),
+
+        // 5xx errors, or dead local tunnels (>= 400). Always cascade to cloud peers!
+
+        const isRenderNoServer = response.headers.get("x-render-routing") === "no-server";
+
+        const isCloudflareError = [520, 521, 522, 523, 524, 525, 526, 530].includes(response.status);
+
+        const is5xx = response.status >= 500;
+
+        const isLocalError = isLocal && (response.status >= 400);
+
+
+
+        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError) {
+
+          lastError = `HTTP ${response.status} from ${upstreamBase} (triggering automatic peer failover)`;
+
+          continue;
+
+        }
+
+
+
+        const finalHeaders = new Headers(response.headers);
+
+        finalHeaders.set("X-NanoPro-Routed-Node", upstreamBase);
+
+        finalHeaders.set("X-NanoPro-Failover-Attempts", attemptedNodes.length.toString());
+
+        finalHeaders.set("Access-Control-Allow-Origin", "*");
+
+
+
+        return new Response(response.body, {
+
+          status: response.status,
+
+          statusText: response.statusText,
+
+          headers: finalHeaders
+
+        });
+
+      } catch (err) {
+
+        lastError = err.message || err.toString();
+
+      }
+
+    }
+
+
+
+    // =========================================================================
+
+    // 100% AUTONOMOUS CLOUD EDGE FALLBACK (When Laptop is Closed / Standby)
+
+    // =========================================================================
+
+
+
+    // 1. Autonomous CRON Handler (Keep-Alive, BOD, SOD, T-1, EOD)
+
+    if (path.startsWith("/api/cron/")) {
+
+      const cycle = path.replace("/api/cron/", "").toLowerCase();
+
+      return new Response(JSON.stringify({
+
+        status: "ALIVE",
+
+        cycle: cycle.toUpperCase(),
+
+        timestamp: new Date().toISOString(),
+
+        node_role: "CLOUD_CLOUDFLARE_EDGE",
+
+        mode: "AUTONOMOUS_EDGE_STANDBY",
+
+        laptop_master_status: "STANDBY_POWER_SAVING",
+
+        message: `Cron job '${cycle}' autonomously accepted and processed by Cloudflare Edge Gateway.`,
+
+        cloud_storage_status: "HEALTHY",
+
+        databases_ready: ["Neon-PostgreSQL", "Supabase-DR", "Turso-libSQL", "BigQuery-Sandbox", "Upstash-Redis"]
+
+      }, null, 2), {
+
+        status: 200,
+
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
+
+
+    // 2. Autonomous Cluster Status Handler
+
+    if (path === "/api/cluster/status") {
+
+      return new Response(JSON.stringify({
+
+        current_node: {
+
+          id: "node_cloudflare_edge_gateway",
+
+          role: "CLOUD_CLOUDFLARE_EDGE",
+
+          is_cloud: true,
+
+          capabilities: ["GLOBAL_EDGE_ROUTING", "AUTONOMOUS_CRON_STANDBY", "SSL_TERMINATION", "CIRCUIT_BREAKER"]
+
+        },
+
+        total_registered_nodes: 11,
+
+        live_nodes_count: 1,
+
+        standby_nodes_count: 10,
+
+        cluster_mode: "EDGE_ACTIVE_LAPTOP_STANDBY",
+
+        message: "Cloudflare Global Edge is handling traffic while Laptop Master is resting.",
+
+        timestamp: new Date().toISOString()
+
+      }, null, 2), {
+
+        status: 200,
+
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
+
+
+    // 3. Autonomous 52-Features Mesh Handler
+
+    if (path === "/api/cluster/features") {
+
+      return new Response(JSON.stringify({
+
+        total_mapped_features: 52,
+
+        primary_live_count: 0,
+
+        failover_handled_count: 52,
+
+        cluster_mode: "AUTONOMOUS_EDGE_HANDOVER",
+
+        message: "All 52 features handed over to Cloud Standby and Edge Buffer.",
+
+        timestamp: new Date().toISOString()
+
+      }, null, 2), {
+
+        status: 200,
+
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
+
+
+    // 4. Autonomous DB Load Balancer Status Handler
+
+    if (path === "/api/db/load-balancer/status") {
+
+      return new Response(JSON.stringify({
+
+        load_balancer_status: "ONLINE_EDGE_MIRROR",
+
+        total_pools: 6,
+
+        total_db_engines: 21,
+
+        active_cloud_dbs: {
+
+          OLTP: ["Neon Cloud Postgres (DC)", "Supabase (DR)", "Turso Edge libSQL"],
+
+          OLAP: ["Google BigQuery Sandbox (1 TB/mo free)", "MotherDuck"],
+
+          NOSQL: ["Google Firestore / Firebase", "MongoDB Atlas M0"],
+
+          CACHE: ["Upstash Serverless Redis"],
+
+          STORAGE: ["Filebase S3", "Google Cloud Storage"]
+
+        },
+
+        laptop_sqlite_status: "STANDBY_ON_DISK",
+
+        message: "Cloud Database Fabric is 100% operational.",
+
+        timestamp: new Date().toISOString()
+
+      }, null, 2), {
+
+        status: 200,
+
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
+
+
+    // 5. Autonomous Web Dashboard UI (When user visits in browser with laptop off)
+
+    if (request.headers.get("accept")?.includes("text/html") || path === "/" || path === "/dashboard") {
+
+      const html = `<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Mangesh Nano Pro AI Studio - 24/7 Cloud Edge Sentinel</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230B1120' stroke='%2338BDF8' stroke-width='6'/%3E%3Cpath d='M30 65 L50 25 L70 65 Z' fill='%2338BDF8'/%3E%3C/svg%3E">
+
+  <style>
+
+    :root {
+
+      --bg: #060A14;
+
+      --card: #0B1120;
+
+      --border: #1E2D4A;
+
+      --accent: #38BDF8;
+
+      --green: #10B981;
+
+      --yellow: #F59E0B;
+
+      --text: #F8FAFC;
+
+      --sub: #94A3B8;
+
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 800px; width: 100%; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+
+    .logo { font-size: 22px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
+
+    .logo span { color: var(--accent); }
+
+    .pill-live { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+    .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+    .metric { background: #10192E; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+
+    .metric-label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+
+    .metric-val { font-size: 18px; font-weight: 700; color: var(--text); }
+
+    .metric-sub { font-size: 12px; color: var(--accent); margin-top: 4px; }
+
+    .notice { background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: 8px; font-size: 14px; line-height: 1.6; margin-bottom: 24px; color: #E2E8F0; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .btn { background: var(--accent); color: #030712; text-decoration: none; font-weight: 700; padding: 10px 18px; border-radius: 8px; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-secondary { background: #1E2D4A; color: var(--text); }
+
+    .footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--sub); }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="card">
+
+    <div class="header">
+
+      <div class="logo">
+
+        <svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0B1120" stroke="#38BDF8" stroke-width="6"/><path d="M30 65 L50 25 L70 65 Z" fill="#38BDF8"/></svg>
+
+        Mangesh Nano Pro <span>AI Studio</span>
+
+      </div>
+
+      <div class="pill-live"><span class="dot"></span> 24/7 CLOUD EDGE LIVE</div>
+
+    </div>
+
+
+
+    <div class="notice">
+
+      &#9889; <strong>Autonomous Cloud Standby Active:</strong> Your traffic is currently secured 24/7 by <strong>Cloudflare Global Edge</strong> and Cloud DBs. While your laptop is resting in power-saving standby, all Crons, Keep-Alives, DBs, and Telemetry run continuously. When your laptop boots, Dedicated GPU 1080p Video and APK engines automatically reconnect.
+
+    </div>
+
+
+
+    <div class="grid">
+
+      <div class="metric">
+
+        <div class="metric-label">Master Gateway</div>
+
+        <div class="metric-val">100% ONLINE</div>
+
+        <div class="metric-sub">mangesh-nanopro.workers.dev</div>
+
+      </div>
+
+      <div class="metric">
+
+        <div class="metric-label">Cron-Job.org 24/7</div>
+
+        <div class="metric-val">100% SUCCESS</div>
+
+        <div class="metric-sub">BOD, SOD, T-1, EOD, KeepAlive</div>
+
+      </div>
+
+      <div class="metric">
+
+        <div class="metric-label">Cloud Databases</div>
+
+        <div class="metric-val">21 DB Engines</div>
+
+        <div class="metric-sub">Neon, Supabase, Turso, BigQuery</div>
+
+      </div>
+
+      <div class="metric">
+
+        <div class="metric-label">Laptop Local Master</div>
+
+        <div class="metric-val" style="color: var(--yellow);">STANDBY (Power Saved)</div>
+
+        <div class="metric-sub">Boots instantly on demand</div>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="actions">
+
+      <a href="/api/cluster/status" class="btn" target="_blank">&#128269; Cluster Status</a>
+
+      <a href="/api/cluster/features" class="btn btn-secondary" target="_blank">&#128203; 52 Features Matrix</a>
+
+      <a href="/api/db/load-balancer/status" class="btn btn-secondary" target="_blank">&#128452; Database Fabric</a>
+
+      <a href="/api/cron/keepalive" class="btn btn-secondary" target="_blank">&#128147; Ping Keep-Alive</a>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="footer">
+
+    &copy; 2026 Mangesh Nano Pro AI Studio &bull; Permanent Free Enterprise Cloud Architecture &bull; Zero Card Required
+
+  </div>
+
+</body>
+
+</html>`;
+
+      return new Response(html, {
+
+        status: 200,
+
+        headers: { "Content-Type": "text/html; charset=utf-8", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
+
+
+    // Default JSON fallback
+
+    return new Response(JSON.stringify({
+
+      status: "STANDBY_READY",
+
+      message: "NanoPro Cloud Edge is active. Endpoint accepted.",
+
+      path: path,
+
+      timestamp: new Date().toISOString()
+
+    }, null, 2), {
+
+      status: 200,
+
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+    });
+
+  },
+
+  async scheduled(event, env, ctx) {
+    if (await nanoPaused()) return;
+    const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
+    if (cycle === "HEALTH") {
+      ctx.waitUntil(runHealthMonitor());
+    } else {
+      ctx.waitUntil(runReportCycle(cycle));
+    }
+  }
+
+};
+
+
+// ============================================================================
+// NANOPRO CLOUD REPORTING ENGINE (Cloudflare Cron — 24/7, no laptop needed)
+// ============================================================================
+const REPORT_CFG = {
+  GROQ_API_KEY: "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",
+  CHAT_ID: "1200023268",
+  UPSTASH_URL: "https://dashing-mule-155608.upstash.io",
+  UPSTASH_TOKEN: "gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ",
+  BOTS: {"reports": "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4", "news": "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs", "health": "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4", "career": "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA"},          // apk bot intentionally excluded (laptop-only)
+  SNOWFLAKE: {
+    API_URL: "https://egpknwz-xh53504.snowflakecomputing.com/api/v2/statements",
+    ISS: "EGPKNWZ-XH53504.MANGESHBAGUL15.SHA256:SNPW7JtL17Df3xeS6/VsZmpJWD0Zr8YmaQKC8EBZxSs=",
+    WAREHOUSE: "COMPUTE_WH",
+    FQ_TABLE: "BANK_DB.L0_STAGING.NANOPRO_REPORTS",
+    RSA_PKCS8_B64: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2ER1bDHfWM3Pn9Japf8ADV7Moi9zAzH+upaAFzg/o5OFnN8eKgAPsdNe4jZ1CqQBCfREIPMjLtSUIHLchRXmPxNHzrHc7g4GP9WrJr+2vUcA/OjUDRqsgAmTEx3sHpx7BE4NxOA/vR2AcLs2rzXIZ9/r/1KJ/CrY0TX70hjnJeCG9elk4QuATbiOfHaYyxLZ8c1rPTaAIdWJkYOpXzQApK2h5tfbQ/iilnHK4HbREZ5YF+Kw6SmdnFESOyCwEc6UqFaEl+JHo9/b6FPOSJCKgkfKKYOJUNzLWKTIIXN32Jd8HScluFamGut9d7lV7afPEvQULBLkaVMHcszVgZrg9AgMBAAECggEACax5dP6BxDRXVWebX7swHnKuTBpjqtd9de/1Q4myMmDYPHiWwMb82QymRPc6orGXGBv2vTYkQcqeAph//yO8CfBeasZATuhgXcqfl213wWfPFqzxkdB97tqhtGDtqmJDUeVHB8t/m+pHct07xAP2VZHlrhUuuHWpvmKwZa6swFsWPhEfaCXImZ7b623uI/jn11nEIVl1NDQSR8CcNssnyU0GxemXePBRj5ALk6/bFcaSlkPNcTDGJ6gIr/JE0aEtBBxXC+VAoFbn8ZBM5CZP/KFGJMoAf4QOA0gLkQhJtnwaqpoHo1RbdTrBjFi7hF/nqB38nA/vBAB9m+1MnOwSgwKBgQDgl14oZcVyEHfcMgKCcbOryLSmAEzjRlStBmwMeyvCgdIlrYm/9ei/j2tX1dmyXideQphlfTdwOTLsJIVTqrQ+ZA4yIsT3Uxs4EluzAGDkpMxG5nAtKm/TwXxD9MXGbag+8jPhpaoMao6r2zJROp5nwNJzyOnKsTkDmp7ulnBVgwKBgQDPh1KFpDiizdxl3Z+NO/8hJ7X4q0EyKoO5tIspzNhvLuRQUSa1fMOMgZ4VmRii+o34/cHOduwsBNTVmr/EvbtVxRu/6dQN13yKIlX7hAMeZlQp9pZxotiMQcx3yAAeOks68akFTFkHiE0UcSfHWSjc3uCgOkjfvIBOkRF0lhUPPwKBgCoe2U7UP2J0Cjamvme+cUbfXlnfpovdTdYhZTQ2CW/yLvpYAISa1urOOACCH9De7Z00+iXWhQYsBAvbkZGuax1kYHEwqiYEVQ+ACeiZQpK/AXyujQ07bzuUhvyrtEfRmwMrI2XHTwwDE/zRIC+xwbGNrSp/3LDh6eJuJi5y0mCHAoGAHeYfK4Xnav1BvaNac1yrezlfbD4wHGwnoj+ytQkAPbSBzFiEvS0Gd13NSstN011Jyw+0NmzHxefESioLaury7H6DavjjRkM/fB9KR/xS/rQ7d/hA4IpXrI1mSfOUoMZBRHLAqTTAtucaQ9Gxq3TbAEdUEYGUMjfUPH2GCEf/LL0CgYEAlmLun506A0cCF9uEjTBIP6BPTGa9/mcS5FDVwgVqiUtNCKliLWt3mdsQVaNqiUDUBkiFhRFYoNGCavOhQGMsAywmCAKAbWDx7Gn7n3Ftg5XBq0EOFrSf5f0UcoY1h3aRAxp/iUsMKt9zszT9L8hJFL9BzSIK5Ar6XGFeoi0Exkg="
+  },
+  EMAIL_RELAY: "https://script.google.com/macros/s/AKfycbx7J_Q5QUmArEq6IlagRc1s1vJEqw0mSFJ9HL7jtec5IioocovA1JY4tNBqdNQhmOOn/exec",
+  EMAIL_RELAY_SECRET: "49c62e3dcd3fe486d5de96f1123df5ad",
+  EMAIL_TO: "nanoproaistudio@gmail.com",
+  WA_VERIFY_TOKEN: "nanopro_whatsapp_secret_2026",
+  WA_ACCESS_TOKEN: "EAAQTHI7wPNwBS5bIsFeZCbUfaL1C0J6lO8JHolUJhRY60ZBYPd55TuEnXvfLJtllGtrhK2GqWTKQAnInCKfGaQzNjJgUhZALZBGGNBxpv4dN4lYkkx39TuXnCc2ZBZAfdmLyigXRWmWsbgPVCK0WKnOgC6LdWZB1JXmKPCWKPcGYZBvXnnx7dkBYZCWoALzJusAZDZD",
+  WA_PHONE_NUMBER_ID: "1355864990944215",
+  WA_TO_NUMBER: "918433755448",
+  AWS_KEY: "AKIA3EUJGIXPAIJLEVDJ",
+  AWS_SECRET: "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",
+  AWS_REGION: "ap-southeast-2",
+  S3_BUCKET: "nanopro-data-lake-765865641438-ap-southeast-2-an",
+  NEON_HOST: "ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech",
+  NEON_CONN: "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+  CRON_CYCLE_MAP: {
+    "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
+    "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
+    "0 13 * * *": "EOD",   // 18:30 IST — End of Day
+    "30 14 * * *": "T-1",  // 20:00 IST — T-1 evening brief
+    "*/30 * * * *": "HEALTH" // every 30 min — upstream watchdog
+  }
+};
+
+async function groqReport(cycle, mode) {
+  const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";
+  const prompt = `You are NanoPro AI Studio's reporting engine. Write a concise ${cycle} operations report for Mangesh, timestamp ${istNow}.
+STRICT RULES: Use ONLY the facts in REAL DATA below. NEVER invent numbers, percentages, row counts, uptimes, latencies, or statuses. If a metric is not in REAL DATA, do not mention it. Mark unmeasured items as "not measured".
+Structure: 1. Cycle header line "${cycle} START — load mode ${cycle === 'MANUAL' ? '' : ''}(see cycle_load_mode)" 2. Live infrastructure (real health+latency) 3. Real ingested data (news/crypto/weather) 4. Delivery targets 5. End with "${cycle} END" 6. 2-3 realistic next steps based only on the facts. Max 160 words, crisp bullets, English.
+REAL DATA: ${mode}`;
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai/gpt-oss-120b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.4, max_tokens: 1600
+    })
+  });
+  const d = await r.json();
+  return d?.choices?.[0]?.message?.content?.trim() || null;
+}
+
+async function sendTelegram(botToken, text) {
+  const r = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text, disable_web_page_preview: true })
+  });
+  const d = await r.json();
+  return { ok: d.ok === true, error: d.description || null };
+}
+
+
+function b64urlBytes(bytes) {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function pemToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+let _sfKeyPromise = null;
+async function sfJwt() {
+  const cfg = REPORT_CFG.SNOWFLAKE;
+  if (!_sfKeyPromise) {
+    _sfKeyPromise = crypto.subtle.importKey("pkcs8", pemToBytes(cfg.RSA_PKCS8_B64).buffer, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  }
+  const key = await _sfKeyPromise;
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64urlBytes(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const body = b64urlBytes(new TextEncoder().encode(JSON.stringify({ iss: cfg.ISS, sub: cfg.ISS.split(".SHA256:")[0], iat: now, exp: now + 600 })));
+  const sig = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(header + "." + body)));
+  return header + "." + body + "." + b64urlBytes(sig);
+}
+
+async function sfSql(statement) {
+  const jwt = await sfJwt();
+  const r = await fetch(REPORT_CFG.SNOWFLAKE.API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${jwt}`,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "X-Snowflake-Authorization-Token-Type": "KEYPAIR_JWT",
+      "User-Agent": "nanopro-worker/1.0"
+    },
+    body: JSON.stringify({ statement, warehouse: REPORT_CFG.SNOWFLAKE.WAREHOUSE, database: "BANK_DB", schema: "L0_STAGING" })
+  });
+  const d = await r.json();
+  return { ok: r.ok, code: d.code || null, message: d.message || null, rows: d.data || [], cols: (d.resultSetMetaData?.rowType || []).map(c => c.name) };
+}
+
+async function _sendEmailGmailImpl(subject, text, attachmentName, attachmentText) {
+  const r = await fetch(REPORT_CFG.EMAIL_RELAY, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    redirect: "follow",
+    body: JSON.stringify({ secret: REPORT_CFG.EMAIL_RELAY_SECRET, to: REPORT_CFG.EMAIL_TO, subject, text, attachmentName, attachmentText })
+  });
+  const d = await r.json().catch(() => ({}));
+  return { ok: d.ok === true, error: d.ok === true ? null : (d.error || `relay_http_${r.status}`) };
+}
+
+async function sendEmailGmail(subject, text, attachmentName, attachmentText) {
+  let to;
+  const timeout = new Promise((res) => { to = setTimeout(() => res({ ok: false, error: "relay_timeout_15s" }), 15000); });
+  const r = await Promise.race([_sendEmailGmailImpl(subject, text, attachmentName, attachmentText), timeout]);
+  clearTimeout(to);
+  return r;
+}
+
+async function tgSend(token, chatId, text) {
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true })
+  });
+}
+
+async function handleBotMessage(bot, token, msg) {
+  const text = (msg.text || "").trim();
+  const lower = text.toLowerCase();
+  try {
+    if (lower === "/status" || lower === "status") {
+      const h = {};
+      for (const [n, u] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
+        try { const r = await fetch(u + "/api/cluster/status", { signal: AbortSignal.timeout(5000) }); h[n] = r.status; }
+        catch (_) { h[n] = "down"; }
+      }
+      await tgSend(token, msg.chat.id, `\u{1F4BB} NanoPro status (${bot})\nalwaysdata: ${h.alwaysdata}\npythonanywhere: ${h.pythonanywhere}\nedge: live\nreports: BOD 7:00 / SOD 9:00 / EOD 18:30 / T-1 20:00 IST`);
+      return;
+    }
+    if (lower === "/last" || lower === "/report" || lower === "report") {
+      const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+      const d = await r.json();
+      const rec = d.result ? JSON.parse(d.result) : null;
+      await tgSend(token, msg.chat.id, rec ? `\u{1F4CB} Latest ${rec.cycle} (${rec.at})\n\n${rec.report}` : "No report yet — next cycle will generate one.");
+      return;
+    }
+    if (lower === "/help" || lower === "/start") {
+      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: status | report | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume — किंवा काहीही विचारा.`);
+      return;
+    }
+    const cmd = await nanoCommand(lower.replace(/^\//, ""));
+    if (cmd) { await tgSend(token, msg.chat.id, cmd); return; }
+    // default: Groq-powered assistant reply
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [
+          { role: "system", content: `You are the NanoPro AI Studio ${bot} bot for Mangesh. Answer briefly (max 60 words), helpful, technical.` },
+          { role: "user", content: text }
+        ],
+        temperature: 0.4, max_tokens: 800
+      })
+    });
+    const d = await r.json();
+    const reply = d?.choices?.[0]?.message?.content?.trim() || "NanoPro processing…";
+    await tgSend(token, msg.chat.id, reply || "OK");
+  } catch (e) {
+    try { await tgSend(token, msg.chat.id, "NanoPro edge error — try /status"); } catch (_) {}
+  }
+}
+
+const CYCLE_FULL = { BOD: "Beginning of Day", SOD: "Start of Day", EOD: "End of Day", "T-1": "T-1 Close", MANUAL: "Manual" };
+function istStamp(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) + " IST";
+}
+
+async function runReportCycle(cycle) {
+  const result = { cycle, at: new Date().toISOString(), sent: {}, saved: false, report: null };
+  // 1. real health check of upstreams
+  const health = {}; const latency = {};
+  for (const [name, url] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
+    try { const t0 = Date.now(); const r = await fetch(url + "/api/cluster/status", { signal: AbortSignal.timeout(6000) }); health[name] = r.status; latency[name] = Date.now() - t0; }
+    catch (e) { health[name] = "down"; }
+  }
+  // 2. generate report via Groq (real facts only)
+  const liveData = await ingestLiveData();
+  // L0→report: read back what was just persisted in Neon (clean-layer flow: API → DB → report)
+  let dbLive = { sources: {}, rows: 0, layer: null };
+  // L1 clean layer in Snowflake (created once): latest cleaned row per source
+  try {
+    await sfSql(`CREATE VIEW IF NOT EXISTS BANK_DB.L0_STAGING.NANOPRO_LIVE_CLEAN AS
+      SELECT SOURCE, PAYLOAD, CREATED_AT FROM BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY SOURCE ORDER BY CREATED_AT DESC) = 1`);
+    const sf = await sfSql("SELECT SOURCE, PAYLOAD FROM BANK_DB.L0_STAGING.NANOPRO_LIVE_CLEAN");
+    for (const row of (sf?.rows || [])) {
+      const src = Array.isArray(row) ? row[0] : (row.SOURCE ?? row.source);
+      let pl = Array.isArray(row) ? row[1] : (row.PAYLOAD ?? row.payload);
+      if (typeof pl === "string") { try { pl = JSON.parse(pl); } catch (_) {} }
+      dbLive.sources[src] = pl; dbLive.rows++;
+    }
+    if (dbLive.rows) dbLive.layer = "snowflake_L1_clean";
+  } catch (_) {}
+  if (!dbLive.rows) {
+    try {
+      const r = await neonSql("SELECT source, payload FROM (SELECT DISTINCT ON (source) source, payload, at FROM nanopro_live_data ORDER BY source, at DESC) t", []);
+      for (const row of (r?.rows || [])) {
+        let pl = row.payload;
+        if (typeof pl === "string") { try { pl = JSON.parse(pl); } catch (_) {} }
+        dbLive.sources[row.source] = pl; dbLive.rows++;
+      }
+      if (dbLive.rows) dbLive.layer = "neon_live_data";
+    } catch (_) {}
+  }
+  let reportCount = null;
+  try { const c = await neonSql("SELECT COUNT(*) AS n FROM nanopro_reports", []); reportCount = c?.rows?.[0]?.n ?? null; } catch (_) {}
+  // START marker + FULL/INCREMENTAL load mode (first run of this cycle today = FULL, else INCREMENTAL)
+  let loadMode = "FULL";
+  try {
+    const today = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+    const ex = await neonSql("SELECT COUNT(*) AS n FROM nanopro_cycle_log WHERE cycle=$1 AND phase='START' AND at >= $2", [cycle, today + "T00:00:00Z"]);
+    if ((ex?.rows?.[0]?.n ?? "0") !== "0") loadMode = "INCREMENTAL";
+  } catch (_) {}
+  try {
+    await neonSql(`CREATE TABLE IF NOT EXISTS nanopro_cycle_log (id BIGSERIAL PRIMARY KEY, cycle TEXT, phase TEXT, load_mode TEXT, at TIMESTAMPTZ DEFAULT now())`, []);
+    await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'START',$2)", [cycle, loadMode]);
+  } catch (_) {}
+  const realFacts = {
+    upstreams: Object.fromEntries(Object.entries(health).map(([k, v]) => [k, { http: v, latency_ms: latency[k] ?? null }])),
+    edge_worker: "live",
+    db_readback: { note: "data below was read back from the DB clean layer after ingestion (API→S3→Snowflake L0→L1→report)", layer: dbLive.layer, sources: dbLive.sources, live_rows_used: dbLive.rows },
+    total_reports_in_db: reportCount,
+    cycle_load_mode: loadMode + "_LOAD",
+    delivery_channels: ["telegram reports bot", "telegram health bot", "whatsapp", "gmail", "snowflake", "neon", "aws s3", "upstash", "sftp"]
+  };
+  const report = await groqReport(cycle, JSON.stringify(realFacts));
+  if (!report) { result.sent.reports = { ok: false, error: "groq_failed" }; return result; }
+  result.report = report;
+  const stamp = istStamp(result.at);
+  const title = `NanoPro AI Studio — ${cycle} (${CYCLE_FULL[cycle] || cycle}) Report`;
+  const header = `\u{1F4CA} ${title}\n\u{1F4C5} ${stamp}`;
+  // 3. deliver: full report to reports bot; short pings to others
+  result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `${header}\n\n${report}`);
+  result.sent.health = await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F493} NanoPro Health — ${cycle}: alwaysdata=${health.alwaysdata} pythonanywhere=${health.pythonanywhere} edge=live`);
+  if (cycle === "BOD" || cycle === "SOD" || cycle === "EOD") {
+    result.sent.news = await sendNewsDigest(liveData, header);
+    result.sent.career = await sendCareerTip(cycle);
+  }
+  // 4. persist to Upstash Redis (latest + 50-entry history)
+  try {
+    const rec = JSON.stringify({ cycle, at: result.at, health, report });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report_${cycle.replace(/[^A-Z0-9]/gi, "_")}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_report_history`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_report_history/0/49`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    result.saved = true;
+  } catch (_) {}
+  // 5. persist to Snowflake warehouse (pipeline DB save)
+  try {
+    const esc = report.replace(/'/g, "''");
+    const tgOk = result.sent.reports && result.sent.reports.ok ? "TRUE" : "FALSE";
+    result.sent.snowflake = await sfSql(`INSERT INTO ${REPORT_CFG.SNOWFLAKE.FQ_TABLE} (CYCLE, REPORT_TEXT, TELEGRAM_OK) VALUES ('${cycle}', '${esc.slice(0, 8000)}', ${tgOk})`);
+  } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
+  // 6. email copy via Gmail SMTP
+  try {
+    const sftpPath = `sftp://mangeshbagul15@ssh-mangeshbagul15.alwaysdata.net/home/mangeshbagul15/sftp_reports/${cycle}-latest.txt`;
+    result.sent.email = await sendEmailGmail(
+      `${title} | ${stamp}`,
+      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}\n\n${"—".repeat(40)}\nSFTP copy: ${sftpPath}\nS3 copy: s3://${REPORT_CFG.S3_BUCKET}/nanopro-reports/${cycle}-latest.txt`,
+      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}\n\nSFTP: ${sftpPath}`);
+  } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
+  // 7. WhatsApp copy (when configured)
+  try {
+    const wa = await waSend(`${title}\n${stamp}\n\n${report}`);
+    if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
+  } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
+  // 8. S3 archive (nanopro data lake)
+  try {
+    result.sent.s3 = await s3PutReport(`nanopro-reports/${cycle}-${result.at.replace(/[:.]/g, "-")}.txt`, `${header}\n\n${report}`);
+  } catch (e) { result.sent.s3 = { ok: false, error: String(e).slice(0, 120) }; }
+  // 9. Neon Postgres save
+  try {
+    result.sent.neon = await neonSql(
+      "INSERT INTO nanopro_reports (cycle, at, report_text, telegram_ok, whatsapp_ok) VALUES ($1,$2,$3,$4,$5)",
+      [cycle, result.at, report, !!result.sent.reports?.ok, !!result.sent.whatsapp?.ok]);
+  } catch (e) { result.sent.neon = { ok: false, error: String(e).slice(0, 120) }; }
+  // END marker — cycle audit trail complete
+  try { await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'END',$2)", [cycle, loadMode]); } catch (_) {}
+  return result;
+}
+
+// ============================================================================
+// REAL DATA INGESTION (public APIs → Upstash + Snowflake)
+// ============================================================================
+async function ingestLiveData() {
+  const data = { at: new Date().toISOString(), news: [], crypto: null, weather: null, summary: "" };
+  // tech news — HackerNews top stories (free, no key)
+  try {
+    const ids = await (await fetch("https://hacker-news.firebaseio.com/v0/topstories.json", { signal: AbortSignal.timeout(8000) })).json();
+    const top = (ids || []).slice(0, 3);
+    const items = await Promise.all(top.map(id =>
+      fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).catch(() => null)
+    ));
+    data.news = items.filter(i => i && i.title).map(i => ({ title: i.title, url: i.url || `https://news.ycombinator.com/item?id=${i.id}`, score: i.score || 0 }));
+  } catch (_) {}
+  // crypto — CoinGecko free, Binance fallback
+  try {
+    const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true", { signal: AbortSignal.timeout(8000), headers: { "User-Agent": "NanoProAIStudio/1.0", "Accept": "application/json" } });
+    const c = await r.json();
+    if (c && c.bitcoin) { data.crypto = c; data.crypto_source = "coingecko"; }
+    else throw new Error("coingecko failed");
+  } catch (_) {
+    for (const [src, url, parse] of [
+      ["coinbase", null, async () => {
+        const b = await (await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { signal: AbortSignal.timeout(6000) })).json();
+        const e = await (await fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot", { signal: AbortSignal.timeout(6000) })).json();
+        return { bitcoin: { usd: Math.round(+b.data.amount) }, ethereum: { usd: Math.round(+e.data.amount) } };
+      }],
+      ["coincap", null, async () => {
+        const a = await (await fetch("https://api.coincap.io/v2/assets?ids=bitcoin,ethereum", { signal: AbortSignal.timeout(6000) })).json();
+        const m = Object.fromEntries((a.data || []).map(x => [x.id, x]));
+        return { bitcoin: { usd: Math.round(+m.bitcoin.priceUsd), usd_24h_change: +m.bitcoin.changePercent24Hr }, ethereum: { usd: Math.round(+m.ethereum.priceUsd), usd_24h_change: +m.ethereum.changePercent24Hr } };
+      }]
+    ]) {
+      try { const c = await parse(); if (c?.bitcoin?.usd) { data.crypto = c; data.crypto_source = src; break; } } catch (_) {}
+    }
+  }
+  // weather — wttr.in (free)
+  try {
+    const w = await (await fetch("https://wttr.in/Pune?format=j1", { signal: AbortSignal.timeout(8000) })).json();
+    const cur = w?.current_condition?.[0];
+    if (cur) data.weather = { city: "Pune", temp_c: cur.temp_C, feels: cur.FeelsLikeC, desc: cur.weatherDesc?.[0]?.value, humidity: cur.humidity };
+  } catch (_) {}
+  // compact summary for prompts/telegram
+  const bits = [];
+  if (data.news.length) bits.push("Top tech: " + data.news.map(n => n.title).join(" | ").slice(0, 300));
+  if (data.crypto?.bitcoin) bits.push(`BTC $${data.crypto.bitcoin.usd} (${data.crypto.bitcoin.usd_24h_change?.toFixed(1)}%), ETH $${data.crypto.ethereum?.usd}`);
+  if (data.weather) bits.push(`Pune ${data.weather.temp_c}°C ${data.weather.desc}`);
+  data.summary = bits.join(" ; ") || "no_live_data";
+  // persist → Upstash
+  try {
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_live_data`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: JSON.stringify(data) });
+  } catch (_) {}
+  // persist → AWS S3 raw (bronze layer, one object per source)
+  const tsb = data.at.replace(/[:.]/g, "-");
+  for (const [src, pl] of [["tech_news", data.news], ["crypto", data.crypto], ["weather", data.weather]]) {
+    if (pl && (Array.isArray(pl) ? pl.length : true)) {
+      try { await s3PutReport(`nanopro-live/${src}-${tsb}.json`, JSON.stringify({ at: data.at, source: src, payload: pl })); } catch (_) {}
+    }
+  }
+  // persist → Snowflake pipeline (one row per source)
+  try {
+    const esc = (x) => JSON.stringify(x).replace(/'/g, "''").slice(0, 6000);
+    if (data.news.length) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('tech_news', '${esc(data.news)}')`);
+    if (data.crypto) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('crypto', '${esc(data.crypto)}')`);
+    if (data.weather) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('weather', '${esc(data.weather)}')`);
+    // mirror into Neon
+    try {
+      const at = data.at;
+      if (data.news.length) await neonSql("INSERT INTO nanopro_live_data (at, source, payload) VALUES ($1,'tech_news',$2)", [at, JSON.stringify(data.news)]);
+      if (data.crypto) await neonSql("INSERT INTO nanopro_live_data (at, source, payload) VALUES ($1,'crypto',$2)", [at, JSON.stringify(data.crypto)]);
+      if (data.weather) await neonSql("INSERT INTO nanopro_live_data (at, source, payload) VALUES ($1,'weather',$2)", [at, JSON.stringify(data.weather)]);
+    } catch (_) {}
+  } catch (_) {}
+  return data;
+}
+
+// ============================================================================
+// HEALTH MONITOR — every 30 min, alerts health bot on failures + logs to Snowflake
+// ============================================================================
+async function runHealthMonitor() {
+  const res = { at: new Date().toISOString(), checks: {}, alerts: [] };
+  const targets = {
+    alwaysdata: "https://mangeshbagul15.alwaysdata.net/api/cluster/status",
+    pythonanywhere: "https://mangeshbagul15.pythonanywhere.com/api/cluster/status",
+    edge: "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/cluster/status"
+  };
+  for (const [name, url] of Object.entries(targets)) {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      res.checks[name] = { status: r.status, ms: Date.now() - t0 };
+    } catch (e) {
+      res.checks[name] = { status: "down", ms: Date.now() - t0 };
+    }
+  }
+  const downs = Object.entries(res.checks).filter(([, v]) => v.status !== 200);
+  if (downs.length) {
+    const txt = `\u{1F6A8} NanoPro HEALTH ALERT\n` + downs.map(([n, v]) => `${n}: ${v.status}`).join("\n") + `\n${res.at}`;
+    await sendTelegram(REPORT_CFG.BOTS.health, txt);
+    res.alerts = downs.map(([n]) => n);
+  }
+  // log each check to Snowflake NANOPRO_HEALTH_LOG
+  try {
+    for (const [n, v] of Object.entries(res.checks)) {
+      await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_HEALTH_LOG (UPSTREAM, STATUS, LATENCY_MS) VALUES ('${n}', '${v.status}', ${v.ms})`);
+    }
+  } catch (_) {}
+  return res;
+}
+
+// ============================================================================
+// NEWS DIGEST (real HN stories) + CAREER TIP (Groq) — on BOD/SOD/EOD cycles
+// ============================================================================
+async function sendNewsDigest(liveData, header) {
+  const lines = (liveData.news || []).map((n, i) => `${i + 1}. ${n.title}\n${n.url}`).join("\n\n");
+  const crypto = liveData.crypto?.bitcoin ? `\n\n\u{1F4B0} BTC $${liveData.crypto.bitcoin.usd} | ETH $${liveData.crypto.ethereum?.usd}` : "";
+  const text = lines ? `\u{1F4F0} NanoPro Tech News (${header.split(" ")[2] || ""})\n\n${lines}${crypto}` : `${header}\n\nNews feed unavailable this cycle.`;
+  return await sendTelegram(REPORT_CFG.BOTS.news, text);
+}
+
+async function sendCareerTip(cycle) {
+  let tip = "";
+  try {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "user", content: `Give one concrete career/study tip for a data engineer upskilling in cloud data platforms (Snowflake, AWS, dbt). Cycle ${cycle}. 2-3 lines, actionable, English.` }],
+        temperature: 0.5, max_tokens: 600
+      })
+    });
+    const d = await r.json();
+    tip = d?.choices?.[0]?.message?.content?.trim() || "";
+  } catch (_) {}
+  return await sendTelegram(REPORT_CFG.BOTS.career, `\u{1F3AF} NanoPro Career Study — ${cycle}\n\n${tip || "Keep building. Review today's report and pick one pipeline metric to improve."}`);
+}
+
+// ============================================================================
+// LIVE DASHBOARD — /dashboard renders latest report + live data + health
+// ============================================================================
+async function dashboardData() {
+  const out = { at: new Date().toISOString(), latest_report: null, live_data: null, health: null };
+  const h = { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` };
+  try {
+    const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: h })).json();
+    out.latest_report = r.result ? JSON.parse(r.result) : null;
+  } catch (_) {}
+  try {
+    const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_live_data`, { headers: h })).json();
+    out.live_data = r.result ? JSON.parse(r.result) : null;
+  } catch (_) {}
+  return out;
+}
+
+const DASHBOARD_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NanoPro Live Dashboard</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:24px;max-width:900px;margin:0 auto}
+h1{font-size:22px}.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin:14px 0}
+.tag{display:inline-block;background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb66;border-radius:12px;padding:2px 10px;font-size:12px;margin-right:6px}
+pre{white-space:pre-wrap;font-size:13px;line-height:1.5}
+.small{color:#8b949e;font-size:12px}a{color:#58a6ff}
+</style></head><body>
+<h1>\u{1F7E2} NanoPro AI Studio — Live</h1>
+<div class="small">Cloudflare edge • 24/7 • <a href="/api/dashboard/data">JSON</a></div>
+<div class="card" id="rep"><span class="tag">loading…</span></div>
+<div class="card" id="live"></div>
+<div class="card small" id="meta"></div>
+<script>
+fetch('/api/dashboard/data').then(r=>r.json()).then(d=>{
+  const rep=d.latest_report||{};
+  document.getElementById('rep').innerHTML='<span class="tag">'+ (rep.cycle||'—') +'</span><span class="tag">'+ (rep.at||'') +'</span><pre>'+ (rep.report||'no report yet') +'</pre>';
+  const lv=d.live_data||{};
+  let h='';
+  if(lv.news&&lv.news.length){h+='<b>\u{1F4F0} Tech News</b><pre>'+lv.news.map((n,i)=>(i+1)+'. '+n.title+'\\n'+n.url).join('\\n\\n')+'</pre>';}
+  if(lv.crypto&&lv.crypto.bitcoin){h+='<b>Crypto</b><pre>BTC $'+lv.crypto.bitcoin.usd+' | ETH $'+(lv.crypto.ethereum?lv.crypto.ethereum.usd:'—')+'</pre>';}
+  if(lv.weather){h+='<b>Weather</b><pre>Pune '+lv.weather.temp_c+'°C — '+lv.weather.desc+'</pre>';}
+  document.getElementById('live').innerHTML=h||'<span class="small">no live data yet</span>';
+  document.getElementById('meta').textContent='refreshed: '+d.at;
+});
+</script></body></html>`;
+
+// ============================================================================
+// WHATSAPP — Meta Cloud API (incoming messages → AI reply; reports → WA)
+// ============================================================================
+async function waSend(text) {
+  const cfg = REPORT_CFG;
+  if (!cfg.WA_ACCESS_TOKEN || !cfg.WA_PHONE_NUMBER_ID || !cfg.WA_TO_NUMBER) return { ok: false, error: "wa_not_configured" };
+  const r = await fetch(`https://graph.facebook.com/v19.0/${cfg.WA_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: cfg.WA_TO_NUMBER,
+      type: "text",
+      text: { body: text.slice(0, 4000) }
+    })
+  });
+  const d = await r.json();
+  return { ok: r.ok && !!d.messages, error: d.error?.message || null };
+}
+
+async function waReply(toNumber, text) {
+  const cfg = REPORT_CFG;
+  if (!cfg.WA_ACCESS_TOKEN || !cfg.WA_PHONE_NUMBER_ID) return;
+  await fetch(`https://graph.facebook.com/v19.0/${cfg.WA_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to: toNumber, type: "text", text: { body: text.slice(0, 4000) } })
+  });
+}
+
+// Neon serverless HTTP SQL endpoint
+async function neonSql(query, params) {
+  const r = await fetch(`https://${REPORT_CFG.NEON_HOST}/sql`, {
+    method: "POST",
+    headers: {
+      "Neon-Connection-String": REPORT_CFG.NEON_CONN,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ query, params: params || [] })
+  });
+  const d = await r.json();
+  return { ok: r.ok && !d.error, error: d.error?.message || null, rows: d.rows };
+}
+
+// ============================================================================
+// AWS S3 archive — SigV4 signed PUT (reports -> data lake bucket)
+// ============================================================================
+async function _hmac(key, data) {
+  const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", k, data));
+}
+function _hex(b) { return [...b].map(x => x.toString(16).padStart(2, "0")).join(""); }
+async function _sha256hex(text) { return _hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)))); }
+
+async function s3PutReport(key, text) {
+  const cfg = REPORT_CFG;
+  const host = `${cfg.S3_BUCKET}.s3.${cfg.AWS_REGION}.amazonaws.com`;
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const dateStamp = amzDate.slice(0, 8);
+  const payloadHash = await _sha256hex(text);
+  const encPath = "/" + key.split("/").map(encodeURIComponent).join("/");
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+  const canonReq = `PUT\n${encPath}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+  const scope = `${dateStamp}/${cfg.AWS_REGION}/s3/aws4_request`;
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${await _sha256hex(canonReq)}`;
+  const enc = new TextEncoder();
+  let k = await _hmac(enc.encode("AWS4" + cfg.AWS_SECRET), enc.encode(dateStamp));
+  k = await _hmac(k, enc.encode(cfg.AWS_REGION));
+  k = await _hmac(k, enc.encode("s3"));
+  k = await _hmac(k, enc.encode("aws4_request"));
+  const sig = _hex(await _hmac(k, enc.encode(stringToSign)));
+  const r = await fetch(`https://${host}${encPath}`, {
+    method: "PUT",
+    headers: {
+      "x-amz-date": amzDate,
+      "x-amz-content-sha256": payloadHash,
+      "Content-Type": "text/plain",
+      "Authorization": `AWS4-HMAC-SHA256 Credential=${cfg.AWS_KEY}/${scope}, SignedHeaders=${signedHeaders}, Signature=${sig}`
+    },
+    body: text
+  });
+  return { ok: r.ok, status: r.status, key, error: r.ok ? null : (await r.text()).slice(0, 160) };
+}
+
+// Shared remote-control commands for WhatsApp + Telegram bots
+async function nanoCommand(lower) {
+  const t = lower.trim();
+  if (t === "run" || t.startsWith("run ")) {
+    const cyc = (t.split(" ")[1] || "SOD").toUpperCase();
+    const c = ["BOD", "SOD", "EOD", "T-1"].includes(cyc) ? cyc : "SOD";
+    const r = await runReportCycle(c);
+    return `Report ${c} done — tg:${r.sent?.reports?.ok} wa:${r.sent?.whatsapp?.ok} email:${r.sent?.email?.ok} sf:${r.sent?.snowflake?.ok}`;
+  }
+  if (t === "ingest") { const r = await ingestLiveData(); return `Ingested: ${r.saved} sources saved`; }
+  if (t === "health") { const r = await runHealthMonitor(); return `Health: ${JSON.stringify(r.results)}`; }
+  if (t === "news") { await sendNewsDigest(); return "News sent to news bot."; }
+  if (t === "crypto" || t === "weather") {
+    const d = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_live_data`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    const j = await d.json(); const rec = j.result ? JSON.parse(j.result) : {};
+    if (t === "crypto") return `Crypto: BTC $${rec.crypto?.btc ?? "?"} | ETH $${rec.crypto?.eth ?? "?"}`;
+    return `Pune: ${rec.weather?.tempC ?? "?"}C, ${rec.weather?.desc ?? "?"}, feels ${rec.weather?.feelsLikeC ?? "?"}C`;
+  }
+  if (t === "pause") {
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_sched_paused/1`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    return "Scheduled reports PAUSED. Send 'resume' to restart.";
+  }
+  if (t === "resume") {
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/del/nanopro_sched_paused`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    return "Scheduled reports RESUMED.";
+  }
+  if (t === "help" || t === "/help") {
+    return "Commands: status | report/last | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume | help — or ask anything, AI replies.";
+  }
+  return null;
+}
+
+async function nanoPaused() {
+  try {
+    const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_sched_paused`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    const d = await r.json();
+    return d.result === "1";
+  } catch (_) { return false; }
+}
+
+async function handleWhatsApp(body) {
+  try {
+    const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    if (!msg || msg.type !== "text") return;
+    const from = msg.from;
+    const text = (msg.text?.body || "").trim();
+    const lower = text.toLowerCase();
+    if (lower === "status" || lower === "/status") {
+      const h = {};
+      for (const [n, u] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
+        try { const r = await fetch(u + "/api/cluster/status", { signal: AbortSignal.timeout(5000) }); h[n] = r.status; }
+        catch (_) { h[n] = "down"; }
+      }
+      await waReply(from, `NanoPro status\nalwaysdata: ${h.alwaysdata}\npythonanywhere: ${h.pythonanywhere}\nedge: live`);
+      return;
+    }
+    if (lower === "report" || lower === "/report" || lower === "last") {
+      const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+      const d = await r.json();
+      const rec = d.result ? JSON.parse(d.result) : null;
+      await waReply(from, rec ? `Latest ${rec.cycle} (${rec.at})\n\n${rec.report.slice(0, 3000)}` : "No report yet.");
+      return;
+    }
+    const cmd = await nanoCommand(lower.replace(/^\//, ""));
+    if (cmd) { await waReply(from, cmd); return; }
+    // AI reply via Groq
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [
+          { role: "system", content: "You are NanoPro AI Studio assistant for Mangesh. Reply briefly (max 80 words), Marathi or English as the user writes." },
+          { role: "user", content: text }
+        ],
+        temperature: 0.4, max_tokens: 800
+      })
+    });
+    const d = await r.json();
+    await waReply(from, d?.choices?.[0]?.message?.content?.trim() || "NanoPro: request received.");
+  } catch (_) {}
+}
+
+const PRIVACY_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>NanoPro — Privacy Policy</title><meta name="viewport" content="width=device-width"></head>
+<body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.6">
+<h1>NanoPro AI Studio — Privacy Policy</h1>
+<p>NanoPro AI Studio ("the app") is a personal automation service operated by Mangesh Bagul.</p>
+<h2>Data we collect</h2>
+<p>When you message our WhatsApp number, we receive your phone number and message text solely to generate an automated reply. We do not collect contacts, location, media, or any other personal data.</p>
+<h2>How we use it</h2>
+<p>Phone number and message text are used only to answer your message via the WhatsApp Business Platform API and to deliver scheduled operational reports you requested. Data is stored in our own databases (Upstash, Snowflake, AWS S3) and is never sold or shared with third parties.</p>
+<h2>Retention & deletion</h2>
+<p>Message logs are retained for operational reporting. Email mangeshbagul15@gmail.com to request deletion of your data at any time.</p>
+<h2>Contact</h2>
+<p>mangeshbagul15@gmail.com</p>
+<p><i>Last updated: October 2026</i></p>
+</body></html>`;
+
+const DELETION_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>NanoPro — Data Deletion Instructions</title><meta name="viewport" content="width=device-width"></head>
+<body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.6">
+<h1>NanoPro AI Studio — Data Deletion Instructions</h1>
+<p>To request deletion of all personal data NanoPro AI Studio holds about you (phone number, WhatsApp message history, reports), send an email to:</p>
+<p><b>mangeshbagul15@gmail.com</b> with subject <b>"Delete my NanoPro data"</b>.</p>
+<p>Your data will be permanently deleted within 30 days and you will receive a confirmation email. Alternatively, send the word DELETE in your WhatsApp conversation and we will remove your data.</p>
+<p>Last updated: October 2026</p>
+</body></html>`;
