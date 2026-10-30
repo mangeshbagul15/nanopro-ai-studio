@@ -124,6 +124,17 @@ export default {
       return new Response("ok");
     }
 
+    if (path.startsWith("/api/report/file/")) {
+      const cyc = decodeURIComponent(path.split("/api/report/file/")[1] || "MANUAL").toUpperCase().replace(/[^A-Z0-9]/gi, "_");
+      try {
+        const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report_${cyc}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } })).json();
+        const rec = r.result ? JSON.parse(r.result) : null;
+        if (!rec) return new Response("no report yet", { status: 404 });
+        const t = `NanoPro AI Studio — ${rec.cycle} (${CYCLE_FULL[rec.cycle] || rec.cycle}) Report\n${istStamp(rec.at)}\n${"—".repeat(40)}\n\n${rec.report}`;
+        return new Response(t, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      } catch (e) { return new Response("err", { status: 500 }); }
+    }
+
     if (path === "/api/report/now" || path === "/api/report/run") {
 
       const cyc = (url.searchParams.get("cycle") || "MANUAL").toUpperCase();
@@ -752,7 +763,7 @@ async function groqReport(cycle, mode) {
   const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";
   const prompt = `You are NanoPro AI Studio's reporting engine. Write a concise ${cycle} operations report for Mangesh, timestamp ${istNow}.
 STRICT RULES: Use ONLY the facts in REAL DATA below. NEVER invent numbers, percentages, row counts, uptimes, latencies, or statuses. If a metric is not in REAL DATA, do not mention it. Mark unmeasured items as "not measured".
-Structure: 1. Live infrastructure (real health+latency) 2. Real ingested data (news/crypto/weather) 3. Delivery targets 4. 2-3 realistic next steps based only on the facts. Max 160 words, crisp bullets, English.
+Structure: 1. Cycle header line "${cycle} START — load mode ${cycle === 'MANUAL' ? '' : ''}(see cycle_load_mode)" 2. Live infrastructure (real health+latency) 3. Real ingested data (news/crypto/weather) 4. Delivery targets 5. End with "${cycle} END" 6. 2-3 realistic next steps based only on the facts. Max 160 words, crisp bullets, English.
 REAL DATA: ${mode}`;
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -941,11 +952,23 @@ async function runReportCycle(cycle) {
   }
   let reportCount = null;
   try { const c = await neonSql("SELECT COUNT(*) AS n FROM nanopro_reports", []); reportCount = c?.rows?.[0]?.n ?? null; } catch (_) {}
+  // START marker + FULL/INCREMENTAL load mode (first run of this cycle today = FULL, else INCREMENTAL)
+  let loadMode = "FULL";
+  try {
+    const today = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+    const ex = await neonSql("SELECT COUNT(*) AS n FROM nanopro_cycle_log WHERE cycle=$1 AND phase='START' AND at >= $2", [cycle, today + "T00:00:00Z"]);
+    if ((ex?.rows?.[0]?.n ?? "0") !== "0") loadMode = "INCREMENTAL";
+  } catch (_) {}
+  try {
+    await neonSql(`CREATE TABLE IF NOT EXISTS nanopro_cycle_log (id BIGSERIAL PRIMARY KEY, cycle TEXT, phase TEXT, load_mode TEXT, at TIMESTAMPTZ DEFAULT now())`, []);
+    await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'START',$2)", [cycle, loadMode]);
+  } catch (_) {}
   const realFacts = {
     upstreams: Object.fromEntries(Object.entries(health).map(([k, v]) => [k, { http: v, latency_ms: latency[k] ?? null }])),
     edge_worker: "live",
     db_readback: { note: "data below was read back from the DB clean layer after ingestion (API→S3→Snowflake L0→L1→report)", layer: dbLive.layer, sources: dbLive.sources, live_rows_used: dbLive.rows },
     total_reports_in_db: reportCount,
+    cycle_load_mode: loadMode + "_LOAD",
     delivery_channels: ["telegram reports bot", "telegram health bot", "whatsapp", "gmail", "snowflake", "neon", "aws s3", "upstash", "sftp"]
   };
   const report = await groqReport(cycle, JSON.stringify(realFacts));
@@ -965,6 +988,7 @@ async function runReportCycle(cycle) {
   try {
     const rec = JSON.stringify({ cycle, at: result.at, health, report });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report_${cycle.replace(/[^A-Z0-9]/gi, "_")}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_report_history`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_report_history/0/49`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
     result.saved = true;
@@ -977,10 +1001,11 @@ async function runReportCycle(cycle) {
   } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
   // 6. email copy via Gmail SMTP
   try {
+    const sftpPath = `sftp://mangeshbagul15@ssh-mangeshbagul15.alwaysdata.net/home/mangeshbagul15/sftp_reports/${cycle}-latest.txt`;
     result.sent.email = await sendEmailGmail(
       `${title} | ${stamp}`,
-      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}`,
-      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}`);
+      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}\n\n${"—".repeat(40)}\nSFTP copy: ${sftpPath}\nS3 copy: s3://${REPORT_CFG.S3_BUCKET}/nanopro-reports/${cycle}-latest.txt`,
+      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}\n\nSFTP: ${sftpPath}`);
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   // 7. WhatsApp copy (when configured)
   try {
@@ -997,6 +1022,8 @@ async function runReportCycle(cycle) {
       "INSERT INTO nanopro_reports (cycle, at, report_text, telegram_ok, whatsapp_ok) VALUES ($1,$2,$3,$4,$5)",
       [cycle, result.at, report, !!result.sent.reports?.ok, !!result.sent.whatsapp?.ok]);
   } catch (e) { result.sent.neon = { ok: false, error: String(e).slice(0, 120) }; }
+  // END marker — cycle audit trail complete
+  try { await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'END',$2)", [cycle, loadMode]); } catch (_) {}
   return result;
 }
 
