@@ -64,6 +64,21 @@ export default {
 
     // 0. Report engine (manual trigger) — handled at edge, never proxied
 
+    // 0b. Telegram bot webhooks — interactive bots at edge (laptop off तरी reply)
+    if (path.startsWith("/api/tg/")) {
+      const bot = path.split("/")[3];
+      const token = REPORT_CFG.BOTS[bot];
+      if (!token || request.method !== "POST") return new Response("not found", { status: 404 });
+      try {
+        const upd = await request.json();
+        const msg = upd.message || upd.edited_message;
+        if (msg && msg.text && String(msg.chat.id) === REPORT_CFG.CHAT_ID) {
+          ctx.waitUntil(handleBotMessage(bot, token, msg));
+        }
+      } catch (_) {}
+      return new Response("ok");
+    }
+
     if (path === "/api/report/now" || path === "/api/report/run") {
 
       const cyc = (url.searchParams.get("cycle") || "MANUAL").toUpperCase();
@@ -761,6 +776,59 @@ async function sendEmailGmail(subject, text) {
   const r = await Promise.race([_sendEmailGmailImpl(subject, text), timeout]);
   clearTimeout(to);
   return r;
+}
+
+async function tgSend(token, chatId, text) {
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true })
+  });
+}
+
+async function handleBotMessage(bot, token, msg) {
+  const text = (msg.text || "").trim();
+  const lower = text.toLowerCase();
+  try {
+    if (lower === "/status" || lower === "status") {
+      const h = {};
+      for (const [n, u] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
+        try { const r = await fetch(u + "/api/cluster/status", { signal: AbortSignal.timeout(5000) }); h[n] = r.status; }
+        catch (_) { h[n] = "down"; }
+      }
+      await tgSend(token, msg.chat.id, `\u{1F4BB} NanoPro status (${bot})\nalwaysdata: ${h.alwaysdata}\npythonanywhere: ${h.pythonanywhere}\nedge: live\nreports: BOD 7:00 / SOD 9:00 / EOD 18:30 / T-1 20:00 IST`);
+      return;
+    }
+    if (lower === "/last" || lower === "/report" || lower === "report") {
+      const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+      const d = await r.json();
+      const rec = d.result ? JSON.parse(d.result) : null;
+      await tgSend(token, msg.chat.id, rec ? `\u{1F4CB} Latest ${rec.cycle} (${rec.at})\n\n${rec.report}` : "No report yet — next cycle will generate one.");
+      return;
+    }
+    if (lower === "/help" || lower === "/start") {
+      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: /status /report /last — किंवा काहीही विचारा.`);
+      return;
+    }
+    // default: Groq-powered assistant reply
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [
+          { role: "system", content: `You are the NanoPro AI Studio ${bot} bot for Mangesh. Answer briefly (max 60 words), helpful, technical.` },
+          { role: "user", content: text }
+        ],
+        temperature: 0.4, max_tokens: 800
+      })
+    });
+    const d = await r.json();
+    const reply = d?.choices?.[0]?.message?.content?.trim() || "NanoPro processing…";
+    await tgSend(token, msg.chat.id, reply || "OK");
+  } catch (e) {
+    try { await tgSend(token, msg.chat.id, "NanoPro edge error — try /status"); } catch (_) {}
+  }
 }
 
 async function runReportCycle(cycle) {
