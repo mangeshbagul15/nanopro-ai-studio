@@ -54,6 +54,8 @@ const CONFIG = {
 
 
 
+import { connect } from "cloudflare:sockets";
+
 export default {
 
   async fetch(request, env, ctx) {
@@ -654,6 +656,14 @@ const REPORT_CFG = {
   UPSTASH_URL: "https://dashing-mule-155608.upstash.io",
   UPSTASH_TOKEN: "gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ",
   BOTS: {"reports": "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4", "news": "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs", "health": "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4", "career": "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA"},          // apk bot intentionally excluded (laptop-only)
+  SNOWFLAKE: {
+    API_URL: "https://egpknwz-xh53504.snowflakecomputing.com/api/v2/statements",
+    ISS: "EGPKNWZ-XH53504.MANGESHBAGUL15.SHA256:SNPW7JtL17Df3xeS6/VsZmpJWD0Zr8YmaQKC8EBZxSs=",
+    WAREHOUSE: "COMPUTE_WH",
+    FQ_TABLE: "BANK_DB.L0_STAGING.NANOPRO_REPORTS",
+    RSA_PKCS8_B64: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2ER1bDHfWM3Pn9Japf8ADV7Moi9zAzH+upaAFzg/o5OFnN8eKgAPsdNe4jZ1CqQBCfREIPMjLtSUIHLchRXmPxNHzrHc7g4GP9WrJr+2vUcA/OjUDRqsgAmTEx3sHpx7BE4NxOA/vR2AcLs2rzXIZ9/r/1KJ/CrY0TX70hjnJeCG9elk4QuATbiOfHaYyxLZ8c1rPTaAIdWJkYOpXzQApK2h5tfbQ/iilnHK4HbREZ5YF+Kw6SmdnFESOyCwEc6UqFaEl+JHo9/b6FPOSJCKgkfKKYOJUNzLWKTIIXN32Jd8HScluFamGut9d7lV7afPEvQULBLkaVMHcszVgZrg9AgMBAAECggEACax5dP6BxDRXVWebX7swHnKuTBpjqtd9de/1Q4myMmDYPHiWwMb82QymRPc6orGXGBv2vTYkQcqeAph//yO8CfBeasZATuhgXcqfl213wWfPFqzxkdB97tqhtGDtqmJDUeVHB8t/m+pHct07xAP2VZHlrhUuuHWpvmKwZa6swFsWPhEfaCXImZ7b623uI/jn11nEIVl1NDQSR8CcNssnyU0GxemXePBRj5ALk6/bFcaSlkPNcTDGJ6gIr/JE0aEtBBxXC+VAoFbn8ZBM5CZP/KFGJMoAf4QOA0gLkQhJtnwaqpoHo1RbdTrBjFi7hF/nqB38nA/vBAB9m+1MnOwSgwKBgQDgl14oZcVyEHfcMgKCcbOryLSmAEzjRlStBmwMeyvCgdIlrYm/9ei/j2tX1dmyXideQphlfTdwOTLsJIVTqrQ+ZA4yIsT3Uxs4EluzAGDkpMxG5nAtKm/TwXxD9MXGbag+8jPhpaoMao6r2zJROp5nwNJzyOnKsTkDmp7ulnBVgwKBgQDPh1KFpDiizdxl3Z+NO/8hJ7X4q0EyKoO5tIspzNhvLuRQUSa1fMOMgZ4VmRii+o34/cHOduwsBNTVmr/EvbtVxRu/6dQN13yKIlX7hAMeZlQp9pZxotiMQcx3yAAeOks68akFTFkHiE0UcSfHWSjc3uCgOkjfvIBOkRF0lhUPPwKBgCoe2U7UP2J0Cjamvme+cUbfXlnfpovdTdYhZTQ2CW/yLvpYAISa1urOOACCH9De7Z00+iXWhQYsBAvbkZGuax1kYHEwqiYEVQ+ACeiZQpK/AXyujQ07bzuUhvyrtEfRmwMrI2XHTwwDE/zRIC+xwbGNrSp/3LDh6eJuJi5y0mCHAoGAHeYfK4Xnav1BvaNac1yrezlfbD4wHGwnoj+ytQkAPbSBzFiEvS0Gd13NSstN011Jyw+0NmzHxefESioLaury7H6DavjjRkM/fB9KR/xS/rQ7d/hA4IpXrI1mSfOUoMZBRHLAqTTAtucaQ9Gxq3TbAEdUEYGUMjfUPH2GCEf/LL0CgYEAlmLun506A0cCF9uEjTBIP6BPTGa9/mcS5FDVwgVqiUtNCKliLWt3mdsQVaNqiUDUBkiFhRFYoNGCavOhQGMsAywmCAKAbWDx7Gn7n3Ftg5XBq0EOFrSf5f0UcoY1h3aRAxp/iUsMKt9zszT9L8hJFL9BzSIK5Ar6XGFeoi0Exkg="
+  },
+  GMAIL: { USER: "mangeshbagul15@gmail.com", APP_PASSWORD: "agunjgvexwcjudb", TO: "mangeshbagul15@gmail.com", HOST: "smtp.gmail.com", PORT: "465" },
   CRON_CYCLE_MAP: {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
@@ -689,6 +699,103 @@ async function sendTelegram(botToken, text) {
   return { ok: d.ok === true, error: d.description || null };
 }
 
+
+function b64urlBytes(bytes) {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function pemToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+let _sfKeyPromise = null;
+async function sfJwt() {
+  const cfg = REPORT_CFG.SNOWFLAKE;
+  if (!_sfKeyPromise) {
+    _sfKeyPromise = crypto.subtle.importKey("pkcs8", pemToBytes(cfg.RSA_PKCS8_B64).buffer, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  }
+  const key = await _sfKeyPromise;
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64urlBytes(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const body = b64urlBytes(new TextEncoder().encode(JSON.stringify({ iss: cfg.ISS, sub: cfg.ISS.split(".SHA256:")[0], iat: now, exp: now + 600 })));
+  const sig = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(header + "." + body)));
+  return header + "." + body + "." + b64urlBytes(sig);
+}
+
+async function sfSql(statement) {
+  const jwt = await sfJwt();
+  const r = await fetch(REPORT_CFG.SNOWFLAKE.API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${jwt}`,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "X-Snowflake-Authorization-Token-Type": "KEYPAIR_JWT",
+      "User-Agent": "nanopro-worker/1.0"
+    },
+    body: JSON.stringify({ statement, warehouse: REPORT_CFG.SNOWFLAKE.WAREHOUSE, database: "BANK_DB", schema: "L0_STAGING" })
+  });
+  const d = await r.json();
+  return { ok: r.ok, code: d.code || null, message: d.message || null };
+}
+
+async function smtpRead(reader, buf) {
+  // accumulate until we see a line like "250 " (final reply line)
+  const dec = new TextDecoder();
+  while (!/\r?\n\d{3} /.test(buf.data)) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf.data += dec.decode(value, { stream: true });
+  }
+  const lines = buf.data.split("\r\n");
+  buf.data = lines.pop() || "";
+  return lines;
+}
+
+async function _sendEmailGmailImpl(subject, text) {
+  const g = REPORT_CFG.GMAIL;
+  const enc = new TextEncoder();
+  const socket = connect(`${g.HOST}:${g.PORT}`, { secureTransport: "on" });
+  await socket.opened;
+  const reader = socket.readable.getReader();
+  const writer = socket.writable.getWriter();
+  const buf = { data: "" };
+  const cmd = async (c) => { await writer.write(enc.encode(c + "\r\n")); return smtpRead(reader, buf); };
+  try {
+    await smtpRead(reader, buf);                       // 220 greeting
+    await cmd("EHLO nanopro-edge");
+    await cmd("AUTH LOGIN");
+    await cmd(btoa(g.USER));
+    const auth = await cmd(btoa(g.APP_PASSWORD));
+    if (!auth.some(l => l.startsWith("235"))) { socket.close(); return { ok: false, error: "auth_rejected: " + auth.join(" | ") }; }
+    await cmd(`MAIL FROM:<${g.USER}>`);
+    await cmd(`RCPT TO:<${g.TO}>`);
+    await cmd("DATA");
+    const msg = `From: NanoPro Studio <${g.USER}>\r\nTo: <${g.TO}>\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${text.replace(/\n/g, "\r\n")}\r\n.`;
+    const sendOk = await cmd(msg);
+    await cmd("QUIT");
+    socket.close();
+    const ok = sendOk.some(l => l.startsWith("250"));
+    return { ok, error: ok ? null : sendOk.join(" | ") };
+  } catch (e) {
+    try { socket.close(); } catch (_) {}
+    return { ok: false, error: String(e).slice(0, 160) };
+  }
+}
+
+async function sendEmailGmail(subject, text) {
+  let to;
+  const timeout = new Promise((res) => { to = setTimeout(() => res({ ok: false, error: "smtp_timeout_15s" }), 15000); });
+  const r = await Promise.race([_sendEmailGmailImpl(subject, text), timeout]);
+  clearTimeout(to);
+  return r;
+}
+
 async function runReportCycle(cycle) {
   const result = { cycle, at: new Date().toISOString(), sent: {}, saved: false, report: null };
   // 1. real health check of upstreams
@@ -717,5 +824,15 @@ async function runReportCycle(cycle) {
     await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_report_history/0/49`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
     result.saved = true;
   } catch (_) {}
+  // 5. persist to Snowflake warehouse (pipeline DB save)
+  try {
+    const esc = report.replace(/'/g, "''");
+    const tgOk = result.sent.reports && result.sent.reports.ok ? "TRUE" : "FALSE";
+    result.sent.snowflake = await sfSql(`INSERT INTO ${REPORT_CFG.SNOWFLAKE.FQ_TABLE} (CYCLE, REPORT_TEXT, TELEGRAM_OK) VALUES ('${cycle}', '${esc.slice(0, 8000)}', ${tgOk})`);
+  } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
+  // 6. email copy via Gmail SMTP
+  try {
+    result.sent.email = await sendEmailGmail(`NanoPro ${cycle} Report — ${result.at.slice(0, 10)}`, `${header}\n\n${report}`);
+  } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   return result;
 }
