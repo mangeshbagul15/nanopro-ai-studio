@@ -1001,11 +1001,11 @@ async function runReportCycle(cycle) {
   } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
   // 6. email copy via Gmail SMTP
   try {
-    const sftpPath = `sftp://mangeshbagul15@ssh-mangeshbagul15.alwaysdata.net/home/mangeshbagul15/sftp_reports/${cycle}-latest.txt`;
+    const sftpPath = `s3://${REPORT_CFG.S3_BUCKET}/nanopro-sftp/${cycle}-latest.txt`;
     result.sent.email = await sendEmailGmail(
       `${title} | ${stamp}`,
-      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}\n\n${"—".repeat(40)}\nSFTP copy: ${sftpPath}\nS3 copy: s3://${REPORT_CFG.S3_BUCKET}/nanopro-reports/${cycle}-latest.txt`,
-      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}\n\nSFTP: ${sftpPath}`);
+      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}\n\n${"—".repeat(40)}\nReport file (AWS S3): ${sftpPath}`,
+      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}\n\nFile: ${sftpPath}`);
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   // 7. WhatsApp copy (when configured)
   try {
@@ -1015,6 +1015,7 @@ async function runReportCycle(cycle) {
   // 8. S3 archive (nanopro data lake)
   try {
     result.sent.s3 = await s3PutReport(`nanopro-reports/${cycle}-${result.at.replace(/[:.]/g, "-")}.txt`, `${header}\n\n${report}`);
+    await s3PutReport(`nanopro-sftp/${cycle}-latest.txt`, `${header}\n\n${report}`);
   } catch (e) { result.sent.s3 = { ok: false, error: String(e).slice(0, 120) }; }
   // 9. Neon Postgres save
   try {
