@@ -821,21 +821,21 @@ async function sfSql(statement) {
   return { ok: r.ok, code: d.code || null, message: d.message || null };
 }
 
-async function _sendEmailGmailImpl(subject, text) {
+async function _sendEmailGmailImpl(subject, text, attachmentName, attachmentText) {
   const r = await fetch(REPORT_CFG.EMAIL_RELAY, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     redirect: "follow",
-    body: JSON.stringify({ secret: REPORT_CFG.EMAIL_RELAY_SECRET, to: REPORT_CFG.EMAIL_TO, subject, text })
+    body: JSON.stringify({ secret: REPORT_CFG.EMAIL_RELAY_SECRET, to: REPORT_CFG.EMAIL_TO, subject, text, attachmentName, attachmentText })
   });
   const d = await r.json().catch(() => ({}));
   return { ok: d.ok === true, error: d.ok === true ? null : (d.error || `relay_http_${r.status}`) };
 }
 
-async function sendEmailGmail(subject, text) {
+async function sendEmailGmail(subject, text, attachmentName, attachmentText) {
   let to;
   const timeout = new Promise((res) => { to = setTimeout(() => res({ ok: false, error: "relay_timeout_15s" }), 15000); });
-  const r = await Promise.race([_sendEmailGmailImpl(subject, text), timeout]);
+  const r = await Promise.race([_sendEmailGmailImpl(subject, text, attachmentName, attachmentText), timeout]);
   clearTimeout(to);
   return r;
 }
@@ -895,6 +895,12 @@ async function handleBotMessage(bot, token, msg) {
   }
 }
 
+const CYCLE_FULL = { BOD: "Beginning of Day", SOD: "Start of Day", EOD: "End of Day", "T-1": "T-1 Close", MANUAL: "Manual" };
+function istStamp(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) + " IST";
+}
+
 async function runReportCycle(cycle) {
   const result = { cycle, at: new Date().toISOString(), sent: {}, saved: false, report: null };
   // 1. real health check of upstreams
@@ -908,7 +914,9 @@ async function runReportCycle(cycle) {
   const report = await groqReport(cycle, JSON.stringify({ health, live: liveData.summary }));
   if (!report) { result.sent.reports = { ok: false, error: "groq_failed" }; return result; }
   result.report = report;
-  const header = `\u{1F4CA} NanoPro ${cycle} Report`;
+  const stamp = istStamp(result.at);
+  const title = `NanoPro AI Studio — ${cycle} (${CYCLE_FULL[cycle] || cycle}) Report`;
+  const header = `\u{1F4CA} ${title}\n\u{1F4C5} ${stamp}`;
   // 3. deliver: full report to reports bot; short pings to others
   result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `${header}\n\n${report}`);
   result.sent.health = await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F493} NanoPro Health — ${cycle}: alwaysdata=${health.alwaysdata} pythonanywhere=${health.pythonanywhere} edge=live`);
@@ -932,11 +940,14 @@ async function runReportCycle(cycle) {
   } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
   // 6. email copy via Gmail SMTP
   try {
-    result.sent.email = await sendEmailGmail(`NanoPro ${cycle} Report — ${result.at.slice(0, 10)}`, `${header}\n\n${report}`);
+    result.sent.email = await sendEmailGmail(
+      `${title} | ${stamp}`,
+      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}`,
+      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}`);
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   // 7. WhatsApp copy (when configured)
   try {
-    const wa = await waSend(`NanoPro ${cycle} Report — ${result.at.slice(0,10)}\n\n${report}`);
+    const wa = await waSend(`${title}\n${stamp}\n\n${report}`);
     if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
   } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
   // 8. S3 archive (nanopro data lake)
