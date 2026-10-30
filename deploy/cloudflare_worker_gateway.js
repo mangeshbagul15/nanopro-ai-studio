@@ -763,7 +763,7 @@ async function groqReport(cycle, mode) {
   const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";
   const prompt = `You are NanoPro AI Studio's reporting engine. Write a concise ${cycle} operations report for Mangesh, timestamp ${istNow}.
 STRICT RULES: Use ONLY the facts in REAL DATA below. NEVER invent numbers, percentages, row counts, uptimes, latencies, or statuses. If a metric is not in REAL DATA, do not mention it. Mark unmeasured items as "not measured".
-Structure: 1. Cycle header line "${cycle} START — load mode ${cycle === 'MANUAL' ? '' : ''}(see cycle_load_mode)" 2. Live infrastructure (real health+latency) 3. Real ingested data (news/crypto/weather) 4. Delivery targets 5. End with "${cycle} END" 6. 2-3 realistic next steps based only on the facts. Max 160 words, crisp bullets, English.
+Structure: 1. Cycle header line "${cycle} START — load mode (from cycle_load_mode)" 2. Live infrastructure (real health+latency) 3. Banking pipeline — MUST list each project row count + total amount from banking_pipeline.today_per_project 4. Real ingested data (news/crypto/weather) 5. Delivery targets 6. End with "${cycle} END" 7. 2 realistic next steps based only on the facts. Max 200 words, crisp bullets, English.
 REAL DATA: ${mode}`;
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -964,11 +964,16 @@ async function runReportCycle(cycle) {
     await neonSql(`CREATE TABLE IF NOT EXISTS nanopro_cycle_log (id BIGSERIAL PRIMARY KEY, cycle TEXT, phase TEXT, load_mode TEXT, at TIMESTAMPTZ DEFAULT now())`, []);
     await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'START',$2)", [cycle, loadMode]);
   } catch (_) {}
+  // banking pipeline: synthetic rows -> L0/L1/L2 -> read real aggregates
+  const bankIngest = await ingestBankingData(cycle, loadMode);
+  let bankAgg = [];
+  try { const r = await neonSql("SELECT project, txns, total_amt, failed FROM nanopro_banking_l2 WHERE day::date = CURRENT_DATE", []); bankAgg = r?.rows || []; } catch (_) {}
   const realFacts = {
     upstreams: Object.fromEntries(Object.entries(health).map(([k, v]) => [k, { http: v, latency_ms: latency[k] ?? null }])),
     edge_worker: "live",
     db_readback: { note: "data below was read back from the DB clean layer after ingestion (API→S3→Snowflake L0→L1→report)", layer: dbLive.layer, sources: dbLive.sources, live_rows_used: dbLive.rows },
     total_reports_in_db: reportCount,
+    banking_pipeline: { note: "sample development data written this run then read back from DB L2 aggregate", ingest_this_run: bankIngest, today_per_project: bankAgg },
     cycle_load_mode: loadMode + "_LOAD",
     delivery_channels: ["telegram reports bot", "telegram health bot", "whatsapp", "gmail", "snowflake", "neon", "aws s3", "upstash", "sftp"]
   };
@@ -1032,6 +1037,41 @@ async function runReportCycle(cycle) {
 // ============================================================================
 // REAL DATA INGESTION (public APIs → Upstash + Snowflake)
 // ============================================================================
+// SYNTHETIC BANKING DATA (development stage) — sample txn rows -> DB L0 -> L1 -> L2
+// FULL_LOAD = larger batch; INCREMENTAL = small delta batch. Report reads real DB counts.
+const BANKING_PROJECTS = ["AML", "CREDIT_CARD", "ALM", "ADF_CIMS", "CBS"];
+const BANKING_CHANNELS = ["UPI", "NEFT", "IMPS", "CARD", "CASH"];
+function _rnd(seedObj) { seedObj.s = (seedObj.s * 1664525 + 1013904223) >>> 0; return seedObj.s / 4294967296; }
+
+async function ingestBankingData(cycle, loadMode) {
+  const seed = { s: (Date.now() >>> 0) || 42 };
+  const batch = loadMode === "FULL_LOAD" ? 12 : 4; // rows per project per run
+  const out = { rows_written: 0, per_project: {}, load_mode: loadMode, at: new Date().toISOString() };
+  const values = [];
+  for (const p of BANKING_PROJECTS) {
+    let n = 0;
+    for (let i = 0; i < batch; i++) {
+      const amt = Math.round((_rnd(seed) * 90000 + 100) * 100) / 100;
+      const ch = BANKING_CHANNELS[Math.floor(_rnd(seed) * BANKING_CHANNELS.length)];
+      const st = _rnd(seed) > 0.08 ? "SETTLED" : "FAILED";
+      const txn = `${p.slice(0,3)}-${Date.now().toString(36)}-${i}`;
+      values.push(`('${p}','${txn}',${amt},'${ch}','${st}','${cycle}')`);
+      n++;
+    }
+    out.per_project[p] = n;
+  }
+  // L0 raw insert (Neon) — real rows
+  try {
+    await neonSql(`CREATE TABLE IF NOT EXISTS nanopro_banking_l0 (id BIGSERIAL PRIMARY KEY, project TEXT, txn_id TEXT, amount NUMERIC, channel TEXT, status TEXT, cycle TEXT, at TIMESTAMPTZ DEFAULT now())`, []);
+    await neonSql(`INSERT INTO nanopro_banking_l0 (project, txn_id, amount, channel, status, cycle) VALUES ${values.join(",")}`, []);
+    out.rows_written = values.length;
+    // L1 clean = settled-only dedup view; L2 = per-project daily aggregate
+    await neonSql(`CREATE OR REPLACE VIEW nanopro_banking_l1 AS SELECT DISTINCT ON (txn_id) * FROM nanopro_banking_l0 ORDER BY txn_id, at DESC`, []);
+    await neonSql(`CREATE OR REPLACE VIEW nanopro_banking_l2 AS SELECT project, date_trunc('day', at) AS day, COUNT(*) AS txns, SUM(amount) AS total_amt, COUNT(*) FILTER (WHERE status='FAILED') AS failed FROM nanopro_banking_l1 GROUP BY project, date_trunc('day', at)`, []);
+  } catch (e) { out.error = String(e).slice(0, 120); }
+  return out;
+}
+
 async function ingestLiveData() {
   const data = { at: new Date().toISOString(), news: [], crypto: null, weather: null, summary: "" };
   // tech news — HackerNews top stories (free, no key)
