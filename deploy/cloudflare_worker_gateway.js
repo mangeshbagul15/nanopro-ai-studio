@@ -66,6 +66,16 @@ export default {
     if (path === "/dashboard") {
       return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
+    if (path === "/api/dashboard/business") {
+      const bm = await businessMetrics();
+      const bs = await bankingSummary();
+      const lv = await dashboardData();
+      return new Response(JSON.stringify({ at: new Date().toISOString(), metrics: bm, tables: bs, live: lv.live_data, report: lv.latest_report }, null, 2), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+    if (path === "/dashboard/business") {
+      return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
     if (path === "/api/dashboard/data") {
       const out = await dashboardData();
       return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
@@ -1098,6 +1108,8 @@ async function runReportCycle(cycle) {
   const report = buildReport(cycle, realFacts, stamp); // fixed structured format — no AI text
   result.report = report;
   const title = `NanoPro AI Studio — ${cycle} (${CYCLE_FULL[cycle] || cycle}) Report`;
+  const dashLinks = `\u{1F517} Dashboards:\n  Ops: https://mangesh-nanopro.mangeshbagul15.workers.dev/dashboard\n  Business: https://mangesh-nanopro.mangeshbagul15.workers.dev/dashboard/business\n  Report: https://mangesh-nanopro.mangeshbagul15.workers.dev/api/report/html/${cycle}`;
+  const report2 = report + "\n\n" + dashLinks;
   const header = `\u{1F4CA} ${title}\n\u{1F4C5} ${stamp}`;
   // 3. deliver: full report to reports bot; short pings to others
   const tgMsg = `<b>${_escHtml(header.split("\n")[0])}</b>\n${_escHtml(header.split("\n")[1]||"")}\n<pre>${_escHtml(report)}</pre>`;
@@ -1109,7 +1121,7 @@ async function runReportCycle(cycle) {
   }
   // 4. persist to Upstash Redis (latest + 50-entry history)
   try {
-    const rec = JSON.stringify({ cycle, at: result.at, health, report });
+    const rec = JSON.stringify({ cycle, at: result.at, health, report: report2 });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report_${cycle.replace(/[^A-Z0-9]/gi, "_")}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_report_html_${cycle.replace(/[^A-Z0-9]/gi, "_")}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: buildReportHtml(cycle, realFacts, stamp, title) });
@@ -1119,7 +1131,7 @@ async function runReportCycle(cycle) {
   } catch (_) {}
   // 5. persist to Snowflake warehouse (pipeline DB save)
   try {
-    const esc = report.replace(/'/g, "''");
+    const esc = report2.replace(/'/g, "''");
     const tgOk = result.sent.reports && result.sent.reports.ok ? "TRUE" : "FALSE";
     result.sent.snowflake = await sfSql(`INSERT INTO ${REPORT_CFG.SNOWFLAKE.FQ_TABLE} (CYCLE, REPORT_TEXT, TELEGRAM_OK) VALUES ('${cycle}', '${esc.slice(0, 8000)}', ${tgOk})`);
   } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
@@ -1128,7 +1140,7 @@ async function runReportCycle(cycle) {
   try {
     const sftpPath = `s3://${REPORT_CFG.S3_BUCKET}/nanopro-sftp/${cycle}-latest.txt`;
     const liveUrl = `https://mangesh-nanopro.mangeshbagul15.workers.dev/api/report/html/${cycle}`;
-    fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report}\n\n${"—".repeat(46)}\nLive colored report: ${liveUrl}\nReport file (AWS S3): ${sftpPath}`;
+    fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report2}\n\n${"—".repeat(46)}\nLive colored report: ${liveUrl}\nReport file (AWS S3): ${sftpPath}`;
     result.sent.email = await sendEmailGmail(
       `${title} | ${stamp}`,
       fullBody,
@@ -1137,14 +1149,14 @@ async function runReportCycle(cycle) {
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   // 7. WhatsApp copy (when configured)
   try {
-    waMsg = `*${title}*\n${stamp}\n` + "``\u0060" + `\n${report}\n` + "``\u0060";
+    waMsg = `*${title}*\n${stamp}\n` + "``\u0060" + `\n${report2}\n` + "``\u0060";
     const wa = await waSend(waMsg);
     if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
   } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
   // 8. S3 archive (nanopro data lake)
   try {
-    result.sent.s3 = await s3PutReport(`nanopro-reports/${cycle}-${result.at.replace(/[:.]/g, "-")}.txt`, `${header}\n\n${report}`);
-    await s3PutReport(`nanopro-sftp/${cycle}-latest.txt`, `${header}\n\n${report}`);
+    result.sent.s3 = await s3PutReport(`nanopro-reports/${cycle}-${result.at.replace(/[:.]/g, "-")}.txt`, `${header}\n\n${report2}`);
+    await s3PutReport(`nanopro-sftp/${cycle}-latest.txt`, `${header}\n\n${report2}`);
   } catch (e) { result.sent.s3 = { ok: false, error: String(e).slice(0, 120) }; }
   // 9. Neon Postgres save
   try {
@@ -1173,15 +1185,18 @@ const BANKING_SCHEMA = {
   AML: {
     FACT_AML_TXN_MONITOR: ["txn_key","account_key","customer_key","cp_key","date_key","channel_key","branch_key","alert_type_key","txn_id","txn_reference","txn_type","amount_inr","base_currency","exchange_rate"],
     FACT_AML_WATCHLIST_HITS: ["hit_key","customer_key","date_key","watchlist_type","match_score","match_type","hit_status","escalated_flag","cleared_flag","escalation_date","clearance_date"],
-    FACT_AML_DAILY_SUMMARY: ["summary_key","date_key","branch_key","total_txns","total_amount_inr","str_count","ctr_count","ntr_count","high_risk_count","critical_count","new_alerts","resolved_alerts","open_alerts"]
+    FACT_AML_DAILY_SUMMARY: ["summary_key","date_key","branch_key","total_txns","total_amount_inr","str_count","ctr_count","ntr_count","high_risk_count","critical_count","new_alerts","resolved_alerts","open_alerts"],
+    FACT_AML_STR_CASES: ["str_case_key","customer_key","date_key","case_ref","suspicion_type","amount_inr","priority","case_status","fiu_ref","assigned_to"]
   },
   CREDIT_CARD: {
     FACT_CC_TRANSACTIONS: ["txn_key","card_key","customer_key","merchant_key","date_key","channel_key","auth_code","rrn","txn_amount_inr","fee_inr","gst_inr","reward_points_earned","cashback_inr","txn_type"],
-    FACT_CC_FRAUD_ALERTS: ["alert_key","txn_key","card_key","customer_key","date_key","alert_type","risk_category","ml_score","rule_triggered","is_confirmed_fraud","false_positive_flag","resolution_status","resolved_by","resolved_at"]
+    FACT_CC_FRAUD_ALERTS: ["alert_key","txn_key","card_key","customer_key","date_key","alert_type","risk_category","ml_score","rule_triggered","is_confirmed_fraud","false_positive_flag","resolution_status","resolved_by","resolved_at"],
+    FACT_CC_SETTLEMENTS: ["settle_key","card_key","date_key","batch_id","txn_count","gross_amount_inr","fee_inr","gst_inr","net_settlement_inr","settlement_status","interchange_inr"]
   },
   ALM: {
     FACT_ALM_CASHFLOWS: ["cf_key","product_key","bucket_key","currency_key","date_key","branch_key","cp_key","deal_id","deal_type","inflow_amount_inr","outflow_amount_inr","net_cashflow_inr","inflow_fx_amount","outflow_fx_amount"],
-    FACT_STRUCTURAL_LIQUIDITY: ["sl_key","date_key","bucket_key","currency_key","total_assets_inr","total_liabilities_inr","gap_inr","cumulative_gap_inr","gap_pct_of_total_assets","rbi_threshold_pct","threshold_breached","report_date"]
+    FACT_STRUCTURAL_LIQUIDITY: ["sl_key","date_key","bucket_key","currency_key","total_assets_inr","total_liabilities_inr","gap_inr","cumulative_gap_inr","gap_pct_of_total_assets","rbi_threshold_pct","threshold_breached","report_date"],
+    FACT_ALM_LCR: ["lcr_key","date_key","hqla_inr","total_outflows_inr","total_inflows_inr","lcr_pct","rbi_min_pct","compliant_flag"]
   },
   ADF_CIMS: {
     FACT_CIMS_GL_BALANCES: ["balance_key","gl_key","return_key","date_key","branch_key","currency_key","sector_key","opening_debit","opening_credit","closing_debit","closing_credit","net_balance_inr","previous_period_balance","variance_inr"],
@@ -1190,7 +1205,8 @@ const BANKING_SCHEMA = {
   UPI: {
     FACT_UPI_TRANSACTIONS: ["txn_key","vpa_payer_key","vpa_payee_key","bank_key","date_key","txn_type_key","upi_txn_id","npci_txn_ref","amount_inr","txn_status","failure_reason","response_code","latency_ms","batch_id","reversal_flag","settlement_date"],
     FACT_UPI_SETTLEMENT: ["settlement_key","bank_key","date_key","batch_id","total_txns","success_count","failed_count","reversal_count","total_debit_inr","total_credit_inr","net_settlement_inr","npci_settlement_ref","settlement_status"],
-    FACT_UPI_DAILY_SUMMARY: ["summary_key","date_key","bank_key","total_txns","success_rate_pct","avg_txn_amount","peak_hour","top_merchant_vpa","failure_rate_pct"]
+    FACT_UPI_DAILY_SUMMARY: ["summary_key","date_key","bank_key","total_txns","success_rate_pct","avg_txn_amount","peak_hour","top_merchant_vpa","failure_rate_pct"],
+    FACT_UPI_DISPUTES: ["dispute_key","txn_key","vpa_payer_key","date_key","dispute_type","dispute_ref","amount_inr","raised_channel","dispute_status","tat_days","resolution_code"]
   },
   UCIC: {
     FACT_UCIC_DEDUP: ["dedup_key","ucic_key","date_key","source_system","duplicate_count","merge_action","match_score","pan_match","aadhaar_match","mobile_match","resolution_status"],
@@ -1206,6 +1222,35 @@ const BANKING_SCHEMA = {
     FACT_INGESTION_LOG: ["log_key","source_key","domain_key","date_key","partition_key","batch_id","record_count","byte_size","load_start","load_end","duration_sec","validation_status","quarantine_count","schema_drift_flag"],
     FACT_DATA_QUALITY: ["dq_key","source_key","domain_key","date_key","completeness_pct","uniqueness_pct","validity_pct","timeliness_pct","overall_score","failed_rules"],
     FACT_SCHEMA_DRIFT: ["drift_key","source_key","schema_key","date_key","column_added","column_dropped","type_changed","nullable_changed","impact_level","downstream_affected"]
+  },
+  TREASURY: {
+    FACT_TS_DEALS: ["deal_key","cp_key","product_key","currency_key","date_key","branch_key","deal_id","deal_type","instrument_type","principal_inr","interest_rate","value_date","maturity_date","trader_id","status"],
+    FACT_TS_POSITIONS: ["position_key","book_key","currency_key","date_key","instrument_type","long_position_inr","short_position_inr","net_position_inr","mtm_inr","var_inr","limit_utilized_pct","breach_flag"],
+    FACT_TS_SETTLEMENTS: ["stl_key","deal_key","date_key","settlement_type","amount_inr","settlement_status","value_date","nostro_account","confirm_ref"]
+  },
+  TRADE_FINANCE: {
+    FACT_TF_LC_TRANSACTIONS: ["lc_txn_key","lc_key","customer_key","date_key","lc_number","lc_type","amount_inr","currency_code","expiry_date","issuance_status","beneficiary_name","advising_bank"],
+    FACT_TF_BILLS_COLLECTION: ["bill_key","customer_key","date_key","bill_ref","bill_type","amount_inr","tenor_days","collection_status","drawee_bank","lodgement_date"],
+    FACT_TF_GUARANTEES: ["bg_key","customer_key","date_key","bg_number","bg_type","amount_inr","expiry_date","claim_flag","margin_pct","bg_status"]
+  },
+  FRAUD_RISK: {
+    FACT_FR_TXN_SCORING: ["score_key","txn_key","customer_key","date_key","ml_score","rule_hits","final_decision","score_band","model_version","latency_ms"],
+    FACT_FR_CASES: ["case_key","customer_key","date_key","case_type","fraud_amount_inr","case_status","analyst_id","open_date","close_date","recovery_inr","confirmed_fraud_flag"],
+    FACT_FR_DEVICE_INTEL: ["device_key","customer_key","date_key","device_id","geo_mismatch_flag","emulator_flag","rooted_flag","ip_risk_score","first_seen","last_seen"]
+  },
+  LOAN_BOOK: {
+    FACT_LB_DISBURSALS: ["disb_key","loan_key","customer_key","product_key","branch_key","date_key","loan_id","sanctioned_inr","disbursed_inr","roi_pct","tenor_months","emi_inr","disb_status"],
+    FACT_LB_REPAYMENTS: ["repay_key","loan_key","date_key","emi_due_inr","emi_paid_inr","principal_paid_inr","interest_paid_inr","dpd_days","payment_status","bounce_flag"],
+    FACT_LB_NPA: ["npa_key","loan_key","date_key","npa_category","outstanding_inr","provision_pct","provision_inr","days_in_npa","recovery_action"]
+  },
+  FOREX: {
+    FACT_FX_REMITTANCES: ["remit_key","customer_key","date_key","remit_type","currency_pair","fcy_amount","inr_amount","rate_applied","purpose_code","fema_compliant","swift_ref"],
+    FACT_FX_RATE_SNAPSHOT: ["rate_key","date_key","currency_pair","tt_buy","tt_sell","bill_buy","bill_sell","card_rate","rbi_ref_rate","spread_pips"]
+  },
+  REG_REPORTING: {
+    FACT_RR_RETURNS: ["return_key","return_type_key","date_key","return_code","period_code","line_items","validation_errors","submission_status","rbi_ack_number","filed_date"],
+    FACT_RR_CTR: ["ctr_key","customer_key","account_key","date_key","ctr_ref","cash_amount_inr","txn_type","branch_key","reporting_status","fiu_ref"],
+    FACT_RR_STR: ["str_key","customer_key","date_key","str_ref","suspicion_type","amount_inr","priority","reporting_status","fiu_ref","narrative_code"]
   },
   CBS: {
     FACT_CBS_TXN_JOURNAL: ["journal_key","account_key","gl_key","branch_key","date_key","employee_key","currency_key","tran_id","tran_type","tran_sub_type","tran_amount","tran_currency","tran_amount_inr","tran_date"],
@@ -1231,6 +1276,18 @@ const _TXT_POOL = {
   enquiry_type: ["FRESH_APPLICATION","ACCOUNT_REVIEW","PRE_APPROVED"], purpose: ["PERSONAL_LOAN","HOME_LOAN","CREDIT_CARD"],
   lender_name: ["HDFC","ICICI","SBI","AXIS","KOTAK"], risk_flag: ["WATCH","EARLY_WARNING","NPA"], recommended_action: ["CALL_CUSTOMER","RESTRUCTURE","LEGAL","MONITOR"],
   validation_status: ["PASSED","FAILED","QUARANTINED"], impact_level: ["BREAKING","NON_BREAKING","WARNING"],
+  instrument_type: ["GOVT_BOND","CORP_BOND","T_BILL","CD","CP","FX_SWAP","IRS"], settlement_type: ["DVP","FOP","PAYMENT"], nostro_account: ["CHASUS33","DEUTDEFF","SBININBB"],
+  lc_type: ["SIGHT","USANCE","STANDBY"], issuance_status: ["ISSUED","AMENDED","EXPIRED","CANCELLED"], advising_bank: ["HSBC","CITI","SCB","DBS"],
+  bill_type: ["DA","DP","USANCE"], collection_status: ["LODGED","PAID","ACCEPTED","PROTESTED"], drawee_bank: ["HSBC","BNP","MUFG"],
+  bg_type: ["PERFORMANCE","FINANCIAL","BID_BOND","APG"], claim_flag: ["N","Y"], margin_pct: ["10","15","25"],
+  case_type: ["CARD_FRAUD","UPI_FRAUD","PHISHING","ACCOUNT_TAKEOVER"], case_status: ["OPEN","INVESTIGATING","CLOSED","CHARGEBACK"], analyst_id: ["ANL_1","ANL_2","ANL_3"],
+  final_decision: ["APPROVE","REVIEW","DECLINE"], score_band: ["LOW","MEDIUM","HIGH","CRITICAL"], model_version: ["v2.1","v2.3","v3.0"],
+  disb_status: ["DISBURSED","PARTIAL","PENDING"], payment_status: ["PAID","PARTIAL","BOUNCED","OVERDUE"], npa_category: ["SUB_STANDARD","DOUBTFUL","LOSS"], recovery_action: ["RESTRUCTURE","SARFAESI","WRITE_OFF","LEGAL"],
+  remit_type: ["OUTWARD","INWARD"], currency_pair: ["USDINR","EURINR","GBPINR","AEDINR"], purpose_code: ["P1301","P0301","S1101"], fema_compliant: ["Y","N"],
+  return_code: ["XBRL_ALM","XBRL_LCR","RAF","CRILC","FMR1"], period_code: ["M","Q","F"], reporting_status: ["FILED","PENDING","LATE"], fiu_ref: ["FIU2024","FIU2025"],
+  suspicion_type: ["STRUCTURING","ROUND_TRIPPING","LAYERING","MULE"], priority: ["HIGH","MEDIUM","LOW"], narrative_code: ["N01","N02","N07"], assigned_to: ["ANL_1","ANL_2"],
+  dispute_type: ["WRONG_CREDIT","FAILED_DEBIT","DOUBLE_DEBIT"], raised_channel: ["APP","BRANCH","CALL_CENTER"], dispute_status: ["OPEN","RESOLVED","REJECTED"], resolution_code: ["CREDITED","DEBIT_OK","ESCALATED"],
+  trader_id: ["TRD_1","TRD_2","TRD_3"], book_key: ["1","2","3"], fcy_amount: ["1000","5000","25000"],
   status: ["ACTIVE","DORMANT","CLOSED"], peak_hour: ["10","13","19","21"], batch_id: ["BATCH_A","BATCH_B","BATCH_C"]
 };
 function _colType(c) {
@@ -1307,6 +1364,27 @@ SELECT p, ord, m, v FROM (
   UNION ALL SELECT 'DATA_LAKE',1,'Records ingested',COALESCE(SUM(record_count),0)::text FROM bank_data_lake_fact_ingestion_log WHERE loaded_at::date=CURRENT_DATE
   UNION ALL SELECT 'DATA_LAKE',2,'Avg DQ score',COALESCE(ROUND(AVG(overall_score))::text,'n/a') FROM bank_data_lake_fact_data_quality WHERE loaded_at::date=CURRENT_DATE
   UNION ALL SELECT 'DATA_LAKE',3,'Schema drifts',COUNT(*)::text FROM bank_data_lake_fact_schema_drift WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TREASURY',1,'Deals today',COUNT(*)::text||' — Rs '||TO_CHAR(COALESCE(SUM(principal_inr),0),'FM999,999,999,999') FROM bank_treasury_fact_ts_deals WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TREASURY',2,'Net position','Rs '||TO_CHAR(COALESCE(SUM(net_position_inr),0),'FM999,999,999,999') FROM bank_treasury_fact_ts_positions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TREASURY',3,'Limit breaches',COUNT(*) FILTER (WHERE breach_flag='Y')::text FROM bank_treasury_fact_ts_positions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TREASURY',4,'Settlements',COUNT(*)::text||' (PENDING '||COUNT(*) FILTER (WHERE settlement_status='PENDING')||')' FROM bank_treasury_fact_ts_settlements WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TRADE_FINANCE',1,'LC issued','Rs '||TO_CHAR(COALESCE(SUM(amount_inr),0),'FM999,999,999,999') FROM bank_trade_finance_fact_tf_lc_transactions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TRADE_FINANCE',2,'Bills in collection',COUNT(*)::text FROM bank_trade_finance_fact_tf_bills_collection WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'TRADE_FINANCE',3,'Guarantees',COUNT(*)::text||' (claimed '||COUNT(*) FILTER (WHERE claim_flag='Y')||')' FROM bank_trade_finance_fact_tf_guarantees WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FRAUD_RISK',1,'Txns scored',COUNT(*)::text FROM bank_fraud_risk_fact_fr_txn_scoring WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FRAUD_RISK',2,'Declined',COUNT(*) FILTER (WHERE final_decision='DECLINE')::text FROM bank_fraud_risk_fact_fr_txn_scoring WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FRAUD_RISK',3,'Fraud cases',COUNT(*)::text||' — Rs '||TO_CHAR(COALESCE(SUM(fraud_amount_inr),0),'FM999,999,999,999') FROM bank_fraud_risk_fact_fr_cases WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FRAUD_RISK',4,'Risky devices',COUNT(*) FILTER (WHERE emulator_flag='Y' OR rooted_flag='Y')::text FROM bank_fraud_risk_fact_fr_device_intel WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'LOAN_BOOK',1,'Disbursed','Rs '||TO_CHAR(COALESCE(SUM(disbursed_inr),0),'FM999,999,999,999') FROM bank_loan_book_fact_lb_disbursals WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'LOAN_BOOK',2,'EMI collected','Rs '||TO_CHAR(COALESCE(SUM(emi_paid_inr),0),'FM999,999,999,999') FROM bank_loan_book_fact_lb_repayments WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'LOAN_BOOK',3,'Bounces',COUNT(*) FILTER (WHERE bounce_flag='Y')::text FROM bank_loan_book_fact_lb_repayments WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'LOAN_BOOK',4,'NPA outstanding','Rs '||TO_CHAR(COALESCE(SUM(outstanding_inr),0),'FM999,999,999,999') FROM bank_loan_book_fact_lb_npa WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FOREX',1,'Remittances',COUNT(*)::text||' — Rs '||TO_CHAR(COALESCE(SUM(inr_amount),0),'FM999,999,999,999') FROM bank_forex_fact_fx_remittances WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FOREX',2,'FEMA non-compliant',COUNT(*) FILTER (WHERE fema_compliant='N')::text FROM bank_forex_fact_fx_remittances WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'FOREX',3,'USDINR card rate',COALESCE((SELECT card_rate::text FROM bank_forex_fact_fx_rate_snapshot WHERE currency_pair='USDINR' ORDER BY loaded_at DESC LIMIT 1),'n/a')
+  UNION ALL SELECT 'REG_REPORTING',1,'Returns filed',COUNT(*)::text FROM bank_reg_reporting_fact_rr_returns WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'REG_REPORTING',2,'CTR reports',COUNT(*)::text||' — Rs '||TO_CHAR(COALESCE(SUM(cash_amount_inr),0),'FM999,999,999,999') FROM bank_reg_reporting_fact_rr_ctr WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'REG_REPORTING',3,'STR reports',COUNT(*)::text||' (HIGH '||COUNT(*) FILTER (WHERE priority='HIGH')||')' FROM bank_reg_reporting_fact_rr_str WHERE loaded_at::date=CURRENT_DATE
 ) t ORDER BY p, ord`;
   const out = {};
   try {
@@ -1319,8 +1397,10 @@ SELECT p, ord, m, v FROM (
   return out;
 }
 
-const PROJECT_NAMES = { AML: "Anti-Money Laundering", CREDIT_CARD: "Credit Card", ALM: "Asset-Liability Mgmt", ADF_CIMS: "ADF CIMS Regulatory", CBS: "Core Banking", UPI: "UPI Payments", UCIC: "Unified Customer ID", BUREAU_MART: "Credit Bureau Mart", DATA_LAKE: "Data Lake Ops" };
-const PROJECT_ICONS = { AML: "\u{1F6E1}", CREDIT_CARD: "\u{1F4B3}", ALM: "\u{1F3E6}", ADF_CIMS: "\u{1F4CB}", CBS: "\u{1F3DB}", UPI: "\u{1F4F1}", UCIC: "\u{1FAAA}", BUREAU_MART: "\u{1F4CA}", DATA_LAKE: "\u{1F4BE}" };
+const PROJECT_NAMES = { TREASURY: "Treasury & FX Desk", TRADE_FINANCE: "Trade Finance", FRAUD_RISK: "Fraud Risk Engine", LOAN_BOOK: "Loan Book", FOREX: "Forex & Remittance", REG_REPORTING: "Regulatory Reporting",
+  AML: "Anti-Money Laundering", CREDIT_CARD: "Credit Card", ALM: "Asset-Liability Mgmt", ADF_CIMS: "ADF CIMS Regulatory", CBS: "Core Banking", UPI: "UPI Payments", UCIC: "Unified Customer ID", BUREAU_MART: "Credit Bureau Mart", DATA_LAKE: "Data Lake Ops" };
+const PROJECT_ICONS = { TREASURY: "\u{1F4B0}", TRADE_FINANCE: "\u{1F30F}", FRAUD_RISK: "\u{1F575}", LOAN_BOOK: "\u{1F3E0}", FOREX: "\u{1F4B1}", REG_REPORTING: "\u{1F3DB}",
+  AML: "\u{1F6E1}", CREDIT_CARD: "\u{1F4B3}", ALM: "\u{1F3E6}", ADF_CIMS: "\u{1F4CB}", CBS: "\u{1F3DB}", UPI: "\u{1F4F1}", UCIC: "\u{1FAAA}", BUREAU_MART: "\u{1F4CA}", DATA_LAKE: "\u{1F4BE}" };
 
 function _amtCol(cols) {
   return cols.find(c => /amount_inr$|_amount_inr$|amount$|total_amount|net_cashflow_inr|balance_inr|net_settlement_inr|total_exposure_inr|overdue_amount_inr|enquiry_amount|net_balance_inr|tran_amount_inr|total_debit_inr|total_credit_inr|inflow_amount_inr|gap_inr/.test(c)) || null;
@@ -1599,6 +1679,48 @@ fetch('/api/dashboard/data').then(r=>r.json()).then(d=>{
   document.getElementById('live').innerHTML=h||'<span class="small">no live data yet</span>';
   document.getElementById('meta').textContent='refreshed: '+d.at;
 });
+</script></body></html>`;
+
+const BUSINESS_DASH_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NanoPro Business Dashboard</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:24px}
+h1{font-size:22px}.sub{color:#8b949e;font-size:12px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px 16px}
+.card h3{margin:0 0 4px;font-size:14px;color:#d2a8ff}
+.card .nm{font-size:11px;color:#8b949e;margin-bottom:10px}
+.mr{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px solid #21262d}
+.mr:last-child{border:none}.mr b{color:#3fb950;font-weight:600;text-align:right}
+a{color:#58a6ff}.top{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.stat{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:10px 14px;font-size:12px}
+.stat b{display:block;font-size:17px;color:#58a6ff}
+</style></head><body>
+<h1>\u{1F3E6} NanoPro Business Dashboard</h1>
+<div class="sub">Live from Neon DM layer \u2022 auto-refresh 60s \u2022 <a href="/api/dashboard/business">JSON</a> \u2022 <a href="/dashboard">Ops dashboard</a></div>
+<div class="top" id="top"></div>
+<div class="grid" id="grid"></div>
+<script>
+const NAMES=${JSON.stringify({AML:"Anti-Money Laundering",CREDIT_CARD:"Credit Card",ALM:"Asset-Liability Mgmt",ADF_CIMS:"ADF CIMS Regulatory",CBS:"Core Banking",UPI:"UPI Payments",UCIC:"Unified Customer ID",BUREAU_MART:"Credit Bureau Mart",DATA_LAKE:"Data Lake Ops",TREASURY:"Treasury & FX Desk",TRADE_FINANCE:"Trade Finance",FRAUD_RISK:"Fraud Risk Engine",LOAN_BOOK:"Loan Book",FOREX:"Forex & Remittance",REG_REPORTING:"Regulatory Reporting"})};
+async function load(){
+ const d=await (await fetch('/api/dashboard/business')).json();
+ const tb=d.tables||{};let rows=0,tabs=0;
+ for(const p of Object.values(tb))for(const t of Object.values(p)){rows+=t.rows||0;tabs++;}
+ document.getElementById('top').innerHTML=
+  '<div class="stat"><b>'+rows.toLocaleString()+'</b>rows today</div>'+
+  '<div class="stat"><b>'+tabs+'</b>fact tables</div>'+
+  '<div class="stat"><b>'+Object.keys(d.metrics||{}).length+'</b>projects</div>'+
+  '<div class="stat"><b>'+((d.report&&d.report.cycle)||'\u2014')+'</b>last report</div>'+
+  '<div class="stat"><b>'+d.at.slice(11,19)+' UTC</b>refreshed</div>';
+ let h='';
+ for(const [p,ms] of Object.entries(d.metrics||{})){
+  const tsum=Object.values((tb[p]||{})).reduce((a,t)=>a+(t.rows||0),0);
+  h+='<div class="card"><h3>'+p+'</h3><div class="nm">'+(NAMES[p]||'')+' \u2022 '+tsum+' rows today</div>'+
+   ms.map(m=>'<div class="mr"><span>'+m[0]+'</span><b>'+m[1]+'</b></div>').join('')+'</div>';
+ }
+ document.getElementById('grid').innerHTML=h||'<div class="card">no data yet</div>';
+}
+load();setInterval(load,60000);
 </script></body></html>`;
 
 // ============================================================================
