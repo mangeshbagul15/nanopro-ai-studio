@@ -124,6 +124,13 @@ export default {
       return new Response("ok");
     }
 
+    if (path === "/api/bank/ingest") {
+      const cyc = (url.searchParams.get("cycle") || "MANUAL").toUpperCase();
+      const mode = url.searchParams.get("mode") || "INCREMENTAL";
+      const out = await ingestBankingData(cyc, mode);
+      return new Response(JSON.stringify(out), { headers: { "Content-Type": "application/json" } });
+    }
+
     if (path.startsWith("/api/report/file/")) {
       const cyc = decodeURIComponent(path.split("/api/report/file/")[1] || "MANUAL").toUpperCase().replace(/[^A-Z0-9]/gi, "_");
       try {
@@ -964,10 +971,12 @@ async function runReportCycle(cycle) {
     await neonSql(`CREATE TABLE IF NOT EXISTS nanopro_cycle_log (id BIGSERIAL PRIMARY KEY, cycle TEXT, phase TEXT, load_mode TEXT, at TIMESTAMPTZ DEFAULT now())`, []);
     await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'START',$2)", [cycle, loadMode]);
   } catch (_) {}
-  // banking pipeline: synthetic rows -> L0/L1/L2 -> read real aggregates
-  const bankIngest = await ingestBankingData(cycle, loadMode);
-  let bankAgg = [];
-  try { const r = await neonSql("SELECT project, txns, total_amt, failed FROM nanopro_banking_l2 WHERE day::date = CURRENT_DATE", []); bankAgg = r?.rows || []; } catch (_) {}
+  // banking pipeline: run in a separate invocation (own subrequest budget) then read real aggregates
+  let bankIngest = {};
+  try {
+    bankIngest = await (await fetch(`https://mangesh-nanopro.mangeshbagul15.workers.dev/api/bank/ingest?cycle=${encodeURIComponent(cycle)}&mode=${loadMode}_LOAD`, { signal: AbortSignal.timeout(60000) })).json();
+  } catch (e) { bankIngest = { error: String(e).slice(0, 100) }; }
+  const bankAgg = await bankingSummary();
   const realFacts = {
     upstreams: Object.fromEntries(Object.entries(health).map(([k, v]) => [k, { http: v, latency_ms: latency[k] ?? null }])),
     edge_worker: "live",
@@ -1037,39 +1046,100 @@ async function runReportCycle(cycle) {
 // ============================================================================
 // REAL DATA INGESTION (public APIs → Upstash + Snowflake)
 // ============================================================================
-// SYNTHETIC BANKING DATA (development stage) — sample txn rows -> DB L0 -> L1 -> L2
-// FULL_LOAD = larger batch; INCREMENTAL = small delta batch. Report reads real DB counts.
-const BANKING_PROJECTS = ["AML", "CREDIT_CARD", "ALM", "ADF_CIMS", "CBS"];
-const BANKING_CHANNELS = ["UPI", "NEFT", "IMPS", "CARD", "CASH"];
+// SYNTHETIC BANKING DATA (development stage) — real schema tables, medium volume.
+// L0 raw rows per project FACT table -> L2 aggregate view. Report reads real DB counts.
 function _rnd(seedObj) { seedObj.s = (seedObj.s * 1664525 + 1013904223) >>> 0; return seedObj.s / 4294967296; }
+const BANKING_SCHEMA = {
+  AML: {
+    FACT_AML_TXN_MONITOR: ["txn_key","account_key","customer_key","cp_key","date_key","channel_key","branch_key","alert_type_key","txn_id","txn_reference","txn_type","amount_inr","base_currency","exchange_rate"],
+    FACT_AML_WATCHLIST_HITS: ["hit_key","customer_key","date_key","watchlist_type","match_score","match_type","hit_status","escalated_flag","cleared_flag","escalation_date","clearance_date"],
+    FACT_AML_DAILY_SUMMARY: ["summary_key","date_key","branch_key","total_txns","total_amount_inr","str_count","ctr_count","ntr_count","high_risk_count","critical_count","new_alerts","resolved_alerts","open_alerts"]
+  },
+  CREDIT_CARD: {
+    FACT_CC_TRANSACTIONS: ["txn_key","card_key","customer_key","merchant_key","date_key","channel_key","auth_code","rrn","txn_amount_inr","fee_inr","gst_inr","reward_points_earned","cashback_inr","txn_type"],
+    FACT_CC_FRAUD_ALERTS: ["alert_key","txn_key","card_key","customer_key","date_key","alert_type","risk_category","ml_score","rule_triggered","is_confirmed_fraud","false_positive_flag","resolution_status","resolved_by","resolved_at"]
+  },
+  ALM: {
+    FACT_ALM_CASHFLOWS: ["cf_key","product_key","bucket_key","currency_key","date_key","branch_key","cp_key","deal_id","deal_type","inflow_amount_inr","outflow_amount_inr","net_cashflow_inr","inflow_fx_amount","outflow_fx_amount"],
+    FACT_STRUCTURAL_LIQUIDITY: ["sl_key","date_key","bucket_key","currency_key","total_assets_inr","total_liabilities_inr","gap_inr","cumulative_gap_inr","gap_pct_of_total_assets","rbi_threshold_pct","threshold_breached","report_date"]
+  },
+  ADF_CIMS: {
+    FACT_CIMS_GL_BALANCES: ["balance_key","gl_key","return_key","date_key","branch_key","currency_key","sector_key","opening_debit","opening_credit","closing_debit","closing_credit","net_balance_inr","previous_period_balance","variance_inr"],
+    FACT_CIMS_SUBMISSIONS: ["submission_key","return_key","date_key","total_line_items","validated_count","submitted_count","accepted_count","rejected_count","submission_timestamp","rbi_portal_ref","rbi_ack_number","rbi_ack_timestamp","submission_status","retry_count"]
+  },
+  CBS: {
+    FACT_CBS_TXN_JOURNAL: ["journal_key","account_key","gl_key","branch_key","date_key","employee_key","currency_key","tran_id","tran_type","tran_sub_type","tran_amount","tran_currency","tran_amount_inr","tran_date"],
+    FACT_CBS_PAYMENTS: ["payment_key","account_key","branch_key","date_key","currency_key","payment_ref","uti_number","utr_number","payment_type","payment_mode","amount_inr","beneficiary_name","beneficiary_account","beneficiary_ifsc"],
+    FACT_CBS_GL_BALANCE: ["gl_balance_key","gl_key","branch_key","date_key","currency_key","opening_dr","opening_cr","period_dr_amount","period_cr_amount","period_txn_count","closing_dr","closing_cr","net_balance_inr","legacy_net_balance"]
+  }
+};
+const _TXT_POOL = {
+  txn_type: ["DEBIT","CREDIT","REVERSAL"], match_type: ["EXACT","FUZZY","PHONETIC"],
+  watchlist_type: ["PEP","OFAC","UN","EU","RBI"], hit_status: ["OPEN","CLEARED","ESCALATED"],
+  alert_type: ["VELOCITY","GEO_MISMATCH","CARD_NOT_PRESENT","ML_PATTERN"], risk_category: ["HIGH","MEDIUM","LOW"],
+  resolution_status: ["OPEN","RESOLVED","ESCALATED"], deal_type: ["TERM_LOAN","DEPOSIT","REPO","SWAP"],
+  payment_type: ["NEFT","RTGS","IMPS","UPI"], payment_mode: ["ONLINE","BRANCH","ATM"],
+  submission_status: ["SUBMITTED","ACCEPTED","REJECTED"], tran_type: ["CASH","TRANSFER","CHEQUE"],
+  tran_sub_type: ["DR","CR"], base_currency: ["INR"], tran_currency: ["INR"], beneficiary_ifsc: ["SBIN0001234","HDFC0000456","ICIC0000789"],
+  rule_triggered: ["R-VEL-01","R-GEO-02","R-AMT-05"], resolved_by: ["AUTO","ANALYST_1","ANALYST_2"],
+  interest_type: ["SIMPLE","COMPOUND"], beneficiary_account: ["50100234567890","50200345678901"]
+};
+function _colType(c) {
+  if (/_key$|_count$|_count_|count$|score|_points|_items|retry|_txns$|_minutes$|line_items/.test(c)) return "N";
+  if (/amount|_inr|balance|debit|credit|rate|pct|variance|fee|gst|cashback|principal|interest|emi|assets|liabilities|gap|dr_|cr_|dr$|cr$/.test(c)) return "N";
+  if (/date$|_at$|timestamp|_date/.test(c)) return "T";
+  return "S";
+}
+function _genVal(c, seed, i, cycle) {
+  const t = _colType(c); const r = _rnd(seed);
+  if (t === "N") { if (/score|pct|rate|exchange/.test(c)) return Math.round(r * 100 * 100) / 100; return Math.round(r * 100000 + 1); }
+  if (t === "T") { const d = new Date(Date.now() - Math.floor(r * 86400000)); return `'${d.toISOString()}'`; }
+  const pool = _TXT_POOL[c];
+  if (pool) return `'${pool[Math.floor(r * pool.length)]}'`;
+  if (/_id$|_ref$|rrn|auth_code|uti_number|utr_number|rbi_portal_ref|rbi_ack_number/.test(c)) return `'${c.slice(0,4).toUpperCase()}${Math.floor(r * 1e9)}'`;
+  if (/flag|breached|fraud/.test(c)) return `'${r > 0.5 ? "Y" : "N"}'`;
+  return `'${c}_${i}'`;
+}
 
 async function ingestBankingData(cycle, loadMode) {
   const seed = { s: (Date.now() >>> 0) || 42 };
-  const batch = loadMode === "FULL_LOAD" ? 12 : 4; // rows per project per run
-  const out = { rows_written: 0, per_project: {}, load_mode: loadMode, at: new Date().toISOString() };
-  const values = [];
-  for (const p of BANKING_PROJECTS) {
-    let n = 0;
-    for (let i = 0; i < batch; i++) {
-      const amt = Math.round((_rnd(seed) * 90000 + 100) * 100) / 100;
-      const ch = BANKING_CHANNELS[Math.floor(_rnd(seed) * BANKING_CHANNELS.length)];
-      const st = _rnd(seed) > 0.08 ? "SETTLED" : "FAILED";
-      const txn = `${p.slice(0,3)}-${Date.now().toString(36)}-${i}`;
-      values.push(`('${p}','${txn}',${amt},'${ch}','${st}','${cycle}')`);
-      n++;
+  const perTable = loadMode === "FULL_LOAD" ? 20 : 8; // medium volume
+  const out = { rows_written: 0, tables: {}, load_mode: loadMode, at: new Date().toISOString() };
+  for (const [proj, tables] of Object.entries(BANKING_SCHEMA)) {
+    for (const [tab, cols] of Object.entries(tables)) {
+      const fq = `bank_${proj.toLowerCase()}_${tab.toLowerCase()}`;
+      try {
+
+        const rows = [];
+        for (let i = 0; i < perTable; i++) {
+          rows.push("(" + cols.map(c => _genVal(c, seed, i, cycle)).join(",") + `,'${cycle}')`);
+        }
+        await neonSql(`INSERT INTO ${fq} (${cols.join(",")}, cycle) VALUES ${rows.join(",")}`, []);
+        out.tables[`${proj}.${tab}`] = perTable; out.rows_written += perTable;
+      } catch (e) { out.tables[`${proj}.${tab}`] = "err:" + String(e).slice(0, 60); }
     }
-    out.per_project[p] = n;
   }
-  // L0 raw insert (Neon) — real rows
-  try {
-    await neonSql(`CREATE TABLE IF NOT EXISTS nanopro_banking_l0 (id BIGSERIAL PRIMARY KEY, project TEXT, txn_id TEXT, amount NUMERIC, channel TEXT, status TEXT, cycle TEXT, at TIMESTAMPTZ DEFAULT now())`, []);
-    await neonSql(`INSERT INTO nanopro_banking_l0 (project, txn_id, amount, channel, status, cycle) VALUES ${values.join(",")}`, []);
-    out.rows_written = values.length;
-    // L1 clean = settled-only dedup view; L2 = per-project daily aggregate
-    await neonSql(`CREATE OR REPLACE VIEW nanopro_banking_l1 AS SELECT DISTINCT ON (txn_id) * FROM nanopro_banking_l0 ORDER BY txn_id, at DESC`, []);
-    await neonSql(`CREATE OR REPLACE VIEW nanopro_banking_l2 AS SELECT project, date_trunc('day', at) AS day, COUNT(*) AS txns, SUM(amount) AS total_amt, COUNT(*) FILTER (WHERE status='FAILED') AS failed FROM nanopro_banking_l1 GROUP BY project, date_trunc('day', at)`, []);
-  } catch (e) { out.error = String(e).slice(0, 120); }
   return out;
+}
+
+async function bankingSummary() {
+  const per = {};
+  const parts = [];
+  for (const [proj, tables] of Object.entries(BANKING_SCHEMA)) {
+    for (const tab of Object.keys(tables)) {
+      const fq = `bank_${proj.toLowerCase()}_${tab.toLowerCase()}`;
+      parts.push(`SELECT '${proj}.${tab}' AS k, COUNT(*) AS n FROM ${fq} WHERE loaded_at::date = CURRENT_DATE`);
+    }
+  }
+  try {
+    const r = await neonSql(parts.join(" UNION ALL "), []);
+    for (const row of (r?.rows || [])) {
+      const [p, t] = String(row.k).split(".");
+      if (!per[p]) per[p] = {};
+      per[p][t] = row.n;
+    }
+  } catch (_) {}
+  return per;
 }
 
 async function ingestLiveData() {
