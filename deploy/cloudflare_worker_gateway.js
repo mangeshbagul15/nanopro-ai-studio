@@ -62,6 +62,24 @@ export default {
 
     const path = url.pathname;
 
+    // 0. Report engine (manual trigger) — handled at edge, never proxied
+
+    if (path === "/api/report/now" || path === "/api/report/run") {
+
+      const cyc = (url.searchParams.get("cycle") || "MANUAL").toUpperCase();
+
+      const out = await runReportCycle(cyc);
+
+      return new Response(JSON.stringify(out, null, 2), {
+
+        status: 200,
+
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+
+      });
+
+    }
+
 
 
     // Dynamically resolve live local tunnel from Upstash Redis if available (cached for speed)
@@ -617,7 +635,87 @@ export default {
 
     });
 
+  },
+
+  async scheduled(event, env, ctx) {
+    const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
+    ctx.waitUntil(runReportCycle(cycle));
   }
 
 };
 
+
+// ============================================================================
+// NANOPRO CLOUD REPORTING ENGINE (Cloudflare Cron — 24/7, no laptop needed)
+// ============================================================================
+const REPORT_CFG = {
+  GROQ_API_KEY: "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",
+  CHAT_ID: "1200023268",
+  UPSTASH_URL: "https://dashing-mule-155608.upstash.io",
+  UPSTASH_TOKEN: "gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ",
+  BOTS: {"reports": "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4", "news": "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs", "health": "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4", "career": "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA"},          // apk bot intentionally excluded (laptop-only)
+  CRON_CYCLE_MAP: {
+    "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
+    "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
+    "0 13 * * *": "EOD",   // 18:30 IST — End of Day
+    "30 14 * * *": "T-1"   // 20:00 IST — T-1 evening brief
+  }
+};
+
+async function groqReport(cycle, mode) {
+  const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";
+  const prompt = `You are NanoPro AI Studio's executive reporting engine. Write a concise ${cycle} report (mode: ${mode}) for Mangesh, timestamp ${istNow}.
+Cover: cloud cluster status, scheduled-pipeline status (AWS S3 → Snowflake, DuckDB/Neon/Turso), telegram bot health, pending items, and 3 actionable next steps. Max 180 words, crisp bullets, English.`;
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai/gpt-oss-120b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.4, max_tokens: 1600
+    })
+  });
+  const d = await r.json();
+  return d?.choices?.[0]?.message?.content?.trim() || null;
+}
+
+async function sendTelegram(botToken, text) {
+  const r = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text, disable_web_page_preview: true })
+  });
+  const d = await r.json();
+  return { ok: d.ok === true, error: d.description || null };
+}
+
+async function runReportCycle(cycle) {
+  const result = { cycle, at: new Date().toISOString(), sent: {}, saved: false, report: null };
+  // 1. real health check of upstreams
+  const health = {};
+  for (const [name, url] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
+    try { const r = await fetch(url + "/api/cluster/status", { signal: AbortSignal.timeout(6000) }); health[name] = r.status; }
+    catch (e) { health[name] = "down"; }
+  }
+  // 2. generate report via Groq
+  const report = await groqReport(cycle, JSON.stringify(health));
+  if (!report) { result.sent.reports = { ok: false, error: "groq_failed" }; return result; }
+  result.report = report;
+  const header = `\u{1F4CA} NanoPro ${cycle} Report`;
+  // 3. deliver: full report to reports bot; short pings to others
+  result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `${header}\n\n${report}`);
+  result.sent.health = await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F493} NanoPro Health — ${cycle}: alwaysdata=${health.alwaysdata} pythonanywhere=${health.pythonanywhere} edge=live`);
+  if (cycle === "BOD" || cycle === "EOD") {
+    result.sent.news = await sendTelegram(REPORT_CFG.BOTS.news, `${header} — Tech Brief\n\n${report.slice(0, 600)}`);
+    result.sent.career = await sendTelegram(REPORT_CFG.BOTS.career, `\u{1F3AF} NanoPro ${cycle} — Career Study\n\n${report.slice(0, 600)}`);
+  }
+  // 4. persist to Upstash Redis (latest + 50-entry history)
+  try {
+    const rec = JSON.stringify({ cycle, at: result.at, health, report });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_report_history`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_report_history/0/49`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    result.saved = true;
+  } catch (_) {}
+  return result;
+}
