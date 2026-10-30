@@ -907,7 +907,8 @@ async function handleBotMessage(bot, token, msg) {
   }
 }
 
-const CYCLE_FULL = { BOD: "Beginning of Day", SOD: "Start of Day", EOD: "End of Day", "T-1": "T-1 Close", MANUAL: "Manual" };
+const CYCLE_FULL = { BOD: "Beginning of Day", SOD: "Start of Day", EOD: "End of Day", "T-1": "T-1 Close", MANUAL: "Manual",
+  AML: "AML Reconciliation", CREDIT_CARD: "Credit Card Settlement", ALM: "Asset-Liability Mgmt", ADF_CIMS: "ADF CIMS", CBS: "Core Banking System" };
 function istStamp(iso) {
   const d = new Date(iso);
   return d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) + " IST";
