@@ -719,7 +719,11 @@ export default {
     if (await nanoPaused()) return;
     const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
     if (cycle === "HEALTH") {
-      ctx.waitUntil(runHealthMonitor());
+      const minute = new Date(event.scheduledTime ?? Date.now()).getUTCMinutes();
+      ctx.waitUntil((async () => {
+        await runHealthMonitor();
+        if (minute < 30) await ingestBankingData("INTRADAY", "INCREMENTAL_LOAD"); // once/hour — free tier max is 5 crons
+      })());
     } else {
       ctx.waitUntil(runReportCycle(cycle));
     }
@@ -762,7 +766,7 @@ const REPORT_CFG = {
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
     "0 13 * * *": "EOD",   // 18:30 IST — End of Day
     "30 14 * * *": "T-1",  // 20:00 IST — T-1 evening brief
-    "*/30 * * * *": "HEALTH" // every 30 min — upstream watchdog
+    "*/30 * * * *": "HEALTH" // every 30 min — watchdog + hourly intraday banking ingest
   }
 };
 
@@ -783,6 +787,28 @@ REAL DATA: ${mode}`;
   });
   const d = await r.json();
   return d?.choices?.[0]?.message?.content?.trim() || null;
+}
+
+// Deterministic report built only from real measured facts — used when Groq is unreachable.
+function fallbackReport(cycle, f) {
+  const L = [];
+  L.push(`${cycle} START — load mode (${f.cycle_load_mode})`);
+  L.push("Live infrastructure");
+  for (const [k, v] of Object.entries(f.upstreams || {})) L.push(`- ${k}: HTTP ${v.http}, latency ${v.latency_ms ?? "not measured"} ms`);
+  L.push("- edge_worker: live");
+  const bp = f.banking_pipeline?.today_per_project || {};
+  L.push("Banking pipeline (today per project)");
+  for (const [p, tabs] of Object.entries(bp)) {
+    L.push(`- ${p}: ` + Object.entries(tabs).map(([t, n]) => `${t}: ${n}`).join(", "));
+  }
+  const src = f.db_readback?.sources || {};
+  if (src.crypto?.bitcoin) L.push(`Crypto: BTC $${src.crypto.bitcoin.usd ?? "not measured"}, ETH $${src.crypto.ethereum?.usd ?? "not measured"}`);
+  if (Array.isArray(src.tech_news)) L.push("Tech news: " + src.tech_news.map(n => n.title).slice(0, 3).join(" | "));
+  if (src.weather) L.push(`Weather (Pune): ${src.weather.temp_c}°C, ${src.weather.desc}`);
+  L.push(`DB readback layer: ${f.db_readback?.layer || "not measured"}; total reports in DB: ${f.total_reports_in_db ?? "not measured"}`);
+  L.push("Delivery targets: " + (f.delivery_channels || []).join(", "));
+  L.push(`${cycle} END`);
+  return L.join("\n");
 }
 
 async function sendTelegram(botToken, text) {
@@ -986,8 +1012,8 @@ async function runReportCycle(cycle) {
     cycle_load_mode: loadMode + "_LOAD",
     delivery_channels: ["telegram reports bot", "telegram health bot", "whatsapp", "gmail", "snowflake", "neon", "aws s3", "upstash", "sftp"]
   };
-  const report = await groqReport(cycle, JSON.stringify(realFacts));
-  if (!report) { result.sent.reports = { ok: false, error: "groq_failed" }; return result; }
+  let report = await groqReport(cycle, JSON.stringify(realFacts));
+  if (!report) report = fallbackReport(cycle, realFacts); // AI down → deterministic report from real facts only — cycle never fails
   result.report = report;
   const stamp = istStamp(result.at);
   const title = `NanoPro AI Studio — ${cycle} (${CYCLE_FULL[cycle] || cycle}) Report`;
@@ -1067,6 +1093,26 @@ const BANKING_SCHEMA = {
     FACT_CIMS_GL_BALANCES: ["balance_key","gl_key","return_key","date_key","branch_key","currency_key","sector_key","opening_debit","opening_credit","closing_debit","closing_credit","net_balance_inr","previous_period_balance","variance_inr"],
     FACT_CIMS_SUBMISSIONS: ["submission_key","return_key","date_key","total_line_items","validated_count","submitted_count","accepted_count","rejected_count","submission_timestamp","rbi_portal_ref","rbi_ack_number","rbi_ack_timestamp","submission_status","retry_count"]
   },
+  UPI: {
+    FACT_UPI_TRANSACTIONS: ["txn_key","vpa_payer_key","vpa_payee_key","bank_key","date_key","txn_type_key","upi_txn_id","npci_txn_ref","amount_inr","txn_status","failure_reason","response_code","latency_ms","batch_id","reversal_flag","settlement_date"],
+    FACT_UPI_SETTLEMENT: ["settlement_key","bank_key","date_key","batch_id","total_txns","success_count","failed_count","reversal_count","total_debit_inr","total_credit_inr","net_settlement_inr","npci_settlement_ref","settlement_status"],
+    FACT_UPI_DAILY_SUMMARY: ["summary_key","date_key","bank_key","total_txns","success_rate_pct","avg_txn_amount","peak_hour","top_merchant_vpa","failure_rate_pct"]
+  },
+  UCIC: {
+    FACT_UCIC_DEDUP: ["dedup_key","ucic_key","date_key","source_system","duplicate_count","merge_action","match_score","pan_match","aadhaar_match","mobile_match","resolution_status"],
+    FACT_UCIC_PRODUCT_HOLDINGS: ["holding_key","ucic_key","date_key","product_type","account_id","balance_inr","status","open_date","maturity_date"],
+    FACT_UCIC_KYC_STATUS: ["kyc_key","ucic_key","date_key","kyc_type","kyc_status","expiry_date","document_type","verified_by","days_to_expiry","alert_flag"]
+  },
+  BUREAU_MART: {
+    FACT_BUREAU_SCORES: ["score_key","credit_cust_key","bureau_key","band_key","date_key","credit_score","score_change_30d","number_of_accounts","active_accounts","overdue_accounts","dpd_30","dpd_60","dpd_90","total_exposure_inr","unsecured_inr","enquiry_count_6m"],
+    FACT_BUREAU_ENQUIRIES: ["enquiry_key","credit_cust_key","bureau_key","date_key","enquiry_type","enquiry_amount","lender_name","purpose"],
+    FACT_NPA_EARLY_WARNING: ["npa_key","credit_cust_key","date_key","risk_flag","dpd_current","score_drop","overdue_amount_inr","watchlist_flag","recommended_action"]
+  },
+  DATA_LAKE: {
+    FACT_INGESTION_LOG: ["log_key","source_key","domain_key","date_key","partition_key","batch_id","record_count","byte_size","load_start","load_end","duration_sec","validation_status","quarantine_count","schema_drift_flag"],
+    FACT_DATA_QUALITY: ["dq_key","source_key","domain_key","date_key","completeness_pct","uniqueness_pct","validity_pct","timeliness_pct","overall_score","failed_rules"],
+    FACT_SCHEMA_DRIFT: ["drift_key","source_key","schema_key","date_key","column_added","column_dropped","type_changed","nullable_changed","impact_level","downstream_affected"]
+  },
   CBS: {
     FACT_CBS_TXN_JOURNAL: ["journal_key","account_key","gl_key","branch_key","date_key","employee_key","currency_key","tran_id","tran_type","tran_sub_type","tran_amount","tran_currency","tran_amount_inr","tran_date"],
     FACT_CBS_PAYMENTS: ["payment_key","account_key","branch_key","date_key","currency_key","payment_ref","uti_number","utr_number","payment_type","payment_mode","amount_inr","beneficiary_name","beneficiary_account","beneficiary_ifsc"],
@@ -1082,10 +1128,19 @@ const _TXT_POOL = {
   submission_status: ["SUBMITTED","ACCEPTED","REJECTED"], tran_type: ["CASH","TRANSFER","CHEQUE"],
   tran_sub_type: ["DR","CR"], base_currency: ["INR"], tran_currency: ["INR"], beneficiary_ifsc: ["SBIN0001234","HDFC0000456","ICIC0000789"],
   rule_triggered: ["R-VEL-01","R-GEO-02","R-AMT-05"], resolved_by: ["AUTO","ANALYST_1","ANALYST_2"],
-  interest_type: ["SIMPLE","COMPOUND"], beneficiary_account: ["50100234567890","50200345678901"]
+  interest_type: ["SIMPLE","COMPOUND"], beneficiary_account: ["50100234567890","50200345678901"],
+  txn_status: ["SUCCESS","FAILED","PENDING","REVERSED"], settlement_status: ["SETTLED","PENDING","FAILED"],
+  failure_reason: ["INSUFFICIENT_FUNDS","BANK_DOWN","TIMEOUT","INVALID_VPA"], response_code: ["00","U30","ZM","91"],
+  source_system: ["CBS","FINACLE","BAANCS","LOS","UPI_SWITCH"], merge_action: ["MERGED","RETAINED","DELETED"],
+  product_type: ["SAVINGS","CURRENT","FIXED_DEPOSIT","TERM_LOAN","CREDIT_CARD"], kyc_type: ["CKYC","EKYC","RE_KYC"],
+  kyc_status: ["VERIFIED","PENDING","EXPIRED"], document_type: ["PAN","AADHAAR","PASSPORT"], verified_by: ["SYSTEM","BRANCH","VKYC"],
+  enquiry_type: ["FRESH_APPLICATION","ACCOUNT_REVIEW","PRE_APPROVED"], purpose: ["PERSONAL_LOAN","HOME_LOAN","CREDIT_CARD"],
+  lender_name: ["HDFC","ICICI","SBI","AXIS","KOTAK"], risk_flag: ["WATCH","EARLY_WARNING","NPA"], recommended_action: ["CALL_CUSTOMER","RESTRUCTURE","LEGAL","MONITOR"],
+  validation_status: ["PASSED","FAILED","QUARANTINED"], impact_level: ["BREAKING","NON_BREAKING","WARNING"],
+  status: ["ACTIVE","DORMANT","CLOSED"], peak_hour: ["10","13","19","21"], batch_id: ["BATCH_A","BATCH_B","BATCH_C"]
 };
 function _colType(c) {
-  if (/_key$|_count$|_count_|count$|score|_points|_items|retry|_txns$|_minutes$|line_items/.test(c)) return "N";
+  if (/_key$|_count$|_count_|count$|score|_points|_items|retry|_txns$|_minutes$|line_items|latency_ms|byte_size|duration_sec|dpd_|days_to_expiry|record_count|overall_score|failed_rules|enquiry_amount|avg_txn_amount/.test(c)) return "N";
   if (/amount|_inr|balance|debit|credit|rate|pct|variance|fee|gst|cashback|principal|interest|emi|assets|liabilities|gap|dr_|cr_|dr$|cr$/.test(c)) return "N";
   if (/date$|_at$|timestamp|_date/.test(c)) return "T";
   return "S";
@@ -1240,6 +1295,16 @@ async function runHealthMonitor() {
     await sendTelegram(REPORT_CFG.BOTS.health, txt);
     res.alerts = downs.map(([n]) => n);
   }
+  // report watchdog — if no report was produced in >26h, alert (reports must never silently stop)
+  try {
+    const lr = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    const lrj = await lr.json();
+    const lastAt = JSON.parse(lrj?.result || "null")?.at;
+    if (lastAt && (Date.now() - new Date(lastAt).getTime()) > 26 * 3600 * 1000) {
+      await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F6A8} NanoPro REPORT WATCHDOG\nNo report since ${lastAt} (>26h). Check scheduled cycles.\n${res.at}`);
+      res.alerts.push("report_watchdog");
+    }
+  } catch (_) {}
   // log each check to Snowflake NANOPRO_HEALTH_LOG
   try {
     for (const [n, v] of Object.entries(res.checks)) {
