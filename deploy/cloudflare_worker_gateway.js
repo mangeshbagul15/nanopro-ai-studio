@@ -71,6 +71,27 @@ export default {
       return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }
 
+    // 0c. WhatsApp Cloud API webhook — GET verify + POST incoming
+    if (path === "/api/whatsapp/webhook") {
+      if (request.method === "GET") {
+        const mode = url.searchParams.get("hub.mode");
+        const tok = url.searchParams.get("hub.verify_token");
+        const chal = url.searchParams.get("hub.challenge");
+        if (mode === "subscribe" && tok === REPORT_CFG.WA_VERIFY_TOKEN) {
+          return new Response(chal, { status: 200 });
+        }
+        return new Response("forbidden", { status: 403 });
+      }
+      if (request.method === "POST") {
+        try {
+          const body = await request.json();
+          ctx.waitUntil(handleWhatsApp(body));
+        } catch (_) {}
+        return new Response("ok");
+      }
+      return new Response("method", { status: 405 });
+    }
+
     // 0. Report engine (manual trigger) — handled at edge, never proxied
 
     // 0b. Telegram bot webhooks — interactive bots at edge (laptop off तरी reply)
@@ -692,6 +713,10 @@ const REPORT_CFG = {
   EMAIL_RELAY: "https://script.google.com/macros/s/AKfycbyHbAMGTHe644Zywajjo4Vo1BwGmEu9mijZ7BnkCZ3EDsPjlZ5YkiifKkCiAZlz17gp/exec",
   EMAIL_RELAY_SECRET: "49c62e3dcd3fe486d5de96f1123df5ad",
   EMAIL_TO: "mangeshbagul15@gmail.com",
+  WA_VERIFY_TOKEN: "nanopro_whatsapp_secret_2026",
+  WA_ACCESS_TOKEN: "",          // <- Meta Cloud API token (fill when provided)
+  WA_PHONE_NUMBER_ID: "",       // <- phone_number_id (fill when provided)
+  WA_TO_NUMBER: "",             // <- recipient mobile e.g. 91XXXXXXXXXX (fill when provided)
   CRON_CYCLE_MAP: {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
@@ -885,6 +910,11 @@ async function runReportCycle(cycle) {
   try {
     result.sent.email = await sendEmailGmail(`NanoPro ${cycle} Report — ${result.at.slice(0, 10)}`, `${header}\n\n${report}`);
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
+  // 7. WhatsApp copy (when configured)
+  try {
+    const wa = await waSend(`NanoPro ${cycle} Report — ${result.at.slice(0,10)}\n\n${report}`);
+    if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
+  } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
   return result;
 }
 
@@ -1039,3 +1069,74 @@ fetch('/api/dashboard/data').then(r=>r.json()).then(d=>{
   document.getElementById('meta').textContent='refreshed: '+d.at;
 });
 </script></body></html>`;
+
+// ============================================================================
+// WHATSAPP — Meta Cloud API (incoming messages → AI reply; reports → WA)
+// ============================================================================
+async function waSend(text) {
+  const cfg = REPORT_CFG;
+  if (!cfg.WA_ACCESS_TOKEN || !cfg.WA_PHONE_NUMBER_ID || !cfg.WA_TO_NUMBER) return { ok: false, error: "wa_not_configured" };
+  const r = await fetch(`https://graph.facebook.com/v19.0/${cfg.WA_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: cfg.WA_TO_NUMBER,
+      type: "text",
+      text: { body: text.slice(0, 4000) }
+    })
+  });
+  const d = await r.json();
+  return { ok: r.ok && !!d.messages, error: d.error?.message || null };
+}
+
+async function waReply(toNumber, text) {
+  const cfg = REPORT_CFG;
+  if (!cfg.WA_ACCESS_TOKEN || !cfg.WA_PHONE_NUMBER_ID) return;
+  await fetch(`https://graph.facebook.com/v19.0/${cfg.WA_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to: toNumber, type: "text", text: { body: text.slice(0, 4000) } })
+  });
+}
+
+async function handleWhatsApp(body) {
+  try {
+    const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    if (!msg || msg.type !== "text") return;
+    const from = msg.from;
+    const text = (msg.text?.body || "").trim();
+    const lower = text.toLowerCase();
+    if (lower === "status" || lower === "/status") {
+      const h = {};
+      for (const [n, u] of Object.entries({ alwaysdata: "https://mangeshbagul15.alwaysdata.net", pythonanywhere: "https://mangeshbagul15.pythonanywhere.com" })) {
+        try { const r = await fetch(u + "/api/cluster/status", { signal: AbortSignal.timeout(5000) }); h[n] = r.status; }
+        catch (_) { h[n] = "down"; }
+      }
+      await waReply(from, `NanoPro status\nalwaysdata: ${h.alwaysdata}\npythonanywhere: ${h.pythonanywhere}\nedge: live`);
+      return;
+    }
+    if (lower === "report" || lower === "/report" || lower === "last") {
+      const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+      const d = await r.json();
+      const rec = d.result ? JSON.parse(d.result) : null;
+      await waReply(from, rec ? `Latest ${rec.cycle} (${rec.at})\n\n${rec.report.slice(0, 3000)}` : "No report yet.");
+      return;
+    }
+    // AI reply via Groq
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [
+          { role: "system", content: "You are NanoPro AI Studio assistant for Mangesh. Reply briefly (max 80 words), Marathi or English as the user writes." },
+          { role: "user", content: text }
+        ],
+        temperature: 0.4, max_tokens: 800
+      })
+    });
+    const d = await r.json();
+    await waReply(from, d?.choices?.[0]?.message?.content?.trim() || "NanoPro: request received.");
+  } catch (_) {}
+}
