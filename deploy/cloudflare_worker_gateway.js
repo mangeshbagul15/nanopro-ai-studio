@@ -718,6 +718,10 @@ const REPORT_CFG = {
   WA_ACCESS_TOKEN: "EAAQTHI7wPNwBS5bIsFeZCbUfaL1C0J6lO8JHolUJhRY60ZBYPd55TuEnXvfLJtllGtrhK2GqWTKQAnInCKfGaQzNjJgUhZALZBGGNBxpv4dN4lYkkx39TuXnCc2ZBZAfdmLyigXRWmWsbgPVCK0WKnOgC6LdWZB1JXmKPCWKPcGYZBvXnnx7dkBYZCWoALzJusAZDZD",
   WA_PHONE_NUMBER_ID: "1355864990944215",
   WA_TO_NUMBER: "918433755448",
+  AWS_KEY: "AKIA3EUJGIXPAIJLEVDJ",
+  AWS_SECRET: "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",
+  AWS_REGION: "ap-southeast-2",
+  S3_BUCKET: "nanopro-data-lake-765865641438-ap-southeast-2-an",
   CRON_CYCLE_MAP: {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
@@ -918,6 +922,10 @@ async function runReportCycle(cycle) {
     const wa = await waSend(`NanoPro ${cycle} Report — ${result.at.slice(0,10)}\n\n${report}`);
     if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
   } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
+  // 8. S3 archive (nanopro data lake)
+  try {
+    result.sent.s3 = await s3PutReport(`nanopro-reports/${cycle}-${result.at.replace(/[:.]/g, "-")}.txt`, `${header}\n\n${report}`);
+  } catch (e) { result.sent.s3 = { ok: false, error: String(e).slice(0, 120) }; }
   return result;
 }
 
@@ -1101,6 +1109,48 @@ async function waReply(toNumber, text) {
     headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({ messaging_product: "whatsapp", to: toNumber, type: "text", text: { body: text.slice(0, 4000) } })
   });
+}
+
+// ============================================================================
+// AWS S3 archive — SigV4 signed PUT (reports -> data lake bucket)
+// ============================================================================
+async function _hmac(key, data) {
+  const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", k, data));
+}
+function _hex(b) { return [...b].map(x => x.toString(16).padStart(2, "0")).join(""); }
+async function _sha256hex(text) { return _hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)))); }
+
+async function s3PutReport(key, text) {
+  const cfg = REPORT_CFG;
+  const host = `${cfg.S3_BUCKET}.s3.${cfg.AWS_REGION}.amazonaws.com`;
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const dateStamp = amzDate.slice(0, 8);
+  const payloadHash = await _sha256hex(text);
+  const encPath = "/" + key.split("/").map(encodeURIComponent).join("/");
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+  const canonReq = `PUT\n${encPath}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+  const scope = `${dateStamp}/${cfg.AWS_REGION}/s3/aws4_request`;
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${await _sha256hex(canonReq)}`;
+  const enc = new TextEncoder();
+  let k = await _hmac(enc.encode("AWS4" + cfg.AWS_SECRET), enc.encode(dateStamp));
+  k = await _hmac(k, enc.encode(cfg.AWS_REGION));
+  k = await _hmac(k, enc.encode("s3"));
+  k = await _hmac(k, enc.encode("aws4_request"));
+  const sig = _hex(await _hmac(k, enc.encode(stringToSign)));
+  const r = await fetch(`https://${host}${encPath}`, {
+    method: "PUT",
+    headers: {
+      "x-amz-date": amzDate,
+      "x-amz-content-sha256": payloadHash,
+      "Content-Type": "text/plain",
+      "Authorization": `AWS4-HMAC-SHA256 Credential=${cfg.AWS_KEY}/${scope}, SignedHeaders=${signedHeaders}, Signature=${sig}`
+    },
+    body: text
+  });
+  return { ok: r.ok, status: r.status, key, error: r.ok ? null : (await r.text()).slice(0, 160) };
 }
 
 // Shared remote-control commands for WhatsApp + Telegram bots
