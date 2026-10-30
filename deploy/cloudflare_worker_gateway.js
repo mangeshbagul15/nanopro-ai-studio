@@ -74,6 +74,9 @@ export default {
     if (path === "/privacy") {
       return new Response(PRIVACY_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
+    if (path === "/data-deletion") {
+      return new Response(DELETION_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
 
     // 0c. WhatsApp Cloud API webhook — GET verify + POST incoming
     if (path === "/api/whatsapp/webhook") {
@@ -1253,4 +1256,13 @@ const PRIVACY_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Na
 <h2>Contact</h2>
 <p>mangeshbagul15@gmail.com</p>
 <p><i>Last updated: October 2026</i></p>
+</body></html>`;
+
+const DELETION_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>NanoPro — Data Deletion Instructions</title><meta name="viewport" content="width=device-width"></head>
+<body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.6">
+<h1>NanoPro AI Studio — Data Deletion Instructions</h1>
+<p>To request deletion of all personal data NanoPro AI Studio holds about you (phone number, WhatsApp message history, reports), send an email to:</p>
+<p><b>mangeshbagul15@gmail.com</b> with subject <b>"Delete my NanoPro data"</b>.</p>
+<p>Your data will be permanently deleted within 30 days and you will receive a confirmation email. Alternatively, send the word DELETE in your WhatsApp conversation and we will remove your data.</p>
+<p>Last updated: October 2026</p>
 </body></html>`;
