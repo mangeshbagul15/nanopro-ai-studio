@@ -54,8 +54,6 @@ const CONFIG = {
 
 
 
-import { connect } from "cloudflare:sockets";
-
 export default {
 
   async fetch(request, env, ctx) {
@@ -663,7 +661,9 @@ const REPORT_CFG = {
     FQ_TABLE: "BANK_DB.L0_STAGING.NANOPRO_REPORTS",
     RSA_PKCS8_B64: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2ER1bDHfWM3Pn9Japf8ADV7Moi9zAzH+upaAFzg/o5OFnN8eKgAPsdNe4jZ1CqQBCfREIPMjLtSUIHLchRXmPxNHzrHc7g4GP9WrJr+2vUcA/OjUDRqsgAmTEx3sHpx7BE4NxOA/vR2AcLs2rzXIZ9/r/1KJ/CrY0TX70hjnJeCG9elk4QuATbiOfHaYyxLZ8c1rPTaAIdWJkYOpXzQApK2h5tfbQ/iilnHK4HbREZ5YF+Kw6SmdnFESOyCwEc6UqFaEl+JHo9/b6FPOSJCKgkfKKYOJUNzLWKTIIXN32Jd8HScluFamGut9d7lV7afPEvQULBLkaVMHcszVgZrg9AgMBAAECggEACax5dP6BxDRXVWebX7swHnKuTBpjqtd9de/1Q4myMmDYPHiWwMb82QymRPc6orGXGBv2vTYkQcqeAph//yO8CfBeasZATuhgXcqfl213wWfPFqzxkdB97tqhtGDtqmJDUeVHB8t/m+pHct07xAP2VZHlrhUuuHWpvmKwZa6swFsWPhEfaCXImZ7b623uI/jn11nEIVl1NDQSR8CcNssnyU0GxemXePBRj5ALk6/bFcaSlkPNcTDGJ6gIr/JE0aEtBBxXC+VAoFbn8ZBM5CZP/KFGJMoAf4QOA0gLkQhJtnwaqpoHo1RbdTrBjFi7hF/nqB38nA/vBAB9m+1MnOwSgwKBgQDgl14oZcVyEHfcMgKCcbOryLSmAEzjRlStBmwMeyvCgdIlrYm/9ei/j2tX1dmyXideQphlfTdwOTLsJIVTqrQ+ZA4yIsT3Uxs4EluzAGDkpMxG5nAtKm/TwXxD9MXGbag+8jPhpaoMao6r2zJROp5nwNJzyOnKsTkDmp7ulnBVgwKBgQDPh1KFpDiizdxl3Z+NO/8hJ7X4q0EyKoO5tIspzNhvLuRQUSa1fMOMgZ4VmRii+o34/cHOduwsBNTVmr/EvbtVxRu/6dQN13yKIlX7hAMeZlQp9pZxotiMQcx3yAAeOks68akFTFkHiE0UcSfHWSjc3uCgOkjfvIBOkRF0lhUPPwKBgCoe2U7UP2J0Cjamvme+cUbfXlnfpovdTdYhZTQ2CW/yLvpYAISa1urOOACCH9De7Z00+iXWhQYsBAvbkZGuax1kYHEwqiYEVQ+ACeiZQpK/AXyujQ07bzuUhvyrtEfRmwMrI2XHTwwDE/zRIC+xwbGNrSp/3LDh6eJuJi5y0mCHAoGAHeYfK4Xnav1BvaNac1yrezlfbD4wHGwnoj+ytQkAPbSBzFiEvS0Gd13NSstN011Jyw+0NmzHxefESioLaury7H6DavjjRkM/fB9KR/xS/rQ7d/hA4IpXrI1mSfOUoMZBRHLAqTTAtucaQ9Gxq3TbAEdUEYGUMjfUPH2GCEf/LL0CgYEAlmLun506A0cCF9uEjTBIP6BPTGa9/mcS5FDVwgVqiUtNCKliLWt3mdsQVaNqiUDUBkiFhRFYoNGCavOhQGMsAywmCAKAbWDx7Gn7n3Ftg5XBq0EOFrSf5f0UcoY1h3aRAxp/iUsMKt9zszT9L8hJFL9BzSIK5Ar6XGFeoi0Exkg="
   },
-  GMAIL: { USER: "mangeshbagul15@gmail.com", APP_PASSWORD: "agunjgvexwcjudb", TO: "mangeshbagul15@gmail.com", HOST: "smtp.gmail.com", PORT: "465" },
+  EMAIL_RELAY: "https://script.google.com/macros/s/AKfycbyHbAMGTHe644Zywajjo4Vo1BwGmEu9mijZ7BnkCZ3EDsPjlZ5YkiifKkCiAZlz17gp/exec",
+  EMAIL_RELAY_SECRET: "49c62e3dcd3fe486d5de96f1123df5ad",
+  EMAIL_TO: "mangeshbagul15@gmail.com",
   CRON_CYCLE_MAP: {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
@@ -744,53 +744,20 @@ async function sfSql(statement) {
   return { ok: r.ok, code: d.code || null, message: d.message || null };
 }
 
-async function smtpRead(reader, buf) {
-  // accumulate until we see a line like "250 " (final reply line)
-  const dec = new TextDecoder();
-  while (!/\r?\n\d{3} /.test(buf.data)) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf.data += dec.decode(value, { stream: true });
-  }
-  const lines = buf.data.split("\r\n");
-  buf.data = lines.pop() || "";
-  return lines;
-}
-
 async function _sendEmailGmailImpl(subject, text) {
-  const g = REPORT_CFG.GMAIL;
-  const enc = new TextEncoder();
-  const socket = connect(`${g.HOST}:${g.PORT}`, { secureTransport: "on" });
-  await socket.opened;
-  const reader = socket.readable.getReader();
-  const writer = socket.writable.getWriter();
-  const buf = { data: "" };
-  const cmd = async (c) => { await writer.write(enc.encode(c + "\r\n")); return smtpRead(reader, buf); };
-  try {
-    await smtpRead(reader, buf);                       // 220 greeting
-    await cmd("EHLO nanopro-edge");
-    await cmd("AUTH LOGIN");
-    await cmd(btoa(g.USER));
-    const auth = await cmd(btoa(g.APP_PASSWORD));
-    if (!auth.some(l => l.startsWith("235"))) { socket.close(); return { ok: false, error: "auth_rejected: " + auth.join(" | ") }; }
-    await cmd(`MAIL FROM:<${g.USER}>`);
-    await cmd(`RCPT TO:<${g.TO}>`);
-    await cmd("DATA");
-    const msg = `From: NanoPro Studio <${g.USER}>\r\nTo: <${g.TO}>\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${text.replace(/\n/g, "\r\n")}\r\n.`;
-    const sendOk = await cmd(msg);
-    await cmd("QUIT");
-    socket.close();
-    const ok = sendOk.some(l => l.startsWith("250"));
-    return { ok, error: ok ? null : sendOk.join(" | ") };
-  } catch (e) {
-    try { socket.close(); } catch (_) {}
-    return { ok: false, error: String(e).slice(0, 160) };
-  }
+  const r = await fetch(REPORT_CFG.EMAIL_RELAY, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    redirect: "follow",
+    body: JSON.stringify({ secret: REPORT_CFG.EMAIL_RELAY_SECRET, to: REPORT_CFG.EMAIL_TO, subject, text })
+  });
+  const d = await r.json().catch(() => ({}));
+  return { ok: d.ok === true, error: d.ok === true ? null : (d.error || `relay_http_${r.status}`) };
 }
 
 async function sendEmailGmail(subject, text) {
   let to;
-  const timeout = new Promise((res) => { to = setTimeout(() => res({ ok: false, error: "smtp_timeout_15s" }), 15000); });
+  const timeout = new Promise((res) => { to = setTimeout(() => res({ ok: false, error: "relay_timeout_15s" }), 15000); });
   const r = await Promise.race([_sendEmailGmailImpl(subject, text), timeout]);
   clearTimeout(to);
   return r;
