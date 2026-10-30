@@ -62,6 +62,15 @@ export default {
 
     const path = url.pathname;
 
+    // -1. Live dashboard (edge-rendered status page)
+    if (path === "/dashboard") {
+      return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+    if (path === "/api/dashboard/data") {
+      const out = await dashboardData();
+      return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
     // 0. Report engine (manual trigger) — handled at edge, never proxied
 
     // 0b. Telegram bot webhooks — interactive bots at edge (laptop off तरी reply)
@@ -654,7 +663,11 @@ export default {
 
   async scheduled(event, env, ctx) {
     const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
-    ctx.waitUntil(runReportCycle(cycle));
+    if (cycle === "HEALTH") {
+      ctx.waitUntil(runHealthMonitor());
+    } else {
+      ctx.waitUntil(runReportCycle(cycle));
+    }
   }
 
 };
@@ -683,14 +696,16 @@ const REPORT_CFG = {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
     "0 13 * * *": "EOD",   // 18:30 IST — End of Day
-    "30 14 * * *": "T-1"   // 20:00 IST — T-1 evening brief
+    "30 14 * * *": "T-1",  // 20:00 IST — T-1 evening brief
+    "*/30 * * * *": "HEALTH" // every 30 min — upstream watchdog
   }
 };
 
 async function groqReport(cycle, mode) {
   const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";
   const prompt = `You are NanoPro AI Studio's executive reporting engine. Write a concise ${cycle} report (mode: ${mode}) for Mangesh, timestamp ${istNow}.
-Cover: cloud cluster status, scheduled-pipeline status (AWS S3 → Snowflake, DuckDB/Neon/Turso), telegram bot health, pending items, and 3 actionable next steps. Max 180 words, crisp bullets, English.`;
+Cover: cloud cluster status, scheduled-pipeline status (AWS S3 → Snowflake, DuckDB/Neon/Turso), telegram bot health, pending items, and 3 actionable next steps. Max 180 words, crisp bullets, English.
+Real ingested data (news/crypto/weather): ${mode}`;
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
@@ -840,16 +855,17 @@ async function runReportCycle(cycle) {
     catch (e) { health[name] = "down"; }
   }
   // 2. generate report via Groq
-  const report = await groqReport(cycle, JSON.stringify(health));
+  const liveData = await ingestLiveData();
+  const report = await groqReport(cycle, JSON.stringify({ health, live: liveData.summary }));
   if (!report) { result.sent.reports = { ok: false, error: "groq_failed" }; return result; }
   result.report = report;
   const header = `\u{1F4CA} NanoPro ${cycle} Report`;
   // 3. deliver: full report to reports bot; short pings to others
   result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `${header}\n\n${report}`);
   result.sent.health = await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F493} NanoPro Health — ${cycle}: alwaysdata=${health.alwaysdata} pythonanywhere=${health.pythonanywhere} edge=live`);
-  if (cycle === "BOD" || cycle === "EOD") {
-    result.sent.news = await sendTelegram(REPORT_CFG.BOTS.news, `${header} — Tech Brief\n\n${report.slice(0, 600)}`);
-    result.sent.career = await sendTelegram(REPORT_CFG.BOTS.career, `\u{1F3AF} NanoPro ${cycle} — Career Study\n\n${report.slice(0, 600)}`);
+  if (cycle === "BOD" || cycle === "SOD" || cycle === "EOD") {
+    result.sent.news = await sendNewsDigest(liveData, header);
+    result.sent.career = await sendCareerTip(cycle);
   }
   // 4. persist to Upstash Redis (latest + 50-entry history)
   try {
@@ -871,3 +887,155 @@ async function runReportCycle(cycle) {
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   return result;
 }
+
+// ============================================================================
+// REAL DATA INGESTION (public APIs → Upstash + Snowflake)
+// ============================================================================
+async function ingestLiveData() {
+  const data = { at: new Date().toISOString(), news: [], crypto: null, weather: null, summary: "" };
+  // tech news — HackerNews top stories (free, no key)
+  try {
+    const ids = await (await fetch("https://hacker-news.firebaseio.com/v0/topstories.json", { signal: AbortSignal.timeout(8000) })).json();
+    const top = (ids || []).slice(0, 3);
+    const items = await Promise.all(top.map(id =>
+      fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).catch(() => null)
+    ));
+    data.news = items.filter(i => i && i.title).map(i => ({ title: i.title, url: i.url || `https://news.ycombinator.com/item?id=${i.id}`, score: i.score || 0 }));
+  } catch (_) {}
+  // crypto — CoinGecko free
+  try {
+    const c = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true", { signal: AbortSignal.timeout(8000) })).json();
+    data.crypto = c;
+  } catch (_) {}
+  // weather — wttr.in (free)
+  try {
+    const w = await (await fetch("https://wttr.in/Pune?format=j1", { signal: AbortSignal.timeout(8000) })).json();
+    const cur = w?.current_condition?.[0];
+    if (cur) data.weather = { city: "Pune", temp_c: cur.temp_C, feels: cur.FeelsLikeC, desc: cur.weatherDesc?.[0]?.value, humidity: cur.humidity };
+  } catch (_) {}
+  // compact summary for prompts/telegram
+  const bits = [];
+  if (data.news.length) bits.push("Top tech: " + data.news.map(n => n.title).join(" | ").slice(0, 300));
+  if (data.crypto?.bitcoin) bits.push(`BTC $${data.crypto.bitcoin.usd} (${data.crypto.bitcoin.usd_24h_change?.toFixed(1)}%), ETH $${data.crypto.ethereum?.usd}`);
+  if (data.weather) bits.push(`Pune ${data.weather.temp_c}°C ${data.weather.desc}`);
+  data.summary = bits.join(" ; ") || "no_live_data";
+  // persist → Upstash
+  try {
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_live_data`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: JSON.stringify(data) });
+  } catch (_) {}
+  // persist → Snowflake pipeline (one row per source)
+  try {
+    const esc = (x) => JSON.stringify(x).replace(/'/g, "''").slice(0, 6000);
+    if (data.news.length) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('tech_news', '${esc(data.news)}')`);
+    if (data.crypto) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('crypto', '${esc(data.crypto)}')`);
+    if (data.weather) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('weather', '${esc(data.weather)}')`);
+  } catch (_) {}
+  return data;
+}
+
+// ============================================================================
+// HEALTH MONITOR — every 30 min, alerts health bot on failures + logs to Snowflake
+// ============================================================================
+async function runHealthMonitor() {
+  const res = { at: new Date().toISOString(), checks: {}, alerts: [] };
+  const targets = {
+    alwaysdata: "https://mangeshbagul15.alwaysdata.net/api/cluster/status",
+    pythonanywhere: "https://mangeshbagul15.pythonanywhere.com/api/cluster/status",
+    edge: "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/cluster/status"
+  };
+  for (const [name, url] of Object.entries(targets)) {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      res.checks[name] = { status: r.status, ms: Date.now() - t0 };
+    } catch (e) {
+      res.checks[name] = { status: "down", ms: Date.now() - t0 };
+    }
+  }
+  const downs = Object.entries(res.checks).filter(([, v]) => v.status !== 200);
+  if (downs.length) {
+    const txt = `\u{1F6A8} NanoPro HEALTH ALERT\n` + downs.map(([n, v]) => `${n}: ${v.status}`).join("\n") + `\n${res.at}`;
+    await sendTelegram(REPORT_CFG.BOTS.health, txt);
+    res.alerts = downs.map(([n]) => n);
+  }
+  // log each check to Snowflake NANOPRO_HEALTH_LOG
+  try {
+    for (const [n, v] of Object.entries(res.checks)) {
+      await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_HEALTH_LOG (UPSTREAM, STATUS, LATENCY_MS) VALUES ('${n}', '${v.status}', ${v.ms})`);
+    }
+  } catch (_) {}
+  return res;
+}
+
+// ============================================================================
+// NEWS DIGEST (real HN stories) + CAREER TIP (Groq) — on BOD/SOD/EOD cycles
+// ============================================================================
+async function sendNewsDigest(liveData, header) {
+  const lines = (liveData.news || []).map((n, i) => `${i + 1}. ${n.title}\n${n.url}`).join("\n\n");
+  const crypto = liveData.crypto?.bitcoin ? `\n\n\u{1F4B0} BTC $${liveData.crypto.bitcoin.usd} | ETH $${liveData.crypto.ethereum?.usd}` : "";
+  const text = lines ? `\u{1F4F0} NanoPro Tech News (${header.split(" ")[2] || ""})\n\n${lines}${crypto}` : `${header}\n\nNews feed unavailable this cycle.`;
+  return await sendTelegram(REPORT_CFG.BOTS.news, text);
+}
+
+async function sendCareerTip(cycle) {
+  let tip = "";
+  try {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "user", content: `Give one concrete career/study tip for a data engineer upskilling in cloud data platforms (Snowflake, AWS, dbt). Cycle ${cycle}. 2-3 lines, actionable, English.` }],
+        temperature: 0.5, max_tokens: 600
+      })
+    });
+    const d = await r.json();
+    tip = d?.choices?.[0]?.message?.content?.trim() || "";
+  } catch (_) {}
+  return await sendTelegram(REPORT_CFG.BOTS.career, `\u{1F3AF} NanoPro Career Study — ${cycle}\n\n${tip || "Keep building. Review today's report and pick one pipeline metric to improve."}`);
+}
+
+// ============================================================================
+// LIVE DASHBOARD — /dashboard renders latest report + live data + health
+// ============================================================================
+async function dashboardData() {
+  const out = { at: new Date().toISOString(), latest_report: null, live_data: null, health: null };
+  const h = { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` };
+  try {
+    const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: h })).json();
+    out.latest_report = r.result ? JSON.parse(r.result) : null;
+  } catch (_) {}
+  try {
+    const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_live_data`, { headers: h })).json();
+    out.live_data = r.result ? JSON.parse(r.result) : null;
+  } catch (_) {}
+  return out;
+}
+
+const DASHBOARD_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NanoPro Live Dashboard</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:24px;max-width:900px;margin:0 auto}
+h1{font-size:22px}.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin:14px 0}
+.tag{display:inline-block;background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb66;border-radius:12px;padding:2px 10px;font-size:12px;margin-right:6px}
+pre{white-space:pre-wrap;font-size:13px;line-height:1.5}
+.small{color:#8b949e;font-size:12px}a{color:#58a6ff}
+</style></head><body>
+<h1>\u{1F7E2} NanoPro AI Studio — Live</h1>
+<div class="small">Cloudflare edge • 24/7 • <a href="/api/dashboard/data">JSON</a></div>
+<div class="card" id="rep"><span class="tag">loading…</span></div>
+<div class="card" id="live"></div>
+<div class="card small" id="meta"></div>
+<script>
+fetch('/api/dashboard/data').then(r=>r.json()).then(d=>{
+  const rep=d.latest_report||{};
+  document.getElementById('rep').innerHTML='<span class="tag">'+ (rep.cycle||'—') +'</span><span class="tag">'+ (rep.at||'') +'</span><pre>'+ (rep.report||'no report yet') +'</pre>';
+  const lv=d.live_data||{};
+  let h='';
+  if(lv.news&&lv.news.length){h+='<b>\u{1F4F0} Tech News</b><pre>'+lv.news.map((n,i)=>(i+1)+'. '+n.title+'\n'+n.url).join('\n\n')+'</pre>';}
+  if(lv.crypto&&lv.crypto.bitcoin){h+='<b>Crypto</b><pre>BTC $'+lv.crypto.bitcoin.usd+' | ETH $'+(lv.crypto.ethereum?lv.crypto.ethereum.usd:'—')+'</pre>';}
+  if(lv.weather){h+='<b>Weather</b><pre>Pune '+lv.weather.temp_c+'°C — '+lv.weather.desc+'</pre>';}
+  document.getElementById('live').innerHTML=h||'<span class="small">no live data yet</span>';
+  document.getElementById('meta').textContent='refreshed: '+d.at;
+});
+</script></body></html>`;
