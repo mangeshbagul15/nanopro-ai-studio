@@ -728,7 +728,7 @@ const REPORT_CFG = {
   },
   EMAIL_RELAY: "https://script.google.com/macros/s/AKfycbyHbAMGTHe644Zywajjo4Vo1BwGmEu9mijZ7BnkCZ3EDsPjlZ5YkiifKkCiAZlz17gp/exec",
   EMAIL_RELAY_SECRET: "49c62e3dcd3fe486d5de96f1123df5ad",
-  EMAIL_TO: "mangeshbagul15@gmail.com",
+  EMAIL_TO: "nanoproaistudio@gmail.com",
   WA_VERIFY_TOKEN: "nanopro_whatsapp_secret_2026",
   WA_ACCESS_TOKEN: "EAAQTHI7wPNwBS5bIsFeZCbUfaL1C0J6lO8JHolUJhRY60ZBYPd55TuEnXvfLJtllGtrhK2GqWTKQAnInCKfGaQzNjJgUhZALZBGGNBxpv4dN4lYkkx39TuXnCc2ZBZAfdmLyigXRWmWsbgPVCK0WKnOgC6LdWZB1JXmKPCWKPcGYZBvXnnx7dkBYZCWoALzJusAZDZD",
   WA_PHONE_NUMBER_ID: "1355864990944215",
