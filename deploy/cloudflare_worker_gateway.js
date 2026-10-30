@@ -683,6 +683,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    if (await nanoPaused()) return;
     const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
     if (cycle === "HEALTH") {
       ctx.waitUntil(runHealthMonitor());
@@ -847,9 +848,11 @@ async function handleBotMessage(bot, token, msg) {
       return;
     }
     if (lower === "/help" || lower === "/start") {
-      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: /status /report /last — किंवा काहीही विचारा.`);
+      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: status | report | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume — किंवा काहीही विचारा.`);
       return;
     }
+    const cmd = await nanoCommand(lower.replace(/^\//, ""));
+    if (cmd) { await tgSend(token, msg.chat.id, cmd); return; }
     // default: Groq-powered assistant reply
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -1100,6 +1103,46 @@ async function waReply(toNumber, text) {
   });
 }
 
+// Shared remote-control commands for WhatsApp + Telegram bots
+async function nanoCommand(lower) {
+  const t = lower.trim();
+  if (t === "run" || t.startsWith("run ")) {
+    const cyc = (t.split(" ")[1] || "SOD").toUpperCase();
+    const c = ["BOD", "SOD", "EOD", "T-1"].includes(cyc) ? cyc : "SOD";
+    const r = await runReportCycle(c);
+    return `Report ${c} done — tg:${r.sent?.reports?.ok} wa:${r.sent?.whatsapp?.ok} email:${r.sent?.email?.ok} sf:${r.sent?.snowflake?.ok}`;
+  }
+  if (t === "ingest") { const r = await ingestLiveData(); return `Ingested: ${r.saved} sources saved`; }
+  if (t === "health") { const r = await runHealthMonitor(); return `Health: ${JSON.stringify(r.results)}`; }
+  if (t === "news") { await sendNewsDigest(); return "News sent to news bot."; }
+  if (t === "crypto" || t === "weather") {
+    const d = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_live_data`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    const j = await d.json(); const rec = j.result ? JSON.parse(j.result) : {};
+    if (t === "crypto") return `Crypto: BTC $${rec.crypto?.btc ?? "?"} | ETH $${rec.crypto?.eth ?? "?"}`;
+    return `Pune: ${rec.weather?.tempC ?? "?"}C, ${rec.weather?.desc ?? "?"}, feels ${rec.weather?.feelsLikeC ?? "?"}C`;
+  }
+  if (t === "pause") {
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_sched_paused/1`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    return "Scheduled reports PAUSED. Send 'resume' to restart.";
+  }
+  if (t === "resume") {
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/del/nanopro_sched_paused`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    return "Scheduled reports RESUMED.";
+  }
+  if (t === "help" || t === "/help") {
+    return "Commands: status | report/last | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume | help — or ask anything, AI replies.";
+  }
+  return null;
+}
+
+async function nanoPaused() {
+  try {
+    const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_sched_paused`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+    const d = await r.json();
+    return d.result === "1";
+  } catch (_) { return false; }
+}
+
 async function handleWhatsApp(body) {
   try {
     const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
@@ -1123,6 +1166,8 @@ async function handleWhatsApp(body) {
       await waReply(from, rec ? `Latest ${rec.cycle} (${rec.at})\n\n${rec.report.slice(0, 3000)}` : "No report yet.");
       return;
     }
+    const cmd = await nanoCommand(lower.replace(/^\//, ""));
+    if (cmd) { await waReply(from, cmd); return; }
     // AI reply via Groq
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
