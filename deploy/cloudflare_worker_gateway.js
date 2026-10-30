@@ -1032,7 +1032,7 @@ fetch('/api/dashboard/data').then(r=>r.json()).then(d=>{
   document.getElementById('rep').innerHTML='<span class="tag">'+ (rep.cycle||'—') +'</span><span class="tag">'+ (rep.at||'') +'</span><pre>'+ (rep.report||'no report yet') +'</pre>';
   const lv=d.live_data||{};
   let h='';
-  if(lv.news&&lv.news.length){h+='<b>\u{1F4F0} Tech News</b><pre>'+lv.news.map((n,i)=>(i+1)+'. '+n.title+'\n'+n.url).join('\n\n')+'</pre>';}
+  if(lv.news&&lv.news.length){h+='<b>\u{1F4F0} Tech News</b><pre>'+lv.news.map((n,i)=>(i+1)+'. '+n.title+'\\n'+n.url).join('\\n\\n')+'</pre>';}
   if(lv.crypto&&lv.crypto.bitcoin){h+='<b>Crypto</b><pre>BTC $'+lv.crypto.bitcoin.usd+' | ETH $'+(lv.crypto.ethereum?lv.crypto.ethereum.usd:'—')+'</pre>';}
   if(lv.weather){h+='<b>Weather</b><pre>Pune '+lv.weather.temp_c+'°C — '+lv.weather.desc+'</pre>';}
   document.getElementById('live').innerHTML=h||'<span class="small">no live data yet</span>';
