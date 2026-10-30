@@ -789,37 +789,101 @@ REAL DATA: ${mode}`;
   return d?.choices?.[0]?.message?.content?.trim() || null;
 }
 
-// Deterministic report built only from real measured facts — used when Groq is unreachable.
-function fallbackReport(cycle, f) {
-  const L = [];
-  L.push(`${cycle} START — load mode (${f.cycle_load_mode})`);
-  L.push("Live infrastructure");
-  for (const [k, v] of Object.entries(f.upstreams || {})) L.push(`- ${k}: HTTP ${v.http}, latency ${v.latency_ms ?? "not measured"} ms`);
-  L.push("- edge_worker: live");
-  const bp = f.banking_pipeline?.today_per_project || {};
-  L.push("Banking pipeline (today per project)");
-  for (const [p, tabs] of Object.entries(bp)) {
-    L.push(`- ${p}: ` + Object.entries(tabs).map(([t, n]) => `${t}: ${n}`).join(", "));
+// Colored HTML version of the report for email (modern high-tech look).
+function buildReportHtml(cycle, f, stamp, title) {
+  const esc = (t) => String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const H = [];
+  H.push(`<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:640px;margin:auto;background:#0d1117;border-radius:12px;overflow:hidden;border:1px solid #21262d">`);
+  H.push(`<div style="background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);padding:22px 26px;color:#fff">`);
+  H.push(`<div style="font-size:20px;font-weight:700;letter-spacing:.5px">${esc(title)}</div>`);
+  H.push(`<div style="font-size:13px;color:#9adbe8;margin-top:6px">${esc(stamp)} &nbsp;|&nbsp; Load: ${esc(f.cycle_load_mode)}</div></div>`);
+  H.push(`<div style="padding:20px 26px;color:#e6edf3">`);
+  H.push(`<div style="font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Infrastructure</div>`);
+  H.push(`<table style="width:100%;border-collapse:collapse;font-size:13px">`);
+  for (const [k,v] of Object.entries(f.upstreams||{})) {
+    const ok = v.http===200;
+    H.push(`<tr><td style="padding:5px 8px;border-bottom:1px solid #21262d">${esc(k)}</td><td style="padding:5px 8px;border-bottom:1px solid #21262d;color:${ok?"#3fb950":"#f85149"};font-weight:600">HTTP ${v.http}</td><td style="padding:5px 8px;border-bottom:1px solid #21262d;color:#8b949e">${v.latency_ms??"n/a"} ms</td></tr>`);
   }
+  H.push(`<tr><td style="padding:5px 8px">edge worker</td><td style="padding:5px 8px;color:#3fb950;font-weight:600">live</td><td></td></tr></table>`);
+  const bm = f.banking_pipeline?.business_metrics||{};
+  H.push(`<div style="font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:1px;text-transform:uppercase;margin:22px 0 8px">Banking business report — today</div>`);
+  for (const [p,metrics] of Object.entries(bm)) {
+    H.push(`<div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 14px;margin-bottom:10px">`);
+    H.push(`<div style="font-size:13px;font-weight:700;color:#d2a8ff;margin-bottom:6px">${esc(p)} <span style="color:#8b949e;font-weight:400">· ${esc(PROJECT_NAMES[p]||"")}</span></div>`);
+    H.push(`<table style="width:100%;border-collapse:collapse;font-size:13px">`);
+    for (const [m,v] of metrics) H.push(`<tr><td style="padding:3px 6px;color:#8b949e;width:55%">${esc(m)}</td><td style="padding:3px 6px;color:#e6edf3;font-weight:600">${esc(v)}</td></tr>`);
+    H.push(`</table></div>`);
+  }
+  const bp2 = f.banking_pipeline?.today_per_project||{};
+  const tr = Object.values(bp2).reduce((a,t)=>a+Object.values(t).reduce((x,i)=>x+(i?.rows??0),0),0);
+  const tt = Object.values(bp2).reduce((a,t)=>a+Object.keys(t).length,0);
+  H.push(`<div style="font-size:12px;color:#8b949e;margin-top:4px">Pipeline: ${tt} fact tables · ${tr} rows today · ${esc(f.cycle_load_mode)}</div>`);
+  const src = f.db_readback?.sources||{};
+  H.push(`<div style="font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:1px;text-transform:uppercase;margin:22px 0 8px">Live data (${esc(f.db_readback?.layer||"DB")})</div>`);
+  H.push(`<div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.7">`);
+  if (src.crypto?.bitcoin) H.push(`<b>Crypto:</b> BTC $${src.crypto.bitcoin.usd?.toLocaleString("en-US")} · ETH $${src.crypto.ethereum?.usd?.toLocaleString("en-US")}<br>`);
+  (src.tech_news||[]).slice(0,3).forEach((n,i)=>H.push(`<b>News ${i+1}:</b> ${esc(n.title)} <span style="color:#8b949e">(${n.score})</span><br>`));
+  if (src.weather) H.push(`<b>Weather:</b> Pune ${src.weather.temp_c}&deg;C — ${esc(src.weather.desc)}`);
+  H.push(`</div>`);
+  H.push(`<div style="font-size:11px;color:#8b949e;margin-top:18px;border-top:1px solid #21262d;padding-top:10px">Delivery: ${(f.delivery_channels||[]).join(", ")}<br>Reports in DB: ${f.total_reports_in_db??"n/a"} · ${esc(cycle)} END</div>`);
+  H.push(`</div></div>`);
+  return H.join("");
+}
+
+// Deterministic report — clean fixed layout, real measured facts only.
+function _pad(v, n) { v = String(v); return v.length >= n ? v : v + " ".repeat(n - v.length); }
+function _fmtAmt(a) { return "₹" + Math.round(a).toLocaleString("en-IN"); }
+function buildReport(cycle, f, stamp) {
+  const L = [];
+  L.push(`NanoPro AI Studio — ${cycle} Report`);
+  L.push(`${stamp}`);
+  L.push(`Load: ${f.cycle_load_mode}`);
+  L.push(``);
+  L.push(`\u{1F4E1} Infrastructure`);
+  for (const [k, v] of Object.entries(f.upstreams || {})) L.push(`  ${_pad(k,16)} HTTP ${v.http}   ${v.latency_ms ?? "n/a"} ms`);
+  L.push(`  ${_pad("edge worker",16)} live`);
+  L.push(``);
+  L.push(`\u{1F3E6} Banking business report — today`);
+  const bm = f.banking_pipeline?.business_metrics || {};
+  if (!Object.keys(bm).length) {
+    L.push(`  no data loaded today`);
+  }
+  for (const [p, metrics] of Object.entries(bm)) {
+    L.push(``);
+    L.push(`${PROJECT_ICONS[p] || "\u{1F539}"} ${_pad(p,14)} ${PROJECT_NAMES[p] || p}`);
+    for (const [m, v] of metrics) L.push(`  ${_pad(m,22)}${v}`);
+  }
+  const bp = f.banking_pipeline?.today_per_project || {};
+  const totRows = Object.values(bp).reduce((a, tabs) => a + Object.values(tabs).reduce((x, i) => x + (i?.rows ?? 0), 0), 0);
+  const totTbl = Object.values(bp).reduce((a, tabs) => a + Object.keys(tabs).length, 0);
+  L.push(``);
+  L.push(`Pipeline: ${totTbl} fact tables, ${totRows} rows loaded today (${f.cycle_load_mode})`);
+  L.push(``);
   const src = f.db_readback?.sources || {};
-  if (src.crypto?.bitcoin) L.push(`Crypto: BTC $${src.crypto.bitcoin.usd ?? "not measured"}, ETH $${src.crypto.ethereum?.usd ?? "not measured"}`);
-  if (Array.isArray(src.tech_news)) L.push("Tech news: " + src.tech_news.map(n => n.title).slice(0, 3).join(" | "));
-  if (src.weather) L.push(`Weather (Pune): ${src.weather.temp_c}°C, ${src.weather.desc}`);
-  L.push(`DB readback layer: ${f.db_readback?.layer || "not measured"}; total reports in DB: ${f.total_reports_in_db ?? "not measured"}`);
-  L.push("Delivery targets: " + (f.delivery_channels || []).join(", "));
+  L.push(`\u{1F4C8} Live data (read back from ${f.db_readback?.layer || "DB"})`);
+  if (src.crypto?.bitcoin) L.push(`  Crypto   BTC $${src.crypto.bitcoin.usd?.toLocaleString("en-US") ?? "n/a"}   ETH $${src.crypto.ethereum?.usd?.toLocaleString("en-US") ?? "n/a"}`);
+  if (Array.isArray(src.tech_news) && src.tech_news.length) src.tech_news.slice(0,3).forEach((n,i) => L.push(`  News ${i+1}   ${n.title} (${n.score})`));
+  if (src.weather) L.push(`  Weather  Pune ${src.weather.temp_c}°C — ${src.weather.desc}`);
+  if (!src.crypto && !src.weather && !(src.tech_news||[]).length) L.push(`  not measured this cycle`);
+  L.push(``);
+  L.push(`\u{1F4EC} Delivery: ${(f.delivery_channels || []).join(", ")}`);
+  L.push(`Reports in DB: ${f.total_reports_in_db ?? "n/a"}`);
   L.push(`${cycle} END`);
   return L.join("\n");
 }
 
-async function sendTelegram(botToken, text) {
+async function sendTelegram(botToken, text, html = false) {
+  const body = { chat_id: REPORT_CFG.CHAT_ID, text, disable_web_page_preview: true };
+  if (html) body.parse_mode = "HTML";
   const r = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text, disable_web_page_preview: true })
+    body: JSON.stringify(body)
   });
   const d = await r.json();
   return { ok: d.ok === true, error: d.description || null };
 }
+function _escHtml(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
 
 function b64urlBytes(bytes) {
@@ -866,21 +930,21 @@ async function sfSql(statement) {
   return { ok: r.ok, code: d.code || null, message: d.message || null, rows: d.data || [], cols: (d.resultSetMetaData?.rowType || []).map(c => c.name) };
 }
 
-async function _sendEmailGmailImpl(subject, text, attachmentName, attachmentText) {
+async function _sendEmailGmailImpl(subject, text, attachmentName, attachmentText, htmlBody) {
   const r = await fetch(REPORT_CFG.EMAIL_RELAY, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     redirect: "follow",
-    body: JSON.stringify({ secret: REPORT_CFG.EMAIL_RELAY_SECRET, to: REPORT_CFG.EMAIL_TO, subject, text, attachmentName, attachmentText })
+    body: JSON.stringify({ secret: REPORT_CFG.EMAIL_RELAY_SECRET, to: REPORT_CFG.EMAIL_TO, subject, text, attachmentName, attachmentText, htmlBody })
   });
   const d = await r.json().catch(() => ({}));
   return { ok: d.ok === true, error: d.ok === true ? null : (d.error || `relay_http_${r.status}`) };
 }
 
-async function sendEmailGmail(subject, text, attachmentName, attachmentText) {
+async function sendEmailGmail(subject, text, attachmentName, attachmentText, htmlBody) {
   let to;
   const timeout = new Promise((res) => { to = setTimeout(() => res({ ok: false, error: "relay_timeout_15s" }), 15000); });
-  const r = await Promise.race([_sendEmailGmailImpl(subject, text, attachmentName, attachmentText), timeout]);
+  const r = await Promise.race([_sendEmailGmailImpl(subject, text, attachmentName, attachmentText, htmlBody), timeout]);
   clearTimeout(to);
   return r;
 }
@@ -1003,23 +1067,23 @@ async function runReportCycle(cycle) {
     bankIngest = await (await fetch(`https://mangesh-nanopro.mangeshbagul15.workers.dev/api/bank/ingest?cycle=${encodeURIComponent(cycle)}&mode=${loadMode}_LOAD`, { signal: AbortSignal.timeout(60000) })).json();
   } catch (e) { bankIngest = { error: String(e).slice(0, 100) }; }
   const bankAgg = await bankingSummary();
+  const bizMetrics = await businessMetrics();
   const realFacts = {
     upstreams: Object.fromEntries(Object.entries(health).map(([k, v]) => [k, { http: v, latency_ms: latency[k] ?? null }])),
     edge_worker: "live",
     db_readback: { note: "data below was read back from the DB clean layer after ingestion (API→S3→Snowflake L0→L1→report)", layer: dbLive.layer, sources: dbLive.sources, live_rows_used: dbLive.rows },
     total_reports_in_db: reportCount,
-    banking_pipeline: { note: "sample development data written this run then read back from DB L2 aggregate", ingest_this_run: bankIngest, today_per_project: bankAgg },
+    banking_pipeline: { note: "sample development data written this run then read back from DB", ingest_this_run: bankIngest, today_per_project: bankAgg, business_metrics: bizMetrics },
     cycle_load_mode: loadMode + "_LOAD",
     delivery_channels: ["telegram reports bot", "telegram health bot", "whatsapp", "gmail", "snowflake", "neon", "aws s3", "upstash", "sftp"]
   };
-  let report = await groqReport(cycle, JSON.stringify(realFacts));
-  if (!report) report = fallbackReport(cycle, realFacts); // AI down → deterministic report from real facts only — cycle never fails
-  result.report = report;
   const stamp = istStamp(result.at);
+  const report = buildReport(cycle, realFacts, stamp); // fixed structured format — no AI text
+  result.report = report;
   const title = `NanoPro AI Studio — ${cycle} (${CYCLE_FULL[cycle] || cycle}) Report`;
   const header = `\u{1F4CA} ${title}\n\u{1F4C5} ${stamp}`;
   // 3. deliver: full report to reports bot; short pings to others
-  result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `${header}\n\n${report}`);
+  result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `<b>${_escHtml(header.split("\n")[0])}</b>\n${_escHtml(header.split("\n")[1]||"")}\n<pre>${_escHtml(report)}</pre>`, true);
   result.sent.health = await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F493} NanoPro Health — ${cycle}: alwaysdata=${health.alwaysdata} pythonanywhere=${health.pythonanywhere} edge=live`);
   if (cycle === "BOD" || cycle === "SOD" || cycle === "EOD") {
     result.sent.news = await sendNewsDigest(liveData, header);
@@ -1043,14 +1107,16 @@ async function runReportCycle(cycle) {
   // 6. email copy via Gmail SMTP
   try {
     const sftpPath = `s3://${REPORT_CFG.S3_BUCKET}/nanopro-sftp/${cycle}-latest.txt`;
+    const fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report}\n\n${"—".repeat(46)}\nReport file (AWS S3): ${sftpPath}`;
     result.sent.email = await sendEmailGmail(
       `${title} | ${stamp}`,
-      `${title}\n${stamp}\n${"—".repeat(40)}\n\n${report}\n\n${"—".repeat(40)}\nReport file (AWS S3): ${sftpPath}`,
-      `${cycle}-report-${result.at.slice(0,10)}.txt`, `${title}\n${stamp}\n\n${report}\n\nFile: ${sftpPath}`);
+      fullBody,
+      `${cycle}-report-${result.at.slice(0,10)}.txt`, fullBody,
+      buildReportHtml(cycle, realFacts, stamp, title));
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   // 7. WhatsApp copy (when configured)
   try {
-    const wa = await waSend(`${title}\n${stamp}\n\n${report}`);
+    const wa = await waSend(`*${title}*\n${stamp}\n` + "``\u0060" + `\n${report}\n` + "``\u0060");
     if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
   } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
   // 8. S3 archive (nanopro data lake)
@@ -1147,6 +1213,7 @@ function _colType(c) {
 }
 function _genVal(c, seed, i, cycle) {
   const t = _colType(c); const r = _rnd(seed);
+  if (/_key$/.test(c)) return Math.floor(r * 300) + 1; // FK range matches DIM tables (1-300) so joins work
   if (t === "N") { if (/score|pct|rate|exchange/.test(c)) return Math.round(r * 100 * 100) / 100; return Math.round(r * 100000 + 1); }
   if (t === "T") { const d = new Date(Date.now() - Math.floor(r * 86400000)); return `'${d.toISOString()}'`; }
   const pool = _TXT_POOL[c];
@@ -1177,13 +1244,68 @@ async function ingestBankingData(cycle, loadMode) {
   return out;
 }
 
+// BRD-style business metrics per project — FACT joins DIM, read from DM layer.
+async function businessMetrics() {
+  const q = `
+SELECT p, ord, m, v FROM (
+  SELECT 'AML' p, 1 ord, 'Txns monitored' m, COUNT(*)::text v FROM bank_aml_fact_aml_txn_monitor WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'AML',2,'Txn volume','Rs '||TO_CHAR(COALESCE(SUM(amount_inr),0),'FM999,999,999,999') FROM bank_aml_fact_aml_txn_monitor WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'AML',3,'Watchlist hits',COUNT(*)::text||' (OPEN '||COUNT(*) FILTER (WHERE hit_status='OPEN')||', ESC '||COUNT(*) FILTER (WHERE hit_status='ESCALATED')||')' FROM bank_aml_fact_aml_watchlist_hits WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'AML',4,'High-risk customers',COUNT(*)::text FROM bank_aml_dim_customer WHERE risk_category='HIGH'
+  UNION ALL SELECT 'AML',5,'Top txn',COALESCE('Rs '||TO_CHAR(mx.a,'FM999,999,999,999')||' — '||mx.n,'n/a') FROM (SELECT t.amount_inr a, c.customer_name n FROM bank_aml_fact_aml_txn_monitor t JOIN bank_aml_dim_customer c ON c.customer_key=t.customer_key ORDER BY t.amount_inr DESC LIMIT 1) mx
+  UNION ALL SELECT 'CREDIT_CARD',1,'Transactions',COUNT(*)::text FROM bank_credit_card_fact_cc_transactions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'CREDIT_CARD',2,'Txn volume','Rs '||TO_CHAR(COALESCE(SUM(txn_amount_inr),0),'FM999,999,999,999') FROM bank_credit_card_fact_cc_transactions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'CREDIT_CARD',3,'Fraud alerts',COUNT(*)::text||' (OPEN '||COUNT(*) FILTER (WHERE resolution_status='OPEN')||')' FROM bank_credit_card_fact_cc_fraud_alerts WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'CREDIT_CARD',4,'Cards on file',COUNT(*)::text FROM bank_credit_card_dim_card
+  UNION ALL SELECT 'ALM',1,'Inflow','Rs '||TO_CHAR(COALESCE(SUM(inflow_amount_inr),0),'FM999,999,999,999') FROM bank_alm_fact_alm_cashflows WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'ALM',2,'Outflow','Rs '||TO_CHAR(COALESCE(SUM(outflow_amount_inr),0),'FM999,999,999,999') FROM bank_alm_fact_alm_cashflows WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'ALM',3,'Net cashflow','Rs '||TO_CHAR(COALESCE(SUM(net_cashflow_inr),0),'FM999,999,999,999') FROM bank_alm_fact_alm_cashflows WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'ALM',4,'Threshold breaches',COUNT(*) FILTER (WHERE threshold_breached='Y')::text FROM bank_alm_fact_structural_liquidity WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'ADF_CIMS',1,'GL net balance','Rs '||TO_CHAR(COALESCE(SUM(net_balance_inr),0),'FM999,999,999,999') FROM bank_adf_cims_fact_cims_gl_balances WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'ADF_CIMS',2,'Submissions',COUNT(*)::text||' (ACC '||COUNT(*) FILTER (WHERE submission_status='ACCEPTED')||', REJ '||COUNT(*) FILTER (WHERE submission_status='REJECTED')||')' FROM bank_adf_cims_fact_cims_submissions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'CBS',1,'Journal txns',COUNT(*)::text||' — Rs '||TO_CHAR(COALESCE(SUM(tran_amount_inr),0),'FM999,999,999,999') FROM bank_cbs_fact_cbs_txn_journal WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'CBS',2,'Payments',COUNT(*)::text||' — Rs '||TO_CHAR(COALESCE(SUM(amount_inr),0),'FM999,999,999,999') FROM bank_cbs_fact_cbs_payments WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'CBS',3,'Payment modes',COALESCE(STRING_AGG(DISTINCT payment_type,', '), 'n/a') FROM bank_cbs_fact_cbs_payments WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'UPI',1,'Transactions',COUNT(*)::text||' (OK '||COUNT(*) FILTER (WHERE txn_status='SUCCESS')||', FAIL '||COUNT(*) FILTER (WHERE txn_status='FAILED')||')' FROM bank_upi_fact_upi_transactions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'UPI',2,'Success rate',COALESCE(ROUND(100.0*COUNT(*) FILTER (WHERE txn_status='SUCCESS')/NULLIF(COUNT(*),0))::text||' %','n/a') FROM bank_upi_fact_upi_transactions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'UPI',3,'Volume','Rs '||TO_CHAR(COALESCE(SUM(amount_inr),0),'FM999,999,999,999') FROM bank_upi_fact_upi_transactions WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'UPI',4,'Top payee VPA',COALESCE((SELECT v2.vpa_id FROM bank_upi_fact_upi_transactions t2 JOIN bank_upi_dim_vpa v2 ON v2.vpa_key=t2.vpa_payee_key WHERE t2.loaded_at::date=CURRENT_DATE GROUP BY v2.vpa_id ORDER BY COUNT(*) DESC LIMIT 1),'n/a')
+  UNION ALL SELECT 'UCIC',1,'Dedup merges',COUNT(*) FILTER (WHERE merge_action='MERGED')::text FROM bank_ucic_fact_ucic_dedup WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'UCIC',2,'KYC status',COUNT(*) FILTER (WHERE kyc_status='VERIFIED')::text||' verified / '||COUNT(*) FILTER (WHERE kyc_status<>'VERIFIED')::text||' pending' FROM bank_ucic_fact_ucic_kyc_status WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'UCIC',3,'Active holdings',COUNT(*) FILTER (WHERE status='ACTIVE')::text FROM bank_ucic_fact_ucic_product_holdings WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'BUREAU_MART',1,'Avg credit score',COALESCE(ROUND(AVG(credit_score))::text,'n/a') FROM bank_bureau_mart_fact_bureau_scores WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'BUREAU_MART',2,'NPA warnings',COUNT(*)::text FROM bank_bureau_mart_fact_npa_early_warning WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'BUREAU_MART',3,'Enquiries',COUNT(*)::text FROM bank_bureau_mart_fact_bureau_enquiries WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'DATA_LAKE',1,'Records ingested',COALESCE(SUM(record_count),0)::text FROM bank_data_lake_fact_ingestion_log WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'DATA_LAKE',2,'Avg DQ score',COALESCE(ROUND(AVG(overall_score))::text,'n/a') FROM bank_data_lake_fact_data_quality WHERE loaded_at::date=CURRENT_DATE
+  UNION ALL SELECT 'DATA_LAKE',3,'Schema drifts',COUNT(*)::text FROM bank_data_lake_fact_schema_drift WHERE loaded_at::date=CURRENT_DATE
+) t ORDER BY p, ord`;
+  const out = {};
+  try {
+    const r = await neonSql(q, []);
+    for (const row of (r?.rows || [])) {
+      if (!out[row.p]) out[row.p] = [];
+      out[row.p].push([row.m, row.v]);
+    }
+  } catch (_) {}
+  return out;
+}
+
+const PROJECT_NAMES = { AML: "Anti-Money Laundering", CREDIT_CARD: "Credit Card", ALM: "Asset-Liability Mgmt", ADF_CIMS: "ADF CIMS Regulatory", CBS: "Core Banking", UPI: "UPI Payments", UCIC: "Unified Customer ID", BUREAU_MART: "Credit Bureau Mart", DATA_LAKE: "Data Lake Ops" };
+const PROJECT_ICONS = { AML: "\u{1F6E1}", CREDIT_CARD: "\u{1F4B3}", ALM: "\u{1F3E6}", ADF_CIMS: "\u{1F4CB}", CBS: "\u{1F3DB}", UPI: "\u{1F4F1}", UCIC: "\u{1FAAA}", BUREAU_MART: "\u{1F4CA}", DATA_LAKE: "\u{1F4BE}" };
+
+function _amtCol(cols) {
+  return cols.find(c => /amount_inr$|_amount_inr$|amount$|total_amount|net_cashflow_inr|balance_inr|net_settlement_inr|total_exposure_inr|overdue_amount_inr|enquiry_amount|net_balance_inr|tran_amount_inr|total_debit_inr|total_credit_inr|inflow_amount_inr|gap_inr/.test(c)) || null;
+}
+
 async function bankingSummary() {
   const per = {};
   const parts = [];
   for (const [proj, tables] of Object.entries(BANKING_SCHEMA)) {
-    for (const tab of Object.keys(tables)) {
+    for (const [tab, cols] of Object.entries(tables)) {
       const fq = `bank_${proj.toLowerCase()}_${tab.toLowerCase()}`;
-      parts.push(`SELECT '${proj}.${tab}' AS k, COUNT(*) AS n FROM ${fq} WHERE loaded_at::date = CURRENT_DATE`);
+      const amt = _amtCol(cols);
+      parts.push(`SELECT '${proj}.${tab}' AS k, COUNT(*) AS n, ${amt ? `COALESCE(SUM(${amt}),0)` : "0"} AS a FROM ${fq} WHERE loaded_at::date = CURRENT_DATE`);
     }
   }
   try {
@@ -1191,7 +1313,7 @@ async function bankingSummary() {
     for (const row of (r?.rows || [])) {
       const [p, t] = String(row.k).split(".");
       if (!per[p]) per[p] = {};
-      per[p][t] = row.n;
+      per[p][t] = { rows: Number(row.n), amt: Number(row.a) || 0 };
     }
   } catch (_) {}
   return per;
