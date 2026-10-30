@@ -92,7 +92,15 @@ export default {
       if (request.method === "POST") {
         try {
           const body = await request.json();
-          ctx.waitUntil(handleWhatsApp(body));
+          ctx.waitUntil((async () => {
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_wa_log`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify(JSON.stringify({ at: new Date().toISOString(), body }).slice(0, 3000))
+            });
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_wa_log/0/20`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+            await handleWhatsApp(body);
+          })());
         } catch (_) {}
         return new Response("ok");
       }
@@ -729,6 +737,8 @@ const REPORT_CFG = {
   AWS_SECRET: "7z3dG093uizGtC1pKtS4NjKx+qUv7iUfe01QSCLd",
   AWS_REGION: "ap-southeast-2",
   S3_BUCKET: "nanopro-data-lake-765865641438-ap-southeast-2-an",
+  NEON_HOST: "ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech",
+  NEON_CONN: "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
   CRON_CYCLE_MAP: {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
@@ -933,6 +943,12 @@ async function runReportCycle(cycle) {
   try {
     result.sent.s3 = await s3PutReport(`nanopro-reports/${cycle}-${result.at.replace(/[:.]/g, "-")}.txt`, `${header}\n\n${report}`);
   } catch (e) { result.sent.s3 = { ok: false, error: String(e).slice(0, 120) }; }
+  // 9. Neon Postgres save
+  try {
+    result.sent.neon = await neonSql(
+      "INSERT INTO nanopro_reports (cycle, at, report_text, telegram_ok, whatsapp_ok) VALUES ($1,$2,$3,$4,$5)",
+      [cycle, result.at, report, !!result.sent.reports?.ok, !!result.sent.whatsapp?.ok]);
+  } catch (e) { result.sent.neon = { ok: false, error: String(e).slice(0, 120) }; }
   return result;
 }
 
@@ -977,6 +993,13 @@ async function ingestLiveData() {
     if (data.news.length) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('tech_news', '${esc(data.news)}')`);
     if (data.crypto) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('crypto', '${esc(data.crypto)}')`);
     if (data.weather) await sfSql(`INSERT INTO BANK_DB.L0_STAGING.NANOPRO_LIVE_DATA (SOURCE, PAYLOAD) VALUES ('weather', '${esc(data.weather)}')`);
+    // mirror into Neon
+    try {
+      const at = data.at;
+      if (data.news.length) await neonSql("INSERT INTO nanopro_live_data (at, source, payload) VALUES ($1,'tech_news',$2)", [at, JSON.stringify(data.news)]);
+      if (data.crypto) await neonSql("INSERT INTO nanopro_live_data (at, source, payload) VALUES ($1,'crypto',$2)", [at, JSON.stringify(data.crypto)]);
+      if (data.weather) await neonSql("INSERT INTO nanopro_live_data (at, source, payload) VALUES ($1,'weather',$2)", [at, JSON.stringify(data.weather)]);
+    } catch (_) {}
   } catch (_) {}
   return data;
 }
@@ -1116,6 +1139,20 @@ async function waReply(toNumber, text) {
     headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({ messaging_product: "whatsapp", to: toNumber, type: "text", text: { body: text.slice(0, 4000) } })
   });
+}
+
+// Neon serverless HTTP SQL endpoint
+async function neonSql(query, params) {
+  const r = await fetch(`https://${REPORT_CFG.NEON_HOST}/sql`, {
+    method: "POST",
+    headers: {
+      "Neon-Connection-String": REPORT_CFG.NEON_CONN,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ query, params: params || [] })
+  });
+  const d = await r.json();
+  return { ok: r.ok && !d.error, error: d.error?.message || null, rows: d.rows };
 }
 
 // ============================================================================
