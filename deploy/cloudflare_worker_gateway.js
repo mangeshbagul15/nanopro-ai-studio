@@ -124,6 +124,14 @@ export default {
       return new Response("ok");
     }
 
+    if (path.startsWith("/api/report/html/")) {
+      const cyc = decodeURIComponent(path.split("/api/report/html/")[1] || "MANUAL").toUpperCase().replace(/[^A-Z0-9]/gi, "_");
+      const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_report_html_${cyc}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+      const html = (await r.json())?.result;
+      if (!html) return new Response("no report yet", { status: 404 });
+      return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
     if (path === "/api/bank/ingest") {
       const cyc = (url.searchParams.get("cycle") || "MANUAL").toUpperCase();
       const mode = url.searchParams.get("mode") || "INCREMENTAL";
@@ -1094,6 +1102,7 @@ async function runReportCycle(cycle) {
     const rec = JSON.stringify({ cycle, at: result.at, health, report });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_latest_report_${cycle.replace(/[^A-Z0-9]/gi, "_")}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
+    await fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_report_html_${cycle.replace(/[^A-Z0-9]/gi, "_")}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: buildReportHtml(cycle, realFacts, stamp, title) });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_report_history`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }, body: rec });
     await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_report_history/0/49`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
     result.saved = true;
@@ -1107,7 +1116,8 @@ async function runReportCycle(cycle) {
   // 6. email copy via Gmail SMTP
   try {
     const sftpPath = `s3://${REPORT_CFG.S3_BUCKET}/nanopro-sftp/${cycle}-latest.txt`;
-    const fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report}\n\n${"—".repeat(46)}\nReport file (AWS S3): ${sftpPath}`;
+    const liveUrl = `https://mangesh-nanopro.mangeshbagul15.workers.dev/api/report/html/${cycle}`;
+    const fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report}\n\n${"—".repeat(46)}\nLive colored report: ${liveUrl}\nReport file (AWS S3): ${sftpPath}`;
     result.sent.email = await sendEmailGmail(
       `${title} | ${stamp}`,
       fullBody,
