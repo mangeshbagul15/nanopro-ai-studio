@@ -71,6 +71,10 @@ export default {
       return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }
 
+    if (path === "/privacy") {
+      return new Response(PRIVACY_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
     // 0c. WhatsApp Cloud API webhook — GET verify + POST incoming
     if (path === "/api/whatsapp/webhook") {
       if (request.method === "GET") {
@@ -1235,3 +1239,18 @@ async function handleWhatsApp(body) {
     await waReply(from, d?.choices?.[0]?.message?.content?.trim() || "NanoPro: request received.");
   } catch (_) {}
 }
+
+const PRIVACY_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>NanoPro — Privacy Policy</title><meta name="viewport" content="width=device-width"></head>
+<body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.6">
+<h1>NanoPro AI Studio — Privacy Policy</h1>
+<p>NanoPro AI Studio ("the app") is a personal automation service operated by Mangesh Bagul.</p>
+<h2>Data we collect</h2>
+<p>When you message our WhatsApp number, we receive your phone number and message text solely to generate an automated reply. We do not collect contacts, location, media, or any other personal data.</p>
+<h2>How we use it</h2>
+<p>Phone number and message text are used only to answer your message via the WhatsApp Business Platform API and to deliver scheduled operational reports you requested. Data is stored in our own databases (Upstash, Snowflake, AWS S3) and is never sold or shared with third parties.</p>
+<h2>Retention & deletion</h2>
+<p>Message logs are retained for operational reporting. Email mangeshbagul15@gmail.com to request deletion of your data at any time.</p>
+<h2>Contact</h2>
+<p>mangeshbagul15@gmail.com</p>
+<p><i>Last updated: October 2026</i></p>
+</body></html>`;
