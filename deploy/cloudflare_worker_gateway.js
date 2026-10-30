@@ -124,6 +124,15 @@ export default {
       return new Response("ok");
     }
 
+    if (path === "/api/manager/status") {
+      const mh = { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` };
+      const st = { at: new Date().toISOString(), manager: "active", subsystems: {} };
+      try { const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: mh })).json(); const lr = JSON.parse(r?.result || "null"); st.subsystems.reports = { last_at: lr?.at || null, cycle: lr?.cycle || null, age_h: lr?.at ? Math.round((Date.now() - new Date(lr.at).getTime()) / 360000) / 10 : null }; } catch (_) {}
+      try { const r = await (await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_live_data`, { headers: mh })).json(); const ld = JSON.parse(r?.result || "null"); st.subsystems.live_data = { last_at: ld?.at || null }; } catch (_) {}
+      try { const r = await neonSql("SELECT COUNT(*) AS n FROM nanopro_reports", []); st.subsystems.neon_reports = r?.rows?.[0]?.n ?? null; } catch (_) { st.subsystems.neon_reports = "err"; }
+      return new Response(JSON.stringify(st, null, 2), { headers: { "Content-Type": "application/json" } });
+    }
+
     if (path.startsWith("/api/report/html/")) {
       const cyc = decodeURIComponent(path.split("/api/report/html/")[1] || "MANUAL").toUpperCase().replace(/[^A-Z0-9]/gi, "_");
       const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_report_html_${cyc}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
@@ -1091,7 +1100,8 @@ async function runReportCycle(cycle) {
   const title = `NanoPro AI Studio — ${cycle} (${CYCLE_FULL[cycle] || cycle}) Report`;
   const header = `\u{1F4CA} ${title}\n\u{1F4C5} ${stamp}`;
   // 3. deliver: full report to reports bot; short pings to others
-  result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, `<b>${_escHtml(header.split("\n")[0])}</b>\n${_escHtml(header.split("\n")[1]||"")}\n<pre>${_escHtml(report)}</pre>`, true);
+  const tgMsg = `<b>${_escHtml(header.split("\n")[0])}</b>\n${_escHtml(header.split("\n")[1]||"")}\n<pre>${_escHtml(report)}</pre>`;
+  result.sent.reports = await sendTelegram(REPORT_CFG.BOTS.reports, tgMsg, true);
   result.sent.health = await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F493} NanoPro Health — ${cycle}: alwaysdata=${health.alwaysdata} pythonanywhere=${health.pythonanywhere} edge=live`);
   if (cycle === "BOD" || cycle === "SOD" || cycle === "EOD") {
     result.sent.news = await sendNewsDigest(liveData, header);
@@ -1114,10 +1124,11 @@ async function runReportCycle(cycle) {
     result.sent.snowflake = await sfSql(`INSERT INTO ${REPORT_CFG.SNOWFLAKE.FQ_TABLE} (CYCLE, REPORT_TEXT, TELEGRAM_OK) VALUES ('${cycle}', '${esc.slice(0, 8000)}', ${tgOk})`);
   } catch (e) { result.sent.snowflake = { ok: false, error: String(e).slice(0, 160) }; }
   // 6. email copy via Gmail SMTP
+  let fullBody = "", waMsg = "";
   try {
     const sftpPath = `s3://${REPORT_CFG.S3_BUCKET}/nanopro-sftp/${cycle}-latest.txt`;
     const liveUrl = `https://mangesh-nanopro.mangeshbagul15.workers.dev/api/report/html/${cycle}`;
-    const fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report}\n\n${"—".repeat(46)}\nLive colored report: ${liveUrl}\nReport file (AWS S3): ${sftpPath}`;
+    fullBody = `${title}\n${stamp}\n${"—".repeat(46)}\n\n${report}\n\n${"—".repeat(46)}\nLive colored report: ${liveUrl}\nReport file (AWS S3): ${sftpPath}`;
     result.sent.email = await sendEmailGmail(
       `${title} | ${stamp}`,
       fullBody,
@@ -1126,7 +1137,8 @@ async function runReportCycle(cycle) {
   } catch (e) { result.sent.email = { ok: false, error: String(e).slice(0, 160) }; }
   // 7. WhatsApp copy (when configured)
   try {
-    const wa = await waSend(`*${title}*\n${stamp}\n` + "``\u0060" + `\n${report}\n` + "``\u0060");
+    waMsg = `*${title}*\n${stamp}\n` + "``\u0060" + `\n${report}\n` + "``\u0060";
+    const wa = await waSend(waMsg);
     if (wa.ok || wa.error !== "wa_not_configured") result.sent.whatsapp = wa;
   } catch (e) { result.sent.whatsapp = { ok: false, error: String(e).slice(0, 120) }; }
   // 8. S3 archive (nanopro data lake)
@@ -1140,6 +1152,12 @@ async function runReportCycle(cycle) {
       "INSERT INTO nanopro_reports (cycle, at, report_text, telegram_ok, whatsapp_ok) VALUES ($1,$2,$3,$4,$5)",
       [cycle, result.at, report, !!result.sent.reports?.ok, !!result.sent.whatsapp?.ok]);
   } catch (e) { result.sent.neon = { ok: false, error: String(e).slice(0, 120) }; }
+  // queue failed channel sends for manager retry (self-healing)
+  try {
+    if (result.sent.reports && !result.sent.reports.ok) await queueRetry("telegram", { text: tgMsg });
+    if (result.sent.email && !result.sent.email.ok) await queueRetry("email", { subject: `${title} | ${stamp}`, text: fullBody, attachmentName: `${cycle}-report-${result.at.slice(0,10)}.txt`, attachmentText: fullBody, htmlBody: buildReportHtml(cycle, realFacts, stamp, title) });
+    if (result.sent.whatsapp && !result.sent.whatsapp.ok) await queueRetry("whatsapp", { text: waMsg });
+  } catch (_) {}
   // END marker — cycle audit trail complete
   try { await neonSql("INSERT INTO nanopro_cycle_log (cycle, phase, load_mode) VALUES ($1,'END',$2)", [cycle, loadMode]); } catch (_) {}
   return result;
@@ -1405,6 +1423,47 @@ async function ingestLiveData() {
 // ============================================================================
 // HEALTH MONITOR — every 30 min, alerts health bot on failures + logs to Snowflake
 // ============================================================================
+// ============================================================================
+// NANOPRO MANAGER — self-healing ops layer: retry queue, stale-data auto-heal,
+// missed-report auto-recovery, AI diagnosis. No manual intervention needed.
+// ============================================================================
+async function _upstash(cmd) {
+  try { const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/${cmd}`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } }); return await r.json(); }
+  catch (_) { return {}; }
+}
+async function queueRetry(kind, payload) {
+  try { await _upstash(`lpush/nanopro_retry_queue/${encodeURIComponent(JSON.stringify({ kind, payload, at: new Date().toISOString() }))}`); } catch (_) {}
+}
+async function drainRetryQueue() {
+  const done = { retried: 0, recovered: [] };
+  for (let i = 0; i < 5; i++) {
+    try {
+      const r = await _upstash("rpop/nanopro_retry_queue");
+      if (!r?.result) break;
+      const job = JSON.parse(r.result);
+      let ok = false;
+      if (job.kind === "telegram") ok = (await sendTelegram(REPORT_CFG.BOTS.reports, job.payload.text, true)).ok;
+      else if (job.kind === "email") ok = (await sendEmailGmail(job.payload.subject, job.payload.text, job.payload.attachmentName, job.payload.attachmentText, job.payload.htmlBody)).ok;
+      else if (job.kind === "whatsapp") ok = (await waSend(job.payload.text)).ok;
+      if (ok) { done.retried++; done.recovered.push(job.kind); }
+      else await queueRetry(job.kind, job.payload);
+    } catch (_) { break; }
+  }
+  return done;
+}
+async function managerDiagnose(facts) {
+  try {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.3, max_tokens: 300,
+        messages: [{ role: "user", content: `You are the NanoPro Manager agent. Given these ops facts, write a 2-line diagnosis + corrective action taken. Facts: ${facts}` }] })
+    });
+    const d = await r.json();
+    return d?.choices?.[0]?.message?.content?.trim() || null;
+  } catch (_) { return null; }
+}
+
 async function runHealthMonitor() {
   const res = { at: new Date().toISOString(), checks: {}, alerts: [] };
   const targets = {
@@ -1437,6 +1496,29 @@ async function runHealthMonitor() {
       res.alerts.push("report_watchdog");
     }
   } catch (_) {}
+  // SELF-HEAL 1: missed report → auto-run a MANUAL recovery cycle (once)
+  if (res.alerts.includes("report_watchdog")) {
+    try { await runReportCycle("MANUAL"); res.alerts.push("auto_recovered_report"); } catch (_) {}
+  }
+  // SELF-HEAL 2: live data stale (>3h) → re-ingest now
+  try {
+    const ld = await _upstash("get/nanopro_live_data");
+    const lastAt = JSON.parse(ld?.result || "null")?.at;
+    if (!lastAt || (Date.now() - new Date(lastAt).getTime()) > 3 * 3600 * 1000) {
+      await ingestLiveData();
+      res.alerts.push("auto_reingested_live_data");
+    }
+  } catch (_) {}
+  // SELF-HEAL 3: drain retry queue (failed telegram/email/whatsapp sends)
+  try {
+    const dr = await drainRetryQueue();
+    if (dr.retried) res.alerts.push(`retried_${dr.recovered.join("+")}`);
+  } catch (_) {}
+  // AI manager diagnosis when anything was wrong
+  if (res.alerts.length) {
+    const diag = await managerDiagnose(JSON.stringify({ checks: res.checks, alerts: res.alerts }));
+    if (diag) await sendTelegram(REPORT_CFG.BOTS.health, `\u{1F916} NanoPro Manager\n${diag}\n${res.at}`);
+  }
   // log each check to Snowflake NANOPRO_HEALTH_LOG
   try {
     for (const [n, v] of Object.entries(res.checks)) {
