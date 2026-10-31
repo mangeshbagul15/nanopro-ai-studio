@@ -940,8 +940,8 @@ class DatabaseManager:
             f"• Reason: {reason}\n"
             f"• Approval ID: {approval_id}\n\n"
             f"👉 1-Click Decisions:\n"
-            f"✅ Approve: https://mangesh-nanopro-studio.onrender.com/api/approvals/quick_decide?id={approval_id}&decision=approved\n\n"
-            f"🛑 Reject: https://mangesh-nanopro-studio.onrender.com/api/approvals/quick_decide?id={approval_id}&decision=rejected"
+            f"✅ Approve: https://mangesh-nanopro.mangeshbagul15.workers.dev/api/approvals/quick_decide?id={approval_id}&decision=approved\n\n"
+            f"🛑 Reject: https://mangesh-nanopro.mangeshbagul15.workers.dev/api/approvals/quick_decide?id={approval_id}&decision=rejected"
         )
         # 1. Dispatch to Meta WhatsApp Business Cloud API
         try:

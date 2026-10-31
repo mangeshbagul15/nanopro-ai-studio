@@ -6411,24 +6411,14 @@ def _get_raw_dashboard_html() -> str:
 
 
 
-            <!-- Right Group: Clean Interactive Live Login / Logout / Signup Controls -->
+            <!-- Right Group: Dynamically rendered by updateHeaderUserProfile() based on session state -->
 
             <div class="header-right-group" id="headerAuthActionContainer" style="display:flex; align-items:center; gap:10px;">
 
-                <button type="button" onclick="openAuthGatewayModal('login', true)" style="background:rgba(56,189,248,0.12); border:1px solid #38BDF8; color:#38BDF8; padding:6px 16px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Sign in to your account">
-
-                    🔐 Login
-
-                </button>
-
-                <button type="button" onclick="openAuthGatewayModal('register', true)" style="background:linear-gradient(135deg, #0284C7, #06B6D4); border:none; color:#FFFFFF; padding:6px 16px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 10px rgba(6,182,212,0.3); transition:all 0.2s;" title="Create free account">
-
-                    📝 Sign Up
-
-                </button>
+                <!-- Skeleton placeholder before JS auth check fires -->
+                <div id="headerAuthSkeleton" style="width:120px; height:30px; background:rgba(56,189,248,0.07); border-radius:20px; border:1px solid rgba(56,189,248,0.15);"></div>
 
             </div>
-
 
 
             <!-- Hidden Container for Legacy DOM IDs (Ensures Zero JS Breakage) -->
@@ -23977,6 +23967,11 @@ Ready for message compilation and automated dispatch.
         function switchView(viewName, skipHistoryPush = false) {
 
             if (!viewName) return;
+            if (typeof window.checkViewAllowed === 'function') {
+                if (!window.checkViewAllowed(viewName, true)) {
+                    return;
+                }
+            }
 
             try {
 

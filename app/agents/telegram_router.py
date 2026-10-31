@@ -169,7 +169,19 @@ def route_telegram_command(assistant, user_id: str, text: str) -> Dict[str, Any]
         res_b = backup_manager.create_system_backup()
         return {"status": "success", "reply": f"📦 <b>System Backup Completed:</b>\n• Archive: <code>{res_b.get('filename', 'backup.tar.gz')}</code>\n• Size: {res_b.get('size_bytes', 0):,} bytes\n• Validated in Backup Ledger: ✅"}
 
-    # Natural language query fallback: Route to AI Manager
+    # Natural language query fallback: Route to Ultra Pro AI Manager (Full Real-Time Grounding)
+    try:
+        from app.core.ultra_pro_ai_manager import ultra_pro_ai_manager
+        up_resp = ultra_pro_ai_manager.chat_ultra_pro(cmd_raw, session_id=f"tg_{user_id}")
+        ai_text = up_resp.get("reply") or up_resp.get("text")
+        if ai_text:
+            return {
+                "status": "success",
+                "reply": assistant._clean_telegram_text(ai_text)
+            }
+    except Exception:
+        pass
+
     from app.agents.manager_agent import manager_agent
     mgr_resp = manager_agent.chat_interact(cmd_raw, session_id=f"tg_{user_id}")
     return {

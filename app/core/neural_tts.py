@@ -182,101 +182,61 @@ class NeuralTTSEngine:
             "mr_male": "mr-IN-ManoharNeural"   # 🇮🇳 Manohar Neural (Male Teacher)
         }
 
-    def _format_natural_teacher_ssml(self, text: str, voice: str, locale: str = "hi-IN") -> str:
-        """
-        Formats text into valid SSML with natural human breathing breaks and patient teacher prosody.
-        - Rate: -2% (calm, warm, articulate human teacher pace)
-        - Pauses:
-          * 450ms between scenes/paragraphs
-          * 350ms after rhetorical/teaching questions to let the concept sink in
-          * 280ms after explanation colons
-          * 220ms after full stops
-        """
-        import html
-        clean = html.escape(text.strip())
-        clean = re.sub(r'(\r?\n){2,}', '<break time="450ms"/>\n', clean)
-        clean = re.sub(r'(\r?\n)', ' <break time="250ms"/> ', clean)
-        clean = re.sub(r'\?\s*', '? <break time="350ms"/> ', clean)
-        clean = re.sub(r':\s*', ': <break time="280ms"/> ', clean)
-        clean = re.sub(r'!\s*', '! <break time="250ms"/> ', clean)
-        clean = re.sub(r'\.\s+', '. <break time="220ms"/> ', clean)
-        clean = re.sub(r'\|\s*', '<break time="220ms"/> ', clean)
-
-        return (
-            f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='{locale}'>\n"
-            f"  <voice name='{voice}'>\n"
-            f"    <prosody rate='-2%' pitch='+0Hz'>\n"
-            f"      {clean}\n"
-            f"    </prosody>\n"
-            f"  </voice>\n"
-            f"</speak>"
-        )
-
     def _prepare_conversational_text(self, text: str, for_eleven_v4: bool = False) -> str:
         """
-        Enhances text with natural conversational pauses and crystal-clear technical pronunciation:
-        - Persona: Indian Tech Educator & Mentor
-        - Language: Natural Hindi / Marathi + English technical words
-        - Pauses: Natural breath after questions (, ... ) and key explanations
-        - Pronunciation: Crystal-clear AWS, DMS, CDC, SQL, Python, Snowflake terms
+        Enhances text with pure natural conversational pauses and crystal-clear technical pronunciation:
+        - STRICTLY ZERO XML / ZERO SSML TAGS (Edge-TTS speaks plain text; XML tags get read aloud!)
+        - Persona: Natural Indian Tech Educator & Mentor (Swara / Aarohi)
+        - Natural breathing pauses created using pure punctuation (commas, question marks, periods, newlines)
         """
         if not text:
             return ""
         t = text.strip()
 
-        # Natural conversational commas around key explanatory discourse markers:
-        t = re.sub(r'\b(yaani|yani|matlab)\b', ', yaani,', t, flags=re.IGNORECASE)
-        t = re.sub(r'\b(dekhiye|dhyan se suniye)\b', ', dekhiye,', t, flags=re.IGNORECASE)
-        t = re.sub(r'\b(chaliye|sabse pehle)\b', 'chaliye,', t, flags=re.IGNORECASE)
+        # 1. Strictly strip ANY XML/HTML/SSML tags so Edge-TTS never speaks "speak", "break", "http", etc.
+        t = re.sub(r'<[^>]+>', ' ', t)
+        t = re.sub(r'&(?:amp|lt|gt|quot|apos);', ' ', t)
+
+        # 2. Natural conversational commas around key explanatory discourse markers:
+        t = re.sub(r'\b(yaani|yani)\b', ', yaani,', t, flags=re.IGNORECASE)
+        t = re.sub(r'\b(matlab)\b', ', matlab,', t, flags=re.IGNORECASE)
+        t = re.sub(r'\b(dekhiye)\b', ', dekhiye,', t, flags=re.IGNORECASE)
+        t = re.sub(r'\b(chaliye)\b', 'chaliye,', t, flags=re.IGNORECASE)
         t = re.sub(r'\b(म्हणजेच|म्हणजे)\b', ', म्हणजेच,', t)
         t = re.sub(r'\b(बघा|लक्ष द्या)\b', ', बघा,', t)
         t = re.sub(r'\b(चला|सर्वप्रथम)\b', 'चला,', t)
 
-        # Natural pauses:
-        t = re.sub(r'\?\s*', '? , ', t)
-        t = re.sub(r':\s*', ': , ', t)
+        # 3. Clean human teacher punctuation pauses (Edge-TTS pauses naturally on punctuation):
+        t = re.sub(r'\?\s*', '? ', t)
+        t = re.sub(r':\s*', ', ', t)
         t = re.sub(r'!\s*', '! ', t)
         t = re.sub(r'\.\s+', '. ', t)
+        t = re.sub(r',\s*,+', ', ', t)
         t = re.sub(r'\s{2,}', ' ', t)
 
         if not for_eleven_v4:
             t = re.sub(r'\[(curious|confident|enthusiastic|whispering|thoughtful)\]\s*', '', t, flags=re.IGNORECASE)
 
-        return t
+        return t.strip()
 
     async def _synthesize_edge_tts(self, text: str, voice: str, output_path: Path):
-        """Synthesizes speech via Microsoft Edge Neural TTS with natural SSML and short retries."""
+        """Synthesizes speech via Microsoft Edge Neural TTS with 100% clean plain text (ZERO SSML/XML tags)."""
         import asyncio
         import edge_tts
 
-        locale = "hi-IN"
-        if "mr-" in voice or "mr_IN" in voice:
-            locale = "mr-IN"
-        elif "en-" in voice or "en_IN" in voice:
-            locale = "en-IN"
-
+        formatted = self._prepare_conversational_text(text, for_eleven_v4=False)
         last_error = None
         for attempt in range(3):
             try:
-                # Attempt 1: Rich SSML with natural human breathing breaks & educator prosody
-                ssml = self._format_natural_teacher_ssml(text, voice, locale)
-                communicate = edge_tts.Communicate(ssml, voice=voice)
+                # Pure human conversational speech at calm educator rate (-2%)
+                communicate = edge_tts.Communicate(formatted, voice=voice, rate="-2%", pitch="+0Hz")
                 await asyncio.wait_for(communicate.save(str(output_path)), timeout=60)
                 if output_path.exists() and output_path.stat().st_size > 1000:
                     return
-            except Exception as ssml_exc:
-                log_event(f"SSML synthesis notice: {ssml_exc}. Falling back to conversational prosody text.", level="DEBUG", component="NeuralTTS")
-                try:
-                    # Fallback: Natural conversational text at calm teacher rate (-2%)
-                    formatted = self._prepare_conversational_text(text, for_eleven_v4=False)
-                    communicate = edge_tts.Communicate(formatted, voice=voice, rate="-2%", pitch="+0Hz")
-                    await asyncio.wait_for(communicate.save(str(output_path)), timeout=60)
-                    if output_path.exists() and output_path.stat().st_size > 1000:
-                        return
-                    last_error = RuntimeError("Edge Neural TTS returned an empty audio file.")
-                except Exception as exc:
-                    last_error = exc
-                    log_event(f"Edge Neural TTS attempt {attempt + 1}/3 failed: {exc}", level="WARNING", component="NeuralTTS")
+                last_error = RuntimeError("Edge Neural TTS returned an empty audio file.")
+            except Exception as exc:
+                last_error = exc
+                log_event(f"Edge Neural TTS attempt {attempt + 1}/3 failed: {exc}", level="WARNING", component="NeuralTTS")
 
             if attempt < 2:
                 await asyncio.sleep(1.2 * (attempt + 1))

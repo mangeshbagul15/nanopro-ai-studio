@@ -352,15 +352,16 @@ class WhatsAppWebhookHandler:
         # -------------------------------------------------------------
         if any(w in q_lower for w in ["सिस्टीम", "सर्व्हर", "health", "status", "server", "चालू आहे का", "कशी आहे"]):
             return (
-                f"🛡️ *NanoPro AI Studio सिस्टीम स्टेटस*\n\n"
-                f"• *क्लाऊड सर्व्हर:* Render Cloud (24/7 LIVE) 🟢\n"
-                f"• *सर्व्हिस URL:* https://mangesh-nanopro-studio.onrender.com\n"
-                f"• *Snowflake Connection:* 🟢 कनेक्टेड (Active)\n"
-                f"• *Oracle XE Database:* 🟢 कनेक्टेड\n"
-                f"• *Telegram Bots:* ४ बॉट्स ऍक्टिव्ह (@mangesh_technews_bot, health, career, reports)\n"
-                f"• *WhatsApp Cloud API:* ०% वॉटरमार्क ऍक्टिव्ह (1,000 Free msgs/mo)\n"
-                f"• *Discovery Schedules:* ७ शेड्युल्स कार्यरत\n\n"
-                f"सिस्टीम उत्तम कार्य करत आहे!"
+                f"🛡️ *NanoPro AI Studio सिस्टीम स्टेटस (2026 Live)*\n\n"
+                f"• *मास्टर क्लाउड गेटवे:* https://mangesh-nanopro.mangeshbagul15.workers.dev 🟢 (Active)\n"
+                f"• *क्लाउड फॉलबॅक नोड:* Alwaysdata 24/7 Sentinel (Site 1092968) 🟢\n"
+                f"• *क्लस्टर टोपोलॉजी:* १० सर्व्हर नोड्स (Local NVMe, Alwaysdata, PythonAnywhere, Cloudflare Edge, इ.)\n"
+                f"• *डेटाबेस इंजिन्स:* २१ डेटाबेसेस (Snowflake, Oracle XE, DuckDB, Postgres, BigQuery)\n"
+                f"• *गोल्ड लेकहाउस:* ४९ Gold Marts (DuckDB + AWS S3 Iceberg)\n"
+                f"• *स्वायत्त एजंट्स:* सर्व ३०५ स्पेशलाइज्ड एजंट्स (१९ ग्रूप्स A-S) कार्यरत 🟢\n"
+                f"• *Telegram Bots:* ५ बॉट्स ऍक्टिव्ह (@mangesh_health_monitor_bot, technews, career, reports)\n"
+                f"• *WhatsApp Cloud API:* ०% वॉटरमार्क ऍक्टिव्ह (1,000 Free msgs/mo)\n\n"
+                f"सिस्टीम १००% सुरळीत व हाय-अव्हेलेबिलिटी मोडमध्ये सुरू आहे!"
             )
 
         # -------------------------------------------------------------
@@ -378,8 +379,17 @@ class WhatsAppWebhookHandler:
                     return f"कृपया अप्रूव्हल आयडी सोबत द्या. उदा. 'Approve appr_123'"
 
         # -------------------------------------------------------------
-        # DOMAIN 5: Universal Multi-Model AI Reasoning (Marathi/English)
+        # DOMAIN 5: Universal Multi-Model AI Reasoning (Ultra Pro Grounded Brain)
         # -------------------------------------------------------------
+        try:
+            from app.core.ultra_pro_ai_manager import ultra_pro_ai_manager
+            res = ultra_pro_ai_manager.chat_ultra_pro(query, session_id=f"wa_{user_name}")
+            ai_reply = res.get("reply") or res.get("text")
+            if ai_reply:
+                return ai_reply.strip()
+        except Exception as e_up:
+            log_event(f"UltraProAIManager routing error in WhatsApp AI: {e_up}", level="WARNING", component="WhatsAppWebhook")
+
         prompt = f"""You are Mangesh's high-intelligence 24/7 personal assistant on WhatsApp for NanoPro AI Studio.
 The user sent this message on WhatsApp: "{query}"
 
@@ -400,8 +410,8 @@ Instructions:
             log_event(f"ModelManager routing error in WhatsApp AI: {e}", level="WARNING", component="WhatsAppWebhook")
             return (
                 f"नमस्ते {user_name}! तुमचा प्रश्न मिळाला: '{query}'.\n\n"
-                f"नॅनोप्रो AI स्टुडिओ सध्या पूर्ण क्षमतेने कार्यरत आहे. अधिक माहितीसाठी तुम्ही डॅशबोर्डवर पाहू शकता:\n"
-                f"https://mangesh-nanopro-studio.onrender.com"
+                f"नॅनोप्रो AI स्टुडिओ सध्या पूर्ण क्षमतेने कार्यरत आहे. अधिक माहितीसाठी तुम्ही गेटवे डॅशबोर्ड पाहू शकता:\n"
+                f"https://mangesh-nanopro.mangeshbagul15.workers.dev"
             )
 
     def simulate_incoming_message(

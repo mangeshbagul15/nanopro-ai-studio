@@ -362,7 +362,7 @@ def test_all_specialized_bots(chat_id: Optional[str] = None) -> Dict[str, Any]:
     results = {}
     
     test_cases = [
-        ("health", "🏥 [Health Monitor Bot] Snowflake, 3x Oracle XE, and Render Cloud health is NOMINAL. Latency: 2ms."),
+        ("health", "🏥 [Health Monitor Bot] Snowflake, 3x Oracle XE, DuckDB Lakehouse, and Cloudflare Gateway health is NOMINAL. Latency: 2ms."),
         ("career", "💼 [Career & Study Bot] 4-Hour Job Radar active. 18 new Data Engineer openings discovered across Pune & Mumbai."),
         ("reports", "📊 [Executive Reports Bot] Snowflake BankDB Daily Financial Ledger generated. 142,500 transactions verified."),
         ("news", "📰 [Tech News Bot] Daily AI Discovery Digest: Meta Llama, Groq LPU, and Snowflake Polaris trends.")
