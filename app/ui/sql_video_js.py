@@ -12460,6 +12460,1050 @@ SECOND_HIGHEST_SALARY: 70000`;
     // DYNAMIC TECH ARCHITECTURE & MOTION GRAPHICS SCENE DISPATCHER
     // (2026 VIRAL KINETIC TECH REEL ENGINE - 100% BALANCED CANVAS)
     // =========================================================================
+    
+    // =========================================================================
+    // 2D CARTOON CHARACTER MASCOTS & KINETIC AUDIO-DRIVEN ANIMATION ENGINE
+    // =========================================================================
+
+    // 1. Cute 2D Database Mascot (Blinking eyes, smile, tapping feet, server LEDs)
+    function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "Oracle DB", sub = "Source Data") {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // Bouncy walk / idle tap
+        const tapY = Math.sin(t * 6) * 4;
+        const tilt = Math.sin(t * 3) * 0.04;
+        ctx.rotate(tilt);
+
+        // Little rounded feet
+        ctx.fillStyle = "#1E293B";
+        ctx.beginPath();
+        ctx.ellipse(-26, 68 + tapY * 0.5, 14, 8, 0, 0, Math.PI * 2);
+        ctx.ellipse(26, 68 - tapY * 0.5, 14, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // 3-Tier Cylinder Server Tower Body
+        const rX = 54;
+        const rY = 18;
+        const towerH = 100;
+
+        // Base Cylinder Gradient
+        const bodyGrad = ctx.createLinearGradient(-rX, 0, rX, 0);
+        bodyGrad.addColorStop(0, "#1E3A8A");
+        bodyGrad.addColorStop(0.3, "#2563EB");
+        bodyGrad.addColorStop(0.7, "#3B82F6");
+        bodyGrad.addColorStop(1, "#1D4ED8");
+
+        // Main Cylinder Body
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.roundRect(-rX, -40, rX * 2, towerH, 18);
+        ctx.fill();
+        ctx.strokeStyle = "#60A5FA";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#3B82F6";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Server Segment Lines
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-rX + 8, -6);
+        ctx.lineTo(rX - 8, -6);
+        ctx.moveTo(-rX + 8, 28);
+        ctx.lineTo(rX - 8, 28);
+        ctx.stroke();
+
+        // Blinking Server Activity LEDs
+        const ledColors = [
+            (Math.sin(t * 8) > 0 ? "#10B981" : "#047857"),
+            (Math.sin(t * 10 + 1) > 0 ? "#38BDF8" : "#0284C7"),
+            (Math.sin(t * 7 + 2) > 0 ? "#F59E0B" : "#B45309")
+        ];
+        ledColors.forEach((c, i) => {
+            ctx.fillStyle = c;
+            ctx.shadowColor = c;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(-34 + i * 14, -22, 3.5, 0, Math.PI * 2);
+            ctx.arc(-34 + i * 14, 12, 3.5, 0, Math.PI * 2);
+            ctx.arc(-34 + i * 14, 46, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.shadowBlur = 0;
+
+        // Top Cylinder Cap
+        ctx.save();
+        ctx.translate(0, -40);
+        ctx.scale(1.0, 0.36);
+        const topGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, rX);
+        topGrad.addColorStop(0, "#93C5FD");
+        topGrad.addColorStop(0.8, "#2563EB");
+        ctx.fillStyle = topGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, rX, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#93C5FD";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+
+        // Top Data Emitter Ring (Shoots energy rings)
+        const pulseR = 12 + (Math.sin(t * 5) * 4);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.7)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, -48, pulseR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Cute Face (Center tier)
+        const eyeY = 8;
+        const blink = Math.sin(t * 3.5) > 0.96 ? 0.15 : 1.0;
+
+        // Rosy Cheeks
+        ctx.fillStyle = "rgba(244, 114, 182, 0.5)";
+        ctx.beginPath();
+        ctx.arc(-26, eyeY + 10, 7, 0, Math.PI * 2);
+        ctx.arc(26, eyeY + 10, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Big Anime Eyes
+        ctx.save();
+        ctx.translate(0, eyeY);
+        ctx.scale(1.0, blink);
+        ctx.fillStyle = "#0F172A";
+        ctx.beginPath();
+        ctx.ellipse(-16, 0, 7, 9, 0, 0, Math.PI * 2);
+        ctx.ellipse(16, 0, 7, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sparkle Highlights in Eyes
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(-18, -3, 3, 0, Math.PI * 2);
+        ctx.arc(-14, 3, 1.5, 0, Math.PI * 2);
+        ctx.arc(14, -3, 3, 0, Math.PI * 2);
+        ctx.arc(18, 3, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Mouth (Happy smile or worried zigzag)
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        if (emotion === "worried" || emotion === "sad") {
+            ctx.moveTo(-10, eyeY + 14);
+            ctx.lineTo(-4, eyeY + 18);
+            ctx.lineTo(2, eyeY + 14);
+            ctx.lineTo(8, eyeY + 18);
+            ctx.lineTo(12, eyeY + 15);
+            // Sweat drop
+            ctx.fillStyle = "#38BDF8";
+            ctx.beginPath();
+            ctx.arc(38, -12 + Math.sin(t * 4) * 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.arc(0, eyeY + 8, 8, 0.2, Math.PI - 0.2, false);
+        }
+        ctx.stroke();
+
+        // Name Badge Pill
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-70, 78, 140, 26, 13);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🗄️ " + label, 0, 95);
+
+        ctx.restore();
+    }
+
+    // 2. Cute 2D AWS DMS Robot (Purple cube body, spinning antenna, scanner beam, CDC badge)
+    function draw2DDmsRobot(ctx, x, y, scale, t, active = true, label = "AWS DMS") {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const hoverY = Math.sin(t * 3.5) * 6;
+        ctx.translate(0, hoverY);
+
+        // Scanner Beam projecting downwards if active
+        if (active) {
+            ctx.save();
+            const beamGrad = ctx.createLinearGradient(0, 40, 0, 130);
+            beamGrad.addColorStop(0, "rgba(168, 85, 247, 0.65)");
+            beamGrad.addColorStop(0.8, "rgba(56, 189, 248, 0.25)");
+            beamGrad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+            ctx.fillStyle = beamGrad;
+            ctx.beginPath();
+            ctx.moveTo(-20, 40);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(70, 130);
+            ctx.lineTo(-70, 130);
+            ctx.closePath();
+            ctx.fill();
+
+            // Holographic scan grid lines
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
+            ctx.lineWidth = 1.5;
+            const scanLineY = 50 + ((t * 40) % 70);
+            ctx.beginPath();
+            ctx.moveTo(-35, scanLineY);
+            ctx.lineTo(35, scanLineY);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Antenna on Top with Spinning Radar Beacon
+        ctx.strokeStyle = "#C084FC";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, -42);
+        ctx.lineTo(0, -68);
+        ctx.stroke();
+
+        // Radar Dish
+        ctx.save();
+        ctx.translate(0, -68);
+        ctx.rotate(t * 4);
+        ctx.fillStyle = "#A855F7";
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Radar pulse wave
+        ctx.strokeStyle = "rgba(192, 132, 252, 0.6)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 16 + (Math.sin(t * 6) * 4), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Little Ear Bolts
+        ctx.fillStyle = "#7C3AED";
+        ctx.beginPath();
+        ctx.roundRect(-52, -18, 10, 24, 4);
+        ctx.roundRect(42, -18, 10, 24, 4);
+        ctx.fill();
+
+        // Rounded Cube Robot Body
+        const botGrad = ctx.createLinearGradient(-42, -42, 42, 42);
+        botGrad.addColorStop(0, "#6D28D9");
+        botGrad.addColorStop(0.5, "#7C3AED");
+        botGrad.addColorStop(1, "#9333EA");
+        ctx.fillStyle = botGrad;
+        ctx.beginPath();
+        ctx.roundRect(-44, -42, 88, 84, 18);
+        ctx.fill();
+        ctx.strokeStyle = "#C084FC";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#A855F7";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Digital Visor Screen
+        ctx.fillStyle = "#0F172A";
+        ctx.beginPath();
+        ctx.roundRect(-34, -30, 68, 32, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Glowing Cyan Eyes in Visor
+        ctx.fillStyle = "#38BDF8";
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 8;
+        const botBlink = Math.sin(t * 3.8) > 0.94 ? 0.2 : 1.0;
+        ctx.save();
+        ctx.translate(0, -14);
+        ctx.scale(1.0, botBlink);
+        ctx.beginPath();
+        ctx.roundRect(-22, -6, 14, 12, 3);
+        ctx.roundRect(8, -6, 14, 12, 3);
+        ctx.fill();
+        ctx.restore();
+        ctx.shadowBlur = 0;
+
+        // Chest CDC Badge
+        ctx.fillStyle = "rgba(10, 18, 38, 0.9)";
+        ctx.beginPath();
+        ctx.roundRect(-30, 8, 60, 24, 8);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("⚡ CDC", 0, 24);
+
+        // Name Badge Pill
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-65, 54, 130, 26, 13);
+        ctx.fill();
+        ctx.strokeStyle = "#A855F7";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🤖 " + label, 0, 71);
+
+        ctx.restore();
+    }
+
+    // 3. Cute 2D Amazon S3 Bucket (Emerald green, swinging handle, cute smile, catching data files)
+    function draw2DS3Bucket(ctx, x, y, scale, t, label = "Amazon S3") {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const bob = Math.sin(t * 3) * 4;
+        ctx.translate(0, bob);
+
+        // Swinging Metallic Handle
+        const handleTilt = Math.sin(t * 2.8) * 0.12;
+        ctx.save();
+        ctx.rotate(handleTilt);
+        ctx.strokeStyle = "#94A3B8";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, -32, 44, Math.PI * 0.9, Math.PI * 2.1, false);
+        ctx.stroke();
+        ctx.restore();
+
+        // Bucket Body Gradient (Rich Emerald Green)
+        const bGrad = ctx.createLinearGradient(-44, -30, 44, 30);
+        bGrad.addColorStop(0, "#047857");
+        bGrad.addColorStop(0.4, "#059669");
+        bGrad.addColorStop(0.8, "#10B981");
+        bGrad.addColorStop(1, "#047857");
+
+        // Bucket trapezoid / rounded body
+        ctx.fillStyle = bGrad;
+        ctx.beginPath();
+        ctx.roundRect(-44, -28, 88, 76, 16);
+        ctx.fill();
+        ctx.strokeStyle = "#34D399";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#10B981";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Top Bucket Rim
+        ctx.save();
+        ctx.translate(0, -28);
+        ctx.scale(1.0, 0.36);
+        const rimGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 44);
+        rimGrad.addColorStop(0, "#A7F3D0");
+        rimGrad.addColorStop(0.8, "#059669");
+        ctx.fillStyle = rimGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 44, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#A7F3D0";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+
+        // Falling Parquet Data File landing inside
+        const fileY = -56 + ((t * 30) % 28);
+        ctx.save();
+        ctx.translate(14, fileY);
+        ctx.rotate(0.15);
+        ctx.fillStyle = "#F8FAFC";
+        ctx.beginPath();
+        ctx.roundRect(-10, -12, 20, 24, 3);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(".prq", 0, 3);
+        ctx.restore();
+
+        // Cute Face on Bucket
+        const eyeY = 8;
+        const blink = Math.sin(t * 4) > 0.95 ? 0.2 : 1.0;
+
+        // Blushing Cheeks
+        ctx.fillStyle = "rgba(244, 114, 182, 0.55)";
+        ctx.beginPath();
+        ctx.arc(-22, eyeY + 8, 6, 0, Math.PI * 2);
+        ctx.arc(22, eyeY + 8, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cute Anime Eyes
+        ctx.save();
+        ctx.translate(0, eyeY);
+        ctx.scale(1.0, blink);
+        ctx.fillStyle = "#064E3B";
+        ctx.beginPath();
+        ctx.ellipse(-14, 0, 6, 8, 0, 0, Math.PI * 2);
+        ctx.ellipse(14, 0, 6, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(-16, -2, 2.5, 0, Math.PI * 2);
+        ctx.arc(12, -2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Smiling Mouth
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, eyeY + 8, 8, 0.2, Math.PI - 0.2, false);
+        ctx.stroke();
+
+        // Name Badge Pill
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-70, 58, 140, 26, 13);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🪣 " + label, 0, 75);
+
+        ctx.restore();
+    }
+
+    // 4. Cute 2D Snowflake Warehouse Mascot (Cyan crystal, rotating snowflake halo, cyber shades)
+    function draw2DSnowflakeCharacter(ctx, x, y, scale, t, label = "Snowflake") {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const bob = Math.sin(t * 3.2) * 5;
+        ctx.translate(0, bob);
+
+        // Rotating Geometric Snowflake Halo Behind
+        ctx.save();
+        ctx.rotate(t * 0.9);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+        ctx.lineWidth = 2.5;
+        for (let i = 0; i < 6; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -62);
+            // Crystal branches
+            ctx.moveTo(0, -42);
+            ctx.lineTo(-12, -50);
+            ctx.moveTo(0, -42);
+            ctx.lineTo(12, -50);
+            ctx.stroke();
+            ctx.rotate(Math.PI / 3);
+        }
+        ctx.restore();
+
+        // Snowflake Crystal Cube Body
+        const snowGrad = ctx.createLinearGradient(-44, -44, 44, 44);
+        snowGrad.addColorStop(0, "#0284C7");
+        snowGrad.addColorStop(0.5, "#0EA5E9");
+        snowGrad.addColorStop(1, "#38BDF8");
+        ctx.fillStyle = snowGrad;
+        ctx.beginPath();
+        ctx.roundRect(-42, -40, 84, 80, 18);
+        ctx.fill();
+        ctx.strokeStyle = "#BAE6FD";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 16;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Stylish Cyber Sunglasses / Visor
+        ctx.fillStyle = "#0F172A";
+        ctx.beginPath();
+        ctx.roundRect(-30, -22, 60, 20, 6);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Reflection highlight on sunglasses
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-22, -18);
+        ctx.lineTo(-14, -8);
+        ctx.moveTo(6, -18);
+        ctx.lineTo(14, -8);
+        ctx.stroke();
+
+        // Smile
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 4, 8, 0.2, Math.PI - 0.2, false);
+        ctx.stroke();
+
+        // MERGE Indicator Badge on Chest
+        ctx.fillStyle = "rgba(10, 18, 38, 0.9)";
+        ctx.beginPath();
+        ctx.roundRect(-28, 14, 56, 18, 6);
+        ctx.fill();
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("MERGE", 0, 27);
+
+        // Name Badge Pill
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-65, 50, 130, 26, 13);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("❄️ " + label, 0, 67);
+
+        ctx.restore();
+    }
+
+    // 5. Cute 2D DuckDB Mascot (Golden yellow duck, developer glasses, orange beak, flapping wings)
+    function draw2DDuckDbMascot(ctx, x, y, scale, t, label = "DuckDB") {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const bob = Math.sin(t * 3.5) * 5;
+        ctx.translate(0, bob);
+
+        // Round Yellow Duck Body
+        const duckGrad = ctx.createRadialGradient(-10, -10, 8, 0, 0, 46);
+        duckGrad.addColorStop(0, "#FEF08A");
+        duckGrad.addColorStop(0.6, "#FBBF24");
+        duckGrad.addColorStop(1, "#F59E0B");
+        ctx.fillStyle = duckGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 44, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#FDE047";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#F59E0B";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Flapping Left & Right Wings
+        const wingFlap = Math.sin(t * 7) * 0.18;
+        ctx.save();
+        ctx.translate(-40, 2);
+        ctx.rotate(-wingFlap);
+        ctx.fillStyle = "#F59E0B";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 12, 20, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(40, 2);
+        ctx.rotate(wingFlap);
+        ctx.fillStyle = "#F59E0B";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 12, 20, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Developer Spectacles / Glasses
+        ctx.strokeStyle = "#1E293B";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(-16, -10, 10, 0, Math.PI * 2);
+        ctx.arc(16, -10, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        // Bridge between glasses
+        ctx.beginPath();
+        ctx.moveTo(-6, -10);
+        ctx.lineTo(6, -10);
+        ctx.stroke();
+
+        // Cute Eyes behind glasses
+        ctx.fillStyle = "#0F172A";
+        ctx.beginPath();
+        ctx.arc(-16, -10, 5, 0, Math.PI * 2);
+        ctx.arc(16, -10, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(-18, -12, 2, 0, Math.PI * 2);
+        ctx.arc(14, -12, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright Orange Duck Beak
+        ctx.fillStyle = "#EA580C";
+        ctx.beginPath();
+        ctx.ellipse(0, 8, 14, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#C2410C";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // In-Process SQL Badge
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-65, 52, 130, 26, 13);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🦆 " + label + " (In-Proc)", 0, 69);
+
+        ctx.restore();
+    }
+
+    // 6. Cute 2D Medallion Tier Mascots (Bronze hard hat, Silver bubbles & shield, Gold crown)
+    function draw2DMedallionCharacters(ctx, x, y, tier, scale, t) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const bob = Math.sin(t * 3.2 + (tier === "gold" ? 1 : (tier === "silver" ? 2 : 0))) * 5;
+        ctx.translate(0, bob);
+
+        if (tier === "bronze") {
+            // Bronze Body
+            const bGrad = ctx.createRadialGradient(-10, -10, 6, 0, 0, 44);
+            bGrad.addColorStop(0, "#D97706");
+            bGrad.addColorStop(0.7, "#B45309");
+            bGrad.addColorStop(1, "#78350F");
+            ctx.fillStyle = bGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Yellow Construction Hard Hat
+            ctx.fillStyle = "#FACC15";
+            ctx.beginPath();
+            ctx.arc(0, -32, 26, Math.PI, 0, false);
+            ctx.fill();
+            ctx.fillRect(-32, -32, 64, 8);
+            ctx.strokeStyle = "#CA8A04";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Wrench in hand
+            ctx.save();
+            ctx.translate(34, 10);
+            ctx.rotate(0.3);
+            ctx.fillStyle = "#94A3B8";
+            ctx.fillRect(-3, -16, 6, 32);
+            ctx.restore();
+
+            // Eyes & Smile
+            ctx.fillStyle = "#FFFFFF";
+            ctx.beginPath();
+            ctx.arc(-12, -4, 5, 0, Math.PI * 2);
+            ctx.arc(12, -4, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#0F172A";
+            ctx.beginPath();
+            ctx.arc(-12, -4, 3, 0, Math.PI * 2);
+            ctx.arc(12, -4, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 8, 8, 0.2, Math.PI - 0.2, false);
+            ctx.stroke();
+
+            // Badge Pill
+            ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(-65, 48, 130, 24, 12);
+            ctx.fill();
+            ctx.strokeStyle = "#CD7F32";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.fillStyle = "#CD7F32";
+            ctx.font = "bold 11px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🥉 BRONZE (L0)", 0, 64);
+
+        } else if (tier === "silver") {
+            // Floating translucent soap bubbles
+            const bubbles = [
+                {x: -42, y: -26, r: 8},
+                {x: 40, y: -34, r: 12},
+                {x: -36, y: 32, r: 9}
+            ];
+            bubbles.forEach((b, bi) => {
+                const by = b.y + Math.sin(t * 4 + bi) * 6;
+                ctx.fillStyle = "rgba(56, 189, 248, 0.35)";
+                ctx.beginPath();
+                ctx.arc(b.x, by, b.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            // Polished Silver Metallic Body
+            const sGrad = ctx.createRadialGradient(-10, -10, 6, 0, 0, 44);
+            sGrad.addColorStop(0, "#F8FAFC");
+            sGrad.addColorStop(0.6, "#CBD5E1");
+            sGrad.addColorStop(1, "#64748B");
+            ctx.fillStyle = sGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#E2E8F0";
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = "#94A3B8";
+            ctx.shadowBlur = 14;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Holding Green Validation Shield
+            ctx.save();
+            ctx.translate(34, 12);
+            ctx.fillStyle = "#10B981";
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(14, -6);
+            ctx.lineTo(14, 8);
+            ctx.lineTo(0, 18);
+            ctx.lineTo(-14, 8);
+            ctx.lineTo(-14, -6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 12px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("✓", 0, 5);
+            ctx.restore();
+
+            // Eyes & Wink
+            ctx.fillStyle = "#0F172A";
+            ctx.beginPath();
+            ctx.arc(-14, -4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#0F172A";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(14, -4, 5, 0.2, Math.PI - 0.2, false); // Wink
+            ctx.stroke();
+
+            // Smile
+            ctx.strokeStyle = "#0F172A";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 8, 8, 0.2, Math.PI - 0.2, false);
+            ctx.stroke();
+
+            // Badge Pill
+            ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(-65, 48, 130, 24, 12);
+            ctx.fill();
+            ctx.strokeStyle = "#E2E8F0";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "bold 11px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🥈 SILVER (L1)", 0, 64);
+
+        } else {
+            // Radiant Gold King Mascot
+            const gGrad = ctx.createRadialGradient(-10, -10, 6, 0, 0, 44);
+            gGrad.addColorStop(0, "#FEF08A");
+            gGrad.addColorStop(0.5, "#FACC15");
+            gGrad.addColorStop(1, "#D97706");
+            ctx.fillStyle = gGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#FDE047";
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = "#F59E0B";
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Sparkling Gold Crown on top
+            ctx.save();
+            ctx.translate(0, -38);
+            ctx.fillStyle = "#F59E0B";
+            ctx.beginPath();
+            ctx.moveTo(-22, 6);
+            ctx.lineTo(-24, -16);
+            ctx.lineTo(-12, -6);
+            ctx.lineTo(0, -20);
+            ctx.lineTo(12, -6);
+            ctx.lineTo(24, -16);
+            ctx.lineTo(22, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "#FEF08A";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Gemstones on crown
+            ctx.fillStyle = "#EF4444";
+            ctx.beginPath();
+            ctx.arc(0, -6, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#38BDF8";
+            ctx.beginPath();
+            ctx.arc(-14, -2, 2.5, 0, Math.PI * 2);
+            ctx.arc(14, -2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Cool Sunglasses
+            ctx.fillStyle = "#0F172A";
+            ctx.beginPath();
+            ctx.roundRect(-24, -8, 48, 16, 5);
+            ctx.fill();
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Broad Confident Smile
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 14, 10, 0.2, Math.PI - 0.2, false);
+            ctx.stroke();
+
+            // Badge Pill
+            ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+            ctx.beginPath();
+            ctx.roundRect(-65, 48, 130, 24, 12);
+            ctx.fill();
+            ctx.strokeStyle = "#F59E0B";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "bold 11px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🥇 GOLD (L2)", 0, 64);
+        }
+
+        ctx.restore();
+    }
+
+    // 7. Cute 2D Power BI / Dashboards Screen Mascot (Live pulsing bar charts)
+    function draw2DPowerBiCharacter(ctx, x, y, scale, t, label = "Power BI") {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const bob = Math.sin(t * 3) * 4;
+        ctx.translate(0, bob);
+
+        // Glassmorphic Monitor Frame
+        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+        ctx.beginPath();
+        ctx.roundRect(-52, -42, 104, 84, 14);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#F59E0B";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Monitor Stand
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(-10, 42, 20, 14);
+        ctx.beginPath();
+        ctx.roundRect(-24, 54, 48, 6, 3);
+        ctx.fill();
+
+        // 3 Animated Live KPI Bars on Screen
+        const bars = [
+            {h: 24 + Math.sin(t * 4) * 10, col: "#38BDF8"},
+            {h: 36 + Math.sin(t * 4 + 1) * 8, col: "#10B981"},
+            {h: 46 + Math.sin(t * 4 + 2) * 12, col: "#F59E0B"}
+        ];
+        bars.forEach((b, bi) => {
+            ctx.fillStyle = b.col;
+            ctx.beginPath();
+            ctx.roundRect(-34 + bi * 24, 28 - b.h, 16, b.h, 4);
+            ctx.fill();
+        });
+
+        // Top Eyes on Screen Bezel
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(-16, -26, 4, 0, Math.PI * 2);
+        ctx.arc(16, -26, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#0F172A";
+        ctx.beginPath();
+        ctx.arc(-16, -26, 2, 0, Math.PI * 2);
+        ctx.arc(16, -26, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Name Badge Pill
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-65, 66, 130, 24, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 11px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("📊 " + label + " BI", 0, 82);
+
+        ctx.restore();
+    }
+
+    // 8. Kinetic Curved Pipeline with Animated Flow Particles & Sliding Data Packets
+    function draw2DKineticPipeline(ctx, x1, y1, x2, y2, t, packetText = "CDC", packetCol = "#F59E0B", progress = 0.5) {
+        ctx.save();
+
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2 - 30;
+
+        // Outer Dark Conduit
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(midX, midY, x2, y2);
+        ctx.stroke();
+
+        // Glowing Animated Flow Line
+        ctx.strokeStyle = packetCol;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = packetCol;
+        ctx.shadowBlur = 10;
+        ctx.setLineDash([14, 8]);
+        ctx.lineDashOffset = -t * 60;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(midX, midY, x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+
+        // Sliding Data Packet Position (Quadratic Bezier formula: B(u) = (1-u)^2 * P0 + 2(1-u)u * P1 + u^2 * P2)
+        const u = Math.max(0, Math.min(1, progress));
+        const px = (1 - u) * (1 - u) * x1 + 2 * (1 - u) * u * midX + u * u * x2;
+        const py = (1 - u) * (1 - u) * y1 + 2 * (1 - u) * u * midY + u * u * y2;
+
+        // Draw Data Packet
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.fillStyle = "rgba(10, 18, 38, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-32, -14, 64, 28, 8);
+        ctx.fill();
+        ctx.strokeStyle = packetCol;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = packetCol;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = packetCol;
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(packetText, 0, 5);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // 9. Kinetic Story Popup Card (Bouncy spring entrance synchronized to voice narration)
+    function draw2DStoryPopup(ctx, x, y, title, subtitle, badgeText = "CDC", color = "#F59E0B", scaleIn = 1.0) {
+        if (scaleIn <= 0.05) return;
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Smooth spring scale
+        const s = Math.sin(Math.min(1, scaleIn) * Math.PI / 2);
+        ctx.scale(s, s);
+
+        const cardW = 540;
+        const cardH = 76;
+
+        ctx.fillStyle = "rgba(10, 18, 38, 0.96)";
+        ctx.beginPath();
+        ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 16);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 16;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Category Badge
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(-cardW / 2 + 18, -cardH / 2 + 14, 110, 24, 6);
+        ctx.fill();
+        ctx.fillStyle = "#0F172A";
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(badgeText, -cardW / 2 + 73, -cardH / 2 + 30);
+
+        // Title & Subtitle
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 16px 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(title, -cardW / 2 + 140, -cardH / 2 + 30);
+
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillText(subtitle, -cardW / 2 + 20, -cardH / 2 + 58);
+
+        ctx.restore();
+    }
+
+
+    // =========================================================================
+    // DYNAMIC TECH ARCHITECTURE & MOTION GRAPHICS SCENE DISPATCHER
+    // (2026 VIRAL KINETIC TECH REEL ENGINE - 100% BALANCED CANVAS)
+    // =========================================================================
     function renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId) {
         const spec = resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx);
         const stageIdx = Number(currentStageIdx) || 1;
@@ -12469,8 +13513,11 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1.0, stageAlpha));
 
-        const isLakehouse = promptText.includes("lakehouse") || promptText.includes("medallion") || promptText.includes("bronze") || promptText.includes("silver") || promptText.includes("gold") || promptText.includes("duckdb") || promptText.includes("delta") || promptText.includes("iceberg") || promptText.includes("oracle") || promptText.includes("dms") || promptText.includes("snowflake") || promptText.includes("aws") || stageTitle.includes("bronze") || stageTitle.includes("silver") || stageTitle.includes("gold") || stageTitle.includes("lakehouse") || stageTitle.includes("medallion") || stageTitle.includes("snowflake") || stageTitle.includes("dms") || stageTitle.includes("duckdb");
-        const isAiRag = (promptText.includes("rag") || promptText.includes("agent") || promptText.includes("vector") || promptText.includes("embed") || promptText.includes("rerank") || promptText.includes("guardrail") || promptText.includes("llm") || promptText.includes("neural") || stageTitle.includes("rag") || stageTitle.includes("vector") || stageTitle.includes("rerank") || stageTitle.includes("guardrail") || stageTitle.includes("embed") || promptText.includes("shape") || promptText.includes("3d")) && !isLakehouse;
+        const isSql = promptText.includes("sql") || promptText.includes("rank") || promptText.includes("dense_rank") || promptText.includes("partition") || promptText.includes("window") || promptText.includes("query") || stageTitle.includes("sql") || stageTitle.includes("rank") || stageTitle.includes("dense") || stageTitle.includes("partition") || stageTitle.includes("window");
+        const isPython = (promptText.includes("python") || promptText.includes("asyncio") || promptText.includes("async") || promptText.includes("await") || stageTitle.includes("python") || stageTitle.includes("async")) && !isSql;
+        const isDockerK8s = (promptText.includes("docker") || promptText.includes("k8s") || promptText.includes("kubernetes") || promptText.includes("container") || stageTitle.includes("docker") || stageTitle.includes("k8s") || stageTitle.includes("kubernetes")) && !isSql;
+        const isLakehouse = (promptText.includes("lakehouse") || promptText.includes("medallion") || promptText.includes("bronze") || promptText.includes("silver") || promptText.includes("gold") || promptText.includes("duckdb") || promptText.includes("delta") || promptText.includes("iceberg") || promptText.includes("oracle") || promptText.includes("dms") || promptText.includes("snowflake") || promptText.includes("aws") || stageTitle.includes("bronze") || stageTitle.includes("silver") || stageTitle.includes("gold") || stageTitle.includes("lakehouse") || stageTitle.includes("medallion") || stageTitle.includes("snowflake") || stageTitle.includes("dms") || stageTitle.includes("duckdb")) && !isSql;
+        const isAiRag = (promptText.includes("rag") || promptText.includes("agent") || promptText.includes("vector") || promptText.includes("embed") || promptText.includes("rerank") || promptText.includes("guardrail") || promptText.includes("llm") || promptText.includes("neural") || stageTitle.includes("rag") || stageTitle.includes("vector") || stageTitle.includes("rerank") || stageTitle.includes("guardrail") || stageTitle.includes("embed") || promptText.includes("shape") || promptText.includes("3d")) && !isLakehouse && !isSql;
 
         const centerY = 820;
 
@@ -13045,6 +14092,771 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // =====================================================================
+        
+        // =====================================================================
+        // TOPIC 3: SQL WINDOW FUNCTIONS (RANK() vs DENSE_RANK() vs PARTITION BY)
+        // =====================================================================
+        else if (isSql) {
+            // SCENE 1: INTRODUCTION TO RANKING & SQL QUERY SYNTAX
+            if (stageIdx === 1 || stageTitle.includes("intro") || stageTitle.includes("ranking") || stageTitle.includes("question") || stageTitle.includes("fark")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Database Mascot on the Left
+                draw2DDatabaseCharacter(ctx, -270, 0, 0.9, t, "happy", "SQL Engine", "Active");
+
+                // Glowing SQL Code Terminal in Center
+                const termW = 460;
+                const termH = 260;
+                const termX = -80;
+                const termY = -130;
+
+                ctx.fillStyle = "rgba(10, 16, 32, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(termX, termY, termW, termH, 16);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+                ctx.lineWidth = 2.0;
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 16;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Terminal Window Dots
+                ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(termX + 24, termY + 22, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#F59E0B"; ctx.beginPath(); ctx.arc(termX + 42, termY + 22, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#10B981"; ctx.beginPath(); ctx.arc(termX + 60, termY + 22, 6, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "bold 13px monospace";
+                ctx.textAlign = "left";
+                ctx.fillText("query.sql — Window Ranking", termX + 80, termY + 26);
+
+                // SQL Syntax Code Lines
+                const sqlLines = [
+                    { t: "SELECT name, salary,", col: "#E2E8F0" },
+                    { t: "  RANK() OVER (", col: "#F59E0B" },
+                    { t: "    ORDER BY salary DESC) as rnk,", col: "#F59E0B" },
+                    { t: "  DENSE_RANK() OVER (", col: "#38BDF8" },
+                    { t: "    ORDER BY salary DESC) as dense", col: "#38BDF8" },
+                    { t: "FROM employees;", col: "#E2E8F0" }
+                ];
+                sqlLines.forEach((l, li) => {
+                    ctx.fillStyle = l.col;
+                    ctx.font = "bold 14px monospace";
+                    ctx.fillText(l.t, termX + 24, termY + 66 + li * 28);
+                });
+
+                // Comparison Badges
+                draw2DStoryPopup(ctx, 0, 240, "SQL Window Functions: RANK() vs DENSE_RANK()", "How does SQL handle ties when ranking salaries?", "🔍 SQL RANK", "#38BDF8", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 2: HOW RANK() WORKS — SKIPS ON TIES (GAPS: 1, 2, 2, 4)
+            else if (stageIdx === 2 || stageTitle.includes("how rank") || stageTitle.includes("gaps") || stageTitle.includes("rank()")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Salary Ranking Table with GAP in Row 4
+                const tblW = 560;
+                const tblH = 300;
+                const tblX = -tblW / 2;
+                const tblY = -150;
+
+                ctx.fillStyle = "rgba(10, 16, 32, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(tblX, tblY, tblW, tblH, 16);
+                ctx.fill();
+                ctx.strokeStyle = "#F59E0B";
+                ctx.lineWidth = 2.0;
+                ctx.shadowColor = "#F59E0B";
+                ctx.shadowBlur = 16;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Table Header
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 17px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("⚡ RANK() Output Table — Leaves Gaps on Ties", tblX + 24, tblY + 30);
+
+                const cols = [{ name: "EMPLOYEE", x: tblX + 24 }, { name: "DEPT", x: tblX + 170 }, { name: "SALARY", x: tblX + 290 }, { name: "RANK()", x: tblX + 430 }];
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "bold 13px monospace";
+                cols.forEach(c => ctx.fillText(c.name, c.x, tblY + 64));
+
+                // 4 Rows
+                const rows = [
+                    { name: "Alex", dept: "Tech", sal: "$8,000", rnk: "1", isTie: false, isGap: false, badge: "🥇 Rank 1" },
+                    { name: "Bob", dept: "Tech", sal: "$6,500", rnk: "2", isTie: true, isGap: false, badge: "🥈 Tie 2" },
+                    { name: "Chad", dept: "Tech", sal: "$6,500", rnk: "2", isTie: true, isGap: false, badge: "🥈 Tie 2" },
+                    { name: "Dan", dept: "Tech", sal: "$5,000", rnk: "4", isTie: false, isGap: true, badge: "🚨 GAP! Rank 4" }
+                ];
+
+                rows.forEach((r, ri) => {
+                    const ry = tblY + 86 + ri * 48;
+                    ctx.save();
+                    if (r.isGap) {
+                        ctx.fillStyle = "rgba(239, 68, 68, 0.24)";
+                        ctx.beginPath();
+                        ctx.roundRect(tblX + 14, ry, tblW - 28, 40, 8);
+                        ctx.fill();
+                        ctx.strokeStyle = "#EF4444";
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.fillStyle = "#EF4444";
+                    } else if (r.isTie) {
+                        ctx.fillStyle = "rgba(245, 158, 11, 0.18)";
+                        ctx.beginPath();
+                        ctx.roundRect(tblX + 14, ry, tblW - 28, 40, 8);
+                        ctx.fill();
+                        ctx.strokeStyle = "#F59E0B";
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.fillStyle = "#F59E0B";
+                    } else {
+                        ctx.fillStyle = "rgba(15, 23, 42, 0.6)";
+                        ctx.beginPath();
+                        ctx.roundRect(tblX + 14, ry, tblW - 28, 40, 8);
+                        ctx.fill();
+                        ctx.fillStyle = "#E2E8F0";
+                    }
+
+                    ctx.font = "bold 14px monospace";
+                    ctx.textAlign = "left";
+                    ctx.fillText(r.name, cols[0].x, ry + 25);
+                    ctx.fillText(r.dept, cols[1].x, ry + 25);
+                    ctx.fillText(r.sal, cols[2].x, ry + 25);
+
+                    // Rank pill
+                    ctx.font = "bold 14px monospace";
+                    ctx.fillText(r.badge, cols[3].x, ry + 25);
+                    ctx.restore();
+                });
+
+                // Callout for Gap
+                draw2DStoryPopup(ctx, 0, 240, "RANK() Skips Rank 3! (1, 2, 2 ➔ 4)", "Because 2 people tied at Rank 2, the next rank is 4 (GAP!)", "⚠️ RANK GAP", "#EF4444", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 3: HOW DENSE_RANK() WORKS — NO GAPS (CONSECUTIVE: 1, 2, 2, 3)
+            else if (stageIdx === 3 || stageTitle.includes("how dense") || stageTitle.includes("consecutive") || stageTitle.includes("dense_rank()")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Salary Ranking Table with NO GAP in Row 4
+                const tblW = 560;
+                const tblH = 300;
+                const tblX = -tblW / 2;
+                const tblY = -150;
+
+                ctx.fillStyle = "rgba(10, 16, 32, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(tblX, tblY, tblW, tblH, 16);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 2.0;
+                ctx.shadowColor = "#10B981";
+                ctx.shadowBlur = 16;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Table Header
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 17px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("✨ DENSE_RANK() Output Table — Consecutive Ranks", tblX + 24, tblY + 30);
+
+                const cols = [{ name: "EMPLOYEE", x: tblX + 24 }, { name: "DEPT", x: tblX + 170 }, { name: "SALARY", x: tblX + 290 }, { name: "DENSE_RANK()", x: tblX + 410 }];
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "bold 13px monospace";
+                cols.forEach(c => ctx.fillText(c.name, c.x, tblY + 64));
+
+                // 4 Rows
+                const rows = [
+                    { name: "Alex", dept: "Tech", sal: "$8,000", rnk: "1", isTie: false, badge: "🥇 Rank 1", col: "#10B981" },
+                    { name: "Bob", dept: "Tech", sal: "$6,500", rnk: "2", isTie: true, badge: "🥈 Tie 2", col: "#38BDF8" },
+                    { name: "Chad", dept: "Tech", sal: "$6,500", rnk: "2", isTie: true, badge: "🥈 Tie 2", col: "#38BDF8" },
+                    { name: "Dan", dept: "Tech", sal: "$5,000", rnk: "3", isTie: false, badge: "✅ NO GAP! 3", col: "#10B981" }
+                ];
+
+                rows.forEach((r, ri) => {
+                    const ry = tblY + 86 + ri * 48;
+                    ctx.save();
+                    ctx.fillStyle = "rgba(15, 23, 42, 0.7)";
+                    ctx.beginPath();
+                    ctx.roundRect(tblX + 14, ry, tblW - 28, 40, 8);
+                    ctx.fill();
+                    ctx.strokeStyle = r.col;
+                    ctx.lineWidth = r.isTie || ri === 3 ? 1.8 : 1.0;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#E2E8F0";
+                    ctx.font = "bold 14px monospace";
+                    ctx.textAlign = "left";
+                    ctx.fillText(r.name, cols[0].x, ry + 25);
+                    ctx.fillText(r.dept, cols[1].x, ry + 25);
+                    ctx.fillText(r.sal, cols[2].x, ry + 25);
+
+                    // Rank pill
+                    ctx.fillStyle = r.col;
+                    ctx.font = "bold 14px monospace";
+                    ctx.fillText(r.badge, cols[3].x, ry + 25);
+                    ctx.restore();
+                });
+
+                // Callout for Consecutive Ranks
+                draw2DStoryPopup(ctx, 0, 240, "DENSE_RANK() Has Zero Gaps! (1, 2, 2 ➔ 3)", "Ranks remain strictly consecutive even when ties occur!", "✅ CONSECUTIVE", "#10B981", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 4: USING PARTITION BY (SEPARATE RANKING PER DEPARTMENT)
+            else if (stageIdx === 4 || stageTitle.includes("partition") || stageTitle.includes("department") || stageTitle.includes("salary")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Two Partitioned Department Boxes
+                // Box 1: IT Department
+                ctx.save();
+                ctx.translate(0, -80);
+                ctx.fillStyle = "rgba(10, 24, 48, 0.95)";
+                ctx.beginPath();
+                ctx.roundRect(-260, -50, 520, 100, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("🏢 PARTITION 1: IT Department", -240, -24);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("• Alex  ($8,000) ➔ Rank 1", -240, 4);
+                ctx.fillText("• Bob   ($6,500) ➔ Rank 2", -240, 28);
+                ctx.restore();
+
+                // Box 2: HR Department (Ranks restart to 1!)
+                ctx.save();
+                ctx.translate(0, 50);
+                ctx.fillStyle = "rgba(24, 18, 10, 0.95)";
+                ctx.beginPath();
+                ctx.roundRect(-260, -50, 520, 100, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#F59E0B";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("👥 PARTITION 2: HR Department (Ranks Restart!)", -240, -24);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("• Emma  ($7,000) ➔ Rank 1  (Restarts at 1!)", -240, 4);
+                ctx.fillText("• Liam  ($5,500) ➔ Rank 2", -240, 28);
+                ctx.restore();
+
+                draw2DStoryPopup(ctx, 0, 240, "PARTITION BY dept: Independent Ranking Windows", "Ranks restart back to 1 for each distinct department partition!", "📂 PARTITION BY", "#F59E0B", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 5: CAREER PRO-TIP & INTERVIEW CHEAT SHEET
+            else {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Left: RANK() Cheat Card
+                ctx.save();
+                ctx.translate(-140, -40);
+                ctx.fillStyle = "rgba(10, 16, 32, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(-110, -70, 220, 140, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#EF4444";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#EF4444";
+                ctx.font = "bold 16px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("RANK()", 0, -36);
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("Gaps on ties:", 0, -10);
+                ctx.fillStyle = "#EF4444";
+                ctx.font = "bold 18px monospace";
+                ctx.fillText("1, 2, 2, 4", 0, 16);
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "11px sans-serif";
+                ctx.fillText("Skips Rank 3", 0, 42);
+                ctx.restore();
+
+                // Right: DENSE_RANK() Cheat Card
+                ctx.save();
+                ctx.translate(140, -40);
+                ctx.fillStyle = "rgba(10, 16, 32, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(-110, -70, 220, 140, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 16px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("DENSE_RANK()", 0, -36);
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("Consecutive:", 0, -10);
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 18px monospace";
+                ctx.fillText("1, 2, 2, 3", 0, 16);
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "11px sans-serif";
+                ctx.fillText("Zero Gaps", 0, 42);
+                ctx.restore();
+
+                // Gold Winner Trophy Banner at bottom
+                draw2DStoryPopup(ctx, 0, 240, "Interview Rule: Need Gaps? ➔ RANK | No Gaps? ➔ DENSE_RANK", "Master this rule to ace top-tier SQL engineering interviews!", "🏆 INTERVIEW WINNER", "#F59E0B", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+        }
+
+
+        // =====================================================================
+        // TOPIC 4: PYTHON ASYNCIO (ASYNC / AWAIT, EVENT LOOP, CONCURRENCY)
+        // =====================================================================
+        else if (isPython) {
+            // SCENE 1: SYNCHRONOUS BLOCKING PROBLEM (SLOW 1-BY-1)
+            if (stageIdx === 1 || stageTitle.includes("intro") || stageTitle.includes("sync") || stageTitle.includes("block")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // 3 Stacked Blocked Tasks with Red Loading Spinners
+                const tasks = [
+                    { name: "Task 1: Fetch User Profile", time: "3.2s (Blocking)", col: "#EF4444" },
+                    { name: "Task 2: Fetch Orders API", time: "4.1s (Waiting)", col: "#EF4444" },
+                    { name: "Task 3: Compute Recommendation", time: "2.8s (Idle)", col: "#EF4444" }
+                ];
+                tasks.forEach((tk, tki) => {
+                    const ty = -100 + tki * 76;
+                    ctx.save();
+                    ctx.translate(0, ty);
+                    ctx.fillStyle = "rgba(10, 18, 38, 0.96)";
+                    ctx.beginPath();
+                    ctx.roundRect(-240, -28, 480, 56, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = tk.col;
+                    ctx.lineWidth = 1.8;
+                    ctx.stroke();
+
+                    ctx.fillStyle = tk.col;
+                    ctx.font = "bold 14px monospace";
+                    ctx.textAlign = "left";
+                    ctx.fillText("⏳ " + tk.name, -220, -4);
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "12px monospace";
+                    ctx.fillText(tk.time, -220, 18);
+                    ctx.restore();
+                });
+
+                draw2DStoryPopup(ctx, 0, 240, "Synchronous Python: 1-by-1 Blocking Waste", "CPU sits idle while waiting for network I/O responses", "⚠️ BLOCKING I/O", "#EF4444", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 2: THE ASYNCIO EVENT LOOP (CIRCULAR SCHEDULER)
+            else if (stageIdx === 2 || stageTitle.includes("event loop") || stageTitle.includes("loop") || stageTitle.includes("how")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Rotating Circular Event Loop
+                ctx.save();
+                ctx.rotate(t * 1.5);
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 16;
+                ctx.setLineDash([24, 12]);
+                ctx.beginPath();
+                ctx.arc(0, -30, 90, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Center Event Loop Core
+                ctx.fillStyle = "#0F172A";
+                ctx.beginPath();
+                ctx.arc(0, -30, 60, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 13px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("EVENT LOOP", 0, -34);
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "11px sans-serif";
+                ctx.fillText("Non-Blocking", 0, -18);
+
+                draw2DStoryPopup(ctx, 0, 240, "Asyncio Event Loop: Single-Threaded Concurrency", "While Task 1 waits for I/O, the Event Loop executes Task 2!", "⚡ EVENT LOOP", "#38BDF8", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 3: ASYNCIO.GATHER() CONCURRENT EXECUTION
+            else if (stageIdx === 3 || stageTitle.includes("gather") || stageTitle.includes("concurr") || stageTitle.includes("parallel")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // 3 Parallel Concurrent Tasks with Green Progress Bars
+                const pTasks = [
+                    { name: "asyncio.create_task(profile())", prog: Math.min(1.0, stageProg * 1.8), col: "#10B981" },
+                    { name: "asyncio.create_task(orders())", prog: Math.min(1.0, stageProg * 1.4), col: "#38BDF8" },
+                    { name: "asyncio.create_task(recommend())", prog: Math.min(1.0, stageProg * 1.6), col: "#F59E0B" }
+                ];
+
+                pTasks.forEach((pt, pti) => {
+                    const py = -100 + pti * 76;
+                    ctx.save();
+                    ctx.translate(0, py);
+                    ctx.fillStyle = "rgba(10, 18, 38, 0.96)";
+                    ctx.beginPath();
+                    ctx.roundRect(-240, -28, 480, 56, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = pt.col;
+                    ctx.lineWidth = 1.8;
+                    ctx.stroke();
+
+                    // Progress Fill Bar
+                    ctx.fillStyle = pt.col;
+                    ctx.globalAlpha = 0.25;
+                    ctx.beginPath();
+                    ctx.roundRect(-236, -24, 472 * pt.prog, 48, 8);
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 13px monospace";
+                    ctx.textAlign = "left";
+                    ctx.fillText(pt.name, -220, 6);
+
+                    ctx.fillStyle = pt.col;
+                    ctx.font = "bold 12px monospace";
+                    ctx.textAlign = "right";
+                    ctx.fillText(Math.round(pt.prog * 100) + "% Done", 220, 6);
+                    ctx.restore();
+                });
+
+                draw2DStoryPopup(ctx, 0, 240, "asyncio.gather(): 3 Tasks Run Together in Parallel!", "Total latency equals only the single slowest task!", "🚀 CONCURRENT", "#10B981", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 4: 10X PERFORMANCE SPEEDUP BENCHMARK
+            else if (stageIdx === 4 || stageTitle.includes("speed") || stageTitle.includes("bench") || stageTitle.includes("perform")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Sync Bar (10.1s - Red)
+                ctx.save();
+                ctx.translate(0, -60);
+                ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
+                ctx.beginPath();
+                ctx.roundRect(-240, -24, 480, 48, 10);
+                ctx.fill();
+                ctx.strokeStyle = "#EF4444";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = "#EF4444";
+                ctx.font = "bold 14px monospace";
+                ctx.textAlign = "left";
+                ctx.fillText("Sync Execution: 10.1 Seconds", -220, 6);
+                ctx.restore();
+
+                // Async Bar (1.1s - Green 10x Faster!)
+                ctx.save();
+                ctx.translate(0, 30);
+                ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+                ctx.beginPath();
+                ctx.roundRect(-240, -24, 120, 48, 10);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 14px monospace";
+                ctx.textAlign = "left";
+                ctx.fillText("Async: 1.1s (10x FASTER!) ⚡", -220, 6);
+                ctx.restore();
+
+                draw2DStoryPopup(ctx, 0, 240, "10x Speedup with Zero Extra Threads!", "Massive throughput without multithreading race conditions", "⚡ 10X SPEED", "#10B981", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 5: PRO-TIPS & INTERVIEW WINNER
+            else {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                draw2DPowerBiCharacter(ctx, 0, -40, 1.25, t, "Async Python");
+
+                draw2DStoryPopup(ctx, 0, 240, "Rule: Never block the Event Loop with time.sleep()!", "Always use await asyncio.sleep() for non-blocking execution!", "🏆 PRO-TIP", "#F59E0B", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+        }
+
+
+        // =====================================================================
+        // TOPIC 5: DOCKER VS KUBERNETES (CONTAINERS VS ORCHESTRATION)
+        // =====================================================================
+        else if (isDockerK8s) {
+            // SCENE 1: DOCKER CONTAINERS — PACKAGING CODE
+            if (stageIdx === 1 || stageTitle.includes("intro") || stageTitle.includes("docker") || stageTitle.includes("package")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Draw Whale / Container Box
+                ctx.save();
+                ctx.translate(0, -40);
+                ctx.fillStyle = "rgba(14, 165, 233, 0.25)";
+                ctx.beginPath();
+                ctx.roundRect(-140, -70, 280, 140, 16);
+                ctx.fill();
+                ctx.strokeStyle = "#0284C7";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🐳 Docker Container", 0, -26);
+
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("• Code + Runtime + Libs", 0, 4);
+                ctx.fillText("• 'Runs on my machine & cloud'", 0, 28);
+                ctx.restore();
+
+                draw2DStoryPopup(ctx, 0, 240, "Docker: Standardized Lightweight Container", "Packages apps so they run identically everywhere", "🐳 DOCKER", "#0284C7", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 2: PRODUCTION SCALE CRASH PROBLEM
+            else if (stageIdx === 2 || stageTitle.includes("crash") || stageTitle.includes("problem") || stageTitle.includes("scale")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // 3 Containers, 1 Crashed (Red)
+                const cList = [
+                    { name: "Container 1 (App)", status: "HEALTHY", col: "#10B981" },
+                    { name: "Container 2 (Worker)", status: "CRASHED! (OOM)", col: "#EF4444" },
+                    { name: "Container 3 (API)", status: "OVERLOADED (98%)", col: "#F59E0B" }
+                ];
+                cList.forEach((c, ci) => {
+                    const cy = -100 + ci * 76;
+                    ctx.save();
+                    ctx.translate(0, cy);
+                    ctx.fillStyle = "rgba(10, 18, 38, 0.96)";
+                    ctx.beginPath();
+                    ctx.roundRect(-240, -28, 480, 56, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = c.col;
+                    ctx.lineWidth = 1.8;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 14px monospace";
+                    ctx.textAlign = "left";
+                    ctx.fillText(c.name, -220, 6);
+
+                    ctx.fillStyle = c.col;
+                    ctx.font = "bold 13px monospace";
+                    ctx.textAlign = "right";
+                    ctx.fillText(c.status, 220, 6);
+                    ctx.restore();
+                });
+
+                draw2DStoryPopup(ctx, 0, 240, "The Challenge: Who Restarts Crashed Containers?", "When traffic spikes, Docker alone cannot auto-heal or autoscale!", "⚠️ CONTAINER DRIFT", "#EF4444", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 3: KUBERNETES THE CAPTAIN (ORCHESTRATION & AUTOSCALING)
+            else if (stageIdx === 3 || stageTitle.includes("k8s") || stageTitle.includes("kubernetes") || stageTitle.includes("orchestrat")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Kubernetes Helm Wheel Rotating
+                ctx.save();
+                ctx.translate(0, -40);
+                ctx.rotate(t * 1.2);
+                ctx.strokeStyle = "#326CE5";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#326CE5";
+                ctx.shadowBlur = 16;
+                for (let i = 0; i < 7; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, -64);
+                    ctx.stroke();
+                    ctx.rotate(Math.PI * 2 / 7);
+                }
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Kubernetes Center Helm
+                ctx.fillStyle = "#0F172A";
+                ctx.beginPath();
+                ctx.arc(0, -40, 36, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 11px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("K8s HELM", 0, -36);
+
+                draw2DStoryPopup(ctx, 0, 240, "Kubernetes: Container Orchestration Captain", "Auto-restarts dead pods, autoscales replicas, balances traffic!", "☸️ KUBERNETES", "#326CE5", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 4: SELF-HEALING & ZERO-DOWNTIME ROLLING UPDATES
+            else if (stageIdx === 4 || stageTitle.includes("healing") || stageTitle.includes("rolling") || stageTitle.includes("update")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // 3 Replicas Managed with Green Checkmarks
+                for (let i = 0; i < 3; i++) {
+                    const px = -180 + i * 180;
+                    ctx.save();
+                    ctx.translate(px, -40);
+                    ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+                    ctx.beginPath();
+                    ctx.roundRect(-75, -50, 150, 100, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = "#10B981";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#10B981";
+                    ctx.font = "bold 13px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText("Pod " + (i + 1) + " (v2.0)", 0, -16);
+                    ctx.fillText("✓ Healthy", 0, 8);
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "11px sans-serif";
+                    ctx.fillText("Traffic Active", 0, 28);
+                    ctx.restore();
+                }
+
+                draw2DStoryPopup(ctx, 0, 240, "Zero-Downtime Rolling Updates & Self-Healing", "Replaces outdated versions gracefully with no customer disruption!", "🔄 AUTO-HEAL", "#10B981", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+
+            // SCENE 5: DOCKER VS K8S SUMMARY MATRIX
+            else {
+                ctx.save();
+                ctx.translate(W / 2, centerY - 20);
+
+                // Docker Card Left
+                ctx.save();
+                ctx.translate(-140, -40);
+                ctx.fillStyle = "rgba(10, 24, 48, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(-110, -70, 220, 140, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#0284C7";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = "#0284C7";
+                ctx.font = "bold 16px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🐳 Docker", 0, -36);
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 12px monospace";
+                ctx.fillText("Packaging Tool", 0, -10);
+                ctx.fillText("Single Container", 0, 14);
+                ctx.fillText("Local Dev", 0, 38);
+                ctx.restore();
+
+                // K8s Card Right
+                ctx.save();
+                ctx.translate(140, -40);
+                ctx.fillStyle = "rgba(10, 18, 38, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(-110, -70, 220, 140, 12);
+                ctx.fill();
+                ctx.strokeStyle = "#326CE5";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = "#326CE5";
+                ctx.font = "bold 16px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("☸️ Kubernetes", 0, -36);
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 12px monospace";
+                ctx.fillText("Fleet Manager", 0, -10);
+                ctx.fillText("Autoscaling Pods", 0, 14);
+                ctx.fillText("Production Cloud", 0, 38);
+                ctx.restore();
+
+                draw2DStoryPopup(ctx, 0, 240, "Summary: Docker Builds It, Kubernetes Runs It at Scale!", "They are not competitors — they work together in production!", "🏆 DOCKER + K8S", "#38BDF8", Math.min(1.0, stageProg * 2));
+
+                ctx.restore();
+                ctx.restore();
+                return true;
+            }
+        }
+
         // GENERAL TECH ARCHITECTURE (SQL, DOCKER, K8S, PYTHON, ETC.)
         // =====================================================================
         else {

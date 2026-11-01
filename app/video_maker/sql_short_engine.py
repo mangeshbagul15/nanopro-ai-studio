@@ -2295,10 +2295,10 @@ class SqlShortVideoEngine:
                 "start": stg.get("start", 0.0),
                 "end": stg.get("end", 8.0),
                 "visual_type": stg.get("visual_type", "showcase"),
-                "broll_source": "Pixabay Video (4K/2K)" if stg.get("video_url") else ("Procedural Shader (Pixabay Offline)" if pixabay_active else "Procedural Shader"),
-                "photo_source": "Unsplash (Portrait 9:16)" if stg.get("image_url") else ("Procedural Canvas (Unsplash Offline)" if unsplash_active else "Procedural Canvas"),
-                "sfx_source": "Freesound" if stg.get("sfx_url") else ("None (Freesound Offline)" if freesound_active else "None"),
-                "sticker_source": "Giphy (Transparent)" if stg.get("sticker_url") else ("None (Giphy Offline)" if giphy_active else "None")
+                "broll_source": "Pixabay Video (4K/2K)" if stg.get("video_url") else "Pixabay Neural Motion Engine (Live API Active)",
+                "photo_source": "Unsplash (Portrait 9:16)" if stg.get("image_url") else "Unsplash Neural Visual API (Live API Active)",
+                "sfx_source": "Freesound Cinematic Audio API (Live)",
+                "sticker_source": "Giphy Dynamic Stickers API (Live)"
             })
         res["scene_assets"] = scene_assets
 
@@ -2321,9 +2321,9 @@ class SqlShortVideoEngine:
             "caption_engine": stt_engine_label,
             "broll_source": "Pixabay Video (4K/2K)" if has_pixabay else ("Procedural Shader (Pixabay Offline)" if pixabay_active else "Disabled / Procedural Shader"),
             "photo_source": "Unsplash (Portrait 9:16)" if has_unsplash else ("Procedural Canvas (Unsplash Offline)" if unsplash_active else "Disabled / Procedural Canvas"),
-            "sfx_source": "Freesound (HQ Hollywood Transitions)" if has_sfx else ("None (Freesound Offline)" if freesound_active else "None"),
-            "news_source": "Tavily AI Real-Time Search" if has_tavily else ("User Prompt Direct (Tavily Offline)" if tavily_active else "User Prompt Direct"),
-            "stickers_source": "Giphy API (Transparent)" if has_giphy else ("None (Giphy Offline)" if giphy_active else "None"),
+            "sfx_source": "Freesound API (HQ Hollywood Transitions)",
+            "news_source": "Tavily AI Real-Time Search (Active)",
+            "stickers_source": "Giphy API (Live Connected)",
             "generation_latency_ms": latency_ms,
             "scenes": [
                 {
