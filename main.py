@@ -14646,6 +14646,42 @@ async def api_sentinel_status():
 
 
 
+@app.get("/api/qa/full-test")
+
+async def api_qa_full_test():
+
+    """Executes full system QA test suite across all 52 features & databases."""
+
+    from app.core.autonomous_qa_engine import autonomous_qa_engine
+
+    return JSONResponse(autonomous_qa_engine.run_full_system_test_suite())
+
+
+
+@app.post("/api/qa/deploy")
+
+async def api_qa_deploy(req: Request):
+
+    """Triggers autonomous git commit and live deployment."""
+
+    from app.core.autonomous_qa_engine import autonomous_qa_engine
+
+    b = {}
+
+    try:
+
+        b = await req.json()
+
+    except Exception:
+
+        pass
+
+    msg = b.get("commit_message", "feat(autonomous): live self-evolution update")
+
+    return JSONResponse(autonomous_qa_engine.execute_autonomous_git_deploy(msg))
+
+
+
 
 
 if __name__ == "__main__":

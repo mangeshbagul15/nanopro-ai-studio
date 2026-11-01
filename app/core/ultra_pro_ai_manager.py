@@ -199,7 +199,21 @@ class UltraProAIManager:
 
         # 1. Detect if the user wants an executive action executed right now
         action_result = None
-        if any(w in p_lower for w in ["switch host", "failover to", "make primary", "change server"]):
+        if any(w in p_lower for w in ["test feature", "test all", "sagle test", "test kara", "run test", "qa test", "check all features", "testing kara", "health test"]):
+            from app.core.autonomous_qa_engine import autonomous_qa_engine
+            qa_res = autonomous_qa_engine.run_full_system_test_suite()
+            action_result = {
+                "status": "success",
+                "message": f"Full System QA Test Suite Completed across all 52 Features & Databases. Health Score: {qa_res['health_score']}% ({qa_res['features_passed']} Passed, {qa_res['features_failed']} Failed in {qa_res['duration_sec']}s). Status: {qa_res['status']}",
+                "qa_summary": qa_res
+            }
+
+        elif any(w in p_lower for w in ["deploy", "git push", "push kara", "live deploy", "github commit", "commit kara", "deploy kara"]):
+            from app.core.autonomous_qa_engine import autonomous_qa_engine
+            c_msg = f"feat(autonomous): live sync & self-evolution commit via AI Manager ({datetime.datetime.now().strftime('%Y-%m-%d %H:%M')})"
+            action_result = autonomous_qa_engine.execute_autonomous_git_deploy(c_msg)
+
+        elif any(w in p_lower for w in ["switch host", "failover to", "make primary", "change server"]):
             target = "node_cloud_flyio" if "fly" in p_lower else ("node_cloud_alwaysdata" if "always" in p_lower else "node_cloud_pythonanywhere")
             action_result = self.execute_autonomous_action("switch", {"target_node": target})
 
