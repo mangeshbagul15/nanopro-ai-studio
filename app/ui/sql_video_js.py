@@ -10382,9 +10382,293 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         ctx.save();
 
-        const isAiRag = promptText.includes("rag") || promptText.includes("agent") || promptText.includes("vector") || promptText.includes("embed") || promptText.includes("rerank") || promptText.includes("guardrail") || promptText.includes("llm") || promptText.includes("neural") || promptText.includes("ai") || stageTitle.includes("rag") || stageTitle.includes("vector") || stageTitle.includes("rerank") || stageTitle.includes("guardrail") || stageTitle.includes("embed") || promptText.includes("shape") || promptText.includes("3d");
-        const isS3 = promptText.includes("s3") || promptText.includes("bucket") || promptText.includes("storage") || promptText.includes("object") || promptText.includes("blob") || stageTitle.includes("s3") || stageTitle.includes("bucket");
-        const isDms = promptText.includes("dms") || promptText.includes("migrat") || promptText.includes("cdc") || stageTitle.includes("dms");
+        const isLakehouse = promptText.includes("lakehouse") || promptText.includes("medallion") || promptText.includes("bronze") || promptText.includes("silver") || promptText.includes("gold") || promptText.includes("duckdb") || promptText.includes("delta") || promptText.includes("iceberg") || stageTitle.includes("bronze") || stageTitle.includes("silver") || stageTitle.includes("gold") || stageTitle.includes("lakehouse") || stageTitle.includes("medallion");
+        const isAiRag = (promptText.includes("rag") || promptText.includes("agent") || promptText.includes("vector") || promptText.includes("embed") || promptText.includes("rerank") || promptText.includes("guardrail") || promptText.includes("llm") || promptText.includes("neural") || stageTitle.includes("rag") || stageTitle.includes("vector") || stageTitle.includes("rerank") || stageTitle.includes("guardrail") || stageTitle.includes("embed") || promptText.includes("shape") || promptText.includes("3d")) && !isLakehouse;
+        const isS3 = (promptText.includes("s3") || promptText.includes("bucket") || promptText.includes("storage") || promptText.includes("object") || promptText.includes("blob") || stageTitle.includes("s3") || stageTitle.includes("bucket")) && !isLakehouse;
+        const isDms = (promptText.includes("dms") || promptText.includes("migrat") || promptText.includes("cdc") || stageTitle.includes("dms")) && !isLakehouse;
+
+        // =====================================================================
+        // TOPIC 0: CLOUD DATA LAKEHOUSE MEDALLION ARCHITECTURE (BRONZE -> SILVER -> GOLD) & DUCKDB
+        // =====================================================================
+        if (isLakehouse) {
+            const centerY = 840;
+
+            // SCENE 1: 3D HOLOGRAPHIC MEDALLION PIPELINE & DUCKDB VECTOR ENGINE
+            if (stageIdx === 1 || stageTitle.includes("intro") || stageTitle.includes("overview") || stageTitle.includes("kya") || stageTitle.includes("medallion")) {
+                const bob = Math.sin(t * 2.8) * 6;
+                ctx.save();
+                ctx.translate(W / 2, centerY + bob);
+
+                // 3 Cascading 3D Medallion Tiers (Bronze, Silver, Gold)
+                const tiers = [
+                    { name: "BRONZE", sub: "Raw Append-Only", col: "#CD7F32", border: "#D97706", x: -250, y: -80, icon: "🥉" },
+                    { name: "SILVER", sub: "Cleansed & Conformed", col: "#E2E8F0", border: "#94A3B8", x: 0, y: -130, icon: "🥈" },
+                    { name: "GOLD", sub: "Business Analytics", col: "#F59E0B", border: "#FBBF24", x: 250, y: -80, icon: "🥇" }
+                ];
+
+                // Data flow arrows
+                tiers.forEach((tr, tri) => {
+                    if (tri < tiers.length - 1) {
+                        const nxt = tiers[tri + 1];
+                        ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([8, 8]);
+                        ctx.lineDashOffset = -t * 30;
+                        ctx.beginPath();
+                        ctx.moveTo(tr.x + 80, tr.y);
+                        ctx.lineTo(nxt.x - 80, nxt.y);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+
+                    // Medallion Card
+                    ctx.save();
+                    ctx.translate(tr.x, tr.y);
+                    ctx.fillStyle = "rgba(8, 16, 36, 0.95)";
+                    ctx.beginPath();
+                    ctx.roundRect(-95, -55, 190, 110, 16);
+                    ctx.fill();
+                    ctx.strokeStyle = tr.border;
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = tr.col;
+                    ctx.shadowBlur = 16;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Icon & Title
+                    ctx.fillStyle = tr.col;
+                    ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(tr.icon, 0, -18);
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 16px 'Segoe UI', sans-serif";
+                    ctx.fillText(tr.name, 0, 12);
+
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "11px monospace";
+                    ctx.fillText(tr.sub, 0, 32);
+                    ctx.restore();
+                });
+
+                // Central Engine: DuckDB In-Process Vectorized Core
+                const duckY = 120;
+                ctx.save();
+                ctx.translate(0, duckY);
+                ctx.fillStyle = "rgba(10, 24, 48, 0.96)";
+                ctx.beginPath();
+                ctx.roundRect(-280, -45, 560, 90, 18);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 18;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🦆 DUCKDB IN-PROCESS VECTOR ENGINE", 0, -8);
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 14px monospace";
+                ctx.fillText("ZERO NETWORK COPIES • SINGLE-FILE LAKEHOUSE OLAP", 0, 22);
+                ctx.restore();
+
+                // Status Badge
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🏛️ MEDALLION ARCHITECTURE PIPELINE", 0, 210);
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("[ ZERO INFRASTRUCTURE • EMBEDDED ANALYTICS ]", 0, 235);
+
+                ctx.restore();
+            }
+
+            // SCENE 2: BRONZE LAYER INGESTION (RAW APPEND-ONLY LAKE)
+            else if (stageIdx === 2 || stageTitle.includes("bronze") || stageTitle.includes("raw") || stageTitle.includes("ingest")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY);
+
+                // Streaming Raw Files falling into Bronze Vault
+                const rawItems = [
+                    { name: "telemetry.json", icon: "📄", col: "#38BDF8", offset: 0 },
+                    { name: "orders_stream.cdc", icon: "⚡", col: "#F59E0B", offset: 1.2 },
+                    { name: "access_logs.csv", icon: "📊", col: "#10B981", offset: 2.4 },
+                    { name: "events.parquet", icon: "📦", col: "#EC4899", offset: 3.6 }
+                ];
+
+                rawItems.forEach((itm, idx) => {
+                    const prog = ((t * 0.7 + itm.offset * 0.25) % 1.0);
+                    const fx = -220 + (idx % 2 === 0 ? -1 : 1) * 60 + (idx * 110);
+                    const fy = -220 + prog * 160;
+                    ctx.save();
+                    ctx.translate(fx, fy);
+                    ctx.scale(1.0 - prog * 0.25, 1.0 - prog * 0.25);
+                    ctx.fillStyle = "rgba(10, 20, 40, 0.95)";
+                    ctx.beginPath();
+                    ctx.roundRect(-70, -22, 140, 44, 10);
+                    ctx.fill();
+                    ctx.strokeStyle = itm.col;
+                    ctx.lineWidth = 1.8;
+                    ctx.stroke();
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 12px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(`${itm.icon} ${itm.name}`, 0, 5);
+                    ctx.restore();
+                });
+
+                // Main Bronze Data Vault
+                ctx.save();
+                ctx.translate(0, 40);
+                ctx.fillStyle = "rgba(18, 12, 6, 0.95)";
+                ctx.beginPath();
+                ctx.roundRect(-360, -75, 720, 150, 20);
+                ctx.fill();
+                ctx.strokeStyle = "#CD7F32";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#D97706";
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#CD7F32";
+                ctx.font = "bold 26px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🥉 BRONZE LAYER: RAW IMMUTABLE VAULT", 0, -28);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                ctx.fillText("• Append-Only Ingestion  • Zero Data Loss Guarantee", 0, 5);
+
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("STATUS: 100k events/sec • Schema-on-Read Active", 0, 36);
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            // SCENE 3: SILVER & GOLD DUAL MEDALLION (CLEANSED ➔ BUSINESS STAR SCHEMA)
+            else if (stageIdx === 3 || stageTitle.includes("silver") || stageTitle.includes("gold") || stageTitle.includes("transform")) {
+                ctx.save();
+                ctx.translate(W / 2, centerY);
+
+                // Silver Card (Left / Top)
+                ctx.save();
+                ctx.translate(0, -90);
+                ctx.fillStyle = "rgba(10, 18, 36, 0.95)";
+                ctx.beginPath();
+                ctx.roundRect(-370, -55, 740, 110, 16);
+                ctx.fill();
+                ctx.strokeStyle = "#E2E8F0";
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = "#E2E8F0";
+                ctx.shadowBlur = 14;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("🥈 SILVER LAYER: CLEANSED & ENRICHED", -340, -18);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "14px 'Segoe UI', sans-serif";
+                ctx.fillText("Deduplicated, type-enforced, and conformed schema (Delta / Parquet).", -340, 12);
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 12px monospace";
+                ctx.fillText("DUCKDB FILTER: WHERE id IS NOT NULL AND status = 'COMPLETED'", -340, 34);
+                ctx.restore();
+
+                // Animated Connecting Laser Bridge
+                ctx.strokeStyle = "rgba(245, 158, 11, 0.8)";
+                ctx.lineWidth = 3;
+                ctx.setLineDash([6, 6]);
+                ctx.lineDashOffset = -t * 35;
+                ctx.beginPath();
+                ctx.moveTo(0, -35);
+                ctx.lineTo(0, 45);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Gold Card (Right / Bottom)
+                ctx.save();
+                ctx.translate(0, 95);
+                ctx.fillStyle = "rgba(20, 14, 4, 0.95)";
+                ctx.beginPath();
+                ctx.roundRect(-370, -55, 740, 110, 16);
+                ctx.fill();
+                ctx.strokeStyle = "#F59E0B";
+                ctx.lineWidth = 2.8;
+                ctx.shadowColor = "#F59E0B";
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#F59E0B";
+                ctx.font = "bold 22px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("🥇 GOLD LAYER: BUSINESS ANALYTICS & KPIS", -340, -18);
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "14px 'Segoe UI', sans-serif";
+                ctx.fillText("Aggregated dimensional star schema ready for sub-second BI reporting.", -340, 12);
+                ctx.fillStyle = "#10B981";
+                ctx.font = "bold 12px monospace";
+                ctx.fillText("QUERY: SELECT customer_tier, SUM(revenue) GROUP BY 1", -340, 34);
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            // SCENE 4: DUCKDB HIGH-SPEED ANALYTICS & KUBERNETES PRO-TIP
+            else {
+                ctx.save();
+                ctx.translate(W / 2, centerY);
+
+                const stats = [
+                    { title: "🦆 EMBEDDED COLUMNAR OLAP", desc: "Runs in-process inside Python or K8s container without cluster spin-up", col: "#F59E0B" },
+                    { title: "⚡ ZERO-COPY VECTORIZED QUERY", desc: "Directly queries Parquet files with SIMD parallel thread execution", col: "#38BDF8" },
+                    { title: "☸️ LIGHTWEIGHT K8S DEPLOYMENT", desc: "Shared PVC volume mount delivers multi-terabyte query power", col: "#10B981" }
+                ];
+
+                stats.forEach((st, si) => {
+                    const sy = -140 + si * 105;
+                    ctx.save();
+                    ctx.translate(0, sy);
+                    ctx.fillStyle = "rgba(8, 16, 36, 0.95)";
+                    ctx.beginPath();
+                    ctx.roundRect(-370, -42, 740, 84, 16);
+                    ctx.fill();
+                    ctx.strokeStyle = st.col;
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = st.col;
+                    ctx.shadowBlur = 14;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = st.col;
+                    ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "left";
+                    ctx.fillText(st.title, -340, -8);
+
+                    ctx.fillStyle = "#E2E8F0";
+                    ctx.font = "14px 'Segoe UI', sans-serif";
+                    ctx.fillText(st.desc, -340, 18);
+                    ctx.restore();
+                });
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        else 
 
         // =====================================================================
         // TOPIC A: AMAZON S3 BUCKET & CLOUD OBJECT STORAGE 3D SUITE
