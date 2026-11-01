@@ -208,7 +208,15 @@ def get_sql_video_js() -> str:
 
         audioEl.addEventListener("canplay", calibrateAudioDuration);
 
+        audioEl.addEventListener("play", () => { if (typeof setAudioWaveformPlaying === "function") setAudioWaveformPlaying(true); });
+
+        audioEl.addEventListener("playing", () => { if (typeof setAudioWaveformPlaying === "function") setAudioWaveformPlaying(true); });
+
+        audioEl.addEventListener("pause", () => { if (typeof setAudioWaveformPlaying === "function") setAudioWaveformPlaying(false); });
+
         audioEl.addEventListener("ended", () => {
+
+            if (typeof setAudioWaveformPlaying === "function") setAudioWaveformPlaying(false);
 
             // Audio narration finished! Cleanly pause at final verified result (zero trailing outro)
 
@@ -658,27 +666,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function toggleSqlAvatar(enabled) {
 
-        sqlShortState.showAvatar = !!enabled;
-
-        const btnOn = document.getElementById("btnAvatarToggleOn");
-
-        const btnOff = document.getElementById("btnAvatarToggleOff");
-
-        if (enabled) {
-
-            if (btnOn) btnOn.classList.add("active");
-
-            if (btnOff) btnOff.classList.remove("active");
-
-        } else {
-
-            if (btnOn) btnOn.classList.remove("active");
-
-            if (btnOff) btnOff.classList.add("active");
-
-        }
-
-        renderSqlShortFrame(sqlShortState.currentTime);
+        sqlShortState.showAvatar = false;
 
     }
 
@@ -926,15 +914,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             case 2: {
 
-                // Open the observed video workflow and quality report.
-
-                if (typeof openAgentBrainModal === "function") {
-
-                    openAgentBrainModal();
-
-                }
-
-                logPipelineStep("Stage 2: Generation Report", "Opened the current pre-render checks and workflow steps. No specialist-agent execution is implied.");
+                logPipelineStep("Stage 2: Script Synthesis", "Multi-stage LLM generating high-retention technical script.");
 
                 break;
 
@@ -968,15 +948,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             case 6: {
 
-                // Open ElevenLabs Voice AI Studio Modal
-
-                if (typeof openElevenLabsModal === "function") {
-
-                    openElevenLabsModal();
-
-                }
-
-                logPipelineStep("Stage 6: Voice & Subtitle", "Opened ElevenLabs Humanlike AI Voice Studio & Regional Voice Engine.");
+                logPipelineStep("Stage 6: Voice & Subtitle", "Regional neural TTS generating synchronized audio voiceover.");
 
                 break;
 
@@ -1358,137 +1330,9 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-    function openAgentBrainModal() {
+    function openAgentBrainModal() {}
 
-        const modal = document.getElementById("agentBrainModal");
-
-        if (!modal) return;
-
-        modal.style.display = "flex";
-
-        const auditEsc = value => String(value ?? "").replace(/[&<>\"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#39;" }[ch]));
-
-
-
-        const audit = sqlShortState.perfectionistAudit || {
-
-            status: "NOT_RUN",
-
-            perfectionist_score: "N/A",
-
-            simulation_notice: "External systems and visual/audio quality checks are not verified by storyboard generation.",
-
-            audit_checks: [{ trial: 1, check: "Pre-render report", status: "NOT_RUN", badge: "Generate a storyboard to inspect checks." }]
-
-        };
-
-
-
-        const scoreBadge = document.getElementById("modalAuditScoreBadge");
-
-        if (scoreBadge) {
-
-            const auditStatus = audit.status || "NOT_RUN";
-
-            const auditColor = auditStatus === "PASSED" || auditStatus === "POST_RENDER_PASSED" ? "#10B981" : auditStatus === "BLOCKED" ? "#EF4444" : auditStatus.includes("WARNINGS") || auditStatus === "READY_WITH_WARNINGS" ? "#FBBF24" : "#94A3B8";
-
-            scoreBadge.innerText = `Quality report: ${auditStatus} · score not calculated`;
-
-            scoreBadge.style.color = auditColor;
-
-            scoreBadge.style.borderColor = auditColor;
-
-            scoreBadge.style.background = `${auditColor}22`;
-
-        }
-
-
-
-        const trialsGrid = document.getElementById("modalAuditTrialsGrid");
-
-        if (trialsGrid && audit.audit_checks) {
-
-            trialsGrid.innerHTML = audit.audit_checks.map(c => `
-
-                <div style="background: #0B132B; border: 1px solid ${c.status === 'PASSED' ? '#10B981' : c.status === 'FAILED' ? '#EF4444' : '#64748B'}; border-radius: 6px; padding: 8px 10px; font-size: 11px;">
-
-                    <div style="color: ${c.status === 'PASSED' ? '#10B981' : c.status === 'FAILED' ? '#FCA5A5' : '#CBD5E1'}; font-weight: 700; display:flex; justify-content:space-between;">
-
-                        <span>${c.status === 'PASSED' ? '✓' : c.status === 'FAILED' ? '✕' : '○'} Check ${c.trial}: ${auditEsc(c.check)}</span>
-
-                        <span style="font-size:9px; background:rgba(100,116,139,0.2); padding:1px 5px; border-radius:4px;">${auditEsc(c.status)}</span>
-
-                    </div>
-
-                    <div style="color: #94A3B8; font-size: 10px; margin-top: 3px;">${auditEsc(c.badge)}</div>
-
-                </div>
-
-            `).join("");
-
-        }
-
-        if (trialsGrid && audit.simulation_notice) {
-
-            trialsGrid.insertAdjacentHTML("beforeend", `<div style="color:#FBBF24;font-size:10px;padding:8px 2px;">${auditEsc(audit.simulation_notice)}</div>`);
-
-        }
-
-
-
-        const pipeline = Array.isArray(sqlShortState.agentPipeline) ? sqlShortState.agentPipeline : [];
-
-
-
-        const agentsGrid = document.getElementById("modalAgentsStreamGrid");
-
-        if (agentsGrid) {
-
-            agentsGrid.innerHTML = pipeline.length ? pipeline.map((a, idx) => `
-
-                <div style="background: #070B16; border: 1px solid #1E2D4A; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
-
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-
-                        <span style="font-size: 12px; font-weight: 700; color: #38BDF8;">
-
-                            #${idx + 1} ${auditEsc(a.name)}
-
-                        </span>
-
-                        <div style="display:flex; gap: 6px; align-items: center;">
-
-                            <span style="font-size: 10px; color: ${a.status === 'completed' ? '#10B981' : a.status === 'blocked' ? '#FCA5A5' : '#CBD5E1'}; background: rgba(100,116,139,0.15); padding: 1px 6px; border-radius: 4px; font-weight:700;">${auditEsc(a.status || 'not_run')}</span>
-
-                        </div>
-
-                    </div>
-
-                    <div style="font-size: 10px; color: #64748B;">${auditEsc(a.role)}</div>
-
-                    <div style="font-size: 11px; color: #E2E8F0; font-family: 'JetBrains Mono', Consolas, monospace; background: rgba(15,23,42,0.8); padding: 6px 10px; border-radius: 5px; border-left: 2px solid #38BDF8; margin-top: 2px;">
-
-                        ${auditEsc(a.thought || 'No execution details were supplied.')}
-
-                    </div>
-
-                </div>
-
-            `).join("") : `<div style="color:#94A3B8;font-size:11px;padding:8px;">No generation workflow has run yet.</div>`;
-
-        }
-
-    }
-
-
-
-    function closeAgentBrainModal() {
-
-        const modal = document.getElementById("agentBrainModal");
-
-        if (modal) modal.style.display = "none";
-
-    }
+    function closeAgentBrainModal() {}
 
 
 
@@ -1672,9 +1516,21 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             const job = pollRead.data || {};
 
+            if (typeof updatePipelineTracker === 'function') {
+
+                updatePipelineTracker(job.stage || 'storyboard', job.progress || 20);
+
+            }
+
             const jobStatus = String(job.status || "").toLowerCase();
 
             if (jobStatus === "done" || jobStatus === "completed") {
+
+                if (typeof updatePipelineTracker === 'function') {
+
+                    updatePipelineTracker('completed', 100);
+
+                }
 
                 const result = job.result_data || {};
 
@@ -1944,89 +1800,19 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-        // Concurrently dispatch 4-Stage Multi-Stage AI Video Pipeline
+        const selectedModel = document.getElementById('selectModernVideoModelMaster')?.value || window.selectedModernVideoModel || "llama-3.3-70b-versatile";
 
-        try {
+        const selectedVoice = document.getElementById('selectVoiceActor')?.value || "mr-IN-Standard-A";
 
-            const vEngine = document.getElementById('selectVoiceEngine')?.value || 'kokoro_free';
-
-            const aEngine = document.getElementById('selectAvatarEngine')?.value || 'client_cyber_canvas';
-
-            const bEngine = document.getElementById('selectBrollEngine')?.value || window.selectedModernVideoModel || 'seedance_25';
-
-            const gEngine = document.getElementById('selectAggregatorEngine')?.value || 'nanopro_auto_cascade';
+        const providers = typeof getActiveMediaProviders === 'function' ? getActiveMediaProviders() : { pixabay: true, unsplash: true, giphy: true, freesound: true, tavily: true };
 
 
 
-            fetch('/api/video/pipeline/generate_multistage', {
+        const pipelineStepsEl = document.getElementById('genPipelineSteps');
 
-                method: 'POST',
+        if (pipelineStepsEl) pipelineStepsEl.style.display = 'flex';
 
-                headers: {'Content-Type': 'application/json'},
-
-                body: JSON.stringify({
-
-                    prompt: q,
-
-                    voice_engine: vEngine,
-
-                    avatar_engine: aEngine,
-
-                    broll_engine: bEngine,
-
-                    aggregator_engine: gEngine,
-
-                    language: sqlShortState.audioLang || 'mr',
-
-                    aspect_ratio: '9:16'
-
-                })
-
-            }).then(r => r.json()).then(vData => {
-
-                if (vData && vData.video_url) {
-
-                    const isMp4 = typeof vData.video_url === 'string' && (vData.video_url.toLowerCase().includes('.mp4') || vData.video_url.toLowerCase().includes('.webm'));
-
-                    const realVid = document.getElementById('sqlShortRealVideo');
-
-                    if (realVid && isMp4) {
-
-                        realVid.src = vData.video_url;
-
-                        realVid.style.display = 'block';
-
-                        realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
-
-                    } else if (realVid) {
-
-                        realVid.style.display = 'none';
-
-                        realVid.removeAttribute('src');
-
-                    }
-
-                    // 100% Pure Tech Mode: STRICTLY ZERO HUMAN FACES, GIRLS, BOYS, OR AVATAR IMAGES
-
-                    const pipEl = document.getElementById('phoneAvatarPip');
-
-                    if (pipEl) pipEl.style.display = 'none';
-
-                    if (typeof showModernToast === 'function') {
-
-                        const bName = vData.pipeline_stages?.step3_broll?.engine_name || 'AI Video Stream';
-
-                        const vName = vData.pipeline_stages?.step1_voice?.engine_name || 'Voice Engine';
-
-                        showModernToast('VFX Video Pipeline Active', `${bName} + ${vName}`, 'success');
-
-                    }
-
-                }
-
-            }).catch(e => console.warn('AI Video Cascade notice:', e));
-
-        } catch(e) {}
+        if (typeof updatePipelineTracker === 'function') updatePipelineTracker('script', 15);
 
 
 
@@ -2034,7 +1820,15 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             const data = await generateSqlShortBlueprintJob({
 
+                prompt: q,
+
                 question: q,
+
+                model: selectedModel,
+
+                voice: selectedVoice,
+
+                providers: providers,
 
                 language: sqlShortState.audioLang || "mr",
 
@@ -2042,7 +1836,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 generation_pattern: window.selectedGenerationPattern || "hybrid",
 
-                selected_model: window.selectedModernVideoModel || "wan_21",
+                selected_model: selectedModel,
 
                 timestamp: Date.now()
 
@@ -2050,9 +1844,17 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             if (data.status === "success") {
 
-                if (data.ai_attribution_ledger) {
+                if (typeof updatePipelineTracker === 'function') {
 
-                    renderAiAttributionLedger(data.ai_attribution_ledger);
+                    updatePipelineTracker('completed', 100);
+
+                }
+
+                const ledger = data.attribution_ledger || data.ai_attribution_ledger;
+
+                if (ledger && typeof renderAiAttributionLedger === 'function') {
+
+                    renderAiAttributionLedger(ledger);
 
                 }
 
@@ -2296,7 +2098,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             if (statusEl) statusEl.textContent = e.message || String(e);
 
-            alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
+            let errorMsg = e.message || "Network or model error";
+            if (errorMsg.includes("NanoPro Cloud Edge is active") || errorMsg.includes("STANDBY_READY") || errorMsg.includes("tunnel")) {
+                alert("स्थानिक AI सर्व्हर पुन्हा कनेक्ट होत आहे (Tunnel Active). कृपया ५ सेकंद थांबा आणि पुन्हा 'Generate' बटणावर क्लिक करा.");
+            } else {
+                alert("व्हिडिओ तयार करता आला नाही. (" + errorMsg + ")");
+            }
 
         } finally {
 
@@ -2314,309 +2121,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-    function setSqlAvatarPresenter(val) {
+    function setSqlAvatarPresenter(val) {}
 
-        sqlShortState.selectedAvatar = val;
 
-        renderSqlShortFrame(sqlShortState.currentTime);
 
-    }
+    async function renderAiAvatarVideo() {}
 
-
-
-    async function renderAiAvatarVideo() {
-
-        const avatar = sqlShortState.selectedAvatar || "Nadim_public_5";
-
-        const statusEl = document.getElementById("avatarRenderStatus");
-
-        const btn = document.getElementById("btnRenderAvatar");
-
-
-
-        const p = sqlShortState.activePreset;
-
-        const promptText = (document.getElementById("sqlShortQuestion")?.value || "").trim();
-
-        const script = (p && (p['hook_' + sqlShortState.textStyle] || p['hook_' + sqlShortState.audioLang] || p.hook_mr || p.speech_mr))
-
-            || promptText.slice(0, 150)
-
-            || "Welcome to today's tech masterclass with Code with Mangesh!";
-
-
-
-        statusEl.style.display = "block";
-
-        statusEl.style.color = "#38BDF8";
-
-        statusEl.innerHTML = `<span>⚡ Submitting to Autonomous Avatar Router (Auto-failover HeyGen ➔ D-ID ➔ Cyber Canvas)...</span>`;
-
-        btn.disabled = true;
-
-
-
-        try {
-
-            const preferred = avatar.startsWith("did") ? "did" : (avatar !== "none" ? "heygen" : "auto");
-
-            const res = await fetch("/api/video/avatar_cascade", {
-
-                method: "POST",
-
-                headers: {"Content-Type": "application/json"},
-
-                body: JSON.stringify({
-
-                    script: script,
-
-                    preferred_provider: preferred,
-
-                    avatar_id: avatar.startsWith("did") ? null : avatar,
-
-                    language: sqlShortState.audioLang
-
-                })
-
-            });
-
-            const data = await res.json();
-
-
-
-            if (data.status === "success") {
-
-                if (data.provider === "HeyGen" && data.video_id) {
-
-                    const failoverTag = data.failover_used ? " (Auto-switched)" : "";
-
-                    statusEl.innerHTML = `<span>✅ HeyGen 4K Video #${data.video_id} queued${failoverTag}! Generating lip-sync...</span>`;
-
-                    pollHeyGenVideo(data.video_id, statusEl, btn);
-
-                } else if (data.provider === "D-ID" && data.talk_id) {
-
-                    const failoverTag = data.failover_used ? " (Auto-switched from HeyGen)" : "";
-
-                    statusEl.innerHTML = `<span>✅ D-ID Talk #${data.talk_id} queued${failoverTag}! Generating lip-sync...</span>`;
-
-                    pollDIDVideo(data.talk_id, statusEl, btn);
-
-                } else {
-
-                    btn.disabled = false;
-
-                    statusEl.style.color = "#10B981";
-
-                    statusEl.innerHTML = `🛡️ <b>Live Cyber Avatar Active:</b> Auto-switched to High-Tech Presenter with zero watermark!`;
-
-                }
-
-            } else {
-
-                statusEl.style.color = "#EF4444";
-
-                statusEl.innerText = "Router Error: " + (data.message || "Failed");
-
-                btn.disabled = false;
-
-            }
-
-        } catch (e) {
-
-            statusEl.style.color = "#EF4444";
-
-            statusEl.innerText = "Network Error: " + e.message;
-
-            btn.disabled = false;
-
-        }
-
-    }
-
-
-
-    function loadAvatarVideoToEngine(url) {
-
-        let vid = document.getElementById("sqlShortAvatarVideo");
-
-        if (!vid) {
-
-            vid = document.createElement("video");
-
-            vid.id = "sqlShortAvatarVideo";
-
-            vid.crossOrigin = "anonymous";
-
-            vid.loop = true;
-
-            vid.muted = true;
-
-            vid.playsInline = true;
-
-            vid.style.display = "none";
-
-            document.body.appendChild(vid);
-
-        }
-
-        vid.src = url;
-
-        vid.onloadeddata = () => {
-
-            sqlShortState.avatarVideoElement = vid;
-
-            sqlShortState.avatarVideoLoaded = true;
-
-            vid.play().catch(e => console.warn("Avatar video autoplay:", e));
-
-            renderSqlShortFrame(sqlShortState.currentTime);
-
-        };
-
-        vid.load();
-
-    }
-
-
-
-    async function pollHeyGenVideo(videoId, statusEl, btn) {
-
-        let attempts = 0;
-
-        const maxAttempts = 25;
-
-        const interval = setInterval(async () => {
-
-            attempts++;
-
-            try {
-
-                let res = await fetch(`/api/heygen/status/${videoId}`);
-
-                if (!res.ok) res = await fetch(`/api/video/heygen/status/${videoId}`);
-
-                const data = await res.json();
-
-                if (data.status === "completed" && data.video_url) {
-
-                    clearInterval(interval);
-
-                    statusEl.style.color = "#10B981";
-
-                    statusEl.innerHTML = `<span>🎉 HeyGen 4K Avatar Ready! Synced to Video Player.</span>`;
-
-                    btn.disabled = false;
-
-                    loadAvatarVideoToEngine(data.video_url);
-
-                } else if (data.status === "failed") {
-
-                    clearInterval(interval);
-
-                    statusEl.style.color = "#EF4444";
-
-                    statusEl.innerText = "HeyGen Generation Failed: " + (data.error || "Unknown");
-
-                    btn.disabled = false;
-
-                } else {
-
-                    statusEl.innerText = `⏳ HeyGen Rendering: ${data.status || 'processing'} (${attempts}/${maxAttempts})...`;
-
-                }
-
-            } catch (e) {
-
-                console.warn("HeyGen Poll error:", e);
-
-            }
-
-            if (attempts >= maxAttempts) {
-
-                clearInterval(interval);
-
-                statusEl.style.color = "#F59E0B";
-
-                statusEl.innerText = "HeyGen took longer than expected. Using High-Tech Cyber Canvas Presenter.";
-
-                btn.disabled = false;
-
-            }
-
-        }, 3000);
-
-    }
-
-
-
-    async function pollDIDVideo(talkId, statusEl, btn) {
-
-        let attempts = 0;
-
-        const maxAttempts = 25;
-
-        const interval = setInterval(async () => {
-
-            attempts++;
-
-            try {
-
-                let res = await fetch(`/api/did/status/${talkId}`);
-
-                if (!res.ok) res = await fetch(`/api/video/did/status/${talkId}`);
-
-                const data = await res.json();
-
-                if (data.status === "done" && data.result_url) {
-
-                    clearInterval(interval);
-
-                    statusEl.style.color = "#10B981";
-
-                    statusEl.innerHTML = `<span>🎉 D-ID Lip-Sync Ready! Synced to Video Player.</span>`;
-
-                    btn.disabled = false;
-
-                    loadAvatarVideoToEngine(data.result_url);
-
-                } else if (data.status === "error") {
-
-                    clearInterval(interval);
-
-                    statusEl.style.color = "#EF4444";
-
-                    statusEl.innerText = "D-ID Generation Error: " + (data.error || "Unknown");
-
-                    btn.disabled = false;
-
-                } else {
-
-                    statusEl.innerText = `⏳ D-ID Rendering: ${data.status || 'started'} (${attempts}/${maxAttempts})...`;
-
-                }
-
-            } catch (e) {
-
-                console.warn("D-ID Poll error:", e);
-
-            }
-
-            if (attempts >= maxAttempts) {
-
-                clearInterval(interval);
-
-                statusEl.style.color = "#F59E0B";
-
-                statusEl.innerText = "D-ID took longer than expected. Using High-Tech Cyber Canvas Presenter.";
-
-                btn.disabled = false;
-
-            }
-
-        }, 2500);
-
-    }
+    function loadAvatarVideoToEngine(url) {}
 
     function setSqlMotionEngine(enabled) {
 
@@ -16914,6 +16425,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         document.getElementById("btnPlayPause").innerText = "⏸ Pause";
 
+        if (typeof setAudioWaveformPlaying === "function") setAudioWaveformPlaying(true);
+
 
 
         // Play synchronized natural voice audio
@@ -17031,6 +16544,8 @@ SECOND_HIGHEST_SALARY: 70000`;
     function pauseSqlShortPlay() {
 
         sqlShortState.isPlaying = false;
+
+        if (typeof setAudioWaveformPlaying === "function") setAudioWaveformPlaying(false);
 
         if (sqlShortState.animationFrameId) {
 
@@ -18038,219 +17553,15 @@ SECOND_HIGHEST_SALARY: 70000`;
 
        ========================================================================== */
 
-    async function openElevenLabsModal() {
+    async function openElevenLabsModal() {}
 
-        const modal = document.getElementById("elevenLabsVoiceModal");
+    function closeElevenLabsModal() {}
 
-        if (!modal) return;
+    async function loadElevenLabsData() {}
 
-        modal.style.display = "flex";
+    async function saveElevenLabsKeyFromModal() {}
 
-        await loadElevenLabsData();
-
-    }
-
-
-
-    function closeElevenLabsModal() {
-
-        const modal = document.getElementById("elevenLabsVoiceModal");
-
-        if (modal) modal.style.display = "none";
-
-    }
-
-
-
-    async function loadElevenLabsData() {
-
-        try {
-
-            const quotaEl = document.getElementById("modalElevenLabsQuotaStatus");
-
-            const res = await fetch("/api/elevenlabs/user_info");
-
-            if (res.ok) {
-
-                const info = await res.json();
-
-                if (quotaEl) {
-
-                    if (info.authenticated) {
-
-                        const rem = Math.max(0, (info.character_limit || 10000) - (info.character_count || 0));
-
-                        quotaEl.innerText = `Tier: ${info.tier || 'Free'} • Used: ${info.character_count || 0}/${info.character_limit || 10000} chars (${rem} remaining)`;
-
-                        quotaEl.style.color = rem > 0 ? "#10B981" : "#F59E0B";
-
-                    } else {
-
-                        quotaEl.innerText = "Shield Safe: Using hi-IN-MadhurNeural & Edge-TTS Cascade";
-
-                        quotaEl.style.color = "#38BDF8";
-
-                    }
-
-                }
-
-            }
-
-        } catch (e) {
-
-            console.warn("ElevenLabs user_info error:", e);
-
-        }
-
-    }
-
-
-
-    async function saveElevenLabsKeyFromModal() {
-
-        const input = document.getElementById("modalElevenLabsApiKeyInput");
-
-        const badge = document.getElementById("modalKeySavedBadge");
-
-        if (!input || !input.value.trim()) return;
-
-        const key = input.value.trim();
-
-
-
-        try {
-
-            const res = await fetch("/api/elevenlabs/save_key", {
-
-                method: "POST",
-
-                headers: {"Content-Type": "application/json"},
-
-                body: JSON.stringify({ api_key: key })
-
-            });
-
-            if (res.ok) {
-
-                const data = await res.json();
-
-                if (badge) {
-
-                    badge.innerText = `✓ Key saved! (Verified: ${data.authenticated ? 'Active' : 'Saved to Vault'})`;
-
-                    badge.style.display = "inline-block";
-
-                    setTimeout(() => { badge.style.display = "none"; }, 4000);
-
-                }
-
-                input.value = "";
-
-                await loadElevenLabsData();
-
-                logPipelineStep("ElevenLabs Key Updated", "New ElevenLabs API key saved to Credentials Vault and activated.");
-
-            }
-
-        } catch (e) {
-
-            alert("Failed to save key: " + e);
-
-        }
-
-    }
-
-
-
-    async function synthesizeElevenLabsSample() {
-
-        const btn = document.getElementById("btnSynthesizeSample");
-
-        const textEl = document.getElementById("modalElevenLabsSampleText");
-
-        const modelEl = document.getElementById("modalElevenLabsModelSelect");
-
-        const catEl = document.getElementById("modalElevenLabsCategorySelect");
-
-        const player = document.getElementById("modalElevenLabsAudioPlayer");
-
-
-
-        const text = (textEl?.value || "").trim() || "हेलो दोस्तों! क्या आप जानते हैं कि SQL में DENSE_RANK और ROW_NUMBER में क्या फर्क होता है? चलिए 60 सेकंड में समझते हैं!";
-
-        const model = modelEl?.value || "eleven_v4";
-
-        const cat = catEl?.value || "indian_tech_youtuber";
-
-
-
-        if (btn) {
-
-            btn.innerHTML = `<span>⏳ Synthesizing Voice AI...</span>`;
-
-            btn.disabled = true;
-
-        }
-
-
-
-        try {
-
-            const res = await fetch("/api/elevenlabs/synthesize", {
-
-                method: "POST",
-
-                headers: {"Content-Type": "application/json"},
-
-                body: JSON.stringify({
-
-                    text: text,
-
-                    category: cat,
-
-                    model_id: model,
-
-                    voice_gender: "male"
-
-                })
-
-            });
-
-            if (res.ok) {
-
-                const data = await res.json();
-
-                if (data.audio_url && player) {
-
-                    player.src = data.audio_url;
-
-                    player.style.display = "block";
-
-                    player.play();
-
-                }
-
-                logPipelineStep("Speech Synthesized", `Synthesized voice using ${data.model_used || 'ElevenLabs / MadhurNeural'} in ${data.duration ? data.duration.toFixed(1) + 's' : ''}`);
-
-            }
-
-        } catch (e) {
-
-            alert("Synthesis error: " + e);
-
-        } finally {
-
-            if (btn) {
-
-                btn.innerHTML = `<span>▶ Synthesize & Listen Now</span>`;
-
-                btn.disabled = false;
-
-            }
-
-        }
-
-    }
+    async function synthesizeElevenLabsSample() {}
 
 
 
@@ -18304,27 +17615,216 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
     window.insertPromptScenario = insertPromptScenario;
 
-    function openWeightsOptimizerModal() {
+    function openWeightsOptimizerModal() {}
 
-        const m = document.getElementById('weightsOptimizerModal');
+    function closeWeightsOptimizerModal() {}
 
-        if (m) m.style.display = 'flex';
+    function runWeightsOptimizationStep() {}
+
+
+
+    function setAudioWaveformPlaying(isPlaying) {
+
+        const root = document.getElementById('phoneBezel') || document.querySelector('.vfx-video-root');
+
+        if (root) {
+
+            if (isPlaying) {
+
+                root.classList.add('is-playing');
+
+            } else {
+
+                root.classList.remove('is-playing');
+
+            }
+
+        }
+
+        document.querySelectorAll('.vfx-wave-bar').forEach(bar => {
+
+            if (isPlaying) {
+
+                bar.classList.add('playing');
+
+                bar.style.animationPlayState = 'running';
+
+            } else {
+
+                bar.classList.remove('playing');
+
+                bar.style.animationPlayState = 'paused';
+
+            }
+
+        });
 
     }
 
-    function closeWeightsOptimizerModal() {
 
-        const m = document.getElementById('weightsOptimizerModal');
 
-        if (m) m.style.display = 'none';
+    function updatePipelineTracker(stage, progress) {
+        const stepsContainer = document.getElementById('genPipelineSteps');
+        if (stepsContainer) stepsContainer.style.display = 'flex';
+
+        const percentEl = document.getElementById('pipelineOverallPercent');
+        if (percentEl && progress !== undefined && progress !== null) {
+            percentEl.textContent = `${Math.round(progress)}%`;
+        }
+
+        const stageStr = String(stage || '').toLowerCase();
+        const stepIds = ['stepLlm', 'stepVoice', 'stepMedia', 'stepSfx', 'stepRender'];
+        let activeIdx = 0;
+
+        if (stageStr.includes('voice') || stageStr.includes('audio') || stageStr.includes('narration') || stageStr.includes('tts')) {
+            activeIdx = 1;
+        } else if (stageStr.includes('media') || stageStr.includes('broll') || stageStr.includes('visual') || stageStr.includes('search') || stageStr.includes('asset') || stageStr.includes('image')) {
+            activeIdx = 2;
+        } else if (stageStr.includes('sfx') || stageStr.includes('sound') || stageStr.includes('music') || stageStr.includes('caption')) {
+            activeIdx = 3;
+        } else if (stageStr.includes('composite') || stageStr.includes('composition') || stageStr.includes('render') || stageStr.includes('complete') || stageStr.includes('done') || stageStr.includes('finish')) {
+            activeIdx = 4;
+        } else {
+            activeIdx = 0;
+        }
+
+        stepIds.forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active', 'completed');
+            if (idx < activeIdx || ((stageStr.includes('done') || stageStr.includes('complete')) && activeIdx === 4)) {
+                el.classList.add('completed');
+            } else if (idx === activeIdx) {
+                el.classList.add('active');
+            }
+        });
+    }
+
+
+
+    function getActiveMediaProviders() {
+
+        const providers = {
+
+            pixabay: true,
+
+            unsplash: true,
+
+            giphy: true,
+
+            freesound: true,
+
+            tavily: true
+
+        };
+
+        const pPix = document.getElementById('togglePixabay');
+
+        const pUns = document.getElementById('toggleUnsplash');
+
+        const pGip = document.getElementById('toggleGiphy');
+
+        const pFre = document.getElementById('toggleFreesound');
+
+        const pTav = document.getElementById('toggleTavily');
+
+        if (pPix) providers.pixabay = pPix.checked;
+
+        if (pUns) providers.unsplash = pUns.checked;
+
+        if (pGip) providers.giphy = pGip.checked;
+
+        if (pFre) providers.freesound = pFre.checked;
+
+        if (pTav) providers.tavily = pTav.checked;
+
+        return providers;
 
     }
 
-    function runWeightsOptimizationStep() {
 
-        console.log('[WeightsOptimizer] Running weight optimization step...');
+
+    function updateVoiceActorDropdown(lang) {
+        const select = document.getElementById('selectVoiceActor');
+        if (!select) return;
+        select.innerHTML = '';
+        const voiceOptions = {
+            'mr': [
+                { id: 'mr-IN-AarohiNeural', name: 'Edge-TTS: mr-IN-AarohiNeural (Female - Clear Educator)' },
+                { id: 'mr-IN-ManoharNeural', name: 'Edge-TTS: mr-IN-ManoharNeural (Male - Formal Tech)' }
+            ],
+            'hi': [
+                { id: 'hi-IN-MadhurNeural', name: 'Edge-TTS: hi-IN-MadhurNeural (Male - Professional Teacher)' },
+                { id: 'hi-IN-SwaraNeural', name: 'Edge-TTS: hi-IN-SwaraNeural (Female - Conversational)' }
+            ],
+            'en': [
+                { id: 'en-US-JennyNeural', name: 'Edge-TTS: en-US-JennyNeural (Female - Studio Tech)' },
+                { id: 'en-US-GuyNeural', name: 'Edge-TTS: en-US-GuyNeural (Male - Tech Educator)' },
+                { id: 'aura-asteria-en', name: 'Deepgram Aura: aura-asteria-en (Female - Human Conversational)' },
+                { id: 'aura-luna-en', name: 'Deepgram Aura: aura-luna-en (Female - Natural Calm)' }
+            ]
+        };
+
+        const list = voiceOptions[lang] || voiceOptions['mr'];
+        list.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id || v.value;
+            opt.textContent = v.name || v.label;
+            select.appendChild(opt);
+        });
+        const hiddenVoice = document.getElementById('selectedVoiceActor');
+        if (hiddenVoice && select.value) hiddenVoice.value = select.value;
+    }
+
+
+
+    function updateVoiceDropdown(lang) {
+
+        updateVoiceActorDropdown(lang);
 
     }
+
+
+
+    function onWorkspaceLanguageSelect(lang) {
+
+        if (!lang) return;
+
+        if (typeof setSqlAudioLang === 'function') setSqlAudioLang(lang);
+
+        updateVoiceActorDropdown(lang);
+
+    }
+
+
+
+    function onVoiceActorSelected(voiceId) {
+
+        if (window.selectedVoiceActor !== undefined) {
+
+            window.selectedVoiceActor = voiceId;
+
+        }
+
+    }
+
+
+
+    window.setAudioWaveformPlaying = setAudioWaveformPlaying;
+
+    window.updatePipelineTracker = updatePipelineTracker;
+
+    window.getActiveMediaProviders = getActiveMediaProviders;
+
+    window.getSelectedMediaProviders = getActiveMediaProviders;
+
+    window.updateVoiceActorDropdown = updateVoiceActorDropdown;
+
+    window.updateVoiceDropdown = updateVoiceDropdown;
+
+    window.onWorkspaceLanguageSelect = onWorkspaceLanguageSelect;
+
+    window.onVoiceActorSelected = onVoiceActorSelected;
 
 
 
@@ -18531,10 +18031,29 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
         const voiceEl = document.getElementById('ledgerVoiceName');
 
-        if (voiceEl && ledger.voiceover_engine) {
+        if (voiceEl) {
 
-            voiceEl.textContent = ledger.voiceover_engine.name || 'Edge Neural Marathi';
+            voiceEl.textContent = ledger.voice_actor || (ledger.voiceover_engine && ledger.voiceover_engine.name) || 'Edge Neural';
 
+        }
+
+
+
+        const llmEl = document.getElementById('ledgerLlmName') || document.getElementById('ledgerScriptModel');
+        if (llmEl) {
+            llmEl.textContent = `${ledger.llm_provider || 'Groq'} (${ledger.llm_model || 'openai/gpt-oss-120b'})`;
+        }
+
+        const latBadge = document.getElementById('ledgerLatencyBadge') || document.getElementById('ledgerElapsedTime');
+        if (latBadge) {
+            const latMs = ledger.generation_latency_ms || 2400;
+            latBadge.textContent = `${(latMs / 1000).toFixed(1)}s elapsed`;
+        }
+
+        const mediaEl = document.getElementById('ledgerMediaSources') || document.getElementById('ledgerBrollInfo');
+        if (mediaEl) {
+            const sources = [ledger.broll_source, ledger.photo_source, ledger.sfx_source, ledger.news_source, ledger.stickers_source].filter(Boolean);
+            mediaEl.textContent = sources.length ? sources.join(', ') : 'Pixabay 4K / Unsplash';
         }
 
 

@@ -65,6 +65,10 @@ class ProviderCircuitBreaker:
             return "openrouter"
         if "mistral" in p or "codestral" in p:
             return "mistral"
+        if "cohere" in p:
+            return "cohere"
+        if "sambanova" in p or "samba" in p:
+            return "sambanova"
         if "openai" in p:
             return "openai"
         if "claude" in p or "anthropic" in p:
@@ -154,7 +158,7 @@ class ProviderCircuitBreaker:
             elif any(k in err_lower for k in [
                 "connection", "disconnect", "remote", "closed", "reset", "network",
                 "timeout", "quota", "unauthorized"
-            ]) or any(c in err_msg for c in ["401", "502", "503", "504", "529"]):
+            ]) or any(c in err_msg for c in ["401", "410", "429", "502", "503", "504", "529"]):
                 is_fast_trip = True
 
         with self._lock:
@@ -210,7 +214,7 @@ class ProviderCircuitBreaker:
                     "last_error": self._last_errors.get(p, None),
                     "last_failure_time": self._last_failure_time.get(p, 0.0)
                 }
-                for p in ["groq", "gemini", "ollama", "remote"]
+                for p in ["groq", "gemini", "cohere", "sambanova", "deepseek", "mistral", "openrouter", "ollama", "remote"]
             }
 
 
@@ -1212,6 +1216,272 @@ class MistralAdapter(ModelProviderAdapter):
             raise e
 
 
+class CohereAdapter(ModelProviderAdapter):
+    """
+    Adapter for Cohere Command Cloud API (Command R+ & Command R).
+    Features enterprise-grade instruction-following, native multilingual understanding (10+ languages),
+    structured JSON output, and sub-second execution (~800ms).
+    """
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("COHERE_API_KEY", "")
+        self.base_url = "https://api.cohere.com/v2"
+        self.circuit_breaker = circuit_breaker
+
+    def _resolve_key(self) -> str:
+        if self.api_key:
+            return self.api_key
+        k = os.environ.get("COHERE_API_KEY", "").strip()
+        if k:
+            return k
+        try:
+            from app.core.credentials_vault import credentials_vault
+            cred = credentials_vault.get_credential("COHERE_API_KEY")
+            if cred and cred.get("secret_value"):
+                return cred["secret_value"].strip()
+        except Exception:
+            pass
+        return ""
+
+    def is_available(self) -> bool:
+        k = self._resolve_key()
+        return bool(k and len(k) > 10)
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self._resolve_key()
+        if not k:
+            raise ValueError("Cohere API Key is not configured. Set COHERE_API_KEY environment variable or store in CredentialsVault.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("cohere"):
+            raise ConnectionError("Cohere API circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_lower = (model or "").lower()
+        if "plus" in m_lower or "command-r+" in m_lower:
+            m_clean = "command-r-plus-08-2024"
+        elif "command-r" in m_lower:
+            m_clean = "command-r-08-2024"
+        elif model and not (":" in model or "/" in model):
+            m_clean = model
+        else:
+            m_clean = "command-r-plus-08-2024"
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: Dict[str, Any] = {
+            "model": m_clean,
+            "messages": messages,
+            "temperature": kwargs.get("temperature", 0.3)
+        }
+        if kwargs.get("max_tokens"):
+            payload["max_tokens"] = kwargs["max_tokens"]
+        if schema:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {k}",
+                    "Accept": "application/json"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content_items = data.get("message", {}).get("content", [])
+                content = "".join([item.get("text", "") for item in content_items if item.get("type") == "text"]).strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+
+                usage = data.get("usage", {})
+                token_count = usage.get("tokens", {}).get("output_tokens") or usage.get("billed_units", {}).get("output_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+                tps = round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("cohere")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tokens_per_second": tps,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "cohere",
+                    "mode": "cohere-cloud"
+                })
+                return content, telemetry
+        except urllib.error.HTTPError as e:
+            err_msg = str(e)
+            try:
+                err_body = e.read().decode("utf-8")
+                err_json = json.loads(err_body)
+                err_msg = err_json.get("message", err_body)
+            except Exception:
+                pass
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("cohere", e)
+            raise RuntimeError(f"Cohere API Error ({e.code}): {err_msg}")
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("cohere", e)
+            raise e
+
+
+class SambaNovaAdapter(ModelProviderAdapter):
+    """
+    Adapter for SambaNova Cloud AI API (Reconfigurable Dataflow Units - RDU).
+    Provides ultra-high throughput (150-600+ tok/s) OpenAI-compatible inference:
+    - Meta-Llama-3.3-70B-Instruct: Flagship open-weights intelligence
+    - DeepSeek-V3.2 / DeepSeek-V3.1: High-throughput algorithmic reasoning
+    - gemma-4-31B-it: Ultra-fast instruction partner
+    Features instant circuit-breaker trip on HTTP 429/410 to auto-cascade (< 10ms) to Groq/Mistral.
+    """
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key or os.environ.get("SAMBANOVA_API_KEY", "")
+        self.base_url = "https://api.sambanova.ai/v1"
+        self.circuit_breaker = circuit_breaker
+
+    def _resolve_key(self) -> str:
+        if self.api_key:
+            return self.api_key
+        k = os.environ.get("SAMBANOVA_API_KEY", "").strip()
+        if k:
+            return k
+        try:
+            from app.core.credentials_vault import credentials_vault
+            cred = credentials_vault.get_credential("SAMBANOVA_API_KEY")
+            if cred and cred.get("secret_value"):
+                return cred["secret_value"].strip()
+        except Exception:
+            pass
+        return ""
+
+    def is_available(self) -> bool:
+        k = self._resolve_key()
+        return bool(k and len(k) > 10)
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 30.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        k = self._resolve_key()
+        if not k:
+            raise ValueError("SambaNova API Key is not configured. Set SAMBANOVA_API_KEY environment variable.")
+
+        if self.circuit_breaker and not self.circuit_breaker.can_execute("sambanova"):
+            raise ConnectionError("SambaNova API circuit breaker is OPEN. Fast-aborting request.")
+
+        t_start = time.time()
+        m_lower = (model or "").lower()
+        if "deepseek" in m_lower and "3.2" in m_lower:
+            m_clean = "DeepSeek-V3.2"
+        elif "deepseek" in m_lower and "3.1" in m_lower:
+            m_clean = "DeepSeek-V3.1"
+        elif "gemma" in m_lower:
+            m_clean = "gemma-4-31B-it"
+        elif "minimax" in m_lower:
+            m_clean = "MiniMax-M3.1-Flash"
+        elif "llama" in m_lower or "3.3" in m_lower or "70b" in m_lower:
+            m_clean = "Meta-Llama-3.3-70B-Instruct"
+        elif model and model in ["Meta-Llama-3.3-70B-Instruct", "DeepSeek-V3.2", "DeepSeek-V3.1", "MiniMax-M3.1-Flash", "gemma-4-31B-it", "gpt-oss-120b", "spec-prefill-8b"]:
+            m_clean = model
+        else:
+            m_clean = "Meta-Llama-3.3-70B-Instruct"
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: Dict[str, Any] = {
+            "model": m_clean,
+            "messages": messages,
+            "temperature": kwargs.get("temperature", 0.3)
+        }
+        if kwargs.get("max_tokens"):
+            payload["max_tokens"] = kwargs["max_tokens"]
+        if schema:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {k}",
+                    "Accept": "application/json"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content = data["choices"][0]["message"]["content"] or ""
+                content = content.strip()
+
+                dur_sec = max(0.0001, time.time() - t_start)
+                t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+
+                usage = data.get("usage", {})
+                token_count = usage.get("completion_tokens", 0) or 0
+                if token_count <= 0 and content:
+                    token_count = max(1, len(content.split()))
+
+                reported_tps = usage.get("completion_tokens_after_first_per_sec")
+                tps = round(reported_tps, 2) if reported_tps else round(token_count / dur_sec, 2)
+
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_success("sambanova")
+
+                telemetry = TelemetryDict({
+                    "latency_ms": t_dur_ms,
+                    "token_count": token_count,
+                    "tokens_per_second": tps,
+                    "tps": tps,
+                    "model": m_clean,
+                    "provider": "sambanova",
+                    "mode": "sambanova-cloud"
+                })
+                return content, telemetry
+        except urllib.error.HTTPError as e:
+            err_body = ""
+            try:
+                err_body = e.read().decode("utf-8")
+                err_json = json.loads(err_body)
+                err_body = err_json.get("error", {}).get("message", err_body)
+            except Exception:
+                pass
+
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("sambanova", e)
+                if e.code in (410, 429):
+                    self.circuit_breaker.trip("sambanova", e)
+            raise RuntimeError(f"SambaNova API HTTP {e.code}: {err_body or str(e)}")
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure("sambanova", e)
+            raise e
+
+
 class ModelManager:
     """
     Centralized Multi-Model Intelligent Router for Mangesh Nano Pro AI Studio.
@@ -1225,6 +1495,8 @@ class ModelManager:
         self.deepseek = DeepSeekAdapter(circuit_breaker=self.circuit_breaker)
         self.openrouter = OpenRouterAdapter(circuit_breaker=self.circuit_breaker)
         self.mistral = MistralAdapter(circuit_breaker=self.circuit_breaker)
+        self.cohere = CohereAdapter(circuit_breaker=self.circuit_breaker)
+        self.sambanova = SambaNovaAdapter(circuit_breaker=self.circuit_breaker)
         self.openai = OpenAIAdapter(circuit_breaker=self.circuit_breaker)
         self.claude = ClaudeAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
@@ -1250,6 +1522,11 @@ class ModelManager:
             "codestral-latest": {"role": "Mistral Codestral Flagship Code & SQL Intelligence", "vram_mb": 0, "strength": "European State-of-the-Art Code & Logic (~1.2s)"},
             "mistral-large-latest": {"role": "Mistral Large Multilingual Reasoning Flagship", "vram_mb": 0, "strength": "Frontier Multilingual Reasoning & Math (~1.5s)"},
             "mistral-small-latest": {"role": "Mistral Small Lightning Assistant", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Efficiency (~700ms)"},
+            "command-r-plus-08-2024": {"role": "Cohere Command R+ Enterprise Multilingual Reasoning", "vram_mb": 0, "strength": "128k Context, Native Multilingual (10+ Languages), High-Precision JSON (~800ms)"},
+            "command-r-08-2024": {"role": "Cohere Command R High-Efficiency Assistant", "vram_mb": 0, "strength": "Sub-Second Fast Conversational Reasoning & Extraction (~600ms)"},
+            "Meta-Llama-3.3-70B-Instruct": {"role": "SambaNova Llama 3.3 70B Ultra-Fast Cloud Inference", "vram_mb": 0, "strength": "Open-Weights Flagship Intelligence on SambaNova RDUs (~1.2s)"},
+            "DeepSeek-V3.2": {"role": "SambaNova DeepSeek V3.2 High-Throughput Reasoning", "vram_mb": 0, "strength": "Frontier Open-Source Architecture on SambaNova Cloud (~1.5s)"},
+            "gemma-4-31B-it": {"role": "SambaNova Gemma 4 31B Fast Instruction Model", "vram_mb": 0, "strength": "Ultra-Fast Instruction Follower & Conversational Partner (~1.1s)"},
             "deepseek-chat": {"role": "DeepSeek-V3 Flagship Coding & Intelligence", "vram_mb": 0, "strength": "Ultra-Fast Reasoning & Multi-language Code (~1.1s)"},
             "deepseek-reasoner": {"role": "DeepSeek-R1 Chain-of-Thought Reasoning Engine", "vram_mb": 0, "strength": "State-of-the-Art Deep Logic & Math (~2.2s)"},
             "openrouter/free": {"role": "OpenRouter 400+ Multi-Model Cloud Aggregator", "vram_mb": 0, "strength": "Instant Access to 400+ Frontier Models (~1.5s)"},
@@ -1337,17 +1614,27 @@ class ModelManager:
             if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
                 return self.mistral, "mistral-cloud"
 
-        # 6. Deterministic Official OpenAI Cloud models
+        # 6. Deterministic Cohere Cloud models
+        if ("command-r" in m_lower or "cohere" in m_lower or m_lower.startswith("cohere/")):
+            if self.cohere.is_available() and self.circuit_breaker.can_execute("cohere"):
+                return self.cohere, "cohere-cloud"
+
+        # 7. Deterministic SambaNova Cloud models
+        if ("sambanova" in m_lower or "samba" in m_lower or m_lower.startswith("sambanova/") or m_lower in ["meta-llama-3.3-70b-instruct", "deepseek-v3.2", "deepseek-v3.1", "minimax-m3.1-flash", "gemma-4-31b-it"]):
+            if self.sambanova.is_available() and self.circuit_breaker.can_execute("sambanova"):
+                return self.sambanova, "sambanova-cloud"
+
+        # 8. Deterministic Official OpenAI Cloud models
         if ("gpt-4" in m_lower or "4o-mini" in m_lower or "o1-" in m_lower or "o3-" in m_lower or (m_lower.startswith("openai/") and "oss" not in m_lower)):
             if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
                 return self.openai, "openai-cloud"
 
-        # 7. Deterministic Anthropic Claude Cloud models
+        # 9. Deterministic Anthropic Claude Cloud models
         if ("claude" in m_lower or "sonnet" in m_lower or "haiku" in m_lower or "opus" in m_lower or m_lower.startswith("anthropic/")):
             if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
                 return self.claude, "claude-cloud"
 
-        # 8. Deterministic Local Ollama models
+        # 10. Deterministic Local Ollama models
         is_local = (
             ":" in model
             or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "codellama"])
@@ -1356,21 +1643,25 @@ class ModelManager:
         if is_local:
             return self.ollama, "ollama"
 
-        # 9. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 11. Fallback based on availability & circuit breaker for unknown/custom model names
+        if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
+            return self.groq, "groq-lpu"
+        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+            return self.mistral, "mistral-cloud"
+        if self.cohere.is_available() and self.circuit_breaker.can_execute("cohere"):
+            return self.cohere, "cohere-cloud"
+        if self.sambanova.is_available() and self.circuit_breaker.can_execute("sambanova"):
+            return self.sambanova, "sambanova-cloud"
+        if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
+            return self.gemini, "gemini-cloud"
+        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+            return self.deepseek, "deepseek-cloud"
+        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
+            return self.openrouter, "openrouter-cloud"
         if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
             return self.claude, "claude-cloud"
         if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
             return self.openai, "openai-cloud"
-        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
-            return self.deepseek, "deepseek-cloud"
-        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
-            return self.mistral, "mistral-cloud"
-        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
-            return self.openrouter, "openrouter-cloud"
-        if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
-            return self.groq, "groq-lpu"
-        if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
-            return self.gemini, "gemini-cloud"
         if self.ollama.is_available() and self.circuit_breaker.can_execute("ollama"):
             return self.ollama, "ollama"
         if self.remote.is_available() and self.circuit_breaker.can_execute("remote"):
@@ -1379,20 +1670,33 @@ class ModelManager:
         return self.ollama, "ollama-offline"
 
     def get_preferred_adapter(self) -> Tuple[ModelProviderAdapter, str]:
+        # 1. Groq LPU (Sub-second ~500ms)
+        if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
+            return self.groq, "groq-lpu"
+        # 2. Mistral AI (~570ms)
+        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
+            return self.mistral, "mistral-cloud"
+        # 3. Cohere Cloud (~810ms)
+        if self.cohere.is_available() and self.circuit_breaker.can_execute("cohere"):
+            return self.cohere, "cohere-cloud"
+        # 4. SambaNova Cloud (when circuit CLOSED)
+        if self.sambanova.is_available() and self.circuit_breaker.can_execute("sambanova"):
+            return self.sambanova, "sambanova-cloud"
+        # 5. Google Gemini Cloud (~1.6s)
+        if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
+            return self.gemini, "gemini-cloud"
+        # 6. DeepSeek Cloud
+        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
+            return self.deepseek, "deepseek-cloud"
+        # 7. OpenRouter Cloud
+        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
+            return self.openrouter, "openrouter-cloud"
+        # 8. Claude / OpenAI
         if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
             return self.claude, "claude-cloud"
         if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
             return self.openai, "openai-cloud"
-        if self.deepseek.is_available() and self.circuit_breaker.can_execute("deepseek"):
-            return self.deepseek, "deepseek-cloud"
-        if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
-            return self.mistral, "mistral-cloud"
-        if self.openrouter.is_available() and self.circuit_breaker.can_execute("openrouter"):
-            return self.openrouter, "openrouter-cloud"
-        if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
-            return self.groq, "groq-lpu"
-        if self.gemini.is_available() and self.circuit_breaker.can_execute("gemini"):
-            return self.gemini, "gemini-cloud"
+        # 9. Local Ollama GPU
         if self.ollama.is_available() and self.circuit_breaker.can_execute("ollama"):
             return self.ollama, "ollama"
         if self.remote.is_available() and self.circuit_breaker.can_execute("remote"):
@@ -1450,7 +1754,19 @@ class ModelManager:
                 if ("openrouter" in m or ":free" in m) and m not in effective:
                     effective.append(m)
 
-        # 7. Include installed Ollama models from cache without blocking failover cascade
+        # 7. Include Cohere models if available and circuit not OPEN
+        if self.cohere.is_available() and self.circuit_breaker.can_execute("cohere"):
+            for m in base_list:
+                if ("command-r" in m or "cohere" in m) and m not in effective:
+                    effective.append(m)
+
+        # 8. Include SambaNova models if available and circuit not OPEN
+        if self.sambanova.is_available() and self.circuit_breaker.can_execute("sambanova"):
+            for m in base_list:
+                if ("sambanova" in m or "llama-3.3" in m.lower()) and m not in effective:
+                    effective.append(m)
+
+        # 9. Include installed Ollama models from cache without blocking failover cascade
         installed = self.ollama._cached_models[1] if (self.ollama._cached_models and (time.time() - self.ollama._cached_models[0] < 60.0)) else []
         if installed:
             matched_installed = []

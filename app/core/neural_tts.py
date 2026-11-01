@@ -15,7 +15,7 @@ import re
 import asyncio
 import hashlib
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from app.core.logger import log_event
 from app.core.elevenlabs_voice import elevenlabs_voice
 
@@ -363,6 +363,70 @@ class NeuralTTSEngine:
         """Synchronous wrapper for get_preset_audio_async."""
         return asyncio.run(self.get_preset_audio_async(preset_id, language))
 
+    def generate_speech(self, text: str, output_path: Union[str, Path], voice: Optional[str] = None) -> bool:
+        """
+        Synthesizes high-fidelity speech using Microsoft Edge Neural TTS for a specific voice actor.
+        Supports:
+        - Marathi: mr-IN-AarohiNeural (Female Teacher), mr-IN-ManoharNeural (Male Teacher)
+        - Hindi: hi-IN-MadhurNeural (Male Teacher), hi-IN-SwaraNeural (Female)
+        - English: en-US-JennyNeural (Female), en-US-GuyNeural (Male), en-IN-NeerjaNeural, en-IN-PrabhatNeural
+        Returns True if successful, False otherwise.
+        """
+        if not text or not text.strip():
+            return False
+
+        out_path = Path(output_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        v = (voice or "").strip()
+        if not v or "Neural" not in v:
+            v = "mr-IN-AarohiNeural"
+
+        try:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(asyncio.run, self._synthesize_edge_tts(text, v, out_path)).result(timeout=65)
+            else:
+                asyncio.run(self._synthesize_edge_tts(text, v, out_path))
+
+            return out_path.exists() and out_path.stat().st_size > 100
+        except Exception as e:
+            log_event(f"Microsoft Neural TTS generate_speech error for {v}: {e}", level="ERROR", component="NeuralTTS")
+            return False
+
+    async def generate_speech_async(self, text: str, output_path: Union[str, Path], voice: Optional[str] = None) -> bool:
+        """Asynchronous synthesis helper for Edge-TTS."""
+        if not text or not text.strip():
+            return False
+        out_path = Path(output_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        v = (voice or "").strip()
+        if not v or "Neural" not in v:
+            v = "mr-IN-AarohiNeural"
+        try:
+            await self._synthesize_edge_tts(text, v, out_path)
+            return out_path.exists() and out_path.stat().st_size > 100
+        except Exception as e:
+            log_event(f"Microsoft Neural TTS generate_speech_async error for {v}: {e}", level="ERROR", component="NeuralTTS")
+            return False
+
 
 # Global Singleton instance
 neural_tts = NeuralTTSEngine()
+
+
+def generate_speech(text: str, output_path: Union[str, Path], voice: Optional[str] = None) -> bool:
+    """Module-level wrapper for neural_tts.generate_speech."""
+    return neural_tts.generate_speech(text, output_path, voice=voice)
+
+
+async def generate_speech_async(text: str, output_path: Union[str, Path], voice: Optional[str] = None) -> bool:
+    """Module-level wrapper for neural_tts.generate_speech_async."""
+    return await neural_tts.generate_speech_async(text, output_path, voice=voice)
+

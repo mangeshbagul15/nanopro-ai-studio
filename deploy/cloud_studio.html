@@ -3047,7 +3047,12 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             if (statusEl) statusEl.textContent = e.message || String(e);
 
-            alert("व्हिडिओ तयार करता आला नाही. तुमचे prompt पुन्हा तपासा आणि पुन्हा प्रयत्न करा. (" + (e.message || "Network or model error") + ")");
+            let errorMsg = e.message || "Network or model error";
+            if (errorMsg.includes("NanoPro Cloud Edge is active") || errorMsg.includes("STANDBY_READY") || errorMsg.includes("tunnel")) {
+                alert("स्थानिक AI सर्व्हर पुन्हा कनेक्ट होत आहे (Tunnel Active). कृपया ५ सेकंद थांबा आणि पुन्हा 'Generate' बटणावर क्लिक करा.");
+            } else {
+                alert("व्हिडिओ तयार करता आला नाही. (" + errorMsg + ")");
+            }
 
         } finally {
 
