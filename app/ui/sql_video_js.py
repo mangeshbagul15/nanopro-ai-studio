@@ -9383,75 +9383,73 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         await Promise.all(sqlShortState.sceneAssetList.map((asset, index) => new Promise((resolve) => {
 
-            if (!asset || !asset.image_url) return resolve();
+            if (!asset || (!asset.image_url && !asset.video_url)) return resolve();
 
-            const image = new Image();
+            const scene = { image: null, video: null, sticker: null, asset };
+            sqlShortState.sceneAssets.set(String(asset.scene_id ?? index), scene);
+            sqlShortState.sceneAssets.set(String(index), scene);
+            sqlShortState.sceneAssets.set(String(index + 1), scene);
+            sqlShortState.sceneAssets.set(`index:${index}`, scene);
+            if (asset.title) {
+                sqlShortState.sceneAssets.set(String(asset.title).toLowerCase().trim(), scene);
+            }
 
-            image.crossOrigin = "anonymous";
-
-            const imageTimer = setTimeout(() => resolve(), 12000);
-
-            image.onload = () => {
-
-                clearTimeout(imageTimer);
-
-                const scene = { image, video: null, asset };
-
-                sqlShortState.sceneAssets.set(String(asset.scene_id ?? index), scene);
-
-                sqlShortState.sceneAssets.set(String(index), scene);
-
-                sqlShortState.sceneAssets.set(String(index + 1), scene);
-
-                sqlShortState.sceneAssets.set(`index:${index}`, scene);
-
-                if (asset.title) {
-
-                    sqlShortState.sceneAssets.set(String(asset.title).toLowerCase().trim(), scene);
-
-                }
-
+            const checkDone = () => {
                 if (sqlShortState.activePreset) {
-
                     renderSqlShortFrame(sqlShortState.currentTime || 0);
-
                 }
-
-                if (!asset.video_url) return resolve();
-
-                const video = document.createElement("video");
-
-                video.crossOrigin = "anonymous";
-
-                video.muted = true;
-
-                video.loop = true;
-
-                video.playsInline = true;
-
-                video.preload = "auto";
-
-                const videoTimer = setTimeout(resolve, 7000);
-
-                video.onloadeddata = () => { clearTimeout(videoTimer); scene.video = video; resolve(); };
-
-                video.onerror = () => { clearTimeout(videoTimer); resolve(); };
-
-                video.src = asset.video_url;
-
-                video.load();
-
-            };
-
-            image.onerror = () => {
-
-                clearTimeout(imageTimer);
-
                 resolve();
-
             };
 
-            image.src = asset.image_url;
+            const overallTimer = setTimeout(checkDone, 8000);
+
+            // 1. Pixabay 4K/2K Video Background
+            if (asset.video_url) {
+                const video = document.createElement("video");
+                video.crossOrigin = "anonymous";
+                video.muted = true;
+                video.loop = true;
+                video.playsInline = true;
+                video.preload = "auto";
+                video.onloadeddata = () => {
+                    scene.video = video;
+                    checkDone();
+                };
+                video.onerror = () => {
+                    console.warn(`Scene ${index + 1} video load notice; photo fallback active.`);
+                };
+                video.src = asset.video_url;
+                video.load();
+            }
+
+            // 2. Unsplash 4K Portrait 9:16 Photo
+            if (asset.image_url) {
+                const image = new Image();
+                image.crossOrigin = "anonymous";
+                image.onload = () => {
+                    scene.image = image;
+                    checkDone();
+                };
+                image.onerror = () => {
+                    console.warn(`Scene ${index + 1} photo fallback notice.`);
+                };
+                image.src = asset.image_url;
+            }
+
+            // 3. Giphy Animated Sticker
+            if (asset.sticker_url) {
+                const sticker = new Image();
+                sticker.crossOrigin = "anonymous";
+                sticker.onload = () => {
+                    scene.sticker = sticker;
+                };
+                sticker.src = asset.sticker_url;
+            }
+
+            if (!asset.video_url && !asset.image_url) {
+                clearTimeout(overallTimer);
+                resolve();
+            }
 
         })));
 
@@ -9460,8 +9458,105 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = true) {
-        // Zero static/rate-limited images: Hardware-accelerated 60 FPS 3D GPU Engine handles all visual stages
-        return false;
+        const scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
+            sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex)) ||
+            sqlShortState.sceneAssets.get(String(stageIndex + 1));
+        if (!scene || (!scene.video && !scene.image)) return false;
+
+        const media = (scene.video && scene.video.readyState >= 2) ? scene.video : scene.image;
+        if (!media) return false;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        const localTime = Math.max(0, t - Number(stage?.start || 0));
+
+        // Sync and play real Pixabay MP4 video for this scene
+        if (scene.video && scene.video.readyState >= 2) {
+            const expected = scene.video.duration ? (localTime % scene.video.duration) : localTime;
+            if (Math.abs(scene.video.currentTime - expected) > 0.6) {
+                try { scene.video.currentTime = expected; } catch (_) {}
+            }
+            if (scene.video.paused) scene.video.play().catch(() => {});
+        }
+
+        // 9:16 Cinematic Smooth Push-in Camera Zoom and Subtle Drift (60 FPS)
+        const zoom = 1.02 + 0.05 * progress + 0.005 * Math.sin(t * 0.55);
+        const width = W * zoom, height = H * zoom;
+        const driftX = Math.sin(t * 0.42) * W * 0.004;
+        const driftY = Math.cos(t * 0.37) * H * 0.003;
+
+        // Filmic Grade: High dynamic range contrast, deep blacks, vibrant saturation
+        const previousFilter = ctx.filter;
+        ctx.filter = "saturate(1.15) contrast(1.08) brightness(1.02)";
+        try {
+            ctx.drawImage(media, (W - width) / 2 + driftX, (H - height) / 2 + driftY, width, height);
+        } catch (_) {}
+        ctx.filter = previousFilter;
+
+        // Cinematic 9:16 Scrim Gradients (Clear viewport for video subject; dark bands for subtitles & title)
+        const shade = ctx.createLinearGradient(0, 0, 0, H);
+        shade.addColorStop(0, "rgba(2,6,23,0.70)");
+        shade.addColorStop(0.18, "rgba(2,6,23,0.15)");
+        shade.addColorStop(0.55, "rgba(2,6,23,0.02)");
+        shade.addColorStop(0.82, "rgba(2,6,23,0.60)");
+        shade.addColorStop(1, "rgba(2,6,23,0.95)");
+        ctx.fillStyle = shade;
+        ctx.fillRect(0, 0, W, H);
+
+        const vignette = ctx.createRadialGradient(W / 2, H * 0.5, W * 0.35, W / 2, H * 0.5, W * 0.95);
+        vignette.addColorStop(0, "rgba(0,0,0,0)");
+        vignette.addColorStop(1, "rgba(0,0,0,0.45)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, W, H);
+
+        // Render Giphy Animated Sticker if present (Floating 3D viral effect)
+        if (scene.sticker && scene.sticker.complete && scene.sticker.naturalWidth > 0) {
+            ctx.save();
+            const stickerSize = 180;
+            const stickerX = W - stickerSize - 40;
+            const stickerY = 160 + Math.sin(t * 3.5) * 8;
+            ctx.shadowColor = "rgba(0,0,0,0.7)";
+            ctx.shadowBlur = 18;
+            ctx.drawImage(scene.sticker, stickerX, stickerY, stickerSize, stickerSize);
+            ctx.restore();
+        }
+
+        // Draw Modern 2026 Glassmorphic Scene Title Pill
+        if (drawText) {
+            const title = String(stage?.title || p.title || p.question || "");
+            if (title) {
+                ctx.save();
+                ctx.textAlign = "center";
+                ctx.font = "800 42px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                const titleLines = (typeof wrapCanvasText === "function") ? wrapCanvasText(ctx, title, W - 180, 2) : [title];
+                const titleTextWidth = titleLines.reduce((widest, line) => Math.max(widest, ctx.measureText(line).width), 0);
+                const titleBoxWidth = Math.min(W - 120, Math.max(340, titleTextWidth + 72));
+                const titleBoxHeight = titleLines.length * 52 + 32;
+                const titleY = 140;
+
+                // Glassmorphism pill backdrop
+                const titleGrad = ctx.createLinearGradient(0, titleY, 0, titleY + titleBoxHeight);
+                titleGrad.addColorStop(0, "rgba(10, 15, 30, 0.90)");
+                titleGrad.addColorStop(1, "rgba(5, 10, 22, 0.75)");
+                ctx.fillStyle = titleGrad;
+                ctx.beginPath();
+                ctx.roundRect((W - titleBoxWidth) / 2, titleY, titleBoxWidth, titleBoxHeight, 22);
+                ctx.fill();
+
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.50)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.shadowColor = "rgba(0, 0, 0, 0.90)";
+                ctx.shadowBlur = 12;
+                titleLines.forEach((line, index) => ctx.fillText(line, W / 2, titleY + 48 + index * 52));
+                ctx.restore();
+            }
+        }
+
+        ctx.restore();
+        return true;
     }
 
 
