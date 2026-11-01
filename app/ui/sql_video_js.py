@@ -4022,127 +4022,52 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx = 1, totalStages = 5) {
-
-        const domain = (p.domain || p.topic_category || "EXPLORE").toUpperCase();
-
-        let domainColor = p.accent_color || "#38BDF8";
-
-        if (domain.includes("PY")) domainColor = "#38BDF8";
-
-        else if (domain.includes("AI") || domain.includes("AGENT") || domain.includes("MCP")) domainColor = "#818CF8";
-
-        else if (domain.includes("SQL") || domain.includes("DATA")) domainColor = "#F59E0B";
-
-        else if (domain.includes("SCIENCE") || domain.includes("BIO")) domainColor = "#10B981";
-
-        else if (domain.includes("SPACE") || domain.includes("COSMOS")) domainColor = "#A855F7";
-
-
-
-        const titleText = p.title || p.question || "AI Video";
-
-
-
         ctx.save();
+        const barY = 46;
+        const barH = 54;
+        const barW = W - 100;
+        const barX = 50;
 
-        const barY = 38;
-
-        const barH = 68;
-
-        ctx.fillStyle = "rgba(10, 16, 32, 0.92)";
-
+        // Single sleek glassmorphism top header container
+        ctx.fillStyle = "rgba(10, 18, 36, 0.94)";
         ctx.beginPath();
-
-        ctx.roundRect(50, barY, W - 100, barH, 20);
-
+        ctx.roundRect(barX, barY, barW, barH, 20);
         ctx.fill();
-
         ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-
         ctx.lineWidth = 1.5;
-
         ctx.stroke();
 
-
-
-        // Domain Tag Pill: the label is clamped to the pill so long domains such as
-
-        // "PROMPT-BASED TECHNOLOGY" can never bleed across the header.
-
-        ctx.fillStyle = domainColor;
-
-        ctx.beginPath();
-
-        ctx.roundRect(58, barY + 8, 125, barH - 16, 14);
-
-        ctx.fill();
-
-        ctx.fillStyle = "#000000";
-
-        ctx.font = "900 19px 'Segoe UI', sans-serif";
-
-        ctx.textAlign = "center";
-
-        ctx.fillText(fitTextToWidth(ctx, domain, 104), 120, barY + 43);
-
-
-
-        // Stage Indicator (e.g. PART 2/6)
-
-        ctx.beginPath();
-
-        ctx.roundRect(192, barY + 12, 115, barH - 24, 10);
-
-        ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-
-        ctx.fill();
-
-        ctx.strokeStyle = "#38BDF8";
-
-        ctx.lineWidth = 1;
-
-        ctx.stroke();
-
+        // Left: Neon Tech Tag
         ctx.fillStyle = "#38BDF8";
-
-        ctx.font = "bold 15px monospace";
-
+        ctx.beginPath();
+        ctx.roundRect(barX + 8, barY + 8, 124, barH - 16, 12);
+        ctx.fill();
+        ctx.fillStyle = "#030816";
+        ctx.font = "900 15px 'Segoe UI', system-ui, sans-serif";
         ctx.textAlign = "center";
+        ctx.fillText("⚡ TECH REEL", barX + 70, barY + 34);
 
-        ctx.fillText(`PART ${currentStageIdx}/${totalStages}`, 249, barY + 42);
-
-
-
-        // Title Text
-
-        ctx.textAlign = "left";
-
+        // Center: Nanopro Studio Branding
         ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 18px 'Segoe UI', system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("NANOPRO AI STUDIO", W / 2, barY + 34);
 
-        ctx.font = "bold 23px 'Segoe UI', sans-serif";
-
-        ctx.fillText(fitTextToWidth(ctx, titleText, 430), 320, barY + 43);
-
-
-
-        // Channel Tag (static; no animated equalizer on the exported frame)
-
+        // Right: Clean Stage Tracker Pill (PART X/Y)
+        ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+        ctx.beginPath();
+        ctx.roundRect(barX + barW - 130, barY + 8, 122, barH - 16, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
         ctx.fillStyle = "#10B981";
-
-        ctx.font = "bold 17px 'Segoe UI', sans-serif";
-
-        ctx.textAlign = "right";
-
-        ctx.fillText("● @Code_With_Mangesh", W - 70, barY + 43);
+        ctx.font = "bold 15px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`PART ${currentStageIdx}/${totalStages}`, barX + barW - 69, barY + 34);
 
         ctx.restore();
-
     }
-
-
-
-    // 1D. Animated Laser Scanner Beam
-
     function drawLaserScannerBeam(ctx, x, y, w, h, t) {
 
         ctx.save();
@@ -9471,7 +9396,9 @@ SECOND_HIGHEST_SALARY: 70000`;
             sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex)) ||
             sqlShortState.sceneAssets.get(String(stageIndex + 1));
         const promptStr = String(p?.question || p?.title || "").toLowerCase();
-        const prefers3DShapes = promptStr.includes("dont use image") || promptStr.includes("dont use video") || promptStr.includes("shapes 3d") || promptStr.includes("3d animation") || promptStr.includes("shape animation");
+        const prefers3DShapes = true; // Default clean studio plain canvas for crisp 3D tech architecture
+        const wantsStock = promptStr.includes("real footage") || promptStr.includes("live action") || promptStr.includes("stock broll");
+        if (!wantsStock) return false;
         if (prefers3DShapes) return false;
         if (!scene || (!scene.video && !scene.image)) return false;
 
@@ -11134,8 +11061,8 @@ SECOND_HIGHEST_SALARY: 70000`;
                 // Grid base
                 ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
                 ctx.lineWidth = 1.5;
-                const gridW = 340;
-                const gridH = 180;
+                const gridW = 410;
+                const gridH = 260;
                 for (let gx = -gridW; gx <= gridW; gx += 85) {
                     ctx.beginPath();
                     ctx.moveTo(gx, -gridH);
@@ -11183,30 +11110,34 @@ SECOND_HIGHEST_SALARY: 70000`;
                         ctx.setLineDash([]);
                     }
 
-                    // Vector Node
+                    // Vector Node (Enlarged & Glowing)
                     ctx.save();
                     ctx.translate(v.x, v.y);
-                    ctx.fillStyle = v.active ? "#10B981" : "#475569";
+                    ctx.fillStyle = v.active ? "#10B981" : "#64748B";
                     ctx.shadowColor = v.active ? "#10B981" : "transparent";
-                    ctx.shadowBlur = v.active ? 16 : 0;
+                    ctx.shadowBlur = v.active ? 22 : 0;
                     ctx.beginPath();
-                    ctx.arc(0, 0, v.active ? 12 : 7, 0, Math.PI * 2);
+                    ctx.arc(0, 0, v.active ? 18 : 10, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.shadowBlur = 0;
 
-                    // Micro-tag
+                    // Crisp, Large Vector Match Tag
                     if (v.active) {
-                        ctx.fillStyle = "rgba(6, 18, 38, 0.9)";
+                        ctx.fillStyle = "rgba(4, 10, 24, 0.95)";
                         ctx.beginPath();
-                        ctx.roundRect(-45, -34, 90, 24, 6);
+                        ctx.roundRect(-65, -46, 130, 32, 8);
                         ctx.fill();
                         ctx.strokeStyle = "#10B981";
-                        ctx.lineWidth = 1;
+                        ctx.lineWidth = 1.8;
+                        ctx.shadowColor = "#10B981";
+                        ctx.shadowBlur = 10;
                         ctx.stroke();
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.font = "bold 11px monospace";
+                        ctx.shadowBlur = 0;
+
+                        ctx.fillStyle = "#10B981";
+                        ctx.font = "bold 13px monospace";
                         ctx.textAlign = "center";
-                        ctx.fillText(`cos: ${v.sim}`, 0, -18);
+                        ctx.fillText(`${v.label}: ${Math.round(parseFloat(v.sim)*100)}%`, 0, -26);
                     }
                     ctx.restore();
                 });
@@ -11254,40 +11185,40 @@ SECOND_HIGHEST_SALARY: 70000`;
                 ctx.shadowBlur = 0;
 
                 ranks.forEach((rk, ri) => {
-                    const ry = -100 + ri * 72;
+                    const ry = -140 + ri * 92;
                     ctx.save();
                     ctx.translate(0, ry);
 
-                    // Slabs with isometric depth
-                    ctx.fillStyle = "rgba(10, 24, 48, 0.94)";
+                    // Large 760px Wide High-Tech Glassmorphic Slab
+                    ctx.fillStyle = "rgba(8, 16, 36, 0.96)";
                     ctx.beginPath();
-                    ctx.roundRect(-240, -28, 480, 56, 12);
+                    ctx.roundRect(-380, -38, 760, 76, 16);
                     ctx.fill();
                     ctx.strokeStyle = rk.col;
-                    ctx.lineWidth = ri === 0 ? 2.5 : 1.5;
+                    ctx.lineWidth = ri === 0 ? 2.5 : 1.6;
                     ctx.shadowColor = rk.col;
-                    ctx.shadowBlur = ri === 0 ? 16 : 6;
+                    ctx.shadowBlur = ri === 0 ? 18 : 8;
                     ctx.stroke();
                     ctx.shadowBlur = 0;
 
-                    // Rank badge
+                    // Bold Rank badge (#1, #2, #3, #4)
                     ctx.fillStyle = rk.col;
-                    ctx.font = "bold 16px 'Segoe UI', monospace";
+                    ctx.font = "bold 24px monospace";
                     ctx.textAlign = "left";
-                    ctx.fillText(rk.rank, -220, 6);
+                    ctx.fillText(rk.rank, -350, 7);
 
-                    // Score
+                    // Title & Description (Large 17px)
                     ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "bold 13px 'Segoe UI', sans-serif";
-                    ctx.fillText(rk.text, -170, 0);
+                    ctx.font = "bold 17px 'Segoe UI', system-ui, sans-serif";
+                    ctx.fillText(rk.text, -290, -4);
                     ctx.fillStyle = "#94A3B8";
-                    ctx.font = "11px monospace";
-                    ctx.fillText(`Cross-Encoder Score: ${rk.score}`, -170, 18);
+                    ctx.font = "bold 13px monospace";
+                    ctx.fillText(`Cross-Encoder Score: ${rk.score} • Semantic Match`, -290, 19);
 
-                    // Status Pill
+                    // Status Pill (Large, Clear)
                     ctx.fillStyle = rk.col;
                     ctx.beginPath();
-                    ctx.roundRect(140, -14, 80, 26, 6);
+                    ctx.roundRect(240, -18, 115, 36, 8);
                     ctx.fill();
                     ctx.fillStyle = "#020617";
                     ctx.font = "bold 10px monospace";
@@ -11621,7 +11552,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             // 1. Sleek Floating Upper HUD Badge & Scene Title
 
-            const topBadgeY = 310;
+            const topBadgeY = 145;
 
             ctx.save();
 
@@ -16020,96 +15951,39 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function drawPromptSceneBackdrop(ctx, W, H, visual, time) {
         ctx.save();
-
-        // 1. Deep Space Cosmic Sky Gradient
+        // 1. Sleek studio plain dark canvas (deep navy/slate black)
         const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-        skyGrad.addColorStop(0, "#020617");
-        skyGrad.addColorStop(0.38, "#050D24");
-        skyGrad.addColorStop(0.65, "#0A1633");
-        skyGrad.addColorStop(1, "#030816");
+        skyGrad.addColorStop(0, "#050914");
+        skyGrad.addColorStop(0.5, "#0A1226");
+        skyGrad.addColorStop(1, "#030610");
         ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, W, H);
 
-        // 2. Dynamic 3D Volumetric Horizon Glow
-        const horizonY = H * 0.42;
-        const beamGrad = ctx.createRadialGradient(W / 2, horizonY, 20, W / 2, horizonY, W * 0.75);
-        beamGrad.addColorStop(0, "rgba(56, 189, 248, 0.28)");
-        beamGrad.addColorStop(0.35, "rgba(99, 102, 241, 0.14)");
-        beamGrad.addColorStop(0.7, "rgba(236, 72, 153, 0.05)");
-        beamGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = beamGrad;
+        // 2. Subtle soft central studio radial glow
+        const centerGlow = ctx.createRadialGradient(W / 2, H * 0.48, 50, W / 2, H * 0.48, W * 0.65);
+        centerGlow.addColorStop(0, "rgba(56, 189, 248, 0.08)");
+        centerGlow.addColorStop(0.5, "rgba(14, 165, 233, 0.02)");
+        centerGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = centerGlow;
         ctx.fillRect(0, 0, W, H);
 
-        // Horizon Laser Line
-        ctx.save();
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.65)";
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = "#38BDF8";
-        ctx.shadowBlur = 20;
-        ctx.beginPath();
-        ctx.moveTo(0, horizonY);
-        ctx.lineTo(W, horizonY);
-        ctx.stroke();
-        ctx.restore();
-
-        // 3. Infinite 3D Perspective Cyber Highway Grid
-        ctx.save();
-        const fov = 380;
-        const gridSpeed = (time * 140) % 180;
-
-        // Radiating Perspective Vanishing Rays
-        const numRays = 18;
-        for (let i = -numRays; i <= numRays; i++) {
-            const bottomX = W / 2 + i * 95;
-            const rayAlpha = Math.max(0.08, 0.42 - Math.abs(i) * 0.018);
-            ctx.strokeStyle = `rgba(56, 189, 248, ${rayAlpha})`;
-            ctx.lineWidth = 1.4;
+        // 3. Calm, non-intrusive technical grid
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.035)";
+        ctx.lineWidth = 1;
+        for (let x = 60; x < W; x += 80) {
             ctx.beginPath();
-            ctx.moveTo(W / 2 + i * 4, horizonY);
-            ctx.lineTo(bottomX, H);
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
             ctx.stroke();
         }
-
-        // Horizontal Grid Rungs Moving Forward at 60 FPS
-        const numRungs = 14;
-        for (let r = 0; r < numRungs; r++) {
-            const z = ((r * 65 + gridSpeed) % 800) + 20;
-            const rungY = horizonY + (fov * (H - horizonY)) / (fov + z);
-            if (rungY >= horizonY && rungY <= H) {
-                const depthAlpha = Math.min(0.55, ((rungY - horizonY) / (H - horizonY)) * 0.65);
-                ctx.strokeStyle = `rgba(56, 189, 248, ${depthAlpha})`;
-                ctx.lineWidth = 1.2 + (rungY - horizonY) / (H - horizonY) * 2.0;
-                ctx.beginPath();
-                ctx.moveTo(0, rungY);
-                ctx.lineTo(W, rungY);
-                ctx.stroke();
-            }
-        }
-        ctx.restore();
-
-        // 4. Floating 3D Starfield & Photon Particles with Parallax Depth
-        ctx.save();
-        const pCount = 36;
-        for (let i = 0; i < pCount; i++) {
-            const pSpeed = 0.15 + (i % 5) * 0.08;
-            const px = (Math.sin(i * 19.3 + time * pSpeed * 0.4) * 0.5 + 0.5) * W;
-            const py = (Math.cos(i * 29.7 + time * pSpeed * 0.3) * 0.5 + 0.5) * horizonY;
-            const pSize = 1.2 + (i % 4) * 1.2;
-            const pAlpha = 0.25 + Math.sin(time * 3 + i) * 0.2;
-            ctx.fillStyle = i % 2 === 0 ? `rgba(56, 189, 248, ${pAlpha})` : `rgba(245, 158, 11, ${pAlpha})`;
-            ctx.shadowColor = ctx.fillStyle;
-            ctx.shadowBlur = 8;
+        for (let y = 60; y < H; y += 80) {
             ctx.beginPath();
-            ctx.arc(px, py, pSize, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
         }
-        ctx.restore();
-
         ctx.restore();
     }
-
-
-
     function setSqlCanvasRenderScale(scale) {
 
         const canvas = document.getElementById("sqlShortCanvas");
@@ -16671,10 +16545,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-        // 3.6. DRAW ACTIVE 50+ AI VIDEO ENGINE WATERMARK (Transparent Model Attribution)
-        drawActiveAiVideoEngineWatermark(ctx, W, H, p, activeStage, currentStageIdx, t);
-        // 3.6. DRAW ACTIVE 50+ AI VIDEO ENGINE WATERMARK (Transparent Model Attribution)
-        drawActiveAiVideoEngineWatermark(ctx, W, H, p, activeStage, currentStageIdx, t);
+// Watermark removed for ultra-clean layout
         // 4. DRAW VIRAL KINETIC KARAOKE SUBTITLES (High-Retention Word Highlighting)
 
         drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t);
