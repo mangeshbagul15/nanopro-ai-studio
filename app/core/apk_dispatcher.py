@@ -40,12 +40,31 @@ APK_SENT_LOG = BASE_DIR / "data" / "banking" / "apk_sent_log.json"
 APK_CONFIG_FILE = BASE_DIR / "data" / "banking" / "apk_config.json"
 
 
+def is_cloud_environment() -> bool:
+    """
+    Detect if running in cloud container (Render, Koyeb, Alwaysdata, etc.)
+    where outbound bandwidth has strict caps (e.g. Render 5GB free monthly cap).
+    Returns True on Render / Cloud Linux containers; False on Local Windows PC.
+    """
+    if os.environ.get("FORCE_LOCAL_MODE") == "1":
+        return False
+    if os.environ.get("RENDER") or os.environ.get("IS_CLOUD"):
+        return True
+    if os.environ.get("RENDER_SERVICE_ID") or os.environ.get("RENDER_INSTANCE_ID"):
+        return True
+    if os.environ.get("PORT") == "10000":
+        return True
+    if os.name != "nt" and not os.path.exists("C:\\"):
+        return True
+    return False
+
+
 def get_apk_config() -> Dict[str, Any]:
     """Load configurable APK dispatcher parameters (interval, count, enabled)."""
     default_cfg = {
-        "interval_minutes": 15,
-        "interval_hours": 0.25,
-        "count": 5,
+        "interval_minutes": 180,
+        "interval_hours": 3.0,
+        "count": 3,
         "enabled": True,
         "direct_apk_only": True,
         "last_updated": datetime.datetime.now().isoformat(),
@@ -629,6 +648,9 @@ def _github_latest_apk(repo: str, min_size_mb: float = 0.0, max_size_mb: float =
 
 def _download_apk(url: str, filename: str, timeout_seconds: int = 90) -> Optional[Path]:
     """Downloads APK to temp dir with chunked 256KB low-memory streaming with 90s budget."""
+    if is_cloud_environment():
+        log_event(f"[APKBot] Blocked binary download of {filename}: Cloud Zero-Binary Shield ACTIVE (protecting 5GB Render cap).", level="INFO", component="APKDispatcher")
+        return None
     dest = APK_TEMP_DIR / filename
     start_time = time.time()
     try:
@@ -677,7 +699,12 @@ def _build_caption(source: Dict[str, Any], apk_info: Dict[str, Any], lane: str =
     if feat_lines:
         feat_str = "\n✨ <b>मुख्य वैशिष्ट्ये (Features):</b>\n" + "\n".join(feat_lines)
 
-    if lane == "heavy":
+    if lane == "cloud_card":
+        badge = (
+            f"☁️ <b>[NANOPRO CLOUD SHIELD • VERIFIED RELEASE]</b>\n"
+            f"⚡ <i>Zero-Bandwidth Ultra-Fast Delivery (1-Tap Direct Download)</i>\n"
+        )
+    elif lane == "heavy":
         badge = (
             f"🚀 <b>[HEAVY-DUTY ENTERPRISE APK • {size_mb} MB]</b>\n"
             f"⚡ <i>Delivered via NanoPro Parallel High-Capacity Background Worker</i>\n"
@@ -702,7 +729,7 @@ def _build_caption(source: Dict[str, Any], apk_info: Dict[str, Any], lane: str =
         f"🔗 github.com/{repo_esc}\n"
         f"🤖 @mangesh_apk_bot • NanoPro AI Studio"
     )
-    return caption[:1020]
+    return caption[:3950] if lane == "cloud_card" else caption[:1020]
 
 
 def _send_telegram_button_message(caption: str, button_text: str, button_url: str, parse_mode: str = "HTML") -> bool:
@@ -812,6 +839,11 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
     If Telegram rejects (e.g. file is too big or 400 error), falls back to plain-text
     or VIP button message if fallback_url is provided.
     """
+    if is_cloud_environment():
+        log_event(f"[APKBot] Blocked binary upload of {apk_path.name}: Cloud Zero-Binary Shield ACTIVE.", level="WARNING", component="APKDispatcher")
+        if fallback_url:
+            return _send_telegram_button_message(caption, "⬇️ Direct Download APK", fallback_url)
+        return False
     token = TELEGRAM_APK_BOT_TOKEN or os.environ.get("TELEGRAM_APK_BOT_TOKEN", "")
     if not token:
         log_event("[APKBot] APK bot token not configured", level="WARNING", component="APKDispatcher")
@@ -897,6 +929,62 @@ def discover_and_send_apks(count: Optional[int] = None) -> Dict[str, Any]:
     import random
     sources = list(APK_SOURCES)
     random.shuffle(sources)
+
+    # =========================================================================
+    # CLOUD ZERO-BANDWIDTH SHIELD (Render / Cloud Container Protection)
+    # =========================================================================
+    if is_cloud_environment():
+        log_event("[APKBot] Cloud Shield Guard ACTIVE (Render / Cloud Container). Binary transfers disabled to protect 5GB bandwidth cap. Dispatching Rich Interactive Release Cards with 1-Tap Download Buttons.", component="APKDispatcher")
+        cloud_sent = 0
+        cloud_target = min(count, 3) if count else 3
+        for src in sources:
+            if cloud_sent >= cloud_target:
+                break
+            repo = src["repo"]
+            label = src["label"]
+            apk_info = _github_latest_apk(repo, min_size_mb=0.0, max_size_mb=9999.0)
+            if not apk_info:
+                continue
+
+            version = apk_info["version"]
+            with sent_lock:
+                if sent_log.get(repo) == version:
+                    skipped.append({"repo": repo, "version": version, "reason": "Already sent"})
+                    continue
+
+            caption = _build_caption(src, apk_info, lane="cloud_card")
+            download_url = apk_info["url"]
+            button_label = f"⬇️ Direct Download APK ({version} • {apk_info.get('size_mb', 0)} MB)"[:64]
+            ok = _send_telegram_button_message(
+                caption=caption,
+                button_text=button_label,
+                button_url=download_url
+            )
+            if ok:
+                with sent_lock:
+                    sent_log[repo] = version
+                    _save_sent_log(sent_log)
+                    sent.append({
+                        "repo": repo,
+                        "name": apk_info["name"],
+                        "version": version,
+                        "size_mb": apk_info.get("size_mb", 0),
+                        "mode": "cloud_zero_bandwidth_card"
+                    })
+                cloud_sent += 1
+                log_event(f"[APKBot-CloudShield] Sent {label} ({apk_info.get('size_mb', 0)} MB) via Zero-Bandwidth Cloud Card to @mangesh_apk_bot", component="APKDispatcher")
+            else:
+                failed.append({"repo": repo, "name": apk_info["name"], "reason": "Button card send failed"})
+            time.sleep(2)
+
+        return {
+            "status": "success",
+            "mode": "cloud_zero_bandwidth",
+            "sent": sent,
+            "skipped": skipped,
+            "failed": failed,
+            "sent_count": len(sent),
+        }
 
     # Lane 2: Heavy-Duty Background Worker function
     def _run_heavy_lane():
@@ -1049,31 +1137,24 @@ class APKScheduler:
         self._wake_event.set()
 
     def _loop(self):
-        # Cloud Bandwidth Protection Guard:
-        # Render Free tier has a strict 5GB monthly bandwidth cap.
-        # When running in cloud (Render), heavy APK file binary transfers are deferred
-        # to the Local Master Node (which has unlimited home internet bandwidth).
-        if os.environ.get("RENDER") or os.environ.get("IS_CLOUD"):
-            log_event("[APKBot] Cloud Environment (Render) active. Heavy APK binary downloads deferred to Local Master Node to protect 5GB cloud bandwidth cap.", component="APKDispatcher")
-            return
-
-        # Initial run shortly after server boot (15 seconds) so APKs start flowing immediately
-        self._stop.wait(15)
+        # Initial run 45s after boot so server and telemetry settle
+        self._stop.wait(45)
         while not self._stop.is_set():
             cfg = get_apk_config()
             enabled = cfg.get("enabled", True)
-            interval_min = int(cfg.get("interval_minutes") or 15)
-            self.COUNT = max(1, min(20, int(cfg.get("count", 5))))
+            interval_min = int(cfg.get("interval_minutes") or 180)
+            self.COUNT = max(1, min(5, int(cfg.get("count", 3))))
 
             if enabled:
                 try:
-                    log_event(f"[APKBot] NanoPro AI Manager: Starting 15-min Direct APK cycle (Count: {self.COUNT}, Interval: {interval_min} min)...", component="APKDispatcher")
+                    mode_label = "Cloud Zero-Bandwidth Card" if is_cloud_environment() else "Local Direct Binary"
+                    log_event(f"[APKBot] Scheduled APK cycle starting [Mode: {mode_label}] (Count: {self.COUNT}, Interval: {interval_min} min)...", component="APKDispatcher")
                     res = discover_and_send_apks(count=self.COUNT)
-                    log_event(f"[APKBot] NanoPro AI Manager: Delivered {res.get('sent_count', 0)} direct APKs to @mangesh_apk_bot successfully.", component="APKDispatcher")
+                    log_event(f"[APKBot] Delivered {res.get('sent_count', 0)} APKs to @mangesh_apk_bot successfully.", component="APKDispatcher")
                 except Exception as e:
-                    log_event(f"[APKBot] NanoPro AI Manager: Scheduler cycle error: {e}", level="WARNING", component="APKDispatcher")
+                    log_event(f"[APKBot] Scheduler cycle error: {e}", level="WARNING", component="APKDispatcher")
 
-            target_wait = max(60, interval_min * 60)
+            target_wait = max(300, interval_min * 60)
             elapsed = 0
             while elapsed < target_wait and not self._stop.is_set():
                 if self._wake_event.is_set():
