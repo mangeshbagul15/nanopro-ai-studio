@@ -2170,10 +2170,16 @@ class SqlShortVideoEngine:
             sticker_cats = ["rocket", "technology", "code", "fire", "verified"]
             sticker_cat = sticker_cats[min(idx, len(sticker_cats) - 1)]
 
+            # Check if procedural vector / 3D cartoon character animation is preferred
+            wants_procedural_vector = any(
+                k in f"{text_input} {raw_text}".lower()
+                for k in ["dont use image", "dont use video", "shapes", "3d", "animation", "lottie", "cartoon", "character", "vector", "mascot", "lakehouse", "medallion", "rag", "docker", "k8s", "sql", "duckdb", "snowflake", "aws", "dms"]
+            )
+
             # Sub-task 1: Pixabay Video
             async def _get_video():
-                if not pixabay_active:
-                    return "", {"status": "procedural_shader"}
+                if wants_procedural_vector or not pixabay_active:
+                    return "", {"status": "procedural_vector_engine"}
                 try:
                     from app.video_maker.pixabay_video_provider import search_pixabay_videos
                     hits = await asyncio.wait_for(asyncio.to_thread(search_pixabay_videos, clean_kw, 5), timeout=3.5)
@@ -2193,7 +2199,7 @@ class SqlShortVideoEngine:
 
             # Sub-task 2: Unsplash Photo
             async def _get_photo():
-                if not unsplash_active:
+                if wants_procedural_vector or not unsplash_active:
                     return "", {"status": "procedural_canvas"}
                 try:
                     from app.video_maker.unsplash_provider import search_unsplash_photos
@@ -2230,7 +2236,7 @@ class SqlShortVideoEngine:
 
             # Sub-task 4: Giphy Sticker
             async def _get_sticker():
-                if not giphy_active:
+                if wants_procedural_vector or not giphy_active:
                     return None, ""
                 try:
                     from app.video_maker.giphy_provider import search_giphy_stickers
