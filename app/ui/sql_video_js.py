@@ -9466,7 +9466,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-    function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = true) {
+    function renderPromptSceneAssetVisual(ctx, W, H, p, stage, stageIndex, progress, alpha, t, drawText = false) {
         const scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
             sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex)) ||
             sqlShortState.sceneAssets.get(String(stageIndex + 1));
@@ -9479,7 +9479,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (!media) return false;
 
         ctx.save();
-        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        // Subtle cyber ambient backdrop (35% opacity so foreground 3D tech architecture pops)
+        ctx.globalAlpha = Math.max(0, Math.min(0.35, alpha * 0.35));
         const localTime = Math.max(0, t - Number(stage?.start || 0));
 
         // Sync and play real Pixabay MP4 video for this scene
@@ -11698,10 +11699,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-            // 2. Dynamic 3D Tech Architecture Scene (60 FPS Procedural GPU Engine)
-            if (!hasRealVideo) {
-                renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
-            }
+            // 2. Dynamic 3D Tech Architecture Scene (60 FPS Procedural GPU Engine - ALWAYS ACTIVE)
+            renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
             ctx.restore();
         }
 
@@ -16652,25 +16651,15 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         }
 
-        // 3. RENDER REAL PHOTOREALISTIC 9:16 AI SCENE VISUAL (WITH 3D CAMERA ZOOM & DRIFT)
-
-        let drewAiVisual = false;
-
+        // 3. RENDER SUBTLE ATMOSPHERIC AI BACKDROP (IF PRESENT)
         try {
-
-            drewAiVisual = renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, currentStageIdx - 1, stageProg, stageAlpha, t);
-
+            renderPromptSceneAssetVisual(ctx, W, H, p, activeStage, currentStageIdx - 1, stageProg, stageAlpha, t, false);
         } catch (_err) {
-
-            console.warn("Notice rendering AI visual:", _err);
-
+            console.warn("Notice rendering AI backdrop:", _err);
         }
 
-        if (!drewAiVisual) {
-
-            renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
-
-        }
+        // 3.1. ALWAYS RENDER DYNAMIC 3D TECH ARCHITECTURE & MOTION GRAPHICS (HERO CENTER)
+        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
 
 
 

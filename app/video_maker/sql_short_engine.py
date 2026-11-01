@@ -2119,9 +2119,48 @@ class SqlShortVideoEngine:
         async def _fetch_scene_media(idx: int, stg: Dict[str, Any]):
             raw_text = stg.get("video_prompt") or stg.get("visual_description") or stg.get("title") or text_input
             words = re.findall(r'[a-zA-Z]{3,}', raw_text.lower())
-            stop_words = {"cinematic", "vertical", "showing", "render", "high", "definition", "scene", "video", "photo", "ultra"}
+            stop_words = {
+                "cinematic", "vertical", "showing", "render", "high", "definition",
+                "scene", "video", "photo", "ultra", "model", "image", "realistic",
+                "full", "hd", "woman", "man", "person", "waterfall", "river", "nature"
+            }
             filtered = [w for w in words if w not in stop_words]
-            clean_kw = " ".join(filtered[:3]) if filtered else "technology"
+
+            # Tech-grounded query mapping (guarantees zero makeup models, waterfalls, or random nature)
+            tech_kw_map = {
+                "rag": "neural network abstract cyber technology",
+                "agentic": "artificial intelligence neural network digital futuristic",
+                "vector": "data particles cyber technology network",
+                "embed": "neural network digital technology abstract",
+                "embeddings": "neural network digital technology abstract",
+                "rerank": "computer code algorithm data matrix",
+                "reranking": "computer code algorithm data matrix",
+                "guardrail": "cyber security digital technology shield",
+                "guardrails": "cyber security digital technology shield",
+                "llm": "artificial intelligence neural network cyber",
+                "sql": "database server computer code technology",
+                "docker": "cloud server computing containers technology",
+                "k8s": "cloud server architecture computing technology",
+                "kubernetes": "cloud server architecture computing technology",
+                "lakehouse": "data cloud server architecture analytics",
+                "aws": "cloud computing server network datacenter",
+                "s3": "cloud data storage server computing",
+                "python": "software programming code developer computer",
+                "asyncio": "high speed computing network code technology",
+                "database": "database server architecture technology",
+                "cloud": "cloud server network datacenter cyber",
+                "api": "api microservices network code cyber"
+            }
+
+            combined_txt = f"{raw_text} {text_input}".lower()
+            matched_tech = [v for k, v in tech_kw_map.items() if k in combined_txt]
+            if matched_tech:
+                clean_kw = matched_tech[idx % len(matched_tech)]
+            elif filtered:
+                sub_kw = " ".join(filtered[:2])
+                clean_kw = f"technology abstract cyber {sub_kw}".strip()
+            else:
+                clean_kw = "technology abstract cyber network"
 
             # SFX categories per scene
             sfx_cats = ["impact", "whoosh", "glitch", "whoosh", "success"]
