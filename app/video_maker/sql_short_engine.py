@@ -2087,10 +2087,14 @@ class SqlShortVideoEngine:
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
 
         # Authentic Attribution Ledger & Provenance
-        llm_provider = "Groq LPU"
+        llm_provider = "Google DeepMind / Gemini Cloud"
         if selected_model:
             sm_lower = selected_model.lower()
-            if "mistral" in sm_lower or "codestral" in sm_lower:
+            if "gemini" in sm_lower:
+                llm_provider = "Google Gemini 2.5 Flash (Technical Accuracy Engine)"
+            elif "wan" in sm_lower:
+                llm_provider = "Alibaba Wan 2.1 + Dedicated 3D Isometric Architecture Engine"
+            elif "mistral" in sm_lower or "codestral" in sm_lower:
                 llm_provider = "Mistral AI"
             elif "cohere" in sm_lower or "command" in sm_lower:
                 llm_provider = "Cohere Cloud"

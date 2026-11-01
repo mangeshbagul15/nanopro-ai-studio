@@ -9886,9 +9886,30 @@ SECOND_HIGHEST_SALARY: 70000`;
     // 🧬 50+ AI VIDEO ENGINES SPECIFICATION CATALOG & VISUAL SIGNATURES
     // =========================================================================
     const AI_VIDEO_ENGINE_SPECS = {
+        'gemini-2.5-flash': {
+            name: "Google Gemini 2.5 Flash (Technical Accuracy Engine)",
+            shortName: "Gemini 2.5 Flash",
+            icon: "🌟",
+            provider: "Google DeepMind / Gemini Cloud",
+            category: "Technical Accuracy & Multimodal",
+            badge: "TECHNICAL ACCURACY REASONING ENGINE",
+            themeCol: "#38BDF8",
+            accentCol: "#10B981",
+            bgGradient: ["#051538", "#030A1C", "#01040D"],
+            desc: "Technical Accuracy & Audio-Synchronized Architecture"
+        },
         'wan_21': {
-            name: "Wan 2.1 (Alibaba Open-Source)",
-            shortName: "Alibaba Wan 2.1",
+            name: "Alibaba Wan 2.1 + Dedicated 3D Isometric Architecture Engine",
+            shortName: "Alibaba Wan 2.1 3D",
+            icon: "🎬",
+            provider: "Alibaba / Wan-Video & 3D Isometric Engine",
+            category: "100% Free Local GPU",
+            badge: "1080p 60 FPS 3D ISOMETRIC NEURAL DIFFUSION",
+            themeCol: "#00F2FE",
+            accentCol: "#4FACFE",
+            bgGradient: ["#021B26", "#040D14", "#01050A"],
+            desc: "Dedicated 3D Isometric Architecture Engine & Neural Video"
+        },
             icon: "🟢",
             provider: "Alibaba / Wan-Video",
             category: "100% Free Local GPU",
@@ -10001,12 +10022,14 @@ SECOND_HIGHEST_SALARY: 70000`;
         let modelKey = sceneAttr?.engine_id || activeStage?.ai_model || p?.selected_model || window.selectedModernVideoModel || "wan_21";
         
         modelKey = String(modelKey).toLowerCase().trim();
+        if (modelKey.includes('gemini')) return AI_VIDEO_ENGINE_SPECS['gemini-2.5-flash'];
+        if (modelKey.includes('wan')) return AI_VIDEO_ENGINE_SPECS['wan_21'];
         for (const k of Object.keys(AI_VIDEO_ENGINE_SPECS)) {
             if (modelKey.includes(k) || k.includes(modelKey)) {
                 return AI_VIDEO_ENGINE_SPECS[k];
             }
         }
-        return AI_VIDEO_ENGINE_SPECS['wan_21'];
+        return AI_VIDEO_ENGINE_SPECS['gemini-2.5-flash'] || AI_VIDEO_ENGINE_SPECS['wan_21'];
     }
 
     // =========================================================================
@@ -21783,7 +21806,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
     window.selectedGenerationPattern = 'hybrid';
 
-    window.selectedModernVideoModel = 'wan_21';
+    window.selectedModernVideoModel = 'gemini-2.5-flash';
 
 
 
@@ -21876,33 +21899,40 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
 
     function onModernModelSelected(val) {
-
         window.selectedModernVideoModel = val;
         if (typeof sqlShortState !== 'undefined' && sqlShortState.activePreset) {
             sqlShortState.activePreset.selected_model = val;
         }
+
+        const sel = document.getElementById('selectModernVideoModelMaster');
+        const textEl = document.getElementById('modelSpecsNameText');
+        const badgeEl = document.getElementById('modelLatencyBadge');
+        const opt = sel ? sel.options[sel.selectedIndex] : null;
+
+        if (textEl && opt) {
+            textEl.textContent = opt.text.trim();
+        }
+
+        if (badgeEl) {
+            if (val === 'gemini-2.5-flash') {
+                badgeEl.textContent = "Technical Accuracy Engine";
+                badgeEl.style.color = "#38BDF8";
+            } else if (val === 'wan_21') {
+                badgeEl.textContent = "3D Isometric Architecture Engine";
+                badgeEl.style.color = "#00F2FE";
+            } else {
+                badgeEl.textContent = "Sub-Second LPU";
+                badgeEl.style.color = "#10B981";
+            }
+        }
+
         if (typeof renderSqlShortFrame === 'function' && typeof sqlShortState !== 'undefined') {
             renderSqlShortFrame(sqlShortState.currentTime || 0);
         }
 
-        const sel = document.getElementById('selectModernVideoModelMaster');
-
-        const textEl = document.getElementById('modelSpecsNameText');
-
-        const opt = sel ? sel.options[sel.selectedIndex] : null;
-
-        if (textEl && opt) {
-
-            textEl.textContent = opt.text.split('•')[0].trim();
-
-        }
-
         if (typeof showModernToast === 'function') {
-
-            showModernToast('Model Engine Selected', opt ? opt.text.split('•')[0].trim() : val, 'success');
-
+            showModernToast('Model Engine Selected', opt ? opt.text.trim() : val, 'success');
         }
-
     }
 
     window.onModernModelSelected = onModernModelSelected;

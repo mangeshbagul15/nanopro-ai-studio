@@ -1084,34 +1084,21 @@ def get_sql_video_workspace_html() -> str:
 
                         </span>
 
-                        <span id="modelLatencyBadge" style="font-size: 10px; color: #10B981; font-family: monospace;">Sub-Second LPU</span>
-
+                        <span id="modelLatencyBadge" style="font-size: 10px; color: #38BDF8; font-family: monospace; font-weight: 700;">Technical Accuracy Engine</span>
                     </div>
-
-                    <select id="selectModernVideoModelMaster" class="studio-input" onchange="onModernModelSelected(this.value)" style="width: 100%; background: #070B16; border: 1px solid #334155; color: #F8FAFC; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer;">
-
-                        <option value="gemini-2.5-flash">🌟 Google Gemini 2.5 Flash (Ultra-Accuracy & Multimodal Intelligence)</option>
-                        <option value="wan_21">🎬 Alibaba Wan 2.1 (Generative AI 3D Video Engine - Fal.ai)</option>
-                        <option value="openai/gpt-oss-120b" selected>⚡ Groq LPU: openai/gpt-oss-120b (Ultra-Fast ~500ms)</option>
-
+                    <select id="selectModernVideoModelMaster" class="studio-input" onchange="onModernModelSelected(this.value)" style="width: 100%; background: #070B16; border: 1px solid #38BDF8; color: #F8FAFC; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer;">
+                        <option value="gemini-2.5-flash" selected>🌟 Google Gemini 2.5 Flash (Technical Accuracy Engine)</option>
+                        <option value="wan_21">🎬 Alibaba Wan 2.1 + Dedicated 3D Isometric Architecture Engine</option>
+                        <option value="openai/gpt-oss-120b">⚡ Groq LPU: openai/gpt-oss-120b (Ultra-Fast ~500ms)</option>
                         <option value="codestral-latest">🧪 Mistral: codestral-latest (Clean Code &amp; Architecture)</option>
-
                         <option value="command-r-plus-08-2024">🏢 Cohere: command-r-plus-08-2024 (Enterprise Structured)</option>
-
                         <option value="Meta-Llama-3.3-70B-Instruct">🚀 SambaNova: Meta-Llama-3.3-70B (600+ tok/s Speed)</option>
-
                         <option value="deepseek-chat">🧬 DeepSeek: DeepSeek-V3 / R1 (Algorithmic Reasoning)</option>
-
                         <option value="openrouter/auto">🌐 OpenRouter: Multi-Model Gateway (Auto-Cascade)</option>
-
                     </select>
-
-                    <div id="modelSpecsQuickPill" style="font-size: 10.5px; color: #10B981; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-
-                        <span>● Active:</span> <b style="color: #F8FAFC;" id="modelSpecsNameText">Groq LPU (openai/gpt-oss-120b)</b>
-
-                        <span style="color: #64748B;">• High-Speed Neural Inference</span>
-
+                    <div id="modelSpecsQuickPill" style="font-size: 10.5px; color: #38BDF8; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span>● Active:</span> <b style="color: #38BDF8;" id="modelSpecsNameText">Google Gemini 2.5 Flash (Technical Accuracy Engine)</b>
+                        <span style="color: #94A3B8;">• Multimodal &amp; Audio-Synced Architecture</span>
                     </div>
 
                 </div>

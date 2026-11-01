@@ -887,58 +887,20 @@ _asset_cache = {}
 
 
 def get_cached_asset(filename):
-
-
-
-    if filename not in _asset_cache:
-
-
-
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-
-        paths_to_try = [
-
-
-
-            os.path.join(script_dir, filename),
-
-
-
-            os.path.join(os.path.expanduser('~'), filename),
-
-
-
-            os.path.join('/home/mangeshbagul15', filename)
-
-
-
-        ]
-
-
-
-        for p in paths_to_try:
-
-
-
-            if os.path.exists(p):
-
-
-
+    paths_to_try = [
+        os.path.join('/home/mangeshbagul15', filename),
+        os.path.join('/home/mangeshbagul15/home/mangeshbagul15', filename),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), filename),
+        os.path.join(os.path.expanduser('~'), filename)
+    ]
+    for p in paths_to_try:
+        if os.path.exists(p):
+            try:
                 with open(p, 'rb') as f:
-
-
-
-                    _asset_cache[filename] = f.read()
-
-
-
-                break
-
-
-
-    return _asset_cache.get(filename, b'')
+                    return f.read()
+            except Exception:
+                pass
+    return b''
 
 
 
