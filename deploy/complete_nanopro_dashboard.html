@@ -81092,6 +81092,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         const scene = sqlShortState.sceneAssets.get(`index:${stageIndex}`) ||
             sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex)) ||
             sqlShortState.sceneAssets.get(String(stageIndex + 1));
+        const promptStr = String(p?.question || p?.title || "").toLowerCase();
+        const prefers3DShapes = promptStr.includes("dont use image") || promptStr.includes("dont use video") || promptStr.includes("shapes 3d") || promptStr.includes("3d animation") || promptStr.includes("shape animation");
+        if (prefers3DShapes) return false;
         if (!scene || (!scene.video && !scene.image)) return false;
 
         const media = (scene.video && scene.video.readyState >= 2) ? scene.video : scene.image;
@@ -82073,6 +82076,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         ctx.save();
 
+        const isAiRag = promptText.includes("rag") || promptText.includes("agent") || promptText.includes("vector") || promptText.includes("embed") || promptText.includes("rerank") || promptText.includes("guardrail") || promptText.includes("llm") || promptText.includes("neural") || promptText.includes("ai") || stageTitle.includes("rag") || stageTitle.includes("vector") || stageTitle.includes("rerank") || stageTitle.includes("guardrail") || stageTitle.includes("embed") || promptText.includes("shape") || promptText.includes("3d");
         const isS3 = promptText.includes("s3") || promptText.includes("bucket") || promptText.includes("storage") || promptText.includes("object") || promptText.includes("blob") || stageTitle.includes("s3") || stageTitle.includes("bucket");
         const isDms = promptText.includes("dms") || promptText.includes("migrat") || promptText.includes("cdc") || stageTitle.includes("dms");
 
@@ -82645,12 +82649,426 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
         }
 
+
         // =====================================================================
-        // TOPIC C: UNIVERSAL 50+ AI MODEL PROCEDURAL ENGINE
+        // TOPIC C: AGENTIC RAG, VECTOR SEARCH, RERANKING & LLM GUARDRAILS 3D SUITE
+        // =====================================================================
+        else if (isAiRag) {
+            const centerY = 820;
+
+            // SCENE 1: 3D HOLOGRAPHIC NEURAL BRAIN & ROTATING ISOMETRIC EMBEDDER
+            if (stageIdx === 1 || stageTitle.includes("hook") || stageTitle.includes("problem") || stageTitle.includes("intro") || stageTitle.includes("rag")) {
+                const bob = Math.sin(t * 2.8) * 6;
+
+                // Orbiting 3D Knowledge Capsules
+                const capsules = [
+                    {label: "Raw Text / PDF", col: "#38BDF8", delay: 0},
+                    {label: "User Query", col: "#F59E0B", delay: 1.5},
+                    {label: "Vector Store", col: "#10B981", delay: 3.0}
+                ];
+                capsules.forEach((c, ci) => {
+                    const ang = t * 1.5 + ci * (Math.PI * 2 / 3);
+                    const cx = W / 2 + Math.cos(ang) * 240;
+                    const cy = centerY - 140 + Math.sin(ang) * 60 + bob;
+                    const scale = 0.85 + Math.sin(ang) * 0.15;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.scale(scale, scale);
+                    ctx.fillStyle = "rgba(10, 24, 48, 0.94)";
+                    ctx.beginPath();
+                    ctx.roundRect(-75, -22, 150, 44, 22);
+                    ctx.fill();
+                    ctx.strokeStyle = c.col;
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = c.col;
+                    ctx.shadowBlur = 12;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 13px 'Segoe UI', monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(c.label, 0, 5);
+                    ctx.restore();
+                });
+
+                // Central 3D Rotating Isometric Neural Core
+                ctx.save();
+                ctx.translate(W / 2, centerY + bob);
+                const isoRot = t * 0.8;
+                const size = 110;
+
+                // Draw 3D Isometric Cube Faces with Perspective Depth
+                for (let layer = 0; layer < 3; layer++) {
+                    const lRadius = size + layer * 28 + Math.sin(t * 3 + layer) * 6;
+                    ctx.strokeStyle = layer === 0 ? "rgba(56, 189, 248, 0.6)" : (layer === 1 ? "rgba(168, 85, 247, 0.4)" : "rgba(16, 185, 129, 0.3)");
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, lRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Rotating 3D Isometric Diamond/Prism
+                ctx.save();
+                ctx.rotate(isoRot);
+                ctx.fillStyle = "rgba(14, 40, 75, 0.85)";
+                ctx.beginPath();
+                ctx.moveTo(0, -size);
+                ctx.lineTo(size * 0.86, 0);
+                ctx.lineTo(0, size);
+                ctx.lineTo(-size * 0.86, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Inner pulsing core
+                ctx.fillStyle = "#10B981";
+                ctx.beginPath();
+                ctx.arc(0, 0, 32 + Math.sin(t * 6) * 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Holographic HUD Badge
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🧠 AGENTIC RAG ORCHESTRATOR", 0, size + 50);
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 13px monospace";
+                ctx.fillText("[ 600+ TOK/S REAL-TIME INFERENCE ]", 0, size + 74);
+                ctx.restore();
+            }
+
+            // SCENE 2: 3D ISOMETRIC VECTOR EMBEDDING SPACE & K-NN LASER SEARCH
+            else if (stageIdx === 2 || stageTitle.includes("vector") || stageTitle.includes("search") || stageTitle.includes("embed")) {
+                const spaceY = centerY + 10;
+
+                // 3D Isometric Bounding Grid
+                ctx.save();
+                ctx.translate(W / 2, spaceY);
+
+                // Grid base
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+                ctx.lineWidth = 1.5;
+                const gridW = 340;
+                const gridH = 180;
+                for (let gx = -gridW; gx <= gridW; gx += 85) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, -gridH);
+                    ctx.lineTo(gx, gridH);
+                    ctx.stroke();
+                }
+                for (let gy = -gridH; gy <= gridH; gy += 45) {
+                    ctx.beginPath();
+                    ctx.moveTo(-gridW, gy);
+                    ctx.lineTo(gridW, gy);
+                    ctx.stroke();
+                }
+
+                // Vector Points in 3D Space
+                const vectors = [
+                    {x: -160, y: -60, label: "Vector A", sim: "0.98", active: true},
+                    {x: -80, y: 70, label: "Vector B", sim: "0.94", active: true},
+                    {x: 140, y: -40, label: "Vector C", sim: "0.89", active: true},
+                    {x: 190, y: 80, label: "Vector D", sim: "0.62", active: false},
+                    {x: -220, y: 50, label: "Vector E", sim: "0.55", active: false},
+                    {x: 60, y: -90, label: "Vector F", sim: "0.48", active: false}
+                ];
+
+                // Query Node in Center (Glowing Gold)
+                const qPulse = Math.sin(t * 5) * 4;
+                ctx.fillStyle = "#F59E0B";
+                ctx.shadowColor = "#F59E0B";
+                ctx.shadowBlur = 24;
+                ctx.beginPath();
+                ctx.arc(0, 0, 16 + qPulse, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Laser connection beams to active nearest-neighbors
+                vectors.forEach(v => {
+                    if (v.active) {
+                        ctx.strokeStyle = "rgba(16, 185, 129, 0.85)";
+                        ctx.lineWidth = 2.5;
+                        ctx.setLineDash([6, 6]);
+                        ctx.lineDashOffset = -t * 30;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(v.x, v.y);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+
+                    // Vector Node
+                    ctx.save();
+                    ctx.translate(v.x, v.y);
+                    ctx.fillStyle = v.active ? "#10B981" : "#475569";
+                    ctx.shadowColor = v.active ? "#10B981" : "transparent";
+                    ctx.shadowBlur = v.active ? 16 : 0;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, v.active ? 12 : 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Micro-tag
+                    if (v.active) {
+                        ctx.fillStyle = "rgba(6, 18, 38, 0.9)";
+                        ctx.beginPath();
+                        ctx.roundRect(-45, -34, 90, 24, 6);
+                        ctx.fill();
+                        ctx.strokeStyle = "#10B981";
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.font = "bold 11px monospace";
+                        ctx.textAlign = "center";
+                        ctx.fillText(`cos: ${v.sim}`, 0, -18);
+                    }
+                    ctx.restore();
+                });
+
+                // Top Status Badge
+                ctx.fillStyle = "rgba(10, 20, 42, 0.95)";
+                ctx.beginPath();
+                ctx.roundRect(-180, -gridH - 50, 360, 38, 19);
+                ctx.fill();
+                ctx.strokeStyle = "#38BDF8";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = "#38BDF8";
+                ctx.font = "bold 13px 'Segoe UI', monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("⚡ DENSE VECTOR EMBEDDINGS (k-NN SEARCH)", 0, -gridH - 26);
+
+                ctx.restore();
+            }
+
+            // SCENE 3: 3D SEMANTIC RERANKING TOWER (CROSS-ENCODER PRECISION)
+            else if (stageIdx === 3 || stageTitle.includes("rerank") || stageTitle.includes("semantic")) {
+                const towerY = centerY - 60;
+                ctx.save();
+                ctx.translate(W / 2, towerY);
+
+                const ranks = [
+                    {rank: "#1", score: "0.99", text: "Top Grounded Context Chunk", col: "#10B981", topBadge: "PROMOTED"},
+                    {rank: "#2", score: "0.86", text: "High-Relevance Sub-Topic", col: "#38BDF8", topBadge: "VERIFIED"},
+                    {rank: "#3", score: "0.64", text: "Borderline Context (Filtered)", col: "#F59E0B", topBadge: "SECONDARY"},
+                    {rank: "#4", score: "0.32", text: "Irrelevant Noise (Discarded)", col: "#EF4444", topBadge: "PRUNED"}
+                ];
+
+                // Vertical Cross-Encoder Laser Scanner
+                const scanProg = (t * 0.7) % 1.0;
+                const scanY = -120 + scanProg * 280;
+                ctx.strokeStyle = "rgba(244, 63, 94, 0.85)";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#F43F5E";
+                ctx.shadowBlur = 18;
+                ctx.beginPath();
+                ctx.moveTo(-260, scanY);
+                ctx.lineTo(260, scanY);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ranks.forEach((rk, ri) => {
+                    const ry = -100 + ri * 72;
+                    ctx.save();
+                    ctx.translate(0, ry);
+
+                    // Slabs with isometric depth
+                    ctx.fillStyle = "rgba(10, 24, 48, 0.94)";
+                    ctx.beginPath();
+                    ctx.roundRect(-240, -28, 480, 56, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = rk.col;
+                    ctx.lineWidth = ri === 0 ? 2.5 : 1.5;
+                    ctx.shadowColor = rk.col;
+                    ctx.shadowBlur = ri === 0 ? 16 : 6;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Rank badge
+                    ctx.fillStyle = rk.col;
+                    ctx.font = "bold 16px 'Segoe UI', monospace";
+                    ctx.textAlign = "left";
+                    ctx.fillText(rk.rank, -220, 6);
+
+                    // Score
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+                    ctx.fillText(rk.text, -170, 0);
+                    ctx.fillStyle = "#94A3B8";
+                    ctx.font = "11px monospace";
+                    ctx.fillText(`Cross-Encoder Score: ${rk.score}`, -170, 18);
+
+                    // Status Pill
+                    ctx.fillStyle = rk.col;
+                    ctx.beginPath();
+                    ctx.roundRect(140, -14, 80, 26, 6);
+                    ctx.fill();
+                    ctx.fillStyle = "#020617";
+                    ctx.font = "bold 10px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(rk.topBadge, 180, 4);
+
+                    ctx.restore();
+                });
+
+                ctx.restore();
+            }
+
+            // SCENE 4: 3D LLM GUARDRAILS & ANTI-HALLUCINATION SHIELD
+            else {
+                const shieldY = centerY;
+                ctx.save();
+                ctx.translate(W / 2, shieldY);
+
+                // Rotating 3D Hexagonal Energy Shield
+                const shieldR = 140;
+                ctx.save();
+                ctx.rotate(t * 0.4);
+                for (let hex = 0; hex < 6; hex++) {
+                    const ang = hex * (Math.PI / 3);
+                    const hx = Math.cos(ang) * shieldR;
+                    const hy = Math.sin(ang) * shieldR;
+                    ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(hx * 0.6, hy * 0.6, 35, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                // Shield Aura
+                const shieldGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, shieldR);
+                shieldGrad.addColorStop(0, "rgba(16, 185, 129, 0.35)");
+                shieldGrad.addColorStop(0.7, "rgba(56, 189, 248, 0.2)");
+                shieldGrad.addColorStop(1, "rgba(6, 18, 38, 0.9)");
+                ctx.fillStyle = shieldGrad;
+                ctx.beginPath();
+                ctx.arc(0, 0, shieldR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#10B981";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#10B981";
+                ctx.shadowBlur = 24;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Shield Icon & Center Brand
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 44px 'Segoe UI', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("🛡️", 0, 10);
+
+                // Guardrail Verification Checks
+                const checks = [
+                    {title: "HALLUCINATION DETECTOR", status: "0.00% (PASS)", col: "#10B981"},
+                    {title: "PROMPT INJECTION SHIELD", status: "SECURE", col: "#38BDF8"},
+                    {title: "GROUNDED ATTRIBUTION", status: "99.8% VERIFIED", col: "#F59E0B"}
+                ];
+                checks.forEach((chk, ci) => {
+                    const cky = shieldR + 35 + ci * 42;
+                    ctx.save();
+                    ctx.fillStyle = "rgba(10, 22, 44, 0.92)";
+                    ctx.beginPath();
+                    ctx.roundRect(-210, cky - 16, 420, 34, 17);
+                    ctx.fill();
+                    ctx.strokeStyle = chk.col;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.font = "bold 12px 'Segoe UI', sans-serif";
+                    ctx.textAlign = "left";
+                    ctx.fillText(`✓ ${chk.title}:`, -190, cky + 6);
+
+                    ctx.fillStyle = chk.col;
+                    ctx.font = "bold 12px monospace";
+                    ctx.textAlign = "right";
+                    ctx.fillText(chk.status, 190, cky + 6);
+                    ctx.restore();
+                });
+
+                ctx.restore();
+            }
+        }
+
+        // =====================================================================
+        // TOPIC D: UNIVERSAL 3D TECH ARCHITECTURE (ZERO-RESTRICTION 60 FPS MOTION)
         // =====================================================================
         else {
-            renderEngineSpecificCinematicVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId);
+            const centerY = 820;
+            const bob = Math.sin(t * 3.0) * 8;
+            ctx.save();
+            ctx.translate(W / 2, centerY);
+
+            // 3D Multi-Tier Distributed Engine
+            const tiers = [
+                {name: "CLIENT / API GATEWAY", icon: "🌐", col: "#38BDF8", y: -160},
+                {name: "ASYNC COMPUTE ENGINE", icon: "⚡", col: "#10B981", y: 0},
+                {name: "HIGH-SCALE PERSISTENCE", icon: "🗄️", col: "#A855F7", y: 160}
+            ];
+
+            // Conduit connecting tiers
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+            ctx.lineWidth = 4;
+            ctx.setLineDash([8, 8]);
+            ctx.lineDashOffset = -t * 40;
+            ctx.beginPath();
+            ctx.moveTo(0, -160);
+            ctx.lineTo(0, 160);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Traveling photon packets
+            for (let i = 0; i < 4; i++) {
+                const pProg = ((t * 0.8 + i * 0.25) % 1.0);
+                const py = -160 + pProg * 320;
+                ctx.fillStyle = "#38BDF8";
+                ctx.shadowColor = "#38BDF8";
+                ctx.shadowBlur = 14;
+                ctx.beginPath();
+                ctx.arc(0, py, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw Tier Cards
+            tiers.forEach((tr, tri) => {
+                ctx.save();
+                ctx.translate(0, tr.y + Math.sin(t * 2.5 + tri) * 5);
+                ctx.fillStyle = "rgba(10, 24, 48, 0.94)";
+                ctx.beginPath();
+                ctx.roundRect(-220, -38, 440, 76, 18);
+                ctx.fill();
+                ctx.strokeStyle = tr.col;
+                ctx.lineWidth = 2.2;
+                ctx.shadowColor = tr.col;
+                ctx.shadowBlur = 16;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 24px 'Segoe UI', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText(tr.icon, -195, 8);
+
+                ctx.font = "bold 15px 'Segoe UI', sans-serif";
+                ctx.fillText(tr.name, -150, -4);
+                ctx.fillStyle = tr.col;
+                ctx.font = "bold 12px monospace";
+                ctx.fillText("ACTIVE • 60 FPS • HIGH AVAILABILITY", -150, 18);
+                ctx.restore();
+            });
+
+            ctx.restore();
         }
+
 
         ctx.restore();
     }
