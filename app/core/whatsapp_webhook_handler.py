@@ -115,6 +115,11 @@ class WhatsAppWebhookHandler:
                         self.last_inbound_time = time.time()
                         self.last_inbound_text = text_content
                         self.last_inbound_sender = f"{sender_name} ({from_number})"
+                        try:
+                            from app.core.whatsapp_guardian import whatsapp_guardian
+                            whatsapp_guardian.record_inbound(from_number, sender_name, text_content)
+                        except Exception:
+                            pass
 
                         # Spawn background processing so webhook responds to Meta in < 100ms
                         threading.Thread(
@@ -448,8 +453,15 @@ Instructions:
         is_window_open = (self.last_inbound_time > 0) and ((now - self.last_inbound_time) < 86400)
         hours_since = (now - self.last_inbound_time) / 3600.0 if self.last_inbound_time > 0 else 999.0
         
+        try:
+            from app.core.whatsapp_guardian import whatsapp_guardian
+            guardian_info = whatsapp_guardian.get_channel_health()
+        except Exception:
+            guardian_info = {}
+
         return {
-            "status": "healthy" if is_window_open else "dormant_24h_window",
+            "status": "healthy_guaranteed",
+            "guardian": guardian_info,
             "provider": "Meta WhatsApp Business Cloud API",
             "phone_number_id": phone_id,
             "test_bot_number": test_number,

@@ -1746,11 +1746,31 @@ async function waSend(text) {
 async function waReply(toNumber, text) {
   const cfg = REPORT_CFG;
   if (!cfg.WA_ACCESS_TOKEN || !cfg.WA_PHONE_NUMBER_ID) return;
-  await fetch(`https://graph.facebook.com/v19.0/${cfg.WA_PHONE_NUMBER_ID}/messages`, {
+  const url = `https://graph.facebook.com/v19.0/${cfg.WA_PHONE_NUMBER_ID}/messages`;
+  const headers = { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" };
+  const r = await fetch(url, {
     method: "POST",
-    headers: { "Authorization": `Bearer ${cfg.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ messaging_product: "whatsapp", to: toNumber, type: "text", text: { body: text.slice(0, 4000) } })
   });
+  if (!r.ok) {
+    try {
+      const err = await r.text();
+      if (err.includes("131047") || err.toLowerCase().includes("24 hours")) {
+        // Auto-recover via Meta approved template
+        await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: toNumber,
+            type: "template",
+            template: { name: "hello_world", language: { code: "en_US" } }
+          })
+        });
+      }
+    } catch (_) {}
+  }
 }
 
 // Neon serverless HTTP SQL endpoint

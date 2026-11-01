@@ -1362,6 +1362,16 @@ def _execute_staged_boot_phases_2_and_3():
 
         log_event(f"Phase 3I notice: {e}", level="WARNING", component="BootSequence")
 
+    # T + 31s: WhatsApp Autonomous Guardian Daemon (Zero-Downtime 24/7 Channel Keep-Alive)
+    time.sleep(2.0)
+    try:
+        log_event("=== [PHASE 3J] Starting WhatsApp Autonomous Guardian Daemon (T + 31s) ===", component="BootSequence")
+        from app.core.whatsapp_guardian import whatsapp_guardian
+        whatsapp_guardian.start()
+    except Exception as e:
+        log_event(f"Phase 3J notice: {e}", level="WARNING", component="BootSequence")
+
+
 
 
     log_event("=== Staged Boot Sequence Complete: All NanoPro Systems Synchronized & Healthy ===", component="BootSequence")
@@ -9351,6 +9361,20 @@ class WhatsAppSendRequest(BaseModel):
 
 
 @app.get("/api/communication/whatsapp/status")
+
+
+@app.get("/api/whatsapp/guardian/status")
+async def api_whatsapp_guardian_status():
+    """Provides real-time health and zero-downtime protection status for WhatsApp."""
+    from app.core.whatsapp_guardian import whatsapp_guardian
+    return JSONResponse(whatsapp_guardian.get_channel_health())
+
+
+@app.post("/api/whatsapp/guardian/heartbeat")
+async def api_whatsapp_guardian_heartbeat():
+    """Triggers autonomous Meta Template heartbeat to refresh 24h window."""
+    from app.core.whatsapp_guardian import whatsapp_guardian
+    return JSONResponse(whatsapp_guardian.force_heartbeat(reason="manual_api_trigger"))
 
 @app.get("/api/whatsapp/diagnostics")
 
