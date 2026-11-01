@@ -9910,15 +9910,6 @@ SECOND_HIGHEST_SALARY: 70000`;
             bgGradient: ["#021B26", "#040D14", "#01050A"],
             desc: "Dedicated 3D Isometric Architecture Engine & Neural Video"
         },
-            icon: "🟢",
-            provider: "Alibaba / Wan-Video",
-            category: "100% Free Local GPU",
-            badge: "1080p 60 FPS NEURAL DIFFUSION",
-            themeCol: "#00F2FE",
-            accentCol: "#4FACFE",
-            bgGradient: ["#021B26", "#040D14", "#01050A"],
-            desc: "Alibaba Open-Weights 1080p Flagship Diffusion"
-        },
         'runway_gen45': {
             name: "Runway Gen-4.5 / Gen-4 Turbo",
             shortName: "Runway Gen-4.5",
@@ -10019,7 +10010,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx) {
         const sceneAttr = p?.ai_attribution_ledger?.scenes?.[currentStageIdx - 1] || p?.ai_attribution_ledger?.scene_attributions?.[currentStageIdx - 1];
-        let modelKey = sceneAttr?.engine_id || activeStage?.ai_model || p?.selected_model || window.selectedModernVideoModel || "wan_21";
+        const userChoice = window.selectedModernVideoModel || document.getElementById('selectModernVideoModelMaster')?.value;
+        let modelKey = userChoice || p?.selected_model || sceneAttr?.engine_id || activeStage?.ai_model || "gemini-2.5-flash";
         
         modelKey = String(modelKey).toLowerCase().trim();
         if (modelKey.includes('gemini')) return AI_VIDEO_ENGINE_SPECS['gemini-2.5-flash'];
