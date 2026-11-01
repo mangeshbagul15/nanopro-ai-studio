@@ -1779,9 +1779,31 @@ class SqlShortVideoEngine:
                     f"}}"
                 )
 
+                target_models = []
+                sm_clean = (selected_model or "").lower()
+                if "gemini" in sm_clean:
+                    target_models = ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"]
+                    ai_prompt += (
+                        "\n\n[GEMINI TECHNICAL ACCURACY DIRECTIVE]:\n"
+                        "- Provide deep technical rigor, specific DuckDB and Snowflake SQL queries (e.g. MERGE INTO, DISTINCT ON, ROW_NUMBER).\n"
+                        "- Detail the exact schema transformation: duplicate removal, null handling, type casting.\n"
+                        "- Keep teacher narration authoritative, pedagogical, and mathematically precise."
+                    )
+                elif "wan" in sm_clean:
+                    target_models = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
+                    ai_prompt += (
+                        "\n\n[ALIBABA WAN 2.1 3D ISOMETRIC DIRECTIVE]:\n"
+                        "- Structure narration around the physical 3D Isometric Architecture (Oracle DB -> AWS DMS -> S3 Landing -> Snowflake -> Power BI).\n"
+                        "- Describe visual scenes as 3D isometric components with animated glowing data cubes (INSERT, UPDATE, DELETE) flowing across pipeline rails.\n"
+                        "- Highlight volumetric Bronze, Silver, and Gold 3D cylinders with industrial metallic reflections."
+                    )
+                else:
+                    target_models = [selected_model]
+
                 ai_resp, used_model, _ = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
-                    system_prompt=f"You are NanoPro AI Neural Video Generator. You output strictly raw valid JSON without markdown fences.\n{learned_guide}"
+                    system_prompt=f"You are NanoPro AI Neural Video Generator. You output strictly raw valid JSON without markdown fences.\n{learned_guide}",
+                    models=target_models
                 )
                 if "{" in ai_resp and "}" in ai_resp:
                     json_str = ai_resp[ai_resp.find("{"):ai_resp.rfind("}") + 1]

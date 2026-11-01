@@ -13519,6 +13519,557 @@ SECOND_HIGHEST_SALARY: 70000`;
     // DYNAMIC TECH ARCHITECTURE & MOTION GRAPHICS SCENE DISPATCHER
     // (2026 VIRAL KINETIC TECH REEL ENGINE - 100% BALANCED CANVAS)
     // =========================================================================
+    
+    // =========================================================================
+    // 🏛️ PROFESSIONAL 3D ISOMETRIC ARCHITECTURE & 3D MEDALLION CYLINDERS
+    // Modeled faithfully after Enterprise AWS + Snowflake Medallion Blueprints
+    // =========================================================================
+
+    // 1. Draw True 3D Isometric Cube with Beveled Faces
+    function draw3DIsometricCube(ctx, x, y, w, h, d, topCol, leftCol, rightCol, label, badge, pulse = 0) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        const isoX = w * 0.866;
+        const isoY = w * 0.5;
+        const heightZ = h;
+
+        // Shadow under cube
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.beginPath();
+        ctx.ellipse(0, heightZ * 0.5 + 18, isoX * 1.3, isoY * 0.9, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Left Face
+        ctx.fillStyle = leftCol;
+        ctx.beginPath();
+        ctx.moveTo(0, -heightZ + isoY);
+        ctx.lineTo(-isoX, -heightZ);
+        ctx.lineTo(-isoX, 0);
+        ctx.lineTo(0, isoY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Right Face
+        ctx.fillStyle = rightCol;
+        ctx.beginPath();
+        ctx.moveTo(0, -heightZ + isoY);
+        ctx.lineTo(isoX, -heightZ);
+        ctx.lineTo(isoX, 0);
+        ctx.lineTo(0, isoY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Top Face
+        ctx.fillStyle = topCol;
+        ctx.beginPath();
+        ctx.moveTo(0, -heightZ - isoY);
+        ctx.lineTo(isoX, -heightZ);
+        ctx.lineTo(0, -heightZ + isoY);
+        ctx.lineTo(-isoX, -heightZ);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.4)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Optional Pulse Glow
+        if (pulse > 0) {
+            ctx.shadowColor = topCol;
+            ctx.shadowBlur = 18 * pulse;
+            ctx.strokeStyle = topCol;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // Label below
+        if (label) {
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "bold 13px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(label, 0, isoY + 28);
+        }
+        if (badge) {
+            ctx.fillStyle = topCol;
+            ctx.font = "bold 10.5px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(badge, 0, isoY + 44);
+        }
+
+        ctx.restore();
+    }
+
+    // 2. Draw 3D Volumetric Metallic Medallion Cylinder
+    function draw3DMedallionCylinder(ctx, x, y, rX, rY, h, baseGradColors, topGradColors, label, subtext, countText, isActive, t) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        const floatY = isActive ? Math.sin(t * 3.5) * 5 : 0;
+        ctx.translate(0, floatY);
+
+        // Ground shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.beginPath();
+        ctx.ellipse(0, h * 0.5 + 16, rX * 1.15, rY * 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cylinder Body
+        const bodyGrad = ctx.createLinearGradient(-rX, 0, rX, 0);
+        bodyGrad.addColorStop(0, baseGradColors[0]);
+        bodyGrad.addColorStop(0.3, baseGradColors[1]);
+        bodyGrad.addColorStop(0.7, baseGradColors[2]);
+        bodyGrad.addColorStop(1, baseGradColors[0]);
+
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, -h * 0.5, rX, rY, 0, Math.PI, 0);
+        ctx.lineTo(rX, h * 0.5);
+        ctx.ellipse(0, h * 0.5, rX, rY, 0, 0, Math.PI);
+        ctx.lineTo(-rX, -h * 0.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Specular cylinder rim stroke
+        ctx.strokeStyle = isActive ? baseGradColors[1] : "rgba(255,255,255,0.2)";
+        ctx.lineWidth = isActive ? 2.5 : 1.2;
+        if (isActive) {
+            ctx.shadowColor = baseGradColors[1];
+            ctx.shadowBlur = 18;
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Top Disk (Cap)
+        const capGrad = ctx.createRadialGradient(0, -h * 0.5 - rY * 0.2, 2, 0, -h * 0.5, rX);
+        capGrad.addColorStop(0, topGradColors[0]);
+        capGrad.addColorStop(0.6, topGradColors[1]);
+        capGrad.addColorStop(1, topGradColors[2]);
+
+        ctx.fillStyle = capGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, -h * 0.5, rX, rY, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Center Ring Accent
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rX, rY * 0.85, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Title and Subtext on Cylinder Face
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 15px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(label, 0, 6);
+
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.font = "11px monospace";
+        ctx.fillText(subtext, 0, 26);
+
+        if (countText) {
+            ctx.fillStyle = baseGradColors[1];
+            ctx.font = "bold 10px monospace";
+            ctx.fillText(countText, 0, 44);
+        }
+
+        ctx.restore();
+    }
+
+    // 3. Draw Complete 3D Isometric Pipeline (Oracle -> AWS DMS -> S3 -> Snowflake -> Power BI)
+    // Directly matching reference media_1793547128958_85ac46c3.jpg
+    function drawPro3DIsometricPipeline(ctx, W, H, t, activeStageIdx, stageProg) {
+        ctx.save();
+
+        // Isometric Highway Grid Floor
+        ctx.save();
+        ctx.strokeStyle = "rgba(30, 41, 59, 0.4)";
+        ctx.lineWidth = 1.0;
+        for (let i = -6; i <= 6; i++) {
+            const gx = W / 2 + i * 55;
+            ctx.beginPath();
+            ctx.moveTo(gx - 200, H * 0.28);
+            ctx.lineTo(gx + 200, H * 0.65);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 4 Key Isometric Nodes along diagonal conveyor highway
+        const nodes = [
+            { x: W / 2 - 210, y: H * 0.35, label: "Oracle source", sub: "CDC Log Miner", type: "oracle" },
+            { x: W / 2 - 70,  y: H * 0.42, label: "AWS DMS", sub: "Change Capture", type: "dms" },
+            { x: W / 2 + 70,  y: H * 0.49, label: "S3 landing", sub: "Parquet Lake", type: "s3" },
+            { x: W / 2 + 210, y: H * 0.56, label: "Snowflake", sub: "MERGE Engine", type: "snowflake" }
+        ];
+
+        // Draw Connecting Conveyor Rails
+        for (let i = 0; i < nodes.length - 1; i++) {
+            const n1 = nodes[i];
+            const n2 = nodes[i + 1];
+
+            ctx.save();
+            ctx.strokeStyle = "rgba(71, 85, 105, 0.7)";
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(n1.x, n1.y + 12);
+            ctx.lineTo(n2.x, n2.y + 12);
+            ctx.stroke();
+
+            ctx.strokeStyle = "#38BDF8";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(n1.x, n1.y + 12);
+            ctx.lineTo(n2.x, n2.y + 12);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draw Animated 3D Data Packets (INSERT, UPDATE, DELETE cubes) gliding across rails
+        const totalDist = 3.0;
+        const packetOffset1 = (t * 0.65) % totalDist;
+        const packetOffset2 = (t * 0.65 + 1.0) % totalDist;
+        const packetOffset3 = (t * 0.65 + 2.0) % totalDist;
+
+        function getConveyorPos(offset) {
+            const seg = Math.min(2, Math.floor(offset));
+            const prog = offset - seg;
+            const nA = nodes[seg];
+            const nB = nodes[seg + 1];
+            return {
+                x: nA.x + (nB.x - nA.x) * prog,
+                y: (nA.y + 12) + (nB.y - nA.y) * prog
+            };
+        }
+
+        // Green INSERT Cube
+        const pos1 = getConveyorPos(packetOffset1);
+        draw3DIsometricCube(ctx, pos1.x, pos1.y - 10, 12, 10, 10, "#4ADE80", "#22C55E", "#15803D", null, null, 0.8);
+
+        // Yellow UPDATE Cube
+        const pos2 = getConveyorPos(packetOffset2);
+        draw3DIsometricCube(ctx, pos2.x, pos2.y - 10, 12, 10, 10, "#FDE047", "#EAB308", "#A16207", null, null, 0.8);
+
+        // Red DELETE Cube
+        const pos3 = getConveyorPos(packetOffset3);
+        draw3DIsometricCube(ctx, pos3.x, pos3.y - 10, 12, 10, 10, "#F87171", "#EF4444", "#B91C1C", null, null, 0.8);
+
+        // Draw Nodes
+        nodes.forEach((n, idx) => {
+            const isTarget = (stageIdx === (idx + 1)) || (stageIdx === 5 && idx === 3);
+            const pulse = isTarget ? Math.abs(Math.sin(t * 4)) : 0;
+
+            if (n.type === "oracle") {
+                // 3D Isometric Oracle Cylinder Database
+                draw3DMedallionCylinder(ctx, n.x, n.y - 10, 36, 14, 50, ["#1E3A8A", "#2563EB", "#3B82F6"], ["#60A5FA", "#3B82F6", "#1D4ED8"], "Oracle", n.sub, "SOURCE", isTarget, t);
+            } else if (n.type === "dms") {
+                // 3D Isometric AWS DMS Purple Cube
+                draw3DIsometricCube(ctx, n.x, n.y - 10, 34, 40, 34, "#C084FC", "#9333EA", "#6B21A8", "AWS DMS", n.sub, pulse);
+            } else if (n.type === "s3") {
+                // 3D Isometric S3 Green Layered Storage
+                draw3DMedallionCylinder(ctx, n.x, n.y - 10, 36, 14, 44, ["#065F46", "#059669", "#10B981"], ["#6EE7B7", "#10B981", "#047857"], "Amazon S3", n.sub, "LANDING", isTarget, t);
+            } else if (n.type === "snowflake") {
+                // 3D Isometric Snowflake Electric Blue Cube
+                draw3DIsometricCube(ctx, n.x, n.y - 10, 38, 44, 38, "#38BDF8", "#0284C7", "#0369A1", "Snowflake", n.sub, pulse);
+            }
+        });
+
+        // Legend at bottom: INSERT / UPDATE / DELETE
+        ctx.save();
+        ctx.translate(W / 2, H * 0.69);
+        ctx.fillStyle = "rgba(10, 16, 32, 0.9)";
+        ctx.beginPath();
+        ctx.roundRect(-240, -18, 480, 36, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#22C55E";
+        ctx.fillText("■ INSERT", -140, 5);
+        ctx.fillStyle = "#EAB308";
+        ctx.fillText("■ UPDATE", 0, 5);
+        ctx.fillStyle = "#EF4444";
+        ctx.fillText("■ DELETE", 140, 5);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // 4. Draw Complete 3D Medallion Poster (Bronze -> Silver -> Gold + Challenge & Solutions)
+    // Directly matching reference media_1793547419431_7d80381b.jpg
+    function drawPro3DMedallionPoster(ctx, W, H, t, stageIdx, stageProg) {
+        ctx.save();
+
+        const baseY = H * 0.44;
+
+        // Top Flow Breadcrumb: Oracle -> AWS DMS -> S3 -> Snowflake -> Power BI
+        ctx.save();
+        ctx.translate(W / 2, H * 0.29);
+        const flowSteps = ["Oracle DB", "AWS DMS", "Amazon S3", "Snowflake", "Power BI"];
+        const stepW = 90;
+        const totalW = stepW * flowSteps.length;
+        const startX = -totalW / 2 + stepW / 2;
+
+        flowSteps.forEach((st, i) => {
+            const bx = startX + i * stepW;
+            ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+            ctx.beginPath();
+            ctx.roundRect(bx - 38, -14, 76, 28, 6);
+            ctx.fill();
+            ctx.strokeStyle = i === 3 ? "#38BDF8" : "rgba(255,255,255,0.2)";
+            ctx.stroke();
+
+            ctx.fillStyle = i === 3 ? "#38BDF8" : "#E2E8F0";
+            ctx.font = "bold 10px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(st, bx, 4);
+
+            if (i < flowSteps.length - 1) {
+                ctx.fillStyle = "#94A3B8";
+                ctx.fillText("➔", bx + stepW / 2, 4);
+            }
+        });
+        ctx.restore();
+
+        // 3 Large 3D Volumetric Cylinders (Bronze, Silver, Gold)
+        // 1. Bronze Cylinder
+        const isBronzeActive = stageIdx === 2;
+        draw3DMedallionCylinder(
+            ctx, W / 2 - 160, baseY, 62, 22, 100,
+            ["#7C2D12", "#C2410C", "#EA580C"],
+            ["#FB923C", "#EA580C", "#9A3412"],
+            "Bronze (L0)", "Raw Ingested Data", "APPEND-ONLY",
+            isBronzeActive, t
+        );
+
+        // Arrow 1: Bronze -> Silver
+        ctx.save();
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 24px monospace";
+        ctx.textAlign = "center";
+        const arrowPulse1 = Math.sin(t * 5) * 4;
+        ctx.fillText("➔", W / 2 - 80 + arrowPulse1, baseY);
+        ctx.restore();
+
+        // 2. Silver Cylinder
+        const isSilverActive = stageIdx === 3;
+        draw3DMedallionCylinder(
+            ctx, W / 2, baseY, 62, 22, 100,
+            ["#334155", "#64748B", "#94A3B8"],
+            ["#E2E8F0", "#94A3B8", "#475569"],
+            "Silver (L1)", "Cleaned & Conformed", "DEDUPLICATED",
+            isSilverActive, t
+        );
+
+        // Arrow 2: Silver -> Gold
+        ctx.save();
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 24px monospace";
+        ctx.textAlign = "center";
+        const arrowPulse2 = Math.sin(t * 5 + 1) * 4;
+        ctx.fillText("➔", W / 2 + 80 + arrowPulse2, baseY);
+        ctx.restore();
+
+        // 3. Gold Cylinder
+        const isGoldActive = stageIdx === 4 || stageIdx === 5;
+        draw3DMedallionCylinder(
+            ctx, W / 2 + 160, baseY, 62, 22, 100,
+            ["#78350F", "#D97706", "#F59E0B"],
+            ["#FDE68A", "#F59E0B", "#B45309"],
+            "Gold (L2)", "Business Analytics", "STAR SCHEMA & BI",
+            isGoldActive, t
+        );
+
+        // Bottom Callout Boxes: Challenge vs Resolved
+        const calloutY = H * 0.58;
+        ctx.save();
+        ctx.translate(W / 2, calloutY);
+
+        // Challenge Box (Red)
+        ctx.fillStyle = "rgba(30, 10, 15, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-240, -28, 225, 56, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#EF4444";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        ctx.fillStyle = "#EF4444";
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("⚠️ Challenge!", -225, -8);
+        ctx.fillStyle = "#F87171";
+        ctx.font = "10px monospace";
+        ctx.fillText("Duplicate Records Detected", -225, 12);
+
+        // Pipeline Success Box (Green)
+        ctx.fillStyle = "rgba(10, 30, 20, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(15, -28, 225, 56, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("✅ Pipeline Success!", 30, -8);
+        ctx.fillStyle = "#34D399";
+        ctx.font = "10px monospace";
+        ctx.fillText("Clean & Trusted Data to BI", 30, 12);
+        ctx.restore();
+
+        // Key Takeaways Banner
+        ctx.save();
+        ctx.translate(W / 2, H * 0.66);
+        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+        ctx.beginPath();
+        ctx.roundRect(-240, -32, 480, 64, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText("💡 Key Takeaways:", -220, -12);
+
+        ctx.fillStyle = "#E2E8F0";
+        ctx.font = "10.5px monospace";
+        ctx.fillText("✔ Medallion: Bronze (Raw) ➔ Silver (Clean) ➔ Gold (Aggregates)", -220, 8);
+        ctx.fillText("✔ AWS DMS + S3 + Snowflake + DuckDB for Zero-Latency Analytics", -220, 24);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // 5. Draw Real Live Data Deduplication Table & DuckDB SQL Transformation
+    // Directly matching reference media_1793547003491_00da34df.png
+    function drawProTechnicalDataCleaning(ctx, W, H, t, stageProg) {
+        ctx.save();
+        const startY = H * 0.28;
+        const tblW = 490;
+        const tblH = 220;
+        const tblX = W / 2 - tblW / 2;
+
+        // Table Card
+        ctx.fillStyle = "rgba(11, 19, 36, 0.96)";
+        ctx.beginPath();
+        ctx.roundRect(tblX, startY, tblW, tblH, 14);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Header
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText("📊 Live Table Deduplication (Bronze ➔ Silver)", tblX + 18, startY + 28);
+
+        // Column Titles
+        const cols = [
+            { name: "id", x: tblX + 20 },
+            { name: "amt", x: tblX + 110 },
+            { name: "date", x: tblX + 220 },
+            { name: "status", x: tblX + 340 }
+        ];
+
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "bold 11px monospace";
+        cols.forEach(c => ctx.fillText(c.name, c.x, startY + 54));
+
+        // Sample Data Rows with Duplicate Scanning Laser
+        const rows = [
+            { id: "101", amt: "$500", date: "Oct 12", status: "VALID", isBad: false },
+            { id: "101", amt: "$500", date: "Oct 12", status: "DUP! [REMOVED]", isBad: true },
+            { id: "102", amt: "null", date: "Oct 13", status: "NULL [IMPUTED]", isBad: true },
+            { id: "103", amt: "$840", date: "Oct 14", status: "VALID", isBad: false }
+        ];
+
+        rows.forEach((r, ri) => {
+            const ry = startY + 68 + ri * 36;
+            ctx.save();
+            if (r.isBad) {
+                // Flash / strike-through when cleaned
+                const fade = Math.max(0.2, 1.0 - stageProg * 1.5);
+                ctx.fillStyle = `rgba(239, 68, 68, ${0.15 * fade})`;
+                ctx.beginPath();
+                ctx.roundRect(tblX + 10, ry, tblW - 20, 30, 6);
+                ctx.fill();
+                ctx.strokeStyle = `rgba(239, 68, 68, ${fade})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = `rgba(248, 113, 113, ${fade})`;
+                // Red Strike-Through Laser Line
+                if (stageProg > 0.3) {
+                    ctx.strokeStyle = "#EF4444";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(tblX + 14, ry + 15);
+                    ctx.lineTo(tblX + tblW - 28, ry + 15);
+                    ctx.stroke();
+                }
+            } else {
+                ctx.fillStyle = "#E2E8F0";
+            }
+
+            ctx.font = "bold 12px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText(r.id, cols[0].x, ry + 19);
+            ctx.fillText(r.amt, cols[1].x, ry + 19);
+            ctx.fillText(r.date, cols[2].x, ry + 19);
+            ctx.fillText(r.status, cols[3].x, ry + 19);
+            ctx.restore();
+        });
+
+        // DuckDB / Snowflake SQL Code Terminal below
+        const codeY = startY + tblH + 20;
+        const codeH = 140;
+        ctx.fillStyle = "rgba(7, 11, 22, 0.98)";
+        ctx.beginPath();
+        ctx.roundRect(tblX, codeY, tblW, codeH, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 11px monospace";
+        ctx.fillText("⚡ DuckDB / Snowflake Silver Transformation SQL:", tblX + 16, codeY + 24);
+
+        ctx.font = "11px monospace";
+        ctx.fillStyle = "#38BDF8";
+        ctx.fillText("SELECT id, COALESCE(amt, 0) as amt, date", tblX + 16, codeY + 48);
+        ctx.fillStyle = "#FCD34D";
+        ctx.fillText("FROM (SELECT *, ROW_NUMBER() OVER", tblX + 16, codeY + 70);
+        ctx.fillText("      (PARTITION BY id ORDER BY date DESC) as rn", tblX + 16, codeY + 92);
+        ctx.fillStyle = "#34D399";
+        ctx.fillText("      FROM bronze_layer) WHERE rn = 1;", tblX + 16, codeY + 114);
+
+        // Verification Pill
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("✔ DEDUPLICATION COMPLETE • 0 DUPLICATES IN SILVER", W / 2, codeY + codeH + 24);
+
+        ctx.restore();
+    }
+
     function renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, modelId) {
         const spec = resolveActiveSceneEngineSpec(p, activeStage, currentStageIdx);
         const stageIdx = Number(currentStageIdx) || 1;
@@ -13540,293 +14091,53 @@ SECOND_HIGHEST_SALARY: 70000`;
         // TOPIC 1: CLOUD DATA LAKEHOUSE MEDALLION ARCHITECTURE (AWS + SNOWFLAKE + DUCKDB)
         // =====================================================================
         if (isLakehouse) {
-            // SCENE 1: THE PROBLEM — MESSY DATA HURTS (DUPLICATES & NULLS BREAK REPORTING)
-            if (stageIdx === 1 || stageTitle.includes("intro") || stageTitle.includes("overview") || stageTitle.includes("trend") || stageTitle.includes("messy") || stageTitle.includes("problem") || stageTitle.includes("hurt") || stageTitle.includes("revolution")) {
+            const isWan = (modelId || window.selectedModernVideoModel || "").toLowerCase().includes("wan");
+
+            // SCENE 1: INTRODUCTION & PROBLEM / SOURCE ARCHITECTURE
+            if (stageIdx === 1 || stageTitle.includes("intro") || stageTitle.includes("overview") || stageTitle.includes("trend") || stageTitle.includes("messy") || stageTitle.includes("problem") || stageTitle.includes("revolution")) {
                 ctx.save();
-                ctx.translate(W / 2, centerY - 20);
-
-                // 1. Worried Database Mascot on the Left
-                const dbScale = Math.min(1.0, stageProg * 2.5);
-                draw2DDatabaseCharacter(ctx, -280, 0, dbScale, t, "worried", "Oracle DB", "Source Data");
-
-                // 2. Floating Sleek Tech Data Table with Red Bad Rows
-                const tblW = 480;
-                const tblH = 300;
-                const tblX = -80;
-                const tblY = -150;
-
-                ctx.fillStyle = "rgba(10, 16, 32, 0.95)";
-                ctx.beginPath();
-                ctx.roundRect(tblX, tblY, tblW, tblH, 16);
-                ctx.fill();
-                ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
-                ctx.lineWidth = 2.0;
-                ctx.shadowColor = "#EF4444";
-                ctx.shadowBlur = 16;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                // Table Title Header
-                ctx.fillStyle = "#EF4444";
-                ctx.font = "bold 17px 'Segoe UI', sans-serif";
-                ctx.textAlign = "left";
-                ctx.fillText("⚠️  Raw OLTP Table (Uncleaned Source)", tblX + 20, tblY + 30);
-
-                // Column Headers
-                const cols = [{ name: "id", x: tblX + 20 }, { name: "amt", x: tblX + 130 }, { name: "date", x: tblX + 240 }, { name: "status", x: tblX + 350 }];
-                ctx.fillStyle = "#94A3B8";
-                ctx.font = "bold 13px monospace";
-                cols.forEach(c => ctx.fillText(c.name, c.x, tblY + 64));
-
-                // Table Rows (Highlight duplicates and nulls in coral red)
-                const sampleRows = [
-                    { id: "101", amt: "$500", date: "Oct 12", status: "VALID", isBad: false },
-                    { id: "101", amt: "$500", date: "Oct 12", status: "DUP!", isBad: true },
-                    { id: "102", amt: "null", date: "Oct 13", status: "NULL!", isBad: true },
-                    { id: "103", amt: "-$40", date: "??/??", status: "BAD!", isBad: true }
-                ];
-
-                sampleRows.forEach((r, ri) => {
-                    const ry = tblY + 86 + ri * 48;
-                    ctx.save();
-                    if (r.isBad) {
-                        ctx.fillStyle = "rgba(239, 68, 68, 0.22)";
-                        ctx.beginPath();
-                        ctx.roundRect(tblX + 14, ry, tblW - 28, 40, 8);
-                        ctx.fill();
-                        ctx.strokeStyle = "#EF4444";
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                        ctx.fillStyle = "#F87171";
-                    } else {
-                        ctx.fillStyle = "rgba(15, 23, 42, 0.6)";
-                        ctx.beginPath();
-                        ctx.roundRect(tblX + 14, ry, tblW - 28, 40, 8);
-                        ctx.fill();
-                        ctx.fillStyle = "#E2E8F0";
-                    }
-
-                    ctx.font = "bold 14px monospace";
-                    ctx.textAlign = "left";
-                    ctx.fillText(r.id, cols[0].x, ry + 25);
-                    ctx.fillText(r.amt, cols[1].x, ry + 25);
-                    ctx.fillText(r.date, cols[2].x, ry + 25);
-                    ctx.fillText(r.status, cols[3].x, ry + 25);
-                    ctx.restore();
-                });
-
-                // Challenge Popup below
-                const challengeScale = Math.min(1.0, Math.max(0, (stageProg - 0.25) * 2.0));
-                draw2DStoryPopup(ctx, 0, tblY + tblH + 54, "Challenge: Duplicates & Nulls Break Reports!", "Garbage In ➔ Garbage Out breaks executive dashboards", "⚠️ CHALLENGE", "#EF4444", challengeScale);
-
-                ctx.restore(); // restores scene translate
-                ctx.restore(); // restores function save
+                if (isWan) {
+                    drawPro3DIsometricPipeline(ctx, W, H, t, 1, stageProg);
+                } else {
+                    drawProTechnicalDataCleaning(ctx, W, H, t, stageProg * 0.4);
+                }
+                ctx.restore();
                 return true;
             }
 
-            // SCENE 2: BRONZE LAYER — RAW APPEND-ONLY INGESTION
+            // SCENE 2: BRONZE LAYER (RAW APPEND-ONLY INGESTION)
             else if (stageIdx === 2 || stageTitle.includes("bronze") || stageTitle.includes("raw") || stageTitle.includes("ingest") || stageTitle.includes("foundation")) {
                 ctx.save();
-                ctx.translate(W / 2, centerY - 25);
-
-                // 3 Ingestion Sources on Left
-                const srcX = -270;
-                // 1. CSV File
-                ctx.save();
-                ctx.translate(srcX, -130);
-                ctx.fillStyle = "rgba(10, 24, 48, 0.95)";
-                ctx.beginPath();
-                ctx.roundRect(-80, -30, 160, 60, 12);
-                ctx.fill();
-                ctx.strokeStyle = "#38BDF8";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 14px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("📄 CSV Files", 0, 5);
+                drawPro3DMedallionPoster(ctx, W, H, t, 2, stageProg);
                 ctx.restore();
-
-                // 2. API Stream
-                ctx.save();
-                ctx.translate(srcX, 0);
-                ctx.fillStyle = "rgba(10, 24, 48, 0.95)";
-                ctx.beginPath();
-                ctx.roundRect(-80, -30, 160, 60, 12);
-                ctx.fill();
-                ctx.strokeStyle = "#F59E0B";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 14px 'Segoe UI', sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("⚡ Live APIs", 0, 5);
-                ctx.restore();
-
-                // 3. Oracle DB Mascot
-                draw2DDatabaseCharacter(ctx, srcX, 130, 0.72, t, "happy", "Oracle DB", "OLTP CDC");
-
-                // Right: Bronze Mascot & Bronze Storage Vault
-                const bronzeX = 180;
-                draw2DMedallionCharacters(ctx, bronzeX, 0, "bronze", 1.25, t);
-
-                // 3 Animated Kinetic Pipelines connecting to Bronze
-                const flowProg1 = (stageProg * 1.5 + 0.1) % 1.0;
-                const flowProg2 = (stageProg * 1.5 + 0.4) % 1.0;
-                const flowProg3 = (stageProg * 1.5 + 0.7) % 1.0;
-
-                draw2DKineticPipeline(ctx, srcX + 80, -130, bronzeX - 70, -30, t, "PARQUET", "#38BDF8", flowProg1);
-                draw2DKineticPipeline(ctx, srcX + 80, 0, bronzeX - 70, 0, t, "STREAM", "#F59E0B", flowProg2);
-                draw2DKineticPipeline(ctx, srcX + 80, 130, bronzeX - 70, 30, t, "CDC EVENT", "#CD7F32", flowProg3);
-
-                // Story Popup
-                draw2DStoryPopup(ctx, 0, 240, "Bronze: Immutable Raw Append-Only Layer", "Preserves 100% of raw historical data without transformation", "🥉 BRONZE L0", "#CD7F32", Math.min(1.0, stageProg * 2));
-
-                ctx.restore(); // restores scene translate
-                ctx.restore(); // restores function save
                 return true;
             }
 
-            // SCENE 3: SILVER LAYER — CLEANSED & CONFORMED TRANSFORMATION
+            // SCENE 3: SILVER LAYER (CLEANSED, DEDUPLICATED & CONFORMED)
             else if (stageIdx === 3 || stageTitle.includes("silver") || stageTitle.includes("clean") || stageTitle.includes("structur") || stageTitle.includes("refining")) {
                 ctx.save();
-                ctx.translate(W / 2, centerY - 30);
-
-                // Left: AWS DMS Robot Mascot scanning packets
-                const dmsScale = Math.min(1.0, stageProg * 2.2);
-                draw2DDmsRobot(ctx, -270, -40, dmsScale, t, true, "AWS DMS");
-
-                // Center: 3 Transformation Steps
-                const steps = [
-                    { name: "1. Deduplicate Records", sub: "ROW_NUMBER() / DISTINCT", icon: "✨", col: "#38BDF8" },
-                    { name: "2. Fix Data Types", sub: "CAST strings to DATE / NUMERIC", icon: "🔧", col: "#10B981" },
-                    { name: "3. Filter Invalid Nulls", sub: "Impute or route to dead-letter", icon: "🛡️", col: "#F59E0B" }
-                ];
-
-                steps.forEach((st, sti) => {
-                    const sy = -100 + sti * 76;
-                    ctx.save();
-                    ctx.translate(-40, sy);
-                    ctx.fillStyle = "rgba(10, 18, 38, 0.96)";
-                    ctx.beginPath();
-                    ctx.roundRect(-150, -28, 300, 56, 12);
-                    ctx.fill();
-                    ctx.strokeStyle = st.col;
-                    ctx.lineWidth = 1.8;
-                    ctx.stroke();
-
-                    ctx.fillStyle = st.col;
-                    ctx.font = "bold 14px monospace";
-                    ctx.textAlign = "left";
-                    ctx.fillText(st.icon + "  " + st.name, -135, -4);
-                    ctx.fillStyle = "#94A3B8";
-                    ctx.font = "11px monospace";
-                    ctx.fillText(st.sub, -135, 16);
-                    ctx.restore();
-                });
-
-                // Right: Silver Cleaner Mascot with bubbles & validation shield
-                draw2DMedallionCharacters(ctx, 240, -10, "silver", 1.25, t);
-
-                // Animated Pipeline connecting DMS to Steps to Silver
-                draw2DKineticPipeline(ctx, -210, -40, -190, -40, t, "CDC", "#A855F7", (stageProg * 1.6) % 1.0);
-                draw2DKineticPipeline(ctx, 110, -10, 175, -10, t, "CLEAN", "#E2E8F0", (stageProg * 1.6 + 0.3) % 1.0);
-
-                // Story Popup
-                draw2DStoryPopup(ctx, 0, 240, "Silver: Cleaned, Deduplicated & Conformed", "Production-grade single source of truth ready for queries", "🥈 SILVER L1", "#E2E8F0", Math.min(1.0, stageProg * 2));
-
-                ctx.restore(); // restores scene translate
-                ctx.restore(); // restores function save
+                if (isWan) {
+                    drawPro3DMedallionPoster(ctx, W, H, t, 3, stageProg);
+                } else {
+                    drawProTechnicalDataCleaning(ctx, W, H, t, stageProg);
+                }
+                ctx.restore();
                 return true;
             }
 
-            // SCENE 4: GOLD LAYER — BUSINESS AGGREGATES & KPIS
+            // SCENE 4: GOLD LAYER (BUSINESS AGGREGATES, STAR SCHEMA & KPIS)
             else if (stageIdx === 4 || stageTitle.includes("gold") || stageTitle.includes("business") || stageTitle.includes("intellig") || stageTitle.includes("metric") || stageTitle.includes("insights")) {
                 ctx.save();
-                ctx.translate(W / 2, centerY - 30);
-
-                // Left: Silver Clean Input feeding into Gold
-                draw2DMedallionCharacters(ctx, -260, -30, "silver", 0.9, t);
-
-                // Center: Radiant Gold King Mascot with Crown & Sunglasses
-                draw2DMedallionCharacters(ctx, -40, -30, "gold", 1.35, t);
-
-                // Right: Power BI Screen Mascot with Live Animated Bar Charts
-                draw2DPowerBiCharacter(ctx, 220, -30, 1.1, t, "Power BI");
-
-                // Kinetic Pipelines connecting Silver -> Gold -> Power BI
-                draw2DKineticPipeline(ctx, -190, -30, -110, -30, t, "CLEAN", "#E2E8F0", (stageProg * 1.6) % 1.0);
-                draw2DKineticPipeline(ctx, 30, -30, 150, -30, t, "KPIs", "#F59E0B", (stageProg * 1.6 + 0.4) % 1.0);
-
-                // Story Popup
-                draw2DStoryPopup(ctx, 0, 240, "Gold: Business-Ready Star Schemas & Dashboards", "Aggregated metrics, fast sub-second queries for executive BI", "🥇 GOLD L2", "#F59E0B", Math.min(1.0, stageProg * 2));
-
-                ctx.restore(); // restores scene translate
-                ctx.restore(); // restores function save
+                drawPro3DMedallionPoster(ctx, W, H, t, 4, stageProg);
+                ctx.restore();
                 return true;
             }
 
-            // SCENE 5: FULL AWS + SNOWFLAKE + DUCKDB KINETIC PIPELINE (THE COMPLETE ARCHITECTURE POSTER)
+            // SCENE 5: COMPLETE 3D ISOMETRIC PIPELINE (ORACLE -> AWS DMS -> S3 -> SNOWFLAKE MERGE)
             else {
                 ctx.save();
-                ctx.translate(W / 2, centerY - 40);
-
-                // Top Row: 4 Cloud Infrastructure Entities
-                const topY = -120;
-                // 1. Oracle DB Mascot
-                draw2DDatabaseCharacter(ctx, -320, topY, 0.72, t, "happy", "Oracle", "Source");
-                // 2. AWS DMS Robot
-                draw2DDmsRobot(ctx, -110, topY, 0.75, t, true, "DMS");
-                // 3. Amazon S3 Bucket Mascot
-                draw2DS3Bucket(ctx, 110, topY, 0.75, t, "S3");
-                // 4. Snowflake / DuckDB Mascot
-                draw2DDuckDbMascot(ctx, 320, topY, 0.75, t, "DuckDB");
-
-                // Top Connecting Kinetic Pipelines
-                draw2DKineticPipeline(ctx, -260, topY, -165, topY, t, "CDC", "#F59E0B", (stageProg * 1.5) % 1.0);
-                draw2DKineticPipeline(ctx, -55, topY, 55, topY, t, "PARQUET", "#10B981", (stageProg * 1.5 + 0.3) % 1.0);
-                draw2DKineticPipeline(ctx, 165, topY, 260, topY, t, "SQL", "#38BDF8", (stageProg * 1.5 + 0.6) % 1.0);
-
-                // Bottom Row: 3 Medallion Cylinders + Power BI Output
-                const botY = 90;
-                draw2DMedallionCharacters(ctx, -280, botY, "bronze", 0.85, t);
-                draw2DMedallionCharacters(ctx, -90, botY, "silver", 0.85, t);
-                draw2DMedallionCharacters(ctx, 100, botY, "gold", 0.85, t);
-                draw2DPowerBiCharacter(ctx, 290, botY, 0.85, t, "Power BI");
-
-                // Bottom Connecting Pipelines
-                draw2DKineticPipeline(ctx, -220, botY, -150, botY, t, "CLEAN", "#E2E8F0", (stageProg * 1.5 + 0.2) % 1.0);
-                draw2DKineticPipeline(ctx, -30, botY, 40, botY, t, "AGG", "#F59E0B", (stageProg * 1.5 + 0.5) % 1.0);
-                draw2DKineticPipeline(ctx, 160, botY, 230, botY, t, "DASH", "#F59E0B", (stageProg * 1.5 + 0.8) % 1.0);
-
-                // Pipeline Success Celebration Ribbon at bottom (When progress > 0.35)
-                if (stageProg > 0.35) {
-                    ctx.save();
-                    ctx.translate(0, 245);
-                    const ribScale = Math.min(1.0, (stageProg - 0.35) * 2.5);
-                    ctx.scale(ribScale, ribScale);
-
-                    // Ribbon Container
-                    ctx.fillStyle = "rgba(16, 185, 129, 0.95)";
-                    ctx.beginPath();
-                    ctx.roundRect(-270, -26, 540, 52, 14);
-                    ctx.fill();
-                    ctx.strokeStyle = "#6EE7B7";
-                    ctx.lineWidth = 2.5;
-                    ctx.shadowColor = "#10B981";
-                    ctx.shadowBlur = 18;
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "bold 18px 'Segoe UI', sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText("✓  Pipeline Success! DuckDB Medallion Live", 0, 6);
-                    ctx.restore();
-                }
-
-                ctx.restore(); // restores scene translate
-                ctx.restore(); // restores function save
+                drawPro3DIsometricPipeline(ctx, W, H, t, 4, stageProg);
+                ctx.restore();
                 return true;
             }
         }
