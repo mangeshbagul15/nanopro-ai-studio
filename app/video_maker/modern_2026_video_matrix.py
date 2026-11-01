@@ -913,6 +913,8 @@ class Modern2026VideoMatrix:
         self.fal_key = self._resolve_credential(["FAL_KEY", "FAL_API_KEY", "FAL"])
         self.wavespeed_key = self._resolve_credential(["WAVESPEED_KEY", "WAVESPEED_API_KEY"])
         self.kling_key = self._resolve_credential(["KLING_API_KEY", "KLING"])
+        self.hailuo_key = self._resolve_credential(["HAILUO_API_KEY", "MINIMAX_API_KEY", "HAILUO", "MINIMAX"])
+        self.hf_token = self._resolve_credential(["HF_TOKEN", "HUGGINGFACE_TOKEN", "HUGGINGFACE_API_KEY"])
         self.heygen_key = self._resolve_credential(["HEYGEN_API_KEY", "HEYGEN"])
         self.luma_key = self._resolve_credential(["LUMA_API_KEY", "LUMA"])
         self.runway_key = self._resolve_credential(["RUNWAY_API_KEY", "RUNWAY"])
@@ -1055,21 +1057,37 @@ class Modern2026VideoMatrix:
         avatar_label = "Pure Tech 3D Architecture (Zero Faces)"
         avatar_stream = f"avatar_stream_{avatar_engine}"
 
-        # Step 3: B-Roll Video Generation (with fallback to Pollinations free cluster)
+        # Step 3: B-Roll Video Generation (with Direct Model API Cascade)
         broll_label = next((b["name"] for b in PROMPT_TO_VIDEO_CATALOG if b["id"] == broll_engine), "ByteDance Seedance 2.5")
         
-        # Call fal.ai if key exists and broll is seedance/kling/veo, else fallback to pollinations
         video_url = ""
         provider_used = broll_label
-        if self.fal_key and broll_engine in ("seedance_25", "kling_30", "veo_31"):
+
+        # 1. Direct Kling AI 3.0 Pro Call (Daily Free Credits)
+        if (broll_engine == "kling_30" or not video_url) and self.kling_key:
+            kling_res = self._call_kling_ai(clean_prompt, aspect_ratio)
+            if kling_res.get("status") == "success" and kling_res.get("video_url"):
+                video_url = kling_res["video_url"]
+                provider_used = "Kuaishou Kling AI 3.0 Pro"
+
+        # 2. Direct MiniMax Hailuo H3 Call (Free Tier)
+        if (broll_engine == "hailuo_h3" or not video_url) and self.hailuo_key:
+            minimax_res = self._call_minimax_ai(clean_prompt, aspect_ratio)
+            if minimax_res.get("status") == "success" and minimax_res.get("task_id"):
+                video_url = f"https://api.minimaxi.chat/v1/video_generation/{minimax_res['task_id']}"
+                provider_used = "MiniMax Hailuo H3 (Video-01)"
+
+        # 3. Direct Fal.ai Queue Call (Wan 2.1, Seedance 2.5, Veo 3.1)
+        if not video_url and self.fal_key:
             fal_res = self._call_fal_ai(broll_engine, clean_prompt, aspect_ratio)
             if fal_res.get("status") == "success" and fal_res.get("video_url"):
                 video_url = fal_res["video_url"]
                 provider_used = f"{broll_label} via fal.ai"
 
+        # 4. Fallback to Generative Stream
         if not video_url:
             video_url = self._generate_pollinations_video_url(clean_prompt, aspect_ratio, broll_engine)
-            provider_used = f"{broll_label} (Pollinations 2026 Free Stream)"
+            provider_used = f"{broll_label} (Dynamic AI Generator)"
 
         return {
             "status": "success",
@@ -1152,6 +1170,68 @@ class Modern2026VideoMatrix:
                     "status": "success",
                     "request_id": data.get("request_id"),
                     "video_url": data.get("video", {}).get("url")
+                }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def _call_kling_ai(self, prompt: str, aspect_ratio: str) -> Dict[str, Any]:
+        """Direct API call to Kuaishou Kling AI 3.0 Pro (klingai.com)."""
+        if not self.kling_key:
+            return {"status": "error", "message": "KLING_API_KEY missing"}
+        try:
+            req_data = json.dumps({
+                "model_name": "kling-v3",
+                "prompt": prompt,
+                "aspect_ratio": "9:16" if aspect_ratio == "9:16" else "16:9",
+                "duration": "5"
+            }).encode("utf-8")
+            url = "https://api.klingai.com/v1/videos/text2video"
+            req = urllib.request.Request(
+                url,
+                data=req_data,
+                headers={
+                    "Authorization": f"Bearer {self.kling_key}",
+                    "Content-Type": "application/json"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                task_id = data.get("data", {}).get("task_id")
+                return {
+                    "status": "success",
+                    "task_id": task_id,
+                    "video_url": f"https://api.klingai.com/v1/videos/text2video/{task_id}" if task_id else None,
+                    "raw": data
+                }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def _call_minimax_ai(self, prompt: str, aspect_ratio: str) -> Dict[str, Any]:
+        """Direct API call to MiniMax Hailuo H3 Video (hailuoai.video)."""
+        if not self.hailuo_key:
+            return {"status": "error", "message": "MINIMAX_API_KEY / HAILUO_API_KEY missing"}
+        try:
+            req_data = json.dumps({
+                "model": "video-01",
+                "prompt": prompt,
+                "prompt_optimizer": True
+            }).encode("utf-8")
+            url = "https://api.minimaxi.chat/v1/video_generation"
+            req = urllib.request.Request(
+                url,
+                data=req_data,
+                headers={
+                    "Authorization": f"Bearer {self.hailuo_key}",
+                    "Content-Type": "application/json"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                task_id = data.get("task_id")
+                return {
+                    "status": "success",
+                    "task_id": task_id,
+                    "raw": data
                 }
         except Exception as e:
             return {"status": "error", "message": str(e)}
