@@ -16918,6 +16918,93 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
+    async function renderServerReelFast() {
+        const btn = document.getElementById("btnServerReelFast");
+        const pContainer = document.getElementById("exportProgressBarContainer");
+        const pFill = document.getElementById("exportProgressFill");
+        const pDesc = document.getElementById("exportStageDesc");
+        const pPctText = document.getElementById("exportPercentNum");
+        const celebrationBox = document.getElementById("videoReadyCelebration");
+
+        const spec = sqlShortState.activePreset || sqlShortState.activeVideoSpec || {};
+        const prompt = document.getElementById("sqlShortQuestion")?.value || spec.question || spec.title || "Tech Explainer";
+        const lang = sqlShortState.audioLang || "mr";
+        const voice = document.getElementById("selectVoiceActor")?.value || "mr-IN-AarohiNeural";
+
+        if (btn) btn.disabled = true;
+        if (pContainer) pContainer.style.display = "block";
+        if (pFill) pFill.style.width = "25%";
+        if (pPctText) pPctText.innerText = "25%";
+        if (pDesc) pDesc.innerText = "⚡ FFmpeg 7.1 Server Compositor सुरू होत आहे...";
+
+        try {
+            if (pFill) pFill.style.width = "50%";
+            if (pPctText) pPctText.innerText = "50%";
+            if (pDesc) pDesc.innerText = "Pixabay 4K क्लिप्स, न्यूरल ऑडिओ व 9:16 रेंडरिंग चालू आहे...";
+
+            const res = await fetch("/api/video/render_server_reel", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    prompt: prompt,
+                    topic: prompt,
+                    language: lang,
+                    voice: voice,
+                    scenes: spec.stages || spec.scenes || []
+                })
+            });
+
+            const data = await res.json();
+            if (data.status === "success" && data.video_url) {
+                if (pFill) pFill.style.width = "100%";
+                if (pPctText) pPctText.innerText = "100%";
+                if (pDesc) pDesc.innerText = "🎉 9:16 MP4 Reel तयार झाला आहे!";
+
+                if (celebrationBox) {
+                    celebrationBox.style.display = "block";
+                    const btnAgain = document.getElementById("btnDownloadAgain");
+                    if (btnAgain) {
+                        btnAgain.href = data.video_url;
+                        btnAgain.download = `NanoPro_9x16_Reel_${lang}.mp4`;
+                        btnAgain.innerText = "📥 MP4 व्हिडिओ डाउनलोड करा (" + (data.file_size ? (data.file_size / 1048576).toFixed(1) + " MB" : "Full HD") + ")";
+                    }
+
+                    // Show interactive video player inside celebration card
+                    let playerEl = document.getElementById("serverReelPlayer");
+                    if (!playerEl) {
+                        playerEl = document.createElement("video");
+                        playerEl.id = "serverReelPlayer";
+                        playerEl.controls = true;
+                        playerEl.playsInline = true;
+                        playerEl.style.width = "100%";
+                        playerEl.style.maxHeight = "280px";
+                        playerEl.style.borderRadius = "8px";
+                        playerEl.style.marginTop = "10px";
+                        playerEl.style.border = "1px solid #10B981";
+                        celebrationBox.appendChild(playerEl);
+                    }
+                    playerEl.src = data.video_url;
+                    playerEl.play().catch(e => console.warn("Notice autoplay:", e));
+                }
+
+                // Also trigger direct browser download
+                const a = document.createElement("a");
+                a.href = data.video_url;
+                a.download = `NanoPro_9x16_Reel_${lang}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                throw new Error(data.message || "Server render failed");
+            }
+        } catch(err) {
+            alert("Server 9:16 Video Render Notice: " + (err.message || String(err)));
+            if (pDesc) pDesc.innerText = "त्रुटी: " + err.message;
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
     async function exportSqlShortVideo(durationSec = null) {
 
         const canvas = document.getElementById("sqlShortCanvas");

@@ -412,6 +412,10 @@ _assets_mount_dir.mkdir(parents=True, exist_ok=True)
 
 app.mount("/assets", StaticFiles(directory=str(_assets_mount_dir)), name="assets")
 
+_output_mount_dir = BASE_DIR / "data" / "output"
+_output_mount_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/output", StaticFiles(directory=str(_output_mount_dir)), name="output")
+
 
 
 # Pydantic Request Models
@@ -811,18 +815,17 @@ class AudioProbeRequest(BaseModel):
 
 
 class SqlShortPromptRequest(BaseModel):
-
-    question: str
-
+    question: Optional[str] = None
+    prompt: Optional[str] = None
     difficulty: Optional[str] = "Medium"
-
     language: Optional[str] = "mr"
-
     mode: Optional[str] = "faang_drill"
-
     generation_pattern: Optional[str] = "hybrid"
-
-    selected_model: Optional[str] = "wan_21"
+    selected_model: Optional[str] = "openai/gpt-oss-120b"
+    model: Optional[str] = None
+    voice: Optional[str] = None
+    providers: Optional[Dict[str, bool]] = None
+    timestamp: Optional[Any] = None
 
 
 
@@ -2457,69 +2460,46 @@ async def api_sql_video_presets():
 
 
 @app.post("/api/sql_video/generate_prompt")
-
 async def api_sql_video_generate_prompt(req: SqlShortPromptRequest):
-
     """Generates a prompt-driven 9:16 video blueprint with full narration-synchronized stages and regional voice."""
-
+    effective_prompt = req.prompt or req.question or ""
+    effective_model = req.model or req.selected_model or "openai/gpt-oss-120b"
     try:
-
         res = await sql_short_engine.generate_short_prompt_async(
-
-            topic_or_question=req.question,
-
+            topic_or_question=effective_prompt,
             difficulty=req.difficulty or "Medium",
-
             language=req.language or "mr",
-
             mode=req.mode or "faang_drill",
-
             generation_pattern=req.generation_pattern or "hybrid",
-
-            selected_model=req.selected_model or "wan_21"
-
+            selected_model=effective_model,
+            voice=req.voice,
+            providers=req.providers,
         )
-
     except RuntimeError as exc:
-
         return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
-
     return JSONResponse(res)
 
 
-
 @app.post("/api/sql_video/generate_prompt_job")
-
 async def api_sql_video_generate_prompt_job(req: SqlShortPromptRequest, request: Request):
-
     """Queues the prompt storyboard and voice-synchronized architecture animation."""
-
     from app.video_maker.video_generation_jobs import queue_generation_job
-
+    effective_prompt = req.prompt or req.question or ""
+    effective_model = req.model or req.selected_model or "openai/gpt-oss-120b"
     queued = queue_generation_job(
-
         task_manager,
-
-        req.question,
-
+        effective_prompt,
         str(request.base_url).rstrip("/"),
-
         sql_short_engine.generate_short_prompt_async,
-
         None,
-
         difficulty=req.difficulty or "Medium",
-
         language=req.language or "mr",
-
         mode=req.mode or "faang_drill",
-
         generation_pattern=req.generation_pattern or "hybrid",
-
-        selected_model=req.selected_model or "wan_21",
-
+        selected_model=effective_model,
+        voice=req.voice,
+        providers=req.providers,
     )
-
     return JSONResponse(queued, status_code=202)
 
 
@@ -3309,6 +3289,28 @@ class DirectorCommissionRequest(BaseModel):
     language: Optional[str] = "mr"
 
 
+
+class ServerReelRequest(BaseModel):
+    topic: Optional[str] = "Tech Explainer"
+    prompt: Optional[str] = None
+    language: Optional[str] = "mr"
+    voice: Optional[str] = None
+    scenes: Optional[List[Dict[str, Any]]] = None
+
+@app.post("/api/video/render_server_reel")
+async def render_server_reel_endpoint(req: ServerReelRequest):
+    try:
+        from app.video_maker.autonomous_reel_generator import generate_custom_reel
+        topic = req.prompt or req.topic or "Tech Explainer"
+        res = await generate_custom_reel(
+            topic=topic,
+            scenes=req.scenes,
+            language=req.language or "mr",
+            voice=req.voice
+        )
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 class MultiStagePipelineRequest(BaseModel):
 
