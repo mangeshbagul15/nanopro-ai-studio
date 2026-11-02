@@ -175,6 +175,14 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertNotIn("100% FREE (GPU)", js)
         self.assertNotIn("FFmpeg 7.1 Hardware", js)
         self.assertNotIn("/api/video/generate_2026_video", js)
+        self.assertIn("WAITING FOR REPORT", self.html)
+        self.assertNotIn("Verified Live Providers", self.html)
+        self.assertNotIn("Sub-second LPU Inference", self.html)
+
+    def test_video_studio_uses_responsive_editorial_layout(self):
+        self.assertIn('class="studio-masthead"', self.html)
+        self.assertIn("@media (max-width: 760px)", self.html)
+        self.assertIn("overflow-x: hidden !important", self.html)
 
 
 class TestPromptVisualDirections(unittest.TestCase):

@@ -22356,21 +22356,21 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
             if (btnH) {
 
-                btnH.style.border = '1px solid #10B981';
+                btnH.style.border = '1px solid #C9EF70';
 
-                btnH.style.background = 'rgba(16,185,129,0.2)';
+                btnH.style.background = 'rgba(201,239,112,0.14)';
 
-                btnH.style.color = '#34D399';
+                btnH.style.color = '#DFFF9B';
 
             }
 
             if (btnU) {
 
-                btnU.style.border = '1px solid #334155';
+                btnU.style.border = '1px solid #394239';
 
-                btnU.style.background = 'rgba(15,23,42,0.8)';
+                btnU.style.background = '#171d18';
 
-                btnU.style.color = '#94A3B8';
+                btnU.style.color = '#A9B0A4';
 
             }
 
@@ -22378,9 +22378,8 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
                 badge.textContent = 'AUTO FALLBACK';
 
-                badge.style.color = '#10B981';
-
-                badge.style.borderColor = '#10B981';
+                badge.style.color = '#C9EF70';
+                badge.style.borderColor = '#C9EF70';
 
             }
 
@@ -22388,21 +22387,21 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
             if (btnU) {
 
-                btnU.style.border = '1px solid #38BDF8';
+                btnU.style.border = '1px solid #C9EF70';
 
-                btnU.style.background = 'rgba(56,189,248,0.2)';
+                btnU.style.background = 'rgba(201,239,112,0.14)';
 
-                btnU.style.color = '#38BDF8';
+                btnU.style.color = '#DFFF9B';
 
             }
 
             if (btnH) {
 
-                btnH.style.border = '1px solid #334155';
+                btnH.style.border = '1px solid #394239';
 
-                btnH.style.background = 'rgba(15,23,42,0.8)';
+                btnH.style.background = '#171d18';
 
-                btnH.style.color = '#94A3B8';
+                btnH.style.color = '#A9B0A4';
 
             }
 
@@ -22410,9 +22409,8 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
                 badge.textContent = 'SELECTED MODEL';
 
-                badge.style.color = '#38BDF8';
-
-                badge.style.borderColor = '#38BDF8';
+                badge.style.color = '#C9EF70';
+                badge.style.borderColor = '#C9EF70';
 
             }
 
@@ -22445,25 +22443,14 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
             textEl.textContent = opt.text.trim();
         }
 
-        if (badgeEl) {
-            if (val === 'gemini-2.5-flash') {
-                badgeEl.textContent = "Technical Accuracy Engine";
-                badgeEl.style.color = "#38BDF8";
-            } else if (val === 'wan_21') {
-                badgeEl.textContent = "3D Isometric Architecture Engine";
-                badgeEl.style.color = "#00F2FE";
-            } else {
-                badgeEl.textContent = "Sub-Second LPU";
-                badgeEl.style.color = "#10B981";
-            }
-        }
+        if (badgeEl) badgeEl.textContent = "SCRIPT MODEL";
 
         if (typeof renderSqlShortFrame === 'function' && typeof sqlShortState !== 'undefined') {
             renderSqlShortFrame(sqlShortState.currentTime || 0);
         }
 
         if (typeof showModernToast === 'function') {
-            showModernToast('Model Engine Selected', opt ? opt.text.trim() : val, 'success');
+            showModernToast('Storyboard model selected', opt ? opt.text.trim() : val, 'info');
         }
     }
 
@@ -22495,44 +22482,53 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
 
         const patBadge = document.getElementById('ledgerPatternBadge');
-
         if (patBadge) {
-
             patBadge.textContent = ledger.pattern_label || (ledger.pattern === 'unified' ? 'SELECTED MODEL' : 'AUTO FALLBACK');
-
-            patBadge.style.color = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
-
-            patBadge.style.borderColor = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
-
+            patBadge.style.color = '#C9EF70';
+            patBadge.style.borderColor = '#C9EF70';
         }
 
 
 
         const voiceEl = document.getElementById('ledgerVoiceName');
-
         if (voiceEl) {
-
-            voiceEl.textContent = ledger.voice_actor || (ledger.voiceover_engine && ledger.voiceover_engine.name) || 'Edge Neural';
-
+            voiceEl.textContent = ledger.voice_actor || (ledger.voiceover_engine && ledger.voiceover_engine.name) || 'Not reported';
         }
-
-
 
         const llmEl = document.getElementById('ledgerLlmName') || document.getElementById('ledgerScriptModel');
         if (llmEl) {
-            llmEl.textContent = `${ledger.llm_provider || 'Groq'} (${ledger.llm_model || 'openai/gpt-oss-120b'})`;
+            const model = ledger.llm_model || ledger.storyboard_source || 'Not reported';
+            const route = ledger.llm_provider || 'Route not reported';
+            llmEl.textContent = `${model} · ${route}`;
         }
 
         const latBadge = document.getElementById('ledgerLatencyBadge') || document.getElementById('ledgerElapsedTime');
         if (latBadge) {
-            const latMs = ledger.generation_latency_ms || 2400;
-            latBadge.textContent = `${(latMs / 1000).toFixed(1)}s elapsed`;
+            const latMs = Number(ledger.generation_latency_ms);
+            latBadge.textContent = Number.isFinite(latMs) && latMs > 0
+                ? `${(latMs / 1000).toFixed(1)}s generation`
+                : 'Generation time not reported';
         }
 
         const mediaEl = document.getElementById('ledgerMediaSources') || document.getElementById('ledgerBrollInfo');
         if (mediaEl) {
             const sources = [ledger.broll_source, ledger.photo_source, ledger.sfx_source, ledger.news_source, ledger.stickers_source].filter(Boolean);
-            mediaEl.textContent = sources.length ? sources.join(', ') : 'Pixabay 4K / Unsplash';
+            mediaEl.textContent = sources.length ? sources.join(', ') : 'Optional providers not requested';
+        }
+
+        const scriptSourceEl = document.getElementById('ledgerScriptSpeed');
+        if (scriptSourceEl) {
+            scriptSourceEl.textContent = ledger.storyboard_source || 'Storyboard source not reported';
+        }
+
+        const voiceSourceEl = document.getElementById('ledgerVoiceDuration');
+        if (voiceSourceEl) {
+            voiceSourceEl.textContent = ledger.scenes?.[0]?.voice_provider || 'Voice provider not reported';
+        }
+
+        const visualSourceEl = document.getElementById('ledgerVisualStats');
+        if (visualSourceEl) {
+            visualSourceEl.textContent = ledger.scenes?.[0]?.compositor || 'Compositor not reported';
         }
 
 

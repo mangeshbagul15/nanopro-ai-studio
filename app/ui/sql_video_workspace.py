@@ -1,16 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-
-Mangesh Nano Pro AI Studio - 2026 VFX-Style Universal Tech AI Video Maker
-
-State-of-the-art 9:16 Shorts & Reels Studio:
-
-- 4-Tier Multi-Stage API Docks: Prompt-to-Voice • Voice-to-Video Lip-Sync • Prompt-to-Video B-Roll • Unified Aggregators
-
-- 100% AI Generated, Live Dynamic APIs, Titanium Smartphone Preview, and VFX 1-Click Export!
-
-"""
+"""Responsive workspace for prompt-led technical lessons and 9:16 video export."""
 
 
 
@@ -890,6 +880,345 @@ def get_sql_video_workspace_html() -> str:
 
     }
 
+    #vfxHorizontalScrollContainer {
+        overflow-x: hidden !important;
+        padding: 18px clamp(12px, 2.4vw, 36px) 36px;
+        background:
+            radial-gradient(ellipse at 10% 0%, rgba(201, 239, 112, 0.09), transparent 34rem),
+            radial-gradient(ellipse at 92% 18%, rgba(255, 120, 95, 0.06), transparent 28rem),
+            #101411;
+        scrollbar-width: thin;
+        scrollbar-color: #68764e #171d18;
+    }
+
+    .vfx-video-root {
+        max-width: 1540px;
+        color: #eef1e6;
+        font-family: "Avenir Next", "Segoe UI", sans-serif !important;
+    }
+
+    .studio-masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin: 0 0 18px;
+        padding: 20px 24px;
+        border: 1px solid #394239;
+        border-left: 4px solid #c9ef70;
+        border-radius: 14px;
+        background: linear-gradient(110deg, #1a201b 0%, #171b18 62%, #20251e 100%);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+    }
+
+    .studio-brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+    }
+
+    .studio-mark {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        place-items: center;
+        border: 1px solid rgba(201, 239, 112, 0.45);
+        border-radius: 12px;
+        background: rgba(201, 239, 112, 0.1);
+        color: #c9ef70;
+        font: 800 17px "Avenir Next", "Segoe UI", sans-serif;
+        letter-spacing: -0.08em;
+    }
+
+    .studio-hero-kicker {
+        margin-bottom: 4px;
+        color: #c9ef70;
+        font: 700 10px "SFMono-Regular", Consolas, monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .studio-header-title {
+        margin: 0;
+        color: #f3f1e8;
+        font: 600 clamp(21px, 2.2vw, 30px)/1.12 Georgia, "Times New Roman", serif;
+        letter-spacing: -0.035em;
+    }
+
+    .studio-header-copy {
+        margin-top: 6px;
+        color: #a9b0a4;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .studio-header-status {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .studio-header-status .kokonut-badge {
+        padding: 7px 10px;
+        border: 1px solid #465044 !important;
+        border-radius: 999px;
+        background: #20271f !important;
+        color: #dce5d2 !important;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+    }
+
+    .vfx-studio-grid {
+        grid-template-columns: minmax(0, 1.13fr) minmax(300px, 0.78fr) minmax(245px, 0.66fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    #sqlStudioMainGrid > .vfx-glow-box:first-child,
+    #exportCardContainer .vfx-glow-box {
+        border: 1px solid #394239 !important;
+        border-radius: 14px;
+        background: #181d19 !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2) !important;
+        backdrop-filter: none;
+    }
+
+    #sqlStudioMainGrid > .vfx-glow-box:first-child:hover,
+    #exportCardContainer .vfx-glow-box:hover {
+        transform: none;
+        border-color: #59664d !important;
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28) !important;
+    }
+
+    #sqlShortQuestion {
+        min-height: 150px;
+        border: 1px solid #465044 !important;
+        border-radius: 10px !important;
+        background: #111612 !important;
+        color: #f0f2e9 !important;
+        font: 13px/1.65 "SFMono-Regular", Consolas, monospace !important;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18) !important;
+    }
+
+    #sqlShortQuestion:focus,
+    .vfx-video-root select:focus,
+    .vfx-video-root button:focus-visible,
+    .vfx-video-root input:focus-visible {
+        outline: 2px solid #c9ef70;
+        outline-offset: 2px;
+    }
+
+    #sqlStudioMainGrid > section[aria-labelledby] > div[style*="background"] {
+        border-color: #394239 !important;
+        background: #1d241e !important;
+    }
+
+    #sqlStudioMainGrid > section[aria-labelledby] [style*="color: #38BDF8"],
+    #sqlStudioMainGrid > section[aria-labelledby] [style*="color: #10B981"] {
+        color: #c9ef70 !important;
+    }
+
+    #sqlStudioMainGrid > section[aria-labelledby] select,
+    #sqlExportResolution,
+    #sqlShortSpeed {
+        border-color: #465044 !important;
+        background: #111612 !important;
+        color: #eef1e6 !important;
+    }
+
+    #activePatternBadge,
+    #modelLatencyBadge,
+    #modelSpecsQuickPill,
+    #modelSpecsNameText,
+    #sqlVideoGenerationStatus {
+        color: #c9ef70 !important;
+    }
+
+    .vfx-quick-chip {
+        border-color: #3b4439;
+        background: #202720;
+        color: #d1d7ca;
+    }
+
+    .vfx-quick-chip:hover {
+        border-color: #c9ef70;
+        background: rgba(201, 239, 112, 0.1);
+        color: #dfff9b;
+    }
+
+    .sql-lang-btn {
+        border-color: #3b4439;
+        background: #141a15;
+        color: #b6beb1;
+    }
+
+    .sql-lang-btn.active {
+        border-color: #c9ef70;
+        background: rgba(201, 239, 112, 0.11);
+        color: #dfff9b;
+        box-shadow: inset 0 0 0 1px rgba(201, 239, 112, 0.18);
+    }
+
+    .provider-toggle-card {
+        border-color: #394239;
+        background: #202720;
+        color: #d4d9ce;
+    }
+
+    .provider-toggle-card input[type="checkbox"] {
+        accent-color: #c9ef70;
+    }
+
+    #btnGenerateSqlBlueprint,
+    #btnDownloadShortVideo {
+        border: 1px solid #d5f687 !important;
+        border-radius: 10px !important;
+        background: #c9ef70 !important;
+        box-shadow: none !important;
+        color: #172012 !important;
+        letter-spacing: 0.03em;
+    }
+
+    #btnGenerateSqlBlueprint:hover,
+    #btnDownloadShortVideo:hover {
+        background: #d9ff85 !important;
+        box-shadow: 0 8px 26px rgba(201, 239, 112, 0.16) !important;
+    }
+
+    #btnServerReelFast {
+        border-color: #66503e !important;
+        background: #241e19 !important;
+        color: #f3bc79 !important;
+    }
+
+    #sqlStudioMainGrid > .studio-preview-column {
+        align-items: stretch !important;
+        min-width: 0;
+        padding: 8px 4px;
+    }
+
+    #phoneBezel {
+        width: min(100%, 336px) !important;
+        height: auto !important;
+        aspect-ratio: 9 / 16;
+        border: 1px solid #58634c !important;
+        border-radius: 24px !important;
+        background: #080b08 !important;
+        box-shadow: 0 24px 62px rgba(0, 0, 0, 0.5), 0 0 0 6px rgba(30, 37, 29, 0.72) !important;
+    }
+
+    #sqlStudioMainGrid > .studio-preview-column > div,
+    #sqlStudioMainGrid > .studio-preview-column > .studio-player-controls {
+        width: min(100%, 336px) !important;
+        max-width: 336px !important;
+        align-self: center;
+    }
+
+    #sqlShortScrubber {
+        accent-color: #c9ef70 !important;
+    }
+
+    #exportCardContainer {
+        min-width: 0;
+    }
+
+    #exportCardContainer .vfx-glow-box {
+        border-color: #59664d !important;
+    }
+
+    #aiAttributionLedgerContainer {
+        border: 1px solid #394239 !important;
+        border-radius: 12px;
+        background: #141a15 !important;
+        box-shadow: none !important;
+    }
+
+    #exportCardContainer .vfx-glow-box > div:first-child > span:first-child {
+        color: #c9ef70 !important;
+    }
+
+    .vfx-pipeline-tracker {
+        border: 1px solid #394239;
+        border-radius: 10px;
+        background: #121713;
+    }
+
+    .pipeline-step-row.active {
+        color: #dfff9b;
+    }
+
+    .pipeline-step-row.completed {
+        color: #a8d87a;
+    }
+
+    .vfx-video-root button,
+    .vfx-video-root select,
+    .vfx-video-root input,
+    .vfx-video-root textarea {
+        font-family: inherit;
+    }
+
+    @media (max-width: 1400px) {
+        .vfx-studio-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(300px, 0.78fr);
+        }
+
+        #exportCardContainer {
+            grid-column: 1 / -1;
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            align-items: start;
+        }
+    }
+
+    @media (max-width: 760px) {
+        #vfxHorizontalScrollContainer {
+            padding: 12px 10px 24px;
+        }
+
+        .studio-masthead {
+            align-items: flex-start;
+            flex-direction: column;
+            padding: 17px;
+        }
+
+        .studio-header-status {
+            justify-content: flex-start;
+        }
+
+        .vfx-studio-grid {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+        }
+
+        #exportCardContainer {
+            grid-column: auto;
+            display: flex !important;
+        }
+
+        #sqlStudioMainGrid > .studio-preview-column {
+            padding: 4px 0;
+        }
+
+        #sqlStudioMainGrid > .vfx-glow-box:first-child {
+            padding: 16px !important;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .vfx-video-root *,
+        .vfx-video-root *::before,
+        .vfx-video-root *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
     </style>
 
 
@@ -940,29 +1269,23 @@ def get_sql_video_workspace_html() -> str:
 
 
 
-        <!-- CLEAN MASTER STUDIO HEADER -->
+        <header class="studio-masthead">
 
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding: 12px 18px; background: rgba(10, 15, 29, 0.95); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <div class="studio-brand">
 
-            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="studio-mark" aria-hidden="true">N/</div>
 
-                <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #0284C7, #8B5CF6); display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
+                <div class="studio-hero-copy">
 
-                    🎬
+                    <div class="studio-hero-kicker">NanoPro / Video studio</div>
 
-                </div>
-
-                <div>
-
-                    <h2 style="margin: 0; font-size: 17px; color: #38BDF8; font-weight: 900; letter-spacing: 0.5px;">
-
-                        UNIVERSAL TECH AI VIDEO MAKER (9:16 SHORTS &amp; REELS)
+                    <h2 class="studio-header-title">
+                        Turn a technical idea into a short lesson.
 
                     </h2>
 
-                    <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
-
-                        Prompt-led tech lessons • scene-specific 2D motion • neural voice
+                    <div class="studio-header-copy">
+                        Prompt-led scenes · Marathi, Hindi, or English voice · 9:16 export
 
                     </div>
 
@@ -970,7 +1293,7 @@ def get_sql_video_workspace_html() -> str:
 
             </div>
 
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="studio-header-status">
 
                 <span id="badgeActiveApis" class="kokonut-badge" style="color: #10B981; border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.15);">
 
@@ -986,7 +1309,7 @@ def get_sql_video_workspace_html() -> str:
 
             </div>
 
-        </div>
+            </header>
 
 
 
@@ -1002,7 +1325,7 @@ def get_sql_video_workspace_html() -> str:
 
             <!-- COLUMN 1: MASTER PROMPT & TECH SCENARIO CONSOLE -->
 
-            <div class="vfx-glow-box" style="padding: 20px;">
+            <section class="vfx-glow-box" aria-labelledby="studioBriefHeading" style="padding: 20px;">
 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
 
@@ -1010,13 +1333,13 @@ def get_sql_video_workspace_html() -> str:
 
                         <span style="font-size: 16px;">📝</span>
 
-                        <h3 style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 800;">MASTER PROMPT &amp; TECH SCENARIO INPUT</h3>
+                        <h3 id="studioBriefHeading" style="margin: 0; font-size: 14px; color: #F8FAFC; font-weight: 800;">YOUR LESSON BRIEF</h3>
 
                     </div>
 
                     <span style="font-size: 10.5px; color: #38BDF8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 6px; font-weight: 700;">
 
-                        ✨ Live Multi-Stage Synth
+                        PROMPT → SCENES
 
                     </span>
 
@@ -1050,7 +1373,7 @@ def get_sql_video_workspace_html() -> str:
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
 
-                        <button type="button" class="sql-pattern-btn active" id="btnPatternHybrid" onclick="setGenerationPattern('hybrid')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #10B981; background: rgba(16,185,129,0.2); color: #34D399; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
+                        <button type="button" class="sql-pattern-btn active" id="btnPatternHybrid" onclick="setGenerationPattern('hybrid')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #C9EF70; background: rgba(201,239,112,0.14); color: #DFFF9B; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
 
                             <span>✨ Automatic model fallback</span>
 
@@ -1058,7 +1381,7 @@ def get_sql_video_workspace_html() -> str:
 
                         </button>
 
-                        <button type="button" class="sql-pattern-btn" id="btnPatternUnified" onclick="setGenerationPattern('unified')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #334155; background: rgba(15,23,42,0.8); color: #94A3B8; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
+                        <button type="button" class="sql-pattern-btn" id="btnPatternUnified" onclick="setGenerationPattern('unified')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #394239; background: #171D18; color: #A9B0A4; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
 
                             <span>🎯 Selected model only</span>
 
@@ -1084,21 +1407,21 @@ def get_sql_video_workspace_html() -> str:
 
                         </span>
 
-                        <span id="modelLatencyBadge" style="font-size: 10px; color: #38BDF8; font-family: monospace; font-weight: 700;">Technical Accuracy Engine</span>
+                        <span id="modelLatencyBadge" style="font-size: 10px; color: #38BDF8; font-family: monospace; font-weight: 700;">SCRIPT MODEL</span>
                     </div>
                     <select id="selectModernVideoModelMaster" class="studio-input" onchange="onModernModelSelected(this.value)" style="width: 100%; background: #070B16; border: 1px solid #38BDF8; color: #F8FAFC; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer;">
-                        <option value="gemini-2.5-flash" selected>🌟 Google Gemini 2.5 Flash (Technical Accuracy Engine)</option>
+                        <option value="gemini-2.5-flash" selected>Google Gemini 2.5 Flash</option>
                         <option value="wan_21">🏗️ Architecture storyboard (Groq model route)</option>
-                        <option value="openai/gpt-oss-120b">⚡ Groq route: openai/gpt-oss-120b</option>
-                        <option value="codestral-latest">🧪 Mistral: codestral-latest (Clean Code &amp; Architecture)</option>
-                        <option value="command-r-plus-08-2024">🏢 Cohere: command-r-plus-08-2024 (Enterprise Structured)</option>
-                        <option value="Meta-Llama-3.3-70B-Instruct">🚀 Meta-Llama-3.3-70B-Instruct</option>
-                        <option value="deepseek-chat">🧬 DeepSeek: DeepSeek-V3 / R1 (Algorithmic Reasoning)</option>
-                        <option value="openrouter/auto">🌐 OpenRouter: Multi-Model Gateway (Auto-Cascade)</option>
+                        <option value="openai/gpt-oss-120b">Groq · openai/gpt-oss-120b</option>
+                        <option value="codestral-latest">Mistral · Codestral</option>
+                        <option value="command-r-plus-08-2024">Cohere · Command R+</option>
+                        <option value="Meta-Llama-3.3-70B-Instruct">Meta · Llama 3.3 70B</option>
+                        <option value="deepseek-chat">DeepSeek · Chat</option>
+                        <option value="openrouter/auto">OpenRouter · Auto route</option>
                     </select>
                     <div id="modelSpecsQuickPill" style="font-size: 10.5px; color: #38BDF8; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-                        <span>● Active:</span> <b style="color: #38BDF8;" id="modelSpecsNameText">Google Gemini 2.5 Flash (Technical Accuracy Engine)</b>
-                        <span style="color: #94A3B8;">• Multimodal &amp; Audio-Synced Architecture</span>
+                        <span>Selected:</span> <b style="color: #38BDF8;" id="modelSpecsNameText">Google Gemini 2.5 Flash</b>
+                        <span style="color: #94A3B8;">• Used for the storyboard</span>
                     </div>
 
                 </div>
@@ -1141,13 +1464,11 @@ def get_sql_video_workspace_html() -> str:
 
                 <!-- Master Prompt Textarea -->
 
-                <textarea class="studio-input" id="sqlShortQuestion" rows="5" placeholder="तुमचा मास्टर प्रॉम्प्ट (Master Prompt) इथे प्रविष्ट करा:
+                <textarea class="studio-input" id="sqlShortQuestion" rows="5" placeholder="तुमचा विषय किंवा learner चा प्रश्न लिहा.
 
-उदा. 'Explain DENSE_RANK() vs RANK() in SQL with live salary table' किंवा 'Microservices vs Monolith Architecture'
+उदा. “Docker vs Kubernetes: scale करताना फरक काय?” किंवा “Explain SQL window functions with a salary example.”
 
-
-
-✨ तुमच्या topic नुसार 9:16 Shorts / Reels व्हिडिओ थेट कोड डायग्राम, B-Roll, व व्हॉईसओव्हरसह तयार होईल." style="width: 100%; margin-bottom: 14px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 12.5px; font-family: 'Fira Code', monospace; border-radius: 10px; padding: 12px; line-height: 1.6; resize: vertical; box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);"></textarea>
+NanoPro prompt-specific scenes, teacher narration आणि निवडलेल्या भाषेतील voice तयार करेल." style="width: 100%; margin-bottom: 14px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 12.5px; font-family: 'Fira Code', monospace; border-radius: 10px; padding: 12px; line-height: 1.6; resize: vertical; box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);"></textarea>
 
 
 
@@ -1376,13 +1697,13 @@ def get_sql_video_workspace_html() -> str:
 
                 </div>
 
-            </div>
+            </section>
 
 
 
             <!-- COLUMN 2: 9:16 TITANIUM SMARTPHONE PREVIEW -->
 
-            <div style="display: flex; flex-direction: column; align-items: center;">
+            <section class="studio-preview-column" aria-label="Video preview and playback controls" style="display: flex; flex-direction: column; align-items: center;">
 
                 <div style="margin-bottom: 10px; display: flex; justify-content: space-between; width: 100%; max-width: 340px; align-items: center;">
 
@@ -1456,7 +1777,7 @@ def get_sql_video_workspace_html() -> str:
 
                 <!-- Player Transport Controls -->
 
-                <div style="width: 100%; max-width: 340px; margin-top: 12px; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 10px; padding: 10px;">
+                <div class="studio-player-controls" style="width: 100%; max-width: 340px; margin-top: 12px; background: #0E1528; border: 1px solid #1E2D4A; border-radius: 10px; padding: 10px;">
 
                     <!-- Timeline Scrubber -->
 
@@ -1496,7 +1817,7 @@ def get_sql_video_workspace_html() -> str:
 
                 </div>
 
-            </div>
+            </section>
 
 
 
@@ -1622,11 +1943,11 @@ def get_sql_video_workspace_html() -> str:
 
                                     <h4 style="margin: 0; font-size: 13px; color: #38BDF8; font-weight: 800; letter-spacing: 0.5px;">
 
-                                        AUTHENTIC ASSET ATTRIBUTION LEDGER
+                                        GENERATION REPORT
 
                                     </h4>
 
-                                    <div style="font-size: 10.5px; color: #94A3B8;">Verified Live Providers • Scene Composition Provenance</div>
+                                    <div style="font-size: 10.5px; color: #94A3B8;">Models, voice, rendering and optional assets actually used</div>
 
                                 </div>
 
@@ -1634,7 +1955,7 @@ def get_sql_video_workspace_html() -> str:
 
                             <span id="ledgerPatternBadge" style="font-size: 10px; font-weight: 800; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 3px 10px; border-radius: 6px;">
 
-                                AUTHENTIC ASSETS VERIFIED
+                                WAITING FOR REPORT
 
                             </span>
 
@@ -1660,9 +1981,8 @@ def get_sql_video_workspace_html() -> str:
 
                                 <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">🧠 Reasoning LLM</div>
 
-                                <div id="ledgerScriptModel" style="font-size: 11.5px; color: #38BDF8; font-weight: 800; margin-top: 2px;">Groq openai/gpt-oss-120b</div>
-
-                                <div id="ledgerScriptSpeed" style="font-size: 9.5px; color: #94A3B8;">Sub-second LPU Inference</div>
+                                <div id="ledgerScriptModel" style="font-size: 11.5px; color: #38BDF8; font-weight: 800; margin-top: 2px;">Not generated yet</div>
+                                <div id="ledgerScriptSpeed" style="font-size: 9.5px; color: #94A3B8;">Storyboard source appears after generation</div>
 
                             </div>
 
@@ -1670,9 +1990,8 @@ def get_sql_video_workspace_html() -> str:
 
                                 <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">🎙️ Voiceover Actor</div>
 
-                                <div id="ledgerVoiceName" style="font-size: 11.5px; color: #34D399; font-weight: 800; margin-top: 2px;">Edge Neural Marathi</div>
-
-                                <div id="ledgerVoiceDuration" style="font-size: 9.5px; color: #94A3B8;">Neural Cloud Synthesis</div>
+                                <div id="ledgerVoiceName" style="font-size: 11.5px; color: #34D399; font-weight: 800; margin-top: 2px;">Selected voice appears after generation</div>
+                                <div id="ledgerVoiceDuration" style="font-size: 9.5px; color: #94A3B8;">Voice provider not reported</div>
 
                             </div>
 
@@ -1680,9 +1999,8 @@ def get_sql_video_workspace_html() -> str:
 
                                 <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">🎬 B-Roll &amp; Visuals</div>
 
-                                <div id="ledgerBrollInfo" style="font-size: 11.5px; color: #FBBF24; font-weight: 800; margin-top: 2px;">Pixabay 4K / Unsplash</div>
-
-                                <div id="ledgerVisualStats" style="font-size: 9.5px; color: #94A3B8;">Vertical 9:16 Dynamic Cropping</div>
+                                <div id="ledgerBrollInfo" style="font-size: 11.5px; color: #FBBF24; font-weight: 800; margin-top: 2px;">Optional providers not requested</div>
+                                <div id="ledgerVisualStats" style="font-size: 9.5px; color: #94A3B8;">Browser Canvas compositor</div>
 
                             </div>
 
@@ -1690,7 +2008,7 @@ def get_sql_video_workspace_html() -> str:
 
                                 <div style="font-size: 10px; color: #64748B; text-transform: uppercase; font-weight: 700;">⏱️ Total Generation Time</div>
 
-                                <div id="ledgerElapsedTime" style="font-size: 11.5px; color: #A78BFA; font-weight: 800; margin-top: 2px;">2.4s elapsed</div>
+                                <div id="ledgerElapsedTime" style="font-size: 11.5px; color: #A78BFA; font-weight: 800; margin-top: 2px;">Shown after generation</div>
 
                                 <div style="font-size: 9.5px; color: #94A3B8;">Real-Time End-to-End Pipeline</div>
 
