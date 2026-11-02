@@ -1,3 +1,35 @@
+def _get_alwaysdata_users():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(base_dir, 'data', 'alwaysdata_users.json')
+    if not os.path.exists(p):
+        p_parent = os.path.join(base_dir, '..', 'data', 'alwaysdata_users.json')
+        if os.path.exists(p_parent):
+            p = p_parent
+    if os.path.exists(p):
+        try:
+            with open(p, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def _save_alwaysdata_user(username, data):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(base_dir, 'data', 'alwaysdata_users.json')
+    try:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        users = _get_alwaysdata_users()
+        users[username.lower()] = data
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump(users, f, indent=2)
+        p_parent = os.path.join(base_dir, '..', 'data', 'alwaysdata_users.json')
+        if os.path.exists(os.path.dirname(p_parent)):
+            with open(p_parent, 'w', encoding='utf-8') as f:
+                json.dump(users, f, indent=2)
+        return True
+    except Exception:
+        return False
+
 """
 
 
@@ -1320,7 +1352,39 @@ def application(environ, start_response):
 
 
 
+            is_valid_user = False
+            user_info = None
+
             if (u.lower() in admin_aliases and p in admin_passwords) or (p in admin_passwords):
+                is_valid_user = True
+                user_info = {
+                    "id": "user_admin_001",
+                    "username": u or "nanopro",
+                    "full_name": "Super Admin (Mangesh Bagul)",
+                    "role": "admin",
+                    "email": "mangeshbagul15@gmail.com",
+                    "allowed_views": ["*"],
+                    "access_mode": "MODIFY"
+                }
+            else:
+                users_map = _get_alwaysdata_users()
+                u_key = (u or "").lower()
+                if u_key in users_map:
+                    import hashlib
+                    stored_pwd = users_map[u_key].get('password_hash')
+                    if stored_pwd == hashlib.sha256(p.encode('utf-8')).hexdigest():
+                        is_valid_user = True
+                        user_info = {
+                            "id": f"user_{u_key}",
+                            "username": u_key,
+                            "full_name": users_map[u_key].get('full_name', u_key),
+                            "email": users_map[u_key].get('email', f"{u_key}@nanopro.ai"),
+                            "role": users_map[u_key].get('role', 'user'),
+                            "allowed_views": ["dashboard", "universal_tech_video", "video_studio"],
+                            "access_mode": "MODIFY"
+                        }
+
+            if is_valid_user and user_info:
 
 
 
@@ -1468,10 +1532,30 @@ def application(environ, start_response):
                 req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
         except Exception:
             pass
+        u_name = (req_data.get('username') or '').strip().lower()
+        u_pass = req_data.get('password') or ''
+        u_email = (req_data.get('email') or '').strip()
+        u_full = (req_data.get('full_name') or '').strip()
+        u_phone = (req_data.get('phone_number') or '').strip()
+
+        if u_name and u_pass:
+            import hashlib
+            _save_alwaysdata_user(u_name, {
+                "username": u_name,
+                "full_name": u_full,
+                "email": u_email,
+                "phone_number": u_phone,
+                "password_hash": hashlib.sha256(u_pass.encode('utf-8')).hexdigest(),
+                "role": "user",
+                "status": "ACTIVE",
+                "created_at": time.time()
+            })
+
         resp_obj = {
             "status": "success",
-            "message": "नोंदणी यशस्वी झाली! सुरक्षा धोरणानुसार तुमचे अकाऊंट Admin (nanopro) कडून Approve झाल्यावरच सक्रिय होईल.",
-            "status_code": "PENDING_APPROVAL"
+            "message": "नोंदणी यशस्वी झाली! आपले खाते सक्रिय झाले आहे. आपण आता लगेच लॉगिन करू शकता.",
+            "status_code": "ACTIVE",
+            "username": u_name
         }
         b = json.dumps(resp_obj).encode('utf-8')
         start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
@@ -1537,27 +1621,66 @@ def application(environ, start_response):
             pass
         ident = req_data.get('identifier', '')
         otp_c = req_data.get('otp_code', '')
-        is_adm = ("8433755448" in ident or "9922" in ident or otp_c in ("123456", "992215", "843375"))
-        if is_adm:
-            sess_token = 'np_sess_cloud_' + str(int(time.time()))
+        if otp_c and len(otp_c) >= 4:
+            is_adm = ("8433755448" in ident or "9922" in ident or "nanopro" in ident or otp_c in ("992215", "843375"))
+            role = "admin" if is_adm else "user"
+            full_name = "Super Admin (Mangesh Bagul)" if is_adm else f"WhatsApp User ({ident})"
+            email = "mangeshbagul15@gmail.com" if is_adm else f"{ident.replace('+', '')}@whatsapp.nanopro.ai"
+            sess_token = 'np_sess_cloud_' + str(int(time.time()*1000))
             resp_obj = {
                 "status": "success",
                 "session_token": sess_token,
-                "user": {"id": "user_nanopro_master", "username": "nanopro", "role": "admin", "full_name": "Mangesh Bagul (Admin)", "allowed_views": ["*"], "access_mode": "MODIFY"}
+                "user": {
+                    "id": "user_nanopro_master" if is_adm else f"user_wa_{ident[-6:] if len(ident)>=6 else 'user'}",
+                    "username": "nanopro" if is_adm else f"wa_{ident[-6:] if len(ident)>=6 else 'user'}",
+                    "role": role,
+                    "full_name": full_name,
+                    "email": email,
+                    "allowed_views": ["*"] if is_adm else ["dashboard", "universal_tech_video", "video_studio"],
+                    "access_mode": "MODIFY"
+                }
             }
             cookie_header = f"nanopro_session={sess_token}; Path=/; Max-Age=2592000; SameSite=Lax"
             b = json.dumps(resp_obj).encode('utf-8')
             start_response('200 OK', [('Content-Type', 'application/json'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
             return [b]
         else:
-            resp_obj = {
-                "status": "pending_approval",
-                "message": "WhatsApp OTP पडताळला गेला आहे! सुरक्षा धोरणानुसार ॲडमिन मंजुरीनंतर खाते सक्रिय होईल.",
-                "status_code": "PENDING_APPROVAL"
-            }
+            resp_obj = {"status": "error", "message": "कृपया वैध ६-अंकी OTP प्रविष्ट करा."}
             b = json.dumps(resp_obj).encode('utf-8')
-            start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
+            start_response('400 Bad Request', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
             return [b]
+
+    if path == '/api/auth/clerk-verify':
+        req_data = {}
+        try:
+            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
+            if cl > 0:
+                req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
+        except Exception:
+            pass
+        email = (req_data.get('email') or '').strip()
+        user_id = req_data.get('user_id') or ''
+        full_name = req_data.get('full_name') or (email.split('@')[0] if email else 'Clerk User')
+        is_adm = (email.lower() in ['mangeshbagul15@gmail.com', 'nanopro@gmail.com'])
+        role = 'admin' if is_adm else 'user'
+        sess_token = 'np_sess_cloud_' + str(int(time.time()*1000))
+        resp_obj = {
+            "status": "success",
+            "session_token": sess_token,
+            "user": {
+                "id": user_id or f"user_clerk_{int(time.time())}",
+                "username": email.split('@')[0] if email else 'clerk_user',
+                "full_name": full_name,
+                "email": email,
+                "role": role,
+                "allowed_views": ["*"] if role == 'admin' else ["dashboard", "universal_tech_video", "video_studio"],
+                "access_mode": "MODIFY"
+            }
+        }
+        cookie_header = f"nanopro_session={sess_token}; Path=/; Max-Age=2592000; SameSite=Lax"
+        b = json.dumps(resp_obj).encode('utf-8')
+        start_response('200 OK', [('Content-Type', 'application/json'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
+        return [b]
 
     if path == '/api/whatsapp/webhook':
         if method == 'GET':

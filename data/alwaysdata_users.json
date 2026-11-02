@@ -1,0 +1,12 @@
+{
+  "mangesh_user_test": {
+    "username": "mangesh_user_test",
+    "full_name": "Mangesh User Test",
+    "email": "mangesh_user_test@example.com",
+    "phone_number": "+918433755448",
+    "password_hash": "88d2768af76df6aa7a66d07ace9ff06a18f7047088b8940be85640c0c58277cd",
+    "role": "user",
+    "status": "ACTIVE",
+    "created_at": 1793595716.0775838
+  }
+}

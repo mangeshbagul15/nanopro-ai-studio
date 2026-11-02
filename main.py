@@ -1035,6 +1035,8 @@ class AuthRegisterRequest(BaseModel):
 
     password: str
 
+    phone_number: Optional[str] = None
+
 
 
 class AuthLoginRequest(BaseModel):
@@ -12561,6 +12563,8 @@ async def api_auth_register(req: AuthRegisterRequest, request: Request):
         email=req.email,
 
         password=req.password,
+
+        phone_number=getattr(req, "phone_number", None),
 
         ip_address=ip,
 

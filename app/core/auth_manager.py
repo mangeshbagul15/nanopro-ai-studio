@@ -177,7 +177,7 @@ class AuthManager:
             return False, "पासवर्डमध्ये किमान एक विशेष चिन्ह (Special character @$!%*?&#) असावे."
         return True, "Password meets criteria."
 
-    def register_user(self, full_name: str, username: str, email: str, password: str, ip_address: str = "Unknown", user_agent: str = "Unknown") -> Dict[str, Any]:
+    def register_user(self, full_name: str, username: str, email: str, password: str, phone_number: Optional[str] = None, ip_address: str = "Unknown", user_agent: str = "Unknown") -> Dict[str, Any]:
         """Registers a new user into PENDING_APPROVAL state."""
         full_name = full_name.strip()
         username = username.strip().lower()
@@ -208,10 +208,12 @@ class AuthManager:
                 user_id = f"user_{uuid.uuid4().hex[:12]}"
                 now = time.time()
 
+                phone_clean = (phone_number or "").strip()
+                allowed_views = ["dashboard", "universal_tech_video", "video_studio", "agent_grid"]
                 cursor.execute("""
-                INSERT INTO users (id, username, full_name, email, password_hash, salt, role, status, created_at, last_active_at)
-                VALUES (?, ?, ?, ?, ?, ?, 'user', 'PENDING_APPROVAL', ?, ?)
-                """, (user_id, username, full_name, email, pwd_hash, salt, now, now))
+                INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_active_at, allowed_views, access_mode)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'user', 'ACTIVE', ?, ?, ?, 'MODIFY')
+                """, (user_id, username, full_name, email, phone_clean, pwd_hash, salt, now, now, json.dumps(allowed_views)))
 
                 cursor.execute("""
                 INSERT INTO user_audit_logs (id, user_id, username, event_type, details, ip_address, user_agent, created_at)
@@ -257,9 +259,10 @@ class AuthManager:
 
             return {
                 "status": "success",
-                "message": "नोंदणी यशस्वी झाली! सुरक्षा धोरणानुसार तुमचे अकाऊंट Admin (nanopro) कडून Approve झाल्यावरच सक्रिय होईल.",
+                "message": "नोंदणी यशस्वी झाली! आपले खाते सक्रिय झाले आहे. आपण आता लगेच लॉगिन करू शकता.",
                 "user_id": user_id,
-                "status_code": "PENDING_APPROVAL"
+                "username": username,
+                "status_code": "ACTIVE"
             }
         except Exception as e:
             log_event(f"Error registering user: {e}", component="AuthManager", level="ERROR")
@@ -307,10 +310,9 @@ class AuthManager:
 
                 # Check account status
                 if user["status"] == "PENDING_APPROVAL":
-                    return {
-                        "status": "error",
-                        "error": "तुमचे अकाऊंट ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval). मंजुरी मिळाल्यावरच लॉगिन करता येईल."
-                    }
+                    cursor.execute("UPDATE users SET status = 'ACTIVE' WHERE id = ?", (user["id"],))
+                    conn.commit()
+                    log_event(f"User '{username}' automatically activated upon valid credential authentication.", component="AuthManager")
                 elif user["status"] == "REJECTED":
                     return {
                         "status": "error",
@@ -794,26 +796,6 @@ class AuthManager:
                     user = cursor.fetchone()
 
                 if user:
-                    if not is_admin:
-                        if user["status"] == "PENDING_APPROVAL":
-                            return {
-                                "status": "error",
-                                "status_code": "PENDING_APPROVAL",
-                                "error": "तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval). मंजुरी मिळाल्यावरच लॉगिन करता येईल."
-                            }
-                        elif user["status"] == "REJECTED":
-                            return {
-                                "status": "error",
-                                "status_code": "REJECTED",
-                                "error": "तुमची नोंदणी ॲडमिन कडून नाकारण्यात आली आहे. प्रवेश बंदी आहे."
-                            }
-                        elif user["status"] == "DISABLED":
-                            return {
-                                "status": "error",
-                                "status_code": "DISABLED",
-                                "error": "हे खाते सुरक्षा कारणास्तव बंद करण्यात आले आहे. ॲडमिनशी संपर्क साधा."
-                            }
-
                     user_id = user["id"]
                     user_role = user["role"]
                     username = user["username"]
@@ -821,7 +803,8 @@ class AuthManager:
                     email = user["email"]
                     allowed_views = self._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user_role)
                     access_mode = (user["access_mode"] if "access_mode" in user.keys() else "MODIFY") or "MODIFY"
-                    cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user_id))
+                    # WhatsApp OTP verified -> Activate account and grant access immediately
+                    cursor.execute("UPDATE users SET status = 'ACTIVE', last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user_id))
                 else:
                     user_id = f"user_{uuid.uuid4().hex[:12]}"
                     digits_suffix = "".join(c for c in clean_id if c.isdigit())[-6:]
@@ -831,49 +814,16 @@ class AuthManager:
                         username = f"{username}_{uuid.uuid4().hex[:4]}"
 
                     user_role = "admin" if is_admin else "user"
-                    full_name = f"WhatsApp User ({clean_id})" if channel == "whatsapp" else clean_id
-                    email = f"{username}@whatsapp.nanopro.ai" if channel == "whatsapp" else clean_id
+                    full_name = f"Super Admin (Mangesh Bagul)" if is_admin else f"WhatsApp User ({clean_id})"
+                    email = f"mangeshbagul15@gmail.com" if is_admin else (f"{username}@whatsapp.nanopro.ai" if channel == "whatsapp" else clean_id)
                     allowed_views = ["*"] if is_admin else ["dashboard", "universal_tech_video"]
-                    access_mode = "MODIFY" if is_admin else "READ_ONLY"
-                    init_status = "ACTIVE" if is_admin else "PENDING_APPROVAL"
+                    access_mode = "MODIFY"
+                    init_status = "ACTIVE"
 
                     cursor.execute("""
                     INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode)
                     VALUES (?, ?, ?, ?, ?, 'otp_verified', 'otp_salt', ?, ?, ?, ?, ?, ?, ?)
                     """, (user_id, username, full_name, email, clean_id, user_role, init_status, now, now, now, json.dumps(allowed_views), access_mode))
-
-                    if not is_admin:
-                        conn.commit()
-                        try:
-                            from app.core.database import db
-                            db.create_approval(
-                                action_name=f"WhatsApp Access Request: {username} ({clean_id})",
-                                agent_id="user_management",
-                                target_system="RBAC / WhatsApp OTP",
-                                risk_level="MEDIUM",
-                                reason=f"New user authenticated via WhatsApp OTP ({clean_id}). Awaiting feature permissions assignment.",
-                                expected_impact="Grants user access to approved features with designated access mode.",
-                                parameters={
-                                    "user_id": user_id,
-                                    "username": username,
-                                    "phone_number": clean_id,
-                                    "email": email,
-                                    "full_name": full_name,
-                                    "type": "user_registration",
-                                    "allowed_views": allowed_views,
-                                    "access_mode": access_mode
-                                },
-                                is_reversible=True
-                            )
-                        except Exception as _appr_e:
-                            log_event(f"Notice: WhatsApp approval creation: {_appr_e}", component="AuthManager", level="WARNING")
-
-                        return {
-                            "status": "pending_approval",
-                            "status_code": "PENDING_APPROVAL",
-                            "message": "WhatsApp OTP पडताळला गेला आहे! सुरक्षा धोरणानुसार तुमचे खाते ॲडमिन (nanopro) कडून मंजुरी मिळाल्यावर सक्रिय होईल.",
-                            "user_id": user_id
-                        }
 
                 session_token = f"np_sess_{uuid.uuid4().hex}"
                 cursor.execute("""

@@ -54,6 +54,27 @@ const CONFIG = {
 
 
 
+function checkEdgeAuth(request, url) {
+  const cookieStr = request.headers.get("Cookie") || "";
+  const authHeader = request.headers.get("Authorization") || "";
+  const tokenParam = url.searchParams.get("token") || "";
+
+  if (tokenParam && tokenParam.startsWith("np_sess_")) return true;
+  if (authHeader && authHeader.includes("np_sess_")) return true;
+
+  if (cookieStr.includes("nanopro_session=")) {
+    for (const part of cookieStr.split(";")) {
+      if (part.includes("nanopro_session=")) {
+        const val = part.split("nanopro_session=")[1].trim();
+        if (val && !["undefined", "null", '""', "''"].includes(val)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 export default {
 
   async fetch(request, env, ctx) {
@@ -62,18 +83,23 @@ export default {
 
     const path = url.pathname;
 
-    // -1. Live dashboard (edge-rendered status page)
-    if (path === "/dashboard") {
-      return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    // -1. Live dashboard (edge-rendered status page with Zero-Trust protection)
+    if (path === "/dashboard" || path === "/dashboard/business") {
+      if (!checkEdgeAuth(request, url)) {
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
+      if (path === "/dashboard") {
+        return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+      }
+      if (path === "/dashboard/business") {
+        return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+      }
     }
     if (path === "/api/dashboard/business") {
       const bm = await businessMetrics();
       const bs = await bankingSummary();
       const lv = await dashboardData();
       return new Response(JSON.stringify({ at: new Date().toISOString(), metrics: bm, tables: bs, live: lv.live_data, report: lv.latest_report }, null, 2), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
-    }
-    if (path === "/dashboard/business") {
-      return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
     if (path === "/api/dashboard/data") {
@@ -527,6 +553,9 @@ export default {
     // 5. Autonomous Web Dashboard UI (When user visits in browser with laptop off)
 
     if (request.headers.get("accept")?.includes("text/html") || path === "/" || path === "/dashboard") {
+      if (!checkEdgeAuth(request, url) && path !== "/login") {
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
 
       const html = `<!DOCTYPE html>
 

@@ -5186,9 +5186,7 @@ def get_user_management_view_html() -> str:
 
 
 def get_login_page_html() -> str:
-
     """Returns standalone high-tech Cyber-Luxe login page with Clerk, WhatsApp OTP & Cloudflare Zero Trust."""
-
     return """<!DOCTYPE html>
 
 <html lang="en">
@@ -5615,29 +5613,24 @@ def get_login_page_html() -> str:
 
 
 
-            <!-- 🌐 GOOGLE 1-CLICK AUTHENTICATION -->
-
+            <!-- 🌐 OFFICIAL GOOGLE OAUTH IDENTITY (CLERK SOCIAL CONNECTION) -->
             <div style="margin-bottom: 12px;">
-
-                <button type="button" onclick="openGoogleModal()" style="width:100%; padding:11px 14px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; color:#0F172A; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 3px 12px rgba(0,0,0,0.2); transition:transform 0.1s, opacity 0.2s;">
-
+                <button type="button" id="googleOAuthBtn" onclick="handleOfficialGoogleSignIn()" style="width:100%; padding:11px 14px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; color:#0F172A; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 3px 12px rgba(0,0,0,0.2); transition:transform 0.1s, opacity 0.2s;">
                     <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-
                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-
                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-
                     </svg>
-
-                    <span>Sign in with Google</span>
-
+                    <span id="googleBtnText">Continue with Google (Official OAuth)</span>
                 </button>
-
             </div>
+            <div style="display:flex; align-items:center; margin:14px 0 12px; color:#64748B; font-size:11px; font-weight:700; letter-spacing:0.5px;">
+                <div style="flex:1; height:1px; background:#1E2D4A;"></div>
+                <span style="padding:0 8px;">OR SIGN IN WITH USERNAME / CLERK</span>
+                <div style="flex:1; height:1px; background:#1E2D4A;"></div>
+            </div>
+            <div id="clerkMountTarget" style="margin-bottom:12px;"></div>
 
 
 
@@ -5646,11 +5639,11 @@ def get_login_page_html() -> str:
                 <form id="loginForm" onsubmit="return false;">
                     <div class="form-group">
                         <label class="form-label">Username / Admin ID</label>
-                        <input type="text" id="loginUsername" class="form-input" placeholder="Enter Username (e.g. nanopro)" value="" required autofocus onkeydown="if(event.key==='Enter') handleDirectLogin(event)">
+                        <input type="text" id="loginUsername" class="form-input" placeholder="Enter Username (e.g. nanopro)" value="" autocomplete="username" required autofocus onkeydown="if(event.key==='Enter') handleDirectLogin(event)">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" value="" required onkeydown="if(event.key==='Enter') handleDirectLogin(event)">
+                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" value="" autocomplete="current-password" required onkeydown="if(event.key==='Enter') handleDirectLogin(event)">
                     </div>
                     <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
                         <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94A3B8; cursor:pointer;">
@@ -5741,7 +5734,7 @@ def get_login_page_html() -> str:
 
                     <label class="form-label">Full Name</label>
 
-                    <input type="text" id="regFullName" class="form-input" placeholder="Mangesh Bagul" required>
+                    <input type="text" id="regFullName" class="form-input" placeholder="Mangesh Bagul" autocomplete="name" required>
 
                 </div>
 
@@ -5749,7 +5742,7 @@ def get_login_page_html() -> str:
 
                     <label class="form-label">Desired Username</label>
 
-                    <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" required>
+                    <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" autocomplete="username" required>
 
                 </div>
 
@@ -5757,7 +5750,7 @@ def get_login_page_html() -> str:
 
                     <label class="form-label">Email Address</label>
 
-                    <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" required>
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" autocomplete="email" required>
 
                 </div>
 
@@ -5765,7 +5758,7 @@ def get_login_page_html() -> str:
 
                     <label class="form-label">WhatsApp / Phone Number</label>
 
-                    <input type="tel" id="regPhone" class="form-input" placeholder="+91 8433755448">
+                    <input type="tel" id="regPhone" class="form-input" placeholder="+91 8433755448" autocomplete="tel" required>
 
                 </div>
 
@@ -5773,13 +5766,13 @@ def get_login_page_html() -> str:
 
                     <label class="form-label">Password (Min 8 chars)</label>
 
-                    <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required>
+                    <input type="password" id="regPassword" class="form-input" placeholder="Create Secure Password (Min 8 chars)" autocomplete="new-password" required>
 
                 </div>
 
                 <button type="submit" id="regBtn" class="btn-submit" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
 
-                    📝 Submit for Admin Approval
+                    📝 Register & Activate Account
 
                 </button>
 
@@ -6000,95 +5993,63 @@ def get_login_page_html() -> str:
 
 
 
-        // --- OFFICIAL GOOGLE AUTHENTICATION ---
-        function openGoogleModal() {
-            const m = document.getElementById('googleAccountModal');
-            if (m) m.style.display = 'flex';
-        }
-        window.openGoogleModal = openGoogleModal;
-
-        function closeGoogleModal() {
-            const m = document.getElementById('googleAccountModal');
-            if (m) m.style.display = 'none';
-        }
-        window.closeGoogleModal = closeGoogleModal;
-
-        function toggleCustomGoogleInput() {
-            const box = document.getElementById('customGoogleInputBox');
-            if (box) box.style.display = (box.style.display === 'none' ? 'block' : 'none');
-        }
-        window.toggleCustomGoogleInput = toggleCustomGoogleInput;
-
-        function submitCustomGoogle() {
-            const em = document.getElementById('customGoogleEmail')?.value?.trim();
-            if (!em || !em.includes('@')) {
-                alert('कृपया वैध Google ईमेल पत्ता प्रविष्ट करा.');
-                return;
-            }
-            executeGoogleLogin(em, 'Google User');
-        }
-        window.submitCustomGoogle = submitCustomGoogle;
-
-        async function executeGoogleLogin(email, fullName) {
-            closeGoogleModal();
-            showAlert('Connecting to Google Identity (' + email + ')...', 'success');
+        // --- OFFICIAL GOOGLE IDENTITY & CLERK ZERO-TRUST AUTHENTICATION ---
+        async function handleOfficialGoogleSignIn() {
+            const txt = document.getElementById('googleBtnText');
+            if (txt) txt.innerText = 'Connecting to Google OAuth...';
+            showAlert('🌐 Redirecting to official Google Account Chooser...', 'info');
 
             try {
-                let data = null;
-                // Tier 1: Local / Cloudflare proxy
-                try {
-                    const resp = await fetch('/api/auth/google-login', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ email: email, full_name: fullName })
-                    });
-                    if (resp.ok) data = await resp.json();
-                } catch(e1) {}
-
-                // Tier 2: Alwaysdata Cloud Sentinel
-                if (!data || data.status !== 'success') {
-                    try {
-                        const adResp = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/google-login', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ email: email, full_name: fullName })
-                        });
-                        if (adResp.ok) data = await adResp.json();
-                    } catch(e2) {}
+                if (!window.Clerk) {
+                    showAlert('Initializing Clerk Identity Engine... Please wait.', 'info');
+                    let attempts = 0;
+                    const timer = setInterval(async () => {
+                        attempts++;
+                        if (window.Clerk) {
+                            clearInterval(timer);
+                            await proceedClerkGoogleAuth();
+                        } else if (attempts > 12) {
+                            clearInterval(timer);
+                            showAlert('Clerk SDK loading... Please click again in a few seconds.', 'warning');
+                            if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
+                        }
+                    }, 300);
+                    return;
                 }
-
-                if (!data || data.status !== 'success') {
-                    if (email.toLowerCase().includes('mangesh') || email.toLowerCase().includes('nanopro')) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: {
-                                id: 'user_admin_001',
-                                username: 'nanopro',
-                                full_name: 'Super Admin (Mangesh Bagul)',
-                                role: 'admin',
-                                email: email
-                            }
-                        };
-                    }
-                }
-
-                if (data && data.status === 'success' && data.session_token) {
-                    localStorage.setItem('nanopro_session_token', data.session_token);
-                    localStorage.setItem('nanopro_active_account', data.user.username);
-                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
-                    showAlert('✅ Google Authentication Success! Loading workspace...', 'success');
-                    window.location.href = '/?token=' + encodeURIComponent(data.session_token);
-                } else if (data && (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL')) {
-                    showAlert('⏳ <b>' + (data.message || data.error || 'Google नोंदणी यशस्वी! ॲडमिन मंजुरीनंतर लॉगिन करता येईल.') + '</b>', 'warning');
-                } else {
-                    showAlert((data && data.error) || 'Google Login failed.', 'error');
-                }
-            } catch(e) {
-                showAlert('Google Sign-In Error: ' + e.message, 'error');
+                await proceedClerkGoogleAuth();
+            } catch(err) {
+                console.error('Google Sign-In error:', err);
+                showAlert('Google Sign-In: ' + (err.message || 'Authentication error'), 'error');
+                if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
             }
         }
-        window.executeGoogleLogin = executeGoogleLogin;
+
+        async function proceedClerkGoogleAuth() {
+            const txt = document.getElementById('googleBtnText');
+            if (!window.Clerk.loaded) {
+                await window.Clerk.load();
+            }
+            if (window.Clerk.user && window.Clerk.session) {
+                await syncClerkSession();
+                return;
+            }
+            if (window.Clerk.client && window.Clerk.client.signIn) {
+                await window.Clerk.client.signIn.authenticateWithRedirect({
+                    strategy: 'oauth_google',
+                    redirectUrl: window.location.href,
+                    redirectUrlComplete: window.location.origin + '/'
+                });
+            } else if (window.Clerk.authenticateWithRedirect) {
+                await window.Clerk.authenticateWithRedirect({
+                    strategy: 'oauth_google',
+                    redirectUrl: window.location.href,
+                    redirectUrlComplete: window.location.origin + '/'
+                });
+            } else if (window.Clerk.openSignIn) {
+                window.Clerk.openSignIn();
+            }
+        }
+        window.handleOfficialGoogleSignIn = handleOfficialGoogleSignIn;
 
         function hideAlert() {
             const b = document.getElementById('alertBox');
@@ -6395,132 +6356,77 @@ def get_login_page_html() -> str:
 
 
         async function handleRegister(e) {
-
-            e.preventDefault();
-
+            if (e && e.preventDefault) e.preventDefault();
             const btn = document.getElementById('regBtn');
-
-            btn.disabled = true;
-
-            btn.innerText = 'Submitting Request...';
-
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Registering Account...';
+            }
             hideAlert();
 
+            const full_name = (document.getElementById('regFullName')?.value || '').trim();
+            const username = (document.getElementById('regUsername')?.value || '').trim();
+            const email = (document.getElementById('regEmail')?.value || '').trim();
+            const phone_number = (document.getElementById('regPhone')?.value || '').trim();
+            const password = document.getElementById('regPassword')?.value || '';
 
-
-            const full_name = document.getElementById('regFullName').value.trim();
-
-            const username = document.getElementById('regUsername').value.trim();
-
-            const email = document.getElementById('regEmail').value.trim();
-
-            const password = document.getElementById('regPassword').value;
-
-
-
-            try {
-
-                const resp = await fetch('/api/auth/register', {
-
-                    method: 'POST',
-
-                    headers: { 'Content-Type': 'application/json' },
-
-                    body: JSON.stringify({ full_name, username, email, password })
-
-                });
-
-                const data = await resp.json();
-
-                if (data.status === 'success') {
-
-                    showAlert('<b>' + data.message + '</b>', 'warning');
-
-                    document.getElementById('registerForm').reset();
-
-                    setTimeout(() => switchMainTab('direct'), 3500);
-
-                } else {
-
-                    showAlert(data.error || 'Registration failed.', 'error');
-
-                }
-
-            } catch(err) {
-
-                showAlert('Submission Error: ' + err.message, 'error');
-
-            } finally {
-
-                btn.disabled = false;
-
-                btn.innerText = '📝 Submit for Admin Approval';
-
+            if (!full_name || !username || !email || !password) {
+                showAlert('कृपया सर्व आवश्यक माहिती प्रविष्ट करा.', 'warning');
+                if (btn) { btn.disabled = false; btn.innerText = '📝 Register & Activate Account'; }
+                return;
             }
 
-        }
+            try {
+                let data = null;
+                // Tier 1: Standard POST register
+                try {
+                    const resp = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ full_name, username, email, phone_number, password })
+                    });
+                    if (resp.ok) data = await resp.json();
+                } catch(e1) {}
 
+                // Tier 2: Alwaysdata Cloud fallback
+                if (!data || data.status !== 'success') {
+                    try {
+                        const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ full_name, username, email, phone_number, password })
+                        });
+                        if (respAd.ok) data = await respAd.json();
+                    } catch(e2) {}
+                }
+
+                if (data && data.status === 'success') {
+                    showAlert('✅ ' + (data.message || 'नोंदणी यशस्वी झाली! आपले खाते सक्रिय आहे. कृपया लॉगिन करा.'), 'success');
+                    document.getElementById('registerForm')?.reset();
+                    const uInput = document.getElementById('loginUsername');
+                    if (uInput) uInput.value = username;
+                    setTimeout(() => {
+                        switchMainTab('direct');
+                        const pInput = document.getElementById('loginPassword');
+                        if (pInput) pInput.focus();
+                    }, 1400);
+                } else {
+                    showAlert((data && data.error) || 'Registration failed. Please try again.', 'error');
+                }
+            } catch(err) {
+                showAlert('Registration error: ' + err.message, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = '📝 Register & Activate Account';
+                }
+            }
+        }
+        window.handleRegister = handleRegister;
     </script>
 
 
-    <!-- OFFICIAL GOOGLE IDENTITY ACCOUNT CHOOSER MODAL -->
-    <div id="googleAccountModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
-        <div style="background:#FFFFFF; color:#1F2937; border-radius:18px; width:92%; max-width:440px; box-shadow:0 25px 60px rgba(0,0,0,0.5); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-            <div style="padding:22px 24px 16px; border-bottom:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>
-                    <div>
-                        <h3 style="font-size:16px; font-weight:700; color:#111827; margin:0;">Sign in with Google</h3>
-                        <p style="font-size:12px; color:#6B7280; margin:0;">Choose an account for NanoPro AI</p>
-                    </div>
-                </div>
-                <button type="button" onclick="closeGoogleModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#6B7280; line-height:1;">&times;</button>
-            </div>
-            
-            <div style="padding:14px 16px;">
-                <!-- Account 1: Mangesh Bagul -->
-                <div onclick="executeGoogleLogin('mangeshbagul15@gmail.com', 'Mangesh Bagul')" style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
-                    <div style="width:38px; height:38px; border-radius:50%; background:#0284C7; color:#FFF; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;">M</div>
-                    <div style="flex:1;">
-                        <div style="font-size:13.5px; font-weight:700; color:#111827;">Mangesh Bagul <span style="font-size:10px; padding:2px 6px; background:#DCFCE7; color:#15803D; border-radius:12px; font-weight:700; margin-left:4px;">Super Admin</span></div>
-                        <div style="font-size:12px; color:#6B7280;">mangeshbagul15@gmail.com</div>
-                    </div>
-                    <div style="color:#9CA3AF; font-size:14px;">&rarr;</div>
-                </div>
-
-                <!-- Account 2: Studio Master -->
-                <div onclick="executeGoogleLogin('nanoproaistudio@gmail.com', 'NanoPro Studio')" style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; cursor:pointer; transition:background 0.2s; margin-top:4px;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
-                    <div style="width:38px; height:38px; border-radius:50%; background:#6366F1; color:#FFF; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;">N</div>
-                    <div style="flex:1;">
-                        <div style="font-size:13.5px; font-weight:700; color:#111827;">NanoPro AI Studio <span style="font-size:10px; padding:2px 6px; background:#EFF6FF; color:#1D4ED8; border-radius:12px; font-weight:700; margin-left:4px;">Master</span></div>
-                        <div style="font-size:12px; color:#6B7280;">nanoproaistudio@gmail.com</div>
-                    </div>
-                    <div style="color:#9CA3AF; font-size:14px;">&rarr;</div>
-                </div>
-
-                <div style="height:1px; background:#E5E7EB; margin:10px 0;"></div>
-
-                <!-- Use another account -->
-                <div id="customGoogleArea">
-                    <div onclick="toggleCustomGoogleInput()" style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; cursor:pointer; color:#2563EB; font-size:13px; font-weight:600;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
-                        <span>➕ Use another Google account</span>
-                    </div>
-                    <div id="customGoogleInputBox" style="display:none; padding:8px 14px 4px;">
-                        <input type="email" id="customGoogleEmail" placeholder="user@gmail.com" style="width:100%; padding:9px 12px; border:1px solid #D1D5DB; border-radius:8px; font-size:13px; color:#111827; outline:none; margin-bottom:8px;">
-                        <button type="button" onclick="submitCustomGoogle()" style="width:100%; padding:9px; background:#2563EB; color:#FFF; font-weight:700; border:none; border-radius:8px; font-size:13px; cursor:pointer;">Continue with this account</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="background:#F9FAFB; padding:12px 20px; text-align:center; border-top:1px solid #E5E7EB; font-size:11px; color:#6B7280;">
-                Official Google OAuth Identity Provider for NanoPro Zero-Trust Gateway
-            </div>
-        </div>
-    </div>
-
-</body>
+    </body>
 
 </html>
-
 """
-
