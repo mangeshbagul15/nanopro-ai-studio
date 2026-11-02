@@ -247,6 +247,14 @@ def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str)
     return normalized
 
 
+def _resolve_storyboard_attribution(used_model: Optional[str], used_mode: Any) -> Tuple[str, str]:
+    if isinstance(used_mode, dict):
+        actual_model = used_mode.get("model") or used_model
+        route = used_mode.get("mode") or used_mode.get("provider")
+        return str(actual_model or "Unknown model"), str(route or "Configured model route")
+    return str(used_model or "Unknown model"), str(used_mode or "Configured model route")
+
+
 def compute_audio_synchronized_stages(
     raw_stages: List[Dict[str, Any]],
     audio_duration: float,
@@ -2226,12 +2234,10 @@ class SqlShortVideoEngine:
             })
 
         storyboard_voice_latency_ms = round((time.perf_counter() - t0) * 1000, 1)
-        reported_model = str(
-            used_model if storyboard_source == "LLM-generated storyboard" else storyboard_source
-        )
+        reported_model = storyboard_source
         llm_provider = "Prompt-derived fallback (no LLM call)"
         if storyboard_source == "LLM-generated storyboard":
-            llm_provider = str(used_mode or "Configured model route")
+            reported_model, llm_provider = _resolve_storyboard_attribution(used_model, used_mode)
 
         voice_actor_name = voice or (
             "mr-IN-AarohiNeural (Microsoft Edge-TTS)" if lang_key == "mr" else (

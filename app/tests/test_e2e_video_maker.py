@@ -41,6 +41,7 @@ import app.video_maker.video_generation_jobs as gen_jobs
 # Core Engine and Audio Utilities
 from app.video_maker.sql_short_engine import (
     _ensure_scene_visual_directions,
+    _resolve_storyboard_attribution,
     get_mp3_duration,
     sql_short_engine,
 )
@@ -222,6 +223,18 @@ class TestPromptVisualDirections(unittest.TestCase):
         normalized = _ensure_scene_visual_directions(stages, "en")
 
         self.assertEqual(normalized[0]["visual_data"]["layout"], "table")
+
+    def test_storyboard_attribution_uses_provider_reported_model(self):
+        model, route = _resolve_storyboard_attribution(
+            "gemini-2.5-flash",
+            {
+                "model": "gemini-3.5-flash-lite",
+                "mode": "gemini-cloud:gemini-3.5-flash-lite",
+            },
+        )
+
+        self.assertEqual(model, "gemini-3.5-flash-lite")
+        self.assertEqual(route, "gemini-cloud:gemini-3.5-flash-lite")
 
     def test_selected_model_failure_is_not_silently_reported_as_a_storyboard(self):
         with patch(
