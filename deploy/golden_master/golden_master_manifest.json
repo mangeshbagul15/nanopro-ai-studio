@@ -1,0 +1,28 @@
+{
+  "snapshot_name": "NanoPro Golden Master Authentication Baseline v1.0",
+  "created_at_utc": "2026-11-02 09:09:39 UTC",
+  "created_at_ist": "2026-11-02 14:39:39 IST",
+  "verified_by": "Super Admin (Mangesh Bagul)",
+  "components": {
+    "deploy/login_gateway.html": {
+      "backup_file": "deploy\\golden_master\\login_gateway_golden_master.html",
+      "sha256": "79ac40fcd51bcc8b4e2f3df4c297eb012b685340747d8d07a8c87548a81fd4b1",
+      "size_bytes": 66167
+    },
+    "deploy/alwaysdata_wsgi.py": {
+      "backup_file": "deploy\\golden_master\\alwaysdata_wsgi_golden_master.py",
+      "sha256": "2b755a6f5608cef468ba687b5b01ce4952f927ae6e38cd0509d150debb061b6a",
+      "size_bytes": 172689
+    },
+    "deploy/cloudflare_worker_gateway.js": {
+      "backup_file": "deploy\\golden_master\\cloudflare_worker_gateway_golden_master.js",
+      "sha256": "f29b435826027cb81466151281817667ccfc907a07684c7d63c2bcbe21ccbff4",
+      "size_bytes": 110719
+    },
+    "app/core/auth_manager.py": {
+      "backup_file": "deploy\\golden_master\\auth_manager_golden_master.py",
+      "sha256": "b9057c137e15a0aa8a09a8195a495a8bea7484e6d0ecda9ca2046ba6970906ce",
+      "size_bytes": 65977
+    }
+  }
+}
