@@ -194,6 +194,11 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("maxShortDuration = 58.5", js)
         self.assertIn("totalDuration = Math.min(58.5, Math.max(1, totalDuration))", js)
         self.assertIn("activeCue, activeCueIndex", js)
+        self.assertIn("function drawCinematicSceneHeadline", js)
+        self.assertIn("@Code_With_Mangesh", js)
+        self.assertIn("TECH EXPLAINER  ·  9:16", js)
+        self.assertIn("cueProgress = stageProg", js)
+        self.assertIn('ctx.font = "bold 48px', js)
         self.assertIn("kind.includes(\"container\")", js)
         self.assertIn("kind.includes(\"box\")", js)
         self.assertNotIn('ctx.fillText(`${stepLabel} · STATE:', js)
@@ -249,8 +254,40 @@ class TestPromptVisualDirections(unittest.TestCase):
 
         normalized = _ensure_scene_visual_directions(stages, "en")
 
-        self.assertEqual(normalized[0]["visual_data"]["layout"], "spatial")
+        self.assertEqual(normalized[0]["visual_data"]["layout"], "table")
+        self.assertEqual(normalized[0]["visual_data"]["visual_mode"], "table")
         self.assertEqual(normalized[0]["visual_data"]["rows"], stages[0]["visual_data"]["rows"])
+
+    def test_authored_editorial_and_pipeline_layouts_are_preserved(self):
+        stages = [
+            {
+                "title": "The one-line fix",
+                "speech": "A non-root user limits damage if an application is compromised.",
+                "visual_description": "Show a container image switching from root to a restricted user.",
+                "visual_data": {
+                    "layout": "editorial",
+                    "headline": "The fix is one line",
+                    "takeaway": "Run the app as a non-root user.",
+                    "elements": [],
+                },
+            },
+            {
+                "title": "Retry flow",
+                "speech": "Refresh the token, then retry the profile request.",
+                "visual_description": "A phone refreshes a short-lived access token before retrying.",
+                "visual_data": {
+                    "layout": "pipeline",
+                    "steps": ["Refresh token", "Retry request", "Show profile"],
+                    "elements": [],
+                },
+            },
+        ]
+
+        normalized = _ensure_scene_visual_directions(stages, "en")
+
+        self.assertEqual(normalized[0]["visual_data"]["visual_mode"], "editorial")
+        self.assertEqual(normalized[1]["visual_data"]["visual_mode"], "pipeline")
+        self.assertEqual(normalized[1]["visual_data"]["steps"], stages[1]["visual_data"]["steps"])
 
     def test_technical_objects_map_to_illustrated_shapes(self):
         self.assertEqual(_infer_visual_shape("Docker container"), "container")

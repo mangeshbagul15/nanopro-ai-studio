@@ -3891,51 +3891,96 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-    function drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx = 1, totalStages = 5) {
+    function drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx = 1, totalStages = 5, stageProgress = 0, activeStage = null) {
         ctx.save();
-        const barY = 46;
-        const barH = 54;
-        const barW = W - 100;
-        const barX = 50;
+        const visual = activeStage?.visual_data || {};
+        const rawAccent = String(visual.theme_color || p?.accent_color || "#38BDF8");
+        const accent = /^#[0-9a-f]{6}$/i.test(rawAccent) ? rawAccent : "#38BDF8";
+        const x = 68;
+        const right = W - 68;
+        const count = Math.max(1, Math.min(8, totalStages));
+        const gap = 12;
+        const segmentW = (right - x - gap * (count - 1)) / count;
 
-        // Single sleek glassmorphism top header container
-        ctx.fillStyle = "rgba(10, 18, 36, 0.94)";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#E8EEF8";
+        ctx.font = "700 20px 'Segoe UI', sans-serif";
+        ctx.fillText("@Code_With_Mangesh", x, 62);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "rgba(196,208,226,0.68)";
+        ctx.font = "600 16px 'Segoe UI', sans-serif";
+        ctx.fillText("TECH EXPLAINER  ·  9:16", right, 62);
+
+        for (let index = 0; index < count; index++) {
+            const segmentX = x + index * (segmentW + gap);
+            const segmentY = 96;
+            ctx.fillStyle = "rgba(148,163,184,0.22)";
+            ctx.beginPath();
+            ctx.roundRect(segmentX, segmentY, segmentW, 7, 4);
+            ctx.fill();
+
+            const fill = index < currentStageIdx - 1 ? 1
+                : index === currentStageIdx - 1 ? Math.max(0, Math.min(1, stageProgress))
+                    : 0;
+            if (fill > 0) {
+                ctx.fillStyle = accent;
+                ctx.beginPath();
+                ctx.roundRect(segmentX, segmentY, segmentW * fill, 7, 4);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+
+    function drawCinematicSceneHeadline(ctx, W, H, stage, stageIndex, totalStages, progress) {
+        if (!stage) return;
+        const visual = stage.visual_data || {};
+        if (String(visual.visual_mode || "").toLowerCase() === "editorial") return;
+        const title = String(visual.headline || stage.title || "").trim();
+        if (!title) return;
+
+        const rawAccent = String(visual.theme_color || "#F2B84B");
+        const accent = /^#[0-9a-f]{6}$/i.test(rawAccent) ? rawAccent : "#F2B84B";
+        const reveal = Math.max(0, Math.min(1, progress * 4));
+        const badge = String(visual.badge || `SCENE ${String(stageIndex).padStart(2, "0")} / ${String(totalStages).padStart(2, "0")}`)
+            .replace(/\s+/g, " ").trim().slice(0, 34);
+
+        ctx.save();
+        ctx.globalAlpha *= reveal;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = `${accent}22`;
+        ctx.strokeStyle = `${accent}88`;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.roundRect(barX, barY, barW, barH, 20);
+        ctx.roundRect(72, 174, 350, 48, 18);
         ctx.fill();
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-        ctx.lineWidth = 1.5;
         ctx.stroke();
+        ctx.fillStyle = accent;
+        ctx.font = "800 19px 'Segoe UI', sans-serif";
+        ctx.fillText(badge.toUpperCase(), 92, 198);
 
-        // Left: Neon Tech Tag
-        ctx.fillStyle = "#38BDF8";
-        ctx.beginPath();
-        ctx.roundRect(barX + 8, barY + 8, 124, barH - 16, 12);
-        ctx.fill();
-        ctx.fillStyle = "#030816";
-        ctx.font = "900 15px 'Segoe UI', system-ui, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("⚡ TECH REEL", barX + 70, barY + 34);
+        const lines = wrapCanvasText(ctx, title, W - 150, 2);
+        const fontSize = lines.length > 1 ? 72 : 82;
+        ctx.font = `900 ${fontSize}px 'Segoe UI', sans-serif`;
+        ctx.textBaseline = "top";
+        lines.forEach((line, index) => {
+            ctx.fillStyle = index === 0 ? "#F8FAFC" : accent;
+            ctx.shadowColor = index === 0 ? "rgba(0,0,0,0.2)" : `${accent}55`;
+            ctx.shadowBlur = index === 0 ? 0 : 16;
+            ctx.fillText(line, 72, 252 + index * (fontSize + 8), W - 144);
+        });
+        ctx.shadowBlur = 0;
 
-        // Center: Nanopro Studio Branding
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 18px 'Segoe UI', system-ui, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("NANOPRO AI STUDIO", W / 2, barY + 34);
-
-        // Right: Clean Stage Tracker Pill (PART X/Y)
-        ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-        ctx.beginPath();
-        ctx.roundRect(barX + barW - 130, barY + 8, 122, barH - 16, 12);
-        ctx.fill();
-        ctx.strokeStyle = "#10B981";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-        ctx.fillStyle = "#10B981";
-        ctx.font = "bold 15px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(`PART ${currentStageIdx}/${totalStages}`, barX + barW - 69, barY + 34);
-
+        const subtext = String(visual.subtext || "").trim();
+        if (subtext) {
+            ctx.fillStyle = "rgba(226,232,240,0.82)";
+            ctx.font = "500 28px 'Segoe UI', sans-serif";
+            ctx.textBaseline = "top";
+            wrapCanvasText(ctx, subtext, W - 150, 2)
+                .forEach((line, index) => ctx.fillText(line, 74, 270 + lines.length * (fontSize + 8) + index * 36, W - 150));
+        }
         ctx.restore();
     }
     function drawLaserScannerBeam(ctx, x, y, w, h, t) {
@@ -15375,12 +15420,15 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, activeCue = null, activeCueIndex = 0) {
+        const stageVisual = activeStage?.visual_data || {};
         const authoredVisual = {
-            ...(activeStage?.visual_data || {}),
+            ...stageVisual,
             ...(activeCue?.visual_data || {}),
-            elements: activeStage?.visual_data?.elements || activeCue?.visual_data?.elements || [],
-            layout: "spatial",
-            visual_mode: "semantic_objects",
+            elements: Array.isArray(stageVisual.elements) && stageVisual.elements.length
+                ? stageVisual.elements
+                : (activeCue?.visual_data?.elements || []),
+            layout: stageVisual.layout || "spatial",
+            visual_mode: stageVisual.visual_mode || (stageVisual.layout && stageVisual.layout !== "spatial" ? stageVisual.layout : "semantic_objects"),
         };
         if (authoredVisual.layout || authoredVisual.visual_mode || Array.isArray(authoredVisual.elements)) {
             try {
@@ -19966,18 +20014,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     // =========================================================================
 
-    function drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t) {
-
+    function drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t, activeCue = null, cueProgress = stageProg) {
         if (!activeStage) return;
 
-
-
         const speech = (
-
+            activeCue?.speech ||
             activeStage.speech_mr ||
-
             activeStage.speech_hi ||
-
             activeStage.speech_en ||
 
             activeStage.speech ||
@@ -19999,11 +20042,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.save();
 
         const boxX = 60;
-
         const boxW = W - 120;
-
-        const boxH = 150;
-
+        const boxH = 190;
         const boxY = H - 340;
 
 
@@ -20096,19 +20136,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-        const activeWordIdx = Math.min(words.length - 1, Math.floor(stageProg * words.length));
-
-        const WINDOW_SIZE = 8;
-
+        const activeWordIdx = Math.min(words.length - 1, Math.floor(cueProgress * words.length));
+        const WINDOW_SIZE = 6;
         const windowStart = Math.floor(activeWordIdx / WINDOW_SIZE) * WINDOW_SIZE;
-
         const windowWords = words.slice(windowStart, windowStart + WINDOW_SIZE);
-
         const localActiveIdx = activeWordIdx - windowStart;
 
-
-
-        ctx.font = "bold 32px 'Segoe UI', system-ui, sans-serif";
+        ctx.font = "bold 48px 'Segoe UI', system-ui, sans-serif";
 
         ctx.textAlign = "left";
 
@@ -20132,7 +20166,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             const wWidth = ctx.measureText(wText).width;
 
-            if (line1.length === 0 || (curW + spaceW + wWidth < maxLineW && line2.length === 0 && line1.length < 4)) {
+            if (line1.length === 0 || (curW + spaceW + wWidth < maxLineW && line2.length === 0 && line1.length < 3)) {
 
                 line1.push({ text: wText, isCurrent: (i === localActiveIdx), isDone: (i < localActiveIdx) });
 
@@ -20210,13 +20244,13 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         if (line2.length === 0) {
 
-            renderLine(line1, boxY + 95);
+            renderLine(line1, boxY + 112);
 
         } else {
 
-            renderLine(line1, boxY + 75);
+            renderLine(line1, boxY + 82);
 
-            renderLine(line2, boxY + 120);
+            renderLine(line2, boxY + 142);
 
         }
 
@@ -20487,7 +20521,9 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         // 3.5. DRAW TOP HEADER STATUS & STAGE TRACKER (Overlay on top of visual)
 
-        drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 5);
+        drawCinematicSceneHeadline(ctx, W, H, activeStage, currentStageIdx, stages.length || 1, cueProgress);
+
+        drawTrendingTopHeader(ctx, W, H, p, t, currentStageIdx, stages.length || 1, stageProg, activeStage);
 
 
 
@@ -20496,7 +20532,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 // Watermark removed for ultra-clean layout
         // 4. DRAW VIRAL KINETIC KARAOKE SUBTITLES (High-Retention Word Highlighting)
 
-        drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t);
+        drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t, activeCue, cueProgress);
 
 
 

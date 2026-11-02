@@ -1010,12 +1010,12 @@ class PromptScenePlayerTests(unittest.TestCase):
     def test_storyboard_prompt_requests_native_language_narration(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
         self.assertIn("Marathi in Devanagari script", source)
-        self.assertIn("Every speech value must be written only in this language", source)
-        self.assertIn("relaxed everyday spoken Indian Hindi", source)
-        self.assertIn("Avoid shuddh/formal/bookish Hindi", source)
-        self.assertIn("The generated track uses one narrator", source)
-        self.assertIn("interactive medallion-flow art direction", source)
-        self.assertIn("one named component at a time", source)
+        self.assertIn("Write Hindi in Devanagari script", source)
+        self.assertIn("authentic, conversational wording, not Romanized Marathi", source)
+        self.assertIn("explain each technical term in plain language", source)
+        self.assertIn("Never ask the viewer to pause, type, answer, or wait", source)
+        self.assertIn("Vary composition when the idea changes", source)
+        self.assertIn("Select a visual_data layout that matches", source)
 
     def test_on_screen_text_is_english_only(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
@@ -1160,36 +1160,35 @@ Scene 8 (0:58-1:05) - Closing
     def test_scene_visuals_use_ai_authored_compositions_before_graph_fallback(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn("function drawPromptVisualPlan(", js)
-        self.assertIn("const authoredVisual = activeStage?.visual_data || {}", js)
+        self.assertIn("const stageVisual = activeStage?.visual_data || {}", js)
+        self.assertIn("const authoredVisual = {", js)
+        self.assertIn("...(activeCue?.visual_data || {})", js)
         self.assertIn("drawPromptVisualPlan(ctx, W, H, activeStage, stageProg", js)
         self.assertIn("Keep the topic-specific legacy animation only for older scenes", js)
 
-    def test_prompt_visual_elements_and_captions_are_not_rendered_as_boxes_or_nodes(self):
+    def test_prompt_visuals_and_captions_follow_authored_scene_cues(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         visual = js.split("function drawPromptVisualPlan(", 1)[1].split("function renderArchitectureScene(", 1)[0]
-        frame = js.split("function renderSqlShortFrame(", 1)[1].split("function renderSqlSyntaxLine(", 1)[0]
+        subtitles = js.split("function drawKineticSubtitles(", 1)[1].split("function renderSqlShortFrame(", 1)[0]
         self.assertNotIn("ctx.arc(0, 0", visual)
         self.assertIn("stage._promptVisualBackdrops[cueIndex] = backdrop", visual)
         self.assertIn("sqlShortState.isExporting ? 0 : 20", visual)
         self.assertIn('String(item.label).replace(/[_-]+/g, " ")', visual)
-        self.assertIn("const glyphSize = elements.length <= 3 ? 88 : elements.length <= 6 ? 78 : 68", visual)
+        self.assertIn("const radius = elements.length <= 3 ? 78 : elements.length <= 6 ? 68 : 42", visual)
         self.assertIn('interactionStep === "transfer"', visual)
         self.assertIn("const packetX =", visual)
         self.assertIn('ctx.lineTo(-25, -14)', visual)
-        self.assertIn("stepLabels[interactionStep]", visual)
+        self.assertIn("drawCueDetailPanel(ctx, W, H, cue, progress, time, interactionStep)", visual)
         self.assertIn("historyLabels", visual)
         self.assertIn("revealedConnectorKeys", visual)
         self.assertIn('ctx.ellipse(0, 0, 194, 174', visual)
         self.assertIn('CORE · LIVE TELEMETRY', visual)
         self.assertIn("Math.max(470, Math.min(H - 1040", visual)
-        self.assertNotIn("ctx.roundRect(subPillX", frame)
-        self.assertIn('ctx.fillStyle = "#04070F";', frame)
-        self.assertIn("const subTextWidth = W - 176", frame)
-        self.assertIn("const maxLines = 3", frame)
-        self.assertIn("fitTextToWidth(ctx, `${subtitleLines[last]}…`", frame)
-        engine = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
-        self.assertIn("Frame-safe layout specialist", engine)
-        self.assertIn("Motion & medallion director", engine)
+        self.assertIn("activeCue?.speech", subtitles)
+        self.assertIn("cueProgress * words.length", subtitles)
+        self.assertIn('ctx.font = "bold 48px', subtitles)
+        self.assertIn("drawCinematicSceneHeadline(ctx, W, H, activeStage", js)
+        self.assertIn("drawKineticSubtitles(ctx, W, H, p, activeStage, stageProg, t, activeCue, cueProgress)", js)
 
     def test_architecture_graph_uses_vertical_safe_margins(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "architecture_animation.py").read_text(encoding="utf-8")

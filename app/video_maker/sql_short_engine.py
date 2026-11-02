@@ -193,6 +193,23 @@ def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str)
     for index, source in enumerate(stages):
         stage = dict(source)
         visual = dict(stage.get("visual_data") or {})
+        supported_layouts = {
+            "title", "split", "pipeline", "table", "chips", "warning", "cards",
+            "spatial", "editorial", "timeline", "chart",
+        }
+        layout = str(visual.get("layout") or "spatial").strip().lower()
+        if layout not in supported_layouts:
+            layout = "spatial"
+        supported_modes = supported_layouts | {
+            "semantic_objects", "illustration", "terminal", "blueprint",
+            "network", "state_machine",
+        }
+        visual_mode = str(
+            visual.get("visual_mode")
+            or ("semantic_objects" if layout == "spatial" else layout)
+        ).strip().lower()
+        if visual_mode not in supported_modes:
+            visual_mode = "semantic_objects" if layout == "spatial" else layout
         title = str(stage.get("title") or f"Scene {index + 1}").strip()
         speech = str(stage.get("speech") or stage.get(f"speech_{lang_key}") or "").strip()
         authored_elements = visual.get("elements") or visual.get("entities") or visual.get("nodes") or []
@@ -236,8 +253,8 @@ def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str)
         ).strip()
         visual["headline"] = str(visual.get("headline") or title).strip()
         visual["subtext"] = str(visual.get("subtext") or visual_description).strip()
-        visual["layout"] = "spatial"
-        visual["visual_mode"] = "semantic_objects"
+        visual["layout"] = layout
+        visual["visual_mode"] = visual_mode
         visual["visual_description"] = visual_description
         visual["composition"] = str(visual.get("composition") or visual_description)
         visual["elements"] = elements
@@ -1674,7 +1691,9 @@ class SqlShortVideoEngine:
                     "Create a finished short-form social video, not an interactive lesson. "
                     "Every scene must teach a specific fact about this exact prompt, use a distinct visual "
                     "action, and move one connected story forward. Never use generic template narration "
-                    "or ask viewers to pause, type, or answer."
+                    "or ask viewers to pause, type, or answer. Use a premium, human-friendly tech-explainer "
+                    "reel visual language: deep navy/charcoal, a few vivid accent colors, bold readable "
+                    "headlines, clean infographic/code panels, and concise voice-synced captions."
                 )
                 if tavily_grounding_text:
                     learned_guide += f"\nIncorporate verified real-time facts:{tavily_grounding_text}"
@@ -1699,27 +1718,35 @@ class SqlShortVideoEngine:
                     f"Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
                     f"TECHNICAL ACCURACY CHECK: {topic_accuracy_guide}\n"
                     f"HUMAN INDIAN TEACHER & PEDAGOGY DIRECTIVES (ZERO MONOTONE / ZERO ROBOTIC TONE):\n"
-                    f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy).\n"
-                    f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hinglish/Hindi with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. In Marathi ('mr'), use authentic Marathi teacher phrasing. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses.\n"
+                    f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy). Assume the viewer is new to the topic: explain each technical term in plain language at the moment it appears, anchor the idea in a familiar real-life situation, and connect the example back to the real technology without misleading analogies.\n"
+                    f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hindi/Hinglish with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. Write Hindi in Devanagari script. In Marathi ('mr'), write Marathi in Devanagari script using authentic, conversational wording, not Romanized Marathi. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses. Keep standard product and technical names in their usual English spelling.\n"
                     f"3. Short-form storytelling: choose a human-relevant, prompt-specific story shape (a developer debugging an incident, a customer order moving through a system, a real before/after, or a misconception revealed). Pick a new scenario from the prompt; do not reuse the same fixed lesson outline. Avoid generic section titles such as Overview, Core Mechanism, Real-World Impact, and Key Takeaway. Scenes should continue one story and show a visible state change. Never ask the viewer to pause, type, answer, or wait; this is a finished social video.\n"
                     f"4. Timing: Create exactly 3 or 4 scenes and 55-75 spoken words total, targeting 30-45 seconds and never exceeding 58 seconds when spoken. Hook in the first sentence; remove filler and repeated conclusions.\n"
                     f"5. Language QA: Proofread every spoken line in {lang_key} before returning JSON. Use idiomatic grammar, correct spelling, complete words, and punctuation that sounds natural aloud. Keep standard technical terms in English when translating them would sound awkward; never emit garbled transliterations.\n"
-                    f"6. Scene Visual Content:\n"
+                    f"6. Reference-inspired visual direction: create a polished vertical tech explainer with a deep navy/charcoal background, sparse cyan/amber/green/violet accents, a small creator/progress header, a large 2-6 word scene headline, one clear animated diagram, comparison, code panel, or illustrated example, and readable voice-synced captions. Treat each scene like a concise visual explanation, not a row of tiny connected icons. Use screen-like panels only when they help explain the requested topic. Vary composition when the idea changes; never repeat one layout for every scene.\n"
+                    f"7. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
                     f"   - 'speech': Spoken human teacher narration in {lang_key} (about 14-22 words per scene, natural punctuation)\n"
                     f"   - 'visual_description': A concrete, topic-specific visual action, not an abstract background or generic title card\n"
                     f"   - 'visual_type': 'diagram' or 'showcase' with objects that visibly change as this narration is spoken\n"
                     f"   - 'visual_data': {{\n"
                     f"       'layout': 'spatial',\n"
+                    f"       'visual_mode': 'semantic_objects',\n"
                     f"       'headline': 'A concise, scene-specific on-screen line',\n"
                     f"       'subtext': 'A useful supporting fact or consequence',\n"
                     f"       'elements': [{{'label': 'real component or person', 'detail': 'what it does in this exact scene', 'shape': 'person|database_cylinder|container|box|server|cloud|laptop|phone|cube', 'glyph': 'optional emoji', 'x': 0.25, 'y': 0.45}}],\n"
+                    f"       'steps': ['Use for pipeline layout: 2-5 short concrete steps'],\n"
+                    f"       'rows': [['Use for table layout: concise header and example rows']],\n"
+                    f"       'chart': {{'type': 'bar', 'title': 'Only a real numeric comparison', 'labels': ['A', 'B'], 'series': [{{'name': 'Observed metric', 'values': [1, 2], 'color': '#38BDF8'}}]}},\n"
+                    f"       'takeaway': 'Use for editorial layout: one plain-language insight',\n"
+                    f"       'events': [{{'label': 'Use for timeline layout: a visible step', 'detail': 'what changes'}}],\n"
                     f"       'connectors': [{{'from': 'exact element label', 'to': 'exact element label', 'color': '#38BDF8'}}],\n"
                     f"       'motion_grammar': 'Describe how objects move or change as the spoken explanation advances',\n"
                     f"       'badge': 'Topic or stage badge text',\n"
                     f"       'theme_color': '#38BDF8' or '#10B981' or '#F59E0B' or '#EC4899' or '#8B5CF6'\n"
                     f"     }}\n\n"
-                    f"Every scene must include a concrete human anchor when appropriate plus at least two topic-specific objects; name real things (e.g. database cylinder, Docker container, queue box, request packet), never placeholder nodes. At least one person/learner/developer must appear in the opening scene. Use 2-4 actual objects per scene and connect them only when the narrated process connects them. Each visual_description must say what moves/changes and match that scene's spoken words. Vary scene compositions and object positions across scenes. Never use generic bullets or unrelated decorations.\n\n"
+                    f"Select a visual_data layout that matches the actual teaching beat: spatial for moving parts, pipeline for ordered actions, split/cards for a meaningful comparison, table for real example data, editorial for one surprising fact, timeline for events, or chart only for numeric data. Do not fabricate values. For non-spatial layouts, set visual_mode to the same layout name. For spatial, use visual_mode='semantic_objects'.\n"
+                    f"Every scene must explain its idea so a non-expert can follow: give one concrete everyday example, briefly explain the technical term, and say what changes for the person using the technology. At least one person/learner/developer must appear in the opening scene. Use 2-4 real, topic-specific visual elements where the chosen layout needs them; use authentic values only, never placeholders or fabricated metrics. Connect objects only when the narrated process connects them. Each visual_description must say what moves/changes and match that scene's spoken words. Vary scene compositions and object positions across scenes. Never use generic bullets or unrelated decorations.\n\n"
                     f"Output strictly raw valid JSON with no markdown wrapping:\n"
                     f"{{\n"
                     f'  "title": "Compelling Title",\n'
@@ -1734,6 +1761,7 @@ class SqlShortVideoEngine:
                     f'      "visual_type": "diagram",\n'
                     f'      "visual_data": {{\n'
                     f'        "layout": "spatial",\n'
+                    f'        "visual_mode": "semantic_objects",\n'
                     f'        "headline": "Replace with a scene-specific headline",\n'
                     f'        "subtext": "Replace with a useful supporting fact",\n'
                     f'        "elements": [{{"label": "human actor or user", "detail": "specific action or role", "shape": "person", "x": 0.25, "y": 0.45}}, {{"label": "actual topic-specific object", "detail": "specific action or role", "shape": "choose the matching object shape", "x": 0.75, "y": 0.45}}],\n'
@@ -1872,8 +1900,28 @@ class SqlShortVideoEngine:
                 "from": human_label,
                 "to": first_scene_visual["elements"][1]["label"],
             })
+        def has_visual_content(stage: Dict[str, Any]) -> bool:
+            visual = stage["visual_data"]
+            layout = visual.get("layout", "spatial")
+            elements = visual.get("elements", [])
+            labels = visual.get("labels", [])
+            if layout == "editorial":
+                return bool(visual.get("headline") and (visual.get("takeaway") or visual.get("subtext")))
+            if layout == "timeline":
+                return len(visual.get("events", [])) >= 2
+            if layout == "chart":
+                chart = visual.get("chart") or {}
+                return len(chart.get("labels", [])) >= 2 and bool(chart.get("series"))
+            if layout == "table":
+                return len(visual.get("rows", [])) >= 2
+            if layout == "pipeline":
+                return len(visual.get("steps", [])) >= 2 or len(elements) >= 2
+            if layout in {"split", "cards", "chips", "warning", "title"}:
+                return len(labels) >= 2 or len(elements) >= 2 or bool(visual.get("headline"))
+            return len(elements) >= 2
+
         if any(
-            len(stage["visual_data"]["elements"]) < 2
+            not has_visual_content(stage)
             or not stage["visual_description"]
             or len(stage["sentence_cues"]) < 1
             for stage in stages
