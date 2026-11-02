@@ -1818,6 +1818,18 @@ class SqlShortVideoEngine:
                 learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
                 if tavily_grounding_text:
                     learned_guide += f"\nIncorporate verified real-time facts:{tavily_grounding_text}"
+                rag_terms = ("rag", "vector search", "rerank", "embedding", "retrieval augmented")
+                if any(term in text_input.lower() for term in rag_terms):
+                    topic_accuracy_guide = (
+                        "For RAG, distinguish retrieval from reranking: vector search finds candidate chunks, "
+                        "a reranker orders those candidates by query relevance, and the answer model uses the "
+                        "best context. Do not claim reranking guarantees correctness or improves recall."
+                    )
+                else:
+                    topic_accuracy_guide = (
+                        "Explain only claims supported by the requested topic. Preserve its important "
+                        "technical distinctions and do not invent guarantees, benchmarks, or citations."
+                    )
 
                 ai_prompt = (
                     f"You are NanoPro Autonomous Universal AI Video Director.\n"
@@ -1825,12 +1837,14 @@ class SqlShortVideoEngine:
                     f"User Prompt: {text_input}\n"
                     f"{tavily_grounding_text}\n"
                     f"Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
+                    f"TECHNICAL ACCURACY CHECK: {topic_accuracy_guide}\n"
                     f"HUMAN INDIAN TEACHER & PEDAGOGY DIRECTIVES (ZERO MONOTONE / ZERO ROBOTIC TONE):\n"
                     f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy).\n"
                     f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hinglish/Hindi with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. In Marathi ('mr'), use authentic Marathi teacher phrasing. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses.\n"
                     f"3. Cognitive Flow Across 4-5 scenes: open with a specific learner problem; show the mechanism with a concrete example; ask the viewer one natural question mid-video and pause for thought; reveal the answer; finish with a practical takeaway. Speak directly to 'you' as a mentor, not as a list reader.\n"
                     f"4. Timing: Exactly 4 to 5 scenes, total narration script ~80-100 words (~38-48 seconds), perfectly paced for 9:16 vertical Shorts & Reels.\n"
-                    f"5. Scene Visual Content:\n"
+                    f"5. Language QA: Proofread every spoken line in {lang_key} before returning JSON. Use idiomatic grammar, correct spelling, complete words, and punctuation that sounds natural aloud. Keep standard technical terms in English when translating them would sound awkward; never emit garbled transliterations.\n"
+                    f"6. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
                     f"   - 'speech': Spoken human teacher narration in {lang_key} (strictly 16-22 words per scene, natural punctuation)\n"
                     f"   - 'visual_description': Vivid description of the visual scene\n"
