@@ -41,6 +41,7 @@ import app.video_maker.video_generation_jobs as gen_jobs
 # Core Engine and Audio Utilities
 from app.video_maker.sql_short_engine import (
     _ensure_scene_visual_directions,
+    _infer_visual_shape,
     _resolve_storyboard_attribution,
     get_mp3_duration,
     sql_short_engine,
@@ -190,32 +191,45 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertNotIn("learnerInteractionPanel", self.html)
         self.assertNotIn("learnerInteraction", js)
         self.assertNotIn("interactionPauseKey", js)
+        self.assertIn("maxShortDuration = 58.5", js)
+        self.assertIn("totalDuration = Math.min(58.5, Math.max(1, totalDuration))", js)
+        self.assertIn("activeCue, activeCueIndex", js)
+        self.assertIn("kind.includes(\"container\")", js)
+        self.assertIn("kind.includes(\"box\")", js)
+        self.assertNotIn('ctx.fillText(`${stepLabel} · STATE:', js)
 
 
 class TestPromptVisualDirections(unittest.TestCase):
-    def test_scene_layouts_are_varied_and_interactive_checkins_are_removed(self):
+    def test_voice_sentences_drive_semantic_scene_objects(self):
         stages = [
-            {"title": "The problem", "speech": "What happens when a service fails?"},
             {
-                "title": "The recovery",
-                "speech": "The controller replaces the failed pod.",
+                "title": "Orders reach the database",
+                "speech": "A customer places an order. The message waits in a queue before a worker writes it.",
                 "visual_data": {
-                    "interaction_prompt": "What do you think happens next?",
-                    "interaction_label": "THINK WITH ME",
-                    "reveal_text": "The replacement controller detects the failure.",
+                    "visual_description": "Follow a customer order as it moves through a queue into persistent storage.",
+                    "elements": [
+                        {"label": "Customer", "detail": "places an order", "shape": "node"},
+                        {"label": "Message queue", "detail": "holds the order", "shape": "node"},
+                        {"label": "Database", "detail": "stores the order", "shape": "node"},
+                    ],
                 },
-            },
-            {"title": "The takeaway", "speech": "Set health checks and resource limits."},
+            }
         ]
 
         normalized = _ensure_scene_visual_directions(stages, "en")
-        layouts = [stage["visual_data"]["layout"] for stage in normalized]
-
-        self.assertEqual(len(layouts), len(set(layouts)))
-        for stage in normalized:
-            self.assertNotIn("interaction_prompt", stage["visual_data"])
-            self.assertNotIn("interaction_label", stage["visual_data"])
-            self.assertNotIn("reveal_text", stage["visual_data"])
+        scene = normalized[0]
+        self.assertEqual(scene["visual_data"]["layout"], "spatial")
+        self.assertEqual([cue["speech"] for cue in scene["sentence_cues"]], [
+            "A customer places an order.",
+            "The message waits in a queue before a worker writes it.",
+        ])
+        self.assertEqual(
+            [element["shape"] for element in scene["visual_data"]["elements"]],
+            ["person", "box", "database_cylinder"],
+        )
+        self.assertEqual(scene["sentence_cues"][0]["focus_element"], "Customer")
+        self.assertEqual(scene["sentence_cues"][1]["interaction_step"], "transfer")
+        self.assertEqual(len(scene["visual_data"]["connectors"]), 2)
 
     def test_unauthored_scenes_do_not_get_generic_template_scripts(self):
         stages = sql_short_engine._build_dynamic_stages(
@@ -224,7 +238,7 @@ class TestPromptVisualDirections(unittest.TestCase):
 
         self.assertEqual(stages, [])
 
-    def test_supported_table_layout_is_preserved(self):
+    def test_authored_table_data_is_available_in_semantic_scene(self):
         stages = [{
             "title": "Before and after",
             "visual_data": {
@@ -235,7 +249,14 @@ class TestPromptVisualDirections(unittest.TestCase):
 
         normalized = _ensure_scene_visual_directions(stages, "en")
 
-        self.assertEqual(normalized[0]["visual_data"]["layout"], "table")
+        self.assertEqual(normalized[0]["visual_data"]["layout"], "spatial")
+        self.assertEqual(normalized[0]["visual_data"]["rows"], stages[0]["visual_data"]["rows"])
+
+    def test_technical_objects_map_to_illustrated_shapes(self):
+        self.assertEqual(_infer_visual_shape("Docker container"), "container")
+        self.assertEqual(_infer_visual_shape("Queue message"), "box")
+        self.assertEqual(_infer_visual_shape("Database table"), "database_cylinder")
+        self.assertEqual(_infer_visual_shape("Engineer"), "person")
 
     def test_storyboard_attribution_uses_provider_reported_model(self):
         model, route = _resolve_storyboard_attribution(
@@ -305,6 +326,86 @@ class TestPromptVisualDirections(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertIn("generic lesson outline", result["message"])
         self.assertNotIn("stages", result)
+
+    def test_storyboard_pipeline_creates_voice_timed_human_tech_visuals_under_sixty_seconds(self):
+        storyboard = {
+            "title": "Why a delayed order gets lost",
+            "domain": "Software systems",
+            "scenes": [
+                {
+                    "title": "A customer taps Place Order",
+                    "speech": "A customer taps Place Order. The app sends one message to the queue.",
+                    "visual_description": "A customer submits an order and a bright message packet travels into a queue.",
+                    "visual_type": "diagram",
+                    "visual_data": {
+                        "layout": "spatial",
+                        "elements": [
+                            {"label": "Customer", "detail": "submits an order", "shape": "person"},
+                            {"label": "Order queue", "detail": "holds the message", "shape": "box"},
+                        ],
+                    },
+                },
+                {
+                    "title": "The worker persists the order",
+                    "speech": "A worker reads the waiting message. The database cylinder stores the order safely.",
+                    "visual_description": "A worker pulls an order from the queue and inserts it into a database.",
+                    "visual_type": "diagram",
+                    "visual_data": {
+                        "layout": "spatial",
+                        "elements": [
+                            {"label": "Queue worker", "detail": "reads one message", "shape": "server"},
+                            {"label": "Order database", "detail": "stores the row", "shape": "database_cylinder"},
+                        ],
+                    },
+                },
+                {
+                    "title": "Retries prevent lost orders",
+                    "speech": "If storage fails, the queue retries instead of dropping the order. That is why durable queues matter.",
+                    "visual_description": "An order packet retries its path to storage after a temporary failure.",
+                    "visual_type": "diagram",
+                    "visual_data": {
+                        "layout": "spatial",
+                        "elements": [
+                            {"label": "Retry packet", "detail": "returns after a failure", "shape": "box"},
+                            {"label": "Order database", "detail": "accepts the retry", "shape": "database_cylinder"},
+                        ],
+                    },
+                },
+            ],
+        }
+
+        async def fake_speech(_text, file_path, **_kwargs):
+            Path(file_path).write_bytes(b"t" * 1024)
+            return True
+
+        with patch(
+            "app.core.model_adapter.model_manager.execute_with_fallback",
+            return_value=(json.dumps(storyboard), "test-model", "test-route"),
+        ), patch(
+            "app.core.neural_tts.neural_tts.generate_speech_async",
+            new=AsyncMock(side_effect=fake_speech),
+        ), patch(
+            "app.video_maker.sql_short_engine.get_mp3_duration",
+            return_value=72.0,
+        ):
+            result = asyncio.run(sql_short_engine.generate_short_prompt_async(
+                "Explain how durable order queues protect an online store",
+                language="en",
+                generation_pattern="unified",
+                selected_model="gemini-3.5-flash-lite",
+            ))
+
+        self.assertEqual(result["status"], "success", result.get("message"))
+        self.assertLessEqual(result["duration"], 58.5)
+        self.assertEqual(len(result["stages"]), 3)
+        self.assertTrue(all(stage["sentence_cues"] for stage in result["stages"]))
+        self.assertEqual(result["stages"][0]["visual_data"]["elements"][0]["shape"], "person")
+        self.assertEqual(result["stages"][0]["visual_data"]["elements"][1]["shape"], "box")
+        self.assertTrue(any(
+            element["shape"] == "database_cylinder"
+            for stage in result["stages"]
+            for element in stage["visual_data"]["elements"]
+        ))
 
 
 class TestStrictModelRouting(unittest.TestCase):

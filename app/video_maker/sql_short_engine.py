@@ -166,70 +166,131 @@ def _motion_bg_for_domain(domain: str, prompt: str) -> str:
     return "quantum_nebula"
 
 
+def _infer_visual_shape(label: str, detail: str = "") -> str:
+    text = f"{label} {detail}".lower()
+    if re.search(r"\b(database|data ?base|sql|table|index|cache|storage|डेटाबेस|संग्रह)\b", text):
+        return "database_cylinder"
+    if re.search(r"\b(container|docker|pod|कंटेनर|पॉड)\b", text):
+        return "container"
+    if re.search(r"\b(queue|message|event|packet|record|row|box|file|document|chunk|क्यू|संदेश|फाइल)\b", text):
+        return "box"
+    if re.search(r"\b(user|customer|developer|engineer|person|learner|वापरकर्ता|ग्राहक|डेव्हलपर|इंजिनियर)\b", text):
+        return "person"
+    if re.search(r"\b(cloud|aws|azure|gcp|क्लाउड)\b", text):
+        return "cloud"
+    if re.search(r"\b(server|worker|processor|service|सर्व्हर|वर्कर)\b", text):
+        return "server"
+    if re.search(r"\b(phone|mobile|client|request|फोन|मोबाइल)\b", text):
+        return "phone"
+    if re.search(r"\b(code|terminal|script|कोड)\b", text):
+        return "laptop"
+    return "cube"
+
+
 def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str) -> List[Dict[str, Any]]:
-    """Give each authored scene a distinct, content-led Canvas layout."""
-    layouts = ("title", "pipeline", "split", "cards", "chips", "spatial", "table")
+    """Build voice-timed motion cues around authored, topic-specific scene objects."""
     normalized = []
-    previous_layout = None
     for index, source in enumerate(stages):
         stage = dict(source)
         visual = dict(stage.get("visual_data") or {})
-        requested = str(visual.get("layout") or "").strip().lower()
-        if requested not in layouts:
-            visual_type = str(stage.get("visual_type") or "").lower()
-            if "compar" in visual_type:
-                requested = "split"
-            elif any(kind in visual_type for kind in ("diagram", "flow", "architect")):
-                requested = "pipeline"
-            elif "takeaway" in visual_type:
-                requested = "title"
-            elif "key" in visual_type:
-                requested = "cards"
-            else:
-                requested = layouts[index % len(layouts)]
-        if requested == previous_layout:
-            requested = layouts[(layouts.index(requested) + 1) % len(layouts)]
-        previous_layout = requested
-
         title = str(stage.get("title") or f"Scene {index + 1}").strip()
         speech = str(stage.get("speech") or stage.get(f"speech_{lang_key}") or "").strip()
-        bullets = visual.get("bullets") or visual.get("points") or []
-        if not isinstance(bullets, list):
-            bullets = [str(bullets)]
-        labels = visual.get("labels") or [str(item) for item in bullets if item]
+        authored_elements = visual.get("elements") or visual.get("entities") or visual.get("nodes") or []
+        if not isinstance(authored_elements, list):
+            authored_elements = []
+        labels = visual.get("labels") or visual.get("steps") or []
         if not isinstance(labels, list):
-            labels = [str(labels)]
-        labels = [str(item).strip() for item in labels if str(item).strip()][:6]
-        headline = str(visual.get("headline") or title).strip()
-        subtext = str(visual.get("subtext") or visual.get("visual_description") or "").strip()
-        visual["headline"] = headline
-        visual["subtext"] = subtext
-        visual["layout"] = requested
-        visual["labels"] = labels or [headline]
-        visual["visual"] = str(visual.get("visual") or subtext)
+            labels = [labels]
+        elements = [dict(item) for item in authored_elements if isinstance(item, dict)]
+        if not elements:
+            elements = [{"label": str(label).strip()} for label in labels if str(label).strip()]
+        elements = elements[:6]
+        for element_index, element in enumerate(elements):
+            label = str(element.get("label") or element.get("name") or element.get("title") or "").strip()
+            detail = str(element.get("detail") or element.get("role") or "").strip()
+            element["label"] = label
+            element["detail"] = detail
+            shape = str(element.get("shape") or "").lower()
+            supported_shape = any(
+                kind in shape
+                for kind in (
+                    "database", "cylinder", "storage", "container", "box", "cube", "block", "packet",
+                    "cloud", "phone", "laptop", "monitor", "device", "server", "person", "user",
+                    "chip", "processor", "document", "file", "lock", "security", "gear", "settings",
+                    "neuron", "brain", "molecule", "atom", "orbit", "wave", "signal", "audio",
+                    "warning", "triangle", "diamond",
+                )
+            )
+            if not supported_shape:
+                element["shape"] = _infer_visual_shape(label, detail)
+            element.setdefault("x", 0.24 + element_index * (0.52 / max(1, len(elements) - 1)))
+            element.setdefault("y", 0.44)
+            element.setdefault("motion", "float")
 
-        if requested == "pipeline":
-            steps = visual.get("steps") or visual["labels"]
-            visual["steps"] = [str(item.get("label") or item) if isinstance(item, dict) else str(item) for item in steps][:5]
-        elif requested == "split" and len(visual["labels"]) < 2:
-            visual["labels"] = [headline, subtext or speech[:100] or headline]
-        elif requested == "table":
-            rows = visual.get("rows")
-            if not isinstance(rows, list) or len(rows) < 2:
-                requested = "cards"
-                visual["layout"] = requested
-        elif requested == "spatial":
-            elements = visual.get("elements") or visual.get("entities") or visual.get("nodes")
-            if not isinstance(elements, list) or len(elements) < 2:
-                elements = [
-                    {"label": label, "detail": subtext if item_index == 0 else "", "motion": "pulse"}
-                    for item_index, label in enumerate(visual["labels"][:5])
-                ]
-            visual["elements"] = elements[:8]
+        visual_description = str(
+            stage.get("visual_description")
+            or visual.get("visual_description")
+            or visual.get("composition")
+            or visual.get("subtext")
+            or ""
+        ).strip()
+        visual["headline"] = str(visual.get("headline") or title).strip()
+        visual["subtext"] = str(visual.get("subtext") or visual_description).strip()
+        visual["layout"] = "spatial"
+        visual["visual_mode"] = "semantic_objects"
+        visual["visual_description"] = visual_description
+        visual["composition"] = str(visual.get("composition") or visual_description)
+        visual["elements"] = elements
+        visual["labels"] = [element["label"] for element in elements]
+        visual["entities"] = elements
+        if not isinstance(visual.get("connectors"), list) or not visual["connectors"]:
+            visual["connectors"] = [
+                {"from": elements[item_index]["label"], "to": elements[item_index + 1]["label"]}
+                for item_index in range(len(elements) - 1)
+            ]
+        visual["motion_grammar"] = str(
+            visual.get("motion_grammar") or "reveal_objects_then_follow_the_spoken_data_flow"
+        )
 
         for key in ("interaction_prompt", "interaction_label", "reveal_text"):
             visual.pop(key, None)
 
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?।])\s+", speech) if part.strip()]
+        if not sentences and speech:
+            sentences = [speech]
+        if len(sentences) > 5:
+            sentences = sentences[:4] + [" ".join(sentences[4:])]
+        cues = []
+        for cue_index, sentence in enumerate(sentences):
+            sentence_words = set(re.findall(r"\w+", sentence.lower()))
+            focus = max(
+                elements,
+                key=lambda element: len(
+                    sentence_words
+                    & set(re.findall(r"\w+", f"{element['label']} {element['detail']}".lower()))
+                ),
+                default=None,
+            )
+            if focus is None and elements:
+                focus = elements[min(cue_index, len(elements) - 1)]
+            step = "introduce" if cue_index == 0 else "process"
+            if re.search(r"\b(send|flow|move|transfer|write|read|queue|consume|deliver|पास|पाठव|वाहत|मूव)\b", sentence.lower()):
+                step = "transfer"
+            elif re.search(r"\b(connect|join|link|जोड|कनेक्ट)\b", sentence.lower()):
+                step = "connect"
+            elif re.search(r"\b(error|fail|down|चूक|बंद|फेल)\b", sentence.lower()):
+                step = "failure"
+            elif re.search(r"\b(result|output|answer|मिळत|उत्तर|आउटपुट)\b", sentence.lower()):
+                step = "output"
+            elif cue_index == len(sentences) - 1:
+                step = "complete"
+            cue = {"speech": sentence, "interaction_step": step}
+            if focus:
+                cue["focus_element"] = focus["label"]
+                cue["visual_data"] = {"elements": [focus]}
+            cues.append(cue)
+        stage["sentence_cues"] = cues
+        stage["visual_description"] = visual_description
         stage["visual_data"] = visual
         normalized.append(stage)
     return normalized
@@ -1640,26 +1701,25 @@ class SqlShortVideoEngine:
                     f"HUMAN INDIAN TEACHER & PEDAGOGY DIRECTIVES (ZERO MONOTONE / ZERO ROBOTIC TONE):\n"
                     f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy).\n"
                     f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hinglish/Hindi with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. In Marathi ('mr'), use authentic Marathi teacher phrasing. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses.\n"
-                    f"3. Short-form storytelling: choose the story shape that best fits this specific topic (for example: a production incident, debugging trace, before/after, misconception reveal, data journey, or mini case study). Do not use the same fixed lesson outline for every topic. Avoid generic section titles such as Overview, Core Mechanism, Real-World Impact, and Key Takeaway. Make each scene advance one connected story with a visible change or consequence. Never ask the viewer to pause, type, answer, or wait; this is a finished social video, not an interactive lesson.\n"
-                    f"4. Timing: Create 3 to 5 scenes and ~65-90 spoken words total (about 30-45 seconds). Keep the hook immediate, remove filler and repeated conclusions, and end on one useful practical insight.\n"
+                    f"3. Short-form storytelling: choose a human-relevant, prompt-specific story shape (a developer debugging an incident, a customer order moving through a system, a real before/after, or a misconception revealed). Pick a new scenario from the prompt; do not reuse the same fixed lesson outline. Avoid generic section titles such as Overview, Core Mechanism, Real-World Impact, and Key Takeaway. Scenes should continue one story and show a visible state change. Never ask the viewer to pause, type, answer, or wait; this is a finished social video.\n"
+                    f"4. Timing: Create exactly 3 or 4 scenes and 55-75 spoken words total, targeting 30-45 seconds and never exceeding 58 seconds when spoken. Hook in the first sentence; remove filler and repeated conclusions.\n"
                     f"5. Language QA: Proofread every spoken line in {lang_key} before returning JSON. Use idiomatic grammar, correct spelling, complete words, and punctuation that sounds natural aloud. Keep standard technical terms in English when translating them would sound awkward; never emit garbled transliterations.\n"
                     f"6. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
                     f"   - 'speech': Spoken human teacher narration in {lang_key} (about 14-22 words per scene, natural punctuation)\n"
                     f"   - 'visual_description': A concrete, topic-specific visual action, not an abstract background or generic title card\n"
-                    f"   - 'visual_type': 'showcase' | 'key_points' | 'comparison' | 'diagram' | 'code' | 'takeaway'\n"
+                    f"   - 'visual_type': 'diagram' or 'showcase' with objects that visibly change as this narration is spoken\n"
                     f"   - 'visual_data': {{\n"
-                    f"       'layout': one distinct per-scene choice from 'title' | 'pipeline' | 'split' | 'cards' | 'chips' | 'spatial' | 'table',\n"
+                    f"       'layout': 'spatial',\n"
                     f"       'headline': 'A concise, scene-specific on-screen line',\n"
                     f"       'subtext': 'A useful supporting fact or consequence',\n"
-                    f"       'bullets': ['Only accurate details from this scene'],\n"
-                    f"       'steps': ['Actual prompt-specific process steps when relevant'],\n"
-                    f"       'labels': ['Short, accurate labels for visible objects or states'],\n"
-                    f"       'rows': [['Relevant field', 'Actual example'], ['Concrete value', 'Result']],\n"
-                    f"       'elements': [{{'label': 'real topic component', 'detail': 'its role', 'shape': 'node'}}],\n"
+                    f"       'elements': [{{'label': 'real component or person', 'detail': 'what it does in this exact scene', 'shape': 'person|database_cylinder|container|box|server|cloud|laptop|phone|cube', 'glyph': 'optional emoji', 'x': 0.25, 'y': 0.45}}],\n"
+                    f"       'connectors': [{{'from': 'exact element label', 'to': 'exact element label', 'color': '#38BDF8'}}],\n"
+                    f"       'motion_grammar': 'Describe how objects move or change as the spoken explanation advances',\n"
                     f"       'badge': 'Topic or stage badge text',\n"
                     f"       'theme_color': '#38BDF8' or '#10B981' or '#F59E0B' or '#EC4899' or '#8B5CF6'\n"
                     f"     }}\n\n"
+                    f"Every scene must include a concrete human anchor when appropriate plus at least two topic-specific objects; name real things (e.g. database cylinder, Docker container, queue box, request packet), never placeholder nodes. At least one person/learner/developer must appear in the opening scene. Use 2-4 actual objects per scene and connect them only when the narrated process connects them. Each visual_description must say what moves/changes and match that scene's spoken words. Vary scene compositions and object positions across scenes. Never use generic bullets or unrelated decorations.\n\n"
                     f"Output strictly raw valid JSON with no markdown wrapping:\n"
                     f"{{\n"
                     f'  "title": "Compelling Title",\n'
@@ -1671,14 +1731,14 @@ class SqlShortVideoEngine:
                     f'      "title": "Replace with a specific, story-led scene title",\n'
                     f'      "speech": "Replace with accurate narration in {lang_key}",\n'
                     f'      "visual_description": "Replace with a concrete, topic-specific visual action",\n'
-                    f'      "visual_type": "Choose the best fitting visual type",\n'
+                    f'      "visual_type": "diagram",\n'
                     f'      "visual_data": {{\n'
-                    f'        "layout": "Choose a layout; make it differ from adjacent scenes",\n'
+                    f'        "layout": "spatial",\n'
                     f'        "headline": "Replace with a scene-specific headline",\n'
                     f'        "subtext": "Replace with a useful supporting fact",\n'
-                    f'        "bullets": ["Replace with accurate prompt-specific detail"],\n'
-                    f'        "steps": ["Replace with actual process steps when relevant"],\n'
-                    f'        "labels": ["Replace with visible objects or states"],\n'
+                    f'        "elements": [{{"label": "human actor or user", "detail": "specific action or role", "shape": "person", "x": 0.25, "y": 0.45}}, {{"label": "actual topic-specific object", "detail": "specific action or role", "shape": "choose the matching object shape", "x": 0.75, "y": 0.45}}],\n'
+                    f'        "connectors": [{{"from": "human actor or user", "to": "actual topic-specific object"}}],\n'
+                    f'        "motion_grammar": "move the spoken data between the actual objects",\n'
                     f'        "badge": "Replace with a short topic-specific label",\n'
                     f'        "theme_color": "#38BDF8"\n'
                     f'      }}\n'
@@ -1764,14 +1824,14 @@ class SqlShortVideoEngine:
             self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode),
             lang_key,
         )
-        if len(stages) < 3 or any(
+        if not 3 <= len(stages) <= 5 or any(
             not str(stage.get(f"speech_{lang_key}") or stage.get("speech") or stage.get("speech_en") or "").strip()
             for stage in stages
         ):
             return {
                 "status": "error",
                 "message": (
-                    "The storyboard model did not return at least three complete narrated scenes. "
+                    "The storyboard model must return 3-5 complete narrated scenes. "
                     "Try another model or enable Automatic model fallback; no generic lesson was substituted."
                 ),
             }
@@ -1793,6 +1853,36 @@ class SqlShortVideoEngine:
                 "message": (
                     "The storyboard model returned a generic lesson outline instead of a topic-specific story. "
                     "Try Automatic model fallback or another model; no template video was generated."
+                ),
+            }
+        first_scene_visual = stages[0]["visual_data"]
+        if first_scene_visual["elements"] and not any(element.get("shape") == "person" for element in first_scene_visual["elements"]):
+            human_label = {"mr": "तुम्ही", "hi": "आप", "en": "You"}.get(lang_key, "You")
+            first_scene_visual["elements"].insert(0, {
+                "label": human_label,
+                "detail": "the learner facing this real-world problem",
+                "shape": "person",
+                "x": 0.18,
+                "y": 0.45,
+                "motion": "point",
+            })
+            first_scene_visual["entities"] = first_scene_visual["elements"]
+            first_scene_visual["labels"] = [element["label"] for element in first_scene_visual["elements"]]
+            first_scene_visual["connectors"].insert(0, {
+                "from": human_label,
+                "to": first_scene_visual["elements"][1]["label"],
+            })
+        if any(
+            len(stage["visual_data"]["elements"]) < 2
+            or not stage["visual_description"]
+            or len(stage["sentence_cues"]) < 1
+            for stage in stages
+        ):
+            return {
+                "status": "error",
+                "message": (
+                    "The storyboard is missing scene-specific visual objects or voice-timed narration cues. "
+                    "Try Automatic model fallback or another storyboard model; no generic animation was substituted."
                 ),
             }
 

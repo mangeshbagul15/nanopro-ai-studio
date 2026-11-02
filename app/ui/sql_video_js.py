@@ -96,9 +96,9 @@ def get_sql_video_js() -> str:
 
         if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 1.0) {
 
-            // Keep every narrated word in the rendered video; do not truncate long scenarios.
+            const maxShortDuration = 58.5;
 
-            const narrationDur = Number(realDur.toFixed(2));
+            const narrationDur = Number(Math.min(maxShortDuration, realDur).toFixed(2));
 
             const totalDur = narrationDur;
 
@@ -8754,30 +8754,6 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         );
 
-        const stepLabels = { introduce: "1 · INTRODUCE", highlight: "2 · HIGHLIGHT", connect: "3 · CONNECT", transfer: "4 · TRANSFER", process: "5 · PROCESS", failure: "5A · FAILURE", diagnose: "5B · DIAGNOSE", recover: "5C · RECOVERY", reprocess: "5D · REPROCESS", output: "6 · OUTPUT", verify: "7 · VERIFY", complete: "8 · COMPLETE", continue: "9 · CONTINUE" };
-
-        const stepLabel = stepLabels[interactionStep] || stepLabels.introduce;
-
-        const componentState = String(cue && cue.component_state || "introducing").replace(/_/g, " ").toUpperCase();
-
-        ctx.save();
-
-        ctx.globalAlpha = 0.94;
-
-        ctx.fillStyle = "rgba(8,17,31,0.88)";
-
-        ctx.strokeStyle = "rgba(56,189,248,0.72)";
-
-        ctx.lineWidth = 2;
-
-        ctx.beginPath(); ctx.roundRect(W * 0.5 - 245, 255, 490, 58, 28); ctx.fill(); ctx.stroke();
-
-        ctx.fillStyle = "#BAE6FD"; ctx.font = "750 22px 'Segoe UI', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-
-        ctx.fillText(`${stepLabel} · STATE: ${componentState}`, W * 0.5, 284, 470);
-
-        ctx.restore();
-
         let focusPoint = focusItem ? points.get(String(focusItem.label)) : null;
 
         let cameraTargetPoint = focusPoint;
@@ -9389,6 +9365,25 @@ SECOND_HIGHEST_SALARY: 70000`;
             ctx.beginPath(); ctx.moveTo(-radius, -radius * 0.55); ctx.lineTo(-radius, radius * 0.6); ctx.quadraticCurveTo(0, radius * 1.05, radius, radius * 0.6); ctx.lineTo(radius, -radius * 0.55); ctx.stroke();
 
             ctx.beginPath(); ctx.ellipse(0, radius * 0.1, radius, radius * 0.3, 0, 0, Math.PI); ctx.stroke();
+
+        } else if (kind.includes("container")) {
+
+            const left = -radius * 0.95, right = radius * 0.95, top = -radius * 0.58, bottom = radius * 0.62;
+            ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(right, top); ctx.lineTo(right, bottom); ctx.lineTo(left, bottom); ctx.closePath();
+            ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+            for (let rib = 1; rib <= 6; rib++) {
+                const x = left + (right - left) * rib / 7;
+                ctx.beginPath(); ctx.moveTo(x, top + 5); ctx.lineTo(x, bottom - 5); ctx.stroke();
+            }
+            ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(-radius * 0.55, -radius); ctx.lineTo(radius * 1.3, -radius); ctx.lineTo(right, top); ctx.stroke();
+            if (glyph) { ctx.shadowBlur = 0; ctx.fillStyle = color; ctx.font = `700 ${radius * 0.55}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(glyph).slice(0, 2), 0, radius * 0.05); }
+
+        } else if (kind.includes("box") || kind.includes("cube") || kind.includes("block") || kind.includes("packet")) {
+
+            ctx.beginPath(); ctx.moveTo(-radius * 0.7, -radius * 0.42); ctx.lineTo(0, -radius); ctx.lineTo(radius * 0.7, -radius * 0.42); ctx.lineTo(radius * 0.7, radius * 0.55); ctx.lineTo(0, radius); ctx.lineTo(-radius * 0.7, radius * 0.55); ctx.closePath();
+            ctx.fillStyle = "rgba(7,17,30,0.96)"; ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(0, radius); ctx.moveTo(-radius * 0.7, -radius * 0.42); ctx.lineTo(0, 0); ctx.lineTo(radius * 0.7, -radius * 0.42); ctx.stroke();
+            if (glyph) { ctx.shadowBlur = 0; ctx.fillStyle = color; ctx.font = `700 ${radius * 0.55}px 'Segoe UI Symbol', 'Segoe UI Emoji', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(glyph).slice(0, 2), 0, 2); }
 
         } else if (kind.includes("cloud")) {
 
@@ -15379,11 +15374,17 @@ SECOND_HIGHEST_SALARY: 70000`;
     }
 
 
-    function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
-        const authoredVisual = activeStage?.visual_data || {};
+    function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, activeCue = null, activeCueIndex = 0) {
+        const authoredVisual = {
+            ...(activeStage?.visual_data || {}),
+            ...(activeCue?.visual_data || {}),
+            elements: activeStage?.visual_data?.elements || activeCue?.visual_data?.elements || [],
+            layout: "spatial",
+            visual_mode: "semantic_objects",
+        };
         if (authoredVisual.layout || authoredVisual.visual_mode || Array.isArray(authoredVisual.elements)) {
             try {
-                if (drawPromptVisualPlan(ctx, W, H, activeStage, stageProg, t, authoredVisual, 0, activeStage?.activeCue || null)) {
+                if (drawPromptVisualPlan(ctx, W, H, activeStage, stageProg, t, authoredVisual, activeCueIndex, activeCue)) {
                     return;
                 }
             } catch (_err) {
@@ -20480,7 +20481,7 @@ SECOND_HIGHEST_SALARY: 70000`;
         }
 
         // 3.1. ALWAYS RENDER DYNAMIC 3D TECH ARCHITECTURE & MOTION GRAPHICS (HERO CENTER)
-        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t);
+        renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, cueProgress, stageAlpha, t, activeCue, activeCueIndex);
 
 
 
@@ -21288,7 +21289,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         let totalDuration = durationSec || measuredDuration || Number(activeSpec.max_duration_seconds || 0) || 30;
 
-        totalDuration = Math.max(1, totalDuration);
+        totalDuration = Math.min(58.5, Math.max(1, totalDuration));
 
         const resolutionScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
 
