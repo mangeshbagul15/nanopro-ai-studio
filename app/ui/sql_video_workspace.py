@@ -962,7 +962,7 @@ def get_sql_video_workspace_html() -> str:
 
                     <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
 
-                        Universal Tech AI Shorts &amp; Reels Studio • 1080×1920 60 FPS
+                        Prompt-led tech lessons • scene-specific 2D motion • neural voice
 
                     </div>
 
@@ -974,7 +974,7 @@ def get_sql_video_workspace_html() -> str:
 
                 <span id="badgeActiveApis" class="kokonut-badge" style="color: #10B981; border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.15);">
 
-                    <span class="kokonut-pulse-dot"></span> 8 LIVE APIS CONNECTED
+                    <span class="kokonut-pulse-dot"></span> AI STORY + NEURAL VOICE
 
                 </span>
 
@@ -1028,7 +1028,7 @@ def get_sql_video_workspace_html() -> str:
 
 
 
-                <!-- 🔄 Generation Strategy Pattern Selector (Unified vs Multi-Model Mix) -->
+                <!-- Model routing: automatic fallback or selected model only -->
 
                 <div style="background: rgba(11, 19, 43, 0.9); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;">
 
@@ -1036,13 +1036,13 @@ def get_sql_video_workspace_html() -> str:
 
                         <span style="font-size: 11px; font-weight: 800; color: #38BDF8; text-transform: uppercase;">
 
-                            🔄 Generation Pattern Strategy
+                            🔄 Model Routing
 
                         </span>
 
                         <span id="activePatternBadge" style="font-size: 10px; font-weight: 800; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 2px 8px; border-radius: 6px;">
 
-                            MULTI-MODEL HYBRID
+                            AUTO FALLBACK
 
                         </span>
 
@@ -1052,17 +1052,17 @@ def get_sql_video_workspace_html() -> str:
 
                         <button type="button" class="sql-pattern-btn active" id="btnPatternHybrid" onclick="setGenerationPattern('hybrid')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #10B981; background: rgba(16,185,129,0.2); color: #34D399; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
 
-                            <span>✨ Multi-Model Hybrid</span>
+                            <span>✨ Automatic model fallback</span>
 
-                            <span style="font-size: 9.5px; opacity: 0.8; font-weight: normal;">Best-of-Breed mixture across scenes</span>
+                            <span style="font-size: 9.5px; opacity: 0.8; font-weight: normal;">Try configured backups if the selected model fails</span>
 
                         </button>
 
                         <button type="button" class="sql-pattern-btn" id="btnPatternUnified" onclick="setGenerationPattern('unified')" style="padding: 8px 10px; font-size: 11px; border-radius: 8px; border: 1px solid #334155; background: rgba(15,23,42,0.8); color: #94A3B8; font-weight: 700; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px;">
 
-                            <span>🎯 Unified (Same Engine)</span>
+                            <span>🎯 Selected model only</span>
 
-                            <span style="font-size: 9.5px; opacity: 0.8; font-weight: normal;">Single model for entire 60s video</span>
+                            <span style="font-size: 9.5px; opacity: 0.8; font-weight: normal;">Do not try backup models</span>
 
                         </button>
 
@@ -1088,11 +1088,11 @@ def get_sql_video_workspace_html() -> str:
                     </div>
                     <select id="selectModernVideoModelMaster" class="studio-input" onchange="onModernModelSelected(this.value)" style="width: 100%; background: #070B16; border: 1px solid #38BDF8; color: #F8FAFC; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer;">
                         <option value="gemini-2.5-flash" selected>🌟 Google Gemini 2.5 Flash (Technical Accuracy Engine)</option>
-                        <option value="wan_21">🎬 Alibaba Wan 2.1 + Dedicated 3D Isometric Architecture Engine</option>
-                        <option value="openai/gpt-oss-120b">⚡ Groq LPU: openai/gpt-oss-120b (Ultra-Fast ~500ms)</option>
+                        <option value="wan_21">🏗️ Architecture storyboard (Groq model route)</option>
+                        <option value="openai/gpt-oss-120b">⚡ Groq route: openai/gpt-oss-120b</option>
                         <option value="codestral-latest">🧪 Mistral: codestral-latest (Clean Code &amp; Architecture)</option>
                         <option value="command-r-plus-08-2024">🏢 Cohere: command-r-plus-08-2024 (Enterprise Structured)</option>
-                        <option value="Meta-Llama-3.3-70B-Instruct">🚀 SambaNova: Meta-Llama-3.3-70B (600+ tok/s Speed)</option>
+                        <option value="Meta-Llama-3.3-70B-Instruct">🚀 Meta-Llama-3.3-70B-Instruct</option>
                         <option value="deepseek-chat">🧬 DeepSeek: DeepSeek-V3 / R1 (Algorithmic Reasoning)</option>
                         <option value="openrouter/auto">🌐 OpenRouter: Multi-Model Gateway (Auto-Cascade)</option>
                     </select>
@@ -1245,11 +1245,11 @@ def get_sql_video_workspace_html() -> str:
 
                             <span style="font-size: 14px;">🌐</span>
 
-                            <span style="font-size: 11px; font-weight: 800; color: #38BDF8; text-transform: uppercase;">Live Media Providers (5 APIs)</span>
+                            <span style="font-size: 11px; font-weight: 800; color: #38BDF8; text-transform: uppercase;">Optional Media &amp; Research APIs</span>
 
                         </div>
 
-                        <span style="font-size: 10px; color: #10B981; font-weight: 700;">● ALL ACTIVE</span>
+                        <span style="font-size: 10px; color: #FBBF24; font-weight: 700;">● Off by default · enable only when needed</span>
 
                     </div>
 
@@ -1257,7 +1257,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <label class="provider-toggle-card">
 
-                            <input type="checkbox" id="togglePixabay" checked />
+                            <input type="checkbox" id="togglePixabay" />
 
                             <span>🎬 Pixabay 4K B-Roll</span>
 
@@ -1265,7 +1265,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <label class="provider-toggle-card">
 
-                            <input type="checkbox" id="toggleUnsplash" checked />
+                            <input type="checkbox" id="toggleUnsplash" />
 
                             <span>📸 Unsplash 4K Photos</span>
 
@@ -1273,7 +1273,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <label class="provider-toggle-card">
 
-                            <input type="checkbox" id="toggleGiphy" checked />
+                            <input type="checkbox" id="toggleGiphy" />
 
                             <span>✨ Giphy Stickers</span>
 
@@ -1281,7 +1281,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <label class="provider-toggle-card">
 
-                            <input type="checkbox" id="toggleFreesound" checked />
+                            <input type="checkbox" id="toggleFreesound" />
 
                             <span>🔊 Freesound SFX</span>
 
@@ -1289,9 +1289,16 @@ def get_sql_video_workspace_html() -> str:
 
                         <label class="provider-toggle-card" style="grid-column: span 2;">
 
-                            <input type="checkbox" id="toggleTavily" checked />
+                            <input type="checkbox" id="toggleTavily" />
 
                             <span>📡 Tavily Real-Time News &amp; Facts</span>
+                        </label>
+
+                        <label class="provider-toggle-card" style="grid-column: span 2;">
+
+                            <input type="checkbox" id="toggleCaptions" />
+
+                            <span>🗣️ Deepgram word-level caption alignment (extra API call)</span>
 
                         </label>
 
@@ -1331,7 +1338,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <span class="pipeline-step-icon" id="stepIconLlm">⏳</span>
 
-                        <span>1. Script Synthesis (<span id="activeLlmLabel">Groq LPU</span>)</span>
+                        <span>1. Prompt → teacher-led storyboard (<span id="activeLlmLabel">Selected model</span>)</span>
 
                     </div>
 
@@ -1339,7 +1346,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <span class="pipeline-step-icon" id="stepIconVoice">⏳</span>
 
-                        <span>2. Neural Voiceover (<span id="activeVoiceLabel">Edge-TTS</span>)</span>
+                        <span>2. Neural teacher voice (<span id="activeVoiceLabel">Edge-TTS</span>)</span>
 
                     </div>
 
@@ -1347,7 +1354,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <span class="pipeline-step-icon" id="stepIconMedia">⏳</span>
 
-                        <span>3. Live Media Ingestion (Pixabay / Unsplash / Giphy / Tavily)</span>
+                        <span>3. Scene-specific 2D motion &amp; learner interaction</span>
 
                     </div>
 
@@ -1355,7 +1362,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <span class="pipeline-step-icon" id="stepIconSfx">⏳</span>
 
-                        <span>4. SFX Transitions &amp; Captions (Freesound / Nova-2)</span>
+                        <span>4. Optional media APIs / precise captions (when enabled)</span>
 
                     </div>
 
@@ -1363,7 +1370,7 @@ def get_sql_video_workspace_html() -> str:
 
                         <span class="pipeline-step-icon" id="stepIconRender">⏳</span>
 
-                        <span>5. 9:16 Compositor (1080×1920 60 FPS)</span>
+                        <span>5. Browser Canvas export (starts when you choose Export)</span>
 
                     </div>
 
@@ -1525,23 +1532,25 @@ def get_sql_video_workspace_html() -> str:
 
                     <div style="display: flex; flex-direction: column; gap: 8px;">
 
-                        <button type="button" class="btn btn-primary" id="btnServerReelFast" onclick="renderServerReelFast()" style="width: 100%; padding: 13px; font-weight: 900; font-size: 13.5px; background: linear-gradient(135deg, #0284C7, #10B981); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 20px rgba(2,132,199,0.5);">
+                        <button type="button" class="btn btn-primary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 13px; font-weight: 900; font-size: 13.5px; background: linear-gradient(135deg, #0284C7, #10B981); border: none; border-radius: 8px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 20px rgba(2,132,199,0.5);">
 
-                            <span style="font-size: 18px;">⚡</span>
+                            <span style="font-size: 18px;">📥</span>
 
-                            <span>FAST SERVER RENDER (FFmpeg 7.1 MP4)</span>
+                            <span id="exportBtnLabel">RENDER ON THIS DEVICE · 1080×1920</span>
+
+                        </button>
+
+                        <button type="button" class="btn btn-secondary" id="btnServerReelFast" onclick="renderServerReelFast()" style="width: 100%; padding: 9px; font-weight: 800; font-size: 11.5px; border: 1px solid #1E2D4A; border-radius: 8px; cursor: pointer; color: #FBBF24; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(14,21,40,0.85);">
+
+                            <span style="font-size: 15px;">⚠️</span>
+
+                            <span>HEAVY SERVER RENDER · uses Render CPU/RAM</span>
 
                         </button>
 
-
-
-                        <button type="button" class="btn btn-secondary" id="btnDownloadShortVideo" onclick="exportSqlShortVideo()" style="width: 100%; padding: 9px; font-weight: 800; font-size: 11.5px; border: 1px solid #1E2D4A; border-radius: 8px; cursor: pointer; color: #38BDF8; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(14,21,40,0.85);">
-
-                            <span style="font-size: 15px;">📥</span>
-
-                            <span id="exportBtnLabel">📱 BROWSER CANVAS RECORD (60S MP4)</span>
-
-                        </button>
+                        <div style="font-size:10px;color:#94A3B8;line-height:1.5;">
+                            Recommended: browser export renders on your laptop. Server rendering runs FFmpeg on the hosted instance and can slow NanoPro; 4K also uses substantially more device memory.
+                        </div>
 
 
 
@@ -1916,4 +1925,3 @@ def get_sql_video_workspace_html() -> str:
     </script>
 
     """
-

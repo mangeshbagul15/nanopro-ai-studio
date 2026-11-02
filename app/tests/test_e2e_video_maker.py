@@ -39,7 +39,11 @@ import app.video_maker.unsplash_provider as unsplash_prov
 import app.video_maker.video_generation_jobs as gen_jobs
 
 # Core Engine and Audio Utilities
-from app.video_maker.sql_short_engine import sql_short_engine, get_mp3_duration
+from app.video_maker.sql_short_engine import (
+    _ensure_scene_visual_directions,
+    get_mp3_duration,
+    sql_short_engine,
+)
 
 
 # ============================================================================
@@ -158,10 +162,50 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("unsplash", html_lower)
 
     def test_generation_pattern_switchers(self):
-        """Verify buttons for switching generation patterns (Hybrid vs Unified)."""
-        has_hybrid = "btnPatternHybrid" in self.html or "Hybrid" in self.html
-        has_unified = "btnPatternUnified" in self.html or "Unified" in self.html
+        """Verify honest controls for model fallback and selected-model-only routing."""
+        has_hybrid = "Automatic model fallback" in self.html
+        has_unified = "Selected model only" in self.html
         self.assertTrue(has_hybrid and has_unified, "Pattern switchers must exist")
+
+    def test_video_studio_discloses_browser_rendering_and_optional_services(self):
+        js = get_sql_video_js()
+        self.assertIn("Browser Canvas + MediaRecorder", js)
+        self.assertIn("Optional Media &amp; Research APIs", self.html)
+        self.assertNotIn("LIVE ASSET VERIFIED", js)
+        self.assertNotIn("100% FREE (GPU)", js)
+        self.assertNotIn("FFmpeg 7.1 Hardware", js)
+        self.assertNotIn("/api/video/generate_2026_video", js)
+
+
+class TestPromptVisualDirections(unittest.TestCase):
+    def test_scene_layouts_are_varied_and_middle_scene_prompts_learner(self):
+        stages = [
+            {"title": "The problem", "speech": "What happens when a service fails?"},
+            {"title": "The recovery", "speech": "The controller replaces the failed pod."},
+            {"title": "The takeaway", "speech": "Set health checks and resource limits."},
+        ]
+
+        normalized = _ensure_scene_visual_directions(stages, "en")
+        layouts = [stage["visual_data"]["layout"] for stage in normalized]
+
+        self.assertEqual(len(layouts), len(set(layouts)))
+        self.assertEqual(
+            normalized[1]["visual_data"]["interaction_prompt"],
+            "Pause for a moment: what do you think happens next?",
+        )
+
+    def test_supported_table_layout_is_preserved(self):
+        stages = [{
+            "title": "Before and after",
+            "visual_data": {
+                "layout": "table",
+                "rows": [["Mode", "Behavior"], ["Manual", "Slow"], ["Automatic", "Fast"]],
+            },
+        }]
+
+        normalized = _ensure_scene_visual_directions(stages, "en")
+
+        self.assertEqual(normalized[0]["visual_data"]["layout"], "table")
 
 
 class TestTier1_F3_ProgressAndLedger(unittest.TestCase):

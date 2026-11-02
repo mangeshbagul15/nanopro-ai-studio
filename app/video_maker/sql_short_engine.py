@@ -166,6 +166,87 @@ def _motion_bg_for_domain(domain: str, prompt: str) -> str:
     return "quantum_nebula"
 
 
+def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str) -> List[Dict[str, Any]]:
+    """Give each scene a distinct, content-led Canvas layout and one learner prompt."""
+    layouts = ("title", "pipeline", "split", "cards", "chips", "spatial", "table")
+    normalized = []
+    previous_layout = None
+    for index, source in enumerate(stages):
+        stage = dict(source)
+        visual = dict(stage.get("visual_data") or {})
+        requested = str(visual.get("layout") or "").strip().lower()
+        if requested not in layouts:
+            visual_type = str(stage.get("visual_type") or "").lower()
+            if "compar" in visual_type:
+                requested = "split"
+            elif any(kind in visual_type for kind in ("diagram", "flow", "architect")):
+                requested = "pipeline"
+            elif "takeaway" in visual_type:
+                requested = "title"
+            elif "key" in visual_type:
+                requested = "cards"
+            else:
+                requested = layouts[index % len(layouts)]
+        if requested == previous_layout:
+            requested = layouts[(layouts.index(requested) + 1) % len(layouts)]
+        previous_layout = requested
+
+        title = str(stage.get("title") or f"Scene {index + 1}").strip()
+        speech = str(stage.get("speech") or stage.get(f"speech_{lang_key}") or "").strip()
+        bullets = visual.get("bullets") or visual.get("points") or []
+        if not isinstance(bullets, list):
+            bullets = [str(bullets)]
+        labels = visual.get("labels") or [str(item) for item in bullets if item]
+        if not isinstance(labels, list):
+            labels = [str(labels)]
+        labels = [str(item).strip() for item in labels if str(item).strip()][:6]
+        headline = str(visual.get("headline") or title).strip()
+        subtext = str(visual.get("subtext") or visual.get("visual_description") or "").strip()
+        visual["headline"] = headline
+        visual["subtext"] = subtext
+        visual["layout"] = requested
+        visual["labels"] = labels or [headline]
+        visual["visual"] = str(visual.get("visual") or subtext)
+
+        if requested == "pipeline":
+            steps = visual.get("steps") or visual["labels"]
+            visual["steps"] = [str(item.get("label") or item) if isinstance(item, dict) else str(item) for item in steps][:5]
+        elif requested == "split" and len(visual["labels"]) < 2:
+            visual["labels"] = [headline, subtext or speech[:100] or headline]
+        elif requested == "table":
+            rows = visual.get("rows")
+            if not isinstance(rows, list) or len(rows) < 2:
+                requested = "cards"
+                visual["layout"] = requested
+        elif requested == "spatial":
+            elements = visual.get("elements") or visual.get("entities") or visual.get("nodes")
+            if not isinstance(elements, list) or len(elements) < 2:
+                elements = [
+                    {"label": label, "detail": subtext if item_index == 0 else "", "motion": "pulse"}
+                    for item_index, label in enumerate(visual["labels"][:5])
+                ]
+            visual["elements"] = elements[:8]
+
+        middle_scene = len(stages) > 1 and index == len(stages) // 2
+        if middle_scene and not visual.get("interaction_prompt"):
+            visual["interaction_prompt"] = {
+                "mr": "उत्तर सांगण्याआधी, तुम्ही काय विचार कराल?",
+                "hi": "जवाब देखने से पहले, आप क्या सोचेंगे?",
+                "en": "Pause for a moment: what do you think happens next?",
+            }.get(lang_key, "Pause for a moment: what do you think happens next?")
+        if middle_scene:
+            visual.setdefault("interaction_label", {
+                "mr": "आधी विचार करा",
+                "hi": "पहले सोचिए",
+                "en": "THINK WITH ME",
+            }.get(lang_key, "THINK WITH ME"))
+            visual.setdefault("reveal_text", subtext or (str(bullets[-1]) if bullets else headline))
+
+        stage["visual_data"] = visual
+        normalized.append(stage)
+    return normalized
+
+
 def compute_audio_synchronized_stages(
     raw_stages: List[Dict[str, Any]],
     audio_duration: float,
@@ -1674,14 +1755,18 @@ class SqlShortVideoEngine:
 
         text_input = (topic_or_question or "").strip()
         matched = None
+        used_model = None
+        used_mode = None
+        storyboard_source = "Prompt-derived fallback"
 
         # Unpack active providers configuration
         prov_dict = providers or {}
-        pixabay_active = prov_dict.get("pixabay", True)
-        unsplash_active = prov_dict.get("unsplash", True)
-        giphy_active = prov_dict.get("giphy", True)
-        freesound_active = prov_dict.get("freesound", True)
-        tavily_active = prov_dict.get("tavily", True)
+        pixabay_active = prov_dict.get("pixabay", False)
+        unsplash_active = prov_dict.get("unsplash", False)
+        giphy_active = prov_dict.get("giphy", False)
+        freesound_active = prov_dict.get("freesound", False)
+        tavily_active = prov_dict.get("tavily", False)
+        captions_active = prov_dict.get("captions", False)
 
         # Pre-script Tavily Real-Time News Grounding
         tavily_grounding_text = ""
@@ -1710,6 +1795,7 @@ class SqlShortVideoEngine:
             parsed_master = self._parse_master_prompt_text(text_input, lang_key=lang_key)
             if parsed_master:
                 matched = parsed_master
+                storyboard_source = "User-supplied storyboard"
 
         # 2. Content Type Detection
         content_type = self._detect_content_type(text_input)
@@ -1733,24 +1819,24 @@ class SqlShortVideoEngine:
                     f"HUMAN INDIAN TEACHER & PEDAGOGY DIRECTIVES (ZERO MONOTONE / ZERO ROBOTIC TONE):\n"
                     f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy).\n"
                     f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hinglish/Hindi with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. In Marathi ('mr'), use authentic Marathi teacher phrasing. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses.\n"
-                    f"3. Cognitive Flow Across 4-5 Scenes:\n"
-                    f"   - Scene 1: Friendly curiosity hook (e.g., 'Kya aapko pata hai...', 'Agar aap apne database ko AWS par shift karna chahte hain...').\n"
-                    f"   - Scene 2: How it Works step-by-step (e.g., 'Dekhiye, sabse pehle source se data read hota hai...').\n"
-                    f"   - Scene 3: Deep dive mechanism or architecture.\n"
-                    f"   - Scene 4: Key practical benefits and real-world impact (e.g., 'Iska sabse bada fayda kya hai? Zero downtime!').\n"
-                    f"   - Scene 5: Actionable takeaway or career pro-tip.\n"
+                    f"3. Cognitive Flow Across 4-5 scenes: open with a specific learner problem; show the mechanism with a concrete example; ask the viewer one natural question mid-video and pause for thought; reveal the answer; finish with a practical takeaway. Speak directly to 'you' as a mentor, not as a list reader.\n"
                     f"4. Timing: Exactly 4 to 5 scenes, total narration script ~80-100 words (~38-48 seconds), perfectly paced for 9:16 vertical Shorts & Reels.\n"
                     f"5. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
                     f"   - 'speech': Spoken human teacher narration in {lang_key} (strictly 16-22 words per scene, natural punctuation)\n"
                     f"   - 'visual_description': Vivid description of the visual scene\n"
-                    f"   - 'video_prompt': High-definition 9:16 text-to-video prompt matching the scene\n"
-                    f"   - 'visual_type': 'showcase' | 'key_points' | 'stat' | 'comparison' | 'diagram' | 'code' | 'takeaway'\n"
-                    f"     (NOTE: Use 'code' ONLY if the user specifically asked for coding/programming. Use 'diagram' ONLY if the user specifically asked for system architecture. Otherwise use 'showcase', 'key_points', 'stat', or 'comparison').\n"
+                    f"   - 'visual_type': 'showcase' | 'key_points' | 'comparison' | 'diagram' | 'code' | 'takeaway'\n"
                     f"   - 'visual_data': {{\n"
+                    f"       'layout': one distinct per-scene choice from 'title' | 'pipeline' | 'split' | 'cards' | 'chips' | 'spatial' | 'table',\n"
                     f"       'headline': 'Punchy headline for the on-screen card',\n"
                     f"       'subtext': 'One sentence explanation',\n"
                     f"       'bullets': ['Key takeaway 1', 'Key takeaway 2', 'Key takeaway 3'],\n"
+                    f"       'steps': ['Prompt-specific process steps for pipeline layout'],\n"
+                    f"       'labels': ['Short, accurate labels for the selected layout'],\n"
+                    f"       'rows': [['Column A', 'Column B'], ['Example', 'Result']],\n"
+                    f"       'elements': [{{'label': 'real component', 'detail': 'its role', 'shape': 'node'}}],\n"
+                    f"       'interaction_prompt': 'One short question for the learner in {lang_key}; include only in a middle scene',\n"
+                    f"       'reveal_text': 'The accurate answer or practical result',\n"
                     f"       'badge': 'Topic or stage badge text',\n"
                     f"       'theme_color': '#38BDF8' or '#10B981' or '#F59E0B' or '#EC4899' or '#8B5CF6'\n"
                     f"     }}\n\n"
@@ -1765,12 +1851,16 @@ class SqlShortVideoEngine:
                     f'      "title": "Scene 1 Title",\n'
                     f'      "speech": "Natural spoken script in {lang_key}",\n'
                     f'      "visual_description": "Vivid visual description",\n'
-                    f'      "video_prompt": "Cinematic 9:16 vertical video of ...",\n'
                     f'      "visual_type": "showcase",\n'
                     f'      "visual_data": {{\n'
+                    f'        "layout": "pipeline",\n'
                     f'        "headline": "Core Insight",\n'
                     f'        "subtext": "Explanation sentence",\n'
                     f'        "bullets": ["Key point 1", "Key point 2"],\n'
+                    f'        "steps": ["Prompt-specific step 1", "Prompt-specific step 2"],\n'
+                    f'        "labels": ["Prompt-specific label 1", "Prompt-specific label 2"],\n'
+                    f'        "interaction_prompt": "Question for the learner, on one middle scene only",\n'
+                    f'        "reveal_text": "The answer to the learner question",\n'
                     f'        "badge": "INTRO",\n'
                     f'        "theme_color": "#38BDF8"\n'
                     f'      }}\n'
@@ -1785,29 +1875,34 @@ class SqlShortVideoEngine:
                     target_models = ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"]
                     ai_prompt += (
                         "\n\n[GEMINI TECHNICAL ACCURACY DIRECTIVE]:\n"
-                        "- Provide deep technical rigor, specific DuckDB and Snowflake SQL queries (e.g. MERGE INTO, DISTINCT ON, ROW_NUMBER).\n"
-                        "- Detail the exact schema transformation: duplicate removal, null handling, type casting.\n"
-                        "- Keep teacher narration authoritative, pedagogical, and mathematically precise."
+                        "- Preserve technical terms, constraints, and facts specific to the user's topic; never introduce unrelated examples.\n"
+                        "- Use a concrete example that fits the prompt and explain it accurately.\n"
+                        "- Keep teacher narration clear, pedagogical, and precise."
                     )
                 elif "wan" in sm_clean:
                     target_models = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
                     ai_prompt += (
-                        "\n\n[ALIBABA WAN 2.1 3D ISOMETRIC DIRECTIVE]:\n"
-                        "- Structure narration around the physical 3D Isometric Architecture (Oracle DB -> AWS DMS -> S3 Landing -> Snowflake -> Power BI).\n"
-                        "- Describe visual scenes as 3D isometric components with animated glowing data cubes (INSERT, UPDATE, DELETE) flowing across pipeline rails.\n"
-                        "- Highlight volumetric Bronze, Silver, and Gold 3D cylinders with industrial metallic reflections."
+                        "\n\n[ARCHITECTURE STORYBOARD DIRECTIVE]:\n"
+                        "- Choose components and relationships that genuinely match the user's requested topic.\n"
+                        "- Use a distinct visual metaphor and scene layout for each teaching beat; do not reuse a preset architecture."
                     )
                 else:
                     target_models = [selected_model]
 
-                ai_resp, used_model, _ = model_manager.execute_with_fallback(
+                if generation_pattern == "unified" and selected_model:
+                    target_models = ["openai/gpt-oss-120b"] if "wan" in sm_clean else [selected_model]
+
+                ai_resp, used_model, used_mode = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
-                    system_prompt=f"You are NanoPro AI Neural Video Generator. You output strictly raw valid JSON without markdown fences.\n{learned_guide}",
+                    system_prompt=f"You are NanoPro's technical educator and storyboard director. Output strictly raw valid JSON without markdown fences.\n{learned_guide}",
                     models=target_models
                 )
                 if "{" in ai_resp and "}" in ai_resp:
                     json_str = ai_resp[ai_resp.find("{"):ai_resp.rfind("}") + 1]
                     parsed = json.loads(json_str)
+                    model_scenes = (parsed.get("scenes") or parsed.get("stages")) if isinstance(parsed, dict) else None
+                    if not isinstance(model_scenes, list) or not model_scenes:
+                        raise ValueError("The selected model did not return a storyboard scene list.")
                     matched = parsed
                     matched["id"] = "custom_ai_scenario"
                     matched["question"] = text_input
@@ -1815,6 +1910,9 @@ class SqlShortVideoEngine:
                     if "scenes" in matched and not matched.get("stages"):
                         matched["stages"] = matched["scenes"]
                     matched["difficulty"] = difficulty
+                    storyboard_source = "LLM-generated storyboard"
+                else:
+                    raise ValueError("The selected model did not return valid storyboard JSON.")
             except Exception as e:
                 log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
 
@@ -1823,7 +1921,10 @@ class SqlShortVideoEngine:
             matched = self._dynamic_analyze_prompt(text_input, lang_key=lang_key)
 
         matched_content_type = matched.get("content_type", content_type)
-        stages = self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode)
+        stages = _ensure_scene_visual_directions(
+            self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode),
+            lang_key,
+        )
 
         # Gather voice narration script across educational stages
         narration_parts = []
@@ -1920,9 +2021,9 @@ class SqlShortVideoEngine:
 
         # Extract word timestamps via Deepgram Nova-2 STT with robust heuristic fallback
         extracted_words: List[Dict[str, Any]] = []
-        stt_engine_label = "Deepgram Nova-2 STT (word-level aligned)"
+        stt_engine_label = "Word-level alignment unavailable"
 
-        if audio_file_path and os.path.exists(audio_file_path):
+        if captions_active and audio_file_path and os.path.exists(audio_file_path):
             try:
                 from app.video_maker.deepgram_provider import transcribe_audio_with_timestamps
                 stt_raw = await asyncio.wait_for(
@@ -1953,12 +2054,14 @@ class SqlShortVideoEngine:
                                     "start": round(float(w.get("start", 0.0)), 2),
                                     "end": round(float(w.get("end", 0.0)), 2)
                                 })
+                if extracted_words:
+                    stt_engine_label = "Deepgram Nova-2 word alignment"
             except Exception as e:
                 log_event(f"Deepgram Nova-2 transcription notice: {e}", level="DEBUG", component="SqlShortEngine")
 
         # Fallback to proportional duration estimation if STT network call failed or returned empty
         if not extracted_words:
-            stt_engine_label = "Deepgram Nova-2 STT (heuristic fallback)"
+            stt_engine_label = "Heuristic word timing (audio-duration aligned)"
             prev_w_end = 0.0
             for stg in calibrated_stages:
                 s_start = float(stg.get("start", 0.0))
@@ -2106,30 +2209,13 @@ class SqlShortVideoEngine:
                 "explanation": matched.get("concept_summary", "")
             })
 
-        latency_ms = round((time.perf_counter() - t0) * 1000, 1)
-
-        # Authentic Attribution Ledger & Provenance
-        llm_provider = "Google DeepMind / Gemini Cloud"
-        if selected_model:
-            sm_lower = selected_model.lower()
-            if "gemini" in sm_lower:
-                llm_provider = "Google Gemini 2.5 Flash (Technical Accuracy Engine)"
-            elif "wan" in sm_lower:
-                llm_provider = "Alibaba Wan 2.1 + Dedicated 3D Isometric Architecture Engine"
-            elif "mistral" in sm_lower or "codestral" in sm_lower:
-                llm_provider = "Mistral AI"
-            elif "cohere" in sm_lower or "command" in sm_lower:
-                llm_provider = "Cohere Cloud"
-            elif "sambanova" in sm_lower or "llama" in sm_lower:
-                llm_provider = "SambaNova Cloud"
-            elif "deepseek" in sm_lower:
-                llm_provider = "DeepSeek"
-            elif "openrouter" in sm_lower:
-                llm_provider = "OpenRouter Gateway"
-            elif "gemini" in sm_lower:
-                llm_provider = "Google Gemini"
-            elif "ollama" in sm_lower:
-                llm_provider = "Ollama (Local GPU)"
+        storyboard_voice_latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+        reported_model = str(
+            used_model if storyboard_source == "LLM-generated storyboard" else storyboard_source
+        )
+        llm_provider = "Prompt-derived fallback (no LLM call)"
+        if storyboard_source == "LLM-generated storyboard":
+            llm_provider = str(used_mode or "Configured model route")
 
         voice_actor_name = voice or (
             "mr-IN-AarohiNeural (Microsoft Edge-TTS)" if lang_key == "mr" else (
@@ -2321,10 +2407,10 @@ class SqlShortVideoEngine:
                 "start": stg.get("start", 0.0),
                 "end": stg.get("end", 8.0),
                 "visual_type": stg.get("visual_type", "showcase"),
-                "broll_source": "Pixabay Video (4K/2K)" if stg.get("video_url") else "Pixabay Neural Motion Engine (Live API Active)",
-                "photo_source": "Unsplash (Portrait 9:16)" if stg.get("image_url") else "Unsplash Neural Visual API (Live API Active)",
-                "sfx_source": "Freesound Cinematic Audio API (Live)",
-                "sticker_source": "Giphy Dynamic Stickers API (Live)"
+                    "broll_source": "Pixabay Video API" if stg.get("video_url") else "Not used",
+                    "photo_source": "Unsplash Photos API" if stg.get("image_url") else "Not used",
+                    "sfx_source": "Freesound API" if stg.get("sfx_url") else "Browser audio synthesis",
+                    "sticker_source": "Giphy API" if stg.get("sticker_url") else "Not used"
             })
         res["scene_assets"] = scene_assets
 
@@ -2334,30 +2420,32 @@ class SqlShortVideoEngine:
         has_giphy = any(bool(s.get("sticker_url")) for s in calibrated_stages)
         has_tavily = bool(tavily_grounding_text)
 
+        latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         attribution_ledger = {
             "pattern": generation_pattern or "hybrid",
-            "pattern_label": "MULTI-MODEL HYBRID",
-            "selected_model": selected_model or "openai/gpt-oss-120b",
+            "pattern_label": "MODEL FALLBACK CASCADE" if generation_pattern == "hybrid" else "SINGLE MODEL",
+            "selected_model": reported_model,
             "total_scenes": len(calibrated_stages),
             "total_duration_seconds": final_dur,
             "llm_provider": llm_provider,
-            "llm_model": selected_model or "openai/gpt-oss-120b",
+            "llm_model": reported_model,
+            "storyboard_source": storyboard_source,
             "voice_actor": voice_actor_name,
             "voiceover_engine": {"name": voice_actor_name},
             "caption_engine": stt_engine_label,
-            "broll_source": "Pixabay Video (4K/2K)" if has_pixabay else ("Procedural Shader (Pixabay Offline)" if pixabay_active else "Disabled / Procedural Shader"),
-            "photo_source": "Unsplash (Portrait 9:16)" if has_unsplash else ("Procedural Canvas (Unsplash Offline)" if unsplash_active else "Disabled / Procedural Canvas"),
-            "sfx_source": "Freesound API (HQ Hollywood Transitions)",
-            "news_source": "Tavily AI Real-Time Search (Active)",
-            "stickers_source": "Giphy API (Live Connected)",
+            "broll_source": "Pixabay Video API" if has_pixabay else "Not requested",
+            "photo_source": "Unsplash Photos API" if has_unsplash else "Not requested",
+            "sfx_source": "Freesound API" if has_sfx else "Browser audio synthesis",
+            "news_source": "Tavily research" if has_tavily else "Not requested",
+            "stickers_source": "Giphy API" if has_giphy else "Not requested",
             "generation_latency_ms": latency_ms,
+            "storyboard_voice_latency_ms": storyboard_voice_latency_ms,
             "scenes": [
                 {
                     "scene_index": idx + 1,
                     "scene_title": stg.get("title") or f"Scene {idx + 1}",
-                    "engine_name": selected_model or "openai/gpt-oss-120b",
+                    "engine_name": reported_model,
                     "provider": llm_provider,
-                    "is_free": True,
                     "attribution_reason": "Curriculum Logic & Scene Synthesis",
                     "narration": stg.get(f"speech_{lang_key}") or stg.get("speech") or stg.get("speech_en") or "",
                     "duration": round(float(stg.get("duration", 8.0)), 1),
@@ -2365,25 +2453,25 @@ class SqlShortVideoEngine:
                     "end": round(float(stg.get("end", stg.get("duration", 8.0))), 1),
                     "word_count": len((stg.get(f"speech_{lang_key}") or stg.get("speech") or stg.get("title") or "").split()),
                     "media_type": (
-                        "3D Procedural Neural Canvas (60 FPS k-NN Space)"
+                        "Prompt-authored 2D Canvas animation"
                         if (not stg.get("video_url") and not stg.get("image_url")) or any(k in str(topic_or_question or "").lower() for k in ["dont use image", "dont use video", "shapes 3d", "3d animation", "shape animation"])
                         else ("Pixabay 4K Video B-Roll" if stg.get("video_url") else "Unsplash 4K Portrait Backdrop")
                     ),
-                    "media_provider": "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photo API" if stg.get("image_url") else "Canvas 3D Procedural Engine"),
+                    "media_provider": "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photos API" if stg.get("image_url") else "NanoPro Canvas"),
                     "media_url": stg.get("video_url") or stg.get("image_url") or "",
-                    "sfx_name": stg.get("sfx_name") or ("Hollywood Cinematic Swoosh" if freesound_active else "Procedural Sonic Pulse"),
-                    "sfx_provider": "Freesound API" if stg.get("sfx_url") else ("Freesound Cached" if freesound_active else "WebAudio Synthesizer"),
+                    "sfx_name": stg.get("sfx_name") or "Browser-generated transition",
+                    "sfx_provider": "Freesound API" if stg.get("sfx_url") else "Browser audio synthesis",
                     "sfx_url": stg.get("sfx_url", ""),
                     "voice_actor": voice_actor_name,
                     "voice_provider": "Microsoft Edge-TTS (Neural Cloud)" if "Neural" in voice_actor_name else "Deepgram Aura (Ultra-Realistic)",
                     "caption_engine": stt_engine_label,
-                    "compositor": "FFmpeg 7.1 (1080×1920 @ 60 FPS H.264/AAC)",
+                    "compositor": "Browser Canvas + MediaRecorder",
                     "contributions": {
                         "llm": {
                             "api": llm_provider,
-                            "model": selected_model or "openai/gpt-oss-120b",
+                            "model": reported_model,
                             "role": "Script Reasoning & Concept Storyboard",
-                            "metric": "600+ tok/s Sub-Second LPU"
+                            "metric": storyboard_source
                         },
                         "tts": {
                             "api": "Microsoft Edge-TTS" if "Neural" in voice_actor_name else "Deepgram Aura",
@@ -2392,19 +2480,19 @@ class SqlShortVideoEngine:
                             "metric": f"{round(float(stg.get('duration', 8.0)), 1)}s Generated (24kHz HD)"
                         },
                         "visuals": {
-                            "api": "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photo API" if stg.get("image_url") else "Canvas 3D Procedural Engine"),
-                            "type": "3D Procedural Neural Canvas (60 FPS k-NN Space)" if (not stg.get("video_url") and not stg.get("image_url")) or any(k in str(topic_or_question or "").lower() for k in ["dont use image", "dont use video", "shapes 3d", "3d animation"]) else ("Pixabay 4K Video B-Roll" if stg.get("video_url") else "Unsplash 4K Portrait Backdrop"),
-                            "role": "9:16 Vertical Visual Backdrop with Pan-Zoom",
-                            "metric": "Full HD 1080×1920 60 FPS"
+                            "api": "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photos API" if stg.get("image_url") else "NanoPro Canvas"),
+                            "type": "Prompt-authored 2D scene layout",
+                            "role": "Scene-specific educational animation",
+                            "metric": "Rendered in browser; export resolution is user-selected"
                         },
                         "sound": {
-                            "api": "Freesound API",
-                            "name": stg.get("sfx_name") or "Hollywood Cinematic Swoosh",
+                            "api": "Freesound API" if stg.get("sfx_url") else "Browser audio synthesis",
+                            "name": stg.get("sfx_name") or "Browser-generated transition",
                             "role": "Scene Transition Impact & Sonic Whoosh",
                             "metric": "192kbps Stereo Mastered"
                         },
                         "captions": {
-                            "api": "Deepgram Nova-2" if "Nova" in stt_engine_label else "OpenAI Whisper",
+                            "api": "Deepgram Nova-2" if extracted_words and captions_active else "Heuristic word timing",
                             "role": "Word-by-Word Kinetic Karaoke Alignment",
                             "metric": f"{len((stg.get(f'speech_{lang_key}') or stg.get('speech') or '').split())} Words Frame-Locked"
                         }
@@ -2475,4 +2563,3 @@ class SqlShortVideoEngine:
 
 # Global Singleton instance
 sql_short_engine = SqlShortVideoEngine()
-

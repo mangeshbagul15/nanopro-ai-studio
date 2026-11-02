@@ -1373,94 +1373,20 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     async function generateSqlShortBlueprintJob(payload, statusEl) {
-
-        let queuedRes = null;
-
-        let queuedRead = null;
-
-        let queueAttempts = 0;
-
-
-
-        // Resilient queue dispatch with standby auto-retry
-
-        while (queueAttempts < 3) {
-
-            queueAttempts++;
-
-            try {
-
-                queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
-
-                    method: "POST",
-
-                    headers: {"Content-Type": "application/json"},
-
-                    body: JSON.stringify(payload)
-
-                });
-
-                queuedRead = await readVideoJsonResponse(queuedRes);
-
-                if (queuedRead.ok && queuedRes.ok && queuedRead.data?.job_id) {
-
-                    break;
-
-                }
-
-                if (queuedRead.data?.status === "STANDBY_READY") {
-
-                    if (statusEl) statusEl.textContent = "Connecting through cloud edge to local GPU master…";
-
-                    await new Promise(r => setTimeout(r, 1200));
-
-                    continue;
-
-                }
-
-            } catch (_) {
-
-                await new Promise(r => setTimeout(r, 1000));
-
-            }
-
+        if (statusEl) statusEl.textContent = "Sending one storyboard job to NanoPro…";
+        const queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        const queuedRead = await readVideoJsonResponse(queuedRes);
+        if (!queuedRead.ok || !queuedRes.ok || !queuedRead.data?.job_id) {
+            throw new Error(
+                queuedRead.data?.detail
+                || queuedRead.data?.message
+                || "NanoPro could not confirm the queued job. No automatic retry was sent to avoid duplicate model usage."
+            );
         }
-
-
-
-        // Direct generation fallback if background job queue was unavailable
-
-        if (!queuedRead?.ok || !queuedRes?.ok || !queuedRead.data?.job_id) {
-
-            if (statusEl) statusEl.textContent = "Synthesizing AI video scenes and narration directly…";
-
-            try {
-
-                const directRes = await fetch("/api/sql_video/generate_prompt", {
-
-                    method: "POST",
-
-                    headers: {"Content-Type": "application/json"},
-
-                    body: JSON.stringify(payload)
-
-                });
-
-                const directRead = await readVideoJsonResponse(directRes);
-
-                if (directRead.ok && directRead.data?.status === "success") {
-
-                    return directRead.data;
-
-                }
-
-            } catch (_) {}
-
-            throw new Error(queuedRead?.data?.detail || queuedRead?.data?.message || "NanoPro could not queue this video prompt. Please verify local tunnel.");
-
-        }
-
-
 
         const jobId = queuedRead.data.job_id;
 
@@ -1496,7 +1422,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 if (statusEl && consecutivePollErrors >= 3) {
 
-                    statusEl.textContent = "Streaming AI video frames and neural voice from GPU…";
+                    statusEl.textContent = "Reconnecting to the storyboard job status…";
 
                 }
 
@@ -1788,7 +1714,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-        btn.innerHTML = `<span>⏳ Synthesizing AI Video & Voice Blueprint...</span>`;
+        btn.innerHTML = `<span>⏳ Creating storyboard & narration...</span>`;
 
         btn.disabled = true;
 
@@ -1796,7 +1722,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const statusEl = document.getElementById("sqlVideoGenerationStatus");
 
-        if (statusEl) statusEl.textContent = "Synthesizing 2026 AI Video & Narration concurrently…";
+        if (statusEl) statusEl.textContent = "Creating a prompt-specific storyboard and matching narration…";
 
 
 
@@ -1804,7 +1730,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const selectedVoice = document.getElementById('selectVoiceActor')?.value || "mr-IN-Standard-A";
 
-        const providers = typeof getActiveMediaProviders === 'function' ? getActiveMediaProviders() : { pixabay: true, unsplash: true, giphy: true, freesound: true, tavily: true };
+        const providers = typeof getActiveMediaProviders === 'function' ? getActiveMediaProviders() : { pixabay: false, unsplash: false, giphy: false, freesound: false, tavily: false, captions: false };
 
 
 
@@ -1986,64 +1912,6 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-                // Trigger October 2026 State-of-the-Art AI Video Generation with Zero-Stop Cascade
-
-                try {
-
-                    fetch('/api/video/generate_2026_video', {
-
-                        method: 'POST',
-
-                        headers: {'Content-Type': 'application/json'},
-
-                        body: JSON.stringify({
-
-                            prompt: q,
-
-                            model_id: window.selectedModernVideoModel || 'seedance_25',
-
-                            aspect_ratio: '9:16'
-
-                        })
-
-                    }).then(r => r.json()).then(vData => {
-
-                        if (vData && vData.video_url) {
-
-                            const isMp4 = typeof vData.video_url === 'string' && (vData.video_url.toLowerCase().includes('.mp4') || vData.video_url.toLowerCase().includes('.webm'));
-
-                            const realVid = document.getElementById('sqlShortRealVideo');
-
-                            if (realVid && isMp4) {
-
-                                realVid.src = vData.video_url;
-
-                                realVid.style.display = 'block';
-
-                                realVid.play().catch(e => console.warn('Real AI video autoplay notice:', e));
-
-                            } else if (realVid) {
-
-                                realVid.style.display = 'none';
-
-                                realVid.removeAttribute('src');
-
-                            }
-
-                            if (typeof showModernToast === 'function') {
-
-                                showModernToast('2026 AI Video Active', (vData.provider || 'AI Video Stream') + ' (' + (vData.benchmark_rating || '5★') + ')', 'success');
-
-                            }
-
-                        }
-
-                    }).catch(e => console.warn('AI Video Cascade notice:', e));
-
-                } catch(e) {}
-
-
-
                 // Load and play fresh synthesized audio with cache-buster
 
                 if (data.audio_url) {
@@ -2082,7 +1950,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 // Generation ready: Start playing preview smoothly (1-Click Export button available for download)
 
-                logPipelineStep("Video Ready", "AI Video & Voiceover loaded. Playing preview smoothly.");
+                logPipelineStep("Video Ready", "Prompt-specific storyboard and selected neural voice are ready. Preview is rendered on this device.");
 
             } else {
 
@@ -2109,7 +1977,10 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             const statusEl = document.getElementById("sqlVideoGenerationStatus");
 
-            if (statusEl && sqlShortState.activeVideoSpec) statusEl.textContent = "Ready · voice-synchronized architecture animation";
+            if (statusEl && sqlShortState.activeVideoSpec) {
+                const sceneCount = sqlShortState.activeVideoSpec.stages?.length || 0;
+                statusEl.textContent = `Ready · ${sceneCount} prompt-specific scenes · browser-rendered preview`;
+            }
 
             btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
 
@@ -9396,10 +9267,13 @@ SECOND_HIGHEST_SALARY: 70000`;
             sqlShortState.sceneAssets.get(String(stage?.id ?? stageIndex)) ||
             sqlShortState.sceneAssets.get(String(stageIndex + 1));
         const promptStr = String(p?.question || p?.title || "").toLowerCase();
-        const prefers3DShapes = true; // Default clean studio plain canvas for crisp 3D tech architecture
-        const wantsStock = promptStr.includes("real footage") || promptStr.includes("live action") || promptStr.includes("stock broll");
+        const providers = typeof getActiveMediaProviders === "function" ? getActiveMediaProviders() : {};
+        const wantsStock = promptStr.includes("real footage")
+            || promptStr.includes("live action")
+            || promptStr.includes("stock broll")
+            || providers.pixabay
+            || providers.unsplash;
         if (!wantsStock) return false;
-        if (prefers3DShapes) return false;
         if (!scene || (!scene.video && !scene.image)) return false;
 
         const media = (scene.video && scene.video.readyState >= 2) ? scene.video : scene.image;
@@ -15507,7 +15381,19 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function renderDynamicSceneVisual(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t) {
-        // 1. ALWAYS RUN AUDIO-SYNCHRONIZED 2D CARTOON & 3D ISOMETRIC ARCHITECTURE ENGINE FIRST
+        const authoredVisual = activeStage?.visual_data || {};
+        if (authoredVisual.layout || authoredVisual.visual_mode || Array.isArray(authoredVisual.elements)) {
+            try {
+                if (drawPromptVisualPlan(ctx, W, H, activeStage, stageProg, t, authoredVisual, 0, activeStage?.activeCue || null)) {
+                    drawLearnerInteractionBeat(ctx, W, H, activeStage, stageProg, t);
+                    return;
+                }
+            } catch (_err) {
+                console.warn("Notice rendering prompt-authored scene:", _err);
+            }
+        }
+
+        // Keep the topic-specific legacy animation only for older scenes without an authored visual plan.
         try {
             const handled = renderDynamicTechArchitectureScene(ctx, W, H, p, activeStage, currentStageIdx, stageProg, stageAlpha, t, window.selectedModernVideoModel);
             if (handled) {
@@ -15515,6 +15401,44 @@ SECOND_HIGHEST_SALARY: 70000`;
             }
         } catch (_err) {
             console.warn("Notice in 2D character engine:", _err);
+        }
+
+        function drawLearnerInteractionBeat(ctx, W, H, stage, progress, time) {
+            const visual = stage?.visual_data || {};
+            const question = String(visual.interaction_prompt || "").trim();
+            if (!question || progress < 0.38 || progress > 0.94) return;
+
+            const revealAt = 0.76;
+            const opacity = Math.min(1, (progress - 0.38) * 5, (0.94 - progress) * 5);
+            const reveal = progress >= revealAt;
+            const accent = /^#[0-9a-f]{6}$/i.test(visual.theme_color || "") ? visual.theme_color : "#38BDF8";
+            ctx.save();
+            ctx.globalAlpha *= Math.max(0, opacity);
+            ctx.fillStyle = "rgba(5, 12, 24, 0.94)";
+            ctx.strokeStyle = accent;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(86, 1260, W - 172, reveal ? 244 : 190, 24);
+            ctx.fill();
+            ctx.stroke();
+            ctx.textAlign = "left";
+            ctx.fillStyle = accent;
+            ctx.font = "800 22px 'Segoe UI', sans-serif";
+            ctx.fillText(String(visual.interaction_label || "THINK WITH ME").slice(0, 52), 126, 1308);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.font = "700 29px 'Segoe UI', sans-serif";
+            wrapCanvasText(ctx, question, W - 260, 2).forEach((line, index) => ctx.fillText(line, 126, 1358 + index * 38));
+            if (reveal) {
+                ctx.fillStyle = "#A7F3D0";
+                ctx.font = "600 24px 'Segoe UI', sans-serif";
+                wrapCanvasText(ctx, String(visual.reveal_text || visual.subtext || "").trim(), W - 260, 2)
+                    .forEach((line, index) => ctx.fillText(line, 126, 1450 + index * 34));
+            } else {
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "600 18px 'Segoe UI', sans-serif";
+                ctx.fillText("Pause · think · then continue", 126, 1432);
+            }
+            ctx.restore();
         }
 
 
@@ -21295,12 +21219,12 @@ SECOND_HIGHEST_SALARY: 70000`;
         if (pContainer) pContainer.style.display = "block";
         if (pFill) pFill.style.width = "25%";
         if (pPctText) pPctText.innerText = "25%";
-        if (pDesc) pDesc.innerText = "⚡ FFmpeg 7.1 Server Compositor सुरू होत आहे...";
+        if (pDesc) pDesc.innerText = "Render is using hosted server CPU/RAM. For a faster app, prefer browser export on your device.";
 
         try {
             if (pFill) pFill.style.width = "50%";
             if (pPctText) pPctText.innerText = "50%";
-            if (pDesc) pDesc.innerText = "Pixabay 4K क्लिप्स, न्यूरल ऑडिओ व 9:16 रेंडरिंग चालू आहे...";
+            if (pDesc) pDesc.innerText = "Hosted server rendering is in progress; this may temporarily slow NanoPro.";
 
             const res = await fetch("/api/video/render_server_reel", {
                 method: "POST",
@@ -22248,15 +22172,17 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
         const providers = {
 
-            pixabay: true,
+            pixabay: false,
 
-            unsplash: true,
+            unsplash: false,
 
-            giphy: true,
+            giphy: false,
 
-            freesound: true,
+            freesound: false,
 
-            tavily: true
+            tavily: false,
+
+            captions: false
 
         };
 
@@ -22270,6 +22196,8 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
         const pTav = document.getElementById('toggleTavily');
 
+        const pCaptions = document.getElementById('toggleCaptions');
+
         if (pPix) providers.pixabay = pPix.checked;
 
         if (pUns) providers.unsplash = pUns.checked;
@@ -22279,6 +22207,8 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
         if (pFre) providers.freesound = pFre.checked;
 
         if (pTav) providers.tavily = pTav.checked;
+
+        if (pCaptions) providers.captions = pCaptions.checked;
 
         return providers;
 
@@ -22446,7 +22376,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
             if (badge) {
 
-                badge.textContent = 'MULTI-MODEL HYBRID';
+                badge.textContent = 'AUTO FALLBACK';
 
                 badge.style.color = '#10B981';
 
@@ -22478,7 +22408,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
             if (badge) {
 
-                badge.textContent = 'UNIFIED PATTERN';
+                badge.textContent = 'SELECTED MODEL';
 
                 badge.style.color = '#38BDF8';
 
@@ -22490,7 +22420,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
         if (typeof showModernToast === 'function') {
 
-            showModernToast('Pattern Changed', pat === 'hybrid' ? 'Multi-Model Best-of-Breed Mix' : 'Unified Single-Engine Pattern', 'info');
+            showModernToast('Model routing changed', pat === 'hybrid' ? 'Configured backup models may be tried if needed.' : 'Only the selected model will be tried.', 'info');
 
         }
 
@@ -22568,7 +22498,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
         if (patBadge) {
 
-            patBadge.textContent = ledger.pattern_label || (ledger.pattern === 'unified' ? 'UNIFIED PATTERN' : 'MULTI-MODEL HYBRID');
+            patBadge.textContent = ledger.pattern_label || (ledger.pattern === 'unified' ? 'SELECTED MODEL' : 'AUTO FALLBACK');
 
             patBadge.style.color = ledger.pattern === 'unified' ? '#38BDF8' : '#10B981';
 
@@ -22612,23 +22542,23 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
         if (listEl && Array.isArray(ledger.scenes)) {
             let html = '';
             ledger.scenes.forEach(sc => {
-                const isFree = sc.is_free !== false;
-                const freeTag = isFree 
-                    ? `<span style="font-size: 9.5px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid #10B981; padding: 2px 7px; border-radius: 4px; font-weight: 800;">100% FREE (GPU)</span>`
-                    : `<span style="font-size: 9.5px; background: rgba(56,189,248,0.2); color: #38BDF8; border: 1px solid #38BDF8; padding: 2px 7px; border-radius: 4px; font-weight: 800;">DIRECT API</span>`;
-
                 const speechQuote = sc.narration ? escapeHtml(sc.narration) : '';
                 const scDur = sc.duration || 8;
                 const scStart = sc.start || 0;
                 const scEnd = sc.end || scDur;
                 const scWords = sc.word_count || (speechQuote ? speechQuote.split(' ').length : 12);
-                const mediaLabel = escapeHtml(sc.media_type || '3D Procedural Neural Canvas (60 FPS)');
-                const mediaSource = escapeHtml(sc.media_provider || 'Canvas 3D Procedural Engine');
+                const mediaLabel = escapeHtml(sc.media_type || 'Prompt-authored 2D Canvas animation');
+                const mediaSource = escapeHtml(sc.media_provider || 'NanoPro Canvas');
                 const voiceName = escapeHtml(sc.voice_actor || ledger.voice_actor || 'hi-IN-MadhurNeural');
-                const sfxName = escapeHtml(sc.sfx_name || 'Hollywood Cinematic Whoosh');
-                const sfxSource = escapeHtml(sc.sfx_provider || 'Freesound API');
-                const engineName = escapeHtml(sc.engine_name || ledger.llm_model || 'openai/gpt-oss-120b');
-                const providerName = escapeHtml(sc.provider || ledger.llm_provider || 'Groq Cloud LPU');
+                const voiceProvider = escapeHtml(sc.voice_provider || 'Selected neural TTS');
+                const sfxName = escapeHtml(sc.sfx_name || 'Browser-generated transition');
+                const sfxSource = escapeHtml(sc.sfx_provider || 'Browser audio synthesis');
+                const engineName = escapeHtml(sc.engine_name || ledger.llm_model || 'Prompt parser');
+                const providerName = escapeHtml(sc.provider || ledger.llm_provider || 'Prompt parser / local fallback');
+                const storyboardSource = escapeHtml(ledger.storyboard_source || 'Prompt-derived storyboard');
+                const assetStatus = sc.media_url ? 'MEDIA ASSET USED' : 'PROMPT-DRAWN VISUAL';
+                const captionSource = escapeHtml(sc.caption_engine || ledger.caption_engine || 'Heuristic word timing');
+                const compositor = escapeHtml(sc.compositor || 'Browser Canvas + MediaRecorder');
 
                 html += `
                 <div class="ledger-scene-card" style="background: rgba(11, 19, 36, 0.95); border: 1px solid #1E2D4A; border-radius: 10px; padding: 14px; margin-bottom: 12px; transition: border-color 0.2s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
@@ -22648,9 +22578,8 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            ${freeTag}
                             <span style="font-size: 9.5px; background: rgba(56,189,248,0.15); color: #38BDF8; border: 1px solid rgba(56,189,248,0.4); padding: 2px 7px; border-radius: 4px; font-weight: 700;">
-                                LIVE ASSET VERIFIED
+                                ${assetStatus}
                             </span>
                         </div>
                     </div>
@@ -22672,7 +22601,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
                                 ${engineName}
                             </div>
                             <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
-                                ${providerName} • 600+ tok/s Sub-Second LPU
+                                ${providerName} • ${storyboardSource}
                             </div>
                         </div>
 
@@ -22685,7 +22614,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
                                 ${voiceName}
                             </div>
                             <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
-                                Microsoft Edge-TTS • 24kHz HD Cloud Speech
+                                ${voiceProvider}
                             </div>
                         </div>
 
@@ -22698,7 +22627,7 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
                                 ${mediaLabel}
                             </div>
                             <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
-                                ${mediaSource} • 9:16 Vertical 60 FPS
+                                ${mediaSource} • Scene-specific animation
                             </div>
                         </div>
 
@@ -22711,14 +22640,14 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
                                 ${sfxName}
                             </div>
                             <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
-                                ${sfxSource} • Deepgram Nova-2 Word Sync
+                                ${sfxSource} • ${captionSource}
                             </div>
                         </div>
                     </div>
 
                     <!-- Bottom Compositor & Actions bar -->
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: #64748B; padding-top: 4px; border-top: 1px dashed rgba(30, 45, 74, 0.5);">
-                        <span>⚙️ <b>Compositor:</b> FFmpeg 7.1 Hardware 1080×1920 60 FPS • AAC 192k</span>
+                        <span>⚙️ <b>Compositor:</b> ${compositor}</span>
                         <button type="button" class="btn btn-secondary" onclick="rerollSceneModel(${sc.scene_index}, '${escapeHtml(sc.scene_title || '')}')" style="padding: 2px 7px; font-size: 9.5px; font-weight: 700; border-color: #38BDF8; color: #38BDF8;" title="Swap model for this scene">
                             🔄 Swap Model
                         </button>
@@ -22791,4 +22720,3 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
     '''
 
     return script.replace("    </script>", f"{ARCHITECTURE_ANIMATION_JS}\n    </script>", 1)
-

@@ -1154,15 +1154,15 @@ Scene 8 (0:58-1:05) - Closing
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         for name in ("drawBriefTitle", "drawBriefSplit", "drawBriefPipeline", "drawBriefTable", "drawBriefChips", "drawBriefWarning", "drawBriefCards"):
             self.assertIn(f"function {name}(", js)
-        self.assertIn("if (p.show_subtitles === false) { return; }", js)
+        self.assertIn("function drawPromptTextOverlays(", js)
+        self.assertIn("drawPromptTextOverlays(ctx, W, H, stage, visual, progress, cue)", js)
 
     def test_scene_visuals_use_ai_authored_compositions_before_graph_fallback(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
         self.assertIn("function drawPromptVisualPlan(", js)
-        self.assertIn("allVisuals = [stage?.visual_data", js)
-        self.assertIn("elementByLabel", js)
-        self.assertIn("const sceneVisualRendered = drawPromptVisualPlan", js)
-        self.assertIn("!sceneVisualRendered && drawTechnicalArchitectureGraph", js)
+        self.assertIn("const authoredVisual = activeStage?.visual_data || {}", js)
+        self.assertIn("drawPromptVisualPlan(ctx, W, H, activeStage, stageProg", js)
+        self.assertIn("Keep the topic-specific legacy animation only for older scenes", js)
 
     def test_prompt_visual_elements_and_captions_are_not_rendered_as_boxes_or_nodes(self):
         js = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
