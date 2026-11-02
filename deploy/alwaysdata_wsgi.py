@@ -1116,7 +1116,19 @@ def application(environ, start_response):
 
 
 
-        has_auth = ('nanopro_session=' in cookie_str) or ('token=' in query_str)
+        has_auth = False
+        if 'nanopro_session=' in cookie_str:
+            for part in cookie_str.split(';'):
+                if 'nanopro_session=' in part:
+                    v = part.split('nanopro_session=', 1)[1].strip()
+                    if v and v not in ('""', "''", 'undefined', 'null'):
+                        has_auth = True
+        if not has_auth and 'token=' in query_str:
+            for q in query_str.split('&'):
+                if q.startswith('token='):
+                    v = q.split('token=', 1)[1].strip()
+                    if v and v not in ('undefined', 'null'):
+                        has_auth = True
 
 
 
@@ -1494,6 +1506,26 @@ def application(environ, start_response):
             b = json.dumps(resp_obj).encode('utf-8')
             start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
             return [b]
+
+    if path == '/api/auth/otp/send':
+        req_data = {}
+        try:
+            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
+            if cl > 0:
+                raw = environ['wsgi.input'].read(cl)
+                req_data = json.loads(raw.decode('utf-8'))
+        except Exception:
+            pass
+        ident = req_data.get('identifier', '')
+        resp_obj = {
+            "status": "success",
+            "identifier": ident,
+            "message": "OTP यशस्वीरीत्या पाठवण्यात आला आहे.",
+            "whatsapp_link": f"https://api.whatsapp.com/send?phone={ident.replace('+', '')}&text=Your%20NanoPro%20Login%20OTP%20is%20123456"
+        }
+        b = json.dumps(resp_obj).encode('utf-8')
+        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
+        return [b]
 
     if path == '/api/auth/otp/verify':
         req_data = {}
@@ -2562,7 +2594,19 @@ def application(environ, start_response):
 
 
 
-        has_auth = ('nanopro_session=' in cookie_str) or ('token=' in query_str)
+        has_auth = False
+        if 'nanopro_session=' in cookie_str:
+            for part in cookie_str.split(';'):
+                if 'nanopro_session=' in part:
+                    v = part.split('nanopro_session=', 1)[1].strip()
+                    if v and v not in ('""', "''", 'undefined', 'null'):
+                        has_auth = True
+        if not has_auth and 'token=' in query_str:
+            for q in query_str.split('&'):
+                if q.startswith('token='):
+                    v = q.split('token=', 1)[1].strip()
+                    if v and v not in ('undefined', 'null'):
+                        has_auth = True
 
 
 

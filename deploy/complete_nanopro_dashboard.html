@@ -9509,55 +9509,28 @@ async function triggerAutoLogout() {
 
 
 async function performLogout(isAuto=false) {
-
     try {
-
         if (currentSessionToken) {
-
             await fetch('/api/auth/logout', {
-
                 method: 'POST',
-
                 headers: {'Content-Type': 'application/json'},
-
                 body: JSON.stringify({ session_token: currentSessionToken })
-
             });
-
         }
-
     } catch(e){}
-
+    document.cookie = 'nanopro_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'nanopro_session=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     localStorage.removeItem('nanopro_session_token');
-
+    localStorage.removeItem('nanopro_saved_accounts');
+    localStorage.removeItem('nanopro_remember_credentials');
+    localStorage.removeItem('nanopro_active_account');
+    sessionStorage.clear();
     currentSessionToken = null;
-
     currentUser = null;
-
     window.currentUser = null;
-
     document.body.classList.remove('auth-verified');
-
     document.documentElement.classList.remove('auth-verified');
-
-    
-
-    // Check if other saved accounts exist on this device
-
-    const accounts = getSavedAccounts();
-
-    if (accounts.length > 0) {
-
-        renderAuthSavedAccountsChooser();
-
-        openAuthGatewayModal('login');
-
-    } else {
-
-        location.reload();
-
-    }
-
+    window.location.replace('/login');
 }
 
 

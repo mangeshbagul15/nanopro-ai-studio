@@ -3543,55 +3543,31 @@ async function triggerAutoLogout() {
 
 
 async function performLogout(isAuto=false) {
-
     try {
-
         if (currentSessionToken) {
-
             await fetch('/api/auth/logout', {
-
                 method: 'POST',
-
                 headers: {'Content-Type': 'application/json'},
-
                 body: JSON.stringify({ session_token: currentSessionToken })
-
             });
-
         }
-
     } catch(e){}
-
+    // Complete Clean Logout: Expire cookie across all paths
+    document.cookie = 'nanopro_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'nanopro_session=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    // Clear tokens & credentials so auto-login loop never traps user
     localStorage.removeItem('nanopro_session_token');
-
+    localStorage.removeItem('nanopro_saved_accounts');
+    localStorage.removeItem('nanopro_remember_credentials');
+    localStorage.removeItem('nanopro_active_account');
+    sessionStorage.clear();
     currentSessionToken = null;
-
     currentUser = null;
-
     window.currentUser = null;
-
     document.body.classList.remove('auth-verified');
-
     document.documentElement.classList.remove('auth-verified');
-
-    
-
-    // Check if other saved accounts exist on this device
-
-    const accounts = getSavedAccounts();
-
-    if (accounts.length > 0) {
-
-        renderAuthSavedAccountsChooser();
-
-        openAuthGatewayModal('login');
-
-    } else {
-
-        location.reload();
-
-    }
-
+    // Direct hard redirect to login gateway
+    window.location.replace('/login');
 }
 
 
@@ -5847,92 +5823,38 @@ def get_login_page_html() -> str:
 
     <script>
 
-        // Check if device already has active session or auto-login credentials
+                // Tab Switching for Direct Login, WhatsApp OTP, and Request Access
+        function switchMainTab(tab) {
+            const tabDirect = document.getElementById('tabDirect');
+            const tabWhatsapp = document.getElementById('tabWhatsapp');
+            const tabRegister = document.getElementById('tabRegister');
+            const directView = document.getElementById('directView');
+            const whatsappView = document.getElementById('whatsappView');
+            const registerForm = document.getElementById('registerForm');
 
-        document.addEventListener('DOMContentLoaded', async () => {
+            if (tabDirect) tabDirect.classList.remove('active');
+            if (tabWhatsapp) tabWhatsapp.classList.remove('active');
+            if (tabRegister) tabRegister.classList.remove('active');
 
-            const token = localStorage.getItem('nanopro_session_token');
+            if (directView) directView.style.display = 'none';
+            if (whatsappView) whatsappView.style.display = 'none';
+            if (registerForm) registerForm.style.display = 'none';
 
-            if (token) {
-
-                try {
-
-                    const resp = await fetch('/api/auth/validate', {
-
-                        method: 'POST',
-
-                        headers: { 'Content-Type': 'application/json' },
-
-                        body: JSON.stringify({ session_token: token })
-
-                    });
-
-                    const d = await resp.json();
-
-                    if (d.is_valid && d.user) {
-
-                        document.cookie = 'nanopro_session=' + encodeURIComponent(token) + '; path=/; max-age=2592000; SameSite=Lax';
-
-                        window.location.replace('/?token=' + encodeURIComponent(token));
-
-                        return;
-
-                    }
-
-                } catch(e){}
-
+            if (tab === 'direct') {
+                if (tabDirect) tabDirect.classList.add('active');
+                if (directView) directView.style.display = 'block';
+            } else if (tab === 'whatsapp') {
+                if (tabWhatsapp) tabWhatsapp.classList.add('active');
+                if (whatsappView) whatsappView.style.display = 'block';
+            } else if (tab === 'register') {
+                if (tabRegister) tabRegister.classList.add('active');
+                if (registerForm) registerForm.style.display = 'block';
             }
+        }
+        window.switchMainTab = switchMainTab;
 
-
-
-            // Check remember credentials
-
-            try {
-
-                const raw = localStorage.getItem('nanopro_saved_accounts');
-
-                const accounts = raw ? JSON.parse(raw) : [];
-
-                const active = localStorage.getItem('nanopro_active_account');
-
-                const target = accounts.find(a => a.username.toLowerCase() === (active || '').toLowerCase()) || accounts[0];
-
-                if (target && target.saved_password && localStorage.getItem('nanopro_remember_credentials') === 'true') {
-
-                    const pwd = decodeURIComponent(escape(atob(target.saved_password)));
-
-                    if (pwd) {
-
-                        const resp = await fetch('/api/auth/login', {
-
-                            method: 'POST',
-
-                            headers: { 'Content-Type': 'application/json' },
-
-                            body: JSON.stringify({ username: target.username, password: pwd })
-
-                        });
-
-                        const d = await resp.json();
-
-                        if (d.status === 'success') {
-
-                            localStorage.setItem('nanopro_session_token', d.session_token);
-
-                            document.cookie = 'nanopro_session=' + encodeURIComponent(d.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
-
-                            window.location.replace('/?token=' + encodeURIComponent(d.session_token));
-
-                            return;
-
-                        }
-
-                    }
-
-                }
-
-            } catch(e){}
-
+        document.addEventListener('DOMContentLoaded', () => {
+            switchMainTab('direct');
         });
 
 
@@ -6098,12 +6020,16 @@ def get_login_page_html() -> str:
 
 
 
-        async function triggerGoogleSignIn() {
-            let email = "mangeshbagul15@gmail.com";
-            if (typeof prompt !== 'undefined') {
-                const entered = prompt("Sign in with Google - Enter your email address:", email);
-                if (entered === null) return;
-                if (entered.trim()) email = entered.trim();
+        async function triggerGoogleSignIn(targetEmail) {
+            let email = targetEmail || "mangeshbagul15@gmail.com";
+            if (!targetEmail) {
+                try {
+                    if (typeof prompt !== 'undefined') {
+                        const entered = prompt("Sign in with Google - Enter your email or click OK for Super Admin:", email);
+                        if (entered === null) return;
+                        if (entered && entered.trim()) email = entered.trim();
+                    }
+                } catch(e) {}
             }
             showAlert('Authenticating with Google (' + email + ')...', 'success');
 
