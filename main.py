@@ -14340,13 +14340,14 @@ async def api_db_load_balancer_probe():
 
 @app.get("/api/server-manager/overview")
 
-async def api_server_manager_overview():
+async def api_server_manager_overview(refresh: bool = False):
 
     """Returns comprehensive real-time state for Server Manager & Agents Hub."""
 
     from app.core.server_manager_hub import server_manager_hub
 
-    return JSONResponse(server_manager_hub.get_overview())
+    overview = await asyncio.to_thread(server_manager_hub.get_overview, force_refresh=refresh)
+    return JSONResponse(overview)
 
 
 
@@ -14354,39 +14355,15 @@ async def api_server_manager_overview():
 
 async def api_server_manager_switch_node(req: Request):
 
-    """Rehearses or triggers a cluster node failover/switch."""
+    """Rejects fake migration requests until a real traffic-routing control plane is configured."""
 
-    from app.core.server_manager_hub import server_manager_hub
-
-    b = {}
-
-    try:
-
-        b = await req.json()
-
-    except Exception:
-
-        pass
-
-    target = b.get("target_node", "node_cloud_flyio")
-
-    reason = b.get("reason", "Manual Operator Host Migration")
-
-    server_manager_hub.log_failover_event(
-
-        event=f"Host Node Rebalance: {target}",
-
-        source_node=b.get("source_node", "node_laptop_master"),
-
-        target_node=target,
-
-        status="ACTIVE_SWITCHED",
-
-        details=reason
-
+    return JSONResponse(
+        {
+            "status": "unavailable",
+            "message": "Host switching is not configured. This dashboard currently monitors nodes but cannot reroute traffic.",
+        },
+        status_code=501,
     )
-
-    return JSONResponse({"status": "success", "message": f"Host Node successfully migrated to {target}", "target_node": target})
 
 
 
@@ -14422,33 +14399,29 @@ async def api_server_manager_test_component(req: Request):
 
     """Live probe test for DB, API, or Communication service."""
 
-    b = {}
-
-    try:
-
-        b = await req.json()
-
-    except Exception:
-
-        pass
-
+    b = await req.json()
     comp_type = b.get("type", "db")
-
     comp_id = b.get("id", "neon_pg")
+    if comp_type == "server":
+        from app.core.server_manager_hub import server_manager_hub
 
+        node = await asyncio.to_thread(server_manager_hub.probe_app_server, str(comp_id))
+        if node is None:
+            raise HTTPException(status_code=404, detail="Unknown application server node")
+        return JSONResponse({
+            "status": node["status"],
+            "component_id": node["id"],
+            "component_type": "server",
+            "ping_ms": node["ping_ms"],
+            "http_status": node["http_status"],
+            "message": node["status_message"] or f"Health probe: {node['status']}",
+        })
     return JSONResponse({
-
-        "status": "success",
-
+        "status": "unavailable",
         "component_id": comp_id,
-
         "component_type": comp_type,
-
-        "ping_ms": 1.2,
-
-        "message": f"Component '{comp_id}' verified healthy and responsive [200 OK]"
-
-    })
+        "message": "Live probes are currently implemented for application server nodes only.",
+    }, status_code=501)
 
 
 
@@ -14719,4 +14692,3 @@ async def api_qa_deploy(req: Request):
 if __name__ == "__main__":
 
     run_server()
-

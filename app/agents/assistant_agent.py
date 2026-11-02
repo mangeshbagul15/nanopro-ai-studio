@@ -1739,52 +1739,122 @@ class MonitoringAgent:
             health_status = "WARNING"
             issues.append(f"Disk space high ({used_pct}% used)")
 
-        # Memory & CPU telemetry for container and process
-        proc_ram_mb = 112.5
+        # Prefer the actual container memory cgroup; otherwise report host memory if discoverable.
+        host_total_mb = None
+        host_available_mb = None
         try:
-            import resource
-            proc_ram_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 2)
-        except Exception:
-            pass
+            with open("/proc/meminfo", encoding="utf-8") as meminfo:
+                values = {}
+                for line in meminfo:
+                    key, raw_value = line.split(":", 1)
+                    values[key] = int(raw_value.strip().split()[0]) / 1024
+                host_total_mb = values.get("MemTotal")
+                host_available_mb = values.get("MemAvailable")
+        except (OSError, ValueError, IndexError):
+            try:
+                host_total_mb = (
+                    os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / (1024 * 1024)
+                )
+            except (AttributeError, OSError, ValueError):
+                pass
 
-        container_limit_mb = 512.0
-        cgroup_ram_mb = 0.0
-        for cpath in ['/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory/memory.usage_in_bytes']:
-            if os.path.exists(cpath):
-                try:
-                    with open(cpath) as cf:
-                        cgroup_ram_mb = round(int(cf.read().strip()) / (1024 * 1024), 2)
-                        break
-                except Exception:
-                    pass
+        cgroup_limit_mb = None
+        cgroup_used_mb = None
+        for limit_path, used_path in [
+            ("/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory.current"),
+            (
+                "/sys/fs/cgroup/memory/memory.limit_in_bytes",
+                "/sys/fs/cgroup/memory/memory.usage_in_bytes",
+            ),
+        ]:
+            try:
+                with open(limit_path, encoding="utf-8") as limit_file:
+                    raw_limit = limit_file.read().strip()
+                with open(used_path, encoding="utf-8") as used_file:
+                    raw_used = used_file.read().strip()
+                if raw_limit != "max":
+                    limit_mb = int(raw_limit) / (1024 * 1024)
+                    if limit_mb > 0 and (host_total_mb is None or limit_mb <= host_total_mb * 1.5):
+                        cgroup_limit_mb = limit_mb
+                cgroup_used_mb = int(raw_used) / (1024 * 1024)
+                break
+            except (OSError, ValueError):
+                continue
 
-        ram_used = cgroup_ram_mb if cgroup_ram_mb > 0 else proc_ram_mb
-        ram_free = max(round(container_limit_mb - ram_used, 2), 0.0)
-        ram_pct = round((ram_used / container_limit_mb) * 100, 1)
+        if cgroup_used_mb is not None and cgroup_limit_mb is not None:
+            ram_used = round(cgroup_used_mb, 2)
+            total_ram_mb = round(cgroup_limit_mb, 2)
+        elif host_total_mb and host_available_mb is not None:
+            total_ram_mb = round(host_total_mb, 2)
+            ram_used = round(max(host_total_mb - host_available_mb, 0), 2)
+        else:
+            total_ram_mb = None
+            ram_used = None
 
-        cpu_load = 0.05
+        ram_free = (
+            round(max(total_ram_mb - ram_used, 0), 2)
+            if total_ram_mb is not None and ram_used is not None
+            else None
+        )
+        ram_pct = (
+            round((ram_used / total_ram_mb) * 100, 1)
+            if total_ram_mb and ram_used is not None
+            else None
+        )
+
+        cpu_load = None
         try:
             cpu_load = round(os.getloadavg()[0], 2)
-        except Exception:
+        except (AttributeError, OSError):
             pass
+
+        node_id = os.environ.get("NANOPRO_NODE_ID")
+        runtime_tiers = {
+            "node_cloud_render": "Render Cloud",
+            "node_cloud_flyio": "Fly.io",
+            "node_cloud_alwaysdata": "Alwaysdata",
+            "node_cloud_pythonanywhere": "PythonAnywhere",
+            "node_cloud_cloudflare_edge": "Cloudflare Worker",
+            "node_laptop_master": "Local Laptop",
+        }
+        server_tier = runtime_tiers.get(node_id)
+        if not server_tier:
+            if os.environ.get("RENDER"):
+                server_tier = "Render Cloud"
+            elif os.environ.get("FLY_APP_NAME"):
+                server_tier = "Fly.io"
+            elif os.environ.get("PYTHONANYWHERE_SITE"):
+                server_tier = "PythonAnywhere"
+            elif os.name == "nt":
+                server_tier = "Local Windows Host"
+            else:
+                server_tier = f"{platform.system()} Host"
 
         result = {
             "health_status": health_status,
             "timestamp": now,
             "os_platform": platform.platform(),
-            "server_tier": "Render Cloud Linux Container",
+            "server_tier": server_tier,
             "memory": {
-                "total_ram_mb": container_limit_mb,
+                "total_ram_mb": total_ram_mb,
                 "used_ram_mb": ram_used,
                 "free_ram_mb": ram_free,
-                "used_percentage": min(ram_pct, 100.0),
-                "status": "EXCELLENT" if ram_pct < 70.0 else "NORMAL"
+                "used_percentage": min(ram_pct, 100.0) if ram_pct is not None else None,
+                "status": (
+                    "UNKNOWN" if ram_pct is None
+                    else "EXCELLENT" if ram_pct < 70.0
+                    else "NORMAL"
+                )
             },
             "cpu": {
                 "cores": os.cpu_count() or 1,
                 "load_1m": cpu_load,
-                "utilization_estimate_pct": round(min(cpu_load * 20.0, 100.0), 1),
-                "status": "OPTIMAL" if cpu_load < 1.0 else "ACTIVE"
+                "utilization_estimate_pct": None,
+                "status": (
+                    "UNKNOWN" if cpu_load is None
+                    else "OPTIMAL" if cpu_load < 1.0
+                    else "ACTIVE"
+                )
             },
             "disk": {"free_gb": free_gb, "total_gb": total_gb, "used_percentage": used_pct},
             "database": {"healthy": db_ok, "size_bytes": db_size, "path": str(SQLITE_DB_PATH)},

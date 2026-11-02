@@ -18,6 +18,9 @@ import json
 import socket
 import datetime
 import subprocess
+import urllib.error
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -28,7 +31,323 @@ FAILOVER_LOG_FILE = Path("data/server_failover_history.json")
 
 class ServerManagerHub:
     def __init__(self):
+        self._server_telemetry_cache: Optional[List[Dict[str, Any]]] = None
+        self._server_telemetry_cached_at = 0.0
         self._init_failover_log()
+
+    @staticmethod
+    def _current_node_id() -> Optional[str]:
+        configured_id = os.environ.get("NANOPRO_NODE_ID", "").strip()
+        known_ids = {
+            "node_laptop_master",
+            "node_cloud_flyio",
+            "node_cloud_alwaysdata",
+            "node_cloud_pythonanywhere",
+            "node_cloud_cloudflare_edge",
+            "node_cloud_northflank",
+            "node_cloud_zeabur",
+            "node_cloud_render",
+            "node_cloud_back4app",
+            "node_cloud_serv00",
+        }
+        if configured_id in known_ids:
+            return configured_id
+        if os.environ.get("RENDER"):
+            return "node_cloud_render"
+        if os.environ.get("FLY_APP_NAME"):
+            return "node_cloud_flyio"
+        if os.environ.get("PYTHONANYWHERE_SITE"):
+            return "node_cloud_pythonanywhere"
+        if os.name == "nt":
+            return "node_laptop_master"
+        return None
+
+    @staticmethod
+    def _read_health_endpoint(base_url: str, timeout: float = 4.0) -> Dict[str, Any]:
+        base_url = base_url.rstrip("/")
+        started = time.perf_counter()
+        request = urllib.request.Request(
+            f"{base_url}/api/health",
+            headers={"Accept": "application/json", "User-Agent": "NanoPro-Health-Monitor/1.0"},
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                status_code = response.status
+                body = response.read(64 * 1024)
+            latency_ms = round((time.perf_counter() - started) * 1000, 1)
+            if not 200 <= status_code < 300:
+                return {"status": "UNHEALTHY", "http_status": status_code, "ping_ms": latency_ms}
+            try:
+                payload = json.loads(body.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                return {
+                    "status": "NO_HEALTH_ENDPOINT",
+                    "http_status": status_code,
+                    "ping_ms": latency_ms,
+                    "message": "Health route did not return JSON",
+                }
+            if not isinstance(payload, dict):
+                return {
+                    "status": "NO_HEALTH_ENDPOINT",
+                    "http_status": status_code,
+                    "ping_ms": latency_ms,
+                    "message": "Health route returned an unexpected response",
+                }
+            app_health = str(payload.get("health_status", "")).upper()
+            health_status = (
+                "UNHEALTHY" if app_health == "CRITICAL"
+                else "DEGRADED" if app_health == "WARNING"
+                else "HEALTHY" if app_health == "HEALTHY"
+                else "REACHABLE"
+            )
+            return {
+                "status": health_status,
+                "http_status": status_code,
+                "ping_ms": latency_ms,
+                "health": payload,
+            }
+        except urllib.error.HTTPError as exc:
+            latency_ms = round((time.perf_counter() - started) * 1000, 1)
+            status = "NO_HEALTH_ENDPOINT" if exc.code == 404 else "UNHEALTHY"
+            return {"status": status, "http_status": exc.code, "ping_ms": latency_ms}
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            latency_ms = round((time.perf_counter() - started) * 1000, 1)
+            return {
+                "status": "OFFLINE",
+                "ping_ms": latency_ms,
+                "message": str(getattr(exc, "reason", exc))[:160],
+            }
+
+    @staticmethod
+    def _health_metrics(health: Optional[Dict[str, Any]]) -> Dict[str, str]:
+        if not health:
+            return {"load": "Not reported", "memory_usage": "Not reported"}
+        cpu = health.get("cpu") or {}
+        memory = health.get("memory") or {}
+        cpu_pct = cpu.get("usage_percent")
+        used_mb = memory.get("used_ram_mb", memory.get("used_mb"))
+        total_mb = memory.get("total_ram_mb", memory.get("total_mb"))
+        if cpu.get("load_1m") is not None:
+            load = f"1m avg {cpu['load_1m']}"
+        else:
+            load = f"{cpu_pct:g}%" if isinstance(cpu_pct, (int, float)) else "Not reported"
+        if isinstance(used_mb, (int, float)) and isinstance(total_mb, (int, float)) and total_mb > 0:
+            memory_usage = f"{used_mb:.0f} / {total_mb:.0f} MB"
+        elif isinstance(used_mb, (int, float)):
+            memory_usage = f"{used_mb:.0f} MB used"
+        else:
+            memory_usage = "Not reported"
+        return {"load": load, "memory_usage": memory_usage}
+
+    def _get_app_server_telemetry(
+        self,
+        force_refresh: bool = False,
+        node_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        now = time.monotonic()
+        if (
+            node_id is None
+            and not force_refresh
+            and self._server_telemetry_cache is not None
+            and now - self._server_telemetry_cached_at < 15
+        ):
+            return self._server_telemetry_cache
+
+        current_node_id = self._current_node_id()
+        tunnel_url = os.environ.get("NANOPRO_LAPTOP_HEALTH_URL", "").strip().rstrip("/")
+        if tunnel_url:
+            from urllib.parse import urlparse
+
+            parsed_tunnel = urlparse(tunnel_url)
+            if (
+                parsed_tunnel.scheme != "https"
+                or not parsed_tunnel.hostname
+                or not parsed_tunnel.hostname.endswith(".trycloudflare.com")
+            ):
+                tunnel_url = ""
+
+        definitions = [
+            {
+                "id": "node_laptop_master",
+                "name": "Local Laptop Master",
+                "platform": "Windows 11 (Ollama GPU + NVMe)",
+                "region": "Mumbai (Local)",
+                "role": "LOCAL_MASTER",
+                "url": tunnel_url or None,
+                "capabilities": ["1080p GPU Video", "Ollama 3B", "DuckDB", "APK Dispatcher", "SQLite WAL"],
+            },
+            {
+                "id": "node_cloud_flyio",
+                "name": "Fly.io Anycast Cloud",
+                "platform": "Docker MicroVM",
+                "region": "Singapore",
+                "role": "CLOUD_EDGE_CONTAINER",
+                "url": "https://mangesh-nanopro.fly.dev",
+                "capabilities": ["24/7 Webhook", "FastAPI Core", "REST APIs"],
+            },
+            {
+                "id": "node_cloud_alwaysdata",
+                "name": "Alwaysdata Cloud Sentinel",
+                "platform": "WSGI Python",
+                "region": "Paris (EU)",
+                "role": "CLOUD_SENTINEL_24_7",
+                "url": "https://mangeshbagul15.alwaysdata.net",
+                "capabilities": ["Cloud Sentinel", "Cron Worker"],
+            },
+            {
+                "id": "node_cloud_pythonanywhere",
+                "name": "PythonAnywhere Cloud Sentinel",
+                "platform": "WSGI Python",
+                "region": "Virginia (US)",
+                "role": "CLOUD_SENTINEL_24_7",
+                "url": "https://mangeshbagul15.pythonanywhere.com",
+                "capabilities": ["Status Sentinel", "PythonAnywhere WSGI"],
+            },
+            {
+                "id": "node_cloud_cloudflare_edge",
+                "name": "Cloudflare Global Edge Gateway",
+                "platform": "Cloudflare Worker",
+                "region": "Global Edge",
+                "role": "EDGE_GATEWAY_LB",
+                "url": "https://mangesh-nanopro.mangeshbagul15.workers.dev",
+                "capabilities": ["Global Anycast", "Gateway Routing"],
+            },
+            {
+                "id": "node_cloud_northflank",
+                "name": "Northflank Docker PaaS",
+                "platform": "Micro-Container PaaS",
+                "region": "Frankfurt (EU)",
+                "role": "STANDBY_BACKUP",
+                "url": None,
+                "capabilities": ["Standby (deployment URL not configured)"],
+            },
+            {
+                "id": "node_cloud_zeabur",
+                "name": "Zeabur Container PaaS",
+                "platform": "Git Deployment Node",
+                "region": "Tokyo (AP)",
+                "role": "STANDBY_BACKUP",
+                "url": None,
+                "capabilities": ["Standby (deployment URL not configured)"],
+            },
+            {
+                "id": "node_cloud_render",
+                "name": "Render Cloud Web Service",
+                "platform": "Render Web Service",
+                "region": "Oregon (US)",
+                "role": "CLOUD_WEB_SERVICE",
+                "url": os.environ.get("NANOPRO_RENDER_HEALTH_URL", "https://mangesh-nanopro-studio.onrender.com"),
+                "capabilities": ["NanoPro Web App", "FastAPI API"],
+            },
+            {
+                "id": "node_cloud_back4app",
+                "name": "Back4App Docker Engine",
+                "platform": "CaaS Container",
+                "region": "N. Virginia (US)",
+                "role": "STANDBY_BACKUP",
+                "url": None,
+                "capabilities": ["Standby (deployment URL not configured)"],
+            },
+            {
+                "id": "node_cloud_serv00",
+                "name": "Serv00 FreeBSD Shell",
+                "platform": "FreeBSD Shell Host",
+                "region": "Poland (EU)",
+                "role": "STANDBY_BACKUP",
+                "url": None,
+                "capabilities": ["Standby (deployment URL not configured)"],
+            },
+        ]
+        if node_id is not None:
+            definitions = [node for node in definitions if node["id"] == node_id]
+            if not definitions:
+                return []
+
+        configured_nodes = [
+            node for node in definitions
+            if node["url"] or node["id"] == current_node_id
+        ]
+        results: Dict[str, Dict[str, Any]] = {}
+        with ThreadPoolExecutor(max_workers=min(6, len(configured_nodes) or 1)) as executor:
+            futures = {}
+            for node in configured_nodes:
+                if node["id"] == current_node_id:
+                    try:
+                        from app.agents.assistant_agent import monitoring_agent
+
+                        health = monitoring_agent.get_system_health()
+                        health_status = str(health.get("health_status", "")).upper()
+                        results[node["id"]] = {
+                            "status": (
+                                "UNHEALTHY" if health_status == "CRITICAL"
+                                else "DEGRADED" if health_status == "WARNING"
+                                else "HEALTHY"
+                            ),
+                            "ping_ms": None,
+                            "health": health,
+                            "message": "Local process telemetry",
+                        }
+                    except Exception as exc:
+                        results[node["id"]] = {
+                            "status": "UNKNOWN",
+                            "ping_ms": None,
+                            "message": str(exc)[:160],
+                        }
+                else:
+                    futures[executor.submit(self._read_health_endpoint, node["url"])] = node["id"]
+            for future in as_completed(futures):
+                node_id = futures[future]
+                try:
+                    results[node_id] = future.result()
+                except Exception as exc:
+                    results[node_id] = {
+                        "status": "UNKNOWN",
+                        "ping_ms": None,
+                        "message": str(exc)[:160],
+                    }
+
+        app_servers = []
+        for node in definitions:
+            telemetry = results.get(node["id"], {})
+            health = telemetry.get("health")
+            is_current_host = node["id"] == current_node_id
+            if not node["url"] and not is_current_host:
+                status = "NOT_CONFIGURED"
+            elif telemetry.get("status"):
+                status = telemetry["status"]
+            else:
+                status = "UNKNOWN"
+            metrics = self._health_metrics(health)
+            app_servers.append({
+                **node,
+                "is_current_host": is_current_host,
+                "status": status,
+                "ping_ms": telemetry.get("ping_ms"),
+                "http_status": telemetry.get("http_status"),
+                "health_url": f"{node['url'].rstrip('/')}/api/health" if node["url"] else None,
+                "memory_usage": metrics["memory_usage"],
+                "load": metrics["load"],
+                "last_checked_at": (
+                    datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    if telemetry else None
+                ),
+                "status_message": telemetry.get("message"),
+            })
+        if node_id is None:
+            self._server_telemetry_cache = app_servers
+            self._server_telemetry_cached_at = time.monotonic()
+        return app_servers
+
+    def probe_app_server(self, node_id: str) -> Optional[Dict[str, Any]]:
+        node = next(
+            (
+                item for item in self._get_app_server_telemetry(force_refresh=True, node_id=node_id)
+                if item["id"] == node_id
+            ),
+            None,
+        )
+        return node
 
     def _init_failover_log(self):
         if not FAILOVER_LOG_FILE.exists():
@@ -121,193 +440,19 @@ class ServerManagerHub:
                 "remote_synced": True
             }
 
-    def get_overview(self) -> Dict[str, Any]:
+    def get_overview(self, force_refresh: bool = False) -> Dict[str, Any]:
         """Gathers full real-time telemetry across all 7 server/agent management pillars."""
-        
-        # 1. Host Node
-        tunnel_url = "https://survive-asset-commands-mls.trycloudflare.com"
-        tunnel_file = Path("data/cloudflare_tunnel_url.txt")
-        if tunnel_file.exists():
-            try:
-                t_content = tunnel_file.read_text(encoding="utf-8").strip()
-                if t_content.startswith("http"):
-                    tunnel_url = t_content
-            except Exception:
-                pass
-
-        master_gateway_url = "https://mangesh-nanopro.mangeshbagul15.workers.dev"
-
+        app_servers = self._get_app_server_telemetry(force_refresh=force_refresh)
+        current_host = next((node for node in app_servers if node["is_current_host"]), None)
         host_info = {
-            "current_host_node": "node_laptop_master",
-            "host_name": "Mangesh Local Laptop (Windows 11 NVMe Master)",
-            "role": "LOCAL_MASTER",
-            "uptime_percent": 99.98,
-            "tunnel_url": tunnel_url,
-            "master_gateway_url": master_gateway_url,
-            "status": "ONLINE_ACTIVE",
-            "last_failover_check": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S IST"),
-            "switch_policy": "Zero-Downtime Quadruple Cloud Cascade",
-            "failover_order": [
-                "node_laptop_master (Primary NVMe)",
-                "node_cloud_alwaysdata (Permanent 24/7 Cloud Sentinel)",
-                "node_cloud_pythonanywhere (Auto-Renewed Headless Sentinel)",
-                "node_cloud_flyio (Singapore Docker VM: 66.241.124.145)"
-            ]
+            "current_host_node": current_host["id"] if current_host else "unknown",
+            "host_name": current_host["name"] if current_host else "Runtime host not identified",
+            "role": current_host["role"] if current_host else "UNKNOWN",
+            "status": current_host["status"] if current_host else "UNKNOWN",
+            "last_failover_check": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "switch_policy": "Monitoring only — automatic failover control is not configured",
+            "failover_order": [],
         }
-
-        # 2. Application Servers (10 Nodes)
-        app_servers = [
-            {
-                "id": "node_laptop_master",
-                "name": "Local Laptop Master",
-                "platform": "Windows 11 (Ollama GPU + NVMe)",
-                "region": "Mumbai (Local)",
-                "role": "LOCAL_MASTER",
-                "is_current_host": True,
-                "status": "HEALTHY",
-                "ping_ms": 1.2,
-                "url": "http://127.0.0.1:8000",
-                "public_url": tunnel_url,
-                "capabilities": ["1080p GPU Video", "Ollama 3B", "DuckDB 49 Marts", "APK Dispatcher", "SQLite WAL"],
-                "memory_usage": "2.4 GB",
-                "load": "14%"
-            },
-            {
-                "id": "node_cloud_flyio",
-                "name": "Fly.io Anycast Cloud",
-                "platform": "Docker MicroVM (shared-1x-cpu@512MB)",
-                "region": "sin (Singapore)",
-                "role": "CLOUD_EDGE_CONTAINER",
-                "is_current_host": False,
-                "status": "HEALTHY",
-                "ping_ms": 38.5,
-                "url": "https://mangesh-nanopro.fly.dev",
-                "public_url": "https://mangesh-nanopro.fly.dev",
-                "capabilities": ["24/7 Webhook", "FastAPI Core", "REST APIs", "Shared IPv4: 66.241.124.145"],
-                "memory_usage": "184 MB",
-                "load": "8%"
-            },
-            {
-                "id": "node_cloud_alwaysdata",
-                "name": "Alwaysdata Cloud Sentinel",
-                "platform": "Free Tier WSGI Python 3.11",
-                "region": "Paris (EU)",
-                "role": "CLOUD_SENTINEL_24_7",
-                "is_current_host": False,
-                "status": "HEALTHY",
-                "ping_ms": 112.0,
-                "url": "https://mangeshbagul15.alwaysdata.net",
-                "public_url": "https://mangeshbagul15.alwaysdata.net",
-                "capabilities": ["Permanent Free Sentinel", "Cron Worker", "Emergency Failover", "Zero Egress Fee"],
-                "memory_usage": "98 MB",
-                "load": "5%"
-            },
-            {
-                "id": "node_cloud_pythonanywhere",
-                "name": "PythonAnywhere Cloud Sentinel",
-                "platform": "Free Tier WSGI (Auto-Renewed)",
-                "region": "us-east-1 (Virginia)",
-                "role": "CLOUD_SENTINEL_24_7",
-                "is_current_host": False,
-                "status": "HEALTHY",
-                "ping_ms": 145.0,
-                "url": "https://mangeshbagul15.pythonanywhere.com",
-                "public_url": "https://mangeshbagul15.pythonanywhere.com",
-                "capabilities": ["Auto-Renewal Playwright", "Status Sentinel", "Failover Webhook", "Python 3.11"],
-                "memory_usage": "112 MB",
-                "load": "6%"
-            },
-            {
-                "id": "node_cloud_cloudflare_edge",
-                "name": "Cloudflare Global Edge Gateway",
-                "platform": "Cloudflare Workers Global Edge",
-                "region": "310+ Global Edge PoPs",
-                "role": "EDGE_GATEWAY_LB",
-                "is_current_host": False,
-                "status": "HEALTHY",
-                "ping_ms": 12.4,
-                "url": master_gateway_url,
-                "public_url": master_gateway_url,
-                "capabilities": ["Global Anycast", "Error 520-530 Interceptor", "Failover Routing", "SSL Termination"],
-                "memory_usage": "V8 Isolate",
-                "load": "2%"
-            },
-            {
-                "id": "node_cloud_northflank",
-                "name": "Northflank Docker PaaS",
-                "platform": "Micro-Container PaaS",
-                "region": "Frankfurt (EU)",
-                "role": "STANDBY_BACKUP",
-                "is_current_host": False,
-                "status": "STANDBY_READY",
-                "ping_ms": 130.0,
-                "url": "https://northflank.com",
-                "public_url": "Standby Node",
-                "capabilities": ["Container Fallback", "BOD/SOD Cron", "Zero Card Required"],
-                "memory_usage": "Standby",
-                "load": "0%"
-            },
-            {
-                "id": "node_cloud_zeabur",
-                "name": "Zeabur Container PaaS",
-                "platform": "Git Deployment Node",
-                "region": "Tokyo (AP)",
-                "role": "STANDBY_BACKUP",
-                "is_current_host": False,
-                "status": "STANDBY_READY",
-                "ping_ms": 95.0,
-                "url": "https://zeabur.com",
-                "public_url": "Standby Node",
-                "capabilities": ["Data Lake Mirror", "API Proxy", "$5/mo Free Allocation"],
-                "memory_usage": "Standby",
-                "load": "0%"
-            },
-            {
-                "id": "node_cloud_render",
-                "name": "Render Cloud Web Service",
-                "platform": "Hobby Web Tier",
-                "region": "Oregon (US)",
-                "role": "STANDBY_BACKUP",
-                "is_current_host": False,
-                "status": "STANDBY_READY",
-                "ping_ms": 180.0,
-                "url": "https://render.com",
-                "public_url": "Standby Node",
-                "capabilities": ["Public Dashboard Mirror", "Bandwidth Guarded"],
-                "memory_usage": "Standby",
-                "load": "0%"
-            },
-            {
-                "id": "node_cloud_back4app",
-                "name": "Back4App Docker Engine",
-                "platform": "CaaS Containers",
-                "region": "N. Virginia",
-                "role": "STANDBY_BACKUP",
-                "is_current_host": False,
-                "status": "STANDBY_READY",
-                "ping_ms": 160.0,
-                "url": "https://back4app.com",
-                "public_url": "Standby Node",
-                "capabilities": ["100 GB Free Egress", "Docker Webhook Fallback"],
-                "memory_usage": "Standby",
-                "load": "0%"
-            },
-            {
-                "id": "node_cloud_serv00",
-                "name": "Serv00 FreeBSD Shell",
-                "platform": "FreeBSD Shell Host",
-                "region": "Poland (EU)",
-                "role": "STANDBY_BACKUP",
-                "is_current_host": False,
-                "status": "STANDBY_READY",
-                "ping_ms": 140.0,
-                "url": "https://serv00.com",
-                "public_url": "Standby Node",
-                "capabilities": ["BSD Cron Sentinel", "Python Script Fallback", "SSH Shell"],
-                "memory_usage": "Standby",
-                "load": "0%"
-            }
-        ]
 
         # 3. 21 Database Engines across 6 Pools
         db_servers = [

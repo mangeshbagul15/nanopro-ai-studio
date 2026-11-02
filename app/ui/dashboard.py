@@ -11513,9 +11513,8 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                         </button>
 
-                        <button type="button" class="btn btn-sm btn-primary" onclick="openFailoverRehearsalModal()" style="font-size:11.5px; padding:5px 12px; background:linear-gradient(135deg, #0284C7, #8B5CF6); border:none; font-weight:700;">
-
-                            &#9889; Switch / Failover Host
+                        <button type="button" class="btn btn-sm btn-secondary" disabled title="Monitoring is live; configure a traffic-routing control plane to enable failover." style="font-size:11.5px; padding:5px 12px; opacity:.65;">
+                            &#9889; Failover Control Not Configured
 
                         </button>
 
@@ -11537,11 +11536,11 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <div style="background:rgba(15,23,42,0.6); padding:8px 12px; border-radius:8px; border:1px solid #1E293B;">
 
-                        <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase;">Current Active Host Node</div>
+                        <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase;">Current Runtime Node</div>
 
                         <div id="smHostNodeBadge" style="font-size:13px; font-weight:800; color:#34D399; margin-top:2px;">
 
-                            node_laptop_master (LOCAL_MASTER)
+                            Detecting runtime host…
 
                         </div>
 
@@ -11549,11 +11548,10 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <div style="background:rgba(15,23,42,0.6); padding:8px 12px; border-radius:8px; border:1px solid #1E293B;">
 
-                        <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase;">Master Cloudflare Gateway</div>
+                        <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase;">Cloudflare Edge Endpoint</div>
 
-                        <div style="font-size:11.5px; font-weight:700; color:#38BDF8; margin-top:2px; font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-
-                            mangesh-nanopro.workers.dev
+                        <div id="smMasterGatewayUrl" style="font-size:11.5px; font-weight:700; color:#38BDF8; margin-top:2px; font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            Checking configured edge…
 
                         </div>
 
@@ -11561,11 +11559,10 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <div style="background:rgba(15,23,42,0.6); padding:8px 12px; border-radius:8px; border:1px solid #1E293B;">
 
-                        <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase;">Active Failover Order</div>
+                        <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase;">Routing / Failover Capability</div>
 
-                        <div style="font-size:11px; color:#FBBF24; margin-top:2px;">
-
-                            Local NVMe &rarr; Alwaysdata &rarr; PA &rarr; Fly.io
+                        <div id="smFailoverMode" style="font-size:11px; color:#FBBF24; margin-top:2px;">
+                            Monitoring only — failover not configured
 
                         </div>
 
@@ -11577,7 +11574,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                         <div style="font-size:13px; font-weight:800; color:#A78BFA; margin-top:2px;">
 
-                            305 Agents • 10 Servers Live
+                            10 nodes monitored · online only after health check
 
                         </div>
 
@@ -11664,14 +11661,12 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                             </h3>
 
-                            <span style="font-size:11px; color:var(--text-muted);">Real-time server switching, cloud redundancy, and health heartbeats</span>
+                            <span style="font-size:11px; color:var(--text-muted);">Live application health probes; resource metrics appear only when each node reports them</span>
 
                         </div>
 
-                        <span class="sm-neon-pill" style="background:#0F172A; color:#38BDF8; border:1px solid #334155;">
-
-                            Quadruple Cascade Active
-
+                        <span id="smServerClusterState" class="sm-neon-pill" style="background:#0F172A; color:#FBBF24; border:1px solid #334155;">
+                            Checking configured nodes…
                         </span>
 
                     </div>
@@ -12170,7 +12165,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                 <p style="font-size:12px; color:#94A3B8; margin-bottom:14px;">
 
-                    Select any cloud node to switch primary active hosting or rehearse zero-downtime failover cascade. The Cloudflare Global Gateway will automatically re-route in &lt;500ms.
+                    Failover is unavailable until a traffic-routing control plane is configured. This dashboard performs health checks only and does not change host routing.
 
                 </p>
 
@@ -12204,7 +12199,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <button type="button" class="btn btn-secondary" onclick="closeFailoverModal()" style="font-size:12px;">Cancel</button>
 
-                    <button type="button" class="btn btn-primary" onclick="submitHostMigration()" style="font-size:12px; background:linear-gradient(135deg, #0284C7, #8B5CF6); font-weight:700;">Confirm &amp; Migrate Host</button>
+                    <button type="button" class="btn btn-primary" disabled title="No traffic-routing control plane is configured" style="font-size:12px; opacity:.6;">Migration unavailable</button>
 
                 </div>
 
@@ -61473,6 +61468,7 @@ let smCurrentDbFilter = 'ALL';
 let smZenModeActive = true;
 
 let smAutoRefreshInterval = null;
+let smLastPollAt = 0;
 
 
 
@@ -61487,8 +61483,10 @@ async function refreshServerManagerOverview(showToast = false) {
 
     try {
 
-        const res = await fetch('/api/server-manager/overview');
-
+        if (!showToast && Date.now() - smLastPollAt < 15000) return;
+        smLastPollAt = Date.now();
+        const res = await fetch(`/api/server-manager/overview${showToast ? '?refresh=true' : ''}`);
+        if (!res.ok) throw new Error(`Server telemetry request failed (${res.status})`);
         const data = await res.json();
 
         if (data.status === 'success') {
@@ -61500,11 +61498,20 @@ async function refreshServerManagerOverview(showToast = false) {
             // Host Node
 
             const hostBadge = document.getElementById('smHostNodeBadge');
-
             if (hostBadge && data.host_info) {
+                hostBadge.innerText = `${data.host_info.current_host_node} (${data.host_info.role} · ${data.host_info.status})`;
+            }
+            const edgeNode = (data.app_servers || []).find(node => node.id === 'node_cloud_cloudflare_edge');
+            const gatewayLabel = document.getElementById('smMasterGatewayUrl');
+            if (gatewayLabel) gatewayLabel.innerText = edgeNode?.url ? new URL(edgeNode.url).host : 'Not configured';
+            const failoverMode = document.getElementById('smFailoverMode');
+            if (failoverMode && data.host_info) failoverMode.innerText = data.host_info.switch_policy;
 
-                hostBadge.innerHTML = `<span style="color:#10B981;">&#9679;</span> ${data.host_info.current_host_node} <span style="font-size:11px; color:#94A3B8;">(${data.host_info.role})</span>`;
-
+            const clusterState = document.getElementById('smServerClusterState');
+            if (clusterState) {
+                const online = (data.app_servers || []).filter(node => node.status === 'HEALTHY').length;
+                const configured = (data.app_servers || []).filter(node => node.status !== 'NOT_CONFIGURED').length;
+                clusterState.innerText = `${online} / ${configured} configured nodes healthy · failover not configured`;
             }
 
 
@@ -61551,10 +61558,10 @@ async function refreshServerManagerOverview(showToast = false) {
 
             if (showToast && typeof showStudioToast === 'function') {
 
-                showStudioToast('Server Manager Synced', 'All 10 servers, 21 databases, and 305 agents refreshed.', 'success');
-
+                const online = (data.app_servers || []).filter(node => node.status === 'HEALTHY').length;
+                const configured = (data.app_servers || []).filter(node => node.status !== 'NOT_CONFIGURED').length;
+                showStudioToast('Server Telemetry Refreshed', `${online} of ${configured} configured app nodes healthy. Unconfigured nodes are not counted as online.`, 'success');
             }
-
         }
 
     } catch(e) {
@@ -61575,20 +61582,29 @@ function renderServerManagerAppServers(servers) {
 
 
 
+    const statusPresentation = {
+        HEALTHY: { label: 'HEALTHY', color: '#34D399', background: '#064E3B' },
+        REACHABLE: { label: 'REACHABLE · HEALTH UNKNOWN', color: '#38BDF8', background: '#075985' },
+        DEGRADED: { label: 'DEGRADED', color: '#FBBF24', background: '#78350F' },
+        OFFLINE: { label: 'OFFLINE', color: '#FCA5A5', background: '#7F1D1D' },
+        UNHEALTHY: { label: 'UNHEALTHY', color: '#FCA5A5', background: '#7F1D1D' },
+        NO_HEALTH_ENDPOINT: { label: 'NO HEALTH ENDPOINT', color: '#FBBF24', background: '#78350F' },
+        NOT_CONFIGURED: { label: 'NOT CONFIGURED', color: '#94A3B8', background: '#1E293B' },
+        UNKNOWN: { label: 'UNKNOWN', color: '#94A3B8', background: '#1E293B' }
+    };
+
     el.innerHTML = servers.map(s => {
 
         const isMaster = s.is_current_host;
-
+        const status = statusPresentation[s.status] || statusPresentation.UNKNOWN;
         const borderCol = isMaster ? '#10B981' : (s.status === 'HEALTHY' ? 'rgba(56,189,248,0.3)' : '#334155');
-
         const bgGlow = isMaster ? 'background: linear-gradient(145deg, rgba(6,78,59,0.3), rgba(15,23,42,0.9));' : 'background: rgba(15,23,42,0.6);';
-
-        const statusBadge = isMaster ? 
-
-            '<span class="badge" style="background:#064E3B; color:#34D399; font-size:9.5px; font-weight:800;">ACTIVE MASTER HOST</span>' :
-
-            (s.status === 'HEALTHY' ? '<span class="badge" style="background:#075985; color:#38BDF8; font-size:9.5px;">ONLINE 24/7</span>' : '<span class="badge" style="background:#1E293B; color:#94A3B8; font-size:9.5px;">STANDBY READY</span>');
-
+        const statusBadge = `<span class="badge" style="background:${status.background}; color:${status.color}; font-size:9.5px; font-weight:800;">${isMaster ? 'CURRENT INSTANCE · ' : ''}${status.label}</span>`;
+        const ping = typeof s.ping_ms === 'number' ? `${s.ping_ms}ms` : 'Not measured';
+        const checkedAt = s.last_checked_at ? new Date(s.last_checked_at).toLocaleTimeString() : 'Not checked';
+        const probeAction = s.url || isMaster
+            ? `<button type="button" class="btn btn-sm btn-secondary" onclick="testServerManagerComponent('server', '${s.id}')" style="font-size:10px; padding:2px 8px;">Probe Health</button>`
+            : '<span style="font-size:10px; color:#94A3B8;">No deployment URL configured</span>';
 
 
         return `
@@ -61608,25 +61624,15 @@ function renderServerManagerAppServers(servers) {
                     ${statusBadge}
 
                 </div>
-
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:#94A3B8; margin:6px 0; padding:4px 0; border-top:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05);">
-
-                    <span>Ping: <strong style="color:${s.ping_ms < 50 ? '#34D399' : '#FBBF24'};">${s.ping_ms}ms</strong></span>
-
-                    <span>Load: <strong style="color:#38BDF8;">${s.load}</strong></span>
-
-                    <span>RAM: <strong style="color:#A78BFA;">${s.memory_usage}</strong></span>
-
+                    <span>Probe: <strong style="color:${status.color};">${escapeHtml(ping)}</strong></span>
+                    <span>Load: <strong style="color:#38BDF8;">${escapeHtml(s.load || 'Not reported')}</strong></span>
+                    <span>RAM: <strong style="color:#A78BFA;">${escapeHtml(s.memory_usage || 'Not reported')}</strong></span>
                 </div>
-
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="testServerManagerComponent('server', '${s.id}')" style="font-size:10px; padding:2px 8px;">Ping Node</button>
-
-                    ${!isMaster ? `<button type="button" class="btn btn-sm btn-primary" onclick="migrateHostToNode('${s.id}')" style="font-size:10px; padding:2px 8px; background:#0284C7;">Make Primary</button>` : `<span style="font-size:10px; color:#10B981; font-weight:700;">&#10003; Primary Live</span>`}
-
+                    ${probeAction}
+                    <span title="Traffic routing control plane is not configured" style="font-size:9px; color:#94A3B8;">Checked ${escapeHtml(checkedAt)} · monitoring only</span>
                 </div>
-
             </div>
 
         `;
@@ -61944,10 +61950,11 @@ async function testServerManagerComponent(type, id) {
         });
 
         const d = await res.json();
+        if (!res.ok) throw new Error(d.message || `Node probe failed (${res.status})`);
 
         if (typeof showStudioToast === 'function') {
 
-            showStudioToast('Component Health Checked', d.message, 'success');
+            showStudioToast('Application Node Probe', d.message || `${d.status} · ${d.ping_ms ?? 'n/a'}ms`, d.status === 'HEALTHY' ? 'success' : 'error');
 
         } else {
 

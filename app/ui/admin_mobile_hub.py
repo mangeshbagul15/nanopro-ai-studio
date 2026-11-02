@@ -1713,21 +1713,24 @@ def get_admin_mobile_hub_html() -> str:
                         const h = await hRes.json();
                         window.hubLiveHealth = h;
                         if (h.memory) {
-                            const used = h.memory.used_ram_mb || 112.5;
-                            const total = h.memory.total_ram_mb || 512;
-                            const pct = h.memory.used_percentage || Math.round((used/total)*100);
                             const ramVal = document.getElementById('hubRamVal');
-                            if (ramVal) ramVal.innerHTML = `${used.toFixed(1)} <span style="font-size:10px; color:#94A3B8;">MB (${pct}%)</span>`;
+                            const used = h.memory.used_ram_mb;
+                            const pct = h.memory.used_percentage;
+                            if (ramVal) ramVal.innerHTML = Number.isFinite(used)
+                                ? `${used.toFixed(1)} <span style="font-size:10px; color:#94A3B8;">MB${Number.isFinite(pct) ? ` (${pct}%)` : ''}</span>`
+                                : '<span style="font-size:10px; color:#94A3B8;">Not reported</span>';
                             const ramBar = document.getElementById('hubRamBar');
-                            if (ramBar) ramBar.style.width = pct + '%';
+                            if (ramBar) ramBar.style.width = Number.isFinite(pct) ? `${Math.min(100, Math.max(0, pct))}%` : '0%';
                         }
                         if (h.cpu) {
                             const cpuVal = document.getElementById('hubCpuVal');
-                            if (cpuVal) cpuVal.innerHTML = `${h.cpu.cores || 12} <span style="font-size:10px; color:#94A3B8;">Cores</span>`;
+                            if (cpuVal) cpuVal.innerHTML = Number.isFinite(h.cpu.cores)
+                                ? `${h.cpu.cores} <span style="font-size:10px; color:#94A3B8;">Cores</span>`
+                                : '<span style="font-size:10px; color:#94A3B8;">CPU unavailable</span>';
                             const cpuLoad = document.getElementById('hubCpuLoad');
-                            const micro = (Math.random() * 0.4 - 0.2);
-                            const displayLoad = Math.max(0.5, (h.cpu.utilization_estimate_pct || 1.0) + micro);
-                            if (cpuLoad) cpuLoad.textContent = `Load: ${displayLoad.toFixed(1)}% Optimal`;
+                            if (cpuLoad) cpuLoad.textContent = Number.isFinite(h.cpu.load_1m)
+                                ? `1m system load: ${h.cpu.load_1m}`
+                                : 'System load unavailable';
                         }
                         if (h.database) {
                             const mb = (h.database.size_bytes / (1024*1024)).toFixed(1);
@@ -2084,12 +2087,12 @@ def get_admin_mobile_hub_html() -> str:
             // Dynamic Live Telemetry Bindings
             const h = window.hubLiveHealth || {};
             const k = window.hubLiveKeepAlive || {};
-            const ramMb = h.memory?.used_ram_mb ? h.memory.used_ram_mb.toFixed(1) + ' MB' : '112.5 MB';
-            const ramPct = h.memory?.used_percentage ? h.memory.used_percentage + '%' : '22%';
-            const cpuCores = h.cpu?.cores ? h.cpu.cores + ' Cores' : '12 Cores';
-            const cpuLoad = h.cpu?.utilization_estimate_pct ? h.cpu.utilization_estimate_pct.toFixed(1) + '%' : '1.0%';
-            const dbSizeMb = h.database?.size_bytes ? (h.database.size_bytes / (1024*1024)).toFixed(1) + ' MB' : '19.6 MB';
-            const pingMs = k.stats?.last_latency_ms ? Math.round(k.stats.last_latency_ms) + ' ms' : '436 ms';
+            const ramMb = Number.isFinite(h.memory?.used_ram_mb) ? h.memory.used_ram_mb.toFixed(1) + ' MB' : 'Not reported';
+            const ramPct = Number.isFinite(h.memory?.used_percentage) ? h.memory.used_percentage + '%' : 'Not reported';
+            const cpuCores = Number.isFinite(h.cpu?.cores) ? h.cpu.cores + ' Cores' : 'Not reported';
+            const cpuLoad = Number.isFinite(h.cpu?.load_1m) ? `1m load ${h.cpu.load_1m}` : 'Not reported';
+            const dbSizeMb = Number.isFinite(h.database?.size_bytes) ? (h.database.size_bytes / (1024*1024)).toFixed(1) + ' MB' : 'Not reported';
+            const pingMs = Number.isFinite(k.stats?.last_latency_ms) ? Math.round(k.stats.last_latency_ms) + ' ms' : 'Not reported';
 
             // Sheet Template Builders
             const mkKpi = (lbl, val, s, col='#38BDF8') => `

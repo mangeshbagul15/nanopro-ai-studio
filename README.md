@@ -50,6 +50,12 @@ Every navigation item in the Left Sidebar switches the central panel to a dedica
 - Prioritizes fast models (`qwen2.5-coder:3b`, `phi4-mini`) over heavy models (`7b`) to prevent timeouts.
 - Scales timeout windows based on model parameter size.
 
+### 5. Server Manager Telemetry
+- The Application Servers Cluster probes configured NanoPro `/api/health` endpoints and displays measured response time and metrics returned by each node.
+- Nodes without a deployment URL or health endpoint are shown as **Not Configured** or **No Health Endpoint**, not as online.
+- To identify a deployment, set `NANOPRO_NODE_ID` to its node ID. `NANOPRO_RENDER_HEALTH_URL` can override the Render service URL. A remote laptop can be monitored by setting `NANOPRO_LAPTOP_HEALTH_URL` to its HTTPS `trycloudflare.com` tunnel URL.
+- Health checks are monitoring only. Host migration/failover requires a traffic-routing control plane and is not performed by this dashboard.
+
 ---
 
 ## 🛠️ Windows Installation & Running Guide
