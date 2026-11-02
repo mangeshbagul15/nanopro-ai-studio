@@ -133,20 +133,21 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
     """
     def setUp(self):
         self.html = get_sql_video_workspace_html()
+        self.js = get_sql_video_js()
 
-    def test_topic_input_and_quick_chips_present(self):
-        """Verify topic prompt input and suggestion chips exist."""
-        has_prompt_control = ("id=\"topicInput\"" in self.html or
-                              "id=\"sqlPromptInput\"" in self.html or
-                              "name=\"topic\"" in self.html or
-                              "placeholder=" in self.html)
-        self.assertTrue(has_prompt_control, "Prompt input control must exist in workspace")
+    def test_workspace_exposes_only_prompt_and_language_inputs(self):
+        self.assertIn('id="sqlShortQuestion"', self.html)
+        self.assertIn('id="btnAudioMr"', self.html)
+        self.assertIn('id="btnAudioHi"', self.html)
+        self.assertIn('id="btnAudioEn"', self.html)
+        self.assertNotIn("Quick Tech Topic Presets", self.html)
+        self.assertNotIn("Optional Media &amp; Research APIs", self.html)
+        self.assertNotIn('id="togglePixabay"', self.html)
+        self.assertNotIn('id="toggleFreesound"', self.html)
 
     def test_curated_model_selector_present(self):
-        """Verify master model selector dropdown exists with active AI engines."""
-        has_model_selector = ("id=\"selectModernVideoModelMaster\"" in self.html or
-                              "selectModernVideoModel" in self.html)
-        self.assertTrue(has_model_selector, "Master model selector must exist")
+        self.assertIn('id="selectModernVideoModelMaster" hidden', self.html)
+        self.assertIn('value="gemini-3.5-flash-lite" selected', self.html)
 
     def test_regional_language_and_voice_actors_present(self):
         """Verify support for Marathi, Hindi, and English voice actors in UI."""
@@ -154,25 +155,21 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("Hindi", self.html)
         self.assertIn("English", self.html)
 
-    def test_five_media_provider_toggles_present(self):
-        """Verify controls/toggles exist for 5 media providers (Pixabay, Unsplash, Giphy, Freesound, Tavily)."""
-        html_lower = self.html.lower()
-        self.assertIn("pixabay", html_lower)
-        self.assertIn("freesound", html_lower)
-        self.assertIn("giphy", html_lower)
-        self.assertIn("tavily", html_lower)
-        self.assertIn("unsplash", html_lower)
+    def test_optional_media_providers_are_not_user_controls(self):
+        self.assertNotIn('id="mediaProviderTogglesGrid"', self.html)
+        self.assertNotIn('id="toggleTavily"', self.html)
+        self.assertIn("pixabay: false", self.js)
+        self.assertIn("freesound: false", self.js)
 
     def test_generation_pattern_switchers(self):
-        """Verify honest controls for model fallback and selected-model-only routing."""
-        has_hybrid = "Automatic model fallback" in self.html
-        has_unified = "Selected model only" in self.html
-        self.assertTrue(has_hybrid and has_unified, "Pattern switchers must exist")
+        self.assertNotIn("Automatic model fallback", self.html)
+        self.assertNotIn("Selected model only", self.html)
+        self.assertIn("window.selectedGenerationPattern = 'hybrid'", self.js)
 
     def test_video_studio_discloses_browser_rendering_and_optional_services(self):
         js = get_sql_video_js()
         self.assertIn("Browser Canvas + MediaRecorder", js)
-        self.assertIn("Optional Media &amp; Research APIs", self.html)
+        self.assertNotIn("Optional Media &amp; Research APIs", self.html)
         self.assertNotIn("LIVE ASSET VERIFIED", js)
         self.assertNotIn("100% FREE (GPU)", js)
         self.assertNotIn("FFmpeg 7.1 Hardware", js)
@@ -180,11 +177,20 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("WAITING FOR REPORT", self.html)
         self.assertNotIn("Verified Live Providers", self.html)
         self.assertNotIn("Sub-second LPU Inference", self.html)
+        self.assertNotIn("HEAVY SERVER RENDER", self.html)
 
     def test_video_studio_uses_responsive_editorial_layout(self):
         self.assertIn('class="studio-masthead"', self.html)
-        self.assertIn("@media (max-width: 760px)", self.html)
+        self.assertIn("@media (max-width: 720px)", self.html)
         self.assertIn("overflow-x: hidden !important", self.html)
+        self.assertIn("Make your next idea click.", self.html)
+
+    def test_language_selection_remains_selected_until_next_generation(self):
+        self.assertIn("window.sqlShortRequestedLang = lang", self.js)
+        self.assertIn("language: selectedLanguage", self.js)
+        self.assertIn("window.sqlShortRequestedLang = lang", self.html)
+        self.assertIn('aria-pressed="true"', self.html)
+        self.assertIn("Voice is automatically matched to your language", self.html)
 
     def test_video_studio_is_a_continuous_short_form_preview(self):
         js = get_sql_video_js()

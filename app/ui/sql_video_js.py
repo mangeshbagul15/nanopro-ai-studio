@@ -82,6 +82,8 @@ def get_sql_video_js() -> str:
 
     };
 
+    window.sqlShortRequestedLang = sqlShortState.audioLang;
+
 
 
     // Dynamic duration calibration & proportional stage scaling for complete narration
@@ -1678,7 +1680,16 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         const btn = document.getElementById("btnGenerateSqlBlueprint");
 
-        if (!q) { alert("तुमचा मास्टर प्रॉम्प्ट किंवा प्रश्न प्रविष्ट करा (Please enter your master prompt or SQL question)!"); return; }
+        if (!q) {
+            const status = document.getElementById("sqlVideoGenerationStatus");
+            if (status) status.textContent = "Add a topic or real-life example first, then create your Reel.";
+            document.getElementById("sqlShortQuestion")?.focus();
+            return;
+        }
+
+        const selectedLanguage = ["mr", "hi", "en"].includes(window.sqlShortRequestedLang)
+            ? window.sqlShortRequestedLang
+            : (sqlShortState.audioLang || "mr");
 
 
 
@@ -1724,9 +1735,8 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
 
-        const selectedModel = document.getElementById('selectModernVideoModelMaster')?.value || window.selectedModernVideoModel || "llama-3.3-70b-versatile";
-
-        const selectedVoice = document.getElementById('selectVoiceActor')?.value || "mr-IN-Standard-A";
+        const selectedModel = document.getElementById('selectModernVideoModelMaster')?.value || "gemini-3.5-flash-lite";
+        const selectedVoice = document.getElementById('selectVoiceActor')?.value || "mr-IN-AarohiNeural";
 
         const providers = typeof getActiveMediaProviders === 'function' ? getActiveMediaProviders() : { pixabay: false, unsplash: false, giphy: false, freesound: false, tavily: false, captions: false };
 
@@ -1754,7 +1764,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                 providers: providers,
 
-                language: sqlShortState.audioLang || "mr",
+                language: selectedLanguage,
 
                 mode: document.getElementById("sqlShortCreationMode")?.value || sqlShortState.creationMode || "faang_drill",
 
@@ -1811,17 +1821,15 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
                 const targetDur = Number(data.duration || data.max_duration_seconds || 0);
-
                 if (["mr", "hi", "en"].includes(data.language)) {
-
+                    window.sqlShortRequestedLang = data.language;
                     sqlShortState.audioLang = data.language;
-
                     document.querySelectorAll(".sql-lang-btn").forEach(button => button.classList.remove("active"));
-
                     const languageButton = document.getElementById("btnAudio" + data.language.charAt(0).toUpperCase() + data.language.slice(1));
-
                     if (languageButton) languageButton.classList.add("active");
-
+                    document.querySelectorAll(".sql-lang-btn").forEach(button => {
+                        button.setAttribute("aria-pressed", String(button === languageButton));
+                    });
                 }
 
                 sqlShortState.maxDuration = targetDur;
@@ -1981,7 +1989,7 @@ SECOND_HIGHEST_SALARY: 70000`;
                 statusEl.textContent = `Ready · ${sceneCount} prompt-specific scenes · browser-rendered preview`;
             }
 
-            btn.innerHTML = `<span>✨ Generate AI Teacher Video &amp; Voice from Prompt</span>`;
+            btn.innerHTML = `<span>✦</span><span>Create my Reel</span>`;
 
             btn.disabled = false;
 
@@ -22250,9 +22258,15 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 
         if (!lang) return;
 
-        if (typeof setSqlAudioLang === 'function') setSqlAudioLang(lang);
-
+        window.sqlShortRequestedLang = lang;
+        document.querySelectorAll(".sql-lang-btn").forEach(button => {
+            const selected = button.id === "btnAudio" + lang.charAt(0).toUpperCase() + lang.slice(1);
+            button.classList.toggle("active", selected);
+            button.setAttribute("aria-pressed", String(selected));
+        });
         updateVoiceActorDropdown(lang);
+        const badge = document.getElementById("activeVoiceBadge");
+        if (badge) badge.textContent = lang === "mr" ? "मराठी शिक्षक" : (lang === "hi" ? "हिन्दी शिक्षक" : "English teacher");
 
     }
 
