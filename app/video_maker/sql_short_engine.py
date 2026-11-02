@@ -167,7 +167,7 @@ def _motion_bg_for_domain(domain: str, prompt: str) -> str:
 
 
 def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str) -> List[Dict[str, Any]]:
-    """Give each scene a distinct, content-led Canvas layout and one learner prompt."""
+    """Give each authored scene a distinct, content-led Canvas layout."""
     layouts = ("title", "pipeline", "split", "cards", "chips", "spatial", "table")
     normalized = []
     previous_layout = None
@@ -227,20 +227,8 @@ def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str)
                 ]
             visual["elements"] = elements[:8]
 
-        middle_scene = len(stages) > 1 and index == len(stages) // 2
-        if middle_scene and not visual.get("interaction_prompt"):
-            visual["interaction_prompt"] = {
-                "mr": "उत्तर सांगण्याआधी, तुम्ही काय विचार कराल?",
-                "hi": "जवाब देखने से पहले, आप क्या सोचेंगे?",
-                "en": "Pause for a moment: what do you think happens next?",
-            }.get(lang_key, "Pause for a moment: what do you think happens next?")
-        if middle_scene:
-            visual.setdefault("interaction_label", {
-                "mr": "आधी विचार करा",
-                "hi": "पहले सोचिए",
-                "en": "THINK WITH ME",
-            }.get(lang_key, "THINK WITH ME"))
-            visual.setdefault("reveal_text", subtext or (str(bullets[-1]) if bullets else headline))
+        for key in ("interaction_prompt", "interaction_label", "reveal_text"):
+            visual.pop(key, None)
 
         stage["visual_data"] = visual
         normalized.append(stage)
@@ -1350,15 +1338,7 @@ class SqlShortVideoEngine:
         return evals
 
     def _build_dynamic_stages(self, matched: Dict[str, Any], content_type: str, lang_key: str, mode: str = "faang_drill") -> List[Dict[str, Any]]:
-        """
-        Constructs crisp educational teaching stages tailored to the question, domain, and creation mode.
-        Total script is concise (~110-125 words) for Shorts/Reels compliance (<60s).
-        Modes supported:
-        - faang_drill: Edge cases, ties, NULL handling, execution plans
-        - architecture_3d: Cloud data lake, pipelines, Medallion, microservices, containerization
-        - viral_reel: High-energy 3s hook, kinetic neon punchiness, viral meme rhythm
-        - deep_mentor: First-principles cognitive scaffolding, real-world human analogies
-        """
+        """Normalize an authored storyboard without inventing replacement narration."""
         existing = matched.get("stages") or matched.get("scenes") or []
         if existing and len(existing) >= 3 and any("speech" in s or f"speech_{lang_key}" in s for s in existing):
             clean_existing = []
@@ -1381,193 +1361,7 @@ class SqlShortVideoEngine:
                 clean_existing.append(item)
             return clean_existing
 
-        title = matched.get("title") or matched.get("question", "Universal Topic")[:50]
-        domain = matched.get("domain", "General Knowledge")
-        accent = matched.get("accent_color", "#38BDF8")
-        pro_tip = matched.get("pro_tip") or f"💡 Key Insight: Master the fundamental principles of {title}."
-
-        return [
-            {
-                "id": 1,
-                "action_type": "showcase",
-                "visual_type": "showcase",
-                "title": f"{title} - Overview",
-                "visual_data": {
-                    "headline": title,
-                    "subtext": f"Introduction and core context of {title}",
-                    "bullets": [f"Overview of {title}", "Core principles explained simply", "Everyday relevance and importance"],
-                    "badge": "INTRO",
-                    "theme_color": accent
-                },
-                "speech_mr": f"आज आपण जाणून घेणार आहोत: {title}! यातील मुख्य रहस्य आणि अचूक माहिती आपण सोप्या भाषेत समजून घेऊया.",
-                "speech_hi": f"आज हम बात करेंगे: {title}! इसके मुख्य बिंदु और जरूरी बातें हम आसान भाषा में समझेंगे.",
-                "speech_en": f"Welcome! Today we are exploring: {title}! Let's examine the essential concepts in clear, direct terms."
-            },
-            {
-                "id": 2,
-                "action_type": "showcase",
-                "visual_type": "key_points",
-                "title": "Core Mechanism",
-                "visual_data": {
-                    "headline": "How It Works",
-                    "subtext": "Underlying principles and primary dynamics",
-                    "bullets": ["Step-by-step mechanism", "Key operational factors", "Core functional workflow"],
-                    "badge": "MECHANISM",
-                    "theme_color": "#EC4899"
-                },
-                "speech_mr": "यामागील मुख्य कार्यपद्धती पाहा: जेव्हा आपण मुळापासून विचार करतो, तेव्हा ही प्रक्रिया कशी घडते ते स्पष्टपणे समोर येते.",
-                "speech_hi": "इसकी कार्यप्रणाली को देखिए: जब हम इसके मूल कारणों को देखते हैं, तो पूरी प्रक्रिया साफ तौर पर समझ आती है.",
-                "speech_en": "Here is how it actually works. Breaking down the core mechanism shows how all the pieces interact together."
-            },
-            {
-                "id": 3,
-                "action_type": "showcase",
-                "visual_type": "stat",
-                "title": "Real-World Impact",
-                "visual_data": {
-                    "headline": "Practical Significance",
-                    "subtext": "Real-world effects and practical consequences",
-                    "bullets": ["Measurable consequences", "Direct influence on outcomes", "Practical relevance"],
-                    "badge": "IMPACT",
-                    "theme_color": "#10B981"
-                },
-                "speech_mr": "प्रत्यक्ष व्यवहारात याचा काय प्रभाव पडतो? यातील महत्त्वाचे बदल थेट परिणाम घडवून आणतात.",
-                "speech_hi": "वास्तविक जीवन में इसका क्या प्रभाव होता है? ये मुख्य बदलाव सीधे हमारे अनुभवों को प्रभावित करते हैं.",
-                "speech_en": "What is the real-world impact? Understanding these consequences gives you practical clarity on the outcome."
-            },
-            {
-                "id": 4,
-                "action_type": "showcase",
-                "visual_type": "takeaway",
-                "title": "Key Takeaway",
-                "visual_data": {
-                    "headline": "Summary & Takeaway",
-                    "subtext": "Essential conclusion to remember",
-                    "bullets": ["Remember the fundamental rule", "Apply this insight in practice", "Continuous learning and observation"],
-                    "badge": "TAKEAWAY",
-                    "theme_color": "#F59E0B"
-                },
-                "speech_mr": "महत्त्वाचा अंतिम निष्कर्ष: ही मुख्य गोष्ट नेहमी लक्षात ठेवा आणि ही माहिती नक्की शेअर करा!",
-                "speech_hi": "मुख्य अंतिम निष्कर्ष: यह खास बात हमेशा याद रखिए और इसे आगे जरूर साझा कीजिए!",
-                "speech_en": "Key takeaway: Keep this fundamental principle in mind, and apply this insight with complete confidence!"
-            }
-        ]
-
-    def _dynamic_analyze_prompt(self, text: str, lang_key: str = "mr") -> Dict[str, Any]:
-        """
-        Dynamically analyzes ANY prompt topic (Space, History, Science, Nature, Technology, Business, Coding, AI).
-        100% prompt-faithful; zero hardcoded SQL or FAANG interview templates.
-        """
-        text_clean = text.strip()
-        first_line = text_clean.split("\n")[0].strip()
-        topic_clean = re.sub(r'^[#*\s\d.-]+', '', first_line)[:60].strip() or "Universal Knowledge"
-        
-        # Detect domain dynamically
-        low = text_clean.lower()
-        if any(w in low for w in ["space", "sun", "flare", "planet", "galaxy", "orbit", "satellite", "star", "mars", "moon"]):
-            domain = "Space Science"
-            accent_color = "#A855F7"
-            bg_theme = "quantum_nebula"
-        elif any(w in low for w in ["bio", "dna", "cell", "health", "body", "medical", "doctor", "medicine"]):
-            domain = "Life Science"
-            accent_color = "#10B981"
-            bg_theme = "cosmic_stardust"
-        elif any(w in low for w in ["history", "war", "ancient", "king", "empire", "century", "culture"]):
-            domain = "History & Culture"
-            accent_color = "#F59E0B"
-            bg_theme = "cyber_matrix"
-        elif any(w in low for w in ["business", "finance", "money", "market", "startup", "economy", "stock"]):
-            domain = "Business & Finance"
-            accent_color = "#38BDF8"
-            bg_theme = "silicon_laser"
-        elif any(w in low for w in ["code", "python", "javascript", "sql", "bug", "software", "api", "git", "database"]):
-            domain = "Computer Science"
-            accent_color = "#38BDF8"
-            bg_theme = "silicon_laser"
-        else:
-            domain = "General Knowledge"
-            accent_color = "#38BDF8"
-            bg_theme = "quantum_nebula"
-
-        stages = [
-            {
-                "id": 1,
-                "action_type": "showcase",
-                "visual_type": "showcase",
-                "title": f"{topic_clean} - Overview",
-                "visual_data": {
-                    "headline": topic_clean,
-                    "subtext": f"Introduction and core context of {topic_clean}",
-                    "bullets": [f"Exploring {topic_clean}", "Fundamental concepts explained clearly", "Everyday relevance and importance"],
-                    "badge": "INTRO",
-                    "theme_color": accent_color
-                },
-                "speech_mr": f"आज आपण पाहणार आहोत: {topic_clean}! यामागील मुख्य कारणे आणि अचूक माहिती आपण सोप्या मराठीत समजून घेऊया.",
-                "speech_hi": f"आज हम बात करेंगे: {topic_clean}! इसके मुख्य पहलू और जरूरी बातें हम आसान भाषा में समझेंगे.",
-                "speech_en": f"Welcome! Today we are exploring: {topic_clean}! Let's break down the essential concepts in simple, clear terms."
-            },
-            {
-                "id": 2,
-                "action_type": "showcase",
-                "visual_type": "key_points",
-                "title": "Core Mechanism",
-                "visual_data": {
-                    "headline": "How It Works",
-                    "subtext": "Underlying principles and primary dynamics",
-                    "bullets": ["Step-by-step mechanism", "Key factors and interactions", "Core operational workflow"],
-                    "badge": "MECHANISM",
-                    "theme_color": "#EC4899"
-                },
-                "speech_mr": "याची मुख्य कार्यपद्धती पाहा: जेव्हा आपण मुळापासून विचार करतो, तेव्हा ही प्रक्रिया कशी घडते ते स्पष्टपणे लक्षात येते.",
-                "speech_hi": "इसकी कार्यप्रणाली को देखिए: जब हम इसके मूल कारणों को देखते हैं, तो पूरी प्रक्रिया साफ तौर पर समझ आती है.",
-                "speech_en": "Here is how it actually works. Breaking down the core mechanism shows how all the pieces interact together."
-            },
-            {
-                "id": 3,
-                "action_type": "showcase",
-                "visual_type": "stat",
-                "title": "Real-World Impact",
-                "visual_data": {
-                    "headline": "Practical Significance",
-                    "subtext": "Real-world effects and practical consequences",
-                    "bullets": ["Measurable consequences", "Direct influence on outcomes", "Practical relevance"],
-                    "badge": "IMPACT",
-                    "theme_color": "#10B981"
-                },
-                "speech_mr": "याचा प्रत्यक्ष व्यवहारात काय प्रभाव पडतो? यातील महत्त्वाचे बदल थेट परिणाम घडवून आणतात.",
-                "speech_hi": "वास्तविक जीवन में इसका क्या प्रभाव होता है? ये मुख्य बदलाव सीधे हमारे अनुभवों को प्रभावित करते हैं.",
-                "speech_en": "What is the real-world impact? Understanding these consequences gives you practical clarity on the outcome."
-            },
-            {
-                "id": 4,
-                "action_type": "showcase",
-                "visual_type": "takeaway",
-                "title": "Key Takeaway",
-                "visual_data": {
-                    "headline": "Summary & Takeaway",
-                    "subtext": "Essential conclusion to remember",
-                    "bullets": ["Remember the fundamental rule", "Apply this insight in practice", "Continuous learning and observation"],
-                    "badge": "TAKEAWAY",
-                    "theme_color": "#F59E0B"
-                },
-                "speech_mr": "महत्त्वाचा निष्कर्ष: ही मुख्य गोष्ट नेहमी लक्षात ठेवा आणि ही माहिती आपल्या मित्रांसोबत नक्की शेअर करा!",
-                "speech_hi": "मुख्य निष्कर्ष: यह खास बात हमेशा याद रखिए और इसे आगे जरूर शेयर कीजिए!",
-                "speech_en": "Key takeaway: Keep this fundamental principle in mind, and apply this insight with complete confidence!"
-            }
-        ]
-
-        return {
-            "id": "custom_prompt_analysis",
-            "title": topic_clean,
-            "domain": domain,
-            "accent_color": accent_color,
-            "bg_theme": bg_theme,
-            "suggested_motion_bg": bg_theme,
-            "question": text_clean,
-            "pro_tip": f"💡 Essential Insight: Master the fundamental principles of {topic_clean}.",
-            "stages": stages,
-            "scenes": stages
-        }
+        return []
 
     def _parse_master_prompt_text(self, text: str, lang_key: str = "mr") -> Optional[Dict[str, Any]]:
         """
@@ -1815,7 +1609,12 @@ class SqlShortVideoEngine:
                 from app.core.model_adapter import model_manager
                 min_w = 17
                 max_w = 21
-                learned_guide = "Deliver concise high-impact technical clarity with natural teacher pacing."
+                learned_guide = (
+                    "Create a finished short-form social video, not an interactive lesson. "
+                    "Every scene must teach a specific fact about this exact prompt, use a distinct visual "
+                    "action, and move one connected story forward. Never use generic template narration "
+                    "or ask viewers to pause, type, or answer."
+                )
                 if tavily_grounding_text:
                     learned_guide += f"\nIncorporate verified real-time facts:{tavily_grounding_text}"
                 rag_terms = ("rag", "vector search", "rerank", "embedding", "retrieval augmented")
@@ -1833,7 +1632,7 @@ class SqlShortVideoEngine:
 
                 ai_prompt = (
                     f"You are NanoPro Autonomous Universal AI Video Director.\n"
-                    f"Generate a captivating, viral 9:16 vertical video script & visual storyboard tailored 100% to the user's prompt.\n"
+                    f"Create an original 9:16 YouTube Shorts / Instagram Reel lesson tailored to the user's exact prompt.\n"
                     f"User Prompt: {text_input}\n"
                     f"{tavily_grounding_text}\n"
                     f"Language: {lang_key} (mr=Marathi, hi=Hindi, en=English)\n\n"
@@ -1841,25 +1640,23 @@ class SqlShortVideoEngine:
                     f"HUMAN INDIAN TEACHER & PEDAGOGY DIRECTIVES (ZERO MONOTONE / ZERO ROBOTIC TONE):\n"
                     f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy).\n"
                     f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hinglish/Hindi with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. In Marathi ('mr'), use authentic Marathi teacher phrasing. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses.\n"
-                    f"3. Cognitive Flow Across 4-5 scenes: open with a specific learner problem; show the mechanism with a concrete example; ask the viewer one natural question mid-video and pause for thought; reveal the answer; finish with a practical takeaway. Speak directly to 'you' as a mentor, not as a list reader.\n"
-                    f"4. Timing: Exactly 4 to 5 scenes, total narration script ~80-100 words (~38-48 seconds), perfectly paced for 9:16 vertical Shorts & Reels.\n"
+                    f"3. Short-form storytelling: choose the story shape that best fits this specific topic (for example: a production incident, debugging trace, before/after, misconception reveal, data journey, or mini case study). Do not use the same fixed lesson outline for every topic. Avoid generic section titles such as Overview, Core Mechanism, Real-World Impact, and Key Takeaway. Make each scene advance one connected story with a visible change or consequence. Never ask the viewer to pause, type, answer, or wait; this is a finished social video, not an interactive lesson.\n"
+                    f"4. Timing: Create 3 to 5 scenes and ~65-90 spoken words total (about 30-45 seconds). Keep the hook immediate, remove filler and repeated conclusions, and end on one useful practical insight.\n"
                     f"5. Language QA: Proofread every spoken line in {lang_key} before returning JSON. Use idiomatic grammar, correct spelling, complete words, and punctuation that sounds natural aloud. Keep standard technical terms in English when translating them would sound awkward; never emit garbled transliterations.\n"
                     f"6. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
-                    f"   - 'speech': Spoken human teacher narration in {lang_key} (strictly 16-22 words per scene, natural punctuation)\n"
-                    f"   - 'visual_description': Vivid description of the visual scene\n"
+                    f"   - 'speech': Spoken human teacher narration in {lang_key} (about 14-22 words per scene, natural punctuation)\n"
+                    f"   - 'visual_description': A concrete, topic-specific visual action, not an abstract background or generic title card\n"
                     f"   - 'visual_type': 'showcase' | 'key_points' | 'comparison' | 'diagram' | 'code' | 'takeaway'\n"
                     f"   - 'visual_data': {{\n"
                     f"       'layout': one distinct per-scene choice from 'title' | 'pipeline' | 'split' | 'cards' | 'chips' | 'spatial' | 'table',\n"
-                    f"       'headline': 'Punchy headline for the on-screen card',\n"
-                    f"       'subtext': 'One sentence explanation',\n"
-                    f"       'bullets': ['Key takeaway 1', 'Key takeaway 2', 'Key takeaway 3'],\n"
-                    f"       'steps': ['Prompt-specific process steps for pipeline layout'],\n"
-                    f"       'labels': ['Short, accurate labels for the selected layout'],\n"
-                    f"       'rows': [['Column A', 'Column B'], ['Example', 'Result']],\n"
-                    f"       'elements': [{{'label': 'real component', 'detail': 'its role', 'shape': 'node'}}],\n"
-                    f"       'interaction_prompt': 'One short question for the learner in {lang_key}; include only in a middle scene',\n"
-                    f"       'reveal_text': 'The accurate answer or practical result',\n"
+                    f"       'headline': 'A concise, scene-specific on-screen line',\n"
+                    f"       'subtext': 'A useful supporting fact or consequence',\n"
+                    f"       'bullets': ['Only accurate details from this scene'],\n"
+                    f"       'steps': ['Actual prompt-specific process steps when relevant'],\n"
+                    f"       'labels': ['Short, accurate labels for visible objects or states'],\n"
+                    f"       'rows': [['Relevant field', 'Actual example'], ['Concrete value', 'Result']],\n"
+                    f"       'elements': [{{'label': 'real topic component', 'detail': 'its role', 'shape': 'node'}}],\n"
                     f"       'badge': 'Topic or stage badge text',\n"
                     f"       'theme_color': '#38BDF8' or '#10B981' or '#F59E0B' or '#EC4899' or '#8B5CF6'\n"
                     f"     }}\n\n"
@@ -1871,20 +1668,18 @@ class SqlShortVideoEngine:
                     f'  "scenes": [\n'
                     f'    {{\n'
                     f'      "id": 1,\n'
-                    f'      "title": "Scene 1 Title",\n'
-                    f'      "speech": "Natural spoken script in {lang_key}",\n'
-                    f'      "visual_description": "Vivid visual description",\n'
-                    f'      "visual_type": "showcase",\n'
+                    f'      "title": "Replace with a specific, story-led scene title",\n'
+                    f'      "speech": "Replace with accurate narration in {lang_key}",\n'
+                    f'      "visual_description": "Replace with a concrete, topic-specific visual action",\n'
+                    f'      "visual_type": "Choose the best fitting visual type",\n'
                     f'      "visual_data": {{\n'
-                    f'        "layout": "pipeline",\n'
-                    f'        "headline": "Core Insight",\n'
-                    f'        "subtext": "Explanation sentence",\n'
-                    f'        "bullets": ["Key point 1", "Key point 2"],\n'
-                    f'        "steps": ["Prompt-specific step 1", "Prompt-specific step 2"],\n'
-                    f'        "labels": ["Prompt-specific label 1", "Prompt-specific label 2"],\n'
-                    f'        "interaction_prompt": "Question for the learner, on one middle scene only",\n'
-                    f'        "reveal_text": "The answer to the learner question",\n'
-                    f'        "badge": "INTRO",\n'
+                    f'        "layout": "Choose a layout; make it differ from adjacent scenes",\n'
+                    f'        "headline": "Replace with a scene-specific headline",\n'
+                    f'        "subtext": "Replace with a useful supporting fact",\n'
+                    f'        "bullets": ["Replace with accurate prompt-specific detail"],\n'
+                    f'        "steps": ["Replace with actual process steps when relevant"],\n'
+                    f'        "labels": ["Replace with visible objects or states"],\n'
+                    f'        "badge": "Replace with a short topic-specific label",\n'
                     f'        "theme_color": "#38BDF8"\n'
                     f'      }}\n'
                     f'    }}\n'
@@ -1945,24 +1740,61 @@ class SqlShortVideoEngine:
                     component="SqlShortEngine",
                 )
 
-        if not matched and generation_pattern == "unified" and storyboard_error:
+        if not matched:
+            error_detail = storyboard_error or "No model-authored storyboard was produced."
+            if generation_pattern == "unified" and storyboard_error:
+                return {
+                    "status": "error",
+                    "message": (
+                        f"The selected storyboard model could not generate this lesson: {storyboard_error} "
+                        "Choose Automatic model fallback or check the selected provider's API credentials."
+                    ),
+                }
             return {
                 "status": "error",
                 "message": (
-                    f"The selected storyboard model could not generate this lesson: {storyboard_error} "
-                    "Choose Automatic model fallback or check the selected provider's API credentials."
+                    f"The storyboard model could not create a prompt-specific lesson: {error_detail} "
+                    "Try Automatic model fallback, choose an available model, or check its API credentials. "
+                    "NanoPro will not substitute a generic template."
                 ),
             }
-
-        # Fallback to 100% dynamic prompt analysis (zero hardcoded static templates)
-        if not matched:
-            matched = self._dynamic_analyze_prompt(text_input, lang_key=lang_key)
 
         matched_content_type = matched.get("content_type", content_type)
         stages = _ensure_scene_visual_directions(
             self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode),
             lang_key,
         )
+        if len(stages) < 3 or any(
+            not str(stage.get(f"speech_{lang_key}") or stage.get("speech") or stage.get("speech_en") or "").strip()
+            for stage in stages
+        ):
+            return {
+                "status": "error",
+                "message": (
+                    "The storyboard model did not return at least three complete narrated scenes. "
+                    "Try another model or enable Automatic model fallback; no generic lesson was substituted."
+                ),
+            }
+        generic_titles = (
+            "overview", "introduction", "core mechanism", "how it works",
+            "real world impact", "practical significance", "key takeaway",
+            "summary takeaway",
+        )
+        generic_title_count = sum(
+            any(
+                re.sub(r"[^a-z0-9]+", " ", str(stage.get("title") or "").lower()).strip().startswith(title)
+                for title in generic_titles
+            )
+            for stage in stages
+        )
+        if generic_title_count >= 3:
+            return {
+                "status": "error",
+                "message": (
+                    "The storyboard model returned a generic lesson outline instead of a topic-specific story. "
+                    "Try Automatic model fallback or another model; no template video was generated."
+                ),
+            }
 
         # Gather voice narration script across educational stages
         narration_parts = []

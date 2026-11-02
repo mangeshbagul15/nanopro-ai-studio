@@ -185,20 +185,26 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("@media (max-width: 760px)", self.html)
         self.assertIn("overflow-x: hidden !important", self.html)
 
-    def test_video_studio_has_a_real_pause_and_answer_interaction(self):
+    def test_video_studio_is_a_continuous_short_form_preview(self):
         js = get_sql_video_js()
-        self.assertIn('id="learnerInteractionPanel"', self.html)
-        self.assertIn("showLearnerInteraction(interactionStage)", js)
-        self.assertIn("function revealLearnerAnswer()", js)
-        self.assertIn("function continueAfterLearnerAnswer()", js)
-        self.assertIn("answeredInteractionKeys", js)
+        self.assertNotIn("learnerInteractionPanel", self.html)
+        self.assertNotIn("learnerInteraction", js)
+        self.assertNotIn("interactionPauseKey", js)
 
 
 class TestPromptVisualDirections(unittest.TestCase):
-    def test_scene_layouts_are_varied_and_middle_scene_prompts_learner(self):
+    def test_scene_layouts_are_varied_and_interactive_checkins_are_removed(self):
         stages = [
             {"title": "The problem", "speech": "What happens when a service fails?"},
-            {"title": "The recovery", "speech": "The controller replaces the failed pod."},
+            {
+                "title": "The recovery",
+                "speech": "The controller replaces the failed pod.",
+                "visual_data": {
+                    "interaction_prompt": "What do you think happens next?",
+                    "interaction_label": "THINK WITH ME",
+                    "reveal_text": "The replacement controller detects the failure.",
+                },
+            },
             {"title": "The takeaway", "speech": "Set health checks and resource limits."},
         ]
 
@@ -206,10 +212,17 @@ class TestPromptVisualDirections(unittest.TestCase):
         layouts = [stage["visual_data"]["layout"] for stage in normalized]
 
         self.assertEqual(len(layouts), len(set(layouts)))
-        self.assertEqual(
-            normalized[1]["visual_data"]["interaction_prompt"],
-            "Pause for a moment: what do you think happens next?",
+        for stage in normalized:
+            self.assertNotIn("interaction_prompt", stage["visual_data"])
+            self.assertNotIn("interaction_label", stage["visual_data"])
+            self.assertNotIn("reveal_text", stage["visual_data"])
+
+    def test_unauthored_scenes_do_not_get_generic_template_scripts(self):
+        stages = sql_short_engine._build_dynamic_stages(
+            {"title": "Agentic RAG"}, "universal", "en"
         )
+
+        self.assertEqual(stages, [])
 
     def test_supported_table_layout_is_preserved(self):
         stages = [{
@@ -250,6 +263,47 @@ class TestPromptVisualDirections(unittest.TestCase):
 
         self.assertEqual(result["status"], "error")
         self.assertIn("selected storyboard model could not generate", result["message"])
+        self.assertNotIn("stages", result)
+
+    def test_automatic_model_failure_does_not_substitute_generic_lesson(self):
+        with patch(
+            "app.core.model_adapter.model_manager.execute_with_fallback",
+            side_effect=RuntimeError("No configured provider is available."),
+        ):
+            result = asyncio.run(sql_short_engine.generate_short_prompt_async(
+                "Explain how database replication avoids downtime",
+                language="en",
+                generation_pattern="hybrid",
+                selected_model="openai/gpt-oss-120b",
+            ))
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("will not substitute a generic template", result["message"])
+        self.assertNotIn("stages", result)
+
+    def test_generic_four_beat_outline_is_rejected(self):
+        generic_storyboard = {
+            "title": "Database Replication",
+            "scenes": [
+                {"title": "Overview", "speech": "Replication copies database changes to another server."},
+                {"title": "Core Mechanism", "speech": "A primary server sends changes to replicas."},
+                {"title": "Real-World Impact", "speech": "Replicas help serve reads and recover from failures."},
+                {"title": "Key Takeaway", "speech": "Monitor lag and choose a suitable replication mode."},
+            ],
+        }
+        with patch(
+            "app.core.model_adapter.model_manager.execute_with_fallback",
+            return_value=(json.dumps(generic_storyboard), "test-model", "test-route"),
+        ):
+            result = asyncio.run(sql_short_engine.generate_short_prompt_async(
+                "Explain how database replication works",
+                language="en",
+                generation_pattern="unified",
+                selected_model="gemini-3.5-flash-lite",
+            ))
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("generic lesson outline", result["message"])
         self.assertNotIn("stages", result)
 
 
