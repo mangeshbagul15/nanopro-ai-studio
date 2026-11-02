@@ -1,9 +1,4 @@
-"""
-Mangesh Nano Pro AI Studio - Runway Gen-4 Video Engine (API #22)
-Official integration with RunwayML API (https://api.dev.runwayml.com/v1).
-Supports Gen-4 Turbo (image_to_video) and Gen-4.5 (text_to_video) with 9:16 vertical ratio (720:1280).
-Includes multi-token automatic rotation (Key 1 & Key 2) and seamless cascade failover.
-"""
+"""Runway Gen-4 integration with a verified-free-credit guard and no account rotation."""
 
 import os
 import time
@@ -17,8 +12,7 @@ from app.core.database import credentials_vault
 
 class RunwayVideoEngine:
     """
-    Enterprise Runway Gen-4 Video Generation Engine with Token Rotation.
-    Rotates seamlessly across Runway Token Pool (Token 1, Token 2) on quota/rate-limits.
+    Runway Gen-4 generation engine using one configured account at a time.
     """
 
     def __init__(self, api_key: Optional[str] = None):
@@ -26,34 +20,28 @@ class RunwayVideoEngine:
         self.base_url = "https://api.dev.runwayml.com/v1"
         self.version_header = "2024-09-13"
 
-        # Multi-Token Failover Pool for Runway API
-        self.runway_tokens: List[str] = [
-            "key_1844428f2b071ee075875f502eae9530fdb522d6fb1ab1a4f114378857929722374d0bebd0d969f133b22dc6d302e3e6e3595c1903608da33edebe83ee6b2bfe",
-            "key_d12587db38b98eedd97b34bab231bbcbe66aef4e6f756d206a31a196fc5125b78d7769d7d20f91ac444bedad9787157b366a5ad9f8943552f16479b709613e70"
-        ]
+        self.runway_tokens: List[str] = []
         self.active_token_idx = 0
         self.tokens_depleted_until = 0.0
 
     def _resolve_api_tokens(self) -> List[str]:
-        """Resolves all available Runway API keys from memory, vault, and environment."""
+        """Resolve the single explicitly configured Runway key; never rotate accounts."""
         resolved = []
-        for t in self.runway_tokens:
-            if t and t.startswith("key_"):
-                resolved.append(t)
+        if self.api_key and not self.api_key.startswith("••"):
+            resolved.append(self.api_key)
 
-        for s_name in ["RUNWAY_API_KEY", "RUNWAY_API_KEY_2", "RUNWAYML", "RUNWAY"]:
+        for s_name in ["RUNWAY_API_KEY"]:
             cred = credentials_vault.get_credential(s_name)
             if cred and cred.get("secret_value") and not cred["secret_value"].startswith("••"):
                 val = cred["secret_value"]
-                if val.startswith("key_") and val not in resolved:
+                if val not in resolved:
                     resolved.append(val)
 
         env_k = os.getenv("RUNWAY_API_KEY", "")
-        if env_k and env_k.startswith("key_") and env_k not in resolved:
+        if env_k and env_k not in resolved:
             resolved.append(env_k)
 
-        if resolved:
-            self.runway_tokens = resolved
+        self.runway_tokens = resolved[:1]
         return self.runway_tokens
 
     def is_available(self) -> bool:
@@ -83,10 +71,8 @@ class RunwayVideoEngine:
                 data = json.loads(resp.read().decode("utf-8"))
                 return {
                     "status": "success",
-                    "token_index": idx + 1,
-                    "token_masked": f"{k[:10]}...{k[-6:]}",
                     "credit_balance": data.get("creditBalance", 0),
-                    "tier": data.get("tier", {}).get("name", "Free Tier"),
+                    "tier": data.get("tier", {}).get("name", "Unknown"),
                     "models_supported": list(data.get("tier", {}).get("models", {}).keys()),
                     "provider": "Runway Gen-4"
                 }
@@ -98,12 +84,33 @@ class RunwayVideoEngine:
             return {"status": "error", "token_index": idx + 1, "message": str(e)}
 
     def get_all_tokens_status(self) -> List[Dict[str, Any]]:
-        """Returns health and credit balance across all Runway tokens in pool."""
+        """Returns status for the single configured Runway account, if present."""
         tokens = self._resolve_api_tokens()
         res = []
         for i in range(len(tokens)):
             res.append(self.get_organization_info(token_idx=i))
         return res
+
+    def _require_verified_free_credits(self) -> None:
+        """Block generation unless the configured account is explicitly free-only and has credits."""
+        if os.getenv("RUNWAY_FREE_CREDITS_CONFIRMED", "").strip().lower() != "true":
+            raise RuntimeError(
+                "Runway generation is disabled unless RUNWAY_FREE_CREDITS_CONFIRMED=true "
+                "explicitly confirms that the configured credits are free."
+            )
+        account = self.get_organization_info(token_idx=0)
+        if account.get("status") != "success":
+            raise RuntimeError("Runway free-credit status could not be verified; generation was not submitted.")
+        tier = str(account.get("tier", "")).strip().lower()
+        try:
+            credits = float(account.get("credit_balance", 0))
+        except (TypeError, ValueError):
+            credits = 0
+        if tier != "free tier" or credits <= 0:
+            raise RuntimeError(
+                "Runway generation requires a verified Free Tier account with a positive credit balance; "
+                "generation was not submitted."
+            )
 
     def create_text_to_video(
         self,
@@ -112,10 +119,11 @@ class RunwayVideoEngine:
         duration: int = 5,
         model: str = "gen4.5"
     ) -> Dict[str, Any]:
-        """Submits a text-to-video generation task to Runway Gen-4.5 with multi-token failover."""
+        """Submit a text-to-video task only after the free-credit preflight passes."""
         if getattr(self, "tokens_depleted_until", 0) > time.time():
-            raise RuntimeError("Runway tokens out of credits (cooldown active). Auto-cascading to 3D AI Motion Engine.")
+            raise RuntimeError("Runway generation is temporarily blocked after a quota failure; no paid fallback was attempted.")
 
+        self._require_verified_free_credits()
         tokens = self._resolve_api_tokens()
         if not tokens:
             raise ValueError("Runway API Key missing. Add RUNWAY_API_KEY in CredentialsVault.")
@@ -170,7 +178,7 @@ class RunwayVideoEngine:
         # If all tokens fail (e.g. 0 credit balance), activate cooldown & raise clean error for cascade router
         if "credit" in last_error.lower() or "400" in last_error:
             self.tokens_depleted_until = time.time() + 1800
-        raise RuntimeError(f"All {attempts} Runway tokens exhausted or out of credits. Last error: {last_error}")
+        raise RuntimeError(f"Runway generation failed for the configured account. Last error: {last_error}")
 
     def create_image_to_video(
         self,
@@ -180,10 +188,11 @@ class RunwayVideoEngine:
         duration: int = 5,
         model: str = "gen4_turbo"
     ) -> Dict[str, Any]:
-        """Submits an image-to-video animation task to Runway Gen-4 Turbo with multi-token failover."""
+        """Submit an image-to-video task only after the free-credit preflight passes."""
         if getattr(self, "tokens_depleted_until", 0) > time.time():
-            raise RuntimeError("Runway tokens out of credits (cooldown active). Auto-cascading to 3D AI Motion Engine.")
+            raise RuntimeError("Runway generation is temporarily blocked after a quota failure; no paid fallback was attempted.")
 
+        self._require_verified_free_credits()
         tokens = self._resolve_api_tokens()
         if not tokens:
             raise ValueError("Runway API Key missing.")
@@ -242,7 +251,7 @@ class RunwayVideoEngine:
         raise RuntimeError(f"All {attempts} Runway tokens exhausted or out of credits. Last error: {last_error}")
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
-        """Polls status of a Runway generation task across active tokens."""
+        """Poll status of a Runway task through the configured account."""
         tokens = self._resolve_api_tokens()
         if not tokens:
             raise ValueError("Runway API Key missing.")

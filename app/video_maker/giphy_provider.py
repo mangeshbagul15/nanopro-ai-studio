@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GIPHY_API_KEY = os.getenv("GIPHY_API_KEY", "iJXC8kOPOIIuJl9bNZ2eUoQEGUs12X1z")
+GIPHY_API_KEY = os.getenv("GIPHY_API_KEY", "")
 
 
 def search_giphy_stickers(query: str, limit: int = 5) -> List[Dict[str, Any]]:

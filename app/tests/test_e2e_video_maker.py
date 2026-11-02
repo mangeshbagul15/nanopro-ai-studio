@@ -46,6 +46,7 @@ from app.video_maker.sql_short_engine import (
     get_mp3_duration,
     sql_short_engine,
 )
+from app.core.runway_video import RunwayVideoEngine
 
 
 # ============================================================================
@@ -197,8 +198,8 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertNotIn("learnerInteractionPanel", self.html)
         self.assertNotIn("learnerInteraction", js)
         self.assertNotIn("interactionPauseKey", js)
-        self.assertIn("maxShortDuration = 58.5", js)
-        self.assertIn("totalDuration = Math.min(58.5, Math.max(1, totalDuration))", js)
+        self.assertNotIn("maxShortDuration = 58.5", js)
+        self.assertNotIn("Math.min(58.5", js)
         self.assertIn("activeCue, activeCueIndex", js)
         self.assertIn("function drawCinematicSceneHeadline", js)
         self.assertIn("@Code_With_Mangesh", js)
@@ -208,6 +209,31 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("kind.includes(\"container\")", js)
         self.assertIn("kind.includes(\"box\")", js)
         self.assertNotIn('ctx.fillText(`${stepLabel} · STATE:', js)
+
+
+class TestRunwayFreeCreditGate(unittest.TestCase):
+    def test_generation_requires_explicit_free_credit_confirmation(self):
+        engine = RunwayVideoEngine(api_key="test-runway-key")
+        with patch.dict(os.environ, {"RUNWAY_FREE_CREDITS_CONFIRMED": "false"}), \
+             patch.object(engine, "get_organization_info") as status_check, \
+             patch("urllib.request.urlopen") as provider_request:
+            with self.assertRaisesRegex(RuntimeError, "RUNWAY_FREE_CREDITS_CONFIRMED"):
+                engine.create_text_to_video("A technical lesson scene")
+        status_check.assert_not_called()
+        provider_request.assert_not_called()
+
+    def test_zero_free_tier_balance_blocks_provider_submission(self):
+        engine = RunwayVideoEngine(api_key="test-runway-key")
+        with patch.dict(os.environ, {"RUNWAY_FREE_CREDITS_CONFIRMED": "true"}), \
+             patch.object(engine, "get_organization_info", return_value={
+                 "status": "success",
+                 "tier": "Free Tier",
+                 "credit_balance": 0,
+             }), \
+             patch("urllib.request.urlopen") as provider_request:
+            with self.assertRaisesRegex(RuntimeError, "positive credit balance"):
+                engine.create_text_to_video("A technical lesson scene")
+        provider_request.assert_not_called()
 
 
 class TestPromptVisualDirections(unittest.TestCase):
@@ -439,7 +465,7 @@ class TestPromptVisualDirections(unittest.TestCase):
             ))
 
         self.assertEqual(result["status"], "success", result.get("message"))
-        self.assertLessEqual(result["duration"], 58.5)
+        self.assertEqual(result["duration"], 72.0)
         self.assertEqual(len(result["stages"]), 3)
         self.assertTrue(all(stage["sentence_cues"] for stage in result["stages"]))
         self.assertEqual(result["stages"][0]["visual_data"]["elements"][0]["shape"], "person")
@@ -669,6 +695,13 @@ class TestTier1_F6_PixabayVideoProvider(unittest.TestCase):
     Feature F6: Pixabay 9:16 B-Roll Clip Wiring.
     Authoritative Source: PROJECT.md line 41, lines 102.
     """
+    def setUp(self):
+        self.original_api_key = pixabay_prov.PIXABAY_API_KEY
+        pixabay_prov.PIXABAY_API_KEY = "test-pixabay-key"
+
+    def tearDown(self):
+        pixabay_prov.PIXABAY_API_KEY = self.original_api_key
+
     @patch("requests.get")
     def test_pixabay_search_videos_contract(self, mock_get):
         """Verify search_pixabay_videos extracts medium/small video downloads and metadata."""
@@ -1015,18 +1048,19 @@ class TestTier1_F12_AutomatedLiveApiContracts(unittest.TestCase):
         """Verify API keys, base URLs, and query construction contracts across all 8 APIs."""
         # 1. Pixabay
         self.assertTrue(pixabay_prov.BASE_URL.startswith("https://pixabay.com/api/videos/"))
+        self.assertEqual(pixabay_prov.PIXABAY_API_KEY, os.getenv("PIXABAY_API_KEY", ""))
         # 2. Freesound
         self.assertTrue(freesound_prov.BASE_URL.startswith("https://freesound.org/apiv2/"))
         # 3. Deepgram Aura
         self.assertIn("aura-asteria-en", ["aura-asteria-en", "aura-luna-en"])
         # 4. Deepgram Nova-2
-        self.assertIsNotNone(deepgram_prov.DEEPGRAM_API_KEY)
+        self.assertEqual(deepgram_prov.DEEPGRAM_API_KEY, os.getenv("DEEPGRAM_API_KEY", ""))
         # 5. Giphy
-        self.assertIsNotNone(giphy_prov.GIPHY_API_KEY)
+        self.assertEqual(giphy_prov.GIPHY_API_KEY, os.getenv("GIPHY_API_KEY", ""))
         # 6. Tavily
-        self.assertIsNotNone(tavily_prov.TAVILY_API_KEY)
+        self.assertEqual(tavily_prov.TAVILY_API_KEY, os.getenv("TAVILY_API_KEY", ""))
         # 7. Unsplash
-        self.assertIsNotNone(unsplash_prov.UNSPLASH_ACCESS_KEY)
+        self.assertEqual(unsplash_prov.UNSPLASH_ACCESS_KEY, os.getenv("UNSPLASH_ACCESS_KEY", ""))
         # 8. Edge-TTS Regional models
         self.assertTrue(callable(sql_short_engine.synthesize_voiceover))
 
@@ -1155,7 +1189,8 @@ class TestTier2_BoundaryAndCornerCases(unittest.IsolatedAsyncioTestCase):
 
     def test_pixabay_per_page_bounds_clamping(self):
         """Pixabay per_page must be clamped to [3, 200]."""
-        with patch("requests.get") as mock_get:
+        with patch.object(pixabay_prov, "PIXABAY_API_KEY", "test-pixabay-key"), \
+             patch("requests.get") as mock_get:
             mock_resp = MagicMock()
             mock_resp.status_code = 200
             mock_resp.json.return_value = {"hits": []}
@@ -1591,7 +1626,8 @@ class TestTier4_RealWorldApplicationScenarios(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(len(news), 0)
 
         # 2. Gather matching B-roll
-        clips = pixabay_prov.search_pixabay_videos("artificial intelligence robot")
+        with patch.object(pixabay_prov, "PIXABAY_API_KEY", "test-pixabay-key"):
+            clips = pixabay_prov.search_pixabay_videos("artificial intelligence robot")
         self.assertEqual(len(clips), 1)
 
         # 3. Assemble simulated reel blueprint
@@ -1599,11 +1635,11 @@ class TestTier4_RealWorldApplicationScenarios(unittest.IsolatedAsyncioTestCase):
             "title": "Top 3 AI Breakthroughs of 2026",
             "aspect_ratio": "9:16",
             "resolution": "1080x1920",
-            "duration": 58.0,
+            "duration": 72.0,
             "scenes": [
-                {"title": "Reasoning Models", "duration": 18.0, "b_roll_url": clips[0]["url"]},
-                {"title": "Omni Video Generation", "duration": 20.0, "b_roll_url": clips[0]["url"]},
-                {"title": "Neural Audio", "duration": 20.0, "b_roll_url": clips[0]["url"]}
+                {"title": "Reasoning Models", "duration": 24.0, "b_roll_url": clips[0]["url"]},
+                {"title": "Omni Video Generation", "duration": 24.0, "b_roll_url": clips[0]["url"]},
+                {"title": "Neural Audio", "duration": 24.0, "b_roll_url": clips[0]["url"]}
             ],
             "attribution_ledger": {
                 "pattern": "hybrid",
@@ -1612,7 +1648,7 @@ class TestTier4_RealWorldApplicationScenarios(unittest.IsolatedAsyncioTestCase):
         }
         self.assertEqual(reel_blueprint["aspect_ratio"], "9:16")
         self.assertEqual(reel_blueprint["resolution"], "1080x1920")
-        self.assertLessEqual(reel_blueprint["duration"], 60.0)
+        self.assertGreater(reel_blueprint["duration"], 60.0)
 
     def test_scenario_sql_tutorial_short(self):
         """

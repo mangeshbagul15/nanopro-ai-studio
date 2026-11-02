@@ -621,17 +621,19 @@ Show the cloud.
         record_step = export.split("function recordStep(timestamp)", 1)[1]
         self.assertIn("frameCount - lastProgressFrame >= 15", record_step)
         self.assertLess(record_step.index("renderSqlShortFrame(t)"), record_step.index("updatePlayerScrubberUI(t)"))
-        self.assertLess(record_step.index("frameCount = Math.min(totalFrames"), record_step.index("updatePlayerScrubberUI(t)"))
+        self.assertLess(record_step.index("captureRenderedFrame(t"), record_step.index("updatePlayerScrubberUI(t)"))
         self.assertIn("saveWritable.write(event.data)", export)
         self.assertNotIn("finalize_mp4", export)
         self.assertNotIn("FormData", export)
         self.assertIn("totalDuration = Math.max(1, totalDuration)", source)
         self.assertIn("(timestamp - startTime) / 1000", source)
-        self.assertIn("videoBitsPerSecond: 9000000", source)
+        self.assertIn("const videoBitrate = resolutionScale === 2 ? 36000000 : 9000000", export)
         self.assertIn("const exportFrameRate = 30", source)
         self.assertNotIn("stepBatch = totalDuration <= 15 ? 1 : 2", source)
         self.assertNotIn("Math.min(59.5, totalDuration)", source)
-        self.assertIn("const videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks()", export)
+        self.assertIn("canvas.captureStream(manualFrameCapture ? 0 : exportFrameRate).getVideoTracks()", export)
+        self.assertIn("videoTracks[0].requestFrame()", export)
+        self.assertIn("Captured canvas frames", export)
         self.assertIn("audioTracks", export)
 
     def test_universal_video_export_explains_local_render_and_api_generation_split(self):
@@ -685,21 +687,24 @@ Show the cloud.
         self.assertIn('audio_url = ""', source)
         self.assertNotIn('audio_url = f"/audio/preset_sql_q1_second_highest_salary_', source)
 
-    def test_short_form_narration_targets_under_sixty_seconds(self):
+    def test_storyboard_prompt_has_no_fixed_duration_limit(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
-        self.assertIn("max_narration_words = max(24, int(target_seconds * 140 / 60))", source)
-        self.assertIn("max_duration_seconds when requested", source)
-        self.assertIn("Short narration compression notice", source)
-        self.assertIn("audio_duration=actual_dur", source)
+        timing_directive = source.split('f"4. Timing:', 1)[1].split('f"5. Language QA:', 1)[0]
+        self.assertIn("Never truncate narration or impose a fixed maximum duration", timing_directive)
+        self.assertNotIn("never exceeding 58 seconds", timing_directive)
+        self.assertNotIn("55-75 spoken words", timing_directive)
 
-    def test_duration_shortening_retries_when_model_exceeds_word_budget(self):
+    def test_duration_calibration_preserves_complete_long_narration(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")
-        method = source.split("async def _condense_narration_to_duration", 1)[1].split("async def generate_short_prompt_async", 1)[0]
-        self.assertIn("for attempt in range(3)", method)
-        self.assertIn("budget = max(24, int(budget * 0.8))", method)
-        self.assertIn("json.JSONDecoder().raw_decode", method)
-        self.assertIn("Online narration shortening failed", method)
-        self.assertIn("_deterministic_condense_scenes(scenes, max_words)", method)
+        renderer = (PROJECT_ROOT / "app" / "ui" / "sql_video_js.py").read_text(encoding="utf-8")
+        _, duration, _ = load_duration_calibrator()(
+            [{"title": "Long lesson", "speech_en": "A complete explanation."}],
+            127.4,
+            lang_key="en",
+        )
+        self.assertEqual(duration, 127.4)
+        self.assertNotIn("Math.min(58.5", source)
+        self.assertNotIn("Math.min(58.5", renderer)
 
     def test_invalid_model_storyboard_retries_before_local_fallback(self):
         source = (PROJECT_ROOT / "app" / "video_maker" / "sql_short_engine.py").read_text(encoding="utf-8")

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "4748f50fe427e9060b7fb85661355348aefe1121")
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
 
 
 def generate_deepgram_speech(text: str, output_path: str, voice: str = "aura-asteria-en") -> bool:

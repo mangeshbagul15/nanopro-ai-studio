@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "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")
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 
 
 def search_trending_topic(topic: str, max_results: int = 3) -> List[Dict[str, Any]]:

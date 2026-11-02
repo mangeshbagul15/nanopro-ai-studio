@@ -98,9 +98,7 @@ def get_sql_video_js() -> str:
 
         if (realDur && !isNaN(realDur) && isFinite(realDur) && realDur > 1.0) {
 
-            const maxShortDuration = 58.5;
-
-            const narrationDur = Number(Math.min(maxShortDuration, realDur).toFixed(2));
+            const narrationDur = Number(realDur.toFixed(2));
 
             const totalDur = narrationDur;
 
@@ -21333,7 +21331,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
         let totalDuration = durationSec || measuredDuration || Number(activeSpec.max_duration_seconds || 0) || 30;
 
-        totalDuration = Math.min(58.5, Math.max(1, totalDuration));
+        totalDuration = Math.max(1, totalDuration);
 
         const resolutionScale = document.getElementById("sqlExportResolution")?.value === "4k" ? 2 : 1;
 
@@ -21524,6 +21522,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         const exportFrameRate = 30;
 
         let videoTracks = [];
+        const manualFrameCapture = typeof window.CanvasCaptureMediaStreamTrack !== "undefined"
+            && typeof window.CanvasCaptureMediaStreamTrack.prototype.requestFrame === "function";
 
         try {
 
@@ -21531,7 +21531,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             renderSqlShortFrame(sqlShortState.currentTime);
 
-            videoTracks = canvas.captureStream(exportFrameRate).getVideoTracks();
+            videoTracks = canvas.captureStream(manualFrameCapture ? 0 : exportFrameRate).getVideoTracks();
 
             if (!videoTracks.length) throw new Error("The browser did not create a video capture track.");
 
@@ -21634,14 +21634,17 @@ SECOND_HIGHEST_SALARY: 70000`;
         const totalFrames = Math.round(totalDuration * exportFrameRate);
 
         let frameCount = 0;
-
+        let lastCapturedTime = -Infinity;
         let lastProgressFrame = 0;
-
         const dt = 1.0 / exportFrameRate;
-
         const startTime = performance.now();
-
         let downloadUrl = null;
+        const captureRenderedFrame = (videoTime, force = false) => {
+            if (!force && videoTime - lastCapturedTime < dt) return;
+            if (manualFrameCapture) videoTracks[0].requestFrame();
+            frameCount += 1;
+            lastCapturedTime = videoTime;
+        };
 
 
 
@@ -21715,7 +21718,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
                     { name: "Captured tracks", status: videoTracks.length > 0 && audioTracks.length > 0 ? "PASSED" : "FAILED", detail: `Video tracks ${videoTracks.length}; voice tracks ${audioTracks.length}.` },
 
-                    { name: "Recorded frames", status: frameCount >= totalFrames - 1 ? "PASSED" : "FAILED", detail: `${frameCount} of ${totalFrames} expected frames.` },
+                    { name: "Captured canvas frames", status: frameCount >= totalFrames - 1 ? "PASSED" : "FAILED", detail: `${frameCount} requested canvas frames; at least ${totalFrames - 1} expected.` },
 
                     { name: "Saved output size", status: recordedBytes === null ? "NOT_RUN" : recordedBytes >= 1024 ? "PASSED" : "FAILED", detail: recordedBytes === null ? "Direct-to-file write completed; byte count is not exposed by the browser." : `${(recordedBytes / 1048576).toFixed(1)} MB.` }
 
@@ -21876,7 +21879,8 @@ SECOND_HIGHEST_SALARY: 70000`;
         sqlShortState.isExporting = true;
 
         recorder.start(1000);
-
+        renderSqlShortFrame(0);
+        captureRenderedFrame(0, true);
         if (audioEl && audioEl.src) {
 
             audioEl.currentTime = 0;
@@ -21907,10 +21911,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             renderSqlShortFrame(t);
 
-
-
-            frameCount = Math.min(totalFrames, Math.floor(t / dt));
-
+            captureRenderedFrame(t, t >= totalDuration);
             if (frameCount - lastProgressFrame >= 15 || t >= totalDuration) {
 
                 lastProgressFrame = frameCount;

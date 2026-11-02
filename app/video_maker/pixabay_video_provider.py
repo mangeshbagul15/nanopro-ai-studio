@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "15789695-557e45d2398e0f7e734268c15")
+PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "")
 BASE_URL = "https://pixabay.com/api/videos/"
 
 try:

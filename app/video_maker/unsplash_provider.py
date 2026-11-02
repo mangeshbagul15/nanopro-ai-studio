@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "glMAJsvLeD9e_jq5ZhJcnkWv8SqawBYBW_pZfCVEKKI")
+UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "")
 
 
 def search_unsplash_photos(query: str, count: int = 5, orientation: str = "portrait") -> List[Dict[str, Any]]:

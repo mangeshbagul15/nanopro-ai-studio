@@ -3082,7 +3082,7 @@ async def api_runway_organization():
 
 async def api_runway_generate(req: RunwayGenerateRequest):
 
-    """Submits 9:16 vertical video generation to Runway Gen-4 with multi-token failover and zero-drop cascade."""
+    """Submits 9:16 generation only after the configured free-credit guard passes."""
 
     try:
 
@@ -3123,22 +3123,11 @@ async def api_runway_generate(req: RunwayGenerateRequest):
         return JSONResponse(res)
 
     except Exception as e:
-
-        log_event(f"Runway generate notice ({e}). Auto-cascading to Cinematic Video Router...", level="WARNING", component="RunwayAPI")
-
-        cascade_res = video_cascade_router.generate_cinematic_background_with_failover(
-
-            prompt=req.prompt or "High-tech cloud database and neon data flows",
-
-            image_url=req.image_url,
-
-            aspect_ratio="9:16"
-
+        log_event(f"Runway generation blocked or failed: {e}", level="WARNING", component="RunwayAPI")
+        return JSONResponse(
+            {"status": "error", "message": str(e), "generation_submitted": False},
+            status_code=503,
         )
-
-        cascade_res["notice"] = f"Runway token quota reached. Auto-cascaded to {cascade_res.get('provider')}."
-
-        return JSONResponse(cascade_res)
 
 
 

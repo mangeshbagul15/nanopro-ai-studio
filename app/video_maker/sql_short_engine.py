@@ -332,14 +332,13 @@ def compute_audio_synchronized_stages(
     - Zero hardcoded timings: every timestamp is derived from speech word counts and real audio duration.
     - Spoken educational narration spans 0.0 to audio_duration.
     - Dynamic outro duration calculated strictly from audio length (typically 6-8% of video, 2.0-3.8s).
-    - Total duration strictly stays under 60.0s (<60s YouTube Shorts / Reels standard).
+    - Total duration follows the complete synthesized narration; no fixed duration cap.
     - Subtitles and animations are 100% frame-locked to spoken word counts from prompt.
     """
     raw_audio_dur = float(audio_duration) if audio_duration and float(audio_duration) > 0 else 30.0
 
-    # Video duration strictly matches narration duration (<58s Shorts/Reels standard)
-    # Zero trailing outro screen or branding cards appended as requested by user
-    total_dur = min(58.5, round(raw_audio_dur, 2))
+    # Keep the complete narration; longer lessons must not be silently truncated.
+    total_dur = round(raw_audio_dur, 2)
     edu_dur = total_dur
     outro_start = total_dur
 
@@ -1201,7 +1200,7 @@ TOP_MNC_THEORY_PRESETS = [
 class SqlShortVideoEngine:
     """
     Dedicated 9:16 Short Video Creation Engine.
-    Produces viral <60-second Reels & Shorts with synchronized code, arrows, and multilingual voiceovers.
+    Produces vertical lessons with synchronized visuals and multilingual voiceovers.
     Supports both SQL Coding / Query questions and SQL Theory / Concept questions.
     """
 
@@ -1210,7 +1209,7 @@ class SqlShortVideoEngine:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def get_presets(self) -> List[Dict[str, Any]]:
-        """Returns built-in high-yield banking & theory interview SQL scenarios with dynamically calibrated timings (<60s)."""
+        """Returns built-in high-yield banking and theory scenarios with dynamically calibrated timings."""
         raw_presets = BANKING_SQL_PRESETS + TOP_MNC_THEORY_PRESETS
         calibrated = []
         for p in raw_presets:
@@ -1622,7 +1621,7 @@ class SqlShortVideoEngine:
         - AI model decides structure: sample schema, dynamic pipeline, filter evals, and solution SQL
         - Synthesizes regional voiceover (Marathi / Hindi / English)
         - Analyzes exact synthesized MP3 duration and word counts
-        - Frame-locks stage boundaries so voiceover and animations match perfectly (<60s Shorts standard)
+        - Frame-locks stage boundaries so voiceover and animations match the complete narration
         """
         t0 = time.perf_counter()
         clean_lang = (language or "mr").lower()
@@ -1685,8 +1684,6 @@ class SqlShortVideoEngine:
         if not matched and len(text_input) > 8:
             try:
                 from app.core.model_adapter import model_manager
-                min_w = 17
-                max_w = 21
                 learned_guide = (
                     "Create a finished short-form social video, not an interactive lesson. "
                     "Every scene must teach a specific fact about this exact prompt, use a distinct visual "
@@ -1721,12 +1718,12 @@ class SqlShortVideoEngine:
                     f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy). Assume the viewer is new to the topic: explain each technical term in plain language at the moment it appears, anchor the idea in a familiar real-life situation, and connect the example back to the real technology without misleading analogies.\n"
                     f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hindi/Hinglish with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. Write Hindi in Devanagari script. In Marathi ('mr'), write Marathi in Devanagari script using authentic, conversational wording, not Romanized Marathi. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses. Keep standard product and technical names in their usual English spelling.\n"
                     f"3. Short-form storytelling: choose a human-relevant, prompt-specific story shape (a developer debugging an incident, a customer order moving through a system, a real before/after, or a misconception revealed). Pick a new scenario from the prompt; do not reuse the same fixed lesson outline. Avoid generic section titles such as Overview, Core Mechanism, Real-World Impact, and Key Takeaway. Scenes should continue one story and show a visible state change. Never ask the viewer to pause, type, answer, or wait; this is a finished social video.\n"
-                    f"4. Timing: Create exactly 3 or 4 scenes and 55-75 spoken words total, targeting 30-45 seconds and never exceeding 58 seconds when spoken. Hook in the first sentence; remove filler and repeated conclusions.\n"
+                    f"4. Timing: Use as many scenes and as much narration as the requested lesson needs. If the prompt specifies a duration, honor it; otherwise keep the lesson concise and complete. Never truncate narration or impose a fixed maximum duration. Hook in the first sentence; remove filler and repeated conclusions.\n"
                     f"5. Language QA: Proofread every spoken line in {lang_key} before returning JSON. Use idiomatic grammar, correct spelling, complete words, and punctuation that sounds natural aloud. Keep standard technical terms in English when translating them would sound awkward; never emit garbled transliterations.\n"
                     f"6. Reference-inspired visual direction: create a polished vertical tech explainer with a deep navy/charcoal background, sparse cyan/amber/green/violet accents, a small creator/progress header, a large 2-6 word scene headline, one clear animated diagram, comparison, code panel, or illustrated example, and readable voice-synced captions. Treat each scene like a concise visual explanation, not a row of tiny connected icons. Use screen-like panels only when they help explain the requested topic. Vary composition when the idea changes; never repeat one layout for every scene.\n"
                     f"7. Scene Visual Content:\n"
                     f"   - 'title': Scene title/headline\n"
-                    f"   - 'speech': Spoken human teacher narration in {lang_key} (about 14-22 words per scene, natural punctuation)\n"
+                    f"   - 'speech': Spoken human teacher narration in {lang_key} (a natural, scene-appropriate length; use natural punctuation)\n"
                     f"   - 'visual_description': A concrete, topic-specific visual action, not an abstract background or generic title card\n"
                     f"   - 'visual_type': 'diagram' or 'showcase' with objects that visibly change as this narration is spoken\n"
                     f"   - 'visual_data': {{\n"
@@ -2019,7 +2016,7 @@ class SqlShortVideoEngine:
             rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
             actual_dur = round(words_count / rate, 2)
 
-        # Synchronize stage boundaries dynamically based on word counts and real audio duration (<60s Shorts standard)
+        # Synchronize stage boundaries dynamically based on word counts and the complete audio duration.
         calibrated_stages, final_dur, outro_start = compute_audio_synchronized_stages(
             raw_stages=stages,
             audio_duration=actual_dur,
@@ -2517,7 +2514,7 @@ class SqlShortVideoEngine:
             "attribution": attribution_ledger,
             "trials": [
                 {"trial": 1, "name": "Python AST & SQL Syntax Verification", "status": "PASSED", "detail": "Valid syntax and structure verified."},
-                {"trial": 2, "name": "Speech Pacing & Duration (<60s Constraint)", "status": "PASSED", "detail": f"Exact duration: {final_dur:.1f}s within target bounds."},
+                {"trial": 2, "name": "Speech Pacing & Duration", "status": "PASSED", "detail": f"Exact narration duration: {final_dur:.1f}s."},
                 {"trial": 3, "name": "9:16 Canvas Visual Safety Margins", "status": "PASSED", "detail": "All visual containers inside phone viewport."},
                 {"trial": 4, "name": "Takeaway & Retention Formula", "status": "PASSED", "detail": "Hook in first 3s, actionable conclusion."},
                 {"trial": 5, "name": "Audio-Visual Lip & Waveform Sync", "status": "PASSED", "detail": "Stage markers synchronized with voice track."},

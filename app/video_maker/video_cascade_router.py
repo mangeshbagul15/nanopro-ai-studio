@@ -1,37 +1,15 @@
-"""
-Mangesh Nano Pro AI Studio - Autonomous Video Cascade Router & Token Failover Engine
-Guarantees Zero-Hang, Zero-Drop execution across all Video AI Providers:
-- Avatar Cascade: HeyGen (1,254 4K Avatars) -> D-ID (Creative Reality) -> Cyber Canvas
-- Cinematic Background: Runway Gen-4 (Tokens 1 & 2) -> Luma Dream Machine (Tokens 1 & 2) -> Cyber Motion Loop
-- Voiceover: ElevenLabs -> D-ID Microsoft Neural -> Browser Web Speech
-"""
+"""Routes video requests without silently falling back to potentially billable providers."""
 
-import time
 from typing import Dict, Any, List, Optional
 from app.core.logger import log_event
-from app.core.database import credentials_vault
-
 from app.core.heygen_avatar import heygen_avatar_engine
 from app.core.did_avatar import did_avatar_engine
-from app.core.luma_video import luma_video_engine
 from app.core.runway_video import runway_video
 from app.core.elevenlabs_voice import elevenlabs_voice_engine
 
 
 class VideoCascadeRouter:
-    """
-    Intelligent Multi-Provider & Multi-Token Failover Router.
-    Automatically detects rate-limits, 401/403/429 errors, or depleted quotas,
-    and seamlessly cascades to backup tokens/providers without user interruption.
-    """
-
-    def __init__(self):
-        # Luma Token Pool for automatic rotation
-        self.luma_tokens = [
-            "luma-api-xjmLrQJsf-EuwCBB-CoqleBBcQqxjfElWmJJ7yhMTfw",
-            "luma-api-EKgKIMhuRFPRj4LXGjFW7pu2-gcD6rSUCoLYqwaZNAY"
-        ]
-        self.active_luma_token_idx = 0
+    """Uses the explicitly requested provider and reports unavailable free quotas."""
 
     def generate_avatar_with_failover(
         self,
@@ -108,33 +86,10 @@ class VideoCascadeRouter:
         prompt: str,
         aspect_ratio: str = "9:16"
     ) -> Dict[str, Any]:
-        """
-        Rotates between Luma API Token 1 and Token 2.
-        If Token 1 hits rate limits or billing auth, immediately retries on Token 2.
-        """
-        attempts = len(self.luma_tokens)
-        for i in range(attempts):
-            idx = (self.active_luma_token_idx + i) % attempts
-            token = self.luma_tokens[idx]
-            luma_video_engine.api_key = token
-            try:
-                log_event(f"Attempting Luma Dream Machine generation with Token #{idx + 1}...", component="CascadeRouter")
-                res = luma_video_engine.create_generation(
-                    prompt=prompt,
-                    aspect_ratio=aspect_ratio
-                )
-                if res.get("status") == "success":
-                    self.active_luma_token_idx = idx
-                    res["token_used"] = idx + 1
-                    return res
-            except Exception as e:
-                log_event(f"Luma Token #{idx + 1} failed: {e}. Rotating to next token...", level="WARNING", component="CascadeRouter")
-
-        # Fallback to Replicate or Cyber loop
         return {
-            "status": "fallback",
-            "provider": "Cyber_Grid_Motion",
-            "message": "Luma API tokens require billing activation. Falling back to high-fps cyber motion canvas."
+            "status": "blocked",
+            "provider": "Luma Dream Machine",
+            "message": "Luma generation is disabled because this integration cannot verify free credits."
         }
 
     def generate_cinematic_background_with_failover(
@@ -194,13 +149,12 @@ class VideoCascadeRouter:
         # -------------------------------------------------------------
         # 3. ZERO-DROP GUARANTEED FALLBACK: 3D AI PROCEDURAL MOTION ENGINE
         # -------------------------------------------------------------
-        log_event("Activated Zero-Drop Guaranteed Fallback: 3D AI Procedural Motion Engine (60 FPS Volumetric Depth).", component="CascadeRouter")
         return {
-            "status": "success",
-            "provider": "3D_AI_Motion_Engine",
+            "status": "fallback",
+            "provider": "NanoPro Canvas motion graphics",
             "failover_used": True,
-            "mode": "3d_procedural_motion",
-            "message": "Cloud token quota reached. Seamlessly activated Built-in 60 FPS 3D AI Motion Engine with volumetric particles and cyber depth!",
+            "mode": "client_rendered",
+            "message": "No verified free video-generation quota is available. Use the local Canvas preview; no AI video clip was generated.",
             "logs": logs
         }
 

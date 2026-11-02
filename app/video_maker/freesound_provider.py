@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY", "Gr6WV4n8ixUaW1skiZ8SFSyAPRvPcwHFJWfZI4Ws")
+FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY", "")
 BASE_URL = "https://freesound.org/apiv2/search/text/"
 
 
