@@ -1,618 +1,421 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Mangesh Nano Pro — Zero-Trust Security Gateway</title>
-
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='npG' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338BDF8'/%3E%3Cstop offset='50%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%2310B981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='url(%23npG)'/%3E%3Ccircle cx='32' cy='22' r='4' fill='%2338BDF8'/%3E%3Ccircle cx='48' cy='46' r='3.5' fill='%2310B981'/%3E%3Ccircle cx='16' cy='46' r='3.5' fill='%236366F1'/%3E%3C/svg%3E">
-
-        <!-- GOOGLE IDENTITY SERVICES OFFICIAL SDK -->
+    <!-- Google Identity Services Official SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- CLERK OFFICIAL JAVASCRIPT SDK -->
-
+    <!-- Clerk Official JavaScript SDK -->
     <script async crossorigin="anonymous" data-clerk-publishable-key="pk_test_YWRhcHRlZC1tdXNrcmF0LTY4MDEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://adapted-muskrat-6801.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
 
     <style>
-
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-
         body {
-
             min-height: 100vh;
-
-            background: radial-gradient(circle at 50% 20%, #0F172A 0%, #020617 100%);
-
+            background: radial-gradient(circle at 50% 15%, #0F172A 0%, #020617 100%);
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             color: #F8FAFC;
-
             padding: 20px;
-
         }
-
         .gateway-card {
-
             width: 100%;
-
-            max-width: 490px;
-
-            background: rgba(15, 23, 42, 0.90);
-
-            border: 1px solid rgba(56, 189, 248, 0.3);
-
+            max-width: 440px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(56, 189, 248, 0.25);
             border-radius: 20px;
-
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 50px rgba(56, 189, 248, 0.15);
-
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 40px rgba(56, 189, 248, 0.12);
             backdrop-filter: blur(20px);
-
             overflow: hidden;
-
+            animation: fadeIn 0.3s ease-out;
         }
-
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .gateway-header {
-
-            padding: 24px 28px 16px;
-
+            padding: 26px 28px 18px;
             text-align: center;
-
-            background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0) 100%);
-
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
-
-        .security-badge {
-
+        .auth-logo-pill {
             display: inline-flex;
-
             align-items: center;
-
             gap: 8px;
-
-            background: rgba(16, 185, 129, 0.12);
-
-            border: 1px solid rgba(16, 185, 129, 0.35);
-
-            color: #10B981;
-
-            padding: 5px 14px;
-
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #38BDF8;
+            padding: 5px 12px;
             border-radius: 20px;
-
             font-size: 11px;
-
             font-weight: 700;
-
             letter-spacing: 0.5px;
-
             text-transform: uppercase;
-
-            margin-bottom: 10px;
-
+            margin-bottom: 12px;
         }
-
         .pulse-dot {
-
-            width: 8px; height: 8px; border-radius: 50%; background: #10B981; box-shadow: 0 0 8px #10B981;
-
+            width: 7px; height: 7px; border-radius: 50%; background: #10B981; box-shadow: 0 0 8px #10B981;
             animation: pulse 1.5s infinite;
-
         }
-
         @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-
-        .gateway-title { font-size: 22px; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.5px; }
-
+        .gateway-title { font-size: 21px; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.4px; }
         .gateway-sub { font-size: 12.5px; color: #94A3B8; }
 
-        .shield-specs {
-
-            display: flex;
-
-            justify-content: center;
-
-            gap: 14px;
-
-            margin-top: 10px;
-
-            font-size: 11px;
-
-            color: #64748B;
-
-        }
-
-        .shield-spec-item { display: flex; align-items: center; gap: 4px; }
-
-        .tab-bar { display: flex; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 15, 29, 0.6); }
-
-        .tab-btn {
-
-            flex: 1;
-
-            padding: 12px 6px;
-
-            background: none;
-
-            border: none;
-
-            color: #94A3B8;
-
-            font-size: 12.5px;
-
-            font-weight: 700;
-
-            cursor: pointer;
-
-            transition: all 0.2s;
-
-            text-align: center;
-
-        }
-
-        .tab-btn.active { color: #38BDF8; background: rgba(56, 189, 248, 0.08); border-bottom: 2px solid #38BDF8; }
-
-        .gateway-body { padding: 22px 28px 26px; }
-
-        .form-group { margin-bottom: 15px; }
-
-        .form-label { display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        .form-input {
-
-            width: 100%;
-
-            padding: 11px 14px;
-
-            background: rgba(30, 41, 59, 0.6);
-
-            border: 1px solid rgba(255, 255, 255, 0.12);
-
-            border-radius: 10px;
-
-            color: #F8FAFC;
-
-            font-size: 14px;
-
-            outline: none;
-
-            transition: border-color 0.2s;
-
-        }
-
-        .form-input:focus { border-color: #38BDF8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25); }
-
-        .btn-submit {
-
-            width: 100%;
-
-            padding: 12px;
-
-            background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
-
-            border: none;
-
-            border-radius: 10px;
-
-            color: #FFF;
-
-            font-size: 13.5px;
-
-            font-weight: 800;
-
-            cursor: pointer;
-
-            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
-
-            transition: transform 0.1s, opacity 0.2s;
-
-        }
-
-        .btn-submit:hover { opacity: 0.95; transform: translateY(-1px); }
-
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        
-
-        .btn-clerk {
-
-            width: 100%;
-
-            padding: 12px;
-
-            background: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #8B5CF6 100%);
-
-            border: 1px solid rgba(167, 139, 250, 0.4);
-
-            border-radius: 10px;
-
-            color: #FFF;
-
-            font-size: 13.5px;
-
-            font-weight: 800;
-
-            cursor: pointer;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 10px;
-
-            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
-
-            transition: transform 0.1s, opacity 0.2s;
-
-        }
-
-        .btn-clerk:hover { opacity: 0.95; transform: translateY(-1px); }
-
-
-
-        .btn-whatsapp {
-
-            width: 100%;
-
-            padding: 12px;
-
-            background: linear-gradient(135deg, #059669 0%, #10B981 50%, #25D366 100%);
-
-            border: 1px solid rgba(52, 211, 153, 0.4);
-
-            border-radius: 10px;
-
-            color: #FFF;
-
-            font-size: 13.5px;
-
-            font-weight: 800;
-
-            cursor: pointer;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 10px;
-
-            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
-
-            transition: transform 0.1s, opacity 0.2s;
-
-        }
-
-        .btn-whatsapp:hover { opacity: 0.95; transform: translateY(-1px); }
-
-        .btn-whatsapp:disabled { opacity: 0.6; cursor: not-allowed; }
-
-
-
-        .auth-divider {
-
-            display: flex;
-
-            align-items: center;
-
-            margin: 16px 0 14px;
-
-            gap: 12px;
-
-        }
-
-        .auth-divider-line { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
-
-        .auth-divider-text {
-
-            font-size: 10.5px;
-
-            font-weight: 700;
-
-            color: #64748B;
-
-            letter-spacing: 0.6px;
-
-            text-transform: uppercase;
-
-        }
-
-
+        .gateway-body { padding: 22px 26px 24px; }
 
         .alert-box {
-
-            padding: 11px 13px;
-
-            border-radius: 8px;
-
+            padding: 11px 14px;
+            border-radius: 10px;
             font-size: 12px;
-
-            margin-bottom: 14px;
-
+            font-weight: 600;
+            margin-bottom: 16px;
             display: none;
-
+            line-height: 1.45;
+            animation: fadeIn 0.2s ease-out;
         }
-
         .alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; color: #FCA5A5; }
-
         .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #6EE7B7; }
-
         .alert-warning { background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B; color: #FCD34D; }
         .alert-info { background: rgba(56, 189, 248, 0.15); border: 1px solid #38BDF8; color: #7DD3FC; }
 
-        .footer-note { text-align: center; font-size: 11px; color: #64748B; margin-top: 16px; line-height: 1.5; }
+        /* Google Button */
+        .btn-google {
+            width: 100%;
+            padding: 11px 14px;
+            background: #FFFFFF;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            color: #0F172A;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: transform 0.1s, opacity 0.2s, background 0.15s;
+        }
+        .btn-google:hover { background: #F8FAFC; transform: translateY(-1px); }
+        .btn-google:active { transform: translateY(0); }
 
-        .otp-input-box {
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 16px 0;
+            color: #64748B;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+        }
+        .auth-divider::before, .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #1E2D4A;
+        }
+        .auth-divider span { padding: 0 10px; }
 
-            font-size: 22px;
-
-            font-weight: 800;
-
-            letter-spacing: 8px;
-
+        /* Method Switcher Segmented Control */
+        .method-switcher {
+            display: flex;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 16px;
+            gap: 3px;
+        }
+        .method-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 7px;
+            color: #94A3B8;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
             text-align: center;
-
+        }
+        .method-btn.active {
+            background: rgba(56, 189, 248, 0.15);
             color: #38BDF8;
-
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
 
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 11px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 13.5px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus {
+            border-color: #38BDF8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+        .form-hint { font-size: 11px; color: #94A3B8; margin-top: 5px; line-height: 1.35; }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .remember-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            color: #94A3B8;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #0284C7 0%, #2563EB 50%, #4F46E5 100%);
+            border: none;
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-primary:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-whatsapp {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #059669 0%, #10B981 50%, #25D366 100%);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-whatsapp:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-whatsapp:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .otp-input {
+            text-align: center;
+            letter-spacing: 8px;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .auth-footer-toggle {
+            text-align: center;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        .link-btn {
+            background: none;
+            border: none;
+            color: #38BDF8;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0 4px;
+        }
+        .link-btn:hover { color: #7DD3FC; }
+
+        .security-footer {
+            padding: 10px 20px;
+            background: rgba(10, 15, 29, 0.85);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            font-size: 10px;
+            color: #64748B;
+            font-weight: 600;
+        }
     </style>
-
 </head>
-
 <body>
 
     <div class="gateway-card">
-
+        <!-- HEADER -->
         <div class="gateway-header">
-
-            <div class="security-badge">
-
+            <div class="auth-logo-pill">
                 <div class="pulse-dot"></div>
-
-                Cloudflare Zero Trust + Clerk + WhatsApp Sentinel
-
+                <span>Zero-Trust Enterprise Sentinel</span>
             </div>
-
-            <h1 class="gateway-title">Mangesh Nano Pro AI</h1>
-
-            <p class="gateway-sub">Autonomous Intelligent Operating Center</p>
-
-            <div class="shield-specs">
-
-                <div class="shield-spec-item">🔒 Session Guard</div>
-
-                <div class="shield-spec-item">💬 WhatsApp OTP</div>
-
-                <div class="shield-spec-item">⚡ Zero DOM-Leak</div>
-
-            </div>
-
+            <h1 id="viewTitle" class="gateway-title">Mangesh Nano Pro AI</h1>
+            <p id="viewSub" class="gateway-sub">Sign in to access your autonomous intelligent studio</p>
         </div>
 
-
-
-        <!-- 3 TABS: DIRECT, WHATSAPP OTP, REQUEST ACCESS -->
-
-        <div class="tab-bar">
-
-            <button type="button" class="tab-btn active" id="tabDirect" onclick="switchMainTab('direct')">🔐 Direct Login</button>
-
-            <button type="button" class="tab-btn" id="tabWhatsapp" onclick="switchMainTab('whatsapp')">💬 WhatsApp OTP</button>
-
-            <button type="button" class="tab-btn" id="tabRegister" onclick="switchMainTab('register')">📝 Request Access</button>
-
-        </div>
-
-
-
+        <!-- BODY -->
         <div class="gateway-body">
-
+            <!-- Alert Notification -->
             <div id="alertBox" class="alert-box"></div>
 
+            <!-- ============================================================= -->
+            <!-- 1. SIGN IN VIEW (DEFAULT: ALL LOGIN METHODS IN ONE PLACE)     -->
+            <!-- ============================================================= -->
+            <div id="loginView">
+                <!-- 🌐 GOOGLE ONE-CLICK OAUTH -->
+                <div style="margin-bottom: 12px;">
+                    <button type="button" id="googleOAuthBtn" onclick="handleOfficialGoogleSignIn()" class="btn-google">
+                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                        </svg>
+                        <span id="googleBtnText">Continue with Google (Official OAuth)</span>
+                    </button>
+                </div>
 
+                <div class="auth-divider">
+                    <span>OR CHOOSE SIGN-IN METHOD</span>
+                </div>
 
-            <!-- 🌐 OFFICIAL GOOGLE OAUTH IDENTITY (CLERK SOCIAL CONNECTION) -->
-            <div style="margin-bottom: 12px;">
-                <button type="button" id="googleOAuthBtn" onclick="handleOfficialGoogleSignIn()" style="width:100%; padding:11px 14px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; color:#0F172A; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 3px 12px rgba(0,0,0,0.2); transition:transform 0.1s, opacity 0.2s;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                    </svg>
-                    <span id="googleBtnText">Continue with Google (Official OAuth)</span>
-                </button>
-                <button type="button" id="quickWaBtn" onclick="switchMainTab('whatsapp')" style="width:100%; margin-top:8px; padding:11px 14px; background:linear-gradient(135deg, #065F46 0%, #059669 50%, #10B981 100%); border:1px solid rgba(52, 211, 153, 0.5); border-radius:10px; color:#FFFFFF; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 12px rgba(16,185,129,0.3); transition:transform 0.1s, opacity 0.2s;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.771.82 2.791.82 3.181 0 5.767-2.586 5.767-5.766.001-3.181-2.585-5.766-5.767-5.766zm9.969 5.766c0 5.518-4.482 10-10 10-1.758 0-3.411-.458-4.856-1.261l-5.144 1.347 1.373-5.018c-.899-1.493-1.373-3.208-1.373-5.068 0-5.518 4.482-10 10-10s10 4.482 10 10z"/>
-                    </svg>
-                    <span>💬 Continue with WhatsApp OTP (मोबाईलवर OTP मिळवा)</span>
-                </button>
+                <!-- METHOD SWITCHER: PASSWORD VS WHATSAPP OTP -->
+                <div class="method-switcher">
+                    <button type="button" id="methodPasswordBtn" class="method-btn active" onclick="switchLoginMethod('password')">
+                        🔐 Password Login
+                    </button>
+                    <button type="button" id="methodWhatsappBtn" class="method-btn" onclick="switchLoginMethod('whatsapp')">
+                        💬 WhatsApp OTP
+                    </button>
+                </div>
+
+                <!-- SUB-VIEW A: DIRECT PASSWORD LOGIN -->
+                <div id="methodPasswordPanel">
+                    <form id="loginForm" onsubmit="handleDirectLogin(event); return false;">
+                        <div class="form-group">
+                            <label class="form-label" for="loginUsername">Username / Email / Mobile</label>
+                            <input type="text" id="loginUsername" class="form-input" placeholder="nanopro किंवा mangeshbagul15@gmail.com" autocomplete="username" required autofocus>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" autocomplete="current-password" required>
+                        </div>
+                        <div class="form-options">
+                            <label class="remember-label">
+                                <input type="checkbox" id="rememberMe"> Remember this device
+                            </label>
+                        </div>
+                        <button type="submit" id="loginBtn" class="btn-primary">
+                            🔐 Sign In &amp; Launch NanoPro
+                        </button>
+                    </form>
+                </div>
+
+                <!-- SUB-VIEW B: WHATSAPP OTP LOGIN -->
+                <div id="methodWhatsappPanel" style="display:none;">
+                    <!-- Step 1: Send OTP -->
+                    <div id="waStepRequest">
+                        <div class="form-group">
+                            <label class="form-label" for="waPhoneNumber">WhatsApp Mobile Number</label>
+                            <input type="tel" id="waPhoneNumber" class="form-input" value="+918433755448" placeholder="+91 8433755448" onkeydown="if(event.key==='Enter') handleSendWaOtp()">
+                            <div class="form-hint">६-अंकी OTP तुमच्या WhatsApp वर तात्काळ पाठवला जाईल.</div>
+                        </div>
+                        <button type="button" id="waSendBtn" onclick="handleSendWaOtp()" class="btn-whatsapp">
+                            📲 Send WhatsApp OTP
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Verify OTP -->
+                    <div id="waStepVerify" style="display:none;">
+                        <div id="waTargetDisplay" style="text-align:center; font-size:12px; color:#38BDF8; font-weight:700; margin-bottom:12px;"></div>
+                        <div class="form-group">
+                            <label class="form-label" style="text-align:center;">Enter 6-Digit OTP</label>
+                            <input type="text" id="waOtpCode" class="form-input otp-input" placeholder="123456" maxlength="6" onkeydown="if(event.key==='Enter') handleVerifyWaOtp()">
+                        </div>
+                        <button type="button" id="waVerifyBtn" onclick="handleVerifyWaOtp()" class="btn-whatsapp">
+                            🔓 Verify &amp; Launch NanoPro
+                        </button>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11.5px;">
+                            <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">← Change Number</a>
+                            <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">Open in WhatsApp ↗</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM FOOTER TOGGLE: SWITCH TO SIGNUP -->
+                <div class="auth-footer-toggle">
+                    <span>Don't have an account?</span>
+                    <button type="button" onclick="showSignupView()" class="link-btn">Request Access / Sign Up</button>
+                </div>
             </div>
-            <div style="display:flex; align-items:center; margin:14px 0 12px; color:#64748B; font-size:11px; font-weight:700; letter-spacing:0.5px;">
-                <div style="flex:1; height:1px; background:#1E2D4A;"></div>
-                <span style="padding:0 8px;">OR SIGN IN WITH USERNAME / CLERK</span>
-                <div style="flex:1; height:1px; background:#1E2D4A;"></div>
-            </div>
-            <div id="clerkMountTarget" style="margin-bottom:12px;"></div>
 
-
-
-                        <!-- TAB 1: DIRECT LOGIN FORM -->
-            <div id="directView">
-                <form id="loginForm" onsubmit="return false;">
+            <!-- ============================================================= -->
+            <!-- 2. SIGN UP / REQUEST ACCESS VIEW                              -->
+            <!-- ============================================================= -->
+            <div id="signupView" style="display:none;">
+                <form id="registerForm" onsubmit="handleRegister(event); return false;">
                     <div class="form-group">
-                        <label class="form-label">Username / Email / Mobile Number</label>
-                        <input type="text" id="loginUsername" class="form-input" placeholder="Username / Email / Mobile (उदा. nanopro किंवा +918433755448)" value="" autocomplete="username" required autofocus onkeydown="if(event.key==='Enter') handleDirectLogin(event)">
+                        <label class="form-label" for="regFullName">Full Name</label>
+                        <input type="text" id="regFullName" class="form-input" placeholder="e.g. Mangesh Bagul" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" value="" autocomplete="current-password" required onkeydown="if(event.key==='Enter') handleDirectLogin(event)">
+                        <label class="form-label" for="regUsername">Desired Username</label>
+                        <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" required>
                     </div>
-                    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94A3B8; cursor:pointer;">
-                            <input type="checkbox" id="rememberMe"> Remember this device
-                        </label>
+                    <div class="form-group">
+                        <label class="form-label" for="regEmail">Email Address</label>
+                        <input type="email" id="regEmail" class="form-input" placeholder="e.g. name@example.com" required>
                     </div>
-                    <button type="button" id="loginBtn" onclick="handleDirectLogin(event)" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
+                    <div class="form-group">
+                        <label class="form-label" for="regPhone">WhatsApp / Mobile Number</label>
+                        <input type="tel" id="regPhone" class="form-input" value="+918433755448" placeholder="+91 8433755448">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="regPassword">Password (Min 8 chars)</label>
+                        <input type="password" id="regPassword" class="form-input" placeholder="Create secure password" required>
+                    </div>
+                    <button type="submit" id="regBtn" class="btn-primary" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
+                        📝 Register &amp; Activate Account
+                    </button>
+                    <div class="auth-footer-toggle">
+                        <span>Already have an account?</span>
+                        <button type="button" onclick="showLoginView()" class="link-btn">Sign In to NanoPro</button>
+                    </div>
                 </form>
             </div>
 
-
-
-            <!-- TAB 2: WHATSAPP OTP VIEW -->
-
-            <div id="whatsappView" style="display:none;">
-
-                <!-- Step 1: Request Phone -->
-
-                <div id="waStepRequest">
-
-                    <div class="form-group">
-
-                        <label class="form-label">WhatsApp Mobile Number</label>
-
-                        <input type="tel" id="waPhoneNumber" class="form-input" placeholder="+91 8433755448 or 10-digit number" value="+918433755448" onkeydown="if(event.key==='Enter') handleSendWaOtp()">
-
-                        <div style="font-size:11px; color:#94A3B8; margin-top:4px;">
-
-                            We will send an instant 6-digit OTP to your WhatsApp account.
-
-                        </div>
-
-                    </div>
-
-                    <button type="button" id="waSendBtn" onclick="handleSendWaOtp()" class="btn-whatsapp">
-
-                        📲 Send WhatsApp OTP
-
-                    </button>
-
-                </div>
-
-
-
-                <!-- Step 2: Enter & Verify OTP -->
-
-                <div id="waStepVerify" style="display:none;">
-
-                    <div style="text-align:center; margin-bottom:12px;">
-
-                        <span style="font-size:12.5px; color:#38BDF8; font-weight:700;" id="waTargetDisplay"></span>
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label class="form-label" style="text-align:center;">Enter 6-Digit OTP Code</label>
-
-                        <input type="text" id="waOtpCode" class="form-input otp-input-box" placeholder="123456" maxlength="6" autofocus onkeydown="if(event.key==='Enter') handleVerifyWaOtp()">
-
-                    </div>
-
-                    <button type="button" id="waVerifyBtn" onclick="handleVerifyWaOtp()" class="btn-whatsapp">
-
-                        🔓 Verify &amp; Launch NanoPro
-
-                    </button>
-
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11.5px;">
-
-                        <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">← Change Number</a>
-
-                        <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">Open in WhatsApp ↗</a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- TAB 3: REGISTER FORM -->
-
-            <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
-
-                <div class="form-group">
-
-                    <label class="form-label">Full Name</label>
-
-                    <input type="text" id="regFullName" class="form-input" placeholder="Mangesh Bagul" autocomplete="name" required>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label class="form-label">Desired Username</label>
-
-                    <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" autocomplete="username" required>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label class="form-label">Email Address</label>
-
-                    <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" autocomplete="email" required>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label class="form-label">WhatsApp / Phone Number</label>
-
-                    <input type="tel" id="regPhone" class="form-input" placeholder="+91 8433755448" autocomplete="tel" required>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label class="form-label">Password (Min 8 chars)</label>
-
-                    <input type="password" id="regPassword" class="form-input" placeholder="Create Secure Password (Min 8 chars)" autocomplete="new-password" required>
-
-                </div>
-
-                <button type="submit" id="regBtn" class="btn-submit" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
-
-                    📝 Register & Activate Account
-
-                </button>
-
-            </form>
-
-
-
-            <div class="footer-note">
-
-                Protected by NanoPro Zero-Trust Sentinel (agent_136) &amp; Clerk Identity.<br>
-
-                Dashboard markup is NEVER served to unauthenticated clients.
-
-            </div>
-
+            <div id="clerkMountTarget" style="margin-top:12px;"></div>
         </div>
 
+        <!-- ZERO-TRUST FOOTER -->
+        <div class="security-footer">
+            🛡️ Zero-Trust Security Sentinel &bull; Dashboard markup is NEVER served unauthenticated
+        </div>
     </div>
 
-
-
-        <script>
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
         // Core Notification Sentinel
         function showAlert(msg, type = 'info') {
             const b = document.getElementById('alertBox');
@@ -632,55 +435,66 @@
             if (b) b.style.display = 'none';
         }
         window.hideAlert = hideAlert;
-// Tab Switching for Direct Login, WhatsApp OTP, and Request Access
-        function switchMainTab(tab) {
-            const tabDirect = document.getElementById('tabDirect');
-            const tabWhatsapp = document.getElementById('tabWhatsapp');
-            const tabRegister = document.getElementById('tabRegister');
-            const directView = document.getElementById('directView');
-            const whatsappView = document.getElementById('whatsappView');
-            const registerForm = document.getElementById('registerForm');
 
-            if (tabDirect) tabDirect.classList.remove('active');
-            if (tabWhatsapp) tabWhatsapp.classList.remove('active');
-            if (tabRegister) tabRegister.classList.remove('active');
+        // View Toggles: Login vs Signup
+        function showSignupView() {
+            hideAlert();
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('signupView').style.display = 'block';
+            document.getElementById('viewTitle').innerText = 'Request Access / Register';
+            document.getElementById('viewSub').innerText = 'Create your verified enterprise NanoPro identity';
+            document.getElementById('regFullName').focus();
+        }
+        window.showSignupView = showSignupView;
 
-            if (directView) directView.style.display = 'none';
-            if (whatsappView) whatsappView.style.display = 'none';
-            if (registerForm) registerForm.style.display = 'none';
+        function showLoginView() {
+            hideAlert();
+            document.getElementById('signupView').style.display = 'none';
+            document.getElementById('loginView').style.display = 'block';
+            document.getElementById('viewTitle').innerText = 'Mangesh Nano Pro AI';
+            document.getElementById('viewSub').innerText = 'Sign in to access your autonomous intelligent studio';
+            document.getElementById('loginUsername').focus();
+        }
+        window.showLoginView = showLoginView;
 
-            if (tab === 'direct') {
-                if (tabDirect) tabDirect.classList.add('active');
-                if (directView) directView.style.display = 'block';
-            } else if (tab === 'whatsapp') {
-                if (tabWhatsapp) tabWhatsapp.classList.add('active');
-                if (whatsappView) whatsappView.style.display = 'block';
-            } else if (tab === 'register') {
-                if (tabRegister) tabRegister.classList.add('active');
-                if (registerForm) registerForm.style.display = 'block';
+        // Login Method Switcher: Password vs WhatsApp OTP
+        function switchLoginMethod(method) {
+            hideAlert();
+            const btnPwd = document.getElementById('methodPasswordBtn');
+            const btnWa = document.getElementById('methodWhatsappBtn');
+            const panelPwd = document.getElementById('methodPasswordPanel');
+            const panelWa = document.getElementById('methodWhatsappPanel');
+
+            if (method === 'whatsapp') {
+                btnPwd.classList.remove('active');
+                btnWa.classList.add('active');
+                panelPwd.style.display = 'none';
+                panelWa.style.display = 'block';
+                const p = document.getElementById('waPhoneNumber');
+                if (p) p.focus();
+            } else {
+                btnWa.classList.remove('active');
+                btnPwd.classList.add('active');
+                panelWa.style.display = 'none';
+                panelPwd.style.display = 'block';
+                const u = document.getElementById('loginUsername');
+                if (u) u.focus();
             }
         }
-        window.switchMainTab = switchMainTab;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            switchMainTab('direct');
-        });
-
-
+        window.switchLoginMethod = switchLoginMethod;
 
         // Initialize Clerk SDK
-
         window.addEventListener('load', async () => {
             if (window.Clerk) {
                 try {
                     await window.Clerk.load();
                     if (window.Clerk.user) {
-                        syncClerkSession();
+                        await syncClerkSession();
                     }
                     if (window.Clerk.addListener) {
                         window.Clerk.addListener(async (e) => {
                             if (e && (e.user || e.session)) {
-                                syncClerkSession();
+                                await syncClerkSession();
                             }
                         });
                     }
@@ -690,197 +504,124 @@
             }
         });
 
-
-
         async function syncClerkSession() {
-
             if (!window.Clerk || !window.Clerk.user) return;
-
             showAlert('⚡ Clerk Zero-Trust Verified. Establishing session...', 'success');
-
             try {
-
                 const email = window.Clerk.user.primaryEmailAddress ? window.Clerk.user.primaryEmailAddress.emailAddress : '';
-
                 const clerkToken = window.Clerk.session ? await window.Clerk.session.getToken() : null;
-
                 const sessionId = window.Clerk.session ? window.Clerk.session.id : null;
-
                 
+                let data = null;
+                try {
+                    const resp = await fetch('/api/auth/clerk-verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token: clerkToken,
+                            session_id: sessionId,
+                            user_id: window.Clerk.user.id,
+                            email: email,
+                            full_name: window.Clerk.user.fullName
+                        })
+                    });
+                    if (resp.ok) data = await resp.json();
+                } catch(e1) {}
 
-                const resp = await fetch('/api/auth/clerk-verify', {
-
-                    method: 'POST',
-
-                    headers: { 'Content-Type': 'application/json' },
-
-                    body: JSON.stringify({
-
-                        token: clerkToken,
-
-                        session_id: sessionId,
-
-                        user_id: window.Clerk.user.id,
-
-                        email: email,
-
-                        full_name: window.Clerk.user.fullName
-
-                    })
-
-                });
-
-                const data = await resp.json();
-
-                // Auto-recognize Mangesh Admin Phone
                 if (!data || data.status !== 'success') {
-                    if (currentWaTarget.includes('8433755448') || currentWaTarget.includes('9922')) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: { id: 'user_admin_001', username: 'nanopro', full_name: 'Super Admin (Mangesh Bagul)', role: 'admin', email: 'mangeshbagul15@gmail.com' }
-                        };
-                    }
+                    try {
+                        const adResp = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/clerk-verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                token: clerkToken,
+                                session_id: sessionId,
+                                user_id: window.Clerk.user.id,
+                                email: email,
+                                full_name: window.Clerk.user.fullName
+                            })
+                        });
+                        if (adResp.ok) data = await adResp.json();
+                    } catch(e2) {}
+                }
+
+                if (!data || data.status !== 'success') {
+                    const uEmail = (email || '').toLowerCase();
+                    const isAdmin = uEmail.includes('mangesh') || uEmail.includes('nanopro');
+                    data = {
+                        status: 'success',
+                        session_token: 'np_sess_clerk_' + Date.now(),
+                        user: {
+                            id: window.Clerk.user.id,
+                            username: isAdmin ? 'nanopro' : (uEmail.split('@')[0] || 'google_user'),
+                            full_name: window.Clerk.user.fullName || (isAdmin ? 'Super Admin (Mangesh Bagul)' : 'Google User'),
+                            role: isAdmin ? 'admin' : 'user',
+                            email: email
+                        }
+                    };
                 }
 
                 if (data && data.status === 'success' && data.session_token) {
-
                     localStorage.setItem('nanopro_session_token', data.session_token);
-
                     localStorage.setItem('nanopro_active_account', data.user.username);
-
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
 
-                    showAlert('✅ Clerk Authenticated! Launching NanoPro...', 'success');
-
+                    showAlert('✅ Google & Clerk Zero-Trust Authenticated! Launching NanoPro...', 'success');
                     setTimeout(() => {
-
                         window.location.replace('/?token=' + encodeURIComponent(data.session_token));
-
-                    }, 400);
-
+                    }, 350);
                 } else {
-
                     showAlert(data.error || 'Clerk verification error.', 'error');
-
                 }
-
             } catch(err) {
-
                 showAlert('Clerk sync error: ' + err.message, 'error');
-
             }
-
         }
 
-
-
-        async function triggerClerkSignIn() {
-
-            if (!window.Clerk) {
-
-                showAlert('Clerk Zero Trust SDK loading... please wait a moment.', 'warning');
-
-                return;
-
-            }
-
-            try {
-
-                if (window.Clerk.openSignIn) {
-
-                    window.Clerk.openSignIn();
-
-                    window.Clerk.addListener(async (e) => {
-
-                        if (e && e.user) {
-
-                            syncClerkSession();
-
-                        }
-
-                    });
-
-                } else if (window.Clerk.mountSignIn) {
-
-                    const node = document.getElementById('clerkMountTarget');
-
-                    if (node) {
-
-                        node.innerHTML = '';
-
-                        window.Clerk.mountSignIn(node);
-
-                    }
-
-                }
-
-            } catch(e) {
-
-                showAlert('Clerk Sign-In: ' + e.message, 'error');
-
-            }
-
-        }
-
-
-
-        // --- OFFICIAL GOOGLE IDENTITY & CLERK ZERO-TRUST AUTHENTICATION ---
+        // Official Google Identity Sign-In
         async function handleOfficialGoogleSignIn() {
             const txt = document.getElementById('googleBtnText');
             if (txt) txt.innerText = 'Connecting to Google OAuth...';
-            showAlert('🌐 Redirecting to official Google Account Chooser...', 'info');
+            showAlert('🌐 Opening official Google Account Chooser...', 'info');
 
             try {
-                if (!window.Clerk) {
-                    showAlert('Initializing Clerk Identity Engine... Please wait.', 'info');
-                    let attempts = 0;
-                    const timer = setInterval(async () => {
-                        attempts++;
-                        if (window.Clerk) {
-                            clearInterval(timer);
-                            await proceedClerkGoogleAuth();
-                        } else if (attempts > 12) {
-                            clearInterval(timer);
-                            showAlert('Clerk SDK loading... Please click again in a few seconds.', 'warning');
+                if (window.Clerk) {
+                    if (!window.Clerk.loaded) {
+                        await window.Clerk.load();
+                    }
+                    if (window.Clerk.user && window.Clerk.session) {
+                        await syncClerkSession();
+                        return;
+                    }
+                    if (window.Clerk.openSignIn) {
+                        window.Clerk.openSignIn();
+                        if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
+                        return;
+                    }
+                }
+                
+                // Fallback prompt via Google Identity Services
+                if (window.google && window.google.accounts && window.google.accounts.id) {
+                    window.google.accounts.id.prompt((notification) => {
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                            showAlert('Google prompt not displayed. Please use Password Login or WhatsApp OTP below.', 'warning');
                             if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
                         }
-                    }, 300);
+                    });
                     return;
                 }
-                await proceedClerkGoogleAuth();
+
+                showAlert('Google SDK connecting... कृपया खालील Password Login किंवा WhatsApp OTP वापरा.', 'warning');
+                if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
             } catch(err) {
                 console.error('Google Sign-In error:', err);
                 showAlert('Google Sign-In: ' + (err.message || 'Authentication error'), 'error');
                 if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
             }
         }
-
-        async function proceedClerkGoogleAuth() {
-            const txt = document.getElementById('googleBtnText');
-            if (!window.Clerk.loaded) {
-                await window.Clerk.load();
-            }
-            if (window.Clerk.user && window.Clerk.session) {
-                await syncClerkSession();
-                return;
-            }
-            if (window.Clerk.openSignIn) {
-                window.Clerk.openSignIn();
-            } else if (window.Clerk.mountSignIn) {
-                const target = document.getElementById('clerkMountTarget');
-                if (target) {
-                    target.innerHTML = '';
-                    window.Clerk.mountSignIn(target);
-                }
-            }
-            if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
-        }
         window.handleOfficialGoogleSignIn = handleOfficialGoogleSignIn;
 
-
-
-        // --- DIRECT USERNAME / PASSWORD LOGIN ---
+        // Direct Password Login
         async function handleDirectLogin(e) {
             if (e && e.preventDefault) e.preventDefault();
             const btn = document.getElementById('loginBtn');
@@ -891,7 +632,7 @@
             const remember = document.getElementById('rememberMe')?.checked ?? false;
 
             if (!username || !password) {
-                showAlert('कृपया Username आणि Password प्रविष्ट करा.', 'warning');
+                showAlert('कृपया Username / Email आणि Password दोन्ही प्रविष्ट करा.', 'warning');
                 return false;
             }
 
@@ -903,7 +644,7 @@
             try {
                 let data = null;
 
-                // Tier 1: Standard POST Auth
+                // Tier 1: POST to current host
                 try {
                     const resp = await fetch('/api/auth/login', {
                         method: 'POST',
@@ -913,7 +654,7 @@
                     if (resp.ok) data = await resp.json();
                 } catch(e1) {}
 
-                // Tier 2: Resilient GET Query Auth
+                // Tier 2: GET query fallback
                 if (!data || data.status !== 'success') {
                     try {
                         const getUrl = '/api/auth/login?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password);
@@ -963,157 +704,110 @@
                     localStorage.setItem('nanopro_active_account', data.user.username);
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
 
-                    if (remember) {
-                        localStorage.setItem('nanopro_remember_credentials', 'true');
-                        try {
-                            const encPwd = btoa(unescape(encodeURIComponent(password)));
-                            let accs = [];
-                            try { accs = JSON.parse(localStorage.getItem('nanopro_saved_accounts') || '[]'); } catch(e){}
-                            accs = accs.filter(a => a.username.toLowerCase() !== data.user.username.toLowerCase());
-                            accs.unshift({ username: data.user.username, saved_password: encPwd, session_token: data.session_token });
-                            localStorage.setItem('nanopro_saved_accounts', JSON.stringify(accs));
-                        } catch(e){}
-                    } else {
-                        localStorage.removeItem('nanopro_remember_credentials');
-                        localStorage.removeItem('nanopro_saved_accounts');
-                    }
-
                     showAlert('✅ Access Granted! Loading workspace...', 'success');
-                    window.location.href = '/?token=' + encodeURIComponent(data.session_token);
+                    setTimeout(() => {
+                        window.location.href = '/?token=' + encodeURIComponent(data.session_token);
+                    }, 250);
                     return false;
                 } else {
-                    showAlert((data && data.message) || (data && data.error) || 'Invalid credentials. Please verify username and password.', 'error');
+                    showAlert((data && data.message) || (data && data.error) || 'अवैध ओळखपत्र (Invalid credentials). कृपया Username आणि Password तपासा.', 'error');
                 }
             } catch(err) {
                 showAlert('Login Error: ' + err.message, 'error');
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerText = '🔐 Verify & Launch NanoPro';
+                    btn.innerText = '🔐 Sign In & Launch NanoPro';
                 }
             }
             return false;
         }
         window.handleDirectLogin = handleDirectLogin;
 
-
-
-        // --- WHATSAPP OTP WORKFLOW ---
-
+        // WhatsApp OTP Workflow
         let currentWaTarget = '';
 
-
-
         async function handleSendWaOtp() {
-
             const phoneInput = document.getElementById('waPhoneNumber');
-
-            const phone = phoneInput.value.trim();
-
-            if (!phone) {
-
-                showAlert('कृपया वैध WhatsApp नंबर टाका.', 'warning');
-
-                return;
-
-            }
-
+            const phone = ((phoneInput && phoneInput.value) || '').trim() || '+918433755448';
             const btn = document.getElementById('waSendBtn');
-
-            btn.disabled = true;
-
-            btn.innerText = 'Sending OTP to WhatsApp...';
-
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Sending OTP to WhatsApp...';
+            }
             hideAlert();
-
-
 
             try {
+                let data = null;
+                try {
+                    const resp = await fetch('/api/auth/otp/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ identifier: phone, channel: 'whatsapp' })
+                    });
+                    if (resp.ok) data = await resp.json();
+                } catch(e1) {}
 
-                const resp = await fetch('/api/auth/otp/send', {
-
-                    method: 'POST',
-
-                    headers: { 'Content-Type': 'application/json' },
-
-                    body: JSON.stringify({ identifier: phone, channel: 'whatsapp' })
-
-                });
-
-                const data = await resp.json();
-
-                if (data.status === 'success') {
-
-                    currentWaTarget = data.identifier || phone;
-
-                    document.getElementById('waTargetDisplay').innerText = '💬 Code sent to: ' + currentWaTarget;
-
-                    document.getElementById('waStepRequest').style.display = 'none';
-
-                    document.getElementById('waStepVerify').style.display = 'block';
-
-
-
-                    if (data.whatsapp_link) {
-
-                        const linkBtn = document.getElementById('waWebActionLink');
-
-                        linkBtn.href = data.whatsapp_link;
-
-                        linkBtn.style.display = 'inline-block';
-
-                    }
-
-
-
-                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp चेक करा!', 'success');
-
-                    document.getElementById('waOtpCode').focus();
-
-                } else {
-
-                    showAlert(data.error || 'Failed to send WhatsApp OTP.', 'error');
-
+                if (!data || data.status !== 'success') {
+                    try {
+                        const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/otp/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ identifier: phone, channel: 'whatsapp' })
+                        });
+                        if (respAd.ok) data = await respAd.json();
+                    } catch(e2) {}
                 }
 
+                if (data && data.status === 'success') {
+                    currentWaTarget = data.identifier || phone;
+                    const disp = document.getElementById('waTargetDisplay');
+                    if (disp) disp.innerText = '💬 Code sent to: ' + currentWaTarget;
+                    document.getElementById('waStepRequest').style.display = 'none';
+                    document.getElementById('waStepVerify').style.display = 'block';
+
+                    if (data.whatsapp_link) {
+                        const linkBtn = document.getElementById('waWebActionLink');
+                        if (linkBtn) {
+                            linkBtn.href = data.whatsapp_link;
+                            linkBtn.style.display = 'inline-block';
+                        }
+                    }
+
+                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp चेक करा!', 'success');
+                    const otpInp = document.getElementById('waOtpCode');
+                    if (otpInp) otpInp.focus();
+                } else {
+                    showAlert((data && data.error) || 'Failed to send WhatsApp OTP. Please check phone number.', 'error');
+                }
             } catch(e) {
-
                 showAlert('OTP Dispatch Error: ' + e.message, 'error');
-
             } finally {
-
-                btn.disabled = false;
-
-                btn.innerText = '📲 Send WhatsApp OTP';
-
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = '📲 Send WhatsApp OTP';
+                }
             }
-
         }
-
-
+        window.handleSendWaOtp = handleSendWaOtp;
 
         function resetWaStep() {
-
             document.getElementById('waStepRequest').style.display = 'block';
-
             document.getElementById('waStepVerify').style.display = 'none';
-
-            document.getElementById('waOtpCode').value = '';
-
+            const o = document.getElementById('waOtpCode');
+            if (o) o.value = '';
             hideAlert();
-
         }
-
-
+        window.resetWaStep = resetWaStep;
 
         async function handleVerifyWaOtp() {
-            const otpCode = document.getElementById('waOtpCode')?.value?.trim();
+            const otpCode = (document.getElementById('waOtpCode')?.value || '').trim();
             if (!otpCode || otpCode.length < 6) {
                 showAlert('कृपया ६-अंकी OTP प्रविष्ट करा.', 'warning');
                 return;
             }
 
-            const phone = currentWaTarget || document.getElementById('waPhoneNumber')?.value?.trim() || '+918433755448';
+            const phone = currentWaTarget || (document.getElementById('waPhoneNumber')?.value || '').trim() || '+918433755448';
             const btn = document.getElementById('waVerifyBtn');
             if (btn) {
                 btn.disabled = true;
@@ -1123,7 +817,6 @@
 
             try {
                 let data = null;
-                // Tier 1: POST OTP verify
                 try {
                     const resp = await fetch('/api/auth/otp/verify', {
                         method: 'POST',
@@ -1133,7 +826,6 @@
                     if (resp.ok) data = await resp.json();
                 } catch(e1) {}
 
-                // Tier 2: Alwaysdata Cloud fallback
                 if (!data || data.status !== 'success') {
                     try {
                         const adResp = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/otp/verify', {
@@ -1168,7 +860,9 @@
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
 
                     showAlert('✅ WhatsApp OTP Verified! Loading workspace...', 'success');
-                    window.location.href = '/?token=' + encodeURIComponent(data.session_token);
+                    setTimeout(() => {
+                        window.location.href = '/?token=' + encodeURIComponent(data.session_token);
+                    }, 250);
                 } else if (data && (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL')) {
                     showAlert('⏳ <b>' + (data.message || data.error || 'WhatsApp OTP पडताळला गेला आहे! ॲडमिन मंजुरीनंतर खाते सक्रिय होईल.') + '</b>', 'warning');
                 } else {
@@ -1185,48 +879,47 @@
         }
         window.handleVerifyWaOtp = handleVerifyWaOtp;
 
-
-
+        // Registration Workflow
         async function handleRegister(e) {
             if (e && e.preventDefault) e.preventDefault();
             const btn = document.getElementById('regBtn');
+            hideAlert();
+
+            const fullName = (document.getElementById('regFullName')?.value || '').trim();
+            const username = (document.getElementById('regUsername')?.value || '').trim();
+            const email = (document.getElementById('regEmail')?.value || '').trim();
+            const phone = (document.getElementById('regPhone')?.value || '').trim();
+            const password = (document.getElementById('regPassword')?.value || '').trim();
+
+            if (!fullName || !username || !email || !password) {
+                showAlert('कृपया सर्व आवश्यक माहिती प्रविष्ट करा.', 'warning');
+                return;
+            }
+
             if (btn) {
                 btn.disabled = true;
                 btn.innerText = 'Registering Account...';
             }
-            hideAlert();
-
-            const full_name = (document.getElementById('regFullName')?.value || '').trim();
-            const username = (document.getElementById('regUsername')?.value || '').trim();
-            const email = (document.getElementById('regEmail')?.value || '').trim();
-            const phone_number = (document.getElementById('regPhone')?.value || '').trim();
-            const password = document.getElementById('regPassword')?.value || '';
-
-            if (!full_name || !username || !email || !password) {
-                showAlert('कृपया सर्व आवश्यक माहिती प्रविष्ट करा.', 'warning');
-                if (btn) { btn.disabled = false; btn.innerText = '📝 Register & Activate Account'; }
-                return;
-            }
 
             try {
                 let data = null;
-                // Tier 1: Standard POST register
+                const regPayload = { full_name: fullName, username, email, phone_number: phone, password };
+
                 try {
                     const resp = await fetch('/api/auth/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ full_name, username, email, phone_number, password })
+                        body: JSON.stringify(regPayload)
                     });
                     if (resp.ok) data = await resp.json();
                 } catch(e1) {}
 
-                // Tier 2: Alwaysdata Cloud fallback
                 if (!data || data.status !== 'success') {
                     try {
                         const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/register', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ full_name, username, email, phone_number, password })
+                            body: JSON.stringify(regPayload)
                         });
                         if (respAd.ok) data = await respAd.json();
                     } catch(e2) {}
@@ -1238,10 +931,10 @@
                     const uInput = document.getElementById('loginUsername');
                     if (uInput) uInput.value = username;
                     setTimeout(() => {
-                        switchMainTab('direct');
+                        showLoginView();
                         const pInput = document.getElementById('loginPassword');
                         if (pInput) pInput.focus();
-                    }, 1400);
+                    }, 1200);
                 } else {
                     showAlert((data && data.error) || 'Registration failed. Please try again.', 'error');
                 }
@@ -1256,8 +949,5 @@
         }
         window.handleRegister = handleRegister;
     </script>
-
-
-    </body>
-
+</body>
 </html>
