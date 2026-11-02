@@ -1817,6 +1817,18 @@ NanoPro prompt-specific scenes, teacher narration आणि निवडले�
 
                 </div>
 
+                <section id="learnerInteractionPanel" aria-live="polite" aria-label="Lesson check-in" hidden style="width: 100%; max-width: 340px; margin-top: 10px; padding: 14px; border: 1px solid rgba(201,239,112,.55); border-radius: 12px; background: linear-gradient(145deg, #151d16, #101511); color: #eef4e4; box-shadow: 0 12px 30px rgba(0,0,0,.3);">
+                    <div style="font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #C9EF70; font-weight: 800;">Quick check-in · your turn</div>
+                    <p id="learnerInteractionQuestion" style="margin: 8px 0 10px; font-size: 14px; line-height: 1.5;"></p>
+                    <label for="learnerInteractionAnswer" style="display: block; margin-bottom: 5px; font-size: 11px; color: #a9b0a4;">What do you think? Type a short answer.</label>
+                    <input id="learnerInteractionAnswer" type="text" autocomplete="off" style="width: 100%; box-sizing: border-box; padding: 9px 10px; color: #f7faef; background: #0a0f0b; border: 1px solid #394239; border-radius: 7px;" />
+                    <p id="learnerInteractionFeedback" role="status" style="margin: 8px 0 0; font-size: 12px; line-height: 1.45;"></p>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button id="learnerInteractionReveal" type="button" class="btn btn-primary" onclick="revealLearnerAnswer()" style="padding: 7px 11px; font-size: 11px;">Reveal the explanation</button>
+                        <button id="learnerInteractionContinue" type="button" class="btn btn-secondary" onclick="continueAfterLearnerAnswer()" hidden style="padding: 7px 11px; font-size: 11px;">Continue lesson →</button>
+                    </div>
+                </section>
+
             </section>
 
 

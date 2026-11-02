@@ -1758,6 +1758,7 @@ class SqlShortVideoEngine:
         used_model = None
         used_mode = None
         storyboard_source = "Prompt-derived fallback"
+        storyboard_error = ""
 
         # Unpack active providers configuration
         prov_dict = providers or {}
@@ -1895,7 +1896,8 @@ class SqlShortVideoEngine:
                 ai_resp, used_model, used_mode = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
                     system_prompt=f"You are NanoPro's technical educator and storyboard director. Output strictly raw valid JSON without markdown fences.\n{learned_guide}",
-                    models=target_models
+                    models=target_models,
+                    allow_fallback=generation_pattern != "unified",
                 )
                 if "{" in ai_resp and "}" in ai_resp:
                     json_str = ai_resp[ai_resp.find("{"):ai_resp.rfind("}") + 1]
@@ -1914,7 +1916,21 @@ class SqlShortVideoEngine:
                 else:
                     raise ValueError("The selected model did not return valid storyboard JSON.")
             except Exception as e:
-                log_event(f"AI short prompt synthesis notice: {e}", level="DEBUG", component="SqlShortEngine")
+                storyboard_error = str(e)
+                log_event(
+                    f"AI short prompt synthesis notice: {e}",
+                    level="WARNING" if generation_pattern == "unified" else "DEBUG",
+                    component="SqlShortEngine",
+                )
+
+        if not matched and generation_pattern == "unified" and storyboard_error:
+            return {
+                "status": "error",
+                "message": (
+                    f"The selected storyboard model could not generate this lesson: {storyboard_error} "
+                    "Choose Automatic model fallback or check the selected provider's API credentials."
+                ),
+            }
 
         # Fallback to 100% dynamic prompt analysis (zero hardcoded static templates)
         if not matched:

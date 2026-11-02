@@ -77,10 +77,11 @@ def get_sql_video_js() -> str:
         enable3DMotionEngine: true,
 
         renderScale: 1,
-
         lastSoundCueKey: "",
-
-        soundEffectEvents: 0
+        soundEffectEvents: 0,
+        interactionPauseKey: "",
+        interactionRevealed: false,
+        answeredInteractionKeys: {}
 
     };
 
@@ -1871,6 +1872,11 @@ SECOND_HIGHEST_SALARY: 70000`;
                 sqlShortState.activeVideoSpec = dynamicSpec;
 
                 sqlShortState.activePreset = dynamicSpec;
+                sqlShortState.answeredInteractionKeys = {};
+                sqlShortState.interactionPauseKey = "";
+                sqlShortState.interactionRevealed = false;
+                hideLearnerInteraction();
+                sqlShortState.currentTime = 0;
 
 
 
@@ -15410,7 +15416,9 @@ SECOND_HIGHEST_SALARY: 70000`;
 
             const revealAt = 0.76;
             const opacity = Math.min(1, (progress - 0.38) * 5, (0.94 - progress) * 5);
-            const reveal = progress >= revealAt;
+            const reveal = progress >= revealAt || (
+                !sqlShortState.isExporting && sqlShortState.interactionPauseKey && sqlShortState.interactionRevealed
+            );
             const accent = /^#[0-9a-f]{6}$/i.test(visual.theme_color || "") ? visual.theme_color : "#38BDF8";
             ctx.save();
             ctx.globalAlpha *= Math.max(0, opacity);
@@ -20793,7 +20801,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
 
     function playSqlShort() {
-
+        if (sqlShortState.interactionPauseKey) return;
         if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
 
             sqlShortState.currentTime = 0;
@@ -20861,12 +20869,34 @@ SECOND_HIGHEST_SALARY: 70000`;
                 sqlShortState.currentTime = audioEl.currentTime;
 
             } else {
-
                 sqlShortState.currentTime += deltaSec * sqlShortState.playbackSpeed;
-
             }
 
-
+            const preset = sqlShortState.activePreset;
+            const stages = preset?.stages || preset?.scenes || [];
+            const interactionStage = stages.find((stage, index) => {
+                const visual = stage?.visual_data || {};
+                const key = String(stage.id || index);
+                return visual.interaction_prompt
+                    && sqlShortState.currentTime >= Number(stage.start || 0) + (Number(stage.end || 0) - Number(stage.start || 0)) * 0.38
+                    && !sqlShortState.answeredInteractionKeys[key];
+            });
+            if (interactionStage && !sqlShortState.isExporting) {
+                const stageIndex = stages.indexOf(interactionStage);
+                const key = String(interactionStage.id || stageIndex);
+                const start = Number(interactionStage.start || 0);
+                const duration = Math.max(0, Number(interactionStage.end || start) - start);
+                sqlShortState.currentTime = start + duration * 0.38;
+                sqlShortState.interactionPauseKey = key;
+                sqlShortState.interactionRevealed = false;
+                const audio = document.getElementById("sqlVoiceAudio");
+                if (audio) audio.currentTime = sqlShortState.currentTime;
+                showLearnerInteraction(interactionStage);
+                pauseSqlShortPlay();
+                renderSqlShortFrame(sqlShortState.currentTime);
+                updatePlayerScrubberUI(sqlShortState.currentTime);
+                return;
+            }
 
             if (sqlShortState.currentTime >= sqlShortState.maxDuration) {
 
@@ -20951,7 +20981,10 @@ SECOND_HIGHEST_SALARY: 70000`;
     function restartSqlShortPlay() {
 
         pauseSqlShortPlay();
-
+        sqlShortState.answeredInteractionKeys = {};
+        sqlShortState.interactionPauseKey = "";
+        sqlShortState.interactionRevealed = false;
+        hideLearnerInteraction();
         sqlShortState.currentTime = 0.0;
 
         updatePlayerScrubberUI(0);
@@ -20966,6 +20999,11 @@ SECOND_HIGHEST_SALARY: 70000`;
 
     function seekSqlShortPlayer(val) {
 
+        if (sqlShortState.interactionPauseKey) {
+            sqlShortState.interactionPauseKey = "";
+            sqlShortState.interactionRevealed = false;
+            hideLearnerInteraction();
+        }
         sqlShortState.currentTime = parseFloat(val);
 
         const audioEl = document.getElementById("sqlVoiceAudio");
@@ -20977,6 +21015,70 @@ SECOND_HIGHEST_SALARY: 70000`;
         renderSqlShortFrame(sqlShortState.currentTime);
 
     }
+
+    function showLearnerInteraction(stage) {
+        const panel = document.getElementById("learnerInteractionPanel");
+        const question = document.getElementById("learnerInteractionQuestion");
+        const answer = document.getElementById("learnerInteractionAnswer");
+        const feedback = document.getElementById("learnerInteractionFeedback");
+        const reveal = document.getElementById("learnerInteractionReveal");
+        const continueButton = document.getElementById("learnerInteractionContinue");
+        if (!panel || !question || !answer || !feedback || !reveal || !continueButton) return;
+        question.textContent = String(stage?.visual_data?.interaction_prompt || "What do you think happens next?");
+        answer.value = "";
+        feedback.textContent = "";
+        reveal.hidden = false;
+        continueButton.hidden = true;
+        panel.hidden = false;
+        answer.focus({ preventScroll: true });
+    }
+
+    function revealLearnerAnswer() {
+        const answer = document.getElementById("learnerInteractionAnswer");
+        const feedback = document.getElementById("learnerInteractionFeedback");
+        const reveal = document.getElementById("learnerInteractionReveal");
+        const continueButton = document.getElementById("learnerInteractionContinue");
+        const stage = (sqlShortState.activePreset?.stages || sqlShortState.activePreset?.scenes || [])
+            .find((item, index) => String(item.id || index) === sqlShortState.interactionPauseKey);
+        const explanation = String(stage?.visual_data?.reveal_text || stage?.visual_data?.subtext || "Continue watching to see the key idea.");
+        const learnerAnswer = String(answer?.value || "").trim();
+        if (!learnerAnswer) {
+            if (feedback) feedback.textContent = "Take a moment to write your idea, then reveal the explanation.";
+            answer?.focus({ preventScroll: true });
+            return;
+        }
+        sqlShortState.interactionRevealed = true;
+        if (feedback) {
+            feedback.textContent = `${explanation}${learnerAnswer ? " · Your answer: " + learnerAnswer : ""}`;
+        }
+        if (answer) answer.hidden = true;
+        const label = answer?.previousElementSibling;
+        if (label) label.hidden = true;
+        if (reveal) reveal.hidden = true;
+        if (continueButton) continueButton.hidden = false;
+        renderSqlShortFrame(sqlShortState.currentTime);
+    }
+
+    function continueAfterLearnerAnswer() {
+        if (!sqlShortState.interactionPauseKey) return;
+        sqlShortState.answeredInteractionKeys[sqlShortState.interactionPauseKey] = true;
+        sqlShortState.interactionPauseKey = "";
+        sqlShortState.interactionRevealed = false;
+        hideLearnerInteraction();
+        playSqlShort();
+    }
+
+    function hideLearnerInteraction() {
+        const panel = document.getElementById("learnerInteractionPanel");
+        const answer = document.getElementById("learnerInteractionAnswer");
+        const label = answer?.previousElementSibling;
+        if (panel) panel.hidden = true;
+        if (answer) answer.hidden = false;
+        if (label) label.hidden = false;
+    }
+
+    window.revealLearnerAnswer = revealLearnerAnswer;
+    window.continueAfterLearnerAnswer = continueAfterLearnerAnswer;
 
 
 
@@ -21878,6 +21980,9 @@ SECOND_HIGHEST_SALARY: 70000`;
         sqlShortState.soundEffectEvents = 0;
 
         sqlShortState.isExporting = true;
+        sqlShortState.interactionPauseKey = "";
+        sqlShortState.interactionRevealed = false;
+        hideLearnerInteraction();
 
         recorder.start(1000);
 

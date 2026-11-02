@@ -1844,6 +1844,7 @@ class ModelManager:
         system_prompt: Optional[str] = None,
         timeout: float = 60.0,
         models: Optional[List[str]] = None,
+        allow_fallback: bool = True,
         **kwargs
     ) -> Tuple[str, str, Any, float]:
         """
@@ -1855,9 +1856,13 @@ class ModelManager:
         if not models and "model" in kwargs:
             models = [kwargs["model"]]
 
-        model_list = self.get_effective_model_list(requested_models=models, task_type=task_type)
+        if models and not allow_fallback:
+            model_list = list(dict.fromkeys(model for model in models if model))
+        else:
+            model_list = self.get_effective_model_list(requested_models=models, task_type=task_type)
         last_error = ""
         failed_providers_this_call = set()
+        available_models = []
 
         for model in model_list:
             adapter, provider_type = self.get_adapter_for_model(model)
@@ -1879,6 +1884,7 @@ class ModelManager:
             if not adapter.is_available():
                 continue
 
+            available_models.append(model)
             self._init_model_telemetry(model)
             t_start = time.time()
             try:
@@ -1946,6 +1952,11 @@ class ModelManager:
                     level="WARNING", component="ModelRouter"
                 )
 
+        if not available_models:
+            requested = ", ".join(model_list) or "no model was selected"
+            raise RuntimeError(
+                f"No configured provider is available for [{requested}]. Check that provider's API credentials and service status."
+            )
         raise RuntimeError(f"All routed model candidates exhausted for [{task_type}]. Last error: {last_error}")
 
     def execute_with_fallback(
@@ -1955,6 +1966,7 @@ class ModelManager:
         system_prompt: Optional[str] = None,
         models: List[str] = None,
         timeout: Optional[float] = None,
+        allow_fallback: bool = True,
         **kwargs
     ) -> Tuple[str, str, Any]:
         """Backward-compatible wrapper for execute_with_fallback."""
@@ -1968,6 +1980,7 @@ class ModelManager:
             system_prompt=system_prompt,
             timeout=eff_timeout,
             models=models,
+            allow_fallback=allow_fallback,
             **kwargs
         )
         return content, model, mode

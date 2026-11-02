@@ -184,6 +184,14 @@ class TestTier1_F2_WorkspaceControls(unittest.TestCase):
         self.assertIn("@media (max-width: 760px)", self.html)
         self.assertIn("overflow-x: hidden !important", self.html)
 
+    def test_video_studio_has_a_real_pause_and_answer_interaction(self):
+        js = get_sql_video_js()
+        self.assertIn('id="learnerInteractionPanel"', self.html)
+        self.assertIn("showLearnerInteraction(interactionStage)", js)
+        self.assertIn("function revealLearnerAnswer()", js)
+        self.assertIn("function continueAfterLearnerAnswer()", js)
+        self.assertIn("answeredInteractionKeys", js)
+
 
 class TestPromptVisualDirections(unittest.TestCase):
     def test_scene_layouts_are_varied_and_middle_scene_prompts_learner(self):
@@ -214,6 +222,80 @@ class TestPromptVisualDirections(unittest.TestCase):
         normalized = _ensure_scene_visual_directions(stages, "en")
 
         self.assertEqual(normalized[0]["visual_data"]["layout"], "table")
+
+    def test_selected_model_failure_is_not_silently_reported_as_a_storyboard(self):
+        with patch(
+            "app.core.model_adapter.model_manager.execute_with_fallback",
+            side_effect=RuntimeError("No configured provider is available for [openai/gpt-oss-120b]."),
+        ):
+            result = asyncio.run(sql_short_engine.generate_short_prompt_async(
+                "Agentic RAG with vector search and semantic reranking",
+                language="hi",
+                generation_pattern="unified",
+                selected_model="openai/gpt-oss-120b",
+            ))
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("selected storyboard model could not generate", result["message"])
+        self.assertNotIn("stages", result)
+
+
+class TestStrictModelRouting(unittest.TestCase):
+    def test_selected_only_does_not_try_router_fallback_candidates(self):
+        from app.core.model_adapter import ModelManager
+
+        manager = ModelManager()
+        selected_adapter = SimpleNamespace(
+            is_available=MagicMock(return_value=True),
+            chat=MagicMock(side_effect=RuntimeError("selected model request failed")),
+        )
+        backup_adapter = SimpleNamespace(
+            is_available=MagicMock(return_value=True),
+            chat=MagicMock(return_value=("backup response", "backup provider")),
+        )
+
+        with patch.object(manager, "get_effective_model_list") as effective_models, patch.object(
+            manager,
+            "get_adapter_for_model",
+            side_effect=[(selected_adapter, "groq-lpu"), (backup_adapter, "gemini-cloud")],
+        ):
+            with self.assertRaisesRegex(RuntimeError, "selected model request failed"):
+                manager.route_and_execute(
+                    "Create a technical lesson",
+                    task_type="dialogue",
+                    models=["openai/gpt-oss-120b"],
+                    allow_fallback=False,
+                )
+
+        effective_models.assert_not_called()
+        backup_adapter.chat.assert_not_called()
+
+    def test_automatic_routing_still_tries_a_backup_model(self):
+        from app.core.model_adapter import ModelManager
+
+        manager = ModelManager()
+        selected_adapter = SimpleNamespace(
+            is_available=MagicMock(return_value=True),
+            chat=MagicMock(side_effect=RuntimeError("selected model request failed")),
+        )
+        backup_adapter = SimpleNamespace(
+            is_available=MagicMock(return_value=True),
+            chat=MagicMock(return_value=("backup response", "backup provider")),
+        )
+
+        with patch.object(manager, "get_effective_model_list", return_value=["selected", "backup"]), patch.object(
+            manager,
+            "get_adapter_for_model",
+            side_effect=[(selected_adapter, "groq-lpu"), (backup_adapter, "gemini-cloud")],
+        ):
+            content, model, _, _ = manager.route_and_execute(
+                "Create a technical lesson",
+                task_type="dialogue",
+                models=["selected"],
+            )
+
+        self.assertEqual((content, model), ("backup response", "backup"))
+        backup_adapter.chat.assert_called_once()
 
 
 class TestTier1_F3_ProgressAndLedger(unittest.TestCase):
