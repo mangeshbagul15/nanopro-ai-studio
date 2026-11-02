@@ -404,24 +404,18 @@
 
                     <!-- Step 2: Verify OTP -->
                     <div id="waStepVerify" style="display:none;">
-                        <div id="waTargetDisplay" style="text-align:center; font-size:12px; color:#38BDF8; font-weight:700; margin-bottom:10px;"></div>
-                        <div class="form-group" style="margin-bottom:8px;">
-                            <label class="form-label" style="text-align:center;">Enter 6-Digit OTP</label>
-                            <input type="text" id="waOtpCode" class="form-input otp-input" placeholder="843375" maxlength="6" onkeydown="if(event.key==='Enter') handleVerifyWaOtp()">
-                        </div>
-                        <!-- Permanently Allowed Master OTP Helper -->
-                        <div style="margin: 0 0 12px 0; padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 9px; text-align: center; font-size: 11.5px; color: #E2E8F0;">
-                            ⚡ <strong>कायमस्वरूपी सक्रिय मास्टर OTP (Permanently Allowed):</strong><br>
-                            <span onclick="document.getElementById('waOtpCode').value='843375'; handleVerifyWaOtp();" style="display: inline-block; margin-top: 6px; padding: 4px 14px; background: rgba(56, 189, 248, 0.2); border: 1px solid #38BDF8; border-radius: 6px; font-weight: 800; font-size: 14px; color: #38BDF8; letter-spacing: 2px; cursor: pointer;" title="क्लिक करून थेट लॉगिन करा">
-                                843375 (Click to Auto-Fill &amp; Launch)
-                            </span>
+                        <div id="waTargetDisplay" style="text-align:center; font-size:12.5px; color:#38BDF8; font-weight:700; margin-bottom:12px;"></div>
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label class="form-label" style="text-align:center; font-size:12px; color:#94A3B8;">Enter 6-Digit OTP</label>
+                            <input type="text" id="waOtpCode" class="form-input otp-input" placeholder="••••••" maxlength="6" autocomplete="one-time-code" inputmode="numeric" onkeydown="if(event.key==='Enter') handleVerifyWaOtp()" style="letter-spacing: 6px; text-align: center; font-size: 20px; font-weight: 700;">
+                            <div class="form-hint" style="text-align:center; margin-top: 6px; font-size: 11.5px; color: #94A3B8;">मोबाईल WhatsApp वर आलेला ६-अंकी OTP येथे टाका</div>
                         </div>
                         <button type="button" id="waVerifyBtn" onclick="handleVerifyWaOtp()" class="btn-whatsapp">
                             🔓 Verify &amp; Launch NanoPro
                         </button>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11.5px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:11.5px;">
                             <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">← Change Number</a>
-                            <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">💬 WhatsApp वर उघडा &rarr;</a>
+                            <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none; text-decoration: none;">💬 WhatsApp वर उघडा &rarr;</a>
                         </div>
                     </div>
                 </div>
@@ -1053,21 +1047,20 @@
                 if (data && data.status === 'success') {
                     currentWaTarget = data.identifier || phone;
                     const disp = document.getElementById('waTargetDisplay');
-                    if (disp) disp.innerText = '💬 Code sent to: ' + currentWaTarget;
+                    if (disp) disp.innerText = '💬 Code sent to WhatsApp: ' + currentWaTarget;
                     document.getElementById('waStepRequest').style.display = 'none';
                     document.getElementById('waStepVerify').style.display = 'block';
 
-                    const generatedOtp = data.otp_code || '843375';
                     const linkBtn = document.getElementById('waWebActionLink');
-                    if (linkBtn) {
-                        linkBtn.href = data.whatsapp_link || ('https://api.whatsapp.com/send?phone=' + currentWaTarget.replace('+', '') + '&text=Your%20NanoPro%20Login%20OTP%20is%20' + generatedOtp);
+                    if (linkBtn && data.whatsapp_link) {
+                        linkBtn.href = data.whatsapp_link;
                         linkBtn.style.display = 'inline-block';
                     }
 
-                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे! (किंवा तत्काळ लॉगिनसाठी खालील 843375 वर क्लिक करा)', 'success');
+                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp तपासा आणि OTP प्रविष्ट करा.', 'success');
                     const otpInp = document.getElementById('waOtpCode');
                     if (otpInp) {
-                        otpInp.value = generatedOtp;
+                        otpInp.value = ''; // Strictly empty! User manually enters OTP from mobile WhatsApp
                         otpInp.focus();
                     }
                 } else {
