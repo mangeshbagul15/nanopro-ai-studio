@@ -5187,6 +5187,14 @@ def get_user_management_view_html() -> str:
 
 def get_login_page_html() -> str:
     """Returns standalone high-tech Cyber-Luxe login page with Clerk, WhatsApp OTP & Cloudflare Zero Trust."""
+    import os
+    gateway_file = os.path.join(os.path.dirname(__file__), "..", "..", "deploy", "login_gateway.html")
+    if os.path.exists(gateway_file):
+        try:
+            with open(gateway_file, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
     return """<!DOCTYPE html>
 
 <html lang="en">
