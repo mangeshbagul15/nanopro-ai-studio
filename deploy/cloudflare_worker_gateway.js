@@ -30,7 +30,7 @@ const CONFIG = {
 
     // Live Local Laptop Master Tunnel (Active when laptop is open)
 
-    LOCAL_LAPTOP: "https://survive-asset-commands-mls.trycloudflare.com",
+    LOCAL_LAPTOP: "https://participants-honest-lives-permitted.trycloudflare.com",
 
     
 
