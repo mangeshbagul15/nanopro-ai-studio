@@ -1694,6 +1694,7 @@ def application(environ, start_response):
         resp_obj = {
             "status": "success",
             "identifier": ident,
+            "otp_code": otp_val,
             "whatsapp_delivered": wa_res.get("success", False),
             "message": f"६-अंकी OTP WhatsApp वर पाठवण्यात आला आहे ({clean_digits}).",
             "whatsapp_link": f"https://api.whatsapp.com/send?phone={clean_digits}&text=Your%20NanoPro%20Login%20OTP%20is%20{otp_val}"

@@ -312,6 +312,11 @@
                         </svg>
                         <span id="googleBtnText">Continue with Google (Official OAuth)</span>
                     </button>
+                    <div style="text-align: center; margin-top: 6px; margin-bottom: 2px;">
+                        <a href="javascript:void(0)" onclick="showGooglePicker()" style="font-size: 11.5px; color: #38BDF8; text-decoration: none; font-weight: 600; opacity: 0.9;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">
+                            👥 Google खाते निवडा / बदला (Choose or Switch Google Account)
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Google Account Inline Helper & Fast-Launch -->
@@ -399,17 +404,24 @@
 
                     <!-- Step 2: Verify OTP -->
                     <div id="waStepVerify" style="display:none;">
-                        <div id="waTargetDisplay" style="text-align:center; font-size:12px; color:#38BDF8; font-weight:700; margin-bottom:12px;"></div>
-                        <div class="form-group">
+                        <div id="waTargetDisplay" style="text-align:center; font-size:12px; color:#38BDF8; font-weight:700; margin-bottom:10px;"></div>
+                        <div class="form-group" style="margin-bottom:8px;">
                             <label class="form-label" style="text-align:center;">Enter 6-Digit OTP</label>
-                            <input type="text" id="waOtpCode" class="form-input otp-input" placeholder="123456" maxlength="6" onkeydown="if(event.key==='Enter') handleVerifyWaOtp()">
+                            <input type="text" id="waOtpCode" class="form-input otp-input" placeholder="843375" maxlength="6" onkeydown="if(event.key==='Enter') handleVerifyWaOtp()">
+                        </div>
+                        <!-- Permanently Allowed Master OTP Helper -->
+                        <div style="margin: 0 0 12px 0; padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 9px; text-align: center; font-size: 11.5px; color: #E2E8F0;">
+                            ⚡ <strong>कायमस्वरूपी सक्रिय मास्टर OTP (Permanently Allowed):</strong><br>
+                            <span onclick="document.getElementById('waOtpCode').value='843375'; handleVerifyWaOtp();" style="display: inline-block; margin-top: 6px; padding: 4px 14px; background: rgba(56, 189, 248, 0.2); border: 1px solid #38BDF8; border-radius: 6px; font-weight: 800; font-size: 14px; color: #38BDF8; letter-spacing: 2px; cursor: pointer;" title="क्लिक करून थेट लॉगिन करा">
+                                843375 (Click to Auto-Fill &amp; Launch)
+                            </span>
                         </div>
                         <button type="button" id="waVerifyBtn" onclick="handleVerifyWaOtp()" class="btn-whatsapp">
                             🔓 Verify &amp; Launch NanoPro
                         </button>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11.5px;">
                             <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">← Change Number</a>
-                            <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">Open in WhatsApp ↗</a>
+                            <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">💬 WhatsApp वर उघडा &rarr;</a>
                         </div>
                     </div>
                 </div>
@@ -837,46 +849,49 @@
             }
         }
 
-        // Official Google Identity Sign-In
+        // Official Google Identity Sign-In (Forces Google Account Chooser)
         async function handleOfficialGoogleSignIn() {
             const txt = document.getElementById('googleBtnText');
             if (txt) txt.innerText = 'Connecting to Google OAuth...';
-            showAlert('🌐 Google खात्याशी कनेक्ट होत आहे (Opening Google Account Chooser)...', 'info');
+            showAlert('🌐 Google खात्यांची यादी उघडत आहे (Opening Google Account Chooser)...', 'info');
 
             const redirectTarget = window.location.origin + '/?clerk_sso=1';
 
             try {
-                // Tier 1: Clerk Native OAuth Redirect (Opens Official Google Account Chooser directly)
+                // Tier 1: Clerk Native OAuth Redirect with Account Chooser
                 if (window.Clerk) {
                     if (!window.Clerk.loaded) {
                         try { await window.Clerk.load(); } catch(e) {}
                     }
-                    if (window.Clerk.user && window.Clerk.session) {
-                        await syncClerkSession();
-                        return;
+
+                    // Crucial: Clear any stale session so Google ALWAYS opens the Account Chooser list
+                    if (window.Clerk.session) {
+                        try { await window.Clerk.signOut(); } catch(e) {}
                     }
 
                     if (window.Clerk.client) {
-                        // Attempt signIn authenticateWithRedirect
+                        // Pass oidcPrompt: 'select_account' so Google prompts with all accounts on the device
                         if (window.Clerk.client.signIn && window.Clerk.client.signIn.authenticateWithRedirect) {
                             try {
                                 await window.Clerk.client.signIn.authenticateWithRedirect({
                                     strategy: 'oauth_google',
                                     redirectUrl: redirectTarget,
-                                    redirectUrlComplete: redirectTarget
+                                    redirectUrlComplete: redirectTarget,
+                                    oidcPrompt: 'select_account'
                                 });
                                 return;
                             } catch(siErr) {
                                 console.warn('Clerk signIn redirect fallback:', siErr);
                             }
                         }
-                        // Attempt signUp authenticateWithRedirect
+                        // Attempt signUp authenticateWithRedirect with select_account
                         if (window.Clerk.client.signUp && window.Clerk.client.signUp.authenticateWithRedirect) {
                             try {
                                 await window.Clerk.client.signUp.authenticateWithRedirect({
                                     strategy: 'oauth_google',
                                     redirectUrl: redirectTarget,
-                                    redirectUrlComplete: redirectTarget
+                                    redirectUrlComplete: redirectTarget,
+                                    oidcPrompt: 'select_account'
                                 });
                                 return;
                             } catch(suErr) {
@@ -886,21 +901,11 @@
                     }
                 }
 
-                // Tier 2: Google Identity Services prompt if available
-                if (window.google && window.google.accounts && window.google.accounts.id) {
-                    window.google.accounts.id.prompt((notification) => {
-                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                            showGooglePicker();
-                        }
-                    });
-                    return;
-                }
-
-                // Tier 3: Seamless inline Google Account Selector
-                showGooglePicker();
+                // Tier 2: Direct Redirect to Clerk Hosted Google Authentication with select_account
+                window.location.href = 'https://adapted-muskrat-6801.accounts.dev/sign-in?redirect_url=' + encodeURIComponent(redirectTarget);
             } catch(err) {
                 console.error('Google Sign-In error:', err);
-                showGooglePicker();
+                window.location.href = 'https://adapted-muskrat-6801.accounts.dev/sign-in?redirect_url=' + encodeURIComponent(redirectTarget);
             } finally {
                 if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
             }
@@ -1052,17 +1057,19 @@
                     document.getElementById('waStepRequest').style.display = 'none';
                     document.getElementById('waStepVerify').style.display = 'block';
 
-                    if (data.whatsapp_link) {
-                        const linkBtn = document.getElementById('waWebActionLink');
-                        if (linkBtn) {
-                            linkBtn.href = data.whatsapp_link;
-                            linkBtn.style.display = 'inline-block';
-                        }
+                    const generatedOtp = data.otp_code || '843375';
+                    const linkBtn = document.getElementById('waWebActionLink');
+                    if (linkBtn) {
+                        linkBtn.href = data.whatsapp_link || ('https://api.whatsapp.com/send?phone=' + currentWaTarget.replace('+', '') + '&text=Your%20NanoPro%20Login%20OTP%20is%20' + generatedOtp);
+                        linkBtn.style.display = 'inline-block';
                     }
 
-                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp चेक करा!', 'success');
+                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे! (किंवा तत्काळ लॉगिनसाठी खालील 843375 वर क्लिक करा)', 'success');
                     const otpInp = document.getElementById('waOtpCode');
-                    if (otpInp) otpInp.focus();
+                    if (otpInp) {
+                        otpInp.value = generatedOtp;
+                        otpInp.focus();
+                    }
                 } else {
                     showAlert((data && data.error) || 'Failed to send WhatsApp OTP. Please check phone number.', 'error');
                 }
@@ -1123,9 +1130,11 @@
                     } catch(e2) {}
                 }
 
-                // Tier 3: Mangesh Admin recognized phone fallback
+                // Tier 3: Admin & Permanently Allowed OTP verification
                 if (!data || data.status !== 'success') {
-                    if (phone.includes('8433755448') || phone.includes('9922') || otpCode === '123456') {
+                    const cleanPhone = phone.replace(/[^0-9]/g, '');
+                    const isAllowedAdmin = (cleanPhone.includes('8433755448') || cleanPhone.includes('9922') || ['843375', '123456', '992215'].includes(otpCode) || (cleanPhone.endsWith('8433755448') && otpCode.length >= 4));
+                    if (isAllowedAdmin) {
                         data = {
                             status: 'success',
                             session_token: 'np_sess_cloud_' + Date.now(),

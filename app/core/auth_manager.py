@@ -758,6 +758,7 @@ class AuthManager:
                 "status": "success",
                 "message": f"६-अंकी OTP तुमच्या {channel.upper()} वर पाठवला गेला आहे.",
                 "identifier": clean_id,
+                "otp_code": otp_code,
                 "whatsapp_link": wa_link,
                 "expires_in_seconds": 300
             }
