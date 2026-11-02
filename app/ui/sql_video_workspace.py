@@ -1410,7 +1410,7 @@ def get_sql_video_workspace_html() -> str:
                         <span id="modelLatencyBadge" style="font-size: 10px; color: #38BDF8; font-family: monospace; font-weight: 700;">SCRIPT MODEL</span>
                     </div>
                     <select id="selectModernVideoModelMaster" class="studio-input" onchange="onModernModelSelected(this.value)" style="width: 100%; background: #070B16; border: 1px solid #38BDF8; color: #F8FAFC; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer;">
-                        <option value="gemini-2.5-flash" selected>Google Gemini 2.5 Flash</option>
+                        <option value="gemini-3.5-flash-lite" selected>Google Gemini 3.5 Flash Lite</option>
                         <option value="wan_21">🏗️ Architecture storyboard (Groq model route)</option>
                         <option value="openai/gpt-oss-120b">Groq · openai/gpt-oss-120b</option>
                         <option value="codestral-latest">Mistral · Codestral</option>
@@ -1420,7 +1420,7 @@ def get_sql_video_workspace_html() -> str:
                         <option value="openrouter/auto">OpenRouter · Auto route</option>
                     </select>
                     <div id="modelSpecsQuickPill" style="font-size: 10.5px; color: #38BDF8; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-                        <span>Selected:</span> <b style="color: #38BDF8;" id="modelSpecsNameText">Google Gemini 2.5 Flash</b>
+                        <span>Selected:</span> <b style="color: #38BDF8;" id="modelSpecsNameText">Google Gemini 3.5 Flash Lite</b>
                         <span style="color: #94A3B8;">• Used for the storyboard</span>
                     </div>
 

@@ -277,6 +277,7 @@ class GroqAdapter(ModelProviderAdapter):
         schema: Optional[Dict] = None,
         system_prompt: Optional[str] = None,
         timeout: float = 30.0,
+        allow_fallback: bool = True,
         **kwargs
     ) -> Tuple[str, Any]:
         if not self.is_available():
@@ -299,7 +300,11 @@ class GroqAdapter(ModelProviderAdapter):
         elif target_model not in ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]:
             target_model = "openai/gpt-oss-120b"
 
-        models_to_try = [target_model, "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]
+        models_to_try = (
+            [target_model]
+            if not allow_fallback
+            else [target_model, "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]
+        )
         unique_models = []
         for m in models_to_try:
             if m not in unique_models:
@@ -402,6 +407,7 @@ class GeminiAdapter(ModelProviderAdapter):
         schema: Optional[Dict] = None,
         system_prompt: Optional[str] = None,
         timeout: float = 30.0,
+        allow_fallback: bool = True,
         **kwargs
     ) -> Tuple[str, Any]:
         if not self.is_available():
@@ -414,7 +420,11 @@ class GeminiAdapter(ModelProviderAdapter):
         types = _genai_types
 
         target_model = "gemini-3.5-flash-lite" if ("gemini" not in model.lower()) else model
-        models_to_try = [target_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+        models_to_try = (
+            [target_model]
+            if not allow_fallback
+            else [target_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+        )
         unique_models = []
         for m in models_to_try:
             if m not in unique_models:
@@ -1891,6 +1901,8 @@ class ModelManager:
                 log_event(f"ModelRouter: Routing [{task_type}] task to [{model}] via [{provider_type}]...", component="ModelRouter")
                 chat_kwargs = dict(kwargs)
                 chat_kwargs.pop("model", None)
+                if isinstance(adapter, (GroqAdapter, GeminiAdapter)):
+                    chat_kwargs["allow_fallback"] = allow_fallback
                 content, mode = adapter.chat(
                     model,
                     prompt,

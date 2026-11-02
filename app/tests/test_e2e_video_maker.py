@@ -283,6 +283,46 @@ class TestStrictModelRouting(unittest.TestCase):
         effective_models.assert_not_called()
         backup_adapter.chat.assert_not_called()
 
+    def test_selected_only_does_not_try_provider_internal_models(self):
+        from app.core.model_adapter import GeminiAdapter, GroqAdapter
+
+        groq_adapter = GroqAdapter(api_key="gsk_test")
+        groq_call = MagicMock(side_effect=RuntimeError("selected model unavailable"))
+        groq_client = SimpleNamespace(
+            chat=SimpleNamespace(completions=SimpleNamespace(create=groq_call))
+        )
+        with patch.object(groq_adapter, "is_available", return_value=True), patch.object(
+            groq_adapter, "_get_client", return_value=groq_client
+        ):
+            with self.assertRaisesRegex(RuntimeError, "selected model unavailable"):
+                groq_adapter.chat("openai/gpt-oss-120b", "lesson", allow_fallback=False)
+        self.assertEqual(groq_call.call_count, 1)
+        self.assertEqual(groq_call.call_args.kwargs["model"], "openai/gpt-oss-120b")
+
+        gemini_adapter = GeminiAdapter(api_key="test-key")
+        gemini_generate = MagicMock(side_effect=ValueError("selected model unavailable"))
+        gemini_interaction = MagicMock(side_effect=ValueError("selected model unavailable"))
+        gemini_client = SimpleNamespace(
+            models=SimpleNamespace(generate_content=gemini_generate),
+            interactions=SimpleNamespace(create=gemini_interaction),
+        )
+        with patch("app.core.model_adapter._genai_types", SimpleNamespace(
+            GenerateContentConfig=MagicMock(return_value={})
+        )), patch.object(gemini_adapter, "is_available", return_value=True), patch.object(
+            gemini_adapter, "_get_client", return_value=gemini_client
+        ):
+            with self.assertRaisesRegex(RuntimeError, "selected model unavailable"):
+                gemini_adapter.chat("gemini-3.5-flash-lite", "lesson", allow_fallback=False)
+
+        self.assertEqual(
+            {call.kwargs["model"] for call in gemini_generate.call_args_list},
+            {"gemini-3.5-flash-lite"},
+        )
+        self.assertEqual(
+            {call.kwargs["model"] for call in gemini_interaction.call_args_list},
+            {"gemini-3.5-flash-lite"},
+        )
+
     def test_automatic_routing_still_tries_a_backup_model(self):
         from app.core.model_adapter import ModelManager
 
