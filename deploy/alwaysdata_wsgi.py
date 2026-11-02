@@ -1726,7 +1726,7 @@ def application(environ, start_response):
 
 
 
-        start_response('302 Found', [('Location', '/login'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
+        start_response('302 Found', [('Location', '/login?logout=1'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
 
 
 
@@ -2694,7 +2694,7 @@ def application(environ, start_response):
 
 
 
-        start_response('302 Found', [('Location', '/login'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
+        start_response('302 Found', [('Location', '/login?logout=1'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
 
 
 

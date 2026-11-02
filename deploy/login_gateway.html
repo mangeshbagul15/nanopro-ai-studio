@@ -619,55 +619,75 @@
         // Initialize Clerk SDK & Process OAuth Handshakes
         window.addEventListener('load', async () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const isGoogleCallback = urlParams.has('clerk_sso') || window.location.hash.includes('clerk') || window.location.href.includes('__clerk_');
-            if (isGoogleCallback) {
-                showAlert('⚡ Official Google OAuth handshake प्राप्त झाले. पडताळणी सुरू आहे...', 'info');
+            const isLogout = urlParams.has('logout') || sessionStorage.getItem('nanopro_just_logged_out') === '1';
+
+            // 1. IF USER LOGGED OUT: Purge everything, sign out Clerk, and STAY ON LOGIN PAGE (NO AUTO-LOGIN)!
+            if (isLogout) {
+                sessionStorage.removeItem('nanopro_just_logged_out');
+                localStorage.removeItem('nanopro_session_token');
+                localStorage.removeItem('nanopro_active_account');
+                localStorage.removeItem('nanopro_saved_accounts');
+                localStorage.removeItem('nanopro_remember_credentials');
+                document.cookie = 'nanopro_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+                document.cookie = 'nanopro_session=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+                showAlert('ℹ️ यशस्वीरीत्या लॉगआउट झाले (Successfully logged out). कृपया लॉगिन करण्यासाठी खालील पर्याय निवडा.', 'info');
+
+                if (window.Clerk) {
+                    try {
+                        await window.Clerk.load();
+                        if (window.Clerk.signOut) {
+                            await window.Clerk.signOut();
+                        }
+                    } catch(ce) {}
+                }
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                return; // STOP! Do not auto-login on logout!
             }
 
-            if (window.Clerk) {
-                try {
-                    await window.Clerk.load();
+            // 2. ONLY AUTO-COMPLETE IF USER EXPLICITLY CLICKED GOOGLE OAUTH (?clerk_sso=1)
+            const isGoogleCallback = urlParams.has('clerk_sso');
 
-                    // Check 1: User is already signed in
-                    if (window.Clerk.user && window.Clerk.session) {
-                        await syncClerkSession();
-                        return;
-                    }
+            if (isGoogleCallback) {
+                showAlert('⚡ Official Google OAuth handshake प्राप्त झाले. पडताळणी सुरू आहे...', 'info');
 
-                    // Check 2: Sign-up in progress with missing requirements (intercept email directly, bypass missing fields!)
-                    if (window.Clerk.client && window.Clerk.client.signUp) {
-                        const su = window.Clerk.client.signUp;
-                        const email = su.emailAddress || (su.verifications && su.verifications.externalAccount && su.verifications.externalAccount.emailAddress);
-                        if (email) {
-                            const name = (su.firstName ? (su.firstName + ' ' + (su.lastName || '')) : '') || 'Google User';
-                            await authenticateWithBackendGoogle(email, name);
+                if (window.Clerk) {
+                    try {
+                        await window.Clerk.load();
+
+                        // Check A: User signed in
+                        if (window.Clerk.user && window.Clerk.session) {
+                            await syncClerkSession();
                             return;
                         }
-                    }
 
-                    // Check 3: Sign-in in progress
-                    if (window.Clerk.client && window.Clerk.client.signIn && window.Clerk.client.signIn.status === 'complete') {
-                        await syncClerkSession();
-                        return;
-                    }
-
-                    // Check 4: Dynamic listener for authentication state
-                    if (window.Clerk.addListener) {
-                        window.Clerk.addListener(async (e) => {
-                            if (e && (e.user || e.session)) {
-                                await syncClerkSession();
-                            } else if (e && e.client && e.client.signUp) {
-                                const su = e.client.signUp;
-                                const email = su.emailAddress || (su.verifications && su.verifications.externalAccount && su.verifications.externalAccount.emailAddress);
-                                if (email) {
-                                    const name = (su.firstName ? (su.firstName + ' ' + (su.lastName || '')) : '') || 'Google User';
-                                    await authenticateWithBackendGoogle(email, name);
-                                }
+                        // Check B: Sign-up in progress with missing requirements (intercept email directly, bypass missing fields!)
+                        if (window.Clerk.client && window.Clerk.client.signUp) {
+                            const su = window.Clerk.client.signUp;
+                            const email = su.emailAddress || (su.verifications && su.verifications.externalAccount && su.verifications.externalAccount.emailAddress);
+                            if (email) {
+                                const name = (su.firstName ? (su.firstName + ' ' + (su.lastName || '')) : '') || 'Google User';
+                                await authenticateWithBackendGoogle(email, name);
+                                return;
                             }
-                        });
+                        }
+
+                        // Check C: Sign-in complete
+                        if (window.Clerk.client && window.Clerk.client.signIn && window.Clerk.client.signIn.status === 'complete') {
+                            await syncClerkSession();
+                            return;
+                        }
+                    } catch(e) {
+                        console.warn('Clerk OAuth callback error:', e);
                     }
-                } catch(e) {
-                    console.warn('Clerk initialization note:', e);
+                }
+            } else {
+                // NORMAL VISIT (NOT A REDIRECT): Load Clerk silently, NEVER auto-login without user click!
+                if (window.Clerk) {
+                    try {
+                        await window.Clerk.load();
+                    } catch(e) {}
                 }
             }
         });

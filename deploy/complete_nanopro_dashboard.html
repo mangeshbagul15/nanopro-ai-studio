@@ -8584,18 +8584,21 @@ function removeSavedAccount(username) {
 
 
 
-function signOutAllAccounts() {
-
+async function signOutAllAccounts() {
     localStorage.removeItem('nanopro_saved_accounts');
-
     localStorage.removeItem('nanopro_active_account');
-
     localStorage.removeItem('nanopro_session_token');
-
     localStorage.removeItem('nanopro_remember_credentials');
-
-    location.reload();
-
+    document.cookie = 'nanopro_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'nanopro_session=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    sessionStorage.clear();
+    sessionStorage.setItem('nanopro_just_logged_out', '1');
+    try {
+        if (window.Clerk && window.Clerk.signOut) {
+            await window.Clerk.signOut();
+        }
+    } catch(ce){}
+    window.location.replace('/login?logout=1');
 }
 
 
@@ -9525,12 +9528,18 @@ async function performLogout(isAuto=false) {
     localStorage.removeItem('nanopro_remember_credentials');
     localStorage.removeItem('nanopro_active_account');
     sessionStorage.clear();
+    sessionStorage.setItem('nanopro_just_logged_out', '1');
+    try {
+        if (window.Clerk && window.Clerk.signOut) {
+            await window.Clerk.signOut();
+        }
+    } catch(ce){}
     currentSessionToken = null;
     currentUser = null;
     window.currentUser = null;
     document.body.classList.remove('auth-verified');
     document.documentElement.classList.remove('auth-verified');
-    window.location.replace('/login');
+    window.location.replace('/login?logout=1');
 }
 
 

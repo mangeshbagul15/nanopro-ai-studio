@@ -1492,7 +1492,7 @@ async def serve_logout_gateway():
 
     from fastapi.responses import RedirectResponse
 
-    resp = RedirectResponse(url="/login")
+    resp = RedirectResponse(url="/login?logout=1")
 
     resp.delete_cookie("nanopro_session")
 
