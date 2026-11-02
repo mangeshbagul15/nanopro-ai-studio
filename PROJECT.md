@@ -1,88 +1,122 @@
-# Project: NanoPro AI Studio — Latency Hardening & Performance Benchmarking
+# Project: Universal Tech AI Video Maker (9:16 Shorts & Reels) Revamp
 
 ## Architecture
+- **Workspace UI & Web Route (`main.py`, `app/ui/sql_video_workspace.py`, `app/ui/sql_video_js.py`)**:
+  - `@app.get("/workspace/sql-video")`: Serves clean, responsive HTML5 workspace tailored for 9:16 vertical reels and shorts.
+  - Clean UI Controls:
+    - Topic / prompt input with trending topic suggestion chips.
+    - LLM Model Selector: Groq LPU (`openai/gpt-oss-120b`), Mistral (`codestral-latest`), Cohere (`command-r-plus-08-2024`), SambaNova, DeepSeek, OpenRouter.
+    - Regional Language & Voice Actor Selectors:
+      - Marathi: `mr-IN-AarohiNeural`, `mr-IN-ManoharNeural`
+      - Hindi: `hi-IN-MadhurNeural`, `hi-IN-SwaraNeural`
+      - English: `en-US-JennyNeural`, `en-US-GuyNeural`, Deepgram Aura (`aura-asteria-en`, `aura-luna-en`)
+    - Dynamic Live API Toggles: Pixabay Video (4K/2K B-roll), Unsplash (4K Photos), Giphy (Stickers), Freesound (SFX Transitions), Tavily (Real-Time News).
+    - Multi-stage generation progress indicator and 9:16 smartphone preview player.
 - **Multi-Model Routing Layer (`app/core/model_adapter.py`)**:
-  - `ModelManager`: Orchestrates requests across cloud and local providers with hierarchical routing.
-  - `ProviderCircuitBreaker`: Manages state (`CLOSED`, `OPEN`, `HALF_OPEN`) per provider (Groq, Gemini, Ollama) with fast-abort on rate-limiting, network disconnections, and timeouts (< 500ms cascade).
-  - `GroqAdapter`: Connects to Groq LPU with `max_retries=0` and low-latency parameters for `qwen/qwen3.8-27b` and `openai/gpt-oss-120b`.
-  - `GeminiAdapter`: Connects to Google Gemini Cloud for `gemini-3.5-flash-lite`.
-  - `OllamaAdapter`: Connects to Local Ollama GPU on RTX 3050 for `llama3.2:3b` and `qwen2.5-coder:3b` with cached availability and keep-alive.
-  - `ConversationalIntelligenceEngine`: In-memory pattern matching fastpath responding in < 10ms.
-- **Database & Telemetry Storage (`app/core/database.py`, `app/agents/assistant_agent.py`)**:
-  - `CredentialsVault`: In-memory encrypted credential cache with TTL/LRU invalidation (< 5ms retrieval).
-  - SQLite Database (`studio_memory.db`): Optimized WAL mode, indexed queries (`conversations`, `credentials`, `tasks`), connection reuse, and automated vacuuming (< 15MB file size).
-  - `MonitoringAgent`: Background daemon updating system metrics every 10s to ensure `get_system_health()` returns in < 5ms without blocking.
-- **Benchmarking & Audit Reporting (`app/tests/`, `reports/`)**:
-  - Automated benchmark harness computing p50, p95, p99 latencies, token throughput (tokens/sec), and success rates across Python coding, SQL generation, and Marathi/Hindi dialogue.
-  - Excel Audit Ledger (`Latency_Hardening_Benchmark_Report.xlsx`) with 5 styled sheets via openpyxl.
-  - Executive Markdown Report (`Markdown/_work/latency_benchmark.md`).
+  - `ModelManager`: Orchestrates script generation across providers.
+  - `CohereAdapter`: Supports Cohere `command-r-plus-08-2024` with low latency.
+  - `SambaNovaAdapter`: Supports SambaNova cloud models with fast fallback.
+  - Failover cascade: Groq -> Mistral -> Cohere -> Gemini -> Ollama.
+- **Dynamic Live API Providers (`app/video_maker/`)**:
+  - `pixabay_video_provider.py`: 4K/2K B-roll search, vertical cropping, CDN clip downloading.
+  - `freesound_provider.py`: SFX transition search (`whoosh`, `glitch`, `riser`), audio caching.
+  - `deepgram_provider.py`: Aura TTS high-fidelity speech synthesis; Nova-2 STT transcription with word-level float timestamps (`start`, `end`) for animated captions.
+  - `giphy_provider.py`: Transparent stickers and viral meme overlays.
+  - `tavily_news_search.py`: Real-time news topics search and factual grounding.
+  - `unsplash_provider.py`: 4K portrait 9:16 photography.
+- **Core Video Generation Engine (`app/video_maker/sql_short_engine.py`, `modern_2026_video_matrix.py`)**:
+  - `generate_short_prompt_async`: Assembles scenes, invokes live media APIs, coordinates audio synthesis, word-level caption alignment, and returns authentic generation ledger.
+  - Video Compositor & FFmpeg 7.1 Backend: Stitches 1080x1920 (9:16) H.264 video, AAC audio, and animated subtitles.
+- **Automated Verification & E2E Test Suite (`app/tests/test_video_maker_pipeline_e2e.py`)**:
+  - Python `unittest` harness testing live API connectivity, blueprint generation, and FFmpeg video synthesis with stream aspect ratio and audio verification.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| F1 | Multi-Provider Benchmark Harness | Automated benchmark measuring p50, p95, p99, tokens/sec, and success rates across Groq, Gemini, Ollama, and Fastpath | M3 | R1 Survey |
-| F2 | Workload Test Suite | Benchmarking prompts for Python coding, SQL generation, and Marathi/Hindi conversational dialogue | M3 | R1 Survey |
-| F3 | Groq LPU Latency Hardening | Optimizing Groq parameters (`max_retries=0`, token boundaries) to meet < 1,200ms (coding) and < 1,800ms (dialogue) SLAs | M1 | R1 Survey |
-| F4 | Gemini Cloud Latency Verification | Verifying `gemini-3.5-flash-lite` meets < 2,500ms SLA | M3 | R1 Survey |
-| F5 | Local Ollama GPU Warmup & Latency | Ensuring `llama3.2:3b` and `qwen2.5-coder:3b` run with keep-alive on GPU and cached health checks | M1 | R1 Survey |
-| F6 | In-Memory Fastpath Latency | Ensuring conversational fastpath executes in < 10ms end-to-end | M1 | R1 Survey |
-| F7 | ModelManager Provider Circuit Breaker | Provider-level circuit breaker (CLOSED/OPEN/HALF_OPEN) with sub-500ms trip time | M1 | R2 Survey |
-| F8 | Zero-Downtime Failover Cascade | Cascading Groq -> Gemini -> Ollama in < 500ms without uncaught exceptions during disconnections or 429 rate limits | M1 | R2 Survey |
-| F9 | Deterministic Local Model Resolution | Resolving local models to Ollama without timeout-induced cloud misrouting | M1 | R2 Survey |
-| F10 | Credentials Vault In-Memory Caching | Caching decrypted credentials with invalidation on write/delete to guarantee < 5ms retrieval | M2 | R3 Survey |
-| F11 | Background Decoupled Telemetry | Decoupling `monitoring_agent.get_system_health()` to a background worker to ensure < 5ms response | M2 | R3 Survey |
-| F12 | SQLite Indexation & Query Tuning | Adding B-Tree indexes on `conversations(session_id)`, `credentials(service_name)`, and `tasks(created_at)` | M2 | R3 Survey |
-| F13 | TaskManager Lock Isolation | Removing synchronous DB disk flush from inside `self._lock` critical section | M2 | R3 Survey |
-| F14 | Database Vacuuming & Size Optimization | Enforcing WAL checkpointing and database compaction to maintain file size < 15MB | M2 | R3 Survey |
-| F15 | 20-Worker Concurrency Validation | Proving 20 concurrent workers execute without table locks or `database is locked` errors | M2 | R3 Survey |
-| F16 | Excel Benchmark Report Generation | Consolidated 5-sheet workbook `Latency_Hardening_Benchmark_Report.xlsx` | M3 | R4 Survey |
-| F17 | Markdown Executive Report Generation | Executive summary and metric breakdown at `Markdown/_work/latency_benchmark.md` | M3 | R4 Survey |
-| F18 | Comprehensive E2E Test Suite | Opaque-box test suite covering Tiers 1-4 across all features and requirements | E2E Track | Project Pattern |
-| F19 | Adversarial Coverage Hardening | White-box stress testing, boundary fault injection, and coverage audit (Tier 5) | M4 | Project Pattern |
+| F1 | UI/UX Clutter & Obsolete Elimination | Remove dead `#phoneAvatarPip`, 44 inflated model options, static fake badges, fake modals, and 45 orphan DOM IDs in JS | M1 | R1 Survey |
+| F2 | Responsive 9:16 Workspace Controls | Clean controls for Topic, quick chips, LLM selector, Language, Voice Actor, and 5 Media Provider toggles | M1 | R1 Survey |
+| F3 | Multi-Stage Progress & Authentic Ledger | Live 5-step progress visualization and authentic asset ledger replacing fake 99.8% scores | M1 | R1 Survey |
+| F4 | Model Adapter Cohere & SambaNova | Implement `CohereAdapter` and `SambaNovaAdapter` in `model_adapter.py` with fast failover | M2 | R2 Survey |
+| F5 | Tavily Real-Time Context Wiring | Wire `tavily_news_search.py` into `sql_short_engine.py` for factual script grounding | M2 | R2 Survey |
+| F6 | Pixabay 9:16 B-Roll Clip Wiring | Dynamically query and attach Pixabay video clips per scene in `sql_short_engine.py` | M2 | R2 Survey |
+| F7 | Unsplash Portrait Photography Wiring | Dynamically query and attach Unsplash 9:16 photos per scene in `sql_short_engine.py` | M2 | R2 Survey |
+| F8 | Freesound SFX Transitions Wiring | Dynamically query and attach Freesound SFX (`whoosh`, `glitch`) between scenes | M2 | R2 Survey |
+| F9 | Deepgram Nova-2 Word-Level Captions | Transcribe audio via Nova-2 STT to generate word-level timestamps (`start`, `end`) for animated captions | M2 | R2 Survey |
+| F10 | Deepgram Aura & Edge-TTS Multi-Voice | Support Marathi (`mr-IN-AarohiNeural`), Hindi (`hi-IN-MadhurNeural`), and English (`aura-asteria-en`, `en-US-JennyNeural`) | M2 | R2 Survey |
+| F11 | Giphy Viral Stickers Overlay Wiring | Dynamically query and attach Giphy transparent stickers to scene blueprints | M2 | R2 Survey |
+| F12 | Automated Live API Test Suite | Automated tests for all 8 live APIs verifying HTTP 200 responses and payloads | M3 | R3 Survey |
+| F13 | End-to-End 9:16 Video Synthesis Test | Complete E2E test rendering a 9:16 MP4 clip with FFmpeg, probing DAR 9:16, 1080x1920, and AAC audio | M3 | R3 Survey |
+| F14 | Comprehensive E2E Test Suite (Tiers 1-4) | Opaque-box test suite covering Tiers 1-4 across all features | E2E Track | Project Pattern |
+| F15 | Adversarial Coverage Hardening (Tier 5) | White-box stress testing, boundary fault injection, and coverage audit | M4 | Project Pattern |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | ModelManager Hardening & Circuit Breaker | F3, F5, F6, F7, F8, F9: Implement `ProviderCircuitBreaker`, Groq `max_retries=0`, Ollama model binding & cached health, fastpath end-to-end latency | none | IN_PROGRESS (39a19688-c993-48a2-a4a9-94f49a05cdfa) |
-| M2 | Database & Telemetry Concurrency Hardening | F10, F11, F12, F13, F14, F15: Implement `CredentialsVault` memory cache (<5ms), decoupled `MonitoringAgent` telemetry (<5ms), SQLite indexes, vacuuming (<15MB), 20-worker concurrency | none | IN_PROGRESS (ef925c23-362d-4cbf-8f2e-4ace23e4cba9) |
-| M3 | Benchmark Suite & Audit Report Generator | F1, F2, F4, F16, F17: Implement multi-provider benchmark harness (p50/p95/p99/TPS), Excel report generator (`Latency_Hardening_Benchmark_Report.xlsx`), Markdown report generator (`Markdown/_work/latency_benchmark.md`) | M1, M2 | PLANNED |
-| M4 | Final Milestone: 100% E2E Test Pass & Hardening | Phase 1: Pass 100% E2E tests (Tiers 1-4); Phase 2: Tier 5 adversarial stress testing, coverage verification, audit signoff | M3, TEST_READY | PLANNED |
-| E2E | E2E Testing Track | F18: Build requirement-driven opaque-box test suite (Tiers 1-4), generate `TEST_INFRA.md`, publish `TEST_READY.md` | none | IN_PROGRESS (a21b670d-cd3e-4698-a98e-89a4292ebeb6) |
+| M1 | UI/UX Revamp & Clutter Elimination | F1, F2, F3: Clean up `sql_video_workspace.py` and `sql_video_js.py`, remove obsolete dead elements, implement functional 9:16 controls and authentic generation ledger | none | DONE |
+| M2 | Dynamic Live API Pipeline Integration | F4, F5, F6, F7, F8, F9, F10, F11: Implement `CohereAdapter`/`SambaNovaAdapter`, wire Pixabay, Freesound, Deepgram Aura/Nova-2, Giphy, Tavily, Unsplash, Edge-TTS into `sql_short_engine.py` | none | DONE |
+| M3 | Automated Verification & E2E Video Pipeline Test | F12, F13: Implement `app/tests/test_video_maker_pipeline_e2e.py` covering live APIs, blueprint generation, and FFmpeg 9:16 video synthesis & stream probing | M1, M2 | IN_PROGRESS |
+| M4 | Final Milestone: 100% E2E Test Pass & Hardening | Phase 1: Pass 100% E2E tests (Tiers 1-4); Phase 2: Tier 5 adversarial coverage hardening & forensic audit signoff | M3, TEST_READY | PLANNED |
+| E2E | E2E Testing Track | F14: Build requirement-driven opaque-box test suite (Tiers 1-4), generate `TEST_INFRA.md`, publish `TEST_READY.md` | none | DONE |
 
 ## Interface Contracts
-### ModelManager ↔ ProviderCircuitBreaker
-- `circuit_breaker.record_success(provider: str) -> None`
-- `circuit_breaker.record_failure(provider: str, error: Exception) -> None`
-- `circuit_breaker.can_execute(provider: str) -> bool`
-- Provider state transition: 3 consecutive failures or immediate HTTP 429 / ConnectionError -> `OPEN` (trip time < 1ms). Timeout to `HALF_OPEN`: 30s.
+### Workspace UI ↔ Backend Generation API
+- Route: `POST /api/sql_video/generate_prompt_job`
+  - Request JSON:
+    ```json
+    {
+      "prompt": "Top 3 AI tools in 2026",
+      "model": "openai/gpt-oss-120b",
+      "language": "en",
+      "voice": "mr-IN-AarohiNeural",
+      "providers": {
+        "pixabay": true,
+        "unsplash": true,
+        "giphy": true,
+        "freesound": true,
+        "tavily": true
+      }
+    }
+    ```
+  - Response JSON (HTTP 202):
+    ```json
+    { "status": "queued", "job_id": "<uuid>" }
+    ```
+- Route: `GET /api/sql_video/generation_jobs/{job_id}`
+  - Response JSON (HTTP 200):
+    ```json
+    {
+      "job_id": "<uuid>",
+      "status": "completed",
+      "stage": "complete",
+      "progress": 100,
+      "result_data": {
+        "blueprint": { ... },
+        "audio_url": "/static/...",
+        "word_timestamps": [ { "word": "Top", "start": 0.08, "end": 0.24 } ],
+        "attribution_ledger": { ... }
+      }
+    }
+    ```
 
-### ModelManager ↔ Provider Adapters
-- `chat(prompt: str, system_prompt: str = None, **kwargs) -> Tuple[str, Dict[str, Any]]`
-- Telemetry dictionary returned must include:
-  - `latency_ms: float`
-  - `token_count: int` (completion tokens)
-  - `tps: float` (tokens per second)
-  - `model: str`
-  - `provider: str`
-
-### CredentialsVault Interface
-- `get_credential(service_name_or_id: str) -> Optional[Dict[str, Any]]`
-  - Must return in < 5ms (target < 0.1ms for cached hit).
-  - Cache invalidated automatically on `add_credential()` or `delete_credential()`.
-
-### MonitoringAgent Interface
-- `get_system_health() -> Dict[str, Any]`
-  - Must return in < 5ms (target < 0.1ms).
-  - Background daemon thread refreshes metrics every 10s.
+### Video Engine ↔ Live Media Providers
+- `pixabay_video_provider.search_pixabay_videos(query: str, per_page: int = 5) -> List[Dict[str, Any]]`
+- `unsplash_provider.search_unsplash_photos(query: str, count: int = 5, orientation: str = "portrait") -> List[Dict[str, Any]]`
+- `freesound_provider.search_sound_effects(query: str, count: int = 3) -> List[Dict[str, Any]]`
+- `deepgram_provider.generate_deepgram_speech(text: str, output_path: str, voice: str = "aura-asteria-en") -> bool`
+- `deepgram_provider.transcribe_audio_with_timestamps(audio_path: str) -> Optional[List[Dict[str, Any]]]`
+- `giphy_provider.search_giphy_stickers(query: str, limit: int = 5) -> List[Dict[str, Any]]`
+- `tavily_news_search.search_trending_topic(topic: str, max_results: int = 3) -> List[Dict[str, Any]]`
 
 ## Code Layout
-- `app/core/model_adapter.py`: `ModelManager`, `ProviderCircuitBreaker`, `GroqAdapter`, `GeminiAdapter`, `OllamaAdapter`.
-- `app/core/database.py`: `Database`, `CredentialsVault`, connection management, pragmas, indexes.
-- `app/agents/assistant_agent.py`: `MonitoringAgent`, system health telemetry.
-- `app/core/task_manager.py`: `TaskManager`, lock isolation.
-- `app/tests/test_latency_benchmarks.py`: Benchmark suite and latency test cases.
-- `app/tests/test_failover_circuit_breaker.py`: Circuit breaker and failover tests.
-- `app/tests/test_database_concurrency.py`: 20-worker concurrency and DB latency tests.
-- `app/reports/latency_report_generator.py`: Generates `Latency_Hardening_Benchmark_Report.xlsx` and `Markdown/_work/latency_benchmark.md`.
-- `Latency_Hardening_Benchmark_Report.xlsx`: Root deliverable Excel workbook.
-- `Markdown/_work/latency_benchmark.md`: Root deliverable Markdown executive summary.
+- `app/ui/sql_video_workspace.py`: Workspace HTML layout for `/workspace/sql-video`.
+- `app/ui/sql_video_js.py` & `app/video_maker/sql_video_js.py`: Client-side UI logic, 60fps canvas player, MediaRecorder export.
+- `app/core/model_adapter.py`: `ModelManager`, `CohereAdapter`, `SambaNovaAdapter`, `GroqAdapter`, `MistralAdapter`.
+- `app/video_maker/sql_short_engine.py`: Core short video synthesis engine, prompt generation, audio creation, asset aggregation.
+- `app/video_maker/modern_2026_video_matrix.py`: Visual pipeline matrix and layout definitions.
+- `app/video_maker/pixabay_video_provider.py`: Pixabay Video API client.
+- `app/video_maker/freesound_provider.py`: Freesound SFX API client.
+- `app/video_maker/deepgram_provider.py`: Deepgram Aura TTS and Nova-2 STT client.
+- `app/video_maker/giphy_provider.py`: Giphy stickers and memes client.
+- `app/video_maker/tavily_news_search.py`: Tavily real-time news search client.
+- `app/video_maker/unsplash_provider.py`: Unsplash 4K photography client.
+- `app/tests/test_video_maker_pipeline_e2e.py`: Automated end-to-end test suite.

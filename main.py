@@ -1499,13 +1499,15 @@ async def serve_logout_gateway():
 
 
 @app.get("/login", response_class=HTMLResponse)
-
-async def serve_login_gateway():
-
+async def serve_login_gateway(request: Request, token: Optional[str] = None):
     """Explicit login gateway for user switching or OTP verification if needed."""
-
     from app.ui.auth_components import get_login_page_html
-
+    from app.core.auth_manager import auth_manager
+    candidate_token = token or request.cookies.get("nanopro_session")
+    if candidate_token:
+        v_res = auth_manager.validate_session(candidate_token)
+        if v_res.get("is_valid") and v_res.get("user"):
+            return RedirectResponse(url="/")
     return HTMLResponse(get_login_page_html())
 
 

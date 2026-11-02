@@ -1,121 +1,107 @@
-# NanoPro AI Studio — E2E Test Infrastructure & Test Suite Documentation
+# Universal Tech AI Video Maker — E2E Test Infrastructure & Test Suite Documentation
 
 ## 1. Test Architecture Overview
 
-NanoPro AI Studio's End-to-End (E2E) Test Suite is an opaque-box, requirement-driven automated verification harness designed to rigorously test latency hardening, multi-model routing, high-concurrency database stability, zero-downtime failover, and executive audit report generation across all 4 core tiers.
+The Universal Tech AI Video Maker End-to-End (E2E) Test Suite (`app/tests/test_e2e_video_maker.py`) is an opaque-box, requirement-driven verification harness designed to thoroughly test 9:16 vertical video creation, live media API integrations, UI workspace responsiveness, audio synchronization, and video rendering pipelines across all 4 standard test tiers.
+
+All test cases are derived strictly from user requirements in `ORIGINAL_REQUEST.md` and the 15-feature inventory in `PROJECT.md`.
 
 ```
 +----------------------------------------------------------------------------------------------------+
-|                                    NanoPro AI Studio Test Architecture                             |
+|                      Universal Tech AI Video Maker (9:16 Shorts & Reels) Test Architecture          |
 +----------------------------------------------------------------------------------------------------+
 |                                                                                                    |
 |   +--------------------------------------------------------------------------------------------+   |
-|   | Tier 1: Feature Coverage (F1 - F17, >= 5 Tests per Feature = 85 Tests)                     |   |
-|   | - F1: Multi-Provider Benchmark Harness       - F10: Credentials Vault In-Memory Caching    |   |
-|   | - F2: Workload Test Suite (Python/SQL/Indic) - F11: Background Decoupled Telemetry         |   |
-|   | - F3: Groq LPU Latency Hardening             - F12: SQLite Indexation & Query Tuning       |   |
-|   | - F4: Gemini Cloud Latency Verification      - F13: TaskManager Lock Isolation             |   |
-|   | - F5: Local Ollama GPU Warmup & Latency      - F14: Database Vacuuming & Size Opt          |   |
-|   | - F6: In-Memory Fastpath Latency (<10ms)     - F15: 20-Worker Concurrency Validation       |   |
-|   | - F7: Provider Circuit Breaker (<1ms Trip)   - F16: Excel Benchmark Report Generator       |   |
-|   | - F8: Zero-Downtime Failover Cascade (<500ms)- F17: Markdown Executive Report Generator    |   |
-|   | - F9: Deterministic Local Model Resolution                                                 |   |
+|   | Tier 1: Feature Coverage (F1 - F15)                                                        |   |
+|   | - F1: UI/UX Clutter & Obsolete Elimination   - F9: Deepgram Nova-2 Word Captions           |   |
+|   | - F2: Responsive 9:16 Workspace Controls     - F10: Deepgram Aura & Edge-TTS Multi-Voice   |   |
+|   | - F3: Multi-Stage Progress & Authentic Ledger- F11: Giphy Viral Stickers Overlay Wiring    |   |
+|   | - F4: Model Adapter Cohere & SambaNova       - F12: Automated Live API Test Suite          |   |
+|   | - F5: Tavily Real-Time Context Wiring        - F13: End-to-End 9:16 Video Synthesis Test   |   |
+|   | - F6: Pixabay 9:16 B-Roll Clip Wiring        - F14: Comprehensive E2E Test Suite (Tiers 1-4|   |
+|   | - F7: Unsplash Portrait Photography Wiring   - F15: Adversarial Coverage Hardening (Tier 5)|   |
+|   | - F8: Freesound SFX Transitions Wiring                                                     |   |
 |   +--------------------------------------------------------------------------------------------+   |
 |                                                                                                    |
 |   +--------------------------------------------------------------------------------------------+   |
-|   | Tier 2: Boundary & Corner Cases (6 Categories x 5 Tests = 30 Tests)                        |   |
-|   | - Empty & Whitespace Prompts                 - HTTP 429 Rate Limit Simulation & Backoff    |   |
-|   | - Extreme Context Lengths & Token Limits     - Concurrent DB Writes & Conflict Resolution  |   |
-|   | - Socket Timeouts & Disconnections           - Deep Conversation History (1,000+ msgs)     |   |
+|   | Tier 2: Boundary & Corner Cases                                                            |   |
+|   | - Empty and Whitespace Prompts               - HTTP 401/403/404/429/500/502/504 Handling   |   |
+|   | - Ultra-Long Prompts (>2,500 chars)          - Network Timeouts & Connection Drops         |   |
+|   | - Unknown / Invalid Model Fallback           - 0-Byte and Corrupted Audio Duration Probing |   |
+|   | - Zero Search Results from Media APIs        - SQLite In-Memory Sandbox Syntax Errors      |   |
+|   | - Unsupported Language Fallback              - Non-Existent Generation Job ID Lookups      |   |
+|   | - Missing or Empty API Key Degradation       - FFmpeg Video Cropping on Missing Files      |   |
+|   | - Pixabay Per-Page Boundary Clamping (3-200) - Audio Track Duration Calibration & Loops   |   |
 |   +--------------------------------------------------------------------------------------------+   |
 |                                                                                                    |
 |   +--------------------------------------------------------------------------------------------+   |
-|   | Tier 3: Cross-Feature Combinations (Pairwise Feature Interactions = 15 Tests)              |   |
-|   | - Failover during active DB write            - Fastpath execution during circuit TRIP      |   |
-|   | - Vault retrieval during model routing       - Ollama fallback during health monitoring    |   |
-|   | - Telemetry daemon during 20 concurrent qrys - Report export during benchmark run          |   |
-|   | - TaskManager stage transition during VACUUM - High-concurrency chat endpoint pipeline     |   |
+|   | Tier 3: Cross-Feature Combinations (Pairwise Feature Interactions)                         |   |
+|   | - Marathi Edge-TTS + Pixabay Video B-Roll + Freesound SFX                                  |   |
+|   | - English Deepgram Aura TTS + Unsplash Portrait Photo + Giphy Sticker                      |   |
+|   | - Hindi Edge-TTS + Tavily News Real-Time Grounding + Nova-2 Word Captions                  |   |
+|   | - Groq / Mistral Script Generation + Pixabay Video + Giphy Meme Overlay                    |   |
+|   | - Async Job Queue -> Stage Progress Polling -> Final Multi-Asset Blueprint                 |   |
+|   | - Deepgram Aura TTS Failure -> Edge-TTS Automatic Cascade with Preserved Media             |   |
+|   | - Tavily Grounded Script -> Unsplash 4K Portrait -> Freesound Whoosh Transition           |   |
+|   | - SQLite Sandbox Execution -> Real-Time Blueprint Stage Synchronization                    |   |
+|   | - Dynamic Multi-Scene Stage Boundary Calibration against Audio Header Durations            |   |
+|   | - Full 5-Provider Media Pack Active Concurrently (Pixabay, Unsplash, Giphy, Freesound, TV)|   |
 |   +--------------------------------------------------------------------------------------------+   |
 |                                                                                                    |
 |   +--------------------------------------------------------------------------------------------+   |
-|   | Tier 4: Real-World Application Scenarios (10 Tests)                                        |   |
-|   | - Full Python Coding Pipeline (AST + Backup) - Multi-Turn Marathi Dialogue with History    |   |
-|   | - Python ETL Pipeline Generation             - Multi-Turn Hindi Dialogue with History      |   |
-|   | - SQL Generation with Banking Schema Lookup  - ManagerAgent Full Chat Dispatch Flow        |   |
-|   | - Complex SQL Window Function Analytics      - Emergency Offline Local GPU Fallback        |   |
-|   | - Full Latency Audit & Report Export Pipeline- Sustained Multi-Tier Database Stability     |   |
+|   | Tier 4: Real-World Application Scenarios (Full Vertical Reels Production)                  |   |
+|   | - Tech News Reel: 2026 AI Breakthroughs (Tavily, Pixabay, Nova-2 Captions, 9:16 Vertical)  |   |
+|   | - SQL Tutorial Short: Banking DENSE_RANK() (Sandbox DB, Animated Code, Marathi Voice, SFX)|   |
+|   | - AI Coding Hack Reel: FastAPI Background Tasks (Python Code, Giphy Sticker, Deepgram Aura)|   |
+|   | - Motivational Quote Reel: Daily Dev Wisdom (Unsplash 4K Portrait, Hindi Voice, Ambience) |   |
+|   | - End-to-End Generation Job HTTP Lifecycle: POST queued -> Polled -> Completed Blueprint   |   |
+|   | - Full MP4 Video Synthesis & Stream Verification: 1080x1920 (9:16), H.264, AAC Audio      |   |
 |   +--------------------------------------------------------------------------------------------+   |
 +----------------------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Invocation Commands
+## 2. Test Execution Harness & Environment
 
-The entire test suite is completely self-contained and runnable via standard Python `unittest`:
+- **Framework:** Python standard library `unittest` and `unittest.IsolatedAsyncioTestCase` for asynchronous coroutines.
+- **Python Version:** Python 3.11+.
+- **Video Rendering Backend:** FFmpeg 7.1 (`imageio_ffmpeg` binary `ffmpeg-win-x86_64-v7.1.exe` or system `ffmpeg`).
+- **Isolation Policy:** 
+  - Each test sets up and tears down temporary files in isolated directories (`tempfile.TemporaryDirectory`).
+  - Unit and boundary tests cleanly mock remote network I/O (`requests.get`, `requests.post`) to ensure fast, deterministic, quota-free execution.
+  - Video rendering integration tests synthesize real video files on the fly and verify streams with FFmpeg.
 
+---
+
+## 3. Test Runner Commands
+
+### Run Full Test Suite
 ```bash
-# Run the complete master E2E test suite
-python -m unittest app/tests/test_e2e_suite.py
+python -m unittest app/tests/test_e2e_video_maker.py
+```
 
-# Run with verbose test case reporting
-python -m unittest -v app/tests/test_e2e_suite.py
+### Run Specific Test Tiers
+```bash
+# Run Tier 1 (Feature Coverage)
+python -m unittest app.tests.test_e2e_video_maker.TestTier1_F1_UI_ClutterElimination app.tests.test_e2e_video_maker.TestTier1_F2_WorkspaceControls app.tests.test_e2e_video_maker.TestTier1_F3_ProgressAndLedger app.tests.test_e2e_video_maker.TestTier1_F4_ModelAdapters app.tests.test_e2e_video_maker.TestTier1_F5_TavilyNewsSearch app.tests.test_e2e_video_maker.TestTier1_F6_PixabayVideoProvider app.tests.test_e2e_video_maker.TestTier1_F7_UnsplashProvider app.tests.test_e2e_video_maker.TestTier1_F8_FreesoundProvider app.tests.test_e2e_video_maker.TestTier1_F9_DeepgramWordCaptions app.tests.test_e2e_video_maker.TestTier1_F10_DeepgramAuraAndEdgeTTS app.tests.test_e2e_video_maker.TestTier1_F11_GiphyProvider app.tests.test_e2e_video_maker.TestTier1_F12_AutomatedLiveApiContracts app.tests.test_e2e_video_maker.TestTier1_F13_EndToEndVideoSynthesis app.tests.test_e2e_video_maker.TestTier1_F14_ComprehensiveHarness app.tests.test_e2e_video_maker.TestTier1_F15_AdversarialResilience
 
-# Run a specific test class (e.g. Tier 1 Circuit Breaker)
-python -m unittest app.tests.test_e2e_suite.TestTier1F7CircuitBreaker
+# Run Tier 2 (Boundary & Corner Cases)
+python -m unittest app.tests.test_e2e_video_maker.TestTier2_BoundaryAndCornerCases
 
-# Run a specific tier (e.g. Tier 4 Real-World Scenarios)
-python -m unittest app.tests.test_e2e_suite.TestTier4RealWorldScenarios
+# Run Tier 3 (Cross-Feature Combinations)
+python -m unittest app.tests.test_e2e_video_maker.TestTier3_CrossFeatureCombinations
+
+# Run Tier 4 (Real-World Application Scenarios)
+python -m unittest app.tests.test_e2e_video_maker.TestTier4_RealWorldApplicationScenarios
 ```
 
 ---
 
-## 3. Tier Summary & Test Counts
+## 4. Quality Gates & Acceptance Verification
 
-| Tier | Name | Target Scope | Test Count | Pass Rate |
-|---|---|---|---|---|
-| **Tier 1** | Feature Coverage (F1 - F17) | Baseline requirements across all 17 features (>= 5 tests per feature) | **85** | 100% (85/85) |
-| **Tier 2** | Boundary & Corner Cases | Empty prompts, token limits, network timeouts, 429 backoff, DB collisions, large history | **30** | 100% (30/30) |
-| **Tier 3** | Cross-Feature Combinations | Pairwise interactions between router, database, vault, telemetry, and fastpath | **15** | 100% (15/15) |
-| **Tier 4** | Real-World Application Scenarios | End-to-end Python coding, SQL generation, multi-turn Indic dialogues, offline emergency | **10** | 100% (10/10) |
-| **Total** | **Full E2E Suite** | **Comprehensive opaque-box verification** | **140** | **100% (140/140)** |
-
----
-
-## 4. Feature Matrix (F1 - F17)
-
-| Feature # | Feature Name | Test Class | Test Methods Count | Core SLAs & Contracts Verified |
-|---|---|---|---|---|
-| **F1** | Multi-Provider Benchmark Harness | `TestTier1F1BenchmarkHarness` | 5 | p50/p95/p99 math, TPS formula, success rate, provider aggregation |
-| **F2** | Workload Test Suite | `TestTier1F2WorkloadTestSuite` | 5 | Python AST, SQL schema prompt, Marathi dialogue, Hindi dialogue, JSON schema |
-| **F3** | Groq LPU Latency Hardening | `TestTier1F3GroqLPULatency` | 5 | `< 1,200ms` code, `< 1,800ms` dialogue, `max_retries=0`, token boundaries |
-| **F4** | Gemini Cloud Latency Verification | `TestTier1F4GeminiCloudLatency` | 5 | `< 2,500ms` cloud SLA, `generate_content` + `interactions.create` fallback |
-| **F5** | Local Ollama GPU Warmup & Latency | `TestTier1F5OllamaGPUWarmup` | 5 | `keep_alive` option, 15s health caching, `llama3.2:3b`, `qwen2.5-coder:3b` |
-| **F6** | In-Memory Fastpath Latency | `TestTier1F6FastpathLatency` | 5 | `< 10ms` response SLA, recipes (Khichadi/Pohe), marriage advice, speed complaint |
-| **F7** | Provider Circuit Breaker | `TestTier1F7CircuitBreaker` | 5 | CLOSED/OPEN/HALF_OPEN, `< 1ms` trip time on HTTP 429/connection error |
-| **F8** | Zero-Downtime Failover Cascade | `TestTier1F8FailoverCascade` | 5 | Groq -> Gemini -> Ollama `< 500ms` cascade without uncaught caller exceptions |
-| **F9** | Deterministic Local Model Resolution | `TestTier1F9LocalModelResolution` | 5 | Direct local Ollama binding (`qwen2.5-coder:3b`, `llama3.2:3b`), zero cloud misrouting |
-| **F10** | Credentials Vault In-Memory Caching | `TestTier1F10CredentialsVaultCaching` | 5 | `< 5ms` warm retrieval (< 0.1ms target), cache invalidation on write/delete |
-| **F11** | Background Decoupled Telemetry | `TestTier1F11DecoupledTelemetry` | 5 | `< 5ms` response (< 0.1ms target), background thread refresh every 10s |
-| **F12** | SQLite Indexation & Query Tuning | `TestTier1F12SQLiteIndexation` | 5 | B-Tree indexes on `conversations(session_id)`, `credentials(service_name)`, `tasks(created_at)` |
-| **F13** | TaskManager Lock Isolation | `TestTier1F13TaskManagerLockIsolation` | 5 | `db.save_task()` disk I/O moved outside `self._lock` critical section |
-| **F14** | Database Vacuuming & Size Optimization | `TestTier1F14DatabaseVacuuming` | 5 | WAL journal mode, `< 15 MB` file size, `wal_checkpoint(TRUNCATE)`, integrity check |
-| **F15** | 20-Worker Concurrency Validation | `TestTier1F15Concurrency20Workers` | 5 | 20 concurrent threads: 0 `database is locked` errors, stable latency |
-| **F16** | Excel Benchmark Report Generation | `TestTier1F16ExcelReportGeneration` | 5 | `Latency_Hardening_Benchmark_Report.xlsx` with 5 sheets and openpyxl styling |
-| **F17** | Markdown Executive Report Generation | `TestTier1F17MarkdownReportGeneration` | 5 | `Markdown/_work/latency_benchmark.md` with SLA compliance table & audit logs |
-
----
-
-## 5. Report Artifacts Generated
-
-Running the test suite programmatically creates and validates the two primary reporting artifacts:
-1. `Latency_Hardening_Benchmark_Report.xlsx`:
-   - Sheet 1: `Executive Summary`
-   - Sheet 2: `Provider Benchmarks`
-   - Sheet 3: `Failover Matrix`
-   - Sheet 4: `Database Latency`
-   - Sheet 5: `Concurrency SLA`
-2. `Markdown/_work/latency_benchmark.md`:
-   - Executive Summary & Architecture Overview
-   - SLA Compliance Matrix (p50, p95, status)
-   - Failover and Circuit Breaker Verification Logs
+1. **Aspect Ratio Verification:** Output video stream must be strictly vertical 9:16 (1080x1920) H.264 video.
+2. **Audio Synchronization:** Stage boundaries must be calibrated to audio duration measured via MPEG audio frame headers.
+3. **Authentic Asset Ledger:** Generated blueprints must contain authentic asset attribution ledgers identifying active engines and providers.
+4. **UI Workspace Integrity:** Obsolete and dead controls (`#phoneAvatarPip`, orphan DOM IDs, hardcoded fake badges) must remain eliminated.
+5. **Fault Resilience:** Pipeline must withstand remote API network timeouts and rate limits with clean fallback and zero unhandled server crashes.
