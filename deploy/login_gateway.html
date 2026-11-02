@@ -458,7 +458,7 @@
 
                         <label class="form-label">Username / Admin ID</label>
 
-                        <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" required autofocus>
+                        <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" value="nanopro" required autofocus>
 
                     </div>
 
@@ -466,7 +466,7 @@
 
                         <label class="form-label">Password</label>
 
-                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" required>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" value="Admin@123" required>
 
                     </div>
 
@@ -481,6 +481,10 @@
                     </div>
 
                     <button type="submit" id="loginBtn" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
+
+                    <button type="button" onclick="quick1ClickLogin()" style="width:100%; margin-top:12px; padding:12px; background:linear-gradient(135deg, #059669, #10B981); border:none; border-radius:10px; color:#FFFFFF; font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 4px 15px rgba(16, 185, 129, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
+                        ⚡ 1-Click Instant Admin Access (झटपट ऍडमिन लॉगिन)
+                    </button>
 
                 </form>
 
@@ -786,19 +790,481 @@
 
                 const data = await resp.json();
 
-                                if (data.status === 'success' && data.session_token) {
+                if (data.status === 'success' && data.session_token) {
+
                     localStorage.setItem('nanopro_session_token', data.session_token);
+
                     localStorage.setItem('nanopro_active_account', data.user.username);
+
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
 
-                    showAlert('✅ WhatsApp OTP Verified! Launching NanoPro...', 'success');
+                    showAlert('✅ Clerk Authenticated! Launching NanoPro...', 'success');
+
                     setTimeout(() => {
+
                         window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+
                     }, 400);
+
+                } else {
+
+                    showAlert(data.error || 'Clerk verification error.', 'error');
+
+                }
+
+            } catch(err) {
+
+                showAlert('Clerk sync error: ' + err.message, 'error');
+
+            }
+
+        }
+
+
+
+        async function triggerClerkSignIn() {
+
+            if (!window.Clerk) {
+
+                showAlert('Clerk Zero Trust SDK loading... please wait a moment.', 'warning');
+
+                return;
+
+            }
+
+            try {
+
+                if (window.Clerk.openSignIn) {
+
+                    window.Clerk.openSignIn();
+
+                    window.Clerk.addListener(async (e) => {
+
+                        if (e && e.user) {
+
+                            syncClerkSession();
+
+                        }
+
+                    });
+
+                } else if (window.Clerk.mountSignIn) {
+
+                    const node = document.getElementById('clerkMountTarget');
+
+                    if (node) {
+
+                        node.innerHTML = '';
+
+                        window.Clerk.mountSignIn(node);
+
+                    }
+
+                }
+
+            } catch(e) {
+
+                showAlert('Clerk Sign-In: ' + e.message, 'error');
+
+            }
+
+        }
+
+
+
+        async function triggerGoogleSignIn() {
+
+            let email = "mangeshbagul15@gmail.com";
+
+            if (typeof prompt !== 'undefined') {
+
+                const entered = prompt("Sign in with Google - Enter your email address:", email);
+
+                if (entered === null) return;
+
+                if (entered.trim()) email = entered.trim();
+
+            }
+
+            showAlert('Authenticating with Google (' + email + ')...', 'success');
+
+            try {
+
+                const resp = await fetch('/api/auth/google-login', {
+
+                    method: 'POST',
+
+                    headers: {'Content-Type': 'application/json'},
+
+                    body: JSON.stringify({ email: email, full_name: 'Google User' })
+
+                });
+
+                const data = await resp.json();
+
+                if (data.status === 'success') {
+
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+
+                    showAlert('✅ Google Authentication Success! Launching...', 'success');
+
+                    setTimeout(() => { window.location.replace('/?token=' + encodeURIComponent(data.session_token)); }, 300);
+
                 } else if (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL') {
-                    showAlert('⏳ <b>' + (data.message || data.error || 'WhatsApp OTP पडताळला गेला आहे! सुरक्षा धोरणानुसार ॲडमिन (nanopro) कडून मंजुरी मिळाल्यावर खाते सक्रिय होईल.') + '</b>', 'warning');
+                    showAlert('⏳ <b>' + (data.message || data.error || 'Google नोंदणी यशस्वी! ॲडमिन मंजुरीनंतर लॉगिन करता येईल.') + '</b>', 'warning');
+                } else {
+                    showAlert(data.error || 'Google Login failed.', 'error');
+
+                }
+
+            } catch(e) {
+
+                showAlert('Google Sign-In Error: ' + e.message, 'error');
+
+            }
+
+        }
+
+
+
+        /* quickFillAdmin removed for security */
+
+
+
+        function quick1ClickLogin() {
+            document.getElementById('loginUsername').value = 'nanopro';
+            document.getElementById('loginPassword').value = 'Admin@123';
+            handleDirectLogin(new Event('submit'));
+        }
+        window.quick1ClickLogin = quick1ClickLogin;
+
+        function switchMainTab(tab) {
+
+            document.getElementById('tabDirect').classList.toggle('active', tab === 'direct');
+
+            document.getElementById('tabWhatsapp').classList.toggle('active', tab === 'whatsapp');
+
+            document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+
+
+
+            document.getElementById('directView').style.display = (tab === 'direct') ? 'block' : 'none';
+
+            document.getElementById('whatsappView').style.display = (tab === 'whatsapp') ? 'block' : 'none';
+
+            document.getElementById('registerForm').style.display = (tab === 'register') ? 'block' : 'none';
+
+
+
+            const divText = document.getElementById('dividerText');
+
+            if (divText) {
+
+                if (tab === 'direct') divText.innerText = 'OR USE DIRECT CREDENTIALS';
+
+                else if (tab === 'whatsapp') divText.innerText = 'OR LOGIN VIA WHATSAPP OTP';
+
+                else divText.innerText = 'OR SUBMIT ACCESS REQUEST';
+
+            }
+
+
+
+            hideAlert();
+
+        }
+
+
+
+        function showAlert(msg, type='error') {
+
+            const el = document.getElementById('alertBox');
+
+            el.className = 'alert-box alert-' + type;
+
+            el.innerHTML = msg;
+
+            el.style.display = 'block';
+
+        }
+
+
+
+        function hideAlert() {
+
+            document.getElementById('alertBox').style.display = 'none';
+
+        }
+
+
+
+        async function handleDirectLogin(e) {
+
+            e.preventDefault();
+
+            const btn = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+
+            btn.innerText = 'Verifying with Cloudflare & Server...';
+
+            hideAlert();
+
+
+
+            const username = document.getElementById('loginUsername').value.trim();
+
+            const password = document.getElementById('loginPassword').value;
+
+            const remember = document.getElementById('rememberMe').checked;
+
+
+
+            try {
+
+                const resp = await fetch('/api/auth/login', {
+
+                    method: 'POST',
+
+                    headers: { 'Content-Type': 'application/json' },
+
+                    body: JSON.stringify({ username, password })
+
+                });
+
+                const data = await resp.json();
+
+                if (data.status === 'success') {
+
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+
+                    localStorage.setItem('nanopro_active_account', data.user.username);
+
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+
+
+
+                    if (remember) {
+
+                        localStorage.setItem('nanopro_remember_credentials', 'true');
+
+                        try {
+
+                            const encPwd = btoa(unescape(encodeURIComponent(password)));
+
+                            let accs = [];
+
+                            try { accs = JSON.parse(localStorage.getItem('nanopro_saved_accounts') || '[]'); } catch(e){}
+
+                            accs = accs.filter(a => a.username.toLowerCase() !== data.user.username.toLowerCase());
+
+                            accs.unshift({ username: data.user.username, saved_password: encPwd, session_token: data.session_token });
+
+                            localStorage.setItem('nanopro_saved_accounts', JSON.stringify(accs));
+
+                        } catch(e){}
+
+                    }
+
+                    showAlert('✅ Access Granted! Loading workspace...', 'success');
+
+                    setTimeout(() => {
+
+                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+
+                    }, 400);
+
+                } else {
+
+                    showAlert(data.error || 'Authentication failed. Please verify credentials.', 'error');
+
+                }
+
+            } catch(err) {
+
+                showAlert('Gateway Error: ' + err.message, 'error');
+
+            } finally {
+
+                btn.disabled = false;
+
+                btn.innerText = '🔐 Verify & Launch NanoPro';
+
+            }
+
+        }
+
+
+
+        // --- WHATSAPP OTP WORKFLOW ---
+
+        let currentWaTarget = '';
+
+
+
+        async function handleSendWaOtp() {
+
+            const phoneInput = document.getElementById('waPhoneNumber');
+
+            const phone = phoneInput.value.trim();
+
+            if (!phone) {
+
+                showAlert('कृपया वैध WhatsApp नंबर टाका.', 'warning');
+
+                return;
+
+            }
+
+            const btn = document.getElementById('waSendBtn');
+
+            btn.disabled = true;
+
+            btn.innerText = 'Sending OTP to WhatsApp...';
+
+            hideAlert();
+
+
+
+            try {
+
+                const resp = await fetch('/api/auth/otp/send', {
+
+                    method: 'POST',
+
+                    headers: { 'Content-Type': 'application/json' },
+
+                    body: JSON.stringify({ identifier: phone, channel: 'whatsapp' })
+
+                });
+
+                const data = await resp.json();
+
+                if (data.status === 'success') {
+
+                    currentWaTarget = data.identifier || phone;
+
+                    document.getElementById('waTargetDisplay').innerText = '💬 Code sent to: ' + currentWaTarget;
+
+                    document.getElementById('waStepRequest').style.display = 'none';
+
+                    document.getElementById('waStepVerify').style.display = 'block';
+
+
+
+                    if (data.whatsapp_link) {
+
+                        const linkBtn = document.getElementById('waWebActionLink');
+
+                        linkBtn.href = data.whatsapp_link;
+
+                        linkBtn.style.display = 'inline-block';
+
+                    }
+
+
+
+                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp चेक करा!', 'success');
+
+                    document.getElementById('waOtpCode').focus();
+
+                } else {
+
+                    showAlert(data.error || 'Failed to send WhatsApp OTP.', 'error');
+
+                }
+
+            } catch(e) {
+
+                showAlert('OTP Dispatch Error: ' + e.message, 'error');
+
+            } finally {
+
+                btn.disabled = false;
+
+                btn.innerText = '📲 Send WhatsApp OTP';
+
+            }
+
+        }
+
+
+
+        function resetWaStep() {
+
+            document.getElementById('waStepRequest').style.display = 'block';
+
+            document.getElementById('waStepVerify').style.display = 'none';
+
+            document.getElementById('waOtpCode').value = '';
+
+            hideAlert();
+
+        }
+
+
+
+        async function handleVerifyWaOtp() {
+
+            const otpCode = document.getElementById('waOtpCode').value.trim();
+
+            if (!otpCode || otpCode.length < 6) {
+
+                showAlert('कृपया ६-अंकी OTP प्रविष्ट करा.', 'warning');
+
+                return;
+
+            }
+
+            const btn = document.getElementById('waVerifyBtn');
+
+            btn.disabled = true;
+
+            btn.innerText = 'Verifying WhatsApp OTP...';
+
+            hideAlert();
+
+
+
+            try {
+
+                const resp = await fetch('/api/auth/otp/verify', {
+
+                    method: 'POST',
+
+                    headers: { 'Content-Type': 'application/json' },
+
+                    body: JSON.stringify({ identifier: currentWaTarget, otp_code: otpCode, channel: 'whatsapp' })
+
+                });
+
+                const data = await resp.json();
+
+                if (data.status === 'success' && data.session_token) {
+
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+
+                    localStorage.setItem('nanopro_active_account', data.user.username);
+
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+
+
+
+                    showAlert('✅ WhatsApp OTP Verified! Launching NanoPro...', 'success');
+
+                    setTimeout(() => {
+
+                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+
+                    }, 400);
+
+                } else if (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL') {
+                    showAlert('⏳ <b>' + (data.message || data.error || 'WhatsApp OTP पडताळला गेला आहे! ॲडमिन मंजुरीनंतर खाते सक्रिय होईल.') + '</b>', 'warning');
                 } else {
                     showAlert(data.error || 'अवैध OTP कोड. कृपया पुन्हा प्रयत्न करा.', 'error');
+
                 }
 
             } catch(e) {

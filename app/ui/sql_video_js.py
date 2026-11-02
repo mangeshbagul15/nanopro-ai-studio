@@ -13806,50 +13806,264 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.restore();
     }
 
-    // 4. Draw Complete 3D Medallion Poster (Bronze -> Silver -> Gold + Challenge & Solutions)
-    // Directly matching reference media_1793547419431_7d80381b.jpg
+    // 4. Ultra-Realistic 3D Isometric Medallion Architecture Poster
+    // Directly matching reference media_1793547544550_587a3145.png and media_1793547544575_a9628b1a.jpg
+    function draw3DIsometricBox(ctx, x, y, w, h, d, topColor, leftColor, rightColor) {
+        ctx.save();
+        // Top Face (Isometric rhombus)
+        ctx.fillStyle = topColor;
+        ctx.beginPath();
+        ctx.moveTo(x, y - d);
+        ctx.lineTo(x + w, y - d * 0.5);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x - w, y - d * 0.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Left Face
+        ctx.fillStyle = leftColor;
+        ctx.beginPath();
+        ctx.moveTo(x - w, y - d * 0.5);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x, y + h);
+        ctx.lineTo(x - w, y + h - d * 0.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right Face
+        ctx.fillStyle = rightColor;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + w, y - d * 0.5);
+        ctx.lineTo(x + w, y + h - d * 0.5);
+        ctx.lineTo(x, y + h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function draw3DIsometricPipe(ctx, x1, y1, x2, y2, color, t) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Glowing Core
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Moving Energy Pulse Photon
+        const pulseProg = (t * 1.5) % 1.0;
+        const px = x1 + (x2 - x1) * pulseProg;
+        const py = y1 + (y2 - y1) * pulseProg;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.shadowColor = "#FFFFFF";
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     function drawPro3DMedallionPoster(ctx, W, H, t, stageIdx, stageProg) {
         ctx.save();
 
-        const baseY = H * 0.44;
-
-        // Top Flow Breadcrumb: Oracle -> AWS DMS -> S3 -> Snowflake -> Power BI
+        // 1. TOP HEADER BANNER (3D Gold + Neon Blue Glassmorphism)
+        const headerY = H * 0.17;
         ctx.save();
-        ctx.translate(W / 2, H * 0.29);
-        const flowSteps = ["Oracle DB", "AWS DMS", "Amazon S3", "Snowflake", "Power BI"];
-        const stepW = 90;
-        const totalW = stepW * flowSteps.length;
-        const startX = -totalW / 2 + stepW / 2;
+        ctx.translate(W / 2, headerY);
 
-        flowSteps.forEach((st, i) => {
-            const bx = startX + i * stepW;
-            ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
-            ctx.beginPath();
-            ctx.roundRect(bx - 38, -14, 76, 28, 6);
-            ctx.fill();
-            ctx.strokeStyle = i === 3 ? "#38BDF8" : "rgba(255,255,255,0.2)";
-            ctx.stroke();
+        // Header Background Capsule
+        ctx.fillStyle = "rgba(7, 13, 29, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-245, -42, 490, 78, 18);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "#38BDF8";
+        ctx.shadowBlur = 16;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
 
-            ctx.fillStyle = i === 3 ? "#38BDF8" : "#E2E8F0";
-            ctx.font = "bold 10px monospace";
-            ctx.textAlign = "center";
-            ctx.fillText(st, bx, 4);
+        // AWS Logo Top Left
+        ctx.fillStyle = "#FF9900";
+        ctx.font = "bold 15px 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText("aws", -225, -15);
+        ctx.strokeStyle = "#FF9900";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(-210, -10, 12, 0.3 * Math.PI, 0.8 * Math.PI);
+        ctx.stroke();
 
-            if (i < flowSteps.length - 1) {
-                ctx.fillStyle = "#94A3B8";
-                ctx.fillText("➔", bx + stepW / 2, 4);
-            }
-        });
+        // Snowflake Logo Top Right
+        ctx.fillStyle = "#29B5E8";
+        ctx.font = "bold 14px 'Segoe UI', sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText("❄️ snowflake", 225, -15);
+
+        // Title 3D Embossed Text
+        ctx.fillStyle = "#FDE047";
+        ctx.font = "900 17px 'Segoe UI', system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Medallion Architecture", 0, -18);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText("in AWS + Snowflake", 0, 0);
+
+        // Subheader Golden Capsule
+        ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+        ctx.beginPath();
+        ctx.roundRect(-140, 12, 280, 22, 11);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = "#FCD34D";
+        ctx.font = "bold 11px 'Segoe UI', sans-serif";
+        ctx.fillText("Raw Data se Business Insights tak!", 0, 27);
         ctx.restore();
 
-        // 3 Large 3D Volumetric Cylinders (Bronze, Silver, Gold)
-        // 1. Bronze Cylinder
+        // 2. INGESTION ROW (Isometric Nodes: Oracle -> AWS DMS -> S3 -> Snowflake)
+        const row1Y = H * 0.28;
+        const nodeX = [W / 2 - 185, W / 2 - 62, W / 2 + 62, W / 2 + 185];
+
+        // Draw Interconnecting Glowing Pipes
+        for (let i = 0; i < 3; i++) {
+            draw3DIsometricPipe(ctx, nodeX[i] + 28, row1Y, nodeX[i+1] - 28, row1Y, "#38BDF8", t + i * 0.3);
+        }
+
+        // Node 1: Oracle Database (Blue Stacked Discs)
+        ctx.save();
+        ctx.translate(nodeX[0], row1Y);
+        // Stack of 3 Discs
+        for (let d = 2; d >= 0; d--) {
+            const dy = d * 8;
+            ctx.fillStyle = d === 0 ? "#1E40AF" : "#1E3A8A";
+            ctx.beginPath();
+            ctx.ellipse(0, dy, 24, 9, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#60A5FA";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        // Top glowing disc
+        ctx.fillStyle = "#3B82F6";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Red Oracle Badge
+        ctx.fillStyle = "#DC2626";
+        ctx.beginPath();
+        ctx.roundRect(-16, 18, 32, 11, 3);
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 7px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("ORACLE", 0, 26);
+        // Label
+        ctx.fillStyle = "#93C5FD";
+        ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
+        ctx.fillText("Oracle DB", 0, -16);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "7.5px sans-serif";
+        ctx.fillText("Source Data", 0, -27);
+        ctx.restore();
+
+        // Node 2: AWS DMS (3D Purple Isometric Cube)
+        ctx.save();
+        ctx.translate(nodeX[1], row1Y);
+        draw3DIsometricBox(ctx, 0, 0, 20, 24, 12, "#A855F7", "#7E22CE", "#6B21A8");
+        // AWS DMS Text
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 8px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("AWS", 0, 6);
+        ctx.fillText("DMS", 0, 16);
+        // Top Label
+        ctx.fillStyle = "#D8B4FE";
+        ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
+        ctx.fillText("AWS DMS", 0, -18);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "7.5px sans-serif";
+        ctx.fillText("CDC Changes", 0, -29);
+        ctx.restore();
+
+        // Node 3: Amazon S3 (3D Neon Glowing Green Bucket)
+        ctx.save();
+        ctx.translate(nodeX[2], row1Y);
+        draw3DIsometricBox(ctx, 0, 0, 20, 24, 12, "#22C55E", "#15803D", "#166534");
+        // S3 Bucket Icon
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 10, 8, 0, Math.PI);
+        ctx.stroke();
+        // Top Label
+        ctx.fillStyle = "#86EFAC";
+        ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Amazon S3", 0, -18);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "7.5px sans-serif";
+        ctx.fillText("Data Lake (Storage)", 0, -29);
+        ctx.restore();
+
+        // Node 4: Snowflake Data Warehouse (Cyan Glowing Platform)
+        ctx.save();
+        ctx.translate(nodeX[3], row1Y);
+        draw3DIsometricBox(ctx, 0, 0, 22, 26, 14, "#38BDF8", "#0284C7", "#0369A1");
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("❄️", 0, 14);
+        // Top Label
+        ctx.fillStyle = "#7DD3FC";
+        ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
+        ctx.fillText("Snowflake", 0, -18);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "7.5px sans-serif";
+        ctx.fillText("Warehouse", 0, -29);
+        ctx.restore();
+
+        // 3. MIDDLE MEDALLION ROW (Bronze -> Silver -> Gold Cylinders)
+        const baseY = H * 0.45;
+
+        // Middle Header Pill
+        ctx.save();
+        ctx.translate(W / 2, baseY - 68);
+        ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.beginPath();
+        ctx.roundRect(-120, -12, 240, 24, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#38BDF8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = "#38BDF8";
+        ctx.font = "900 11.5px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Medallion Architecture", 0, 4);
+        ctx.restore();
+
+        // Connect pipe from Snowflake above down to Medallion
+        draw3DIsometricPipe(ctx, nodeX[3], row1Y + 28, nodeX[3], baseY - 68, "#38BDF8", t);
+        draw3DIsometricPipe(ctx, nodeX[3], baseY - 68, W / 2 + 120, baseY - 68, "#38BDF8", t);
+
+        // Cylinder 1: Bronze (L0 Raw)
         const isBronzeActive = stageIdx === 2;
         draw3DMedallionCylinder(
-            ctx, W / 2 - 160, baseY, 62, 22, 100,
+            ctx, W / 2 - 162, baseY, 62, 22, 95,
             ["#7C2D12", "#C2410C", "#EA580C"],
             ["#FB923C", "#EA580C", "#9A3412"],
-            "Bronze (L0)", "Raw Ingested Data", "APPEND-ONLY",
+            "Bronze", "Raw Data", "APPEND-ONLY (L0)",
             isBronzeActive, t
         );
 
@@ -13859,16 +14073,16 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.font = "bold 24px monospace";
         ctx.textAlign = "center";
         const arrowPulse1 = Math.sin(t * 5) * 4;
-        ctx.fillText("➔", W / 2 - 80 + arrowPulse1, baseY);
+        ctx.fillText("➔", W / 2 - 81 + arrowPulse1, baseY);
         ctx.restore();
 
-        // 2. Silver Cylinder
+        // Cylinder 2: Silver (L1 Cleaned)
         const isSilverActive = stageIdx === 3;
         draw3DMedallionCylinder(
-            ctx, W / 2, baseY, 62, 22, 100,
+            ctx, W / 2, baseY, 62, 22, 95,
             ["#334155", "#64748B", "#94A3B8"],
             ["#E2E8F0", "#94A3B8", "#475569"],
-            "Silver (L1)", "Cleaned & Conformed", "DEDUPLICATED",
+            "Silver", "Cleaned Data", "DEDUPLICATED (L1)",
             isSilverActive, t
         );
 
@@ -13878,83 +14092,168 @@ SECOND_HIGHEST_SALARY: 70000`;
         ctx.font = "bold 24px monospace";
         ctx.textAlign = "center";
         const arrowPulse2 = Math.sin(t * 5 + 1) * 4;
-        ctx.fillText("➔", W / 2 + 80 + arrowPulse2, baseY);
+        ctx.fillText("➔", W / 2 + 81 + arrowPulse2, baseY);
         ctx.restore();
 
-        // 3. Gold Cylinder
+        // Cylinder 3: Gold (L2 Curated Business Data)
         const isGoldActive = stageIdx === 4 || stageIdx === 5;
         draw3DMedallionCylinder(
-            ctx, W / 2 + 160, baseY, 62, 22, 100,
+            ctx, W / 2 + 162, baseY, 62, 22, 95,
             ["#78350F", "#D97706", "#F59E0B"],
             ["#FDE68A", "#F59E0B", "#B45309"],
-            "Gold (L2)", "Business Analytics", "STAR SCHEMA & BI",
+            "Gold", "Business Data", "ANALYTICS & KPIS (L2)",
             isGoldActive, t
         );
 
-        // Bottom Callout Boxes: Challenge vs Resolved
-        const calloutY = H * 0.58;
+        // 4. DOWNSTREAM: POWER BI 3D PODIUM
+        const biY = baseY + 86;
+        ctx.save();
+        ctx.translate(W / 2 + 162, biY);
+        // Connect Pipe from Gold down to Power BI
+        draw3DIsometricPipe(ctx, 0, -25, 0, 0, "#F59E0B", t + 0.5);
+
+        ctx.fillStyle = "rgba(30, 27, 75, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-55, 0, 110, 42, 8);
+        ctx.fill();
+        ctx.strokeStyle = "#A855F7";
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = "#A855F7";
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = "#FDE047";
+        ctx.font = "bold 11px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("📊 Power BI", 0, 18);
+        ctx.fillStyle = "#E2E8F0";
+        ctx.font = "8px sans-serif";
+        ctx.fillText("Reports & Dashboards", 0, 32);
+        ctx.restore();
+
+        // 5. LOWER SECTION: CHALLENGE VS PIPELINE SUCCESS
+        const calloutY = H * 0.62;
         ctx.save();
         ctx.translate(W / 2, calloutY);
 
-        // Challenge Box (Red)
-        ctx.fillStyle = "rgba(30, 10, 15, 0.95)";
+        // Challenge Badge (Red)
+        ctx.fillStyle = "rgba(40, 10, 15, 0.95)";
         ctx.beginPath();
-        ctx.roundRect(-240, -28, 225, 56, 10);
+        ctx.roundRect(-245, -24, 150, 48, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#EF4444";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.fillStyle = "#EF4444";
+        ctx.font = "bold 10px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("⚠️ Challenge!", -235, -7);
+        ctx.fillStyle = "#FCA5A5";
+        ctx.font = "8px monospace";
+        ctx.fillText("Duplicate Records", -235, 10);
+
+        // Arrow
+        ctx.fillStyle = "#EF4444";
+        ctx.font = "bold 16px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("➔", -80, 4);
+
+        // Purple Hexagon: Validation Rules
+        ctx.fillStyle = "rgba(88, 28, 135, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-65, -24, 130, 48, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#C084FC";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = "#E9D5FF";
+        ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
+        ctx.fillText("🛡️ Data Validation", 0, -5);
+        ctx.fillStyle = "#D8B4FE";
+        ctx.font = "8px monospace";
+        ctx.fillText("DuckDB / SQL Rules", 0, 11);
+
+        // Arrow
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 16px monospace";
+        ctx.fillText("➔", 80, 4);
+
+        // Pipeline Success Badge (Green)
+        ctx.fillStyle = "rgba(6, 78, 59, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(95, -24, 150, 48, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = "#10B981";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#10B981";
+        ctx.font = "bold 10px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("✔ Pipeline Success!", 105, -7);
+        ctx.fillStyle = "#6EE7B7";
+        ctx.font = "8px monospace";
+        ctx.fillText("Clean Data to Lake", 105, 10);
+        ctx.restore();
+
+        // 6. KEY TAKEAWAYS CARD
+        ctx.save();
+        ctx.translate(W / 2, H * 0.70);
+        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+        ctx.beginPath();
+        ctx.roundRect(-245, -34, 490, 68, 14);
+        ctx.fill();
+        ctx.strokeStyle = "#F59E0B";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        ctx.fillStyle = "#F59E0B";
+        ctx.font = "bold 12.5px 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText("💡 Key Takeaways:", -225, -13);
+
+        ctx.fillStyle = "#E2E8F0";
+        ctx.font = "10.5px monospace";
+        ctx.fillText("✔ Medallion Architecture (Bronze ➔ Silver ➔ Gold)", -225, 6);
+        ctx.fillText("✔ AWS DMS for CDC Ingestion ➔ S3 Data Lake", -225, 22);
+        ctx.restore();
+
+        // 7. YOUTUBE HANDLE PILL (Exact matching reference images)
+        ctx.save();
+        ctx.translate(W / 2, H * 0.77);
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.beginPath();
+        ctx.roundRect(-130, -14, 260, 28, 14);
         ctx.fill();
         ctx.strokeStyle = "#EF4444";
         ctx.lineWidth = 1.6;
         ctx.stroke();
 
+        // Red YouTube Play Icon
         ctx.fillStyle = "#EF4444";
-        ctx.font = "bold 11px monospace";
-        ctx.textAlign = "left";
-        ctx.fillText("⚠️ Challenge!", -225, -8);
-        ctx.fillStyle = "#F87171";
-        ctx.font = "10px monospace";
-        ctx.fillText("Duplicate Records Detected", -225, 12);
-
-        // Pipeline Success Box (Green)
-        ctx.fillStyle = "rgba(10, 30, 20, 0.95)";
         ctx.beginPath();
-        ctx.roundRect(15, -28, 225, 56, 10);
+        ctx.roundRect(-118, -9, 22, 18, 4);
         ctx.fill();
-        ctx.strokeStyle = "#10B981";
-        ctx.lineWidth = 1.6;
-        ctx.stroke();
-
-        ctx.fillStyle = "#10B981";
-        ctx.font = "bold 11px monospace";
-        ctx.textAlign = "left";
-        ctx.fillText("✅ Pipeline Success!", 30, -8);
-        ctx.fillStyle = "#34D399";
-        ctx.font = "10px monospace";
-        ctx.fillText("Clean & Trusted Data to BI", 30, 12);
-        ctx.restore();
-
-        // Key Takeaways Banner
-        ctx.save();
-        ctx.translate(W / 2, H * 0.66);
-        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+        ctx.fillStyle = "#FFFFFF";
         ctx.beginPath();
-        ctx.roundRect(-240, -32, 480, 64, 12);
+        ctx.moveTo(-110, -5);
+        ctx.lineTo(-110, 5);
+        ctx.lineTo(-102, 0);
+        ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = "#F59E0B";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
 
-        ctx.fillStyle = "#F59E0B";
+        ctx.fillStyle = "#FFFFFF";
         ctx.font = "bold 12px 'Segoe UI', sans-serif";
         ctx.textAlign = "left";
-        ctx.fillText("💡 Key Takeaways:", -220, -12);
-
-        ctx.fillStyle = "#E2E8F0";
-        ctx.font = "10.5px monospace";
-        ctx.fillText("✔ Medallion: Bronze (Raw) ➔ Silver (Clean) ➔ Gold (Aggregates)", -220, 8);
-        ctx.fillText("✔ AWS DMS + S3 + Snowflake + DuckDB for Zero-Latency Analytics", -220, 24);
+        ctx.fillText("@Code_With_Mangesh", -88, 4);
         ctx.restore();
 
         ctx.restore();
     }
+
 
     // 5. Draw Real Live Data Deduplication Table & DuckDB SQL Transformation
     // Directly matching reference media_1793547003491_00da34df.png

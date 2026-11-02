@@ -1526,6 +1526,34 @@ def application(environ, start_response):
             start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
             return [b]
 
+    if path == '/api/whatsapp/webhook':
+        if method == 'GET':
+            qs = environ.get('QUERY_STRING', '')
+            params = urllib.parse.parse_qs(qs)
+            mode = params.get('hub.mode', [''])[0]
+            token = params.get('hub.verify_token', [''])[0]
+            challenge = params.get('hub.challenge', [''])[0]
+            if mode == 'subscribe' and token in ('nanopro_whatsapp_secret_2026', 'nanopro_whatsapp_secret'):
+                start_response('200 OK', [('Content-Type', 'text/plain'), ('Access-Control-Allow-Origin', '*')])
+                return [challenge.encode('utf-8')]
+            start_response('403 Forbidden', [('Content-Type', 'text/plain')])
+            return [b'Forbidden']
+        elif method == 'POST':
+            try:
+                active_tunnel = get_active_tunnel_cached()
+                if active_tunnel:
+                    cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
+                    body_bytes = environ['wsgi.input'].read(cl) if cl > 0 else b''
+                    req = urllib.request.Request(f"{active_tunnel}/api/whatsapp/webhook", data=body_bytes, headers={'Content-Type': 'application/json'}, method='POST')
+                    with urllib.request.urlopen(req, timeout=5) as r:
+                        resp_data = r.read()
+                        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
+                        return [resp_data]
+            except Exception:
+                pass
+            start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
+            return [b'{"status":"EVENT_RECEIVED"}']
+
     if path == '/logout':
 
 

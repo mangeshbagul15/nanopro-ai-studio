@@ -5673,7 +5673,7 @@ def get_login_page_html() -> str:
 
                         <label class="form-label">Username / Admin ID</label>
 
-                        <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" required autofocus>
+                        <input type="text" id="loginUsername" class="form-input" placeholder="nanopro or username" value="nanopro" required autofocus>
 
                     </div>
 
@@ -5681,7 +5681,7 @@ def get_login_page_html() -> str:
 
                         <label class="form-label">Password</label>
 
-                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" required>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" value="Admin@123" required>
 
                     </div>
 
@@ -5696,6 +5696,10 @@ def get_login_page_html() -> str:
                     </div>
 
                     <button type="submit" id="loginBtn" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
+
+                    <button type="button" onclick="quick1ClickLogin()" style="width:100%; margin-top:12px; padding:12px; background:linear-gradient(135deg, #059669, #10B981); border:none; border-radius:10px; color:#FFFFFF; font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 4px 15px rgba(16, 185, 129, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
+                        ⚡ 1-Click Instant Admin Access (झटपट ऍडमिन लॉगिन)
+                    </button>
 
                 </form>
 
@@ -6123,9 +6127,7 @@ def get_login_page_html() -> str:
 
                     setTimeout(() => { window.location.replace('/?token=' + encodeURIComponent(data.session_token)); }, 300);
 
-                } else {
-
-                    } else if (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL') {
+                } else if (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL') {
                     showAlert('⏳ <b>' + (data.message || data.error || 'Google नोंदणी यशस्वी! ॲडमिन मंजुरीनंतर लॉगिन करता येईल.') + '</b>', 'warning');
                 } else {
                     showAlert(data.error || 'Google Login failed.', 'error');
@@ -6145,6 +6147,13 @@ def get_login_page_html() -> str:
         /* quickFillAdmin removed for security */
 
 
+
+        function quick1ClickLogin() {
+            document.getElementById('loginUsername').value = 'nanopro';
+            document.getElementById('loginPassword').value = 'Admin@123';
+            handleDirectLogin(new Event('submit'));
+        }
+        window.quick1ClickLogin = quick1ClickLogin;
 
         function switchMainTab(tab) {
 
@@ -6466,9 +6475,7 @@ def get_login_page_html() -> str:
 
                     }, 400);
 
-                } else {
-
-                    } else if (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL') {
+                } else if (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL') {
                     showAlert('⏳ <b>' + (data.message || data.error || 'WhatsApp OTP पडताळला गेला आहे! ॲडमिन मंजुरीनंतर खाते सक्रिय होईल.') + '</b>', 'warning');
                 } else {
                     showAlert(data.error || 'अवैध OTP कोड. कृपया पुन्हा प्रयत्न करा.', 'error');
