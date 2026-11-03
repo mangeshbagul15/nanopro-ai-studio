@@ -58,14 +58,33 @@ function checkEdgeAuth(request, url) {
   const cookieStr = request.headers.get("Cookie") || "";
   const authHeader = request.headers.get("Authorization") || "";
   const tokenParam = url.searchParams.get("token") || "";
+  const clerkHandshake = url.searchParams.get("__clerk_handshake") || "";
+  const clerkToken = url.searchParams.get("__session") || "";
 
+  // NanoPro session token via query param
   if (tokenParam && tokenParam.startsWith("np_sess_")) return true;
-  if (authHeader && authHeader.includes("np_sess_")) return true;
+  // Clerk handshake / session tokens
+  if (clerkHandshake) return true;
+  if (clerkToken) return true;
+  // Authorization header
+  if (authHeader && (authHeader.includes("np_sess_") || authHeader.includes("Bearer"))) return true;
 
+  // Cookie-based session detection
   if (cookieStr.includes("nanopro_session=")) {
     for (const part of cookieStr.split(";")) {
       if (part.includes("nanopro_session=")) {
         const val = part.split("nanopro_session=")[1].trim();
+        if (val && !["undefined", "null", '""', "''"].includes(val)) {
+          return true;
+        }
+      }
+    }
+  }
+  // Clerk __session cookie
+  if (cookieStr.includes("__session=")) {
+    for (const part of cookieStr.split(";")) {
+      if (part.includes("__session=")) {
+        const val = part.split("__session=")[1].trim();
         if (val && !["undefined", "null", '""', "''"].includes(val)) {
           return true;
         }
@@ -83,13 +102,47 @@ export default {
 
     const path = url.pathname;
 
-    // -1. Live dashboard (edge-rendered status page with Zero-Trust protection)
-    if (path === "/dashboard" || path === "/dashboard/business") {
+    // ================================================================
+    // 0. ZERO-TRUST LOGIN GATEWAY — Serve login page, never proxy it
+    // ================================================================
+    if (path === "/login") {
+      // Serve the official login_gateway.html from static assets
+      if (env.ASSETS) {
+        const assetResp = await env.ASSETS.fetch(new Request("https://dummy.host/login_gateway.html"));
+        if (assetResp.ok) return assetResp;
+      }
+      // Fallback: minimal login redirect page
+      return new Response('<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/login_gateway.html"></head><body>Redirecting to login...</body></html>', { status: 302, headers: { "Location": "/login_gateway.html", "Content-Type": "text/html" } });
+    }
+
+    // Serve static assets directly (login_gateway.html, complete_nanopro_dashboard.html, etc.)
+    if (path === "/login_gateway.html" || path === "/complete_nanopro_dashboard.html" || path === "/cloud_studio.html") {
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(new Request("https://dummy.host" + path));
+      }
+    }
+
+    // ================================================================
+    // 1. ROOT PATH (/) AND /dashboard — Zero-Trust Protected Studio
+    // ================================================================
+    // If NOT authenticated → redirect to /login (the Zero-Trust gate)
+    if ((path === "/" || path === "/dashboard") && !path.startsWith("/api/")) {
+      const isAuthed = checkEdgeAuth(request, url);
+      if (!isAuthed) {
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
+      // AUTHENTICATED: Try to proxy to live upstreams (laptop/alwaysdata/pythonanywhere)
+      // The upstream will serve the full live dashboard HTML.
+      // If ALL upstreams are down → serve complete_nanopro_dashboard.html from assets.
+      // (This logic runs through the normal proxy cascade below.)
+    }
+
+    // -1. Legacy dashboard routes (edge-rendered status pages — still protected)
+    if (path === "/dashboard/business") {
       if (!checkEdgeAuth(request, url)) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
-      if (path === "/dashboard") {
-        return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+      return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
       }
       if (path === "/dashboard/business") {
         return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
@@ -346,9 +399,15 @@ export default {
 
         const isLocalError = isLocal && (response.status >= 400);
 
+        // For root/dashboard HTML requests, only accept 200 from upstreams
+
+        const isDashboardPath = (path === "/" || path === "/dashboard");
+
+        const isNon200Dashboard = isDashboardPath && response.status !== 200;
 
 
-        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError) {
+
+        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError || isNon200Dashboard) {
 
           lastError = `HTTP ${response.status} from ${upstreamBase} (triggering automatic peer failover)`;
 
@@ -550,201 +609,26 @@ export default {
 
 
 
-    // 5. Autonomous Web Dashboard UI (When user visits in browser with laptop off)
+    // 5. AUTHENTICATED DASHBOARD — Serve real studio, NOT the old standby page
 
     if (request.headers.get("accept")?.includes("text/html") || path === "/" || path === "/dashboard") {
-      if (!checkEdgeAuth(request, url) && path !== "/login") {
+      if (!checkEdgeAuth(request, url)) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
 
-      const html = `<!DOCTYPE html>
-
-<html lang="en">
-
-<head>
-
-  <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Mangesh Nano Pro AI Studio - 24/7 Cloud Edge Sentinel</title>
-
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230B1120' stroke='%2338BDF8' stroke-width='6'/%3E%3Cpath d='M30 65 L50 25 L70 65 Z' fill='%2338BDF8'/%3E%3C/svg%3E">
-
-  <style>
-
-    :root {
-
-      --bg: #060A14;
-
-      --card: #0B1120;
-
-      --border: #1E2D4A;
-
-      --accent: #38BDF8;
-
-      --green: #10B981;
-
-      --yellow: #F59E0B;
-
-      --text: #F8FAFC;
-
-      --sub: #94A3B8;
-
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 800px; width: 100%; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-
-    .logo { font-size: 22px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
-
-    .logo span { color: var(--accent); }
-
-    .pill-live { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-
-    .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
-
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-
-    .metric { background: #10192E; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-
-    .metric-label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-
-    .metric-val { font-size: 18px; font-weight: 700; color: var(--text); }
-
-    .metric-sub { font-size: 12px; color: var(--accent); margin-top: 4px; }
-
-    .notice { background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: 8px; font-size: 14px; line-height: 1.6; margin-bottom: 24px; color: #E2E8F0; }
-
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
-
-    .btn { background: var(--accent); color: #030712; text-decoration: none; font-weight: 700; padding: 10px 18px; border-radius: 8px; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-    .btn-secondary { background: #1E2D4A; color: var(--text); }
-
-    .footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--sub); }
-
-  </style>
-
-</head>
-
-<body>
-
-  <div class="card">
-
-    <div class="header">
-
-      <div class="logo">
-
-        <svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0B1120" stroke="#38BDF8" stroke-width="6"/><path d="M30 65 L50 25 L70 65 Z" fill="#38BDF8"/></svg>
-
-        Mangesh Nano Pro <span>AI Studio</span>
-
-      </div>
-
-      <div class="pill-live"><span class="dot"></span> 24/7 CLOUD EDGE LIVE</div>
-
-    </div>
-
-
-
-    <div class="notice">
-
-      &#9889; <strong>Autonomous Cloud Standby Active:</strong> Your traffic is currently secured 24/7 by <strong>Cloudflare Global Edge</strong> and Cloud DBs. While your laptop is resting in power-saving standby, all Crons, Keep-Alives, DBs, and Telemetry run continuously. When your laptop boots, Dedicated GPU 1080p Video and APK engines automatically reconnect.
-
-    </div>
-
-
-
-    <div class="grid">
-
-      <div class="metric">
-
-        <div class="metric-label">Master Gateway</div>
-
-        <div class="metric-val">100% ONLINE</div>
-
-        <div class="metric-sub">mangesh-nanopro.workers.dev</div>
-
-      </div>
-
-      <div class="metric">
-
-        <div class="metric-label">Cron-Job.org 24/7</div>
-
-        <div class="metric-val">100% SUCCESS</div>
-
-        <div class="metric-sub">BOD, SOD, T-1, EOD, KeepAlive</div>
-
-      </div>
-
-      <div class="metric">
-
-        <div class="metric-label">Cloud Databases</div>
-
-        <div class="metric-val">21 DB Engines</div>
-
-        <div class="metric-sub">Neon, Supabase, Turso, BigQuery</div>
-
-      </div>
-
-      <div class="metric">
-
-        <div class="metric-label">Laptop Local Master</div>
-
-        <div class="metric-val" style="color: var(--yellow);">STANDBY (Power Saved)</div>
-
-        <div class="metric-sub">Boots instantly on demand</div>
-
-      </div>
-
-    </div>
-
-
-
-    <div class="actions">
-
-      <a href="/api/cluster/status" class="btn" target="_blank">&#128269; Cluster Status</a>
-
-      <a href="/api/cluster/features" class="btn btn-secondary" target="_blank">&#128203; 52 Features Matrix</a>
-
-      <a href="/api/db/load-balancer/status" class="btn btn-secondary" target="_blank">&#128452; Database Fabric</a>
-
-      <a href="/api/cron/keepalive" class="btn btn-secondary" target="_blank">&#128147; Ping Keep-Alive</a>
-
-    </div>
-
-  </div>
-
-
-
-  <div class="footer">
-
-    &copy; 2026 Mangesh Nano Pro AI Studio &bull; Permanent Free Enterprise Cloud Architecture &bull; Zero Card Required
-
-  </div>
-
-</body>
-
-</html>`;
-
-      return new Response(html, {
-
-        status: 200,
-
-        headers: { "Content-Type": "text/html; charset=utf-8", "Access-Control-Allow-Origin": "*" }
-
-      });
-
+      // AUTHENTICATED: Serve complete_nanopro_dashboard.html from static assets
+      if (env.ASSETS) {
+        const dashResp = await env.ASSETS.fetch(new Request("https://dummy.host/complete_nanopro_dashboard.html"));
+        if (dashResp.ok) {
+          const finalHeaders = new Headers(dashResp.headers);
+          finalHeaders.set("X-NanoPro-Mode", "EDGE_STATIC_DASHBOARD");
+          finalHeaders.set("Access-Control-Allow-Origin", "*");
+          return new Response(dashResp.body, { status: dashResp.status, headers: finalHeaders });
+        }
+      }
+
+      // Ultimate fallback: minimal loading page that points to the login
+      return new Response('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NanoPro AI Studio</title><meta http-equiv="refresh" content="3; url=/login"></head><body style="background:#060A14;color:#F8FAFC;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center"><h2>Dashboard loading...</h2><p>Redirecting to login in 3 seconds.</p><a href="/login" style="color:#38BDF8">Go to Login &rarr;</a></div></body></html>', { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
 
