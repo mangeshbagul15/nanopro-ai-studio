@@ -24,6 +24,26 @@ def get_sql_video_js() -> str:
 
  ========================================================================== */
 
+ // ================================================================
+ // VIDEO API BASE URL — auto-detects backend, skips Cloudflare Worker
+ // for long-running AI/video endpoints (Groq takes 15-45s, CF max 30s)
+ // ================================================================
+ const RENDER_BASE = "https://mangesh-nanopro-studio.onrender.com";
+ const CF_BASE = window.location.origin;
+
+ function getVideoApiBase() {
+   // If running locally (laptop), use same origin (localhost:8000)
+   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+     return '';
+   }
+   // For cloud: use Render directly (bypasses 30s Cloudflare Worker limit)
+   return RENDER_BASE;
+ }
+
+ function videoApiUrl(path) {
+   return getVideoApiBase() + path;
+ }
+
  const SQL_CLIENT_PRESETS = {};
 
 
@@ -478,7 +498,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  try {
 
- const res = await fetch("/api/sql_video/synthesize_voice", {
+ const res = await fetch(videoApiUrl("/api/sql_video/synthesize_voice"), {
 
  method: "POST",
 
@@ -1372,7 +1392,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  async function generateSqlShortBlueprintJob(payload, statusEl) {
  if (statusEl) statusEl.textContent = "Sending one storyboard job to NanoPro…";
- const queuedRes = await fetch("/api/sql_video/generate_prompt_job", {
+ const queuedRes = await fetch(videoApiUrl("/api/sql_video/generate_prompt_job"), {
  method: "POST",
  headers: {"Content-Type": "application/json"},
  body: JSON.stringify(payload)
@@ -1402,7 +1422,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  try {
 
- pollRes = await fetch(`/api/sql_video/generation_jobs/${encodeURIComponent(jobId)}`, {cache: "no-store"});
+ pollRes = await fetch(videoApiUrl(`/api/sql_video/generation_jobs/${encodeURIComponent(jobId)}`, {cache: "no-store"});
 
  pollRead = await readVideoJsonResponse(pollRes);
 
@@ -1554,7 +1574,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  const targetLang = lang || sqlShortState.audioLang || 'mr';
 
- const res = await fetch('/api/video/director/autopilot_commission', {
+ const res = await fetch(videoApiUrl('/api/video/director/autopilot_commission'), {
 
  method: 'POST',
 
@@ -2241,7 +2261,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  try {
 
- const res = await fetch("/api/sql_video/run_sandbox", {
+ const res = await fetch(videoApiUrl("/api/sql_video/run_sandbox"), {
 
  method: "POST",
 
@@ -21220,7 +21240,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  if (pPctText) pPctText.innerText = "50%";
  if (pDesc) pDesc.innerText = "Hosted server rendering is in progress; this may temporarily slow NanoPro.";
 
- const res = await fetch("/api/video/render_server_reel", {
+ const res = await fetch(videoApiUrl("/api/video/render_server_reel"), {
  method: "POST",
  headers: {"Content-Type": "application/json"},
  body: JSON.stringify({
