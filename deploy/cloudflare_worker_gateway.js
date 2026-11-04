@@ -307,13 +307,11 @@ export default {
 
     // Upstream candidates in priority order:
 
-    // 1. Local Laptop Master -> 2. Fly.io Singapore -> 3. Alwaysdata Europe -> 4. PythonAnywhere
+    // 1. Local Laptop Master -> 2. Render Cloud -> 3. AlwaysData -> 4. PythonAnywhere
 
-    let candidateUpstreams = [localTunnel, alwaysdataUrl, pythonAnywhereUrl];
+    const renderUrl = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
 
-    if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
-
-    if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
+    let candidateUpstreams = [localTunnel, renderUrl, alwaysdataUrl, pythonAnywhereUrl];
 
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
 
