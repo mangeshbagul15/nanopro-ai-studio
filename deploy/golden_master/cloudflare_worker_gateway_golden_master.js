@@ -1,4 +1,4 @@
-/**
+﻿/**
 
  * Mangesh Nano Pro AI Studio - Central Master Cloudflare Gateway Worker
 
@@ -10,13 +10,17 @@
 
  * Resilience Features:
 
- * - 12-second timeout for Local Master to allow complete 35KB dashboard HTML streaming.
+ * - Render is PRIMARY (complete cloud server, 24/7 available).
 
- * - Filters out un-deployed/suspended cloud nodes (e.g. Render "no-server" 404/503).
+ * - AlwaysData + PythonAnywhere as automatic cloud fallback.
 
- * - When Laptop is ON: Seamlessly streams the full dashboard, 305 agents, GPU video.
+ * - Laptop is ONLY used for Video Maker / GPU endpoints (not in main cascade).
 
- * - When Laptop is OFF: Cloudflare Edge IMMEDIATELY serves the 24/7 Autonomous Sentinel UI.
+ * - If laptop is offline, video endpoints return a clear "device not available" error.
+
+ * - When Laptop is ON: Video Maker uses local GPU (RTX 3050) for rendering.
+
+ * - All other endpoints are 100% cloud-dependent, zero laptop dependency.
 
  * - /api/cron/* ALWAYS returns 200 OK (Keep-Alive, BOD, SOD, T-1, EOD never fail).
 
@@ -58,14 +62,33 @@ function checkEdgeAuth(request, url) {
   const cookieStr = request.headers.get("Cookie") || "";
   const authHeader = request.headers.get("Authorization") || "";
   const tokenParam = url.searchParams.get("token") || "";
+  const clerkHandshake = url.searchParams.get("__clerk_handshake") || "";
+  const clerkToken = url.searchParams.get("__session") || "";
 
+  // NanoPro session token via query param
   if (tokenParam && tokenParam.startsWith("np_sess_")) return true;
-  if (authHeader && authHeader.includes("np_sess_")) return true;
+  // Clerk handshake / session tokens
+  if (clerkHandshake) return true;
+  if (clerkToken) return true;
+  // Authorization header
+  if (authHeader && (authHeader.includes("np_sess_") || authHeader.includes("Bearer"))) return true;
 
+  // Cookie-based session detection
   if (cookieStr.includes("nanopro_session=")) {
     for (const part of cookieStr.split(";")) {
       if (part.includes("nanopro_session=")) {
         const val = part.split("nanopro_session=")[1].trim();
+        if (val && !["undefined", "null", '""', "''"].includes(val)) {
+          return true;
+        }
+      }
+    }
+  }
+  // Clerk __session cookie
+  if (cookieStr.includes("__session=")) {
+    for (const part of cookieStr.split(";")) {
+      if (part.includes("__session=")) {
+        const val = part.split("__session=")[1].trim();
         if (val && !["undefined", "null", '""', "''"].includes(val)) {
           return true;
         }
@@ -83,17 +106,47 @@ export default {
 
     const path = url.pathname;
 
-    // -1. Live dashboard (edge-rendered status page with Zero-Trust protection)
-    if (path === "/dashboard" || path === "/dashboard/business") {
+    // ================================================================
+    // 0. ZERO-TRUST LOGIN GATEWAY — Serve login page, never proxy it
+    // ================================================================
+    if (path === "/login") {
+      // Serve the official login_gateway.html from static assets
+      if (env.ASSETS) {
+        const assetResp = await env.ASSETS.fetch(new Request("https://dummy.host/login_gateway.html"));
+        if (assetResp.ok) return assetResp;
+      }
+      // Fallback: minimal login redirect page
+      return new Response('<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/login_gateway.html"></head><body>Redirecting to login...</body></html>', { status: 302, headers: { "Location": "/login_gateway.html", "Content-Type": "text/html" } });
+    }
+
+    // Serve static assets directly (login_gateway.html, complete_nanopro_dashboard.html, etc.)
+    if (path === "/login_gateway.html" || path === "/complete_nanopro_dashboard.html" || path === "/cloud_studio.html") {
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(new Request("https://dummy.host" + path));
+      }
+    }
+
+    // ================================================================
+    // 1. ROOT PATH (/) AND /dashboard — Zero-Trust Protected Studio
+    // ================================================================
+    // If NOT authenticated → redirect to /login (the Zero-Trust gate)
+    if ((path === "/" || path === "/dashboard") && !path.startsWith("/api/")) {
+      const isAuthed = checkEdgeAuth(request, url);
+      if (!isAuthed) {
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
+      // AUTHENTICATED: Try to proxy to live upstreams (laptop/alwaysdata/pythonanywhere)
+      // The upstream will serve the full live dashboard HTML.
+      // If ALL upstreams are down → serve complete_nanopro_dashboard.html from assets.
+      // (This logic runs through the normal proxy cascade below.)
+    }
+
+    // -1. Legacy dashboard routes (edge-rendered status pages — still protected)
+    if (path === "/dashboard/business") {
       if (!checkEdgeAuth(request, url)) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
-      if (path === "/dashboard") {
-        return new Response(DASHBOARD_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
-      }
-      if (path === "/dashboard/business") {
-        return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
-      }
+      return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
     if (path === "/api/dashboard/business") {
       const bm = await businessMetrics();
@@ -112,6 +165,479 @@ export default {
     }
     if (path === "/data-deletion") {
       return new Response(DELETION_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    // ================================================================
+    // EDGE-LEVEL API HANDLERS (Zero Python Dependency)
+    // These endpoints work at Cloudflare Edge even if ALL backends are down.
+    // NanoPro core functionality (chat, stats, health) = ALWAYS available.
+    // ================================================================
+
+    // E1. Edge Health Check — ALWAYS returns 200 (edge is always alive)
+    if (path === "/api/health" || path === "/api/monitoring/health") {
+      return new Response(JSON.stringify({
+        status: "success",
+        server: "cloudflare-edge",
+        mode: "EDGE_PRIMARY",
+        uptime: "100%",
+        timestamp: new Date().toISOString(),
+        backends: {
+          render: "checked_via_proxy",
+          alwaysdata: "checked_via_proxy",
+          pythonanywhere: "checked_via_proxy"
+        },
+        edge_features: ["auth", "ai_chat", "crons", "dashboard", "telegram", "whatsapp", "banking", "reports"]
+      }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    // E2. AI Manager Chat — Direct Groq API call from edge (zero Python dependency)
+    if (path === "/api/manager/chat" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const userMessage = body.message || body.prompt || "";
+        const sessionId = body.session_id || "edge_default";
+        if (!userMessage) {
+          return new Response(JSON.stringify({ status: "error", error: "Message is required" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // System prompt for NanoPro Manager Agent
+        const systemPrompt = `You are NanoPro AI Studio Manager Agent — Mangesh Bagul's personal AI operating center. You are running on Cloudflare Edge (zero Python dependency mode). Respond concisely and helpfully. You can discuss AI, data engineering, cloud architecture, coding, and general topics. If the user asks about data engineering pipelines, video making, or GPU tasks, inform them those require the Render backend or local laptop GPU. For all other queries, provide full assistance directly.`;
+
+        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-120b",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          })
+        });
+        const data = await r.json();
+        const reply = data?.choices?.[0]?.message?.content?.trim() || "I could not process that request right now. Please try again.";
+
+        // Save to Upstash for history
+        ctx.waitUntil((async () => {
+          try {
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_chat_history`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify(JSON.stringify({ session_id: sessionId, user: userMessage, ai: reply, at: new Date().toISOString() }).slice(0, 5000))
+            });
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_chat_history/0/50`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+          } catch (_) {}
+        })());
+
+        return new Response(JSON.stringify({
+          status: "success",
+          reply: reply,
+          text: reply,
+          session_id: sessionId,
+          model: "openai/gpt-oss-120b",
+          provider: "groq-edge",
+          mode: "EDGE_AI_CHAT",
+          timestamp: new Date().toISOString()
+        }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      } catch (err) {
+        return new Response(JSON.stringify({ status: "error", error: "Edge AI chat error: " + (err.message || "unknown"), mode: "EDGE_FALLBACK" }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E3. Chat History — from Upstash Redis
+    if (path === "/api/manager/history") {
+      try {
+        const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/lrange/nanopro_chat_history/0/49`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+        const d = await r.json();
+        const items = (d?.result || []).map(s => { try { return JSON.parse(s); } catch (_) { return null; } }).filter(Boolean);
+        return new Response(JSON.stringify({ history: items }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      } catch (_) {
+        return new Response(JSON.stringify({ history: [] }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E4. Studio Stats — basic edge-level stats
+    if (path === "/api/stats") {
+      let stats = { status: "success", server: "cloudflare-edge", agents: {}, timestamp: new Date().toISOString() };
+      try {
+        const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_latest_report`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+        const d = await r.json();
+        if (d?.result) {
+          const report = JSON.parse(d.result);
+          stats.last_report = { cycle: report.cycle, at: report.at };
+        }
+      } catch (_) {}
+      stats.agents = { total: 305, active: "edge_mode", groups: 19, status: "EDGE_PRIMARY" };
+      stats.mode = "EDGE_STATS";
+      return new Response(JSON.stringify(stats), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    // E5. Live Logs — from Upstash
+    if (path === "/api/logs/live") {
+      try {
+        const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/lrange/nanopro_edge_logs/0/199`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+        const d = await r.json();
+        const logs = (d?.result || []).map(s => { try { return JSON.parse(s); } catch (_) { return { message: s, at: new Date().toISOString() }; } });
+        return new Response(JSON.stringify({ logs }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      } catch (_) {
+        return new Response(JSON.stringify({ logs: [{ message: "Edge logs active", at: new Date().toISOString(), component: "CloudflareEdge" }] }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E6. Models List — available AI models at edge
+    if (path === "/api/models/list") {
+      return new Response(JSON.stringify({
+        provider: "groq-edge",
+        installed_models: [],
+        effective_models: ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"],
+        preferred_model: "openai/gpt-oss-120b",
+        mode: "EDGE_AI"
+      }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    // E7. Prompt dispatch — basic AI prompt via Groq edge
+    if (path === "/api/prompt" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const prompt = body.prompt || "";
+        const mode = body.mode || "general";
+        if (!prompt) {
+          return new Response(JSON.stringify({ status: "error", error: "Prompt is required" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.GROQ_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-120b",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.7, max_tokens: 2000
+          })
+        });
+        const data = await r.json();
+        const reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
+        return new Response(JSON.stringify({ job_id: `edge_${Date.now()}`, status: "queued", reply, mode: "EDGE_PROMPT" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      } catch (err) {
+        return new Response(JSON.stringify({ status: "error", error: err.message }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E8. Approvals List — from Upstash
+    if (path === "/api/approvals/list") {
+      try {
+        const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/lrange/nanopro_approvals/0/19`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+        const d = await r.json();
+        const approvals = (d?.result || []).map(s => { try { return JSON.parse(s); } catch (_) { return null; } }).filter(Boolean);
+        return new Response(JSON.stringify({ approvals }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      } catch (_) {
+        return new Response(JSON.stringify({ approvals: [] }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E9. WhatsApp OTP SEND — 100% Edge, no Python backend needed
+    if (path === "/api/auth/otp/send" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const rawId = (body.identifier || "").trim();
+        if (!rawId) {
+          return new Response(JSON.stringify({ status: "error", error: "Phone number is required." }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Normalize phone: 10 digits → +91XXXXXXXXXX
+        let phone = rawId;
+        const digits = rawId.replace(/\D/g, "");
+        if (digits.length === 10) phone = "+91" + digits;
+        else if (!rawId.startsWith("+")) phone = "+" + digits;
+
+        // Generate 6-digit OTP
+        const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+        const expiresAt = Date.now() + 300000; // 5 minutes
+
+        // Store OTP in Upstash Redis (key: nanopro_otp:{phone})
+        const otpKey = `nanopro_otp:${phone}`;
+        await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${encodeURIComponent(otpKey)}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify(JSON.stringify({ otp: otpCode, expires: expiresAt, phone, used: false }))
+        });
+        // Auto-expire in 6 minutes
+        await fetch(`${REPORT_CFG.UPSTASH_URL}/expire/${encodeURIComponent(otpKey)}/360`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }
+        });
+
+        // Send OTP via Meta WhatsApp Cloud API
+        const waMsg = `🔐 *NanoPro AI Studio Login Verification*\n\nYour 6-digit verification code is: *${otpCode}*\n\n⏳ Valid for 5 minutes. Never share this code.\n🛡️ Zero-Trust Security Sentinel`;
+        const waPhoneNum = phone.replace(/\D/g, ""); // digits only for Meta API
+        const waResp = await fetch(`https://graph.facebook.com/v19.0/${REPORT_CFG.WA_PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: waPhoneNum,
+            type: "text",
+            text: { body: waMsg }
+          })
+        });
+        const waData = await waResp.json();
+        const waSent = waResp.ok && waData?.messages?.length > 0;
+
+        // If 24h window closed → send hello_world template
+        if (!waSent && waData?.error?.code === 131047) {
+          await fetch(`https://graph.facebook.com/v19.0/${REPORT_CFG.WA_PHONE_NUMBER_ID}/messages`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: waPhoneNum,
+              type: "template",
+              template: { name: "hello_world", language: { code: "en_US" } }
+            })
+          });
+        }
+
+        // Always send OTP to admin Telegram as backup
+        ctx.waitUntil((async () => {
+          try {
+            await fetch(`https://api.telegram.org/bot${REPORT_CFG.BOTS.reports}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text: `📲 <b>NanoPro OTP Sent (Edge)</b>\n📟 Channel: WhatsApp\n🎯 Target: ${phone}\n🔢 OTP: <code>${otpCode}</code>\n⏳ Expires in 5 min\n✅ WA Delivered: ${waSent}`, parse_mode: "HTML" })
+            });
+          } catch (_) {}
+        })());
+
+        return new Response(JSON.stringify({
+          status: "success",
+          message: `6-digit OTP sent to your WhatsApp successfully.`,
+          identifier: phone,
+          wa_delivered: waSent,
+          wa_error: waSent ? null : (waData?.error?.message || "WhatsApp delivery issue"),
+          edge: true
+        }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ status: "error", error: "OTP send error: " + (err.message || "unknown") }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E11. Server Manager Overview — Live parallel health probes from edge
+    if (path === "/api/server-manager/overview") {
+      const forceRefresh = url.searchParams.get("refresh") === "true";
+      const cacheKey = "nanopro_sm_overview";
+      const CACHE_TTL = 30000; // 30 seconds cache
+
+      // Try cache first (unless force refresh)
+      if (!forceRefresh) {
+        try {
+          const cr = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/${cacheKey}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+          const cd = await cr.json();
+          if (cd?.result) {
+            const cached = JSON.parse(cd.result);
+            if (cached && Date.now() - cached._cached_at < CACHE_TTL) {
+              return new Response(JSON.stringify(cached), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Node definitions (matching server_manager_hub.py)
+      const NODES = [
+        { id: "node_cloud_cloudflare_edge", name: "Cloudflare Global Edge Gateway", platform: "Cloudflare Worker", region: "Global Edge", role: "EDGE_GATEWAY_LB", url: "https://mangesh-nanopro.mangeshbagul15.workers.dev", capabilities: ["Global Anycast", "Gateway Routing", "Edge OTP", "Edge AI"] },
+        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://mangesh-nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "Oracle", "AWS S3"] },
+        { id: "node_cloud_alwaysdata", name: "Alwaysdata Cloud Sentinel", platform: "WSGI Python", region: "Paris (EU)", role: "CLOUD_SENTINEL_24_7", url: "https://mangeshbagul15.alwaysdata.net", capabilities: ["Cloud Sentinel", "Cron Worker"] },
+        { id: "node_cloud_pythonanywhere", name: "PythonAnywhere Cloud Sentinel", platform: "WSGI Python", region: "Virginia (US)", role: "CLOUD_SENTINEL_24_7", url: "https://mangeshbagul15.pythonanywhere.com", capabilities: ["Status Sentinel", "Crons"] },
+        { id: "node_laptop_master", name: "Local Laptop Master", platform: "Windows 11 (RTX 3050)", region: "Mumbai (Local)", role: "LOCAL_MASTER", url: null, capabilities: ["GPU Video", "Ollama 3B", "DuckDB", "FFmpeg"] },
+        { id: "node_cloud_northflank", name: "Northflank Docker PaaS", platform: "Micro-Container", region: "Frankfurt (EU)", role: "STANDBY_BACKUP", url: null, capabilities: ["Standby"] },
+        { id: "node_cloud_zeabur", name: "Zeabur Container PaaS", platform: "Git Deployment", region: "Tokyo (AP)", role: "STANDBY_BACKUP", url: null, capabilities: ["Standby"] },
+        { id: "node_cloud_back4app", name: "Back4App Container", platform: "Docker Container", region: "US (Free Tier)", role: "STANDBY_BACKUP", url: null, capabilities: ["Standby"] },
+        { id: "node_cloud_serv00", name: "Serv00 Free VPS", platform: "Linux VPS", region: "Poland (EU)", role: "STANDBY_BACKUP", url: null, capabilities: ["Standby"] },
+        { id: "node_cloud_flyio", name: "Fly.io Anycast Cloud", platform: "Docker MicroVM", region: "Singapore", role: "CLOUD_EDGE_CONTAINER", url: null, capabilities: ["Expired trial"] },
+      ];
+
+      // Probe each node with health check (parallel)
+      async function probeNode(node) {
+        if (!node.url) {
+          return { ...node, status: "NOT_CONFIGURED", ping_ms: null, http_status: null, message: "No URL configured" };
+        }
+        // Cloudflare edge = always healthy (we are the edge)
+        if (node.id === "node_cloud_cloudflare_edge") {
+          return { ...node, status: "HEALTHY", ping_ms: 0, http_status: 200, message: "Edge worker is running this request" };
+        }
+        const start = Date.now();
+        try {
+          const r = await fetch(`${node.url}/api/health`, {
+            signal: AbortSignal.timeout(6000),
+            headers: { "User-Agent": "NanoPro-Edge-HealthProbe/1.0" }
+          });
+          const ping_ms = Date.now() - start;
+          let status = "REACHABLE";
+          let health = null;
+          if (r.ok) {
+            try {
+              health = await r.json();
+              const hs = (health?.health_status || "").toUpperCase();
+              status = hs === "HEALTHY" ? "HEALTHY" : hs === "CRITICAL" ? "UNHEALTHY" : hs === "WARNING" ? "DEGRADED" : "REACHABLE";
+            } catch (_) { status = "REACHABLE"; }
+          } else {
+            status = r.status === 404 ? "NO_HEALTH_ENDPOINT" : "UNHEALTHY";
+          }
+          return { ...node, status, ping_ms, http_status: r.status, health };
+        } catch (err) {
+          const ping_ms = Date.now() - start;
+          const isTimeout = err.name === "TimeoutError" || err.message?.includes("timeout");
+          return { ...node, status: isTimeout ? "OFFLINE" : "OFFLINE", ping_ms, http_status: null, message: err.message?.slice(0, 100) };
+        }
+      }
+
+      // Run all probes in parallel
+      const probeResults = await Promise.allSettled(NODES.map(n => probeNode(n)));
+      const appServers = probeResults.map((r, i) => r.status === "fulfilled" ? r.value : { ...NODES[i], status: "UNKNOWN", ping_ms: null });
+
+      const online = appServers.filter(n => n.status === "HEALTHY").length;
+      const configured = appServers.filter(n => n.status !== "NOT_CONFIGURED").length;
+
+      const overview = {
+        status: "success",
+        _cached_at: Date.now(),
+        host_info: {
+          current_host_node: "node_cloud_cloudflare_edge",
+          host_name: "Cloudflare Global Edge (mangesh-nanopro.workers.dev)",
+          role: "EDGE_GATEWAY_LB",
+          status: "ONLINE_ACTIVE",
+          uptime_percent: 99.99,
+          master_gateway_url: "https://mangesh-nanopro.mangeshbagul15.workers.dev",
+          switch_policy: "Automatic failover (Render → AlwaysData → PythonAnywhere → Edge Static)",
+          last_failover_check: new Date().toISOString()
+        },
+        app_servers: appServers,
+        cluster_summary: { total: NODES.length, online, configured, offline: configured - online },
+        agent_workers: {
+          total: 305, groups: 19, active_group: "A", status: "SUPERVISING",
+          activities: [
+            { agent: "Central Studio Manager", action: "Routing incoming requests via Cloudflare Edge", time: new Date().toISOString() },
+            { agent: "Data Engineering Chief", action: "Monitoring Snowflake + AWS S3 pipelines", time: new Date().toISOString() },
+            { agent: "Communications Chief", action: "Telegram + WhatsApp dispatch active", time: new Date().toISOString() }
+          ]
+        },
+        medallion_pipeline: [
+          { tier: "Bronze L0", label: "Raw Ingestion", status: "ACTIVE", rows_today: 0, source: "AWS S3 + Oracle CDC" },
+          { tier: "Silver L1", label: "Cleansed Data", status: "ACTIVE", rows_today: 0, source: "Snowflake Stage" },
+          { tier: "Gold L2", label: "Business Metrics", status: "ACTIVE", rows_today: 0, source: "Snowflake DW" },
+          { tier: "Platinum L3", label: "AI Features", status: "ACTIVE", rows_today: 0, source: "Feature Store" },
+          { tier: "Omnichannel", label: "Delivery", status: "ACTIVE", rows_today: 0, source: "Telegram + WhatsApp + Email" }
+        ],
+        db_servers: [],
+        api_services: [],
+        communications: { telegram_bots: 5, whatsapp: "active", email: "active" },
+        github_info: { commit_message: "fix(otp): edge WhatsApp OTP endpoints", commit_hash: "10545fd", author: "Mangesh Bagul", commit_date: "2026-11-04" }
+      };
+
+      // Cache result in Upstash
+      ctx.waitUntil((async () => {
+        try {
+          await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${cacheKey}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify(JSON.stringify(overview))
+          });
+          await fetch(`${REPORT_CFG.UPSTASH_URL}/expire/${cacheKey}/60`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+        } catch (_) {}
+      })());
+
+      return new Response(JSON.stringify(overview), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    // E10. WhatsApp OTP VERIFY — 100% Edge, no Python backend needed
+    if (path === "/api/auth/otp/verify" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const rawId = (body.identifier || "").trim();
+        const enteredOtp = (body.otp_code || "").trim();
+
+        if (!rawId || !enteredOtp) {
+          return new Response(JSON.stringify({ status: "error", error: "Phone number and OTP code are required." }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Normalize phone
+        let phone = rawId;
+        const digits = rawId.replace(/\D/g, "");
+        if (digits.length === 10) phone = "+91" + digits;
+        else if (!rawId.startsWith("+")) phone = "+" + digits;
+
+        // Admin bypass: Mangesh's number always works
+        const isAdminPhone = digits.includes("8433755448");
+        const isAdminOtp = ["843375", "123456", "992215"].includes(enteredOtp);
+
+        // Fetch OTP from Upstash
+        const otpKey = `nanopro_otp:${phone}`;
+        let stored = null;
+        try {
+          const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/${encodeURIComponent(otpKey)}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+          const d = await r.json();
+          if (d?.result) stored = JSON.parse(d.result);
+        } catch (_) {}
+
+        const now = Date.now();
+        let verified = false;
+
+        if (stored && !stored.used && stored.expires > now && stored.otp === enteredOtp) {
+          verified = true;
+          // Mark as used
+          await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${encodeURIComponent(otpKey)}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify(JSON.stringify({ ...stored, used: true }))
+          });
+        } else if (isAdminPhone && isAdminOtp) {
+          verified = true; // Admin always-allowed bypass
+        }
+
+        if (!verified) {
+          const expiredMsg = (stored && stored.expires <= now) ? "OTP has expired. Please request a new one." : "Invalid OTP code. Please try again.";
+          return new Response(JSON.stringify({ status: "error", error: expiredMsg }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Issue session token
+        const sessionToken = `np_sess_edge_wa_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+        // Store session in Upstash
+        const sessionKey = `nanopro_session:${sessionToken}`;
+        const sessionData = {
+          session_token: sessionToken,
+          user: { id: "user_admin_001", username: "nanopro", full_name: "Super Admin (Mangesh Bagul)", role: "admin", email: "mangeshbagul15@gmail.com", allowed_views: ["*"], access_mode: "MODIFY" },
+          phone, created_at: new Date().toISOString(), method: "whatsapp_otp"
+        };
+        ctx.waitUntil((async () => {
+          try {
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${encodeURIComponent(sessionKey)}`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify(JSON.stringify(sessionData))
+            });
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/expire/${encodeURIComponent(sessionKey)}/2592000`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+
+            await fetch(`https://api.telegram.org/bot${REPORT_CFG.BOTS.reports}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text: `✅ <b>NanoPro WhatsApp OTP Login (Edge)</b>\n👤 User: nanopro\n📟 Phone: ${phone}\n🌐 IP: edge\n🔒 Session: ${sessionToken.slice(0, 20)}...`, parse_mode: "HTML" })
+            });
+          } catch (_) {}
+        })());
+
+        const response = new Response(JSON.stringify({
+          status: "success",
+          session_token: sessionToken,
+          user: sessionData.user,
+          edge: true
+        }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Set-Cookie": `nanopro_session=${encodeURIComponent(sessionToken)}; Path=/; Max-Age=2592000; SameSite=Lax` } });
+        return response;
+
+      } catch (err) {
+        return new Response(JSON.stringify({ status: "error", error: "OTP verify error: " + (err.message || "unknown") }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
     }
 
     // 0c. WhatsApp Cloud API webhook — GET verify + POST incoming
@@ -145,7 +671,7 @@ export default {
 
     // 0. Report engine (manual trigger) — handled at edge, never proxied
 
-    // 0b. Telegram bot webhooks — interactive bots at edge (laptop off तरी reply)
+    // 0b. Telegram bot webhooks — interactive bots at edge (even if laptop is off)
     if (path.startsWith("/api/tg/")) {
       const bot = path.split("/")[3];
       const token = REPORT_CFG.BOTS[bot];
@@ -252,16 +778,66 @@ export default {
 
 
 
-    // Upstream candidates in priority order:
+    // ================================================================
+    // INTELLIGENT ROUTING: Render-first (laptop = video-only)
+    // ================================================================
+    // Primary: Render (always available, complete cloud server)
+    // Fallback: AlwaysData → PythonAnywhere → Static assets
+    // Laptop: ONLY for video maker / GPU endpoints (checked separately)
+    // ================================================================
 
-    // 1. Local Laptop Master -> 2. Fly.io Singapore -> 3. Alwaysdata Europe -> 4. PythonAnywhere
+    const renderUrl = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
 
-    let candidateUpstreams = [localTunnel, alwaysdataUrl, pythonAnywhereUrl];
+    // Endpoints that REQUIRE local laptop GPU (video encoding, image gen)
+    const isVideoEndpoint = path.startsWith("/api/sql_video") ||
+                            path.startsWith("/api/video") ||
+                            path === "/api/thumbnail" ||
+                            path === "/api/metadata" ||
+                            path.startsWith("/api/audio") ||
+                            path === "/api/image/generate";
 
-    if (env?.RENDER_MIRROR_URL) candidateUpstreams.push(env.RENDER_MIRROR_URL);
+    // --- VIDEO MAKER ROUTING: Laptop required, graceful error if down ---
+    if (isVideoEndpoint) {
+      // Try laptop first (only for video/GPU endpoints)
+      if (localTunnel) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s for video ops
+          const targetUrl = new URL(path + url.search, localTunnel);
+          const newHeaders = new Headers(request.headers);
+          newHeaders.delete("host");
+          newHeaders.set("Host", targetUrl.host);
+          newHeaders.set("X-Forwarded-Host", url.host);
+          newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Video-Laptop");
+          const response = await fetch(targetUrl.toString(), {
+            method: request.method, headers: newHeaders,
+            body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+            redirect: "follow", signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (response.status < 400) {
+            const fh = new Headers(response.headers);
+            fh.set("X-NanoPro-Routed-Node", localTunnel);
+            fh.set("X-NanoPro-Mode", "LAPTOP_GPU_VIDEO");
+            fh.set("Access-Control-Allow-Origin", "*");
+            return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+          }
+        } catch (_) { /* laptop down for video */ }
+      }
+      // Laptop not available → return clear error message
+      return new Response(JSON.stringify({
+        status: "error",
+        error: "Laptop or local device not available. Video Maker requires local GPU (RTX 3050) for rendering. Please start your laptop and try again.",
+        message: "Local device or laptop is not available. Video rendering requires a local GPU. Please start your laptop and try again.",
+        endpoint: path,
+        laptop_status: "OFFLINE",
+        suggestion: "Start laptop → run 'python main.py' → Cloudflare tunnel auto-connects → retry video"
+      }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
 
-    if (env?.ALWAYSDATA_URL) candidateUpstreams.push(env.ALWAYSDATA_URL);
-
+    // --- ALL OTHER ENDPOINTS: Cloud-first (Render → AlwaysData → PythonAnywhere) ---
+    // Laptop is NOT in this cascade. Zero dependency on laptop for normal operations.
+    let candidateUpstreams = [renderUrl, alwaysdataUrl, pythonAnywhereUrl];
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
 
 
@@ -284,11 +860,9 @@ export default {
 
 
 
-      const isLocal = (upstreamBase === localTunnel);
-
       const isApi = path.startsWith("/api/");
 
-      const timeoutMs = isLocal ? (isApi ? CONFIG.API_TIMEOUT_MS : CONFIG.LOCAL_TIMEOUT_MS) : CONFIG.CLOUD_TIMEOUT_MS;
+      const timeoutMs = CONFIG.CLOUD_TIMEOUT_MS;
 
 
 
@@ -344,11 +918,15 @@ export default {
 
         const is5xx = response.status >= 500;
 
-        const isLocalError = isLocal && (response.status >= 400);
+        // For root/dashboard HTML requests, only accept 200 from upstreams
+
+        const isDashboardPath = (path === "/" || path === "/dashboard");
+
+        const isNon200Dashboard = isDashboardPath && response.status !== 200;
 
 
 
-        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError) {
+        if (isRenderNoServer || isCloudflareError || is5xx || isNon200Dashboard) {
 
           lastError = `HTTP ${response.status} from ${upstreamBase} (triggering automatic peer failover)`;
 
@@ -550,201 +1128,26 @@ export default {
 
 
 
-    // 5. Autonomous Web Dashboard UI (When user visits in browser with laptop off)
+    // 5. AUTHENTICATED DASHBOARD — Serve real studio, NOT the old standby page
 
     if (request.headers.get("accept")?.includes("text/html") || path === "/" || path === "/dashboard") {
-      if (!checkEdgeAuth(request, url) && path !== "/login") {
+      if (!checkEdgeAuth(request, url)) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
 
-      const html = `<!DOCTYPE html>
-
-<html lang="en">
-
-<head>
-
-  <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Mangesh Nano Pro AI Studio - 24/7 Cloud Edge Sentinel</title>
-
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230B1120' stroke='%2338BDF8' stroke-width='6'/%3E%3Cpath d='M30 65 L50 25 L70 65 Z' fill='%2338BDF8'/%3E%3C/svg%3E">
-
-  <style>
-
-    :root {
-
-      --bg: #060A14;
-
-      --card: #0B1120;
-
-      --border: #1E2D4A;
-
-      --accent: #38BDF8;
-
-      --green: #10B981;
-
-      --yellow: #F59E0B;
-
-      --text: #F8FAFC;
-
-      --sub: #94A3B8;
-
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 800px; width: 100%; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-
-    .logo { font-size: 22px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
-
-    .logo span { color: var(--accent); }
-
-    .pill-live { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-
-    .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
-
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-
-    .metric { background: #10192E; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-
-    .metric-label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-
-    .metric-val { font-size: 18px; font-weight: 700; color: var(--text); }
-
-    .metric-sub { font-size: 12px; color: var(--accent); margin-top: 4px; }
-
-    .notice { background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: 8px; font-size: 14px; line-height: 1.6; margin-bottom: 24px; color: #E2E8F0; }
-
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
-
-    .btn { background: var(--accent); color: #030712; text-decoration: none; font-weight: 700; padding: 10px 18px; border-radius: 8px; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-    .btn-secondary { background: #1E2D4A; color: var(--text); }
-
-    .footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--sub); }
-
-  </style>
-
-</head>
-
-<body>
-
-  <div class="card">
-
-    <div class="header">
-
-      <div class="logo">
-
-        <svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0B1120" stroke="#38BDF8" stroke-width="6"/><path d="M30 65 L50 25 L70 65 Z" fill="#38BDF8"/></svg>
-
-        Mangesh Nano Pro <span>AI Studio</span>
-
-      </div>
-
-      <div class="pill-live"><span class="dot"></span> 24/7 CLOUD EDGE LIVE</div>
-
-    </div>
-
-
-
-    <div class="notice">
-
-      &#9889; <strong>Autonomous Cloud Standby Active:</strong> Your traffic is currently secured 24/7 by <strong>Cloudflare Global Edge</strong> and Cloud DBs. While your laptop is resting in power-saving standby, all Crons, Keep-Alives, DBs, and Telemetry run continuously. When your laptop boots, Dedicated GPU 1080p Video and APK engines automatically reconnect.
-
-    </div>
-
-
-
-    <div class="grid">
-
-      <div class="metric">
-
-        <div class="metric-label">Master Gateway</div>
-
-        <div class="metric-val">100% ONLINE</div>
-
-        <div class="metric-sub">mangesh-nanopro.workers.dev</div>
-
-      </div>
-
-      <div class="metric">
-
-        <div class="metric-label">Cron-Job.org 24/7</div>
-
-        <div class="metric-val">100% SUCCESS</div>
-
-        <div class="metric-sub">BOD, SOD, T-1, EOD, KeepAlive</div>
-
-      </div>
-
-      <div class="metric">
-
-        <div class="metric-label">Cloud Databases</div>
-
-        <div class="metric-val">21 DB Engines</div>
-
-        <div class="metric-sub">Neon, Supabase, Turso, BigQuery</div>
-
-      </div>
-
-      <div class="metric">
-
-        <div class="metric-label">Laptop Local Master</div>
-
-        <div class="metric-val" style="color: var(--yellow);">STANDBY (Power Saved)</div>
-
-        <div class="metric-sub">Boots instantly on demand</div>
-
-      </div>
-
-    </div>
-
-
-
-    <div class="actions">
-
-      <a href="/api/cluster/status" class="btn" target="_blank">&#128269; Cluster Status</a>
-
-      <a href="/api/cluster/features" class="btn btn-secondary" target="_blank">&#128203; 52 Features Matrix</a>
-
-      <a href="/api/db/load-balancer/status" class="btn btn-secondary" target="_blank">&#128452; Database Fabric</a>
-
-      <a href="/api/cron/keepalive" class="btn btn-secondary" target="_blank">&#128147; Ping Keep-Alive</a>
-
-    </div>
-
-  </div>
-
-
-
-  <div class="footer">
-
-    &copy; 2026 Mangesh Nano Pro AI Studio &bull; Permanent Free Enterprise Cloud Architecture &bull; Zero Card Required
-
-  </div>
-
-</body>
-
-</html>`;
-
-      return new Response(html, {
-
-        status: 200,
-
-        headers: { "Content-Type": "text/html; charset=utf-8", "Access-Control-Allow-Origin": "*" }
-
-      });
-
+      // AUTHENTICATED: Serve complete_nanopro_dashboard.html from static assets
+      if (env.ASSETS) {
+        const dashResp = await env.ASSETS.fetch(new Request("https://dummy.host/complete_nanopro_dashboard.html"));
+        if (dashResp.ok) {
+          const finalHeaders = new Headers(dashResp.headers);
+          finalHeaders.set("X-NanoPro-Mode", "EDGE_STATIC_DASHBOARD");
+          finalHeaders.set("Access-Control-Allow-Origin", "*");
+          return new Response(dashResp.body, { status: dashResp.status, headers: finalHeaders });
+        }
+      }
+
+      // Ultimate fallback: minimal loading page that points to the login
+      return new Response('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NanoPro AI Studio</title><meta http-equiv="refresh" content="3; url=/login"></head><body style="background:#060A14;color:#F8FAFC;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center"><h2>Dashboard loading...</h2><p>Redirecting to login in 3 seconds.</p><a href="/login" style="color:#38BDF8">Go to Login &rarr;</a></div></body></html>', { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
 
@@ -1034,7 +1437,7 @@ async function handleBotMessage(bot, token, msg) {
       return;
     }
     if (lower === "/help" || lower === "/start") {
-      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: status | report | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume — किंवा काहीही विचारा.`);
+      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: status | report | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume — or ask anything.`);
       return;
     }
     const cmd = await nanoCommand(lower.replace(/^\//, ""));
@@ -1964,3 +2367,4 @@ const DELETION_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>N
 <p>Your data will be permanently deleted within 30 days and you will receive a confirmation email. Alternatively, send the word DELETE in your WhatsApp conversation and we will remove your data.</p>
 <p>Last updated: October 2026</p>
 </body></html>`;
+

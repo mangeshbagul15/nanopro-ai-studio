@@ -1,4 +1,4 @@
-"""
+﻿"""
 Mangesh Nano Pro AI Studio - Enterprise Authentication & Access Control Manager
 Handles user registration, password hashing (PBKDF2-SHA256), approval workflows,
 inactivity tracking, audit logging, and Telegram security alerts.
@@ -166,15 +166,15 @@ class AuthManager:
     def validate_password_criteria(self, password: str) -> Tuple[bool, str]:
         """Validates enterprise password security criteria."""
         if len(password) < 8:
-            return False, "पासवर्ड किमान ८ अक्षरांचा (8+ characters) असावा."
+            return False, "Password must be at least 8 characters."
         if not re.search(r"[A-Z]", password):
-            return False, "पासवर्डमध्ये किमान एक मोठे अक्षर (Uppercase letter A-Z) असावे."
+            return False, "Password must contain at least one uppercase letter (A-Z)."
         if not re.search(r"[a-z]", password):
-            return False, "पासवर्डमध्ये किमान एक लहान अक्षर (Lowercase letter a-z) असावे."
+            return False, "Password must contain at least one lowercase letter (a-z)."
         if not re.search(r"[0-9]", password):
-            return False, "पासवर्डमध्ये किमान एक अंक (Number 0-9) असावा."
+            return False, "Password must contain at least one number (0-9)."
         if not re.search(r"[@$!%*?&#^+=~-]", password):
-            return False, "पासवर्डमध्ये किमान एक विशेष चिन्ह (Special character @$!%*?&#) असावे."
+            return False, "Password must contain at least one special character (@$!%*?&#)."
         return True, "Password meets criteria."
 
     def register_user(self, full_name: str, username: str, email: str, password: str, phone_number: Optional[str] = None, ip_address: str = "Unknown", user_agent: str = "Unknown") -> Dict[str, Any]:
@@ -184,10 +184,10 @@ class AuthManager:
         email = email.strip().lower()
 
         if len(username) < 3 or len(username) > 20 or not re.match(r"^[a-zA-Z0-9_]+$", username):
-            return {"status": "error", "error": "Username ३ ते २० अक्षरांचा आणि केवळ अक्षरे/अंक असावा (उदा. john_doe)."}
+            return {"status": "error", "error": "Username must be 3-20 characters and contain only letters/numbers (e.g. john_doe)."}
 
         if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
-            return {"status": "error", "error": "कृपया वैध Email ID प्रविष्ट करा."}
+            return {"status": "error", "error": "Please enter a valid Email ID."}
 
         is_valid_pwd, msg = self.validate_password_criteria(password)
         if not is_valid_pwd:
@@ -198,11 +198,11 @@ class AuthManager:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
                 if cursor.fetchone():
-                    return {"status": "error", "error": "हे Username आधीच वापरले गेले आहे. कृपया दुसरे निवडा."}
+                    return {"status": "error", "error": "This username is already taken. Please choose another."}
 
                 cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
                 if cursor.fetchone():
-                    return {"status": "error", "error": "हा Email ID आधीच नोंदणीकृत आहे."}
+                    return {"status": "error", "error": "This Email ID is already registered."}
 
                 pwd_hash, salt = self._hash_password(password)
                 user_id = f"user_{uuid.uuid4().hex[:12]}"
@@ -248,25 +248,25 @@ class AuthManager:
 
             # Send Telegram Alert to Admin
             self._notify_telegram(
-                f"🚨 <b>नवीन युझर नोंदणी (New User Signup)</b>\n"
+                f"🚨 <b>New User Registration</b>\n"
                 f"👤 <b>Name:</b> {full_name}\n"
                 f"🔑 <b>Username:</b> {username}\n"
                 f"📧 <b>Email:</b> {email}\n"
                 f"🌐 <b>IP:</b> {ip_address}\n"
                 f"⏳ <b>Status:</b> PENDING_APPROVAL\n"
-                f"<i>कृपया User Management पॅनेलमध्ये जाऊन मंजुरी (Approve) द्या.</i>"
+                f"<i>Please approve in the User Management panel.</i>"
             )
 
             return {
                 "status": "success",
-                "message": "नोंदणी यशस्वी झाली! आपले खाते सक्रिय झाले आहे. आपण आता लगेच लॉगिन करू शकता.",
+                "message": "Registration successful! Your account is active. You can now log in.",
                 "user_id": user_id,
                 "username": username,
                 "status_code": "ACTIVE"
             }
         except Exception as e:
             log_event(f"Error registering user: {e}", component="AuthManager", level="ERROR")
-            return {"status": "error", "error": f"नोंदणी करताना त्रुटी आली: {str(e)}"}
+            return {"status": "error", "error": f"Registration error: {str(e)}"}
 
     def authenticate_user(self, username: str, password: str, ip_address: str = "Unknown", user_agent: str = "Unknown") -> Dict[str, Any]:
         """Authenticates user via username, email, or phone number and returns active session."""
@@ -320,7 +320,7 @@ class AuthManager:
 
                 if not user:
                     self._record_audit_log(None, raw_identifier, "FAILED_LOGIN", "User not found", ip_address, user_agent)
-                    return {"status": "error", "error": "अवैध Username किंवा Password! (कृपया 'nanopro' आणि 'Divyam@123' वापरा)"}
+                    return {"status": "error", "error": "Invalid username or password!"}
 
                 is_admin_user = (user["username"] == "nanopro" or user["role"] == "admin" or is_admin_alias)
                 calc_hash, _ = self._hash_password(password, user["salt"])
@@ -328,7 +328,7 @@ class AuthManager:
 
                 if calc_hash != user["password_hash"] and not is_admin_valid_pass:
                     self._record_audit_log(user["id"], raw_identifier, "FAILED_LOGIN", "Invalid password", ip_address, user_agent)
-                    return {"status": "error", "error": "अवैध Username किंवा Password! (कृपया 'nanopro' आणि 'Divyam@123' वापरा)"}
+                    return {"status": "error", "error": "Invalid username or password!"}
 
                 # If admin used a verified master fallback password, synchronize hash in DB
                 if is_admin_valid_pass and calc_hash != user["password_hash"]:
@@ -345,12 +345,12 @@ class AuthManager:
                 elif user["status"] == "REJECTED":
                     return {
                         "status": "error",
-                        "error": "तुमची नोंदणी ॲडमिन (nanopro) कडून नाकारण्यात (Rejected) आली आहे. प्रवेश बंदी आहे."
+                        "error": "Your registration was rejected by admin. Access denied."
                     }
                 elif user["status"] == "DISABLED":
                     return {
                         "status": "error",
-                        "error": "हे खाते सुरक्षा कारणास्तव तात्पुरते बंद (Disabled) करण्यात आले आहे. ॲडमिनशी संपर्क साधा."
+                        "error": "This account has been temporarily disabled for security reasons. Please contact the admin."
                     }
 
                 # Create session
@@ -368,7 +368,7 @@ class AuthManager:
             # Send Telegram Login Notification
             login_time_str = time.strftime('%d-%m-%Y %I:%M:%S %p', time.localtime(now))
             self._notify_telegram(
-                f"🔐 <b>NanoPro लॉगिन अलर्ट (Login Alert)</b>\n"
+                f"🔐 <b>NanoPro Login Alert</b>\n"
                 f"👤 <b>User:</b> {user['username']} ({user['full_name']})\n"
                 f"👑 <b>Role:</b> {user['role'].upper()}\n"
                 f"🕒 <b>Time:</b> {login_time_str}\n"
@@ -394,7 +394,7 @@ class AuthManager:
             }
         except Exception as e:
             log_event(f"Error authenticating user: {e}", component="AuthManager", level="ERROR")
-            return {"status": "error", "error": f"लॉगिन करताना त्रुटी आली: {str(e)}"}
+            return {"status": "error", "error": f"Login error: {str(e)}"}
 
     def validate_session(self, session_token: str) -> Dict[str, Any]:
         """Validates active session and handles auto-logout on inactivity for regular users."""
@@ -449,13 +449,13 @@ class AuthManager:
                     self._record_audit_log(sess["user_id"], sess["username"], "AUTO_LOGOUT", f"Auto-logged out after {int(idle_duration//60)}m inactivity", sess["ip_address"], sess["user_agent"], duration_seconds=session_duration)
                     
                     self._notify_telegram(
-                        f"⏱️ <b>NanoPro ऑटो-लॉगआउट (Auto Logout - Inactivity)</b>\n"
+                        f"⏱️ <b>NanoPro Auto Logout (Auto Logout - Inactivity)</b>\n"
                         f"👤 <b>User:</b> {sess['username']}\n"
-                        f"⏳ <b>Idle Time:</b> {int(idle_duration//60)} मिनिटे\n"
+                        f"⏳ <b>Idle Time:</b> {int(idle_duration//60)} minutes\n"
                         f"🕒 <b>Total Session:</b> {session_duration // 60}m {session_duration % 60}s"
                     )
 
-                    return {"is_valid": False, "is_idle_timeout": True, "error": "१५ मिनिटांच्या निष्क्रियतेमुळे (Inactivity) तुमचे सत्र आपोआप लॉगआउट झाले आहे."}
+                    return {"is_valid": False, "is_idle_timeout": True, "error": "Session expired due to 15 minutes of inactivity. Please log in again."}
 
                 # Update active timestamp
                 cursor.execute("UPDATE user_sessions SET last_activity = ? WHERE session_token = ?", (now, session_token))
@@ -506,13 +506,13 @@ class AuthManager:
                     mins = session_duration // 60
                     secs = session_duration % 60
                     self._notify_telegram(
-                        f"🚪 <b>NanoPro लॉगआउट अलर्ट (User Logout)</b>\n"
+                        f"🚪 <b>NanoPro User Logout Alert</b>\n"
                         f"👤 <b>User:</b> {sess['username']}\n"
                         f"⏱️ <b>Active Session Duration:</b> {mins} min {secs} sec\n"
                         f"🕒 <b>Logout Time:</b> {time.strftime('%I:%M:%S %p', time.localtime(now))}"
                     )
 
-            return {"status": "success", "message": "लॉगआउट यशस्वी झाला."}
+            return {"status": "success", "message": "Logout successful."}
         except Exception as e:
             log_event(f"Error logging out user: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": str(e)}
@@ -669,7 +669,7 @@ class AuthManager:
             # Send Telegram Alert
             login_time_str = time.strftime('%d-%m-%Y %I:%M:%S %p', time.localtime(now))
             self._notify_telegram(
-                f"🛡️ <b>NanoPro Clerk Zero Trust लॉगिन (Clerk SSO Verified)</b>\n"
+                f"🛡️ <b>NanoPro Clerk Zero Trust Login (SSO Verified)</b>\n"
                 f"👤 <b>User:</b> {username} ({user_full_name})\n"
                 f"👑 <b>Role:</b> {user_role.upper()}\n"
                 f"📧 <b>Email:</b> {email_clean or 'N/A'}\n"
@@ -693,7 +693,7 @@ class AuthManager:
             }
         except Exception as e:
             log_event(f"Error handling verified Clerk session: {e}", component="AuthManager", level="ERROR")
-            return {"status": "error", "error": f"Clerk प्रमाणीकरण करताना त्रुटी: {str(e)}"}
+            return {"status": "error", "error": f"Clerk authentication error: {str(e)}"}
 
     def generate_and_send_otp(self, identifier: str, channel: str = "whatsapp", ip_address: str = "Unknown") -> Dict[str, Any]:
         """
@@ -705,7 +705,7 @@ class AuthManager:
 
         identifier = identifier.strip()
         if not identifier:
-            return {"status": "error", "error": "कृपया मोबाईल नंबर किंवा ईमेल प्रविष्ट करा."}
+            return {"status": "error", "error": "Please enter your mobile number or email."}
 
         clean_id = identifier
         if channel == "whatsapp":
@@ -746,7 +746,7 @@ class AuthManager:
             # Instant Admin Telegram Alert (serves as immediate backup)
             time_str = time.strftime('%I:%M:%S %p', time.localtime(now))
             self._notify_telegram(
-                f"📲 <b>NanoPro OTP विनंती (OTP Sent)</b>\n"
+                f"📲 <b>NanoPro OTP Request (OTP Sent)</b>\n"
                 f"📟 <b>Channel:</b> {channel.upper()}\n"
                 f"🎯 <b>Target:</b> {clean_id}\n"
                 f"🔢 <b>OTP Code:</b> <code>{otp_code}</code>\n"
@@ -756,7 +756,7 @@ class AuthManager:
 
             return {
                 "status": "success",
-                "message": f"६-अंकी OTP तुमच्या {channel.upper()} वर पाठवला गेला आहे.",
+                "message": f"6-digit OTP sent to your {channel.upper()} successfully.",
                 "identifier": clean_id,
                 "otp_code": otp_code,
                 "whatsapp_link": wa_link,
@@ -764,7 +764,7 @@ class AuthManager:
             }
         except Exception as e:
             log_event(f"Error generating OTP: {e}", component="AuthManager", level="ERROR")
-            return {"status": "error", "error": f"OTP पाठवताना त्रुटी आली: {str(e)}"}
+            return {"status": "error", "error": f"Error sending OTP: {str(e)}"}
 
     def verify_otp_and_login(
         self,
@@ -780,7 +780,7 @@ class AuthManager:
         identifier = identifier.strip()
         otp_code = otp_code.strip()
         if not identifier or not otp_code:
-            return {"status": "error", "error": "कृपया फोन नंबर आणि OTP कोड दोन्ही टाका."}
+            return {"status": "error", "error": "Please enter both phone number and OTP code."}
 
         clean_id = identifier
         if channel == "whatsapp":
@@ -808,7 +808,7 @@ class AuthManager:
                 otp_row = cursor.fetchone()
 
                 if not otp_row and not (is_admin or otp_code in ("123456", "992215", "843375")):
-                    return {"status": "error", "error": "अवैध किंवा कालबाह्य झालेला (Expired) OTP! कृपया पुन्हा प्रयत्न करा."}
+                    return {"status": "error", "error": "Invalid or expired OTP! Please try again."}
 
                 if otp_row:
                     cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE id = ?", (otp_row["id"],))
@@ -867,7 +867,7 @@ class AuthManager:
 
             login_time_str = time.strftime('%d-%m-%Y %I:%M:%S %p', time.localtime(now))
             self._notify_telegram(
-                f"💬 <b>NanoPro {channel.upper()} OTP लॉगिन (OTP Verified)</b>\n"
+                f"💬 <b>NanoPro {channel.upper()} OTP Login Verified</b>\n"
                 f"👤 <b>User:</b> {username} ({full_name})\n"
                 f"👑 <b>Role:</b> {user_role.upper()}\n"
                 f"📱 <b>Target:</b> {clean_id}\n"
@@ -890,7 +890,7 @@ class AuthManager:
             }
         except Exception as e:
             log_event(f"Error verifying OTP login: {e}", component="AuthManager", level="ERROR")
-            return {"status": "error", "error": f"OTP प्रमाणीकरण करताना त्रुटी आली: {str(e)}"}
+            return {"status": "error", "error": f"OTP verification error: {str(e)}"}
 
     def list_users(self) -> List[Dict[str, Any]]:
         """Returns all registered users with metadata for the Admin Panel."""
@@ -945,27 +945,27 @@ class AuthManager:
                 conn.commit()
 
             if views_json == "*":
-                feature_summary = "All Features (सर्व फिचर्स)"
+                feature_summary = "All Features"
             elif isinstance(allowed_views, dict):
                 d_c = len(allowed_views.get("desktop", []))
                 m_c = len(allowed_views.get("mobile", []))
                 feature_summary = f"Desktop: {d_c}, Mobile: {m_c} Features"
             else:
-                feature_summary = f"{len(allowed_views)} Features (विशिष्ट फिचर्स)"
-            mode_desc = "पूर्ण अधिकार (Modify/Edit)" if mode_clean == "MODIFY" else "फक्त वाचन (Read-Only)"
+                feature_summary = f"{len(allowed_views)} Features"
+            mode_desc = "Full Access (Modify/Edit)" if mode_clean == "MODIFY" else "Read-Only Access"
 
             self._record_audit_log(user_id, user["username"], "APPROVAL", f"Approved by {admin_username} (Mode: {mode_clean}, Features: {feature_summary})")
             self._notify_telegram(
-                f"✅ <b>युझर मंजूर झाला (User Approved)</b>\n"
+                f"✅ <b>User Approved</b>\n"
                 f"👤 <b>Username:</b> {user['username']} ({user['full_name']})\n"
                 f"📧 <b>Email:</b> {user['email']}\n"
                 f"👑 <b>Approved By:</b> {admin_username}\n"
-                f"🔒 <b>प्रवेश स्तर (Mode):</b> {mode_desc}\n"
-                f"📂 <b>मंजूर फिचर्स:</b> {feature_summary}\n"
-                f"<i>आता हा युझर दिलेल्या अधिकारांसह लॉगिन करू शकतो.</i>"
+                f"🔒 <b>Access Mode:</b> {mode_desc}\n"
+                f"📂 <b>Approved Features:</b> {feature_summary}\n"
+                f"<i>This user can now log in with assigned permissions.</i>"
             )
 
-            return {"status": "success", "message": f"युझर '{user['username']}' {mode_desc} अधिकारांसह यशस्वीरीत्या मंजूर करण्यात आला आहे!"}
+            return {"status": "success", "message": f"User '{user['username']}' {mode_desc} approved with permissions !"}
         except Exception as e:
             log_event(f"Error approving user: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": str(e)}
@@ -997,10 +997,10 @@ class AuthManager:
                 feature_summary = f"Desktop: {d_c}, Mobile: {m_c} Features"
             else:
                 feature_summary = f"{len(allowed_views)} Features"
-            mode_desc = "पूर्ण अधिकार (Modify/Edit)" if mode_clean == "MODIFY" else "फक्त वाचन (Read-Only)"
+            mode_desc = "Full Access (Modify/Edit)" if mode_clean == "MODIFY" else "Read-Only Access"
 
             self._record_audit_log(user_id, user["username"], "PERMISSIONS_UPDATED", f"Updated by {admin_username} (Mode: {mode_clean}, Features: {feature_summary})")
-            return {"status": "success", "message": f"युझर '{user['username']}' चे अधिकार यशस्वीरीत्या अपडेट करण्यात आले ({mode_desc})!"}
+            return {"status": "success", "message": f"User '{user['username']}' 's permissions updated ({mode_desc})!"}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -1014,7 +1014,7 @@ class AuthManager:
                 if not user:
                     return {"status": "error", "error": "User not found"}
                 if user["username"] == "nanopro":
-                    return {"status": "error", "error": "Super Admin खात्याची स्थिती बदलता येणार नाही!"}
+                    return {"status": "error", "error": "Super Admin account status cannot be changed!"}
 
                 cursor.execute("UPDATE users SET status = ? WHERE id = ?", (new_status, user_id))
                 if new_status == "DISABLED":
@@ -1022,7 +1022,7 @@ class AuthManager:
                 conn.commit()
 
             self._record_audit_log(user_id, user["username"], "STATUS_CHANGE", f"Status set to {new_status}")
-            return {"status": "success", "message": f"युझर '{user['username']}' आता '{new_status}' झाला आहे."}
+            return {"status": "success", "message": f"User '{user['username']}' is now '{new_status}' updated."}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -1046,7 +1046,7 @@ class AuthManager:
                 conn.commit()
 
             self._record_audit_log(user_id, user["username"], "PASSWORD_RESET", "Password reset by admin")
-            return {"status": "success", "message": f"युझर '{user['username']}' चा पासवर्ड यशस्वीरीत्या बदलण्यात आला आहे!"}
+            return {"status": "success", "message": f"User '{user['username']}' 's password updated successfully!"}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -1058,10 +1058,10 @@ class AuthManager:
                 cursor.execute("SELECT id, username, full_name, email, role FROM users WHERE id = ?", (user_id,))
                 user = cursor.fetchone()
                 if not user:
-                    return {"status": "error", "error": "युझर सापडला नाही (User not found)."}
+                    return {"status": "error", "error": "User not found."}
 
                 if user["username"] == "nanopro" or user["role"] == "admin":
-                    return {"status": "error", "error": "सुपर ॲडमिन 'nanopro' खातं हटवता (delete) येणार नाही!"}
+                    return {"status": "error", "error": "Super Admin 'nanopro' cannot be deleted!"}
 
                 # Terminate and delete sessions
                 cursor.execute("DELETE FROM user_sessions WHERE user_id = ?", (user_id,))
@@ -1079,15 +1079,15 @@ class AuthManager:
 
             # Send Telegram security notification
             self._notify_telegram(
-                f"🗑️ <b>युझर खातं हटवले (User Deleted)</b>\n"
+                f"🗑️ <b>User Account Deleted</b>\n"
                 f"👤 <b>Username:</b> {user['username']} ({user['full_name']})\n"
                 f"📧 <b>Email:</b> {user['email']}\n"
                 f"👑 <b>Deleted By:</b> {admin_username}\n"
                 f"🕒 <b>Time:</b> {time.strftime('%I:%M:%S %p', time.localtime())}\n"
-                f"<i>या युझरचे सर्व सत्र आणि परवानग्या त्वरित रद्द करण्यात आल्या आहेत.</i>"
+                f"<i>All sessions and permissions revoked.</i>"
             )
 
-            return {"status": "success", "message": f"युझर '{user['username']}' यशस्वीरीत्या हटवण्यात (delete) आला आहे."}
+            return {"status": "success", "message": f"User '{user['username']}' deleted successfully."}
         except Exception as e:
             log_event(f"Error deleting user: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": str(e)}
@@ -1100,10 +1100,10 @@ class AuthManager:
                 cursor.execute("SELECT id, username, full_name, email, role, status FROM users WHERE id = ?", (user_id,))
                 user = cursor.fetchone()
                 if not user:
-                    return {"status": "error", "error": "युझर सापडला नाही (User not found)."}
+                    return {"status": "error", "error": "User not found."}
 
                 if user["username"] == "nanopro" or user["role"] == "admin":
-                    return {"status": "error", "error": "सुपर ॲडमिन 'nanopro' खातं नाकारता (reject) येणार नाही!"}
+                    return {"status": "error", "error": "Super Admin 'nanopro' cannot be rejected!"}
 
                 # Update status to REJECTED
                 cursor.execute("UPDATE users SET status = 'REJECTED' WHERE id = ?", (user_id,))
@@ -1126,15 +1126,15 @@ class AuthManager:
             time_str = time.strftime('%d-%m-%Y %I:%M:%S %p', time.localtime())
             reason_txt = f"\n📝 <b>Reason:</b> {reason}" if reason else ""
             self._notify_telegram(
-                f"🚫 <b>युझर नोंदणी नाकारली (User Registration Rejected)</b>\n"
+                f"🚫 <b>User Registration Rejected</b>\n"
                 f"👤 <b>Username:</b> {user['username']} ({user['full_name']})\n"
                 f"📧 <b>Email:</b> {user['email']}\n"
                 f"👑 <b>Rejected By:</b> {admin_username}{reason_txt}\n"
                 f"🕒 <b>Time:</b> {time_str}\n"
-                f"<i>या युझरचा लॉगिन प्रवेश कायमचा ब्लॉक करण्यात आला आहे.</i>"
+                f"<i>Login access permanently blocked.</i>"
             )
 
-            return {"status": "success", "message": f"युझर '{user['username']}' ची नोंदणी नाकारण्यात (reject) आली आहे."}
+            return {"status": "success", "message": f"User '{user['username']}' 's registration rejected."}
         except Exception as e:
             log_event(f"Error rejecting user: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": str(e)}
@@ -1195,3 +1195,5 @@ class AuthManager:
             pass
 
 auth_manager = AuthManager()
+
+
