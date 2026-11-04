@@ -967,6 +967,10 @@ export default {
       // Try laptop first
       if (localTunnel) {
         try {
+          // The laptop probe may fail and fall back to Render.  Use a clone for
+          // this first attempt so the original POST body remains readable by
+          // the Render request below.
+          const laptopRequest = ["GET", "HEAD"].includes(request.method) ? null : request.clone();
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 30000);
           const targetUrl = new URL(path + url.search, localTunnel);
@@ -977,7 +981,7 @@ export default {
           newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Video-Laptop");
           const response = await fetch(targetUrl.toString(), {
             method: request.method, headers: newHeaders,
-            body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+            body: laptopRequest ? laptopRequest.body : undefined,
             redirect: "follow", signal: controller.signal
           });
           clearTimeout(timeoutId);
