@@ -10,13 +10,17 @@
 
  * Resilience Features:
 
- * - 12-second timeout for Local Master to allow complete 35KB dashboard HTML streaming.
+ * - Render is PRIMARY (complete cloud server, 24/7 available).
 
- * - Filters out un-deployed/suspended cloud nodes (e.g. Render "no-server" 404/503).
+ * - AlwaysData + PythonAnywhere as automatic cloud fallback.
 
- * - When Laptop is ON: Seamlessly streams the full dashboard, 305 agents, GPU video.
+ * - Laptop is ONLY used for Video Maker / GPU endpoints (not in main cascade).
 
- * - When Laptop is OFF: Cloudflare Edge IMMEDIATELY serves the 24/7 Autonomous Sentinel UI.
+ * - If laptop is offline, video endpoints return a clear "device not available" error.
+
+ * - When Laptop is ON: Video Maker uses local GPU (RTX 3050) for rendering.
+
+ * - All other endpoints are 100% cloud-dependent, zero laptop dependency.
 
  * - /api/cron/* ALWAYS returns 200 OK (Keep-Alive, BOD, SOD, T-1, EOD never fail).
 
@@ -305,14 +309,66 @@ export default {
 
 
 
-    // Upstream candidates in priority order:
-
-    // 1. Local Laptop Master -> 2. Render Cloud -> 3. AlwaysData -> 4. PythonAnywhere
+    // ================================================================
+    // INTELLIGENT ROUTING: Render-first (laptop = video-only)
+    // ================================================================
+    // Primary: Render (always available, complete cloud server)
+    // Fallback: AlwaysData → PythonAnywhere → Static assets
+    // Laptop: ONLY for video maker / GPU endpoints (checked separately)
+    // ================================================================
 
     const renderUrl = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
 
-    let candidateUpstreams = [localTunnel, renderUrl, alwaysdataUrl, pythonAnywhereUrl];
+    // Endpoints that REQUIRE local laptop GPU (video encoding, image gen)
+    const isVideoEndpoint = path.startsWith("/api/sql_video") ||
+                            path.startsWith("/api/video") ||
+                            path === "/api/thumbnail" ||
+                            path === "/api/metadata" ||
+                            path.startsWith("/api/audio") ||
+                            path === "/api/image/generate";
 
+    // --- VIDEO MAKER ROUTING: Laptop required, graceful error if down ---
+    if (isVideoEndpoint) {
+      // Try laptop first (only for video/GPU endpoints)
+      if (localTunnel) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s for video ops
+          const targetUrl = new URL(path + url.search, localTunnel);
+          const newHeaders = new Headers(request.headers);
+          newHeaders.delete("host");
+          newHeaders.set("Host", targetUrl.host);
+          newHeaders.set("X-Forwarded-Host", url.host);
+          newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Video-Laptop");
+          const response = await fetch(targetUrl.toString(), {
+            method: request.method, headers: newHeaders,
+            body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+            redirect: "follow", signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (response.status < 400) {
+            const fh = new Headers(response.headers);
+            fh.set("X-NanoPro-Routed-Node", localTunnel);
+            fh.set("X-NanoPro-Mode", "LAPTOP_GPU_VIDEO");
+            fh.set("Access-Control-Allow-Origin", "*");
+            return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+          }
+        } catch (_) { /* laptop down for video */ }
+      }
+      // Laptop not available → return clear error message
+      return new Response(JSON.stringify({
+        status: "error",
+        error: "Laptop or local device not available. Video Maker requires local GPU (RTX 3050) for rendering. Please start your laptop and try again.",
+        message: "लॅपटॉप किंवा लोकल डिव्हाइस उपलब्ध नाही. व्हिडिओ बनवण्यासाठी लोकल GPU आवश्यक आहे. कृपया लॅपटॉप चालू करा.",
+        endpoint: path,
+        laptop_status: "OFFLINE",
+        suggestion: "Start laptop → run 'python main.py' → Cloudflare tunnel auto-connects → retry video"
+      }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    // --- ALL OTHER ENDPOINTS: Cloud-first (Render → AlwaysData → PythonAnywhere) ---
+    // Laptop is NOT in this cascade. Zero dependency on laptop for normal operations.
+    let candidateUpstreams = [renderUrl, alwaysdataUrl, pythonAnywhereUrl];
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
 
 
@@ -335,11 +391,9 @@ export default {
 
 
 
-      const isLocal = (upstreamBase === localTunnel);
-
       const isApi = path.startsWith("/api/");
 
-      const timeoutMs = isLocal ? (isApi ? CONFIG.API_TIMEOUT_MS : CONFIG.LOCAL_TIMEOUT_MS) : CONFIG.CLOUD_TIMEOUT_MS;
+      const timeoutMs = CONFIG.CLOUD_TIMEOUT_MS;
 
 
 
@@ -395,8 +449,6 @@ export default {
 
         const is5xx = response.status >= 500;
 
-        const isLocalError = isLocal && (response.status >= 400);
-
         // For root/dashboard HTML requests, only accept 200 from upstreams
 
         const isDashboardPath = (path === "/" || path === "/dashboard");
@@ -405,7 +457,7 @@ export default {
 
 
 
-        if (isRenderNoServer || isCloudflareError || is5xx || isLocalError || isNon200Dashboard) {
+        if (isRenderNoServer || isCloudflareError || is5xx || isNon200Dashboard) {
 
           lastError = `HTTP ${response.status} from ${upstreamBase} (triggering automatic peer failover)`;
 
