@@ -147,10 +147,6 @@ export default {
         return Response.redirect(`${url.origin}/login`, 302);
       }
       return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
-      }
-      if (path === "/dashboard/business") {
-        return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
-      }
     }
     if (path === "/api/dashboard/business") {
       const bm = await businessMetrics();
