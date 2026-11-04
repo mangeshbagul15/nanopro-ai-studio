@@ -25,23 +25,12 @@ def get_sql_video_js() -> str:
  ========================================================================== */
 
  // ================================================================
- // VIDEO API BASE URL — auto-detects backend, skips Cloudflare Worker
- // for long-running AI/video endpoints (Groq takes 15-45s, CF max 30s)
+ // VIDEO API BASE URL — always use same origin (Cloudflare Worker)
+ // Worker proxies to Render with extended timeout for AI endpoints
  // ================================================================
- const RENDER_BASE = "https://mangesh-nanopro-studio.onrender.com";
- const CF_BASE = window.location.origin;
-
- function getVideoApiBase() {
-   // If running locally (laptop), use same origin (localhost:8000)
-   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-     return '';
-   }
-   // For cloud: use Render directly (bypasses 30s Cloudflare Worker limit)
-   return RENDER_BASE;
- }
-
  function videoApiUrl(path) {
-   return getVideoApiBase() + path;
+   // Always relative — goes through Cloudflare Worker which proxies to Render
+   return path;
  }
 
  const SQL_CLIENT_PRESETS = {};

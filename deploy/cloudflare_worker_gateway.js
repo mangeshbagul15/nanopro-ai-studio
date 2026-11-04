@@ -106,6 +106,19 @@ export default {
 
     const path = url.pathname;
 
+    // Handle CORS preflight (browser sends OPTIONS before cross-origin POST)
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+          "Access-Control-Max-Age": "86400"
+        }
+      });
+    }
+
     // ================================================================
     // 0. ZERO-TRUST LOGIN GATEWAY — Serve login page, never proxy it
     // ================================================================
@@ -977,9 +990,36 @@ export default {
           }
         } catch (_) { /* laptop down → fall to Render */ }
       }
-      // Laptop not available → Render handles storyboard/TTS/voice (Groq/Gemini cloud)
-      // (Render has FastAPI + edge-tts + Groq API — no GPU needed for these)
-      // falls through to main cloud cascade below
+      // Laptop not available → direct Render proxy for video/AI endpoints (no abort timeout)
+      if (isVideoEndpoint) {
+        try {
+          const targetUrl = new URL(path + url.search, renderUrl);
+          const newHeaders = new Headers(request.headers);
+          newHeaders.delete("host");
+          newHeaders.set("Host", targetUrl.host);
+          newHeaders.set("X-Forwarded-Host", url.host);
+          newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Video-Render-Direct");
+          // No AbortController — let Render take as long as it needs (Groq/Gemini)
+          const response = await fetch(targetUrl.toString(), {
+            method: request.method, headers: newHeaders,
+            body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+            redirect: "follow"
+          });
+          const fh = new Headers(response.headers);
+          fh.set("X-NanoPro-Routed-Node", renderUrl);
+          fh.set("X-NanoPro-Mode", "RENDER_VIDEO_DIRECT");
+          fh.set("Access-Control-Allow-Origin", "*");
+          fh.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          fh.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+          return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+        } catch (err) {
+          return new Response(JSON.stringify({
+            status: "error",
+            error: "Video service temporarily unavailable. Please try again.",
+            details: err.message
+          }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+      }
     }
 
     // --- ALL OTHER ENDPOINTS: Cloud-first (Render → AlwaysData → PythonAnywhere) ---
