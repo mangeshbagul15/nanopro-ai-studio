@@ -335,6 +335,184 @@ export default {
       }
     }
 
+    // E9. WhatsApp OTP SEND — 100% Edge, no Python backend needed
+    if (path === "/api/auth/otp/send" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const rawId = (body.identifier || "").trim();
+        if (!rawId) {
+          return new Response(JSON.stringify({ status: "error", error: "Phone number is required." }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Normalize phone: 10 digits → +91XXXXXXXXXX
+        let phone = rawId;
+        const digits = rawId.replace(/\D/g, "");
+        if (digits.length === 10) phone = "+91" + digits;
+        else if (!rawId.startsWith("+")) phone = "+" + digits;
+
+        // Generate 6-digit OTP
+        const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+        const expiresAt = Date.now() + 300000; // 5 minutes
+
+        // Store OTP in Upstash Redis (key: nanopro_otp:{phone})
+        const otpKey = `nanopro_otp:${phone}`;
+        await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${encodeURIComponent(otpKey)}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify(JSON.stringify({ otp: otpCode, expires: expiresAt, phone, used: false }))
+        });
+        // Auto-expire in 6 minutes
+        await fetch(`${REPORT_CFG.UPSTASH_URL}/expire/${encodeURIComponent(otpKey)}/360`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }
+        });
+
+        // Send OTP via Meta WhatsApp Cloud API
+        const waMsg = `🔐 *NanoPro AI Studio Login Verification*\n\nYour 6-digit verification code is: *${otpCode}*\n\n⏳ Valid for 5 minutes. Never share this code.\n🛡️ Zero-Trust Security Sentinel`;
+        const waPhoneNum = phone.replace(/\D/g, ""); // digits only for Meta API
+        const waResp = await fetch(`https://graph.facebook.com/v19.0/${REPORT_CFG.WA_PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: waPhoneNum,
+            type: "text",
+            text: { body: waMsg }
+          })
+        });
+        const waData = await waResp.json();
+        const waSent = waResp.ok && waData?.messages?.length > 0;
+
+        // If 24h window closed → send hello_world template
+        if (!waSent && waData?.error?.code === 131047) {
+          await fetch(`https://graph.facebook.com/v19.0/${REPORT_CFG.WA_PHONE_NUMBER_ID}/messages`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.WA_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: waPhoneNum,
+              type: "template",
+              template: { name: "hello_world", language: { code: "en_US" } }
+            })
+          });
+        }
+
+        // Always send OTP to admin Telegram as backup
+        ctx.waitUntil((async () => {
+          try {
+            await fetch(`https://api.telegram.org/bot${REPORT_CFG.BOTS.reports}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text: `📲 <b>NanoPro OTP Sent (Edge)</b>\n📟 Channel: WhatsApp\n🎯 Target: ${phone}\n🔢 OTP: <code>${otpCode}</code>\n⏳ Expires in 5 min\n✅ WA Delivered: ${waSent}`, parse_mode: "HTML" })
+            });
+          } catch (_) {}
+        })());
+
+        return new Response(JSON.stringify({
+          status: "success",
+          message: `6-digit OTP sent to your WhatsApp successfully.`,
+          identifier: phone,
+          wa_delivered: waSent,
+          wa_error: waSent ? null : (waData?.error?.message || "WhatsApp delivery issue"),
+          edge: true
+        }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ status: "error", error: "OTP send error: " + (err.message || "unknown") }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // E10. WhatsApp OTP VERIFY — 100% Edge, no Python backend needed
+    if (path === "/api/auth/otp/verify" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const rawId = (body.identifier || "").trim();
+        const enteredOtp = (body.otp_code || "").trim();
+
+        if (!rawId || !enteredOtp) {
+          return new Response(JSON.stringify({ status: "error", error: "Phone number and OTP code are required." }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Normalize phone
+        let phone = rawId;
+        const digits = rawId.replace(/\D/g, "");
+        if (digits.length === 10) phone = "+91" + digits;
+        else if (!rawId.startsWith("+")) phone = "+" + digits;
+
+        // Admin bypass: Mangesh's number always works
+        const isAdminPhone = digits.includes("8433755448");
+        const isAdminOtp = ["843375", "123456", "992215"].includes(enteredOtp);
+
+        // Fetch OTP from Upstash
+        const otpKey = `nanopro_otp:${phone}`;
+        let stored = null;
+        try {
+          const r = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/${encodeURIComponent(otpKey)}`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+          const d = await r.json();
+          if (d?.result) stored = JSON.parse(d.result);
+        } catch (_) {}
+
+        const now = Date.now();
+        let verified = false;
+
+        if (stored && !stored.used && stored.expires > now && stored.otp === enteredOtp) {
+          verified = true;
+          // Mark as used
+          await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${encodeURIComponent(otpKey)}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify(JSON.stringify({ ...stored, used: true }))
+          });
+        } else if (isAdminPhone && isAdminOtp) {
+          verified = true; // Admin always-allowed bypass
+        }
+
+        if (!verified) {
+          const expiredMsg = (stored && stored.expires <= now) ? "OTP has expired. Please request a new one." : "Invalid OTP code. Please try again.";
+          return new Response(JSON.stringify({ status: "error", error: expiredMsg }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Issue session token
+        const sessionToken = `np_sess_edge_wa_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+        // Store session in Upstash
+        const sessionKey = `nanopro_session:${sessionToken}`;
+        const sessionData = {
+          session_token: sessionToken,
+          user: { id: "user_admin_001", username: "nanopro", full_name: "Super Admin (Mangesh Bagul)", role: "admin", email: "mangeshbagul15@gmail.com", allowed_views: ["*"], access_mode: "MODIFY" },
+          phone, created_at: new Date().toISOString(), method: "whatsapp_otp"
+        };
+        ctx.waitUntil((async () => {
+          try {
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/set/${encodeURIComponent(sessionKey)}`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify(JSON.stringify(sessionData))
+            });
+            await fetch(`${REPORT_CFG.UPSTASH_URL}/expire/${encodeURIComponent(sessionKey)}/2592000`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+
+            await fetch(`https://api.telegram.org/bot${REPORT_CFG.BOTS.reports}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: REPORT_CFG.CHAT_ID, text: `✅ <b>NanoPro WhatsApp OTP Login (Edge)</b>\n👤 User: nanopro\n📟 Phone: ${phone}\n🌐 IP: edge\n🔒 Session: ${sessionToken.slice(0, 20)}...`, parse_mode: "HTML" })
+            });
+          } catch (_) {}
+        })());
+
+        const response = new Response(JSON.stringify({
+          status: "success",
+          session_token: sessionToken,
+          user: sessionData.user,
+          edge: true
+        }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Set-Cookie": `nanopro_session=${encodeURIComponent(sessionToken)}; Path=/; Max-Age=2592000; SameSite=Lax` } });
+        return response;
+
+      } catch (err) {
+        return new Response(JSON.stringify({ status: "error", error: "OTP verify error: " + (err.message || "unknown") }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
     // 0c. WhatsApp Cloud API webhook — GET verify + POST incoming
     if (path === "/api/whatsapp/webhook") {
       if (request.method === "GET") {
