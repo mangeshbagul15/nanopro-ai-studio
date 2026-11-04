@@ -11800,107 +11800,65 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                 <div class="sm-card-3d" style="grid-column: span 7;">
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-
                         <div>
-
                             <h3 style="font-size:14px; font-weight:800; color:#38BDF8; margin:0; display:flex; align-items:center; gap:6px;">
-
-                                <span>&#128450;</span> DB Servers &amp; Data Warehouses (21 Engines • 6 Pools)
-
+                                <span>&#128450;</span> DB Servers &amp; Data Warehouses (21 Engines &bull; 6 Pools)
                             </h3>
-
-                            <span style="font-size:11px; color:var(--text-muted);">DC/DR connection status, latencies, storage volumes, and failover health</span>
-
+                            <span style="font-size:11px; color:var(--text-muted);">Live connection status, latency &amp; failover health across all pools</span>
                         </div>
-
-                        <!-- Pool Filters -->
-
                         <div style="display:flex; gap:4px; flex-wrap:wrap;" id="smDbPoolFilterBar">
-
                             <button type="button" class="sm-tab-btn active" onclick="filterServerManagerDbs('ALL')">All 21</button>
-
-                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Pool 1')">OLTP</button>
-
-                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Pool 2')">OLAP</button>
-
-                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Pool 3')">Cache</button>
-
-                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Pool 4')">Lake</button>
-
-                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Pool 5')">Vector</button>
-
-                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Pool 6')">Timeseries</button>
-
+                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('OLTP')">OLTP</button>
+                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('OLAP')">OLAP</button>
+                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Cache')">Cache</button>
+                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Lake')">Lake</button>
+                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Vector')">Vector</button>
+                            <button type="button" class="sm-tab-btn" onclick="filterServerManagerDbs('Timeseries')">Timeseries</button>
                         </div>
-
                     </div>
 
-
-
-                    <div style="overflow-x:auto; max-height:360px;">
-
-                        <table style="width:100%; border-collapse:collapse; font-size:11.5px; text-align:left;">
-
-                            <thead>
-
-                                <tr style="background:#0F172A; border-bottom:1px solid #334155; color:#94A3B8;">
-
-                                    <th style="padding:8px 10px;">ENGINE &amp; POOL</th>
-
-                                    <th style="padding:8px 10px;">ENDPOINT</th>
-
-                                    <th style="padding:8px 10px;">VOLUME</th>
-
-                                    <th style="padding:8px 10px;">LATENCY</th>
-
-                                    <th style="padding:8px 10px;">STATUS</th>
-
-                                    <th style="padding:8px 10px; text-align:right;">ACTION</th>
-
-                                </tr>
-
-                            </thead>
-
-                            <tbody id="smDbServersTbody">
-
-                                <!-- Injected via renderServerManagerDbs() -->
-
-                            </tbody>
-
-                        </table>
-
+                    <!-- Summary: donut chart + counters -->
+                    <div style="display:flex; gap:14px; align-items:center; margin-bottom:12px; background:#0F172A; border-radius:8px; padding:12px;">
+                        <svg id="smDbDonut" width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0;">
+                            <circle cx="40" cy="40" r="30" fill="none" stroke="#1E293B" stroke-width="12"/>
+                            <circle id="smDbDonutHealthy" cx="40" cy="40" r="30" fill="none" stroke="#10B981" stroke-width="12"
+                                stroke-dasharray="0 188" stroke-dashoffset="47" transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.6s ease;"/>
+                            <circle id="smDbDonutNotConfig" cx="40" cy="40" r="30" fill="none" stroke="#475569" stroke-width="12"
+                                stroke-dasharray="0 188" stroke-dashoffset="47" transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.6s ease;"/>
+                            <circle id="smDbDonutOther" cx="40" cy="40" r="30" fill="none" stroke="#F59E0B" stroke-width="12"
+                                stroke-dasharray="0 188" stroke-dashoffset="47" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="36" text-anchor="middle" fill="#F8FAFC" font-size="14" font-weight="800" id="smDbDonutCount">21</text>
+                            <text x="40" y="50" text-anchor="middle" fill="#94A3B8" font-size="8">engines</text>
+                        </svg>
+                        <div style="display:flex; gap:18px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:24px; font-weight:900; color:#10B981; line-height:1;" id="smDbCountHealthy">—</div>
+                                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">CONNECTED</div>
+                            </div>
+                            <div>
+                                <div style="font-size:24px; font-weight:900; color:#475569; line-height:1;" id="smDbCountNotConfig">—</div>
+                                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">NOT CONFIGURED</div>
+                            </div>
+                            <div>
+                                <div style="font-size:24px; font-weight:900; color:#F59E0B; line-height:1;" id="smDbCountOther">—</div>
+                                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">DEGRADED/OTHER</div>
+                            </div>
+                            <div>
+                                <div style="font-size:18px; font-weight:900; color:#38BDF8; line-height:1;" id="smDbAvgLatency">—ms</div>
+                                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">AVG LATENCY</div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Visual DB Cards Grid -->
+                    <div id="smDbCardsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(195px,1fr)); gap:7px; max-height:290px; overflow-y:auto; padding-right:2px;">
+                        <div style="color:#475569; font-size:11px; padding:8px; grid-column:1/-1;">Loading database engines...</div>
+                    </div>
+
+                    <!-- Hidden legacy table for filter compatibility -->
+                    <div style="display:none;"><table><tbody id="smDbServersTbody"></tbody></table></div>
 
                 </div>
-
-
-
-                <!-- BENTO CARD 5: 🔌 API SERVICES & GATEWAY (col-span-5) -->
-
-                <div class="sm-card-3d" style="grid-column: span 5;">
-
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-
-                        <div>
-
-                            <h3 style="font-size:14px; font-weight:800; color:#A78BFA; margin:0; display:flex; align-items:center; gap:6px;">
-
-                                <span>&#128268;</span> API Services &amp; Gateway Quotas
-
-                            </h3>
-
-                            <span style="font-size:11px; color:var(--text-muted);">Live LLMs, Market APIs, Science &amp; Proxy Gateways</span>
-
-                        </div>
-
-                        <span class="sm-neon-pill" style="background:#1E293B; color:#A78BFA; border:1px solid #334155;">
-
-                            AES-256 Vault
-
-                        </span>
-
-                    </div>
-
 
 
                     <div id="smApiServicesList" style="display:grid; grid-template-columns:1fr; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
@@ -61823,56 +61781,71 @@ function renderServerManagerMedallion(pipeline) {
 
 function renderServerManagerDbs(dbs) {
 
-    const tbody = document.getElementById('smDbServersTbody');
+    const grid = document.getElementById('smDbCardsGrid');
+    if (!grid || !dbs || !dbs.length) {
+        if (grid) grid.innerHTML = '<div style="color:#475569;font-size:11px;padding:8px;grid-column:1/-1;">No database data available.</div>';
+        return;
+    }
 
-    if (!tbody || !dbs) return;
+    // Status config
+    const statusCfg = {
+        'HEALTHY':          { dot:'#10B981', bg:'rgba(16,185,129,0.12)', border:'rgba(16,185,129,0.35)', label:'CONNECTED' },
+        'SHADOWED_READY':   { dot:'#A78BFA', bg:'rgba(167,139,250,0.1)', border:'rgba(167,139,250,0.3)', label:'SHADOWED' },
+        'NOT_CONFIGURED':   { dot:'#475569', bg:'rgba(71,85,105,0.1)',   border:'rgba(71,85,105,0.3)',   label:'NOT CONFIG' },
+        'DEGRADED':         { dot:'#F59E0B', bg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.3)',  label:'DEGRADED' },
+        'OFFLINE':          { dot:'#EF4444', bg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.3)',   label:'OFFLINE' },
+        'READY':            { dot:'#38BDF8', bg:'rgba(56,189,248,0.1)',  border:'rgba(56,189,248,0.3)',  label:'READY' },
+    };
+    const poolColors = { OLTP:'#38BDF8', OLAP:'#F59E0B', Cache:'#A78BFA', Lake:'#34D399', Vector:'#EC4899', Timeseries:'#FB923C' };
 
+    // Update donut + counters
+    const total = dbs.length;
+    const healthy    = dbs.filter(d => d.status === 'HEALTHY').length;
+    const notConfig  = dbs.filter(d => d.status === 'NOT_CONFIGURED').length;
+    const other      = total - healthy - notConfig;
+    const circ       = 2 * Math.PI * 30; // 188.5
 
+    const hArc = (healthy   / total) * circ;
+    const nArc = (notConfig / total) * circ;
+    const oArc = (other     / total) * circ;
 
-    const filtered = dbs.filter(d => {
+    const hEl = document.getElementById('smDbDonutHealthy');
+    const nEl = document.getElementById('smDbDonutNotConfig');
+    const oEl = document.getElementById('smDbDonutOther');
+    const hOffset = 47; // -90deg offset = quarter circle start
+    if (hEl) { hEl.setAttribute('stroke-dasharray', `${hArc} ${circ}`); hEl.setAttribute('stroke-dashoffset', hOffset); }
+    if (nEl) { nEl.setAttribute('stroke-dasharray', `${nArc} ${circ}`); nEl.setAttribute('stroke-dashoffset', hOffset - hArc); }
+    if (oEl) { oEl.setAttribute('stroke-dasharray', `${oArc} ${circ}`); oEl.setAttribute('stroke-dashoffset', hOffset - hArc - nArc); }
 
-        if (smCurrentDbFilter === 'ALL') return true;
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    setTxt('smDbDonutCount', total);
+    setTxt('smDbCountHealthy', healthy);
+    setTxt('smDbCountNotConfig', notConfig);
+    setTxt('smDbCountOther', other > 0 ? other : '0');
+    const lats = dbs.filter(d => d.latency_ms != null && d.status === 'HEALTHY').map(d => d.latency_ms);
+    const avgLat = lats.length ? (lats.reduce((a,b) => a+b, 0) / lats.length).toFixed(1) : '—';
+    setTxt('smDbAvgLatency', avgLat + 'ms');
 
-        return (d.pool || '').toLowerCase().includes(smCurrentDbFilter.toLowerCase());
+    // Filter and render cards
+    const filtered = dbs.filter(d => smCurrentDbFilter === 'ALL' || d.pool === smCurrentDbFilter);
 
-    });
-
-
-
-    tbody.innerHTML = filtered.map(d => {
-
-        const latCol = d.latency_ms < 5 ? '#34D399' : (d.latency_ms < 30 ? '#38BDF8' : '#FBBF24');
-
-        return `
-
-            <tr style="border-bottom:1px solid #1E293B;">
-
-                <td style="padding:8px 10px;">
-
-                    <strong style="color:#F8FAFC;">${escapeHtml(d.name)}</strong><br/>
-
-                    <span style="font-size:10px; color:#64748B;">${escapeHtml(d.pool)} &bull; ${escapeHtml(d.type)}</span>
-
-                </td>
-
-                <td style="padding:8px 10px; font-family:monospace; color:#38BDF8; font-size:10.5px;">${escapeHtml(d.endpoint)}</td>
-
-                <td style="padding:8px 10px; color:#A78BFA; font-size:10.5px;">${escapeHtml(d.volume)}</td>
-
-                <td style="padding:8px 10px; font-weight:700; color:${latCol};">${d.latency_ms}ms</td>
-
-                <td style="padding:8px 10px;"><span class="badge" style="background:#064E3B; color:#34D399; font-size:9.5px;">${escapeHtml(d.status)}</span></td>
-
-                <td style="padding:8px 10px; text-align:right;">
-
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="testServerManagerComponent('db', '${d.id}')" style="font-size:10px; padding:2px 7px;">Test</button>
-
-                </td>
-
-            </tr>
-
-        `;
-
+    grid.innerHTML = filtered.map(d => {
+        const s = statusCfg[d.status] || statusCfg['NOT_CONFIGURED'];
+        const pc = poolColors[d.pool] || '#94A3B8';
+        const lat = d.latency_ms != null ? `${d.latency_ms}ms` : '—';
+        const latColor = d.latency_ms == null ? '#475569' : d.latency_ms < 5 ? '#10B981' : d.latency_ms < 30 ? '#38BDF8' : d.latency_ms < 80 ? '#FBBF24' : '#F87171';
+        return `<div style="background:${s.bg};border:1px solid ${s.border};border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:4px;cursor:default;" title="${d.endpoint}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;">
+                <span style="font-size:11px;font-weight:800;color:#F8FAFC;line-height:1.3;flex:1;">${d.name}</span>
+                <span style="width:7px;height:7px;border-radius:50%;background:${s.dot};flex-shrink:0;margin-top:3px;box-shadow:0 0 6px ${s.dot}88;"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:9px;font-weight:700;color:${pc};background:${pc}22;padding:1px 6px;border-radius:10px;">${d.pool}</span>
+                <span style="font-size:10px;font-weight:700;color:${latColor};">${lat}</span>
+            </div>
+            <div style="font-size:9.5px;color:#64748B;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.type} &bull; ${d.volume || '—'}</div>
+            <div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:0.4px;">${s.label}</div>
+        </div>`;
     }).join('');
 
 }
