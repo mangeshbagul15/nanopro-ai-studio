@@ -1411,7 +1411,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  try {
 
- pollRes = await fetch(videoApiUrl(`/api/sql_video/generation_jobs/${encodeURIComponent(jobId)}`, {cache: "no-store"});
+ pollRes = await fetch(videoApiUrl(`/api/sql_video/generation_jobs/${encodeURIComponent(jobId)}`), {cache: "no-store"});
 
  pollRead = await readVideoJsonResponse(pollRes);
 
