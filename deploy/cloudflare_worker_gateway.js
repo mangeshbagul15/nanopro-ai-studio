@@ -1,4 +1,4 @@
-/**
+﻿/**
 
  * Mangesh Nano Pro AI Studio - Central Master Cloudflare Gateway Worker
 
@@ -366,7 +366,7 @@ export default {
 
     // 0. Report engine (manual trigger) — handled at edge, never proxied
 
-    // 0b. Telegram bot webhooks — interactive bots at edge (laptop off तरी reply)
+    // 0b. Telegram bot webhooks — interactive bots at edge (even if laptop is off)
     if (path.startsWith("/api/tg/")) {
       const bot = path.split("/")[3];
       const token = REPORT_CFG.BOTS[bot];
@@ -523,7 +523,7 @@ export default {
       return new Response(JSON.stringify({
         status: "error",
         error: "Laptop or local device not available. Video Maker requires local GPU (RTX 3050) for rendering. Please start your laptop and try again.",
-        message: "लॅपटॉप किंवा लोकल डिव्हाइस उपलब्ध नाही. व्हिडिओ बनवण्यासाठी लोकल GPU आवश्यक आहे. कृपया लॅपटॉप चालू करा.",
+        message: "Local device or laptop is not available. Video rendering requires a local GPU. Please start your laptop and try again.",
         endpoint: path,
         laptop_status: "OFFLINE",
         suggestion: "Start laptop → run 'python main.py' → Cloudflare tunnel auto-connects → retry video"
@@ -1132,7 +1132,7 @@ async function handleBotMessage(bot, token, msg) {
       return;
     }
     if (lower === "/help" || lower === "/start") {
-      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: status | report | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume — किंवा काहीही विचारा.`);
+      await tgSend(token, msg.chat.id, `NanoPro ${bot} bot — live on cloud edge.\nCommands: status | report | run <BOD|SOD|EOD|T-1> | ingest | health | news | crypto | weather | pause | resume — or ask anything.`);
       return;
     }
     const cmd = await nanoCommand(lower.replace(/^\//, ""));
@@ -2062,3 +2062,4 @@ const DELETION_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>N
 <p>Your data will be permanently deleted within 30 days and you will receive a confirmation email. Alternatively, send the word DELETE in your WhatsApp conversation and we will remove your data.</p>
 <p>Last updated: October 2026</p>
 </body></html>`;
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 
 Mangesh Nano Pro AI Studio - Central UI Dashboard Templates
 
@@ -6649,7 +6649,7 @@ def _get_raw_dashboard_html() -> str:
 
                         </div>
 
-                        <div class="panoramic-card-sub">"Hi NanoPro" hands-free speech recognition in Marathi (मराठी), Hindi &amp; English.</div>
+                        <div class="panoramic-card-sub">"Hi NanoPro" hands-free speech recognition in Marathi (mr), Hindi &amp; English.</div>
 
                         <div class="panoramic-card-footer">
 
@@ -9215,9 +9215,9 @@ def _get_raw_dashboard_html() -> str:
 
                             <div class="msg-text">
 
-                                नमस्कार मंगेश! मी तुमचा <strong>NanoPro AI Manager</strong> आहे.<br>
+                                Hello Mangesh! I am your NanoPro AI Manager.<br>
 
-                                डेटाबेस, कोडिंग, स्नोफ्लेक किंवा दैनंदिन टास्क — आज आपण कशावर काम करायचं?
+                                Database, coding, Snowflake, or daily tasks — what shall we work on today?
 
                             </div>
 
@@ -9369,9 +9369,9 @@ def _get_raw_dashboard_html() -> str:
 
                             <div class="msg-text">
 
-                                नमस्कार मंगेश! मी तुमचा <strong>Antigravity AI Assistant</strong> आहे.<br>
+                                Hello Mangesh! I am your NanoPro AI Manager.<br>
 
-                                📱 <b>Continuous Sync:</b> लॅपटॉप बंद असतानाही तुम्ही मोबाईलवरून केलेला सर्व कोड आपोआप <b>GitHub</b> वर सेव्ह होतो. लॅपटॉप सुरू केल्यावर <b>'🔄 Sync'</b> ने सर्व फाइल्स थेट लॅपटॉपवर १ सेकंदात अपडेट होतात!
+                                📱 <b>Continuous Sync:</b> Even when your laptop is off, all code written on mobile syncs automatically to <b>GitHub</b>   .    <b>'🔄 Sync'</b>         !
 
                             </div>
 
@@ -9579,7 +9579,7 @@ def _get_raw_dashboard_html() -> str:
 
         <p style="font-size:12.5px; color:var(--text-muted); max-width:680px; margin:0 auto 16px auto;">
 
-            Speak naturally in <strong>मराठी (Marathi)</strong>, <strong>हिंदी (Hindi)</strong>, or <strong>English</strong>. Say <em>"Hi NanoPro"</em> to activate or click the central AI Manager Symbol below.
+            Speak naturally in Marathi, Hindi, or <strong>English</strong>. Say <em>"Hi NanoPro"</em> to activate or click the central AI Manager Symbol below.
 
         </p>
 
@@ -9631,9 +9631,9 @@ def _get_raw_dashboard_html() -> str:
 
                 <select id="voiceLanguageSelect" class="studio-input" style="padding:5px 8px; font-size:12px;" onchange="onVoiceLanguageChanged()">
 
-                    <option value="mr-IN" selected>मराठी (Marathi - mr-IN)</option>
+                    <option value="mr-IN" selected>Marathi (mr-IN)</option>
 
-                    <option value="hi-IN">हिंदी (Hindi - hi-IN)</option>
+                    <option value="hi-IN">Hindi (hi-IN)</option>
 
                     <option value="en-IN">Indian English (en-IN)</option>
 
@@ -10179,7 +10179,7 @@ def _get_raw_dashboard_html() -> str:
 
 
 
-            <!-- MULTILINGUAL ENTERPRISE PROMPT MAKER STUDIO (मराठी / Minglish / हिंदी / English) -->
+            <!-- MULTILINGUAL ENTERPRISE PROMPT MAKER STUDIO (Marathi / Minglish / Hindi / English) -->
 
             <div class="panel-card" style="margin-bottom:18px; background:linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,27,75,0.7) 100%); border:1px solid #8B5CF6; border-radius:10px; padding:18px; box-shadow:0 0 20px rgba(139,92,246,0.15);">
 
@@ -10189,7 +10189,7 @@ def _get_raw_dashboard_html() -> str:
 
                         <h3 style="margin:0; font-size:15px; color:#C084FC; font-weight:700; display:flex; align-items:center; gap:8px;">
 
-                            <span>🎨</span> Multilingual Enterprise Prompt Maker Studio (मराठी / Minglish / हिंदी / English)
+                            <span>🎨</span> Multilingual Enterprise Prompt Maker Studio (Marathi / Minglish / Hindi / English)
 
                             <span class="badge" style="background:#3B0764; color:#D8B4FE; border:1px solid #8B5CF6; font-size:10px;">NANOPRO PROMPT ARCHITECT • TECH &amp; GENERAL</span>
 
@@ -10207,7 +10207,7 @@ def _get_raw_dashboard_html() -> str:
 
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('rawPromptInput').value='Mala code madhe changes karaychet: Python function madhe retry logic ani error handling add karaycha ahe.'; document.getElementById('promptDomainSelect').value='code_modification'; document.getElementById('promptStyleSelect').value='simple'; generateEnterprisePrompt();" style="font-size:11px; padding:5px 10px; border-color:#EC4899; color:#F472B6;">
 
-                            💻 Code Changes (साधा प्रॉम्प्ट)
+                            💻 Code Changes ( )
 
                         </button>
 
@@ -10269,15 +10269,15 @@ def _get_raw_dashboard_html() -> str:
 
                     <div>
 
-                        <label class="input-label" style="color:#E2E8F0; font-size:11.5px; margin-bottom:4px; display:block;">Prompt Output Style (प्रॉम्प्ट स्वरूप)</label>
+                        <label class="input-label" style="color:#E2E8F0; font-size:11.5px; margin-bottom:4px; display:block;">Prompt Output Style ( )</label>
 
                         <select class="studio-input" id="promptStyleSelect" onchange="if(window._lastGeneratedPrompts) switchPromptOutputStyle(this.value);" style="width:100%; padding:8px 10px; font-size:12px; background:#0B1222; border:1px solid #8B5CF6; color:#F8FAFC; border-radius:6px;">
 
-                            <option value="simple" selected>🎯 Simple &amp; Direct Prompt (साधा व थेट प्रॉम्प्ट - Ready to Copy &amp; Paste)</option>
+                            <option value="simple" selected>🎯 Simple &amp; Direct Prompt (    - Ready to Copy &amp; Paste)</option>
 
-                            <option value="structured">📋 Structured Pro Prompt (सविस्तर प्रगत प्रॉम्प्ट - Role, Rules, Format)</option>
+                            <option value="structured">📋 Structured Pro Prompt (   - Role, Rules, Format)</option>
 
-                            <option value="enterprise">🏛️ Enterprise Master Directive (MNC आर्किटेक्चरल आराखडा - Deep Blueprint)</option>
+                            <option value="enterprise">🏛️ Enterprise Master Directive (MNC   - Deep Blueprint)</option>
 
                         </select>
 
@@ -10311,11 +10311,11 @@ def _get_raw_dashboard_html() -> str:
 
                     <label class="input-label" style="color:#E2E8F0; font-size:11.5px; margin-bottom:4px; display:block;">
 
-                        Your Raw Idea / Requirement (मराठी, Minglish, हिंदी, or English):
+                        Your Raw Idea / Requirement (Marathi, Minglish, Hindi, or English):
 
                     </label>
 
-                    <textarea id="rawPromptInput" class="studio-input" rows="4" placeholder="उदा. Mala code madhe changes karaychet... किंवा Mala ek Python batch pipeline banvaychi ahe... Any topic in Marathi, Minglish, Hindi or English!" style="width:100%; font-family:inherit; font-size:12.5px; line-height:1.6; padding:10px; background:#0B1222; border:1px solid #334155; color:#F8FAFC; border-radius:6px; resize:vertical;"></textarea>
+                    <textarea id="rawPromptInput" class="studio-input" rows="4" placeholder=". Mala code madhe changes karaychet...  Mala ek Python batch pipeline banvaychi ahe... Any topic in Marathi, Minglish, Hindi or English!" style="width:100%; font-family:inherit; font-size:12.5px; line-height:1.6; padding:10px; background:#0B1222; border:1px solid #334155; color:#F8FAFC; border-radius:6px; resize:vertical;"></textarea>
 
                 </div>
 
@@ -10325,7 +10325,7 @@ def _get_raw_dashboard_html() -> str:
 
                     <button type="button" class="btn btn-primary" onclick="generateEnterprisePrompt()" id="btnGeneratePrompt" style="background:linear-gradient(135deg, #8B5CF6, #3B82F6); font-weight:700; font-size:12px; padding:8px 18px; border:none; box-shadow:0 0 14px rgba(139,92,246,0.4);">
 
-                        ⚡ Generate Master Prompt (मराठी / Minglish / हिंदी / English)
+                        ⚡ Generate Master Prompt (Marathi / Minglish / Hindi / English)
 
                     </button>
 
@@ -10353,7 +10353,7 @@ def _get_raw_dashboard_html() -> str:
 
                         <div style="font-size:12.5px; font-weight:700; color:#38BDF8;" id="promptOutputTitle">
 
-                            🚀 Synthesized Prompt (मराठी / Minglish / हिंदी / English)
+                            🚀 Synthesized Prompt (Marathi / Minglish / Hindi / English)
 
                         </div>
 
@@ -10363,19 +10363,19 @@ def _get_raw_dashboard_html() -> str:
 
                             <button type="button" id="btnStyleTabSimple" class="btn" onclick="switchPromptOutputStyle('simple')" style="font-size:11px; padding:4px 10px; background:#8B5CF6; color:#fff; border:1px solid #A78BFA; border-radius:4px; font-weight:600; cursor:pointer;">
 
-                                🎯 Simple (साधा)
+                                🎯 Simple ()
 
                             </button>
 
                             <button type="button" id="btnStyleTabStructured" class="btn" onclick="switchPromptOutputStyle('structured')" style="font-size:11px; padding:4px 10px; background:#1E293B; color:#CBD5E1; border:1px solid #334155; border-radius:4px; cursor:pointer;">
 
-                                📋 Structured Pro (सविस्तर)
+                                📋 Structured Pro ()
 
                             </button>
 
                             <button type="button" id="btnStyleTabEnterprise" class="btn" onclick="switchPromptOutputStyle('enterprise')" style="font-size:11px; padding:4px 10px; background:#1E293B; color:#CBD5E1; border:1px solid #334155; border-radius:4px; cursor:pointer;">
 
-                                🏛️ Enterprise MNC (मोठा)
+                                🏛️ Enterprise MNC ()
 
                             </button>
 
@@ -12041,7 +12041,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                         </div>
                         <div style="display:flex; gap:6px; flex-wrap:wrap;">
                             <a href="https://wa.me/15556737622?text=Hi%20NanoPro" target="_blank" class="btn btn-sm" style="font-size:10.5px; padding:4px 9px; background:linear-gradient(135deg, #10B981, #059669); color:#000; font-weight:800; border-radius:6px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
-                                💬 WhatsApp वर 'Hi' पाठवा
+                                💬 WhatsApp  'Hi' 
                             </a>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="testServerManagerWaCloudPing()" style="font-size:10.5px; padding:4px 9px; border-color:#10B981; color:#34D399; font-weight:700;">
                                 ⚡ Send Test Msg
@@ -12445,7 +12445,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <p style="font-size:12px; color:#94A3B8; margin:4px 0 0 0;">
 
-                        स्वायत्त क्लाउड-टू-क्लाउड सिंक &bull; AWS S3 Lakehouse &harr; Snowflake BANK_DB &harr; Cloud SFTP Hub &harr; DuckDB Gold Marts &harr; Neon Cloud PostgreSQL. लॅपटॉप बंद असला तरी Render Cloud + GitHub Actions वर 24/7 अविरत सुरू!
+                         --  &bull; AWS S3 Lakehouse &harr; Snowflake BANK_DB &harr; Cloud SFTP Hub &harr; DuckDB Gold Marts &harr; Neon Cloud PostgreSQL.     Render Cloud + GitHub Actions  24/7  !
 
                     </p>
 
@@ -12753,7 +12753,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <p style="font-size:11.5px; color:#94A3B8; margin:3px 0 0 0;">
 
-                        इथून तुम्ही कोणत्याही Source, Target, किंवा Project साठी मॅन्युअली Pipeline तयार व ट्रिगर करू शकता.
+                           Source, Target,  Project   Pipeline     .
 
                     </p>
 
@@ -14921,7 +14921,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <h3 style="margin:0; font-size:16px; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
 
-                    <span>🗣️</span> AI Text &amp; Marathi Voice to SQL Center (मराठीतून SQL &amp; व्हिज्युअलायझेशन)
+                    <span>🗣️</span> AI Text &amp; Marathi Voice to SQL Center (Marathi SQL &amp; )
 
                     <span class="badge" style="background:#0F172A; border:1px solid #38BDF8; color:#38BDF8; font-size:10.5px;">GROQ LPU &bull; ZERO-CARD AI</span>
 
@@ -14929,7 +14929,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <p style="font-size:12px; color:#94A3B8; margin:3px 0 0 0;">
 
-                    नैसर्गिक मराठी किंवा इंग्रजी भाषेत बोला किंवा लिहा — AI आपोआप अचूक SQL तयार करून Neon Postgres वर चालवेल व Chart.js चार्ट दाखवेल.
+                     Marathi       — AI   SQL   Neon Postgres    Chart.js  .
 
                 </p>
 
@@ -14959,11 +14959,11 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
         <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
 
-            <input type="text" id="textToSqlInput" class="studio-input" placeholder="उदा. गेल्या आठवड्यातील टॉप ५ बँकिंग ट्रान्झॅक्शन्स दाखव... किंवा शहरानुसार एकूण रक्कम किती?" style="flex:1; min-width:280px; font-size:13px; padding:9px 14px;" onkeydown="if(event.key==='Enter') runTextToSql()" />
+            <input type="text" id="textToSqlInput" class="studio-input" placeholder=".       ...     ?" style="flex:1; min-width:280px; font-size:13px; padding:9px 14px;" onkeydown="if(event.key==='Enter') runTextToSql()" />
 
             <button type="button" id="btnVoiceSearch" class="btn btn-secondary" onclick="startMarathiSpeechRecognition()" style="font-size:12px; padding:8px 14px; font-weight:700; border-color:#38BDF8; color:#38BDF8;" title="Click and speak in Marathi or English">
 
-                🎤 बोलून शोधा
+                🎤  
 
             </button>
 
@@ -14981,15 +14981,15 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
         <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
 
-            <span style="font-size:11px; color:#64748B; font-weight:bold;">मराठी सॅम्पल क्वेरीज:</span>
+            <span style="font-size:11px; color:#64748B; font-weight:bold;">Marathi  :</span>
 
-            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='गेल्या आठवड्यातील टॉप ५ बँकिंग ट्रान्झॅक्शन्स दाखव'; runTextToSql();">🏆 टॉप ५ ट्रान्झॅक्शन्स</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='      '; runTextToSql();">🏆   </button>
 
-            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='शहरानुसार ट्रान्झॅक्शन्सचे वर्गीकरण दाखव'; runTextToSql();">🏙️ शहरानुसार एकूण रक्कम</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='   '; runTextToSql();">🏙️   </button>
 
-            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='UPI द्वारे झालेले सर्व व्यवहार दाखव'; runTextToSql();">📱 UPI द्वारे झालेले व्यवहार</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='UPI     '; runTextToSql();">📱 UPI   </button>
 
-            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='सर्व ट्रान्झॅक्शन्सची एकूण रक्कम आणि सरासरी किती आहे?'; runTextToSql();">📊 एकूण रक्कम व सरासरी समरी</button>
+            <button type="button" class="action-chip" onclick="document.getElementById('textToSqlInput').value='       ?'; runTextToSql();">📊     </button>
 
         </div>
 
@@ -15247,7 +15247,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <h3 style="margin:0; font-size:16px; color:#F8FAFC; display:flex; align-items:center; gap:8px;">
 
-                    <span>🛡️</span> Hugging Face बँकिंग एनॉमली &amp; फ्रॉड डिटेक्शन इंजिन (AI Fraud Scanner)
+                    <span>🛡️</span> Hugging Face   &amp;    (AI Fraud Scanner)
 
                     <span class="badge" style="background:#0F172A; border:1px solid #EF4444; color:#FCA5A5; font-size:10.5px;">HF AUTHENTICATED: mangeshv</span>
 
@@ -15255,7 +15255,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <p style="font-size:12px; color:#94A3B8; margin:4px 0 0 0;">
 
-                    Neon PostgreSQL मधील ट्रान्झॅक्शन्सचे मल्टि-फॅक्टर रिस्क मॉडेलिंग (Velocity Spikes, High Amount Outliers, Geo-Location Anomaly). धोका &ge; 75% असल्यास तात्काळ Telegram अलर्ट!
+                    Neon PostgreSQL   -   (Velocity Spikes, High Amount Outliers, Geo-Location Anomaly).  &ge; 75%   Telegram !
 
                 </p>
 
@@ -16399,25 +16399,25 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <div>
 
-                    <label class="input-label" style="color:#38BDF8; font-weight:700;">⏱️ Delivery Interval / Frequency (कधी आणि किती वेळाने)</label>
+                    <label class="input-label" style="color:#38BDF8; font-weight:700;">⏱️ Delivery Interval / Frequency (   )</label>
 
                     <select class="studio-input" id="schedEditApkInterval" style="font-weight:700; border-color:#38BDF8;" onchange="document.getElementById('schedEditRecurrence').value = this.value;">
 
-                        <option value="1">Every 1 Hour (दर १ तासाला)</option>
+                        <option value="1">Every 1 Hour (  )</option>
 
-                        <option value="2">Every 2 Hours (दर २ तासाला)</option>
+                        <option value="2">Every 2 Hours (  )</option>
 
-                        <option value="3">Every 3 Hours (दर ३ तासाला)</option>
+                        <option value="3">Every 3 Hours (  )</option>
 
-                        <option value="4" selected>Every 4 Hours (दर ४ तासाला - शिफारस)</option>
+                        <option value="4" selected>Every 4 Hours (   - )</option>
 
-                        <option value="6">Every 6 Hours (दर ६ तासाला)</option>
+                        <option value="6">Every 6 Hours (  )</option>
 
-                        <option value="8">Every 8 Hours (दर ८ तासाला)</option>
+                        <option value="8">Every 8 Hours (  )</option>
 
-                        <option value="12">Every 12 Hours (दर १२ तासाला)</option>
+                        <option value="12">Every 12 Hours (  )</option>
 
-                        <option value="24">Every 24 Hours / Daily (दर २४ तासाला)</option>
+                        <option value="24">Every 24 Hours / Daily (  )</option>
 
                     </select>
 
@@ -16425,7 +16425,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <div>
 
-                    <label class="input-label" style="color:#38BDF8; font-weight:700;">📦 APK Quantity Per Cycle (प्रत्येक वेळी किती APKs पाठवायचे)</label>
+                    <label class="input-label" style="color:#38BDF8; font-weight:700;">📦 APK Quantity Per Cycle (   APKs )</label>
 
                     <select class="studio-input" id="schedEditApkCount" style="font-weight:700; border-color:#38BDF8;">
 
@@ -16437,7 +16437,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <option value="4">4 APKs per cycle</option>
 
-                        <option value="5" selected>5 APKs per cycle (डिफॉल्ट)</option>
+                        <option value="5" selected>5 APKs per cycle ()</option>
 
                         <option value="8">8 APKs per cycle</option>
 
@@ -16517,7 +16517,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
             <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:8px; padding:12px;">
 
-                <label class="input-label" style="color:#38BDF8; font-weight:700;">📦 APK Quantity Per Cycle (प्रत्येक वेळेस किती APKs?)</label>
+                <label class="input-label" style="color:#38BDF8; font-weight:700;">📦 APK Quantity Per Cycle (   APKs?)</label>
 
                 <select class="studio-input" id="apkFormCount" style="margin-top:6px; font-weight:700;">
 
@@ -16535,7 +16535,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 </select>
 
-                <div style="font-size:11px; color:#94A3B8; margin-top:6px;">Telegram वर पाठवल्या जाणाऱ्या APK फाईल्सची संख्या निवडा.</div>
+                <div style="font-size:11px; color:#94A3B8; margin-top:6px;">Telegram    APK   .</div>
 
             </div>
 
@@ -16543,27 +16543,27 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
             <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:8px; padding:12px;">
 
-                <label class="input-label" style="color:#FBBF24; font-weight:700;">⏱️ Interval / Time Frequency (वेळ आणि वारंवारता)</label>
+                <label class="input-label" style="color:#FBBF24; font-weight:700;">⏱️ Interval / Time Frequency (  )</label>
 
                 <select class="studio-input" id="apkFormInterval" style="margin-top:6px; font-weight:700;">
 
-                    <option value="1">Every 1 Hour (दर १ तासाला)</option>
+                    <option value="1">Every 1 Hour (  )</option>
 
-                    <option value="2">Every 2 Hours (दर २ तासाला)</option>
+                    <option value="2">Every 2 Hours (  )</option>
 
-                    <option value="4" selected>Every 4 Hours (दर ४ तासाला - Default)</option>
+                    <option value="4" selected>Every 4 Hours (   - Default)</option>
 
-                    <option value="6">Every 6 Hours (दर ६ तासाला)</option>
+                    <option value="6">Every 6 Hours (  )</option>
 
-                    <option value="8">Every 8 Hours (दर ८ तासाला)</option>
+                    <option value="8">Every 8 Hours (  )</option>
 
-                    <option value="12">Every 12 Hours (दर १२ तासाला)</option>
+                    <option value="12">Every 12 Hours (  )</option>
 
-                    <option value="24">Every 24 Hours / Daily (दिवसातून एकदा)</option>
+                    <option value="24">Every 24 Hours / Daily ( )</option>
 
                 </select>
 
-                <div style="font-size:11px; color:#94A3B8; margin-top:6px;">नवीन APK शोधून पाठवण्याचे अचूक वेळापत्रक ठरवा.</div>
+                <div style="font-size:11px; color:#94A3B8; margin-top:6px;"> APK     .</div>
 
             </div>
 
@@ -16575,9 +16575,9 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <select class="studio-input" id="apkFormEnabled" style="margin-top:6px; font-weight:700;">
 
-                    <option value="true" selected>Active &amp; Automated (चालू ठेवा)</option>
+                    <option value="true" selected>Active &amp; Automated ( )</option>
 
-                    <option value="false">Paused / Inactive (तात्पुरते थांबवा)</option>
+                    <option value="false">Paused / Inactive ( )</option>
 
                 </select>
 
@@ -16683,7 +16683,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
         <div style="font-size:10.5px; color:#64748B; margin-top:6px; display:flex; justify-content:space-between;">
 
-            <span>💡 टीप: वरील टेबलवर तुम्ही डावीकडून उजवीकडे (Horizontal) स्क्रोल करून सर्व Action बटने व तपशील पाहू शकता.</span>
+            <span>💡 :      (Horizontal)    Action     .</span>
 
             <span>Columns: 7 | Responsive 3D Grid</span>
 
@@ -16903,7 +16903,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
         <button type="button" class="action-chip active" onclick="filterEntertainmentCategory('All', this)">All</button>
 
-        <button type="button" class="action-chip" onclick="filterEntertainmentCategory('Marathi Movies', this)">🎭 Marathi Cinema (मराठी चित्रपट)</button>
+        <button type="button" class="action-chip" onclick="filterEntertainmentCategory('Marathi Movies', this)">🎭 Marathi Cinema (Marathi )</button>
 
         <button type="button" class="action-chip" onclick="filterEntertainmentCategory('Bollywood', this)">🎬 Bollywood</button>
 
@@ -17111,7 +17111,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                     <button type="button" class="action-chip" onclick="startBookInteractiveQuiz()" style="background:linear-gradient(135deg, #0284C7, #10B981); color:#fff; font-weight:700;">&#10067; Quiz Me</button>
 
-                    <button type="button" class="action-chip" onclick="askBookAI('Explain this in Marathi')">&#127470;&#127475; मराठीत स्पष्ट करा</button>
+                    <button type="button" class="action-chip" onclick="askBookAI('Explain this in Marathi')">&#127470;&#127475; Marathi  </button>
 
                     <button type="button" class="action-chip" onclick="askBookAI('Generate a visual conceptual architecture diagram')">&#128202; Visual Concept Diagram</button>
 
@@ -17227,7 +17227,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                             <span style="font-size:12px; color:#94A3B8;">
 
-                                Data Engineering Career &amp; Lakehouse Production Blueprints • Dual-Language (English &amp; मराठी) • Cortex AI &amp; Bedrock AgentCore
+                                Data Engineering Career &amp; Lakehouse Production Blueprints • Dual-Language (English &amp; Marathi) • Cortex AI &amp; Bedrock AgentCore
 
                             </span>
 
@@ -17241,7 +17241,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <button type="button" class="btn btn-secondary" onclick="exportCloudTrendsCSV()" style="font-size:11px; padding:6px 12px;">&#128190; Export Matrix CSV</button>
 
-                        <button type="button" class="btn btn-accent" onclick="switchCloudTrendTab('roadmap'); showCareerRoadmap('mr');" style="font-size:11px; padding:6px 12px;">&#127470;&#127475; मराठी करिअर मार्गदर्शन</button>
+                        <button type="button" class="btn btn-accent" onclick="switchCloudTrendTab('roadmap'); showCareerRoadmap('mr');" style="font-size:11px; padding:6px 12px;">&#127470;&#127475; Marathi  </button>
 
                     </div>
 
@@ -17439,7 +17439,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <button type="button" class="btn btn-secondary" onclick="showCareerRoadmap('en')" style="font-size:11px; padding:3px 8px;">English</button>
 
-                        <button type="button" class="btn btn-secondary" onclick="showCareerRoadmap('mr')" style="font-size:11px; padding:3px 8px;">मराठी</button>
+                        <button type="button" class="btn btn-secondary" onclick="showCareerRoadmap('mr')" style="font-size:11px; padding:3px 8px;">Marathi</button>
 
                     </div>
 
@@ -20555,25 +20555,25 @@ Ready for message compilation and automated dispatch.
 
 
 
-            <!-- मराठी / MINGLISH EXPLANATION CARD (समजून घ्या) -->
+            <!-- Marathi / MINGLISH EXPLANATION CARD ( ) -->
 
             <div style="background:#051329; border:1px solid #1E3A8A; border-left:4px solid #38BDF8; border-radius:6px; padding:10px 12px; margin-bottom:12px;" id="learningMinglishCard">
 
                 <div style="font-size:11px; font-weight:800; color:#38BDF8; margin-bottom:5px;">
 
-                    🇮🇳 मराठी / MINGLISH EXPLANATION (समजून घ्या):
+                    🇮🇳 Marathi / MINGLISH EXPLANATION ( ):
 
                 </div>
 
                 <div style="font-size:11.5px; color:#93C5FD; line-height:1.5; margin-bottom:6px;" id="learningMinglishRequirement">
 
-                    <b>🎯 Nakki Kay Sangtay:</b> प्रत्येक कस्टमरच्या अकाऊंटनुसार (account_no) त्यांच्या ट्रॅन्झॅक्शन रकमेचा (amount_inr) तारीख/वेळेप्रमाणे वाढणारा चालता रनिंग बॅलन्स काढायचा आहे.
+                    <b>🎯 Nakki Kay Sangtay:</b>    (account_no)    (amount_inr) /      .
 
                 </div>
 
                 <div style="font-size:11.5px; color:#FDE047; line-height:1.5;" id="learningMinglishOutput">
 
-                    <b>📊 Kay Output Madhe Pahije:</b> account_no, txn_timestamp, amount_inr, आणि running_balance_inr हे 4 कॉलम्स आउटपुटमध्ये यायला हवेत.
+                    <b>📊 Kay Output Madhe Pahije:</b> account_no, txn_timestamp, amount_inr,  running_balance_inr  4    .
 
                 </div>
 
@@ -27502,7 +27502,7 @@ function navigateHistory(direction) {
 
                 if (d.success) {
 
-                    alert(d.message || '✅ Mobile आणि Laptop चे सर्व फाइल्स GitHub द्वारे १००% सिंक झाले!');
+                    alert(d.message || '✅ Mobile  Laptop    GitHub  %  !');
 
                     appendAntigravitySystemNotice(d.message);
 
@@ -27510,13 +27510,13 @@ function navigateHistory(direction) {
 
                 } else {
 
-                    alert('Sync त्रुटी: ' + (d.error || 'अज्ञात त्रुटी'));
+                    alert('Sync : ' + (d.error || ' '));
 
                 }
 
             } catch (err) {
 
-                alert('Sync नेटवर्क त्रुटी: ' + err.message);
+                alert('Sync  : ' + err.message);
 
             } finally {
 
@@ -27910,7 +27910,7 @@ function navigateHistory(direction) {
 
                             <div class="msg-text">
 
-                                नवीन Antigravity सत्र सुरू झाले आहे. मी तुमच्या प्रोजेक्टचा कोड, फाइल्स व GitHub सिंकवर काम करण्यास तयार आहे!
+                                 Antigravity    .    ,   GitHub     !
 
                             </div>
 
@@ -27974,7 +27974,7 @@ function navigateHistory(direction) {
 
                             <br><br>
 
-                            I discuss requirements, formulate multi-agent architecture plans, secure credentials into the Vault, and orchestrate our 45 specialized agents with verified test executions. Speak or type in <strong>English</strong>, <strong>मराठी (Marathi)</strong>, or <strong>हिंदी (Hindi)</strong>.
+                            I discuss requirements, formulate multi-agent architecture plans, secure credentials into the Vault, and orchestrate our 45 specialized agents with verified test executions. Speak or type in <strong>English</strong>, <strong>Marathi (Marathi)</strong>, or <strong>Hindi (Hindi)</strong>.
 
                         </div>
 
@@ -40106,7 +40106,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                     '<div style="font-size:11px; color:#CBD5E1; background:#0B1120; padding:6px; border-radius:4px; margin-bottom:8px; border-left:2px solid #38BDF8;">' +
 
-                        '<strong>मराठी उपयोग:</strong> ' + item.de_use_case_mr +
+                        '<strong>Marathi :</strong> ' + item.de_use_case_mr +
 
                     '</div>' +
 
@@ -40160,7 +40160,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                     '<div style="font-size:11px; color:#CBD5E1; background:#0B1120; padding:6px; border-radius:4px; margin-bottom:8px; border-left:2px solid #F59E0B;">' +
 
-                        '<strong>मराठी उपयोग:</strong> ' + item.de_use_case_mr +
+                        '<strong>Marathi :</strong> ' + item.de_use_case_mr +
 
                     '</div>' +
 
@@ -41724,7 +41724,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                         <div style="font-size:11.5px; font-weight:800; color:#A5B4FC; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
 
-                            <span>💬</span> या प्रश्नाचा नेमका अर्थ काय आहे? (Minlish Core Concept)
+                            <span>💬</span>      ? (Minlish Core Concept)
 
                         </div>
 
@@ -46092,9 +46092,9 @@ ${d.preview}`;
 
             const logBox = document.getElementById('cloudSyncLogBox');
 
-            if (btn) { btn.disabled = true; btn.innerText = '⚡ सिंक करत आहे (Syncing Cloud)...'; }
+            if (btn) { btn.disabled = true; btn.innerText = '⚡    (Syncing Cloud)...'; }
 
-            if (logBox) logBox.innerHTML = '<span style="color:#38BDF8;">⏳ Neon PostgreSQL मधून नवीन डेटा एक्सट्रॅक्ट करून Snowflake L0 Staging मध्ये लोड करत आहे...</span>';
+            if (logBox) logBox.innerHTML = '<span style="color:#38BDF8;">⏳ Neon PostgreSQL      Snowflake L0 Staging    ...</span>';
 
 
 
@@ -46118,15 +46118,15 @@ ${d.preview}`;
 
                         logBox.innerHTML = `
 
-                            <div style="color:#10B981; font-weight:bold; margin-bottom:4px;">✅ क्लाउड-टू-क्लाउड ETL सिंक यशस्वी! (${data.duration_ms} ms)</div>
+                            <div style="color:#10B981; font-weight:bold; margin-bottom:4px;">✅ -- ETL  ! (${data.duration_ms} ms)</div>
 
                             <div style="font-size:11px; color:#E2E8F0;">• Source: <b>${data.source}</b></div>
 
                             <div style="font-size:11px; color:#E2E8F0;">• Target: <b>${data.target}</b></div>
 
-                            <div style="font-size:11px; color:#38BDF8;">• सिंक केलेले ट्रान्झॅक्शन्स: <b>${data.synced_count} रेकॉर्ड्स</b></div>
+                            <div style="font-size:11px; color:#38BDF8;">•   : <b>${data.synced_count} </b></div>
 
-                            <div style="font-size:11px; color:#A78BFA;">• Telegram वर तात्काळ अलर्ट पाठवला गेला आहे! 📱</div>
+                            <div style="font-size:11px; color:#A78BFA;">• Telegram      ! 📱</div>
 
                         `;
 
@@ -46136,17 +46136,17 @@ ${d.preview}`;
 
                 } else {
 
-                    if (logBox) logBox.innerHTML = `<span style="color:#EF4444;">❌ त्रुटी: ${data.error || 'सिंक अयशस्वी'}</span>`;
+                    if (logBox) logBox.innerHTML = `<span style="color:#EF4444;">❌ : ${data.error || ' '}</span>`;
 
                 }
 
             } catch (e) {
 
-                if (logBox) logBox.innerHTML = `<span style="color:#EF4444;">सर्व्हर त्रुटी: ${e.message}</span>`;
+                if (logBox) logBox.innerHTML = `<span style="color:#EF4444;"> : ${e.message}</span>`;
 
             } finally {
 
-                if (btn) { btn.disabled = false; btn.innerText = '⚡ Run Cloud Sync Now (सिंक करा)'; }
+                if (btn) { btn.disabled = false; btn.innerText = '⚡ Run Cloud Sync Now ( )'; }
 
             }
 
@@ -46164,7 +46164,7 @@ ${d.preview}`;
 
             if (!SpeechRecognition) {
 
-                alert('तुमच्या ब्राऊझरमध्ये Web Speech API सपोर्ट उपलब्ध नाही. कृपया क्रोम (Chrome) वापरा किंवा खाली टाइप करा.');
+                alert('  Web Speech API   .   (Chrome)     .');
 
                 return;
 
@@ -46178,7 +46178,7 @@ ${d.preview}`;
 
                 recognitionInstance = null;
 
-                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                if (voiceBtn) voiceBtn.innerHTML = '🎤  ';
 
                 return;
 
@@ -46196,7 +46196,7 @@ ${d.preview}`;
 
 
 
-            if (voiceBtn) voiceBtn.innerHTML = '🔴 ऐकत आहे (Listening)...';
+            if (voiceBtn) voiceBtn.innerHTML = '🔴   (Listening)...';
 
 
 
@@ -46208,7 +46208,7 @@ ${d.preview}`;
 
                 if (input) input.value = transcript;
 
-                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                if (voiceBtn) voiceBtn.innerHTML = '🎤  ';
 
                 recognitionInstance = null;
 
@@ -46222,7 +46222,7 @@ ${d.preview}`;
 
                 console.warn('Speech recognition error:', event.error);
 
-                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                if (voiceBtn) voiceBtn.innerHTML = '🎤  ';
 
                 recognitionInstance = null;
 
@@ -46232,7 +46232,7 @@ ${d.preview}`;
 
             recognitionInstance.onend = function() {
 
-                if (voiceBtn) voiceBtn.innerHTML = '🎤 बोलून शोधा';
+                if (voiceBtn) voiceBtn.innerHTML = '🎤  ';
 
                 recognitionInstance = null;
 
@@ -46256,7 +46256,7 @@ ${d.preview}`;
 
             if (!prompt) {
 
-                alert('कृपया प्रश्न टाइप करा किंवा माईकवर बोला!');
+                alert('      !');
 
                 return;
 
@@ -46270,7 +46270,7 @@ ${d.preview}`;
 
             const resBox = document.getElementById('textToSqlResultContainer');
 
-            if (btn) { btn.disabled = true; btn.innerText = '🧠 AI विचार करत आहे...'; }
+            if (btn) { btn.disabled = true; btn.innerText = '🧠 AI   ...'; }
 
 
 
@@ -46424,7 +46424,7 @@ ${d.preview}`;
 
             } catch (e) {
 
-                alert('त्रुटी: ' + e.message);
+                alert(': ' + e.message);
 
             } finally {
 
@@ -46442,7 +46442,7 @@ ${d.preview}`;
 
             const btn = document.getElementById('btnSendExecTelegram');
 
-            if (btn) { btn.disabled = true; btn.innerText = '📱 Telegram ला पाठवत आहे...'; }
+            if (btn) { btn.disabled = true; btn.innerText = '📱 Telegram   ...'; }
 
 
 
@@ -46454,17 +46454,17 @@ ${d.preview}`;
 
                 if (data.status === 'success' && data.telegram_delivered) {
 
-                    alert(`✅ दैनिक बिझनेस BI रिपोर्ट आणि एक्सेल वर्कबुक (${data.report_file}) Telegram वर यशस्वीरीत्या पाठवले गेले आहेत!`);
+                    alert(`✅   BI     (${data.report_file}) Telegram     !`);
 
                 } else {
 
-                    alert('त्रुटी: रिपोर्ट तयार झाला परंतु Telegram पाठवता आला नाही: ' + (data.error || 'Check Bot'));
+                    alert(':     Telegram   : ' + (data.error || 'Check Bot'));
 
                 }
 
             } catch (e) {
 
-                alert('सर्व्हर त्रुटी: ' + e.message);
+                alert(' : ' + e.message);
 
             } finally {
 
@@ -46484,7 +46484,7 @@ ${d.preview}`;
 
             const container = document.getElementById('fraudScanResultsBox');
 
-            if (btn) { btn.disabled = true; btn.innerText = '🔍 Hugging Face स्कॅन चालू आहे...'; }
+            if (btn) { btn.disabled = true; btn.innerText = '🔍 Hugging Face   ...'; }
 
 
 
@@ -46514,7 +46514,7 @@ ${d.preview}`;
 
                             alertHtml = `<div style="background:rgba(239,68,68,0.15); border:1px solid #EF4444; color:#FCA5A5; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:bold;">
 
-                                🚨 ${data.critical_anomalies_count} संशयास्पद व्यवहार आढळले! तात्काळ Telegram अलर्ट पाठवला गेला आहे.
+                                🚨 ${data.critical_anomalies_count}   !  Telegram    .
 
                             </div>`;
 
@@ -46522,7 +46522,7 @@ ${d.preview}`;
 
                             alertHtml = `<div style="background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#6EE7B7; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:bold;">
 
-                                ✅ सर्व व्यवहार सुरक्षित आणि सामान्य मर्यादेत आहेत (Zero Critical Fraud).
+                                ✅        (Zero Critical Fraud).
 
                             </div>`;
 
@@ -46610,7 +46610,7 @@ ${d.preview}`;
 
             } catch (e) {
 
-                alert('त्रुटी: ' + e.message);
+                alert(': ' + e.message);
 
             } finally {
 
@@ -51216,9 +51216,9 @@ ORDER BY balance DESC;`
 
                 explanation_context: "Single table window frame aggregation on TRANSACTIONS_LOG. Specifying ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW ensures deterministic running total computation per account.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: एकाच टेबलवर (TRANSACTIONS_LOG) प्रत्येक कस्टमरच्या खात्यानुसार (account_no) त्यांच्या खर्चाचा वेळेनुसार तारीखवार वाढणारा चालता रनिंग बॅलन्स (running cumulative total) काढायचा आहे.",
+                minglish_req: "🎯 Nakki Kay Sangtay:   (TRANSACTIONS_LOG)    (account_no)         (running cumulative total)  .",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: account_no, txn_timestamp, amount_inr, आणि running_balance_inr हे कॉलम्स अचूक क्रमाने आउटपुटमध्ये यायला हवेत.",
+                minglish_out: "📊 Kay Output Madhe Pahije: account_no, txn_timestamp, amount_inr,  running_balance_inr       .",
 
                 prompt: "Calculate each customer's running cumulative spending balance ordered by transaction timestamp. Ensure ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW is specified to avoid duplicate peer aggregation when timestamps coincide.",
 
@@ -51324,9 +51324,9 @@ FROM TRANSACTIONS_LOG;`,
 
                 explanation_context: "Two table relational join: ACCOUNTS_MASTER joined to TRANSACTIONS_LOG on account key. Discovers transaction activity per customer name and filters active banking relationships.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: दोन टेबल्स (ACCOUNTS_MASTER आणि TRANSACTIONS_LOG) एकत्र जोडून प्रत्येक बँक खात्याचे नाव, ब्रांच आणि झालेले व्यवहार (transactions) मॅच करायचे आहेत.",
+                minglish_req: "🎯 Nakki Kay Sangtay:   (ACCOUNTS_MASTER  TRANSACTIONS_LOG)      ,     (transactions)   .",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: acc_no, cust_name, branch, txn_id, amount_inr, channel हे 6 कॉलम्स आउटपुटमध्ये यायला हवेत.",
+                minglish_out: "📊 Kay Output Madhe Pahije: acc_no, cust_name, branch, txn_id, amount_inr, channel  6    .",
 
                 prompt: "Reconcile customer account records with their financial transaction activities by joining ACCOUNTS_MASTER with TRANSACTIONS_LOG. Order the result by transaction amount descending.",
 
@@ -51456,9 +51456,9 @@ ORDER BY t.amount_inr DESC;`,
 
                 explanation_context: "Enterprise 3-table pipeline: Correlates master account details, ledger state, and landing CDC payload to ensure real-time auditability across all three tiers.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: तीन टेबल्स (ACCOUNTS_MASTER, TRANSACTIONS_LOG, आणि STG_TRANSACTIONS_CDC) जोडून कस्टमर खात्याचे नाव, व्यवहाराची रक्कम आणि आलेला CDC पेलोड एकाच ठिकाणी ऑडिट करायचा आहे.",
+                minglish_req: "🎯 Nakki Kay Sangtay:   (ACCOUNTS_MASTER, TRANSACTIONS_LOG,  STG_TRANSACTIONS_CDC)    ,     CDC      .",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: acc_no, cust_name, txn_id, amount_inr, आणि payload हे 5 कॉलम्स आउटपुटमध्ये यायला हवेत.",
+                minglish_out: "📊 Kay Output Madhe Pahije: acc_no, cust_name, txn_id, amount_inr,  payload  5    .",
 
                 prompt: "Perform a 3-table relational query joining ACCOUNTS_MASTER, TRANSACTIONS_LOG, and STG_TRANSACTIONS_CDC to extract full customer lineage and raw CDC landing payloads for all audited transactions.",
 
@@ -51600,9 +51600,9 @@ INNER JOIN STG_TRANSACTIONS_CDC c
 
                 explanation_context: "In modern Snowflake ELT, the native QUALIFY clause filters window function calculations directly without requiring extra subqueries or common table expressions.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: नेटवर्क रिट्रायमुळे एकाच ट्रॅन्झॅक्शनचे डुप्लिकेट रेकॉर्ड्स आले असल्यास, प्रत्येक ट्रॅन्झॅक्शनचा फक्त सर्वात शेवटचा (latest) रेकॉर्ड QUALIFY वापरून काढायचा आहे.",
+                minglish_req: "🎯 Nakki Kay Sangtay:        ,      (latest)  QUALIFY   .",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: txn_id, account_no, amount_inr, ingestion_timestamp, आणि payload हे कॉलम्स कोणत्याही डुप्लिकेशनशिवाय आउटपुटमध्ये हवेत.",
+                minglish_out: "📊 Kay Output Madhe Pahije: txn_id, account_no, amount_inr, ingestion_timestamp,  payload      .",
 
                 prompt: "In a CDC landing table with multiple duplicate transaction events sent by network retries, extract only the single latest state per transaction using Snowflake's native QUALIFY clause without slow subqueries.",
 
@@ -51712,9 +51712,9 @@ QUALIFY ROW_NUMBER() OVER(
 
                 explanation_context: "In high-throughput Python data pipelines (50GB+ daily delta), loading all records into memory causes OOM crashes. Generators yield discrete micro-batches with minimal RAM footprint.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: मेमरी वाचवण्यासाठी (OOM एरर टाळण्यासाठी) पायथॉन जनरेटर फंक्शन वापरून ट्रॅन्झॅक्शन्सचे लहान लहान बॅचेस (उदा. 5 चे तुकडे) तयार करून प्रोसेस करायचे आहेत.",
+                minglish_req: "🎯 Nakki Kay Sangtay:   (OOM  )         (. 5  )     .",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: प्रत्येक बॅचचा count, total_cr आणि total_dr yield करणारा जनरेटर फंक्शन तयार करायचा आहे.",
+                minglish_out: "📊 Kay Output Madhe Pahije:   count, total_cr  total_dr yield      .",
 
                 prompt: "Write a high-performance Python generator function process_txn_batches(records, batch_size=5) that consumes an iterator of banking transaction dicts and yields aggregated micro-batch summaries without accumulating entire stream in memory.",
 
@@ -51848,9 +51848,9 @@ print(list(process_txn_batches(sample_data, batch_size=2)))`,
 
                 explanation_context: "Understanding CPython thread execution model and process isolation in enterprise data engineering.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: पायथॉनमध्ये CPython चा Global Interpreter Lock (GIL) मुळे मल्टिथ्रेडिंग मल्टिपल CPU कोअर्स का वापरू शकत नाही आणि ETL पाईपलाईनसाठी खरा पर्याय काय आहे?",
+                minglish_req: "🎯 Nakki Kay Sangtay:  CPython  Global Interpreter Lock (GIL)    CPU       ETL     ?",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: खालील 4 पर्यायांमधून सर्वात अचूक पर्याय (Option A) निवडा.",
+                minglish_out: "📊 Kay Output Madhe Pahije:  4     (Option A) .",
 
                 prompt: "In CPython, why does CPU-bound multi-threading with the threading module fail to utilize multiple CPU cores, and what is the standard production solution in enterprise data engineering pipelines?",
 
@@ -51938,9 +51938,9 @@ print(list(process_txn_batches(sample_data, batch_size=2)))`,
 
                 explanation_context: "Deep dive into Snowflake's proprietary storage layer: immutable columnar micro-partitions and automated metadata pruning.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: स्नोफ्लेकमध्ये डेटा मायक्रो-पार्टिशनमध्ये कसा साठवला जातो आणि पारंपारिक B-tree इंडेक्सशिवाय क्वेरी प्रूनिंग (query pruning) आपोआप कशी होते?",
+                minglish_req: "🎯 Nakki Kay Sangtay:   -      B-tree    (query pruning)   ?",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: खालील 4 पर्यायांमधून योग्य पर्याय (Option A) निवडून समजून घ्या.",
+                minglish_out: "📊 Kay Output Madhe Pahije:  4    (Option A)   .",
 
                 prompt: "How does Snowflake organize and store table data internally, and how does the Cloud Services Layer achieve high-speed query pruning without traditional DBA-maintained B-Tree indexes?",
 
@@ -52026,9 +52026,9 @@ print(list(process_txn_batches(sample_data, batch_size=2)))`,
 
                 explanation_context: "Architecture of instant database/table cloning with zero physical data replication.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: स्नोफ्लेकमध्ये 'CREATE DATABASE uat_db CLONE prod_db;' कमांड दिल्यावर नवीन डेटा फाईल्स तयार न होता स्टोरेजचे पैसे का वाचतात?",
+                minglish_req: "🎯 Nakki Kay Sangtay:  'CREATE DATABASE uat_db CLONE prod_db;'            ?",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: योग्य पर्याय निवडून त्याचे स्पष्टीकरण तपासा.",
+                minglish_out: "📊 Kay Output Madhe Pahije:      .",
 
                 prompt: "What happens to physical cloud storage files and enterprise billing immediately after executing CREATE DATABASE uat_clone CLONE prod_db; in Snowflake?",
 
@@ -52116,9 +52116,9 @@ print(list(process_txn_batches(sample_data, batch_size=2)))`,
 
                 explanation_context: "Architecture of zero-downtime transactional database CDC replication using Oracle LogMiner and AWS DMS.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: कोअर बँकिंग ओरेकल डेटाबेसमधून AWS S3 आणि स्नोफ्लेकमध्ये शून्य डाऊनटाईमसह डेटा आणण्यासाठी AWS DMS (CDC) रिडू लॉग्स (Redo Logs) कसे वाचते?",
+                minglish_req: "🎯 Nakki Kay Sangtay:     AWS S3       AWS DMS (CDC)   (Redo Logs)  ?",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: योग्य पर्याय (Option A) निवडून संकल्पना पक्की करा.",
+                minglish_out: "📊 Kay Output Madhe Pahije:   (Option A)    .",
 
                 prompt: "In an on-premise Oracle to AWS S3 / Snowflake banking pipeline, how does AWS Database Migration Service (DMS) achieve near real-time Change Data Capture (CDC) without causing performance degradation on the source production database?",
 
@@ -52204,9 +52204,9 @@ print(list(process_txn_batches(sample_data, batch_size=2)))`,
 
                 explanation_context: "End-to-end architecture of serverless event notification from AWS S3 to Snowflake Snowpipe.",
 
-                minglish_req: "🎯 Nakki Kay Sangtay: AWS S3 बकेटमध्ये नवीन बँकिंग फाईल येताच आपोआप काही सेकंदात स्नोफ्लेकमध्ये डेटा लोड होण्यासाठी SQS आणि Snowpipe कसे जोडले जातात?",
+                minglish_req: "🎯 Nakki Kay Sangtay: AWS S3             SQS  Snowpipe   ?",
 
-                minglish_out: "📊 Kay Output Madhe Pahije: योग्य उत्तर (Option A) निवडा.",
+                minglish_out: "📊 Kay Output Madhe Pahije:   (Option A) .",
 
                 prompt: "What is the industry-standard serverless architecture for automatically ingesting files into Snowflake tables within seconds of landing in an AWS S3 bucket?",
 
@@ -56556,7 +56556,7 @@ async function executeNanoProOfficeCommand(cmdText) {
 
         const lower = cmdText.toLowerCase();
 
-        if (lower.includes('summary') || lower.includes('समरी') || lower.includes('सारांश') || lower.includes('report') || lower.includes('telegram') || lower.includes('mail')) {
+        if (lower.includes('summary') || lower.includes('') || lower.includes('') || lower.includes('report') || lower.includes('telegram') || lower.includes('mail')) {
 
             triggerOfficeDelegationDemo('summary_and_dispatch');
 
@@ -60294,7 +60294,7 @@ async function generateEnterprisePrompt() {
 
             btn.disabled = false;
 
-            btn.innerHTML = '⚡ Generate Master Prompt (मराठी / Minglish / हिंदी / English)';
+            btn.innerHTML = '⚡ Generate Master Prompt (Marathi / Minglish / Hindi / English)';
 
         }
 
@@ -62124,7 +62124,7 @@ async function testCloudflareEdgePing() {
 
 async function testServerManagerWaCloudPing() {
     const log = document.getElementById('smWaResultLog');
-    if (log) { log.style.display = 'block'; log.innerText = 'Meta Cloud API द्वारे +918433755448 ला मेसेज पाठवत आहे...'; }
+    if (log) { log.style.display = 'block'; log.innerText = 'Meta Cloud API  +918433755448    ...'; }
     try {
         const res = await fetch('/api/communication/whatsapp/send_cloud_api', {
             method: 'POST',
@@ -62133,26 +62133,26 @@ async function testServerManagerWaCloudPing() {
         });
         const d = await res.json();
         if (log) {
-            log.innerText = d.success ? '✅ मेसेज यशस्वीरित्या पाठवला! (Msg ID: ' + (d.message_id || 'OK') + ')' : '⚠️ त्रुटी: ' + (d.error || JSON.stringify(d));
+            log.innerText = d.success ? '✅   ! (Msg ID: ' + (d.message_id || 'OK') + ')' : '⚠️ : ' + (d.error || JSON.stringify(d));
             log.style.color = d.success ? '#34D399' : '#F87171';
         }
     } catch (e) {
-        if (log) { log.innerText = '❌ नेटवर्क एरर: ' + e.message; log.style.color = '#F87171'; }
+        if (log) { log.innerText = '❌  : ' + e.message; log.style.color = '#F87171'; }
     }
 }
 
 async function testServerManagerWaTemplatePing() {
     const log = document.getElementById('smWaResultLog');
-    if (log) { log.style.display = 'block'; log.innerText = 'Meta official hello_world template पाठवत आहे...'; }
+    if (log) { log.style.display = 'block'; log.innerText = 'Meta official hello_world template  ...'; }
     try {
         const res = await fetch('/api/whatsapp/send_template_ping', { method: 'POST' });
         const d = await res.json();
         if (log) {
-            log.innerText = d.success ? '✅ Template Ping यशस्वी! 24h विंडो बाहेरही डिलिव्हरी शक्य. (Msg ID: ' + (d.message_id || 'OK') + ')' : '⚠️ त्रुटी: ' + (d.error || JSON.stringify(d));
+            log.innerText = d.success ? '✅ Template Ping ! 24h    . (Msg ID: ' + (d.message_id || 'OK') + ')' : '⚠️ : ' + (d.error || JSON.stringify(d));
             log.style.color = d.success ? '#34D399' : '#F87171';
         }
     } catch (e) {
-        if (log) { log.innerText = '❌ एरर: ' + e.message; log.style.color = '#F87171'; }
+        if (log) { log.innerText = '❌ : ' + e.message; log.style.color = '#F87171'; }
     }
 }
 

@@ -789,7 +789,7 @@ def get_admin_mobile_hub_html() -> str:
 
             <!-- User Identity, Account Switcher & Direct Auth Actions (Mobile) -->
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:9px; padding:6px 10px; background:rgba(15,23,42,0.65); border:1px solid rgba(56,189,248,0.22); border-radius:10px;">
-                <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="if(window.openAccountSwitcherModal){window.openAccountSwitcherModal();}else{alert('Account Switcher');}" title="Switch Account (खाते बदला)">
+                <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="if(window.openAccountSwitcherModal){window.openAccountSwitcherModal();}else{alert('Account Switcher');}" title="Switch Account (   )">
                     <span style="font-size:12px;">👤</span>
                     <span id="hubActiveUsername" style="font-size:11px; font-weight:800; color:#38BDF8;">nanopro</span>
                     <span style="font-size:9px; background:rgba(56,189,248,0.18); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); padding:1px 5px; border-radius:6px; font-weight:700;">🔄 Switch</span>
@@ -2127,8 +2127,8 @@ def get_admin_mobile_hub_html() -> str:
                 return `
                     <div class="sheet-card-box">
                         <div class="sheet-sec-hdr">
-                            <span>📜 काय केलं? (Recent Executions &amp; Audit)</span>
-                            <span style="color:#94A3B8; font-size:10px;">${items.length} नोंदी</span>
+                            <span>📜    ? (Recent Executions &amp; Audit)</span>
+                            <span style="color:#94A3B8; font-size:10px;">${items.length}  </span>
                         </div>
                         <div style="display:flex; flex-direction:column; gap:6px;">${iHtml}</div>
                     </div>`;
@@ -2137,7 +2137,7 @@ def get_admin_mobile_hub_html() -> str:
             const mkState = (marathiText, badge='ACTIVE') => `
                 <div class="sheet-card-box">
                     <div class="sheet-sec-hdr">
-                        <span>🔍 काय होतंय? (Current Live State)</span>
+                        <span>🔍    ? (Current Live State)</span>
                         <span class="hub-tile-badge badge-live">${badge}</span>
                     </div>
                     <div style="font-size:11px; color:#CBD5E1; line-height:1.5;">${marathiText}</div>
@@ -2163,7 +2163,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:65, t:'06:00', c:'purple'}, {h:45, t:'07:00', c:'purple'}, {h:80, t:'08:00', c:'green'},
                         {h:95, t:'09:00', c:'green'}, {h:70, t:'10:00', c:'amber'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('सर्व incoming मोबाइल व डेस्कटॉप ऑर्डर्सचे सेमेंटिक विश्लेषण करून योग्य 305 स्पेशलिस्ट एजंटकडे त्वरित डेलिगेशन चालू आहे. रिअल-टाईम टास्क ट्रॅव्हलिंग आणि मल्टी-मॉडेल लोड बॅलन्सिंग विनाअडथळा सुरू आहे.'),
+                    state: mkState('  incoming                 305            .  -         -           .'),
                     audit: mkAudit([
                         {time: '10:14:22', desc: 'Task routed to Agent 02 (Data Eng) via Groq LPU in 390ms'},
                         {time: '10:08:15', desc: 'Swarm load rebalanced across 12 CPU cores (0.8% load)'},
@@ -2185,7 +2185,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:50, t:'06:00', c:'purple'}, {h:70, t:'07:00', c:'purple'}, {h:85, t:'08:00', c:'green'},
                         {h:90, t:'09:00', c:'green'}, {h:65, t:'10:00', c:'amber'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('सर्व 305 स्पेशलिस्ट एजंट्स इन-मेमरी रजिस्टर्ड असून डेटा इंजिनिअरिंग, फायनान्स, न्यूज, सिक्युरिटी आणि गव्हर्नन्स कार्यांसाठी 100% सज्ज आहेत.'),
+                    state: mkState('  305      -         ,  ,  ,         100%    .'),
                     audit: mkAudit([
                         {time: '10:12:00', desc: 'Heartbeat validated for all 305 registered agents'},
                         {time: '09:50:30', desc: 'Vector index embeddings synced in ChromaDB memory (<5ms)'},
@@ -2207,7 +2207,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:60, t:'06:00', c:'green'}, {h:75, t:'07:00', c:'green'}, {h:90, t:'08:00', c:'green'},
                         {h:85, t:'09:00', c:'green'}, {h:95, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('युझरच्या मराठी आणि इंग्रजी प्रॉम्प्ट्सचे तात्काळ सेमेंटिक टोकनायझेशन आणि प्रिफॉर्मॅटिंग करत आहे. 99.4% कॉल्स इन-मेमरी फास्टपाथने हँडल केले जात आहेत.'),
+                    state: mkState('                       . 99.4%    -           .'),
                     audit: mkAudit([
                         {time: '10:15:01', desc: 'Marathi grammar & intent tokenization completed (0.01ms)'},
                         {time: '10:02:18', desc: 'Intent routed to SQLite hybrid vault without model cold start'},
@@ -2229,7 +2229,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:40, t:'06:00', c:'purple'}, {h:60, t:'07:00', c:'purple'}, {h:80, t:'08:00', c:'green'},
                         {h:90, t:'09:00', c:'green'}, {h:75, t:'10:00', c:'amber'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('Snowflake DW आणि AWS S3 डेल्टा लेकवर पोलार्स इंजिनद्वारे नॉन-ब्लॉकिंग रिअल-टाईम ट्रान्झॅक्शन स्ट्रिमिंग सुरू आहे.'),
+                    state: mkState('Snowflake DW   AWS S3          -   -         .'),
                     audit: mkAudit([
                         {time: '10:13:40', desc: '1,248,500 rows CDC partition validated in Snowflake COMPUTE_WH'},
                         {time: '09:58:22', desc: 'Snappy compressed Parquet batch pushed to S3 Delta'},
@@ -2251,7 +2251,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:100, t:'06:00', c:'green'}, {h:100, t:'07:00', c:'green'}, {h:100, t:'08:00', c:'green'},
                         {h:100, t:'09:00', c:'green'}, {h:100, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('4 पॅसिव्ह स्कॅनिंग इंजिन्स द्वारे सिस्टीममधील सर्व त्रुटी, मेमरी लीक्स आणि एपीआय टाइमआउट्सचे अखंड वॉचडॉग मॉनिटरिंग चालू आहे.'),
+                    state: mkState('4              ,                    .'),
                     audit: mkAudit([
                         {time: '10:14:00', desc: 'Routine 60-second health sweep completed: 0 active errors'},
                         {time: '09:42:15', desc: 'Simulated API rate limit healed via secondary circuit in 180ms'},
@@ -2273,7 +2273,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:50, t:'06:00', c:'purple'}, {h:40, t:'07:00', c:'purple'}, {h:85, t:'08:00', c:'green'},
                         {h:95, t:'09:00', c:'green'}, {h:70, t:'10:00', c:'amber'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('एबीपी माझा आणि आज तकच्या लाइव्ह आरएसएस फीड्सवरून ताज्या मराठी बातम्या स्क्रॅप करून ऑटो-डायजेस्ट तयार होत आहे.'),
+                    state: mkState('                           -       .'),
                     audit: mkAudit([
                         {time: '10:11:45', desc: 'Scraped 15 top Marathi headlines from ABP Majha RSS'},
                         {time: '09:55:00', desc: 'Deduplication filter verified 100% unique news items'},
@@ -2295,7 +2295,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:80, t:'06:00', c:'green'}, {h:70, t:'07:00', c:'green'}, {h:90, t:'08:00', c:'green'},
                         {h:85, t:'09:00', c:'green'}, {h:95, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('मेटा सिस्टीम युझरच्या परमनंट टोकनद्वारे ऍडमिन मोबाइल नंबर (+918433755448) वर थेट अलर्ट्स व ओटीपी ट्रान्समिट करण्यासाठी गेटवे 24/7 कनेक्टेड आहे.'),
+                    state: mkState('                (+918433755448)                 24/7    .'),
                     audit: mkAudit([
                         {time: '10:14:30', desc: 'Keepalive health packet received from Meta Graph API (200 OK)'},
                         {time: '09:52:10', desc: 'RCA drill incident notification successfully delivered to +918433755448'},
@@ -2317,7 +2317,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:70, t:'06:00', c:'amber'}, {h:60, t:'07:00', c:'green'}, {h:80, t:'08:00', c:'green'},
                         {h:85, t:'09:00', c:'green'}, {h:75, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('SQLite डेटाबेस WAL मोडमध्ये असून मल्टी-थ्रेडेड ऑपरेशन्स चालू असतानाही एकही टेबल लॉक न होता झिरो-लॅग ऍक्सेस देत आहे.'),
+                    state: mkState('SQLite   WAL      -                   -       .'),
                     audit: mkAudit([
                         {time: '10:14:55', desc: 'WAL write checkpoint flushed 0 uncommitted pages'},
                         {time: '09:48:30', desc: 'AES-256 encrypted credentials table integrity verified'},
@@ -2339,7 +2339,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:75, t:'06:00', c:'purple'}, {h:85, t:'07:00', c:'purple'}, {h:95, t:'08:00', c:'green'},
                         {h:90, t:'09:00', c:'green'}, {h:80, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('अत्यंत क्लिष्ट कोडिंग आणि जनरेशन टास्क सब-सेकंद रिस्पॉन्ससह एलपीयू (LPU) हार्डवेअरवर डायरेक्ट एक्झिक्युट होत आहेत.'),
+                    state: mkState('             -      (LPU)          .'),
                     audit: mkAudit([
                         {time: '10:14:10', desc: 'Inference session completed: 480 tokens in 410ms (1,170 tok/sec burst)'},
                         {time: '10:01:25', desc: 'Marathi response synthesis completed with zero timeouts'},
@@ -2361,7 +2361,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:50, t:'06:00', c:'purple'}, {h:60, t:'07:00', c:'purple'}, {h:70, t:'08:00', c:'purple'},
                         {h:85, t:'09:00', c:'green'}, {h:80, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('हाय-कॉन्टेक्स्ट आणि मल्टिमोडल क्वेरींसाठी गुगल जेमिनी क्लाउड रेडी असून आवश्यकतेनुसार सेकंडरी फेलओव्हर प्रोव्हायडर म्हणून ऍक्टिव्ह आहे.'),
+                    state: mkState(' -                               .'),
                     audit: mkAudit([
                         {time: '10:10:00', desc: 'High-context system prompt cached in Gemini memory'},
                         {time: '09:45:20', desc: 'Multimodal vision analysis tested successfully'},
@@ -2383,7 +2383,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:60, t:'06:00', c:'purple'}, {h:70, t:'07:00', c:'purple'}, {h:85, t:'08:00', c:'green'},
                         {h:90, t:'09:00', c:'green'}, {h:75, t:'10:00', c:'amber'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('5 ऑटोनॉमस टेलिग्राम बॉट्स विविध चॅनल्सवर बातम्या, सुरक्षा अलर्ट्स आणि सिस्टीम अपडेट्स पाठवण्यासाठी बॅकग्राउंडमध्ये कार्यरत आहेत.'),
+                    state: mkState('5            ,                  .'),
                     audit: mkAudit([
                         {time: '10:13:00', desc: 'Bot 01 (Sentinel) verified channel status: Active'},
                         {time: '10:02:45', desc: 'Bot 04 (News Scout) delivered Marathi news broadcast to 5 bots'},
@@ -2405,7 +2405,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:65, t:'06:00', c:'purple'}, {h:50, t:'07:00', c:'purple'}, {h:80, t:'08:00', c:'green'},
                         {h:95, t:'09:00', c:'green'}, {h:70, t:'10:00', c:'amber'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('बँकिंग ट्रान्झॅक्शन्स आणि ॲनालिटिक्स डेटा स्नोफ्लेक क्लाउड वेअरहाऊसमध्ये रिअल-टाईम पार्टिशनिंगसह सिंक होत आहे.'),
+                    state: mkState('                 -         .'),
                     audit: mkAudit([
                         {time: '10:12:30', desc: 'CDC micro-batch partition committed to BANK_DB'},
                         {time: '09:50:15', desc: 'Snowflake warehouse auto-suspend timer saved cloud credits'},
@@ -2427,7 +2427,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:50, t:'06:00', c:'amber'}, {h:65, t:'07:00', c:'amber'}, {h:80, t:'08:00', c:'green'},
                         {h:85, t:'09:00', c:'green'}, {h:75, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('डेल्टा लेकवर कॉम्प्रेस्ड पारके (Parquet) फाइल्स स्ट्रिम होत असून हिस्टॉरिकल ऑडिट लॉग्स अखंड सुरक्षित ठेवले जात आहेत.'),
+                    state: mkState('        (Parquet)                        .'),
                     audit: mkAudit([
                         {time: '10:11:00', desc: 'Written 4.2 MB compressed Parquet batch to S3'},
                         {time: '09:40:25', desc: 'Snappy CRC checksum verification passed (100% data integrity)'},
@@ -2449,7 +2449,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:22, t:'06:00', c:'green'}, {h:23, t:'07:00', c:'green'}, {h:22, t:'08:00', c:'green'},
                         {h:25, t:'09:00', c:'green'}, {h:22, t:'10:00', c:'green'}, {h:22, t:'Now', c:'green'}
                     ]),
-                    state: mkState('सर्वरवरील रॅम, सीपीयू आणि डिस्क स्पेसचे अखंड रिअल-टाईम प्रोफायलिंग सुरू असून कोणतीही मेमरी लीक किंवा थ्रेड ब्लॉकिंग नाही.'),
+                    state: mkState('   ,            -                     .'),
                     audit: mkAudit([
                         {time: '10:15:00', desc: 'Telemetry snapshot cached in memory (<0.01ms)'},
                         {time: '10:00:00', desc: 'Garbage collector freed inactive socket handles'},
@@ -2471,7 +2471,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:70, t:'06:00', c:'amber'}, {h:80, t:'07:00', c:'green'}, {h:85, t:'08:00', c:'green'},
                         {h:90, t:'09:00', c:'green'}, {h:65, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('कोअर बँकिंग आणि अकाउंट लेजर ट्रान्झॅक्शन्स ओरॅकल रिडू लॉग्समधून कॅप्चर करून थेट स्ट्रिमिंग लेकहाउसकडे पाठवले जात आहेत.'),
+                    state: mkState('                                 .'),
                     audit: mkAudit([
                         {time: '10:13:15', desc: 'LogMiner CDC stream processed 320 banking transactions'},
                         {time: '09:47:30', desc: 'TNS listener port 1521 connection pool verified'},
@@ -2493,7 +2493,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:40, t:'06:00', c:'purple'}, {h:55, t:'07:00', c:'purple'}, {h:75, t:'08:00', c:'green'},
                         {h:85, t:'09:00', c:'green'}, {h:60, t:'10:00', c:'amber'}, {h:90, t:'Now', c:'green'}
                     ]),
-                    state: mkState('युझर रोल्स, ऍडमिन ऑथोरायझेशन आणि सिस्टीम ऑडिट ट्रेल्ससाठी पोस्टग्रेस डीबी अखंड सुरक्षित सेव्ह करत आहे.'),
+                    state: mkState('   ,                          .'),
                     audit: mkAudit([
                         {time: '10:14:40', desc: 'pg_stat_activity reported 2 active connections, 0 locks'},
                         {time: '09:59:10', desc: 'Schema migration integrity check passed (Version: Current)'},
@@ -2515,7 +2515,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:90, t:'06:00', c:'green'}, {h:85, t:'07:00', c:'green'}, {h:95, t:'08:00', c:'green'},
                         {h:90, t:'09:00', c:'green'}, {h:100, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('युझरच्या कोणत्याही प्रश्नासाठी योग्य एजंट शोधण्यासाठी उच्च-आयामी (High-Dimensional) व्हेक्टर स्पेसमध्ये इन्स्टंट मॅचिंग चालू आहे.'),
+                    state: mkState('             -  (High-Dimensional)            .'),
                     audit: mkAudit([
                         {time: '10:12:00', desc: 'HNSW graph cosine distance search executed in 3.1ms'},
                         {time: '09:50:00', desc: '305 agent capability vectors re-indexed in RAM'},
@@ -2537,7 +2537,7 @@ def get_admin_mobile_hub_html() -> str:
                         {h:70, t:'06:00', c:'green'}, {h:65, t:'07:00', c:'green'}, {h:80, t:'08:00', c:'green'},
                         {h:75, t:'09:00', c:'green'}, {h:85, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
-                    state: mkState('रेंडर क्लाउड सर्वर स्लीप मोडमध्ये जाऊ नये म्हणून दर 9 मिनिटांनी ऑटोमॅटिक बॅकग्राउंड पिंग पाठवली जात आहे.'),
+                    state: mkState('                  9              .'),
                     audit: mkAudit([
                         {time: '10:14:00', desc: 'Keepalive ping succeeded with sub-500ms response'},
                         {time: '10:05:00', desc: 'Cloud worker awake verified; zero cold starts encountered'},
