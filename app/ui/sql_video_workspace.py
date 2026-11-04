@@ -1598,7 +1598,7 @@ def get_sql_video_workspace_html() -> str:
 
  <span style="font-size: 10.5px; color: #38BDF8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 6px; font-weight: 700;">
 
- UNDER 60 SECONDS
+ AI VIDEO STUDIO
 
  </span>
 
@@ -1618,7 +1618,7 @@ def get_sql_video_workspace_html() -> str:
  <label for="sqlShortQuestion" style="display: block; margin: 0 0 9px; color: #E5EDF6; font-size: 13px; font-weight: 750;">
  What should this Reel teach?
  </label>
- <textarea class="studio-input" id="sqlShortQuestion" rows="7" maxlength="1600" aria-describedby="lessonPromptHelp" placeholder="Describe the idea, a real-life example, and what the viewer should understand.&#10;&#10;Example: A banking app request fails when Maya’s access token expires. Show how a refresh token gets a new access token, then retries the request successfully. Explain it simply in the selected language." style="width: 100%; margin-bottom: 8px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 14px; border-radius: 10px; padding: 12px; line-height: 1.65; resize: vertical;"></textarea>
+ <textarea class="studio-input" id="sqlShortQuestion" rows="9" aria-describedby="lessonPromptHelp" placeholder="Describe the idea, a real-life example, and what the viewer should understand.&#10;&#10;Example: A banking app request fails when Maya’s access token expires. Show how a refresh token gets a new access token, then retries the request successfully. Explain it simply in the selected language." style="width: 100%; margin-bottom: 8px; background: #070B16; border: 1.5px solid #1E2D4A; color: #F8FAFC; font-size: 14px; border-radius: 10px; padding: 12px; line-height: 1.65; resize: vertical;"></textarea>
  <div id="lessonPromptHelp" style="margin: 0 0 18px; color: #9AAABD; font-size: 11px; line-height: 1.55;">
  A specific situation makes a better story. Lessons have no fixed duration limit; longer exports take more time and device memory. This studio currently renders Canvas motion graphics, not AI-generated video clips.
  </div>
