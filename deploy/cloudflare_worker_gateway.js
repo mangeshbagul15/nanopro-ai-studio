@@ -1009,7 +1009,14 @@ export default {
 
       const isApi = path.startsWith("/api/");
 
-      const timeoutMs = CONFIG.CLOUD_TIMEOUT_MS;
+      // Video/AI endpoints need longer timeout — Groq/Gemini calls take 15-45s
+      const isSlowEndpoint = path.startsWith("/api/sql_video") ||
+                              path.startsWith("/api/video") ||
+                              path === "/api/manager/chat" ||
+                              path === "/api/prompt" ||
+                              path.startsWith("/api/coding") ||
+                              path.startsWith("/api/image");
+      const timeoutMs = isSlowEndpoint ? 55000 : CONFIG.CLOUD_TIMEOUT_MS;
 
 
 
