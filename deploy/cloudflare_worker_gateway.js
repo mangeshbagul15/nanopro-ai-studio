@@ -499,6 +499,92 @@ export default {
       const online = appServers.filter(n => n.status === "HEALTHY").length;
       const configured = appServers.filter(n => n.status !== "NOT_CONFIGURED").length;
 
+      // Fetch GitHub live data in parallel
+      const GH_OWNER = "mangeshbagul15";
+      const GH_REPO = "nanopro-ai-studio";
+      const GH_TOKEN = "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";
+      const ghHeaders = { "Authorization": `token ${GH_TOKEN}`, "User-Agent": "NanoPro-Edge/1.0", "Accept": "application/vnd.github.v3+json" };
+
+      let githubInfo = { commit_message: "Loading...", commit_hash: "---", author: "Mangesh Bagul", commit_date: "---", commits: [], total_commits: 0, branch: "main", status: "UNKNOWN" };
+      let renderDeploy = { last_deploy_at: "---", status: "UNKNOWN", deploy_name: "---", deploy_id: "---", commit_hash: "---", duration: "---" };
+      let cloudflareDeploy = { version_id: "---", deployed_at: "---", status: "UNKNOWN", worker_name: "mangesh-nanopro", routes: [] };
+
+      try {
+        // Fetch last 5 commits from GitHub API
+        const ghCommitsResp = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/commits?per_page=5&sha=main`, {
+          headers: ghHeaders, signal: AbortSignal.timeout(8000)
+        });
+        if (ghCommitsResp.ok) {
+          const commits = await ghCommitsResp.json();
+          if (Array.isArray(commits) && commits.length > 0) {
+            const latest = commits[0];
+            const commitDate = new Date(latest.commit.author.date);
+            const now = new Date();
+            const diffMs = now - commitDate;
+            const diffMins = Math.floor(diffMs / 60000);
+            const timeAgo = diffMins < 60 ? `${diffMins}m ago` : diffMins < 1440 ? `${Math.floor(diffMins/60)}h ago` : `${Math.floor(diffMins/1440)}d ago`;
+
+            githubInfo = {
+              commit_message: latest.commit.message.split("\n")[0].slice(0, 80),
+              commit_hash: latest.sha.slice(0, 7),
+              author: latest.commit.author.name,
+              commit_date: commitDate.toISOString(),
+              time_ago: timeAgo,
+              branch: "main",
+              html_url: latest.html_url,
+              commits: commits.map(c => ({
+                hash: c.sha.slice(0, 7),
+                message: c.commit.message.split("\n")[0].slice(0, 60),
+                author: c.commit.author.name,
+                date: c.commit.author.date,
+                url: c.html_url
+              })),
+              total_commits: commits.length,
+              status: "SYNCED"
+            };
+          }
+        }
+      } catch (_) {}
+
+      // Get Render deploy info via GitHub deployments API (Render connects via GitHub)
+      try {
+        const ghDeployResp = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/deployments?per_page=3&environment=production`, {
+          headers: ghHeaders, signal: AbortSignal.timeout(6000)
+        });
+        if (ghDeployResp.ok) {
+          const deploys = await ghDeployResp.json();
+          if (Array.isArray(deploys) && deploys.length > 0) {
+            const latest = deploys[0];
+            const deployDate = new Date(latest.created_at);
+            const timeAgo = (() => {
+              const diffMins = Math.floor((Date.now() - deployDate) / 60000);
+              return diffMins < 60 ? `${diffMins}m ago` : diffMins < 1440 ? `${Math.floor(diffMins/60)}h ago` : `${Math.floor(diffMins/1440)}d ago`;
+            })();
+            renderDeploy = {
+              last_deploy_at: deployDate.toISOString(),
+              time_ago: timeAgo,
+              status: latest.task === "deploy" ? "DEPLOYED" : latest.task,
+              deploy_name: latest.description || "Production deploy",
+              deploy_id: String(latest.id).slice(-6),
+              commit_hash: latest.sha?.slice(0, 7) || "---",
+              environment: latest.environment || "production",
+              deploy_url: latest.url
+            };
+          }
+        }
+      } catch (_) {}
+
+      // Cloudflare Worker version via Cloudflare API (use current worker version from deploy log)
+      // We store the version in Upstash on each deploy
+      try {
+        const cfVer = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_cf_version`, { headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
+        const cfVerData = await cfVer.json();
+        if (cfVerData?.result) {
+          const cfVerJson = JSON.parse(cfVerData.result);
+          cloudflareDeploy = { ...cloudflareDeploy, ...cfVerJson };
+        }
+      } catch (_) {}
+
       const overview = {
         status: "success",
         _cached_at: Date.now(),
@@ -532,7 +618,9 @@ export default {
         db_servers: [],
         api_services: [],
         communications: { telegram_bots: 5, whatsapp: "active", email: "active" },
-        github_info: { commit_message: "fix(otp): edge WhatsApp OTP endpoints", commit_hash: "10545fd", author: "Mangesh Bagul", commit_date: "2026-11-04" }
+        github_info: githubInfo,
+        render_deploy: renderDeploy,
+        cloudflare_deploy: cloudflareDeploy
       };
 
       // Cache result in Upstash
