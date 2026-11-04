@@ -906,13 +906,13 @@ export default {
                             path.startsWith("/api/audio") ||
                             path === "/api/image/generate";
 
-    // --- VIDEO MAKER ROUTING: Laptop first → Render fallback (both support video APIs) ---
+    // --- VIDEO MAKER ROUTING: Laptop ONLY (GPU required for video encoding) ---
     if (isVideoEndpoint) {
-      // Try laptop tunnel first (for GPU-accelerated operations)
+      // Try laptop tunnel (only option for video — GPU/FFmpeg required)
       if (localTunnel) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 25000);
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
           const targetUrl = new URL(path + url.search, localTunnel);
           const newHeaders = new Headers(request.headers);
           newHeaders.delete("host");
@@ -932,42 +932,17 @@ export default {
             fh.set("Access-Control-Allow-Origin", "*");
             return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
           }
-        } catch (_) { /* laptop timeout/offline — falling through to Render */ }
+        } catch (_) { /* laptop not reachable */ }
       }
-
-      // Laptop not available or failed → try Render cloud (has FastAPI + all video endpoints)
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for video (Groq/TTS)
-        const targetUrl = new URL(path + url.search, renderUrl);
-        const newHeaders = new Headers(request.headers);
-        newHeaders.delete("host");
-        newHeaders.set("Host", targetUrl.host);
-        newHeaders.set("X-Forwarded-Host", url.host);
-        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Video-Render");
-        const response = await fetch(targetUrl.toString(), {
-          method: request.method, headers: newHeaders,
-          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
-          redirect: "follow", signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (response.status < 400) {
-          const fh = new Headers(response.headers);
-          fh.set("X-NanoPro-Routed-Node", renderUrl);
-          fh.set("X-NanoPro-Mode", "RENDER_CLOUD_VIDEO");
-          fh.set("Access-Control-Allow-Origin", "*");
-          return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
-        }
-      } catch (_) { /* Render also failed */ }
-
-      // Both laptop and Render failed
+      // Laptop not available → clear message (Render does NOT support video — no GPU/FFmpeg)
       return new Response(JSON.stringify({
         status: "error",
-        error: "Video service temporarily unavailable. Both laptop and cloud are offline. Please try again in a moment.",
+        error: "Laptop not found. Video Maker requires your local laptop (GPU + FFmpeg). Please start your laptop, run 'python main.py', and try again.",
+        message: "Video service temporarily unavailable. Laptop is required for video rendering.",
         endpoint: path,
         laptop_status: "OFFLINE",
-        render_status: "UNREACHABLE",
-        suggestion: "Check internet connection or try again in 30 seconds"
+        requires: "Local laptop with GPU (RTX 3050) + FFmpeg",
+        suggestion: "Start laptop → run 'python main.py' → Cloudflare tunnel auto-connects → retry video"
       }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }
 
