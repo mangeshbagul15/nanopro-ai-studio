@@ -2004,6 +2004,9 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  }
 
+ // Export immediately after definition so button onclick works even if later JS has errors
+ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
+
 
 
  function setSqlAvatarPresenter(val) {}
@@ -22052,6 +22055,9 @@ SECOND_HIGHEST_SALARY: 70000`;
 window.applyQuickPromptPreset = applyQuickPromptPreset;
 
 window.scrollVfxStudio = scrollVfxStudio;
+
+// *** CRITICAL: Export generateSqlShortBlueprint IMMEDIATELY after definition ***
+// This ensures button onclick works even if later script sections have errors
 
 window.generateSqlShortBlueprint = generateSqlShortBlueprint;
 

@@ -1679,13 +1679,41 @@ def get_sql_video_workspace_html() -> str:
 
  <!-- Launch Action Button -->
 
- <button type="button" class="btn btn-primary vfx-laser-btn motion-spring-btn" id="btnGenerateSqlBlueprint" onclick="generateSqlShortBlueprint()" style="width: 100%; padding: 14px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #10B981); border: none; border-radius: 10px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 25px rgba(2,132,199,0.55);">
+ <button type="button" class="btn btn-primary vfx-laser-btn motion-spring-btn" id="btnGenerateSqlBlueprint" style="width: 100%; padding: 14px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; background: linear-gradient(135deg, #0284C7, #6366F1, #10B981); border: none; border-radius: 10px; cursor: pointer; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 25px rgba(2,132,199,0.55);">
 
  <span style="font-size: 19px;">✦</span>
 
  <span>Create my Reel</span>
 
  </button>
+ <script>
+ (function() {
+   function attachReelBtn() {
+     var btn = document.getElementById('btnGenerateSqlBlueprint');
+     if (!btn) return;
+     btn.onclick = function() {
+       if (typeof window.generateSqlShortBlueprint === 'function') {
+         window.generateSqlShortBlueprint();
+       } else if (typeof generateSqlShortBlueprint === 'function') {
+         generateSqlShortBlueprint();
+       } else {
+         var st = document.getElementById('sqlVideoGenerationStatus');
+         if (st) st.textContent = 'Loading AI engine... please wait 2 seconds and try again.';
+         setTimeout(function() {
+           if (typeof window.generateSqlShortBlueprint === 'function') {
+             window.generateSqlShortBlueprint();
+           }
+         }, 2000);
+       }
+     };
+   }
+   if (document.readyState === 'loading') {
+     document.addEventListener('DOMContentLoaded', attachReelBtn);
+   } else {
+     attachReelBtn();
+   }
+ })();
+ </script>
 
  <div id="sqlVideoGenerationStatus" role="status" aria-live="polite" style="margin-top: 8px; min-height: 18px; color: #7DD3FC; font-size: 11.5px; text-align: center; font-weight: 600;"></div>
 
