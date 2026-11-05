@@ -17,6 +17,33 @@ import urllib.error
 from typing import Dict, Any, List, Optional, Tuple, Union
 from app.core.config import OLLAMA_HOST, OLLAMA_KEEP_ALIVE, DEFAULT_MODELS_TO_TRY, DEFAULT_METADATA_MODELS
 from app.core.logger import log_event
+import re as _re
+
+_MAX_RATE_LIMIT_WAIT_S = 20.0
+
+
+def _short_rate_limit_wait_seconds(err: Exception) -> Optional[float]:
+    """Return a wait time when a 429 is a short per-minute throttle worth retrying.
+
+    Groq free-tier OTPM/TPM limits answer with "Please try again in 60ms" or "in 4.2s";
+    those clear quickly, so retrying the same model beats failing the whole storyboard.
+    Daily quotas or unknown waits return None so the router cascades instead.
+    """
+    msg = str(err)
+    lower = msg.lower()
+    if "429" not in msg and "rate limit" not in lower and "rate_limit" not in lower:
+        return None
+    if "per day" in lower or "(tpd)" in lower or "(rpd)" in lower:
+        return None
+    match = _re.search(r"try again in\s+(?:(\d+)m(?!s))?\s*([\d.]+)\s*(ms|s)\b", msg, _re.IGNORECASE)
+    if not match:
+        return None
+    minutes = float(match.group(1) or 0)
+    value = float(match.group(2))
+    seconds = minutes * 60 + (value / 1000.0 if match.group(3).lower() == "ms" else value)
+    if seconds > _MAX_RATE_LIMIT_WAIT_S:
+        return None
+    return max(0.5, seconds + 0.5)
 
 try:
     from google.genai import types as _genai_types
@@ -1903,15 +1930,27 @@ class ModelManager:
                 chat_kwargs.pop("model", None)
                 if isinstance(adapter, (GroqAdapter, GeminiAdapter)):
                     chat_kwargs["allow_fallback"] = allow_fallback
-                content, mode = adapter.chat(
-                    model,
-                    prompt,
-                    schema=schema,
-                    system_prompt=system_prompt,
-                    timeout=timeout,
-                    task_type=task_type,
-                    **chat_kwargs
-                )
+                for rate_limit_attempt in range(3):
+                    try:
+                        content, mode = adapter.chat(
+                            model,
+                            prompt,
+                            schema=schema,
+                            system_prompt=system_prompt,
+                            timeout=timeout,
+                            task_type=task_type,
+                            **chat_kwargs
+                        )
+                        break
+                    except Exception as rate_err:
+                        wait_s = _short_rate_limit_wait_seconds(rate_err)
+                        if wait_s is None or rate_limit_attempt == 2:
+                            raise
+                        log_event(
+                            f"ModelRouter: [{model}] per-minute rate limit hit; waiting {wait_s:.1f}s and retrying the same model",
+                            level="WARNING", component="ModelRouter"
+                        )
+                        time.sleep(wait_s)
                 t_dur_ms = max(0.1, round((time.time() - t_start) * 1000, 1))
 
                 if content:
