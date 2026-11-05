@@ -355,9 +355,10 @@ class GroqAdapter(ModelProviderAdapter):
             if m not in unique_models:
                 unique_models.append(m)
 
-        # Dialogue requests max token boundary to strictly preserve < 1,800ms SLA
+        # Dialogue requests max token boundary to strictly preserve < 1,800ms SLA.
+        # JSON storyboards need room; a 768 cap truncated them mid-object.
         is_dialogue = "gpt-oss" in target_model.lower() or "dialogue" in str(kwargs.get("task_type", "")).lower()
-        default_max_tokens = 768 if is_dialogue else 2048
+        default_max_tokens = 768 if (is_dialogue and not schema) else 2048
         max_tokens_val = kwargs.get("max_tokens") or default_max_tokens
 
         last_err = None
@@ -485,6 +486,8 @@ class GeminiAdapter(ModelProviderAdapter):
                     cfg_kwargs["system_instruction"] = system_prompt
                 if schema:
                     cfg_kwargs["response_mime_type"] = "application/json"
+                if kwargs.get("max_tokens"):
+                    cfg_kwargs["max_output_tokens"] = int(kwargs["max_tokens"])
                 cfg = types.GenerateContentConfig(**cfg_kwargs)
                 resp = client.models.generate_content(
                     model=m,
@@ -1561,7 +1564,7 @@ class ModelManager:
         self.task_routing: Dict[str, List[str]] = {
             "coding": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
             "dialogue": ["gpt-4o-mini", "claude-3-haiku-20240307", "deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "google/gemma-4-31b-it:free", "claude-sonnet-5-5", "gpt-4o", "deepseek-reasoner", "phi4-mini:latest"],
+            "data_analyst": ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "gemini-3-flash-preview", "google/gemma-4-31b-it:free", "claude-sonnet-5-5", "gpt-4o", "deepseek-reasoner", "gemini-3.1-pro-preview", "phi4-mini:latest"],
             "research": ["claude-3-5-sonnet-20241022", "gpt-4o", "mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
             "price_tracking": ["gpt-4o-mini", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
             "learning": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],

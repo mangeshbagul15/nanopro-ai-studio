@@ -352,16 +352,8 @@ function pgrRenderConfig(cfg) {
     if (adminToggle) adminToggle.style.display = pgrIsAdmin() ? 'inline-block' : 'none';
 
     if (banner) {
-        if (cfg.configured) {
-            pgrShow(banner, false);
-        } else {
-            banner.innerHTML = '&#9888; Card / net-banking API checkout is not connected. ' +
-                'You can still pay with <b>UPI / QR</b> or the <b>Razorpay.me</b> page above. ' +
-                (pgrIsAdmin()
-                    ? 'Admins can use <b>Connect Razorpay</b> to enable the secure API checkout.'
-                    : '');
-            pgrShow(banner, true);
-        }
+        banner.innerHTML = '';
+        pgrShow(banner, false);
     }
     if (cfg.configured) {
         pgrShow(pgrEl('pgrAdminPanel'), false);

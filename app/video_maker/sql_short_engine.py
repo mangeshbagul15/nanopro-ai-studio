@@ -782,9 +782,13 @@ def _ensure_min_storyboard_scenes(scenes: List[Dict[str, Any]], lang_key: str, t
             },
         })
 
+    topic_norm = _norm(topic)
     for sentence in _prompt_narrative_sentences(topic):
         if len(padded) >= MIN_STORYBOARD_SCENES:
             break
+        # The user's prompt is a request, not narration: never read it aloud.
+        if _norm(sentence) == topic_norm or len(_norm(sentence)) < 20:
+            continue
         labels = _labels_for_scene("", sentence, slots, len(padded))
         words = sentence.split()
         title = ""
@@ -811,6 +815,258 @@ def _ensure_min_storyboard_scenes(scenes: List[Dict[str, Any]], lang_key: str, t
     while len(padded) < MIN_STORYBOARD_SCENES:
         padded.append(_recap_scene(lang_key, topic))
     return padded
+
+
+_NARRATION_LANG = {
+    "mr": "Marathi written in Devanagari script",
+    "hi": "Hindi written in Devanagari script",
+    "en": "English",
+}
+
+
+def _plan_narration_scenes(
+    topic: str,
+    lang_key: str,
+    difficulty: str,
+    models: List[str],
+) -> List[Dict[str, Any]]:
+    """Ask one model for a compact 4-scene narration outline.
+
+    The full storyboard prompt also demands visual_data, and the free models
+    answer that with a single scene (which then gets padded with boilerplate).
+    A small outline-only request is far more reliable and keeps the spoken
+    script specific to the user's topic.
+    """
+    from app.core.model_adapter import model_manager
+
+    lang_name = _NARRATION_LANG.get(lang_key, "English")
+    system_prompt = (
+        "You write precise short-video teaching scripts. "
+        "Return only a JSON object, never markdown."
+    )
+    prompt = (
+        f"Topic: {topic}\n"
+        f"Audience level: {difficulty}\n"
+        f"Language: {lang_name}.\n\n"
+        "Write exactly 4 teaching scenes as JSON:\n"
+        '{"title":"<video title>","scenes":[{"title":"<beat name>","speech":"<spoken lines>",'
+        '"visual":"<2-5 word on-screen headline>","labels":["<keyword>","<keyword>","<keyword>"],'
+        '"layout":"cards"}]}\n'
+        "Rules:\n"
+        "- Scene 1 hooks with a concrete everyday situation.\n"
+        "- Scene 2 explains why the problem matters.\n"
+        "- Scene 3 gives the exact method with real syntax and one small example "
+        "(table names, column names, function names).\n"
+        "- Scene 4 closes with the takeaway.\n"
+        "- Each speech is 2-3 sentences, 30-55 words, natural spoken language.\n"
+        "- 'labels' are 2-4 short on-screen keywords (1-3 words each) naming the exact objects, "
+        "columns, or steps spoken in that scene; never a full sentence.\n"
+        "- 'layout' must be one of cards, pipeline, chips, editorial, chosen by what the beat shows.\n"
+        f"- Write {lang_name} only; Latin letters are allowed only for technical terms "
+        "such as SQL, GROUP BY, HAVING, COUNT.\n"
+        "- Never repeat the topic line, never say 'let us begin', never mention being an AI.\n"
+        "- Every scene must add new information.\n"
+    )
+    try:
+        content, used_model, _ = model_manager.execute_with_fallback(
+            prompt=prompt,
+            schema={"type": "object"},
+            system_prompt=system_prompt,
+            models=models,
+            allow_fallback=True,
+            timeout=60.0,
+            max_tokens=1800,
+        )
+    except Exception as exc:
+        log_event(
+            f"Narration planner unavailable: {exc}",
+            level="WARNING",
+            component="SqlShortEngine",
+        )
+        return []
+    if "{" not in (content or ""):
+        return []
+    try:
+        parsed = _parse_model_json(content)
+    except Exception:
+        return []
+    if isinstance(parsed, list):
+        parsed = {"scenes": parsed}
+    if not isinstance(parsed, dict):
+        return []
+    scenes = _normalize_storyboard_scenes(
+        parsed.get("scenes") or parsed.get("stages"), lang_key
+    )
+    if MIN_STORYBOARD_SCENES <= len(scenes) < _PLANNED_SCENE_TARGET:
+        scenes = _merge_unique_scenes(
+            scenes,
+            _continue_narration_scenes(
+                scenes,
+                topic,
+                lang_key,
+                difficulty,
+                models,
+                _PLANNED_SCENE_TARGET - len(scenes),
+            ),
+        )
+    _attach_planned_visuals(scenes, topic, lang_key)
+    log_event(
+        f"Narration planner via {used_model}: {len(scenes)} scenes",
+        component="SqlShortEngine",
+    )
+    return scenes
+
+
+_PLANNED_SCENE_TARGET = 4
+
+
+def _merge_unique_scenes(
+    existing: List[Dict[str, Any]], extra: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    merged = list(existing)
+    seen = {
+        re.sub(r"\W+", "", str(scene.get("speech") or "").lower())
+        for scene in merged
+    }
+    for scene in extra:
+        key = re.sub(r"\W+", "", str(scene.get("speech") or "").lower())
+        if not key or key in seen or len(merged) >= MAX_STORYBOARD_SCENES:
+            continue
+        seen.add(key)
+        merged.append(scene)
+    return merged
+
+
+def _continue_narration_scenes(
+    existing: List[Dict[str, Any]],
+    topic: str,
+    lang_key: str,
+    difficulty: str,
+    models: List[str],
+    wanted: int,
+) -> List[Dict[str, Any]]:
+    """Ask for only the missing teaching beats, so a short outline is completed instead of padded."""
+    if wanted <= 0:
+        return []
+    from app.core.model_adapter import model_manager
+
+    lang_name = _NARRATION_LANG.get(lang_key, "English")
+    written = "\n".join(
+        f"{index + 1}. {str(scene.get('title') or '').strip()}: "
+        f"{str(scene.get('speech') or '').strip()[:120]}"
+        for index, scene in enumerate(existing)
+    )
+    prompt = (
+        f"Topic: {topic}\n"
+        f"Audience level: {difficulty}\n"
+        f"Language: {lang_name}.\n\n"
+        f"These teaching scenes are already written:\n{written}\n\n"
+        f"Write exactly {wanted} more scene(s) that finish the same lesson without repeating them. "
+        "If the exact method or the takeaway is still missing, cover those.\n"
+        'Return JSON: {"scenes":[{"title":"<beat name>","speech":"<spoken lines>",'
+        '"visual":"<2-5 word on-screen headline>","labels":["<keyword>","<keyword>","<keyword>"],'
+        '"layout":"cards"}]}\n'
+        f"- Write {lang_name} only; Latin letters are allowed only for technical terms.\n"
+        "- Each speech is 2-3 sentences, 25-45 words, natural spoken language.\n"
+        "- Never repeat the topic line, never mention being an AI, always add new information.\n"
+    )
+    try:
+        content, used_model, _ = model_manager.execute_with_fallback(
+            prompt=prompt,
+            schema={"type": "object"},
+            system_prompt=(
+                "You write precise short-video teaching scripts. "
+                "Return only a JSON object, never markdown."
+            ),
+            models=models,
+            allow_fallback=True,
+            timeout=60.0,
+            max_tokens=1400,
+        )
+    except Exception as exc:
+        log_event(
+            f"Narration continuation unavailable: {exc}",
+            level="WARNING",
+            component="SqlShortEngine",
+        )
+        return []
+    if "{" not in (content or ""):
+        return []
+    try:
+        parsed = _parse_model_json(content)
+    except Exception:
+        return []
+    if isinstance(parsed, list):
+        parsed = {"scenes": parsed}
+    if not isinstance(parsed, dict):
+        return []
+    extra = _normalize_storyboard_scenes(
+        parsed.get("scenes") or parsed.get("stages"), lang_key
+    )
+    log_event(
+        f"Narration continuation via {used_model}: {len(extra)} scenes",
+        component="SqlShortEngine",
+    )
+    return extra
+
+
+_PLANNED_LAYOUTS = ("cards", "pipeline", "chips", "editorial")
+
+
+def _attach_planned_visuals(scenes: List[Dict[str, Any]], topic: str, lang_key: str) -> None:
+    """Give outline-only scenes real on-screen objects so they survive storyboard validation."""
+    if not scenes:
+        return
+    short = _storyboard_topic_label(topic)
+    slots = _fill_keywords(_topic_keywords(topic), short, lang_key)
+    for index, scene in enumerate(scenes):
+        visual = scene.get("visual_data")
+        visual = dict(visual) if isinstance(visual, dict) else {}
+        speech = str(scene.get("speech") or scene.get(f"speech_{lang_key}") or "").strip()
+        headline = str(
+            scene.get("visual") or visual.get("headline") or scene.get("title") or f"Scene {index + 1}"
+        ).strip()[:60]
+
+        raw_labels = scene.get("labels") or visual.get("labels") or []
+        if not isinstance(raw_labels, list):
+            raw_labels = [raw_labels]
+        labels: List[str] = []
+        for raw in raw_labels:
+            label = re.sub(r"\s+", " ", str(raw or "")).strip(" .,;:-–")
+            if not label or len(label) > 42 or label.lower() in {l.lower() for l in labels}:
+                continue
+            labels.append(label)
+        if len(labels) < 2:
+            for label in _labels_for_scene(headline, speech, slots, index):
+                if label.lower() not in {l.lower() for l in labels}:
+                    labels.append(label)
+        labels = labels[:4]
+
+        layout = str(scene.get("layout") or visual.get("layout") or "").strip().lower()
+        if layout not in _PLANNED_LAYOUTS:
+            layout = _PLANNED_LAYOUTS[index % len(_PLANNED_LAYOUTS)]
+
+        description = str(
+            scene.get("visual_description") or visual.get("visual_description") or ""
+        ).strip()
+        if not description:
+            description = f"{headline}: {', '.join(labels)} highlight in turn as the narration explains each point."
+
+        visual.update({
+            "layout": layout,
+            "headline": headline,
+            "subtext": str(visual.get("subtext") or scene.get("subtext") or speech[:120]).strip(),
+            "labels": labels,
+            "elements": visual.get("elements")
+            or [{"label": label, "detail": speech[:90], "motion": "float"} for label in labels],
+            "steps": labels if layout == "pipeline" else visual.get("steps") or [],
+            "takeaway": headline if layout == "editorial" else visual.get("takeaway") or "",
+            "motion_grammar": visual.get("motion_grammar")
+            or "reveal_each_label_as_the_spoken_point_lands",
+        })
+        scene["visual_type"] = scene.get("visual_type") or layout
+        scene["visual_description"] = description
+        scene["visual_data"] = visual
 
 
 def _build_local_storyboard(
@@ -2605,36 +2861,16 @@ class SqlShortVideoEngine:
                     )
                     if len(model_scenes) < MIN_STORYBOARD_SCENES:
                         log_event(
-                            f"Storyboard from {used_model} had {len(model_scenes)} narrated scenes; requesting a restructure.",
+                            f"Storyboard from {used_model} had {len(model_scenes)} narrated scenes; "
+                            "planning a compact 4-scene narration instead.",
                             level="WARNING",
                             component="SqlShortEngine",
                         )
-                        restructure_prompt = (
-                            f"Rewrite this storyboard as exactly 4 scenes for the topic: {text_input}\n"
-                            "Each scene must teach a different beat (hook, why it matters, how it works, takeaway) "
-                            "and no scene may repeat another scene's narration; use the word Recap only in the last scene.\n"
-                            f"Every scene needs 'title', 'speech' (2-4 spoken sentences in {lang_key}), "
-                            "'visual_description', 'visual_type', and 'visual_data' with at least 2 topic-specific "
-                            "elements. Output only a JSON object of the form {\"title\": ..., \"scenes\": [...]}.\n\n"
-                            f"{json.dumps(parsed, ensure_ascii=False)[:6000]}"
+                        planned = _plan_narration_scenes(
+                            text_input, lang_key, difficulty, target_models
                         )
-                        restructured_resp, used_model, used_mode = model_manager.execute_with_fallback(
-                            prompt=restructure_prompt,
-                            schema={"type": "object"},
-                            system_prompt=storyboard_system_prompt,
-                            models=target_models,
-                            allow_fallback=True,
-                            timeout=60.0,
-                        )
-                        reparsed = _parse_model_json(restructured_resp)
-                        if isinstance(reparsed, list):
-                            reparsed = {"scenes": reparsed}
-                        retry_scenes = _normalize_storyboard_scenes(
-                            (reparsed.get("scenes") or reparsed.get("stages")) if isinstance(reparsed, dict) else None,
-                            lang_key,
-                        )
-                        if len(retry_scenes) > len(model_scenes):
-                            parsed, model_scenes = reparsed, retry_scenes
+                        if len(planned) > len(model_scenes):
+                            model_scenes = planned
                     if len(model_scenes) < MIN_STORYBOARD_SCENES:
                         model_scenes = _ensure_min_storyboard_scenes(model_scenes, lang_key, text_input)
                     parsed["scenes"] = model_scenes
@@ -2658,6 +2894,25 @@ class SqlShortVideoEngine:
                 )
 
         # 5. Free keyless AI storyboard (Pollinations) before any template fallback.
+        if not matched and len(text_input) > 3 and backend_ready:
+            planned = _plan_narration_scenes(
+                text_input,
+                lang_key,
+                difficulty,
+                ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "openai/gpt-oss-120b"],
+            )
+            if len(planned) >= MIN_STORYBOARD_SCENES:
+                matched = {
+                    "id": "custom_ai_scenario",
+                    "title": _storyboard_topic_label(text_input),
+                    "question": text_input,
+                    "difficulty": difficulty,
+                    "content_type": content_type,
+                    "scenes": planned,
+                    "stages": planned,
+                }
+                storyboard_source = "LLM narration plan"
+
         if not matched and len(text_input) > 3:
             try:
                 free_board = await asyncio.wait_for(
