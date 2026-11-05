@@ -923,6 +923,39 @@ export default {
                             path === "/api/metadata" ||
                             path === "/api/image/generate";
 
+    // Payment endpoints must return the backend's real status (503 = keys missing,
+    // 400 = bad signature). The generic cascade treats 5xx as node failure and
+    // replaces the response, which hides gateway errors from the checkout UI.
+    if (path.startsWith("/api/payments/")) {
+      try {
+        const targetUrl = new URL(path + url.search, renderUrl);
+        const newHeaders = new Headers(request.headers);
+        newHeaders.delete("host");
+        newHeaders.set("Host", targetUrl.host);
+        newHeaders.set("X-Forwarded-Host", url.host);
+        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Payments-Render-Direct");
+        const response = await fetch(targetUrl.toString(), {
+          method: request.method,
+          headers: newHeaders,
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+          redirect: "follow"
+        });
+        const fh = new Headers(response.headers);
+        fh.set("X-NanoPro-Routed-Node", renderUrl);
+        fh.set("X-NanoPro-Mode", "RENDER_PAYMENTS_DIRECT");
+        fh.set("Access-Control-Allow-Origin", "*");
+        fh.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        fh.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          status: "error",
+          code: "gateway_unreachable",
+          message: "Payment service is temporarily unavailable. Please retry in a moment."
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
     // --- LAPTOP-ONLY ENDPOINTS (FFmpeg encoding — no cloud substitute) ---
     if (isLaptopOnlyEndpoint) {
       if (localTunnel) {
