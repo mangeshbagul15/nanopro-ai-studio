@@ -16,9 +16,8 @@ from app.video_maker import sql_short_engine as _sse
 STORYBOARD_MODEL_CHAIN: List[str] = [
     "gemini-3.5-flash-lite",
     "openai/gpt-oss-120b",
-    "llama-3.3-70b-versatile",
-    "gemini-3.1-flash-lite",
-    "gemini-3.8-flash",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
 ]
 
 

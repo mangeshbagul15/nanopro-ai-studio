@@ -431,6 +431,115 @@ def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str)
     return normalized
 
 
+_LOCAL_STORYBOARD_COPY: Dict[str, Dict[str, str]] = {
+    "mr": {
+        "hook": "आज आपण {topic} हा विषय अगदी सोप्या भाषेत समजून घेणार आहोत. शेवटपर्यंत पहा, कारण प्रत्येक टप्पा एका मोठ्या कल्पनेकडे घेऊन जातो.",
+        "why": "{topic} का महत्त्वाचा आहे? कारण तो रोजच्या कामात वेळ वाचवतो आणि चुका कमी करतो. हे समजल्यावर पुढचा टप्पा लक्षात ठेवणे सोपे होते.",
+        "how": "आता कामाची पद्धत पाहू. पहिली पायरी म्हणजे मूळ गरज ओळखणे. दुसरी पायरी म्हणजे योग्य घटक निवडणे. तिसरी पायरी म्हणजे ते घटक जोडून निकाल तपासणे. असा क्रम ठेवल्यास {topic} नेहमी अचूक चालतो.",
+        "takeaway": "थोडक्यात, {topic} मध्ये पहिला टप्पा समजून घ्या, दुसरा टप्पा सराव करा आणि तिसरा टप्पा तपासा. याच सवयीने तुम्ही पुढच्या पातळीवर जाल.",
+    },
+    "hi": {
+        "hook": "आज हम {topic} को बिल्कुल आसान भाषा में समझेंगे। अंत तक देखिए, क्योंकि हर चरण एक बड़े विचार तक ले जाता है।",
+        "why": "{topic} क्यों जरूरी है? क्योंकि यह रोज के काम में समय बचाता है और गलतियाँ कम करता है। यह समझने के बाद अगला चरण याद रखना आसान हो जाता है।",
+        "how": "अब काम का तरीका देखिए। पहला कदम जरूरत समझना है। दूसरा कदम सही हिस्से चुनना है। तीसरा कदम उन्हें जोड़कर नतीजा जाँचना है। इसी क्रम से {topic} हमेशा सही चलता है।",
+        "takeaway": "संक्षेप में, {topic} में पहले चरण को समझिए, दूसरे में अभ्यास कीजिए और तीसरे में नतीजा जाँचिए। इसी आदत से आप अगले स्तर पर पहुँचेंगे।",
+    },
+    "en": {
+        "hook": "Today we understand {topic} in the simplest possible way. Watch till the end, because every scene builds one connected idea.",
+        "why": "Why does {topic} matter? It saves time in daily work and removes common mistakes. Once this is clear, the next step becomes much easier to remember.",
+        "how": "Now look at the method. Step one is understanding the real requirement. Step two is choosing the right building blocks. Step three is connecting them and verifying the result. Follow this order and {topic} stays accurate.",
+        "takeaway": "In short, understand the first step of {topic}, practise the second, and verify the third. That habit is what takes you to the next level.",
+    },
+}
+
+
+def _storyboard_topic_label(topic: str) -> str:
+    clean = (topic or "Technology").strip().replace("\n", " ")
+    return clean if len(clean) <= 55 else clean[:52].rstrip() + "…"
+
+
+def _recap_scene(lang_key: str, topic: str) -> Dict[str, Any]:
+    short = _storyboard_topic_label(topic)
+    speech = _LOCAL_STORYBOARD_COPY.get(lang_key, _LOCAL_STORYBOARD_COPY["en"])["takeaway"].format(topic=short)
+    return {
+        "title": f"Recap: {short}",
+        "speech": speech,
+        f"speech_{lang_key}": speech,
+        "visual_type": "chips",
+        "visual_description": f"A concise recap of {short} with the key steps highlighted.",
+        "visual_data": {
+            "layout": "chips",
+            "headline": f"Recap: {short}",
+            "subtext": "Key steps and the final takeaway.",
+            "labels": [short, "Key steps", "Takeaway"],
+        },
+    }
+
+
+def _ensure_min_storyboard_scenes(scenes: List[Dict[str, Any]], lang_key: str, topic: str) -> List[Dict[str, Any]]:
+    """Pad a short AI storyboard instead of failing the whole video job."""
+    if not scenes:
+        return scenes
+    padded = list(scenes)
+    while len(padded) < MIN_STORYBOARD_SCENES:
+        padded.append(_recap_scene(lang_key, topic))
+    return padded
+
+
+def _build_local_storyboard(
+    topic: str,
+    lang_key: str,
+    difficulty: str,
+    content_type: str = "theory",
+    mode: str = "faang_drill",
+) -> Dict[str, Any]:
+    """Guaranteed AI-free 2D storyboard so any prompt still produces a video."""
+    topic_text = (topic or "Technology").strip() or "Technology"
+    short = _storyboard_topic_label(topic_text)
+    copy = _LOCAL_STORYBOARD_COPY.get(lang_key, _LOCAL_STORYBOARD_COPY["en"])
+    specs = [
+        ("hook", f"Understand {short}", "title", [short, "Why it matters", "What you will learn"]),
+        ("why", f"{short} in the real world", "cards", ["Real use case", "Common mistake", "Benefit"]),
+        ("how", f"Step-by-step: {short}", "pipeline", ["Requirement", "Build blocks", "Verify result"]),
+        ("takeaway", f"Recap: {short}", "chips", [short, "Key steps", "Takeaway"]),
+    ]
+    stages: List[Dict[str, Any]] = []
+    for index, (key, title, layout, labels) in enumerate(specs):
+        speech = copy[key].format(topic=short)
+        stages.append({
+            "id": index + 1,
+            "title": title,
+            "speech": speech,
+            f"speech_{lang_key}": speech,
+            "visual_type": layout,
+            "visual_description": f"Topic-specific 2D diagram for {short}: {title}.",
+            "visual_data": {
+                "layout": layout,
+                "headline": title,
+                "subtext": f"A clear visual walkthrough of {short}.",
+                "labels": labels,
+                "steps": labels if layout == "pipeline" else [],
+            },
+        })
+    return {
+        "id": "custom_local_fallback",
+        "title": short,
+        "question": topic_text,
+        "difficulty": difficulty,
+        "content_type": content_type,
+        "mode": mode,
+        "stages": stages,
+        "storyboard_fallback": True,
+        "pro_tip": {
+            "mr": f"💡 टीप: {short} शिकताना प्रत्येक टप्पा स्वतः सराव करा.",
+            "hi": f"💡 टिप: {short} सीखते समय हर चरण खुद अभ्यास करें.",
+            "en": f"💡 Tip: practise each step of {short} yourself while learning.",
+        }.get(lang_key, f"💡 Tip: practise each step of {short} yourself while learning."),
+        f"explanation_{lang_key}": copy["takeaway"].format(topic=short),
+        f"hook_{lang_key}": copy["hook"].format(topic=short),
+    }
+
+
 def _resolve_storyboard_attribution(used_model: Optional[str], used_mode: Any) -> Tuple[str, str]:
     if isinstance(used_mode, dict):
         actual_model = used_mode.get("model") or used_model
@@ -1901,7 +2010,7 @@ class SqlShortVideoEngine:
                         "- Keep teacher narration clear, pedagogical, and precise."
                     )
                 elif "wan" in sm_clean:
-                    target_models = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
+                    target_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
                     ai_prompt += (
                         "\n\n[ARCHITECTURE STORYBOARD DIRECTIVE]:\n"
                         "- Choose components and relationships that genuinely match the user's requested topic.\n"
@@ -2001,9 +2110,7 @@ class SqlShortVideoEngine:
                         if len(retry_scenes) > len(model_scenes):
                             parsed, model_scenes = reparsed, retry_scenes
                     if len(model_scenes) < MIN_STORYBOARD_SCENES:
-                        raise ValueError(
-                            f"The model returned only {len(model_scenes)} narrated scene(s) after a restructure attempt."
-                        )
+                        model_scenes = _ensure_min_storyboard_scenes(model_scenes, lang_key, text_input)
                     parsed["scenes"] = model_scenes
                     parsed.pop("stages", None)
                     matched = parsed
@@ -2025,23 +2132,14 @@ class SqlShortVideoEngine:
                 )
 
         if not matched:
-            error_detail = storyboard_error or "No model-authored storyboard was produced."
-            if generation_pattern == "unified" and storyboard_error:
-                return {
-                    "status": "error",
-                    "message": (
-                        f"The selected storyboard model could not generate this lesson: {storyboard_error} "
-                        "Choose Automatic model fallback or check the selected provider's API credentials."
-                    ),
-                }
-            return {
-                "status": "error",
-                "message": (
-                    f"The storyboard model could not create a prompt-specific lesson: {error_detail} "
-                    "Try Automatic model fallback, choose an available model, or check its API credentials. "
-                    "NanoPro will not substitute a generic template."
-                ),
-            }
+            log_event(
+                f"All storyboard models unavailable ({storyboard_error or 'no model response'}); "
+                "rendering the guaranteed local 2D storyboard instead of failing.",
+                level="WARNING",
+                component="SqlShortEngine",
+            )
+            matched = _build_local_storyboard(text_input, lang_key, difficulty, content_type, mode)
+            storyboard_source = "NanoPro local 2D fallback storyboard"
 
         matched_content_type = matched.get("content_type", content_type)
         stages = _ensure_scene_visual_directions(
