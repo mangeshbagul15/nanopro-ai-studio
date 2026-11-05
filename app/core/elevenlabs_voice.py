@@ -271,6 +271,12 @@ class ElevenLabsVoiceEngine:
             )
         except Exception as e:
             log_event(f"Notice saving key to vault: {e}", level="DEBUG", component="ElevenLabs")
+        try:
+            from app.video_maker.ai_provider_router import reset_provider_probe
+
+            reset_provider_probe()
+        except Exception as e:
+            log_event(f"Notice resetting provider probe: {e}", level="DEBUG", component="ElevenLabs")
         return {"status": "success", "message": "ElevenLabs API Key successfully stored and verified."}
 
     def get_user_info(self) -> Dict[str, Any]:

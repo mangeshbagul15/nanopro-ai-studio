@@ -107,6 +107,11 @@ def _mark_exhausted(provider: str) -> None:
         data[provider]["usable"] = False
 
 
+def reset_provider_probe() -> None:
+    """Invalidate cached provider status so a newly saved API key is used immediately."""
+    _probe_cache.update({"at": 0.0, "data": None})
+
+
 def _build_clip_prompt(scene_prompt: str, topic: str) -> str:
     return (
         f"Vertical 9:16 2D animated tech explainer, flat vector motion graphics style. "
