@@ -206,19 +206,29 @@ MAX_STORYBOARD_SCENES = 5
 
 
 def _scene_speech(scene: Dict[str, Any], lang_key: str) -> str:
-    for key in (f"speech_{lang_key}", *_SPEECH_ALIASES, "speech_en"):
+    keys: List[str] = [f"speech_{lang_key}"]
+    for alias in _SPEECH_ALIASES:
+        keys.append(f"{alias}_{lang_key}")
+    keys.extend(_SPEECH_ALIASES)
+    keys.append("speech_en")
+    for key in keys:
         value = scene.get(key)
         if isinstance(value, str) and value.strip():
             return value.strip()
+        if isinstance(value, dict):
+            for sub_key in (lang_key, f"{lang_key}_text", "text", "content", "speech", "narration", "line", "en"):
+                sub = value.get(sub_key)
+                if isinstance(sub, str) and sub.strip():
+                    return sub.strip()
         if isinstance(value, list):
             parts = []
             for v in value:
                 if isinstance(v, str):
                     parts.append(v.strip())
                 elif isinstance(v, dict):
-                    for key in ("line", "text", "content", "speech", "narration"):
-                        if isinstance(v.get(key), str) and v[key].strip():
-                            parts.append(v[key].strip())
+                    for sub_key in ("line", "text", "content", "speech", "narration"):
+                        if isinstance(v.get(sub_key), str) and v[sub_key].strip():
+                            parts.append(v[sub_key].strip())
                             break
             joined = " ".join(p for p in parts if p)
             if joined:
