@@ -211,7 +211,16 @@ def _scene_speech(scene: Dict[str, Any], lang_key: str) -> str:
         if isinstance(value, str) and value.strip():
             return value.strip()
         if isinstance(value, list):
-            joined = " ".join(str(v).strip() for v in value if str(v).strip())
+            parts = []
+            for v in value:
+                if isinstance(v, str):
+                    parts.append(v.strip())
+                elif isinstance(v, dict):
+                    for key in ("line", "text", "content", "speech", "narration"):
+                        if isinstance(v.get(key), str) and v[key].strip():
+                            parts.append(v[key].strip())
+                            break
+            joined = " ".join(p for p in parts if p)
             if joined:
                 return joined
     return ""
@@ -455,16 +464,16 @@ _LOCAL_STORYBOARD_COPY: Dict[str, Dict[str, str]] = {
 
 _LOCAL_KEYWORD_TEMPLATES: Dict[str, Dict[str, str]] = {
     "mr": {
-        "hook": "आज आपण {topic} समजून घेणार आहोत. यात {k1}, {k2} आणि {k3} हे तीन महत्त्वाचे भाग आहेत. शेवटपर्यंत पहा.",
-        "why": "{topic} मध्ये {k1} का महत्त्वाचा आहे? कारण त्यामुळे {k2} अधिक स्पष्ट होतो आणि {k3} मधील चुका कमी होतात.",
-        "how": "आता कामाचा क्रम पाहू. पहिले {k1}, नंतर {k2}, आणि शेवटी {k3}. हा क्रम ठेवल्यास {topic} अचूक चालतो.",
-        "takeaway": "थोडक्यात, {k1} समजून घ्या, {k2} सराव करा आणि {k3} तपासा. हीच पद्धत {topic} मध्ये काम करते.",
+        "hook": "{topic} हा विषय आज सोप्या भाषेत समजून घेऊ. यात {k1}, {k2} आणि {k3} या तीन गोष्टी महत्त्वाच्या आहेत. शेवटपर्यंत पहा.",
+        "why": "{topic} समजून घेण्यासाठी {k1}, {k2} आणि {k3} का महत्त्वाचे? कारण या तिन्हींमुळे विषय अधिक स्पष्ट होतो आणि चुका कमी होतात.",
+        "how": "आता क्रमाने पाहू: पहिले {k1}, नंतर {k2}, आणि शेवटी {k3}. हा क्रम ठेवल्यास विषय अचूक समजतो.",
+        "takeaway": "थोडक्यात, {k1}, {k2} आणि {k3} हे मुद्दे लक्षात ठेवा. हीच पद्धत {topic} मध्ये उपयोगी पडते.",
     },
     "hi": {
-        "hook": "आज हम {topic} को आसान भाषा में समझेंगे। इसमें {k1}, {k2} और {k3} तीन अहम हिस्से हैं। अंत तक देखिए।",
-        "why": "{topic} में {k1} क्यों जरूरी है? क्योंकि इससे {k2} साफ होता है और {k3} में गलतियाँ कम होती हैं।",
-        "how": "अब क्रम देखिए। पहले {k1}, फिर {k2}, और आखिर में {k3}। इसी क्रम से {topic} सही चलता है।",
-        "takeaway": "संक्षेप में, {k1} समझिए, {k2} का अभ्यास कीजिए और {k3} जाँचिए। यही तरीका {topic} में काम करता है।",
+        "hook": "{topic} को आज आसान भाषा में समझेंगे। इसमें {k1}, {k2} और {k3} ये तीन बातें अहम हैं। अंत तक देखिए।",
+        "why": "{topic} समझने के लिए {k1}, {k2} और {k3} क्यों जरूरी हैं? क्योंकि इन तीनों से विषय साफ होता है और गलतियाँ कम होती हैं.",
+        "how": "अब क्रम देखिए: पहले {k1}, फिर {k2}, और आखिर में {k3}. इसी क्रम से विषय सही समझ आता है.",
+        "takeaway": "संक्षेप में, {k1}, {k2} और {k3} ये मुद्दे याद रखिए। यही तरीका {topic} में काम आता है.",
     },
     "en": {
         "hook": "Today we unpack {topic}. The three parts that matter most are {k1}, {k2}, and {k3}. Watch till the end.",
@@ -486,6 +495,7 @@ _KEYWORD_STOPWORDS = {
     "two", "still", "day", "days", "now", "today", "new", "way", "part", "parts", "time", "years",
     "year", "ago", "enough", "push", "pushes", "through", "inside", "without", "within", "between",
     "explain", "describe", "teach", "tell", "give", "write", "show", "draw", "animate",
+    "marathi", "hindi", "english", "language", "simple", "reel", "reels", "shorts", "clip",
     "those", "these", "into", "while", "works", "keeps", "about", "under", "onto", "upon",
     "म्हणजे", "आणि", "आहे", "आहेत", "आपण", "हे", "हा", "ही", "तो", "ती", "ते", "मध्ये",
     "साठी", "नंतर", "पहिले", "शेवटी", "आता", "आज", "कारण", "त्यामुळे", "कमी", "अधिक",
@@ -674,7 +684,7 @@ def _prompt_narrative_sentences(text: str) -> List[str]:
     sentences = re.split(r"(?<=[.!?।])\s+", body.replace("\n", " "))
     instruction_start = re.compile(
         r"(?i)^(?:make|create|generate|keep|use|write|return|output|include|avoid|do not|don't|ensure|"
-        r"make sure|add|show|use a|use an)\b"
+        r"make sure|add|show|explain|describe|teach|tell|give|draw|animate|illustrate)\b"
     )
     cleaned = []
     framing = re.compile(r"(?i)\b(?:\d+|short|quick)\s*(?:second|sec|minute|min)?\s*(?:reel|video|short|clip|lesson)\b")
@@ -710,10 +720,66 @@ def _recap_scene(lang_key: str, topic: str) -> Dict[str, Any]:
 
 
 def _ensure_min_storyboard_scenes(scenes: List[Dict[str, Any]], lang_key: str, topic: str) -> List[Dict[str, Any]]:
-    """Pad a short AI storyboard instead of failing the whole video job."""
+    """Pad a short AI storyboard with distinct prompt-derived scenes, never duplicate recaps."""
     if not scenes:
         return scenes
     padded = list(scenes)
+    short = _storyboard_topic_label(topic)
+    slots = _fill_keywords(_topic_keywords(topic), short, lang_key)
+    copy = _LOCAL_KEYWORD_TEMPLATES.get(lang_key, _LOCAL_KEYWORD_TEMPLATES["en"])
+
+    def _norm(text: str) -> str:
+        return re.sub(r"[^a-z0-9\u0900-\u097F]+", " ", (text or "").lower()).strip()
+
+    spoken = {_norm(s.get("speech") or s.get(f"speech_{lang_key}") or "") for s in padded}
+    layouts = ("cards", "pipeline", "chips")
+
+    def _push(title: str, speech: str, layout: str, visual_text: str, labels: List[str]) -> None:
+        key = _norm(speech)
+        if not key or key in spoken:
+            return
+        spoken.add(key)
+        padded.append({
+            "title": title,
+            "speech": speech,
+            f"speech_{lang_key}": speech,
+            "visual_type": layout,
+            "visual_description": visual_text,
+            "visual_data": {
+                "layout": layout,
+                "headline": title,
+                "subtext": visual_text[:150],
+                "labels": labels,
+                "steps": labels if layout == "pipeline" else [],
+            },
+        })
+
+    for sentence in _prompt_narrative_sentences(topic):
+        if len(padded) >= MIN_STORYBOARD_SCENES:
+            break
+        labels = _labels_for_scene("", sentence, slots, len(padded))
+        words = sentence.split()
+        title = ""
+        for word in words:
+            candidate = (title + " " + word).strip()
+            if len(candidate) > 48:
+                break
+            title = candidate
+        title = title.rstrip(" ,;:-–") or (labels[0] if labels else sentence[:40])
+        _push(title, sentence, layouts[len(padded) % len(layouts)], sentence[:160], labels)
+
+    specs = (
+        ("why", f"{short} in the real world", "cards"),
+        ("how", f"Step-by-step: {short}", "pipeline"),
+        ("hook", f"Understand {short}", "title"),
+    )
+    for index, (key, title, layout) in enumerate(specs):
+        if len(padded) >= MIN_STORYBOARD_SCENES:
+            break
+        speech = _format_template(copy[key], topic=short, k1=slots[0], k2=slots[1], k3=slots[2])
+        labels = [slots[(index + j) % 3] for j in range(3)]
+        _push(title, speech, layout, f"2D diagram for {short} illustrating {labels[0]}, {labels[1]} and {labels[2]}.", labels)
+
     while len(padded) < MIN_STORYBOARD_SCENES:
         padded.append(_recap_scene(lang_key, topic))
     return padded
@@ -2517,6 +2583,8 @@ class SqlShortVideoEngine:
                         )
                         restructure_prompt = (
                             f"Rewrite this storyboard as exactly 4 scenes for the topic: {text_input}\n"
+                            "Each scene must teach a different beat (hook, why it matters, how it works, takeaway) "
+                            "and no scene may repeat another scene's narration; use the word Recap only in the last scene.\n"
                             f"Every scene needs 'title', 'speech' (2-4 spoken sentences in {lang_key}), "
                             "'visual_description', 'visual_type', and 'visual_data' with at least 2 topic-specific "
                             "elements. Output only a JSON object of the form {\"title\": ..., \"scenes\": [...]}.\n\n"
