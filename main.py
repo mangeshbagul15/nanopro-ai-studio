@@ -3721,6 +3721,14 @@ class PaymentGatewayConfigRequest(BaseModel):
     key_secret: str
 
 
+class UpiClaimRequest(BaseModel):
+    plan_id: str = "ai_awaaz_starter"
+    name: str = ""
+    email: str = ""
+    mobile: str = ""
+    reference: str = ""
+
+
 def _payment_admin_token(request: Request) -> str:
     auth_header = (request.headers.get("Authorization") or "").strip()
     if auth_header.lower().startswith("bearer "):
@@ -3788,6 +3796,17 @@ async def api_payments_verify(req: PaymentVerifyRequest):
 
     try:
         return JSONResponse(verify_payment(req.order_id, req.payment_id, req.signature))
+    except PaymentError as e:
+        return JSONResponse({"status": "error", "code": e.code, "message": e.message}, status_code=e.status_code)
+
+
+@app.post("/api/payments/upi/claim")
+async def api_payments_upi_claim(req: UpiClaimRequest):
+    """Records a direct UPI / QR payment reference for admin confirmation."""
+    from app.payments.razorpay_gateway import PaymentError, claim_upi_payment
+
+    try:
+        return JSONResponse(claim_upi_payment(req.plan_id, req.name, req.email, req.mobile, req.reference))
     except PaymentError as e:
         return JSONResponse({"status": "error", "code": e.code, "message": e.message}, status_code=e.status_code)
 

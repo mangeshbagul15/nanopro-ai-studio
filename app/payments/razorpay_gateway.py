@@ -6,6 +6,7 @@ import re
 import time
 import uuid
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote, urlencode
 
 import requests
 
@@ -14,6 +15,10 @@ from app.core.logger import log_event
 RAZORPAY_BASE_URL = "https://api.razorpay.com/v1"
 CURRENCY = "INR"
 GST_RATE = 0.18
+
+UPI_ID = (os.getenv("NANOPRO_UPI_ID") or "mangeshbagul15-2@okhdfcbank").strip()
+UPI_PAYEE = (os.getenv("NANOPRO_UPI_NAME") or "Mangesh Bagul").strip()
+RAZORPAY_ME_URL = (os.getenv("NANOPRO_RAZORPAY_ME_URL") or "https://razorpay.me/@mangeshvasantbagul").strip()
 
 PLANS: Dict[str, Dict[str, Any]] = {
     "ai_awaaz_starter": {
@@ -72,6 +77,31 @@ def plan_summary(plan: Dict[str, Any]) -> Dict[str, Any]:
 
 def list_plans() -> List[Dict[str, Any]]:
     return [plan_summary(plan) for plan in PLANS.values()]
+
+
+def direct_upi_payload(plan: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Key-free payment path: UPI intent QR plus the Razorpay.me payment page."""
+    plan = plan or PLANS["ai_awaaz_starter"]
+    summary = plan_summary(plan)
+    amount = f"{summary['total_paise'] / 100:.2f}"
+    params = {
+        "pa": UPI_ID,
+        "pn": UPI_PAYEE,
+        "am": amount,
+        "cu": CURRENCY,
+        "tn": f"{plan['name']} - NanoPro",
+    }
+    return {
+        "upi_id": UPI_ID,
+        "payee": UPI_PAYEE,
+        "upi_uri": "upi://pay?" + urlencode(params, quote_via=quote),
+        "qr_image_url": "/assets/payment/razorpay_upi_qr.png",
+        "razorpay_me_url": RAZORPAY_ME_URL,
+        "plan_id": plan["id"],
+        "amount_paise": summary["total_paise"],
+        "amount_display": summary["total_display"],
+        "note": f"{plan['name']} - NanoPro AI Studio",
+    }
 
 
 def _clean_text(value: str, field: str, min_len: int, max_len: int) -> str:
@@ -141,6 +171,7 @@ def config() -> Dict[str, Any]:
         "gateway": "Razorpay",
         "methods": ["UPI", "Cards", "Net Banking"],
         "plans": list_plans(),
+        "direct_upi": direct_upi_payload(),
         "setup_env": ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"],
     }
 
@@ -288,6 +319,7 @@ def payment_history(limit: int = 20) -> List[Dict[str, Any]]:
             "plan_id": row["plan_id"],
             "amount_display": _money(int(row["amount_paise"])),
             "status": row["status"],
+            "mode": row["gateway_mode"],
             "customer_name": row["customer_name"],
             "customer_email": row["customer_email"],
             "created_at": row["created_at"],
@@ -389,6 +421,65 @@ def create_order(plan_id: str, name: str, email: str, mobile: str, client_ip: st
             "notes": payload["notes"],
             "theme": {"color": "#38BDF8"},
         },
+    }
+
+
+def claim_upi_payment(plan_id: str, name: str, email: str, mobile: str, reference: str) -> Dict[str, Any]:
+    """Records a direct-UPI payment claim so the admin can confirm the UTR manually."""
+    plan = PLANS.get((plan_id or "ai_awaaz_starter").strip())
+    if not plan:
+        raise PaymentError("Unknown plan.", code="unknown_plan", status_code=404)
+
+    customer = {
+        "plan_id": plan["id"],
+        "name": _clean_text(name, "Name", 2, 80),
+        "email": _clean_email(email),
+        "mobile": _clean_mobile(mobile),
+    }
+    reference = re.sub(r"\s+", "", reference or "").upper()
+    if not re.fullmatch(r"[A-Z0-9]{6,40}", reference):
+        raise PaymentError(
+            "Enter the UPI transaction reference / UTR (6-40 letters or digits) shown in your UPI app.",
+            code="invalid_reference",
+            status_code=422,
+        )
+
+    summary = plan_summary(plan)
+    order_id = "upi_" + uuid.uuid4().hex[:16]
+    with _conn() as conn:
+        _ensure_table(conn)
+        conn.execute(
+            """
+            INSERT INTO payment_orders
+            (order_id, payment_id, plan_id, amount_paise, currency, status, customer_name,
+             customer_email, customer_mobile, signature_verified, gateway_mode, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+            """,
+            (
+                order_id,
+                reference,
+                plan["id"],
+                int(summary["total_paise"]),
+                CURRENCY,
+                "awaiting_confirmation",
+                customer["name"],
+                customer["email"],
+                customer["mobile"],
+                "upi_direct",
+                time.time(),
+            ),
+        )
+        conn.commit()
+
+    log_event(f"UPI payment claim {order_id} recorded for {summary['total_display']} (ref {reference})", component="Payments")
+    return {
+        "status": "success",
+        "order_id": order_id,
+        "reference": reference,
+        "state": "awaiting_confirmation",
+        "amount_display": summary["total_display"],
+        "plan": summary,
+        "message": "Payment reference received. Access activates as soon as the admin confirms it.",
     }
 
 

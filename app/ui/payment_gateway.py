@@ -51,6 +51,22 @@ def get_payment_gateway_html() -> str:
 #view-payment_gateway .pgr-line { display:flex; justify-content:space-between; gap:10px; font-size:12.5px; color:#CBD5E1; padding:5px 0; }
 #view-payment_gateway .pgr-line.total { border-top:1px solid #334155; margin-top:6px; padding-top:10px; color:#F8FAFC; font-weight:800; font-size:14px; }
 #view-payment_gateway .pgr-setup { display:none; border:1px solid #92400E; background:rgba(146,64,14,.14); border-radius:12px; padding:14px; font-size:12px; color:#FCD34D; line-height:1.55; }
+#view-payment_gateway .pgr-upi { border-color:#0EA5E9; background:linear-gradient(135deg, rgba(8,47,73,.55), rgba(15,23,42,.98)); }
+#view-payment_gateway .pgr-upi-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+#view-payment_gateway .pgr-upi-grid { display:grid; grid-template-columns:200px minmax(0,1fr); gap:18px; margin-top:14px; align-items:start; }
+@media (max-width: 760px) { #view-payment_gateway .pgr-upi-grid { grid-template-columns:1fr; justify-items:center; } }
+#view-payment_gateway .pgr-qr-wrap { width:200px; height:200px; background:#FFF; border-radius:12px; padding:6px; display:flex; align-items:center; justify-content:center; position:relative; }
+#view-payment_gateway .pgr-qr-wrap img { width:188px; height:188px; display:block; border-radius:6px; }
+#view-payment_gateway .pgr-qr-fallback { position:absolute; inset:6px; display:none; align-items:center; justify-content:center; text-align:center; padding:10px; color:#0F172A; font-size:11px; font-weight:800; line-height:1.4; }
+#view-payment_gateway .pgr-upi-info { width:100%; min-width:0; }
+#view-payment_gateway .pgr-upi-id-row { display:flex; align-items:center; gap:8px; background:#0B1120; border:1px dashed #334155; border-radius:10px; padding:9px 12px; }
+#view-payment_gateway .pgr-upi-id-row code { flex:1; color:#E2E8F0; font-size:13.5px; font-weight:700; overflow-wrap:anywhere; }
+#view-payment_gateway .pgr-upi-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:stretch; }
+#view-payment_gateway .pgr-upi-actions .pgr-pay-btn { width:auto; margin-top:0; padding:11px 16px; font-size:13px; text-align:center; text-decoration:none; display:inline-block; }
+#view-payment_gateway .pgr-upi-actions .btn { padding:11px 14px; font-size:12px; text-decoration:none; }
+#view-payment_gateway .pgr-claim-toggle { background:none; border:0; color:#38BDF8; font-size:11.5px; font-weight:800; cursor:pointer; padding:12px 0 0; }
+#view-payment_gateway .pgr-claim-box { display:none; margin-top:10px; padding-top:10px; border-top:1px dashed #334155; }
+#view-payment_gateway .pgr-claim-box.open { display:block; }
 #view-payment_gateway .pgr-admin { display:none; }
 #view-payment_gateway .pgr-admin-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 @media (max-width: 720px) { #view-payment_gateway .pgr-admin-grid { grid-template-columns:1fr; } }
@@ -76,6 +92,42 @@ def get_payment_gateway_html() -> str:
     </div>
 
     <div class="pgr-setup" id="pgrSetupBanner"></div>
+
+    <div class="pgr-card pgr-upi" id="pgrUpiCard">
+        <div class="pgr-upi-head">
+            <div>
+                <h3>&#9889; Pay instantly with UPI / QR</h3>
+                <p class="pgr-muted" style="margin-top:4px;">Official Razorpay UPI QR &mdash; scan with GPay, PhonePe, Paytm or any UPI app. Or pay on the Razorpay page with a card.</p>
+            </div>
+            <span class="pgr-badge live" id="pgrUpiBadge">READY</span>
+        </div>
+        <div class="pgr-upi-grid">
+            <div class="pgr-qr-wrap">
+                <img id="pgrQrImg" alt="Scan to pay with any UPI app" width="188" height="188" />
+                <div class="pgr-qr-fallback" id="pgrQrFallback">QR preview unavailable.<br />Use the UPI ID or Razorpay link.</div>
+            </div>
+            <div class="pgr-upi-info">
+                <label class="pgr-label">UPI ID</label>
+                <div class="pgr-upi-id-row">
+                    <code id="pgrUpiId">mangeshbagul15-2@okhdfcbank</code>
+                    <button type="button" class="pgr-change" onclick="pgrCopyUpi()">Copy</button>
+                </div>
+                <div class="pgr-muted" style="margin-top:9px;">Payee: <b id="pgrUpiPayee" style="color:#E2E8F0;">Mangesh Bagul</b> &bull; Amount: <b id="pgrUpiAmount" style="color:#E2E8F0;">&#8377;352.82</b></div>
+                <div class="pgr-upi-actions">
+                    <a class="pgr-pay-btn" id="pgrRazorpayMe" href="https://razorpay.me/@mangeshvasantbagul" target="_blank" rel="noopener">Pay &#8377;352.82 on Razorpay.me</a>
+                    <a class="btn btn-secondary" id="pgrOpenUpi" href="#" style="display:inline-flex; align-items:center; justify-content:center;">Open UPI app</a>
+                </div>
+                <p class="pgr-muted" style="margin:8px 0 0; font-size:10.5px;">On Razorpay.me, type the amount <b id="pgrMeAmount">&#8377;352.82</b> (or scan the QR above), then submit your UTR below.</p>
+                <button type="button" class="pgr-claim-toggle" id="pgrClaimToggle" onclick="pgrToggleClaim()">I have paid &mdash; submit reference &darr;</button>
+                <div class="pgr-claim-box" id="pgrClaimBox">
+                    <label class="pgr-label" for="pgrUtr">UPI reference / UTR</label>
+                    <div class="pgr-input-wrap"><input type="text" id="pgrUtr" maxlength="40" placeholder="e.g. 412345678901" autocomplete="off" /></div>
+                    <button type="button" class="btn btn-primary" id="pgrClaimBtn" onclick="pgrSubmitClaim()" style="margin-top:10px; font-size:12px; padding:9px 14px;">Submit payment reference</button>
+                </div>
+                <div class="pgr-flash" id="pgrUpiMsg"></div>
+            </div>
+        </div>
+    </div>
 
     <div class="pgr-grid">
         <div class="pgr-card">
@@ -177,7 +229,7 @@ def get_payment_gateway_html() -> str:
 def get_payment_gateway_js() -> str:
     return r'''
 <script>
-window.pgrState = window.pgrState || { config: null, plan: null, order: null, initialised: false, busy: false };
+window.pgrState = window.pgrState || { config: null, plan: null, order: null, directUpi: null, initialised: false, busy: false };
 
 function pgrEl(id) { return document.getElementById(id); }
 
@@ -282,23 +334,32 @@ function pgrRenderConfig(cfg) {
     const payBtn = pgrEl('pgrPayBtn');
     const plan = (cfg.plans && cfg.plans[0]) || window.pgrState.plan;
     if (plan) pgrRenderPlan(plan);
+    pgrRenderUpi(cfg.direct_upi);
 
     if (badge) {
         badge.className = 'pgr-badge ' + (cfg.configured ? (cfg.mode === 'live' ? 'live' : 'test') : 'off');
         badge.textContent = cfg.configured ? (cfg.mode === 'live' ? 'LIVE' : 'TEST MODE') : 'NOT CONNECTED';
     }
-    if (payBtn) payBtn.disabled = !cfg.configured || window.pgrState.busy;
+    if (payBtn) {
+        payBtn.disabled = window.pgrState.busy;
+        payBtn.dataset.mode = cfg.configured ? 'api' : 'external';
+        if (plan) {
+            payBtn.innerHTML = cfg.configured
+                ? 'Pay ' + plan.total_display
+                : 'Pay ' + plan.total_display + ' on Razorpay.me';
+        }
+    }
     if (adminToggle) adminToggle.style.display = pgrIsAdmin() ? 'inline-block' : 'none';
 
     if (banner) {
         if (cfg.configured) {
             pgrShow(banner, false);
         } else {
-            banner.innerHTML = '&#9888; Razorpay is not connected. ' +
+            banner.innerHTML = '&#9888; Card / net-banking API checkout is not connected. ' +
+                'You can still pay with <b>UPI / QR</b> or the <b>Razorpay.me</b> page above. ' +
                 (pgrIsAdmin()
-                    ? 'Use <b>Connect Razorpay</b> above to paste your Key ID and Key Secret, or set the env vars on the server.'
-                    : 'Ask the studio admin to connect the gateway.') +
-                ' Until then the Pay button stays locked.';
+                    ? 'Admins can use <b>Connect Razorpay</b> to enable the secure API checkout.'
+                    : '');
             pgrShow(banner, true);
         }
     }
@@ -306,6 +367,135 @@ function pgrRenderConfig(cfg) {
         pgrShow(pgrEl('pgrAdminPanel'), false);
         pgrShow(pgrEl('pgrHistoryPanel'), false);
     }
+}
+
+function pgrRenderUpi(upi) {
+    window.pgrState.directUpi = upi || null;
+    if (!upi) return;
+    if (pgrEl('pgrUpiId')) pgrEl('pgrUpiId').textContent = upi.upi_id;
+    if (pgrEl('pgrUpiPayee')) pgrEl('pgrUpiPayee').textContent = upi.payee;
+    if (pgrEl('pgrUpiAmount')) pgrEl('pgrUpiAmount').textContent = upi.amount_display;
+    if (pgrEl('pgrMeAmount')) pgrEl('pgrMeAmount').textContent = upi.amount_display;
+    const me = pgrEl('pgrRazorpayMe');
+    if (me && upi.razorpay_me_url) {
+        me.href = upi.razorpay_me_url;
+        me.innerHTML = 'Pay ' + upi.amount_display + ' on Razorpay.me';
+    }
+    const openBtn = pgrEl('pgrOpenUpi');
+    if (openBtn && upi.upi_uri) openBtn.href = upi.upi_uri;
+    const img = pgrEl('pgrQrImg');
+    const fallback = pgrEl('pgrQrFallback');
+    if (img) {
+        const generated = function () {
+            return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(upi.upi_uri);
+        };
+        img.style.display = 'block';
+        if (fallback) fallback.style.display = 'none';
+        let attempt = 0;
+        img.onerror = function () {
+            attempt += 1;
+            if (attempt === 1 && upi.upi_uri) {
+                img.src = generated();
+            } else if (attempt === 2 && upi.upi_uri) {
+                img.src = 'https://quickchart.io/qr?size=220&text=' + encodeURIComponent(upi.upi_uri);
+            } else {
+                img.style.display = 'none';
+                if (fallback) fallback.style.display = 'flex';
+            }
+        };
+        if (upi.qr_image_url) {
+            img.src = upi.qr_image_url;
+        } else if (upi.upi_uri) {
+            img.src = generated();
+        }
+    }
+}
+
+function pgrCopyWithTextarea(value) {
+    const tmp = document.createElement('textarea');
+    tmp.value = value;
+    tmp.style.position = 'fixed';
+    tmp.style.opacity = '0';
+    document.body.appendChild(tmp);
+    tmp.focus();
+    tmp.select();
+    let copied = false;
+    try { copied = document.execCommand('copy'); } catch (e) { copied = false; }
+    document.body.removeChild(tmp);
+    return copied;
+}
+
+function pgrCopyUpi() {
+    const upi = window.pgrState.directUpi;
+    const value = (upi && upi.upi_id) || (pgrEl('pgrUpiId') && pgrEl('pgrUpiId').textContent) || '';
+    if (!value) return;
+    const done = function () { pgrUpiMsg('UPI ID copied: ' + value, 'ok'); };
+    const failed = function () { pgrUpiMsg('Copy blocked by the browser. Tap the UPI ID and copy it manually.', 'err'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(done).catch(function () {
+            if (pgrCopyWithTextarea(value)) done(); else failed();
+        });
+    } else if (pgrCopyWithTextarea(value)) {
+        done();
+    } else {
+        failed();
+    }
+}
+
+function pgrToggleClaim(force) {
+    const box = pgrEl('pgrClaimBox');
+    if (!box) return;
+    const open = typeof force === 'boolean' ? force : !box.classList.contains('open');
+    box.classList.toggle('open', open);
+    if (open) {
+        pgrPrefillUser();
+        setTimeout(function () { if (pgrEl('pgrUtr')) pgrEl('pgrUtr').focus(); }, 50);
+    }
+}
+
+async function pgrSubmitClaim() {
+    const upi = window.pgrState.directUpi || {};
+    const customer = pgrValidateForm();
+    if (!customer) return;
+    const reference = (pgrEl('pgrUtr').value || '').trim();
+    if (!/^[A-Za-z0-9]{6,40}$/.test(reference)) {
+        pgrUpiMsg('Enter the UPI transaction reference / UTR shown in your UPI app.', 'err');
+        return;
+    }
+    const btn = pgrEl('pgrClaimBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    try {
+        const data = await pgrApi('/api/payments/upi/claim', {
+            method: 'POST',
+            body: JSON.stringify({
+                plan_id: (window.pgrState.plan && window.pgrState.plan.id) || upi.plan_id || 'ai_awaaz_starter',
+                name: customer.name,
+                email: customer.email,
+                mobile: customer.mobile,
+                reference: reference
+            })
+        });
+        if (data.status === 'success') {
+            pgrUpiMsg('Reference received for ' + pgrEscape(data.amount_display) + '. Access activates after admin confirmation.', 'ok');
+            pgrEl('pgrUtr').value = '';
+            pgrLoadHistory();
+        } else {
+            pgrUpiMsg(pgrEscape(data.message || 'Could not submit the reference.'), 'err');
+        }
+    } catch (e) {
+        pgrUpiMsg('Network error while submitting the reference.', 'err');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit payment reference';
+    }
+}
+
+function pgrUpiMsg(text, kind) {
+    const el = pgrEl('pgrUpiMsg');
+    if (!el) return;
+    el.className = 'pgr-flash' + (kind ? ' ' + kind : '');
+    el.innerHTML = text || '';
 }
 
 async function pgrRefresh() {
@@ -367,6 +557,8 @@ function pgrValidateForm() {
         pgrMsg('Please fix the highlighted fields before paying.', 'err');
         const firstBad = !nameOk ? pgrEl('pgrName') : (!emailOk ? pgrEl('pgrEmail') : pgrEl('pgrMobile'));
         if (firstBad) firstBad.focus();
+    } else {
+        pgrMsg('', '');
     }
     return ok ? { name: name, email: email, mobile: mobile } : null;
 }
@@ -392,22 +584,32 @@ function pgrSetBusy(busy, label) {
         btn.innerHTML = '<span class="pgr-spin"></span>' + (label || 'Opening secure checkout…');
     } else {
         const plan = window.pgrState.plan;
-        btn.innerHTML = 'Pay ' + (plan ? plan.total_display : '');
         const cfg = window.pgrState.config;
-        btn.disabled = !cfg || !cfg.configured;
+        btn.innerHTML = 'Pay ' + (plan ? plan.total_display : '') +
+            (cfg && cfg.configured ? '' : ' on Razorpay.me');
+        btn.disabled = false;
     }
 }
 
 async function pgrPay() {
     if (window.pgrState.busy) return;
     const cfg = window.pgrState.config;
-    if (!cfg || !cfg.configured) {
-        pgrMsg('Razorpay is not connected yet. ' + (pgrIsAdmin() ? 'Open “Connect Razorpay” and paste your keys.' : 'Please contact the studio admin.'), 'err');
-        if (pgrIsAdmin()) pgrToggleAdmin();
-        return;
-    }
     const customer = pgrValidateForm();
     if (!customer) return;
+    if (!cfg || !cfg.configured) {
+        const upi = (cfg && cfg.direct_upi) || window.pgrState.directUpi;
+        if (upi && upi.razorpay_me_url) {
+            window.open(upi.razorpay_me_url, '_blank', 'noopener');
+            pgrMsg('Opening the secure Razorpay page. Pay ' + pgrEscape(upi.amount_display || '') +
+                ', then submit your UPI reference below so access can be activated.', 'info');
+            pgrToggleClaim(true);
+        } else {
+            pgrMsg('Payment options are not available right now. ' +
+                (pgrIsAdmin() ? 'Open “Connect Razorpay” and paste your keys.' : 'Please contact the studio admin.'), 'err');
+            if (pgrIsAdmin()) pgrToggleAdmin();
+        }
+        return;
+    }
     pgrMsg('');
     pgrSetBusy(true, 'Creating secure order…');
     try {
@@ -593,5 +795,8 @@ window.pgrSaveKeys = pgrSaveKeys;
 window.pgrLoadHistory = pgrLoadHistory;
 window.pgrEnableEmail = pgrEnableEmail;
 window.pgrResetForm = pgrResetForm;
+window.pgrCopyUpi = pgrCopyUpi;
+window.pgrToggleClaim = pgrToggleClaim;
+window.pgrSubmitClaim = pgrSubmitClaim;
 </script>
 '''
