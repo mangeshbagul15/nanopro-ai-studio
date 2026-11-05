@@ -1965,8 +1965,25 @@ class SqlShortVideoEngine:
         audio_dir.mkdir(parents=True, exist_ok=True)
         target_audio_file = audio_dir / custom_filename
 
+        premium_voice_used = False
+        if not selected_voice.lower().startswith("aura-") and full_narration:
+            try:
+                from app.video_maker.ai_provider_router import synthesize_premium_voice
+                el_res = await synthesize_premium_voice(
+                    full_narration, lang_key, f"el_{preset_id}_{narration_hash}_{lang_key}.mp3"
+                )
+                if el_res and el_res.get("file_path") and Path(el_res["file_path"]).exists():
+                    audio_url = el_res.get("audio_url", "")
+                    audio_file_path = el_res["file_path"]
+                    premium_voice_used = True
+                    voice = f"ElevenLabs {el_res.get('model_id', '')}".strip()
+            except Exception as e:
+                log_event(f"Premium voice routing notice: {e}", level="DEBUG", component="SqlShortEngine")
+
         try:
-            if selected_voice.lower().startswith("aura-"):
+            if premium_voice_used:
+                pass
+            elif selected_voice.lower().startswith("aura-"):
                 # Deepgram Aura TTS
                 from app.video_maker.deepgram_provider import generate_deepgram_speech
                 dg_ok = await asyncio.wait_for(
@@ -2292,7 +2309,26 @@ class SqlShortVideoEngine:
             )
 
             # Sub-task 1: Pixabay Video
+            explicit_no_video = any(
+                k in f"{text_input}".lower()
+                for k in ["dont use video", "don't use video", "no video", "canvas only"]
+            )
+
             async def _get_video():
+                if not explicit_no_video:
+                    try:
+                        from app.video_maker.ai_provider_router import generate_scene_clip
+                        clip = await generate_scene_clip(raw_text, text_input)
+                        stg["ai_clip_attempts"] = clip.get("attempts", [])
+                        if clip.get("video_url"):
+                            stg["ai_clip_provider"] = clip["provider"]
+                            return clip["video_url"], {
+                                "aspect_ratio": "9:16",
+                                "duration": 5,
+                                "provider": clip["provider"],
+                            }
+                    except Exception as e:
+                        log_event(f"AI clip routing notice: {e}", level="DEBUG", component="SqlShortEngine")
                 if wants_procedural_vector or not pixabay_active:
                     return "", {"status": "procedural_vector_engine"}
                 try:
@@ -2410,7 +2446,7 @@ class SqlShortVideoEngine:
                 "start": stg.get("start", 0.0),
                 "end": stg.get("end", 8.0),
                 "visual_type": stg.get("visual_type", "showcase"),
-                    "broll_source": "Pixabay Video API" if stg.get("video_url") else "Not used",
+                    "broll_source": (stg.get("ai_clip_provider") or "Pixabay Video API") if stg.get("video_url") else "Not used",
                     "photo_source": "Unsplash Photos API" if stg.get("image_url") else "Not used",
                     "sfx_source": "Freesound API" if stg.get("sfx_url") else "Browser audio synthesis",
                     "sticker_source": "Giphy API" if stg.get("sticker_url") else "Not used"
@@ -2422,6 +2458,12 @@ class SqlShortVideoEngine:
         has_sfx = any(bool(s.get("sfx_url")) for s in calibrated_stages)
         has_giphy = any(bool(s.get("sticker_url")) for s in calibrated_stages)
         has_tavily = bool(tavily_grounding_text)
+
+        _voice_provider_label = (
+            "ElevenLabs (premium, credits checked)" if "ElevenLabs" in voice_actor_name
+            else ("Microsoft Edge-TTS (Neural Cloud, free)" if "Neural" in voice_actor_name else "Deepgram Aura")
+        )
+        ai_clip_providers = sorted({s.get("ai_clip_provider") for s in calibrated_stages if s.get("ai_clip_provider")})
 
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         attribution_ledger = {
@@ -2436,7 +2478,8 @@ class SqlShortVideoEngine:
             "voice_actor": voice_actor_name,
             "voiceover_engine": {"name": voice_actor_name},
             "caption_engine": stt_engine_label,
-            "broll_source": "Pixabay Video API" if has_pixabay else "Not requested",
+            "broll_source": (", ".join(ai_clip_providers) if ai_clip_providers else ("Pixabay Video API" if has_pixabay else "Not requested")),
+            "ai_video_providers": ai_clip_providers,
             "photo_source": "Unsplash Photos API" if has_unsplash else "Not requested",
             "sfx_source": "Freesound API" if has_sfx else "Browser audio synthesis",
             "news_source": "Tavily research" if has_tavily else "Not requested",
@@ -2458,15 +2501,16 @@ class SqlShortVideoEngine:
                     "media_type": (
                         "Prompt-authored 2D Canvas animation"
                         if (not stg.get("video_url") and not stg.get("image_url")) or any(k in str(topic_or_question or "").lower() for k in ["dont use image", "dont use video", "shapes 3d", "3d animation", "shape animation"])
-                        else ("Pixabay 4K Video B-Roll" if stg.get("video_url") else "Unsplash 4K Portrait Backdrop")
+                        else (f"AI-generated video clip ({stg['ai_clip_provider']})" if stg.get("ai_clip_provider") else ("Pixabay 4K Video B-Roll" if stg.get("video_url") else "Unsplash 4K Portrait Backdrop"))
                     ),
-                    "media_provider": "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photos API" if stg.get("image_url") else "NanoPro Canvas"),
+                    "ai_clip_attempts": stg.get("ai_clip_attempts", []),
+                    "media_provider": stg.get("ai_clip_provider") or "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photos API" if stg.get("image_url") else "NanoPro Canvas"),
                     "media_url": stg.get("video_url") or stg.get("image_url") or "",
                     "sfx_name": stg.get("sfx_name") or "Browser-generated transition",
                     "sfx_provider": "Freesound API" if stg.get("sfx_url") else "Browser audio synthesis",
                     "sfx_url": stg.get("sfx_url", ""),
                     "voice_actor": voice_actor_name,
-                    "voice_provider": "Microsoft Edge-TTS (Neural Cloud)" if "Neural" in voice_actor_name else "Deepgram Aura (Ultra-Realistic)",
+                    "voice_provider": _voice_provider_label,
                     "caption_engine": stt_engine_label,
                     "compositor": "Browser Canvas + MediaRecorder",
                     "contributions": {
@@ -2477,13 +2521,13 @@ class SqlShortVideoEngine:
                             "metric": storyboard_source
                         },
                         "tts": {
-                            "api": "Microsoft Edge-TTS" if "Neural" in voice_actor_name else "Deepgram Aura",
+                            "api": _voice_provider_label,
                             "actor": voice_actor_name,
                             "role": "Multilingual Neural Teacher Voiceover",
                             "metric": f"{round(float(stg.get('duration', 8.0)), 1)}s Generated (24kHz HD)"
                         },
                         "visuals": {
-                            "api": "Pixabay Video API" if stg.get("video_url") else ("Unsplash Photos API" if stg.get("image_url") else "NanoPro Canvas"),
+                            "api": (stg.get("ai_clip_provider") or "Pixabay Video API") if stg.get("video_url") else ("Unsplash Photos API" if stg.get("image_url") else "NanoPro Canvas"),
                             "type": "Prompt-authored 2D scene layout",
                             "role": "Scene-specific educational animation",
                             "metric": "Rendered in browser; export resolution is user-selected"
