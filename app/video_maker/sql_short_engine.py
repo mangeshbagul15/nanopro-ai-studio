@@ -632,19 +632,30 @@ def _parse_prompt_scenes(text: str) -> List[Dict[str, str]]:
     """Read explicit Scene 1..N beats (narration + visual prompt) pasted by the user."""
     if not re.search(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b", text or ""):
         return []
-    header_re = re.compile(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b[:.\-–]?\s*(.*)$")
     label_re = re.compile(
         r"(?i)^\s*(?:visual(?:\s*prompt)?|on-?screen|image|picture|narration|voice\s*-?\s*over|"
         r"ai\s+teacher\s+voice|speech|script|dialogue|audio|title|duration)\s*[:\-–]"
     )
+    inline_labels = (
+        r"(?:narration|voice\s*-?\s*over|ai\s+teacher\s+voice|speech|script|dialogue|audio|"
+        r"visual(?:\s*prompt)?|on-?screen|image|picture|title|duration)"
+    )
+    normalized = re.sub(
+        rf"(?i)[ \t]+(?={inline_labels}\s*[:\-–])", "\n", text or ""
+    )
+    header_re = re.compile(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b[:.\-–]?\s*(.*)$")
     blocks: List[Dict[str, Any]] = []
     current: Optional[Dict[str, Any]] = None
-    for line in (text or "").splitlines():
+    for line in normalized.splitlines():
         match = header_re.match(line)
         if match:
             if current:
                 blocks.append(current)
-            current = {"header": match.group(1).strip(), "lines": []}
+            rest = match.group(1).strip()
+            current = {
+                "header": "" if label_re.match(rest) else rest,
+                "lines": [rest] if rest else [],
+            }
         elif current is not None:
             current["lines"].append(line)
     if current:
@@ -691,6 +702,13 @@ def _prompt_narrative_sentences(text: str) -> List[str]:
     body = re.sub(r"(?im)^\s*(?:video\s*title|title)\s*[:\-–].*$", "", text or "")
     body = re.sub(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b.*$", "", body)
     body = re.sub(r"(?im)^\s*(?:visual(?:\s*prompt)?|narration|voice\s*-?\s*over|speech|script|audio)\s*[:\-–].*$", "", body)
+    body = re.sub(r"(?i)\b(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\s*[:.\-–]?\s*", " ", body)
+    body = re.sub(
+        r"(?i)\b(?:narration|voice\s*-?\s*over|speech|script|dialogue|audio|"
+        r"visual(?:\s*prompt)?|on-?screen|image|picture|title|duration)\s*[:\-–]\s*",
+        " ",
+        body,
+    )
     sentences = re.split(r"(?<=[.!?।])\s+", body.replace("\n", " "))
     instruction_start = re.compile(
         r"(?i)^(?:make|create|generate|keep|use|write|return|output|include|avoid|do not|don't|ensure|"
