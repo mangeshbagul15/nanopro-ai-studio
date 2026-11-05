@@ -18,6 +18,8 @@ def get_dashboard_html() -> str:
 
     from app.ui.payment_gateway import get_payment_gateway_html, get_payment_gateway_js
 
+    from app.ui.data_modeling_ai import get_data_modeling_html, get_data_modeling_js
+
 
 
     raw = _get_raw_dashboard_html()
@@ -58,7 +60,7 @@ def get_dashboard_html() -> str:
 
         '<div class="workspace-view" id="view-bitcoin_wallet">',
 
-        get_payment_gateway_html() + '\n<div class="workspace-view" id="view-bitcoin_wallet">'
+        get_payment_gateway_html() + '\n' + get_data_modeling_html() + '\n<div class="workspace-view" id="view-bitcoin_wallet">'
 
     )
 
@@ -74,7 +76,7 @@ def get_dashboard_html() -> str:
 
     processed = processed.replace("<body>", "<body>\n" + get_2026_modern_trends_html() + "\n")
 
-    processed = processed.replace("</body>", sql_js + "\n" + get_2026_modern_trends_js() + "\n" + get_payment_gateway_js() + "\n</body>")
+    processed = processed.replace("</body>", sql_js + "\n" + get_2026_modern_trends_js() + "\n" + get_payment_gateway_js() + "\n" + get_data_modeling_js() + "\n</body>")
 
 
 
@@ -6058,6 +6060,16 @@ def _get_raw_dashboard_html() -> str:
                         <span class="nav-item-label">Payment Gateway</span>
 
                         <span class="badge" style="font-size:8px; background:linear-gradient(135deg,#0EA5E9,#2563EB); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">LIVE</span>
+
+                    </li>
+
+                    <li class="nav-item" onclick="switchView('data_modeling_ai')" data-tooltip="Data Modeling by AI - Chat with every NanoPro database, create tables, joins and reports">
+
+                        <span class="nav-item-icon" style="color:#34D399;">&#128451;</span>
+
+                        <span class="nav-item-label">Data Modeling by AI</span>
+
+                        <span class="badge" style="font-size:8px; background:linear-gradient(135deg,#10B981,#0EA5E9); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">NL</span>
 
                     </li>
 
@@ -24220,6 +24232,8 @@ Ready for message compilation and automated dispatch.
 
                     payment_gateway: "Payment Gateway & Secure Razorpay Checkout",
 
+                    data_modeling_ai: "Data Modeling by AI - Conversational Database Workspace",
+
                     user_management: "User Management & Security Administration (Admin Only)",
 
                     dashboard: "Dashboard & Overview",
@@ -24467,6 +24481,8 @@ window.switchView = switchView;
                 if (viewName === 'bitcoin_wallet') loadBitcoinWalletData();
 
                 if (viewName === 'payment_gateway' && typeof initPaymentGateway === 'function') initPaymentGateway();
+
+                if (viewName === 'data_modeling_ai' && typeof initDataModeling === 'function') initDataModeling();
 
                 if (viewName === 'settings' || viewName === 'models_hub') loadModelList();
 

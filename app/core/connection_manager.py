@@ -25,16 +25,19 @@ from app.core.config import REPORTS_DIR, BASE_DIR
 # Non-secret configuration defaults
 SNOWFLAKE_CONFIG = {
     "connection_name": "NANO_PRO_SNOWFLAKE",
-    "organization": "EGPKNWZ",
-    "account_name": "XH53504",
-    "account_identifier": "EGPKNWZ-XH53504",
-    "region": "AWS_AP_SOUTHEAST_7",
-    "username": "mangeshbagul15",
+    "organization": "XMUTKDJ",
+    "account_name": "KP74023",
+    "account_identifier": "XMUTKDJ-KP74023",
+    "account_locator": "UI21071",
+    "cloud": "AWS",
+    "edition": "Enterprise",
+    "region": "AWS",
+    "username": "MANGESHBAGUL15@GMAIL.COM",
     "role": "ACCOUNTADMIN",
     "warehouse": "COMPUTE_WH",
     "database": "BANK_DB",
     "schema": "L0_STAGING",
-    "account_url": "https://EGPKNWZ-XH53504.snowflakecomputing.com"
+    "account_url": "https://XMUTKDJ-KP74023.snowflakecomputing.com"
 }
 
 ORACLE_CONFIGS = {
@@ -174,20 +177,20 @@ class ConnectionManager:
     def ensure_default_connections(self):
         """Register connection metadata and ensure default credentials from environment/vault."""
         default_pw_map = {
-            "NANO_PRO_SNOWFLAKE": os.environ.get("SNOWFLAKE_PASSWORD", "Bhaiyyanand@123"),
-            "MY_ORACLE_XE_LOCAL": os.environ.get("ORACLE_PASSWORD", "NanoPro2026"),
-            "MY_ORACLE_XE_REMOTE": os.environ.get("ORACLE_PASSWORD", "NanoPro2026"),
-            "MY_ORACLE_XE_REMOTE_New": os.environ.get("ORACLE_PASSWORD", "NanoPro2026"),
-            "ORACLE_APEX_23AI_CLOUD": os.environ.get("ORACLE_APEX_PASSWORD", "NanoPro2026"),
-            "MY_POSTGRES_LOCAL": os.environ.get("POSTGRES_PASSWORD", "Divyam@123"),
-            "POSTGRES_CLOUD_FREE": os.environ.get("NEON_POSTGRES_PASSWORD", "npg_VWB8sLHgC3jZ"),
-            "POSTGRES_RENDER_CLOUD": os.environ.get("RENDER_POSTGRES_PASSWORD", "vM67vYJj7ZtU7D4c9l8y3N3u"),
+            "NANO_PRO_SNOWFLAKE": os.environ.get("SNOWFLAKE_PASSWORD", ""),
+            "MY_ORACLE_XE_LOCAL": os.environ.get("ORACLE_PASSWORD", ""),
+            "MY_ORACLE_XE_REMOTE": os.environ.get("ORACLE_PASSWORD", ""),
+            "MY_ORACLE_XE_REMOTE_New": os.environ.get("ORACLE_PASSWORD", ""),
+            "ORACLE_APEX_23AI_CLOUD": os.environ.get("ORACLE_APEX_PASSWORD", ""),
+            "MY_POSTGRES_LOCAL": os.environ.get("POSTGRES_PASSWORD", ""),
+            "POSTGRES_CLOUD_FREE": os.environ.get("NEON_POSTGRES_PASSWORD", ""),
+            "POSTGRES_RENDER_CLOUD": os.environ.get("RENDER_POSTGRES_PASSWORD", ""),
             "AWS_S3_DATA_LAKE": os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
-            "GMAIL_SMTP": os.environ.get("GMAIL_APP_PASSWORD", "agunjgvexwcjudb"),
+            "GMAIL_SMTP": os.environ.get("GMAIL_APP_PASSWORD", ""),
             "TELEGRAM_ALERTS": os.environ.get("TELEGRAM_BOT_TOKEN", ""),
-            "DUCKDB_GOLD_LAKEHOUSE": "embedded_olap_verified",
-            "GOOGLE_BIGQUERY_SANDBOX": "sandbox_free_tier",
-            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", "NanoPro@SFTP2026!")
+            "DUCKDB_GOLD_LAKEHOUSE": "",
+            "GOOGLE_BIGQUERY_SANDBOX": "",
+            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", ""),
         }
 
         profiles = [
@@ -289,7 +292,7 @@ class ConnectionManager:
     def test_snowflake_connection(self) -> Dict[str, Any]:
         """
         Executes real Snowflake connection verification.
-        - Validates account identifier (EGPKNWZ-XH53504) and region (AWS_AP_SOUTHEAST_7).
+        - Validates account identifier (XMUTKDJ-KP74023) and region (AWS).
         - Connects via snowflake.connector if installed.
         - Verifies active user, role, warehouse COMPUTE_WH, database BANK_DB, schema L0_STAGING.
         - Runs lightweight query: SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_WAREHOUSE(), CURRENT_DATABASE(), CURRENT_SCHEMA().
@@ -344,7 +347,7 @@ class ConnectionManager:
             snowflake_connector = None
 
         # Network Reachability Check on Snowflake Endpoint
-        host_to_probe = "egpknwz-xh53504.snowflakecomputing.com"
+        host_to_probe = str(account_url or "").replace("https://", "").replace("http://", "").split("/")[0].strip() or "xmutkdj-kp74023.snowflakecomputing.com"
         net_reachable = False
         net_error = None
         try:
@@ -1465,7 +1468,7 @@ class ConnectionManager:
             },
             {
                 "stage": "3. Data Warehouse Target",
-                "system": "NANO_PRO_SNOWFLAKE (EGPKNWZ-XH53504 / BANK_DB.L0_STAGING)",
+                "system": "NANO_PRO_SNOWFLAKE (XMUTKDJ-KP74023 / BANK_DB.L0_STAGING)",
                 "status": sf_status,
                 "ready": sf_ok,
                 "detail": "Snowflake session active on COMPUTE_WH." if sf_ok else (sf_test.get("message") or sf_test.get("error_message"))
@@ -1821,47 +1824,65 @@ class ConnectionManager:
     # =========================================================================
 
     def list_accessible_databases(self, connection_name: str) -> List[str]:
-        """Lists accessible databases for the selected connection."""
+        """Lists databases discovered live for the selected connection."""
         if connection_name == "STUDIO_MEMORY_DB":
             return ["main"]
-        elif connection_name == "NANO_PRO_SNOWFLAKE":
-            return ["BANK_DB", "SNOWFLAKE_SAMPLE_DATA"]
-        elif connection_name == "MY_ORACLE_XE_REMOTE":
-            return ["XEPDB1"]
-        return []
+        from app.core import live_catalog
+
+        entry = live_catalog.find(connection_name)
+        if not entry or entry.get("status") != "live":
+            return []
+        names: List[str] = []
+        for group in entry.get("schemas") or []:
+            database = group.get("database") or str(group.get("name") or "").split(".", 1)[0]
+            if database and database not in names:
+                names.append(database)
+        return names
 
     def list_accessible_schemas(self, connection_name: str, database_name: str = "") -> List[str]:
-        """Lists accessible schemas for the selected connection and database."""
+        """Lists schemas discovered live for the selected connection."""
         if connection_name == "STUDIO_MEMORY_DB":
             return ["main"]
-        elif connection_name == "NANO_PRO_SNOWFLAKE":
-            return ["L0_STAGING", "L1_HARMONIZED", "L2_CURATED", "PUBLIC", "INFORMATION_SCHEMA"]
-        elif connection_name == "MY_ORACLE_XE_REMOTE":
-            return ["SYSTEM", "HR", "OE", "SH", "XEPDB1_ADMIN"]
-        return []
+        from app.core import live_catalog
+
+        entry = live_catalog.find(connection_name)
+        if not entry or entry.get("status") != "live":
+            return []
+        names: List[str] = []
+        for group in entry.get("schemas") or []:
+            if database_name and str(group.get("database") or "") != database_name:
+                continue
+            schema = str(group.get("schema") or group.get("name") or "")
+            if schema and schema not in names:
+                names.append(schema)
+        return names
 
     def list_accessible_tables(self, connection_name: str, database_name: str = "", schema_name: str = "") -> List[str]:
-        """Lists accessible tables and views."""
+        """Lists tables/views discovered live for the selected schema."""
         if connection_name == "STUDIO_MEMORY_DB":
             with db.get_connection() as conn:
                 cur = conn.cursor()
                 cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
                 return [r[0] for r in cur.fetchall()]
-        elif connection_name == "NANO_PRO_SNOWFLAKE":
-            # Real table names corresponding to BANK_DB.L0_STAGING / L1 / L2 layers
-            if schema_name == "L0_STAGING":
-                return ["ACCOUNTS", "CUSTOMERS", "TRANSACTIONS", "BRANCHES", "LOANS", "DEPARTMENTS", "EMPLOYEES", "RAW_TRANSACTIONS", "RAW_CUSTOMERS", "RAW_ACCOUNTS", "INGESTION_METADATA_LOG"]
-            elif schema_name == "L1_HARMONIZED":
-                return ["HARMONIZED_TRANSACTIONS", "HARMONIZED_CUSTOMERS", "HARMONIZED_ACCOUNTS"]
-            elif schema_name == "L2_CURATED":
-                return ["FACT_DAILY_BANK_TRANSACTIONS", "DIM_CUSTOMERS_SCD2", "DIM_ACCOUNTS", "MONTHLY_FINANCIAL_SUMMARY"]
-            return ["ACCOUNTS", "CUSTOMERS", "TRANSACTIONS", "RAW_TRANSACTIONS", "RAW_CUSTOMERS"]
-        elif connection_name in ["MY_ORACLE_XE_LOCAL", "MY_ORACLE_XE_REMOTE", "MY_ORACLE_XE_REMOTE_New", "ORCL_LAN_240"]:
-            return ["CUSTOMERS", "ACCOUNT_MASTER", "TXN_JOURNAL", "BRANCH_MASTER", "AUDIT_LOGS"]
-        return []
+        from app.core import live_catalog
+
+        entry = live_catalog.find(connection_name)
+        if not entry or entry.get("status") != "live":
+            return []
+        tables: List[str] = []
+        for group in entry.get("schemas") or []:
+            if database_name and str(group.get("database") or "") != database_name:
+                continue
+            if schema_name and str(group.get("schema") or group.get("name") or "") != schema_name:
+                continue
+            for item in group.get("tables") or []:
+                name = str(item.get("name") or "")
+                if name and name not in tables:
+                    tables.append(name)
+        return tables
 
     def get_table_metadata(self, connection_name: str, table_name: str, schema_name: str = "") -> Dict[str, Any]:
-        """Retrieves column names, data types, and primary key metadata for a table."""
+        """Returns real columns and row count read from the live database."""
         if connection_name == "STUDIO_MEMORY_DB":
             with db.get_connection() as conn:
                 cur = conn.cursor()
@@ -1879,49 +1900,28 @@ class ConnectionManager:
                 count = cur.fetchone()[0]
                 return {"table_name": table_name, "columns": columns, "row_count": count}
 
-        # Snowflake Schema definitions
-        if connection_name == "NANO_PRO_SNOWFLAKE":
-            if table_name == "RAW_TRANSACTIONS":
-                return {
-                    "table_name": table_name,
-                    "columns": [
-                        {"name": "BATCH_ID", "data_type": "VARCHAR(64)", "is_pk": False},
-                        {"name": "RAW_PAYLOAD", "data_type": "VARIANT", "is_pk": False},
-                        {"name": "INGESTION_TIMESTAMP", "data_type": "TIMESTAMP_NTZ", "is_pk": False},
-                        {"name": "SOURCE_FILE", "data_type": "VARCHAR(256)", "is_pk": False},
-                        {"name": "RECORD_COUNT", "data_type": "NUMBER(38,0)", "is_pk": False}
-                    ],
-                    "row_count": 142500
-                }
-            elif table_name == "FACT_DAILY_BANK_TRANSACTIONS":
-                return {
-                    "table_name": table_name,
-                    "columns": [
-                        {"name": "TXN_KEY", "data_type": "VARCHAR(64)", "is_pk": True},
-                        {"name": "ACCOUNT_ID", "data_type": "VARCHAR(32)", "is_pk": False},
-                        {"name": "CUSTOMER_ID", "data_type": "VARCHAR(32)", "is_pk": False},
-                        {"name": "TXN_TYPE", "data_type": "VARCHAR(16)", "is_pk": False},
-                        {"name": "AMOUNT_INR", "data_type": "NUMBER(18,2)", "is_pk": False},
-                        {"name": "TXN_TIMESTAMP", "data_type": "TIMESTAMP_NTZ", "is_pk": False},
-                        {"name": "STATUS", "data_type": "VARCHAR(16)", "is_pk": False}
-                    ],
-                    "row_count": 89200
-                }
+        from app.core import live_catalog
 
-        # Oracle Schema definitions
-        if connection_name == "MY_ORACLE_XE_REMOTE":
-            return {
-                "table_name": table_name,
-                "columns": [
-                    {"name": "CUST_ID", "data_type": "NUMBER(10)", "is_pk": True},
-                    {"name": "FULL_NAME", "data_type": "VARCHAR2(100)", "is_pk": False},
-                    {"name": "PHONE", "data_type": "VARCHAR2(20)", "is_pk": False},
-                    {"name": "CREATED_DATE", "data_type": "DATE", "is_pk": False}
-                ],
-                "row_count": 4500
-            }
-
-        return {"table_name": table_name, "columns": [], "row_count": 0}
+        entry = live_catalog.find(connection_name)
+        if not entry:
+            return {"table_name": table_name, "columns": [], "row_count": 0, "error": "Connection not found in the live catalog."}
+        schema = schema_name
+        if not schema:
+            for group in entry.get("schemas") or []:
+                if any(str(t.get("name")) == table_name for t in group.get("tables") or []):
+                    schema = str(group.get("schema") or group.get("name") or "")
+                    break
+        try:
+            details = live_catalog.table_details(connection_name, schema, table_name)
+        except Exception as exc:
+            return {"table_name": table_name, "columns": [], "row_count": 0, "error": str(exc)[:300]}
+        return {
+            "table_name": table_name,
+            "columns": details.get("columns") or [],
+            "row_count": details.get("row_count") or 0,
+            "sample": details.get("sample") or [],
+            "ddl": details.get("ddl") or "",
+        }
 
     def execute_query(
         self,
