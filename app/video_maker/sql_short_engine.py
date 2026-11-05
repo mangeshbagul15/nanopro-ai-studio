@@ -2308,6 +2308,15 @@ class SqlShortVideoEngine:
                 for k in ["dont use image", "dont use video", "shapes", "3d", "animation", "lottie", "cartoon", "character", "vector", "mascot", "lakehouse", "medallion", "rag", "docker", "k8s", "sql", "duckdb", "snowflake", "aws", "dms"]
             )
 
+            # 2D animation is the default look; stock photos, stock footage and
+            # GIF stickers are opt-in only when the prompt explicitly asks for them.
+            wants_real_media = any(
+                k in f"{text_input}".lower()
+                for k in ["real footage", "live action", "stock broll", "stock footage", "stock video", "real photo", "use photo", "use image", "photos"]
+            )
+            if not wants_real_media:
+                wants_procedural_vector = True
+
             # Sub-task 1: Pixabay Video
             explicit_no_video = any(
                 k in f"{text_input}".lower()

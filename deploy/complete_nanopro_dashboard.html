@@ -81946,12 +81946,14 @@ SECOND_HIGHEST_SALARY: 70000`;
  const wantsStock = promptStr.includes("real footage")
  || promptStr.includes("live action")
  || promptStr.includes("stock broll")
- || providers.pixabay
- || providers.unsplash;
- if (!wantsStock) return false;
+ || promptStr.includes("stock footage")
+ || promptStr.includes("use photo")
+ || promptStr.includes("use image");
  if (!scene || (!scene.video && !scene.image)) return false;
+ // 2D animated AI clips are always allowed; still photos only when explicitly requested.
+ if (!wantsStock && !(scene.video && scene.video.readyState >= 2)) return false;
 
- const media = (scene.video && scene.video.readyState >= 2) ? scene.video : scene.image;
+ const media = (scene.video && scene.video.readyState >= 2) ? scene.video : (wantsStock ? scene.image : null);
  if (!media) return false;
 
  ctx.save();

@@ -109,9 +109,11 @@ def _mark_exhausted(provider: str) -> None:
 
 def _build_clip_prompt(scene_prompt: str, topic: str) -> str:
     return (
-        f"Vertical 9:16 cinematic tech explainer shot. Topic: {topic[:120]}. "
-        f"Scene: {scene_prompt[:300]}. Clean modern motion graphics, glowing data flows, "
-        f"dark background, no text, no logos, smooth camera move."
+        f"Vertical 9:16 2D animated tech explainer, flat vector motion graphics style. "
+        f"Topic: {topic[:120]}. Scene: {scene_prompt[:300]}. "
+        f"Flat 2D illustrated shapes, icons and characters animating smoothly, "
+        f"animated data flows and arrows, dark navy background with cyan and amber accents. "
+        f"Not photorealistic, no live action, no photos, no 3D render, no text, no logos."
     )
 
 
