@@ -1,4 +1,4 @@
-"""Routes video requests without silently falling back to potentially billable providers."""
+"""Routes video requests across Runway -> Luma -> Replicate -> Canvas, switching on any error."""
 
 from typing import Dict, Any, List, Optional
 from app.core.logger import log_event
@@ -86,11 +86,57 @@ class VideoCascadeRouter:
         prompt: str,
         aspect_ratio: str = "9:16"
     ) -> Dict[str, Any]:
-        return {
-            "status": "blocked",
-            "provider": "Luma Dream Machine",
-            "message": "Luma generation is disabled because this integration cannot verify free credits."
-        }
+        """Submit a Luma Dream Machine generation; errors are reported so the caller can fail over."""
+        from app.core.luma_video import luma_video_engine
+        if not luma_video_engine.is_available():
+            return {"status": "unavailable", "provider": "Luma Dream Machine", "message": "LUMA_API_KEY not configured."}
+        try:
+            res = luma_video_engine.create_generation(prompt=prompt, aspect_ratio=aspect_ratio, loop=False)
+            res["status"] = "success" if res.get("generation_id") else "error"
+            return res
+        except Exception as e:
+            log_event(f"Luma generation failed: {e}", level="WARNING", component="CascadeRouter")
+            return {"status": "error", "provider": "Luma Dream Machine", "message": str(e)}
+
+    def generate_replicate_video(self, prompt: str, aspect_ratio: str = "9:16") -> Dict[str, Any]:
+        """Text-to-video on Replicate, trying several models in order until one accepts the job."""
+        import json as _json
+        import urllib.request
+        import urllib.error
+        from app.core.replicate_engine import replicate_engine
+        if not replicate_engine.is_available():
+            return {"status": "unavailable", "provider": "Replicate", "message": "REPLICATE_API_TOKEN not configured."}
+        token = replicate_engine._resolve_token()
+        errors = []
+        for model in ("wan-video/wan-2.2-t2v-fast", "minimax/video-01", "kwaivgi/kling-v1.6-standard"):
+            payload = {"input": {"prompt": prompt, "aspect_ratio": aspect_ratio}}
+            req = urllib.request.Request(
+                f"https://api.replicate.com/v1/models/{model}/predictions",
+                data=_json.dumps(payload).encode("utf-8"),
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Prefer": "wait=55", "User-Agent": "NanoProAI/2.0"},
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = _json.loads(resp.read().decode("utf-8"))
+                if data.get("status") in ("failed", "canceled"):
+                    errors.append(f"{model}: {data.get('error')}")
+                    continue
+                out = data.get("output")
+                video_url = out[0] if isinstance(out, list) and out else out
+                return {
+                    "status": "success",
+                    "provider": f"Replicate ({model})",
+                    "prediction_id": data.get("id"),
+                    "state": data.get("status"),
+                    "video_url": video_url if isinstance(video_url, str) else None,
+                }
+            except urllib.error.HTTPError as e:
+                body = e.read().decode("utf-8", "ignore")[:300]
+                errors.append(f"{model} ({e.code}): {body}")
+                log_event(f"Replicate video {model} failed ({e.code}); trying next model.", level="WARNING", component="CascadeRouter")
+            except Exception as e:
+                errors.append(f"{model}: {e}")
+        return {"status": "error", "provider": "Replicate", "message": " | ".join(errors)}
 
     def generate_cinematic_background_with_failover(
         self,
@@ -147,7 +193,21 @@ class VideoCascadeRouter:
             logs.append(f"Luma error: {str(e)}")
 
         # -------------------------------------------------------------
-        # 3. ZERO-DROP GUARANTEED FALLBACK: 3D AI PROCEDURAL MOTION ENGINE
+        # 3. REPLICATE (Wan 2.2 -> MiniMax -> Kling)
+        # -------------------------------------------------------------
+        try:
+            rep_res = self.generate_replicate_video(prompt=prompt, aspect_ratio=aspect_ratio)
+            if rep_res.get("status") == "success":
+                rep_res["failover_used"] = True
+                rep_res["fallback_reason"] = "Auto-switched to Replicate after Runway/Luma failed"
+                rep_res["logs"] = logs
+                return rep_res
+            logs.append(f"Replicate notice: {rep_res.get('message')}")
+        except Exception as e:
+            logs.append(f"Replicate error: {e}")
+
+        # -------------------------------------------------------------
+        # 4. ZERO-DROP GUARANTEED FALLBACK: 3D AI PROCEDURAL MOTION ENGINE
         # -------------------------------------------------------------
         return {
             "status": "fallback",
@@ -161,3 +221,9 @@ class VideoCascadeRouter:
 
 # Global Singleton instance
 video_cascade_router = VideoCascadeRouter()
+
+# Install storyboard model failover (retry Reel storyboards with the next model on error).
+try:
+    import app.video_maker.storyboard_failover  # noqa: F401
+except Exception as _failover_err:  # never block server startup
+    log_event(f"Storyboard failover not installed: {_failover_err}", level="WARNING", component="CascadeRouter")
