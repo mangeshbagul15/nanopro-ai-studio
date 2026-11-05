@@ -187,6 +187,79 @@ def _infer_visual_shape(label: str, detail: str = "") -> str:
     return "cube"
 
 
+_JSON_VALUE_START = re.compile(r'["{\[]|-?\d|(?:true|false|null)\b')
+
+
+def _strip_json_wrapper(text: str) -> str:
+    cleaned = (text or "").strip()
+    cleaned = re.sub(r"^```(?:json|JSON)?\s*", "", cleaned)
+    cleaned = re.sub(r"\s*```\s*$", "", cleaned)
+    start, end = cleaned.find("{"), cleaned.rfind("}")
+    if start == -1 or end <= start:
+        raise ValueError("The selected model did not return valid storyboard JSON.")
+    return cleaned[start:end + 1]
+
+
+def _repair_json_by_error_position(text: str, max_fixes: int = 200) -> Any:
+    """Fixes the two most common LLM JSON defects: unescaped inner quotes and missing commas."""
+    candidate = text
+    last_error: Optional[json.JSONDecodeError] = None
+    for _ in range(max_fixes):
+        try:
+            return json.loads(candidate, strict=False)
+        except json.JSONDecodeError as err:
+            last_error = err
+            pos = err.pos
+            prev = pos - 1
+            while prev >= 0 and candidate[prev].isspace():
+                prev -= 1
+            starts_value = bool(_JSON_VALUE_START.match(candidate, pos))
+            if err.msg.startswith("Expecting ',' delimiter") or err.msg.startswith("Expecting ':' delimiter"):
+                if starts_value and prev >= 0 and candidate[prev] in '"}]0123456789el':
+                    candidate = candidate[:prev + 1] + "," + candidate[prev + 1:]
+                    continue
+                quote = candidate.rfind('"', 0, pos)
+                if quote > 0 and candidate[quote - 1] != "\\":
+                    candidate = candidate[:quote] + '\\"' + candidate[quote + 1:]
+                    continue
+            elif err.msg.startswith("Expecting property name enclosed in double quotes"):
+                trailing = re.match(r"\s*[}\]]", candidate[pos:])
+                if trailing and prev >= 0 and candidate[prev] == ",":
+                    candidate = candidate[:prev] + candidate[prev + 1:]
+                    continue
+            elif err.msg.startswith("Expecting value") and re.match(r"\s*[}\]]", candidate[pos:]):
+                if prev >= 0 and candidate[prev] == ",":
+                    candidate = candidate[:prev] + candidate[prev + 1:]
+                    continue
+            break
+    if last_error:
+        raise last_error
+    raise ValueError("The selected model did not return valid storyboard JSON.")
+
+
+def _parse_model_json(text: str) -> Any:
+    json_str = _strip_json_wrapper(text)
+    try:
+        return json.loads(json_str, strict=False)
+    except json.JSONDecodeError as first_error:
+        no_trailing = re.sub(r",(\s*[}\]])", r"\1", json_str)
+        try:
+            return _repair_json_by_error_position(no_trailing)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        try:
+            import ast
+            pythonish = re.sub(r"\btrue\b", "True", no_trailing)
+            pythonish = re.sub(r"\bfalse\b", "False", pythonish)
+            pythonish = re.sub(r"\bnull\b", "None", pythonish)
+            value = ast.literal_eval(pythonish)
+            if isinstance(value, dict):
+                return value
+        except (ValueError, SyntaxError, MemoryError, RecursionError):
+            pass
+        raise first_error
+
+
 def _ensure_scene_visual_directions(stages: List[Dict[str, Any]], lang_key: str) -> List[Dict[str, Any]]:
     """Build voice-timed motion cues around authored, topic-specific scene objects."""
     normalized = []
@@ -1740,7 +1813,7 @@ class SqlShortVideoEngine:
                     f"       'connectors': [{{'from': 'exact element label', 'to': 'exact element label', 'color': '#38BDF8'}}],\n"
                     f"       'motion_grammar': 'Describe how objects move or change as the spoken explanation advances',\n"
                     f"       'badge': 'Topic or stage badge text',\n"
-                    f"       'theme_color': '#38BDF8' or '#10B981' or '#F59E0B' or '#EC4899' or '#8B5CF6'\n"
+                    f"       'theme_color': 'one of #38BDF8, #10B981, #F59E0B, #EC4899, #8B5CF6'\n"
                     f"     }}\n\n"
                     f"Select a visual_data layout that matches the actual teaching beat: spatial for moving parts, pipeline for ordered actions, split/cards for a meaningful comparison, table for real example data, editorial for one surprising fact, timeline for events, or chart only for numeric data. Do not fabricate values. For non-spatial layouts, set visual_mode to the same layout name. For spatial, use visual_mode='semantic_objects'.\n"
                     f"Every scene must explain its idea so a non-expert can follow: give one concrete everyday example, briefly explain the technical term, and say what changes for the person using the technology. At least one person/learner/developer must appear in the opening scene. Use 2-4 real, topic-specific visual elements where the chosen layout needs them; use authentic values only, never placeholders or fabricated metrics. Connect objects only when the narrated process connects them. Each visual_description must say what moves/changes and match that scene's spoken words. Vary scene compositions and object positions across scenes. Never use generic bullets or unrelated decorations.\n\n"
@@ -1795,15 +1868,47 @@ class SqlShortVideoEngine:
                 if generation_pattern == "unified" and selected_model:
                     target_models = ["openai/gpt-oss-120b"] if "wan" in sm_clean else [selected_model]
 
+                storyboard_system_prompt = (
+                    "You are NanoPro's technical educator and storyboard director. "
+                    "Output strictly raw valid JSON without markdown fences. "
+                    "Inside JSON string values never use unescaped double quotes; use single quotes or \\\" instead. "
+                    "Separate every array item and object property with a comma and never leave trailing commas.\n"
+                    f"{learned_guide}"
+                )
                 ai_resp, used_model, used_mode = model_manager.execute_with_fallback(
                     prompt=ai_prompt,
-                    system_prompt=f"You are NanoPro's technical educator and storyboard director. Output strictly raw valid JSON without markdown fences.\n{learned_guide}",
+                    schema={"type": "object"},
+                    system_prompt=storyboard_system_prompt,
                     models=target_models,
                     allow_fallback=generation_pattern != "unified",
+                    timeout=60.0,
                 )
                 if "{" in ai_resp and "}" in ai_resp:
-                    json_str = ai_resp[ai_resp.find("{"):ai_resp.rfind("}") + 1]
-                    parsed = json.loads(json_str)
+                    try:
+                        parsed = _parse_model_json(ai_resp)
+                    except (json.JSONDecodeError, ValueError) as parse_error:
+                        log_event(
+                            f"Storyboard JSON from {used_model} was malformed ({parse_error}); requesting a repair.",
+                            level="WARNING",
+                            component="SqlShortEngine",
+                        )
+                        repair_prompt = (
+                            "The following storyboard JSON is malformed and failed to parse with error: "
+                            f"{parse_error}.\n"
+                            "Return the same storyboard as strictly valid JSON. Keep every scene, title, speech, "
+                            "and visual_data value; only fix the syntax (escape inner double quotes, add missing "
+                            "commas, remove trailing commas). Output only the JSON object.\n\n"
+                            f"{ai_resp}"
+                        )
+                        repaired_resp, used_model, used_mode = model_manager.execute_with_fallback(
+                            prompt=repair_prompt,
+                            schema={"type": "object"},
+                            system_prompt=storyboard_system_prompt,
+                            models=target_models,
+                            allow_fallback=True,
+                            timeout=60.0,
+                        )
+                        parsed = _parse_model_json(repaired_resp)
                     model_scenes = (parsed.get("scenes") or parsed.get("stages")) if isinstance(parsed, dict) else None
                     if not isinstance(model_scenes, list) or not model_scenes:
                         raise ValueError("The selected model did not return a storyboard scene list.")
