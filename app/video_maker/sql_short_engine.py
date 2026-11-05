@@ -200,6 +200,51 @@ def _strip_json_wrapper(text: str) -> str:
     return cleaned[start:end + 1]
 
 
+_SPEECH_ALIASES = ("speech", "narration", "voiceover", "voice_over", "script", "dialogue", "text", "spoken_text")
+MIN_STORYBOARD_SCENES = 3
+MAX_STORYBOARD_SCENES = 5
+
+
+def _scene_speech(scene: Dict[str, Any], lang_key: str) -> str:
+    for key in (f"speech_{lang_key}", *_SPEECH_ALIASES, "speech_en"):
+        value = scene.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        if isinstance(value, list):
+            joined = " ".join(str(v).strip() for v in value if str(v).strip())
+            if joined:
+                return joined
+    return ""
+
+
+def _normalize_storyboard_scenes(scenes: Any, lang_key: str) -> List[Dict[str, Any]]:
+    """Map alternate narration keys to 'speech', drop silent scenes, and fold overflow into the final scene."""
+    if not isinstance(scenes, list):
+        return []
+    narrated: List[Dict[str, Any]] = []
+    for scene in scenes:
+        if not isinstance(scene, dict):
+            continue
+        speech = _scene_speech(scene, lang_key)
+        if not speech:
+            continue
+        item = dict(scene)
+        item["speech"] = speech
+        item[f"speech_{lang_key}"] = speech
+        narrated.append(item)
+
+    if len(narrated) > MAX_STORYBOARD_SCENES:
+        kept = narrated[:MAX_STORYBOARD_SCENES]
+        overflow = narrated[MAX_STORYBOARD_SCENES:]
+        last = dict(kept[-1])
+        merged = " ".join([last["speech"]] + [s["speech"] for s in overflow])
+        last["speech"] = merged
+        last[f"speech_{lang_key}"] = merged
+        kept[-1] = last
+        narrated = kept
+    return narrated
+
+
 def _repair_json_by_error_position(text: str, max_fixes: int = 200) -> Any:
     """Fixes the two most common LLM JSON defects: unescaped inner quotes and missing commas."""
     candidate = text
@@ -1791,7 +1836,7 @@ class SqlShortVideoEngine:
                     f"1. Human Teacher Persona: Act as an exceptional, warm, encouraging Indian Tech Educator (like an experienced mentor explaining step-by-step to a student with complete human understanding and empathy). Assume the viewer is new to the topic: explain each technical term in plain language at the moment it appears, anchor the idea in a familiar real-life situation, and connect the example back to the real technology without misleading analogies.\n"
                     f"2. Conversational Language & Pauses: In Hindi ('hi'), use natural conversational Hindi/Hinglish with standard tech terms (AWS, DMS, CDC, Database, Replication, Downtime) that anyone can grasp. Write Hindi in Devanagari script. In Marathi ('mr'), write Marathi in Devanagari script using authentic, conversational wording, not Romanized Marathi. Use natural commas (', ') and question marks ('? ') so the speech takes natural breathing pauses. Keep standard product and technical names in their usual English spelling.\n"
                     f"3. Short-form storytelling: choose a human-relevant, prompt-specific story shape (a developer debugging an incident, a customer order moving through a system, a real before/after, or a misconception revealed). Pick a new scenario from the prompt; do not reuse the same fixed lesson outline. Avoid generic section titles such as Overview, Core Mechanism, Real-World Impact, and Key Takeaway. Scenes should continue one story and show a visible state change. Never ask the viewer to pause, type, answer, or wait; this is a finished social video.\n"
-                    f"4. Timing: Use as many scenes and as much narration as the requested lesson needs. If the prompt specifies a duration, honor it; otherwise keep the lesson concise and complete. Never truncate narration or impose a fixed maximum duration. Hook in the first sentence; remove filler and repeated conclusions.\n"
+                    f"4. Scene count and timing: Return EXACTLY 4 scenes (never fewer than 3 and never more than 5). Every scene MUST have a non-empty 'speech' string of 2-4 spoken sentences. Put as much narration in each scene as the lesson needs instead of adding extra scenes. If the prompt specifies a duration, honor it. Hook in the first sentence; remove filler and repeated conclusions.\n"
                     f"5. Language QA: Proofread every spoken line in {lang_key} before returning JSON. Use idiomatic grammar, correct spelling, complete words, and punctuation that sounds natural aloud. Keep standard technical terms in English when translating them would sound awkward; never emit garbled transliterations.\n"
                     f"6. Reference-inspired visual direction: create a polished vertical tech explainer with a deep navy/charcoal background, sparse cyan/amber/green/violet accents, a small creator/progress header, a large 2-6 word scene headline, one clear animated diagram, comparison, code panel, or illustrated example, and readable voice-synced captions. Treat each scene like a concise visual explanation, not a row of tiny connected icons. Use screen-like panels only when they help explain the requested topic. Vary composition when the idea changes; never repeat one layout for every scene.\n"
                     f"7. Scene Visual Content:\n"
@@ -1919,9 +1964,48 @@ class SqlShortVideoEngine:
                             timeout=60.0,
                         )
                         parsed = _parse_model_json(repaired_resp)
-                    model_scenes = (parsed.get("scenes") or parsed.get("stages")) if isinstance(parsed, dict) else None
-                    if not isinstance(model_scenes, list) or not model_scenes:
-                        raise ValueError("The selected model did not return a storyboard scene list.")
+                    if isinstance(parsed, list):
+                        parsed = {"scenes": parsed}
+                    model_scenes = _normalize_storyboard_scenes(
+                        (parsed.get("scenes") or parsed.get("stages")) if isinstance(parsed, dict) else None,
+                        lang_key,
+                    )
+                    if len(model_scenes) < MIN_STORYBOARD_SCENES:
+                        log_event(
+                            f"Storyboard from {used_model} had {len(model_scenes)} narrated scenes; requesting a restructure.",
+                            level="WARNING",
+                            component="SqlShortEngine",
+                        )
+                        restructure_prompt = (
+                            f"Rewrite this storyboard as exactly 4 scenes for the topic: {text_input}\n"
+                            f"Every scene needs 'title', 'speech' (2-4 spoken sentences in {lang_key}), "
+                            "'visual_description', 'visual_type', and 'visual_data' with at least 2 topic-specific "
+                            "elements. Output only a JSON object of the form {\"title\": ..., \"scenes\": [...]}.\n\n"
+                            f"{json.dumps(parsed, ensure_ascii=False)[:6000]}"
+                        )
+                        restructured_resp, used_model, used_mode = model_manager.execute_with_fallback(
+                            prompt=restructure_prompt,
+                            schema={"type": "object"},
+                            system_prompt=storyboard_system_prompt,
+                            models=target_models,
+                            allow_fallback=True,
+                            timeout=60.0,
+                        )
+                        reparsed = _parse_model_json(restructured_resp)
+                        if isinstance(reparsed, list):
+                            reparsed = {"scenes": reparsed}
+                        retry_scenes = _normalize_storyboard_scenes(
+                            (reparsed.get("scenes") or reparsed.get("stages")) if isinstance(reparsed, dict) else None,
+                            lang_key,
+                        )
+                        if len(retry_scenes) > len(model_scenes):
+                            parsed, model_scenes = reparsed, retry_scenes
+                    if len(model_scenes) < MIN_STORYBOARD_SCENES:
+                        raise ValueError(
+                            f"The model returned only {len(model_scenes)} narrated scene(s) after a restructure attempt."
+                        )
+                    parsed["scenes"] = model_scenes
+                    parsed.pop("stages", None)
                     matched = parsed
                     matched["id"] = "custom_ai_scenario"
                     matched["question"] = text_input
