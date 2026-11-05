@@ -1848,7 +1848,7 @@ class SqlShortVideoEngine:
                 target_models = []
                 sm_clean = (selected_model or "").lower()
                 if "gemini" in sm_clean:
-                    target_models = ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"]
+                    target_models = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
                     ai_prompt += (
                         "\n\n[GEMINI TECHNICAL ACCURACY DIRECTIVE]:\n"
                         "- Preserve technical terms, constraints, and facts specific to the user's topic; never introduce unrelated examples.\n"
@@ -1867,6 +1867,16 @@ class SqlShortVideoEngine:
 
                 if generation_pattern == "unified" and selected_model:
                     target_models = ["openai/gpt-oss-120b"] if "wan" in sm_clean else [selected_model]
+
+                # Google Gemini is the primary storyboard writer whenever its key is configured;
+                # the selected model stays in the chain as the fallback.
+                gemini_primary = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+                if (
+                    generation_pattern != "unified"
+                    and model_manager.gemini.is_available()
+                    and not any("gemini" in (m or "").lower() for m in target_models[:1])
+                ):
+                    target_models = gemini_primary + [m for m in target_models if m not in gemini_primary]
 
                 storyboard_system_prompt = (
                     "You are NanoPro's technical educator and storyboard director. "
