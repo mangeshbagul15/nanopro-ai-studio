@@ -3703,6 +3703,128 @@ async def api_elevenlabs_save_key(req: ElevenLabsKeyRequest):
 
 
 
+class PaymentOrderRequest(BaseModel):
+    plan_id: str = "ai_awaaz_starter"
+    name: str = ""
+    email: str = ""
+    mobile: str = ""
+
+
+class PaymentVerifyRequest(BaseModel):
+    order_id: str
+    payment_id: str
+    signature: str
+
+
+class PaymentGatewayConfigRequest(BaseModel):
+    key_id: str
+    key_secret: str
+
+
+def _payment_admin_token(request: Request) -> str:
+    auth_header = (request.headers.get("Authorization") or "").strip()
+    if auth_header.lower().startswith("bearer "):
+        auth_header = auth_header[7:].strip()
+    return (
+        request.headers.get("X-Session-Token")
+        or auth_header
+        or request.cookies.get("nanopro_session")
+        or ""
+    ).strip()
+
+
+def _is_payment_admin(request: Request) -> bool:
+    """Strict admin check against persisted sessions (no cloud-token shortcut for secret writes)."""
+    token = _payment_admin_token(request)
+    if not token.startswith("np_sess_"):
+        return False
+    try:
+        from app.core.database import db
+
+        with db.get_connection() as conn:
+            row = conn.execute(
+                "SELECT u.role, u.username FROM user_sessions s "
+                "JOIN users u ON u.id = s.user_id "
+                "WHERE s.session_token = ? AND s.is_active = 1 LIMIT 1",
+                (token,),
+            ).fetchone()
+        return bool(row) and (row["role"] == "admin" or row["username"] == "nanopro")
+    except Exception as e:
+        from app.core.logger import log_event
+
+        log_event(f"Payment admin check failed: {e}", level="WARNING", component="Payments")
+        return False
+
+
+@app.get("/api/payments/config")
+async def api_payments_config():
+    """Public Razorpay configuration (never exposes the secret)."""
+    from app.payments.razorpay_gateway import config
+
+    return JSONResponse(config())
+
+
+@app.get("/api/payments/plans")
+async def api_payments_plans():
+    from app.payments.razorpay_gateway import list_plans
+
+    return JSONResponse({"status": "success", "currency": "INR", "plans": list_plans()})
+
+
+@app.post("/api/payments/razorpay/order")
+async def api_payments_create_order(req: PaymentOrderRequest, request: Request):
+    from app.payments.razorpay_gateway import PaymentError, create_order
+
+    client_ip = request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "")
+    try:
+        return JSONResponse(create_order(req.plan_id, req.name, req.email, req.mobile, client_ip))
+    except PaymentError as e:
+        return JSONResponse({"status": "error", "code": e.code, "message": e.message}, status_code=e.status_code)
+
+
+@app.post("/api/payments/razorpay/verify")
+async def api_payments_verify(req: PaymentVerifyRequest):
+    from app.payments.razorpay_gateway import PaymentError, verify_payment
+
+    try:
+        return JSONResponse(verify_payment(req.order_id, req.payment_id, req.signature))
+    except PaymentError as e:
+        return JSONResponse({"status": "error", "code": e.code, "message": e.message}, status_code=e.status_code)
+
+
+@app.get("/api/payments/status/{order_id}")
+async def api_payments_status(order_id: str):
+    from app.payments.razorpay_gateway import PaymentError, get_payment_status
+
+    try:
+        return JSONResponse(get_payment_status(order_id))
+    except PaymentError as e:
+        return JSONResponse({"status": "error", "code": e.code, "message": e.message}, status_code=e.status_code)
+
+
+@app.get("/api/payments/history")
+async def api_payments_history(request: Request, limit: int = 20):
+    if not _is_payment_admin(request):
+        return JSONResponse({"status": "error", "message": "Admin access required."}, status_code=403)
+    from app.payments.razorpay_gateway import payment_history
+
+    return JSONResponse({"status": "success", "payments": payment_history(limit)})
+
+
+@app.post("/api/payments/config/save")
+async def api_payments_save_config(req: PaymentGatewayConfigRequest, request: Request):
+    """Admin-only: connect Razorpay keys at runtime (stored in the encrypted vault)."""
+    if not _is_payment_admin(request):
+        return JSONResponse({"status": "error", "message": "Admin access required."}, status_code=403)
+    from app.payments.razorpay_gateway import PaymentError, save_credentials
+
+    try:
+        return JSONResponse(save_credentials(req.key_id, req.key_secret))
+    except PaymentError as e:
+        return JSONResponse({"status": "error", "code": e.code, "message": e.message}, status_code=e.status_code)
+
+
+
 @app.post("/api/voice/tts")
 
 @app.post("/api/elevenlabs/synthesize")

@@ -2152,6 +2152,8 @@ def get_auth_injection() -> str:
 
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g5" value="bitcoin_wallet"> Bitcoin Wallet &amp; Pay</label>
 
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb desktop-cb g5" value="payment_gateway"> Payment Gateway &amp; Razorpay Checkout</label>
+
                     </div>
 
 

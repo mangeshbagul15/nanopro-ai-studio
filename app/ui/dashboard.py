@@ -16,6 +16,8 @@ def get_dashboard_html() -> str:
 
     from app.ui.sql_video_js import get_sql_video_js
 
+    from app.ui.payment_gateway import get_payment_gateway_html, get_payment_gateway_js
+
 
 
     raw = _get_raw_dashboard_html()
@@ -50,6 +52,18 @@ def get_dashboard_html() -> str:
 
 
 
+    # Inject the functional Razorpay payment gateway view before the Bitcoin wallet view
+
+    processed = processed.replace(
+
+        '<div class="workspace-view" id="view-bitcoin_wallet">',
+
+        get_payment_gateway_html() + '\n<div class="workspace-view" id="view-bitcoin_wallet">'
+
+    )
+
+
+
     # Inject SQL Short Video Client-Side JavaScript Engine
 
     sql_js = get_sql_video_js()
@@ -60,7 +74,7 @@ def get_dashboard_html() -> str:
 
     processed = processed.replace("<body>", "<body>\n" + get_2026_modern_trends_html() + "\n")
 
-    processed = processed.replace("</body>", sql_js + "\n" + get_2026_modern_trends_js() + "\n</body>")
+    processed = processed.replace("</body>", sql_js + "\n" + get_2026_modern_trends_js() + "\n" + get_payment_gateway_js() + "\n</body>")
 
 
 
@@ -6034,6 +6048,16 @@ def _get_raw_dashboard_html() -> str:
                         <span class="nav-item-icon">&#8383;</span>
 
                         <span class="nav-item-label">Bitcoin Wallet &amp; Pay</span>
+
+                    </li>
+
+                    <li class="nav-item" onclick="switchView('payment_gateway')" data-tooltip="Payment Gateway & Secure Razorpay Checkout (UPI, Cards, Net Banking)">
+
+                        <span class="nav-item-icon" style="color:#38BDF8;">&#128179;</span>
+
+                        <span class="nav-item-label">Payment Gateway</span>
+
+                        <span class="badge" style="font-size:8px; background:linear-gradient(135deg,#0EA5E9,#2563EB); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">LIVE</span>
 
                     </li>
 
@@ -24194,6 +24218,8 @@ Ready for message compilation and automated dispatch.
 
                     bitcoin_wallet: "Bitcoin Wallet & Live Payment Center",
 
+                    payment_gateway: "Payment Gateway & Secure Razorpay Checkout",
+
                     user_management: "User Management & Security Administration (Admin Only)",
 
                     dashboard: "Dashboard & Overview",
@@ -24439,6 +24465,8 @@ window.switchView = switchView;
                 if (viewName === 'storage_dashboard') loadStorageDashboard();
 
                 if (viewName === 'bitcoin_wallet') loadBitcoinWalletData();
+
+                if (viewName === 'payment_gateway' && typeof initPaymentGateway === 'function') initPaymentGateway();
 
                 if (viewName === 'settings' || viewName === 'models_hub') loadModelList();
 
