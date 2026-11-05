@@ -453,8 +453,241 @@ _LOCAL_STORYBOARD_COPY: Dict[str, Dict[str, str]] = {
 }
 
 
+_LOCAL_KEYWORD_TEMPLATES: Dict[str, Dict[str, str]] = {
+    "mr": {
+        "hook": "आज आपण {topic} समजून घेणार आहोत. यात {k1}, {k2} आणि {k3} हे तीन महत्त्वाचे भाग आहेत. शेवटपर्यंत पहा.",
+        "why": "{topic} मध्ये {k1} का महत्त्वाचा आहे? कारण त्यामुळे {k2} अधिक स्पष्ट होतो आणि {k3} मधील चुका कमी होतात.",
+        "how": "आता कामाचा क्रम पाहू. पहिले {k1}, नंतर {k2}, आणि शेवटी {k3}. हा क्रम ठेवल्यास {topic} अचूक चालतो.",
+        "takeaway": "थोडक्यात, {k1} समजून घ्या, {k2} सराव करा आणि {k3} तपासा. हीच पद्धत {topic} मध्ये काम करते.",
+    },
+    "hi": {
+        "hook": "आज हम {topic} को आसान भाषा में समझेंगे। इसमें {k1}, {k2} और {k3} तीन अहम हिस्से हैं। अंत तक देखिए।",
+        "why": "{topic} में {k1} क्यों जरूरी है? क्योंकि इससे {k2} साफ होता है और {k3} में गलतियाँ कम होती हैं।",
+        "how": "अब क्रम देखिए। पहले {k1}, फिर {k2}, और आखिर में {k3}। इसी क्रम से {topic} सही चलता है।",
+        "takeaway": "संक्षेप में, {k1} समझिए, {k2} का अभ्यास कीजिए और {k3} जाँचिए। यही तरीका {topic} में काम करता है।",
+    },
+    "en": {
+        "hook": "Today we unpack {topic}. The three parts that matter most are {k1}, {k2}, and {k3}. Watch till the end.",
+        "why": "Why does {k1} matter inside {topic}? Because it makes {k2} clearer and removes common mistakes around {k3}.",
+        "how": "Here is the working order. First {k1}, then {k2}, and finally {k3}. Follow this sequence and {topic} stays accurate.",
+        "takeaway": "Quick recap: understand {k1}, practise {k2}, and verify {k3}. That is exactly how {topic} works in practice.",
+    },
+}
+
+_KEYWORD_STOPWORDS = {
+    "the", "and", "for", "with", "from", "that", "this", "into", "your", "you", "are", "was",
+    "were", "will", "shall", "have", "has", "had", "not", "but", "all", "any", "can", "could",
+    "should", "would", "make", "made", "create", "generate", "video", "videos", "title", "about",
+    "using", "use", "how", "what", "why", "when", "where", "which", "scene", "shots", "shot",
+    "visual", "visuals", "prompt", "narration", "voiceover", "audio", "seconds", "second",
+    "please", "want", "need", "also", "then", "than", "them", "they", "their", "there", "here",
+    "each", "every", "some", "more", "most", "very", "just", "only", "like", "over", "under",
+    "small", "huge", "large", "left", "right", "flowing", "reviewing", "generated", "three", "one",
+    "two", "still", "day", "days", "now", "today", "new", "way", "part", "parts", "time", "years",
+    "year", "ago", "enough", "push", "pushes", "through", "inside", "without", "within", "between",
+    "explain", "describe", "teach", "tell", "give", "write", "show", "draw", "animate",
+    "those", "these", "into", "while", "works", "keeps", "about", "under", "onto", "upon",
+    "म्हणजे", "आणि", "आहे", "आहेत", "आपण", "हे", "हा", "ही", "तो", "ती", "ते", "मध्ये",
+    "साठी", "नंतर", "पहिले", "शेवटी", "आता", "आज", "कारण", "त्यामुळे", "कमी", "अधिक",
+    "एक", "दोन", "तीन", "हाच", "असा", "असे", "करा", "करते", "करतो", "पहा", "समजून",
+    "घ्या", "घेऊ", "पण", "होते", "होतो", "जाते", "जातो", "येतो", "काम", "गोष्ट",
+    "है", "हैं", "और", "में", "को", "का", "की", "के", "यह", "वह", "हम", "आप", "अब",
+    "फिर", "पहले", "आखिर", "क्योंकि", "इससे", "ज्यादा", "समझिए", "कीजिए", "जाँचिए", "देखिए",
+}
+
+_DEVANAGARI_STOPWORDS = {
+    "म्हणजे", "आणि", "आहे", "आहेत", "आपण", "हे", "हा", "ही", "तो", "ती", "ते", "मध्ये",
+    "साठी", "नंतर", "पहिले", "शेवटी", "आता", "आज", "कारण", "त्यामुळे", "कमी", "अधिक",
+    "एक", "दोन", "तीन", "हाच", "असा", "असे", "करा", "करते", "करतो", "पहा", "समजून",
+    "घ्या", "घेऊ", "पण", "होते", "होतो", "जाते", "जातो", "येतो", "काम", "गोष्ट",
+    "है", "हैं", "और", "में", "को", "का", "की", "के", "यह", "वह", "हम", "आप", "अब",
+    "फिर", "पहले", "आखिर", "क्योंकि", "इससे", "ज्यादा", "समझिए", "कीजिए", "जाँचिए", "देखिए",
+}
+
+_GENERIC_KEYWORDS = {
+    "mr": ("मूलभूत कल्पना", "सराव", "निकाल"),
+    "hi": ("मूल विचार", "अभ्यास", "नतीजा"),
+    "en": ("core idea", "practice", "result"),
+}
+
+
+def _format_template(template: str, **values: Any) -> str:
+    try:
+        return template.format(**values)
+    except (KeyError, IndexError, ValueError):
+        return template
+
+
+def _clean_prompt_topic(text: str) -> str:
+    """Reduce a pasted brief to a short, human topic label instead of the whole prompt."""
+    raw = (text or "").strip()
+    if not raw:
+        return "Technology"
+    title_match = re.search(r"(?:video\s*title|title)\s*[:\-–]\s*(.+)", raw, re.IGNORECASE)
+    candidate = title_match.group(1) if title_match else raw
+    line = next((ln.strip() for ln in candidate.splitlines() if ln.strip()), candidate)
+    line = re.sub(r"^[#*>\-\s]+", "", line)
+    line = line.replace("**", "")
+    line = re.sub(r"^(?:video\s*title|title|topic|prompt)\s*[:\-–]\s*", "", line, flags=re.IGNORECASE)
+    line = re.sub(
+        r"(?i)^(?:a|an|the)?\s*\d+\s*(?:-|to)?\s*\d*\s*(?:second|seconds|sec|secs|minute|minutes|min)\s+"
+        r"(?:reel|video|short|clip|lesson|explainer)\s+(?:about|on|explaining|for)\s+",
+        "", line,
+    )
+    line = re.sub(
+        r"(?i)^(?:a|an|the)?\s*(?:short|quick|viral|cinematic|animated)\s+"
+        r"(?:reel|video|short|clip|lesson|explainer)\s+(?:about|on|explaining|for)\s+",
+        "", line,
+    )
+    line = re.sub(
+        r"^(?:please\s+)?(?:explain|describe|teach(?:\s+me)?|tell\s+me\s+about|introduce)\b\s*",
+        "", line, flags=re.IGNORECASE,
+    )
+    line = re.sub(
+        r"^(?:please\s+)?(?:create|make|generate|build|produce)\b[^.!?]{0,60}?\b(?:about|on|explaining|for)\s+",
+        "", line, flags=re.IGNORECASE,
+    )
+    line = re.sub(r"\s+", " ", line).strip(" \"'`“”‘’.,;:!-–")
+    if len(line) > 90:
+        first_sentence = re.split(r"(?<=[.!?])\s", line)[0]
+        line = first_sentence if len(first_sentence) > 15 else line[:90]
+    return line.strip(" \"'`“”‘’.,;:!-–") or "Technology"
+
+
+def _topic_keywords(text: str, limit: int = 12) -> List[str]:
+    keywords: List[str] = []
+    seen = set()
+    for word in re.findall(r"[A-Za-z][A-Za-z0-9+#./_\-]{2,}", text or ""):
+        cleaned = word.strip(".-/_")
+        key = cleaned.lower()
+        if len(key) < 3 or key in _KEYWORD_STOPWORDS or key in seen:
+            continue
+        seen.add(key)
+        keywords.append(cleaned[:28])
+        if len(keywords) >= limit:
+            return keywords
+    for word in re.findall(r"[\u0900-\u097F]{3,}", text or ""):
+        key = word.lower()
+        if key in seen or key in _DEVANAGARI_STOPWORDS:
+            continue
+        seen.add(key)
+        keywords.append(word[:28])
+        if len(keywords) >= limit:
+            break
+    keywords.sort(key=lambda w: (0 if any(ch.isupper() for ch in w) else 1, -len(w)))
+    return keywords
+
+
+def _fill_keywords(keywords: List[str], short: str, lang_key: str, count: int = 3) -> List[str]:
+    fallback = list(_GENERIC_KEYWORDS.get(lang_key, _GENERIC_KEYWORDS["en"]))
+    filled = [k for k in keywords if k]
+    if short:
+        filled.append(short)
+    filled.extend(fallback)
+    unique: List[str] = []
+    for item in filled:
+        if item and item.lower() not in {u.lower() for u in unique}:
+            unique.append(item)
+    while len(unique) < count:
+        unique.append(f"Step {len(unique) + 1}")
+    return unique[:count]
+
+
+def _labels_for_scene(visual_text: str, speech: str, fallback_keywords: List[str], index: int) -> List[str]:
+    labels = _topic_keywords(speech, limit=4)
+    for item in _topic_keywords(visual_text, limit=4):
+        if item.lower() not in {l.lower() for l in labels}:
+            labels.append(item)
+    for item in fallback_keywords:
+        if len(labels) >= 3:
+            break
+        if item.lower() not in {l.lower() for l in labels}:
+            labels.append(item)
+    while len(labels) < 3:
+        labels.append(f"Step {len(labels) + 1}")
+    return [label[:32] for label in labels[:3]]
+
+
+def _parse_prompt_scenes(text: str) -> List[Dict[str, str]]:
+    """Read explicit Scene 1..N beats (narration + visual prompt) pasted by the user."""
+    if not re.search(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b", text or ""):
+        return []
+    header_re = re.compile(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b[:.\-–]?\s*(.*)$")
+    label_re = re.compile(
+        r"(?i)^\s*(?:visual(?:\s*prompt)?|on-?screen|image|picture|narration|voice\s*-?\s*over|"
+        r"ai\s+teacher\s+voice|speech|script|dialogue|audio|title|duration)\s*[:\-–]"
+    )
+    blocks: List[Dict[str, Any]] = []
+    current: Optional[Dict[str, Any]] = None
+    for line in (text or "").splitlines():
+        match = header_re.match(line)
+        if match:
+            if current:
+                blocks.append(current)
+            current = {"header": match.group(1).strip(), "lines": []}
+        elif current is not None:
+            current["lines"].append(line)
+    if current:
+        blocks.append(current)
+
+    scenes: List[Dict[str, str]] = []
+    for block in blocks:
+        body_lines = block["lines"]
+        speech_lines: List[str] = []
+        visual_lines: List[str] = []
+        title = block["header"]
+        for line in body_lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            lower = stripped.lower()
+            if re.match(r"(?i)^(?:narration|voice\s*-?\s*over|ai\s+teacher\s+voice|speech|script|dialogue|audio)\s*[:\-–]", stripped):
+                speech_lines.append(re.sub(r"^[^:–-]+[:\-–]\s*", "", stripped))
+            elif re.match(r"(?i)^(?:visual(?:\s*prompt)?|on-?screen|image|picture)\s*[:\-–]", stripped):
+                visual_lines.append(re.sub(r"^[^:–-]+[:\-–]\s*", "", stripped))
+            elif re.match(r"(?i)^title\s*[:\-–]", stripped):
+                title = re.sub(r"(?i)^title\s*[:\-–]\s*", "", stripped)
+            elif not label_re.match(stripped):
+                if not speech_lines:
+                    speech_lines.append(stripped)
+        speech = " ".join(part for part in speech_lines if part).strip(" \"'“”‘’")
+        if not speech:
+            speech = " ".join(line.strip() for line in body_lines if line.strip() and not label_re.match(line.strip()))
+        if len(speech) < 18:
+            continue
+        derived_title = block["header"] or re.split(r"[.।!?]", speech)[0].strip()
+        scenes.append({
+            "title": (derived_title[:60] or f"Scene {len(scenes) + 1}"),
+            "speech": speech,
+            "visual": " ".join(visual_lines).strip(),
+        })
+        if len(scenes) >= MAX_STORYBOARD_SCENES:
+            break
+    return scenes
+
+
+def _prompt_narrative_sentences(text: str) -> List[str]:
+    """Extract the user's own explanatory sentences so fallback narration is not boilerplate."""
+    body = re.sub(r"(?im)^\s*(?:video\s*title|title)\s*[:\-–].*$", "", text or "")
+    body = re.sub(r"(?im)^\s*(?:#{1,4}\s*)?(?:scene|shot)\s*[-–:#]*\s*\d{1,2}\b.*$", "", body)
+    body = re.sub(r"(?im)^\s*(?:visual(?:\s*prompt)?|narration|voice\s*-?\s*over|speech|script|audio)\s*[:\-–].*$", "", body)
+    sentences = re.split(r"(?<=[.!?।])\s+", body.replace("\n", " "))
+    instruction_start = re.compile(
+        r"(?i)^(?:make|create|generate|keep|use|write|return|output|include|avoid|do not|don't|ensure|"
+        r"make sure|add|show|use a|use an)\b"
+    )
+    cleaned = []
+    framing = re.compile(r"(?i)\b(?:\d+|short|quick)\s*(?:second|sec|minute|min)?\s*(?:reel|video|short|clip|lesson)\b")
+    for sentence in sentences:
+        s = sentence.strip(" -•*#>\"'“”‘’")
+        if len(s) < 25 or instruction_start.match(s) or framing.search(s):
+            continue
+        cleaned.append(s)
+    return cleaned[:MAX_STORYBOARD_SCENES]
+
+
 def _storyboard_topic_label(topic: str) -> str:
-    clean = (topic or "Technology").strip().replace("\n", " ")
+    clean = _clean_prompt_topic(topic).replace("\n", " ")
     return clean if len(clean) <= 55 else clean[:52].rstrip() + "…"
 
 
@@ -493,34 +726,82 @@ def _build_local_storyboard(
     content_type: str = "theory",
     mode: str = "faang_drill",
 ) -> Dict[str, Any]:
-    """Guaranteed AI-free 2D storyboard so any prompt still produces a video."""
+    """Guaranteed AI-free 2D storyboard so any prompt still produces a real video."""
     topic_text = (topic or "Technology").strip() or "Technology"
     short = _storyboard_topic_label(topic_text)
-    copy = _LOCAL_STORYBOARD_COPY.get(lang_key, _LOCAL_STORYBOARD_COPY["en"])
-    specs = [
-        ("hook", f"Understand {short}", "title", [short, "Why it matters", "What you will learn"]),
-        ("why", f"{short} in the real world", "cards", ["Real use case", "Common mistake", "Benefit"]),
-        ("how", f"Step-by-step: {short}", "pipeline", ["Requirement", "Build blocks", "Verify result"]),
-        ("takeaway", f"Recap: {short}", "chips", [short, "Key steps", "Takeaway"]),
-    ]
-    stages: List[Dict[str, Any]] = []
-    for index, (key, title, layout, labels) in enumerate(specs):
-        speech = copy[key].format(topic=short)
+    keywords = _topic_keywords(topic_text)
+    slots = _fill_keywords(keywords, short, lang_key)
+    keyword_copy = _LOCAL_KEYWORD_TEMPLATES.get(lang_key, _LOCAL_KEYWORD_TEMPLATES["en"])
+
+    def _add_scene(title: str, speech: str, layout: str, visual_text: str, labels: List[str]) -> None:
         stages.append({
-            "id": index + 1,
+            "id": len(stages) + 1,
             "title": title,
             "speech": speech,
             f"speech_{lang_key}": speech,
             "visual_type": layout,
-            "visual_description": f"Topic-specific 2D diagram for {short}: {title}.",
+            "visual_description": visual_text,
             "visual_data": {
                 "layout": layout,
                 "headline": title,
-                "subtext": f"A clear visual walkthrough of {short}.",
+                "subtext": visual_text[:150],
                 "labels": labels,
                 "steps": labels if layout == "pipeline" else [],
+                "takeaway": labels[0] if layout == "editorial" else "",
             },
         })
+
+    stages: List[Dict[str, Any]] = []
+    layouts = ("title", "cards", "pipeline", "chips", "editorial")
+    explicit_scenes = _parse_prompt_scenes(topic_text)
+    narrative_sentences = _prompt_narrative_sentences(topic_text)
+
+    if len(explicit_scenes) >= 2:
+        for index, scene in enumerate(explicit_scenes[:MAX_STORYBOARD_SCENES]):
+            speech = scene["speech"]
+            labels = _labels_for_scene(scene.get("visual", ""), speech, slots, index)
+            title = scene.get("title") or (short if index == 0 else labels[0])
+            _add_scene(
+                title,
+                speech,
+                layouts[index % len(layouts)],
+                scene.get("visual") or f"2D explainer diagram for: {speech[:160]}",
+                labels,
+            )
+    elif len(narrative_sentences) >= MIN_STORYBOARD_SCENES:
+        for index, sentence in enumerate(narrative_sentences):
+            labels = _labels_for_scene("", sentence, slots, index)
+            title = " ".join(sentence.split()[:6]).rstrip(".,;:!?।")[:55] or short
+            _add_scene(
+                title,
+                sentence,
+                layouts[index % len(layouts)],
+                f"2D diagram illustrating: {sentence[:160]}",
+                labels,
+            )
+    else:
+        specs = [
+            ("hook", f"Understand {short}", "title"),
+            ("why", f"{short} in the real world", "cards"),
+            ("how", f"Step-by-step: {short}", "pipeline"),
+            ("takeaway", f"Recap: {short}", "chips"),
+        ]
+        for index, (key, title, layout) in enumerate(specs):
+            speech = _format_template(
+                keyword_copy[key], topic=short, k1=slots[0], k2=slots[1], k3=slots[2]
+            )
+            labels = [slots[index % 3], slots[(index + 1) % 3], slots[(index + 2) % 3]]
+            _add_scene(
+                title,
+                speech,
+                layout,
+                f"2D diagram for {short} illustrating {labels[0]}, {labels[1]} and {labels[2]}.",
+                labels,
+            )
+
+    while len(stages) < MIN_STORYBOARD_SCENES:
+        stages.append(_recap_scene(lang_key, short))
+
     return {
         "id": "custom_local_fallback",
         "title": short,
@@ -535,9 +816,142 @@ def _build_local_storyboard(
             "hi": f"💡 टिप: {short} सीखते समय हर चरण खुद अभ्यास करें.",
             "en": f"💡 Tip: practise each step of {short} yourself while learning.",
         }.get(lang_key, f"💡 Tip: practise each step of {short} yourself while learning."),
-        f"explanation_{lang_key}": copy["takeaway"].format(topic=short),
-        f"hook_{lang_key}": copy["hook"].format(topic=short),
+        f"explanation_{lang_key}": _format_template(
+            keyword_copy["takeaway"], topic=short, k1=slots[0], k2=slots[1], k3=slots[2]
+        ),
+        f"hook_{lang_key}": _format_template(
+            keyword_copy["hook"], topic=short, k1=slots[0], k2=slots[1], k3=slots[2]
+        ),
     }
+
+
+def _pollinations_storyboard(
+    prompt: str,
+    lang_key: str,
+    topic: str,
+    difficulty: str,
+    content_type: str,
+    mode: str,
+) -> Optional[Dict[str, Any]]:
+    """Free, keyless storyboard via Pollinations (OpenAI-compatible endpoint)."""
+    import time as _time
+    import urllib.error
+    import urllib.request
+
+    script_rule = {
+        "mr": "Write all narration in natural Marathi using Devanagari script.",
+        "hi": "Write all narration in natural Hindi using Devanagari script.",
+        "en": "Write all narration in clear conversational English.",
+    }.get(lang_key, "Write all narration in clear conversational English.")
+    instruction = (
+        "You are a short-video director. Return only a JSON object with this shape: "
+        '{"title": "...", "scenes": [{"title": "...", "speech": "...", '
+        '"visual_description": "...", "visual_type": "diagram", '
+        '"visual_data": {"layout": "spatial|title|cards|pipeline|chips|split|editorial|timeline", '
+        '"headline": "...", "subtext": "...", "labels": ["...", "...", "..."], '
+        '"steps": ["..."], "elements": [{"label": "...", "detail": "...", "shape": "person|box|server|database_cylinder|cloud|laptop|phone|cube"}]}}]}. '
+        "Return exactly 4 scenes. Every scene needs 2-4 spoken sentences that teach one concrete, "
+        "topic-specific idea, and 2-3 visual labels taken from that same spoken content so the "
+        "animation follows the narration. No generic section names, no markdown fences. "
+        f"{script_rule}"
+    )
+    payload = {
+        "model": "openai",
+        "messages": [
+            {"role": "system", "content": instruction},
+            {"role": "user", "content": f"Topic prompt:\n{prompt[:4000]}"},
+        ],
+        "temperature": 0.75,
+    }
+    request = urllib.request.Request(
+        "https://text.pollinations.ai/openai",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "NanoProAI/2.0",
+            "Referer": "https://mangesh-nanopro.mangeshbagul15.workers.dev/",
+        },
+    )
+    try:
+        data = None
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(request, timeout=20) as response:
+                    data = json.loads(response.read().decode("utf-8", "ignore"))
+                break
+            except urllib.error.HTTPError as err:
+                body = err.read().decode("utf-8", "ignore")
+                log_event(
+                    f"Pollinations free storyboard attempt {attempt + 1} returned {err.code}: {body[:180]}",
+                    level="WARNING",
+                    component="SqlShortEngine",
+                )
+                if err.code in (402, 429, 503) and attempt == 0:
+                    _time.sleep(10)
+                    continue
+                return None
+        if not isinstance(data, dict):
+            return None
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not content:
+            return None
+        parsed = _parse_model_json(content)
+        if isinstance(parsed, list):
+            parsed = {"scenes": parsed}
+        if not isinstance(parsed, dict):
+            return None
+        scenes = _normalize_storyboard_scenes(parsed.get("scenes") or parsed.get("stages"), lang_key)
+        if len(scenes) < 2:
+            return None
+        if len(scenes) < MIN_STORYBOARD_SCENES:
+            scenes = _ensure_min_storyboard_scenes(scenes, lang_key, topic)
+        parsed["scenes"] = scenes
+        parsed.pop("stages", None)
+        parsed["id"] = "custom_pollinations_scenario"
+        parsed["title"] = str(parsed.get("title") or topic)[:90]
+        parsed["question"] = prompt
+        parsed["difficulty"] = difficulty
+        parsed["content_type"] = content_type
+        parsed["mode"] = mode
+        parsed["storyboard_provider"] = "Pollinations (free, keyless)"
+        return parsed
+    except Exception:
+        return None
+
+
+def _write_silent_wav(path: Path, seconds: float, sample_rate: int = 22050) -> bool:
+    """Last-resort track so the renderer always has audio when every TTS API fails."""
+    try:
+        import wave
+        total_frames = int(max(2.0, min(90.0, seconds)) * sample_rate)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with wave.open(str(path), "wb") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(sample_rate)
+            handle.writeframes(b"\x00\x00" * total_frames)
+        return path.exists() and path.stat().st_size > 1000
+    except Exception:
+        return False
+
+
+def _has_configured_llm_backend() -> bool:
+    """True only when at least one LLM provider key is configured, so we skip slow dead calls."""
+    try:
+        from app.core.model_adapter import model_manager
+    except Exception:
+        return False
+    for name in (
+        "groq", "gemini", "deepseek", "openrouter", "mistral", "cohere",
+        "sambanova", "openai", "claude", "remote",
+    ):
+        adapter = getattr(model_manager, name, None)
+        try:
+            if adapter and adapter.is_available():
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def _resolve_storyboard_attribution(used_model: Optional[str], used_mode: Any) -> Tuple[str, str]:
@@ -1907,8 +2321,24 @@ class SqlShortVideoEngine:
         # 2. Content Type Detection
         content_type = self._detect_content_type(text_input)
 
+        # 3. Respect an explicit Scene 1..N brief without depending on any external API.
+        if not matched and len(_parse_prompt_scenes(text_input)) >= 2:
+            matched = _build_local_storyboard(text_input, lang_key, difficulty, content_type, mode)
+            storyboard_source = "User-supplied scenes (2D)"
+            log_event(
+                "Built the video directly from the user's Scene 1..N brief.",
+                component="SqlShortEngine",
+            )
+
         # 4. If still not matched, synthesize via online AI model dynamically
-        if not matched and len(text_input) > 8:
+        backend_ready = _has_configured_llm_backend()
+        if not backend_ready:
+            log_event(
+                "No LLM provider key is configured on this server; using the free keyless storyboard path.",
+                level="INFO",
+                component="SqlShortEngine",
+            )
+        if not matched and len(text_input) > 8 and backend_ready:
             try:
                 from app.core.model_adapter import model_manager
                 learned_guide = (
@@ -2131,6 +2561,33 @@ class SqlShortVideoEngine:
                     component="SqlShortEngine",
                 )
 
+        # 5. Free keyless AI storyboard (Pollinations) before any template fallback.
+        if not matched and len(text_input) > 3:
+            try:
+                free_board = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        _pollinations_storyboard,
+                        text_input,
+                        lang_key,
+                        _clean_prompt_topic(text_input),
+                        difficulty,
+                        content_type,
+                        mode,
+                    ),
+                    timeout=42.0,
+                )
+                if free_board:
+                    matched = free_board
+                    used_model = "Pollinations openai (free)"
+                    used_mode = "keyless free API"
+                    storyboard_source = "Pollinations free AI storyboard"
+                    log_event(
+                        "Generated the storyboard with the free keyless Pollinations API.",
+                        component="SqlShortEngine",
+                    )
+            except Exception as e:
+                log_event(f"Pollinations storyboard notice: {e}", level="DEBUG", component="SqlShortEngine")
+
         if not matched:
             log_event(
                 f"All storyboard models unavailable ({storyboard_error or 'no model response'}); "
@@ -2146,17 +2603,28 @@ class SqlShortVideoEngine:
             self._build_dynamic_stages(matched, matched_content_type, lang_key, mode=mode),
             lang_key,
         )
+
+        def _guaranteed_local_stages() -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+            fallback_board = _build_local_storyboard(
+                text_input, lang_key, difficulty, matched_content_type, mode
+            )
+            fallback_stages = _ensure_scene_visual_directions(
+                self._build_dynamic_stages(fallback_board, matched_content_type, lang_key, mode=mode),
+                lang_key,
+            )
+            return fallback_board, fallback_stages
+
         if not 3 <= len(stages) <= 5 or any(
             not str(stage.get(f"speech_{lang_key}") or stage.get("speech") or stage.get("speech_en") or "").strip()
             for stage in stages
         ):
-            return {
-                "status": "error",
-                "message": (
-                    "The storyboard model must return 3-5 complete narrated scenes. "
-                    "Try another model or enable Automatic model fallback; no generic lesson was substituted."
-                ),
-            }
+            log_event(
+                "Storyboard validation failed; rendering the guaranteed local 2D storyboard.",
+                level="WARNING",
+                component="SqlShortEngine",
+            )
+            matched, stages = _guaranteed_local_stages()
+            storyboard_source = "NanoPro guaranteed local 2D storyboard"
         generic_titles = (
             "overview", "introduction", "core mechanism", "how it works",
             "real world impact", "practical significance", "key takeaway",
@@ -2170,13 +2638,13 @@ class SqlShortVideoEngine:
             for stage in stages
         )
         if generic_title_count >= 3:
-            return {
-                "status": "error",
-                "message": (
-                    "The storyboard model returned a generic lesson outline instead of a topic-specific story. "
-                    "Try Automatic model fallback or another model; no template video was generated."
-                ),
-            }
+            log_event(
+                "Storyboard returned generic section titles; switching to the topic-aware local 2D storyboard.",
+                level="WARNING",
+                component="SqlShortEngine",
+            )
+            matched, stages = _guaranteed_local_stages()
+            storyboard_source = "NanoPro guaranteed local 2D storyboard"
         first_scene_visual = stages[0]["visual_data"]
         if first_scene_visual["elements"] and not any(element.get("shape") == "person" for element in first_scene_visual["elements"]):
             human_label = {"mr": "तुम्ही", "hi": "आप", "en": "You"}.get(lang_key, "You")
@@ -2220,13 +2688,13 @@ class SqlShortVideoEngine:
             or len(stage["sentence_cues"]) < 1
             for stage in stages
         ):
-            return {
-                "status": "error",
-                "message": (
-                    "The storyboard is missing scene-specific visual objects or voice-timed narration cues. "
-                    "Try Automatic model fallback or another storyboard model; no generic animation was substituted."
-                ),
-            }
+            log_event(
+                "Storyboard was missing scene visuals or voice cues; switching to the guaranteed local 2D storyboard.",
+                level="WARNING",
+                component="SqlShortEngine",
+            )
+            matched, stages = _guaranteed_local_stages()
+            storyboard_source = "NanoPro guaranteed local 2D storyboard"
 
         # Gather voice narration script across educational stages
         narration_parts = []
@@ -2266,16 +2734,26 @@ class SqlShortVideoEngine:
         if not selected_voice.lower().startswith("aura-") and full_narration:
             try:
                 from app.video_maker.ai_provider_router import synthesize_premium_voice
+                from app.core.elevenlabs_voice import elevenlabs_voice as _eleven_voice
                 el_res = await synthesize_premium_voice(
-                    full_narration, lang_key, f"el_{preset_id}_{narration_hash}_{lang_key}.mp3"
+                    full_narration, lang_key, f"el_{preset_id}_{narration_hash}_{lang_key}.mp3",
+                    voice_id=_eleven_voice.resolve_voice_id(selected_voice),
                 )
                 if el_res and el_res.get("file_path") and Path(el_res["file_path"]).exists():
                     audio_url = el_res.get("audio_url", "")
                     audio_file_path = el_res["file_path"]
                     premium_voice_used = True
-                    voice = f"ElevenLabs {el_res.get('model_id', '')}".strip()
+                    voice = f"ElevenLabs {el_res.get('voice_id', '')} {el_res.get('model_id', '')}".strip()
             except Exception as e:
                 log_event(f"Premium voice routing notice: {e}", level="DEBUG", component="SqlShortEngine")
+
+        if not premium_voice_used and re.fullmatch(r"[A-Za-z0-9]{20}", selected_voice):
+            # ElevenLabs unavailable: keep a valid free edge voice for the fallback render.
+            selected_voice = {
+                "mr": "mr-IN-AarohiNeural",
+                "hi": "hi-IN-MadhurNeural",
+            }.get(lang_key, "en-US-JennyNeural")
+            voice = selected_voice
 
         try:
             if premium_voice_used:
@@ -2321,14 +2799,34 @@ class SqlShortVideoEngine:
         except Exception as e:
             log_event(f"Audio synthesis notice in short engine: {e}", level="DEBUG", component="SqlShortEngine")
 
+        # Guarantee an audio track even if every TTS API is down, so the reel still exports.
+        silent_dur = 0.0
+        if not audio_url and full_narration:
+            words_count = max(8, len(full_narration.split()))
+            rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
+            silent_dur = max(6.0, min(75.0, words_count / rate))
+            silent_name = f"voice_{preset_id}_{narration_hash}_silent.wav"
+            if _write_silent_wav(audio_dir / silent_name, silent_dur):
+                audio_url = f"/audio/{silent_name}"
+                audio_file_path = str(audio_dir / silent_name)
+                voice = "Silent fallback (TTS unavailable)"
+                log_event(
+                    "Every TTS provider failed; using a silent track so the video still renders.",
+                    level="WARNING",
+                    component="SqlShortEngine",
+                )
+
         # Measure exact audio duration directly from MP3 frame headers
         actual_dur = 0.0
         if audio_file_path:
             actual_dur = get_mp3_duration(audio_file_path)
         if actual_dur <= 0.0:
-            words_count = len(full_narration.split())
-            rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
-            actual_dur = round(words_count / rate, 2)
+            if silent_dur > 0:
+                actual_dur = round(silent_dur, 2)
+            else:
+                words_count = len(full_narration.split())
+                rate = 2.3 if lang_key in ["mr", "hi"] else 2.5
+                actual_dur = round(words_count / rate, 2)
 
         # Synchronize stage boundaries dynamically based on word counts and the complete audio duration.
         calibrated_stages, final_dur, outro_start = compute_audio_synchronized_stages(
@@ -2533,6 +3031,9 @@ class SqlShortVideoEngine:
         llm_provider = "Prompt-derived fallback (no LLM call)"
         if storyboard_source == "LLM-generated storyboard":
             reported_model, llm_provider = _resolve_storyboard_attribution(used_model, used_mode)
+        elif storyboard_source == "Pollinations free AI storyboard":
+            reported_model = used_model or "Pollinations openai (free)"
+            llm_provider = "Pollinations (free, keyless)"
 
         voice_actor_name = voice or (
             "mr-IN-AarohiNeural (Microsoft Edge-TTS)" if lang_key == "mr" else (
@@ -2767,7 +3268,8 @@ class SqlShortVideoEngine:
 
         _voice_provider_label = (
             "ElevenLabs (premium, credits checked)" if "ElevenLabs" in voice_actor_name
-            else ("Microsoft Edge-TTS (Neural Cloud, free)" if "Neural" in voice_actor_name else "Deepgram Aura")
+            else ("Microsoft Edge-TTS (Neural Cloud, free)" if "Neural" in voice_actor_name
+                  else ("Silent fallback (TTS unavailable)" if "Silent" in voice_actor_name else "Deepgram Aura"))
         )
         ai_clip_providers = sorted({s.get("ai_clip_provider") for s in calibrated_stages if s.get("ai_clip_provider")})
 

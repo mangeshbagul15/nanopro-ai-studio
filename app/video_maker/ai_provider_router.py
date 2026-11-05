@@ -194,17 +194,26 @@ ELEVENLABS_MODEL_BY_LANG = {
 }
 
 
-async def synthesize_premium_voice(text: str, lang_key: str, filename: str) -> Optional[Dict[str, Any]]:
+async def synthesize_premium_voice(
+    text: str,
+    lang_key: str,
+    filename: str,
+    voice_id: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """Use ElevenLabs when it has enough character credits for this narration; otherwise None."""
     status = await probe_providers()
     info = status.get("elevenlabs") or {}
     if not info.get("usable") or int(info.get("credits", 0) or 0) < len(text):
         return None
-    from app.core.elevenlabs_voice import elevenlabs_voice
+    from app.core.elevenlabs_voice import (
+        elevenlabs_voice,
+        NANOPRO_DEFAULT_ELEVENLABS_VOICE_ID,
+    )
     model_id = ELEVENLABS_MODEL_BY_LANG.get(lang_key, "eleven_multilingual_v2")
+    target_voice = elevenlabs_voice.resolve_voice_id(voice_id) or NANOPRO_DEFAULT_ELEVENLABS_VOICE_ID
     try:
         res = await asyncio.wait_for(
-            asyncio.to_thread(elevenlabs_voice.generate_speech, text, None, model_id, 0.55, 0.85, 0.15, filename),
+            asyncio.to_thread(elevenlabs_voice.generate_speech, text, target_voice, model_id, 0.55, 0.85, 0.15, filename),
             timeout=45.0,
         )
         if res.get("status") == "success":

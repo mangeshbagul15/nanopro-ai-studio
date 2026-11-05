@@ -22249,7 +22249,16 @@ window.generateSqlShortBlueprint = generateSqlShortBlueprint;
  ]
  };
 
- const list = voiceOptions[lang] || voiceOptions['mr'];
+ const elevenLabsVoices = [
+ { id: 'pHG3exaXQt8bmTWbaVOs', name: 'ElevenLabs: NanoPro Natural 1 (Default · human)' },
+ { id: '7b9mYhmnp0y2qSH1FnBL', name: 'ElevenLabs: NanoPro Natural 2' },
+ { id: 'OtEfb2LVzIE45wdYe54M', name: 'ElevenLabs: NanoPro Natural 3' },
+ { id: 'f1abxvIEijusskcPWE5x', name: 'ElevenLabs: NanoPro Natural 4' },
+ { id: 'hr8Jn6R7mrb0ncJHDryQ', name: 'ElevenLabs: NanoPro Natural 5' },
+ { id: 'czQ9pLzjRaF61EAYjcPC', name: 'ElevenLabs: NanoPro Natural 6' }
+ ];
+
+ const list = [...elevenLabsVoices, ...(voiceOptions[lang] || voiceOptions['mr'])];
  list.forEach(v => {
  const opt = document.createElement('option');
  opt.value = v.id || v.value;

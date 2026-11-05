@@ -9,6 +9,7 @@ Convert Text to Speech using official ElevenLabs model APIs:
 
 import os
 import json
+import re
 import time
 import urllib.request
 import urllib.error
@@ -80,8 +81,73 @@ ELEVENLABS_VOICE_CATALOG = [
         "category": "podcasts",
         "description": "Laid-back, Casual, Resonant — Great for conversational interviews and developer discussions.",
         "use_case": "Conversational Podcasts"
+    },
+    {
+        "id": "pHG3exaXQt8bmTWbaVOs",
+        "name": "NanoPro Natural 1",
+        "gender": "male",
+        "accent": "Natural / Human",
+        "category": "nanopro_studio",
+        "default": True,
+        "description": "Preferred NanoPro narrator. Warm, natural human delivery for tech reels and lessons.",
+        "use_case": "NanoPro Video Maker"
+    },
+    {
+        "id": "7b9mYhmnp0y2qSH1FnBL",
+        "name": "NanoPro Natural 2",
+        "gender": "male",
+        "accent": "Natural / Human",
+        "category": "nanopro_studio",
+        "description": "Natural human voice for tech explainers and shorts.",
+        "use_case": "NanoPro Video Maker"
+    },
+    {
+        "id": "OtEfb2LVzIE45wdYe54M",
+        "name": "NanoPro Natural 3",
+        "gender": "female",
+        "accent": "Natural / Human",
+        "category": "nanopro_studio",
+        "description": "Natural human voice for tech explainers and shorts.",
+        "use_case": "NanoPro Video Maker"
+    },
+    {
+        "id": "f1abxvIEijusskcPWE5x",
+        "name": "NanoPro Natural 4",
+        "gender": "female",
+        "accent": "Natural / Human",
+        "category": "nanopro_studio",
+        "description": "Natural human voice for tech explainers and shorts.",
+        "use_case": "NanoPro Video Maker"
+    },
+    {
+        "id": "hr8Jn6R7mrb0ncJHDryQ",
+        "name": "NanoPro Natural 5",
+        "gender": "male",
+        "accent": "Natural / Human",
+        "category": "nanopro_studio",
+        "description": "Natural human voice for tech explainers and shorts.",
+        "use_case": "NanoPro Video Maker"
+    },
+    {
+        "id": "czQ9pLzjRaF61EAYjcPC",
+        "name": "NanoPro Natural 6",
+        "gender": "female",
+        "accent": "Natural / Human",
+        "category": "nanopro_studio",
+        "description": "Natural human voice for tech explainers and shorts.",
+        "use_case": "NanoPro Video Maker"
     }
 ]
+
+NANOPRO_ELEVENLABS_VOICE_IDS = (
+    "pHG3exaXQt8bmTWbaVOs",
+    "7b9mYhmnp0y2qSH1FnBL",
+    "OtEfb2LVzIE45wdYe54M",
+    "f1abxvIEijusskcPWE5x",
+    "hr8Jn6R7mrb0ncJHDryQ",
+    "czQ9pLzjRaF61EAYjcPC",
+)
+NANOPRO_DEFAULT_ELEVENLABS_VOICE_ID = "pHG3exaXQt8bmTWbaVOs"
 
 USE_CASE_PRESETS = {
     "indian_tech_youtuber": {
@@ -174,6 +240,20 @@ class ElevenLabsVoiceEngine:
     def is_available(self) -> bool:
         k = self._resolve_api_key()
         return bool(k and k.startswith("sk_"))
+
+    def resolve_voice_id(self, value: Optional[str]) -> Optional[str]:
+        """Map an ElevenLabs voice ID or a catalog voice name to a usable voice ID."""
+        token = (value or "").strip()
+        if not token:
+            return None
+        if re.fullmatch(r"[A-Za-z0-9]{20}", token):
+            return token
+        low = token.lower()
+        for voice in ELEVENLABS_VOICE_CATALOG:
+            name = str(voice.get("name", "")).lower()
+            if low == str(voice.get("id", "")).lower() or low == name or (name and low in name):
+                return voice.get("id")
+        return None
 
     def save_api_key(self, api_key: str) -> Dict[str, Any]:
         """Saves a new ElevenLabs API key into runtime memory, vault, and environment."""
