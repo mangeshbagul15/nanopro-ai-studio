@@ -210,18 +210,32 @@ async def synthesize_premium_voice(
         NANOPRO_DEFAULT_ELEVENLABS_VOICE_ID,
     )
     model_id = ELEVENLABS_MODEL_BY_LANG.get(lang_key, "eleven_multilingual_v2")
-    target_voice = elevenlabs_voice.resolve_voice_id(voice_id) or NANOPRO_DEFAULT_ELEVENLABS_VOICE_ID
-    try:
-        res = await asyncio.wait_for(
-            asyncio.to_thread(elevenlabs_voice.generate_speech, text, target_voice, model_id, 0.55, 0.85, 0.15, filename),
-            timeout=45.0,
-        )
-        if res.get("status") == "success":
-            info["credits"] = max(0, int(info.get("credits", 0)) - len(text))
-            return res
-    except Exception as e:
-        msg = str(e)
-        if "quota" in msg.lower() or "credit" in msg.lower() or "401" in msg:
-            _mark_exhausted("elevenlabs")
-        log_event(f"ElevenLabs narration failed, falling back to free TTS: {msg[:200]}", level="WARNING", component="AIProviderRouter")
+    preferred = elevenlabs_voice.resolve_voice_id(voice_id) or NANOPRO_DEFAULT_ELEVENLABS_VOICE_ID
+    # Free plans cannot use Voice Library voices via the API, so keep account voices ready.
+    candidates = [preferred]
+    for fallback in ("TX3LPaxmHKxFdv7VOQHJ", "EXAVITQu4vr4xnSDxMaL", "JBFqnCBsd6RMkjVDRZzb"):
+        if fallback not in candidates:
+            candidates.append(fallback)
+    for candidate in candidates:
+        try:
+            res = await asyncio.wait_for(
+                asyncio.to_thread(elevenlabs_voice.generate_speech, text, candidate, model_id, 0.55, 0.85, 0.15, filename),
+                timeout=45.0,
+            )
+            if res.get("status") == "success":
+                info["credits"] = max(0, int(info.get("credits", 0)) - len(text))
+                return res
+        except Exception as e:
+            msg = str(e)
+            if "paid_plan_required" in msg or "library voice" in msg.lower():
+                log_event(
+                    f"ElevenLabs voice {candidate} needs a paid plan; retrying with an account voice.",
+                    level="WARNING",
+                    component="AIProviderRouter",
+                )
+                continue
+            if "quota" in msg.lower() or "credit" in msg.lower() or "401" in msg:
+                _mark_exhausted("elevenlabs")
+            log_event(f"ElevenLabs narration failed, falling back to free TTS: {msg[:200]}", level="WARNING", component="AIProviderRouter")
+            return None
     return None
