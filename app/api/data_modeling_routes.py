@@ -103,6 +103,18 @@ def api_dm_status(request: Request):
     })
 
 
+@router.get("/selfcheck")
+def api_dm_selfcheck(request: Request, live: int = 0, workspace_id: str = ""):
+    _session_user(request)
+    from app.core.manager_contract import run_selfcheck
+
+    try:
+        report = run_selfcheck(live=bool(live), workspace_id=workspace_id)
+    except Exception as exc:
+        return _error(f"Self-check failed: {exc}", 500)
+    return JSONResponse({"status": "success", **report})
+
+
 @router.get("/workspaces")
 def api_dm_workspaces(request: Request):
     _session_user(request)

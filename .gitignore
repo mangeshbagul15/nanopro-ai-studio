@@ -32,6 +32,11 @@ data/banking/apk_sent_log.json
 data/lakehouse/*.duckdb
 data/lakehouse/*.duckdb.wal
 
+# Data modeling workspace databases (per-user runtime data)
+data/modeling/*.db
+data/modeling/*.db-wal
+data/modeling/*.db-shm
+
 # SFTP Local Storage & Keys
 data/sftp/
 *.key

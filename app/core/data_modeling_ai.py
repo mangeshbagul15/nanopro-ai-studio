@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from app.core.config import SQLITE_DB_PATH
 from app.core.database import db
 from app.core.logger import log_event
+from app.core.manager_contract import DELIVERY_CONTRACT
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
@@ -1576,7 +1577,8 @@ def _system_prompt(workspace: Dict[str, Any]) -> str:
         "Oracle uses unquoted uppercase names and FETCH FIRST n ROWS ONLY; BigQuery uses `project.dataset.table` with backticks and LIMIT; "
         "AWS S3 is queried through DuckDB read_parquet()/read_csv() over s3:// paths; MySQL uses backticks and LIMIT.\n"
         "12) If a database status is not \"live\", do not query it. Tell the user it is unreachable and quote the real error from the catalog.\n"
-        f"Active workspace: {workspace['id']} — {workspace['name']}.\n"
+        + DELIVERY_CONTRACT
+        + f"Active workspace: {workspace['id']} — {workspace['name']}.\n"
     )
 
 
@@ -1685,6 +1687,26 @@ def _fast_intent(workspace_id: str, message: str) -> Optional[Dict[str, Any]]:
     text = (message or "").strip()
     if not text or len(text) > 200:
         return None
+    low = re.sub(r"[^a-z\u0900-\u097F ]", "", text.lower()).strip()
+    if low in {"hi", "hii", "hello", "hey", "yo", "namaste", "namaskar", "hola", "good morning", "good evening"}:
+        return {
+            "reply": "Namaskar! Mi NanoPro Data Copilot. Konti table, join, report, upload kinva schedule pahije? Udaharan: "
+                     "\"sales_orders madhe top 5 rows dakhav\" kinva \"roj 7 vajta pipeline set kar\".",
+            "sql": None,
+            "target": "workspace",
+            "action": None,
+            "fast": True,
+        }
+    if low in {"help", "what can you do", "kay karu shakto", "kay karta", "kay karu shaktos", "options"}:
+        return {
+            "reply": "Mi SQL na lihita sagl karto: database/schema/table create, columns add-rename-type change, "
+                     "top records, joins, CSV/Excel upload, data append, ETL pipelines ani daily/monthly/quarterly/cron schedules. "
+                     "Fakt tumhi marathi, hindi kinva english madhe sanga.",
+            "sql": None,
+            "target": "workspace",
+            "action": None,
+            "fast": True,
+        }
     catalog = catalog_snapshot(ttl=30.0)
 
     if re.fullmatch(
@@ -1788,6 +1810,38 @@ def _fast_intent(workspace_id: str, message: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+# Parsed AI replies are cached so a repeated question never pays model latency twice.
+_AI_REPLY_CACHE: Dict[str, Dict[str, Any]] = {}
+_AI_REPLY_LOCK = threading.Lock()
+_AI_REPLY_TTL = 300.0
+_AI_REPLY_MAX = 96
+
+
+def _reply_cache_key(workspace_id: str, message: str) -> str:
+    return workspace_id + "|" + re.sub(r"\s+", " ", (message or "").strip().lower())
+
+
+def _reply_cache_get(key: str) -> Optional[Dict[str, Any]]:
+    with _AI_REPLY_LOCK:
+        item = _AI_REPLY_CACHE.get(key)
+        if not item:
+            return None
+        if time.time() - item["at"] > _AI_REPLY_TTL:
+            _AI_REPLY_CACHE.pop(key, None)
+            return None
+        return dict(item["value"])
+
+
+def _reply_cache_put(key: str, value: Dict[str, Any]) -> None:
+    if value.get("action"):
+        return
+    with _AI_REPLY_LOCK:
+        if len(_AI_REPLY_CACHE) >= _AI_REPLY_MAX:
+            oldest = min(_AI_REPLY_CACHE, key=lambda k: _AI_REPLY_CACHE[k]["at"])
+            _AI_REPLY_CACHE.pop(oldest, None)
+        _AI_REPLY_CACHE[key] = {"at": time.time(), "value": dict(value)}
+
+
 def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
     _ensure_schema()
     workspace = get_workspace(workspace_id)
@@ -1814,29 +1868,37 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
             parsed = fast
             model_used = "fast-nlu"
         else:
-            catalog_text = _catalog_for_prompt(workspace_id, message)
-            history_rows = get_messages(workspace_id, limit=12)[:-1]
-            history = "\n".join(f"{m['role']}: {m['content'][:600]}" for m in history_rows)
-            prompt = (
-                f"{catalog_text}\n\nCONVERSATION SO FAR:\n{history or '(new conversation)'}\n\n"
-                f"USER: {message}\n\nReturn the JSON object now."
-            )
-            try:
-                from app.core.model_adapter import model_manager
-
-                content, model_used, _, _ = model_manager.route_and_execute(
-                    prompt,
-                    task_type="data_analyst",
-                    schema={"type": "json_object"},
-                    system_prompt=_system_prompt(workspace),
-                    timeout=30.0,
-                    temperature=0.2,
+            cache_key = _reply_cache_key(workspace_id, message)
+            cached = _reply_cache_get(cache_key)
+            if cached:
+                parsed = cached
+                model_used = "cached-ai"
+            else:
+                catalog_text = _catalog_for_prompt(workspace_id, message)
+                history_rows = get_messages(workspace_id, limit=12)[:-1]
+                history = "\n".join(f"{m['role']}: {m['content'][:600]}" for m in history_rows)
+                prompt = (
+                    f"{catalog_text}\n\nCONVERSATION SO FAR:\n{history or '(new conversation)'}\n\n"
+                    f"USER: {message}\n\nReturn the JSON object now."
                 )
-                parsed = _parse_json_reply(content)
-            except Exception as exc:
-                log_event(f"Data modeling AI unavailable: {exc}", level="WARNING", component="DataModeling")
-                parsed = _fallback_answer(workspace_id, message)
-                model_used = "fallback"
+                try:
+                    from app.core.model_adapter import model_manager
+
+                    content, model_used, _, _ = model_manager.route_and_execute(
+                        prompt,
+                        task_type="data_analyst",
+                        schema={"type": "json_object"},
+                        system_prompt=_system_prompt(workspace),
+                        timeout=30.0,
+                        temperature=0.2,
+                        max_tokens=900,
+                    )
+                    parsed = _parse_json_reply(content)
+                    _reply_cache_put(cache_key, parsed)
+                except Exception as exc:
+                    log_event(f"Data modeling AI unavailable: {exc}", level="WARNING", component="DataModeling")
+                    parsed = _fallback_answer(workspace_id, message)
+                    model_used = "fallback"
 
     action = (parsed.get("action") or "").strip().lower()
     sql = parsed.get("sql")

@@ -11,6 +11,27 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _sanitize_no_proxy() -> None:
+    """httpx rejects bracketed IPv6 entries in NO_PROXY ("Invalid port: ':1]'").
+
+    Windows sets NO_PROXY to "...127.0.0.0/8,[::1],::1" on this machine, which
+    breaks every SDK call (Groq, Gemini, Anthropic) before the request is sent.
+    Drop the bracketed form and keep the bare "::1" token.
+    """
+    raw = os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or ""
+    if "[" not in raw:
+        return
+    kept = [part.strip() for part in raw.split(",") if part.strip() and not part.strip().startswith("[")]
+    if "::1" not in kept:
+        kept.append("::1")
+    for var in ("NO_PROXY", "no_proxy"):
+        if var in os.environ:
+            os.environ[var] = ",".join(kept)
+
+
+_sanitize_no_proxy()
+
 # Base project directory
 SYSTEM_OS = platform.system()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent

@@ -22,55 +22,63 @@ def get_data_modeling_html() -> str:
 #view-data_modeling_ai .dm-btn.primary { background:linear-gradient(135deg,#0EA5E9,#2563EB); border:0; color:#FFF; box-shadow:0 6px 16px rgba(37,99,235,.3); }
 #view-data_modeling_ai .dm-btn.ghost { background:transparent; }
 #view-data_modeling_ai .dm-body { flex:1; display:flex; min-height:0; position:relative; }
-#view-data_modeling_ai .dm-rail { width:300px; flex:0 0 auto; display:flex; flex-direction:column; min-height:0; background:#0F172A; border-right:1px solid #1E293B; transition:width .18s ease; }
-#view-data_modeling_ai .dm-rail-head { display:flex; align-items:center; justify-content:flex-end; padding:8px 10px 0; }
-#view-data_modeling_ai .dm-collapse { width:30px; height:30px; border-radius:8px; border:1px solid #334155; background:#0B1120; color:#94A3B8; font-size:14px; font-weight:900; cursor:pointer; line-height:1; }
+#view-data_modeling_ai .dm-rail { position:relative; width:236px; min-width:180px; max-width:420px; flex:0 0 auto; display:flex; flex-direction:column; min-height:0; background:#0F172A; border-right:1px solid #1E293B; transition:width .18s ease; }
+#view-data_modeling_ai .dm-rail-resize { position:absolute; top:0; right:-3px; bottom:0; width:7px; cursor:col-resize; z-index:8; }
+#view-data_modeling_ai .dm-rail-resize:hover, #view-data_modeling_ai .dm-rail-resize.dragging { background:linear-gradient(180deg,transparent,rgba(14,165,233,.6),transparent); }
+#view-data_modeling_ai .dm-rail-head { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 6px; border-bottom:1px solid #16233b; }
+#view-data_modeling_ai .dm-rail-title { font-size:9px; font-weight:900; letter-spacing:.9px; text-transform:uppercase; color:#64748B; padding-left:3px; }
+#view-data_modeling_ai .dm-rail-tools { display:flex; gap:2px; }
+#view-data_modeling_ai .dm-collapse { width:22px; height:22px; border-radius:6px; border:1px solid #334155; background:#0B1120; color:#94A3B8; font-size:11px; font-weight:900; cursor:pointer; line-height:1; padding:0; }
 #view-data_modeling_ai .dm-collapse:hover { color:#38BDF8; border-color:#0EA5E9; }
-#view-data_modeling_ai .dm-rail-mini { display:none; flex-direction:column; gap:8px; padding:10px 8px; }
-#view-data_modeling_ai .dm-mini-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:10px; border:1px solid transparent; background:transparent; color:#94A3B8; font-size:9px; font-weight:800; cursor:pointer; }
-#view-data_modeling_ai .dm-mini-btn span:first-child { font-size:17px; }
+#view-data_modeling_ai .dm-rail-mini { display:none; flex-direction:column; gap:6px; padding:8px 5px; }
+#view-data_modeling_ai .dm-mini-btn { display:flex; flex-direction:column; align-items:center; gap:2px; padding:7px 3px; border-radius:8px; border:1px solid transparent; background:transparent; color:#94A3B8; font-size:8px; font-weight:800; cursor:pointer; }
+#view-data_modeling_ai .dm-mini-btn span:first-child { font-size:15px; }
 #view-data_modeling_ai .dm-mini-btn:hover, #view-data_modeling_ai .dm-mini-btn.active { color:#38BDF8; background:rgba(14,165,233,.1); border-color:#0EA5E9; }
 #view-data_modeling_ai .dm-rail-panels { display:flex; flex-direction:column; min-height:0; flex:1; }
-#view-data_modeling_ai .dm-tabs { display:flex; gap:4px; padding:4px 10px 0; }
-#view-data_modeling_ai .dm-tab { flex:1; padding:9px 6px; border:0; border-bottom:2px solid transparent; background:transparent; color:#94A3B8; font-size:11.5px; font-weight:800; letter-spacing:.3px; cursor:pointer; }
-#view-data_modeling_ai .dm-tab.active { color:#38BDF8; border-bottom-color:#38BDF8; }
-#view-data_modeling_ai .dm-panel { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px; gap:8px; }
-#view-data_modeling_ai .dm-panel[hidden] { display:none; }
-#view-data_modeling_ai .dm-new-ws { width:100%; padding:10px; border-radius:9px; border:1px dashed #334155; background:rgba(14,165,233,.06); color:#38BDF8; font-size:12px; font-weight:800; cursor:pointer; }
-#view-data_modeling_ai .dm-new-ws:hover { background:rgba(14,165,233,.14); border-color:#0EA5E9; }
-#view-data_modeling_ai .dm-ws-list, #view-data_modeling_ai .dm-tree { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:6px; padding-right:2px; }
-#view-data_modeling_ai .dm-ws { border:1px solid #1E293B; background:#0B1120; border-radius:10px; padding:9px 10px; cursor:pointer; transition:border-color .14s, background .14s; }
-#view-data_modeling_ai .dm-ws:hover { border-color:#334155; background:#111C31; }
-#view-data_modeling_ai .dm-ws.active { border-color:#0EA5E9; background:rgba(14,165,233,.1); box-shadow:inset 2px 0 0 #38BDF8; }
-#view-data_modeling_ai .dm-ws-top { display:flex; align-items:center; gap:6px; }
-#view-data_modeling_ai .dm-ws-name { flex:1; min-width:0; font-size:12.5px; font-weight:800; color:#E2E8F0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-#view-data_modeling_ai .dm-ws-meta { margin-top:4px; font-size:10px; color:#64748B; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-search-wrap { display:flex; gap:4px; padding:6px 6px 3px; }
+#view-data_modeling_ai .dm-filter { flex:1; min-width:0; background:#0B1120; border:1px solid #334155; border-radius:7px; color:#F8FAFC; font-size:11px; padding:5px 8px; outline:none; box-sizing:border-box; }
+#view-data_modeling_ai .dm-filter:focus { border-color:#0EA5E9; box-shadow:0 0 0 2px rgba(14,165,233,.12); }
+#view-data_modeling_ai .dm-clear { flex:0 0 auto; width:24px; border-radius:7px; border:1px solid #334155; background:#0B1120; color:#64748B; font-size:10px; cursor:pointer; display:none; }
+#view-data_modeling_ai .dm-clear.show { display:block; }
+#view-data_modeling_ai .dm-clear:hover { color:#FCA5A5; border-color:#7F1D1D; }
+#view-data_modeling_ai .dm-tree { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:2px 2px 8px; scrollbar-width:thin; scrollbar-color:#334155 transparent; }
+#view-data_modeling_ai .dm-tree::-webkit-scrollbar { width:8px; height:8px; }
+#view-data_modeling_ai .dm-tree::-webkit-scrollbar-track { background:transparent; }
+#view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb { background:#334155; border-radius:8px; }
+#view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb:hover { background:#475569; }
+#view-data_modeling_ai .dm-tree-inner { display:block; }
+#view-data_modeling_ai .dm-tree-note { padding:4px 8px; font-size:10px; color:#64748B; line-height:1.5; }
+#view-data_modeling_ai .dm-railtree-head { display:flex; align-items:center; gap:3px; padding:3px 4px; margin-top:2px; border-radius:6px; position:sticky; top:0; z-index:2; background:#0F172A; }
+#view-data_modeling_ai .dm-railtree-head:hover { background:#111C31; }
+#view-data_modeling_ai .dm-railtree-title { flex:1; font-size:8.5px; font-weight:900; letter-spacing:.9px; text-transform:uppercase; color:#64748B; }
+#view-data_modeling_ai .dm-tree-row { display:flex; align-items:center; gap:4px; width:max-content; min-width:100%; box-sizing:border-box; min-height:23px; padding:0 4px; border:0; border-radius:6px; background:transparent; color:#CBD5E1; font:inherit; font-size:11px; text-align:left; cursor:pointer; white-space:nowrap; }
+#view-data_modeling_ai .dm-tree-row:hover { background:rgba(56,189,248,.08); color:#E2E8F0; }
+#view-data_modeling_ai .dm-tree-row.active { background:rgba(14,165,233,.14); color:#F8FAFC; box-shadow:inset 2px 0 0 #38BDF8; }
+#view-data_modeling_ai .dm-tree-row.is-db { font-weight:800; color:#E2E8F0; }
+#view-data_modeling_ai .dm-tree-row.is-ws { color:#D1FAE5; }
+#view-data_modeling_ai .dm-tree-row.is-schema { font-size:10.5px; font-weight:700; color:#94A3B8; min-height:21px; }
+#view-data_modeling_ai .dm-tree-row.is-table { font-size:10.5px; color:#A5B4CB; min-height:21px; }
+#view-data_modeling_ai .dm-tree-row.is-col { font-size:10px; color:#7C8AA5; min-height:19px; cursor:default; }
+#view-data_modeling_ai .dm-tree-row.is-col:hover { background:transparent; color:#94A3B8; }
+#view-data_modeling_ai .dm-node-caret { width:11px; flex:0 0 auto; text-align:center; color:#64748B; font-size:8px; transition:transform .12s; }
+#view-data_modeling_ai .dm-node-caret.open { transform:rotate(90deg); }
+#view-data_modeling_ai .dm-node-caret.empty { visibility:hidden; }
+#view-data_modeling_ai .dm-node-ico { flex:0 0 auto; width:14px; text-align:center; font-size:10.5px; }
+#view-data_modeling_ai .dm-node-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+#view-data_modeling_ai .dm-node-badge { flex:0 0 auto; font-size:8px; font-weight:800; color:#64748B; }
+#view-data_modeling_ai .dm-node-badge.live { color:#34D399; }
+#view-data_modeling_ai .dm-node-badge.pk { color:#FCD34D; letter-spacing:.3px; }
+#view-data_modeling_ai .dm-node-type { flex:0 0 auto; font-size:8px; color:#64748B; font-family:Consolas,Monaco,monospace; }
+#view-data_modeling_ai .dm-node-act { flex:0 0 auto; width:16px; height:16px; padding:0; border:0; border-radius:4px; background:transparent; color:#475569; font-size:10px; line-height:1; cursor:pointer; opacity:0; }
+#view-data_modeling_ai .dm-tree-row:hover .dm-node-act, #view-data_modeling_ai .dm-railtree-head:hover .dm-node-act { opacity:1; }
+#view-data_modeling_ai .dm-node-act:hover { color:#38BDF8; background:rgba(14,165,233,.14); }
+#view-data_modeling_ai .dm-node-act.danger:hover { color:#FCA5A5; background:rgba(127,29,29,.25); }
 #view-data_modeling_ai .dm-icon-btn { border:0; background:transparent; color:#64748B; font-size:12px; cursor:pointer; padding:2px 4px; border-radius:5px; }
 #view-data_modeling_ai .dm-icon-btn:hover { color:#38BDF8; background:rgba(14,165,233,.12); }
-#view-data_modeling_ai .dm-rename { width:100%; background:#111C31; border:1px solid #0EA5E9; border-radius:6px; color:#F8FAFC; font-size:12px; font-weight:700; padding:4px 6px; outline:none; }
-#view-data_modeling_ai .dm-filter { width:100%; background:#0B1120; border:1px solid #334155; border-radius:8px; color:#F8FAFC; font-size:11.5px; padding:8px 10px; outline:none; box-sizing:border-box; }
-#view-data_modeling_ai .dm-filter:focus { border-color:#0EA5E9; box-shadow:0 0 0 3px rgba(14,165,233,.12); }
-#view-data_modeling_ai .dm-db-head { display:flex; align-items:center; justify-content:space-between; font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#64748B; padding:2px 2px 0; }
-#view-data_modeling_ai .dm-mini-action { border:0; background:transparent; color:#64748B; font-size:14px; cursor:pointer; border-radius:5px; padding:0 4px; }
-#view-data_modeling_ai .dm-mini-action:hover { color:#38BDF8; }
-#view-data_modeling_ai .dm-db { border:1px solid #1E293B; border-radius:9px; background:#0B1120; overflow:hidden; }
-#view-data_modeling_ai .dm-db-row, #view-data_modeling_ai .dm-schema-row, #view-data_modeling_ai .dm-table { width:100%; border:0; background:transparent; color:#CBD5E1; text-align:left; cursor:pointer; display:flex; align-items:center; gap:7px; }
-#view-data_modeling_ai .dm-db-row { padding:9px 9px; }
-#view-data_modeling_ai .dm-db-row:hover { background:rgba(14,165,233,.07); }
-#view-data_modeling_ai .dm-caret { width:10px; flex:0 0 auto; color:#64748B; font-size:9px; transition:transform .14s; }
-#view-data_modeling_ai .dm-db.open > .dm-db-row .dm-caret { transform:rotate(90deg); }
-#view-data_modeling_ai .dm-db-ico { flex:0 0 auto; font-size:12px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; border-radius:5px; background:rgba(56,189,248,.12); color:#38BDF8; font-weight:900; }
-#view-data_modeling_ai .dm-db.ws .dm-db-ico { background:rgba(16,185,129,.14); color:#34D399; }
-#view-data_modeling_ai .dm-db-name { flex:1; min-width:0; font-size:11.5px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-#view-data_modeling_ai .dm-db-meta { flex:0 0 auto; font-size:9px; color:#64748B; font-weight:700; }
-#view-data_modeling_ai .dm-schemas { border-top:1px solid #1E293B; }
-#view-data_modeling_ai .dm-schema-row { padding:7px 9px 7px 22px; font-size:10.5px; font-weight:800; color:#94A3B8; }
-#view-data_modeling_ai .dm-schema-row:hover { background:rgba(56,189,248,.05); color:#38BDF8; }
-#view-data_modeling_ai .dm-tables { padding:1px 0 5px; }
-#view-data_modeling_ai .dm-table { padding:6px 9px 6px 42px; font-size:10.5px; color:#94A3B8; }
-#view-data_modeling_ai .dm-table:hover { background:rgba(99,102,241,.12); color:#E2E8F0; }
-#view-data_modeling_ai .dm-t-ico { font-size:9px; color:#6366F1; }
-#view-data_modeling_ai .dm-view-tag { margin-left:auto; font-size:8px; font-weight:900; color:#A78BFA; border:1px solid #6D28D9; border-radius:4px; padding:1px 4px; }
+#view-data_modeling_ai .dm-rename { width:100%; background:#111C31; border:1px solid #0EA5E9; border-radius:6px; color:#F8FAFC; font-size:11px; font-weight:700; padding:2px 5px; outline:none; }
+#view-data_modeling_ai .dm-rail-foot { display:flex; gap:4px; padding:5px 6px; border-top:1px solid #16233b; }
+#view-data_modeling_ai .dm-new-ws { flex:1; padding:6px 4px; border-radius:7px; border:1px dashed #334155; background:rgba(14,165,233,.06); color:#38BDF8; font-size:10px; font-weight:800; cursor:pointer; white-space:nowrap; }
+#view-data_modeling_ai .dm-new-ws:hover { background:rgba(14,165,233,.14); border-color:#0EA5E9; }
 #view-data_modeling_ai .dm-main { flex:1; min-width:0; display:flex; flex-direction:column; background:radial-gradient(1200px 500px at 80% -10%, rgba(56,189,248,.07), transparent 60%), #0B1120; }
 #view-data_modeling_ai .dm-chat-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 16px; border-bottom:1px solid #1E293B; background:rgba(15,23,42,.6); }
 #view-data_modeling_ai .dm-ws-title { font-size:13.5px; font-weight:900; color:#F8FAFC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -153,15 +161,19 @@ def get_data_modeling_html() -> str:
 #view-data_modeling_ai .dm-toast.show { opacity:1; transform:translateY(0); }
 #view-data_modeling_ai .dm-toast.ok { border-color:#065F46; color:#6EE7B7; }
 #view-data_modeling_ai .dm-toast.err { border-color:#7F1D1D; color:#FCA5A5; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail { width:64px; }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail { width:46px !important; min-width:46px; }
 #view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-panels { display:none; }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-resize { display:none; }
 #view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-mini { display:flex; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-head { justify-content:center; padding:8px 0 0; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-collapse { transform:rotate(180deg); }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-head { justify-content:center; padding:5px 0; }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-title { display:none; }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-tools { display:none; }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-collapse { display:none; }
+#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-mini .dm-collapse { display:block; margin:0 auto; }
 @media (max-width: 900px) {
   #view-data_modeling_ai .dm-app { height:calc(100vh - 104px); min-height:520px; }
-  #view-data_modeling_ai .dm-rail { position:absolute; left:0; top:0; bottom:0; z-index:25; width:270px; box-shadow:14px 0 40px rgba(2,6,23,.6); }
-  #view-data_modeling_ai .dm-app.dm-collapsed .dm-rail { width:56px; box-shadow:none; }
+  #view-data_modeling_ai .dm-rail { position:absolute; left:0; top:0; bottom:0; z-index:25; width:236px; box-shadow:14px 0 40px rgba(2,6,23,.6); }
+  #view-data_modeling_ai .dm-app.dm-collapsed .dm-rail { width:46px; box-shadow:none; }
   #view-data_modeling_ai .dm-messages { padding:12px; }
   #view-data_modeling_ai .dm-bubble { max-width:92%; }
   #view-data_modeling_ai .dm-brand p { display:none; }
@@ -188,30 +200,30 @@ def get_data_modeling_html() -> str:
   <div class="dm-body">
     <aside class="dm-rail" id="dmRail">
       <div class="dm-rail-head">
-        <button class="dm-collapse" id="dmCollapseBtn" onclick="dmToggleRail()" title="Minimize panel">&#171;</button>
+        <span class="dm-rail-title">Explorer</span>
+        <div class="dm-rail-tools">
+          <button class="dm-collapse" id="dmRefreshBtn" onclick="dmLoadCatalog(true)" title="Refresh tree">&#8635;</button>
+          <button class="dm-collapse" id="dmCollapseBtn" onclick="dmToggleRail()" title="Minimize panel">&#171;</button>
+        </div>
       </div>
       <div class="dm-rail-mini">
-        <button class="dm-mini-btn" data-section="workspaces" onclick="dmSetSection('workspaces')" title="Workspaces"><span>&#128193;</span><span>Workspaces</span></button>
-        <button class="dm-mini-btn" data-section="databases" onclick="dmSetSection('databases')" title="Databases"><span>&#128451;</span><span>Databases</span></button>
+        <button class="dm-collapse" onclick="dmToggleRail()" title="Expand panel">&#187;</button>
+        <button class="dm-mini-btn" data-section="workspaces" onclick="dmSetSection('workspaces')" title="Workspaces"><span>&#128193;</span><span>Work</span></button>
+        <button class="dm-mini-btn" data-section="databases" onclick="dmSetSection('databases')" title="Databases"><span>&#128451;</span><span>DB</span></button>
+        <button class="dm-mini-btn" onclick="dmNewSchema()" title="New schema"><span>&#43;</span><span>Schema</span></button>
       </div>
       <div class="dm-rail-panels">
-        <div class="dm-tabs">
-          <button class="dm-tab active" data-section="workspaces" onclick="dmSetSection('workspaces')">Workspaces</button>
-          <button class="dm-tab" data-section="databases" onclick="dmSetSection('databases')">Databases</button>
+        <div class="dm-search-wrap">
+          <input class="dm-filter" id="dmCatalogFilter" placeholder="Search table, schema, column..." oninput="dmOnFilter()" onkeydown="if(event.key==='Escape'){this.value='';dmOnFilter();}">
+          <button class="dm-clear" id="dmClearFilter" onclick="dmClearFilter()" title="Clear search">&#10005;</button>
         </div>
-        <section class="dm-panel" data-panel="workspaces">
-          <button class="dm-new-ws" onclick="dmCreateWorkspace()">&#43; New workspace</button>
-          <div class="dm-ws-list" id="dmWorkspaceList"></div>
-        </section>
-        <section class="dm-panel" data-panel="databases" hidden>
-          <input class="dm-filter" id="dmCatalogFilter" placeholder="Search databases or tables..." oninput="dmRenderTree()">
-          <div class="dm-db-head">
-            <span>All NanoPro databases</span>
-            <button class="dm-mini-action" onclick="dmLoadCatalog(true)" title="Refresh catalog">&#8635;</button>
-          </div>
-          <div class="dm-tree" id="dmDatabaseTree"></div>
-        </section>
+        <div class="dm-tree" id="dmDatabaseTree"><div class="dm-tree-note">Loading catalog...</div></div>
+        <div class="dm-rail-foot">
+          <button class="dm-new-ws" onclick="dmCreateWorkspace()" title="Create a private writable workspace">&#43; Workspace</button>
+          <button class="dm-new-ws" onclick="dmNewSchema()" title="Create a schema in the active workspace">&#43; Schema</button>
+        </div>
       </div>
+      <div class="dm-rail-resize" id="dmRailResize" title="Drag to resize"></div>
     </aside>
 
     <main class="dm-main">
@@ -382,8 +394,12 @@ def get_data_modeling_js() -> str:
         section: localStorage.getItem('dm_section') || 'workspaces',
         workspaces: [],
         catalog: [],
-        openDbs: {},
-        openSchemas: {},
+        treeOpen: (function () {
+            try { return JSON.parse(localStorage.getItem('dm_tree_open') || '{}') || {}; }
+            catch (err) { return {}; }
+        })(),
+        columns: {},
+        colLoading: {},
         tableCtx: null,
         toastTimer: null
     };
@@ -430,22 +446,6 @@ def get_data_modeling_js() -> str:
         return data || {};
     }
 
-    function dmFmtTime(stamp) {
-        if (!stamp) return '';
-        var d = new Date(stamp);
-        if (isNaN(d.getTime())) return '';
-        return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
-
-    function dmFmtBytes(bytes) {
-        var n = Number(bytes || 0);
-        if (!n) return '0 B';
-        if (n >= 1073741824) return (n / 1073741824).toFixed(1) + ' GB';
-        if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
-        if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
-        return n + ' B';
-    }
-
     function dmTableHtml(columns, rows) {
         columns = columns || [];
         rows = rows || [];
@@ -463,6 +463,45 @@ def get_data_modeling_js() -> str:
     }
 
     // ---------------------------------------------------------------- rail
+
+    function dmApplyRailWidth() {
+        var rail = $('dmRail');
+        if (!rail) return;
+        var w = parseInt(localStorage.getItem('dm_rail_w') || '0', 10);
+        if (!w || isNaN(w)) w = 236;
+        w = Math.max(180, Math.min(420, w));
+        rail.style.width = w + 'px';
+    }
+
+    function dmInitRailResize() {
+        var handle = $('dmRailResize');
+        var rail = $('dmRail');
+        if (!handle || !rail) return;
+        handle.addEventListener('pointerdown', function (ev) {
+            ev.preventDefault();
+            var startX = ev.clientX;
+            var startW = rail.getBoundingClientRect().width;
+            handle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            function move(e) {
+                var w = Math.max(180, Math.min(420, startW + (e.clientX - startX)));
+                rail.style.width = Math.round(w) + 'px';
+            }
+            function up() {
+                handle.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.removeEventListener('pointermove', move);
+                document.removeEventListener('pointerup', up);
+                localStorage.setItem('dm_rail_w', String(Math.round(rail.getBoundingClientRect().width)));
+            }
+            document.addEventListener('pointermove', move);
+            document.addEventListener('pointerup', up);
+        });
+    }
+
+    function dmSaveTree() {
+        try { localStorage.setItem('dm_tree_open', JSON.stringify(DM.treeOpen)); } catch (err) { /* private mode */ }
+    }
 
     function dmApplyRail() {
         var shell = $('dmShell');
@@ -486,17 +525,32 @@ def get_data_modeling_js() -> str:
         localStorage.setItem('dm_section', DM.section);
         DM.railOpen = true;
         localStorage.setItem('dm_rail', 'open');
-        document.querySelectorAll('#view-data_modeling_ai .dm-tab').forEach(function (el) {
-            el.classList.toggle('active', el.getAttribute('data-section') === DM.section);
-        });
-        document.querySelectorAll('#view-data_modeling_ai .dm-panel').forEach(function (el) {
-            el.hidden = el.getAttribute('data-panel') !== DM.section;
-        });
+        DM.treeOpen['root:' + DM.section] = true;
+        dmSaveTree();
         dmApplyRail();
+        window.dmRenderTree();
+        dmScrollToSection(DM.section);
     };
 
     window.dmOpenCatalog = function (section) {
         window.dmSetSection(section || 'databases');
+    };
+
+    function dmScrollToSection(section) {
+        var tree = $('dmDatabaseTree');
+        if (!tree) return;
+        var anchor = tree.querySelector('[data-section-anchor="' + section + '"]');
+        if (anchor) anchor.scrollIntoView({ block: 'start' });
+    }
+
+    window.dmOnFilter = function () {
+        window.dmRenderTree();
+    };
+
+    window.dmClearFilter = function () {
+        var el = $('dmCatalogFilter');
+        if (el) { el.value = ''; el.focus(); }
+        window.dmRenderTree();
     };
 
     // ------------------------------------------------------------ workspaces
@@ -519,21 +573,7 @@ def get_data_modeling_js() -> str:
     }
 
     function dmRenderWorkspaces() {
-        var list = $('dmWorkspaceList');
-        if (!list) return;
-        if (!DM.workspaces.length) {
-            list.innerHTML = '<div class="dm-muted">No workspaces yet.<br>Create one to get a private, writable database.</div>';
-            return;
-        }
-        list.innerHTML = DM.workspaces.map(function (ws) {
-            var active = ws.id === DM.workspaceId ? ' active' : '';
-            var tables = ws.table_count || 0;
-            return '<div class="dm-ws' + active + '" data-ws="' + dmAttr(ws.id) + '" onclick="dmSelectWorkspace(this.getAttribute(\'data-ws\'))">' +
-                '<div class="dm-ws-top"><span class="dm-ws-name">' + dmEsc(ws.name || 'Untitled workspace') + '</span>' +
-                '<button class="dm-icon-btn" title="Rename" onclick="event.stopPropagation(); dmRenameWorkspace(this.closest(\'.dm-ws\').getAttribute(\'data-ws\'))">&#9998;</button></div>' +
-                '<div class="dm-ws-meta">' + dmEsc(ws.id) + ' \u00b7 ' + tables + ' table(s) \u00b7 ' + dmEsc(dmFmtTime(ws.updated_at)) + '</div>' +
-                '</div>';
-        }).join('');
+        window.dmRenderTree();
     }
 
     window.dmLoadWorkspaces = async function () {
@@ -588,16 +628,17 @@ def get_data_modeling_js() -> str:
         }
     };
 
-    window.dmRenameWorkspace = function (workspaceId) {
-        var row = document.querySelector('#view-data_modeling_ai .dm-ws[data-ws="' + workspaceId + '"]');
-        if (!row) return;
-        var nameEl = row.querySelector('.dm-ws-name');
-        if (!nameEl) return;
-        var current = nameEl.textContent;
+    window.dmRenameWorkspaceRow = function (btn) {
+        var workspaceId = btn.getAttribute('data-ws');
+        var row = btn.closest('.dm-tree-row');
+        if (!workspaceId || !row) return;
+        var label = row.querySelector('.dm-node-label');
+        if (!label) return;
+        var current = label.textContent;
         var input = document.createElement('input');
         input.className = 'dm-rename';
         input.value = current;
-        nameEl.replaceWith(input);
+        label.replaceWith(input);
         input.focus();
         input.select();
         var done = false;
@@ -606,7 +647,7 @@ def get_data_modeling_js() -> str:
             done = true;
             var value = input.value.trim();
             if (!value || value === current) {
-                dmRenderWorkspaces();
+                window.dmRenderTree();
                 return;
             }
             try {
@@ -616,6 +657,7 @@ def get_data_modeling_js() -> str:
                 dmToast(err.message, 'err');
             }
             await dmLoadWorkspaces();
+            await dmLoadCatalog(true);
         };
         input.addEventListener('keydown', function (ev) {
             if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
@@ -626,23 +668,186 @@ def get_data_modeling_js() -> str:
 
     // --------------------------------------------------------------- catalog
 
-    function dmFilterMatches(entry, schema, table, q) {
-        if (!q) return true;
-        var dbName = String(entry.name || '').toLowerCase();
-        var dbId = String(entry.id || '').toLowerCase();
-        var sName = String(schema || '').toLowerCase();
-        var tName = String(table || '').toLowerCase();
-        return dbName.indexOf(q) >= 0 || dbId.indexOf(q) >= 0 || sName.indexOf(q) >= 0 || tName.indexOf(q) >= 0;
+    // --------------------------------------------------------------- tree
+
+    function dmColumnKey(dbId, schema, table) {
+        return dbId + '::' + schema + '::' + table;
     }
 
-    function dmDbMeta(entry, tableTotal) {
+    function dmColsCached(dbId, schema, table) {
+        return DM.columns[dmColumnKey(dbId, schema, table)] || null;
+    }
+
+    function dmTableMatches(dbId, schema, table, q) {
+        if (String(table.name || '').toLowerCase().indexOf(q) >= 0) return true;
+        var cols = dmColsCached(dbId, schema, table.name);
+        if (!cols) return false;
+        return cols.some(function (c) { return String(c.name || '').toLowerCase().indexOf(q) >= 0; });
+    }
+
+    function dmDbBadge(entry, tableTotal) {
         var status = String(entry.status || '');
-        if (status === 'live') return tableTotal + ' tbl';
-        if (status === 'not_configured') return 'not configured';
-        if (status === 'driver_missing') return 'driver missing';
-        if (status === 'unreachable') return 'unreachable';
-        if (entry.error) return 'unavailable';
-        return tableTotal + ' tbl';
+        if (status === 'live' || status === 'online') return { text: tableTotal + ' tbl', cls: 'live' };
+        if (status === 'not_configured') return { text: 'auth', cls: '' };
+        if (status === 'driver_missing') return { text: 'driver', cls: '' };
+        if (status === 'unreachable') return { text: 'offline', cls: '' };
+        if (entry.error) return { text: 'error', cls: '' };
+        return { text: tableTotal + ' tbl', cls: '' };
+    }
+
+    function dmRow(depth, opts) {
+        var pad = 4 + depth * 12;
+        var cls = 'dm-tree-row' + (opts.cls ? ' ' + opts.cls : '') + (opts.active ? ' active' : '');
+        var attrs = ' style="padding-left:' + pad + 'px"';
+        if (opts.dataset) {
+            Object.keys(opts.dataset).forEach(function (k) {
+                attrs += ' data-' + k + '="' + dmAttr(opts.dataset[k]) + '"';
+            });
+        }
+        if (opts.act) attrs += ' data-act="' + dmAttr(opts.act) + '" role="button" tabindex="0"';
+        if (opts.title) attrs += ' title="' + dmAttr(opts.title) + '"';
+        var caret = '<span class="dm-node-caret empty">&#9656;</span>';
+        if (opts.caretAct) {
+            caret = '<button type="button" class="dm-node-caret ' + (opts.caret || '') + '" data-act="toggle" data-key="' + dmAttr(opts.caretAct) + '">&#9656;</button>';
+        } else if (opts.caret) {
+            caret = '<span class="dm-node-caret ' + opts.caret + '">&#9656;</span>';
+        }
+        return '<div class="' + cls + '"' + attrs + '>' + caret +
+            (opts.icon ? '<span class="dm-node-ico">' + opts.icon + '</span>' : '') +
+            '<span class="dm-node-label">' + dmEsc(opts.label || '') + '</span>' +
+            (opts.type ? '<span class="dm-node-type">' + dmEsc(opts.type) + '</span>' : '') +
+            (opts.badge ? '<span class="dm-node-badge ' + (opts.badgeCls || '') + '">' + dmEsc(opts.badge) + '</span>' : '') +
+            (opts.actions || '') +
+            '</div>';
+    }
+
+    function dmFilterEntry(entry, q) {
+        var dbText = (String(entry.name || '') + ' ' + String(entry.id || '') + ' ' + String(entry.engine || '')).toLowerCase();
+        var dbMatch = !q || dbText.indexOf(q) >= 0;
+        var schemas = [];
+        (entry.schemas || []).forEach(function (schema) {
+            var sMatch = dbMatch || String(schema.name || '').toLowerCase().indexOf(q) >= 0;
+            var tables = (schema.tables || []).filter(function (t) {
+                if (!q) return true;
+                return sMatch || dmTableMatches(entry.id, schema.name, t, q);
+            });
+            if (!q || sMatch || tables.length) schemas.push({ schema: schema, tables: tables });
+        });
+        if (q && !dbMatch && !schemas.length) return null;
+        var tableTotal = 0;
+        schemas.forEach(function (s) { tableTotal += s.tables.length; });
+        return { entry: entry, schemas: schemas, tableTotal: tableTotal };
+    }
+
+    function dmTableNodeHtml(entry, schema, table, depth, q) {
+        var key = 'tb:' + entry.id + '::' + schema.name + '::' + table.name;
+        var open = q ? true : !!DM.treeOpen[key];
+        var cols = dmColsCached(entry.id, schema.name, table.name);
+        var badge = table.type === 'view' ? 'VIEW' : (table.row_count ? table.row_count + 'r' : '');
+        var html = dmRow(depth, {
+            act: 'table',
+            cls: 'is-table',
+            dataset: { db: entry.id, schema: schema.name, table: table.name },
+            caret: open ? 'open' : '',
+            caretAct: key,
+            icon: table.type === 'view' ? '&#128065;' : '&#9638;',
+            label: table.name,
+            badge: badge,
+            title: schema.name + '.' + table.name
+        });
+        if (!open) return html;
+        if (DM.colLoading[key]) return html + '<div class="dm-tree-note">Loading columns...</div>';
+        if (!cols) return html + '<div class="dm-tree-note">Open the table to load its columns.</div>';
+        if (!cols.length) return html + '<div class="dm-tree-note">No columns found.</div>';
+        cols.forEach(function (c) {
+            html += dmRow(depth + 1, {
+                cls: 'is-col',
+                icon: c.is_pk ? '&#128273;' : '&#8226;',
+                label: c.name,
+                type: c.data_type || 'TEXT',
+                badge: c.is_pk ? 'PK' : '',
+                badgeCls: 'pk',
+                title: c.name + ' ' + (c.data_type || '')
+            });
+        });
+        return html;
+    }
+
+    function dmSchemaNodeHtml(entry, item, depth, q) {
+        var schema = item.schema;
+        var key = 'sc:' + entry.id + '::' + schema.name;
+        var open = q ? true : !!DM.treeOpen[key];
+        var html = dmRow(depth, {
+            act: 'toggle',
+            cls: 'is-schema',
+            dataset: { key: key },
+            caret: open ? 'open' : '',
+            caretAct: key,
+            icon: '&#128218;',
+            label: schema.name,
+            badge: item.tables.length + ' tbl',
+            title: entry.id + '.' + schema.name
+        });
+        if (!open) return html;
+        if (!item.tables.length) return html + '<div class="dm-tree-note">No tables yet.</div>';
+        item.tables.forEach(function (t) { html += dmTableNodeHtml(entry, schema, t, depth + 1, q); });
+        return html;
+    }
+
+    function dmDbNodeHtml(filtered, depth, q, isWs) {
+        var entry = filtered.entry;
+        var key = 'db:' + entry.id;
+        var open = q ? true : !!DM.treeOpen[key];
+        var engine = String(entry.engine || '').toLowerCase();
+        var icon = isWs ? '&#128193;' : (engine.indexOf('snow') >= 0 ? '&#10052;' : (engine.indexOf('duck') >= 0 ? '&#129413;' : '&#128452;'));
+        var badge = dmDbBadge(entry, filtered.tableTotal);
+        var active = !!(isWs && entry.workspace_id && entry.workspace_id === DM.workspaceId);
+        var actions = '';
+        if (isWs && entry.workspace_id) {
+            actions += '<button type="button" class="dm-node-act" data-act="rename-ws" data-ws="' + dmAttr(entry.workspace_id) + '" title="Rename workspace">&#9998;</button>';
+            actions += '<button type="button" class="dm-node-act" data-act="new-schema" data-ws="' + dmAttr(entry.workspace_id) + '" title="New schema in this workspace">&#43;</button>';
+        }
+        var html = dmRow(depth, {
+            act: 'toggle',
+            cls: isWs ? 'is-db is-ws' : 'is-db',
+            active: active,
+            dataset: { key: key },
+            caret: open ? 'open' : '',
+            caretAct: key,
+            icon: icon,
+            label: entry.name || entry.id,
+            badge: badge.text,
+            badgeCls: badge.cls,
+            actions: actions,
+            title: entry.id
+        });
+        if (!open) return html;
+        if (!filtered.schemas.length) {
+            return html + '<div class="dm-tree-note">' + dmEsc(entry.detail || entry.error || 'No schemas or tables yet.') + '</div>';
+        }
+        filtered.schemas.forEach(function (item) { html += dmSchemaNodeHtml(entry, item, depth + 1, q); });
+        return html;
+    }
+
+    function dmGroupHtml(group, entries, q) {
+        var isWs = group === 'workspaces';
+        var open = q ? true : DM.treeOpen['root:' + group] !== false;
+        var head = '<div class="dm-railtree-head" data-act="toggle" data-key="root:' + group + '" data-section-anchor="' + group + '" role="button" tabindex="0">' +
+            '<span class="dm-node-caret ' + (open ? 'open' : '') + '">&#9656;</span>' +
+            '<span class="dm-node-ico">' + (isWs ? '&#128193;' : '&#128451;') + '</span>' +
+            '<span class="dm-railtree-title">' + (isWs ? 'Workspaces' : 'Databases') + '</span>' +
+            '<span class="dm-node-badge">' + entries.length + '</span>' +
+            (isWs
+                ? '<button type="button" class="dm-node-act" data-act="new-ws" title="New workspace">&#43;</button>'
+                : '<button type="button" class="dm-node-act" data-act="refresh" title="Refresh catalog">&#8635;</button>') +
+            '</div>';
+        if (!open) return head;
+        if (!entries.length) {
+            return head + '<div class="dm-tree-note">' + (isWs ? 'No workspaces yet - create one below.' : 'No databases detected yet.') + '</div>';
+        }
+        var body = '';
+        entries.forEach(function (item) { body += dmDbNodeHtml(item, 1, q, isWs); });
+        return head + body;
     }
 
     window.dmRenderTree = function () {
@@ -650,54 +855,51 @@ def get_data_modeling_js() -> str:
         if (!tree) return;
         var filterEl = $('dmCatalogFilter');
         var q = filterEl ? filterEl.value.trim().toLowerCase() : '';
-        if (!DM.catalog.length) {
-            tree.innerHTML = '<div class="dm-muted">No databases detected yet.</div>';
+        var clearBtn = $('dmClearFilter');
+        if (clearBtn) clearBtn.classList.toggle('show', !!q);
+        var entries = DM.catalog || [];
+        if (!entries.length) {
+            tree.innerHTML = '<div class="dm-tree-note">No catalog yet. Click refresh to scan every NanoPro database.</div>';
             return;
         }
-        var html = '';
-        DM.catalog.forEach(function (entry) {
-            var schemas = entry.schemas || [];
-            var tableTotal = 0;
-            var bodyHtml = '';
-            var dbMatch = !q || dmFilterMatches(entry, '', '', q);
-            schemas.forEach(function (schema) {
-                var schemaMatch = !q || dbMatch || String(schema.name || '').toLowerCase().indexOf(q) >= 0;
-                var tables = (schema.tables || []).filter(function (t) {
-                    return schemaMatch || String(t.name || '').toLowerCase().indexOf(q) >= 0;
-                });
-                tableTotal += tables.length;
-                if (q && !tables.length && !schemaMatch) return;
-                var schemaKey = entry.id + '::' + schema.name;
-                var open = !!q || !!DM.openSchemas[schemaKey];
-                var rows = tables.length ? tables.map(function (t) {
-                    return '<button class="dm-table" data-db="' + dmAttr(entry.id) + '" data-schema="' + dmAttr(schema.name) + '" data-table="' + dmAttr(t.name) + '">' +
-                        '<span class="dm-t-ico">&#9638;</span>' + dmEsc(t.name) +
-                        (t.type === 'view' ? '<span class="dm-view-tag">VIEW</span>' : '') +
-                        '</button>';
-                }).join('') : '<div class="dm-muted">No tables yet.</div>';
-                bodyHtml += '<div class="dm-schema">' +
-                    '<button class="dm-schema-row" data-schema-key="' + dmAttr(schemaKey) + '"><span class="dm-caret" style="' + (open ? 'transform:rotate(90deg);' : '') + '">&#9656;</span>' + dmEsc(schema.name) + '</button>' +
-                    '<div class="dm-tables"' + (open ? '' : ' hidden') + '>' + rows + '</div></div>';
-            });
-            if (q && !tableTotal && !dbMatch) return;
-            if (entry.detail) bodyHtml = '<div class="dm-muted">' + dmEsc(entry.detail) + '</div>' + bodyHtml;
-            if (entry.error) bodyHtml = '<div class="dm-muted">' + dmEsc(entry.error) + '</div>' + bodyHtml;
-            var openDb = !!q || !!DM.openDbs[entry.id];
-            var engineTag = String(entry.engine || '').toUpperCase().slice(0, 5);
-            var cls = entry.kind === 'workspace' ? ' ws' : '';
-            html += '<div class="dm-db' + (openDb ? ' open' : '') + cls + '">' +
-                '<button class="dm-db-row" data-db-toggle="' + dmAttr(entry.id) + '">' +
-                '<span class="dm-caret">&#9656;</span>' +
-                '<span class="dm-db-ico">' + dmEsc(engineTag) + '</span>' +
-                '<span class="dm-db-name" title="' + dmAttr(entry.name) + '">' + dmEsc(entry.name) + '</span>' +
-                '<span class="dm-db-meta">' + dmEsc(dmDbMeta(entry, tableTotal)) + '</span>' +
-                '</button>' +
-                '<div class="dm-schemas"' + (openDb ? '' : ' hidden') + '>' +
-                (bodyHtml || '<div class="dm-muted">No tables yet.</div>') +
-                '</div></div>';
+        var wsFiltered = [], dbFiltered = [];
+        entries.forEach(function (entry) {
+            var filtered = dmFilterEntry(entry, q);
+            if (!filtered) return;
+            (entry.kind === 'workspace' ? wsFiltered : dbFiltered).push(filtered);
         });
-        tree.innerHTML = html || '<div class="dm-muted">Nothing matches that search.</div>';
+        var html = dmGroupHtml('workspaces', wsFiltered, q) + dmGroupHtml('databases', dbFiltered, q);
+        tree.innerHTML = '<div class="dm-tree-inner">' + (html || '<div class="dm-tree-note">Nothing matches that search.</div>') + '</div>';
     };
+
+    function dmToggleNode(key) {
+        if (!key) return;
+        var open = !DM.treeOpen[key];
+        DM.treeOpen[key] = open;
+        dmSaveTree();
+        if (open && key.indexOf('tb:') === 0) {
+            var parts = key.split('::');
+            dmLoadColumns(parts[0].slice(3), parts[1], parts[2]);
+        }
+        window.dmRenderTree();
+    }
+
+    async function dmLoadColumns(dbId, schema, table) {
+        if (!dbId || !schema || !table) return;
+        var key = 'tb:' + dbId + '::' + schema + '::' + table;
+        if (dmColsCached(dbId, schema, table) || DM.colLoading[key]) return;
+        DM.colLoading[key] = true;
+        window.dmRenderTree();
+        try {
+            var data = await dmApi('/table?db_id=' + encodeURIComponent(dbId) + '&schema=' + encodeURIComponent(schema) + '&table=' + encodeURIComponent(table));
+            DM.columns[dmColumnKey(dbId, schema, table)] = ((data.table || {}).columns) || [];
+        } catch (err) {
+            DM.columns[dmColumnKey(dbId, schema, table)] = [];
+            dmToast(err.message, 'err');
+        }
+        delete DM.colLoading[key];
+        window.dmRenderTree();
+    }
 
     window.dmLoadCatalog = async function (refresh) {
         try {
@@ -736,8 +938,9 @@ def get_data_modeling_js() -> str:
         dmToast('Creating the warehouse, schemas and empty tables...', '');
         try {
             var data = await dmApi('/snowflake/setup', { method: 'POST' });
-            DM.openDbs['connection:NANO_PRO_SNOWFLAKE'] = true;
-            DM.openSchemas['connection:NANO_PRO_SNOWFLAKE::' + data.database + '.' + data.sales_schema] = true;
+            DM.treeOpen['db:connection:NANO_PRO_SNOWFLAKE'] = true;
+            DM.treeOpen['sc:connection:NANO_PRO_SNOWFLAKE::' + data.database + '.' + data.sales_schema] = true;
+            dmSaveTree();
             await dmLoadCatalog(true);
             window.dmSetSection('databases');
             var counts = data.row_counts || {};
@@ -796,23 +999,35 @@ def get_data_modeling_js() -> str:
     };
 
     function dmTreeClick(ev) {
-        var tableBtn = ev.target.closest('[data-table]');
-        if (tableBtn) {
-            window.dmShowTable(tableBtn.getAttribute('data-db'), tableBtn.getAttribute('data-schema'), tableBtn.getAttribute('data-table'));
+        var el = ev.target.closest('[data-act]');
+        if (!el) return;
+        var act = el.getAttribute('data-act');
+        if (act === 'toggle') {
+            dmToggleNode(el.getAttribute('data-key'));
             return;
         }
-        var schemaBtn = ev.target.closest('[data-schema-key]');
-        if (schemaBtn) {
-            var key = schemaBtn.getAttribute('data-schema-key');
-            DM.openSchemas[key] = !DM.openSchemas[key];
-            window.dmRenderTree();
+        if (act === 'table') {
+            window.dmShowTable(el.getAttribute('data-db'), el.getAttribute('data-schema'), el.getAttribute('data-table'));
             return;
         }
-        var dbBtn = ev.target.closest('[data-db-toggle]');
-        if (dbBtn) {
-            var id = dbBtn.getAttribute('data-db-toggle');
-            DM.openDbs[id] = !DM.openDbs[id];
-            window.dmRenderTree();
+        if (act === 'rename-ws') {
+            ev.stopPropagation();
+            window.dmRenameWorkspaceRow(el);
+            return;
+        }
+        if (act === 'new-schema') {
+            ev.stopPropagation();
+            window.dmNewSchema(el.getAttribute('data-ws') || '');
+            return;
+        }
+        if (act === 'new-ws') {
+            ev.stopPropagation();
+            window.dmCreateWorkspace();
+            return;
+        }
+        if (act === 'refresh') {
+            ev.stopPropagation();
+            window.dmLoadCatalog(true);
         }
     }
 
@@ -828,7 +1043,10 @@ def get_data_modeling_js() -> str:
         backdrop.classList.add('open');
         try {
             var data = await dmApi('/table?db_id=' + encodeURIComponent(dbId) + '&schema=' + encodeURIComponent(schema) + '&table=' + encodeURIComponent(table));
-            dmRenderTableDetails(data.table || {});
+            var details = data.table || {};
+            DM.columns[dmColumnKey(dbId, schema, table)] = details.columns || [];
+            dmRenderTableDetails(details);
+            if (DM.treeOpen['tb:' + dbId + '::' + schema + '::' + table]) window.dmRenderTree();
         } catch (err) {
             body.innerHTML = '<div class="dm-muted">' + dmEsc(err.message) + '</div>';
         }
@@ -962,7 +1180,13 @@ def get_data_modeling_js() -> str:
 
     // ---------------------------------------------------------------- schema
 
-    window.dmNewSchema = async function () {
+    window.dmNewSchema = async function (workspaceId) {
+        if (workspaceId && workspaceId !== DM.workspaceId) {
+            DM.workspaceId = workspaceId;
+            localStorage.setItem('dm_active_ws', workspaceId);
+            window.dmRenderTree();
+            dmUpdateHeader();
+        }
         if (!DM.workspaceId) {
             await dmCreateWorkspace(true);
             if (!DM.workspaceId) return;
@@ -1261,7 +1485,17 @@ def get_data_modeling_js() -> str:
         if (DM.bound) return;
         DM.bound = true;
         var tree = $('dmDatabaseTree');
-        if (tree) tree.addEventListener('click', dmTreeClick);
+        if (tree) {
+            tree.addEventListener('click', dmTreeClick);
+            tree.addEventListener('keydown', function (ev) {
+                if (ev.key !== 'Enter' && ev.key !== ' ') return;
+                var el = ev.target.closest('[data-act]');
+                if (!el || el.tagName === 'BUTTON') return;
+                ev.preventDefault();
+                el.click();
+            });
+        }
+        dmInitRailResize();
         var messages = $('dmMessages');
         if (messages) messages.addEventListener('click', dmMessagesClick);
         var input = $('dmInput');
@@ -1312,6 +1546,7 @@ def get_data_modeling_js() -> str:
         if (!$('dmShell')) return;
         DM.inited = true;
         dmBind();
+        dmApplyRailWidth();
         window.dmSetSection(DM.section);
         dmApplyRail();
         await dmLoadStatus();

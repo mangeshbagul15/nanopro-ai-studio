@@ -22,6 +22,18 @@ import re as _re
 _MAX_RATE_LIMIT_WAIT_S = 20.0
 
 
+def _is_rate_limit_error(err: Exception) -> bool:
+    """Quota/throttle failures are per-model, not provider outages.
+
+    A 429 on qwen must still allow gpt-oss on the same Groq account, so the
+    router keeps the provider in the cascade and the breaker counts it instead
+    of tripping on the first hit.
+    """
+    msg = str(err)
+    lower = msg.lower()
+    return "429" in msg or "rate limit" in lower or "rate_limit" in lower or "too many requests" in lower
+
+
 def _short_rate_limit_wait_seconds(err: Exception) -> Optional[float]:
     """Return a wait time when a 429 is a short per-minute throttle worth retrying.
 
@@ -181,16 +193,22 @@ class ProviderCircuitBreaker:
             if isinstance(error, (ConnectionError, TimeoutError, urllib.error.URLError)):
                 is_fast_trip = True
             elif "429" in err_msg or "rate limit" in err_lower or "rate_limit" in err_lower:
-                is_fast_trip = True
+                # Quota exhaustion is counted, not fast-tripped: other models on the
+                # same provider have their own buckets and should still be tried.
+                is_fast_trip = False
             elif any(k in err_lower for k in [
                 "connection", "disconnect", "remote", "closed", "reset", "network",
-                "timeout", "quota", "unauthorized"
-            ]) or any(c in err_msg for c in ["401", "410", "429", "502", "503", "504", "529"]):
+                "timeout", "unauthorized"
+            ]) or any(c in err_msg for c in ["401", "410", "502", "503", "504", "529"]):
                 is_fast_trip = True
 
         with self._lock:
             self._half_open_probes[key] = False
             self._half_open_successes[key] = 0
+            # Consecutive-failure streak: an isolated failure after a long healthy
+            # gap starts a new streak instead of tripping on stale counts.
+            if now - self._last_failure_time.get(key, 0.0) > 30.0:
+                self._failures[key] = 0
             count = self._failures.get(key, 0) + 1
             self._failures[key] = count
             self._last_failure_time[key] = now
@@ -1543,7 +1561,7 @@ class ModelManager:
         self.task_routing: Dict[str, List[str]] = {
             "coding": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
             "dialogue": ["gpt-4o-mini", "claude-3-haiku-20240307", "deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "phi4-mini:latest"],
+            "data_analyst": ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "google/gemma-4-31b-it:free", "claude-sonnet-5-5", "gpt-4o", "deepseek-reasoner", "phi4-mini:latest"],
             "research": ["claude-3-5-sonnet-20241022", "gpt-4o", "mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
             "price_tracking": ["gpt-4o-mini", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
             "learning": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
@@ -1930,7 +1948,7 @@ class ModelManager:
                 chat_kwargs.pop("model", None)
                 if isinstance(adapter, (GroqAdapter, GeminiAdapter)):
                     chat_kwargs["allow_fallback"] = allow_fallback
-                for rate_limit_attempt in range(3):
+                for rate_limit_attempt in range(2):
                     try:
                         content, mode = adapter.chat(
                             model,
@@ -1944,7 +1962,9 @@ class ModelManager:
                         break
                     except Exception as rate_err:
                         wait_s = _short_rate_limit_wait_seconds(rate_err)
-                        if wait_s is None or rate_limit_attempt == 2:
+                        # Only hold the request for very short throttles; longer 429s
+                        # cascade to the next model (each Groq model has its own bucket).
+                        if wait_s is None or wait_s > 3.0 or rate_limit_attempt == 1:
                             raise
                         log_event(
                             f"ModelRouter: [{model}] per-minute rate limit hit; waiting {wait_s:.1f}s and retrying the same model",
@@ -1981,7 +2001,8 @@ class ModelManager:
             except Exception as e:
                 t_dur_ms = max(0.1, round((time.time() - t_start) * 1000, 1))
                 last_error = str(e)
-                failed_providers_this_call.add(norm_prov)
+                if not _is_rate_limit_error(e):
+                    failed_providers_this_call.add(norm_prov)
                 self.circuit_breaker.record_failure(norm_prov, e)
 
                 with self._telemetry_lock:
