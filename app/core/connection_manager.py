@@ -45,6 +45,9 @@ SNOWFLAKE_CONFIG = {
     "authenticator": "externalbrowser"
 }
 
+# Medallion layers: L0 bronze (raw landing), L1 silver (harmonized), L2 gold (curated marts)
+SNOWFLAKE_MEDALLION_SCHEMAS = ("L0_STAGING", "L1_HARMONIZED", "L2_GOLD")
+
 ORACLE_CONFIGS = {
     "MY_ORACLE_XE_LOCAL": {
         "connection_name": "MY_ORACLE_XE_LOCAL",
@@ -455,14 +458,14 @@ class ConnectionManager:
                     conn = snowflake_connector.connect(**connect_kwargs)
                 cur = conn.cursor()
 
-                if sso_auth and meta.get("auto_provision"):
+                if meta.get("auto_provision"):
                     ident = re.compile(r"^[A-Za-z0-9_$]+$")
                     if ident.match(str(warehouse)):
                         cur.execute(f"CREATE WAREHOUSE IF NOT EXISTS {warehouse} WITH WAREHOUSE_SIZE = 'XSMALL' AUTO_SUSPEND = 60 AUTO_RESUME = TRUE")
                     if ident.match(str(database)):
                         cur.execute(f"CREATE DATABASE IF NOT EXISTS {database}")
-                        if ident.match(str(schema)):
-                            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {database}.{schema}")
+                        for layer in SNOWFLAKE_MEDALLION_SCHEMAS:
+                            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {database}.{layer}")
                     try:
                         cur.execute(f"USE WAREHOUSE {warehouse}")
                         cur.execute(f"USE DATABASE {database}")
