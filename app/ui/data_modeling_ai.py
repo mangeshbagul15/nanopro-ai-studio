@@ -706,12 +706,14 @@ def get_data_modeling_js() -> str:
 
     window.dmToggleChats = function () {
         DM.chatsOpen = !DM.chatsOpen;
+        if (DM.chatsOpen && window.innerWidth <= 1180) DM.explorerOpen = false;
         if (window.innerWidth > 1180) localStorage.setItem('dm_chats_hidden', DM.chatsOpen ? '0' : '1');
         dmApplyPanels();
     };
 
     window.dmToggleExplorer = function () {
         DM.explorerOpen = !DM.explorerOpen;
+        if (DM.explorerOpen && window.innerWidth <= 1180) DM.chatsOpen = false;
         if (window.innerWidth > 1180) localStorage.setItem('dm_explorer_hidden', DM.explorerOpen ? '0' : '1');
         dmApplyPanels();
     };
@@ -868,7 +870,7 @@ def get_data_modeling_js() -> str:
                 : '<div class="dm-note">No chats here yet. Press + to start one.</div>';
         }
         var count = $('dmChatCount');
-        if (count) count.textContent = String(DM.workspaces.length);
+        if (count) count.textContent = String(loose.length);
         var projects = $('dmProjectList');
         if (projects) {
             projects.innerHTML = DM.projects.length ? DM.projects.map(dmProjectRow).join('')
@@ -952,6 +954,18 @@ def get_data_modeling_js() -> str:
         await dmLoadMessages();
         dmRenderTree();
     };
+
+    async function dmEnsureSchemas() {
+        var ws = dmActiveWorkspace();
+        if (!ws || (ws.schemas && ws.schemas.length)) return ws;
+        try {
+            var data = await dmApi('/workspaces?light=false');
+            (data.workspaces || []).forEach(function (item) {
+                if (item.id === DM.workspaceId && item.schemas) ws.schemas = item.schemas;
+            });
+        } catch (err) { /* the main schema is always available */ }
+        return ws;
+    }
 
     window.dmNewChat = async function (projectId) {
         var target = projectId || '';
@@ -1485,7 +1499,8 @@ def get_data_modeling_js() -> str:
 
     function dmToggleNode(key) {
         if (!key) return;
-        DM.treeOpen[key] = !DM.treeOpen[key];
+        var open = key.indexOf('root:') === 0 ? DM.treeOpen[key] !== false : !!DM.treeOpen[key];
+        DM.treeOpen[key] = !open;
         dmSaveJson('dm_tree_open', DM.treeOpen);
         if (DM.treeOpen[key] && key.indexOf('tb:') === 0) {
             var parts = key.split('::');
@@ -1611,6 +1626,10 @@ def get_data_modeling_js() -> str:
     window.dmShowTable = async function (dbId, schema, table) {
         dmOpenData();
         dmCloseDataPanel();
+        if (window.innerWidth <= 1180 && DM.explorerOpen) {
+            DM.explorerOpen = false;
+            dmApplyPanels();
+        }
         DM.tableCtx = { dbId: dbId, schema: schema, table: table };
         var ask = $('dmAskTableBtn');
         if (ask) ask.hidden = false;
@@ -1933,7 +1952,7 @@ def get_data_modeling_js() -> str:
         }
         var modal = $('dmUploadModal');
         var select = $('dmUpSchema');
-        var ws = dmActiveWorkspace();
+        var ws = await dmEnsureSchemas();
         var schemas = (ws && ws.schemas && ws.schemas.length) ? ws.schemas : [{ name: 'main', tables: [] }];
         if (select) {
             select.innerHTML = schemas.map(function (schema) {
@@ -2008,13 +2027,15 @@ def get_data_modeling_js() -> str:
         var name = input ? input.value.trim() : '';
         if (!name) { dmToast('Enter a schema name.', 'err'); return; }
         try {
-            await dmApi('/workspaces/' + encodeURIComponent(DM.workspaceId) + '/schemas', {
+            var data = await dmApi('/workspaces/' + encodeURIComponent(DM.workspaceId) + '/schemas', {
                 method: 'POST',
                 body: JSON.stringify({ name: name })
             });
             window.dmCloseSchema();
             dmToast('Schema ' + name + ' created', 'ok');
             await dmLoadChats();
+            var ws = dmActiveWorkspace();
+            if (ws && data.workspace && data.workspace.schemas) ws.schemas = data.workspace.schemas;
             window.dmLoadCatalog(false);
             dmRenderTree();
         } catch (err) {
