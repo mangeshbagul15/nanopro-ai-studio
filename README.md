@@ -56,6 +56,19 @@ Every navigation item in the Left Sidebar switches the central panel to a dedica
 - To identify a deployment, set `NANOPRO_NODE_ID` to its node ID. `NANOPRO_RENDER_HEALTH_URL` can override the Render service URL. A remote laptop can be monitored by setting `NANOPRO_LAPTOP_HEALTH_URL` to its HTTPS `trycloudflare.com` tunnel URL.
 - Health checks are monitoring only. Host migration/failover requires a traffic-routing control plane and is not performed by this dashboard.
 
+### 6. Data Modeling by AI (three-panel studio)
+View id `view-data_modeling_ai`, opened from the sidebar or `switchView('data_modeling_ai')`; routes live under `/api/data_modeling/*`.
+- **Panel 1 - Chats & Projects**: workspaces (`ws_*`), projects (`prj_*`), pin, rename, delete; each workspace keeps its own message history and its own SQLite scratch database.
+- **Panel 2 - Explorer**: every real database, expanded to schema → table → column. Built by `app/core/live_catalog.py` from the Credential Vault plus local files, with a 45 s cache and a 22 s build deadline. Each entry reports `live`, `not_configured`, `unreachable` or `driver_missing` with the reason - an empty database reports 0 tables, it is never padded with invented metadata.
+- **Panel 3 - Copilot + Data dock**: ask in Marathi/Hindi/English; results open in the dock below the chat. Attachments (CSV/Excel/JSON) and a picked table can be sent with the message, so "create a new table from this Excel" and "append this data to this table" work against real files.
+- **Write safety** (`app/core/manager_contract.py`, contract `2026.11.07`): `DROP`/`DELETE`/`TRUNCATE` are only allowed inside the workspace's own SQLite database. Cloud warehouses are read-only unless the user explicitly confirms the target.
+
+### 7. Email delivery cascade
+`smtp_client.send_email_cascading()` tries Gmail REST API → Apps Script Relay → Resend → Brevo → Gmail SMTP, and returns a `failover_trace` naming every tier it skipped.
+- **Verified live**: Apps Script Relay (Google-free, port 443) and Resend (3,000 emails/month free tier; send-only API key).
+- A send-only Resend key cannot read `GET /api-keys`; `test_resend_connection()` confirms it with an incomplete `POST /emails` (422 = key valid, 401 = key wrong) so a working channel is not reported as broken.
+- Gmail REST API, Brevo and Gmail SMTP remain **Not Configured** until credentials are added to the Credential Vault - the dashboard shows that state instead of claiming they work.
+
 ---
 
 ## 🛠️ Windows Installation & Running Guide
