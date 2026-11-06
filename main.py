@@ -6114,6 +6114,20 @@ async def api_test_gmail_api_connection():
 
 
 
+@app.post('/api/connections/test/email_relay')
+
+async def api_test_email_relay_connection():
+
+    """Verifies the Google Apps Script email relay deployment over HTTPS Port 443."""
+
+    from app.core.connection_manager import connection_manager
+
+    res = connection_manager.test_email_relay_connection()
+
+    return JSONResponse(res)
+
+
+
 @app.post('/api/connections/test/email_failover')
 
 async def api_test_email_failover_cluster():

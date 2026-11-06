@@ -21602,7 +21602,7 @@ Ready for message compilation and automated dispatch.
 
                         <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
 
-                            <div><strong>Cascade Pipeline:</strong> Gmail API &#10142; Resend &#10142; Brevo &#10142; SMTP &#10142; Telegram</div>
+                            <div><strong>Cascade Pipeline:</strong> Gmail API &#10142; Apps Script Relay &#10142; Resend &#10142; Brevo &#10142; SMTP &#10142; Telegram</div>
 
                             <div><strong>Protocol:</strong> HTTPS Port 443 (Cloud &amp; Render Firewall Bypass)</div>
 
@@ -21621,6 +21621,48 @@ Ready for message compilation and automated dispatch.
                         </div>
 
                         <div id="failoverTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+
+                    </div>
+
+
+
+                    <!-- GOOGLE APPS SCRIPT EMAIL RELAY CARD -->
+
+                    <div style="background:rgba(15,23,42,0.85); border:1px solid #10B981; border-radius:10px; padding:14px; position:relative;">
+
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+
+                            <div>
+
+                                <div style="font-size:11px; font-weight:700; color:#34D399; letter-spacing:0.5px;">APPS SCRIPT RELAY (HTTPS 443)</div>
+
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">EMAIL_RELAY</h3>
+
+                            </div>
+
+                            <span id="badgeRelayStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+
+                        </div>
+
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+
+                            <div><strong>Endpoint:</strong> script.google.com:443 (HTTPS)</div>
+
+                            <div><strong>Delivery Inbox:</strong> nanoproaistudio@gmail.com</div>
+
+                            <div><strong>Supports:</strong> Plain text body + one text attachment (CSV / JSON / TXT)</div>
+
+                            <div style="font-size:11px; color:#6EE7B7;">No new credentials required &bull; Render Cloud Safe</div>
+
+                        </div>
+
+                        <div style="display:flex; gap:8px;">
+
+                            <button type="button" class="btn btn-primary" onclick="testEmailRelayAction()" id="btnTestRelay" style="flex:1; background:#059669;">&#128269; Test Relay</button>
+
+                        </div>
+
+                        <div id="relayTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
 
                     </div>
 
@@ -30692,7 +30734,7 @@ function navigateHistory(direction) {
 
                 resultBox.style.border = '1px solid #334155';
 
-                resultBox.innerHTML = '<span class="spinner-sm"></span> Auditing 5-Tier Email Failover Cascade...<br>• Tier 1: Gmail REST API (Port 443)<br>• Tier 2: Resend API (3,000/mo)<br>• Tier 3: Brevo API (300/day)<br>• Tier 4: Gmail SMTP (587)<br>• Tier 5: Telegram Emergency Bot';
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Auditing 6-Tier Email Failover Cascade...<br>• Tier 1: Gmail REST API (Port 443)<br>• Tier 2: Apps Script Relay (Port 443)<br>• Tier 3: Resend API (3,000/mo)<br>• Tier 4: Brevo API (300/day)<br>• Tier 5: Gmail SMTP (587)<br>• Tier 6: Telegram Emergency Bot';
 
             }
 
@@ -30913,6 +30955,113 @@ function navigateHistory(direction) {
             } finally {
 
                 isTestingResend = false;
+
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+
+            }
+
+        }
+
+
+
+        let isTestingRelay = false;
+
+        async function testEmailRelayAction() {
+
+            if (isTestingRelay) return;
+
+            isTestingRelay = true;
+
+
+
+            const btn = document.getElementById('btnTestRelay');
+
+            const badge = document.getElementById('badgeRelayStatus');
+
+            const resultBox = document.getElementById('relayTestResultBox');
+
+            const origHtml = btn ? btn.innerHTML : '🔍 Test Relay';
+
+
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Probing Relay...'; }
+
+            if (badge) { badge.innerText = 'Testing...'; badge.style.color = '#34D399'; badge.style.background = 'rgba(52,211,153,0.15)'; }
+
+            if (resultBox) {
+
+                resultBox.style.display = 'block';
+
+                resultBox.style.background = '#0F172A';
+
+                resultBox.style.border = '1px solid #334155';
+
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Reaching Apps Script relay deployment (script.google.com:443)...';
+
+            }
+
+
+
+            try {
+
+                const res = await fetch('/api/connections/test/email_relay', {
+
+                    method: 'POST',
+
+                    headers: { 'Accept': 'application/json' }
+
+                });
+
+                const d = await res.json();
+
+                const isSuccess = d && (d.success === true || d.status === 'Connected');
+
+                if (badge) {
+
+                    badge.innerText = d.status || (isSuccess ? 'Connected' : 'Offline');
+
+                    badge.style.color = isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444');
+
+                    badge.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+
+                }
+
+                if (resultBox) {
+
+                    let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : (d.status === 'Not Configured' ? '#94A3B8' : '#EF4444')}; margin-bottom:6px;">
+                        ${isSuccess ? '✅ Apps Script Relay Reachable' : '⚠️ Relay Status: ' + (d.status || 'Not Configured')}
+                    </div>`;
+
+                    html += `<div style="line-height:1.5; color:#CBD5E1;">
+                        <div><strong>Endpoint:</strong> ${d.host || 'script.google.com:443 (HTTPS)'}</div>
+                        <div><strong>Delivery Inbox:</strong> ${d.relay_inbox || 'nanoproaistudio@gmail.com'}</div>
+                        <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
+                        <div><strong>Diagnostic:</strong> ${d.message || ''}</div>
+                    </div>`;
+
+                    if (d.troubleshooting) {
+
+                        html += `<div style="margin-top:6px; color:#FBBF24; font-size:11px;">${d.troubleshooting}</div>`;
+
+                    }
+
+                    resultBox.innerHTML = html;
+
+                }
+
+            } catch (e) {
+
+                if (badge) { badge.innerText = 'Error'; badge.style.color = '#EF4444'; badge.style.background = 'rgba(239,68,68,0.15)'; }
+
+                if (resultBox) {
+
+                    resultBox.innerHTML = `<div style="color:#EF4444;">❌ Relay Test Error: ${e.message || e}</div>`;
+
+                }
+
+            } finally {
+
+                isTestingRelay = false;
 
                 if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
 
@@ -31184,11 +31333,13 @@ function navigateHistory(direction) {
 
 
 
-            let provDesc = '⚡ Automatic Multi-Tier Cloud Failover (Gmail API ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram)';
+            let provDesc = '⚡ Automatic Multi-Tier Cloud Failover (Gmail API ➔ Apps Script Relay ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram)';
 
             if (provChoice === 'resend') provDesc = 'Resend API (HTTPS Port 443 - 3,000/mo)';
 
             else if (provChoice === 'brevo') provDesc = 'Brevo API (HTTPS Port 443 - 300/day)';
+
+            else if (provChoice === 'relay') provDesc = 'Apps Script Relay (HTTPS Port 443)';
 
             else if (provChoice === 'gmail_api') provDesc = 'Google Gmail REST API (Port 443)';
 
@@ -31211,6 +31362,8 @@ function navigateHistory(direction) {
             else if (provChoice === 'resend') resultBoxId = 'resendTestResultBox';
 
             else if (provChoice === 'brevo') resultBoxId = 'brevoTestResultBox';
+
+            else if (provChoice === 'relay') resultBoxId = 'relayTestResultBox';
 
             else if (provChoice === 'gmail_api') resultBoxId = 'gmailApiTestResultBox';
 

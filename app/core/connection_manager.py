@@ -1081,6 +1081,10 @@ class ConnectionManager:
         """Calls smtp_client to run real Google Gmail REST API test over Port 443."""
         return smtp_client.test_gmail_api_connection()
 
+    def test_email_relay_connection(self) -> Dict[str, Any]:
+        """Calls smtp_client to check the Google Apps Script relay deployment."""
+        return smtp_client.test_email_relay_connection()
+
     def test_email_failover_cluster(self) -> Dict[str, Any]:
         """Calls smtp_client to test multi-tier email cascading failover cluster."""
         return smtp_client.test_email_failover_cluster()
@@ -1753,10 +1757,19 @@ class ConnectionManager:
                 "connection_name": "EMAIL_FAILOVER_CLUSTER",
                 "service_type": "Cloud HTTPS Email Cascading Cluster",
                 "host_identifier": "Port 443 Multi-Tier Cascade",
-                "target": "Gmail API ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram",
+                "target": "Gmail API ➔ Apps Script Relay ➔ Resend ➔ Brevo ➔ SMTP ➔ Telegram",
                 "user_role": "Zero-Downtime Autonomous Failover",
                 "has_credentials": True,
                 "configured": True
+            },
+            {
+                "connection_name": "EMAIL_RELAY",
+                "service_type": "Google Apps Script Email Relay",
+                "host_identifier": "script.google.com:443 (HTTPS)",
+                "target": "nanoproaistudio@gmail.com",
+                "user_role": "mangeshbagul15@gmail.com",
+                "has_credentials": bool(smtp_client.get_relay_config()["has_credentials"]),
+                "configured": bool(smtp_client.get_relay_config()["has_credentials"])
             },
             {
                 "connection_name": "EMAIL_RESEND_API",
@@ -2484,7 +2497,20 @@ class ConnectionManager:
                 pass
             env_updated = True
 
-        # 5. Resend API
+        # 5. Apps Script Relay
+        elif "RELAY" in conn_upper:
+            os.environ["EMAIL_RELAY_SECRET"] = new_password
+            self._update_env_file_variable("EMAIL_RELAY_SECRET", new_password)
+            synced_keys.append("EMAIL_RELAY_SECRET")
+            cfg = smtp_client.get_relay_config()
+            try:
+                if cfg.get("url"):
+                    smtp_client.save_relay_config(cfg["url"], new_password, cfg.get("relay_inbox"))
+            except Exception:
+                pass
+            env_updated = True
+
+        # 6. Resend API
         elif "RESEND" in conn_upper:
             os.environ["RESEND_API_KEY"] = new_password
             self._update_env_file_variable("RESEND_API_KEY", new_password)
@@ -2495,7 +2521,7 @@ class ConnectionManager:
                 pass
             env_updated = True
 
-        # 6. Brevo API
+        # 7. Brevo API
         elif "BREVO" in conn_upper:
             os.environ["BREVO_API_KEY"] = new_password
             self._update_env_file_variable("BREVO_API_KEY", new_password)
@@ -2506,7 +2532,7 @@ class ConnectionManager:
                 pass
             env_updated = True
 
-        # 7. Gmail REST API
+        # 8. Gmail REST API
         elif "GMAIL_API" in conn_upper:
             os.environ["GMAIL_API_REFRESH_TOKEN"] = new_password
             self._update_env_file_variable("GMAIL_API_REFRESH_TOKEN", new_password)
@@ -2517,21 +2543,21 @@ class ConnectionManager:
                 pass
             env_updated = True
 
-        # 8. AWS S3 Data Lake
+        # 9. AWS S3 Data Lake
         elif "AWS" in conn_upper:
             os.environ["AWS_SECRET_ACCESS_KEY"] = new_password
             self._update_env_file_variable("AWS_SECRET_ACCESS_KEY", new_password)
             synced_keys.append("AWS_SECRET_ACCESS_KEY")
             env_updated = True
 
-        # 9. Telegram Alerts
+        # 10. Telegram Alerts
         elif "TELEGRAM" in conn_upper:
             os.environ["TELEGRAM_BOT_TOKEN"] = new_password
             self._update_env_file_variable("TELEGRAM_BOT_TOKEN", new_password)
             synced_keys.append("TELEGRAM_BOT_TOKEN")
             env_updated = True
 
-        # 10. Dynamic / Custom database
+        # 11. Dynamic / Custom database
         else:
             clean_k = re.sub(r'[^A-Z0-9_]', '_', conn_upper) + "_PASSWORD"
             os.environ[clean_k] = new_password

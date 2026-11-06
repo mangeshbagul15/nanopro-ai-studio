@@ -249,6 +249,55 @@ class SMTPClient:
             }
         )
 
+    def get_relay_config(self) -> Dict[str, Any]:
+        """Returns the Google Apps Script email relay endpoint and shared secret."""
+        url = (os.environ.get("EMAIL_RELAY_URL") or "").strip()
+        secret = (os.environ.get("EMAIL_RELAY_SECRET") or "").strip()
+        relay_inbox = (os.environ.get("EMAIL_RELAY_TO") or self.default_recipient).strip()
+
+        if not (url and secret):
+            for s in ["EMAIL_RELAY", "email_relay", "GOOGLE_APPS_SCRIPT_RELAY"]:
+                c = credentials_vault.get_credential(s)
+                if c:
+                    meta = c.get("additional_metadata") or {}
+                    if isinstance(meta, str):
+                        try:
+                            meta = json.loads(meta)
+                        except Exception:
+                            meta = {}
+                    if not url:
+                        url = (meta.get("url") or c.get("host") or "").strip()
+                    if not secret and c.get("secret_value"):
+                        secret = c["secret_value"].strip()
+                    if c.get("email"):
+                        relay_inbox = c["email"].strip()
+                    break
+
+        return {
+            "url": url,
+            "secret": secret,
+            "relay_inbox": relay_inbox,
+            "has_credentials": bool(url and secret),
+            "masked_secret": "••••••••" if secret else ""
+        }
+
+    def save_relay_config(self, url: str, secret: str, relay_inbox: Optional[str] = None) -> str:
+        """Stores the Apps Script relay endpoint and secret encrypted in Vault."""
+        return credentials_vault.store_credential(
+            service_name="EMAIL_RELAY",
+            credential_type="api_key",
+            username="google-apps-script",
+            secret_value=secret.strip(),
+            host=url.strip(),
+            port="443",
+            email=relay_inbox or self.default_recipient,
+            additional_info={
+                "provider": "Google Apps Script Relay",
+                "url": url.strip(),
+                "protocol": "HTTPS Port 443"
+            }
+        )
+
     def get_gmail_api_config(self) -> Dict[str, Any]:
         """Returns Gmail REST API OAuth2 credentials from environment or Vault."""
         client_id = (os.environ.get("GMAIL_API_CLIENT_ID") or "").strip()
@@ -1122,19 +1171,86 @@ class SMTPClient:
             self._record_connection_history("EMAIL_GMAIL_API", "email_api", "Network Error", duration, res["message"], res)
             return res
 
+    def test_email_relay_connection(self) -> Dict[str, Any]:
+        """
+        Readiness check for the Google Apps Script email relay (HTTPS 443).
+        Performs a non-sending GET on the deployment URL so no test mail is dispatched.
+        """
+        start_time = time.time()
+        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        cfg = self.get_relay_config()
+
+        if not cfg.get("has_credentials"):
+            res = {
+                "success": False,
+                "status": "Not Configured",
+                "provider": "Google Apps Script Relay",
+                "host": "script.google.com:443",
+                "response_time_ms": 0,
+                "timestamp": test_ts,
+                "message": "EMAIL_RELAY_URL / EMAIL_RELAY_SECRET not configured.",
+                "troubleshooting": "Set EMAIL_RELAY_URL and EMAIL_RELAY_SECRET in Render env or Vault entry EMAIL_RELAY."
+            }
+            self._record_connection_history("EMAIL_RELAY", "email_relay", "Not Configured", 0, res["message"], res)
+            return res
+
+        try:
+            resp = requests.get(cfg["url"], timeout=10.0, allow_redirects=True)
+            duration = round((time.time() - start_time) * 1000, 2)
+            if resp.status_code < 500:
+                res = {
+                    "success": True,
+                    "status": "Connected",
+                    "provider": "Google Apps Script Relay",
+                    "host": "script.google.com:443 (HTTPS)",
+                    "relay_inbox": cfg.get("relay_inbox"),
+                    "response_time_ms": duration,
+                    "timestamp": test_ts,
+                    "message": f"Relay deployment reachable (HTTP {resp.status_code}, {duration} ms). Delivers to {cfg.get('relay_inbox')}.",
+                    "cloud_safe": True
+                }
+                self._record_connection_history("EMAIL_RELAY", "email_relay", "Connected", duration, None, res)
+                return res
+            res = {
+                "success": False,
+                "status": "API Error",
+                "provider": "Google Apps Script Relay",
+                "host": "script.google.com:443",
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "message": f"Relay returned HTTP {resp.status_code}."
+            }
+            self._record_connection_history("EMAIL_RELAY", "email_relay", "API Error", duration, res["message"], res)
+            return res
+        except Exception as e:
+            duration = round((time.time() - start_time) * 1000, 2)
+            res = {
+                "success": False,
+                "status": "Network Error",
+                "provider": "Google Apps Script Relay",
+                "host": "script.google.com:443",
+                "response_time_ms": duration,
+                "timestamp": test_ts,
+                "message": f"Network error reaching relay: {str(e)}"
+            }
+            self._record_connection_history("EMAIL_RELAY", "email_relay", "Network Error", duration, res["message"], res)
+            return res
+
     def test_email_failover_cluster(self) -> Dict[str, Any]:
         """
         Tests the readiness of the complete multi-tier cascading email delivery cluster:
         Tier 1: Gmail REST API (HTTPS 443)
-        Tier 2: Resend API (HTTPS 443 - 3,000/mo)
-        Tier 3: Brevo API (HTTPS 443 - 300/day)
-        Tier 4: Gmail SMTP (STARTTLS 587)
-        Tier 5: Telegram Emergency Alert Bot
+        Tier 2: Google Apps Script Relay (HTTPS 443)
+        Tier 3: Resend API (HTTPS 443 - 3,000/mo)
+        Tier 4: Brevo API (HTTPS 443 - 300/day)
+        Tier 5: Gmail SMTP (STARTTLS 587)
+        Tier 6: Telegram Emergency Alert Bot
         """
         start_time = time.time()
         test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
 
         res_gmail_api = self.test_gmail_api_connection()
+        res_relay = self.test_email_relay_connection()
         res_resend = self.test_resend_connection()
         res_brevo = self.test_brevo_connection()
         res_smtp = self.test_connection(timeout=3.0)
@@ -1151,10 +1267,11 @@ class SMTPClient:
 
         tiers = [
             {"tier": 1, "name": "Google Gmail REST API", "protocol": "HTTPS Port 443", "quota": "Standard", "status": res_gmail_api.get("status"), "ready": res_gmail_api.get("success", False)},
-            {"tier": 2, "name": "Resend API", "protocol": "HTTPS Port 443", "quota": "3,000 / month free", "status": res_resend.get("status"), "ready": res_resend.get("success", False)},
-            {"tier": 3, "name": "Brevo API", "protocol": "HTTPS Port 443", "quota": "300 / day free", "status": res_brevo.get("status"), "ready": res_brevo.get("success", False)},
-            {"tier": 4, "name": "Gmail SMTP", "protocol": "STARTTLS Port 587", "quota": "500 / day", "status": res_smtp.get("status"), "ready": res_smtp.get("success", False)},
-            {"tier": 5, "name": "Telegram Emergency Dispatch", "protocol": "HTTPS Port 443", "quota": "Unlimited Alerts", "status": "Online" if tg_ok else "Offline", "ready": tg_ok}
+            {"tier": 2, "name": "Apps Script Relay", "protocol": "HTTPS Port 443", "quota": "Google Apps Script quota", "status": res_relay.get("status"), "ready": res_relay.get("success", False)},
+            {"tier": 3, "name": "Resend API", "protocol": "HTTPS Port 443", "quota": "3,000 / month free", "status": res_resend.get("status"), "ready": res_resend.get("success", False)},
+            {"tier": 4, "name": "Brevo API", "protocol": "HTTPS Port 443", "quota": "300 / day free", "status": res_brevo.get("status"), "ready": res_brevo.get("success", False)},
+            {"tier": 5, "name": "Gmail SMTP", "protocol": "STARTTLS Port 587", "quota": "500 / day", "status": res_smtp.get("status"), "ready": res_smtp.get("success", False)},
+            {"tier": 6, "name": "Telegram Emergency Dispatch", "protocol": "HTTPS Port 443", "quota": "Unlimited Alerts", "status": "Online" if tg_ok else "Offline", "ready": tg_ok}
         ]
 
         ready_count = sum(1 for t in tiers if t["ready"])
@@ -1167,7 +1284,7 @@ class SMTPClient:
             "active_tiers_count": ready_count,
             "total_tiers": len(tiers),
             "primary_active_tier": first_ready,
-            "cascade_pipeline": "Gmail REST API ➔ Resend (3,000/mo) ➔ Brevo (300/day) ➔ Gmail SMTP ➔ Telegram Bot",
+            "cascade_pipeline": "Gmail REST API ➔ Apps Script Relay ➔ Resend (3,000/mo) ➔ Brevo (300/day) ➔ Gmail SMTP ➔ Telegram Bot",
             "tiers": tiers,
             "response_time_ms": duration,
             "timestamp": test_ts,
@@ -1177,8 +1294,86 @@ class SMTPClient:
         return res
 
     # =========================================================================
-    # MULTI-PROVIDER TRANSMISSION METHODS (RESEND, BREVO, GMAIL API, SMTP, TELEGRAM)
+    # MULTI-PROVIDER TRANSMISSION METHODS (RELAY, RESEND, BREVO, GMAIL API, SMTP, TELEGRAM)
     # =========================================================================
+
+    def send_via_relay(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+        task_id: Optional[str] = None,
+        report_name: Optional[str] = None,
+        data_source: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Sends an email via the Google Apps Script relay (HTTPS Port 443). Text body + one text attachment."""
+        submission_time = time.time()
+        log_id = f"email_relay_{int(submission_time * 1000)}"
+        cfg = self.get_relay_config()
+
+        if not cfg.get("has_credentials"):
+            return {"success": False, "status": "Not Configured", "error": "EMAIL_RELAY_URL / EMAIL_RELAY_SECRET not configured.", "log_id": log_id, "provider": "Apps Script Relay"}
+
+        relay_inbox = cfg.get("relay_inbox") or self.default_recipient
+        payload: Dict[str, Any] = {
+            "secret": cfg["secret"],
+            "to": recipient or relay_inbox,
+            "subject": subject,
+            "text": body + (f"\n\nCC: {cc}" if cc else "") + (f"\nBCC: {bcc}" if bcc else "")
+        }
+
+        if attachments:
+            for filepath in attachments:
+                p = Path(filepath)
+                if p.exists() and p.is_file() and p.stat().st_size <= 512_000:
+                    try:
+                        payload["attachmentName"] = p.name
+                        payload["attachmentText"] = p.read_text(encoding="utf-8", errors="replace")
+                        break
+                    except Exception as ex:
+                        log_event(f"Relay attachment error {p.name}: {ex}", component="SMTPClient", level="WARNING")
+
+        try:
+            resp = requests.post(cfg["url"], json=payload, timeout=25.0)
+            if resp.status_code == 200:
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = {}
+                if data.get("ok"):
+                    delivered_to = data.get("to") or recipient
+                    provider_resp = f"HTTP 200 OK - relay accepted for {delivered_to}"
+                    self._record_email_delivery(
+                        log_id=log_id, task_id=task_id, report_name=report_name,
+                        recipient=delivered_to, subject=subject, data_source=data_source or "Apps Script Relay",
+                        report_file_path=(attachments[0] if attachments else None),
+                        submission_time=submission_time, provider_response=provider_resp,
+                        delivery_status="Delivered by Apps Script Relay", error_details=None
+                    )
+                    log_event(f"Email [{log_id}] sent via Apps Script Relay to {delivered_to}: Subject '{subject}'", component="SMTPClient")
+                    res = {
+                        "success": True,
+                        "log_id": log_id,
+                        "message_id": log_id,
+                        "provider": "Apps Script Relay (Port 443)",
+                        "status": "Delivered by Apps Script Relay",
+                        "recipient": delivered_to,
+                        "subject": subject,
+                        "submission_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    if delivered_to != recipient:
+                        res["note"] = f"Relay is pinned to {delivered_to}; message delivered there instead of {recipient}."
+                    return res
+                return {"success": False, "error": f"Relay rejected the message: {str(data)[:200]}", "status": "Delivery Failed", "log_id": log_id, "provider": "Apps Script Relay"}
+            err_msg = f"Relay error (HTTP {resp.status_code}): {resp.text[:200]}"
+            return {"success": False, "error": err_msg, "status": "Delivery Failed", "log_id": log_id, "provider": "Apps Script Relay"}
+        except Exception as e:
+            err_msg = f"Network error during relay dispatch: {str(e)}"
+            return {"success": False, "error": err_msg, "status": "Network Error", "log_id": log_id, "provider": "Apps Script Relay"}
 
     def send_via_resend(
         self,
@@ -1714,10 +1909,11 @@ class SMTPClient:
         """
         Multi-Tier Cascading Email Delivery Engine:
         Tier 1: Google Gmail REST API (Port 443)
-        Tier 2: Resend API (Port 443 - 3,000/mo)
-        Tier 3: Brevo API (Port 443 - 300/day)
-        Tier 4: Gmail SMTP (Port 587)
-        Tier 5: Telegram Emergency Bot
+        Tier 2: Google Apps Script Relay (Port 443)
+        Tier 3: Resend API (Port 443 - 3,000/mo)
+        Tier 4: Brevo API (Port 443 - 300/day)
+        Tier 5: Gmail SMTP (Port 587)
+        Tier 6: Telegram Emergency Bot
         """
         extra_kwargs = dict(kwargs)
         target_recipient = recipient or extra_kwargs.pop("to_email", None) or extra_kwargs.pop("recipient", None) or self.default_recipient
@@ -1733,15 +1929,17 @@ class SMTPClient:
 
         prov = (preferred_provider or "auto").lower()
         if prov == "resend":
-            providers = ["resend", "brevo", "gmail_api", "smtp"] if allow_failover else ["resend"]
+            providers = ["resend", "relay", "brevo", "gmail_api", "smtp"] if allow_failover else ["resend"]
         elif prov == "brevo":
-            providers = ["brevo", "resend", "gmail_api", "smtp"] if allow_failover else ["brevo"]
+            providers = ["brevo", "relay", "resend", "gmail_api", "smtp"] if allow_failover else ["brevo"]
+        elif prov in ["relay", "apps_script", "appsscript"]:
+            providers = ["relay", "resend", "brevo", "gmail_api", "smtp"] if allow_failover else ["relay"]
         elif prov in ["gmail_api", "gmailrest", "gmail_rest"]:
-            providers = ["gmail_api", "resend", "brevo", "smtp"] if allow_failover else ["gmail_api"]
+            providers = ["gmail_api", "relay", "resend", "brevo", "smtp"] if allow_failover else ["gmail_api"]
         elif prov in ["smtp", "gmail_smtp"]:
-            providers = ["smtp", "resend", "brevo", "gmail_api"] if allow_failover else ["smtp"]
+            providers = ["smtp", "relay", "resend", "brevo", "gmail_api"] if allow_failover else ["smtp"]
         else:
-            providers = ["gmail_api", "resend", "brevo", "smtp"]
+            providers = ["gmail_api", "relay", "resend", "brevo", "smtp"]
 
         for p_name in providers:
             if p_name == "gmail_api":
@@ -1755,6 +1953,18 @@ class SMTPClient:
                     res["failover_trace"] = failover_trace
                     return res
                 failover_trace.append({"provider": "Gmail REST API", "status": "Failed", "error": res.get("error", "Unknown error")})
+
+            elif p_name == "relay":
+                rel_cfg = self.get_relay_config()
+                if not rel_cfg.get("has_credentials"):
+                    failover_trace.append({"provider": "Apps Script Relay", "status": "Skipped", "error": "EMAIL_RELAY_URL / EMAIL_RELAY_SECRET not configured"})
+                    continue
+                log_event("Attempting email dispatch via Apps Script Relay (Tier 2)...", component="SMTPClient")
+                res = self.send_via_relay(target_recipient, subject, email_body, html_content, attachments, cc, bcc, task_id, report_name, data_source)
+                if res.get("success"):
+                    res["failover_trace"] = failover_trace
+                    return res
+                failover_trace.append({"provider": "Apps Script Relay", "status": "Failed", "error": res.get("error", "Unknown error")})
 
             elif p_name == "resend":
                 r_cfg = self.get_resend_config()
