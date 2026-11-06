@@ -41,3 +41,8 @@ data/modeling/*.db-shm
 data/sftp/
 *.key
 integrate_sftp_pipeline.py
+
+# Runtime SQLite sidecar files
+data/*.db
+data/*.db-wal
+data/*.db-shm
