@@ -2410,6 +2410,51 @@ def mask_credential(val: str) -> str:
         return "••••••••"
     return val[:2] + "•" * (len(val) - 4) + val[-2:]
 
+
+_SECRET_METADATA_KEYS = (
+    "private_key", "private_key_id", "api_key", "access_key", "secret_key",
+    "client_secret", "password", "passwd", "token", "secret", "bearer_token",
+    "refresh_token", "session_token", "auth_token", "key_material",
+    "credential", "credentials", "service_account_json", "service_account_key",
+)
+
+_SECRET_METADATA_SUFFIXES = ("_api_key", "_secret", "_password", "_token", "_secret_key", "_access_key")
+
+_PEM_MARKERS = ("-----BEGIN", "BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY")
+
+
+def _is_secret_metadata_key(name: str) -> bool:
+    n = str(name or "").strip().lower().replace("-", "_")
+    if not n:
+        return False
+    return (
+        n in _SECRET_METADATA_KEYS
+        or n.endswith(_SECRET_METADATA_SUFFIXES)
+        or n.startswith(("aws_secret", "secret_", "bearer_"))
+    )
+
+
+def mask_metadata_secrets(meta: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Copies vault metadata with secret-bearing fields masked.
+
+    Service-account JSON is stored inside `additional_metadata`, so masking only
+    `secret_value` still leaks a private key to every `/api/vault/list` reader.
+    """
+    if not isinstance(meta, dict):
+        return meta
+    masked: Dict[str, Any] = {}
+    for k, v in meta.items():
+        if isinstance(v, dict):
+            masked[k] = mask_metadata_secrets(v)
+        elif isinstance(v, list):
+            masked[k] = [mask_metadata_secrets(i) if isinstance(i, dict) else i for i in v]
+        elif isinstance(v, str) and (v.strip().startswith(_PEM_MARKERS) or _is_secret_metadata_key(k)):
+            masked[k] = mask_credential(v)
+        else:
+            masked[k] = v
+    return masked
+
 class CredentialsVault:
     def __init__(self, ttl: float = 300.0):
         self._cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
@@ -2546,7 +2591,8 @@ class CredentialsVault:
                 d = dict(r)
                 decrypted = decrypt_value(d.get("encrypted_secret", ""))
                 d["secret_value"] = mask_credential(decrypted) if mask else decrypted
-                d["additional_metadata"] = json.loads(d["additional_metadata"]) if d.get("additional_metadata") else {}
+                meta = json.loads(d["additional_metadata"]) if d.get("additional_metadata") else {}
+                d["additional_metadata"] = mask_metadata_secrets(meta) if mask else meta
                 del d["encrypted_secret"]
                 result.append(d)
             return result

@@ -76,6 +76,11 @@ View id `view-data_modeling_ai`, opened from the sidebar or `switchView('data_mo
 - Router status is honest: `Credential Vault Key Required`, `Configured but Disabled`, or `Online (AWS Bedrock us-east-1)`. Throttling and `ModelNotReadyException` trip the `bedrock` circuit breaker so the router cascades immediately.
 - No live Bedrock inference has been run from this studio yet: the AWS account still needs the billing/card step, which only the owner can complete in the AWS console.
 
+### 9. Credential Vault read surface
+`GET /api/vault/list` masks both the secret and any secret-shaped field inside `additional_metadata` (`mask_metadata_secrets()` in `app/core/database.py`). Service-account JSON - which contains a PEM private key - used to pass through unmasked there.
+- Internal connectors call `get_credential()` / `list_credentials(mask=False)` and still receive the real values; only the API read path is masked.
+- Non-secret metadata (`project`, `region`, `host`, `security_mode`, `model_id`) stays readable so the Explorer and Settings panels keep working.
+
 ---
 
 ## 🛠️ Windows Installation & Running Guide
