@@ -31,6 +31,9 @@ clock_sync.apply_botocore_patch()
 def _bq_has_service_account() -> bool:
     if (os.environ.get("GCP_SERVICE_ACCOUNT_JSON") or "").strip():
         return True
+    adc_path = (os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") or "").strip()
+    if adc_path and os.path.exists(adc_path):
+        return True
     try:
         meta = (credentials_vault.get_credential("GOOGLE_BIGQUERY_SANDBOX") or {}).get("additional_metadata") or {}
         if isinstance(meta, str):
