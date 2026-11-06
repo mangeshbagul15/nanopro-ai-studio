@@ -1389,6 +1389,20 @@ async def startup_event():
 
     asyncio.create_task(autonomous_sentinel.start())
 
+    def _integration_monitor_loop():
+        """Background sweep that re-probes every third-party credential every 30 minutes."""
+        time.sleep(45)
+        while True:
+            try:
+                from app.core.integration_health import test_all
+                results = test_all()
+                passed = sum(1 for r in results if r.get('success'))
+                log_event(f"Integration health sweep: {passed}/{len(results)} connected", component="IntegrationHealth")
+            except Exception as exc:
+                log_event(f"Integration health sweep failed: {exc}", level="WARNING", component="IntegrationHealth")
+            time.sleep(1800)
+
+
     """
 
     3-Phase Staged & Graceful Boot Sequence for Mangesh Nano Pro AI Studio.
@@ -14821,6 +14835,29 @@ async def api_qa_deploy(req: Request):
 
 
 
+
+
+@app.get('/api/integrations/list')
+async def api_integrations_list():
+    """Every API key, token and service credential the studio holds, with live status."""
+    from app.core.integration_health import list_services
+    return JSONResponse(list_services())
+
+
+@app.post('/api/integrations/test')
+async def api_integrations_test(service: str = Body(..., embed=True)):
+    """Runs one real authenticated probe against a third-party service."""
+    from app.core.integration_health import test_service
+    return JSONResponse(test_service(service))
+
+
+@app.post('/api/integrations/test/all')
+async def api_integrations_test_all():
+    """Runs every integration probe (AI, messaging, email, media, search, payments)."""
+    from app.core.integration_health import test_all
+    results = test_all()
+    passed = sum(1 for r in results if r.get("success"))
+    return JSONResponse({"checked": len(results), "passed": passed, "results": results})
 
 
 if __name__ == "__main__":

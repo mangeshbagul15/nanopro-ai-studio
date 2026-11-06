@@ -14,6 +14,7 @@ import json
 import socket
 import re
 import uuid
+import threading
 from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
 
@@ -21,6 +22,9 @@ from app.core.logger import log_event
 from app.core.database import db, credentials_vault
 from app.core.smtp_client import smtp_client
 from app.core.config import REPORTS_DIR, BASE_DIR
+from app.core import clock_sync
+
+clock_sync.apply_botocore_patch()
 
 # Non-secret configuration defaults
 SNOWFLAKE_CONFIG = {
@@ -31,13 +35,14 @@ SNOWFLAKE_CONFIG = {
     "account_locator": "UI21071",
     "cloud": "AWS",
     "edition": "Enterprise",
-    "region": "AWS",
+    "region": "ap-southeast-7",
     "username": "MANGESHBAGUL15@GMAIL.COM",
     "role": "ACCOUNTADMIN",
     "warehouse": "COMPUTE_WH",
     "database": "BANK_DB",
     "schema": "L0_STAGING",
-    "account_url": "https://XMUTKDJ-KP74023.snowflakecomputing.com"
+    "account_url": "https://XMUTKDJ-KP74023.snowflakecomputing.com",
+    "authenticator": "externalbrowser"
 }
 
 ORACLE_CONFIGS = {
@@ -176,6 +181,10 @@ class ConnectionManager:
 
     def ensure_default_connections(self):
         """Register connection metadata and ensure default credentials from environment/vault."""
+        try:
+            from app.core.config import TELEGRAM_BOT_TOKEN as _CONFIG_TELEGRAM_TOKEN
+        except Exception:
+            _CONFIG_TELEGRAM_TOKEN = ""
         default_pw_map = {
             "NANO_PRO_SNOWFLAKE": os.environ.get("SNOWFLAKE_PASSWORD", ""),
             "MY_ORACLE_XE_LOCAL": os.environ.get("ORACLE_PASSWORD", ""),
@@ -187,10 +196,10 @@ class ConnectionManager:
             "POSTGRES_RENDER_CLOUD": os.environ.get("RENDER_POSTGRES_PASSWORD", ""),
             "AWS_S3_DATA_LAKE": os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
             "GMAIL_SMTP": os.environ.get("GMAIL_APP_PASSWORD", ""),
-            "TELEGRAM_ALERTS": os.environ.get("TELEGRAM_BOT_TOKEN", ""),
+            "TELEGRAM_ALERTS": os.environ.get("TELEGRAM_BOT_TOKEN") or _CONFIG_TELEGRAM_TOKEN or "",
             "DUCKDB_GOLD_LAKEHOUSE": "",
             "GOOGLE_BIGQUERY_SANDBOX": "",
-            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", ""),
+            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", "NanoPro@SFTP2026!"),
         }
 
         profiles = [
@@ -206,14 +215,19 @@ class ConnectionManager:
         ]
         for name, kind, username, host, port, database_name, metadata in profiles:
             existing = credentials_vault.get_credential(name)
-            existing_pw = existing.get("secret_value") if existing else None
-            effective_pw = existing_pw if (existing_pw and existing_pw.strip()) else default_pw_map.get(name, "")
+            existing_pw = (existing.get("secret_value") or "").strip() if existing else ""
+            fill_pw = (default_pw_map.get(name) or "").strip()
+
+            # Do not rewrite existing vault rows on every boot: that used to reset
+            # updated_at and made empty secrets look freshly configured in the UI.
+            if existing and (existing_pw or not fill_pw):
+                continue
 
             credentials_vault.store_credential(
                 service_name=name,
                 credential_type=kind,
                 username=username,
-                secret_value=effective_pw,
+                secret_value=existing_pw or fill_pw,
                 host=host,
                 port=port,
                 database_name=database_name,
@@ -316,8 +330,12 @@ class ConnectionManager:
         # Secret password
         password = str((cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or os.environ.get("SNOWFLAKE_PASSWORD") or "").strip()
         user = str(user).strip()
+        authenticator = str(meta.get("authenticator") or SNOWFLAKE_CONFIG.get("authenticator") or "").strip().lower()
+        sso_auth = authenticator in ("externalbrowser", "sso", "okta")
+        key_pair_auth = authenticator in ("key_pair", "snowflake_jwt")
+        private_key_path = str(meta.get("private_key_path") or os.environ.get("SNOWFLAKE_PRIVATE_KEY_PATH") or "").strip()
 
-        if not password:
+        if not password and not sso_auth and not key_pair_auth:
             duration = round((time.time() - start_time) * 1000, 2)
             res = {
                 "connection_name": conn_name,
@@ -331,9 +349,9 @@ class ConnectionManager:
                 "schema": schema,
                 "response_time_ms": duration,
                 "timestamp": test_ts,
-                "error_category": "MISSING_PASSWORD_IN_VAULT",
-                "error_message": "Snowflake password is not stored in the Credential Vault or SNOWFLAKE_PASSWORD environment variable.",
-                "troubleshooting": "Please update NANO_PRO_SNOWFLAKE in Credential Vault with your Snowflake account password."
+                "error_category": "MISSING_AUTHENTICATION",
+                "error_message": "No Snowflake authentication method is stored: neither a password, an SSO (externalbrowser) flag, nor a private key path is configured.",
+                "troubleshooting": "Store the Snowflake account password, or set authenticator='externalbrowser' for Google/SSO login, or provide private_key_path for key-pair auth."
             }
             self._record_connection_result(conn_name, "snowflake", res["status"], duration, None, None, None, None, res["error_message"], res)
             return res
@@ -384,22 +402,74 @@ class ConnectionManager:
         if snowflake_connector:
             conn = None
             try:
-                try:
-                    conn = snowflake_connector.connect(
-                        user=user,
-                        password=password,
-                        account=account,
-                        warehouse=warehouse,
-                        database=database,
-                        schema=schema,
-                        role=role,
-                        login_timeout=3
+                connect_kwargs: Dict[str, Any] = {
+                    "user": user,
+                    "account": account,
+                    "role": role,
+                    "login_timeout": 90 if sso_auth else 10,
+                }
+                if sso_auth:
+                    # Google/SSO accounts have no password: externalbrowser opens the
+                    # system browser and caches an id_token for later runs.
+                    connect_kwargs["authenticator"] = "externalbrowser"
+                elif key_pair_auth:
+                    if not private_key_path or not os.path.exists(private_key_path):
+                        raise FileNotFoundError(f"Snowflake private key not found at '{private_key_path}'")
+                    from cryptography.hazmat.primitives import serialization
+                    with open(private_key_path, "rb") as fh:
+                        p_key = serialization.load_pem_private_key(fh.read(), password=None)
+                    connect_kwargs["private_key"] = p_key.private_bytes(
+                        encoding=serialization.Encoding.DER,
+                        format=serialization.PrivateFormat.PKCS8,
+                        encryption_algorithm=serialization.NoEncryption(),
                     )
-                except Exception as first_sf_err:
-                    err_txt = str(first_sf_err)
-                    if not conn:
-                        raise first_sf_err
+                else:
+                    connect_kwargs["password"] = password
+
+                if not sso_auth:
+                    # A fresh trial account may not own the warehouse/database yet, so
+                    # SSO sessions attach them after the first successful login instead.
+                    connect_kwargs.update({"warehouse": warehouse, "database": database, "schema": schema})
+
+                if sso_auth:
+                    sso_result: Dict[str, Any] = {}
+
+                    def _sso_connect():
+                        try:
+                            sso_result["conn"] = snowflake_connector.connect(**connect_kwargs)
+                        except Exception as exc:  # surfaced to the caller below
+                            sso_result["error"] = exc
+
+                    worker = threading.Thread(target=_sso_connect, daemon=True)
+                    worker.start()
+                    worker.join(timeout=180)
+                    if worker.is_alive():
+                        raise TimeoutError(
+                            "Snowflake external-browser SSO did not complete within 180 seconds. "
+                            "Approve the Google login in the browser window that opened, then test again."
+                        )
+                    if sso_result.get("error"):
+                        raise sso_result["error"]
+                    conn = sso_result.get("conn")
+                else:
+                    conn = snowflake_connector.connect(**connect_kwargs)
                 cur = conn.cursor()
+
+                if sso_auth and meta.get("auto_provision"):
+                    ident = re.compile(r"^[A-Za-z0-9_$]+$")
+                    if ident.match(str(warehouse)):
+                        cur.execute(f"CREATE WAREHOUSE IF NOT EXISTS {warehouse} WITH WAREHOUSE_SIZE = 'XSMALL' AUTO_SUSPEND = 60 AUTO_RESUME = TRUE")
+                    if ident.match(str(database)):
+                        cur.execute(f"CREATE DATABASE IF NOT EXISTS {database}")
+                        if ident.match(str(schema)):
+                            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {database}.{schema}")
+                    try:
+                        cur.execute(f"USE WAREHOUSE {warehouse}")
+                        cur.execute(f"USE DATABASE {database}")
+                        cur.execute(f"USE SCHEMA {database}.{schema}")
+                    except Exception:
+                        pass
+
                 cur.execute("SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_WAREHOUSE(), CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_TIMESTAMP()")
                 row = cur.fetchone()
                 duration = round((time.time() - start_time) * 1000, 2)
@@ -845,7 +915,7 @@ class ConnectionManager:
         port = int(meta.get("port") or cfg.get("port") or default_meta.get("port", 5432))
         user = meta.get("username") or cfg.get("username") or default_meta.get("username", "postgres")
         dbname = meta.get("database") or (cfg.get("database_name") if cfg else "") or default_meta.get("database", "nanopro_db")
-        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or (os.environ.get("NEON_POSTGRES_PASSWORD") if "NEON" in conn_name or "FREE" in conn_name else (os.environ.get("RENDER_POSTGRES_PASSWORD") if "RENDER" in conn_name else os.environ.get("POSTGRES_PASSWORD"))) or "postgres"
+        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or (os.environ.get("NEON_POSTGRES_PASSWORD") if "NEON" in conn_name or "FREE" in conn_name else (os.environ.get("RENDER_POSTGRES_PASSWORD") if "RENDER" in conn_name else os.environ.get("POSTGRES_PASSWORD"))) or ""
 
         conn_url = meta.get("connection_url") or meta.get("connection_url_external") or ""
         if host.startswith("postgres://") or host.startswith("postgresql://"):
@@ -887,7 +957,7 @@ class ConnectionManager:
         try:
             import psycopg2
             ssl_mode = meta.get("sslmode") or ("require" if "render.com" in host or "neon.tech" in host or "singapore-postgres" in host else "prefer")
-            candidate_pws = [password] if password else []
+            candidate_pws = [password]
 
             candidate_dbs = [dbname]
             for alt_db in ["nanopro_db", "postgres"]:
@@ -1109,6 +1179,12 @@ class ConnectionManager:
         cfg = self.get_connection_config(conn_name, mask=False)
         
         token = os.environ.get("TELEGRAM_BOT_TOKEN") or (cfg.get("secret_value") if cfg else "")
+        if not token:
+            try:
+                from app.core.config import TELEGRAM_BOT_TOKEN as _CONFIG_TOKEN
+                token = _CONFIG_TOKEN
+            except Exception:
+                token = ""
 
         try:
             import urllib.request
@@ -1217,12 +1293,16 @@ class ConnectionManager:
         conn_name = "CLOUD_SFTP_SERVER"
         try:
             from app.core.cloud_sftp_hub import cloud_sftp_hub
+            if not getattr(cloud_sftp_hub, "_server_running", False):
+                cloud_sftp_hub.start_server()
+                time.sleep(0.5)
             status = cloud_sftp_hub.get_status()
             elapsed_ms = round((time.time() - start_time) * 1000, 2)
             res = {
                 "connection_name": conn_name,
                 "status": "Connected",
                 "success": True,
+                "server_running": status.get("server_running", False),
                 "response_time_ms": elapsed_ms,
                 "timestamp": test_ts,
                 "host": status["host"],
@@ -1326,29 +1406,31 @@ class ConnectionManager:
             return res
         except Exception as e:
             dur = round((time.time() - start_time) * 1000, 2)
-            cred = credentials_vault.get_credential(conn_name)
-            if cred and cred.get("username"):
-                res = {
-                    "connection_name": conn_name,
-                    "status": "Connected",
-                    "success": True,
-                    "engine": "Google Cloud BigQuery (Free Sandbox)",
-                    "project": "nanopro-lakehouse-sandbox",
-                    "response_time_ms": dur if dur > 0 else 12.5,
-                    "timestamp": test_ts,
-                    "message": "BigQuery Sandbox configured with 10 GB free storage & 1 TB/mo query tier."
-                }
-                self._record_connection_result(conn_name, "cloud_data_warehouse", "Connected", 12.5, "nanoproaistudio@gmail.com", "Sandbox", "nanopro-lakehouse-sandbox", "SANDBOX", None, res)
-                return res
+            err_msg = str(e)
+            if "DefaultCredentialsError" in type(e).__name__ or "Could not automatically determine credentials" in err_msg or "Application Default Credentials" in err_msg:
+                status = "Not Configured"
+                error_category = "MISSING_GOOGLE_ADC"
+                message = "BigQuery has no Google application credentials. Set GOOGLE_APPLICATION_CREDENTIALS to a service-account JSON or install the gcloud CLI and run 'gcloud auth application-default login'."
+            elif "403" in err_msg or "AccessDenied" in err_msg or "Permission" in err_msg:
+                status = "Authentication Failed"
+                error_category = "BIGQUERY_PERMISSION_DENIED"
+                message = err_msg
+            else:
+                status = "Connection Failed"
+                error_category = "BIGQUERY_ERROR"
+                message = err_msg
             res = {
                 "connection_name": conn_name,
-                "status": "Not Configured",
+                "status": status,
                 "success": False,
-                "error_message": str(e),
+                "engine": "Google Cloud BigQuery",
+                "error_category": error_category,
+                "error_message": message,
                 "response_time_ms": dur,
-                "timestamp": test_ts
+                "timestamp": test_ts,
+                "troubleshooting": "Provide a BigQuery service-account key with BigQuery Data Viewer/Job User roles, or sign in with gcloud ADC."
             }
-            self._record_connection_result(conn_name, "cloud_data_warehouse", res["status"], dur, None, None, None, None, str(e), res)
+            self._record_connection_result(conn_name, "cloud_data_warehouse", status, dur, None, None, None, None, message, res)
             return res
 
     def test_all_connections(self) -> Dict[str, Any]:

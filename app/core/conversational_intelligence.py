@@ -899,7 +899,7 @@ class ConversationalIntelligenceEngine:
                     "    conn = snowflake.connector.connect(\n"
                     "        user='NANO_PRO_USER',\n"
                     "        password='<VAULT_DECRYPTED>',\n"
-                    "        account='EGPKNWZ-XH53504',\n"
+                    "        account='XMUTKDJ-KP74023',\n"
                     "        warehouse='COMPUTE_WH',\n"
                     "        database='BANK_DB',\n"
                     "        schema='L0_STAGING'\n"

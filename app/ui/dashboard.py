@@ -6053,6 +6053,12 @@ def _get_raw_dashboard_html() -> str:
 
                     </li>
 
+                    <li class="nav-item" onclick="switchView('data_modeling_ai')" data-tooltip="Data Modeling by AI - Chat with every NanoPro database, create tables, joins and reports">
+                        <span class="nav-item-icon" style="color:#38BDF8;">&#10052;</span>
+                        <span class="nav-item-label">Data Modeling by AI</span>
+                        <span class="badge" style="font-size:8px; background:linear-gradient(135deg,#38BDF8,#6366F1); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">AI</span>
+                    </li>
+
                     <li class="nav-item" onclick="switchView('payment_gateway')" data-tooltip="Payment Gateway & Secure Razorpay Checkout (UPI, Cards, Net Banking)">
 
                         <span class="nav-item-icon" style="color:#38BDF8;">&#128179;</span>
@@ -6060,16 +6066,6 @@ def _get_raw_dashboard_html() -> str:
                         <span class="nav-item-label">Payment Gateway</span>
 
                         <span class="badge" style="font-size:8px; background:linear-gradient(135deg,#0EA5E9,#2563EB); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">LIVE</span>
-
-                    </li>
-
-                    <li class="nav-item" onclick="switchView('data_modeling_ai')" data-tooltip="Data Modeling by AI - Chat with every NanoPro database, create tables, joins and reports">
-
-                        <span class="nav-item-icon" style="color:#34D399;">&#128451;</span>
-
-                        <span class="nav-item-label">Data Modeling by AI</span>
-
-                        <span class="badge" style="font-size:8px; background:linear-gradient(135deg,#10B981,#0EA5E9); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">NL</span>
 
                     </li>
 
@@ -12554,7 +12550,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                 <div style="margin-top:8px; font-size:11.5px; color:#CBD5E1; line-height:1.6;">
 
-                    <div><b>Account:</b> <code>egpknwz-xh53504.snowflakecomputing.com</code></div>
+                    <div><b>Account:</b> <code>xmutkdj-kp74023.snowflakecomputing.com</code></div>
 
                     <div><b>Schemas:</b> L0_STAGING &bull; L1_HARMONIZED &bull; L2_CURATED</div>
 
@@ -13740,7 +13736,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <select class="studio-input" id="ddlTargetDb" onchange="onDdlTargetDbChanged(this.value)" style="width:100%; font-weight:700;">
 
-                            <option value="BANK_DB" selected>BANK_DB [Snowflake Cloud DW - EGPKNWZ-XH53504]</option>
+                            <option value="BANK_DB" selected>BANK_DB [Snowflake Cloud DW - XMUTKDJ-KP74023]</option>
 
                             <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]</option>
 
@@ -21196,7 +21192,7 @@ Ready for message compilation and automated dispatch.
 
                         <label class="input-label">Password *</label>
 
-                        <input type="password" class="studio-input" id="addDbPassword" value="NanoPro2026" placeholder="Enter password to encrypt" />
+                        <input type="password" class="studio-input" id="addDbPassword" value="" placeholder="Enter password to encrypt" />
 
                     </div>
 
@@ -21286,7 +21282,7 @@ Ready for message compilation and automated dispatch.
 
                             <label class="input-label">New Password *</label>
 
-                            <input type="text" class="studio-input" id="quickPwdInput" value="NanoPro2026" placeholder="Enter new password" />
+                            <input type="text" class="studio-input" id="quickPwdInput" value="" placeholder="Enter new password" />
 
                         </div>
 
@@ -21340,7 +21336,7 @@ Ready for message compilation and automated dispatch.
 
                         <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
 
-                            <div><strong>Account:</strong> EGPKNWZ-XH53504 (AWS_AP_SOUTHEAST_7)</div>
+                            <div><strong>Account:</strong> XMUTKDJ-KP74023 (AWS)</div>
 
                             <div><strong>User / Role:</strong> mangeshbagul15 (ACCOUNTADMIN)</div>
 
@@ -21348,7 +21344,7 @@ Ready for message compilation and automated dispatch.
 
                             <div><strong>Database &amp; Schema:</strong> BANK_DB.L0_STAGING</div>
 
-                            <div style="word-break:break-all; font-size:11px; color:#64748B;">https://EGPKNWZ-XH53504.snowflakecomputing.com</div>
+                            <div style="word-break:break-all; font-size:11px; color:#64748B;">https://XMUTKDJ-KP74023.snowflakecomputing.com</div>
 
                         </div>
 
@@ -21392,7 +21388,7 @@ Ready for message compilation and automated dispatch.
 
                             <div><strong>User / Role:</strong> SYSTEM (Default)</div>
 
-                            <div><strong>Password:</strong> NanoPro2026 (Vault Active)</div>
+                            <div><strong>Password:</strong> managed in Vault (not displayed)</div>
 
                         </div>
 
@@ -21436,7 +21432,7 @@ Ready for message compilation and automated dispatch.
 
                             <div><strong>User / Role:</strong> SYSTEM (Default)</div>
 
-                            <div><strong>Password:</strong> NanoPro2026 (Vault Active)</div>
+                            <div><strong>Password:</strong> managed in Vault (not displayed)</div>
 
                         </div>
 
@@ -21480,7 +21476,7 @@ Ready for message compilation and automated dispatch.
 
                             <div><strong>User / Role:</strong> SYSTEM (Default)</div>
 
-                            <div><strong>Password:</strong> NanoPro2026 (Vault Active)</div>
+                            <div><strong>Password:</strong> managed in Vault (not displayed)</div>
 
                         </div>
 
@@ -21918,7 +21914,7 @@ Ready for message compilation and automated dispatch.
 
                             <div><strong>Database:</strong> nanopro_db / postgres</div>
 
-                            <div><strong>User / Role:</strong> postgres (Password: Divyam@123)</div>
+                            <div><strong>User / Role:</strong> postgres (password managed in Vault)</div>
 
                             <div style="font-size:11px; color:#64748B;">Customer profiles &amp; Lakehouse transactional CDC</div>
 
@@ -22256,6 +22252,24 @@ Ready for message compilation and automated dispatch.
 
 
 
+            <!-- Service Integrations: API keys and tokens -->
+
+            <div class="panel-card">
+
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+
+                    <h2 style="margin:0;">Service Integrations — API Keys &amp; Tokens</h2>
+
+                    <button type="button" class="btn btn-sm btn-primary" onclick="testAllIntegrations()" id="btnTestAllIntegrations">&#9889; Test All Live</button>
+
+                </div>
+
+                <div id="integrationSummary" style="margin-top:10px; font-size:12px; color:var(--text-muted);">Loading integrations...</div>
+
+                <div id="integrationGrid" style="margin-top:12px; display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:10px;"></div>
+
+            </div>
+
             <!-- Stored Credentials Form & Table -->
 
             <div class="panel-card">
@@ -22314,7 +22328,7 @@ Ready for message compilation and automated dispatch.
 
                         <label class="input-label">Host / Account URL</label>
 
-                        <input type="text" class="studio-input" id="vaultHost" value="https://EGPKNWZ-XH53504.snowflakecomputing.com" />
+                        <input type="text" class="studio-input" id="vaultHost" value="https://XMUTKDJ-KP74023.snowflakecomputing.com" />
 
                     </div>
 
@@ -22338,7 +22352,7 @@ Ready for message compilation and automated dispatch.
 
                         <label class="input-label">Password / App Password (Masked)</label>
 
-                        <input type="password" class="studio-input" id="vaultSecret" value="Bhaiyyanand@123" />
+                        <input type="password" class="studio-input" id="vaultSecret" value="" placeholder="Enter secret (encrypted with AES-256-GCM on save)" />
 
                     </div>
 
@@ -24406,7 +24420,7 @@ window.switchView = switchView;
 
                 if (viewName === 'approvals') loadApprovals();
 
-                if (viewName === 'vault') { loadVaultList(); refreshConnectionHealthTable(); }
+                if (viewName === 'vault') { loadVaultList(); refreshConnectionHealthTable(); loadIntegrations(); }
 
                 if (viewName === 'communication') { if (typeof loadSmtpSenders === 'function') loadSmtpSenders(); if (typeof loadCommunicationHistory === 'function') loadCommunicationHistory(); }
 
@@ -28676,7 +28690,7 @@ function navigateHistory(direction) {
 
                                     <span><strong>Endpoint:</strong> ${c.host || '—'}${c.port ? ':' + c.port : ''}</span> &bull; 
 
-                                    <span><strong>Secret:</strong> <code style="color:#F59E0B; background:#1E293B; padding:2px 6px; border-radius:4px;">${c.secret_value || '••••••••'}</code></span>
+                                    <span><strong>Secret:</strong> ${c.secret_value ? `<code style="color:#F59E0B; background:#1E293B; padding:2px 6px; border-radius:4px;">${c.secret_value}</code>` : '<code style="color:#EF4444; background:#1E293B; padding:2px 6px; border-radius:4px;">NOT SET</code>'}</span>
 
                                 </div>
 
@@ -28707,6 +28721,122 @@ function navigateHistory(direction) {
                 el.innerHTML = '<div style="color:#EF4444; padding:8px;">Error loading vault: ' + (e.message || e) + '</div>';
 
             }
+
+        }
+
+        async function loadIntegrations() {
+
+            const grid = document.getElementById('integrationGrid');
+
+            const summary = document.getElementById('integrationSummary');
+
+            if (!grid) return;
+
+            try {
+
+                const res = await fetch('/api/integrations/list', { headers: { 'Accept': 'application/json' } });
+
+                const d = await res.json();
+
+                const services = d.services || [];
+
+                const configured = services.filter(s => s.configured).length;
+
+                const connected = services.filter(s => s.last_status && s.last_status.status === 'Connected').length;
+
+                if (summary) summary.innerHTML = `<b style="color:#38BDF8;">${services.length}</b> services &middot; <b style="color:#10B981;">${configured}</b> keyed &middot; <b style="color:#A78BFA;">${connected}</b> verified in last run &middot; <span style="color:#64748B;">auto-monitored every 30 min</span>`;
+
+                grid.innerHTML = services.map(s => {
+
+                    const st = s.last_status;
+
+                    const tone = !st ? ['#1E293B', '#94A3B8', 'Not tested'] : (st.status === 'Connected' ? ['rgba(16,185,129,0.15)', '#10B981', 'Connected'] : ['rgba(239,68,68,0.15)', '#EF4444', st.status]);
+
+                    const keyTone = s.configured ? '#10B981' : '#EF4444';
+
+                    return `<div style="background:rgba(15,23,42,0.85); border:1px solid #334155; border-radius:10px; padding:12px;">
+
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+
+                            <div>
+
+                                <div style="font-size:10px; color:#64748B; text-transform:uppercase; letter-spacing:0.4px;">${s.category}</div>
+
+                                <div style="font-size:13px; font-weight:700; color:#E2E8F0;">${s.label}</div>
+
+                            </div>
+
+                            <span class="badge" style="background:${tone[0]}; color:${tone[1]}; font-size:10px; padding:3px 8px; border-radius:10px; white-space:nowrap;">${tone[2]}</span>
+
+                        </div>
+
+                        <div style="font-size:11px; color:#94A3B8; margin-top:8px; line-height:1.5;">
+
+                            <div>Key: <span style="color:${keyTone}; font-weight:600;">${s.configured ? 'stored' : 'missing'}</span>${s.configured ? ` (${s.source})` : ''}</div>
+
+                            ${st ? `<div>Last: ${st.timestamp} &middot; ${Math.round(st.response_time_ms || 0)} ms</div>` : '<div>Never tested</div>'}
+
+                            ${st && st.error ? `<div style="color:#F87171; font-size:10.5px;">${String(st.error).slice(0, 90)}</div>` : ''}
+
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-secondary" style="margin-top:10px; width:100%;" onclick="testIntegration('${s.id}', this)">&#128269; Test ${s.label.split(' ')[0]}</button>
+
+                    </div>`;
+
+                }).join('');
+
+            } catch (e) {
+
+                if (grid) grid.innerHTML = '<div style="color:#EF4444;">Error loading integrations: ' + (e.message || e) + '</div>';
+
+            }
+
+        }
+
+        async function testIntegration(serviceId, btn) {
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '&#8987; Testing...'; }
+
+            try {
+
+                const res = await fetch('/api/integrations/test', {
+
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+
+                    body: JSON.stringify({ service: serviceId })
+
+                });
+
+                const r = await res.json();
+
+                if (btn) { btn.innerHTML = r.success ? '&#10004; Connected' : '&#10060; ' + String(r.status || 'Failed').slice(0, 22); }
+
+            } catch (e) {
+
+                if (btn) btn.innerHTML = '&#10060; Error';
+
+            }
+
+            await loadIntegrations();
+
+        }
+
+        async function testAllIntegrations() {
+
+            const btn = document.getElementById('btnTestAllIntegrations');
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '&#8987; Testing all services...'; }
+
+            try {
+
+                await fetch('/api/integrations/test/all', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+
+            } catch (e) {}
+
+            if (btn) { btn.disabled = false; btn.innerHTML = '&#9889; Test All Live'; }
+
+            await loadIntegrations();
 
         }
 
@@ -28758,7 +28888,7 @@ function navigateHistory(direction) {
 
             if (connName === 'NANO_PRO_SNOWFLAKE') {
 
-                if (hostEl) hostEl.value = 'https://EGPKNWZ-XH53504.snowflakecomputing.com';
+                if (hostEl) hostEl.value = 'https://XMUTKDJ-KP74023.snowflakecomputing.com';
 
                 if (portEl) portEl.value = '443';
 
@@ -29574,7 +29704,7 @@ function navigateHistory(direction) {
 
                 resultBox.style.border = '1px solid #334155';
 
-                resultBox.innerHTML = '<span class="spinner-sm"></span> Establishing real authenticated Snowflake connection to EGPKNWZ-XH53504...<br>• Verifying active user, role (ACCOUNTADMIN), and warehouse (COMPUTE_WH)...<br>• Verifying access to BANK_DB.L0_STAGING...';
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Establishing real authenticated Snowflake connection to XMUTKDJ-KP74023...<br>• Verifying active user, role (ACCOUNTADMIN), and warehouse (COMPUTE_WH)...<br>• Verifying access to BANK_DB.L0_STAGING...';
 
             }
 
@@ -29634,7 +29764,7 @@ function navigateHistory(direction) {
 
                     html += `<div style="line-height:1.5; color:#CBD5E1;">
 
-                        <div><strong>Account:</strong> ${d.account || 'EGPKNWZ-XH53504'}</div>
+                        <div><strong>Account:</strong> ${d.account || 'XMUTKDJ-KP74023'}</div>
 
                         <div><strong>Active User / Role:</strong> ${d.active_user || d.user || 'mangeshbagul15'} (${d.active_role || d.role || 'ACCOUNTADMIN'})</div>
 
@@ -48434,7 +48564,7 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
 
                 if (dbUpper.includes('BANK_DB') || dbUpper.includes('SNOWFLAKE')) {
 
-                    hierEl.innerText = `Hierarchy: [ORG] → [ACCOUNT: EGPKNWZ-XH53504] → [DATABASE: ${dbName}] → [SCHEMA] → [TABLE]`;
+                    hierEl.innerText = `Hierarchy: [ORG] → [ACCOUNT: XMUTKDJ-KP74023] → [DATABASE: ${dbName}] → [SCHEMA] → [TABLE]`;
 
                 } else if (dbUpper.includes('ORACLE') || dbUpper.includes('ORCL')) {
 

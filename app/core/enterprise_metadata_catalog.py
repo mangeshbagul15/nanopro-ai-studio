@@ -31,8 +31,8 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
         "engine_label": "Snowflake Data Cloud",
         "engine_type": "Cloud Analytical Lakehouse / Data Warehouse",
         "cloud_provider": "AWS Sydney (ap-southeast-2)",
-        "account_id": "EGPKNWZ-XH53504",
-        "account_host": "egpknwz-xh53504.snowflakecomputing.com",
+        "account_id": "XMUTKDJ-KP74023",
+        "account_host": "xmutkdj-kp74023.snowflakecomputing.com",
         "warehouse": "COMPUTE_WH",
         "databases": {
             "BANK_DB": {
@@ -582,7 +582,7 @@ class EnterpriseMetadataCatalog:
 
             return (
                 f"🏛️ **Database Architecture Dossier: `{db_upper}`**\n\n"
-                f"• **Engine:** Snowflake Data Cloud (Account: `EGPKNWZ-XH53504` | Warehouse: `COMPUTE_WH`)\n"
+                f"• **Engine:** Snowflake Data Cloud (Account: `XMUTKDJ-KP74023` | Warehouse: `COMPUTE_WH`)\n"
                 f"• **Label:** {db_info.get('label', db_upper)}\n"
                 f"• **उद्देश (Why Created):** {db_info.get('purpose', 'Enterprise Banking Data Lakehouse')}\n"
                 f"• **Total Schemas:** `{db_info.get('total_schemas', len(schemas))}` schemas\n\n"
