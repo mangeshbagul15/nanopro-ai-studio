@@ -851,6 +851,23 @@ class SMTPClient:
     # CLOUD HTTPS EMAIL CONNECTION TESTING (PORT 443)
     # =========================================================================
 
+    def _resend_key_is_valid_for_sending(self, api_key: str, from_email: str) -> bool:
+        """
+        Quota-free validity check: POST /emails with no `to`. Resend authenticates the key
+        first, so a real key answers 422 (missing field) while a bad key answers 401.
+        Send-only keys cannot read /api-keys, so this is the only safe way to confirm them.
+        """
+        try:
+            resp = requests.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {api_key}", "User-Agent": "NanoProAI-Studio/2.0"},
+                json={"from": from_email, "subject": "NanoPro key validation probe"},
+                timeout=8.0,
+            )
+        except Exception:
+            return False
+        return resp.status_code == 422
+
     def test_resend_connection(self) -> Dict[str, Any]:
         """
         Tests Resend REST API connection and key validity over HTTPS Port 443.
@@ -904,6 +921,29 @@ class SMTPClient:
                 self._record_connection_history("EMAIL_RESEND_API", "email_api", "Connected", duration, None, res)
                 return res
             elif resp.status_code in [401, 403]:
+                try:
+                    deny_name = str((resp.json() or {}).get("name") or "")
+                except Exception:
+                    deny_name = ""
+                if deny_name == "restricted_api_key" and self._resend_key_is_valid_for_sending(
+                    api_key, cfg.get("from_email") or "onboarding@resend.dev"
+                ):
+                    duration = round((time.time() - start_time) * 1000, 2)
+                    res = {
+                        "success": True,
+                        "status": "Connected (Send-Only Key)",
+                        "provider": "Resend API",
+                        "quota": "3,000 emails/month free",
+                        "host": "api.resend.com:443 (HTTPS)",
+                        "sender": cfg.get("from_email"),
+                        "key_scope": "sending_access",
+                        "response_time_ms": duration,
+                        "timestamp": test_ts,
+                        "message": f"Resend send-only key verified over HTTPS Port 443 ({duration} ms). Delivery works; dashboard read APIs need a full-access key.",
+                        "cloud_safe": True
+                    }
+                    self._record_connection_history("EMAIL_RESEND_API", "email_api", "Connected", duration, None, res)
+                    return res
                 res = {
                     "success": False,
                     "status": "Authentication Failed",
