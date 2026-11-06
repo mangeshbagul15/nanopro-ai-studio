@@ -54,7 +54,7 @@ sys.path.insert(0, str(BASE_DIR.parent))
 
 from fastapi import FastAPI, Form, Body, Query, HTTPException, UploadFile, File, Request, BackgroundTasks
 
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 
 from starlette.background import BackgroundTask
 
