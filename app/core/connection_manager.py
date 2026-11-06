@@ -45,8 +45,8 @@ SNOWFLAKE_CONFIG = {
     "authenticator": "externalbrowser"
 }
 
-# Medallion layers: L0 bronze (raw landing), L1 silver (harmonized), L2 gold (curated marts)
-SNOWFLAKE_MEDALLION_SCHEMAS = ("L0_STAGING", "L1_HARMONIZED", "L2_GOLD")
+# Medallion layers: L0 bronze staging, L1 silver harmonized, L2 gold curated marts
+SNOWFLAKE_MEDALLION_SCHEMAS = ("L0_STAGING", "L1_HARMONIZED", "L2_CURATED")
 
 ORACLE_CONFIGS = {
     "MY_ORACLE_XE_LOCAL": {
