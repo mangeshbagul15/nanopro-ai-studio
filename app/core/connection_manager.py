@@ -42,7 +42,8 @@ SNOWFLAKE_CONFIG = {
     "database": "BANK_DB",
     "schema": "L0_STAGING",
     "account_url": "https://XMUTKDJ-KP74023.snowflakecomputing.com",
-    "authenticator": "externalbrowser"
+    "authenticator": "password",
+    "auto_provision": "True"
 }
 
 # Medallion layers: L0 bronze staging, L1 silver harmonized, L2 gold curated marts
