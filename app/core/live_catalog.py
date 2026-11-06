@@ -57,6 +57,11 @@ _KNOWN_SPECS: List[Tuple[str, str, str]] = [
     ("AWS_S3_DATA_LAKE", "AWS S3 Data Lake", "s3"),
 ]
 
+_NON_DATABASE_TYPES = {
+    "ai_service", "api_key", "token", "oauth", "webhook", "messaging",
+    "smtp", "imap", "sftp", "ssh", "ftp", "cloud_observability", "observability",
+}
+
 _SYSTEM_ORACLE_OWNERS = {
     "SYS", "SYSTEM", "XDB", "MDSYS", "CTXSYS", "ORDS_METADATA", "OLAPSYS", "WMSYS",
     "LBACSYS", "DBSNMP", "OUTLN", "AUDSYS", "GSMADMIN_INTERNAL", "REMOTE_SCHEDULER_AGENT",
@@ -140,7 +145,7 @@ def _engine_for(name: str, service_type: str = "", metadata: Optional[Dict[str, 
         return "duckdb"
     if any(token in blob for token in ("BIGQUERY", "BIG_QUERY", "GOOGLE CLOUD", "BQ ")):
         return "bigquery"
-    if any(token in blob for token in ("AWS", "S3", "ATHENA", "GLUE", "LAKEHOUSE")) and "DUCKDB" not in blob:
+    if any(token in blob for token in ("S3", "ATHENA", "GLUE", "LAKEHOUSE", "DATA LAKE", "DATA_LAKE")) and "DUCKDB" not in blob:
         return "s3"
     if "MYSQL" in blob or "MARIADB" in blob:
         return "mysql"
@@ -183,6 +188,8 @@ def _specs() -> List[Dict[str, Any]]:
                 except Exception:
                     metadata = {}
             engine = engines.get(name) or _engine_for(name, service_type, metadata)
+            if service_type.strip().lower() in _NON_DATABASE_TYPES or metadata.get("kind") == "api_key":
+                continue
             if not engine:
                 continue
             specs[name] = {
@@ -486,18 +493,52 @@ def _introspect_ords(spec: Dict[str, Any]) -> Dict[str, Any]:
 # BigQuery
 # ----------------------------------------------------------------------------
 
-def _bigquery_client():
-    from google.cloud import bigquery  # type: ignore
-
-    project = _env("GOOGLE_CLOUD_PROJECT", "GCP_PROJECT", "BIGQUERY_PROJECT")
+def _bq_service_account_json() -> str:
+    """Service-account JSON for BigQuery, preferring the explicit env var over the Vault entry."""
     sa_json = (_env("GCP_SERVICE_ACCOUNT_JSON") or "").strip()
     if sa_json:
-        import base64, json as _json
+        return sa_json
+    try:
+        cfg = _credential("GOOGLE_BIGQUERY_SANDBOX") or {}
+        meta = cfg.get("metadata") or {}
+        if isinstance(meta, str):
+            meta = json.loads(meta)
+        stored = str(meta.get("service_account_json") or "").strip()
+        if stored:
+            return stored
+        secret = str(cfg.get("secret_value") or "").strip()
+        return secret if secret.startswith("{") else ""
+    except Exception:
+        return ""
+
+
+def _bq_project_hint() -> str:
+    project = _env("GOOGLE_CLOUD_PROJECT", "GCP_PROJECT", "BIGQUERY_PROJECT")
+    if project:
+        return project
+    try:
+        meta = (_credential("GOOGLE_BIGQUERY_SANDBOX") or {}).get("metadata") or {}
+        if isinstance(meta, str):
+            meta = json.loads(meta)
+        return str(meta.get("project") or "").strip()
+    except Exception:
+        return ""
+
+
+def _bigquery_client() -> Tuple[Any, str]:
+    from google.cloud import bigquery  # type: ignore
+
+    project = _bq_project_hint()
+    sa_json = _bq_service_account_json()
+    if sa_json:
+        import base64
         from google.oauth2 import service_account  # type: ignore
-        info = _json.loads(base64.b64decode(sa_json).decode("utf-8")) if not sa_json.startswith("{") else _json.loads(sa_json)
+
+        info = json.loads(base64.b64decode(sa_json).decode("utf-8")) if not sa_json.startswith("{") else json.loads(sa_json)
         creds = service_account.Credentials.from_service_account_info(info)
-        return bigquery.Client(project=project or info.get("project_id"), credentials=creds)
-    return bigquery.Client(project=project) if project else bigquery.Client()
+        return bigquery.Client(project=project or info.get("project_id"), credentials=creds), "Credential Vault service account"
+    client = bigquery.Client(project=project) if project else bigquery.Client()
+    return client, "Application Default Credentials"
 
 
 def _introspect_bigquery(spec: Dict[str, Any]) -> Dict[str, Any]:
@@ -506,7 +547,7 @@ def _introspect_bigquery(spec: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         return _entry(spec, "driver_missing", error="google-cloud-bigquery is not installed on the server.")
     try:
-        client = _bigquery_client()
+        client, auth_source = _bigquery_client()
         project = client.project
         schemas: List[Dict[str, Any]] = []
         for dataset in list(client.list_datasets(max_results=40)):
@@ -520,9 +561,9 @@ def _introspect_bigquery(spec: Dict[str, Any]) -> Dict[str, Any]:
                 "schema": dataset_id,
                 "tables": tables,
             })
-        return _entry(spec, "live", schemas, detail=f"project {project} · Application Default Credentials")
+        return _entry(spec, "live", schemas, detail=f"project {project} · {auth_source}")
     except Exception as exc:
-        return _entry(spec, "unreachable", error=str(exc)[:300], detail="Application Default Credentials")
+        return _entry(spec, "unreachable", error=str(exc)[:300], detail="Credential Vault service account or Application Default Credentials")
 
 
 # ----------------------------------------------------------------------------
@@ -881,7 +922,7 @@ def _details_oracle(entry: Dict[str, Any], schema: str, table: str) -> Dict[str,
 
 
 def _details_bigquery(entry: Dict[str, Any], schema: str, table: str) -> Dict[str, Any]:
-    client = _bigquery_client()
+    client, _ = _bigquery_client()
     ref = f"{client.project}.{schema}.{table}"
     table_obj = client.get_table(ref)
     columns = [
@@ -1087,7 +1128,7 @@ def _execute_oracle(connection_name: str, statement: str, limit: int) -> Dict[st
 
 
 def _execute_bigquery(connection_name: str, statement: str, limit: int) -> Dict[str, Any]:
-    client = _bigquery_client()
+    client, _ = _bigquery_client()
     started = time.time()
     job = client.query(statement)
     result = job.result(max_results=limit + 1)

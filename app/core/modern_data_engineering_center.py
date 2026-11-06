@@ -362,9 +362,9 @@ def get_3d_pipeline_telemetry(project_id: str = "AML_V1") -> Dict[str, Any]:
         },
         {
             "id": "snowflake_dw",
-            "name": "BANK_DB [Snowflake Cloud DW - EGPKNWZ-XH53504 / Medallion]",
-            "target": "Snowflake Cloud DW - EGPKNWZ-XH53504",
-            "socket": "EGPKNWZ-XH53504.snowflakecomputing.com:443",
+            "name": "BANK_DB [Snowflake Cloud DW - XMUTKDJ-KP74023 / Medallion]",
+            "target": "Snowflake Cloud DW - XMUTKDJ-KP74023",
+            "socket": "XMUTKDJ-KP74023.snowflakecomputing.com:443",
             "database": "BANK_DB",
             "warehouse": "COMPUTE_WH (Started / Active)",
             "status": "ONLINE",
@@ -641,7 +641,7 @@ def resolve_pipeline_incident(incident_id: str, action: str, custom_remap: Optio
 def get_strict_catalog_databases() -> List[Dict[str, Any]]:
     """Returns the list of distinct active databases across all supported engines."""
     dbs = [
-        {"id": "BANK_DB",              "label": "BANK_DB [Snowflake Cloud DW - EGPKNWZ-XH53504 / Medallion]",        "engine": "snowflake", "type": "Snowflake Data Cloud"},
+        {"id": "BANK_DB",              "label": "BANK_DB [Snowflake Cloud DW - XMUTKDJ-KP74023 / Medallion]",        "engine": "snowflake", "type": "Snowflake Data Cloud"},
         {"id": "POSTGRES_CLOUD_FREE",  "label": "POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL - ETL L0/L1]",        "engine": "postgres",  "type": "Neon PostgreSQL (Free Cloud)"},
         {"id": "POSTGRES_RENDER_CLOUD","label": "POSTGRES_RENDER_CLOUD [Render Cloud PostgreSQL]",                     "engine": "postgres",  "type": "Render PostgreSQL"},
         {"id": "MY_ORACLE_XE_LOCAL",   "label": "MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]",             "engine": "oracle",    "type": "Oracle Database XE / 19c"},
@@ -1875,7 +1875,7 @@ def run_infra_network_diagnostics() -> Dict[str, Any]:
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(1.5)
-        res = sock.connect_ex(("egpknwz-xh53504.snowflakecomputing.com", 443))
+        res = sock.connect_ex(("xmutkdj-kp74023.snowflakecomputing.com", 443))
         sock.close()
         s2_ok = (res == 0)
     except Exception:
@@ -1883,12 +1883,12 @@ def run_infra_network_diagnostics() -> Dict[str, Any]:
     s2_lat = round((time.time() - s2_start) * 1000, 2) if s2_ok else 14.2
     diagnostics.append({
         "service": "Snowflake Cloud DW (BANK_DB)",
-        "target": "egpknwz-xh53504.snowflakecomputing.com:443",
+        "target": "xmutkdj-kp74023.snowflakecomputing.com:443",
         "protocol": "HTTPS / TLS 1.3",
         "port": 443,
         "status": "CONNECTED",
         "latency_ms": s2_lat,
-        "dns_resolution": "egpknwz-xh53504.snowflakecomputing.com -> 18.204.14.92 (AWS US-East)",
+        "dns_resolution": "xmutkdj-kp74023.snowflakecomputing.com -> 18.204.14.92 (AWS US-East)",
         "firewall_sentry": "OPEN (Outbound 443 TLS Passed)"
     })
 

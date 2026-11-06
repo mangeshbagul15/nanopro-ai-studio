@@ -59,6 +59,11 @@ def get_data_modeling_html() -> str:
 #view-data_modeling_ai .dm-linkbtn:hover { border-color:var(--dm-accent); background:rgba(76,141,255,.12); color:#CFE0FF; }
 #view-data_modeling_ai .dm-linkbtn[hidden] { display:none; }
 #view-data_modeling_ai .dm-linkbtn svg { width:13px; height:13px; }
+#view-data_modeling_ai .dm-export { display:inline-flex; align-items:center; }
+#view-data_modeling_ai .dm-export[hidden] { display:none; }
+#view-data_modeling_ai .dm-export-select { height:27px; padding:0 5px; border:1px solid var(--dm-line-2); border-right:none; border-radius:6px 0 0 6px; background:#121C2B; color:#9DC0FF; font-size:11.5px; font-weight:600; cursor:pointer; outline:none; }
+#view-data_modeling_ai .dm-export-select:hover, #view-data_modeling_ai .dm-export-select:focus { border-color:var(--dm-accent); background:rgba(76,141,255,.12); }
+#view-data_modeling_ai .dm-export .dm-linkbtn { border-radius:0 6px 6px 0; }
 
 /* ------------------------------------------------------------------ body */
 #view-data_modeling_ai .dm-body { flex:1; display:flex; min-height:0; position:relative; }
@@ -223,6 +228,24 @@ def get_data_modeling_html() -> str:
 #view-data_modeling_ai .dm-send:hover { background:linear-gradient(135deg,#4C8DFF,#2F81F7); }
 #view-data_modeling_ai .dm-send:disabled { opacity:.5; cursor:not-allowed; }
 #view-data_modeling_ai .dm-send svg { width:16px; height:16px; }
+#view-data_modeling_ai .dm-attach-btn { flex:0 0 auto; width:32px; height:32px; border-radius:8px; border:1px solid transparent; background:transparent; color:#8FA8C8; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-attach-btn:hover { background:#16233A; color:#C7DBF7; }
+#view-data_modeling_ai .dm-attach-btn.busy { opacity:.55; cursor:progress; }
+#view-data_modeling_ai .dm-attach-btn svg { width:17px; height:17px; }
+#view-data_modeling_ai .dm-attach-strip { display:flex; flex-wrap:wrap; gap:6px; padding:0 2px 7px; }
+#view-data_modeling_ai .dm-attach-strip:empty { display:none; }
+#view-data_modeling_ai .dm-attach-chip { display:inline-flex; align-items:center; gap:7px; max-width:280px; background:#101A28; border:1px solid var(--dm-line-2); border-radius:8px; padding:4px 6px 4px 5px; font-size:11px; color:#CFE0F5; }
+#view-data_modeling_ai .dm-attach-thumb { width:26px; height:26px; border-radius:5px; object-fit:cover; background:#0B1119; flex:0 0 auto; }
+#view-data_modeling_ai .dm-attach-kind { flex:0 0 auto; width:26px; height:26px; border-radius:5px; display:flex; align-items:center; justify-content:center; background:#16233A; color:#7FB0FF; font-size:9px; font-weight:800; letter-spacing:.04em; }
+#view-data_modeling_ai .dm-attach-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-attach-meta { color:#6F86A6; font-size:10px; white-space:nowrap; }
+#view-data_modeling_ai .dm-attach-x { flex:0 0 auto; border:0; background:transparent; color:#8FA8C8; cursor:pointer; font-size:13px; line-height:1; padding:2px 3px; border-radius:4px; }
+#view-data_modeling_ai .dm-attach-x:hover { background:#22314A; color:#FFF; }
+#view-data_modeling_ai .dm-attach-spin { width:11px; height:11px; border:2px solid #2F81F7; border-top-color:transparent; border-radius:50%; animation:dmspin .7s linear infinite; }
+@keyframes dmspin { to { transform:rotate(360deg); } }
+#view-data_modeling_ai .dm-msg-atts { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+#view-data_modeling_ai .dm-msg-att { display:inline-flex; align-items:center; gap:5px; background:#0B1524; border:1px solid var(--dm-line-2); border-radius:6px; padding:2px 7px; font-size:10.5px; color:#A8CBFF; max-width:240px; }
+#view-data_modeling_ai .dm-msg-att span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #view-data_modeling_ai .dm-hint { text-align:center; font-size:10px; color:#5E6F89; padding:4px 0 6px; }
 
 /* ------------------------------------------------------------------ grips */
@@ -419,10 +442,18 @@ def get_data_modeling_html() -> str:
               <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
               Ask AI
             </button>
-            <a class="dm-linkbtn" id="dmResultDownload" href="#" hidden>
-              <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-              CSV
-            </a>
+            <span class="dm-export" id="dmExportWrap" hidden>
+              <select class="dm-export-select" id="dmExportFormat" onchange="dmApplyExportFormat()" title="Download format">
+                <option value="csv">CSV</option>
+                <option value="xlsx">Excel (.xlsx)</option>
+                <option value="pipe">Text (pipe |)</option>
+                <option value="tab">Text (tab)</option>
+              </select>
+              <a class="dm-linkbtn" id="dmResultDownload" href="#" title="Download this data">
+                <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                Download
+              </a>
+            </span>
             <button class="dm-linkbtn" onclick="dmClearData()" title="Clear the data dock">Clear</button>
             <button class="dm-iconbtn dm-data-toggle" id="dmDataToggle" onclick="dmToggleData()" title="Collapse or expand data">
               <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -436,13 +467,18 @@ def get_data_modeling_html() -> str:
       </section>
 
       <div class="dm-composer">
+        <div class="dm-attach-strip" id="dmAttachStrip"></div>
         <div class="dm-compose-row">
-          <textarea id="dmInput" rows="1" placeholder="Ask anything &mdash; create tables, join data, filter rows, build reports&hellip;"></textarea>
+          <button class="dm-attach-btn" id="dmAttachBtn" type="button" onclick="dmPickAttachment()" title="Attach a CSV, Excel, JSON file or an image">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.4 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <textarea id="dmInput" rows="1" placeholder="Ask anything or attach a file &mdash; &quot;create a new table from this Excel&quot; / &quot;append this data to this table&quot;&hellip;"></textarea>
           <button class="dm-send" id="dmSend" onclick="dmSendMessage()" title="Send (Enter)">
             <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
           </button>
         </div>
-        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; the AI writes the SQL, you decide</div>
+        <input type="file" id="dmAttachInput" multiple hidden accept=".csv,.tsv,.xlsx,.xlsm,.json,.png,.jpg,.jpeg,.webp,.gif,.bmp" onchange="dmAttachmentChosen(this)">
+        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; attach CSV / Excel / JSON or an image; say &quot;new table&quot; or &quot;append to this table&quot;</div>
       </div>
     </main>
   </div>
@@ -600,7 +636,9 @@ def get_data_modeling_js() -> str:
         })(),
         columns: {},
         colLoading: {},
+        attachments: [],
         tableCtx: null,
+        exportTarget: null,
         nameCb: null,
         menuItems: null,
         toastTimer: null
@@ -1606,16 +1644,48 @@ def get_data_modeling_js() -> str:
         if (ask) ask.hidden = true;
     }
 
+    function dmExportUrl() {
+        var target = DM.exportTarget;
+        if (!target) return '';
+        var select = $('dmExportFormat');
+        var fmt = select ? select.value : 'csv';
+        if (target.kind === 'run') {
+            return '/api/data_modeling/runs/' + encodeURIComponent(target.runId) + '/download?format=' + encodeURIComponent(fmt);
+        }
+        return '/api/data_modeling/table/download?db_id=' + encodeURIComponent(target.dbId) +
+            '&schema=' + encodeURIComponent(target.schema || 'main') +
+            '&table=' + encodeURIComponent(target.table) +
+            '&format=' + encodeURIComponent(fmt);
+    }
+
+    window.dmApplyExportFormat = function () {
+        var wrap = $('dmExportWrap');
+        var link = $('dmResultDownload');
+        if (!wrap || !link) return;
+        var url = dmExportUrl();
+        if (!url) {
+            wrap.hidden = true;
+            link.removeAttribute('href');
+            return;
+        }
+        link.href = url;
+        wrap.hidden = false;
+    };
+
+    function dmSetExportTarget(target) {
+        DM.exportTarget = target || null;
+        window.dmApplyExportFormat();
+    }
+
     window.dmEmptyData = function () {
         dmCloseDataPanel();
         var title = $('dmDataTitle');
         var meta = $('dmDataMeta');
         var body = $('dmDataBody');
-        var download = $('dmResultDownload');
         if (title) title.textContent = 'Data';
         if (meta) meta.textContent = 'Table previews and query results appear here';
         if (body) body.innerHTML = '<div class="dm-data-empty">Select a table in the Explorer or ask a question &mdash; tables and query results open here, below the chat.</div>';
-        if (download) { download.hidden = true; download.removeAttribute('href'); }
+        dmSetExportTarget(null);
     };
 
     window.dmClearData = function () {
@@ -1631,16 +1701,15 @@ def get_data_modeling_js() -> str:
             dmApplyPanels();
         }
         DM.tableCtx = { dbId: dbId, schema: schema, table: table };
+        dmSetExportTarget({ kind: 'table', dbId: dbId, schema: schema, table: table });
         var ask = $('dmAskTableBtn');
         if (ask) ask.hidden = false;
         var title = $('dmDataTitle');
         var meta = $('dmDataMeta');
         var body = $('dmDataBody');
-        var download = $('dmResultDownload');
         if (title) title.textContent = table;
         if (meta) meta.textContent = schema + ' \u00b7 ' + dbId;
         if (body) body.innerHTML = '<div class="dm-muted">Loading table metadata...</div>';
-        if (download) { download.hidden = true; download.removeAttribute('href'); }
         try {
             var data = await dmApi('/table?db_id=' + encodeURIComponent(dbId) + '&schema=' + encodeURIComponent(schema) + '&table=' + encodeURIComponent(table));
             var details = data.table || {};
@@ -1718,7 +1787,6 @@ def get_data_modeling_js() -> str:
         var titleEl = $('dmDataTitle');
         var metaEl = $('dmDataMeta');
         var body = $('dmDataBody');
-        var download = $('dmResultDownload');
         if (titleEl) titleEl.textContent = title || 'Result';
         var meta = [];
         if (result && result.row_count !== undefined) meta.push(result.row_count + ' row(s)');
@@ -1729,14 +1797,12 @@ def get_data_modeling_js() -> str:
         if (note) html += '<div class="dm-note-line">' + dmEsc(note) + '</div>';
         if (result) html += dmTableHtml(result.columns || [], result.rows || []);
         if (body) body.innerHTML = html || '<div class="dm-muted">No data.</div>';
-        if (download) {
-            if (result && result.run_id) {
-                download.href = '/api/data_modeling/runs/' + encodeURIComponent(result.run_id) + '/download';
-                download.hidden = false;
-            } else {
-                download.hidden = true;
-                download.removeAttribute('href');
-            }
+        if (result && result.run_id) {
+            dmSetExportTarget({ kind: 'run', runId: result.run_id });
+        } else if (result && result.table_target) {
+            dmSetExportTarget(result.table_target);
+        } else {
+            dmSetExportTarget(null);
         }
     };
 
@@ -1767,6 +1833,9 @@ def get_data_modeling_js() -> str:
         var html = '<div class="dm-msg ' + role + '">' +
             '<div class="dm-avatar">' + (role === 'user' ? 'YOU' : 'AI') + '</div>' +
             '<div class="dm-bubble"><div class="dm-text">' + dmEsc(message.content || '') + '</div>';
+        if (role === 'user') {
+            html += dmAttachmentTagsHtml(meta.attachments);
+        }
         if (sql) {
             html += '<details class="dm-sql"><summary>SQL used by the AI</summary><pre>' + dmEsc(sql) + '</pre></details>';
         }
@@ -1831,6 +1900,140 @@ def get_data_modeling_js() -> str:
         el.style.height = Math.min(el.scrollHeight, 150) + 'px';
     }
 
+    // ------------------------------------------------------------ attachments
+
+    function dmHumanSize(bytes) {
+        var n = Number(bytes || 0);
+        if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+        if (n >= 1024) return Math.round(n / 1024) + ' KB';
+        return n + ' B';
+    }
+
+    function dmAttachmentMetaLine(att) {
+        if (att.error) return att.error;
+        if (att.loading) return 'uploading…';
+        if (att.kind === 'image') {
+            return (att.width && att.height) ? att.width + '×' + att.height + ' · image' : 'image';
+        }
+        var bits = [];
+        if (att.row_count !== undefined && att.row_count !== null) bits.push(att.row_count + ' rows');
+        if (att.columns && att.columns.length) bits.push(att.columns.length + ' cols');
+        if (!bits.length) bits.push(dmHumanSize(att.size_bytes));
+        return bits.join(' · ');
+    }
+
+    function dmAttachmentChipHtml(att, removable) {
+        var thumb = att.localUrl
+            ? '<img class="dm-attach-thumb" src="' + dmAttr(att.localUrl) + '" alt="">'
+            : '<span class="dm-attach-kind">' + (att.loading ? '<span class="dm-attach-spin"></span>' : (att.kind === 'image' ? 'IMG' : 'TBL')) + '</span>';
+        var id = att.attachment_id || att.local_id || '';
+        return '<div class="dm-attach-chip">' + thumb +
+            '<div style="min-width:0;">' +
+            '<div class="dm-attach-name" title="' + dmAttr(att.filename || '') + '">' + dmEsc(att.filename || 'Attachment') + '</div>' +
+            '<div class="dm-attach-meta" title="' + dmAttr(dmAttachmentMetaLine(att)) + '">' + dmEsc(dmAttachmentMetaLine(att)) + '</div>' +
+            '</div>' +
+            (removable ? '<button class="dm-attach-x" type="button" title="Remove attachment" onclick="dmRemoveAttachment(\'' + dmAttr(id) + '\')">✕</button>' : '') +
+            '</div>';
+    }
+
+    function dmRenderAttachStrip() {
+        var strip = $('dmAttachStrip');
+        if (!strip) return;
+        strip.innerHTML = (DM.attachments || []).map(function (att) {
+            return dmAttachmentChipHtml(att, true);
+        }).join('');
+    }
+
+    window.dmPickAttachment = function () {
+        if (DM.sending) return;
+        var input = $('dmAttachInput');
+        if (input) input.click();
+    };
+
+    window.dmAttachmentChosen = async function (input) {
+        var files = Array.prototype.slice.call((input && input.files) || []);
+        if (input) input.value = '';
+        if (!files.length) return;
+        if (!DM.workspaceId) {
+            var created = await window.dmNewChat(DM.projectId || '');
+            if (!created) { dmToast('Create a chat first.', 'err'); return; }
+        }
+        if (!DM.attachments) DM.attachments = [];
+        var room = 5 - DM.attachments.length;
+        if (room <= 0) { dmToast('At most 5 attachments per message.', 'err'); return; }
+        if (files.length > room) {
+            files = files.slice(0, room);
+            dmToast('Only 5 attachments are sent at a time.', 'err');
+        }
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            if (file.size > 25 * 1024 * 1024) {
+                dmToast(file.name + ' is larger than 25 MB.', 'err');
+                continue;
+            }
+            var entry = {
+                local_id: 'loc_' + Date.now() + '_' + i,
+                filename: file.name,
+                size_bytes: file.size,
+                kind: /^image\//i.test(file.type || '') ? 'image' : 'table',
+                loading: true,
+                error: ''
+            };
+            if (entry.kind === 'image' && window.URL && URL.createObjectURL) {
+                entry.localUrl = URL.createObjectURL(file);
+            }
+            DM.attachments.push(entry);
+            dmRenderAttachStrip();
+            var btn = $('dmAttachBtn');
+            if (btn) btn.classList.add('busy');
+            var form = new FormData();
+            form.append('file', file);
+            form.append('workspace_id', DM.workspaceId);
+            try {
+                var data = await dmApi('/attachments', { method: 'POST', body: form });
+                var info = data.attachment || {};
+                entry.attachment_id = info.attachment_id;
+                entry.kind = info.kind || entry.kind;
+                entry.row_count = info.row_count;
+                entry.columns = info.columns || [];
+                entry.width = info.width;
+                entry.height = info.height;
+                entry.error = info.error || '';
+                entry.loading = false;
+            } catch (err) {
+                entry.loading = false;
+                entry.error = err.message;
+                dmToast(err.message, 'err');
+            }
+            if (btn && !(DM.attachments || []).some(function (att) { return att.loading; })) {
+                btn.classList.remove('busy');
+            }
+            dmRenderAttachStrip();
+        }
+    };
+
+    window.dmRemoveAttachment = function (id) {
+        var index = -1;
+        (DM.attachments || []).forEach(function (att, i) {
+            if ((att.attachment_id || att.local_id) === id) index = i;
+        });
+        if (index < 0) return;
+        var removed = DM.attachments.splice(index, 1)[0];
+        if (removed && removed.localUrl && window.URL && URL.revokeObjectURL) {
+            URL.revokeObjectURL(removed.localUrl);
+        }
+        dmRenderAttachStrip();
+    };
+
+    function dmAttachmentTagsHtml(attachments) {
+        if (!attachments || !attachments.length) return '';
+        return '<div class="dm-msg-atts">' + attachments.map(function (att) {
+            return '<span class="dm-msg-att" title="' + dmAttr(att.filename || '') + '">' +
+                '<strong style="color:#7FB0FF;">' + (att.kind === 'image' ? 'IMG' : 'TBL') + '</strong>' +
+                '<span>' + dmEsc(att.filename || 'attachment') + '</span></span>';
+        }).join('') + '</div>';
+    }
+
     function dmAppendTyping() {
         var box = $('dmMessages');
         if (!box) return;
@@ -1849,14 +2052,15 @@ def get_data_modeling_js() -> str:
         if (row) row.remove();
     }
 
-    function dmAppendLocalUser(text) {
+    function dmAppendLocalUser(text, attachments) {
         var box = $('dmMessages');
         if (!box) return;
         var empty = $('dmEmptyState');
         if (empty) empty.remove();
         var row = document.createElement('div');
         row.className = 'dm-msg user';
-        row.innerHTML = '<div class="dm-avatar">YOU</div><div class="dm-bubble"><div class="dm-text">' + dmEsc(text) + '</div></div>';
+        row.innerHTML = '<div class="dm-avatar">YOU</div><div class="dm-bubble"><div class="dm-text">' +
+            dmEsc(text) + '</div>' + dmAttachmentTagsHtml(attachments) + '</div>';
         box.appendChild(row);
         box.scrollTop = box.scrollHeight;
     }
@@ -1866,7 +2070,13 @@ def get_data_modeling_js() -> str:
         var input = $('dmInput');
         if (!input) return;
         var text = (input.value || '').trim();
-        if (!text) { input.focus(); return; }
+        var pending = DM.attachments || [];
+        if (pending.some(function (att) { return att.loading; })) {
+            dmToast('Wait for the attachment to finish uploading.', 'err');
+            return;
+        }
+        var ready = pending.filter(function (att) { return !!att.attachment_id; });
+        if (!text && !ready.length) { input.focus(); return; }
         if (!DM.workspaceId) {
             var created = await window.dmNewChat(DM.projectId || '');
             if (!created) return;
@@ -1876,15 +2086,35 @@ def get_data_modeling_js() -> str:
         if (sendBtn) sendBtn.disabled = true;
         input.value = '';
         dmAutoGrow(input);
-        dmAppendLocalUser(text);
+        dmAppendLocalUser(text || ('Attached: ' + ready.map(function (att) { return att.filename; }).join(', ')), ready);
         dmAppendTyping();
+        var payload = {
+            workspace_id: DM.workspaceId,
+            message: text,
+            attachments: ready.map(function (att) { return { attachment_id: att.attachment_id }; })
+        };
+        if (DM.tableCtx && DM.tableCtx.table) {
+            payload.context = { db_id: DM.tableCtx.dbId || '', schema: DM.tableCtx.schema || '', table: DM.tableCtx.table };
+        }
         try {
             var data = await dmApi('/chat', {
                 method: 'POST',
-                body: JSON.stringify({ workspace_id: DM.workspaceId, message: text })
+                body: JSON.stringify(payload)
             });
             dmRemoveTyping();
             if (data.schema_created) dmToast('Schema ' + data.schema_created.schema + ' created', 'ok');
+            if (data.imports && data.imports.length) {
+                var first = data.imports[0];
+                dmToast('Imported ' + first.rows_inserted + ' row(s) into ' + first.schema + '.' + first.table, 'ok');
+                if (data.imports.length === 1) {
+                    DM.tableCtx = { dbId: 'workspace:' + DM.workspaceId, schema: first.schema, table: first.table };
+                }
+            }
+            pending.forEach(function (att) {
+                if (att.localUrl && window.URL && URL.revokeObjectURL) URL.revokeObjectURL(att.localUrl);
+            });
+            DM.attachments = [];
+            dmRenderAttachStrip();
             await dmLoadChats();
             window.dmLoadCatalog(false);
             dmUpdateHeader();
@@ -1991,7 +2221,8 @@ def get_data_modeling_js() -> str:
             window.dmShowResultPanel('Import complete',
                 'Table ' + data.schema + '.' + data.table + ' now holds ' + data.total_rows + ' row(s). ' +
                 data.rows_inserted + ' row(s) were added from ' + file.name + '.',
-                { columns: (data.columns || []).map(function (c) { return c.name; }), rows: [], row_count: 0 });
+                { columns: (data.columns || []).map(function (c) { return c.name; }), rows: [], row_count: 0,
+                  table_target: { kind: 'table', dbId: 'workspace:' + DM.workspaceId, schema: data.schema, table: data.table } });
             var input = $('dmInput');
             if (input && !input.value) {
                 input.value = 'Show me the first 10 rows of ' + data.table + ' and summarise what this data contains.';

@@ -73,8 +73,8 @@ class LakehouseOmniCommander:
         return {
             "SNOWFLAKE": {
                 "engine": "Snowflake Data Cloud",
-                "account": "EGPKNWZ-XH53504",
-                "host": "egpknwz-xh53504.snowflakecomputing.com",
+                "account": "XMUTKDJ-KP74023",
+                "host": "xmutkdj-kp74023.snowflakecomputing.com",
                 "database": "BANK_DB",
                 "schemas": {
                     "L0_STAGING": {

@@ -12,6 +12,8 @@ Bi-directional SFTP Gateway & File Ingestion/Delivery Engine:
 from __future__ import annotations
 
 import os
+import errno
+import stat as stat_module
 import time
 import shutil
 import datetime
@@ -32,6 +34,189 @@ SFTP_ARCHIVE_DIR = SFTP_BASE_DIR / "archive"
 SFTP_QUARANTINE_DIR = SFTP_BASE_DIR / "quarantine"
 
 DEFAULT_RETENTION_DAYS = 20
+
+
+def _build_rooted_sftp_interface():
+    """Builds a filesystem-backed SFTPServerInterface rooted at SFTP_BASE_DIR.
+
+    paramiko 5 removed the implicit ``root`` handling from SFTPServerInterface,
+    so the base constructor forwards unknown kwargs to ``object.__init__`` and
+    raises. This subclass consumes ``root`` and implements only the operations
+    needed by SFTP clients (WinSCP, FileZilla, curl, paramiko, sftp CLI).
+    """
+    import paramiko
+
+    class RootedSFTPHandle(paramiko.SFTPHandle):
+        def stat(self):
+            try:
+                file_obj = getattr(self, "readfile", None) or getattr(self, "writefile", None)
+                return paramiko.SFTPAttributes.from_stat(os.fstat(file_obj.fileno()))
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+
+    class RootedSFTPInterface(paramiko.SFTPServerInterface):
+        def __init__(self, server, root):
+            self._root = os.path.realpath(str(root))
+
+        def _local(self, path):
+            virtual = "/" + str(path or "/").replace("\\", "/").lstrip("/")
+            normalized = os.path.normpath(virtual).replace("\\", "/")
+            if normalized in ("", ".", "//"):
+                normalized = "/"
+            local = os.path.realpath(os.path.join(self._root, normalized.lstrip("/")))
+            if local != self._root and not local.startswith(self._root + os.sep):
+                return None
+            return local
+
+        def canonicalize(self, path):
+            virtual = "/" + str(path or "/").replace("\\", "/").lstrip("/")
+            return os.path.normpath(virtual).replace("\\", "/")
+
+        def list_folder(self, path):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            try:
+                names = os.listdir(local)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            listing = []
+            for name in names:
+                try:
+                    attr = paramiko.SFTPAttributes.from_stat(os.stat(os.path.join(local, name)))
+                except OSError:
+                    continue
+                attr.filename = name
+                listing.append(attr)
+            return listing
+
+        def _stat(self, path, follow_symlink):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            try:
+                st = os.stat(local) if follow_symlink else os.lstat(local)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTPAttributes.from_stat(st)
+
+        def stat(self, path):
+            return self._stat(path, True)
+
+        def lstat(self, path):
+            return self._stat(path, False)
+
+        def open(self, path, flags, attr):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            if os.path.isdir(local):
+                return paramiko.SFTP_FAILURE
+            mode = getattr(attr, "st_mode", None) or 0o644
+            flags |= getattr(os, "O_BINARY", 0)
+            try:
+                fd = os.open(local, flags, mode)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            try:
+                if flags & os.O_RDWR:
+                    file_obj = os.fdopen(fd, "r+b")
+                elif flags & os.O_WRONLY:
+                    file_obj = os.fdopen(fd, "wb")
+                else:
+                    file_obj = os.fdopen(fd, "rb")
+            except OSError as exc:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            handle = RootedSFTPHandle(flags)
+            handle.filename = local
+            if not (flags & os.O_WRONLY):
+                handle.readfile = file_obj
+            if flags & (os.O_WRONLY | os.O_RDWR):
+                handle.writefile = file_obj
+            return handle
+
+        def remove(self, path):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            try:
+                os.remove(local)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTP_OK
+
+        def rename(self, oldpath, newpath):
+            old_local = self._local(oldpath)
+            new_local = self._local(newpath)
+            if not old_local or not new_local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            if os.path.exists(new_local):
+                return paramiko.SFTP_FAILURE
+            try:
+                os.rename(old_local, new_local)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTP_OK
+
+        def posix_rename(self, oldpath, newpath):
+            old_local = self._local(oldpath)
+            new_local = self._local(newpath)
+            if not old_local or not new_local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            try:
+                os.replace(old_local, new_local)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTP_OK
+
+        def mkdir(self, path, attr):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            mode = getattr(attr, "st_mode", None) or 0o755
+            try:
+                os.mkdir(local, mode)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTP_OK
+
+        def rmdir(self, path):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            try:
+                os.rmdir(local)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTP_OK
+
+        def chattr(self, path, attr):
+            local = self._local(path)
+            if not local:
+                return paramiko.SFTP_PERMISSION_DENIED
+            try:
+                if getattr(attr, "st_mode", None) is not None:
+                    os.chmod(local, stat_module.S_IMODE(attr.st_mode))
+                if getattr(attr, "st_atime", None) is not None or getattr(attr, "st_mtime", None) is not None:
+                    st = os.stat(local)
+                    os.utime(
+                        local,
+                        (
+                            attr.st_atime if getattr(attr, "st_atime", None) is not None else st.st_atime,
+                            attr.st_mtime if getattr(attr, "st_mtime", None) is not None else st.st_mtime,
+                        ),
+                    )
+                if getattr(attr, "st_size", None) is not None:
+                    os.truncate(local, attr.st_size)
+            except OSError as exc:
+                return paramiko.SFTPServer.convert_errno(exc.errno)
+            return paramiko.SFTP_OK
+
+    return RootedSFTPInterface
 
 class CloudSFTPHub:
     """
@@ -566,6 +751,7 @@ class CloudSFTPHub:
             sock.bind(('0.0.0.0', self._server_port))
             sock.listen(5)
             sock.settimeout(2.0)
+            sftp_interface = _build_rooted_sftp_interface()
 
             while self._server_running:
                 try:
@@ -579,7 +765,7 @@ class CloudSFTPHub:
                     try:
                         transport = paramiko.Transport(c)
                         transport.add_server_key(key)
-                        transport.set_subsystem_handler('sftp', paramiko.SFTPServer, sftp_si=paramiko.SFTPServerInterface, root=str(SFTP_BASE_DIR))
+                        transport.set_subsystem_handler('sftp', paramiko.SFTPServer, sftp_si=sftp_interface, root=str(SFTP_BASE_DIR))
                         server = SimpleServerInterface(self._server_user, self._server_pass)
                         transport.start_server(server=server)
                     except Exception as ex:

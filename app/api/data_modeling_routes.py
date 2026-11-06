@@ -42,9 +42,21 @@ class SchemaCreateRequest(BaseModel):
     name: str
 
 
+class ChatAttachmentRef(BaseModel):
+    attachment_id: str
+
+
+class ChatContext(BaseModel):
+    db_id: str = ""
+    schema: str = ""
+    table: str = ""
+
+
 class ChatRequest(BaseModel):
     workspace_id: str
-    message: str
+    message: str = ""
+    attachments: list[ChatAttachmentRef] = []
+    context: ChatContext | None = None
 
 
 class SnowflakeCredentialsRequest(BaseModel):
@@ -302,7 +314,13 @@ def api_dm_chat(req: ChatRequest, request: Request):
     from app.core import data_modeling_ai as dm
 
     try:
-        result = dm.chat(req.workspace_id, req.message, _user_label(user))
+        result = dm.chat(
+            req.workspace_id,
+            req.message,
+            _user_label(user),
+            attachments=[item.dict() for item in req.attachments],
+            context=req.context.dict() if req.context else None,
+        )
     except ValueError as exc:
         return _error(str(exc))
     except Exception as exc:
@@ -414,6 +432,27 @@ async def api_dm_upload(
     return JSONResponse(result)
 
 
+@router.post("/attachments")
+async def api_dm_attachment(
+    request: Request,
+    file: UploadFile = File(...),
+    workspace_id: str = Form(...),
+):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        return _error("File is larger than 25 MB.")
+    try:
+        info = dm.save_attachment(workspace_id, file.filename or "attachment", content)
+    except ValueError as exc:
+        return _error(str(exc))
+    except Exception as exc:
+        return _error(f"Attachment failed: {exc}", 500)
+    return JSONResponse({"status": "success", "attachment": info})
+
+
 @router.get("/runs/{run_id}")
 def api_dm_get_run(run_id: str, request: Request):
     _session_user(request)
@@ -485,17 +524,39 @@ def api_dm_snowflake_setup(request: Request):
 
 
 @router.get("/runs/{run_id}/download")
-def api_dm_download(run_id: str, request: Request):
+def api_dm_download(run_id: str, request: Request, format: str = "csv"):
     _session_user(request)
     from app.core import data_modeling_ai as dm
 
     try:
-        filename, text = dm.run_to_csv(run_id)
+        filename, content, media_type = dm.run_to_export(run_id, format)
     except Exception as exc:
         return _error(str(exc), 404)
     return Response(
-        content=text,
-        media_type="text/csv",
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/table/download")
+def api_dm_table_download(
+    request: Request,
+    db_id: str,
+    table: str,
+    schema: str = "main",
+    format: str = "csv",
+):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        filename, content, media_type = dm.table_to_export(db_id, schema, table, format)
+    except Exception as exc:
+        return _error(str(exc), 400)
+    return Response(
+        content=content,
+        media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

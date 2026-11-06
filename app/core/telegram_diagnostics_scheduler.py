@@ -84,7 +84,7 @@ class TelegramDiagnosticsScheduler:
         pg_local_ok = self._check_tcp("127.0.0.1", 5432, timeout=0.8)
 
         # 3. Cloud DBs
-        sf_ok, sf_lat, _ = self._check_http("https://EGPKNWZ-XH53504.snowflakecomputing.com", timeout=3.0)
+        sf_ok, sf_lat, _ = self._check_http("https://XMUTKDJ-KP74023.snowflakecomputing.com", timeout=3.0)
         ora_cloud_ok, ora_cloud_lat, _ = self._check_http("https://apex.oracle.com/ords/", timeout=3.0)
         s3_ok, s3_lat, _ = self._check_http("https://s3.ap-southeast-2.amazonaws.com", timeout=3.0)
 

@@ -2933,7 +2933,7 @@ class ETLAutomationPipeline:
             if cfg and cfg.get("secret_value"):
                 meta = cfg.get("metadata") or {}
                 sf = snowflake.connector.connect(
-                    account=meta.get("account_identifier", "EGPKNWZ-XH53504"),
+                    account=meta.get("account_identifier", "XMUTKDJ-KP74023"),
                     user=meta.get("username", "mangeshbagul15"),
                     password=cfg["secret_value"],
                     warehouse=meta.get("warehouse", "COMPUTE_WH"),
@@ -3135,7 +3135,7 @@ class ETLAutomationPipeline:
 
             meta = cfg.get("metadata") or {}
             sf = snowflake.connector.connect(
-                account=meta.get("account_identifier", "EGPKNWZ-XH53504"),
+                account=meta.get("account_identifier", "XMUTKDJ-KP74023"),
                 user=meta.get("username", "mangeshbagul15"),
                 password=cfg["secret_value"],
                 warehouse=meta.get("warehouse", "COMPUTE_WH"),

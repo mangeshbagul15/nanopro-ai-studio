@@ -20,7 +20,7 @@ import sqlite3
 import threading
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -32,8 +32,14 @@ from app.core.manager_contract import DELIVERY_CONTRACT
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 MODELING_DIR = DATA_DIR / "modeling"
+ATTACHMENT_DIR = MODELING_DIR / "attachments"
 MAX_PREVIEW_ROWS = 200
 MAX_IMPORT_ROWS = 50000
+MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+MAX_ATTACHMENTS_PER_MESSAGE = 5
+ATTACHMENT_TTL_HOURS = 24
+TABLE_ATTACHMENT_EXTS = {".csv", ".tsv", ".xlsx", ".xlsm", ".json"}
+IMAGE_ATTACHMENT_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
 MAX_CONTEXT_CHARS = 26000
 
 _schema_lock = threading.Lock()
@@ -133,7 +139,11 @@ def _refresh_catalog_async() -> None:
     threading.Thread(target=worker, name="dm-catalog-refresh", daemon=True).start()
 
 _READ_PREFIX = re.compile(r"^\s*(select|with|pragma|explain|show|describe|desc)\b", re.IGNORECASE)
-_WRITE_PREFIX = re.compile(r"^\s*(create\s+(table|view|index|temp\s+table|temporary\s+table)|insert\s+into|update\s+\S+\s+set)\b", re.IGNORECASE)
+_WRITE_PREFIX = re.compile(
+    r"^\s*(create\s+(table|view|index|temp\s+table|temporary\s+table)|insert\s+into|update\s+\S+\s+set|"
+    r"delete\s+from|drop\s+(table|view|index))\b",
+    re.IGNORECASE,
+)
 _DESTRUCTIVE = re.compile(
     r"\b(drop|delete|truncate|attach|detach|vacuum|reindex|grant|revoke|pragma\s+writable_schema)\b",
     re.IGNORECASE,
@@ -617,7 +627,7 @@ def _sqlite_entry(path: Path) -> Dict[str, Any]:
         "engine": "sqlite",
         "kind": "sqlite",
         "writable": False,
-        "status": "online",
+        "status": "live",
         "location": _rel(path),
         "size_bytes": path.stat().st_size if path.exists() else 0,
         "schemas": [],
@@ -646,7 +656,7 @@ def _duckdb_entry(path: Path) -> Dict[str, Any]:
         "engine": "duckdb",
         "kind": "duckdb",
         "writable": False,
-        "status": "online",
+        "status": "live",
         "location": _rel(path),
         "size_bytes": path.stat().st_size if path.exists() else 0,
         "schemas": [],
@@ -711,7 +721,7 @@ def list_catalog() -> List[Dict[str, Any]]:
             "engine": "sqlite",
             "kind": "workspace",
             "writable": True,
-            "status": "online",
+            "status": "live",
             "workspace_id": ws["id"],
             "schemas": ws.get("schemas", [{"name": "main", "tables": []}]),
             "updated_at": ws.get("updated_at"),
@@ -1077,8 +1087,18 @@ def _execute_snowflake(statement: str, limit: int) -> Dict[str, Any]:
 def execute_sql(db_id: str, sql: str, limit: int = MAX_PREVIEW_ROWS, workspace_id: str = "") -> Dict[str, Any]:
     statement = _assert_single_statement(sql)
     _assert_alter_allowed(statement)
+    in_workspace = db_id.startswith("workspace:")
     if _DESTRUCTIVE.search(statement):
-        raise ValueError("Destructive SQL (DROP/DELETE/TRUNCATE/ATTACH/GRANT) is blocked. Ask for a safe alternative.")
+        if not in_workspace:
+            raise ValueError("Destructive SQL (DROP/DELETE/TRUNCATE/ATTACH/GRANT) is blocked on live databases.")
+        if re.match(r"^\s*delete\b", statement, re.IGNORECASE) and not re.search(r"\bwhere\b", statement, re.IGNORECASE):
+            raise ValueError("DELETE inside a workspace must include a WHERE clause.")
+        if re.match(r"^\s*drop\b", statement, re.IGNORECASE) and not re.match(
+            r"^\s*drop\s+(table|view|index)\b", statement, re.IGNORECASE
+        ):
+            raise ValueError("Only DROP TABLE / VIEW / INDEX is allowed inside a workspace.")
+        if re.search(r"\b(attach|detach|vacuum|reindex|grant|revoke)\b", statement, re.IGNORECASE):
+            raise ValueError("That statement is blocked even inside a workspace.")
 
     if db_id.startswith("workspace:"):
         wid = db_id.split(":", 1)[1]
@@ -1222,17 +1242,319 @@ def get_run(run_id: str) -> Optional[Dict[str, Any]]:
     return data
 
 
-def run_to_csv(run_id: str) -> Tuple[str, str]:
+MAX_EXPORT_ROWS = 50000
+
+_EXPORT_FORMATS: Dict[str, Dict[str, str]] = {
+    "csv": {"ext": ".csv", "media": "text/csv; charset=utf-8", "delimiter": ","},
+    "xlsx": {
+        "ext": ".xlsx",
+        "media": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "delimiter": "",
+    },
+    "pipe": {"ext": ".txt", "media": "text/plain; charset=utf-8", "delimiter": "|"},
+    "tab": {"ext": ".tsv", "media": "text/tab-separated-values; charset=utf-8", "delimiter": "\t"},
+}
+
+_EXPORT_ALIASES = {
+    "csv": "csv",
+    "xlsx": "xlsx",
+    "excel": "xlsx",
+    "xls": "xlsx",
+    "txt": "pipe",
+    "text": "pipe",
+    "pipe": "pipe",
+    "psv": "pipe",
+    "tsv": "tab",
+    "tab": "tab",
+    "tsv-tab": "tab",
+}
+
+
+def _normalize_export_format(value: str) -> str:
+    key = (value or "csv").strip().lower()
+    fmt = _EXPORT_ALIASES.get(key)
+    if not fmt:
+        raise ValueError(f"Unsupported download format '{value}'. Use csv, excel, pipe or tab.")
+    return fmt
+
+
+def _export_filename(stem: str, fmt: str) -> str:
+    clean = re.sub(r"[^A-Za-z0-9_.-]+", "_", (stem or "export").strip()).strip("._")
+    if not clean:
+        clean = "export"
+    return clean[:80] + _EXPORT_FORMATS[fmt]["ext"]
+
+
+def _cell_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, ensure_ascii=False, default=str)
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    return str(value)
+
+
+def _excel_cell(value: Any) -> Any:
+    if value is None or isinstance(value, (int, float, bool, datetime, date)):
+        return value
+    text = _cell_text(value)
+    # openpyxl rejects the C0 control characters Excel cannot store.
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
+
+
+def _serialize_rows(columns: List[str], rows: List[Dict[str, Any]], fmt: str) -> Any:
+    if fmt == "xlsx":
+        try:
+            from openpyxl import Workbook  # type: ignore
+        except Exception as exc:
+            raise ValueError("Excel export needs the openpyxl package on the server.") from exc
+        workbook = Workbook(write_only=True)
+        sheet = workbook.create_sheet(title="Data")
+        sheet.append([_excel_cell(column) for column in columns])
+        for row in rows:
+            sheet.append([_excel_cell(row.get(column)) for column in columns])
+        buf = io.BytesIO()
+        workbook.save(buf)
+        return buf.getvalue()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=_EXPORT_FORMATS[fmt]["delimiter"], lineterminator="\r\n")
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([_cell_text(row.get(column)) for column in columns])
+    text = buf.getvalue()
+    # Excel needs a BOM to decode non-ASCII CSV correctly.
+    return "\ufeff" + text if fmt == "csv" else text
+
+
+def run_to_export(run_id: str, fmt: str = "csv") -> Tuple[str, Any, str]:
     run = get_run(run_id)
     if not run:
         raise ValueError("Result set not found.")
-    buf = io.StringIO()
-    writer = csv.writer(buf)
+    fmt = _normalize_export_format(fmt)
     columns = run.get("columns") or []
-    writer.writerow(columns)
-    for row in run.get("rows") or []:
-        writer.writerow([row.get(c, "") for c in columns])
-    return f"{run_id}.csv", buf.getvalue()
+    rows = run.get("rows") or []
+    content = _serialize_rows(columns, rows, fmt)
+    return _export_filename(run_id, fmt), content, _EXPORT_FORMATS[fmt]["media"]
+
+
+def run_to_csv(run_id: str) -> Tuple[str, str]:
+    filename, content, _media = run_to_export(run_id, "csv")
+    return filename, content
+
+
+def _export_table_ref(entry: Dict[str, Any], schema: str, table: str) -> str:
+    schema = (schema or "main").strip() or "main"
+    table = (table or "").strip()
+    if not table:
+        raise ValueError("Table name is required.")
+    engine = str(entry.get("engine") or "")
+    if engine == "snowflake":
+        from app.core import snowflake_client
+
+        if "." in schema:
+            db_name, schema_name = schema.split(".", 1)
+        else:
+            db_name = str(snowflake_client.load_config().get("database") or "").strip()
+            schema_name = schema
+            if not db_name:
+                raise ValueError("This Snowflake table is not qualified with a database name.")
+        return f'"{db_name}"."{schema_name}"."{table}"'
+    if engine == "bigquery":
+        project = str(entry.get("project") or "").strip()
+        dataset = schema.split(".", 1)[-1]
+        return f"`{project}.{dataset}.{table}`" if project else f"`{dataset}.{table}`"
+    if engine in ("postgres", "oracle", "duckdb", "sqlite"):
+        return f"{_quote(schema)}.{_quote(table)}"
+    raise ValueError(f"Download is not supported for engine '{engine or entry.get('kind')}'.")
+
+
+def table_to_export(
+    db_id: str, schema: str = "main", table: str = "", fmt: str = "csv", limit: int = MAX_EXPORT_ROWS
+) -> Tuple[str, Any, str]:
+    entry = find_catalog_entry(db_id)
+    if not entry:
+        raise ValueError("Database not found in catalog.")
+    fmt = _normalize_export_format(fmt)
+    ref = _export_table_ref(entry, schema, table)
+    workspace_id = entry.get("workspace_id") or (db_id.split(":", 1)[1] if db_id.startswith("workspace:") else "")
+    result = execute_sql(db_id, f"SELECT * FROM {ref}", limit=limit, workspace_id=workspace_id)
+    columns = result.get("columns") or []
+    rows = result.get("rows") or []
+    content = _serialize_rows(columns, rows, fmt)
+    stem = f"{(schema or 'main').replace('.', '_')}_{table}" if entry.get("engine") != "workspace" else table
+    return _export_filename(stem, fmt), content, _EXPORT_FORMATS[fmt]["media"]
+
+
+def _export_stem(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", (value or "").strip()).strip("_") or "extract"
+
+
+def deliver_report(
+    workspace_id: str,
+    table: str = "",
+    sql: str = "",
+    db_id: str = "",
+    schema: str = "main",
+    fmt: str = "xlsx",
+    limit: int = 100,
+    channels: Any = None,
+    recipient: str = "",
+    phone: str = "",
+    subject: str = "",
+    user: str = "",
+    project_key: str = "",
+) -> Dict[str, Any]:
+    """Exports a dataset to SFTP, then pushes it to email, Telegram and WhatsApp."""
+    workspace = get_workspace(workspace_id)
+    if not workspace:
+        raise ValueError("Workspace not found.")
+    fmt = _normalize_export_format(fmt)
+    limit = max(1, min(int(limit or 100), MAX_EXPORT_ROWS))
+    target = (db_id or "").strip() or ("workspace:" + workspace_id)
+    if target in ("workspace", "active", workspace_id):
+        target = "workspace:" + workspace_id
+    entry = find_catalog_entry(target)
+    if not entry:
+        raise ValueError("Database not found in catalog.")
+    ws_arg = workspace_id if target.startswith("workspace:") else ""
+
+    table = (table or "").strip()
+    if table and "." in table:
+        schema, table = table.split(".", 1)
+    if sql:
+        statement = sql.strip()
+        if not re.match(r"^\s*(select|with|pragma|explain)\b", statement, re.IGNORECASE):
+            raise ValueError("Report delivery only runs read-only SELECT queries.")
+        result = execute_sql(target, statement, limit=limit, workspace_id=ws_arg)
+        stem_source = table or "query"
+    elif table:
+        ref = _export_table_ref(entry, schema or "main", table)
+        result = execute_sql(target, f"SELECT * FROM {ref}", limit=limit, workspace_id=ws_arg)
+        statement = f"SELECT * FROM {ref}"
+        stem_source = table
+    else:
+        raise ValueError("Tell me which table or query to send.")
+
+    columns = result.get("columns") or []
+    rows = result.get("rows") or []
+    if not columns:
+        raise ValueError("That query returned no columns, so there is nothing to send.")
+    content = _serialize_rows(columns, rows, fmt)
+    stem = _export_stem(f"{workspace['name']}_{stem_source}")
+    now = datetime.now(timezone.utc)
+    from app.core.cloud_sftp_hub import SFTP_BASE_DIR, cloud_sftp_hub
+
+    sftp_res = cloud_sftp_hub.export_report_to_sftp(stem, content, file_format=_EXPORT_FORMATS[fmt]["ext"].lstrip("."), project_key=project_key)
+    local_path = sftp_res.get("sftp_local_path") or ""
+    sftp_path = "/" + os.path.relpath(local_path, str(SFTP_BASE_DIR)).replace(os.sep, "/") if local_path else ""
+    s3_uri = (sftp_res.get("s3_mirror") or {}).get("s3_uri") or ""
+    size_kb = round((sftp_res.get("size_bytes") or 0) / 1024.0, 1)
+    label = f"{limit if len(rows) >= limit else len(rows)} row(s)"
+    summary = (
+        f"NanoPro data extract: {workspace['name']} / {stem_source}\n"
+        f"Rows: {len(rows)}{' (top ' + str(limit) + ')' if len(rows) >= limit else ''} | Columns: {len(columns)}\n"
+        f"Format: {fmt.upper()} | Size: {size_kb} KB\n"
+        f"Generated: {now.strftime('%Y-%m-%d %H:%M UTC')}\n"
+        f"SFTP path: {sftp_path}\n"
+        + (f"S3 mirror: {s3_uri}\n" if s3_uri else "")
+        + f"Columns: {', '.join(str(c) for c in columns[:12])}{' …' if len(columns) > 12 else ''}"
+    )
+
+    want = channels if isinstance(channels, (list, tuple)) else ([channels] if channels else [])
+    want = [str(c).strip().lower() for c in want if str(c).strip()]
+    if not want:
+        want = ["email", "telegram", "whatsapp"]
+
+    delivery: Dict[str, Any] = {}
+    subject = subject or f"{workspace['name']} extract — {stem_source} ({len(rows)} rows)"
+    if "email" in want or "mail" in want:
+        try:
+            from app.core.smtp_client import smtp_client
+
+            html_summary = "<pre style=\"font-family:Consolas,monospace;font-size:13px\">" + summary.replace("&", "&amp;").replace("<", "&lt;") + "</pre>"
+            email_res = smtp_client.send_email(
+                recipient=recipient or smtp_client.default_recipient,
+                subject=subject,
+                body=summary,
+                html_body=html_summary,
+                attachments=[local_path] if local_path else None,
+                task_id="dm_delivery",
+                report_name=stem,
+                data_source=target,
+            )
+            provider = str(email_res.get("provider") or email_res.get("status") or "")
+            telegram_fallback = "telegram" in provider.lower()
+            delivery["email"] = {
+                "status": "sent" if email_res.get("success") and not telegram_fallback else ("fallback" if email_res.get("success") else "failed"),
+                "provider": provider,
+                "recipient": recipient or smtp_client.default_recipient,
+                "error": email_res.get("error") or ("" if not telegram_fallback else "No email provider configured; alert reached Telegram instead."),
+            }
+        except Exception as exc:
+            delivery["email"] = {"status": "failed", "error": str(exc)[:300]}
+    if "telegram" in want or "tg" in want:
+        try:
+            from app.core.telegram_router import send_telegram_routed_message
+
+            tg_res = send_telegram_routed_message(
+                category="reports",
+                text=f"<b>{subject}</b>\n<pre>{summary}</pre>",
+                document_path=local_path or None,
+            )
+            delivery["telegram"] = {
+                "status": "sent" if (tg_res.get("success") or tg_res.get("status") in ("success", "sent")) else "failed",
+                "detail": str(tg_res.get("error") or tg_res.get("status") or "")[:200],
+            }
+        except Exception as exc:
+            delivery["telegram"] = {"status": "failed", "error": str(exc)[:300]}
+    if "whatsapp" in want or "wa" in want:
+        phone = (phone or os.environ.get("WHATSAPP_PHONE") or "").strip()
+        if not phone:
+            delivery["whatsapp"] = {"status": "skipped", "note": "No WhatsApp number configured (set WHATSAPP_PHONE or pass phone)."}
+        else:
+            try:
+                from app.core.communication_center import communication_center
+
+                wa_res = communication_center.send_whatsapp_free_message(phone, summary)
+                delivery["whatsapp"] = {
+                    "status": "sent" if wa_res.get("status") in ("success", "sent") or wa_res.get("success") else "link",
+                    "detail": str(wa_res.get("whatsapp_web_link") or wa_res.get("message") or wa_res.get("error") or "")[:300],
+                }
+            except Exception as exc:
+                delivery["whatsapp"] = {"status": "failed", "error": str(exc)[:300]}
+
+    sent = [name for name, info in delivery.items() if info.get("status") == "sent"]
+    missed = [f"{name} ({info.get('status')})" for name, info in delivery.items() if info.get("status") != "sent"]
+    reply = (
+        f"Prepared {len(rows)} {fmt.upper()} rows from {stem_source} and published them to SFTP {sftp_path or local_path}. "
+        f"Delivered via {', '.join(sent) if sent else 'no channel'}"
+        + (f". Not sent: {', '.join(missed)}." if missed else ".")
+    )
+    return {
+        "status": "success" if sent else "partial",
+        "table": stem_source,
+        "sql": statement,
+        "format": fmt,
+        "rows": len(rows),
+        "columns": columns,
+        "file_name": sftp_res.get("file_name"),
+        "local_path": local_path,
+        "sftp_path": sftp_path,
+        "size_kb": size_kb,
+        "s3_mirror": sftp_res.get("s3_mirror") or {},
+        "channels": delivery,
+        "summary": summary,
+        "reply": reply,
+        "user": user,
+    }
 
 
 # ----------------------------------------------------------------------------
@@ -1414,7 +1736,7 @@ def describe_schedule(schedule: Dict[str, Any]) -> str:
     return when
 
 
-def _clean_steps(statements: Any) -> List[str]:
+def _clean_steps(statements: Any, allow_workspace_delete: bool = False) -> List[str]:
     if isinstance(statements, str):
         statements = [statements]
     cleaned: List[str] = []
@@ -1422,7 +1744,13 @@ def _clean_steps(statements: Any) -> List[str]:
         text = _assert_single_statement(str(statement))
         _assert_alter_allowed(text)
         if _DESTRUCTIVE.search(text):
-            raise ValueError("Scheduled steps cannot be destructive (DROP/DELETE/TRUNCATE).")
+            delete_ok = allow_workspace_delete and re.match(r"^\s*delete\s+from\b", text, re.IGNORECASE)
+            if not delete_ok:
+                raise ValueError("Scheduled steps cannot be destructive (DROP/DELETE/TRUNCATE).")
+            if not re.search(r"\bwhere\b", text, re.IGNORECASE):
+                # Rebuild steps delete the whole workspace table on purpose; the
+                # execute_sql guard still needs an explicit predicate.
+                text = text.rstrip().rstrip(";") + " WHERE 1=1"
         cleaned.append(text)
     if not cleaned:
         raise ValueError("A schedule needs at least one SQL statement.")
@@ -1447,12 +1775,12 @@ def create_schedule(
     _ensure_schema()
     if not get_workspace(workspace_id):
         raise ValueError("Workspace not found.")
-    steps = _clean_steps(statements)
     target = (target or "").strip()
     if target in ("", "workspace", "active", "workspace:" + workspace_id):
         target = "workspace:" + workspace_id
     elif not find_catalog_entry(target):
         raise ValueError("Target database was not found in the live catalog.")
+    steps = _clean_steps(statements, allow_workspace_delete=target.startswith("workspace:"))
     label = (name or "").strip()[:80] or "Scheduled job"
     frequency_norm = _normalize_frequency(frequency)
     at_time = (at_time or "").strip() or _alias_time(frequency)
@@ -1750,10 +2078,11 @@ def _system_prompt(workspace: Dict[str, Any]) -> str:
         "data append and ingestion (INSERT, CREATE TABLE ... AS SELECT, INSERT INTO ... SELECT); "
         "task scheduling (daily, weekly, monthly, quarterly, once, adhoc, cron, SOD/BOD/EOD batch windows); "
         "metadata introspection (columns, types, keys, row counts); and automated ETL/ELT pipelines.\n"
-        "6) Writes (CREATE TABLE/VIEW/INDEX, INSERT, UPDATE, MERGE) are allowed only on the workspace and the Snowflake connection. "
-        "Every other live database is read-only.\n"
-        "7) Never use DROP, DELETE, TRUNCATE, ATTACH, GRANT or REVOKE. ALTER TABLE is allowed only for ADD COLUMN, "
-        "RENAME COLUMN, RENAME TO and datatype changes.\n"
+        "6) Writes (CREATE TABLE/VIEW/INDEX, INSERT, UPDATE, DELETE, DROP TABLE/VIEW/INDEX, MERGE) are allowed only on the "
+        "workspace and the Snowflake connection. Every other live database is read-only.\n"
+        "7) Inside a workspace you may use DELETE only with a WHERE clause, and DROP only as DROP TABLE / VIEW / INDEX when "
+        "the user explicitly asks. Never use TRUNCATE, ATTACH, DETACH, GRANT or REVOKE. ALTER TABLE is allowed only for "
+        "ADD COLUMN, RENAME COLUMN, RENAME TO and datatype changes.\n"
         "8) To schedule work return action=\"create_schedule\" with `name`, `frequency` (once|daily|weekly|monthly|quarterly|adhoc|cron), "
         "`at_time` as HH:MM UTC, optional `weekday` (0=Monday), `day_of_month`, `cron`, `target`, and either `sql` or `steps`. "
         "For multi-step ETL use action=\"create_pipeline\" with 2-20 `steps` that run in order. "
@@ -1766,9 +2095,54 @@ def _system_prompt(workspace: Dict[str, Any]) -> str:
         "Oracle uses unquoted uppercase names and FETCH FIRST n ROWS ONLY; BigQuery uses `project.dataset.table` with backticks and LIMIT; "
         "AWS S3 is queried through DuckDB read_parquet()/read_csv() over s3:// paths; MySQL uses backticks and LIMIT.\n"
         "12) If a database status is not \"live\", do not query it. Tell the user it is unreachable and quote the real error from the catalog.\n"
+        "13) To send an extract to the user return action=\"deliver_report\" with `table` or a read-only `sql`, `format` "
+        "(csv|xlsx|pipe|tab), `limit` (default 100), `channels` (email, telegram, whatsapp), optional `recipient`, `phone` "
+        "and `subject`. The platform saves the file on SFTP and returns the real path; quote that path in `reply`.\n"
         + DELIVERY_CONTRACT
         + f"Active workspace: {workspace['id']} — {workspace['name']}.\n"
     )
+
+
+def _split_sql_statements(text: str) -> List[str]:
+    statements: List[str] = []
+    buf: List[str] = []
+    quote = ""
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if quote:
+            buf.append(char)
+            if char == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    buf.append(text[i + 1])
+                    i += 1
+                else:
+                    quote = ""
+        elif char in ("'", '"', "`"):
+            quote = char
+            buf.append(char)
+        elif char == ";":
+            statement = "".join(buf).strip()
+            if statement:
+                statements.append(statement)
+            buf = []
+        else:
+            buf.append(char)
+        i += 1
+    tail = "".join(buf).strip()
+    if tail:
+        statements.append(tail)
+    return statements or [text.strip()]
+
+
+def _json_string_field(raw: str, field: str) -> str:
+    match = re.search(r'"' + re.escape(field) + r'"\s*:\s*"((?:\\.|[^"\\])*)"', raw, re.DOTALL)
+    if not match:
+        return ""
+    try:
+        return json.loads('"' + match.group(1) + '"')
+    except Exception:
+        return match.group(1)
 
 
 def _parse_json_reply(text: str) -> Dict[str, Any]:
@@ -1791,6 +2165,25 @@ def _parse_json_reply(text: str) -> Dict[str, Any]:
                 return data
         except Exception:
             pass
+    if raw.startswith("{"):
+        for suffix in ('"}', '"}}', '}', '"]}'):
+            try:
+                data = json.loads(raw.rstrip() + suffix)
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                pass
+        salvaged = {
+            "reply": _json_string_field(raw, "reply"),
+            "sql": _json_string_field(raw, "sql"),
+            "target": _json_string_field(raw, "target"),
+            "action": _json_string_field(raw, "action"),
+            "name": _json_string_field(raw, "name"),
+            "frequency": _json_string_field(raw, "frequency"),
+            "at_time": _json_string_field(raw, "at_time"),
+        }
+        if salvaged["reply"] or salvaged["sql"]:
+            return salvaged
     sql_match = re.search(r"```sql\s*(.*?)```", text or "", re.IGNORECASE | re.DOTALL)
     return {
         "reply": (text or "").strip()[:1200],
@@ -1799,12 +2192,23 @@ def _parse_json_reply(text: str) -> Dict[str, Any]:
 
 
 def _looks_like_sql(message: str) -> bool:
-    text = message or ""
+    text = (message or "").strip()
     if re.match(r"^\s*(select|with|pragma|explain)\b", text, re.IGNORECASE):
-        return True
+        return bool(re.search(r"\b(from|where|limit|join|select)\b", text, re.IGNORECASE)) or text.endswith(";")
     return bool(
-        re.match(r"^\s*(create|insert|update|delete|drop|alter|truncate)\b", text, re.IGNORECASE)
-        and re.search(r"\b(table|view|index|into|from|set)\b", text, re.IGNORECASE)
+        re.match(
+            r"^\s*("
+            r"create\s+(?:or\s+replace\s+)?(?:temp(?:orary)?\s+)?(?:table|view|index)\s+(?:if\s+not\s+exists\s+)?[`\"\[]?\w|"
+            r"insert\s+into\s+[`\"\[]?\w|"
+            r"update\s+[`\"\[]?\w+\s+set\b|"
+            r"delete\s+from\s+[`\"\[]?\w+|"
+            r"drop\s+(?:table|view|index)\s+(?:if\s+exists\s+)?[`\"\[]?\w+|"
+            r"alter\s+table\s+[`\"\[]?\w|"
+            r"truncate\s+table\s+[`\"\[]?\w"
+            r")",
+            text,
+            re.IGNORECASE,
+        )
     )
 
 
@@ -2024,6 +2428,8 @@ def _reply_cache_get(key: str) -> Optional[Dict[str, Any]]:
 def _reply_cache_put(key: str, value: Dict[str, Any]) -> None:
     if value.get("action"):
         return
+    if re.match(r"^\s*(insert|update|delete|drop|alter|create|truncate|merge)\b", str(value.get("sql") or ""), re.IGNORECASE):
+        return
     with _AI_REPLY_LOCK:
         if len(_AI_REPLY_CACHE) >= _AI_REPLY_MAX:
             oldest = min(_AI_REPLY_CACHE, key=lambda k: _AI_REPLY_CACHE[k]["at"])
@@ -2031,21 +2437,102 @@ def _reply_cache_put(key: str, value: Dict[str, Any]) -> None:
         _AI_REPLY_CACHE[key] = {"at": time.time(), "value": dict(value)}
 
 
-def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
+def _delivery_intent(workspace_id: str, message: str) -> Dict[str, Any]:
+    text = message or ""
+    low = text.lower()
+    if not re.search(r"\b(mail|email|whatsapp|telegram|sftp)\b", low):
+        return {}
+    if not re.search(r"\b(top|rows?|data|table|file|report|attachment|extract|send|share|path|excel|csv)\b", low):
+        return {}
+    channels = []
+    if re.search(r"\b(mail|email)\b", low):
+        channels.append("email")
+    if "whatsapp" in low:
+        channels.append("whatsapp")
+    if "telegram" in low:
+        channels.append("telegram")
+    if re.search(r"\bexcel\b|\bxlsx\b", low):
+        fmt = "xlsx"
+    elif re.search(r"\bpipe\b|\bpsv\b", low):
+        fmt = "pipe"
+    elif re.search(r"\btab\b|\btsv\b", low):
+        fmt = "tab"
+    elif "csv" in low:
+        fmt = "csv"
+    else:
+        fmt = "xlsx"
+    limit = 100
+    match = re.search(r"\btop\s+(\d{1,5})\b|\b(\d{1,5})\s+rows?\b", low)
+    if match:
+        limit = int(match.group(1) or match.group(2))
+    table = ""
+    schema = "main"
+    table_map = _workspace_table_map(workspace_id)
+    for name in sorted(table_map, key=len, reverse=True):
+        if re.search(r"\b" + re.escape(name) + r"\b", low):
+            schema, table = table_map[name]
+            break
+    if not table:
+        candidate = _table_name_from_text(text).lower()
+        if candidate in table_map:
+            schema, table = table_map[candidate]
+    if not table:
+        return {}
+    return {"table": table, "schema": schema, "fmt": fmt, "limit": limit, "channels": channels or ["email", "telegram", "whatsapp"]}
+
+
+def chat(
+    workspace_id: str,
+    message: str,
+    user: str = "",
+    attachments: Optional[List[Dict[str, Any]]] = None,
+    context: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     _ensure_schema()
     workspace = get_workspace(workspace_id)
     if not workspace:
         raise ValueError("Workspace not found.")
     message = (message or "").strip()
-    if not message:
-        raise ValueError("Message cannot be empty.")
     if len(message) > 4000:
         message = message[:4000]
 
-    is_first = not get_messages(workspace_id, limit=1)
-    add_message(workspace_id, "user", message)
+    prepared: List[Tuple[Dict[str, Any], bytes]] = []
+    for item in (attachments or [])[:MAX_ATTACHMENTS_PER_MESSAGE]:
+        att_id = item.get("attachment_id") if isinstance(item, dict) else str(item or "")
+        try:
+            prepared.append(load_attachment(workspace_id, att_id))
+        except Exception as exc:
+            prepared.append(({"attachment_id": att_id, "filename": "attachment", "kind": "file", "error": str(exc)}, b""))
+    if not message and not prepared:
+        raise ValueError("Message cannot be empty.")
 
+    is_first = not get_messages(workspace_id, limit=1)
     started_at = time.time()
+    if prepared:
+        names = ", ".join((info.get("filename") or "attachment") for info, _ in prepared)
+        echo = [
+            {
+                "attachment_id": info.get("attachment_id"),
+                "filename": info.get("filename"),
+                "kind": info.get("kind"),
+                "row_count": info.get("row_count"),
+                "columns": info.get("columns") or [],
+            }
+            for info, _ in prepared
+        ]
+        add_message(workspace_id, "user", message or f"Attached: {names}", meta={"attachments": echo})
+        result = _attachment_reply(workspace_id, message, prepared, context, started_at)
+        if is_first:
+            title = (message or names).replace("\n", " ").strip()
+            if len(title) > 48:
+                title = title[:48].rstrip() + "…"
+            try:
+                rename_workspace(workspace_id, title)
+            except Exception:
+                pass
+        return result
+
+    add_message(workspace_id, "user", message)
     parsed: Dict[str, Any] = {}
     model_used = "fallback"
     if _looks_like_sql(message):
@@ -2078,9 +2565,9 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
                         task_type="data_analyst",
                         schema={"type": "json_object"},
                         system_prompt=_system_prompt(workspace),
-                        timeout=30.0,
+                        timeout=45.0,
                         temperature=0.2,
-                        max_tokens=900,
+                        max_tokens=3000,
                     )
                     parsed = _parse_json_reply(content)
                     _reply_cache_put(cache_key, parsed)
@@ -2094,13 +2581,37 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
     if isinstance(sql, list):
         sql = " ".join(str(s) for s in sql)
     sql = (sql or "").strip() or None
+    forced_delivery = bool(re.search(r"\b(sftp|attachment)\b", message or "", re.IGNORECASE))
+    if not action or forced_delivery:
+        intent = _delivery_intent(workspace_id, message)
+        if intent:
+            action = "deliver_report"
+            parsed["table"] = intent["table"]
+            parsed["schema"] = intent["schema"]
+            parsed["format"] = parsed.get("format") or intent["fmt"]
+            parsed["limit"] = intent["limit"]
+            parsed["channels"] = parsed.get("channels") or intent["channels"]
+            parsed["sql"] = None
+            sql = None
     target = (parsed.get("target") or "workspace").strip()
     reply = (parsed.get("reply") or "").strip()[:2000] or "Done."
+
+    if target in ("", "active", workspace_id):
+        target = "workspace:" + workspace_id
+    if not target.startswith(("workspace:", "sqlite:", "duckdb:", "connection:")):
+        target = "workspace:" + workspace_id
+    if sql and target.startswith("workspace:"):
+        snowflake_databases = _snowflake_databases()
+        if snowflake_databases:
+            pattern = r"\b(" + "|".join(re.escape(name) for name in snowflake_databases) + r")\."
+            if re.search(pattern, sql, re.IGNORECASE):
+                target = "connection:NANO_PRO_SNOWFLAKE"
 
     created_workspace = None
     created_schema = None
     created_schedule = None
     schedule_run = None
+    delivery_result = None
     schedule_handled = False
     schedule_error = ""
     if action == "create_workspace" and not sql and re.search(r"\b(database|workspace|db)\b", message, re.IGNORECASE):
@@ -2112,8 +2623,32 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
             reply = reply or f"Created schema {created_schema['schema']} in this workspace."
         except Exception as exc:
             reply = f"Could not create that schema: {exc}"
+    elif action == "deliver_report":
+        try:
+            delivery_result = deliver_report(
+                workspace_id,
+                table=str(parsed.get("table") or ""),
+                sql=str(parsed.get("sql") or ""),
+                db_id=target,
+                schema=str(parsed.get("schema") or "main"),
+                fmt=str(parsed.get("format") or "xlsx"),
+                limit=int(parsed.get("limit") or 100),
+                channels=parsed.get("channels"),
+                recipient=str(parsed.get("recipient") or ""),
+                phone=str(parsed.get("phone") or ""),
+                subject=str(parsed.get("subject") or ""),
+                user=user,
+            )
+            reply = delivery_result["reply"]
+            sql = delivery_result.get("sql")
+            parsed["sql"] = sql
+        except Exception as exc:
+            reply = f"Could not deliver that report: {exc}"
+        schedule_handled = True
     elif action in ("create_schedule", "create_pipeline"):
         steps = parsed.get("steps") or ([sql] if sql else [])
+        if not parsed.get("steps") and len(steps) == 1 and steps[0]:
+            steps = _split_sql_statements(str(steps[0]))
         try:
             created_schedule = create_schedule(
                 workspace_id,
@@ -2124,7 +2659,7 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
                 weekday=parsed.get("weekday"),
                 day_of_month=parsed.get("day_of_month"),
                 cron_expr=parsed.get("cron") or parsed.get("cron_expr") or "",
-                target=parsed.get("target") or "",
+                target=target,
                 user=user,
                 kind="pipeline" if action == "create_pipeline" else "sql",
             )
@@ -2163,26 +2698,21 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
             reply = "I could not find a schedule with that name in this workspace."
         schedule_handled = True
 
-    if target in ("", "active", workspace_id):
-        target = "workspace:" + workspace_id
-    if not target.startswith(("workspace:", "sqlite:", "duckdb:", "connection:")):
-        target = "workspace:" + workspace_id
-    if sql and target.startswith("workspace:"):
-        snowflake_databases = _snowflake_databases()
-        if snowflake_databases:
-            pattern = r"\b(" + "|".join(re.escape(name) for name in snowflake_databases) + r")\."
-            if re.search(pattern, sql, re.IGNORECASE):
-                target = "connection:NANO_PRO_SNOWFLAKE"
-
     result = None
     run_id = None
     error = schedule_error or None
     if sql and not created_schema and not schedule_handled:
+        statements = _split_sql_statements(sql) if target.startswith("workspace:") else [sql]
+        executed = 0
         try:
-            result = execute_sql(target, sql, workspace_id=workspace_id)
-            run_id = save_run(workspace_id, sql, result)
+            for statement in statements:
+                result = execute_sql(target, statement, workspace_id=workspace_id)
+                executed += 1
+            run_id = save_run(workspace_id, sql, result or {})
         except Exception as exc:
             error = str(exc)[:400]
+            if executed:
+                error = f"Statement {executed + 1} of {len(statements)} failed: {error}"
 
     latency_ms = round((time.time() - started_at) * 1000, 1)
     meta = {
@@ -2234,6 +2764,7 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
         "latency_ms": latency_ms,
         "schedule_created": created_schedule,
         "schedule_run": schedule_run,
+        "delivery": delivery_result,
     }
 
 
@@ -2252,12 +2783,47 @@ def _decode_rows(filename: str, content: bytes) -> Tuple[List[str], List[List[An
         sheet = wb.active
         rows = [list(r) for r in sheet.iter_rows(values_only=True)]
         wb.close()
+    elif name.endswith(".json"):
+        try:
+            payload = json.loads(content.decode("utf-8-sig"))
+        except UnicodeDecodeError:
+            payload = json.loads(content.decode("latin-1"))
+        if isinstance(payload, dict):
+            for key in ("data", "rows", "records", "items", "results"):
+                if isinstance(payload.get(key), list):
+                    payload = payload[key]
+                    break
+            else:
+                payload = [payload]
+        if not isinstance(payload, list) or not payload:
+            raise ValueError("JSON must be a list of records or an object with a data/rows list.")
+        if all(isinstance(item, dict) for item in payload):
+            header: List[Any] = []
+            for item in payload:
+                for key in item.keys():
+                    if key not in header:
+                        header.append(key)
+            rows = [header] + [[item.get(key) for key in header] for item in payload]
+        elif all(isinstance(item, (list, tuple)) for item in payload):
+            rows = [list(item) for item in payload]
+        else:
+            raise ValueError("JSON records must all be objects or all be arrays.")
     else:
         try:
             text = content.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = content.decode("latin-1")
-        rows = [r for r in csv.reader(io.StringIO(text))]
+        delimiter = ""
+        if name.endswith(".tsv"):
+            delimiter = "\t"
+        elif name.endswith(".csv"):
+            delimiter = ","
+        else:
+            try:
+                delimiter = csv.Sniffer().sniff(text[:4096], delimiters=",\t|;").delimiter
+            except csv.Error:
+                delimiter = ","
+        rows = [r for r in csv.reader(io.StringIO(text), delimiter=delimiter)]
     rows = [r for r in rows if any(v is not None and str(v).strip() != "" for v in r)]
     if not rows:
         raise ValueError("The file has no data rows.")
@@ -2340,6 +2906,7 @@ def import_table(workspace_id: str, filename: str, content: bytes, table_name: s
             create_schema(workspace_id, schema)
 
     types = [_infer_type([row[i] for row in body]) for i in range(len(columns))]
+    added_columns: List[str] = []
     conn = open_workspace_connection(workspace_id)
     try:
         exists = conn.execute(
@@ -2355,6 +2922,7 @@ def import_table(workspace_id: str, filename: str, content: bytes, table_name: s
             for c, t in zip(columns, types):
                 if c.lower() not in current:
                     conn.execute(f"ALTER TABLE {_qualified(schema, table)} ADD COLUMN {_quote(c)} {t}")
+                    added_columns.append(c)
 
         placeholders = ", ".join("?" for _ in columns)
         insert_sql = (
@@ -2383,5 +2951,323 @@ def import_table(workspace_id: str, filename: str, content: bytes, table_name: s
         "mode": "append" if exists else "create",
         "rows_inserted": len(body),
         "total_rows": total,
+        "added_columns": added_columns,
         "columns": [{"name": c, "data_type": t} for c, t in zip(columns, types)],
+    }
+
+
+# ----------------------------------------------------------------------------
+# chat attachments
+# ----------------------------------------------------------------------------
+
+_TABLE_STOPWORDS = {
+    "a", "an", "and", "append", "bana", "banaun", "banav", "banavun", "called", "create",
+    "csv", "data", "ek", "excel", "existing", "file", "from", "ghal", "ha", "he", "hi",
+    "hyat", "in", "insert", "into", "it", "kar", "kara", "madhe", "madhye", "me", "my",
+    "naam", "named", "nava", "navi", "navin", "new", "of", "pan", "pn", "same", "sheet",
+    "table", "tak", "taka", "that", "the", "this", "to", "tyat", "using", "with", "ya",
+    "hya", "tya",
+}
+
+_APPEND_RE = re.compile(
+    r"\b(append|insert|merge|load|import)\b|"
+    r"\b(add|put)\b[^.\n]{0,40}\b(to|into|in)\b|"
+    r"(madhe|madhye|mathe)\s+(taka|tak|append|insert|ghal|add)|"
+    r"\b(tyat|hyat|yat)\b|same table|existing table|(ya|hya|tya)\s+table",
+    re.IGNORECASE,
+)
+
+_CREATE_RE = re.compile(
+    r"\b(create|make|build|new)\b[^.\n]{0,30}\btable\b|"
+    r"\b(nava|navin|navi)\b[^.\n]{0,24}\btable\b|"
+    r"\btable\s+(bana|banav|create)",
+    re.IGNORECASE,
+)
+
+
+def _clean_attachment_id(value: str) -> str:
+    clean = re.sub(r"[^a-zA-Z0-9_]", "", value or "")
+    if not clean.startswith("att_") or len(clean) < 8:
+        raise ValueError("Invalid attachment id.")
+    return clean
+
+
+def _cleanup_attachments() -> None:
+    cutoff = time.time() - ATTACHMENT_TTL_HOURS * 3600
+    try:
+        for path in ATTACHMENT_DIR.glob("*"):
+            if path.is_file() and path.stat().st_mtime < cutoff:
+                path.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def save_attachment(workspace_id: str, filename: str, content: bytes) -> Dict[str, Any]:
+    _ensure_schema()
+    if not get_workspace(workspace_id):
+        raise ValueError("Workspace not found.")
+    raw_name = Path(filename or "attachment").name.replace("\\", "_").strip() or "attachment"
+    ext = Path(raw_name).suffix.lower()
+    if ext in TABLE_ATTACHMENT_EXTS:
+        kind = "table"
+    elif ext in IMAGE_ATTACHMENT_EXTS:
+        kind = "image"
+    else:
+        raise ValueError("Attach a CSV, TSV, Excel (.xlsx), JSON file or an image (PNG/JPG/WEBP/GIF/BMP).")
+    if not content:
+        raise ValueError("The attached file is empty.")
+    if len(content) > MAX_ATTACHMENT_BYTES:
+        raise ValueError("Attachment is larger than 25 MB.")
+    _cleanup_attachments()
+    attachment_id = "att_" + uuid.uuid4().hex[:12]
+    ATTACHMENT_DIR.mkdir(parents=True, exist_ok=True)
+    path = ATTACHMENT_DIR / f"{attachment_id}{ext}"
+    path.write_bytes(content)
+    info: Dict[str, Any] = {
+        "attachment_id": attachment_id,
+        "workspace_id": workspace_id,
+        "filename": raw_name,
+        "kind": kind,
+        "size_bytes": len(content),
+        "created_at": _now(),
+    }
+    if kind == "table":
+        try:
+            header, body = _decode_rows(raw_name, content)
+            columns = _dedupe_headers(header)
+            info["columns"] = columns
+            info["row_count"] = len(body)
+            info["suggested_table"] = _safe_ident(Path(raw_name).stem or "imported_data")
+            info["sample_rows"] = [
+                {columns[i]: (row[i] if i < len(row) else None) for i in range(len(columns))}
+                for row in body[:3]
+            ]
+        except Exception as exc:
+            info["error"] = str(exc)[:300]
+    else:
+        try:
+            from PIL import Image
+
+            with Image.open(io.BytesIO(content)) as img:
+                info["width"], info["height"] = img.size
+                info["image_format"] = (img.format or "").lower()
+        except Exception:
+            pass
+    meta = dict(info)
+    meta["path"] = str(path)
+    (ATTACHMENT_DIR / f"{attachment_id}.json").write_text(json.dumps(meta, default=str), encoding="utf-8")
+    return info
+
+
+def load_attachment(workspace_id: str, attachment_id: str) -> Tuple[Dict[str, Any], bytes]:
+    clean = _clean_attachment_id(attachment_id)
+    meta_path = ATTACHMENT_DIR / f"{clean}.json"
+    if not meta_path.is_file():
+        raise ValueError("Attachment expired or not found. Please attach the file again.")
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    if meta.get("workspace_id") != workspace_id:
+        raise ValueError("That attachment belongs to another chat.")
+    path = Path(meta.get("path") or "")
+    if not path.is_file():
+        raise ValueError("Attachment file is missing. Please attach it again.")
+    return meta, path.read_bytes()
+
+
+def _workspace_table_map(workspace_id: str) -> Dict[str, Tuple[str, str]]:
+    result: Dict[str, Tuple[str, str]] = {}
+    conn = open_workspace_connection(workspace_id)
+    try:
+        schemas = ["main"] + [s["schema_name"] for s in _workspace_schemas(workspace_id)]
+        seen = set()
+        for schema in schemas:
+            if schema in seen:
+                continue
+            seen.add(schema)
+            try:
+                rows = conn.execute(
+                    f"SELECT name FROM {_quote(schema)}.sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                ).fetchall()
+            except sqlite3.Error:
+                continue
+            for row in rows:
+                result[str(row[0]).lower()] = (schema, str(row[0]))
+    finally:
+        conn.close()
+    return result
+
+
+def _table_name_from_text(text: str) -> str:
+    quoted = re.search(r"[`\"']([A-Za-z_][\w]{0,62}(?:\.[A-Za-z_][\w]{0,62})?)[`\"']", text or "")
+    if quoted:
+        return quoted.group(1)
+    patterns = (
+        r"\b(?:table|tbl)\s+(?:called|named|naam|name)\s+([A-Za-z_][\w]{0,62}(?:\.[A-Za-z_][\w]{0,62})?)",
+        r"\b(?:create|make|build)\b[^.\n]{0,40}?\btable\s+([A-Za-z_][\w]{0,62}(?:\.[A-Za-z_][\w]{0,62})?)",
+        r"\b(?:append|insert|load|add|import)\b[^.\n]{0,40}?\b(?:to|into|in)\s+([A-Za-z_][\w]{0,62}(?:\.[A-Za-z_][\w]{0,62})?)",
+        r"\b(?:into|to)\s+([A-Za-z_][\w]{0,62}(?:\.[A-Za-z_][\w]{0,62})?)",
+        r"\btable\s+([A-Za-z_][\w]{0,62}(?:\.[A-Za-z_][\w]{0,62})?)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text or "", re.IGNORECASE)
+        if not match:
+            continue
+        candidate = match.group(1)
+        if candidate.split(".")[-1].lower() in _TABLE_STOPWORDS:
+            continue
+        return candidate
+    return ""
+
+
+def _resolve_import_plan(
+    workspace_id: str,
+    info: Dict[str, Any],
+    message: str,
+    context: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    text = message or ""
+    table_map = _workspace_table_map(workspace_id)
+    context_schema = ""
+    context_table = ""
+    if isinstance(context, dict):
+        ctx_table = str(context.get("table") or "").strip()
+        ctx_schema = str(context.get("schema") or "main").strip() or "main"
+        ctx_db = str(context.get("db_id") or "")
+        if ctx_table and (not ctx_db or ctx_db in (workspace_id, "workspace:" + workspace_id)):
+            if ctx_table.lower() in table_map:
+                context_schema, context_table = table_map[ctx_table.lower()]
+            else:
+                context_schema, context_table = ctx_schema, ctx_table
+
+    create_intent = bool(_CREATE_RE.search(text))
+    append_intent = bool(_APPEND_RE.search(text))
+    name = _table_name_from_text(text)
+    schema = ""
+    if "." in name:
+        parts = [p for p in name.split(".") if p]
+        if len(parts) >= 2:
+            schema, name = parts[-2].lower(), _safe_ident(parts[-1])
+
+    if not name and append_intent and context_table:
+        name, schema = context_table, context_schema
+    if not name and append_intent:
+        mentioned = [tbl for tbl in table_map if re.search(r"\b" + re.escape(tbl) + r"\b", text, re.IGNORECASE)]
+        if mentioned:
+            name = sorted(mentioned, key=len, reverse=True)[0]
+    if not name:
+        name = _safe_ident(info.get("suggested_table") or "imported_data")
+
+    existing = table_map.get(name.lower())
+    if existing:
+        target_schema, name = existing
+        mode = "create" if (create_intent and not append_intent) else "append"
+    else:
+        target_schema = schema or "main"
+        mode = "append" if (append_intent and not create_intent) else "create"
+    if schema:
+        target_schema = schema
+    return {
+        "schema": _safe_ident(target_schema or "main").lower(),
+        "table": _safe_ident(name),
+        "mode": mode,
+    }
+
+
+def _attachment_reply(
+    workspace_id: str,
+    message: str,
+    prepared: List[Tuple[Dict[str, Any], bytes]],
+    context: Optional[Dict[str, Any]],
+    started_at: float,
+) -> Dict[str, Any]:
+    imports: List[Dict[str, Any]] = []
+    notes: List[str] = []
+    errors: List[str] = []
+    for info, content in prepared:
+        filename = info.get("filename") or "attachment"
+        if info.get("error"):
+            errors.append(f"{filename}: {info['error']}")
+            continue
+        if info.get("kind") == "image":
+            dims = ""
+            if info.get("width") and info.get("height"):
+                dims = f" ({info['width']}x{info['height']}px)"
+            notes.append(f"Image {filename}{dims} attached.")
+            continue
+        plan = _resolve_import_plan(workspace_id, info, message, context)
+        try:
+            result = import_table(
+                workspace_id,
+                filename,
+                content,
+                table_name=plan["table"],
+                mode=plan["mode"],
+                schema=plan["schema"],
+            )
+        except Exception as exc:
+            errors.append(f"{filename}: {exc}")
+            continue
+        result["attachment_id"] = info.get("attachment_id")
+        result["filename"] = filename
+        imports.append(result)
+        qualified = f"{result['schema']}.{result['table']}"
+        if result["mode"] == "create":
+            names = [c["name"] for c in result["columns"]]
+            listed = ", ".join(names[:10]) + (" …" if len(names) > 10 else "")
+            notes.append(
+                f"Created table {qualified} from {filename} — {result['rows_inserted']} row(s), "
+                f"{len(names)} column(s): {listed}."
+            )
+        else:
+            extra = ""
+            if result.get("added_columns"):
+                extra = f" New column(s) added: {', '.join(result['added_columns'])}."
+            notes.append(
+                f"Appended {result['rows_inserted']} row(s) from {filename} to {qualified} — "
+                f"total {result['total_rows']} row(s).{extra}"
+            )
+    for error in errors:
+        notes.append(f"Could not import {error}")
+
+    reply = "\n".join(notes) or "Attachments received."
+    if imports:
+        reply += "\n\nAsk about the imported data whenever you want — for example: show the first 10 rows."
+
+    preview = None
+    if len(imports) == 1:
+        item = imports[0]
+        try:
+            details = get_table_details("workspace:" + workspace_id, item["schema"], item["table"])
+            preview = {
+                "columns": [c["name"] for c in details.get("columns", [])],
+                "rows": details.get("sample", []),
+                "row_count": details.get("row_count") or item["total_rows"],
+                "truncated": False,
+            }
+        except Exception:
+            preview = None
+
+    latency_ms = round((time.time() - started_at) * 1000, 1)
+    meta = {
+        "imports": imports,
+        "model": "file-import",
+        "latency_ms": latency_ms,
+        "row_count": (preview or {}).get("row_count") or sum(int(i.get("rows_inserted") or 0) for i in imports) or 0,
+    }
+    assistant = add_message(workspace_id, "assistant", reply, "", meta)
+    return {
+        "status": "success",
+        "workspace": get_workspace(workspace_id),
+        "workspace_created": None,
+        "schema_created": None,
+        "message": assistant,
+        "reply": reply,
+        "sql": None,
+        "target": "workspace:" + workspace_id,
+        "error": ("; ".join(errors)[:400] or None) if errors else None,
+        "result": dict(preview, run_id=None) if preview else None,
+        "model": "file-import",
+        "latency_ms": latency_ms,
+        "schedule_created": None,
+        "schedule_run": None,
+        "imports": imports,
     }

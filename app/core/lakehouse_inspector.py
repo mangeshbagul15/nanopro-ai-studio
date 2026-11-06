@@ -758,7 +758,7 @@ class LakehouseInspector:
             "status": "success",
             "connection_name": connection_name,
             "database_name": "BANK_DB",
-            "cloud_dw": "https://EGPKNWZ-XH53504.snowflakecomputing.com",
+            "cloud_dw": "https://XMUTKDJ-KP74023.snowflakecomputing.com",
             "schemas": schemas,
             "total_tables": len(tables_meta),
             "tables": tables_meta
@@ -767,7 +767,7 @@ class LakehouseInspector:
             "tables": tables_meta,
             "schemas": schemas,
             "database_name": "BANK_DB",
-            "cloud_dw": "https://EGPKNWZ-XH53504.snowflakecomputing.com",
+            "cloud_dw": "https://XMUTKDJ-KP74023.snowflakecomputing.com",
             "connection_name": connection_name
         }
         return res
