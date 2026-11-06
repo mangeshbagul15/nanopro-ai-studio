@@ -1464,7 +1464,7 @@ class ConnectionManager:
             if "DefaultCredentialsError" in type(e).__name__ or "Could not automatically determine credentials" in err_msg or "Application Default Credentials" in err_msg:
                 status = "Not Configured"
                 error_category = "MISSING_GOOGLE_ADC"
-                message = "BigQuery has no Google application credentials. Set GOOGLE_APPLICATION_CREDENTIALS to a service-account JSON or install the gcloud CLI and run 'gcloud auth application-default login'."
+                message = "BigQuery has no credentials. Set GCP_SERVICE_ACCOUNT_JSON (Render env) or paste the service-account JSON into this connection's Vault entry."
             elif "403" in err_msg or "AccessDenied" in err_msg or "Permission" in err_msg:
                 status = "Authentication Failed"
                 error_category = "BIGQUERY_PERMISSION_DENIED"
