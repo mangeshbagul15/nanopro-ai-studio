@@ -110,6 +110,8 @@ class ProviderCircuitBreaker:
             return "sambanova"
         if "openai" in p:
             return "openai"
+        if "bedrock" in p:
+            return "bedrock"
         if "claude" in p or "anthropic" in p:
             return "claude"
         if "ollama" in p:
@@ -259,7 +261,7 @@ class ProviderCircuitBreaker:
                     "last_error": self._last_errors.get(p, None),
                     "last_failure_time": self._last_failure_time.get(p, 0.0)
                 }
-                for p in ["groq", "gemini", "cohere", "sambanova", "deepseek", "mistral", "openrouter", "ollama", "remote"]
+                for p in ["groq", "gemini", "cohere", "sambanova", "deepseek", "mistral", "openrouter", "bedrock", "ollama", "remote"]
             }
 
 
@@ -1540,6 +1542,147 @@ class SambaNovaAdapter(ModelProviderAdapter):
             raise e
 
 
+class BedrockAdapter(ModelProviderAdapter):
+    """
+    Adapter for Amazon Bedrock runtime (Claude family through the Converse API).
+    Disabled unless BEDROCK_ENABLED=true: every Bedrock call is metered against the
+    AWS account, so the router must never reach it silently as a fallback.
+    Credentials resolve from env first, then the Credential Vault service
+    AWS_BEDROCK_API_KEY, whose metadata carries region and model_id.
+    """
+    PROVIDER = "bedrock"
+    DEFAULT_REGION = "us-east-1"
+    DEFAULT_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+
+    def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
+        self.api_key = api_key
+        self.circuit_breaker = circuit_breaker
+
+    @staticmethod
+    def is_enabled() -> bool:
+        return (os.environ.get("BEDROCK_ENABLED") or "").strip().lower() in ("1", "true", "yes", "on")
+
+    def _vault_entry(self) -> Dict[str, Any]:
+        try:
+            from app.core.credentials_vault import credentials_vault
+            return credentials_vault.get_credential("AWS_BEDROCK_API_KEY") or {}
+        except Exception:
+            return {}
+
+    def _resolve_key(self) -> str:
+        if self.api_key:
+            return self.api_key.strip()
+        for var in ("AWS_BEDROCK_API_KEY", "AWS_BEARER_TOKEN_BEDROCK"):
+            k = (os.environ.get(var) or "").strip()
+            if k:
+                return k
+        return (self._vault_entry().get("secret_value") or "").strip()
+
+    def _settings(self) -> Tuple[str, str]:
+        meta = self._vault_entry().get("additional_metadata") or {}
+        region = (os.environ.get("BEDROCK_REGION") or meta.get("region") or self.DEFAULT_REGION).strip()
+        model_id = (os.environ.get("BEDROCK_MODEL_ID") or meta.get("model_id") or self.DEFAULT_MODEL_ID).strip()
+        return region, model_id
+
+    @classmethod
+    def is_bedrock_model_id(cls, name: str) -> bool:
+        n = (name or "").lower()
+        if "bedrock" in n or "anthropic.claude" in n:
+            return True
+        return n.startswith(("us.anthropic", "eu.anthropic", "apac.anthropic", "global.anthropic"))
+
+    def is_available(self) -> bool:
+        return bool(self.is_enabled() and len(self._resolve_key()) > 20)
+
+    def describe_state(self) -> str:
+        if not self._resolve_key():
+            return "Credential Vault Key Required"
+        if not self.is_enabled():
+            return "Configured but Disabled (set BEDROCK_ENABLED=true; calls are metered)"
+        return f"Online (AWS Bedrock {self._settings()[0]})"
+
+    def chat(
+        self,
+        model: str,
+        prompt: str,
+        schema: Optional[Dict] = None,
+        system_prompt: Optional[str] = None,
+        timeout: float = 30.0,
+        **kwargs
+    ) -> Tuple[str, Any]:
+        if not self.is_enabled():
+            raise ValueError("AWS Bedrock routing is disabled. Set BEDROCK_ENABLED=true to allow metered Bedrock inference.")
+        token = self._resolve_key()
+        if not token:
+            raise ValueError("AWS Bedrock bearer token is not configured. Store AWS_BEDROCK_API_KEY in the Credential Vault.")
+        if self.circuit_breaker and not self.circuit_breaker.can_execute(self.PROVIDER):
+            raise ConnectionError("AWS Bedrock circuit breaker is OPEN. Fast-aborting request.")
+
+        try:
+            import boto3
+            from botocore.config import Config
+            from app.core import clock_sync
+        except Exception as e:
+            raise RuntimeError(f"AWS Bedrock SDK unavailable (boto3 missing): {e}")
+
+        region, default_model = self._settings()
+        model_id = (model or "").strip()
+        if not self.is_bedrock_model_id(model_id):
+            model_id = default_model
+
+        clock_sync.apply_botocore_patch()
+        os.environ["AWS_BEARER_TOKEN_BEDROCK"] = token
+        client = boto3.client(
+            "bedrock-runtime",
+            region_name=region,
+            config=Config(connect_timeout=5, read_timeout=int(max(5, timeout)))
+        )
+
+        request: Dict[str, Any] = {
+            "modelId": model_id,
+            "messages": [{"role": "user", "content": [{"text": prompt}]}],
+            "inferenceConfig": {
+                "maxTokens": int(kwargs.get("max_tokens") or 1024),
+                "temperature": float(kwargs.get("temperature", 0.3))
+            }
+        }
+        if system_prompt:
+            request["system"] = [{"text": system_prompt}]
+
+        t_start = time.time()
+        try:
+            resp = client.converse(**request)
+        except Exception as e:
+            if self.circuit_breaker:
+                self.circuit_breaker.record_failure(self.PROVIDER, e)
+                if _is_rate_limit_error(e) or type(e).__name__ in ("ThrottlingException", "ModelNotReadyException", "ModelTimeoutException"):
+                    self.circuit_breaker.trip(self.PROVIDER, e)
+            detail = str(e)[:300]
+            if "not authorized to perform: bedrock" in detail:
+                detail += " | IAM policy missing bedrock:CallWithBearerToken"
+            raise RuntimeError(f"AWS Bedrock {type(e).__name__}: {detail}")
+
+        blocks = ((resp.get("output") or {}).get("message") or {}).get("content") or []
+        content = "".join(b.get("text", "") for b in blocks if isinstance(b, dict)).strip()
+        dur_sec = max(0.0001, time.time() - t_start)
+        usage = resp.get("usage") or {}
+        token_count = int(usage.get("outputTokens") or 0) or max(1, len(content.split()))
+        tps = round(token_count / dur_sec, 2)
+        if self.circuit_breaker:
+            self.circuit_breaker.record_success(self.PROVIDER)
+
+        return content, TelemetryDict({
+            "latency_ms": max(0.1, round(dur_sec * 1000, 1)),
+            "token_count": token_count,
+            "tokens_per_second": tps,
+            "tps": tps,
+            "model": model_id,
+            "provider": self.PROVIDER,
+            "region": region,
+            "mode": "aws-bedrock"
+        })
+
+
 class ModelManager:
     """
     Centralized Multi-Model Intelligent Router for Mangesh Nano Pro AI Studio.
@@ -1557,6 +1700,7 @@ class ModelManager:
         self.sambanova = SambaNovaAdapter(circuit_breaker=self.circuit_breaker)
         self.openai = OpenAIAdapter(circuit_breaker=self.circuit_breaker)
         self.claude = ClaudeAdapter(circuit_breaker=self.circuit_breaker)
+        self.bedrock = BedrockAdapter(circuit_breaker=self.circuit_breaker)
         self.ollama = OllamaAdapter(circuit_breaker=self.circuit_breaker)
         self.remote = RemoteAPIAdapter(circuit_breaker=self.circuit_breaker)
 
@@ -1574,6 +1718,7 @@ class ModelManager:
         # Model metadata registry
         self.model_metadata: Dict[str, Dict[str, Any]] = {
             "claude-3-5-sonnet-20241022": {"role": "Anthropic Claude 3.5 Sonnet Flagship Intelligence", "vram_mb": 0, "strength": "State-of-the-Art Code Architecture & Reasoning (~1.5s)"},
+            "us.anthropic.claude-sonnet-4-5-20250929-v1:0": {"role": "Amazon Bedrock Claude Sonnet 4.5 via Converse API", "vram_mb": 0, "strength": "Metered AWS-region inference; opt-in with BEDROCK_ENABLED=true (~1.5s)"},
             "claude-3-haiku-20240307": {"role": "Anthropic Claude 3 Haiku High-Speed Assistant", "vram_mb": 0, "strength": "Ultra-Fast Light Dialogue (~600ms)"},
             "gpt-4o": {"role": "OpenAI GPT-4o Omnimodal Flagship Intelligence", "vram_mb": 0, "strength": "State-of-the-Art Vision, Code & Multilingual (~1.4s)"},
             "gpt-4o-mini": {"role": "OpenAI GPT-4o-mini High-Speed Intelligence", "vram_mb": 0, "strength": "Sub-Second Ultra-Fast Multimodal Intelligence (~650ms)"},
@@ -1687,12 +1832,18 @@ class ModelManager:
             if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
                 return self.openai, "openai-cloud"
 
-        # 9. Deterministic Anthropic Claude Cloud models
+        # 9. Bedrock-hosted Claude inference profiles (metered; requires BEDROCK_ENABLED=true).
+        #    Kept on this adapter even when disabled so the id is never misrouted to the
+        #    direct Anthropic API - chat() reports the real reason instead.
+        if self.bedrock.is_bedrock_model_id(model):
+            return self.bedrock, "aws-bedrock"
+
+        # 10. Deterministic Anthropic Claude Cloud models
         if ("claude" in m_lower or "sonnet" in m_lower or "haiku" in m_lower or "opus" in m_lower or m_lower.startswith("anthropic/")):
             if self.claude.is_available() and self.circuit_breaker.can_execute("claude"):
                 return self.claude, "claude-cloud"
 
-        # 10. Deterministic Local Ollama models
+        # 11. Deterministic Local Ollama models
         is_local = (
             ":" in model
             or any(m_lower.startswith(p) for p in ["llama", "qwen2", "phi", "gemma", "sqlcoder", "deepseek", "codellama"])
@@ -1701,7 +1852,7 @@ class ModelManager:
         if is_local:
             return self.ollama, "ollama"
 
-        # 11. Fallback based on availability & circuit breaker for unknown/custom model names
+        # 12. Fallback based on availability & circuit breaker for unknown/custom model names
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             return self.groq, "groq-lpu"
         if self.mistral.is_available() and self.circuit_breaker.can_execute("mistral"):
@@ -1720,6 +1871,8 @@ class ModelManager:
             return self.claude, "claude-cloud"
         if self.openai.is_available() and self.circuit_breaker.can_execute("openai"):
             return self.openai, "openai-cloud"
+        if self.bedrock.is_available() and self.circuit_breaker.can_execute("bedrock"):
+            return self.bedrock, "aws-bedrock"
         if self.ollama.is_available() and self.circuit_breaker.can_execute("ollama"):
             return self.ollama, "ollama"
         if self.remote.is_available() and self.circuit_breaker.can_execute("remote"):
@@ -2079,6 +2232,9 @@ class ModelManager:
             elif "gemini" in m:
                 status = "Online (Gemini Cloud API)" if is_gemini_up else "API Key Required"
                 installed_flag = is_gemini_up
+            elif self.bedrock.is_bedrock_model_id(m):
+                status = self.bedrock.describe_state()
+                installed_flag = self.bedrock.is_available()
             else:
                 is_inst = m in installed or any(m.split(":")[0] in inst for inst in installed)
                 status = "Online (Local GPU)" if (is_ollama_up and is_inst) else ("Installed (Service Offline)" if is_inst else "Not Installed")

@@ -69,6 +69,13 @@ View id `view-data_modeling_ai`, opened from the sidebar or `switchView('data_mo
 - A send-only Resend key cannot read `GET /api-keys`; `test_resend_connection()` confirms it with an incomplete `POST /emails` (422 = key valid, 401 = key wrong) so a working channel is not reported as broken.
 - Gmail REST API, Brevo and Gmail SMTP remain **Not Configured** until credentials are added to the Credential Vault - the dashboard shows that state instead of claiming they work.
 
+### 8. Opt-in AWS Bedrock routing
+`BedrockAdapter` in `app/core/model_adapter.py` calls Claude through the Bedrock `converse()` API; the bearer token, `region` and `model_id` come from the `AWS_BEDROCK_API_KEY` vault entry (env vars override it).
+- **Off by default.** Bedrock bills per token to the AWS account, so a request only reaches it when `BEDROCK_ENABLED=true`. Its model id is never part of the automatic cascade list.
+- A Bedrock inference-profile id such as `us.anthropic.claude-sonnet-4-5-20250929-v1:0` always resolves to this adapter - it is not misrouted to the direct Anthropic API, which cannot serve that id.
+- Router status is honest: `Credential Vault Key Required`, `Configured but Disabled`, or `Online (AWS Bedrock us-east-1)`. Throttling and `ModelNotReadyException` trip the `bedrock` circuit breaker so the router cascades immediately.
+- No live Bedrock inference has been run from this studio yet: the AWS account still needs the billing/card step, which only the owner can complete in the AWS console.
+
 ---
 
 ## 🛠️ Windows Installation & Running Guide
