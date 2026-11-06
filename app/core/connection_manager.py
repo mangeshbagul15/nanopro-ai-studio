@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import json
+import base64
 import socket
 import re
 import uuid
@@ -25,6 +26,18 @@ from app.core.config import REPORTS_DIR, BASE_DIR
 from app.core import clock_sync
 
 clock_sync.apply_botocore_patch()
+
+
+def _bq_has_service_account() -> bool:
+    if (os.environ.get("GCP_SERVICE_ACCOUNT_JSON") or "").strip():
+        return True
+    try:
+        meta = (credentials_vault.get_credential("GOOGLE_BIGQUERY_SANDBOX") or {}).get("additional_metadata") or {}
+        if isinstance(meta, str):
+            meta = json.loads(meta)
+        return bool(meta.get("service_account_json"))
+    except Exception:
+        return False
 
 # Non-secret configuration defaults
 SNOWFLAKE_CONFIG = {
@@ -284,6 +297,18 @@ class ConnectionManager:
         existing = credentials_vault.get_credential(connection_name)
         existing_pw = existing.get("secret_value", "") if existing else ""
         effective_pw = password.strip() if password and password.strip() else existing_pw
+
+        if connection_name == "GOOGLE_BIGQUERY_SANDBOX" and effective_pw.lstrip().startswith("{"):
+            try:
+                sa = json.loads(effective_pw)
+                metadata = dict(metadata or {})
+                metadata["service_account_json"] = effective_pw
+                metadata["project"] = sa.get("project_id", "")
+                username = sa.get("client_email", username)
+                database_name = database_name or sa.get("project_id", "")
+                effective_pw = sa.get("private_key", effective_pw)
+            except Exception:
+                pass
 
         # Remove previous entry for clean replacement
         if existing:
@@ -1390,27 +1415,48 @@ class ConnectionManager:
             return res
 
     def test_bigquery_connection(self) -> Dict[str, Any]:
-        """Verifies Google Cloud BigQuery Sandbox connection and sandbox datasets."""
+        """Verifies Google Cloud BigQuery connection using a service account or ADC."""
         start_time = time.time()
         test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
         conn_name = "GOOGLE_BIGQUERY_SANDBOX"
         try:
             from google.cloud import bigquery
-            client = bigquery.Client()
+            from google.oauth2 import service_account
+            client = None
+            auth_mode = "adc"
+            sa_json = (os.environ.get("GCP_SERVICE_ACCOUNT_JSON") or "").strip()
+            if not sa_json:
+                cred = credentials_vault.get_credential(conn_name) or {}
+                meta = cred.get("additional_metadata") or {}
+                if isinstance(meta, str):
+                    try:
+                        meta = json.loads(meta)
+                    except Exception:
+                        meta = {}
+                sa_json = (meta.get("service_account_json") or "").strip()
+            if sa_json:
+                info = json.loads(base64.b64decode(sa_json).decode("utf-8")) if not sa_json.startswith("{") else json.loads(sa_json)
+                creds = service_account.Credentials.from_service_account_info(info)
+                project = info.get("project_id") or os.environ.get("GOOGLE_CLOUD_PROJECT")
+                client = bigquery.Client(project=project, credentials=creds)
+                auth_mode = "service_account"
+            if client is None:
+                client = bigquery.Client()
             datasets = list(client.list_datasets(max_results=5))
             dur = round((time.time() - start_time) * 1000, 2)
             res = {
                 "connection_name": conn_name,
                 "status": "Connected",
                 "success": True,
-                "engine": "Google Cloud BigQuery Sandbox",
+                "engine": "Google Cloud BigQuery",
+                "auth_mode": auth_mode,
                 "project": client.project,
                 "datasets_count": len(datasets),
                 "response_time_ms": dur,
                 "timestamp": test_ts,
-                "message": f"BigQuery Sandbox authenticated. Project: {client.project}"
+                "message": f"BigQuery authenticated via {auth_mode}. Project: {client.project}"
             }
-            self._record_connection_result(conn_name, "cloud_data_warehouse", res["status"], dur, "adc", "bigquery_user", client.project, "sandbox", None, res)
+            self._record_connection_result(conn_name, "cloud_data_warehouse", res["status"], dur, auth_mode, "bigquery_user", client.project, "sandbox", None, res)
             return res
         except Exception as e:
             dur = round((time.time() - start_time) * 1000, 2)
@@ -1858,7 +1904,7 @@ class ConnectionManager:
                 "host_identifier": "bigquery.googleapis.com",
                 "target": "nanopro-lakehouse-sandbox",
                 "user_role": "nanoproaistudio@gmail.com (10 GB Free Storage)",
-                "has_credentials": True,
+                "has_credentials": _bq_has_service_account(),
                 "configured": True
             }
         ]

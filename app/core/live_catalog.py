@@ -490,6 +490,13 @@ def _bigquery_client():
     from google.cloud import bigquery  # type: ignore
 
     project = _env("GOOGLE_CLOUD_PROJECT", "GCP_PROJECT", "BIGQUERY_PROJECT")
+    sa_json = (_env("GCP_SERVICE_ACCOUNT_JSON") or "").strip()
+    if sa_json:
+        import base64, json as _json
+        from google.oauth2 import service_account  # type: ignore
+        info = _json.loads(base64.b64decode(sa_json).decode("utf-8")) if not sa_json.startswith("{") else _json.loads(sa_json)
+        creds = service_account.Credentials.from_service_account_info(info)
+        return bigquery.Client(project=project or info.get("project_id"), credentials=creds)
     return bigquery.Client(project=project) if project else bigquery.Client()
 
 
