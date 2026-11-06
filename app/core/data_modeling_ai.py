@@ -80,6 +80,37 @@ def catalog_snapshot(ttl: float = 8.0) -> List[Dict[str, Any]]:
     return fresh
 
 
+def catalog_cached() -> Tuple[List[Dict[str, Any]], bool]:
+    """Return the current snapshot immediately and refresh in the background when stale."""
+    with _catalog_lock:
+        data = list(_catalog_cache["data"])
+        age = time.time() - _catalog_cache["at"]
+        refreshing = bool(_catalog_refreshing["on"])
+    stale = not data or age > 8.0
+    if stale and not refreshing:
+        _refresh_catalog_async()
+        refreshing = True
+    return data, bool(refreshing and stale)
+
+
+def refresh_catalog_async() -> Tuple[List[Dict[str, Any]], bool]:
+    """Keep the last snapshot on screen and rescan slowly in the background."""
+    with _catalog_lock:
+        has_cache = bool(_catalog_cache["data"])
+        _catalog_cache["at"] = 0.0
+        data = list(_catalog_cache["data"])
+    try:
+        from app.core import live_catalog
+
+        live_catalog.invalidate()
+    except Exception:
+        pass
+    if not has_cache:
+        return [], False
+    _refresh_catalog_async()
+    return data, True
+
+
 def _refresh_catalog_async() -> None:
     with _catalog_lock:
         if _catalog_refreshing["on"]:
@@ -174,8 +205,19 @@ def _ensure_schema() -> None:
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS dm_workspaces ("
                 " id TEXT PRIMARY KEY, name TEXT NOT NULL, created_by TEXT DEFAULT '',"
+                " created_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
+                " project_id TEXT DEFAULT '', pinned INTEGER NOT NULL DEFAULT 0)"
+            )
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS dm_projects ("
+                " id TEXT PRIMARY KEY, name TEXT NOT NULL, created_by TEXT DEFAULT '',"
                 " created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
             )
+            ws_columns = {row[1] for row in conn.execute("PRAGMA table_info(dm_workspaces)").fetchall()}
+            if "project_id" not in ws_columns:
+                conn.execute("ALTER TABLE dm_workspaces ADD COLUMN project_id TEXT DEFAULT ''")
+            if "pinned" not in ws_columns:
+                conn.execute("ALTER TABLE dm_workspaces ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS dm_messages ("
                 " id INTEGER PRIMARY KEY AUTOINCREMENT, workspace_id TEXT NOT NULL,"
@@ -252,11 +294,23 @@ def open_workspace_connection(workspace_id: str) -> sqlite3.Connection:
     return conn
 
 
-def list_workspaces() -> List[Dict[str, Any]]:
+def list_workspaces(light: bool = False) -> List[Dict[str, Any]]:
     _ensure_schema()
     with db.get_connection() as conn:
-        rows = _table_rows(conn, "SELECT * FROM dm_workspaces ORDER BY updated_at DESC")
+        rows = _table_rows(
+            conn,
+            "SELECT w.*,"
+            " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
+            " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
+            " FROM dm_workspaces w ORDER BY w.updated_at DESC",
+        )
     for row in rows:
+        row["pinned"] = bool(row.get("pinned"))
+        row["project_id"] = row.get("project_id") or ""
+        if light:
+            row["schemas"] = []
+            row["table_count"] = 0
+            continue
         schemas = [{"name": "main", "tables": []}]
         try:
             with open_workspace_connection(row["id"]) as wconn:
@@ -272,27 +326,162 @@ def list_workspaces() -> List[Dict[str, Any]]:
 
 
 def get_workspace(workspace_id: str) -> Optional[Dict[str, Any]]:
-    for ws in list_workspaces():
-        if ws["id"] == workspace_id:
-            return ws
-    return None
+    _ensure_schema()
+    with db.get_connection() as conn:
+        row = conn.execute(
+            "SELECT w.*,"
+            " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
+            " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
+            " FROM dm_workspaces w WHERE w.id = ?",
+            (workspace_id,),
+        ).fetchone()
+    if not row:
+        return None
+    row = dict(row)
+    row["pinned"] = bool(row.get("pinned"))
+    row["project_id"] = row.get("project_id") or ""
+    schemas = [{"name": "main", "tables": []}]
+    try:
+        with open_workspace_connection(row["id"]) as wconn:
+            schemas[0]["tables"] = _sqlite_table_names(wconn, "main")
+            for schema in _workspace_schemas(row["id"]):
+                schemas.append({"name": schema["schema_name"], "tables": _sqlite_table_names(wconn, schema["schema_name"])})
+    except Exception:
+        pass
+    row["schemas"] = schemas
+    row["table_count"] = sum(len(s["tables"]) for s in schemas)
+    return row
 
 
-def create_workspace(name: str = "", user: str = "") -> Dict[str, Any]:
+def create_workspace(name: str = "", user: str = "", project_id: str = "") -> Dict[str, Any]:
     _ensure_schema()
     wid = "ws_" + uuid.uuid4().hex[:10]
-    label = (name or "New workspace").strip()[:64] or "New workspace"
+    label = (name or "New chat").strip()[:64] or "New chat"
     stamp = _now()
     with db.get_connection() as conn:
+        project = (project_id or "").strip()
+        if project and not conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (project,)).fetchone():
+            project = ""
         conn.execute(
-            "INSERT INTO dm_workspaces (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (wid, label, user or "", stamp, stamp),
+            "INSERT INTO dm_workspaces (id, name, created_by, created_at, updated_at, project_id, pinned)"
+            " VALUES (?, ?, ?, ?, ?, ?, 0)",
+            (wid, label, user or "", stamp, stamp, project),
         )
         conn.commit()
     open_workspace_connection(wid).close()
     invalidate_catalog()
-    log_event(f"Data modeling workspace created: {wid} ({label})", component="DataModeling")
+    log_event(f"Data modeling chat created: {wid} ({label})", component="DataModeling")
     return get_workspace(wid) or {"id": wid, "name": label, "created_at": stamp, "updated_at": stamp, "schemas": []}
+
+
+def set_workspace_pinned(workspace_id: str, pinned: bool) -> Dict[str, Any]:
+    _ensure_schema()
+    with db.get_connection() as conn:
+        cur = conn.execute("UPDATE dm_workspaces SET pinned = ? WHERE id = ?", (1 if pinned else 0, workspace_id))
+        conn.commit()
+    if not cur.rowcount:
+        raise ValueError("Chat not found.")
+    return get_workspace(workspace_id) or {}
+
+
+def set_workspace_project(workspace_id: str, project_id: str) -> Dict[str, Any]:
+    _ensure_schema()
+    target = (project_id or "").strip()
+    with db.get_connection() as conn:
+        if target and not conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (target,)).fetchone():
+            raise ValueError("Project not found.")
+        cur = conn.execute("UPDATE dm_workspaces SET project_id = ? WHERE id = ?", (target, workspace_id))
+        conn.commit()
+    if not cur.rowcount:
+        raise ValueError("Chat not found.")
+    return get_workspace(workspace_id) or {}
+
+
+def delete_workspace(workspace_id: str) -> Dict[str, Any]:
+    _ensure_schema()
+    db_path = _workspace_db_path(workspace_id)
+    with db.get_connection() as conn:
+        exists = conn.execute("SELECT 1 FROM dm_workspaces WHERE id = ?", (workspace_id,)).fetchone()
+        if not exists:
+            raise ValueError("Chat not found.")
+        schedule_ids = [r["schedule_id"] for r in _table_rows(conn, "SELECT schedule_id FROM dm_schedules WHERE workspace_id = ?", (workspace_id,))]
+        schema_rows = _table_rows(conn, "SELECT file_name FROM dm_workspace_schemas WHERE workspace_id = ?", (workspace_id,))
+        conn.execute("DELETE FROM dm_messages WHERE workspace_id = ?", (workspace_id,))
+        conn.execute("DELETE FROM dm_runs WHERE workspace_id = ?", (workspace_id,))
+        conn.execute("DELETE FROM dm_schedules WHERE workspace_id = ?", (workspace_id,))
+        for schedule_id in schedule_ids:
+            conn.execute("DELETE FROM dm_schedule_runs WHERE schedule_id = ?", (schedule_id,))
+        conn.execute("DELETE FROM dm_workspace_schemas WHERE workspace_id = ?", (workspace_id,))
+        conn.execute("DELETE FROM dm_workspaces WHERE id = ?", (workspace_id,))
+        conn.commit()
+    for name in [db_path.name] + [row["file_name"] for row in schema_rows]:
+        try:
+            (MODELING_DIR / name).unlink()
+        except FileNotFoundError:
+            pass
+    invalidate_catalog()
+    log_event(f"Data modeling chat deleted: {workspace_id}", component="DataModeling")
+    return {"workspace_id": workspace_id, "deleted": True}
+
+
+def list_projects() -> List[Dict[str, Any]]:
+    _ensure_schema()
+    with db.get_connection() as conn:
+        rows = _table_rows(
+            conn,
+            "SELECT p.*, (SELECT COUNT(*) FROM dm_workspaces w WHERE w.project_id = p.id) AS chat_count"
+            " FROM dm_projects p ORDER BY p.updated_at DESC",
+        )
+    return rows
+
+
+def create_project(name: str = "", user: str = "") -> Dict[str, Any]:
+    _ensure_schema()
+    pid = "prj_" + uuid.uuid4().hex[:10]
+    label = (name or "New project").strip()[:64] or "New project"
+    stamp = _now()
+    with db.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO dm_projects (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (pid, label, user or "", stamp, stamp),
+        )
+        conn.commit()
+    return {"id": pid, "name": label, "created_by": user or "", "created_at": stamp, "updated_at": stamp, "chat_count": 0}
+
+
+def rename_project(project_id: str, name: str) -> Dict[str, Any]:
+    label = (name or "").strip()[:64]
+    if not label:
+        raise ValueError("Project name cannot be empty.")
+    _ensure_schema()
+    with db.get_connection() as conn:
+        cur = conn.execute("UPDATE dm_projects SET name = ?, updated_at = ? WHERE id = ?", (label, _now(), project_id))
+        conn.commit()
+    if not cur.rowcount:
+        raise ValueError("Project not found.")
+    for project in list_projects():
+        if project["id"] == project_id:
+            return project
+    return {"id": project_id, "name": label}
+
+
+def delete_project(project_id: str, delete_chats: bool = False) -> Dict[str, Any]:
+    _ensure_schema()
+    with db.get_connection() as conn:
+        exists = conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (project_id,)).fetchone()
+        if not exists:
+            raise ValueError("Project not found.")
+        chat_ids = [r["id"] for r in _table_rows(conn, "SELECT id FROM dm_workspaces WHERE project_id = ?", (project_id,))]
+    if delete_chats:
+        for chat_id in chat_ids:
+            delete_workspace(chat_id)
+    with db.get_connection() as conn:
+        conn.execute("DELETE FROM dm_projects WHERE id = ?", (project_id,))
+        if not delete_chats:
+            conn.execute("UPDATE dm_workspaces SET project_id = '' WHERE project_id = ?", (project_id,))
+        conn.commit()
+    invalidate_catalog()
+    return {"project_id": project_id, "deleted": True, "chats": len(chat_ids), "chats_deleted": bool(delete_chats)}
 
 
 def rename_workspace(workspace_id: str, name: str) -> Dict[str, Any]:
@@ -1915,7 +2104,7 @@ def chat(workspace_id: str, message: str, user: str = "") -> Dict[str, Any]:
     schedule_handled = False
     schedule_error = ""
     if action == "create_workspace" and not sql and re.search(r"\b(database|workspace|db)\b", message, re.IGNORECASE):
-        created_workspace = create_workspace(parsed.get("name") or message[:40], user)
+        created_workspace = create_workspace(parsed.get("name") or message[:40], user, project_id=workspace.get("project_id") or "")
         reply = reply or f"Created workspace {created_workspace['name']} ({created_workspace['id']})."
     elif action == "create_schema" and not sql:
         try:

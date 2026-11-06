@@ -1,5 +1,9 @@
 """
-NanoPro Data Modeling by AI - Snowflake-style conversational workspace UI.
+NanoPro Data Modeling by AI - three panel conversational studio.
+
+Panel 1: Chats & Projects (pinned chats, chat list, project folders)
+Panel 2: Explorer (project tables plus every real database: schemas, tables, columns)
+Panel 3: Copilot chat with the data dock underneath.
 """
 
 
@@ -7,284 +11,462 @@ def get_data_modeling_html() -> str:
     return r'''
 <div class="workspace-view" id="view-data_modeling_ai">
 <style>
-#view-data_modeling_ai .dm-app { position:relative; display:flex; flex-direction:column; height:calc(100vh - 128px); min-height:600px; background:#0B1120; border:1px solid #1E293B; border-radius:16px; overflow:hidden; box-shadow:0 18px 48px rgba(2,6,23,.45); }
-#view-data_modeling_ai .dm-topbar { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 16px; background:linear-gradient(135deg, rgba(15,23,42,.98), rgba(30,27,75,.55)); border-bottom:1px solid #1E293B; flex-wrap:wrap; }
-#view-data_modeling_ai .dm-brand { display:flex; align-items:center; gap:12px; min-width:0; }
-#view-data_modeling_ai .dm-logo { width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:11px; font-size:20px; background:linear-gradient(135deg,#38BDF8,#6366F1); color:#FFF; box-shadow:0 6px 16px rgba(56,189,248,.35); }
-#view-data_modeling_ai .dm-brand h2 { margin:0; font-size:15px; letter-spacing:.7px; color:#F8FAFC; font-weight:900; }
-#view-data_modeling_ai .dm-brand p { margin:2px 0 0; font-size:11px; color:#94A3B8; }
-#view-data_modeling_ai .dm-top-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-#view-data_modeling_ai .dm-ai-badge { font-size:10.5px; font-weight:800; letter-spacing:.4px; padding:5px 10px; border-radius:999px; border:1px solid #334155; background:#0B1120; color:#94A3B8; white-space:nowrap; }
-#view-data_modeling_ai .dm-ai-badge.live { color:#6EE7B7; border-color:#065F46; background:rgba(6,95,70,.22); }
-#view-data_modeling_ai .dm-ai-badge.catalog { color:#FCD34D; border-color:#92400E; background:rgba(146,64,14,.18); }
-#view-data_modeling_ai .dm-btn { padding:8px 13px; border-radius:9px; border:1px solid #334155; background:#1E293B; color:#E2E8F0; font-size:12px; font-weight:800; cursor:pointer; transition:background .15s, border-color .15s, transform .12s; white-space:nowrap; }
-#view-data_modeling_ai .dm-btn:hover { background:#273549; border-color:#475569; transform:translateY(-1px); }
-#view-data_modeling_ai .dm-btn.primary { background:linear-gradient(135deg,#0EA5E9,#2563EB); border:0; color:#FFF; box-shadow:0 6px 16px rgba(37,99,235,.3); }
-#view-data_modeling_ai .dm-btn.ghost { background:transparent; }
+#view-data_modeling_ai .dm-app {
+  --dm-bg:#0B1119; --dm-panel:#0F1724; --dm-panel-2:#121C2B; --dm-line:#1E2A3C; --dm-line-2:#26364C;
+  --dm-text:#E6EDF7; --dm-muted:#92A4BE; --dm-dim:#6B7C97;
+  --dm-accent:#4C8DFF; --dm-accent-soft:rgba(76,141,255,.15);
+  --dm-green:#3FB950; --dm-red:#F85149; --dm-amber:#E3B341;
+  position:relative; display:flex; flex-direction:column; height:calc(100vh - 128px); min-height:560px;
+  background:var(--dm-bg); border:1px solid var(--dm-line); border-radius:14px; overflow:hidden;
+  box-shadow:0 18px 44px rgba(2,6,23,.42);
+  font-family:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-size:13px; line-height:1.5; color:var(--dm-text);
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+#view-data_modeling_ai .dm-app button,
+#view-data_modeling_ai .dm-app input,
+#view-data_modeling_ai .dm-app textarea,
+#view-data_modeling_ai .dm-app select { font-family:inherit; font-size:inherit; color:inherit; }
+#view-data_modeling_ai .dm-app *, #view-data_modeling_ai .dm-app *::before, #view-data_modeling_ai .dm-app *::after { box-sizing:border-box; }
+#view-data_modeling_ai .dm-svg { width:15px; height:15px; flex:0 0 auto; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ---------------------------------------------------------------- topbar */
+#view-data_modeling_ai .dm-topbar { display:flex; align-items:center; gap:10px; padding:9px 12px; background:linear-gradient(180deg,#101A28,#0D1520); border-bottom:1px solid var(--dm-line); flex-wrap:nowrap; }
+#view-data_modeling_ai .dm-top-left { display:flex; align-items:center; gap:4px; }
+#view-data_modeling_ai .dm-brand { display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+#view-data_modeling_ai .dm-logo { width:32px; height:32px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; border-radius:9px; background:linear-gradient(135deg,#2F81F7,#1F6FEB); color:#FFF; box-shadow:0 4px 14px rgba(47,129,247,.35); }
+#view-data_modeling_ai .dm-logo svg { width:18px; height:18px; stroke:#FFF; }
+#view-data_modeling_ai .dm-brand-text { min-width:0; }
+#view-data_modeling_ai .dm-brand-text h2 { margin:0; font-size:12.5px; font-weight:700; letter-spacing:.09em; color:#F2F6FC; white-space:nowrap; }
+#view-data_modeling_ai .dm-brand-text p { margin:1px 0 0; font-size:11px; color:var(--dm-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#view-data_modeling_ai .dm-top-actions { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+#view-data_modeling_ai .dm-ai-badge { font-size:10.5px; font-weight:600; letter-spacing:.02em; padding:4px 9px; border-radius:999px; border:1px solid var(--dm-line-2); background:#0B1320; color:var(--dm-muted); white-space:nowrap; }
+#view-data_modeling_ai .dm-ai-badge.live { color:#7EE787; border-color:rgba(63,185,80,.45); background:rgba(63,185,80,.1); }
+#view-data_modeling_ai .dm-ai-badge.catalog { color:#E3B341; border-color:rgba(227,179,65,.45); background:rgba(227,179,65,.1); }
+
+/* --------------------------------------------------------------- buttons */
+#view-data_modeling_ai .dm-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:7px; border:1px solid var(--dm-line-2); background:#16202F; color:#D6E2F2; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .14s, border-color .14s, color .14s; }
+#view-data_modeling_ai .dm-btn:hover { background:#1C293B; border-color:#33455F; color:#FFF; }
+#view-data_modeling_ai .dm-btn.primary { background:linear-gradient(135deg,#2F81F7,#1F6FEB); border-color:#2F81F7; color:#FFF; }
+#view-data_modeling_ai .dm-btn.primary:hover { background:linear-gradient(135deg,#4C8DFF,#2F81F7); }
+#view-data_modeling_ai .dm-btn[disabled] { opacity:.55; cursor:not-allowed; }
+#view-data_modeling_ai .dm-btn svg { width:14px; height:14px; }
+#view-data_modeling_ai .dm-iconbtn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; border-radius:7px; border:1px solid transparent; background:transparent; color:var(--dm-muted); cursor:pointer; transition:background .14s, color .14s, border-color .14s; }
+#view-data_modeling_ai .dm-iconbtn:hover { background:#1A2636; color:#F2F6FC; border-color:var(--dm-line); }
+#view-data_modeling_ai .dm-iconbtn.is-on { background:var(--dm-accent-soft); color:#8FB8FF; border-color:rgba(76,141,255,.35); }
+#view-data_modeling_ai .dm-iconbtn svg { width:15px; height:15px; }
+#view-data_modeling_ai .dm-linkbtn { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:6px; border:1px solid var(--dm-line-2); background:#121C2B; color:#9DC0FF; font-size:11.5px; font-weight:600; cursor:pointer; text-decoration:none; white-space:nowrap; }
+#view-data_modeling_ai .dm-linkbtn:hover { border-color:var(--dm-accent); background:rgba(76,141,255,.12); color:#CFE0FF; }
+#view-data_modeling_ai .dm-linkbtn[hidden] { display:none; }
+#view-data_modeling_ai .dm-linkbtn svg { width:13px; height:13px; }
+
+/* ------------------------------------------------------------------ body */
 #view-data_modeling_ai .dm-body { flex:1; display:flex; min-height:0; position:relative; }
-#view-data_modeling_ai .dm-rail { position:relative; width:236px; min-width:180px; max-width:420px; flex:0 0 auto; display:flex; flex-direction:column; min-height:0; background:#0F172A; border-right:1px solid #1E293B; transition:width .18s ease; }
-#view-data_modeling_ai .dm-rail-resize { position:absolute; top:0; right:-3px; bottom:0; width:7px; cursor:col-resize; z-index:8; }
-#view-data_modeling_ai .dm-rail-resize:hover, #view-data_modeling_ai .dm-rail-resize.dragging { background:linear-gradient(180deg,transparent,rgba(14,165,233,.6),transparent); }
-#view-data_modeling_ai .dm-rail-head { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 6px; border-bottom:1px solid #16233b; }
-#view-data_modeling_ai .dm-rail-title { font-size:9px; font-weight:900; letter-spacing:.9px; text-transform:uppercase; color:#64748B; padding-left:3px; }
-#view-data_modeling_ai .dm-rail-tools { display:flex; gap:2px; }
-#view-data_modeling_ai .dm-collapse { width:22px; height:22px; border-radius:6px; border:1px solid #334155; background:#0B1120; color:#94A3B8; font-size:11px; font-weight:900; cursor:pointer; line-height:1; padding:0; }
-#view-data_modeling_ai .dm-collapse:hover { color:#38BDF8; border-color:#0EA5E9; }
-#view-data_modeling_ai .dm-rail-mini { display:none; flex-direction:column; gap:6px; padding:8px 5px; }
-#view-data_modeling_ai .dm-mini-btn { display:flex; flex-direction:column; align-items:center; gap:2px; padding:7px 3px; border-radius:8px; border:1px solid transparent; background:transparent; color:#94A3B8; font-size:8px; font-weight:800; cursor:pointer; }
-#view-data_modeling_ai .dm-mini-btn span:first-child { font-size:15px; }
-#view-data_modeling_ai .dm-mini-btn:hover, #view-data_modeling_ai .dm-mini-btn.active { color:#38BDF8; background:rgba(14,165,233,.1); border-color:#0EA5E9; }
-#view-data_modeling_ai .dm-rail-panels { display:flex; flex-direction:column; min-height:0; flex:1; }
-#view-data_modeling_ai .dm-search-wrap { display:flex; gap:4px; padding:6px 6px 3px; }
-#view-data_modeling_ai .dm-filter { flex:1; min-width:0; background:#0B1120; border:1px solid #334155; border-radius:7px; color:#F8FAFC; font-size:11px; padding:5px 8px; outline:none; box-sizing:border-box; }
-#view-data_modeling_ai .dm-filter:focus { border-color:#0EA5E9; box-shadow:0 0 0 2px rgba(14,165,233,.12); }
-#view-data_modeling_ai .dm-clear { flex:0 0 auto; width:24px; border-radius:7px; border:1px solid #334155; background:#0B1120; color:#64748B; font-size:10px; cursor:pointer; display:none; }
-#view-data_modeling_ai .dm-clear.show { display:block; }
-#view-data_modeling_ai .dm-clear:hover { color:#FCA5A5; border-color:#7F1D1D; }
-#view-data_modeling_ai .dm-tree { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:2px 2px 8px; scrollbar-width:thin; scrollbar-color:#334155 transparent; }
-#view-data_modeling_ai .dm-tree::-webkit-scrollbar { width:8px; height:8px; }
-#view-data_modeling_ai .dm-tree::-webkit-scrollbar-track { background:transparent; }
-#view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb { background:#334155; border-radius:8px; }
-#view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb:hover { background:#475569; }
-#view-data_modeling_ai .dm-tree-inner { display:block; }
-#view-data_modeling_ai .dm-tree-note { padding:4px 8px; font-size:10px; color:#64748B; line-height:1.5; }
-#view-data_modeling_ai .dm-railtree-head { display:flex; align-items:center; gap:3px; padding:3px 4px; margin-top:2px; border-radius:6px; position:sticky; top:0; z-index:2; background:#0F172A; }
-#view-data_modeling_ai .dm-railtree-head:hover { background:#111C31; }
-#view-data_modeling_ai .dm-railtree-title { flex:1; font-size:8.5px; font-weight:900; letter-spacing:.9px; text-transform:uppercase; color:#64748B; }
-#view-data_modeling_ai .dm-tree-row { display:flex; align-items:center; gap:4px; width:max-content; min-width:100%; box-sizing:border-box; min-height:23px; padding:0 4px; border:0; border-radius:6px; background:transparent; color:#CBD5E1; font:inherit; font-size:11px; text-align:left; cursor:pointer; white-space:nowrap; }
-#view-data_modeling_ai .dm-tree-row:hover { background:rgba(56,189,248,.08); color:#E2E8F0; }
-#view-data_modeling_ai .dm-tree-row.active { background:rgba(14,165,233,.14); color:#F8FAFC; box-shadow:inset 2px 0 0 #38BDF8; }
-#view-data_modeling_ai .dm-tree-row.is-db { font-weight:800; color:#E2E8F0; }
-#view-data_modeling_ai .dm-tree-row.is-ws { color:#D1FAE5; }
-#view-data_modeling_ai .dm-tree-row.is-schema { font-size:10.5px; font-weight:700; color:#94A3B8; min-height:21px; }
-#view-data_modeling_ai .dm-tree-row.is-table { font-size:10.5px; color:#A5B4CB; min-height:21px; }
-#view-data_modeling_ai .dm-tree-row.is-col { font-size:10px; color:#7C8AA5; min-height:19px; cursor:default; }
-#view-data_modeling_ai .dm-tree-row.is-col:hover { background:transparent; color:#94A3B8; }
-#view-data_modeling_ai .dm-node-caret { width:11px; flex:0 0 auto; text-align:center; color:#64748B; font-size:8px; transition:transform .12s; }
-#view-data_modeling_ai .dm-node-caret.open { transform:rotate(90deg); }
-#view-data_modeling_ai .dm-node-caret.empty { visibility:hidden; }
-#view-data_modeling_ai .dm-node-ico { flex:0 0 auto; width:14px; text-align:center; font-size:10.5px; }
-#view-data_modeling_ai .dm-node-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-#view-data_modeling_ai .dm-node-badge { flex:0 0 auto; font-size:8px; font-weight:800; color:#64748B; }
-#view-data_modeling_ai .dm-node-badge.live { color:#34D399; }
-#view-data_modeling_ai .dm-node-badge.pk { color:#FCD34D; letter-spacing:.3px; }
-#view-data_modeling_ai .dm-node-type { flex:0 0 auto; font-size:8px; color:#64748B; font-family:Consolas,Monaco,monospace; }
-#view-data_modeling_ai .dm-node-act { flex:0 0 auto; width:16px; height:16px; padding:0; border:0; border-radius:4px; background:transparent; color:#475569; font-size:10px; line-height:1; cursor:pointer; opacity:0; }
-#view-data_modeling_ai .dm-tree-row:hover .dm-node-act, #view-data_modeling_ai .dm-railtree-head:hover .dm-node-act { opacity:1; }
-#view-data_modeling_ai .dm-node-act:hover { color:#38BDF8; background:rgba(14,165,233,.14); }
-#view-data_modeling_ai .dm-node-act.danger:hover { color:#FCA5A5; background:rgba(127,29,29,.25); }
-#view-data_modeling_ai .dm-icon-btn { border:0; background:transparent; color:#64748B; font-size:12px; cursor:pointer; padding:2px 4px; border-radius:5px; }
-#view-data_modeling_ai .dm-icon-btn:hover { color:#38BDF8; background:rgba(14,165,233,.12); }
-#view-data_modeling_ai .dm-rename { width:100%; background:#111C31; border:1px solid #0EA5E9; border-radius:6px; color:#F8FAFC; font-size:11px; font-weight:700; padding:2px 5px; outline:none; }
-#view-data_modeling_ai .dm-rail-foot { display:flex; gap:4px; padding:5px 6px; border-top:1px solid #16233b; }
-#view-data_modeling_ai .dm-new-ws { flex:1; padding:6px 4px; border-radius:7px; border:1px dashed #334155; background:rgba(14,165,233,.06); color:#38BDF8; font-size:10px; font-weight:800; cursor:pointer; white-space:nowrap; }
-#view-data_modeling_ai .dm-new-ws:hover { background:rgba(14,165,233,.14); border-color:#0EA5E9; }
-#view-data_modeling_ai .dm-main { flex:1; min-width:0; display:flex; flex-direction:column; background:radial-gradient(1200px 500px at 80% -10%, rgba(56,189,248,.07), transparent 60%), #0B1120; }
-#view-data_modeling_ai .dm-chat-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 16px; border-bottom:1px solid #1E293B; background:rgba(15,23,42,.6); }
-#view-data_modeling_ai .dm-ws-title { font-size:13.5px; font-weight:900; color:#F8FAFC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-#view-data_modeling_ai .dm-ws-sub { margin-top:2px; font-size:10px; color:#64748B; }
-#view-data_modeling_ai .dm-messages { flex:1; min-height:0; overflow:auto; padding:18px 18px 8px; display:flex; flex-direction:column; gap:14px; }
+
+/* ---------------------------------------------------- panel 1: chats */
+#view-data_modeling_ai .dm-chats { position:relative; width:272px; flex:0 0 auto; display:flex; flex-direction:column; min-height:0; background:var(--dm-panel); border-right:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-explorer { position:relative; width:292px; flex:0 0 auto; display:flex; flex-direction:column; min-height:0; background:#0D1520; border-right:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-app.hide-chats .dm-chats,
+#view-data_modeling_ai .dm-app.hide-explorer .dm-explorer { display:none; }
+#view-data_modeling_ai .dm-panel-head { display:flex; align-items:center; gap:6px; height:44px; padding:0 8px 0 12px; border-bottom:1px solid var(--dm-line); flex:0 0 auto; }
+#view-data_modeling_ai .dm-panel-title { flex:1; min-width:0; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#A9BBD4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#view-data_modeling_ai .dm-panel-tools { display:flex; align-items:center; gap:2px; }
+#view-data_modeling_ai .dm-panel-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 6px 12px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
+#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar, #view-data_modeling_ai .dm-tree::-webkit-scrollbar, #view-data_modeling_ai .dm-messages::-webkit-scrollbar, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar { width:9px; height:9px; }
+#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-messages::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar-thumb { background:#2A3A50; border-radius:8px; }
+#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar-track, #view-data_modeling_ai .dm-tree::-webkit-scrollbar-track, #view-data_modeling_ai .dm-messages::-webkit-scrollbar-track, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar-track { background:transparent; }
+#view-data_modeling_ai .dm-sec { margin-bottom:8px; }
+#view-data_modeling_ai .dm-sec-head { display:flex; align-items:center; gap:6px; padding:6px 8px 5px; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dm-dim); }
+#view-data_modeling_ai .dm-sec-head > span:first-child { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-sec-count { font-size:10px; font-weight:600; color:var(--dm-dim); letter-spacing:0; }
+#view-data_modeling_ai .dm-sec-add { width:20px; height:20px; padding:0; border:0; background:transparent; color:var(--dm-dim); border-radius:5px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-sec-add:hover { color:#9DC0FF; background:rgba(76,141,255,.12); }
+#view-data_modeling_ai .dm-sec-add svg { width:13px; height:13px; }
+#view-data_modeling_ai .dm-note { padding:5px 9px 7px; font-size:11.5px; line-height:1.55; color:var(--dm-dim); }
+
+#view-data_modeling_ai .dm-row { display:flex; align-items:center; gap:7px; width:100%; min-height:30px; padding:4px 8px; margin:1px 0; border:0; border-radius:7px; background:transparent; color:#CBD8E9; font-size:12.5px; font-weight:500; text-align:left; cursor:pointer; transition:background .12s, color .12s; }
+#view-data_modeling_ai .dm-row:hover { background:#16202F; color:#F2F6FC; }
+#view-data_modeling_ai .dm-row.is-active { background:var(--dm-accent-soft); color:#FFFFFF; box-shadow:inset 2px 0 0 var(--dm-accent); }
+#view-data_modeling_ai .dm-row-ico { display:inline-flex; align-items:center; justify-content:center; width:16px; color:var(--dm-muted); }
+#view-data_modeling_ai .dm-row.is-active .dm-row-ico { color:#8FB8FF; }
+#view-data_modeling_ai .dm-row-ico svg { width:14px; height:14px; }
+#view-data_modeling_ai .dm-row-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-row-meta { flex:0 0 auto; font-size:10.5px; font-weight:600; color:var(--dm-dim); }
+#view-data_modeling_ai .dm-row-acts { display:none; align-items:center; gap:1px; flex:0 0 auto; }
+#view-data_modeling_ai .dm-row:hover .dm-row-acts, #view-data_modeling_ai .dm-row.is-active .dm-row-acts { display:flex; }
+#view-data_modeling_ai .dm-rowact { width:21px; height:21px; padding:0; border:0; border-radius:5px; background:transparent; color:var(--dm-muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-rowact:hover { background:#223349; color:#FFF; }
+#view-data_modeling_ai .dm-rowact svg { width:13px; height:13px; }
+#view-data_modeling_ai .dm-caret { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; flex:0 0 auto; color:var(--dm-dim); transition:transform .15s; }
+#view-data_modeling_ai .dm-caret.is-open { transform:rotate(90deg); }
+#view-data_modeling_ai .dm-caret svg { width:11px; height:11px; stroke-width:2.2; }
+#view-data_modeling_ai .dm-proj-kids { margin:1px 0 4px 14px; padding-left:8px; border-left:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-newchat-row { color:var(--dm-muted); font-size:12px; }
+#view-data_modeling_ai .dm-newchat-row:hover { color:#9DC0FF; }
+#view-data_modeling_ai .dm-panel-foot { flex:0 0 auto; padding:8px; border-top:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-newchat-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:7px 10px; border-radius:7px; border:1px dashed var(--dm-line-2); background:rgba(76,141,255,.05); color:#9DC0FF; font-size:12px; font-weight:600; cursor:pointer; }
+#view-data_modeling_ai .dm-newchat-btn:hover { border-color:var(--dm-accent); background:rgba(76,141,255,.12); color:#CFE0FF; }
+#view-data_modeling_ai .dm-newchat-btn svg { width:14px; height:14px; }
+
+/* ------------------------------------------------------- panel 2: tree */
+#view-data_modeling_ai .dm-search { padding:8px 8px 6px; flex:0 0 auto; position:relative; }
+#view-data_modeling_ai .dm-search input { width:100%; height:30px; padding:0 28px 0 9px; border-radius:7px; border:1px solid var(--dm-line-2); background:#0A1220; color:var(--dm-text); font-size:12px; outline:none; }
+#view-data_modeling_ai .dm-search input::placeholder { color:#5E6F89; }
+#view-data_modeling_ai .dm-search input:focus { border-color:var(--dm-accent); box-shadow:0 0 0 3px rgba(76,141,255,.12); }
+#view-data_modeling_ai .dm-search-clear { position:absolute; right:14px; top:50%; transform:translateY(-50%); width:19px; height:19px; padding:0; border:0; border-radius:5px; background:transparent; color:var(--dm-dim); cursor:pointer; display:none; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-search-clear.show { display:inline-flex; }
+#view-data_modeling_ai .dm-search-clear:hover { color:#F2F6FC; background:#223349; }
+#view-data_modeling_ai .dm-search-clear svg { width:12px; height:12px; }
+#view-data_modeling_ai .dm-tree { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:2px 6px 10px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
+#view-data_modeling_ai .dm-group { margin-bottom:6px; }
+#view-data_modeling_ai .dm-group-head { display:flex; align-items:center; gap:6px; position:sticky; top:0; z-index:3; padding:5px 6px; border-radius:6px; background:#0D1520; color:#A9BBD4; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; cursor:pointer; }
+#view-data_modeling_ai .dm-group-head:hover { background:#131E2D; }
+#view-data_modeling_ai .dm-group-head .dm-tlabel { text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; font-weight:700; color:#A9BBD4; }
+#view-data_modeling_ai .dm-trow { display:flex; align-items:center; gap:6px; width:100%; min-height:27px; padding:3px 6px; border:0; border-radius:6px; background:transparent; color:#C6D4E6; font-size:12px; text-align:left; cursor:pointer; transition:background .12s, color .12s; }
+#view-data_modeling_ai .dm-trow:hover { background:#16202F; color:#F2F6FC; }
+#view-data_modeling_ai .dm-trow.is-active { background:var(--dm-accent-soft); color:#FFF; }
+#view-data_modeling_ai .dm-trow.is-db { font-weight:600; color:#DCE7F5; }
+#view-data_modeling_ai .dm-trow.is-schema { font-size:11.5px; font-weight:600; color:#AFC1D8; }
+#view-data_modeling_ai .dm-trow.is-table { font-size:12px; color:#BCCDE2; }
+#view-data_modeling_ai .dm-trow.is-col { font-size:11px; color:#8FA2BC; min-height:23px; cursor:default; }
+#view-data_modeling_ai .dm-trow.is-col:hover { background:transparent; color:#8FA2BC; }
+#view-data_modeling_ai .dm-tcaret { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; flex:0 0 auto; padding:0; border:0; background:transparent; color:var(--dm-dim); cursor:pointer; transition:transform .15s; }
+#view-data_modeling_ai .dm-tcaret.is-open { transform:rotate(90deg); }
+#view-data_modeling_ai .dm-tcaret.is-empty { visibility:hidden; }
+#view-data_modeling_ai .dm-tcaret svg { width:11px; height:11px; stroke-width:2.2; }
+#view-data_modeling_ai .dm-tico { display:inline-flex; align-items:center; justify-content:center; width:15px; flex:0 0 auto; color:#7E93AF; }
+#view-data_modeling_ai .dm-tico svg { width:13px; height:13px; }
+#view-data_modeling_ai .dm-tico.is-db { color:#8FB8FF; }
+#view-data_modeling_ai .dm-tico.is-ws { color:#7EE787; }
+#view-data_modeling_ai .dm-tlabel { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-tbadge { flex:0 0 auto; font-size:9.5px; font-weight:700; letter-spacing:.02em; color:#7E93AF; background:#121C2B; border:1px solid var(--dm-line); border-radius:999px; padding:1px 6px; }
+#view-data_modeling_ai .dm-tbadge.live { color:#7EE787; border-color:rgba(63,185,80,.4); }
+#view-data_modeling_ai .dm-tbadge.pk { color:#E3B341; border-color:rgba(227,179,65,.4); }
+#view-data_modeling_ai .dm-ttype { flex:0 0 auto; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:9.5px; color:#6B7C97; }
+#view-data_modeling_ai .dm-tacts { display:flex; align-items:center; gap:1px; }
+#view-data_modeling_ai .dm-tact { width:19px; height:19px; padding:0; border:0; border-radius:4px; background:transparent; color:var(--dm-dim); cursor:pointer; display:none; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-trow:hover .dm-tact { display:inline-flex; }
+#view-data_modeling_ai .dm-tact:hover { background:#223349; color:#9DC0FF; }
+#view-data_modeling_ai .dm-tact svg { width:12px; height:12px; }
+#view-data_modeling_ai .dm-tree-note { padding:4px 9px 7px; font-size:11px; line-height:1.55; color:var(--dm-dim); }
+
+/* ------------------------------------------------------------------ main */
+#view-data_modeling_ai .dm-main { flex:1; min-width:0; display:flex; flex-direction:column; background:radial-gradient(900px 380px at 82% -12%, rgba(76,141,255,.08), transparent 62%), var(--dm-bg); }
+#view-data_modeling_ai .dm-chat-head { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--dm-line); background:rgba(15,23,36,.72); }
+#view-data_modeling_ai .dm-chat-head-main { flex:1; min-width:0; }
+#view-data_modeling_ai .dm-chat-title { font-size:13.5px; font-weight:600; color:#F2F6FC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-chat-sub { margin-top:1px; font-size:11px; color:var(--dm-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#view-data_modeling_ai .dm-chat-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; }
+#view-data_modeling_ai .dm-messages { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:16px 16px 10px; display:flex; flex-direction:column; gap:13px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
 #view-data_modeling_ai .dm-msg { display:flex; gap:9px; align-items:flex-start; }
 #view-data_modeling_ai .dm-msg.user { flex-direction:row-reverse; }
-#view-data_modeling_ai .dm-avatar { flex:0 0 auto; width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900; background:#1E293B; color:#94A3B8; border:1px solid #334155; }
-#view-data_modeling_ai .dm-msg.ai .dm-avatar { background:linear-gradient(135deg,#0EA5E9,#6366F1); color:#FFF; border:0; }
-#view-data_modeling_ai .dm-msg.user .dm-avatar { font-size:8.5px; letter-spacing:0; }
-#view-data_modeling_ai .dm-bubble { max-width:min(760px, 86%); background:#0F172A; border:1px solid #1E293B; border-radius:12px; padding:11px 13px; }
-#view-data_modeling_ai .dm-msg.user .dm-bubble { background:rgba(37,99,235,.18); border-color:rgba(37,99,235,.45); }
-#view-data_modeling_ai .dm-text { font-size:12.5px; line-height:1.62; color:#E2E8F0; white-space:pre-wrap; word-break:break-word; }
-#view-data_modeling_ai .dm-msg.user .dm-text { color:#DBEAFE; }
-#view-data_modeling_ai .dm-sql { margin-top:9px; border:1px solid #1E293B; border-radius:8px; background:#020617; }
-#view-data_modeling_ai .dm-sql summary { cursor:pointer; padding:6px 9px; font-size:10px; font-weight:800; letter-spacing:.4px; color:#38BDF8; text-transform:uppercase; }
-#view-data_modeling_ai .dm-sql pre { margin:0; padding:9px 11px; font-size:11px; line-height:1.5; color:#93C5FD; overflow:auto; white-space:pre; font-family:Consolas,Monaco,monospace; border-top:1px solid #1E293B; }
-#view-data_modeling_ai .dm-msg-foot { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
-#view-data_modeling_ai .dm-mini-tag { font-size:9px; font-weight:800; letter-spacing:.3px; color:#94A3B8; background:#111C31; border:1px solid #334155; border-radius:999px; padding:2px 7px; }
-#view-data_modeling_ai .dm-mini-tag.ok { color:#6EE7B7; border-color:#065F46; }
-#view-data_modeling_ai .dm-mini-tag.err { color:#FCA5A5; border-color:#7F1D1D; }
-#view-data_modeling_ai .dm-link-btn { border:1px solid #334155; background:#0B1120; color:#38BDF8; font-size:10px; font-weight:800; padding:4px 8px; border-radius:6px; cursor:pointer; }
-#view-data_modeling_ai .dm-link-btn:hover { border-color:#0EA5E9; background:rgba(14,165,233,.1); }
-#view-data_modeling_ai .dm-typing { display:inline-flex; gap:4px; align-items:center; padding:4px 0; }
-#view-data_modeling_ai .dm-typing i { width:6px; height:6px; border-radius:50%; background:#38BDF8; animation:dmdot 1s infinite ease-in-out; }
+#view-data_modeling_ai .dm-avatar { flex:0 0 auto; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; letter-spacing:.03em; background:#1B2739; color:#AFC1D8; border:1px solid var(--dm-line-2); }
+#view-data_modeling_ai .dm-msg.ai .dm-avatar { background:linear-gradient(135deg,#2F81F7,#1F6FEB); color:#FFF; border-color:transparent; }
+#view-data_modeling_ai .dm-bubble { max-width:min(780px,88%); background:var(--dm-panel); border:1px solid var(--dm-line); border-radius:11px; padding:10px 12px; }
+#view-data_modeling_ai .dm-msg.user .dm-bubble { background:rgba(47,129,247,.14); border-color:rgba(76,141,255,.35); }
+#view-data_modeling_ai .dm-text { font-size:13px; line-height:1.62; color:#DFE9F6; white-space:pre-wrap; word-break:break-word; }
+#view-data_modeling_ai .dm-msg.user .dm-text { color:#EAF2FF; }
+#view-data_modeling_ai .dm-sql { margin-top:8px; border:1px solid var(--dm-line); border-radius:7px; background:#070D16; overflow:hidden; }
+#view-data_modeling_ai .dm-sql summary { cursor:pointer; padding:5px 9px; font-size:10.5px; font-weight:700; letter-spacing:.03em; color:#8FB8FF; text-transform:uppercase; }
+#view-data_modeling_ai .dm-sql pre { margin:0; padding:8px 10px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11.5px; line-height:1.55; color:#A8CBFF; overflow-x:auto; white-space:pre; border-top:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-msg-foot { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; }
+#view-data_modeling_ai .dm-tag { font-size:10px; font-weight:600; color:#9DB1CB; background:#121C2B; border:1px solid var(--dm-line); border-radius:999px; padding:2px 7px; }
+#view-data_modeling_ai .dm-tag.ok { color:#7EE787; border-color:rgba(63,185,80,.4); }
+#view-data_modeling_ai .dm-tag.err { color:#FF9B93; border-color:rgba(248,81,73,.4); }
+#view-data_modeling_ai .dm-typing { display:inline-flex; gap:4px; align-items:center; padding:5px 2px; }
+#view-data_modeling_ai .dm-typing i { width:6px; height:6px; border-radius:50%; background:#4C8DFF; animation:dmdot 1s infinite ease-in-out; }
 #view-data_modeling_ai .dm-typing i:nth-child(2) { animation-delay:.15s; }
 #view-data_modeling_ai .dm-typing i:nth-child(3) { animation-delay:.3s; }
 @keyframes dmdot { 0%,80%,100% { opacity:.25; transform:translateY(0); } 40% { opacity:1; transform:translateY(-3px); } }
-#view-data_modeling_ai .dm-empty { margin:auto; max-width:620px; text-align:center; padding:10px 8px; }
-#view-data_modeling_ai .dm-empty-ico { width:58px; height:58px; margin:0 auto 12px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px; background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(99,102,241,.18)); border:1px solid #334155; }
-#view-data_modeling_ai .dm-empty h3 { margin:0 0 5px; font-size:16px; color:#F8FAFC; }
-#view-data_modeling_ai .dm-empty p { margin:0 0 14px; font-size:12px; color:#94A3B8; line-height:1.6; }
-#view-data_modeling_ai .dm-suggest { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
-#view-data_modeling_ai .dm-suggest button { border:1px solid #334155; background:#0F172A; color:#CBD5E1; font-size:11px; padding:7px 10px; border-radius:999px; cursor:pointer; }
-#view-data_modeling_ai .dm-suggest button:hover { border-color:#0EA5E9; color:#38BDF8; background:rgba(14,165,233,.08); }
-#view-data_modeling_ai .dm-result { border-top:1px solid #1E293B; background:#0F172A; max-height:42%; display:flex; flex-direction:column; }
-#view-data_modeling_ai .dm-result[hidden] { display:none; }
-#view-data_modeling_ai .dm-result-head { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px solid #1E293B; }
-#view-data_modeling_ai .dm-result-title { font-size:11.5px; font-weight:900; color:#F8FAFC; }
-#view-data_modeling_ai .dm-result-meta { font-size:9.5px; color:#64748B; font-weight:700; }
-#view-data_modeling_ai .dm-result-actions { margin-left:auto; display:flex; gap:6px; }
-#view-data_modeling_ai .dm-result-body { overflow:auto; padding:0; min-height:0; }
-#view-data_modeling_ai .dm-table-wrap { overflow:auto; max-width:100%; }
-#view-data_modeling_ai table.dm-data-table { border-collapse:collapse; width:100%; font-size:11px; }
-#view-data_modeling_ai table.dm-data-table th { position:sticky; top:0; background:#111C31; color:#93C5FD; text-align:left; font-weight:800; padding:7px 10px; border-bottom:1px solid #334155; white-space:nowrap; z-index:1; }
-#view-data_modeling_ai table.dm-data-table td { padding:6px 10px; border-bottom:1px solid #16233b; color:#CBD5E1; white-space:nowrap; max-width:340px; overflow:hidden; text-overflow:ellipsis; }
-#view-data_modeling_ai table.dm-data-table tr:hover td { background:rgba(56,189,248,.05); }
-#view-data_modeling_ai .dm-composer { border-top:1px solid #1E293B; padding:10px 14px 4px; background:#0B1120; }
-#view-data_modeling_ai .dm-compose-row { display:flex; align-items:flex-end; gap:9px; background:#0F172A; border:1px solid #334155; border-radius:13px; padding:8px 9px 8px 12px; transition:border-color .15s, box-shadow .15s; }
-#view-data_modeling_ai .dm-compose-row:focus-within { border-color:#0EA5E9; box-shadow:0 0 0 3px rgba(14,165,233,.12); }
-#view-data_modeling_ai .dm-compose-row textarea { flex:1; min-height:24px; max-height:160px; resize:none; background:transparent; border:0; outline:0; color:#F8FAFC; font-size:13px; line-height:1.5; font-family:inherit; padding:3px 0; }
-#view-data_modeling_ai .dm-compose-row textarea::placeholder { color:#64748B; }
-#view-data_modeling_ai .dm-send { flex:0 0 auto; width:36px; height:36px; border-radius:10px; border:0; background:linear-gradient(135deg,#0EA5E9,#2563EB); color:#FFF; font-size:16px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-empty { margin:auto; max-width:600px; text-align:center; padding:18px 10px 26px; }
+#view-data_modeling_ai .dm-empty-ico { width:52px; height:52px; margin:0 auto 12px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,rgba(76,141,255,.18),rgba(63,185,80,.12)); border:1px solid var(--dm-line-2); color:#9DC0FF; }
+#view-data_modeling_ai .dm-empty-ico svg { width:24px; height:24px; }
+#view-data_modeling_ai .dm-empty h3 { margin:0 0 6px; font-size:16px; font-weight:600; color:#F2F6FC; }
+#view-data_modeling_ai .dm-empty p { margin:0 0 14px; font-size:12.5px; line-height:1.6; color:var(--dm-muted); }
+#view-data_modeling_ai .dm-suggest { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+#view-data_modeling_ai .dm-suggest button { border:1px solid var(--dm-line-2); background:#121C2B; color:#C6D4E6; font-size:12px; padding:6px 11px; border-radius:999px; cursor:pointer; transition:border-color .14s, color .14s, background .14s; }
+#view-data_modeling_ai .dm-suggest button:hover { border-color:var(--dm-accent); color:#CFE0FF; background:rgba(76,141,255,.1); }
+
+/* ------------------------------------------------------------- data dock */
+#view-data_modeling_ai .dm-data { position:relative; flex:0 0 auto; height:250px; display:flex; flex-direction:column; min-height:0; border-top:1px solid var(--dm-line); background:var(--dm-panel); }
+#view-data_modeling_ai .dm-app.data-collapsed .dm-data { height:38px !important; }
+#view-data_modeling_ai .dm-app.data-collapsed .dm-data-body,
+#view-data_modeling_ai .dm-app.data-collapsed .dm-grip-h { display:none; }
+#view-data_modeling_ai .dm-data-head { flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--dm-line); min-height:37px; }
+#view-data_modeling_ai .dm-data-title { font-size:12.5px; font-weight:600; color:#F2F6FC; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px; }
+#view-data_modeling_ai .dm-data-meta { flex:1; min-width:0; font-size:11px; color:var(--dm-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#view-data_modeling_ai .dm-data-actions { display:flex; align-items:center; gap:5px; flex:0 0 auto; }
+#view-data_modeling_ai .dm-data-toggle svg { transition:transform .15s; }
+#view-data_modeling_ai .dm-app.data-collapsed .dm-data-toggle svg { transform:rotate(180deg); }
+#view-data_modeling_ai .dm-data-body { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:10px 12px 14px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
+#view-data_modeling_ai .dm-data-empty { display:flex; align-items:center; justify-content:center; height:100%; min-height:110px; padding:16px 20px; text-align:center; font-size:12px; line-height:1.6; color:var(--dm-dim); }
+#view-data_modeling_ai .dm-stat-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+#view-data_modeling_ai .dm-stat { font-size:10.5px; font-weight:600; color:#C6D4E6; background:#121C2B; border:1px solid var(--dm-line); border-radius:999px; padding:3px 9px; }
+#view-data_modeling_ai .dm-sec-title { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dm-dim); margin:12px 0 6px; }
+#view-data_modeling_ai .dm-note-line { font-size:11.5px; color:var(--dm-muted); margin-bottom:8px; line-height:1.55; }
+#view-data_modeling_ai .dm-data-body pre { margin:0; background:#070D16; border:1px solid var(--dm-line); border-radius:7px; padding:8px 10px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px; line-height:1.55; color:#A8CBFF; overflow:auto; white-space:pre-wrap; }
+#view-data_modeling_ai .dm-table-wrap { overflow:auto; border:1px solid var(--dm-line); border-radius:8px; max-width:100%; }
+#view-data_modeling_ai table.dm-dtable { border-collapse:collapse; width:100%; font-size:11.5px; }
+#view-data_modeling_ai table.dm-dtable th { position:sticky; top:0; z-index:1; background:#16202F; color:#9DC0FF; text-align:left; font-weight:600; padding:6px 10px; border-bottom:1px solid var(--dm-line-2); white-space:nowrap; }
+#view-data_modeling_ai table.dm-dtable td { padding:5px 10px; border-bottom:1px solid #16202F; color:#D6E2F2; white-space:nowrap; max-width:340px; overflow:hidden; text-overflow:ellipsis; }
+#view-data_modeling_ai table.dm-dtable tr:last-child td { border-bottom:0; }
+#view-data_modeling_ai table.dm-dtable tbody tr:hover td { background:rgba(76,141,255,.06); }
+#view-data_modeling_ai .dm-muted { color:var(--dm-dim); font-size:12px; padding:8px 2px; }
+
+/* ---------------------------------------------------------------- composer */
+#view-data_modeling_ai .dm-composer { flex:0 0 auto; padding:9px 14px 4px; border-top:1px solid var(--dm-line); background:#0B1119; }
+#view-data_modeling_ai .dm-compose-row { display:flex; align-items:flex-end; gap:8px; background:#101A28; border:1px solid var(--dm-line-2); border-radius:11px; padding:7px 8px 7px 11px; transition:border-color .14s, box-shadow .14s; }
+#view-data_modeling_ai .dm-compose-row:focus-within { border-color:var(--dm-accent); box-shadow:0 0 0 3px rgba(76,141,255,.12); }
+#view-data_modeling_ai .dm-compose-row textarea { flex:1; min-height:24px; max-height:150px; resize:none; background:transparent; border:0; outline:0; color:#F2F6FC; font-size:13px; line-height:1.55; padding:3px 0; }
+#view-data_modeling_ai .dm-compose-row textarea::placeholder { color:#5E6F89; }
+#view-data_modeling_ai .dm-send { flex:0 0 auto; width:32px; height:32px; border-radius:8px; border:0; background:linear-gradient(135deg,#2F81F7,#1F6FEB); color:#FFF; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+#view-data_modeling_ai .dm-send:hover { background:linear-gradient(135deg,#4C8DFF,#2F81F7); }
 #view-data_modeling_ai .dm-send:disabled { opacity:.5; cursor:not-allowed; }
-#view-data_modeling_ai .dm-hint { text-align:center; font-size:9.5px; color:#475569; padding:4px 0 6px; }
-#view-data_modeling_ai .dm-muted { color:#64748B; font-size:11.5px; padding:10px; }
-#view-data_modeling_ai .dm-drawer-backdrop, #view-data_modeling_ai .dm-modal { position:absolute; inset:0; z-index:40; background:rgba(2,6,23,.72); display:none; }
-#view-data_modeling_ai .dm-drawer-backdrop.open, #view-data_modeling_ai .dm-modal.open { display:flex; }
-#view-data_modeling_ai .dm-drawer { margin-left:auto; width:min(480px,100%); height:100%; background:#0F172A; border-left:1px solid #334155; display:flex; flex-direction:column; animation:dmSlide .18s ease; }
-@keyframes dmSlide { from { transform:translateX(24px); opacity:.4; } to { transform:translateX(0); opacity:1; } }
-#view-data_modeling_ai .dm-drawer-head, #view-data_modeling_ai .dm-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:14px 16px; border-bottom:1px solid #1E293B; }
-#view-data_modeling_ai .dm-drawer-title, #view-data_modeling_ai .dm-modal-title { font-size:14px; font-weight:900; color:#F8FAFC; }
-#view-data_modeling_ai .dm-drawer-sub { margin-top:3px; font-size:10px; color:#64748B; }
-#view-data_modeling_ai .dm-drawer-body { flex:1; overflow:auto; padding:14px 16px; }
-#view-data_modeling_ai .dm-stat-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
-#view-data_modeling_ai .dm-stat { font-size:10px; font-weight:800; color:#CBD5E1; background:#0B1120; border:1px solid #334155; border-radius:999px; padding:4px 9px; }
-#view-data_modeling_ai .dm-section-title { font-size:10px; font-weight:900; letter-spacing:.6px; text-transform:uppercase; color:#64748B; margin:14px 0 6px; }
-#view-data_modeling_ai .dm-drawer pre { margin:0; background:#020617; border:1px solid #1E293B; border-radius:8px; padding:9px 11px; font-size:10.5px; line-height:1.5; color:#93C5FD; overflow:auto; white-space:pre-wrap; }
-#view-data_modeling_ai .dm-drawer-foot { padding:10px 16px; border-top:1px solid #1E293B; display:flex; gap:8px; }
-#view-data_modeling_ai .dm-modal { align-items:center; justify-content:center; }
-#view-data_modeling_ai .dm-modal-card { width:min(460px,92%); background:#0F172A; border:1px solid #334155; border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,.7); }
-#view-data_modeling_ai .dm-modal-body { padding:16px; display:flex; flex-direction:column; gap:11px; }
-#view-data_modeling_ai .dm-field label { display:block; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; color:#94A3B8; margin-bottom:5px; }
-#view-data_modeling_ai .dm-field input, #view-data_modeling_ai .dm-field select { width:100%; box-sizing:border-box; background:#0B1120; border:1px solid #334155; border-radius:8px; color:#F8FAFC; font-size:12.5px; padding:9px 10px; outline:none; }
-#view-data_modeling_ai .dm-field input:focus, #view-data_modeling_ai .dm-field select:focus { border-color:#0EA5E9; }
-#view-data_modeling_ai .dm-field input[type=file] { padding:7px; font-size:11px; color:#94A3B8; }
-#view-data_modeling_ai .dm-field-note { font-size:10px; color:#64748B; line-height:1.5; }
-#view-data_modeling_ai .dm-modal-foot { display:flex; justify-content:flex-end; gap:8px; padding:0 16px 16px; }
-#view-data_modeling_ai .dm-toast { position:absolute; right:18px; bottom:78px; z-index:60; max-width:380px; padding:10px 13px; border-radius:10px; font-size:11.5px; font-weight:700; line-height:1.5; background:#0F172A; border:1px solid #334155; color:#E2E8F0; box-shadow:0 14px 34px rgba(2,6,23,.6); opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .18s, transform .18s; }
+#view-data_modeling_ai .dm-send svg { width:16px; height:16px; }
+#view-data_modeling_ai .dm-hint { text-align:center; font-size:10px; color:#5E6F89; padding:4px 0 6px; }
+
+/* ------------------------------------------------------------------ grips */
+#view-data_modeling_ai .dm-grip-v { position:absolute; top:0; right:-3px; bottom:0; width:6px; cursor:col-resize; z-index:14; }
+#view-data_modeling_ai .dm-grip-v:hover, #view-data_modeling_ai .dm-grip-v.dragging { background:linear-gradient(180deg,transparent,rgba(76,141,255,.55),transparent); }
+#view-data_modeling_ai .dm-grip-h { position:absolute; top:-3px; left:0; right:0; height:6px; cursor:row-resize; z-index:14; }
+#view-data_modeling_ai .dm-grip-h:hover, #view-data_modeling_ai .dm-grip-h.dragging { background:linear-gradient(90deg,transparent,rgba(76,141,255,.55),transparent); }
+
+/* --------------------------------------------------------------- modals */
+#view-data_modeling_ai .dm-modal { position:absolute; inset:0; z-index:70; background:rgba(3,7,14,.72); display:none; align-items:center; justify-content:center; padding:16px; }
+#view-data_modeling_ai .dm-modal.open { display:flex; }
+#view-data_modeling_ai .dm-modal-card { width:min(468px,100%); background:var(--dm-panel); border:1px solid var(--dm-line-2); border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.55); overflow:hidden; }
+#view-data_modeling_ai .dm-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:13px 14px; border-bottom:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-modal-title { font-size:14px; font-weight:600; color:#F2F6FC; }
+#view-data_modeling_ai .dm-modal-sub { margin-top:2px; font-size:11.5px; color:var(--dm-dim); line-height:1.5; }
+#view-data_modeling_ai .dm-modal-body { padding:14px; display:flex; flex-direction:column; gap:10px; }
+#view-data_modeling_ai .dm-field label { display:block; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--dm-muted); margin-bottom:5px; }
+#view-data_modeling_ai .dm-field input, #view-data_modeling_ai .dm-field select { width:100%; height:34px; padding:0 10px; background:#0A1220; border:1px solid var(--dm-line-2); border-radius:7px; color:#F2F6FC; font-size:12.5px; outline:none; }
+#view-data_modeling_ai .dm-field input:focus, #view-data_modeling_ai .dm-field select:focus { border-color:var(--dm-accent); box-shadow:0 0 0 3px rgba(76,141,255,.12); }
+#view-data_modeling_ai .dm-field input[type=file] { height:auto; padding:7px 8px; font-size:11.5px; color:var(--dm-muted); }
+#view-data_modeling_ai .dm-field-note { font-size:11px; color:var(--dm-dim); line-height:1.55; }
+#view-data_modeling_ai .dm-modal-foot { display:flex; justify-content:flex-end; gap:8px; padding:0 14px 14px; }
+
+/* ------------------------------------------------------------------ menu */
+#view-data_modeling_ai .dm-menu { position:fixed; z-index:95; min-width:212px; padding:5px; background:#121C2B; border:1px solid var(--dm-line-2); border-radius:9px; box-shadow:0 18px 44px rgba(0,0,0,.55); }
+#view-data_modeling_ai .dm-menu[hidden] { display:none; }
+#view-data_modeling_ai .dm-menu-item { display:flex; align-items:center; gap:8px; width:100%; padding:6px 8px; border:0; border-radius:6px; background:transparent; color:#D6E2F2; font-size:12.5px; text-align:left; cursor:pointer; white-space:nowrap; }
+#view-data_modeling_ai .dm-menu-item:hover { background:#1C293B; color:#FFF; }
+#view-data_modeling_ai .dm-menu-item.danger { color:#FF9B93; }
+#view-data_modeling_ai .dm-menu-item.danger:hover { background:rgba(248,81,73,.14); color:#FFC1BC; }
+#view-data_modeling_ai .dm-menu-item:disabled { opacity:.45; cursor:not-allowed; }
+#view-data_modeling_ai .dm-menu-item svg { width:14px; height:14px; }
+#view-data_modeling_ai .dm-menu-sep { height:1px; margin:4px 6px; background:var(--dm-line); }
+
+/* ----------------------------------------------------------------- toast */
+#view-data_modeling_ai .dm-toast { position:absolute; right:16px; bottom:74px; z-index:90; max-width:380px; padding:9px 12px; border-radius:9px; font-size:12px; font-weight:500; line-height:1.5; background:#121C2B; border:1px solid var(--dm-line-2); color:#E6EDF7; box-shadow:0 14px 34px rgba(0,0,0,.5); opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .18s, transform .18s; }
 #view-data_modeling_ai .dm-toast.show { opacity:1; transform:translateY(0); }
-#view-data_modeling_ai .dm-toast.ok { border-color:#065F46; color:#6EE7B7; }
-#view-data_modeling_ai .dm-toast.err { border-color:#7F1D1D; color:#FCA5A5; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail { width:46px !important; min-width:46px; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-panels { display:none; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-resize { display:none; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-mini { display:flex; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-head { justify-content:center; padding:5px 0; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-title { display:none; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-tools { display:none; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-collapse { display:none; }
-#view-data_modeling_ai .dm-app.dm-collapsed .dm-rail-mini .dm-collapse { display:block; margin:0 auto; }
-@media (max-width: 900px) {
-  #view-data_modeling_ai .dm-app { height:calc(100vh - 104px); min-height:520px; }
-  #view-data_modeling_ai .dm-rail { position:absolute; left:0; top:0; bottom:0; z-index:25; width:236px; box-shadow:14px 0 40px rgba(2,6,23,.6); }
-  #view-data_modeling_ai .dm-app.dm-collapsed .dm-rail { width:46px; box-shadow:none; }
-  #view-data_modeling_ai .dm-messages { padding:12px; }
-  #view-data_modeling_ai .dm-bubble { max-width:92%; }
-  #view-data_modeling_ai .dm-brand p { display:none; }
+#view-data_modeling_ai .dm-toast.ok { border-color:rgba(63,185,80,.5); color:#9BE9A8; }
+#view-data_modeling_ai .dm-toast.err { border-color:rgba(248,81,73,.5); color:#FFB3AD; }
+
+/* ---------------------------------------------------------------- mobile */
+@media (max-width:1180px) {
+  #view-data_modeling_ai .dm-app { height:calc(100vh - 112px); min-height:520px; border-radius:10px; }
+  #view-data_modeling_ai .dm-chats, #view-data_modeling_ai .dm-explorer { position:absolute; top:0; bottom:0; z-index:40; box-shadow:16px 0 44px rgba(0,0,0,.55); }
+  #view-data_modeling_ai .dm-chats { left:0; }
+  #view-data_modeling_ai .dm-explorer { left:0; }
+  #view-data_modeling_ai .dm-brand-text p { display:none; }
+  #view-data_modeling_ai .dm-ai-badge { display:none; }
+  #view-data_modeling_ai .dm-btn span { display:none; }
+  #view-data_modeling_ai .dm-btn { padding:6px 8px; }
+  #view-data_modeling_ai .dm-messages { padding:12px 10px 8px; }
+  #view-data_modeling_ai .dm-bubble { max-width:94%; }
+  #view-data_modeling_ai .dm-data { height:210px; }
+  #view-data_modeling_ai .dm-data-title { max-width:150px; }
+  #view-data_modeling_ai .dm-topbar { padding:8px; }
 }
 </style>
 
 <div class="dm-app" id="dmShell">
+
   <div class="dm-topbar">
+    <div class="dm-top-left">
+      <button class="dm-iconbtn" id="dmChatsToggle" onclick="dmToggleChats()" title="Show or hide Chats &amp; Projects">
+        <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+      </button>
+      <button class="dm-iconbtn" id="dmExplorerToggle" onclick="dmToggleExplorer()" title="Show or hide Explorer">
+        <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
+      </button>
+    </div>
     <div class="dm-brand">
-      <div class="dm-logo">&#10052;</div>
-      <div>
+      <div class="dm-logo">
+        <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M4.9 6.5l14.2 11"/><path d="M19.1 6.5L4.9 17.5"/><path d="M9 3.6l3 3 3-3"/><path d="M9 20.4l3-3 3 3"/></svg>
+      </div>
+      <div class="dm-brand-text">
         <h2>DATA MODELING BY AI</h2>
-        <p>Talk to every NanoPro database - no SQL, just results</p>
+        <p>Talk to every NanoPro database &mdash; no SQL, just results</p>
       </div>
     </div>
     <div class="dm-top-actions">
-      <span class="dm-ai-badge" id="dmAiBadge">Checking AI...</span>
-      <button class="dm-btn ghost" id="dmSfBtn" onclick="dmSetupSnowflake()" title="Create BANK_DB, schemas, sample table and pipeline metadata in Snowflake">&#10052; Snowflake setup</button>
-      <button class="dm-btn ghost" onclick="dmNewSchema()" title="Create a new schema in the active workspace">&#43; Schema</button>
-      <button class="dm-btn primary" onclick="dmUploadOpen()">&#8679; Upload CSV / Excel</button>
+      <span class="dm-ai-badge" id="dmAiBadge">Checking AI&hellip;</span>
+      <button class="dm-btn" onclick="dmUploadOpen()" title="Upload CSV or Excel into the active chat">
+        <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        <span>Upload</span>
+      </button>
+      <button class="dm-btn" id="dmSfBtn" onclick="dmSetupSnowflake()" title="Create the Snowflake warehouse structure">
+        <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M4.9 6.5l14.2 11"/><path d="M19.1 6.5L4.9 17.5"/></svg>
+        <span>Snowflake</span>
+      </button>
     </div>
   </div>
 
   <div class="dm-body">
-    <aside class="dm-rail" id="dmRail">
-      <div class="dm-rail-head">
-        <span class="dm-rail-title">Explorer</span>
-        <div class="dm-rail-tools">
-          <button class="dm-collapse" id="dmRefreshBtn" onclick="dmLoadCatalog(true)" title="Refresh tree">&#8635;</button>
-          <button class="dm-collapse" id="dmCollapseBtn" onclick="dmToggleRail()" title="Minimize panel">&#171;</button>
+
+    <aside class="dm-chats" id="dmChatsPanel">
+      <div class="dm-panel-head">
+        <span class="dm-panel-title">Chats &amp; Projects</span>
+        <div class="dm-panel-tools">
+          <button class="dm-iconbtn" onclick="dmNewChat('')" title="New chat">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          </button>
+          <button class="dm-iconbtn" onclick="dmNewProject()" title="New project">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6"/><path d="M9 14h6"/></svg>
+          </button>
+          <button class="dm-iconbtn" onclick="dmToggleChats()" title="Hide panel">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
         </div>
       </div>
-      <div class="dm-rail-mini">
-        <button class="dm-collapse" onclick="dmToggleRail()" title="Expand panel">&#187;</button>
-        <button class="dm-mini-btn" data-section="workspaces" onclick="dmSetSection('workspaces')" title="Workspaces"><span>&#128193;</span><span>Work</span></button>
-        <button class="dm-mini-btn" data-section="databases" onclick="dmSetSection('databases')" title="Databases"><span>&#128451;</span><span>DB</span></button>
-        <button class="dm-mini-btn" onclick="dmNewSchema()" title="New schema"><span>&#43;</span><span>Schema</span></button>
-      </div>
-      <div class="dm-rail-panels">
-        <div class="dm-search-wrap">
-          <input class="dm-filter" id="dmCatalogFilter" placeholder="Search table, schema, column..." oninput="dmOnFilter()" onkeydown="if(event.key==='Escape'){this.value='';dmOnFilter();}">
-          <button class="dm-clear" id="dmClearFilter" onclick="dmClearFilter()" title="Clear search">&#10005;</button>
+
+      <div class="dm-panel-scroll" id="dmChatsScroll">
+        <div class="dm-sec" id="dmPinnedSec" hidden>
+          <div class="dm-sec-head"><span>Pinned</span></div>
+          <div id="dmPinnedList"></div>
         </div>
-        <div class="dm-tree" id="dmDatabaseTree"><div class="dm-tree-note">Loading catalog...</div></div>
-        <div class="dm-rail-foot">
-          <button class="dm-new-ws" onclick="dmCreateWorkspace()" title="Create a private writable workspace">&#43; Workspace</button>
-          <button class="dm-new-ws" onclick="dmNewSchema()" title="Create a schema in the active workspace">&#43; Schema</button>
+        <div class="dm-sec">
+          <div class="dm-sec-head">
+            <span>Chats &amp; Tasks</span>
+            <span class="dm-sec-count" id="dmChatCount">0</span>
+          </div>
+          <div id="dmChatList"></div>
+        </div>
+        <div class="dm-sec">
+          <div class="dm-sec-head">
+            <span>Projects</span>
+            <button class="dm-sec-add" onclick="dmNewProject()" title="New project">
+              <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+          </div>
+          <div id="dmProjectList"></div>
         </div>
       </div>
-      <div class="dm-rail-resize" id="dmRailResize" title="Drag to resize"></div>
+
+      <div class="dm-panel-foot">
+        <button class="dm-newchat-btn" onclick="dmNewChat('')">
+          <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          New chat
+        </button>
+      </div>
+      <div class="dm-grip-v" id="dmChatsGrip" title="Drag to resize"></div>
+    </aside>
+
+    <aside class="dm-explorer" id="dmExplorer">
+      <div class="dm-panel-head">
+        <span class="dm-panel-title">Explorer</span>
+        <div class="dm-panel-tools">
+          <button class="dm-iconbtn" onclick="dmLoadCatalog(true)" title="Rescan every database">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10"/><path d="M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+          </button>
+          <button class="dm-iconbtn" onclick="dmToggleExplorer()" title="Hide panel">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="dm-search">
+        <input id="dmCatalogFilter" type="text" placeholder="Search databases, schemas, tables, columns" autocomplete="off" spellcheck="false">
+        <button class="dm-search-clear" id="dmClearFilter" onclick="dmClearFilter()" title="Clear search">
+          <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="dm-tree" id="dmDatabaseTree">
+        <div class="dm-tree-note">Loading your databases&hellip;</div>
+      </div>
+      <div class="dm-panel-foot" style="display:flex;gap:6px;">
+        <button class="dm-btn" style="flex:1;justify-content:center;" onclick="dmUploadOpen()">Upload</button>
+        <button class="dm-btn" style="flex:1;justify-content:center;" onclick="dmNewSchema()">Schema</button>
+      </div>
+      <div class="dm-grip-v" id="dmExplorerGrip" title="Drag to resize"></div>
     </aside>
 
     <main class="dm-main">
       <div class="dm-chat-head">
-        <div style="min-width:0;">
-          <div class="dm-ws-title" id="dmActiveName">No workspace yet</div>
-          <div class="dm-ws-sub" id="dmActiveId">Create a workspace to start talking to your data</div>
+        <div class="dm-chat-head-main">
+          <div class="dm-chat-title" id="dmActiveName">No chat selected</div>
+          <div class="dm-chat-sub" id="dmActiveId">Create a chat to start talking to your data</div>
         </div>
-        <button class="dm-link-btn" onclick="dmOpenCatalog('workspaces')">&#128193; Workspaces</button>
-      </div>
-
-      <div class="dm-messages" id="dmMessages">
-        <div class="dm-empty" id="dmEmptyState">
-          <div class="dm-empty-ico">&#10052;</div>
-          <h3>Your data, in plain language</h3>
-          <p>Ask for tables, joins, filters, reports or uploads. The AI writes and runs the SQL for you and shows the data below.</p>
-          <div class="dm-suggest">
-            <button data-prompt="List all databases and tables available in NanoPro with row counts." onclick="dmUsePrompt(this)">What data do I have?</button>
-            <button data-prompt="Create a table called sales_orders with id, customer_name, city, amount and order_date, then insert 3 sample rows." onclick="dmUsePrompt(this)">Create a table with sample data</button>
-            <button data-prompt="Use Snowflake: create a table BANK_DB.SALES.CUSTOMERS with customer data and show the contents." onclick="dmUsePrompt(this)">Create a Snowflake table</button>
-            <button data-prompt="Join my workspace tables and show the top customers by total amount." onclick="dmUsePrompt(this)">Build a join and rank results</button>
-            <button onclick="dmUploadOpen()">Upload CSV / Excel</button>
-          </div>
+        <div class="dm-chat-actions">
+          <button class="dm-iconbtn" id="dmPinBtn" onclick="dmTogglePinActive()" title="Pin this chat">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M5 17h14v-1.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2z"/></svg>
+          </button>
+          <button class="dm-iconbtn" onclick="dmRenameActive()" title="Rename this chat">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </button>
         </div>
       </div>
 
-      <div class="dm-result" id="dmResultPanel" hidden>
-        <div class="dm-result-head">
-          <span class="dm-result-title" id="dmResultTitle">Result</span>
-          <span class="dm-result-meta" id="dmResultMeta"></span>
-          <div class="dm-result-actions">
-            <a class="dm-link-btn" id="dmResultDownload" href="#" hidden>&#8681; Download CSV</a>
-            <button class="dm-link-btn" onclick="dmCloseResult()">Close</button>
+      <div class="dm-messages" id="dmMessages"></div>
+
+      <section class="dm-data" id="dmDataPanel">
+        <div class="dm-data-head">
+          <span class="dm-data-title" id="dmDataTitle">Data</span>
+          <span class="dm-data-meta" id="dmDataMeta">Table previews and query results appear here</span>
+          <div class="dm-data-actions">
+            <button class="dm-linkbtn" id="dmAskTableBtn" onclick="dmAskAboutTable()" hidden>
+              <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+              Ask AI
+            </button>
+            <a class="dm-linkbtn" id="dmResultDownload" href="#" hidden>
+              <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              CSV
+            </a>
+            <button class="dm-linkbtn" onclick="dmClearData()" title="Clear the data dock">Clear</button>
+            <button class="dm-iconbtn dm-data-toggle" id="dmDataToggle" onclick="dmToggleData()" title="Collapse or expand data">
+              <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
           </div>
         </div>
-        <div class="dm-result-body" id="dmResultBody"></div>
-      </div>
+        <div class="dm-data-body" id="dmDataBody">
+          <div class="dm-data-empty">Select a table in the Explorer or ask a question &mdash; tables and query results open here, below the chat.</div>
+        </div>
+        <div class="dm-grip-h" id="dmDataGrip" title="Drag to resize"></div>
+      </section>
 
       <div class="dm-composer">
         <div class="dm-compose-row">
-          <textarea id="dmInput" rows="1" placeholder="Ask anything: create a table, join data, filter rows, build a report..."></textarea>
-          <button class="dm-send" id="dmSend" onclick="dmSendMessage()" title="Send">&#8593;</button>
+          <textarea id="dmInput" rows="1" placeholder="Ask anything &mdash; create tables, join data, filter rows, build reports&hellip;"></textarea>
+          <button class="dm-send" id="dmSend" onclick="dmSendMessage()" title="Send (Enter)">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
         </div>
-        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; AI writes the SQL, you just decide</div>
+        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; the AI writes the SQL, you decide</div>
       </div>
     </main>
   </div>
 
-  <div class="dm-drawer-backdrop" id="dmTableBackdrop" onclick="dmCloseTable(event)">
-    <div class="dm-drawer" onclick="event.stopPropagation()">
-      <div class="dm-drawer-head">
-        <div style="min-width:0;">
-          <div class="dm-drawer-title" id="dmTableTitle">Table</div>
-          <div class="dm-drawer-sub" id="dmTableSub"></div>
+  <div class="dm-modal" id="dmNameModal">
+    <div class="dm-modal-card">
+      <div class="dm-modal-head">
+        <div>
+          <div class="dm-modal-title" id="dmNameTitle">Name</div>
+          <div class="dm-modal-sub" id="dmNameNote"></div>
         </div>
-        <button class="dm-icon-btn" onclick="dmCloseTable()" title="Close">&#10005;</button>
+        <button class="dm-iconbtn" onclick="dmNameClose()" title="Close">
+          <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
       </div>
-      <div class="dm-drawer-body" id="dmTableBody"><div class="dm-muted">Loading table metadata...</div></div>
-      <div class="dm-drawer-foot">
-        <button class="dm-btn primary" onclick="dmAskAboutTable()">Ask AI about this table</button>
-        <button class="dm-btn ghost" onclick="dmCloseTable()">Close</button>
+      <div class="dm-modal-body">
+        <div class="dm-field">
+          <label id="dmNameLabel" for="dmNameInput">Name</label>
+          <input id="dmNameInput" type="text" maxlength="64" autocomplete="off">
+        </div>
+      </div>
+      <div class="dm-modal-foot">
+        <button class="dm-btn" onclick="dmNameClose()">Cancel</button>
+        <button class="dm-btn primary" onclick="dmNameSubmit()">Save</button>
       </div>
     </div>
   </div>
@@ -294,25 +476,27 @@ def get_data_modeling_html() -> str:
       <div class="dm-modal-head">
         <div>
           <div class="dm-modal-title">Upload CSV / Excel into a table</div>
-          <div class="dm-drawer-sub">Stored inside the active workspace - safe and reversible</div>
+          <div class="dm-modal-sub">Stored inside the active chat &mdash; safe and reversible</div>
         </div>
-        <button class="dm-icon-btn" onclick="dmUploadClose()" title="Close">&#10005;</button>
+        <button class="dm-iconbtn" onclick="dmUploadClose()" title="Close">
+          <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
       </div>
       <div class="dm-modal-body">
         <div class="dm-field">
-          <label>File (CSV, XLSX, XLSM - max 25 MB, 50,000 rows)</label>
+          <label for="dmUpFile">File (CSV, XLSX, XLSM &mdash; max 25 MB, 50,000 rows)</label>
           <input type="file" id="dmUpFile" accept=".csv,.xlsx,.xlsm,text/csv">
         </div>
         <div class="dm-field">
-          <label>Table name (leave blank to use the file name)</label>
-          <input type="text" id="dmUpTable" placeholder="e.g. sales_orders">
+          <label for="dmUpTable">Table name (leave blank to use the file name)</label>
+          <input type="text" id="dmUpTable" placeholder="e.g. sales_orders" autocomplete="off">
         </div>
         <div class="dm-field">
-          <label>Schema</label>
+          <label for="dmUpSchema">Schema</label>
           <select id="dmUpSchema"><option value="main">main</option></select>
         </div>
         <div class="dm-field">
-          <label>Mode</label>
+          <label for="dmUpMode">Mode</label>
           <select id="dmUpMode">
             <option value="create">Create a new table</option>
             <option value="append">Append to an existing table</option>
@@ -321,7 +505,7 @@ def get_data_modeling_html() -> str:
         </div>
       </div>
       <div class="dm-modal-foot">
-        <button class="dm-btn ghost" onclick="dmUploadClose()">Cancel</button>
+        <button class="dm-btn" onclick="dmUploadClose()">Cancel</button>
         <button class="dm-btn primary" id="dmUpSubmit" onclick="dmSubmitUpload()">Import data</button>
       </div>
     </div>
@@ -332,18 +516,20 @@ def get_data_modeling_html() -> str:
       <div class="dm-modal-head">
         <div>
           <div class="dm-modal-title">New schema</div>
-          <div class="dm-drawer-sub">Schemas live inside the active workspace as separate database files</div>
+          <div class="dm-modal-sub">Schemas live inside the active chat as separate database files</div>
         </div>
-        <button class="dm-icon-btn" onclick="dmCloseSchema()" title="Close">&#10005;</button>
+        <button class="dm-iconbtn" onclick="dmCloseSchema()" title="Close">
+          <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
       </div>
       <div class="dm-modal-body">
         <div class="dm-field">
-          <label>Schema name</label>
-          <input type="text" id="dmSchemaName" placeholder="e.g. marketing">
+          <label for="dmSchemaName">Schema name</label>
+          <input type="text" id="dmSchemaName" placeholder="e.g. marketing" autocomplete="off">
         </div>
       </div>
       <div class="dm-modal-foot">
-        <button class="dm-btn ghost" onclick="dmCloseSchema()">Cancel</button>
+        <button class="dm-btn" onclick="dmCloseSchema()">Cancel</button>
         <button class="dm-btn primary" onclick="dmSubmitSchema()">Create schema</button>
       </div>
     </div>
@@ -354,24 +540,27 @@ def get_data_modeling_html() -> str:
       <div class="dm-modal-head">
         <div>
           <div class="dm-modal-title">Connect Snowflake</div>
-          <div class="dm-drawer-sub">Account XMUTKDJ-KP74023 &middot; MANGESHBAGUL15@GMAIL.COM &middot; ACCOUNTADMIN</div>
+          <div class="dm-modal-sub">Account XMUTKDJ-KP74023 &middot; MANGESHBAGUL15@GMAIL.COM &middot; ACCOUNTADMIN</div>
         </div>
-        <button class="dm-icon-btn" onclick="dmCloseSfModal()" title="Close">&#10005;</button>
+        <button class="dm-iconbtn" onclick="dmCloseSfModal()" title="Close">
+          <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
       </div>
       <div class="dm-modal-body">
         <div class="dm-field">
-          <label>Snowflake password</label>
+          <label for="dmSfPassword">Snowflake password</label>
           <input type="password" id="dmSfPassword" placeholder="Password for MANGESHBAGUL15@GMAIL.COM" autocomplete="new-password">
           <div class="dm-field-note">Stored only in NanoPro's encrypted Credential Vault. Used to create BANK_DB, the SALES and L0_STAGING schemas, empty SALES_ORDERS and PIPELINE tables plus the revenue view. No sample rows are inserted.</div>
         </div>
       </div>
       <div class="dm-modal-foot">
-        <button class="dm-btn ghost" onclick="dmCloseSfModal()">Cancel</button>
+        <button class="dm-btn" onclick="dmCloseSfModal()">Cancel</button>
         <button class="dm-btn primary" id="dmSfSave" onclick="dmSubmitSfPassword()">Save &amp; set up</button>
       </div>
     </div>
   </div>
 
+  <div class="dm-menu" id="dmMenu" hidden></div>
   <div class="dm-toast" id="dmToast"></div>
 </div>
 </div>
@@ -390,22 +579,57 @@ def get_data_modeling_js() -> str:
         bound: false,
         sending: false,
         workspaceId: localStorage.getItem('dm_active_ws') || '',
-        railOpen: localStorage.getItem('dm_rail') !== 'closed',
-        section: localStorage.getItem('dm_section') || 'workspaces',
+        projectId: localStorage.getItem('dm_active_prj') || '',
+        chatsOpen: localStorage.getItem('dm_chats_hidden') !== '1',
+        explorerOpen: localStorage.getItem('dm_explorer_hidden') !== '1',
+        dataOpen: localStorage.getItem('dm_data_open') !== '0',
+        dataHeight: parseInt(localStorage.getItem('dm_data_h') || '0', 10) || 250,
         workspaces: [],
+        projects: [],
         catalog: [],
+        scanning: false,
+        pollTries: 0,
+        pollTimer: null,
         treeOpen: (function () {
             try { return JSON.parse(localStorage.getItem('dm_tree_open') || '{}') || {}; }
+            catch (err) { return {}; }
+        })(),
+        projectsOpen: (function () {
+            try { return JSON.parse(localStorage.getItem('dm_projects_open') || '{}') || {}; }
             catch (err) { return {}; }
         })(),
         columns: {},
         colLoading: {},
         tableCtx: null,
+        nameCb: null,
+        menuItems: null,
         toastTimer: null
     };
     window.dmState = DM;
 
+    var ICONS = {
+        plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+        chat: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/>',
+        folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+        pin: '<path d="M12 17v5"/><path d="M5 17h14v-1.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2z"/>',
+        more: '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+        pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+        trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+        database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+        snowflake: '<path d="M12 2v20"/><path d="M4.9 6.5l14.2 11"/><path d="M19.1 6.5L4.9 17.5"/><path d="M9 3.6l3 3 3-3"/><path d="M9 20.4l3-3 3 3"/>',
+        table: '<path d="M3 5h18v14H3z"/><path d="M3 10h18"/><path d="M9 10v9"/><path d="M15 10v9"/>',
+        grid: '<path d="M4 4h16v16H4z"/><path d="M9.3 4v16"/><path d="M14.7 4v16"/>',
+        key: '<path d="M21 2l-2 2"/><path d="M15.5 7.5L19 4l3 3-3.5 3.5"/><path d="M10.5 11.5a5 5 0 1 0 3 3"/><path d="M10.5 11.5l6-6"/>',
+        chevron: '<path d="M9 18l6-6-6-6"/>',
+        close: '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>',
+        sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>'
+    };
+
     function $(id) { return document.getElementById(id); }
+
+    function dmIcon(name, cls) {
+        return '<svg class="dm-svg' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || ICONS.chat) + '</svg>';
+    }
 
     function dmEsc(value) {
         return String(value === null || value === undefined ? '' : value)
@@ -446,6 +670,10 @@ def get_data_modeling_js() -> str:
         return data || {};
     }
 
+    function dmSaveJson(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* private mode */ }
+    }
+
     function dmTableHtml(columns, rows) {
         columns = columns || [];
         rows = rows || [];
@@ -459,152 +687,296 @@ def get_data_modeling_js() -> str:
                 return '<td title="' + dmAttr(v) + '">' + dmEsc(v) + '</td>';
             }).join('') + '</tr>';
         }).join('') : '<tr><td colspan="' + columns.length + '" class="dm-muted">No rows.</td></tr>';
-        return '<div class="dm-table-wrap"><table class="dm-data-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+        return '<div class="dm-table-wrap"><table class="dm-dtable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
     }
 
-    // ---------------------------------------------------------------- rail
+    // ------------------------------------------------------------- layout
 
-    function dmApplyRailWidth() {
-        var rail = $('dmRail');
-        if (!rail) return;
-        var w = parseInt(localStorage.getItem('dm_rail_w') || '0', 10);
-        if (!w || isNaN(w)) w = 236;
-        w = Math.max(180, Math.min(420, w));
-        rail.style.width = w + 'px';
+    function dmFit() {
+        var app = $('dmShell');
+        if (!app) return;
+        if (window.innerWidth <= 1180) {
+            app.style.height = 'calc(100vh - 112px)';
+            return;
+        }
+        var top = app.getBoundingClientRect().top + (window.pageYOffset || 0);
+        var height = window.innerHeight - Math.max(0, top) - 18;
+        app.style.height = Math.max(520, Math.round(height)) + 'px';
     }
 
-    function dmInitRailResize() {
-        var handle = $('dmRailResize');
-        var rail = $('dmRail');
-        if (!handle || !rail) return;
+    window.dmToggleChats = function () {
+        DM.chatsOpen = !DM.chatsOpen;
+        if (window.innerWidth > 1180) localStorage.setItem('dm_chats_hidden', DM.chatsOpen ? '0' : '1');
+        dmApplyPanels();
+    };
+
+    window.dmToggleExplorer = function () {
+        DM.explorerOpen = !DM.explorerOpen;
+        if (window.innerWidth > 1180) localStorage.setItem('dm_explorer_hidden', DM.explorerOpen ? '0' : '1');
+        dmApplyPanels();
+    };
+
+    function dmApplyPanels() {
+        var shell = $('dmShell');
+        if (!shell) return;
+        shell.classList.toggle('hide-chats', !DM.chatsOpen);
+        shell.classList.toggle('hide-explorer', !DM.explorerOpen);
+        var c = $('dmChatsToggle');
+        var e = $('dmExplorerToggle');
+        if (c) c.classList.toggle('is-on', DM.chatsOpen);
+        if (e) e.classList.toggle('is-on', DM.explorerOpen);
+    }
+
+    window.dmToggleData = function () {
+        DM.dataOpen = !DM.dataOpen;
+        localStorage.setItem('dm_data_open', DM.dataOpen ? '1' : '0');
+        dmApplyData();
+    };
+
+    function dmApplyData() {
+        var shell = $('dmShell');
+        var panel = $('dmDataPanel');
+        if (!shell || !panel) return;
+        shell.classList.toggle('data-collapsed', !DM.dataOpen);
+        panel.style.height = DM.dataHeight + 'px';
+        var btn = $('dmDataToggle');
+        if (btn) btn.title = DM.dataOpen ? 'Collapse data' : 'Expand data';
+    }
+
+    function dmInitGripV(handleId, panelId, storageKey, min, max) {
+        var handle = $(handleId);
+        var panel = $(panelId);
+        if (!handle || !panel) return;
+        var saved = parseInt(localStorage.getItem(storageKey) || '0', 10);
+        if (saved >= min && saved <= max) panel.style.width = saved + 'px';
         handle.addEventListener('pointerdown', function (ev) {
             ev.preventDefault();
             var startX = ev.clientX;
-            var startW = rail.getBoundingClientRect().width;
+            var startW = panel.getBoundingClientRect().width;
             handle.classList.add('dragging');
             document.body.style.cursor = 'col-resize';
             function move(e) {
-                var w = Math.max(180, Math.min(420, startW + (e.clientX - startX)));
-                rail.style.width = Math.round(w) + 'px';
+                var w = Math.max(min, Math.min(max, startW + (e.clientX - startX)));
+                panel.style.width = Math.round(w) + 'px';
+                dmFit();
             }
             function up() {
                 handle.classList.remove('dragging');
                 document.body.style.cursor = '';
                 document.removeEventListener('pointermove', move);
                 document.removeEventListener('pointerup', up);
-                localStorage.setItem('dm_rail_w', String(Math.round(rail.getBoundingClientRect().width)));
+                localStorage.setItem(storageKey, String(Math.round(panel.getBoundingClientRect().width)));
             }
             document.addEventListener('pointermove', move);
             document.addEventListener('pointerup', up);
         });
     }
 
-    function dmSaveTree() {
-        try { localStorage.setItem('dm_tree_open', JSON.stringify(DM.treeOpen)); } catch (err) { /* private mode */ }
-    }
-
-    function dmApplyRail() {
-        var shell = $('dmShell');
-        if (!shell) return;
-        shell.classList.toggle('dm-collapsed', !DM.railOpen);
-        var btn = $('dmCollapseBtn');
-        if (btn) btn.title = DM.railOpen ? 'Minimize panel' : 'Expand panel';
-        document.querySelectorAll('#view-data_modeling_ai .dm-mini-btn').forEach(function (el) {
-            el.classList.toggle('active', DM.railOpen && el.getAttribute('data-section') === DM.section);
+    function dmInitGripH() {
+        var handle = $('dmDataGrip');
+        var panel = $('dmDataPanel');
+        if (!handle || !panel) return;
+        handle.addEventListener('pointerdown', function (ev) {
+            ev.preventDefault();
+            var startY = ev.clientY;
+            var startH = panel.getBoundingClientRect().height;
+            handle.classList.add('dragging');
+            document.body.style.cursor = 'row-resize';
+            function move(e) {
+                var h = Math.max(120, Math.min(window.innerHeight * 0.65, startH - (e.clientY - startY)));
+                DM.dataHeight = Math.round(h);
+                panel.style.height = DM.dataHeight + 'px';
+            }
+            function up() {
+                handle.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.removeEventListener('pointermove', move);
+                document.removeEventListener('pointerup', up);
+                localStorage.setItem('dm_data_h', String(DM.dataHeight));
+            }
+            document.addEventListener('pointermove', move);
+            document.addEventListener('pointerup', up);
         });
     }
 
-    window.dmToggleRail = function () {
-        DM.railOpen = !DM.railOpen;
-        localStorage.setItem('dm_rail', DM.railOpen ? 'open' : 'closed');
-        dmApplyRail();
-    };
+    // ---------------------------------------------------- chats & projects
 
-    window.dmSetSection = function (section) {
-        DM.section = section === 'databases' ? 'databases' : 'workspaces';
-        localStorage.setItem('dm_section', DM.section);
-        DM.railOpen = true;
-        localStorage.setItem('dm_rail', 'open');
-        DM.treeOpen['root:' + DM.section] = true;
-        dmSaveTree();
-        dmApplyRail();
-        window.dmRenderTree();
-        dmScrollToSection(DM.section);
-    };
-
-    window.dmOpenCatalog = function (section) {
-        window.dmSetSection(section || 'databases');
-    };
-
-    function dmScrollToSection(section) {
-        var tree = $('dmDatabaseTree');
-        if (!tree) return;
-        var anchor = tree.querySelector('[data-section-anchor="' + section + '"]');
-        if (anchor) anchor.scrollIntoView({ block: 'start' });
+    function dmFindWorkspace(id) {
+        for (var i = 0; i < DM.workspaces.length; i++) {
+            if (DM.workspaces[i].id === id) return DM.workspaces[i];
+        }
+        return null;
     }
 
-    window.dmOnFilter = function () {
-        window.dmRenderTree();
-    };
+    function dmFindProject(id) {
+        for (var i = 0; i < DM.projects.length; i++) {
+            if (DM.projects[i].id === id) return DM.projects[i];
+        }
+        return null;
+    }
 
-    window.dmClearFilter = function () {
-        var el = $('dmCatalogFilter');
-        if (el) { el.value = ''; el.focus(); }
-        window.dmRenderTree();
-    };
+    function dmActiveWorkspace() { return dmFindWorkspace(DM.workspaceId); }
 
-    // ------------------------------------------------------------ workspaces
+    function dmChatRow(ws) {
+        var active = ws.id === DM.workspaceId;
+        return '<div class="dm-row' + (active ? ' is-active' : '') + '" data-chat="' + dmAttr(ws.id) + '" role="button" tabindex="0" title="' + dmAttr(ws.name || 'Untitled chat') + '">' +
+            '<span class="dm-row-ico">' + dmIcon('chat') + '</span>' +
+            '<span class="dm-row-label">' + dmEsc(ws.name || 'Untitled chat') + '</span>' +
+            ((ws.message_count && ws.project_id) ? '' : '<span class="dm-row-meta">' + (ws.message_count ? ws.message_count : '') + '</span>') +
+            '<span class="dm-row-acts">' +
+                '<button class="dm-rowact" data-cact="pin" data-id="' + dmAttr(ws.id) + '" title="' + (ws.pinned ? 'Unpin' : 'Pin') + '">' + dmIcon('pin') + '</button>' +
+                '<button class="dm-rowact" data-cact="menu" data-id="' + dmAttr(ws.id) + '" title="More actions">' + dmIcon('more') + '</button>' +
+            '</span></div>';
+    }
+
+    function dmProjectRow(project) {
+        var open = !!DM.projectsOpen[project.id];
+        var chats = DM.workspaces.filter(function (ws) { return ws.project_id === project.id && !ws.pinned; });
+        var html = '<div class="dm-row' + (open ? ' is-open' : '') + '" data-proj="' + dmAttr(project.id) + '" role="button" tabindex="0" title="' + dmAttr(project.name) + '">' +
+            '<span class="dm-caret' + (open ? ' is-open' : '') + '">' + dmIcon('chevron') + '</span>' +
+            '<span class="dm-row-ico">' + dmIcon('folder') + '</span>' +
+            '<span class="dm-row-label">' + dmEsc(project.name || 'Project') + '</span>' +
+            '<span class="dm-row-meta">' + (chats.length ? chats.length : '') + '</span>' +
+            '<span class="dm-row-acts">' +
+                '<button class="dm-rowact" data-pact="new" data-id="' + dmAttr(project.id) + '" title="New chat in this project">' + dmIcon('plus') + '</button>' +
+                '<button class="dm-rowact" data-pact="menu" data-id="' + dmAttr(project.id) + '" title="More actions">' + dmIcon('more') + '</button>' +
+            '</span></div>';
+        if (open) {
+            html += '<div class="dm-proj-kids">';
+            html += chats.length ? chats.map(dmChatRow).join('') : '<div class="dm-note">No chats yet.</div>';
+            html += '<div class="dm-row dm-newchat-row" data-pact="new" data-id="' + dmAttr(project.id) + '" role="button" tabindex="0">' +
+                '<span class="dm-row-ico">' + dmIcon('plus') + '</span>' +
+                '<span class="dm-row-label">New chat in ' + dmEsc(project.name || 'this project') + '</span></div>';
+            html += '</div>';
+        }
+        return html;
+    }
+
+    function dmRenderChats() {
+        var projectIds = DM.projects.map(function (p) { return p.id; });
+        var pinned = DM.workspaces.filter(function (ws) { return ws.pinned; });
+        var loose = DM.workspaces.filter(function (ws) {
+            return !ws.pinned && (!ws.project_id || projectIds.indexOf(ws.project_id) < 0);
+        });
+        var pinnedSec = $('dmPinnedSec');
+        if (pinnedSec) pinnedSec.hidden = !pinned.length;
+        var pinnedList = $('dmPinnedList');
+        if (pinnedList) pinnedList.innerHTML = pinned.map(dmChatRow).join('');
+        var list = $('dmChatList');
+        if (list) {
+            list.innerHTML = loose.length ? loose.map(dmChatRow).join('')
+                : '<div class="dm-note">No chats here yet. Press + to start one.</div>';
+        }
+        var count = $('dmChatCount');
+        if (count) count.textContent = String(DM.workspaces.length);
+        var projects = $('dmProjectList');
+        if (projects) {
+            projects.innerHTML = DM.projects.length ? DM.projects.map(dmProjectRow).join('')
+                : '<div class="dm-note">No projects yet. Group related chats into a project.</div>';
+        }
+    }
+
+    function dmProjectName(projectId) {
+        var project = dmFindProject(projectId);
+        return project ? project.name : '';
+    }
 
     function dmUpdateHeader() {
-        var ws = null;
-        for (var i = 0; i < DM.workspaces.length; i++) {
-            if (DM.workspaces[i].id === DM.workspaceId) { ws = DM.workspaces[i]; break; }
-        }
+        var ws = dmActiveWorkspace();
         var nameEl = $('dmActiveName');
-        var idEl = $('dmActiveId');
-        if (!nameEl || !idEl) return;
+        var subEl = $('dmActiveId');
+        var pinBtn = $('dmPinBtn');
+        if (!nameEl || !subEl) return;
         if (ws) {
-            nameEl.textContent = ws.name || 'Untitled workspace';
-            idEl.textContent = ws.id + ' \u00b7 ' + (ws.table_count || 0) + ' table(s) \u00b7 ' + (ws.created_by || 'you');
+            nameEl.textContent = ws.name || 'Untitled chat';
+            var bits = [ws.id];
+            if (ws.project_id) bits.push(dmProjectName(ws.project_id));
+            if (ws.message_count) bits.push(ws.message_count + ' message(s)');
+            subEl.textContent = bits.join(' \u00b7 ');
+            if (pinBtn) {
+                pinBtn.classList.toggle('is-on', !!ws.pinned);
+                pinBtn.title = ws.pinned ? 'Unpin this chat' : 'Pin this chat';
+            }
         } else {
-            nameEl.textContent = 'No workspace yet';
-            idEl.textContent = 'Create a workspace to start talking to your data';
+            nameEl.textContent = 'No chat selected';
+            subEl.textContent = 'Create a chat to start talking to your data';
+            if (pinBtn) pinBtn.classList.remove('is-on');
         }
     }
 
-    function dmRenderWorkspaces() {
-        window.dmRenderTree();
+    function dmPickActiveChat() {
+        if (DM.workspaceId && dmFindWorkspace(DM.workspaceId)) return DM.workspaceId;
+        DM.workspaceId = DM.workspaces.length ? DM.workspaces[0].id : '';
+        if (DM.workspaceId) localStorage.setItem('dm_active_ws', DM.workspaceId);
+        else localStorage.removeItem('dm_active_ws');
+        return DM.workspaceId;
     }
 
-    window.dmLoadWorkspaces = async function () {
+    window.dmLoadChats = async function () {
         try {
-            var data = await dmApi('/workspaces');
+            var data = await dmApi('/workspaces?light=true');
             DM.workspaces = data.workspaces || [];
         } catch (err) {
             dmToast(err.message, 'err');
-            DM.workspaces = [];
         }
-        if (DM.workspaceId) {
-            var exists = DM.workspaces.some(function (ws) { return ws.id === DM.workspaceId; });
-            if (!exists) DM.workspaceId = '';
-        }
-        if (!DM.workspaceId && DM.workspaces.length) DM.workspaceId = DM.workspaces[0].id;
-        dmRenderWorkspaces();
+        dmPickActiveChat();
+        dmRenderChats();
         dmUpdateHeader();
         return DM.workspaces;
     };
 
-    window.dmCreateWorkspace = async function (silent) {
+    window.dmLoadProjects = async function () {
         try {
-            var data = await dmApi('/workspaces', { method: 'POST', body: JSON.stringify({ name: '' }) });
-            var ws = data.workspace;
+            var data = await dmApi('/projects');
+            DM.projects = data.projects || [];
+        } catch (err) {
+            dmToast(err.message, 'err');
+        }
+        dmRenderChats();
+        return DM.projects;
+    };
+
+    window.dmSelectChat = async function (workspaceId) {
+        if (!workspaceId) return;
+        DM.workspaceId = workspaceId;
+        localStorage.setItem('dm_active_ws', workspaceId);
+        var ws = dmFindWorkspace(workspaceId);
+        if (ws && ws.project_id) {
+            DM.projectId = ws.project_id;
+            localStorage.setItem('dm_active_prj', DM.projectId);
+        }
+        dmRenderChats();
+        dmUpdateHeader();
+        dmEmptyData();
+        if (window.innerWidth <= 1180) { DM.chatsOpen = false; dmApplyPanels(); }
+        await dmLoadMessages();
+        dmRenderTree();
+    };
+
+    window.dmNewChat = async function (projectId) {
+        var target = projectId || '';
+        try {
+            var data = await dmApi('/workspaces', {
+                method: 'POST',
+                body: JSON.stringify({ name: '', project_id: target })
+            });
+            var ws = data.workspace || {};
+            if (!ws.id) throw new Error('The chat could not be created.');
             DM.workspaceId = ws.id;
             localStorage.setItem('dm_active_ws', ws.id);
-            await dmLoadWorkspaces();
-            await dmLoadCatalog(true);
+            if (target) {
+                DM.projectId = target;
+                localStorage.setItem('dm_active_prj', target);
+                DM.projectsOpen[target] = true;
+                dmSaveJson('dm_projects_open', DM.projectsOpen);
+            }
+            dmCloseDataPanel();
+            dmEmptyData();
             dmRenderMessages([]);
-            dmUpdateHeader();
-            if (!silent) dmToast('Workspace ' + ws.id + ' created', 'ok');
+            await Promise.all([dmLoadChats(), dmLoadProjects()]);
+            dmRenderTree();
+            dmToast('New chat ready', 'ok');
+            if (window.innerWidth <= 1180) { DM.chatsOpen = false; dmApplyPanels(); }
             var input = $('dmInput');
             if (input) input.focus();
             return ws.id;
@@ -614,65 +986,287 @@ def get_data_modeling_js() -> str:
         }
     };
 
-    window.dmSelectWorkspace = async function (workspaceId) {
-        if (!workspaceId) return;
-        DM.workspaceId = workspaceId;
-        localStorage.setItem('dm_active_ws', workspaceId);
-        dmRenderWorkspaces();
-        dmUpdateHeader();
-        dmCloseResult();
-        await dmLoadMessages();
-        if (window.innerWidth <= 900) {
-            DM.railOpen = false;
-            dmApplyRail();
+    window.dmToggleProject = function (projectId) {
+        if (!projectId) return;
+        var open = !DM.projectsOpen[projectId];
+        DM.projectsOpen[projectId] = open;
+        dmSaveJson('dm_projects_open', DM.projectsOpen);
+        if (open) {
+            DM.projectId = projectId;
+            localStorage.setItem('dm_active_prj', projectId);
+        }
+        dmRenderChats();
+        dmRenderTree();
+    };
+
+    window.dmTogglePin = async function (workspaceId) {
+        var ws = dmFindWorkspace(workspaceId);
+        if (!ws) return;
+        try {
+            await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/pin', {
+                method: 'POST',
+                body: JSON.stringify({ pinned: !ws.pinned })
+            });
+            await dmLoadChats();
+            dmRenderTree();
+            dmToast(ws.pinned ? 'Chat unpinned' : 'Chat pinned', 'ok');
+        } catch (err) {
+            dmToast(err.message, 'err');
         }
     };
 
-    window.dmRenameWorkspaceRow = function (btn) {
-        var workspaceId = btn.getAttribute('data-ws');
-        var row = btn.closest('.dm-tree-row');
-        if (!workspaceId || !row) return;
-        var label = row.querySelector('.dm-node-label');
-        if (!label) return;
-        var current = label.textContent;
-        var input = document.createElement('input');
-        input.className = 'dm-rename';
-        input.value = current;
-        label.replaceWith(input);
-        input.focus();
-        input.select();
-        var done = false;
-        var commit = async function () {
-            if (done) return;
-            done = true;
-            var value = input.value.trim();
-            if (!value || value === current) {
-                window.dmRenderTree();
-                return;
+    window.dmTogglePinActive = function () {
+        if (DM.workspaceId) window.dmTogglePin(DM.workspaceId);
+    };
+
+    window.dmDeleteChat = async function (workspaceId) {
+        var ws = dmFindWorkspace(workspaceId);
+        var label = ws ? (ws.name || 'this chat') : 'this chat';
+        if (!window.confirm('Delete "' + label + '"?\n\nIts messages, tables and saved results are removed. This cannot be undone.')) return;
+        try {
+            await dmApi('/workspaces/' + encodeURIComponent(workspaceId), { method: 'DELETE' });
+            if (DM.workspaceId === workspaceId) {
+                DM.workspaceId = '';
+                localStorage.removeItem('dm_active_ws');
             }
+            await Promise.all([dmLoadChats(), dmLoadProjects()]);
+            DM.workspaceId = dmPickActiveChat();
+            dmRenderChats();
+            dmUpdateHeader();
+            dmEmptyData();
+            await dmLoadMessages();
+            dmRenderTree();
+            dmToast('Chat deleted', 'ok');
+        } catch (err) {
+            dmToast(err.message, 'err');
+        }
+    };
+
+    window.dmNewProject = function () {
+        window.dmPromptName({
+            title: 'New project',
+            label: 'Project name',
+            value: '',
+            note: 'Chats started inside a project stay grouped with it.'
+        }, async function (name) {
             try {
-                await dmApi('/workspaces/' + encodeURIComponent(workspaceId), { method: 'PATCH', body: JSON.stringify({ name: value }) });
-                dmToast('Workspace renamed', 'ok');
+                var data = await dmApi('/projects', { method: 'POST', body: JSON.stringify({ name: name }) });
+                var project = data.project || {};
+                if (project.id) {
+                    DM.projectsOpen[project.id] = true;
+                    dmSaveJson('dm_projects_open', DM.projectsOpen);
+                }
+                await dmLoadProjects();
+                if (project.id) await window.dmNewChat(project.id);
+                dmToast('Project "' + (project.name || name) + '" created', 'ok');
             } catch (err) {
                 dmToast(err.message, 'err');
             }
-            await dmLoadWorkspaces();
-            await dmLoadCatalog(true);
-        };
-        input.addEventListener('keydown', function (ev) {
-            if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
-            else if (ev.key === 'Escape') { input.value = current; input.blur(); }
         });
-        input.addEventListener('blur', commit, { once: true });
     };
 
-    // --------------------------------------------------------------- catalog
+    window.dmRenameChat = function (workspaceId) {
+        var ws = dmFindWorkspace(workspaceId);
+        if (!ws) return;
+        window.dmPromptName({
+            title: 'Rename chat',
+            label: 'Chat name',
+            value: ws.name || '',
+            note: 'Only you see this name.'
+        }, async function (name) {
+            try {
+                await dmApi('/workspaces/' + encodeURIComponent(workspaceId), {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: name })
+                });
+                await dmLoadChats();
+                dmRenderTree();
+                dmToast('Chat renamed', 'ok');
+            } catch (err) {
+                dmToast(err.message, 'err');
+            }
+        });
+    };
 
-    // --------------------------------------------------------------- tree
+    window.dmRenameActive = function () {
+        if (DM.workspaceId) window.dmRenameChat(DM.workspaceId);
+        else dmToast('Open a chat first.', 'err');
+    };
 
-    function dmColumnKey(dbId, schema, table) {
-        return dbId + '::' + schema + '::' + table;
+    window.dmRenameProject = function (projectId) {
+        var project = dmFindProject(projectId);
+        if (!project) return;
+        window.dmPromptName({
+            title: 'Rename project',
+            label: 'Project name',
+            value: project.name || '',
+            note: ''
+        }, async function (name) {
+            try {
+                await dmApi('/projects/' + encodeURIComponent(projectId), {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: name })
+                });
+                await Promise.all([dmLoadProjects(), dmLoadChats()]);
+                dmRenderTree();
+                dmToast('Project renamed', 'ok');
+            } catch (err) {
+                dmToast(err.message, 'err');
+            }
+        });
+    };
+
+    window.dmDeleteProject = async function (projectId, withChats) {
+        var project = dmFindProject(projectId);
+        var label = project ? project.name : 'this project';
+        var message = withChats
+            ? 'Delete "' + label + '" and every chat inside it? This cannot be undone.'
+            : 'Delete the project "' + label + '"? Its chats stay in Chats & Tasks.';
+        if (!window.confirm(message)) return;
+        try {
+            await dmApi('/projects/' + encodeURIComponent(projectId) + '?delete_chats=' + (withChats ? 'true' : 'false'), { method: 'DELETE' });
+            delete DM.projectsOpen[projectId];
+            dmSaveJson('dm_projects_open', DM.projectsOpen);
+            if (DM.projectId === projectId) {
+                DM.projectId = '';
+                localStorage.removeItem('dm_active_prj');
+            }
+            if (withChats && !dmFindWorkspace(DM.workspaceId)) {
+                DM.workspaceId = '';
+                localStorage.removeItem('dm_active_ws');
+            }
+            await Promise.all([dmLoadProjects(), dmLoadChats()]);
+            dmPickActiveChat();
+            dmRenderChats();
+            dmUpdateHeader();
+            await dmLoadMessages();
+            dmRenderTree();
+            dmToast('Project deleted', 'ok');
+        } catch (err) {
+            dmToast(err.message, 'err');
+        }
+    };
+
+    async function dmMoveChat(workspaceId, projectId) {
+        try {
+            await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/project', {
+                method: 'POST',
+                body: JSON.stringify({ project_id: projectId || '' })
+            });
+            if (projectId) {
+                DM.projectsOpen[projectId] = true;
+                dmSaveJson('dm_projects_open', DM.projectsOpen);
+            }
+            await Promise.all([dmLoadChats(), dmLoadProjects()]);
+            dmRenderTree();
+            dmToast(projectId ? 'Moved to project' : 'Removed from project', 'ok');
+        } catch (err) {
+            dmToast(err.message, 'err');
+        }
     }
+
+    // ------------------------------------------------------------- the menu
+
+    function dmHideMenu() {
+        var menu = $('dmMenu');
+        if (menu) menu.hidden = true;
+        DM.menuItems = null;
+    }
+
+    function dmShowMenu(x, y, items) {
+        var menu = $('dmMenu');
+        if (!menu) return;
+        DM.menuItems = items;
+        menu.innerHTML = items.map(function (item, index) {
+            if (item.sep) return '<div class="dm-menu-sep"></div>';
+            return '<button class="dm-menu-item' + (item.danger ? ' danger' : '') + '" data-mi="' + index + '"' + (item.disabled ? ' disabled' : '') + '>' +
+                (item.icon ? dmIcon(item.icon) : '') + '<span>' + dmEsc(item.label) + '</span></button>';
+        }).join('');
+        menu.hidden = false;
+        var width = 220;
+        var height = 16 + items.length * 31;
+        var left = Math.max(8, Math.min(x, window.innerWidth - width - 10));
+        var top = Math.max(8, Math.min(y, window.innerHeight - height - 10));
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+    }
+
+    window.dmChatMenu = function (workspaceId, x, y) {
+        var ws = dmFindWorkspace(workspaceId);
+        if (!ws) return;
+        var items = [
+            { label: ws.pinned ? 'Unpin chat' : 'Pin chat', icon: 'pin', run: function () { window.dmTogglePin(workspaceId); } },
+            { label: 'Rename chat', icon: 'pencil', run: function () { window.dmRenameChat(workspaceId); } }
+        ];
+        if (DM.projects.length) {
+            items.push({ sep: true });
+            DM.projects.slice(0, 8).forEach(function (project) {
+                if (project.id === ws.project_id) return;
+                items.push({
+                    label: 'Move to ' + project.name,
+                    icon: 'folder',
+                    run: function () { dmMoveChat(workspaceId, project.id); }
+                });
+            });
+            if (ws.project_id) {
+                items.push({ label: 'Remove from project', icon: 'folder', run: function () { dmMoveChat(workspaceId, ''); } });
+            }
+        }
+        items.push({ sep: true });
+        items.push({ label: 'Delete this chat', icon: 'trash', danger: true, run: function () { window.dmDeleteChat(workspaceId); } });
+        dmShowMenu(x, y, items);
+    };
+
+    window.dmProjectMenu = function (projectId, x, y) {
+        var project = dmFindProject(projectId);
+        if (!project) return;
+        dmShowMenu(x, y, [
+            { label: 'New chat in project', icon: 'plus', run: function () { window.dmNewChat(projectId); } },
+            { label: 'Rename project', icon: 'pencil', run: function () { window.dmRenameProject(projectId); } },
+            { sep: true },
+            { label: 'Delete project (keep chats)', icon: 'folder', run: function () { window.dmDeleteProject(projectId, false); } },
+            { label: 'Delete project and chats', icon: 'trash', danger: true, run: function () { window.dmDeleteProject(projectId, true); } }
+        ]);
+    };
+
+    // --------------------------------------------------------- name dialog
+
+    window.dmPromptName = function (options, callback) {
+        options = options || {};
+        DM.nameCb = callback || null;
+        var modal = $('dmNameModal');
+        if (!modal) return;
+        $('dmNameTitle').textContent = options.title || 'Name';
+        $('dmNameLabel').textContent = options.label || 'Name';
+        $('dmNameNote').textContent = options.note || '';
+        $('dmNameInput').value = options.value || '';
+        modal.classList.add('open');
+        setTimeout(function () {
+            var input = $('dmNameInput');
+            if (!input) return;
+            input.focus();
+            input.select();
+        }, 40);
+    };
+
+    window.dmNameClose = function () {
+        var modal = $('dmNameModal');
+        if (modal) modal.classList.remove('open');
+        DM.nameCb = null;
+    };
+
+    window.dmNameSubmit = function () {
+        var input = $('dmNameInput');
+        var value = input ? input.value.trim() : '';
+        if (!value) { dmToast('Enter a name first.', 'err'); return; }
+        var callback = DM.nameCb;
+        window.dmNameClose();
+        if (callback) callback(value);
+    };
+
+    // ------------------------------------------------------------- explorer
+
+    function dmColumnKey(dbId, schema, table) { return dbId + '::' + schema + '::' + table; }
 
     function dmColsCached(dbId, schema, table) {
         return DM.columns[dmColumnKey(dbId, schema, table)] || null;
@@ -685,169 +1279,166 @@ def get_data_modeling_js() -> str:
         return cols.some(function (c) { return String(c.name || '').toLowerCase().indexOf(q) >= 0; });
     }
 
-    function dmDbBadge(entry, tableTotal) {
-        var status = String(entry.status || '');
-        if (status === 'live' || status === 'online') return { text: tableTotal + ' tbl', cls: 'live' };
-        if (status === 'not_configured') return { text: 'auth', cls: '' };
-        if (status === 'driver_missing') return { text: 'driver', cls: '' };
-        if (status === 'unreachable') return { text: 'offline', cls: '' };
-        if (entry.error) return { text: 'error', cls: '' };
-        return { text: tableTotal + ' tbl', cls: '' };
-    }
-
-    function dmRow(depth, opts) {
-        var pad = 4 + depth * 12;
-        var cls = 'dm-tree-row' + (opts.cls ? ' ' + opts.cls : '') + (opts.active ? ' active' : '');
-        var attrs = ' style="padding-left:' + pad + 'px"';
-        if (opts.dataset) {
-            Object.keys(opts.dataset).forEach(function (k) {
-                attrs += ' data-' + k + '="' + dmAttr(opts.dataset[k]) + '"';
-            });
-        }
-        if (opts.act) attrs += ' data-act="' + dmAttr(opts.act) + '" role="button" tabindex="0"';
-        if (opts.title) attrs += ' title="' + dmAttr(opts.title) + '"';
-        var caret = '<span class="dm-node-caret empty">&#9656;</span>';
-        if (opts.caretAct) {
-            caret = '<button type="button" class="dm-node-caret ' + (opts.caret || '') + '" data-act="toggle" data-key="' + dmAttr(opts.caretAct) + '">&#9656;</button>';
-        } else if (opts.caret) {
-            caret = '<span class="dm-node-caret ' + opts.caret + '">&#9656;</span>';
-        }
-        return '<div class="' + cls + '"' + attrs + '>' + caret +
-            (opts.icon ? '<span class="dm-node-ico">' + opts.icon + '</span>' : '') +
-            '<span class="dm-node-label">' + dmEsc(opts.label || '') + '</span>' +
-            (opts.type ? '<span class="dm-node-type">' + dmEsc(opts.type) + '</span>' : '') +
-            (opts.badge ? '<span class="dm-node-badge ' + (opts.badgeCls || '') + '">' + dmEsc(opts.badge) + '</span>' : '') +
-            (opts.actions || '') +
-            '</div>';
-    }
-
     function dmFilterEntry(entry, q) {
-        var dbText = (String(entry.name || '') + ' ' + String(entry.id || '') + ' ' + String(entry.engine || '')).toLowerCase();
-        var dbMatch = !q || dbText.indexOf(q) >= 0;
+        var text = (String(entry.name || '') + ' ' + String(entry.id || '') + ' ' + String(entry.engine || '')).toLowerCase();
+        var entryMatch = !q || text.indexOf(q) >= 0;
         var schemas = [];
         (entry.schemas || []).forEach(function (schema) {
-            var sMatch = dbMatch || String(schema.name || '').toLowerCase().indexOf(q) >= 0;
-            var tables = (schema.tables || []).filter(function (t) {
+            var schemaMatch = entryMatch || String(schema.name || '').toLowerCase().indexOf(q) >= 0;
+            var tables = (schema.tables || []).filter(function (table) {
                 if (!q) return true;
-                return sMatch || dmTableMatches(entry.id, schema.name, t, q);
+                return schemaMatch || dmTableMatches(entry.id, schema.name, table, q);
             });
-            if (!q || sMatch || tables.length) schemas.push({ schema: schema, tables: tables });
+            if (!q || schemaMatch || tables.length) schemas.push({ schema: schema, tables: tables });
         });
-        if (q && !dbMatch && !schemas.length) return null;
-        var tableTotal = 0;
-        schemas.forEach(function (s) { tableTotal += s.tables.length; });
-        return { entry: entry, schemas: schemas, tableTotal: tableTotal };
+        if (q && !entryMatch && !schemas.length) return null;
+        var total = 0;
+        schemas.forEach(function (item) { total += item.tables.length; });
+        return { entry: entry, schemas: schemas, total: total };
     }
 
-    function dmTableNodeHtml(entry, schema, table, depth, q) {
+    function dmTreeRow(depth, opts) {
+        var html = '<div class="dm-trow' + (opts.cls ? ' ' + opts.cls : '') + (opts.active ? ' is-active' : '') + '" style="padding-left:' + (4 + depth * 13) + 'px"';
+        if (opts.attrs) html += ' ' + opts.attrs;
+        html += ' role="button" tabindex="0">';
+        if (opts.key) {
+            html += '<button type="button" class="dm-tcaret' + (opts.open ? ' is-open' : '') + '" data-act="toggle" data-key="' + dmAttr(opts.key) + '" title="Expand or collapse">' + dmIcon('chevron') + '</button>';
+        } else {
+            html += '<span class="dm-tcaret is-empty">' + dmIcon('chevron') + '</span>';
+        }
+        html += '<span class="dm-tico' + (opts.iconCls ? ' ' + opts.iconCls : '') + '">' + dmIcon(opts.icon || 'table') + '</span>';
+        html += '<span class="dm-tlabel">' + dmEsc(opts.label || '') + '</span>';
+        if (opts.type) html += '<span class="dm-ttype">' + dmEsc(opts.type) + '</span>';
+        if (opts.badge) html += '<span class="dm-tbadge' + (opts.badgeCls ? ' ' + opts.badgeCls : '') + '">' + dmEsc(opts.badge) + '</span>';
+        if (opts.actions) html += '<span class="dm-tacts">' + opts.actions + '</span>';
+        html += '</div>';
+        return html;
+    }
+
+    function dmTableNode(entry, schema, table, depth, q) {
         var key = 'tb:' + entry.id + '::' + schema.name + '::' + table.name;
         var open = q ? true : !!DM.treeOpen[key];
         var cols = dmColsCached(entry.id, schema.name, table.name);
         var badge = table.type === 'view' ? 'VIEW' : (table.row_count ? table.row_count + 'r' : '');
-        var html = dmRow(depth, {
-            act: 'table',
+        var html = dmTreeRow(depth, {
             cls: 'is-table',
-            dataset: { db: entry.id, schema: schema.name, table: table.name },
-            caret: open ? 'open' : '',
-            caretAct: key,
-            icon: table.type === 'view' ? '&#128065;' : '&#9638;',
+            key: key,
+            open: open,
+            icon: table.type === 'view' ? 'grid' : 'table',
             label: table.name,
             badge: badge,
-            title: schema.name + '.' + table.name
+            attrs: 'data-act="table" data-db="' + dmAttr(entry.id) + '" data-schema="' + dmAttr(schema.name) + '" data-table="' + dmAttr(table.name) + '" title="' + dmAttr(schema.name + '.' + table.name) + '"'
         });
         if (!open) return html;
-        if (DM.colLoading[key]) return html + '<div class="dm-tree-note">Loading columns...</div>';
-        if (!cols) return html + '<div class="dm-tree-note">Open the table to load its columns.</div>';
-        if (!cols.length) return html + '<div class="dm-tree-note">No columns found.</div>';
-        cols.forEach(function (c) {
-            html += dmRow(depth + 1, {
+        if (DM.colLoading[key]) return html + '<div class="dm-tree-note" style="padding-left:' + (18 + depth * 13) + 'px">Loading columns...</div>';
+        if (!cols) return html + '<div class="dm-tree-note" style="padding-left:' + (18 + depth * 13) + 'px">Open the table to load its columns.</div>';
+        if (!cols.length) return html + '<div class="dm-tree-note" style="padding-left:' + (18 + depth * 13) + 'px">No columns found.</div>';
+        cols.forEach(function (column) {
+            html += dmTreeRow(depth + 1, {
                 cls: 'is-col',
-                icon: c.is_pk ? '&#128273;' : '&#8226;',
-                label: c.name,
-                type: c.data_type || 'TEXT',
-                badge: c.is_pk ? 'PK' : '',
-                badgeCls: 'pk',
-                title: c.name + ' ' + (c.data_type || '')
+                icon: column.is_pk ? 'key' : 'grid',
+                label: column.name,
+                type: column.data_type || 'TEXT',
+                badge: column.is_pk ? 'PK' : '',
+                badgeCls: 'pk'
             });
         });
         return html;
     }
 
-    function dmSchemaNodeHtml(entry, item, depth, q) {
-        var schema = item.schema;
-        var key = 'sc:' + entry.id + '::' + schema.name;
+    function dmSchemaNode(entry, item, depth, q) {
+        var key = 'sc:' + entry.id + '::' + item.schema.name;
         var open = q ? true : !!DM.treeOpen[key];
-        var html = dmRow(depth, {
-            act: 'toggle',
+        var html = dmTreeRow(depth, {
             cls: 'is-schema',
-            dataset: { key: key },
-            caret: open ? 'open' : '',
-            caretAct: key,
-            icon: '&#128218;',
-            label: schema.name,
-            badge: item.tables.length + ' tbl',
-            title: entry.id + '.' + schema.name
+            key: key,
+            open: open,
+            icon: 'folder',
+            label: item.schema.name,
+            badge: item.tables.length ? item.tables.length + ' tbl' : '',
+            attrs: 'title="' + dmAttr(entry.id + '.' + item.schema.name) + '"'
         });
         if (!open) return html;
-        if (!item.tables.length) return html + '<div class="dm-tree-note">No tables yet.</div>';
-        item.tables.forEach(function (t) { html += dmTableNodeHtml(entry, schema, t, depth + 1, q); });
+        if (!item.tables.length) return html + '<div class="dm-tree-note" style="padding-left:' + (18 + depth * 13) + 'px">No tables yet.</div>';
+        item.tables.forEach(function (table) { html += dmTableNode(entry, item.schema, table, depth + 1, q); });
         return html;
     }
 
-    function dmDbNodeHtml(filtered, depth, q, isWs) {
+    function dmEngineIcon(entry) {
+        var engine = String(entry.engine || '').toLowerCase();
+        if (entry.kind === 'workspace') return { icon: 'database', cls: 'is-ws' };
+        if (engine.indexOf('snow') >= 0) return { icon: 'snowflake', cls: 'is-db' };
+        return { icon: 'database', cls: 'is-db' };
+    }
+
+    function dmStatusBadge(entry, total) {
+        var status = String(entry.status || '');
+        if (status === 'live' || status === 'online') return { text: total + ' tbl', cls: 'live' };
+        if (status === 'not_configured') return { text: 'auth', cls: '' };
+        if (status === 'driver_missing') return { text: 'driver', cls: '' };
+        if (status === 'unreachable') return { text: 'offline', cls: '' };
+        if (entry.error) return { text: 'error', cls: '' };
+        return { text: total + ' tbl', cls: '' };
+    }
+
+    function dmDbNode(filtered, depth, q) {
         var entry = filtered.entry;
         var key = 'db:' + entry.id;
         var open = q ? true : !!DM.treeOpen[key];
-        var engine = String(entry.engine || '').toLowerCase();
-        var icon = isWs ? '&#128193;' : (engine.indexOf('snow') >= 0 ? '&#10052;' : (engine.indexOf('duck') >= 0 ? '&#129413;' : '&#128452;'));
-        var badge = dmDbBadge(entry, filtered.tableTotal);
-        var active = !!(isWs && entry.workspace_id && entry.workspace_id === DM.workspaceId);
-        var actions = '';
-        if (isWs && entry.workspace_id) {
-            actions += '<button type="button" class="dm-node-act" data-act="rename-ws" data-ws="' + dmAttr(entry.workspace_id) + '" title="Rename workspace">&#9998;</button>';
-            actions += '<button type="button" class="dm-node-act" data-act="new-schema" data-ws="' + dmAttr(entry.workspace_id) + '" title="New schema in this workspace">&#43;</button>';
-        }
-        var html = dmRow(depth, {
-            act: 'toggle',
-            cls: isWs ? 'is-db is-ws' : 'is-db',
+        var ico = dmEngineIcon(entry);
+        var badge = dmStatusBadge(entry, filtered.total);
+        var active = !!(entry.workspace_id && entry.workspace_id === DM.workspaceId);
+        var html = dmTreeRow(depth, {
+            cls: 'is-db',
+            key: key,
+            open: open,
             active: active,
-            dataset: { key: key },
-            caret: open ? 'open' : '',
-            caretAct: key,
-            icon: icon,
+            icon: ico.icon,
+            iconCls: ico.cls,
             label: entry.name || entry.id,
             badge: badge.text,
             badgeCls: badge.cls,
-            actions: actions,
-            title: entry.id
+            attrs: 'title="' + dmAttr(entry.id) + '"'
         });
         if (!open) return html;
         if (!filtered.schemas.length) {
-            return html + '<div class="dm-tree-note">' + dmEsc(entry.detail || entry.error || 'No schemas or tables yet.') + '</div>';
+            return html + '<div class="dm-tree-note" style="padding-left:' + (18 + depth * 13) + 'px">' + dmEsc(entry.detail || entry.error || 'No schemas or tables yet.') + '</div>';
         }
-        filtered.schemas.forEach(function (item) { html += dmSchemaNodeHtml(entry, item, depth + 1, q); });
+        filtered.schemas.forEach(function (item) { html += dmSchemaNode(entry, item, depth + 1, q); });
         return html;
     }
 
-    function dmGroupHtml(group, entries, q) {
-        var isWs = group === 'workspaces';
-        var open = q ? true : DM.treeOpen['root:' + group] !== false;
-        var head = '<div class="dm-railtree-head" data-act="toggle" data-key="root:' + group + '" data-section-anchor="' + group + '" role="button" tabindex="0">' +
-            '<span class="dm-node-caret ' + (open ? 'open' : '') + '">&#9656;</span>' +
-            '<span class="dm-node-ico">' + (isWs ? '&#128193;' : '&#128451;') + '</span>' +
-            '<span class="dm-railtree-title">' + (isWs ? 'Workspaces' : 'Databases') + '</span>' +
-            '<span class="dm-node-badge">' + entries.length + '</span>' +
-            (isWs
-                ? '<button type="button" class="dm-node-act" data-act="new-ws" title="New workspace">&#43;</button>'
-                : '<button type="button" class="dm-node-act" data-act="refresh" title="Refresh catalog">&#8635;</button>') +
+    function dmGroupHtml(groupKey, title, icon, entries, q, emptyNote) {
+        var open = q ? true : DM.treeOpen['root:' + groupKey] !== false;
+        var head = '<div class="dm-group-head" data-act="toggle" data-key="root:' + groupKey + '" role="button" tabindex="0">' +
+            '<span class="dm-tcaret' + (open ? ' is-open' : '') + '">' + dmIcon('chevron') + '</span>' +
+            '<span class="dm-tico' + (groupKey === 'databases' ? ' is-db' : ' is-ws') + '">' + dmIcon(icon) + '</span>' +
+            '<span class="dm-tlabel">' + dmEsc(title) + '</span>' +
+            '<span class="dm-tbadge">' + entries.length + '</span>' +
             '</div>';
         if (!open) return head;
-        if (!entries.length) {
-            return head + '<div class="dm-tree-note">' + (isWs ? 'No workspaces yet - create one below.' : 'No databases detected yet.') + '</div>';
-        }
+        if (!entries.length) return head + '<div class="dm-tree-note">' + dmEsc(emptyNote) + '</div>';
         var body = '';
-        entries.forEach(function (item) { body += dmDbNodeHtml(item, 1, q, isWs); });
+        entries.forEach(function (item) { body += dmDbNode(item, 1, q); });
         return head + body;
+    }
+
+    function dmScopeWorkspaceIds() {
+        var ids = [];
+        var ws = dmActiveWorkspace();
+        if (ws) {
+            ids.push(ws.id);
+            if (ws.project_id) {
+                DM.workspaces.forEach(function (other) {
+                    if (other.project_id === ws.project_id && ids.indexOf(other.id) < 0) ids.push(other.id);
+                });
+            }
+        } else if (DM.projectId) {
+            DM.workspaces.forEach(function (other) {
+                if (other.project_id === DM.projectId) ids.push(other.id);
+            });
+        }
+        return ids;
     }
 
     window.dmRenderTree = function () {
@@ -857,27 +1448,46 @@ def get_data_modeling_js() -> str:
         var q = filterEl ? filterEl.value.trim().toLowerCase() : '';
         var clearBtn = $('dmClearFilter');
         if (clearBtn) clearBtn.classList.toggle('show', !!q);
-        var entries = DM.catalog || [];
-        if (!entries.length) {
-            tree.innerHTML = '<div class="dm-tree-note">No catalog yet. Click refresh to scan every NanoPro database.</div>';
+
+        var all = DM.catalog || [];
+        if (!all.length) {
+            tree.innerHTML = '<div class="dm-tree-note">' +
+                (DM.scanning ? 'Scanning your databases in the background...' : 'No databases detected yet. Click rescan to look again.') +
+                '</div>';
             return;
         }
-        var wsFiltered = [], dbFiltered = [];
-        entries.forEach(function (entry) {
+        var scopeIds = dmScopeWorkspaceIds();
+        var scoped = [];
+        var databases = [];
+        all.forEach(function (entry) {
             var filtered = dmFilterEntry(entry, q);
             if (!filtered) return;
-            (entry.kind === 'workspace' ? wsFiltered : dbFiltered).push(filtered);
+            if (entry.kind === 'workspace') {
+                if (scopeIds.indexOf(entry.workspace_id) >= 0) scoped.push(filtered);
+            } else {
+                databases.push(filtered);
+            }
         });
-        var html = dmGroupHtml('workspaces', wsFiltered, q) + dmGroupHtml('databases', dbFiltered, q);
-        tree.innerHTML = '<div class="dm-tree-inner">' + (html || '<div class="dm-tree-note">Nothing matches that search.</div>') + '</div>';
+
+        var ws = dmActiveWorkspace();
+        var scopeName = ws ? (ws.name || 'this chat') : (dmProjectName(DM.projectId) || 'this chat');
+        var label = 'Tables in ' + scopeName;
+        var html = dmGroupHtml('project', label, 'folder', scoped, q, 'No tables yet. Upload a file or ask the AI to create one.');
+        html += dmGroupHtml('databases', 'Databases', 'database', databases, q, 'No external databases detected yet.');
+        tree.innerHTML = html || '<div class="dm-tree-note">Nothing matches that search.</div>';
+    };
+
+    window.dmClearFilter = function () {
+        var el = $('dmCatalogFilter');
+        if (el) { el.value = ''; el.focus(); }
+        window.dmRenderTree();
     };
 
     function dmToggleNode(key) {
         if (!key) return;
-        var open = !DM.treeOpen[key];
-        DM.treeOpen[key] = open;
-        dmSaveTree();
-        if (open && key.indexOf('tb:') === 0) {
+        DM.treeOpen[key] = !DM.treeOpen[key];
+        dmSaveJson('dm_tree_open', DM.treeOpen);
+        if (DM.treeOpen[key] && key.indexOf('tb:') === 0) {
             var parts = key.split('::');
             dmLoadColumns(parts[0].slice(3), parts[1], parts[2]);
         }
@@ -901,100 +1511,53 @@ def get_data_modeling_js() -> str:
         window.dmRenderTree();
     }
 
+    function dmCacheCatalog(list) {
+        try {
+            var text = JSON.stringify(list || []);
+            if (text.length < 450000) localStorage.setItem('dm_catalog_cache', text);
+        } catch (err) { /* quota */ }
+    }
+
+    function dmCachedCatalog() {
+        try {
+            var list = JSON.parse(localStorage.getItem('dm_catalog_cache') || '[]');
+            return Array.isArray(list) ? list : [];
+        } catch (err) { return []; }
+    }
+
+    function dmPollCatalog() {
+        clearTimeout(DM.pollTimer);
+        DM.pollTimer = setTimeout(async function () {
+            if (!DM.scanning || DM.pollTries > 16) { DM.scanning = false; return; }
+            DM.pollTries++;
+            try {
+                var data = await dmApi('/catalog?fast=1');
+                if (data.databases && data.databases.length) {
+                    DM.catalog = data.databases;
+                    dmCacheCatalog(DM.catalog);
+                    window.dmRenderTree();
+                }
+                DM.scanning = !!data.scanning;
+                if (DM.scanning) dmPollCatalog();
+            } catch (err) {
+                DM.scanning = false;
+            }
+        }, 1400);
+    }
+
     window.dmLoadCatalog = async function (refresh) {
         try {
-            var data = await dmApi('/catalog' + (refresh ? '?refresh=true' : ''));
-            DM.catalog = data.databases || [];
-        } catch (err) {
-            dmToast(err.message, 'err');
-            DM.catalog = [];
-        }
-        dmRenderTree();
-        return DM.catalog;
-    };
-
-    window.dmLoadSfStatus = async function () {
-        try {
-            var data = await dmApi('/snowflake/status');
-            var sf = data.snowflake || {};
-            var btn = $('dmSfBtn');
-            if (!btn) return;
-            if (sf.configured) {
-                btn.title = 'Snowflake ' + (sf.account || '') + ' \u00b7 ' + (sf.user || '') + ' - click to create or refresh the warehouse tables';
-            } else if (!sf.password_set) {
-                btn.title = 'Snowflake password is not set. Add it to the Credential Vault or SNOWFLAKE_PASSWORD, then click here.';
-            } else {
-                btn.title = 'Snowflake driver is missing on the server (requirements.txt).';
+            var data = await dmApi('/catalog' + (refresh ? '?refresh=true' : '?fast=1'));
+            if (data.databases && data.databases.length) {
+                DM.catalog = data.databases;
+                dmCacheCatalog(DM.catalog);
             }
-        } catch (err) { /* status is best-effort */ }
-    };
-
-    window.dmSetupSnowflake = async function () {
-        var btn = $('dmSfBtn');
-        if (!btn || btn.disabled) return;
-        var original = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '&#10052; Setting up...';
-        dmToast('Creating the warehouse, schemas and empty tables...', '');
-        try {
-            var data = await dmApi('/snowflake/setup', { method: 'POST' });
-            DM.treeOpen['db:connection:NANO_PRO_SNOWFLAKE'] = true;
-            DM.treeOpen['sc:connection:NANO_PRO_SNOWFLAKE::' + data.database + '.' + data.sales_schema] = true;
-            dmSaveTree();
-            await dmLoadCatalog(true);
-            window.dmSetSection('databases');
-            var counts = data.row_counts || {};
-            var tables = data.tables || [];
-            var summary = 'Database ' + data.database + ' \u00b7 schemas ' + (data.schemas || []).join(', ') +
-                '. ' + tables.length + ' object(s) ready, all empty (no sample rows): ' +
-                tables.map(function (t) {
-                    var n = counts[t];
-                    return t + (n === undefined ? '' : ' (' + n + ' row' + (n === 1 ? '' : 's') + ')');
-                }).join(', ') + '. Account ' + (data.account || '') + '.';
-            window.dmShowResultPanel('Snowflake structure ready', summary, null);
-            dmToast('Snowflake tables created - 0 sample rows', 'ok');
-            window.dmLoadSfStatus();
-        } catch (err) {
-            window.dmShowResultPanel('Snowflake setup needs attention', err.message, null);
-            dmToast(err.message, 'err');
-            if (/password|credential|vault/i.test(err.message || '')) window.dmOpenSfPassword();
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = original;
-        }
-    };
-
-    window.dmOpenSfPassword = function () {
-        var modal = $('dmSfModal');
-        if (!modal) return;
-        $('dmSfPassword').value = '';
-        modal.classList.add('open');
-        setTimeout(function () { var el = $('dmSfPassword'); if (el) el.focus(); }, 40);
-    };
-
-    window.dmCloseSfModal = function () {
-        var modal = $('dmSfModal');
-        if (modal) modal.classList.remove('open');
-    };
-
-    window.dmSubmitSfPassword = async function () {
-        var input = $('dmSfPassword');
-        var password = (input && input.value ? input.value : '').trim();
-        if (!password) { dmToast('Enter the Snowflake password.', 'err'); return; }
-        var btn = $('dmSfSave');
-        btn.disabled = true;
-        btn.textContent = 'Saving...';
-        try {
-            await dmApi('/snowflake/credentials', { method: 'POST', body: JSON.stringify({ password: password }) });
-            if (input) input.value = '';
-            window.dmCloseSfModal();
-            dmToast('Snowflake password saved', 'ok');
-            await window.dmSetupSnowflake();
+            DM.scanning = !!data.scanning;
+            window.dmRenderTree();
+            if (DM.scanning) { DM.pollTries = 0; dmPollCatalog(); }
         } catch (err) {
             dmToast(err.message, 'err');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Save & set up';
+            window.dmRenderTree();
         }
     };
 
@@ -1003,63 +1566,83 @@ def get_data_modeling_js() -> str:
         if (!el) return;
         var act = el.getAttribute('data-act');
         if (act === 'toggle') {
+            ev.stopPropagation();
             dmToggleNode(el.getAttribute('data-key'));
             return;
         }
         if (act === 'table') {
             window.dmShowTable(el.getAttribute('data-db'), el.getAttribute('data-schema'), el.getAttribute('data-table'));
-            return;
-        }
-        if (act === 'rename-ws') {
-            ev.stopPropagation();
-            window.dmRenameWorkspaceRow(el);
-            return;
-        }
-        if (act === 'new-schema') {
-            ev.stopPropagation();
-            window.dmNewSchema(el.getAttribute('data-ws') || '');
-            return;
-        }
-        if (act === 'new-ws') {
-            ev.stopPropagation();
-            window.dmCreateWorkspace();
-            return;
-        }
-        if (act === 'refresh') {
-            ev.stopPropagation();
-            window.dmLoadCatalog(true);
         }
     }
 
-    // ---------------------------------------------------------- table details
+    // ----------------------------------------------------------- data dock
+
+    function dmOpenData() {
+        if (!DM.dataOpen) {
+            DM.dataOpen = true;
+            localStorage.setItem('dm_data_open', '1');
+            dmApplyData();
+        }
+    }
+
+    function dmCloseDataPanel() {
+        DM.tableCtx = null;
+        var ask = $('dmAskTableBtn');
+        if (ask) ask.hidden = true;
+    }
+
+    window.dmEmptyData = function () {
+        dmCloseDataPanel();
+        var title = $('dmDataTitle');
+        var meta = $('dmDataMeta');
+        var body = $('dmDataBody');
+        var download = $('dmResultDownload');
+        if (title) title.textContent = 'Data';
+        if (meta) meta.textContent = 'Table previews and query results appear here';
+        if (body) body.innerHTML = '<div class="dm-data-empty">Select a table in the Explorer or ask a question &mdash; tables and query results open here, below the chat.</div>';
+        if (download) { download.hidden = true; download.removeAttribute('href'); }
+    };
+
+    window.dmClearData = function () {
+        window.dmEmptyData();
+        dmToast('Data panel cleared', 'ok');
+    };
 
     window.dmShowTable = async function (dbId, schema, table) {
+        dmOpenData();
+        dmCloseDataPanel();
         DM.tableCtx = { dbId: dbId, schema: schema, table: table };
-        var backdrop = $('dmTableBackdrop');
-        var body = $('dmTableBody');
-        $('dmTableTitle').textContent = table;
-        $('dmTableSub').textContent = schema + ' \u00b7 ' + dbId;
-        body.innerHTML = '<div class="dm-muted">Loading table metadata...</div>';
-        backdrop.classList.add('open');
+        var ask = $('dmAskTableBtn');
+        if (ask) ask.hidden = false;
+        var title = $('dmDataTitle');
+        var meta = $('dmDataMeta');
+        var body = $('dmDataBody');
+        var download = $('dmResultDownload');
+        if (title) title.textContent = table;
+        if (meta) meta.textContent = schema + ' \u00b7 ' + dbId;
+        if (body) body.innerHTML = '<div class="dm-muted">Loading table metadata...</div>';
+        if (download) { download.hidden = true; download.removeAttribute('href'); }
         try {
             var data = await dmApi('/table?db_id=' + encodeURIComponent(dbId) + '&schema=' + encodeURIComponent(schema) + '&table=' + encodeURIComponent(table));
             var details = data.table || {};
             DM.columns[dmColumnKey(dbId, schema, table)] = details.columns || [];
-            dmRenderTableDetails(details);
+            window.dmRenderTableDetails(details);
             if (DM.treeOpen['tb:' + dbId + '::' + schema + '::' + table]) window.dmRenderTree();
         } catch (err) {
-            body.innerHTML = '<div class="dm-muted">' + dmEsc(err.message) + '</div>';
+            if (body) body.innerHTML = '<div class="dm-muted">' + dmEsc(err.message) + '</div>';
         }
     };
 
-    function dmRenderTableDetails(details) {
-        var body = $('dmTableBody');
+    window.dmRenderTableDetails = function (details) {
+        var body = $('dmDataBody');
+        if (!body) return;
         var columns = details.columns || [];
         var sample = details.sample || [];
-        var sampleCols = columns.map(function (c) { return c.name; });
-        var entity = details.table || 'table';
-        $('dmTableTitle').textContent = entity;
-        $('dmTableSub').textContent = (details.database || '') + ' \u00b7 ' + (details.schema || 'main');
+        var sampleCols = columns.map(function (column) { return column.name; });
+        var title = $('dmDataTitle');
+        var meta = $('dmDataMeta');
+        if (title) title.textContent = details.table || 'Table';
+        if (meta) meta.textContent = (details.database || '') + ' \u00b7 ' + (details.schema || 'main');
 
         var html = '<div class="dm-stat-row">' +
             '<span class="dm-stat">' + (details.row_count === null || details.row_count === undefined ? 'Rows: n/a' : 'Rows: ' + details.row_count) + '</span>' +
@@ -1067,16 +1650,16 @@ def get_data_modeling_js() -> str:
             (details.foreign_keys && details.foreign_keys.length ? '<span class="dm-stat">FK: ' + details.foreign_keys.length + '</span>' : '') +
             (details.indexes && details.indexes.length ? '<span class="dm-stat">Indexes: ' + details.indexes.length + '</span>' : '') +
             '</div>';
-        if (details.error) html += '<div class="dm-muted">' + dmEsc(details.error) + '</div>';
+        if (details.error) html += '<div class="dm-note-line">' + dmEsc(details.error) + '</div>';
 
-        html += '<div class="dm-section-title">Columns</div>';
+        html += '<div class="dm-sec-title">Columns</div>';
         if (columns.length) {
-            html += '<div class="dm-table-wrap"><table class="dm-data-table"><thead><tr><th>#</th><th>Column</th><th>Data type</th><th>Null</th><th>Key</th><th>Default</th></tr></thead><tbody>';
-            columns.forEach(function (c, idx) {
-                html += '<tr><td>' + (idx + 1) + '</td><td>' + dmEsc(c.name) + '</td><td>' + dmEsc(c.data_type || 'TEXT') + '</td>' +
-                    '<td>' + (c.not_null ? 'NOT NULL' : 'NULL') + '</td>' +
-                    '<td>' + (c.is_pk ? 'PRIMARY KEY' : '') + '</td>' +
-                    '<td>' + dmEsc(c.default === null || c.default === undefined ? '' : c.default) + '</td></tr>';
+            html += '<div class="dm-table-wrap"><table class="dm-dtable"><thead><tr><th>#</th><th>Column</th><th>Data type</th><th>Null</th><th>Key</th><th>Default</th></tr></thead><tbody>';
+            columns.forEach(function (column, index) {
+                html += '<tr><td>' + (index + 1) + '</td><td>' + dmEsc(column.name) + '</td><td>' + dmEsc(column.data_type || 'TEXT') + '</td>' +
+                    '<td>' + (column.not_null ? 'NOT NULL' : 'NULL') + '</td>' +
+                    '<td>' + (column.is_pk ? 'PRIMARY KEY' : '') + '</td>' +
+                    '<td>' + dmEsc(column.default === null || column.default === undefined ? '' : column.default) + '</td></tr>';
             });
             html += '</tbody></table></div>';
         } else {
@@ -1084,31 +1667,24 @@ def get_data_modeling_js() -> str:
         }
 
         if (sample.length) {
-            html += '<div class="dm-section-title">Sample data (first 5 rows)</div>' + dmTableHtml(sampleCols, sample);
+            html += '<div class="dm-sec-title">Sample data (first 5 rows)</div>' + dmTableHtml(sampleCols, sample);
         }
         if (details.ddl) {
-            html += '<div class="dm-section-title">Definition</div><pre>' + dmEsc(details.ddl) + '</pre>';
+            html += '<div class="dm-sec-title">Definition</div><pre>' + dmEsc(details.ddl) + '</pre>';
         }
         if (details.foreign_keys && details.foreign_keys.length) {
-            html += '<div class="dm-section-title">Foreign keys</div><pre>' + dmEsc(JSON.stringify(details.foreign_keys, null, 2)) + '</pre>';
+            html += '<div class="dm-sec-title">Foreign keys</div><pre>' + dmEsc(JSON.stringify(details.foreign_keys, null, 2)) + '</pre>';
         }
         if (details.indexes && details.indexes.length) {
-            html += '<div class="dm-section-title">Indexes</div><pre>' + dmEsc(JSON.stringify(details.indexes, null, 2)) + '</pre>';
+            html += '<div class="dm-sec-title">Indexes</div><pre>' + dmEsc(JSON.stringify(details.indexes, null, 2)) + '</pre>';
         }
         body.innerHTML = html;
-    }
-
-    window.dmCloseTable = function (ev) {
-        if (ev && ev.target && ev.target.id !== 'dmTableBackdrop') return;
-        var backdrop = $('dmTableBackdrop');
-        if (backdrop) backdrop.classList.remove('open');
     };
 
     window.dmAskAboutTable = function () {
         var ctx = DM.tableCtx;
         if (!ctx) return;
         var prompt = 'Explain the table "' + ctx.table + '" in schema "' + ctx.schema + '" of "' + ctx.dbId + '": what it stores, its key columns and how it can be joined with other tables.';
-        window.dmCloseTable();
         var input = $('dmInput');
         if (input) {
             input.value = prompt;
@@ -1117,114 +1693,45 @@ def get_data_modeling_js() -> str:
         }
     };
 
-    // ---------------------------------------------------------------- upload
-
-    window.dmUploadOpen = async function () {
-        if (!DM.workspaceId) {
-            await dmCreateWorkspace(true);
-            if (!DM.workspaceId) { dmToast('Create a workspace first.', 'err'); return; }
-        }
-        var modal = $('dmUploadModal');
-        var select = $('dmUpSchema');
-        var ws = null;
-        DM.workspaces.forEach(function (w) { if (w.id === DM.workspaceId) ws = w; });
-        var schemas = (ws && ws.schemas) || [{ name: 'main' }];
-        select.innerHTML = schemas.map(function (s) {
-            return '<option value="' + dmAttr(s.name) + '">' + dmEsc(s.name) + '</option>';
-        }).join('');
-        $('dmUpTable').value = '';
-        $('dmUpFile').value = '';
-        modal.classList.add('open');
-    };
-
-    window.dmUploadClose = function () {
-        var modal = $('dmUploadModal');
-        if (modal) modal.classList.remove('open');
-    };
-
-    window.dmSubmitUpload = async function () {
-        var fileEl = $('dmUpFile');
-        var file = fileEl && fileEl.files ? fileEl.files[0] : null;
-        if (!file) { dmToast('Choose a CSV or Excel file first.', 'err'); return; }
-        var btn = $('dmUpSubmit');
-        btn.disabled = true;
-        btn.textContent = 'Importing...';
-        var form = new FormData();
-        form.append('file', file);
-        form.append('workspace_id', DM.workspaceId);
-        form.append('table_name', $('dmUpTable').value.trim());
-        form.append('mode', $('dmUpMode').value);
-        form.append('schema', $('dmUpSchema').value);
-        try {
-            var data = await dmApi('/upload', { method: 'POST', body: form });
-            window.dmUploadClose();
-            dmToast('Imported ' + data.rows_inserted + ' rows into ' + data.schema + '.' + data.table, 'ok');
-            await dmLoadWorkspaces();
-            await dmLoadCatalog(true);
-            dmShowResultPanel('Import complete',
-                'Table ' + data.schema + '.' + data.table + ' now holds ' + data.total_rows + ' row(s). ' +
-                data.rows_inserted + ' row(s) were added from ' + file.name + '.',
-                { columns: (data.columns || []).map(function (c) { return c.name; }), rows: [], row_count: 0 });
-            var input = $('dmInput');
-            if (input && !input.value) {
-                input.value = 'Show me the first 10 rows of ' + data.table + ' and summarise what this data contains.';
-                dmAutoGrow(input);
+    window.dmShowResultPanel = function (title, note, result) {
+        dmOpenData();
+        dmCloseDataPanel();
+        var titleEl = $('dmDataTitle');
+        var metaEl = $('dmDataMeta');
+        var body = $('dmDataBody');
+        var download = $('dmResultDownload');
+        if (titleEl) titleEl.textContent = title || 'Result';
+        var meta = [];
+        if (result && result.row_count !== undefined) meta.push(result.row_count + ' row(s)');
+        if (result && result.truncated) meta.push('preview capped');
+        if (result && result.execution_time_ms) meta.push(result.execution_time_ms + ' ms');
+        if (metaEl) metaEl.textContent = meta.join(' \u00b7 ');
+        var html = '';
+        if (note) html += '<div class="dm-note-line">' + dmEsc(note) + '</div>';
+        if (result) html += dmTableHtml(result.columns || [], result.rows || []);
+        if (body) body.innerHTML = html || '<div class="dm-muted">No data.</div>';
+        if (download) {
+            if (result && result.run_id) {
+                download.href = '/api/data_modeling/runs/' + encodeURIComponent(result.run_id) + '/download';
+                download.hidden = false;
+            } else {
+                download.hidden = true;
+                download.removeAttribute('href');
             }
-        } catch (err) {
-            dmToast(err.message, 'err');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Import data';
         }
     };
 
-    // ---------------------------------------------------------------- schema
-
-    window.dmNewSchema = async function (workspaceId) {
-        if (workspaceId && workspaceId !== DM.workspaceId) {
-            DM.workspaceId = workspaceId;
-            localStorage.setItem('dm_active_ws', workspaceId);
-            window.dmRenderTree();
-            dmUpdateHeader();
-        }
-        if (!DM.workspaceId) {
-            await dmCreateWorkspace(true);
-            if (!DM.workspaceId) return;
-        }
-        var modal = $('dmSchemaModal');
-        $('dmSchemaName').value = '';
-        modal.classList.add('open');
-        setTimeout(function () { var el = $('dmSchemaName'); if (el) el.focus(); }, 40);
+    window.dmRenderResult = function (result) {
+        window.dmShowResultPanel('Query result', 'The AI ran this query in your chat workspace.', result);
     };
 
-    window.dmCloseSchema = function () {
-        var modal = $('dmSchemaModal');
-        if (modal) modal.classList.remove('open');
-    };
-
-    window.dmSubmitSchema = async function () {
-        var name = ($('dmSchemaName').value || '').trim();
-        if (!name) { dmToast('Enter a schema name.', 'err'); return; }
-        try {
-            await dmApi('/workspaces/' + encodeURIComponent(DM.workspaceId) + '/schemas', {
-                method: 'POST', body: JSON.stringify({ name: name })
-            });
-            window.dmCloseSchema();
-            dmToast('Schema ' + name + ' created', 'ok');
-            await dmLoadWorkspaces();
-            await dmLoadCatalog(true);
-        } catch (err) {
-            dmToast(err.message, 'err');
-        }
-    };
-
-    // ---------------------------------------------------------------- chat
+    // ------------------------------------------------------------- messages
 
     function dmEmptyHtml() {
         return '<div class="dm-empty" id="dmEmptyState">' +
-            '<div class="dm-empty-ico">&#10052;</div>' +
+            '<div class="dm-empty-ico">' + dmIcon('sparkle') + '</div>' +
             '<h3>Your data, in plain language</h3>' +
-            '<p>Ask for tables, joins, filters, reports or uploads. The AI writes and runs the SQL for you and shows the data below.</p>' +
+            '<p>Ask for tables, joins, filters, reports or uploads. The AI writes and runs the SQL for you and the data opens in the dock below.</p>' +
             '<div class="dm-suggest">' +
             '<button data-prompt="List all databases and tables available in NanoPro with row counts." onclick="dmUsePrompt(this)">What data do I have?</button>' +
             '<button data-prompt="Create a table called sales_orders with id, customer_name, city, amount and order_date, then insert 3 sample rows." onclick="dmUsePrompt(this)">Create a table with sample data</button>' +
@@ -1234,33 +1741,32 @@ def get_data_modeling_js() -> str:
             '</div></div>';
     }
 
-    function dmMsgHtml(msg) {
-        var role = msg.role === 'user' ? 'user' : 'ai';
-        var meta = msg.meta || {};
+    function dmMsgHtml(message) {
+        var role = message.role === 'user' ? 'user' : 'ai';
+        var meta = message.meta || {};
+        var sql = message.sql_text || message.sql || meta.sql || '';
         var html = '<div class="dm-msg ' + role + '">' +
             '<div class="dm-avatar">' + (role === 'user' ? 'YOU' : 'AI') + '</div>' +
-            '<div class="dm-bubble"><div class="dm-text">' + dmEsc(msg.content || '') + '</div>';
-        var sql = msg.sql || meta.sql || '';
+            '<div class="dm-bubble"><div class="dm-text">' + dmEsc(message.content || '') + '</div>';
         if (sql) {
             html += '<details class="dm-sql"><summary>SQL used by the AI</summary><pre>' + dmEsc(sql) + '</pre></details>';
         }
         if (meta.error) {
-            html += '<div class="dm-mini-tag err" style="display:inline-block;margin-top:8px;">' + dmEsc(meta.error) + '</div>';
+            html += '<div class="dm-tag err" style="display:inline-block;margin-top:8px;">' + dmEsc(meta.error) + '</div>';
         }
         if (role === 'ai') {
             html += '<div class="dm-msg-foot">';
-            if (meta.model) html += '<span class="dm-mini-tag">' + dmEsc(meta.model) + '</span>';
-            if (meta.fast_path) html += '<span class="dm-mini-tag ok">instant NLU</span>';
+            if (meta.model) html += '<span class="dm-tag">' + dmEsc(meta.model) + '</span>';
+            if (meta.fast_path) html += '<span class="dm-tag ok">instant NLU</span>';
             if (meta.latency_ms) {
                 var ms = Number(meta.latency_ms);
                 var speed = ms >= 1000 ? (ms / 1000).toFixed(1) + 's' : Math.round(ms) + 'ms';
-                html += '<span class="dm-mini-tag">' + speed + '</span>';
+                html += '<span class="dm-tag">' + speed + '</span>';
             }
-            if (meta.row_count) html += '<span class="dm-mini-tag ok">' + meta.row_count + ' row(s)</span>';
-            else if (meta.rows_affected) html += '<span class="dm-mini-tag ok">' + meta.rows_affected + ' affected</span>';
-            if (meta.schedule_created) html += '<span class="dm-mini-tag ok">scheduled</span>';
-            if (meta.run_id) html += '<button class="dm-link-btn" data-run="' + dmAttr(meta.run_id) + '">Show data</button>';
-            if (sql) html += '<button class="dm-link-btn" data-copy="' + dmAttr(sql) + '">Copy SQL</button>';
+            if (meta.row_count) html += '<span class="dm-tag ok">' + meta.row_count + ' row(s)</span>';
+            else if (meta.rows_affected) html += '<span class="dm-tag ok">' + meta.rows_affected + ' affected</span>';
+            if (meta.run_id) html += '<button class="dm-linkbtn" data-run="' + dmAttr(meta.run_id) + '">Show data</button>';
+            if (sql) html += '<button class="dm-linkbtn" data-copy="' + dmAttr(sql) + '">Copy SQL</button>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -1303,7 +1809,7 @@ def get_data_modeling_js() -> str:
     function dmAutoGrow(el) {
         if (!el) return;
         el.style.height = 'auto';
-        el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+        el.style.height = Math.min(el.scrollHeight, 150) + 'px';
     }
 
     function dmAppendTyping() {
@@ -1311,17 +1817,17 @@ def get_data_modeling_js() -> str:
         if (!box) return;
         var empty = $('dmEmptyState');
         if (empty) empty.remove();
-        var el = document.createElement('div');
-        el.className = 'dm-msg ai';
-        el.id = 'dmTypingRow';
-        el.innerHTML = '<div class="dm-avatar">AI</div><div class="dm-bubble"><div class="dm-typing"><i></i><i></i><i></i></div></div>';
-        box.appendChild(el);
+        var row = document.createElement('div');
+        row.className = 'dm-msg ai';
+        row.id = 'dmTypingRow';
+        row.innerHTML = '<div class="dm-avatar">AI</div><div class="dm-bubble"><div class="dm-typing"><i></i><i></i><i></i></div></div>';
+        box.appendChild(row);
         box.scrollTop = box.scrollHeight;
     }
 
     function dmRemoveTyping() {
-        var el = $('dmTypingRow');
-        if (el) el.remove();
+        var row = $('dmTypingRow');
+        if (row) row.remove();
     }
 
     function dmAppendLocalUser(text) {
@@ -1329,10 +1835,10 @@ def get_data_modeling_js() -> str:
         if (!box) return;
         var empty = $('dmEmptyState');
         if (empty) empty.remove();
-        var el = document.createElement('div');
-        el.className = 'dm-msg user';
-        el.innerHTML = '<div class="dm-avatar">YOU</div><div class="dm-bubble"><div class="dm-text">' + dmEsc(text) + '</div></div>';
-        box.appendChild(el);
+        var row = document.createElement('div');
+        row.className = 'dm-msg user';
+        row.innerHTML = '<div class="dm-avatar">YOU</div><div class="dm-bubble"><div class="dm-text">' + dmEsc(text) + '</div></div>';
+        box.appendChild(row);
         box.scrollTop = box.scrollHeight;
     }
 
@@ -1343,8 +1849,8 @@ def get_data_modeling_js() -> str:
         var text = (input.value || '').trim();
         if (!text) { input.focus(); return; }
         if (!DM.workspaceId) {
-            var id = await dmCreateWorkspace(true);
-            if (!id) return;
+            var created = await window.dmNewChat(DM.projectId || '');
+            if (!created) return;
         }
         var sendBtn = $('dmSend');
         DM.sending = true;
@@ -1359,76 +1865,33 @@ def get_data_modeling_js() -> str:
                 body: JSON.stringify({ workspace_id: DM.workspaceId, message: text })
             });
             dmRemoveTyping();
-            if (data.workspace_created) {
-                dmToast('New workspace "' + (data.workspace_created.name || '') + '" created', 'ok');
-                await dmLoadWorkspaces();
-            }
-            if (data.schema_created) {
-                dmToast('Schema ' + data.schema_created.schema + ' created', 'ok');
-            }
-            await dmLoadWorkspaces();
-            await dmLoadCatalog();
+            if (data.schema_created) dmToast('Schema ' + data.schema_created.schema + ' created', 'ok');
+            await dmLoadChats();
+            window.dmLoadCatalog(false);
             dmUpdateHeader();
             await dmLoadMessages();
             if (data.result) {
-                dmRenderResult(data.result);
+                window.dmRenderResult(data.result);
             } else if (data.error) {
                 dmToast(data.error, 'err');
             }
+            dmRenderTree();
         } catch (err) {
             dmRemoveTyping();
             dmToast(err.message, 'err');
             var box = $('dmMessages');
-            if (box && !box.querySelector('.dm-msg.ai')) dmRenderMessages([]);
+            if (box && !box.querySelector('.dm-msg.ai')) window.dmRenderMessages([]);
         } finally {
             DM.sending = false;
             if (sendBtn) sendBtn.disabled = false;
         }
     };
 
-    // --------------------------------------------------------------- results
-
-    window.dmShowResultPanel = function (title, note, result) {
-        var panel = $('dmResultPanel');
-        if (!panel) return;
-        $('dmResultTitle').textContent = title || 'Result';
-        var metaParts = [];
-        if (result && result.row_count !== undefined) metaParts.push(result.row_count + ' row(s)');
-        if (result && result.truncated) metaParts.push('preview capped');
-        if (result && result.execution_time_ms) metaParts.push(result.execution_time_ms + ' ms');
-        if (result) metaParts.push(result.run_id ? 'saved result' : 'not saved');
-        $('dmResultMeta').textContent = metaParts.join(' \u00b7 ');
-        var body = $('dmResultBody');
-        var html = '';
-        if (note) html += '<div class="dm-muted">' + dmEsc(note) + '</div>';
-        if (result) html += dmTableHtml(result.columns || [], result.rows || []);
-        body.innerHTML = html;
-        var dl = $('dmResultDownload');
-        if (result && result.run_id) {
-            dl.href = '/api/data_modeling/runs/' + encodeURIComponent(result.run_id) + '/download';
-            dl.hidden = false;
-        } else {
-            dl.hidden = true;
-            dl.removeAttribute('href');
-        }
-        panel.hidden = false;
-    };
-
-    window.dmRenderResult = function (result) {
-        var cols = (result.columns || []).length;
-        window.dmShowResultPanel('Result', 'The AI ran this query in your workspace. ' + cols + ' column(s) returned.', result);
-    };
-
-    window.dmCloseResult = function () {
-        var panel = $('dmResultPanel');
-        if (panel) panel.hidden = true;
-    };
-
     async function dmReplayRun(runId) {
         try {
             var data = await dmApi('/runs/' + encodeURIComponent(runId));
             var run = data.run || {};
-            window.dmShowResultPanel('Saved result', 'Replayed from chat history.', {
+            window.dmShowResultPanel('Saved result', 'Replayed from this chat history.', {
                 columns: run.columns || [],
                 rows: run.rows || [],
                 row_count: run.row_count || 0,
@@ -1444,13 +1907,13 @@ def get_data_modeling_js() -> str:
             await navigator.clipboard.writeText(text);
             dmToast('SQL copied', 'ok');
         } catch (err) {
-            var ta = document.createElement('textarea');
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
+            var area = document.createElement('textarea');
+            area.value = text;
+            document.body.appendChild(area);
+            area.select();
             try { document.execCommand('copy'); dmToast('SQL copied', 'ok'); }
             catch (e) { dmToast('Copy failed', 'err'); }
-            ta.remove();
+            area.remove();
         }
     }
 
@@ -1458,10 +1921,189 @@ def get_data_modeling_js() -> str:
         var runBtn = ev.target.closest('[data-run]');
         if (runBtn) { dmReplayRun(runBtn.getAttribute('data-run')); return; }
         var copyBtn = ev.target.closest('[data-copy]');
-        if (copyBtn) { dmCopyText(copyBtn.getAttribute('data-copy')); }
+        if (copyBtn) dmCopyText(copyBtn.getAttribute('data-copy'));
     }
 
-    // ------------------------------------------------------------------ boot
+    // --------------------------------------------------------------- upload
+
+    window.dmUploadOpen = async function () {
+        if (!DM.workspaceId) {
+            var created = await window.dmNewChat(DM.projectId || '');
+            if (!created) { dmToast('Create a chat first.', 'err'); return; }
+        }
+        var modal = $('dmUploadModal');
+        var select = $('dmUpSchema');
+        var ws = dmActiveWorkspace();
+        var schemas = (ws && ws.schemas && ws.schemas.length) ? ws.schemas : [{ name: 'main', tables: [] }];
+        if (select) {
+            select.innerHTML = schemas.map(function (schema) {
+                return '<option value="' + dmAttr(schema.name) + '">' + dmEsc(schema.name) + '</option>';
+            }).join('');
+        }
+        if ($('dmUpTable')) $('dmUpTable').value = '';
+        if ($('dmUpFile')) $('dmUpFile').value = '';
+        if (modal) modal.classList.add('open');
+    };
+
+    window.dmUploadClose = function () {
+        var modal = $('dmUploadModal');
+        if (modal) modal.classList.remove('open');
+    };
+
+    window.dmSubmitUpload = async function () {
+        var fileEl = $('dmUpFile');
+        var file = fileEl && fileEl.files ? fileEl.files[0] : null;
+        if (!file) { dmToast('Choose a CSV or Excel file first.', 'err'); return; }
+        var btn = $('dmUpSubmit');
+        if (btn) { btn.disabled = true; btn.textContent = 'Importing...'; }
+        var form = new FormData();
+        form.append('file', file);
+        form.append('workspace_id', DM.workspaceId);
+        form.append('table_name', $('dmUpTable').value.trim());
+        form.append('mode', $('dmUpMode').value);
+        form.append('schema', $('dmUpSchema').value);
+        try {
+            var data = await dmApi('/upload', { method: 'POST', body: form });
+            window.dmUploadClose();
+            dmToast('Imported ' + data.rows_inserted + ' rows into ' + data.schema + '.' + data.table, 'ok');
+            await dmLoadChats();
+            window.dmLoadCatalog(false);
+            dmRenderTree();
+            window.dmShowResultPanel('Import complete',
+                'Table ' + data.schema + '.' + data.table + ' now holds ' + data.total_rows + ' row(s). ' +
+                data.rows_inserted + ' row(s) were added from ' + file.name + '.',
+                { columns: (data.columns || []).map(function (c) { return c.name; }), rows: [], row_count: 0 });
+            var input = $('dmInput');
+            if (input && !input.value) {
+                input.value = 'Show me the first 10 rows of ' + data.table + ' and summarise what this data contains.';
+                dmAutoGrow(input);
+            }
+        } catch (err) {
+            dmToast(err.message, 'err');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Import data'; }
+        }
+    };
+
+    // --------------------------------------------------------------- schema
+
+    window.dmNewSchema = async function () {
+        if (!DM.workspaceId) {
+            var created = await window.dmNewChat(DM.projectId || '');
+            if (!created) return;
+        }
+        var modal = $('dmSchemaModal');
+        if ($('dmSchemaName')) $('dmSchemaName').value = '';
+        if (modal) modal.classList.add('open');
+        setTimeout(function () { var el = $('dmSchemaName'); if (el) el.focus(); }, 40);
+    };
+
+    window.dmCloseSchema = function () {
+        var modal = $('dmSchemaModal');
+        if (modal) modal.classList.remove('open');
+    };
+
+    window.dmSubmitSchema = async function () {
+        var input = $('dmSchemaName');
+        var name = input ? input.value.trim() : '';
+        if (!name) { dmToast('Enter a schema name.', 'err'); return; }
+        try {
+            await dmApi('/workspaces/' + encodeURIComponent(DM.workspaceId) + '/schemas', {
+                method: 'POST',
+                body: JSON.stringify({ name: name })
+            });
+            window.dmCloseSchema();
+            dmToast('Schema ' + name + ' created', 'ok');
+            await dmLoadChats();
+            window.dmLoadCatalog(false);
+            dmRenderTree();
+        } catch (err) {
+            dmToast(err.message, 'err');
+        }
+    };
+
+    // ------------------------------------------------------------ snowflake
+
+    window.dmLoadSfStatus = async function () {
+        try {
+            var data = await dmApi('/snowflake/status');
+            var sf = data.snowflake || {};
+            var btn = $('dmSfBtn');
+            if (!btn) return;
+            if (sf.configured) {
+                btn.title = 'Snowflake ' + (sf.account || '') + ' \u00b7 ' + (sf.user || '') + ' - click to create or refresh the warehouse tables';
+            } else if (!sf.password_set) {
+                btn.title = 'Snowflake password is not set. Add it to the Credential Vault or SNOWFLAKE_PASSWORD, then click here.';
+            } else {
+                btn.title = 'Snowflake driver is missing on the server (requirements.txt).';
+            }
+        } catch (err) { /* best effort */ }
+    };
+
+    window.dmSetupSnowflake = async function () {
+        var btn = $('dmSfBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        dmToast('Creating the warehouse, schemas and empty tables...', '');
+        try {
+            var data = await dmApi('/snowflake/setup', { method: 'POST' });
+            DM.treeOpen['db:connection:NANO_PRO_SNOWFLAKE'] = true;
+            DM.treeOpen['sc:connection:NANO_PRO_SNOWFLAKE::' + data.database + '.' + data.sales_schema] = true;
+            dmSaveJson('dm_tree_open', DM.treeOpen);
+            await window.dmLoadCatalog(true);
+            var counts = data.row_counts || {};
+            var tables = data.tables || [];
+            var summary = 'Database ' + data.database + ' \u00b7 schemas ' + (data.schemas || []).join(', ') +
+                '. ' + tables.length + ' object(s) ready, all empty (no sample rows): ' +
+                tables.map(function (t) {
+                    var n = counts[t];
+                    return t + (n === undefined ? '' : ' (' + n + ' row' + (n === 1 ? '' : 's') + ')');
+                }).join(', ') + '. Account ' + (data.account || '') + '.';
+            window.dmShowResultPanel('Snowflake structure ready', summary, null);
+            dmToast('Snowflake tables created - 0 sample rows', 'ok');
+            window.dmLoadSfStatus();
+        } catch (err) {
+            window.dmShowResultPanel('Snowflake setup needs attention', err.message, null);
+            dmToast(err.message, 'err');
+            if (/password|credential|vault/i.test(err.message || '')) window.dmOpenSfPassword();
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.dmOpenSfPassword = function () {
+        var modal = $('dmSfModal');
+        if (!modal) return;
+        if ($('dmSfPassword')) $('dmSfPassword').value = '';
+        modal.classList.add('open');
+        setTimeout(function () { var el = $('dmSfPassword'); if (el) el.focus(); }, 40);
+    };
+
+    window.dmCloseSfModal = function () {
+        var modal = $('dmSfModal');
+        if (modal) modal.classList.remove('open');
+    };
+
+    window.dmSubmitSfPassword = async function () {
+        var input = $('dmSfPassword');
+        var password = input ? input.value.trim() : '';
+        if (!password) { dmToast('Enter the Snowflake password.', 'err'); return; }
+        var btn = $('dmSfSave');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+        try {
+            await dmApi('/snowflake/credentials', { method: 'POST', body: JSON.stringify({ password: password }) });
+            if (input) input.value = '';
+            window.dmCloseSfModal();
+            dmToast('Snowflake password saved', 'ok');
+            await window.dmSetupSnowflake();
+        } catch (err) {
+            dmToast(err.message, 'err');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Save & set up'; }
+        }
+    };
+
+    // ----------------------------------------------------------------- boot
 
     async function dmLoadStatus() {
         try {
@@ -1484,6 +2126,59 @@ def get_data_modeling_js() -> str:
     function dmBind() {
         if (DM.bound) return;
         DM.bound = true;
+
+        var chatsScroll = $('dmChatsScroll');
+        if (chatsScroll) {
+            chatsScroll.addEventListener('click', function (ev) {
+                var chatAct = ev.target.closest('[data-cact]');
+                if (chatAct) {
+                    ev.stopPropagation();
+                    var chatId = chatAct.getAttribute('data-id');
+                    if (chatAct.getAttribute('data-cact') === 'pin') window.dmTogglePin(chatId);
+                    else {
+                        var rect = chatAct.getBoundingClientRect();
+                        window.dmChatMenu(chatId, rect.right - 10, rect.bottom + 4);
+                    }
+                    return;
+                }
+                var projAct = ev.target.closest('[data-pact]');
+                if (projAct) {
+                    ev.stopPropagation();
+                    var projectId = projAct.getAttribute('data-id');
+                    if (projAct.getAttribute('data-pact') === 'new') window.dmNewChat(projectId);
+                    else {
+                        var prect = projAct.getBoundingClientRect();
+                        window.dmProjectMenu(projectId, prect.right - 10, prect.bottom + 4);
+                    }
+                    return;
+                }
+                var projRow = ev.target.closest('[data-proj]');
+                if (projRow) { window.dmToggleProject(projRow.getAttribute('data-proj')); return; }
+                var chatRow = ev.target.closest('[data-chat]');
+                if (chatRow) window.dmSelectChat(chatRow.getAttribute('data-chat'));
+            });
+            chatsScroll.addEventListener('contextmenu', function (ev) {
+                var chatRow = ev.target.closest('[data-chat]');
+                if (chatRow) {
+                    ev.preventDefault();
+                    window.dmChatMenu(chatRow.getAttribute('data-chat'), ev.clientX, ev.clientY);
+                    return;
+                }
+                var projRow = ev.target.closest('[data-proj]');
+                if (projRow) {
+                    ev.preventDefault();
+                    window.dmProjectMenu(projRow.getAttribute('data-proj'), ev.clientX, ev.clientY);
+                }
+            });
+            chatsScroll.addEventListener('keydown', function (ev) {
+                if (ev.key !== 'Enter' && ev.key !== ' ') return;
+                var row = ev.target.closest('[data-chat],[data-proj]');
+                if (!row || ev.target.tagName === 'BUTTON') return;
+                ev.preventDefault();
+                row.click();
+            });
+        }
+
         var tree = $('dmDatabaseTree');
         if (tree) {
             tree.addEventListener('click', dmTreeClick);
@@ -1495,9 +2190,18 @@ def get_data_modeling_js() -> str:
                 el.click();
             });
         }
-        dmInitRailResize();
+
+        var filter = $('dmCatalogFilter');
+        if (filter) {
+            filter.addEventListener('input', function () { window.dmRenderTree(); });
+            filter.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape') { filter.value = ''; window.dmRenderTree(); }
+            });
+        }
+
         var messages = $('dmMessages');
         if (messages) messages.addEventListener('click', dmMessagesClick);
+
         var input = $('dmInput');
         if (input) {
             input.addEventListener('input', function () { dmAutoGrow(input); });
@@ -1508,60 +2212,104 @@ def get_data_modeling_js() -> str:
                 }
             });
         }
-        var uploadModal = $('dmUploadModal');
-        if (uploadModal) {
-            uploadModal.addEventListener('click', function (ev) {
-                if (ev.target === uploadModal) window.dmUploadClose();
+
+        var menu = $('dmMenu');
+        if (menu) {
+            menu.addEventListener('click', function (ev) {
+                var btn = ev.target.closest('[data-mi]');
+                if (!btn) return;
+                var item = (DM.menuItems || [])[Number(btn.getAttribute('data-mi'))];
+                dmHideMenu();
+                if (item && item.run) item.run();
             });
         }
-        var schemaModal = $('dmSchemaModal');
-        if (schemaModal) {
-            schemaModal.addEventListener('click', function (ev) {
-                if (ev.target === schemaModal) window.dmCloseSchema();
+        document.addEventListener('click', function (ev) {
+            if (!ev.target.closest('#dmMenu')) dmHideMenu();
+        });
+        document.addEventListener('scroll', dmHideMenu, true);
+
+        var nameInput = $('dmNameInput');
+        if (nameInput) nameInput.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter') { ev.preventDefault(); window.dmNameSubmit(); }
+        });
+        var schemaInput = $('dmSchemaName');
+        if (schemaInput) schemaInput.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter') { ev.preventDefault(); window.dmSubmitSchema(); }
+        });
+        var sfInput = $('dmSfPassword');
+        if (sfInput) sfInput.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter') { ev.preventDefault(); window.dmSubmitSfPassword(); }
+        });
+
+        ['dmNameModal', 'dmUploadModal', 'dmSchemaModal', 'dmSfModal'].forEach(function (id) {
+            var modal = $(id);
+            if (!modal) return;
+            modal.addEventListener('click', function (ev) {
+                if (ev.target !== modal) return;
+                if (id === 'dmNameModal') window.dmNameClose();
+                if (id === 'dmUploadModal') window.dmUploadClose();
+                if (id === 'dmSchemaModal') window.dmCloseSchema();
+                if (id === 'dmSfModal') window.dmCloseSfModal();
             });
-            var schemaInput = $('dmSchemaName');
-            if (schemaInput) schemaInput.addEventListener('keydown', function (ev) {
-                if (ev.key === 'Enter') { ev.preventDefault(); window.dmSubmitSchema(); }
-            });
-        }
-        var sfModal = $('dmSfModal');
-        if (sfModal) {
-            sfModal.addEventListener('click', function (ev) {
-                if (ev.target === sfModal) window.dmCloseSfModal();
-            });
-            var sfInput = $('dmSfPassword');
-            if (sfInput) sfInput.addEventListener('keydown', function (ev) {
-                if (ev.key === 'Enter') { ev.preventDefault(); window.dmSubmitSfPassword(); }
-            });
-        }
+        });
+
         document.addEventListener('keydown', function (ev) {
             if (ev.key !== 'Escape') return;
+            window.dmNameClose();
             window.dmUploadClose();
             window.dmCloseSchema();
             window.dmCloseSfModal();
+            dmHideMenu();
+        });
+
+        dmInitGripV('dmChatsGrip', 'dmChatsPanel', 'dm_chats_w', 220, 400);
+        dmInitGripV('dmExplorerGrip', 'dmExplorer', 'dm_explorer_w', 220, 420);
+        dmInitGripH();
+
+        var resizeTimer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(dmFit, 120);
         });
     }
 
-    window.initDataModeling = async function () {
+    window.initDataModeling = function () {
         if (!$('dmShell')) return;
-        DM.inited = true;
-        dmBind();
-        dmApplyRailWidth();
-        window.dmSetSection(DM.section);
-        dmApplyRail();
-        await dmLoadStatus();
-        await dmLoadSfStatus();
-        await dmLoadWorkspaces();
-        await dmLoadCatalog();
-        dmUpdateHeader();
-        if (DM.workspaceId) {
-            await dmLoadMessages();
-        } else {
-            window.dmRenderMessages([]);
+        if (DM.inited) {
+            dmFit();
+            dmApplyPanels();
+            dmApplyData();
+            return;
         }
-    };
+        DM.inited = true;
+        if (window.innerWidth <= 1180) {
+            DM.chatsOpen = false;
+            DM.explorerOpen = false;
+        }
+        dmBind();
+        dmApplyPanels();
+        dmApplyData();
+        dmFit();
 
-    window.dmRenderTree = window.dmRenderTree || function () {};
+        DM.catalog = dmCachedCatalog();
+        window.dmRenderTree();
+        dmRenderChats();
+        window.dmRenderMessages([]);
+        dmUpdateHeader();
+        window.dmEmptyData();
+
+        dmLoadStatus();
+        window.dmLoadSfStatus();
+        dmLoadCatalog(false);
+
+        Promise.all([window.dmLoadProjects(), window.dmLoadChats()]).then(function () {
+            dmPickActiveChat();
+            dmRenderChats();
+            dmUpdateHeader();
+            window.dmRenderTree();
+            return window.dmLoadMessages();
+        }).catch(function () { /* toasts already shown */ });
+    };
 })();
 </script>
 '''

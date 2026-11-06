@@ -15,9 +15,26 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
 class WorkspaceCreateRequest(BaseModel):
     name: str = ""
+    project_id: str = ""
 
 
 class WorkspaceRenameRequest(BaseModel):
+    name: str
+
+
+class WorkspacePinRequest(BaseModel):
+    pinned: bool = True
+
+
+class WorkspaceProjectRequest(BaseModel):
+    project_id: str = ""
+
+
+class ProjectCreateRequest(BaseModel):
+    name: str = ""
+
+
+class ProjectRenameRequest(BaseModel):
     name: str
 
 
@@ -116,11 +133,11 @@ def api_dm_selfcheck(request: Request, live: int = 0, workspace_id: str = ""):
 
 
 @router.get("/workspaces")
-def api_dm_workspaces(request: Request):
+def api_dm_workspaces(request: Request, light: bool = True):
     _session_user(request)
     from app.core import data_modeling_ai as dm
 
-    return JSONResponse({"status": "success", "workspaces": dm.list_workspaces()})
+    return JSONResponse({"status": "success", "workspaces": dm.list_workspaces(light=light)})
 
 
 @router.post("/workspaces")
@@ -129,7 +146,7 @@ def api_dm_create_workspace(req: WorkspaceCreateRequest, request: Request):
     from app.core import data_modeling_ai as dm
 
     try:
-        ws = dm.create_workspace(req.name, _user_label(user))
+        ws = dm.create_workspace(req.name, _user_label(user), project_id=req.project_id)
     except Exception as exc:
         return _error(str(exc))
     return JSONResponse({"status": "success", "workspace": ws})
@@ -145,6 +162,88 @@ def api_dm_rename_workspace(workspace_id: str, req: WorkspaceRenameRequest, requ
     except Exception as exc:
         return _error(str(exc))
     return JSONResponse({"status": "success", "workspace": ws})
+
+
+@router.post("/workspaces/{workspace_id}/pin")
+def api_dm_pin_workspace(workspace_id: str, req: WorkspacePinRequest, request: Request):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        ws = dm.set_workspace_pinned(workspace_id, req.pinned)
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    return JSONResponse({"status": "success", "workspace": ws})
+
+
+@router.post("/workspaces/{workspace_id}/project")
+def api_dm_move_workspace(workspace_id: str, req: WorkspaceProjectRequest, request: Request):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        ws = dm.set_workspace_project(workspace_id, req.project_id)
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    return JSONResponse({"status": "success", "workspace": ws})
+
+
+@router.delete("/workspaces/{workspace_id}")
+def api_dm_delete_workspace(workspace_id: str, request: Request):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        result = dm.delete_workspace(workspace_id)
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    except Exception as exc:
+        return _error(f"Could not delete the chat: {exc}", 500)
+    return JSONResponse({"status": "success", **result})
+
+
+@router.get("/projects")
+def api_dm_projects(request: Request):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    return JSONResponse({"status": "success", "projects": dm.list_projects()})
+
+
+@router.post("/projects")
+def api_dm_create_project(req: ProjectCreateRequest, request: Request):
+    user = _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        project = dm.create_project(req.name, _user_label(user))
+    except Exception as exc:
+        return _error(str(exc))
+    return JSONResponse({"status": "success", "project": project})
+
+
+@router.patch("/projects/{project_id}")
+def api_dm_rename_project(project_id: str, req: ProjectRenameRequest, request: Request):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        project = dm.rename_project(project_id, req.name)
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    return JSONResponse({"status": "success", "project": project})
+
+
+@router.delete("/projects/{project_id}")
+def api_dm_delete_project(project_id: str, request: Request, delete_chats: bool = False):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        result = dm.delete_project(project_id, delete_chats=delete_chats)
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    return JSONResponse({"status": "success", **result})
 
 
 @router.get("/workspaces/{workspace_id}/messages")
@@ -170,12 +269,18 @@ def api_dm_create_schema(workspace_id: str, req: SchemaCreateRequest, request: R
 
 
 @router.get("/catalog")
-def api_dm_catalog(request: Request, refresh: bool = False):
+def api_dm_catalog(request: Request, refresh: bool = False, fast: bool = False):
     _session_user(request)
     from app.core import data_modeling_ai as dm
 
     if refresh:
-        dm.invalidate_catalog()
+        databases, scanning = dm.refresh_catalog_async()
+        if not scanning:
+            databases = dm.catalog_snapshot(ttl=0)
+        return JSONResponse({"status": "success", "databases": databases, "scanning": scanning})
+    if fast:
+        databases, scanning = dm.catalog_cached()
+        return JSONResponse({"status": "success", "databases": databases, "scanning": scanning})
     return JSONResponse({"status": "success", "databases": dm.catalog_snapshot(ttl=0 if refresh else 8.0)})
 
 
