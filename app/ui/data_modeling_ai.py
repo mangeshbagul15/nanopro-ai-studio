@@ -771,15 +771,6 @@ def get_data_modeling_js() -> str:
         }
         return data || {};
     }
-        var data = null;
-        try { data = await res.json(); } catch (err) { data = null; }
-        if (!res.ok || (data && data.status === 'error')) {
-            var detail = data && (data.message || data.detail);
-            if (detail && typeof detail === 'object') detail = JSON.stringify(detail);
-            throw new Error(detail || ('Request failed (' + res.status + ')'));
-        }
-        return data || {};
-    }
 
     function dmSaveJson(key, value) {
         try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* private mode */ }
