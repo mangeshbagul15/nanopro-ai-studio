@@ -11,14 +11,36 @@ def get_data_modeling_html() -> str:
     return r'''
 <div class="workspace-view" id="view-data_modeling_ai">
 <style>
+#view-data_modeling_ai {
+  flex: 1 1 0% !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: none;
+}
+#view-data_modeling_ai.active {
+  display: flex !important;
+  flex-direction: column !important;
+}
+body:has(#view-data_modeling_ai.active) #main-content-viewport,
+#main-content-viewport:has(#view-data_modeling_ai.active) {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
 #view-data_modeling_ai .dm-app {
   --dm-bg:#0B1119; --dm-panel:#0F1724; --dm-panel-2:#121C2B; --dm-line:#1E2A3C; --dm-line-2:#26364C;
   --dm-text:#E6EDF7; --dm-muted:#92A4BE; --dm-dim:#6B7C97;
   --dm-accent:#4C8DFF; --dm-accent-soft:rgba(76,141,255,.15);
   --dm-green:#3FB950; --dm-red:#F85149; --dm-amber:#E3B341;
-  position:relative; display:flex; flex-direction:column; height:calc(100vh - 128px); min-height:560px;
-  background:var(--dm-bg); border:1px solid var(--dm-line); border-radius:14px; overflow:hidden;
-  box-shadow:0 18px 44px rgba(2,6,23,.42);
+  position:relative; display:flex; flex-direction:column;
+  flex: 1 1 0% !important; width:100% !important; height:100% !important; max-height:100% !important; min-height:0 !important;
+  background:var(--dm-bg); border:none !important; border-radius:0 !important; overflow:hidden !important;
+  box-shadow:none !important; margin:0 !important;
   font-family:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   font-size:13px; line-height:1.5; color:var(--dm-text);
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
@@ -108,7 +130,7 @@ def get_data_modeling_html() -> str:
 #view-data_modeling_ai .dm-proj-kids { margin:1px 0 4px 14px; padding-left:8px; border-left:1px solid var(--dm-line); }
 #view-data_modeling_ai .dm-newchat-row { color:var(--dm-muted); font-size:12px; }
 #view-data_modeling_ai .dm-newchat-row:hover { color:#9DC0FF; }
-#view-data_modeling_ai .dm-panel-foot { flex:0 0 auto; padding:8px; border-top:1px solid var(--dm-line); }
+#view-data_modeling_ai .dm-panel-foot { flex:0 0 auto; padding:10px 10px 12px; border-top:1px solid var(--dm-line); }
 #view-data_modeling_ai .dm-newchat-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:7px 10px; border-radius:7px; border:1px dashed var(--dm-line-2); background:rgba(76,141,255,.05); color:#9DC0FF; font-size:12px; font-weight:600; cursor:pointer; }
 #view-data_modeling_ai .dm-newchat-btn:hover { border-color:var(--dm-accent); background:rgba(76,141,255,.12); color:#CFE0FF; }
 #view-data_modeling_ai .dm-newchat-btn svg { width:14px; height:14px; }
@@ -219,7 +241,7 @@ def get_data_modeling_html() -> str:
 #view-data_modeling_ai .dm-muted { color:var(--dm-dim); font-size:12px; padding:8px 2px; }
 
 /* ---------------------------------------------------------------- composer */
-#view-data_modeling_ai .dm-composer { flex:0 0 auto; padding:9px 14px 4px; border-top:1px solid var(--dm-line); background:#0B1119; }
+#view-data_modeling_ai .dm-composer { flex:0 0 auto; padding:10px 16px 8px; border-top:1px solid var(--dm-line); background:#0B1119; }
 #view-data_modeling_ai .dm-compose-row { display:flex; align-items:flex-end; gap:8px; background:#101A28; border:1px solid var(--dm-line-2); border-radius:11px; padding:7px 8px 7px 11px; transition:border-color .14s, box-shadow .14s; }
 #view-data_modeling_ai .dm-compose-row:focus-within { border-color:var(--dm-accent); box-shadow:0 0 0 3px rgba(76,141,255,.12); }
 #view-data_modeling_ai .dm-compose-row textarea { flex:1; min-height:24px; max-height:150px; resize:none; background:transparent; border:0; outline:0; color:#F2F6FC; font-size:13px; line-height:1.55; padding:3px 0; }
@@ -288,7 +310,8 @@ def get_data_modeling_html() -> str:
 
 /* ---------------------------------------------------------------- mobile */
 @media (max-width:1180px) {
-  #view-data_modeling_ai .dm-app { height:calc(100vh - 112px); min-height:520px; border-radius:10px; }
+  #view-data_modeling_ai { height:100vh !important; }
+  #view-data_modeling_ai .dm-app { height:100% !important; min-height:0 !important; border-radius:0 !important; }
   #view-data_modeling_ai .dm-chats, #view-data_modeling_ai .dm-explorer { position:absolute; top:0; bottom:0; z-index:40; box-shadow:16px 0 44px rgba(0,0,0,.55); }
   #view-data_modeling_ai .dm-chats { left:0; }
   #view-data_modeling_ai .dm-explorer { left:0; }
@@ -783,13 +806,23 @@ def get_data_modeling_js() -> str:
     function dmFit() {
         var app = $('dmShell');
         if (!app) return;
-        if (window.innerWidth <= 1180) {
-            app.style.height = 'calc(100vh - 112px)';
-            return;
+        var view = $('view-data_modeling_ai');
+        var vp = $('main-content-viewport');
+        if (vp) {
+            vp.style.padding = '0';
+            vp.style.overflow = 'hidden';
         }
-        var top = app.getBoundingClientRect().top + (window.pageYOffset || 0);
-        var height = window.innerHeight - Math.max(0, top) - 18;
-        app.style.height = Math.max(520, Math.round(height)) + 'px';
+        if (view) {
+            view.style.height = '100%';
+            view.style.maxHeight = '100%';
+            view.style.minHeight = '0';
+            view.style.padding = '0';
+            view.style.margin = '0';
+            view.style.overflow = 'hidden';
+        }
+        app.style.height = '100%';
+        app.style.maxHeight = '100%';
+        app.style.minHeight = '0';
     }
 
     window.dmToggleChats = function () {

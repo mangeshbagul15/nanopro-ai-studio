@@ -12084,7 +12084,6 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
             </div>
 
-        </div>
 
 
 
@@ -24085,7 +24084,16 @@ Ready for message compilation and automated dispatch.
 
                 const vp = document.getElementById('main-content-viewport');
 
-                if (vp) vp.scrollTop = 0;
+                if (vp) {
+                    vp.scrollTop = 0;
+                    if (viewName === 'data_modeling_ai') {
+                        vp.style.padding = '0';
+                        vp.style.overflow = 'hidden';
+                    } else {
+                        vp.style.padding = '';
+                        vp.style.overflow = '';
+                    }
+                }
 
 
 
