@@ -348,7 +348,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
       </div>
     </div>
     <div class="dm-top-actions">
-      <span class="dm-ai-badge" id="dmAiBadge">Checking AI&hellip;</span>
+      <span class="dm-ai-badge live" id="dmAiBadge">AI ready &middot; gemini-3.5-flash-lite</span>
       <button class="dm-btn" onclick="dmUploadOpen()" title="Upload CSV or Excel into the active chat">
         <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
         <span>Upload</span>
@@ -429,7 +429,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
         </button>
       </div>
       <div class="dm-tree" id="dmDatabaseTree">
-        <div class="dm-tree-note">Loading your databases&hellip;</div>
+        <div class="dm-tree-note">Scanning your databases in the background&hellip;</div>
       </div>
       <div class="dm-panel-foot" style="display:flex;gap:6px;">
         <button class="dm-btn" style="flex:1;justify-content:center;" onclick="dmUploadOpen()">Upload</button>
@@ -1094,6 +1094,9 @@ def get_data_modeling_js() -> str:
     }
 
     window.dmNewChat = async function (projectId) {
+        if (!DM.inited) {
+            window.initDataModeling();
+        }
         var target = projectId || '';
         try {
             var data = await dmApi('/workspaces', {
@@ -1103,6 +1106,10 @@ def get_data_modeling_js() -> str:
             var ws = data.workspace || {};
             if (!ws.id) throw new Error('The chat could not be created.');
             DM.workspaceId = ws.id;
+            if (!DM.workspaces) DM.workspaces = [];
+            if (!DM.workspaces.some(function (w) { return w.id === ws.id; })) {
+                DM.workspaces.unshift(ws);
+            }
             var userKey = dmUserKey('dm_active_ws');
             localStorage.setItem(userKey, ws.id);
             localStorage.setItem('dm_active_ws', ws.id);
@@ -1116,13 +1123,18 @@ def get_data_modeling_js() -> str:
             dmCloseDataPanel();
             dmEmptyData();
             dmRenderMessages([]);
+            dmRenderChats();
+            dmUpdateHeader();
             await Promise.all([dmLoadChats(), dmLoadProjects()]);
             dmApi('/workspaces/' + encodeURIComponent(ws.id) + '/active', { method: 'POST' }).catch(function () {});
             dmRenderTree();
             dmToast('New chat ready', 'ok');
             if (window.innerWidth <= 1180) { DM.chatsOpen = false; dmApplyPanels(); }
             var input = $('dmInput');
-            if (input) input.focus();
+            if (input) {
+                input.focus();
+                input.value = '';
+            }
             return ws.id;
         } catch (err) {
             dmToast(err.message, 'err');
@@ -2484,20 +2496,22 @@ def get_data_modeling_js() -> str:
     // ----------------------------------------------------------------- boot
 
     async function dmLoadStatus() {
+        var badge = $('dmAiBadge');
         try {
             var data = await dmApi('/status');
-            var badge = $('dmAiBadge');
             if (!badge) return;
-            if (data.ai_ready) {
-                badge.textContent = 'AI ready \u00b7 ' + (data.model || 'model');
+            if (data && (data.ai_ready || data.status === 'success')) {
+                badge.textContent = 'AI ready \u00b7 ' + (data.model || 'gemini-3.5-flash-lite');
+                badge.className = 'dm-ai-badge live';
+            } else if (data && data.status === 'STANDBY_ACTIVE') {
+                badge.textContent = 'Cloud Sentinel Active';
                 badge.className = 'dm-ai-badge live';
             } else {
                 badge.textContent = 'Catalog mode \u00b7 AI key missing';
                 badge.className = 'dm-ai-badge catalog';
             }
         } catch (err) {
-            var badge = $('dmAiBadge');
-            if (badge) { badge.textContent = 'Offline'; badge.className = 'dm-ai-badge'; }
+            if (badge) { badge.textContent = 'Catalog mode'; badge.className = 'dm-ai-badge catalog'; }
         }
     }
 
@@ -2723,6 +2737,42 @@ def get_data_modeling_js() -> str:
             console.warn('initDataModeling startup err:', err);
         });
     };
+
+    // Auto-boot whenever the view is active or becomes visible
+    function dmCheckAndBoot() {
+        var view = $('view-data_modeling_ai');
+        if (view && (view.classList.contains('active') || view.style.display === 'flex' || (window.getComputedStyle && window.getComputedStyle(view).display !== 'none'))) {
+            if (!DM.inited) window.initDataModeling();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', dmCheckAndBoot);
+    } else {
+        setTimeout(dmCheckAndBoot, 50);
+    }
+
+    try {
+        var _viewEl = $('view-data_modeling_ai');
+        if (_viewEl && window.MutationObserver) {
+            var _mo = new MutationObserver(function (mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                    if (mutations[i].attributeName === 'class' && _viewEl.classList.contains('active')) {
+                        if (!DM.inited) window.initDataModeling();
+                        break;
+                    }
+                }
+            });
+            _mo.observe(_viewEl, { attributes: true, attributeFilter: ['class'] });
+        }
+    } catch (_) {}
+
+    var _shell = $('dmShell');
+    if (_shell) {
+        _shell.addEventListener('click', function () {
+            if (!DM.inited) window.initDataModeling();
+        }, { passive: true });
+    }
 })();
 </script>
 '''

@@ -1,4 +1,4 @@
-﻿"""
+"""
 
 Mangesh Nano Pro AI Studio - Central UI Dashboard Templates
 
@@ -24546,7 +24546,22 @@ window.switchView = switchView;
 
                 if (viewName === 'payment_gateway' && typeof initPaymentGateway === 'function') initPaymentGateway();
 
-                if (viewName === 'data_modeling_ai' && typeof initDataModeling === 'function') initDataModeling();
+                if (viewName === 'data_modeling_ai') {
+                    if (typeof initDataModeling === 'function') {
+                        initDataModeling();
+                    } else {
+                        var _dmRetries = 0;
+                        var _dmTimer = setInterval(function () {
+                            _dmRetries++;
+                            if (typeof initDataModeling === 'function') {
+                                clearInterval(_dmTimer);
+                                initDataModeling();
+                            } else if (_dmRetries > 40) {
+                                clearInterval(_dmTimer);
+                            }
+                        }, 100);
+                    }
+                }
 
                 if (viewName === 'settings' || viewName === 'models_hub') loadModelList();
 
