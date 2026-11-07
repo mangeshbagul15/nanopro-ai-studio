@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.config import SQLITE_DB_PATH
 from app.core.database import db
+from app.core.duckdb_chat_store import duckdb_chat_store
 from app.core.logger import log_event
 from app.core.manager_contract import DELIVERY_CONTRACT
 
@@ -304,16 +305,48 @@ def open_workspace_connection(workspace_id: str) -> sqlite3.Connection:
     return conn
 
 
-def list_workspaces(light: bool = False) -> List[Dict[str, Any]]:
+def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]:
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            ws_list = duckdb_chat_store.list_workspaces(safe_user, light=light)
+            if ws_list:
+                if not light:
+                    for row in ws_list:
+                        schemas = [{"name": "main", "tables": []}]
+                        try:
+                            with open_workspace_connection(row["id"]) as wconn:
+                                tables = _sqlite_table_names(wconn, "main")
+                                schemas[0]["tables"] = tables
+                                for schema in _workspace_schemas(row["id"]):
+                                    schemas.append({"name": schema["schema_name"], "tables": _sqlite_table_names(wconn, schema["schema_name"])})
+                        except Exception:
+                            pass
+                        row["schemas"] = schemas
+                        row["table_count"] = sum(len(s["tables"]) for s in schemas)
+                return ws_list
+        except Exception as exc:
+            log_event(f"DuckDB list_workspaces fallback: {exc}", component="DataModeling", level="WARNING")
+
     with db.get_connection() as conn:
-        rows = _table_rows(
-            conn,
-            "SELECT w.*,"
-            " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
-            " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
-            " FROM dm_workspaces w ORDER BY w.updated_at DESC",
-        )
+        if safe_user and safe_user.lower() not in ("mangesh", "mangeshbagul15", "admin", "nanopro"):
+            rows = _table_rows(
+                conn,
+                "SELECT w.*,"
+                " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
+                " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
+                " FROM dm_workspaces w WHERE w.created_by = ? OR w.created_by = '' ORDER BY w.updated_at DESC",
+                (safe_user,),
+            )
+        else:
+            rows = _table_rows(
+                conn,
+                "SELECT w.*,"
+                " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
+                " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
+                " FROM dm_workspaces w ORDER BY w.updated_at DESC",
+            )
     for row in rows:
         row["pinned"] = bool(row.get("pinned"))
         row["project_id"] = row.get("project_id") or ""
@@ -335,19 +368,43 @@ def list_workspaces(light: bool = False) -> List[Dict[str, Any]]:
     return rows
 
 
-def get_workspace(workspace_id: str) -> Optional[Dict[str, Any]]:
+def get_workspace(workspace_id: str, user: str = "") -> Optional[Dict[str, Any]]:
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            ws = duckdb_chat_store.get_workspace(safe_user, workspace_id)
+            if ws:
+                schemas = [{"name": "main", "tables": []}]
+                try:
+                    with open_workspace_connection(ws["id"]) as wconn:
+                        schemas[0]["tables"] = _sqlite_table_names(wconn, "main")
+                        for schema in _workspace_schemas(ws["id"]):
+                            schemas.append({"name": schema["schema_name"], "tables": _sqlite_table_names(wconn, schema["schema_name"])})
+                except Exception:
+                    pass
+                ws["schemas"] = schemas
+                ws["table_count"] = sum(len(s["tables"]) for s in schemas)
+                return ws
+        except Exception:
+            pass
+
     with db.get_connection() as conn:
-        row = conn.execute(
+        cur = conn.execute(
             "SELECT w.*,"
             " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
             " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
             " FROM dm_workspaces w WHERE w.id = ?",
             (workspace_id,),
-        ).fetchone()
+        )
+        row = cur.fetchone()
     if not row:
         return None
-    row = dict(row)
+    if isinstance(row, sqlite3.Row):
+        row = dict(row)
+    else:
+        cols = [c[0] for c in cur.description] if cur.description else []
+        row = dict(zip(cols, row))
     row["pinned"] = bool(row.get("pinned"))
     row["project_id"] = row.get("project_id") or ""
     schemas = [{"name": "main", "tables": []}]
@@ -368,6 +425,7 @@ def create_workspace(name: str = "", user: str = "", project_id: str = "") -> Di
     wid = "ws_" + uuid.uuid4().hex[:10]
     label = (name or "New chat").strip()[:64] or "New chat"
     stamp = _now()
+    safe_user = (user or "").strip()
     with db.get_connection() as conn:
         project = (project_id or "").strip()
         if project and not conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (project,)).fetchone():
@@ -375,44 +433,84 @@ def create_workspace(name: str = "", user: str = "", project_id: str = "") -> Di
         conn.execute(
             "INSERT INTO dm_workspaces (id, name, created_by, created_at, updated_at, project_id, pinned)"
             " VALUES (?, ?, ?, ?, ?, ?, 0)",
-            (wid, label, user or "", stamp, stamp, project),
+            (wid, label, safe_user, stamp, stamp, project),
         )
         conn.commit()
     open_workspace_connection(wid).close()
     invalidate_catalog()
-    log_event(f"Data modeling chat created: {wid} ({label})", component="DataModeling")
-    return get_workspace(wid) or {"id": wid, "name": label, "created_at": stamp, "updated_at": stamp, "schemas": []}
+    ws_data = {
+        "id": wid,
+        "name": label,
+        "created_by": safe_user,
+        "created_at": stamp,
+        "updated_at": stamp,
+        "project_id": project,
+        "pinned": False,
+        "schemas": [{"name": "main", "tables": []}],
+        "table_count": 0,
+        "message_count": 0,
+        "last_message_at": None,
+    }
+    if safe_user:
+        try:
+            duckdb_chat_store.save_workspace(safe_user, ws_data)
+            duckdb_chat_store.save_user_state(safe_user, wid, project)
+        except Exception as exc:
+            log_event(f"DuckDB save_workspace error: {exc}", component="DataModeling", level="WARNING")
+    ws_loaded = get_workspace(wid, user=safe_user)
+    if ws_loaded:
+        ws_data = ws_loaded
+    log_event(f"Data modeling chat created: {wid} ({label}) by user [{safe_user}]", component="DataModeling")
+    return ws_data
 
 
-def set_workspace_pinned(workspace_id: str, pinned: bool) -> Dict[str, Any]:
+def set_workspace_pinned(workspace_id: str, pinned: bool, user: str = "") -> Dict[str, Any]:
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.pin_workspace(safe_user, workspace_id, pinned)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         cur = conn.execute("UPDATE dm_workspaces SET pinned = ? WHERE id = ?", (1 if pinned else 0, workspace_id))
         conn.commit()
-    if not cur.rowcount:
+    if not cur.rowcount and not safe_user:
         raise ValueError("Chat not found.")
-    return get_workspace(workspace_id) or {}
+    return get_workspace(workspace_id, user=safe_user) or {}
 
 
-def set_workspace_project(workspace_id: str, project_id: str) -> Dict[str, Any]:
+def set_workspace_project(workspace_id: str, project_id: str, user: str = "") -> Dict[str, Any]:
     _ensure_schema()
+    safe_user = (user or "").strip()
     target = (project_id or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.set_workspace_project(safe_user, workspace_id, target)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         if target and not conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (target,)).fetchone():
             raise ValueError("Project not found.")
         cur = conn.execute("UPDATE dm_workspaces SET project_id = ? WHERE id = ?", (target, workspace_id))
         conn.commit()
-    if not cur.rowcount:
+    if not cur.rowcount and not safe_user:
         raise ValueError("Chat not found.")
-    return get_workspace(workspace_id) or {}
+    return get_workspace(workspace_id, user=safe_user) or {}
 
 
-def delete_workspace(workspace_id: str) -> Dict[str, Any]:
+def delete_workspace(workspace_id: str, user: str = "") -> Dict[str, Any]:
     _ensure_schema()
     db_path = _workspace_db_path(workspace_id)
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.delete_workspace(safe_user, workspace_id)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         exists = conn.execute("SELECT 1 FROM dm_workspaces WHERE id = ?", (workspace_id,)).fetchone()
-        if not exists:
+        if not exists and not safe_user:
             raise ValueError("Chat not found.")
         schedule_ids = [r["schedule_id"] for r in _table_rows(conn, "SELECT schedule_id FROM dm_schedules WHERE workspace_id = ?", (workspace_id,))]
         schema_rows = _table_rows(conn, "SELECT file_name FROM dm_workspace_schemas WHERE workspace_id = ?", (workspace_id,))
@@ -434,14 +532,30 @@ def delete_workspace(workspace_id: str) -> Dict[str, Any]:
     return {"workspace_id": workspace_id, "deleted": True}
 
 
-def list_projects() -> List[Dict[str, Any]]:
+def list_projects(user: str = "") -> List[Dict[str, Any]]:
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            projs = duckdb_chat_store.list_projects(safe_user)
+            if projs:
+                return projs
+        except Exception:
+            pass
     with db.get_connection() as conn:
-        rows = _table_rows(
-            conn,
-            "SELECT p.*, (SELECT COUNT(*) FROM dm_workspaces w WHERE w.project_id = p.id) AS chat_count"
-            " FROM dm_projects p ORDER BY p.updated_at DESC",
-        )
+        if safe_user and safe_user.lower() not in ("mangesh", "mangeshbagul15", "admin", "nanopro"):
+            rows = _table_rows(
+                conn,
+                "SELECT p.*, (SELECT COUNT(*) FROM dm_workspaces w WHERE w.project_id = p.id) AS chat_count"
+                " FROM dm_projects p WHERE p.created_by = ? OR p.created_by = '' ORDER BY p.updated_at DESC",
+                (safe_user,),
+            )
+        else:
+            rows = _table_rows(
+                conn,
+                "SELECT p.*, (SELECT COUNT(*) FROM dm_workspaces w WHERE w.project_id = p.id) AS chat_count"
+                " FROM dm_projects p ORDER BY p.updated_at DESC",
+            )
     return rows
 
 
@@ -450,41 +564,59 @@ def create_project(name: str = "", user: str = "") -> Dict[str, Any]:
     pid = "prj_" + uuid.uuid4().hex[:10]
     label = (name or "New project").strip()[:64] or "New project"
     stamp = _now()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.create_project(safe_user, pid, label)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         conn.execute(
             "INSERT INTO dm_projects (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (pid, label, user or "", stamp, stamp),
+            (pid, label, safe_user, stamp, stamp),
         )
         conn.commit()
-    return {"id": pid, "name": label, "created_by": user or "", "created_at": stamp, "updated_at": stamp, "chat_count": 0}
+    return {"id": pid, "name": label, "created_by": safe_user, "created_at": stamp, "updated_at": stamp, "chat_count": 0}
 
 
-def rename_project(project_id: str, name: str) -> Dict[str, Any]:
+def rename_project(project_id: str, name: str, user: str = "") -> Dict[str, Any]:
     label = (name or "").strip()[:64]
     if not label:
         raise ValueError("Project name cannot be empty.")
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.rename_project(safe_user, project_id, label)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         cur = conn.execute("UPDATE dm_projects SET name = ?, updated_at = ? WHERE id = ?", (label, _now(), project_id))
         conn.commit()
-    if not cur.rowcount:
+    if not cur.rowcount and not safe_user:
         raise ValueError("Project not found.")
-    for project in list_projects():
+    for project in list_projects(user=safe_user):
         if project["id"] == project_id:
             return project
     return {"id": project_id, "name": label}
 
 
-def delete_project(project_id: str, delete_chats: bool = False) -> Dict[str, Any]:
+def delete_project(project_id: str, delete_chats: bool = False, user: str = "") -> Dict[str, Any]:
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.delete_project(safe_user, project_id, delete_chats=delete_chats)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         exists = conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (project_id,)).fetchone()
-        if not exists:
+        if not exists and not safe_user:
             raise ValueError("Project not found.")
         chat_ids = [r["id"] for r in _table_rows(conn, "SELECT id FROM dm_workspaces WHERE project_id = ?", (project_id,))]
     if delete_chats:
         for chat_id in chat_ids:
-            delete_workspace(chat_id)
+            delete_workspace(chat_id, user=safe_user)
     with db.get_connection() as conn:
         conn.execute("DELETE FROM dm_projects WHERE id = ?", (project_id,))
         if not delete_chats:
@@ -494,15 +626,21 @@ def delete_project(project_id: str, delete_chats: bool = False) -> Dict[str, Any
     return {"project_id": project_id, "deleted": True, "chats": len(chat_ids), "chats_deleted": bool(delete_chats)}
 
 
-def rename_workspace(workspace_id: str, name: str) -> Dict[str, Any]:
+def rename_workspace(workspace_id: str, name: str, user: str = "") -> Dict[str, Any]:
     label = (name or "").strip()[:64]
     if not label:
         raise ValueError("Workspace name cannot be empty.")
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            duckdb_chat_store.rename_workspace(safe_user, workspace_id, label)
+        except Exception:
+            pass
     with db.get_connection() as conn:
         conn.execute("UPDATE dm_workspaces SET name = ?, updated_at = ? WHERE id = ?", (label, _now(), workspace_id))
         conn.commit()
-    ws = get_workspace(workspace_id)
+    ws = get_workspace(workspace_id, user=safe_user)
     if not ws:
         raise ValueError("Workspace not found.")
     return ws
@@ -534,11 +672,20 @@ def create_schema(workspace_id: str, schema_name: str) -> Dict[str, Any]:
 
 
 # ----------------------------------------------------------------------------
-# chat history
+# chat history & user state
 # ----------------------------------------------------------------------------
 
-def get_messages(workspace_id: str, limit: int = 300) -> List[Dict[str, Any]]:
+def get_messages(workspace_id: str, limit: int = 300, user: str = "") -> List[Dict[str, Any]]:
     _ensure_schema()
+    safe_user = (user or "").strip()
+    if safe_user:
+        try:
+            msgs = duckdb_chat_store.get_messages(safe_user, workspace_id, limit=limit)
+            if msgs:
+                return msgs
+        except Exception as exc:
+            log_event(f"DuckDB get_messages fallback: {exc}", component="DataModeling", level="WARNING")
+
     with db.get_connection() as conn:
         rows = _table_rows(
             conn,
@@ -551,12 +698,30 @@ def get_messages(workspace_id: str, limit: int = 300) -> List[Dict[str, Any]]:
             row["meta"] = json.loads(row["meta"]) if row["meta"] else {}
         except Exception:
             row["meta"] = {}
+        if safe_user:
+            try:
+                duckdb_chat_store.add_message(
+                    safe_user, workspace_id, row["role"], row["content"],
+                    row.get("sql_text") or "", row.get("meta")
+                )
+            except Exception:
+                pass
     return rows
 
 
-def add_message(workspace_id: str, role: str, content: str, sql_text: str = "", meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def add_message(
+    workspace_id: str,
+    role: str,
+    content: str,
+    sql_text: str = "",
+    meta: Optional[Dict[str, Any]] = None,
+    user: str = "",
+) -> Dict[str, Any]:
     _ensure_schema()
     stamp = _now()
+    safe_user = (user or "").strip()
+
+    # Save to SQLite
     with db.get_connection() as conn:
         cur = conn.execute(
             "INSERT INTO dm_messages (workspace_id, role, content, sql_text, meta, created_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -565,7 +730,44 @@ def add_message(workspace_id: str, role: str, content: str, sql_text: str = "", 
         conn.commit()
         msg_id = cur.lastrowid
     _touch_workspace(workspace_id)
-    return {"id": msg_id, "workspace_id": workspace_id, "role": role, "content": content, "sql": sql_text, "meta": meta or {}, "created_at": stamp}
+
+    # Save to user's dedicated DuckDB
+    if safe_user:
+        try:
+            duckdb_res = duckdb_chat_store.add_message(
+                safe_user, workspace_id, role, content, sql_text, meta
+            )
+            return duckdb_res
+        except Exception as exc:
+            log_event(f"DuckDB add_message error: {exc}", component="DataModeling", level="WARNING")
+
+    return {
+        "id": msg_id,
+        "workspace_id": workspace_id,
+        "role": role,
+        "content": content,
+        "sql": sql_text,
+        "meta": meta or {},
+        "created_at": stamp,
+    }
+
+
+def save_user_state(user: str, active_workspace_id: str, active_project_id: str = "") -> None:
+    safe_user = (user or "").strip()
+    if safe_user:
+        duckdb_chat_store.save_user_state(safe_user, active_workspace_id, active_project_id)
+
+
+def get_user_state(user: str) -> Dict[str, str]:
+    safe_user = (user or "").strip()
+    if safe_user:
+        return duckdb_chat_store.get_user_state(safe_user)
+    return {"active_workspace_id": "", "active_project_id": ""}
+
+
+def export_user_chat(user: str, workspace_id: str) -> Dict[str, Any]:
+    safe_user = (user or "").strip()
+    return duckdb_chat_store.export_user_chat_google_claude(safe_user, workspace_id)
 
 
 # ----------------------------------------------------------------------------
@@ -2506,7 +2708,7 @@ def chat(
     if not message and not prepared:
         raise ValueError("Message cannot be empty.")
 
-    is_first = not get_messages(workspace_id, limit=1)
+    is_first = not get_messages(workspace_id, limit=1, user=user)
     started_at = time.time()
     if prepared:
         names = ", ".join((info.get("filename") or "attachment") for info, _ in prepared)
@@ -2520,19 +2722,19 @@ def chat(
             }
             for info, _ in prepared
         ]
-        add_message(workspace_id, "user", message or f"Attached: {names}", meta={"attachments": echo})
-        result = _attachment_reply(workspace_id, message, prepared, context, started_at)
+        add_message(workspace_id, "user", message or f"Attached: {names}", meta={"attachments": echo}, user=user)
+        result = _attachment_reply(workspace_id, message, prepared, context, started_at, user=user)
         if is_first:
             title = (message or names).replace("\n", " ").strip()
             if len(title) > 48:
                 title = title[:48].rstrip() + "…"
             try:
-                rename_workspace(workspace_id, title)
+                rename_workspace(workspace_id, title, user=user)
             except Exception:
                 pass
         return result
 
-    add_message(workspace_id, "user", message)
+    add_message(workspace_id, "user", message, user=user)
     parsed: Dict[str, Any] = {}
     model_used = "fallback"
     if _looks_like_sql(message):
@@ -2739,19 +2941,19 @@ def chat(
             note = f"Returned {result['row_count']} row(s)" + (" (preview truncated)" if result.get("truncated") else "")
         reply = (reply + f"\n\n{note}.").strip()
 
-    assistant = add_message(workspace_id, "assistant", reply, sql or "", meta)
+    assistant = add_message(workspace_id, "assistant", reply, sql or "", meta, user=user)
     if is_first:
         title = message.replace("\n", " ").strip()
         if len(title) > 48:
             title = title[:48].rstrip() + "…"
         try:
-            rename_workspace(workspace_id, title)
+            rename_workspace(workspace_id, title, user=user)
         except Exception:
             pass
 
     return {
         "status": "success",
-        "workspace": get_workspace(workspace_id),
+        "workspace": get_workspace(workspace_id, user=user),
         "workspace_created": created_workspace,
         "schema_created": created_schema,
         "message": assistant,
@@ -3178,6 +3380,7 @@ def _attachment_reply(
     prepared: List[Tuple[Dict[str, Any], bytes]],
     context: Optional[Dict[str, Any]],
     started_at: float,
+    user: str = "",
 ) -> Dict[str, Any]:
     imports: List[Dict[str, Any]] = []
     notes: List[str] = []
@@ -3253,10 +3456,10 @@ def _attachment_reply(
         "latency_ms": latency_ms,
         "row_count": (preview or {}).get("row_count") or sum(int(i.get("rows_inserted") or 0) for i in imports) or 0,
     }
-    assistant = add_message(workspace_id, "assistant", reply, "", meta)
+    assistant = add_message(workspace_id, "assistant", reply, "", meta, user=user)
     return {
         "status": "success",
-        "workspace": get_workspace(workspace_id),
+        "workspace": get_workspace(workspace_id, user=user),
         "workspace_created": None,
         "schema_created": None,
         "message": assistant,

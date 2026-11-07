@@ -610,12 +610,50 @@ def get_data_modeling_js() -> str:
     if (window.__dmModuleLoaded) return;
     window.__dmModuleLoaded = true;
 
+    function dmGetSessionToken() {
+        if (typeof currentSessionToken !== 'undefined' && currentSessionToken) return currentSessionToken;
+        try {
+            var t = localStorage.getItem('nanopro_session_token');
+            if (t) return t;
+        } catch (e) {}
+        try {
+            var m = document.cookie.match(/(?:^|;\s*)nanopro_session=([^;]+)/);
+            if (m) return decodeURIComponent(m[1]);
+        } catch (e) {}
+        return '';
+    }
+
+    function dmCurrentUsername() {
+        var u = window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null);
+        if (u && u.username) return u.username;
+        try {
+            var acc = localStorage.getItem('nanopro_active_account');
+            if (acc) return acc;
+        } catch (e) {}
+        return 'user';
+    }
+
+    function dmUserKey(baseKey) {
+        var user = dmCurrentUsername();
+        return baseKey + '_' + user;
+    }
+
     var DM = {
         inited: false,
         bound: false,
         sending: false,
-        workspaceId: localStorage.getItem('dm_active_ws') || '',
-        projectId: localStorage.getItem('dm_active_prj') || '',
+        workspaceId: (function () {
+            try {
+                var u = (window.currentUser && window.currentUser.username) ? ('_' + window.currentUser.username) : '';
+                return localStorage.getItem('dm_active_ws' + u) || localStorage.getItem('dm_active_ws') || '';
+            } catch (e) { return ''; }
+        })(),
+        projectId: (function () {
+            try {
+                var u = (window.currentUser && window.currentUser.username) ? ('_' + window.currentUser.username) : '';
+                return localStorage.getItem('dm_active_prj' + u) || localStorage.getItem('dm_active_prj') || '';
+            } catch (e) { return ''; }
+        })(),
         chatsOpen: localStorage.getItem('dm_chats_hidden') !== '1',
         explorerOpen: localStorage.getItem('dm_explorer_hidden') !== '1',
         dataOpen: localStorage.getItem('dm_data_open') !== '0',
@@ -690,14 +728,26 @@ def get_data_modeling_js() -> str:
         options = options || {};
         var headers = Object.assign({}, options.headers || {});
         if (options.body && typeof options.body === 'string') headers['Content-Type'] = 'application/json';
+        var token = dmGetSessionToken();
+        if (token && !headers['Authorization']) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
         var res = await fetch('/api/data_modeling' + path, Object.assign({}, options, {
             headers: headers,
             credentials: 'same-origin'
         }));
         if (res.status === 401) {
-            window.location.href = '/login';
             throw new Error('Session expired. Please log in again.');
         }
+        var data = null;
+        try { data = await res.json(); } catch (err) { data = null; }
+        if (!res.ok || (data && data.status === 'error')) {
+            var detail = data && (data.message || data.detail);
+            if (detail && typeof detail === 'object') detail = JSON.stringify(detail);
+            throw new Error(detail || ('Request failed (' + res.status + ')'));
+        }
+        return data || {};
+    }
         var data = null;
         try { data = await res.json(); } catch (err) { data = null; }
         if (!res.ok || (data && data.status === 'error')) {
@@ -945,10 +995,18 @@ def get_data_modeling_js() -> str:
     }
 
     function dmPickActiveChat() {
+        var userKey = dmUserKey('dm_active_ws');
+        var savedWs = localStorage.getItem(userKey) || localStorage.getItem('dm_active_ws') || '';
+        if (savedWs && dmFindWorkspace(savedWs)) {
+            DM.workspaceId = savedWs;
+            return savedWs;
+        }
         if (DM.workspaceId && dmFindWorkspace(DM.workspaceId)) return DM.workspaceId;
         DM.workspaceId = DM.workspaces.length ? DM.workspaces[0].id : '';
-        if (DM.workspaceId) localStorage.setItem('dm_active_ws', DM.workspaceId);
-        else localStorage.removeItem('dm_active_ws');
+        if (DM.workspaceId) {
+            localStorage.setItem(userKey, DM.workspaceId);
+            localStorage.setItem('dm_active_ws', DM.workspaceId);
+        }
         return DM.workspaceId;
     }
 
@@ -979,17 +1037,23 @@ def get_data_modeling_js() -> str:
     window.dmSelectChat = async function (workspaceId) {
         if (!workspaceId) return;
         DM.workspaceId = workspaceId;
+        var userKey = dmUserKey('dm_active_ws');
+        localStorage.setItem(userKey, workspaceId);
         localStorage.setItem('dm_active_ws', workspaceId);
         var ws = dmFindWorkspace(workspaceId);
         if (ws && ws.project_id) {
             DM.projectId = ws.project_id;
+            localStorage.setItem(dmUserKey('dm_active_prj'), DM.projectId);
             localStorage.setItem('dm_active_prj', DM.projectId);
         }
+        // Save active workspace to backend DuckDB in background
+        dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/active', { method: 'POST' }).catch(function () {});
         dmRenderChats();
         dmUpdateHeader();
         dmEmptyData();
         if (window.innerWidth <= 1180) { DM.chatsOpen = false; dmApplyPanels(); }
         await dmLoadMessages();
+        dmRestoreDraft();
         dmRenderTree();
     };
 
@@ -1015,9 +1079,12 @@ def get_data_modeling_js() -> str:
             var ws = data.workspace || {};
             if (!ws.id) throw new Error('The chat could not be created.');
             DM.workspaceId = ws.id;
+            var userKey = dmUserKey('dm_active_ws');
+            localStorage.setItem(userKey, ws.id);
             localStorage.setItem('dm_active_ws', ws.id);
             if (target) {
                 DM.projectId = target;
+                localStorage.setItem(dmUserKey('dm_active_prj'), target);
                 localStorage.setItem('dm_active_prj', target);
                 DM.projectsOpen[target] = true;
                 dmSaveJson('dm_projects_open', DM.projectsOpen);
@@ -1026,6 +1093,7 @@ def get_data_modeling_js() -> str:
             dmEmptyData();
             dmRenderMessages([]);
             await Promise.all([dmLoadChats(), dmLoadProjects()]);
+            dmApi('/workspaces/' + encodeURIComponent(ws.id) + '/active', { method: 'POST' }).catch(function () {});
             dmRenderTree();
             dmToast('New chat ready', 'ok');
             if (window.innerWidth <= 1180) { DM.chatsOpen = false; dmApplyPanels(); }
@@ -1900,6 +1968,39 @@ def get_data_modeling_js() -> str:
         el.style.height = Math.min(el.scrollHeight, 150) + 'px';
     }
 
+    function dmRestoreDraft() {
+        var input = $('dmInput');
+        if (!input) return;
+        try {
+            var draftKey = dmUserKey('dm_draft_' + (DM.workspaceId || 'global'));
+            var draft = localStorage.getItem(draftKey) || '';
+            input.value = draft;
+            dmAutoGrow(input);
+        } catch (e) {}
+    }
+
+    function dmSaveDraft() {
+        var input = $('dmInput');
+        if (!input) return;
+        try {
+            var draftKey = dmUserKey('dm_draft_' + (DM.workspaceId || 'global'));
+            if (input.value && input.value.trim()) {
+                localStorage.setItem(draftKey, input.value);
+            } else {
+                localStorage.removeItem(draftKey);
+            }
+        } catch (e) {}
+    }
+
+    function dmClearDraft() {
+        var input = $('dmInput');
+        if (input) input.value = '';
+        try {
+            var draftKey = dmUserKey('dm_draft_' + (DM.workspaceId || 'global'));
+            localStorage.removeItem(draftKey);
+        } catch (e) {}
+    }
+
     // ------------------------------------------------------------ attachments
 
     function dmHumanSize(bytes) {
@@ -2085,6 +2186,7 @@ def get_data_modeling_js() -> str:
         DM.sending = true;
         if (sendBtn) sendBtn.disabled = true;
         input.value = '';
+        dmClearDraft();
         dmAutoGrow(input);
         dmAppendLocalUser(text || ('Attached: ' + ready.map(function (att) { return att.filename; }).join(', ')), ready);
         dmAppendTyping();
@@ -2456,7 +2558,10 @@ def get_data_modeling_js() -> str:
 
         var input = $('dmInput');
         if (input) {
-            input.addEventListener('input', function () { dmAutoGrow(input); });
+            input.addEventListener('input', function () {
+                dmAutoGrow(input);
+                dmSaveDraft();
+            });
             input.addEventListener('keydown', function (ev) {
                 if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) {
                     ev.preventDefault();
@@ -2531,6 +2636,22 @@ def get_data_modeling_js() -> str:
             dmFit();
             dmApplyPanels();
             dmApplyData();
+            Promise.all([
+                window.dmLoadProjects(),
+                window.dmLoadChats(),
+                dmApi('/active_state').catch(function () { return {}; })
+            ]).then(function (results) {
+                var activeState = (results && results[2]) ? results[2] : {};
+                if (activeState && activeState.active_workspace_id && dmFindWorkspace(activeState.active_workspace_id)) {
+                    DM.workspaceId = activeState.active_workspace_id;
+                } else {
+                    dmPickActiveChat();
+                }
+                dmRenderChats();
+                dmUpdateHeader();
+                window.dmRenderTree();
+                return window.dmLoadMessages().then(dmRestoreDraft);
+            }).catch(function () {});
             return;
         }
         DM.inited = true;
@@ -2554,13 +2675,29 @@ def get_data_modeling_js() -> str:
         window.dmLoadSfStatus();
         dmLoadCatalog(false);
 
-        Promise.all([window.dmLoadProjects(), window.dmLoadChats()]).then(function () {
-            dmPickActiveChat();
-            dmRenderChats();
-            dmUpdateHeader();
-            window.dmRenderTree();
-            return window.dmLoadMessages();
-        }).catch(function () { /* toasts already shown */ });
+        Promise.all([
+            window.dmLoadProjects(),
+            window.dmLoadChats(),
+            dmApi('/active_state').catch(function () { return {}; })
+        ]).then(async function (results) {
+            var activeState = (results && results[2]) ? results[2] : {};
+            if (activeState && activeState.active_workspace_id && dmFindWorkspace(activeState.active_workspace_id)) {
+                DM.workspaceId = activeState.active_workspace_id;
+            } else {
+                dmPickActiveChat();
+            }
+            if (!DM.workspaceId && (!DM.workspaces || DM.workspaces.length === 0)) {
+                await window.dmNewChat('');
+            } else {
+                dmRenderChats();
+                dmUpdateHeader();
+                window.dmRenderTree();
+                await window.dmLoadMessages();
+                dmRestoreDraft();
+            }
+        }).catch(function (err) {
+            console.warn('initDataModeling startup err:', err);
+        });
     };
 })();
 </script>
