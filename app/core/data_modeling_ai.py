@@ -41,7 +41,7 @@ MAX_ATTACHMENTS_PER_MESSAGE = 5
 ATTACHMENT_TTL_HOURS = 24
 TABLE_ATTACHMENT_EXTS = {".csv", ".tsv", ".xlsx", ".xlsm", ".json"}
 IMAGE_ATTACHMENT_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
-MAX_CONTEXT_CHARS = 26000
+MAX_CONTEXT_CHARS = 14000
 
 _schema_lock = threading.Lock()
 _schema_ready = False
@@ -2440,7 +2440,22 @@ def _catalog_for_prompt(
                     except Exception:
                         lines.append(f"  {schema['name']}.{name}")
             else:
-                lines.append(f"  {schema['name']}: " + ", ".join(names[:200]))
+                # Listing every table of every database produces a prompt large
+                # enough to trip provider token-per-minute limits. Keep full names
+                # only for databases the user named; summarize the rest.
+                db_mentioned = (
+                    entry["id"].lower() in q
+                    or str(entry.get("name", "")).lower() in q
+                )
+                if db_mentioned:
+                    suffix = f" … {len(names) - 60} more" if len(names) > 60 else ""
+                    lines.append(f"  {schema['name']}: " + ", ".join(names[:60]) + suffix)
+                else:
+                    examples = ", ".join(names[:6])
+                    line = f"  {schema['name']}: {len(names)} table(s)"
+                    if examples:
+                        line += f" — e.g. {examples}"
+                    lines.append(line)
         if sum(len(x) for x in lines) > MAX_CONTEXT_CHARS:
             lines.append("  …catalog truncated…")
             break
@@ -2896,7 +2911,8 @@ def _fast_intent(
                     if order_column.lower() not in known:
                         return None
                     order_sql = f" ORDER BY {_quote(order_column)} {direction}"
-                reply = f"Here are the {'top' if direction == 'DESC' else 'first'} {count} row(s) of {table['name']} from {entry['name']}"
+                origin = "your workspace" if entry.get("kind") == "workspace" else entry["name"]
+                reply = f"Here are the {'top' if direction == 'DESC' else 'first'} {count} row(s) of {table['name']} in {origin}"
                 if order_column:
                     reply += f", ordered by {order_column} ({'ascending' if direction == 'ASC' else 'descending'})"
                 return {
