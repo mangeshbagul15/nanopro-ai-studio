@@ -100,7 +100,9 @@ def _session_user(request: Request) -> dict:
 
 
 def _user_label(user: dict) -> str:
-    return str(user.get("username") or user.get("email") or "user")
+    from app.core.identity_resolver import resolve_canonical_username
+    uid = str(user.get("username") or user.get("id") or user.get("email") or "user")
+    return resolve_canonical_username(uid)
 
 
 def _error(message: str, status: int = 400) -> JSONResponse:

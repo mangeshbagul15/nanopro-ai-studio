@@ -610,7 +610,8 @@ class AuthManager:
         # 5. Map to Local User Database
         now = time.time()
         email_clean = (email or "").strip().lower()
-        is_admin_user = (email_clean in ["mangeshbagul15@gmail.com", "nanopro@gmail.com"] or (clerk_user_id and "nanopro" in clerk_user_id))
+        from app.core.identity_resolver import is_admin_identity
+        is_admin_user = is_admin_identity(email_clean) or is_admin_identity(clerk_user_id)
 
         try:
             with self._get_connection() as conn:
@@ -791,12 +792,8 @@ class AuthManager:
                 clean_id = f"+{clean_digits}"
 
         now = time.time()
-        is_admin = (
-            "8433755448" in clean_id or 
-            "9922" in clean_id or 
-            clean_id in ["+918433755448", "8433755448"] or
-            clean_id.lower() in ["mangeshbagul15@gmail.com", "nanopro@gmail.com"]
-        )
+        from app.core.identity_resolver import is_admin_identity
+        is_admin = is_admin_identity(clean_id)
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()

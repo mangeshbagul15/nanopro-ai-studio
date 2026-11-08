@@ -307,7 +307,8 @@ def open_workspace_connection(workspace_id: str) -> sqlite3.Connection:
 
 def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]:
     _ensure_schema()
-    safe_user = (user or "").strip()
+    from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
+    safe_user = resolve_canonical_username(user)
     if safe_user:
         try:
             ws_list = duckdb_chat_store.list_workspaces(safe_user, light=light)
@@ -330,13 +331,13 @@ def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]
             log_event(f"DuckDB list_workspaces fallback: {exc}", component="DataModeling", level="WARNING")
 
     with db.get_connection() as conn:
-        if safe_user and safe_user.lower() not in ("mangesh", "mangeshbagul15", "admin", "nanopro"):
+        if not is_admin_identity(safe_user):
             rows = _table_rows(
                 conn,
                 "SELECT w.*,"
                 " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
                 " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
-                " FROM dm_workspaces w WHERE w.created_by = ? OR w.created_by = '' ORDER BY w.updated_at DESC",
+                " FROM dm_workspaces w WHERE w.created_by = ? ORDER BY w.updated_at DESC",
                 (safe_user,),
             )
         else:
@@ -370,7 +371,8 @@ def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]
 
 def get_workspace(workspace_id: str, user: str = "") -> Optional[Dict[str, Any]]:
     _ensure_schema()
-    safe_user = (user or "").strip()
+    from app.core.identity_resolver import resolve_canonical_username
+    safe_user = resolve_canonical_username(user)
     if safe_user:
         try:
             ws = duckdb_chat_store.get_workspace(safe_user, workspace_id)
@@ -425,7 +427,8 @@ def create_workspace(name: str = "", user: str = "", project_id: str = "") -> Di
     wid = "ws_" + uuid.uuid4().hex[:10]
     label = (name or "New chat").strip()[:64] or "New chat"
     stamp = _now()
-    safe_user = (user or "").strip()
+    from app.core.identity_resolver import resolve_canonical_username
+    safe_user = resolve_canonical_username(user)
     with db.get_connection() as conn:
         project = (project_id or "").strip()
         if project and not conn.execute("SELECT 1 FROM dm_projects WHERE id = ?", (project,)).fetchone():
@@ -466,7 +469,8 @@ def create_workspace(name: str = "", user: str = "", project_id: str = "") -> Di
 
 def set_workspace_pinned(workspace_id: str, pinned: bool, user: str = "") -> Dict[str, Any]:
     _ensure_schema()
-    safe_user = (user or "").strip()
+    from app.core.identity_resolver import resolve_canonical_username
+    safe_user = resolve_canonical_username(user)
     if safe_user:
         try:
             duckdb_chat_store.pin_workspace(safe_user, workspace_id, pinned)
@@ -525,7 +529,7 @@ def delete_workspace(workspace_id: str, user: str = "") -> Dict[str, Any]:
     for name in [db_path.name] + [row["file_name"] for row in schema_rows]:
         try:
             (MODELING_DIR / name).unlink()
-        except FileNotFoundError:
+        except (FileNotFoundError, PermissionError):
             pass
     invalidate_catalog()
     log_event(f"Data modeling chat deleted: {workspace_id}", component="DataModeling")
@@ -534,7 +538,8 @@ def delete_workspace(workspace_id: str, user: str = "") -> Dict[str, Any]:
 
 def list_projects(user: str = "") -> List[Dict[str, Any]]:
     _ensure_schema()
-    safe_user = (user or "").strip()
+    from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
+    safe_user = resolve_canonical_username(user)
     if safe_user:
         try:
             projs = duckdb_chat_store.list_projects(safe_user)
@@ -543,11 +548,11 @@ def list_projects(user: str = "") -> List[Dict[str, Any]]:
         except Exception:
             pass
     with db.get_connection() as conn:
-        if safe_user and safe_user.lower() not in ("mangesh", "mangeshbagul15", "admin", "nanopro"):
+        if not is_admin_identity(safe_user):
             rows = _table_rows(
                 conn,
                 "SELECT p.*, (SELECT COUNT(*) FROM dm_workspaces w WHERE w.project_id = p.id) AS chat_count"
-                " FROM dm_projects p WHERE p.created_by = ? OR p.created_by = '' ORDER BY p.updated_at DESC",
+                " FROM dm_projects p WHERE p.created_by = ? ORDER BY p.updated_at DESC",
                 (safe_user,),
             )
         else:
@@ -677,7 +682,8 @@ def create_schema(workspace_id: str, schema_name: str) -> Dict[str, Any]:
 
 def get_messages(workspace_id: str, limit: int = 300, user: str = "") -> List[Dict[str, Any]]:
     _ensure_schema()
-    safe_user = (user or "").strip()
+    from app.core.identity_resolver import resolve_canonical_username
+    safe_user = resolve_canonical_username(user)
     if safe_user:
         try:
             msgs = duckdb_chat_store.get_messages(safe_user, workspace_id, limit=limit)

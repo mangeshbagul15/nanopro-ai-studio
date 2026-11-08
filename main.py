@@ -1210,8 +1210,10 @@ def _execute_staged_boot_phases_2_and_3():
         log_event("=== [PHASE 3A] Starting ConnectionManager Sentinel (T + 5s) ===", component="BootSequence")
 
         from app.core.connection_manager import connection_manager
-
         connection_manager.start_autonomous_sentinel()
+
+        from app.core.ai_identity_sentinel import ai_identity_director
+        ai_identity_director.start_background_sentinel(interval_seconds=60.0)
 
     except Exception as e:
 
@@ -12800,8 +12802,8 @@ async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
 
 
     # Master Admin email match
-
-    if email.lower() in ("mangeshbagul15@gmail.com", "nanoproaistudio@gmail.com"):
+    from app.core.identity_resolver import is_admin_identity
+    if is_admin_identity(email):
 
         admin_sess = auth_manager.authenticate_user("nanopro", "Divyam@123", ip_address=ip, user_agent=ua)
 
@@ -14872,6 +14874,25 @@ async def api_integrations_test_all():
     results = test_all()
     passed = sum(1 for r in results if r.get("success"))
     return JSONResponse({"checked": len(results), "passed": passed, "results": results})
+
+
+
+# =========================================================================
+# AUTONOMOUS AI IDENTITY & IAM SENTINEL ENDPOINTS
+# =========================================================================
+
+@app.get("/api/identity/sentinel/status")
+async def api_identity_sentinel_status():
+    """Returns live diagnostics of Autonomous AI Identity Sentinel & Agent Workers."""
+    from app.core.ai_identity_sentinel import ai_identity_director
+    return JSONResponse(ai_identity_director.execute_self_healing_cycle())
+
+
+@app.post("/api/identity/sentinel/heal")
+async def api_identity_sentinel_heal():
+    """Triggers immediate on-demand self-healing across Identity Linker & Workspace Healers."""
+    from app.core.ai_identity_sentinel import ai_identity_director
+    return JSONResponse(ai_identity_director.execute_self_healing_cycle())
 
 
 if __name__ == "__main__":

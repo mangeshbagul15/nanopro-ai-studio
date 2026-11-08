@@ -44,7 +44,12 @@ def _get_user_lock(username: str) -> threading.RLock:
 
 
 def _sanitize_username(username: str) -> str:
-    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", (username or "user").strip().lower()).strip("_")
+    try:
+        from app.core.identity_resolver import resolve_canonical_username
+        canon = resolve_canonical_username(username)
+    except Exception:
+        canon = username
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", (canon or "user").strip().lower()).strip("_")
     return cleaned or "user"
 
 
@@ -126,10 +131,11 @@ class DuckDBChatStore:
 
         try:
             from app.core.database import db
+            from app.core.identity_resolver import is_admin_identity
 
             with db.get_connection() as sconn:
                 safe_user = (user or "").strip()
-                is_admin = safe_user.lower() in ("mangesh", "mangeshbagul15", "admin", "nanopro")
+                is_admin = is_admin_identity(safe_user)
 
                 # Fetch workspaces
                 if is_admin:

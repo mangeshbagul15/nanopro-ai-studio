@@ -636,24 +636,28 @@ def get_data_modeling_js() -> str:
     function dmGetSessionToken() {
         if (typeof currentSessionToken !== 'undefined' && currentSessionToken) return currentSessionToken;
         try {
-            var t = localStorage.getItem('nanopro_session_token');
-            if (t) return t;
+            var m = document.cookie.match(/(?:^|;\s*)nanopro_session=([^;]+)/);
+            if (m && m[1]) return decodeURIComponent(m[1]);
         } catch (e) {}
         try {
-            var m = document.cookie.match(/(?:^|;\s*)nanopro_session=([^;]+)/);
-            if (m) return decodeURIComponent(m[1]);
+            var t = localStorage.getItem('nanopro_session_token');
+            if (t) return t;
         } catch (e) {}
         return '';
     }
 
     function dmCurrentUsername() {
         var u = window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null);
-        if (u && u.username) return u.username;
-        try {
-            var acc = localStorage.getItem('nanopro_active_account');
-            if (acc) return acc;
-        } catch (e) {}
-        return 'user';
+        var uname = (u && u.username) ? u.username : '';
+        if (!uname) {
+            try { uname = localStorage.getItem('nanopro_active_account') || ''; } catch (e) {}
+        }
+        var low = (uname || '').toLowerCase().trim();
+        if (!low || ['nanopro', 'mangesh', 'mangeshbagul15', 'admin', 'user_admin_001'].indexOf(low) !== -1 ||
+            low.indexOf('mangeshbagul15') !== -1 || low.indexOf('8433755448') !== -1) {
+            return 'nanopro';
+        }
+        return low;
     }
 
     function dmUserKey(baseKey) {
@@ -667,14 +671,14 @@ def get_data_modeling_js() -> str:
         sending: false,
         workspaceId: (function () {
             try {
-                var u = (window.currentUser && window.currentUser.username) ? ('_' + window.currentUser.username) : '';
-                return localStorage.getItem('dm_active_ws' + u) || localStorage.getItem('dm_active_ws') || '';
+                var u = '_' + dmCurrentUsername();
+                return localStorage.getItem('dm_active_ws' + u) || localStorage.getItem('dm_active_ws_nanopro') || localStorage.getItem('dm_active_ws') || '';
             } catch (e) { return ''; }
         })(),
         projectId: (function () {
             try {
-                var u = (window.currentUser && window.currentUser.username) ? ('_' + window.currentUser.username) : '';
-                return localStorage.getItem('dm_active_prj' + u) || localStorage.getItem('dm_active_prj') || '';
+                var u = '_' + dmCurrentUsername();
+                return localStorage.getItem('dm_active_prj' + u) || localStorage.getItem('dm_active_prj_nanopro') || localStorage.getItem('dm_active_prj') || '';
             } catch (e) { return ''; }
         })(),
         chatsOpen: localStorage.getItem('dm_chats_hidden') !== '1',
@@ -1020,7 +1024,7 @@ def get_data_modeling_js() -> str:
 
     function dmPickActiveChat() {
         var userKey = dmUserKey('dm_active_ws');
-        var savedWs = localStorage.getItem(userKey) || localStorage.getItem('dm_active_ws') || '';
+        var savedWs = localStorage.getItem(userKey) || localStorage.getItem('dm_active_ws_nanopro') || localStorage.getItem('dm_active_ws') || '';
         if (savedWs && dmFindWorkspace(savedWs)) {
             DM.workspaceId = savedWs;
             return savedWs;
