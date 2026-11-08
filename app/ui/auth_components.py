@@ -4546,29 +4546,28 @@ async function loadAdminUsers() {
 
 
             const tr = document.createElement('tr');
+            const deptTag = u.department ? `<span style="font-size:10px; color:#38BDF8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.25); padding:1px 6px; border-radius:4px; font-weight:600; display:inline-block; margin-top:3px;">🏢 ${u.department}</span>` : '';
+            const purposeTag = u.purpose ? `<div style="font-size:10px; color:#A78BFA; font-style:italic; margin-top:2px; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${u.purpose}">🎯 ${u.purpose}</div>` : '';
+            const phoneTag = u.phone_number && u.phone_number !== '-' ? `<span style="font-size:10px; color:#94A3B8; display:inline-block; margin-top:1px;">📱 ${u.phone_number}</span>` : '';
 
             tr.innerHTML = `
-
-                <td><b>${u.username}</b></td>
-
-                <td>${u.full_name}</td>
-
-                <td>${u.email}</td>
-
+                <td>
+                    <b>${u.username}</b>
+                    <div style="font-size:11.5px; color:#E2E8F0;">${u.full_name}</div>
+                    ${deptTag}
+                </td>
+                <td>
+                    <div style="font-size:11.5px; color:#CBD5E1;">${u.email}</div>
+                    ${phoneTag}
+                    ${purposeTag}
+                </td>
                 <td><span style="text-transform:uppercase; font-size:11px; font-weight:bold;">${u.role}</span></td>
-
                 <td>${statusBadge}</td>
-
                 <td>${modeBadge}</td>
-
                 <td>${featuresBadge}</td>
-
                 <td>${u.last_login_fmt}</td>
-
                 <td>${u.total_usage_fmt}</td>
-
                 <td>${actionsHtml}</td>
-
             `;
 
             tbody.appendChild(tr);
@@ -5083,11 +5082,9 @@ def get_user_management_view_html() -> str:
 
                             <tr>
 
-                                <th>Username</th>
+                                <th>User &amp; Department</th>
 
-                                <th>Full Name</th>
-
-                                <th>Email</th>
+                                <th>Contact &amp; Purpose</th>
 
                                 <th>Role</th>
 
@@ -5621,7 +5618,8 @@ def get_login_page_html() -> str:
 
 
 
-            <!-- ðŸŒ OFFICIAL GOOGLE OAUTH IDENTITY (CLERK SOCIAL CONNECTION) -->
+            <!-- OFFICIAL GOOGLE OAUTH IDENTITY (CLERK SOCIAL CONNECTION) -->
+            <div id="googleOAuthArea">
             <div style="margin-bottom: 12px;">
                 <button type="button" id="googleOAuthBtn" onclick="handleOfficialGoogleSignIn()" style="width:100%; padding:11px 14px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; color:#0F172A; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 3px 12px rgba(0,0,0,0.2); transition:transform 0.1s, opacity 0.2s;">
                     <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -5639,6 +5637,7 @@ def get_login_page_html() -> str:
                 <div style="flex:1; height:1px; background:#1E2D4A;"></div>
             </div>
             <div id="clerkMountTarget" style="margin-bottom:12px;"></div>
+            </div>
 
 
 
@@ -5736,54 +5735,71 @@ def get_login_page_html() -> str:
 
             <!-- TAB 3: REGISTER FORM -->
 
+            <!-- TAB 3: REDESIGNED REQUEST ACCESS & SECURITY GOVERNANCE FORM -->
             <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
+                <div style="background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.3); border-radius:10px; padding:12px; margin-bottom:16px;">
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:12.5px; color:#F59E0B; margin-bottom:4px;">
+                        <span>🛡️</span> Zero-Trust Enterprise Security Gate
+                    </div>
+                    <div style="font-size:11.5px; color:#CBD5E1; line-height:1.45;">
+                        सर्व नवीन खात्यांसाठी <b>Super Admin (nanopro)</b> कडून मंजुरी आवश्यक आहे. नोंदणीनंतर ॲडमिन मंजुरी दिल्यावरच लॉगिन करता येईल.
+                    </div>
+                </div>
 
-                <div class="form-group">
-
-                    <label class="form-label">Full Name</label>
-
-                    <input type="text" id="regFullName" class="form-input" placeholder="Mangesh Bagul" autocomplete="name" required>
-
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" id="regFullName" class="form-input" placeholder="उदा. Rahul Patil" autocomplete="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Desired Username *</label>
+                        <input type="text" id="regUsername" class="form-input" placeholder="उदा. rahul_p" autocomplete="username" required>
+                    </div>
                 </div>
 
                 <div class="form-group">
-
-                    <label class="form-label">Desired Username</label>
-
-                    <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" autocomplete="username" required>
-
+                    <label class="form-label">Work / Personal Email *</label>
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@company.com" autocomplete="email" required>
                 </div>
 
                 <div class="form-group">
-
-                    <label class="form-label">Email Address</label>
-
-                    <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" autocomplete="email" required>
-
+                    <label class="form-label">WhatsApp / Mobile Number *</label>
+                    <input type="tel" id="regPhone" class="form-input" placeholder="+91 9876543210" autocomplete="tel" required>
                 </div>
 
                 <div class="form-group">
-
-                    <label class="form-label">WhatsApp / Phone Number</label>
-
-                    <input type="tel" id="regPhone" class="form-input" placeholder="+91 8433755448" autocomplete="tel" required>
-
+                    <label class="form-label">Department / Role *</label>
+                    <select id="regDept" class="form-input" style="background:#0F172A; color:#F8FAFC; cursor:pointer;" required>
+                        <option value="Engineering & AI Architecture">🤖 Engineering & AI Architecture</option>
+                        <option value="Data Engineering & Analytics">📊 Data Engineering & Analytics</option>
+                        <option value="Data Science & ML">🔬 Data Science & ML</option>
+                        <option value="Product & Operations">🚀 Product & Operations</option>
+                        <option value="Business Management">💼 Business Management</option>
+                        <option value="Security & Compliance">🛡️ Security & Compliance</option>
+                        <option value="General">🌐 Other / General</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-
-                    <label class="form-label">Password (Min 8 chars)</label>
-
-                    <input type="password" id="regPassword" class="form-input" placeholder="Create Secure Password (Min 8 chars)" autocomplete="new-password" required>
-
+                    <label class="form-label">Access Purpose / Justification *</label>
+                    <input type="text" id="regPurpose" class="form-input" placeholder="उदा. AI Data Modeling, Analytics & SQL Query Studio" required>
                 </div>
 
-                <button type="submit" id="regBtn" class="btn-submit" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
+                <div class="form-group">
+                    <label class="form-label">Secure Password (Min 8 chars, A-Z, 0-9, @#$) *</label>
+                    <input type="password" id="regPassword" class="form-input" placeholder="••••••••••••" autocomplete="new-password" required>
+                </div>
 
-                    ðŸ“ Register & Activate Account
-
+                <button type="submit" id="regBtn" class="btn-submit" style="background:linear-gradient(135deg, #0284C7 0%, #059669 100%); box-shadow:0 4px 15px rgba(5,150,105,0.3); font-size:13.5px; font-weight:700; padding:12px; margin-top:8px;">
+                    🚀 Submit Access Request (ॲडमिन मंजुरीसाठी पाठवा)
                 </button>
 
+                <div style="text-align:center; margin-top:14px; font-size:12px; color:#94A3B8;">
+                    आधीच मंजूर खाते आहे का? 
+                    <a href="javascript:void(0)" onclick="switchMainTab('direct')" style="color:#38BDF8; font-weight:700; text-decoration:none;">
+                        Direct Login वर जा →
+                    </a>
+                </div>
             </form>
 
 
@@ -5812,6 +5828,7 @@ def get_login_page_html() -> str:
             const directView = document.getElementById('directView');
             const whatsappView = document.getElementById('whatsappView');
             const registerForm = document.getElementById('registerForm');
+            const googleArea = document.getElementById('googleOAuthArea');
 
             if (tabDirect) tabDirect.classList.remove('active');
             if (tabWhatsapp) tabWhatsapp.classList.remove('active');
@@ -5824,12 +5841,15 @@ def get_login_page_html() -> str:
             if (tab === 'direct') {
                 if (tabDirect) tabDirect.classList.add('active');
                 if (directView) directView.style.display = 'block';
+                if (googleArea) googleArea.style.display = 'block';
             } else if (tab === 'whatsapp') {
                 if (tabWhatsapp) tabWhatsapp.classList.add('active');
                 if (whatsappView) whatsappView.style.display = 'block';
+                if (googleArea) googleArea.style.display = 'block';
             } else if (tab === 'register') {
                 if (tabRegister) tabRegister.classList.add('active');
                 if (registerForm) registerForm.style.display = 'block';
+                if (googleArea) googleArea.style.display = 'none';
             }
         }
         window.switchMainTab = switchMainTab;
@@ -6368,7 +6388,7 @@ def get_login_page_html() -> str:
             const btn = document.getElementById('regBtn');
             if (btn) {
                 btn.disabled = true;
-                btn.innerText = 'Registering Account...';
+                btn.innerText = 'Submitting Access Request...';
             }
             hideAlert();
 
@@ -6376,11 +6396,13 @@ def get_login_page_html() -> str:
             const username = (document.getElementById('regUsername')?.value || '').trim();
             const email = (document.getElementById('regEmail')?.value || '').trim();
             const phone_number = (document.getElementById('regPhone')?.value || '').trim();
+            const department = (document.getElementById('regDept')?.value || 'General').trim();
+            const purpose = (document.getElementById('regPurpose')?.value || 'Enterprise Access').trim();
             const password = document.getElementById('regPassword')?.value || '';
 
-            if (!full_name || !username || !email || !password) {
-                showAlert('à¤•à¥ƒà¤ªà¤¯à¤¾ à¤¸à¤°à¥à¤µ à¤†à¤µà¤¶à¥à¤¯à¤• à¤®à¤¾à¤¹à¤¿à¤¤à¥€ à¤ªà¥à¤°à¤µà¤¿à¤·à¥à¤Ÿ à¤•à¤°à¤¾.', 'warning');
-                if (btn) { btn.disabled = false; btn.innerText = 'ðŸ“ Register & Activate Account'; }
+            if (!full_name || !username || !email || !password || !phone_number) {
+                showAlert('कृपया सर्व आवश्यक माहिती प्रविष्ट करा (Full Name, Username, Email, Phone, Password).', 'warning');
+                if (btn) { btn.disabled = false; btn.innerText = '🚀 Submit Access Request (ॲडमिन मंजुरीसाठी पाठवा)'; }
                 return;
             }
 
@@ -6391,25 +6413,26 @@ def get_login_page_html() -> str:
                     const resp = await fetch('/api/auth/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ full_name, username, email, phone_number, password })
+                        body: JSON.stringify({ full_name, username, email, phone_number, department, purpose, password })
                     });
-                    if (resp.ok) data = await resp.json();
+                    data = await resp.json();
                 } catch(e1) {}
 
                 // Tier 2: Alwaysdata Cloud fallback
-                if (!data || data.status !== 'success') {
+                if (!data || (data.status !== 'success' && data.status_code !== 'PENDING_APPROVAL')) {
                     try {
                         const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/register', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ full_name, username, email, phone_number, password })
+                            body: JSON.stringify({ full_name, username, email, phone_number, department, purpose, password })
                         });
                         if (respAd.ok) data = await respAd.json();
                     } catch(e2) {}
                 }
 
-                if (data && data.status === 'success') {
-                    showAlert('âœ… ' + (data.message || 'à¤¨à¥‹à¤‚à¤¦à¤£à¥€ à¤¯à¤¶à¤¸à¥à¤µà¥€ à¤à¤¾à¤²à¥€! à¤†à¤ªà¤²à¥‡ à¤–à¤¾à¤¤à¥‡ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤†à¤¹à¥‡. à¤•à¥ƒà¤ªà¤¯à¤¾ à¤²à¥‰à¤—à¤¿à¤¨ à¤•à¤°à¤¾.'), 'success');
+                if (data && (data.status === 'success' || data.status_code === 'PENDING_APPROVAL')) {
+                    const msg = data.message || 'तुमची प्रवेश विनंती (Access Request) यशस्वीरीत्या पाठवली गेली आहे! सुरक्षेसाठी Super Admin (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.';
+                    showAlert('⏳ ' + msg, 'success');
                     document.getElementById('registerForm')?.reset();
                     const uInput = document.getElementById('loginUsername');
                     if (uInput) uInput.value = username;
@@ -6417,16 +6440,16 @@ def get_login_page_html() -> str:
                         switchMainTab('direct');
                         const pInput = document.getElementById('loginPassword');
                         if (pInput) pInput.focus();
-                    }, 1400);
+                    }, 3500);
                 } else {
-                    showAlert((data && data.error) || 'Registration failed. Please try again.', 'error');
+                    showAlert((data && (data.error || data.message)) || 'प्रवेश विनंती पाठवताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.', 'error');
                 }
             } catch(err) {
                 showAlert('Registration error: ' + err.message, 'error');
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerText = 'ðŸ“ Register & Activate Account';
+                    btn.innerText = '🚀 Submit Access Request (ॲडमिन मंजुरीसाठी पाठवा)';
                 }
             }
         }

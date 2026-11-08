@@ -79,6 +79,14 @@ class AuthManager:
                     cursor.execute("ALTER TABLE users ADD COLUMN phone_number TEXT")
                 except Exception:
                     pass
+                try:
+                    cursor.execute("ALTER TABLE users ADD COLUMN department TEXT DEFAULT 'General'")
+                except Exception:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE users ADD COLUMN purpose TEXT DEFAULT 'Enterprise Access'")
+                except Exception:
+                    pass
 
                 cursor.execute("""
                 CREATE TABLE IF NOT EXISTS auth_otps (
@@ -177,11 +185,24 @@ class AuthManager:
             return False, "Password must contain at least one special character (@$!%*?&#)."
         return True, "Password meets criteria."
 
-    def register_user(self, full_name: str, username: str, email: str, password: str, phone_number: Optional[str] = None, ip_address: str = "Unknown", user_agent: str = "Unknown") -> Dict[str, Any]:
-        """Registers a new user into PENDING_APPROVAL state."""
+    def register_user(
+        self,
+        full_name: str,
+        username: str,
+        email: str,
+        password: str,
+        phone_number: Optional[str] = None,
+        department: Optional[str] = None,
+        purpose: Optional[str] = None,
+        ip_address: str = "Unknown",
+        user_agent: str = "Unknown"
+    ) -> Dict[str, Any]:
+        """Registers a new user into PENDING_APPROVAL state with Zero-Trust Governance."""
         full_name = full_name.strip()
         username = username.strip().lower()
         email = email.strip().lower()
+        dept_clean = (department or "General").strip()
+        purpose_clean = (purpose or "Enterprise Access").strip()
 
         if len(username) < 3 or len(username) > 20 or not re.match(r"^[a-zA-Z0-9_]+$", username):
             return {"status": "error", "error": "Username must be 3-20 characters and contain only letters/numbers (e.g. john_doe)."}
@@ -211,14 +232,14 @@ class AuthManager:
                 phone_clean = (phone_number or "").strip()
                 allowed_views = ["dashboard", "universal_tech_video", "video_studio", "agent_grid"]
                 cursor.execute("""
-                INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_active_at, allowed_views, access_mode)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'user', 'ACTIVE', ?, ?, ?, 'MODIFY')
-                """, (user_id, username, full_name, email, phone_clean, pwd_hash, salt, now, now, json.dumps(allowed_views)))
+                INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_active_at, allowed_views, access_mode, department, purpose)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'user', 'PENDING_APPROVAL', ?, ?, ?, 'READ_ONLY', ?, ?)
+                """, (user_id, username, full_name, email, phone_clean, pwd_hash, salt, now, now, json.dumps(allowed_views), dept_clean, purpose_clean))
 
                 cursor.execute("""
                 INSERT INTO user_audit_logs (id, user_id, username, event_type, details, ip_address, user_agent, created_at)
-                VALUES (?, ?, ?, 'SIGNUP', 'New user registered - Pending Admin Approval', ?, ?, ?)
-                """, (f"audit_{uuid.uuid4().hex[:12]}", user_id, username, ip_address, user_agent, now))
+                VALUES (?, ?, ?, 'SIGNUP', ?, ?, ?, ?)
+                """, (f"audit_{uuid.uuid4().hex[:12]}", user_id, username, f"Access Request: Dept={dept_clean}, Purpose={purpose_clean}", ip_address, user_agent, now))
 
                 conn.commit()
 
@@ -230,13 +251,16 @@ class AuthManager:
                     agent_id="user_management",
                     target_system="RBAC / User Auth",
                     risk_level="MEDIUM",
-                    reason=f"New user registered with email {email}. Awaiting admin feature authorization.",
+                    reason=f"New user registered ({email}, Dept: {dept_clean}, Purpose: {purpose_clean}). Awaiting Super Admin authorization.",
                     expected_impact="Grants user access to approved features with designated access mode.",
                     parameters={
                         "user_id": user_id,
                         "username": username,
                         "email": email,
                         "full_name": full_name,
+                        "department": dept_clean,
+                        "purpose": purpose_clean,
+                        "phone_number": phone_clean,
                         "type": "user_registration",
                         "allowed_views": ["dashboard", "universal_tech_video"],
                         "access_mode": "READ_ONLY"
@@ -246,23 +270,26 @@ class AuthManager:
             except Exception as _appr_e:
                 log_event(f"Notice: Approval request creation: {_appr_e}", component="AuthManager", level="WARNING")
 
-            # Send Telegram Alert to Admin
+            # Send Telegram Alert to Super Admin
             self._notify_telegram(
-                f"🚨 <b>New User Registration</b>\n"
+                f"🚨 <b>New User Access Request (नवीन प्रवेश विनंती)</b>\n"
                 f"👤 <b>Name:</b> {full_name}\n"
                 f"🔑 <b>Username:</b> {username}\n"
                 f"📧 <b>Email:</b> {email}\n"
-                f"🌐 <b>IP:</b> {ip_address}\n"
+                f"📱 <b>Phone:</b> {phone_clean or 'N/A'}\n"
+                f"🏢 <b>Department:</b> {dept_clean}\n"
+                f"🎯 <b>Purpose:</b> {purpose_clean}\n"
                 f"⏳ <b>Status:</b> PENDING_APPROVAL\n"
-                f"<i>Please approve in the User Management panel.</i>"
+                f"🌐 <b>IP:</b> {ip_address}\n"
+                f"<i>Please review & approve in User Management & Security Governance panel.</i>"
             )
 
             return {
                 "status": "success",
-                "message": "Registration successful! Your account is active. You can now log in.",
+                "status_code": "PENDING_APPROVAL",
+                "message": "तुमची प्रवेश विनंती (Access Request) यशस्वीरीत्या पाठवली गेली आहे! सुरक्षेसाठी Super Admin (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.",
                 "user_id": user_id,
-                "username": username,
-                "status_code": "ACTIVE"
+                "username": username
             }
         except Exception as e:
             log_event(f"Error registering user: {e}", component="AuthManager", level="ERROR")
@@ -339,18 +366,24 @@ class AuthManager:
 
                 # Check account status
                 if user["status"] == "PENDING_APPROVAL":
-                    cursor.execute("UPDATE users SET status = 'ACTIVE' WHERE id = ?", (user["id"],))
-                    conn.commit()
-                    log_event(f"User '{user['username']}' automatically activated upon valid credential authentication.", component="AuthManager")
+                    if not is_admin_user:
+                        return {
+                            "status": "error",
+                            "status_code": "PENDING_APPROVAL",
+                            "error": "तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval). सुरक्षेसाठी Super Admin मंजुरी मिळाल्यावरच लॉगिन करता येईल."
+                        }
+                    else:
+                        cursor.execute("UPDATE users SET status = 'ACTIVE' WHERE id = ?", (user["id"],))
+                        conn.commit()
                 elif user["status"] == "REJECTED":
                     return {
                         "status": "error",
-                        "error": "Your registration was rejected by admin. Access denied."
+                        "error": "तुमची नोंदणी ॲडमिनद्वारे नाकारली गेली आहे. प्रवेश नाकारला (Access Denied)."
                     }
                 elif user["status"] == "DISABLED":
                     return {
                         "status": "error",
-                        "error": "This account has been temporarily disabled for security reasons. Please contact the admin."
+                        "error": "सुरक्षा कारणास्तव हे खाते तात्पुरते निलंबित करण्यात आले आहे. कृपया ॲडमिनशी संपर्क साधा."
                     }
 
                 # Create session
@@ -632,28 +665,53 @@ class AuthManager:
                     user_id = user["id"]
                     user_role = user["role"]
                     username = user["username"]
+                    if user.get("status") == "PENDING_APPROVAL" and not is_admin_user:
+                        return {
+                            "status": "error",
+                            "status_code": "PENDING_APPROVAL",
+                            "error": "तुमचे Google खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval). सुरक्षेसाठी Super Admin मंजुरी मिळाल्यावरच लॉगिन करता येईल."
+                        }
+                    elif user.get("status") == "REJECTED":
+                        return {"status": "error", "error": "तुमची Google खात्याची नोंदणी ॲडमिन कडून नाकारण्यात आली आहे."}
+                    elif user.get("status") == "DISABLED":
+                        return {"status": "error", "error": "हे खाते सुरक्षा कारणास्तव बंद करण्यात आले आहे."}
+
                     allowed_views = self._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user_role)
                     access_mode = (user["access_mode"] if "access_mode" in user.keys() else "MODIFY") or "MODIFY"
                     user_full_name = user["full_name"] or full_name or username
-                    # Update last active
-                    cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ?, status = 'ACTIVE' WHERE id = ?", (now, now, user_id))
+                    cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user_id))
                 else:
-                    # Provision new user from Clerk
                     user_id = f"user_{uuid.uuid4().hex[:12]}"
                     username = (email_clean.split("@")[0] if email_clean else f"clerk_{clerk_user_id[:8]}").lower()
-                    # Ensure username unique
                     cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
                     if cursor.fetchone():
                         username = f"{username}_{uuid.uuid4().hex[:4]}"
                     user_role = "admin" if is_admin_user else "user"
                     user_full_name = full_name or username.capitalize()
-                    allowed_views = ["*"] if user_role == "admin" else ["dashboard", "video_studio", "agent_grid"]
-                    access_mode = "MODIFY"
+                    allowed_views = ["*"] if user_role == "admin" else ["dashboard", "universal_tech_video"]
+                    access_mode = "MODIFY" if is_admin_user else "READ_ONLY"
+                    init_status = "ACTIVE" if is_admin_user else "PENDING_APPROVAL"
 
                     cursor.execute("""
-                    INSERT INTO users (id, username, full_name, email, password_hash, salt, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode)
-                    VALUES (?, ?, ?, ?, 'clerk_sso_managed', 'sso_salt', ?, 'ACTIVE', ?, ?, ?, ?, ?)
-                    """, (user_id, username, user_full_name, email_clean or f"{username}@clerk.nanopro.ai", user_role, now, now, now, json.dumps(allowed_views), access_mode))
+                    INSERT INTO users (id, username, full_name, email, password_hash, salt, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode, department, purpose)
+                    VALUES (?, ?, ?, ?, 'clerk_sso_managed', 'sso_salt', ?, ?, ?, ?, ?, ?, ?, 'General', 'Google Clerk SSO')
+                    """, (user_id, username, user_full_name, email_clean or f"{username}@clerk.nanopro.ai", user_role, init_status, now, now, now, json.dumps(allowed_views), access_mode))
+                    conn.commit()
+
+                    if not is_admin_user:
+                        self._notify_telegram(
+                            f"🚨 <b>New User Registration (Google SSO)</b>\n"
+                            f"👤 <b>Name:</b> {user_full_name}\n"
+                            f"🔑 <b>Username:</b> {username}\n"
+                            f"📧 <b>Email:</b> {email_clean}\n"
+                            f"⏳ <b>Status:</b> PENDING_APPROVAL\n"
+                            f"<i>Please review & approve in User Management & Security Governance panel.</i>"
+                        )
+                        return {
+                            "status": "error",
+                            "status_code": "PENDING_APPROVAL",
+                            "error": "Google प्रमाणीकरण यशस्वी झाले आहे, परंतु नवीन वापरकर्त्यांसाठी Super Admin (nanopro) कडून मंजुरी आवश्यक आहे."
+                        }
 
                 # Create active NanoPro session token
                 session_token = f"np_sess_{uuid.uuid4().hex}"
@@ -828,10 +886,21 @@ class AuthManager:
                     username = user["username"]
                     full_name = user["full_name"]
                     email = user["email"]
+
+                    if user.get("status") == "PENDING_APPROVAL" and not is_admin:
+                        return {
+                            "status": "error",
+                            "status_code": "PENDING_APPROVAL",
+                            "error": "तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval). सुरक्षेसाठी Super Admin मंजुरी मिळाल्यावरच लॉगिन करता येईल."
+                        }
+                    elif user.get("status") == "REJECTED":
+                        return {"status": "error", "error": "तुमची नोंदणी ॲडमिनद्वारे नाकारली गेली आहे."}
+                    elif user.get("status") == "DISABLED":
+                        return {"status": "error", "error": "सुरक्षा कारणास्तव हे खाते तात्पुरते निलंबित करण्यात आले आहे."}
+
                     allowed_views = self._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user_role)
                     access_mode = (user["access_mode"] if "access_mode" in user.keys() else "MODIFY") or "MODIFY"
-                    # WhatsApp OTP verified -> Activate account and grant access immediately
-                    cursor.execute("UPDATE users SET status = 'ACTIVE', last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user_id))
+                    cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user_id))
                 else:
                     user_id = f"user_{uuid.uuid4().hex[:12]}"
                     digits_suffix = "".join(c for c in clean_id if c.isdigit())[-6:]
@@ -844,13 +913,29 @@ class AuthManager:
                     full_name = f"Super Admin (Mangesh Bagul)" if is_admin else f"WhatsApp User ({clean_id})"
                     email = f"mangeshbagul15@gmail.com" if is_admin else (f"{username}@whatsapp.nanopro.ai" if channel == "whatsapp" else clean_id)
                     allowed_views = ["*"] if is_admin else ["dashboard", "universal_tech_video"]
-                    access_mode = "MODIFY"
-                    init_status = "ACTIVE"
+                    access_mode = "MODIFY" if is_admin else "READ_ONLY"
+                    init_status = "ACTIVE" if is_admin else "PENDING_APPROVAL"
 
                     cursor.execute("""
-                    INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode)
-                    VALUES (?, ?, ?, ?, ?, 'otp_verified', 'otp_salt', ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode, department, purpose)
+                    VALUES (?, ?, ?, ?, ?, 'otp_verified', 'otp_salt', ?, ?, ?, ?, ?, ?, ?, 'General', 'WhatsApp OTP Signup')
                     """, (user_id, username, full_name, email, clean_id, user_role, init_status, now, now, now, json.dumps(allowed_views), access_mode))
+                    conn.commit()
+
+                    if not is_admin:
+                        self._notify_telegram(
+                            f"🚨 <b>New User Registration (WhatsApp OTP)</b>\n"
+                            f"👤 <b>Name:</b> {full_name}\n"
+                            f"🔑 <b>Username:</b> {username}\n"
+                            f"📱 <b>Phone:</b> {clean_id}\n"
+                            f"⏳ <b>Status:</b> PENDING_APPROVAL\n"
+                            f"<i>Please review & approve in User Management & Security Governance panel.</i>"
+                        )
+                        return {
+                            "status": "error",
+                            "status_code": "PENDING_APPROVAL",
+                            "error": "WhatsApp OTP पडताळला गेला आहे! सुरक्षेसाठी नवीन वापरकर्त्यांना प्रवेश देण्यासाठी Super Admin (nanopro) कडून मंजुरी आवश्यक आहे."
+                        }
 
                 session_token = f"np_sess_{uuid.uuid4().hex}"
                 cursor.execute("""
@@ -895,7 +980,7 @@ class AuthManager:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                SELECT id, username, full_name, email, role, status, created_at, last_login_at, last_active_at, total_usage_seconds, allowed_views, access_mode
+                SELECT id, username, full_name, email, phone_number, department, purpose, role, status, created_at, last_login_at, last_active_at, total_usage_seconds, allowed_views, access_mode
                 FROM users
                 ORDER BY created_at DESC
                 """)
@@ -909,6 +994,9 @@ class AuthManager:
                         "username": r["username"],
                         "full_name": r["full_name"],
                         "email": r["email"],
+                        "phone_number": r["phone_number"] if "phone_number" in r.keys() and r["phone_number"] else "-",
+                        "department": r["department"] if "department" in r.keys() and r["department"] else "General",
+                        "purpose": r["purpose"] if "purpose" in r.keys() and r["purpose"] else "Enterprise Access",
                         "role": r["role"],
                         "status": r["status"],
                         "allowed_views": p_views,

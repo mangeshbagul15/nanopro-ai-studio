@@ -1037,6 +1037,10 @@ class AuthRegisterRequest(BaseModel):
 
     phone_number: Optional[str] = None
 
+    department: Optional[str] = None
+
+    purpose: Optional[str] = None
+
 
 
 class AuthLoginRequest(BaseModel):
@@ -12725,6 +12729,10 @@ async def api_auth_register(req: AuthRegisterRequest, request: Request):
         password=req.password,
 
         phone_number=getattr(req, "phone_number", None),
+
+        department=getattr(req, "department", None),
+
+        purpose=getattr(req, "purpose", None),
 
         ip_address=ip,
 
