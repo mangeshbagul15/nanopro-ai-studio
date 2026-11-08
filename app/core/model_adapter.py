@@ -467,11 +467,11 @@ class GeminiAdapter(ModelProviderAdapter):
         client = self._get_client()
         types = _genai_types
 
-        target_model = "gemini-3.5-flash-lite" if ("gemini" not in model.lower()) else model
+        target_model = "gemini-3.8-flash" if ("gemini" not in model.lower()) else model
         models_to_try = (
             [target_model]
             if not allow_fallback
-            else [target_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+            else [target_model, "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
         )
         unique_models = []
         for m in models_to_try:
@@ -1706,13 +1706,13 @@ class ModelManager:
 
         # Task-specific capability routing hierarchy
         self.task_routing: Dict[str, List[str]] = {
-            "coding": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "deepseek-reasoner", "qwen/qwen3.8-27b", "gemini-3.5-flash-lite", "qwen2.5-coder:3b", "qwen2.5-coder:7b", "phi4-mini:latest"],
-            "dialogue": ["gpt-4o-mini", "claude-3-haiku-20240307", "deepseek-chat", "mistral-small-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
-            "data_analyst": ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "gemini-3-flash-preview", "google/gemma-4-31b-it:free", "claude-sonnet-5-5", "gpt-4o", "deepseek-reasoner", "gemini-3.1-pro-preview", "phi4-mini:latest"],
-            "research": ["claude-3-5-sonnet-20241022", "gpt-4o", "mistral-large-latest", "deepseek-reasoner", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "gemma3:4b", "llama3.2:3b"],
-            "price_tracking": ["gpt-4o-mini", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "phi4-mini:latest"],
-            "learning": ["claude-3-5-sonnet-20241022", "gpt-4o", "codestral-latest", "deepseek-chat", "gemini-3.5-flash-lite", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
-            "general": ["claude-3-5-sonnet-20241022", "gpt-4o-mini", "gpt-4o", "codestral-latest", "deepseek-chat", "mistral-large-latest", "openai/gpt-oss-120b", "gemini-3.5-flash-lite", "qwen/qwen3.8-27b", "llama3.2:3b", "qwen2.5-coder:3b"]
+            "coding": ["codestral-latest", "qwen/qwen3.8-27b", "openai/gpt-oss-120b", "deepseek-chat", "command-r-08-2024", "claude-3-5-sonnet-20241022", "gpt-4o", "gemini-3.8-flash", "qwen2.5-coder:3b", "phi4-mini:latest"],
+            "dialogue": ["openai/gpt-oss-120b", "command-r-08-2024", "gemini-3.8-flash", "deepseek-chat", "codestral-latest", "command-r-plus-08-2024", "openai/gpt-oss-20b", "llama3.2:3b", "qwen2.5-coder:3b"],
+            "data_analyst": ["codestral-latest", "qwen/qwen3.8-27b", "openai/gpt-oss-120b", "command-r-08-2024", "gemini-3.8-flash", "deepseek-chat", "deepseek-reasoner", "phi4-mini:latest"],
+            "research": ["command-r-08-2024", "command-r-plus-08-2024", "openai/gpt-oss-120b", "gemini-3.8-flash", "mistral-large-latest", "deepseek-reasoner", "llama3.2:3b"],
+            "price_tracking": ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "command-r-08-2024", "gemini-3.8-flash", "phi4-mini:latest"],
+            "learning": ["codestral-latest", "openai/gpt-oss-120b", "command-r-08-2024", "deepseek-chat", "gemini-3.8-flash", "qwen/qwen3.8-27b"],
+            "general": ["codestral-latest", "openai/gpt-oss-120b", "command-r-08-2024", "gemini-3.8-flash", "deepseek-chat", "qwen/qwen3.8-27b", "llama3.2:3b"]
         }
 
         # Model metadata registry

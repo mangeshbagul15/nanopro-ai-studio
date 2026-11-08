@@ -2476,6 +2476,61 @@ def _fast_query_source(entry: Dict[str, Any], schema: Dict[str, Any], table: Dic
     return f"{_quote(schema_name)}.{_quote(table['name'])}"
 
 
+def detect_chat_intent(message: str) -> str:
+    """
+    Dynamically classify user prompt to route to specialized AI models:
+    - 'coding': Python, scripts, pandas, algorithms, code interpreter (Codestral, Qwen Coder)
+    - 'research': Explanations, architectural comparisons, data science theory, deep reasoning (Cohere, GPT-OSS 120B, Gemini)
+    - 'dialogue': Marathi/Hindi conversational dialogue, greetings, general chat, assistance (Groq GPT-OSS 120B, Cohere, Gemini)
+    - 'data_analyst': SQL, queries, schemas, ETL, joins, aggregations (Codestral, Qwen, DeepSeek)
+    """
+    msg = (message or "").strip().lower()
+
+    # 1. Coding / Python / Scripting / Code Interpreter (Top priority if asking for code)
+    code_patterns = [
+        r"\b(python|py|pandas|dataframe|df|numpy|matplotlib|seaborn|scikit|sklearn|pytorch|tensorflow|torch|keras)\b",
+        r"\b(def\s+|class\s+|import\s+|lambda|pip\s+install|function|script|code|algorithm|regex|unit\s*test)\b",
+        r"\b(json\.loads|requests\.get|asyncio|fastapi|flask|pydantic|pytest|decorator|syntax)\b",
+        r"\b(plot|histogram|scatter|heatmap|chart\s+script|generate\s+code)\b",
+    ]
+    if any(re.search(pat, msg, re.IGNORECASE) for pat in code_patterns):
+        return "coding"
+
+    # 2. Research / Conceptual Explanations / Architectural Comparisons / Deep Dives
+    research_patterns = [
+        r"\b(explain|why|difference\s+between|compare|comparison|architecture|tradeoff|pros\s+and\s+cons)\b",
+        r"\b(how\s+does|what\s+is\s+the\s+best|deep\s+dive|analysis|methodology|theoretical|concept|paradigm)\b",
+        r"\b(machine\s+learning|data\s+science|clustering|regression|classification|neural\s+network|deep\s+learning)\b",
+        r"\b(star\s+schema|snowflake\s+schema|fact\s+table|dimension\s+table|olap|oltp|normalization)\b",
+    ]
+    if any(re.search(pat, msg, re.IGNORECASE) for pat in research_patterns):
+        return "research"
+
+    # 3. Dialogue / Conversational / Greetings / Marathi / Hindi
+    dialogue_patterns = [
+        r"\b(hi|hello|hey|namaskar|namaste|kasa|kay|kaise|kya|shubh|pranam)\b",
+        r"\b(thanks|thank\s+you|dhanyawad|shukriya|great|awesome|cool|bye|goodbye)\b",
+        r"\b(who\s+are\s+you|what\s+can\s+you\s+do|madat|help\s+me|kon\s+ahes|bol|sanga|koni)\b",
+        r"[\u0900-\u097F]",  # Devanagari script (Marathi / Hindi)
+    ]
+    if any(re.search(pat, msg, re.IGNORECASE) for pat in dialogue_patterns):
+        return "dialogue"
+
+    # 4. SQL / Database / ETL / Modeling (Core Data Analyst)
+    sql_patterns = [
+        r"\b(select|insert|update|delete|create\s+table|alter\s+table|drop\s+table|truncate)\b",
+        r"\b(join|inner\s+join|left\s+join|outer\s+join|group\s+by|order\s+by|having|window\s+function|partition\s+by)\b",
+        r"\b(sql|query|queries|database|databases|table|tables|schema|schemas|column|columns|primary\s+key|foreign\s+key)\b",
+        r"\b(snowflake|duckdb|sqlite|bigquery|postgres|postgresql|mysql|mssql|warehouse|lakehouse|etl|elt|dbt)\b",
+        r"\b(count|sum|avg|min|max|distinct|where|limit|offset|view|views|index|indexes|rows?|records?)\b",
+    ]
+    if any(re.search(pat, msg, re.IGNORECASE) for pat in sql_patterns):
+        return "data_analyst"
+
+    # Default to data_analyst for studio context
+    return "data_analyst"
+
+
 def _fast_intent(workspace_id: str, message: str) -> Optional[Dict[str, Any]]:
     """Deterministic intent parser. Answers the most common questions with zero
     model latency while the LLM stays available for everything else."""
@@ -2737,6 +2792,7 @@ def chat(
     add_message(workspace_id, "user", message, user=user)
     parsed: Dict[str, Any] = {}
     model_used = "fallback"
+    task_type = detect_chat_intent(message)
     if _looks_like_sql(message):
         parsed = {"reply": "Running your SQL now.", "sql": message, "target": "workspace", "action": None}
         model_used = "direct-sql"
@@ -2762,9 +2818,10 @@ def chat(
                 try:
                     from app.core.model_adapter import model_manager
 
+                    task_type = detect_chat_intent(message)
                     content, model_used, _, _ = model_manager.route_and_execute(
                         prompt,
-                        task_type="data_analyst",
+                        task_type=task_type,
                         schema={"type": "json_object"},
                         system_prompt=_system_prompt(workspace),
                         timeout=45.0,
@@ -2926,6 +2983,7 @@ def chat(
         "error": error,
         "model": model_used,
         "latency_ms": latency_ms,
+        "task_type": task_type,
         "fast_path": bool(parsed.get("fast")),
         "workspace_created": created_workspace["id"] if created_workspace else None,
         "schema_created": created_schema["schema"] if created_schema else None,
