@@ -379,7 +379,8 @@ def open_workspace_connection(workspace_id: str) -> sqlite3.Connection:
 def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]:
     _ensure_schema()
     from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
-    safe_user = resolve_canonical_username(user)
+    explicit_user = (user or "").strip()
+    safe_user = resolve_canonical_username(explicit_user) if explicit_user else ""
     if safe_user:
         try:
             ws_list = duckdb_chat_store.list_workspaces(safe_user, light=light)
@@ -443,7 +444,8 @@ def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]
 def get_workspace(workspace_id: str, user: str = "") -> Optional[Dict[str, Any]]:
     _ensure_schema()
     from app.core.identity_resolver import resolve_canonical_username
-    safe_user = resolve_canonical_username(user)
+    explicit_user = (user or "").strip()
+    safe_user = resolve_canonical_username(explicit_user) if explicit_user else ""
     if safe_user:
         try:
             ws = duckdb_chat_store.get_workspace(safe_user, workspace_id)
@@ -751,23 +753,47 @@ def create_schema(workspace_id: str, schema_name: str) -> Dict[str, Any]:
 # chat history & user state
 # ----------------------------------------------------------------------------
 
+def _message_signature(message: Dict[str, Any]) -> Tuple[str, str, str]:
+    # The two stores stamp created_at independently, so it cannot be part of the
+    # identity; role/content/sql plus multiset counts identify a stored message.
+    return (
+        str(message.get("role") or ""),
+        str(message.get("content") or "").strip(),
+        str(message.get("sql") or message.get("sql_text") or ""),
+    )
+
+
+def _mirror_to_duckdb(user: str, workspace_id: str, row: Dict[str, Any]) -> None:
+    # History reads must never rewrite the caller's active chat state.
+    try:
+        duckdb_chat_store.add_message(
+            user,
+            workspace_id,
+            row["role"],
+            row["content"],
+            row.get("sql_text") or row.get("sql") or "",
+            row.get("meta") if isinstance(row.get("meta"), dict) else {},
+            touch=False,
+        )
+    except Exception as exc:
+        log_event(f"DuckDB history mirror error: {exc}", component="DataModeling", level="WARNING")
+
+
 def get_messages(workspace_id: str, limit: int = 300, user: str = "") -> List[Dict[str, Any]]:
+    """Returns chat history, healing drift between the SQLite write-ahead copy and
+    the per-user DuckDB store. Assistant replies have been lost from DuckDB when a
+    single write failed, which silently dropped them from the UI transcript."""
     _ensure_schema()
     from app.core.identity_resolver import resolve_canonical_username
-    safe_user = resolve_canonical_username(user)
-    if safe_user:
-        try:
-            msgs = duckdb_chat_store.get_messages(safe_user, workspace_id, limit=limit)
-            if msgs:
-                return msgs
-        except Exception as exc:
-            log_event(f"DuckDB get_messages fallback: {exc}", component="DataModeling", level="WARNING")
+    explicit_user = (user or "").strip()
+    safe_user = resolve_canonical_username(explicit_user) if explicit_user else ""
+    limit = max(1, min(limit, 500))
 
     with db.get_connection() as conn:
         rows = _table_rows(
             conn,
             "SELECT * FROM dm_messages WHERE workspace_id = ? ORDER BY id DESC LIMIT ?",
-            (workspace_id, max(1, min(limit, 500))),
+            (workspace_id, limit),
         )
     rows.reverse()
     for row in rows:
@@ -775,15 +801,54 @@ def get_messages(workspace_id: str, limit: int = 300, user: str = "") -> List[Di
             row["meta"] = json.loads(row["meta"]) if row["meta"] else {}
         except Exception:
             row["meta"] = {}
-        if safe_user:
-            try:
-                duckdb_chat_store.add_message(
-                    safe_user, workspace_id, row["role"], row["content"],
-                    row.get("sql_text") or "", row.get("meta")
-                )
-            except Exception:
-                pass
-    return rows
+
+    if not safe_user:
+        return rows
+
+    try:
+        msgs = duckdb_chat_store.get_messages(safe_user, workspace_id, limit=limit)
+    except Exception as exc:
+        log_event(f"DuckDB get_messages fallback: {exc}", component="DataModeling", level="WARNING")
+        msgs = []
+
+    if not msgs:
+        for row in rows:
+            _mirror_to_duckdb(safe_user, workspace_id, row)
+        return rows
+
+    seen: Dict[Tuple[str, str, str], int] = {}
+    for message in msgs:
+        key = _message_signature(message)
+        seen[key] = seen.get(key, 0) + 1
+
+    missing = []
+    for row in rows:
+        key = _message_signature(row)
+        if seen.get(key):
+            seen[key] -= 1
+            continue
+        missing.append(row)
+
+    if not missing:
+        return msgs
+
+    log_event(
+        f"DataModeling history drift in {workspace_id}: mirroring {len(missing)} message(s) into DuckDB",
+        component="DataModeling",
+        level="WARNING",
+    )
+    for row in missing:
+        _mirror_to_duckdb(safe_user, workspace_id, row)
+
+    merged = list(rows)
+    known = {_message_signature(row) for row in rows}
+    extra = [message for message in msgs if _message_signature(message) not in known]
+    if extra:
+        merged = sorted(
+            merged + extra,
+            key=lambda message: (str(message.get("created_at") or ""), str(message.get("id") or "")),
+        )
+    return merged[-limit:]
 
 
 def add_message(
@@ -2678,10 +2743,42 @@ def detect_chat_intent(message: str) -> str:
     return "data_analyst"
 
 
+def _active_workspace_table(
+    workspace_id: str,
+    focus: Optional[Dict[str, str]],
+    catalog: List[Dict[str, Any]],
+):
+    """Resolves "this table" from the selected table context, or the workspace's
+    only table when the question clearly refers to a single dataset."""
+    if focus and focus.get("table"):
+        want_db = focus.get("db_id") or ("workspace:" + workspace_id)
+        for entry in catalog:
+            if entry.get("id") != want_db:
+                continue
+            for schema in entry.get("schemas", []):
+                schema_label = str(schema.get("schema") or schema.get("name") or "").lower()
+                want_schema = str(focus.get("schema") or "").lower()
+                if want_schema and schema_label != want_schema:
+                    continue
+                for table in schema.get("tables", []):
+                    if str(table.get("name", "")).lower() == str(focus["table"]).lower():
+                        return entry, schema, table
+    entry = next((item for item in catalog if item.get("id") == "workspace:" + workspace_id), None)
+    if not entry:
+        return None
+    found = [
+        (entry, schema, table)
+        for schema in entry.get("schemas", [])
+        for table in schema.get("tables", [])
+    ]
+    return found[0] if len(found) == 1 else None
+
+
 def _fast_intent(
     workspace_id: str,
     message: str,
     allowed_workspaces: Optional[set] = None,
+    focus: Optional[Dict[str, str]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Deterministic intent parser. Answers the most common questions with zero
     model latency while the LLM stays available for everything else."""
@@ -2766,21 +2863,45 @@ def _fast_intent(
                 return None
 
     top_match = re.fullmatch(
-        r"(?:please\s+)?(?:show|get|display|fetch|give|bring)\s+(?:me\s+)?(?:the\s+)?(?:top|first|last)\s*(\d{1,4})?\s*"
-        r"(?:rows?|records?)?\s*(?:from|of|in)\s+(" + _IDENT_TOKEN + r")\s*[?.!]?",
+        r"(?:please\s+)?(?:show|get|display|fetch|give|bring)\s+(?:me\s+)?(?:the\s+)?"
+        r"(top|first|last)\s*(\d{1,4})?\s*(?:rows?|records?)?\s*"
+        r"(?:from|of|in)\s*(this\s+table|the\s+table|" + _IDENT_TOKEN + r")"
+        r"(?:\s+(?:ordered|order|sorted)\s+by\s+([A-Za-z_][\w$]*)\s*(asc|desc)?)?\s*[?.!]?",
         text,
         re.IGNORECASE,
     )
     if top_match:
-        count = max(1, min(int(top_match.group(1) or 5), 100))
-        found = _find_named_table(catalog, top_match.group(2))
+        count = max(1, min(int(top_match.group(2) or 5), 100))
+        table_token = (top_match.group(3) or "").strip()
+        order_column = (top_match.group(4) or "").strip()
+        direction = (top_match.group(5) or "").strip().upper()
+        if not direction:
+            direction = "ASC" if top_match.group(1).lower() == "first" else "DESC"
+        if table_token.lower() in ("this table", "the table"):
+            found = _active_workspace_table(workspace_id, focus, catalog)
+        else:
+            found = _find_named_table(catalog, table_token)
         if found:
             entry, schema, table = found
             source = _fast_query_source(entry, schema, table)
             if source:
+                order_sql = ""
+                if order_column:
+                    schema_name = schema.get("schema") or schema.get("name") or "main"
+                    try:
+                        details = get_table_details(entry["id"], schema_name, table["name"], catalog)
+                    except Exception:
+                        details = {}
+                    known = {str(column.get("name") or "").lower() for column in details.get("columns", [])}
+                    if order_column.lower() not in known:
+                        return None
+                    order_sql = f" ORDER BY {_quote(order_column)} {direction}"
+                reply = f"Here are the {'top' if direction == 'DESC' else 'first'} {count} row(s) of {table['name']} from {entry['name']}"
+                if order_column:
+                    reply += f", ordered by {order_column} ({'ascending' if direction == 'ASC' else 'descending'})"
                 return {
-                    "reply": f"Here are the first {count} row(s) of {table['name']} from {entry['name']}.",
-                    "sql": f"SELECT * FROM {source} LIMIT {count}",
+                    "reply": reply + ".",
+                    "sql": f"SELECT * FROM {source}{order_sql} LIMIT {count}",
                     "target": entry["id"],
                     "action": None,
                     "fast": True,
@@ -2971,7 +3092,7 @@ def chat(
         parsed = {"reply": "Running your SQL now.", "sql": message, "target": "workspace", "action": None}
         model_used = "direct-sql"
     else:
-        fast = _fast_intent(workspace_id, message, allowed_workspaces)
+        fast = _fast_intent(workspace_id, message, allowed_workspaces, focus)
         if fast:
             parsed = fast
             model_used = "fast-nlu"
@@ -2983,7 +3104,7 @@ def chat(
                 model_used = "cached-ai"
             else:
                 catalog_text = _catalog_for_prompt(workspace_id, message, focus, allowed_workspaces)
-                history_rows = get_messages(workspace_id, limit=12)[:-1]
+                history_rows = get_messages(workspace_id, limit=12, user=user)[:-1]
                 history = "\n".join(f"{m['role']}: {m['content'][:600]}" for m in history_rows)
                 prompt = (
                     f"{catalog_text}\n\nCONVERSATION SO FAR:\n{history or '(new conversation)'}\n\n"

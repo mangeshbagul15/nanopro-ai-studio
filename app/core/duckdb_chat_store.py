@@ -483,6 +483,7 @@ class DuckDBChatStore:
         content: str,
         sql_text: str = "",
         meta: Optional[Dict[str, Any]] = None,
+        touch: bool = True,
     ) -> Dict[str, Any]:
         lock = _get_user_lock(user)
         with lock:
@@ -499,16 +500,15 @@ class DuckDBChatStore:
                 )
                 msg_id = conn.execute("SELECT MAX(id) FROM dm_messages WHERE workspace_id = ?", [workspace_id]).fetchone()[0]
 
-                # Update workspace timestamp
-                conn.execute("UPDATE dm_workspaces SET updated_at = ? WHERE id = ?", [stamp, workspace_id])
-                # Record as last active workspace
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO dm_user_state (user_id, active_workspace_id, active_project_id, updated_at)
-                    VALUES (?, ?, COALESCE((SELECT project_id FROM dm_workspaces WHERE id = ?), ''), ?)
-                    """,
-                    [user, workspace_id, workspace_id, stamp],
-                )
+                if touch:
+                    conn.execute("UPDATE dm_workspaces SET updated_at = ? WHERE id = ?", [stamp, workspace_id])
+                    conn.execute(
+                        """
+                        INSERT OR REPLACE INTO dm_user_state (user_id, active_workspace_id, active_project_id, updated_at)
+                        VALUES (?, ?, COALESCE((SELECT project_id FROM dm_workspaces WHERE id = ?), ''), ?)
+                        """,
+                        [user, workspace_id, workspace_id, stamp],
+                    )
 
                 return {
                     "id": msg_id,

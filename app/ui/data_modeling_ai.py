@@ -184,7 +184,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 #view-data_modeling_ai .dm-chat-title { font-size:13.5px; font-weight:600; color:#F2F6FC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #view-data_modeling_ai .dm-chat-sub { margin-top:1px; font-size:11px; color:var(--dm-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #view-data_modeling_ai .dm-chat-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; }
-#view-data_modeling_ai .dm-messages { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:16px 16px 10px; display:flex; flex-direction:column; gap:13px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
+#view-data_modeling_ai .dm-messages { flex:1 1 auto; min-height:170px; overflow-y:auto; overscroll-behavior:contain; padding:16px 16px 10px; display:flex; flex-direction:column; gap:13px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
 #view-data_modeling_ai .dm-msg { display:flex; gap:9px; align-items:flex-start; }
 #view-data_modeling_ai .dm-msg.user { flex-direction:row-reverse; }
 #view-data_modeling_ai .dm-avatar { flex:0 0 auto; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; letter-spacing:.03em; background:#1B2739; color:#AFC1D8; border:1px solid var(--dm-line-2); }
@@ -215,8 +215,8 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 #view-data_modeling_ai .dm-suggest button:hover { border-color:var(--dm-accent); color:#CFE0FF; background:rgba(76,141,255,.1); }
 
 /* ------------------------------------------------------------- data dock */
-#view-data_modeling_ai .dm-data { position:relative; flex:0 0 auto; height:250px; display:flex; flex-direction:column; min-height:0; border-top:1px solid var(--dm-line); background:var(--dm-panel); }
-#view-data_modeling_ai .dm-app.data-collapsed .dm-data { height:38px !important; }
+#view-data_modeling_ai .dm-data { position:relative; flex:0 1 auto; height:250px; min-height:120px; display:flex; flex-direction:column; border-top:1px solid var(--dm-line); background:var(--dm-panel); }
+#view-data_modeling_ai .dm-app.data-collapsed .dm-data { height:38px !important; min-height:38px !important; }
 #view-data_modeling_ai .dm-app.data-collapsed .dm-data-body,
 #view-data_modeling_ai .dm-app.data-collapsed .dm-grip-h { display:none; }
 #view-data_modeling_ai .dm-data-head { flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--dm-line); min-height:37px; }
@@ -322,8 +322,13 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
   #view-data_modeling_ai .dm-messages { padding:12px 10px 8px; }
   #view-data_modeling_ai .dm-bubble { max-width:94%; }
   #view-data_modeling_ai .dm-data { height:210px; }
+  #view-data_modeling_ai .dm-messages { min-height:130px; }
   #view-data_modeling_ai .dm-data-title { max-width:150px; }
   #view-data_modeling_ai .dm-topbar { padding:8px; }
+}
+@media (max-height:620px) {
+  #view-data_modeling_ai .dm-messages { min-height:120px; }
+  #view-data_modeling_ai .dm-data { min-height:96px; }
 }
 </style>
 
