@@ -57,6 +57,8 @@ _state: Dict[str, Any] = {
     "last_sync_at": None,
     "last_sync_bytes": 0,
     "last_error": "",
+    "loop_iterations": 0,
+    "last_check_at": None,
 }
 
 
@@ -431,14 +433,17 @@ def _loop() -> None:
     while not _stop.is_set():
         try:
             signature = (_state_signature(), _files_signature())
+            _state["loop_iterations"] = int(_state.get("loop_iterations") or 0) + 1
+            _state["last_check_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
             if signature != _last_signature:
                 _stop.wait(SYNC_INTERVAL)
                 settled = (_state_signature(), _files_signature())
                 if settled != signature:
                     _last_signature = settled
                     continue
-                snapshot_now()
-                _last_signature = settled
+                # Keep the old baseline on failure so the next tick retries.
+                if snapshot_now().get("status") == "ok":
+                    _last_signature = settled
         except Exception as exc:
             _state["last_error"] = str(exc)[:300]
             log_event(f"DM persistence sync error: {exc}", level="WARNING", component="DMPersistence")
@@ -469,15 +474,30 @@ def flush() -> None:
 
 
 def status() -> Dict[str, Any]:
+    state_sig = ""
+    files_sig = ""
+    try:
+        state_sig = _state_signature()
+        files_sig = _files_signature() or ""
+    except Exception as exc:
+        _state["last_error"] = str(exc)[:300]
+    baseline = _last_signature or (None, None)
     return {
         "enabled": enabled(),
         "running": bool(_thread and _thread.is_alive()),
         "initialized": bool(_state.get("enabled")),
+        "pid": os.getpid(),
+        "loop_iterations": _state.get("loop_iterations"),
+        "last_check_at": _state.get("last_check_at"),
         "last_sync_at": _state.get("last_sync_at"),
         "last_sync_bytes": _state.get("last_sync_bytes"),
         "last_error": _state.get("last_error") or "",
         "restored_state_rows": _state.get("restored_state_rows"),
         "restored_files": _state.get("restored_files"),
+        "state_signature": state_sig,
+        "baseline_state": baseline[0],
+        "files_signature": files_sig,
+        "baseline_files": baseline[1],
     }
 
 
