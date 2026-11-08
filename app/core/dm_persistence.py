@@ -36,6 +36,16 @@ DM_TABLES = (
     "dm_schedules",
     "dm_schedule_runs",
 )
+# Registered users and sessions live in the same ephemeral SQLite file. Without
+# them a redeploy deletes every non-seeded account, so snapshot them too.
+AUTH_TABLES = (
+    "users",
+    "user_sessions",
+    "user_audit_logs",
+    "user_linked_identities",
+    "auth_otps",
+)
+ALL_TABLES = DM_TABLES + AUTH_TABLES
 STATE_KIND = "dm_state"
 FILES_KIND = "dm_files"
 KEEP_SNAPSHOTS = 2
@@ -50,6 +60,7 @@ _lock = threading.RLock()
 _thread: Optional[threading.Thread] = None
 _stop = threading.Event()
 _last_signature: Optional[Tuple[Optional[str], Optional[str]]] = None
+_schema_ready = False
 _state: Dict[str, Any] = {
     "enabled": False,
     "restored_state_rows": 0,
@@ -144,33 +155,59 @@ def _ensure_remote(conn) -> None:
 
 
 # ---------------------------------------------------------------------------
-# state (dm_* tables)
+# state (dm_* + auth tables)
 # ---------------------------------------------------------------------------
 
-def _state_signature() -> Optional[str]:
-    from app.core import data_modeling_ai as dm
+def _ensure_state_schema() -> None:
+    global _schema_ready
+    if _schema_ready:
+        return
+    with _lock:
+        if _schema_ready:
+            return
+        from app.core import data_modeling_ai as dm
 
-    dm._ensure_schema()
+        dm._ensure_schema()
+        try:
+            from app.core.auth_manager import auth_manager  # noqa: F401 - creates auth tables
+
+            from app.core.identity_resolver import init_identity_tables
+
+            init_identity_tables()
+        except Exception as exc:
+            log_event(f"DM persistence auth schema init failed: {exc}", level="WARNING", component="DMPersistence")
+        _schema_ready = True
+
+
+def _table_exists(conn, table: str) -> bool:
+    return bool(conn.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)).fetchone())
+
+
+def _state_signature() -> Optional[str]:
+    _ensure_state_schema()
     parts = []
     with db.get_connection() as conn:
-        for table in DM_TABLES:
+        for table in ALL_TABLES:
+            if not _table_exists(conn, table):
+                parts.append(f"{table}:missing")
+                continue
             count, max_rowid = conn.execute(
                 f"SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM {table}"
             ).fetchone()
             stamp = ""
-            if table in ("dm_workspaces", "dm_projects"):
-                stamp = conn.execute(f"SELECT COALESCE(MAX(updated_at), '') FROM {table}").fetchone()[0] or ""
+            if table in ("dm_workspaces", "dm_projects", "users"):
+                stamp = conn.execute(f"SELECT COALESCE(MAX(updated_at), '') FROM {table}" if table != "users" else "SELECT COALESCE(MAX(last_active_at), 0) FROM users").fetchone()[0] or ""
             parts.append(f"{table}:{count}:{max_rowid}:{stamp}")
     return "|".join(parts)
 
 
 def _export_state() -> bytes:
-    from app.core import data_modeling_ai as dm
-
-    dm._ensure_schema()
+    _ensure_state_schema()
     payload: Dict[str, Any] = {}
     with db.get_connection() as conn:
-        for table in DM_TABLES:
+        for table in ALL_TABLES:
+            if not _table_exists(conn, table):
+                continue
             payload[table] = [dict(row) for row in conn.execute(f"SELECT * FROM {table}").fetchall()]
     # Upload even an empty payload: otherwise deleting the last workspace never
     # reaches Neon and the previous snapshot resurrects it on the next boot.
@@ -179,14 +216,14 @@ def _export_state() -> bytes:
 
 def _restore_state(blob: bytes) -> int:
     data = json.loads(gzip.decompress(blob).decode("utf-8"))
-    from app.core import data_modeling_ai as dm
-
-    dm._ensure_schema()
+    _ensure_state_schema()
     restored = 0
     with db.get_connection() as conn:
         if conn.execute("SELECT COUNT(*) FROM dm_workspaces").fetchone()[0]:
             return 0
-        for table in DM_TABLES:
+        for table in ALL_TABLES:
+            if not _table_exists(conn, table):
+                continue
             for row in data.get(table) or []:
                 cols = list(row.keys())
                 if not cols:
