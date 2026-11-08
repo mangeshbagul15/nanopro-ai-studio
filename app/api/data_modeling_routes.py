@@ -133,6 +133,12 @@ def _owned_workspace(db_id: str, user_label: str):
     return dm.get_workspace(db_id.split(":", 1)[1], user=user_label)
 
 
+def _require_workspace(workspace_id: str, user_label: str) -> bool:
+    from app.core import data_modeling_ai as dm
+
+    return bool(workspace_id) and bool(dm.get_workspace(workspace_id, user=user_label))
+
+
 @router.get("/status")
 def api_dm_status(request: Request):
     _session_user(request)
@@ -320,20 +326,25 @@ def api_dm_export_chat(workspace_id: str, request: Request):
     user = _session_user(request)
     from app.core import data_modeling_ai as dm
     user_label = _user_label(user)
+    if not _require_workspace(workspace_id, user_label):
+        return _error("Workspace not found.", 404)
     export_data = dm.export_user_chat(user_label, workspace_id)
     return JSONResponse({"status": "success", "export": export_data})
 
 
 @router.post("/workspaces/{workspace_id}/schemas")
 def api_dm_create_schema(workspace_id: str, req: SchemaCreateRequest, request: Request):
-    _session_user(request)
+    user = _session_user(request)
     from app.core import data_modeling_ai as dm
+    user_label = _user_label(user)
+    if not _require_workspace(workspace_id, user_label):
+        return _error("Workspace not found.", 404)
 
     try:
         schema = dm.create_schema(workspace_id, req.name)
     except Exception as exc:
         return _error(str(exc))
-    return JSONResponse({"status": "success", "schema": schema, "workspace": dm.get_workspace(workspace_id)})
+    return JSONResponse({"status": "success", "schema": schema, "workspace": dm.get_workspace(workspace_id, user=user_label)})
 
 
 @router.get("/catalog")
@@ -377,6 +388,10 @@ def api_dm_chat(req: ChatRequest, request: Request):
     user = _session_user(request)
     from app.core import data_modeling_ai as dm
 
+    user_label = _user_label(user)
+    if req.workspace_id and not _require_workspace(req.workspace_id, user_label):
+        return _error("Workspace not found.", 404)
+
     # A degraded provider must never hold the request open indefinitely: the
     # user message is already persisted, so the UI can recover the eventual
     # assistant reply by polling the workspace messages endpoint.
@@ -385,7 +400,7 @@ def api_dm_chat(req: ChatRequest, request: Request):
         dm.chat,
         req.workspace_id,
         req.message,
-        _user_label(user),
+        user_label,
         [item.dict() for item in req.attachments],
         req.context.dict() if req.context else None,
     )
@@ -494,7 +509,10 @@ async def api_dm_upload(
     mode: str = Form("create"),
     schema: str = Form("main"),
 ):
-    _session_user(request)
+    user = _session_user(request)
+    user_label = _user_label(user)
+    if not _require_workspace(workspace_id, user_label):
+        return _error("Workspace not found.", 404)
     from app.core import data_modeling_ai as dm
 
     content = await file.read()
@@ -515,7 +533,10 @@ async def api_dm_attachment(
     file: UploadFile = File(...),
     workspace_id: str = Form(...),
 ):
-    _session_user(request)
+    user = _session_user(request)
+    user_label = _user_label(user)
+    if not _require_workspace(workspace_id, user_label):
+        return _error("Workspace not found.", 404)
     from app.core import data_modeling_ai as dm
 
     content = await file.read()

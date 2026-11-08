@@ -443,7 +443,7 @@ def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]
 
 def get_workspace(workspace_id: str, user: str = "") -> Optional[Dict[str, Any]]:
     _ensure_schema()
-    from app.core.identity_resolver import resolve_canonical_username
+    from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
     explicit_user = (user or "").strip()
     safe_user = resolve_canonical_username(explicit_user) if explicit_user else ""
     if safe_user:
@@ -464,14 +464,18 @@ def get_workspace(workspace_id: str, user: str = "") -> Optional[Dict[str, Any]]
         except Exception:
             pass
 
+    scoped = bool(safe_user) and not is_admin_identity(safe_user)
     with db.get_connection() as conn:
-        cur = conn.execute(
+        query = (
             "SELECT w.*,"
             " (SELECT COUNT(*) FROM dm_messages m WHERE m.workspace_id = w.id) AS message_count,"
             " (SELECT MAX(m.created_at) FROM dm_messages m WHERE m.workspace_id = w.id) AS last_message_at"
-            " FROM dm_workspaces w WHERE w.id = ?",
-            (workspace_id,),
+            " FROM dm_workspaces w WHERE w.id = ?"
         )
+        if scoped:
+            cur = conn.execute(query + " AND w.created_by = ?", (workspace_id, safe_user))
+        else:
+            cur = conn.execute(query, (workspace_id,))
         row = cur.fetchone()
     if not row:
         return None
@@ -581,6 +585,15 @@ def delete_workspace(workspace_id: str, user: str = "") -> Dict[str, Any]:
     db_path = _workspace_db_path(workspace_id)
     safe_user = (user or "").strip()
     if safe_user:
+        from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
+
+        canonical = resolve_canonical_username(safe_user)
+        if not is_admin_identity(canonical):
+            with db.get_connection() as conn:
+                owner = conn.execute("SELECT created_by FROM dm_workspaces WHERE id = ?", (workspace_id,)).fetchone()
+            if not owner or str(owner[0] or "") != canonical:
+                raise ValueError("Chat not found.")
+        safe_user = canonical
         try:
             duckdb_chat_store.delete_workspace(safe_user, workspace_id)
         except Exception:
