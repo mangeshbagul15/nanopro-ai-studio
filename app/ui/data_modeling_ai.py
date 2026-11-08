@@ -2340,6 +2340,22 @@ def get_data_modeling_js() -> str:
             dmRenderTree();
         } catch (err) {
             dmRemoveTyping();
+            if (err.status === 404 && /workspace not found/i.test(err.message || '')) {
+                DM.workspaceId = '';
+                DM.lastMessages = [];
+                DM.tableCtx = null;
+                try {
+                    localStorage.removeItem(dmUserKey('dm_active_ws'));
+                    localStorage.removeItem('dm_active_ws_nanopro');
+                    localStorage.removeItem('dm_active_ws');
+                } catch (ignore) { /* private mode */ }
+                dmToast('This chat no longer exists on the server because the backend restarted. Please start a new chat.', 'err');
+                await dmLoadChats();
+                window.dmRenderMessages([]);
+                dmUpdateHeader();
+                dmRenderTree();
+                return;
+            }
             if (err.timeout || err.status === 502 || err.status === 503 || err.status === 504 || err.status === 524) {
                 dmToast('Gateway is slow - checking the backend for your reply…', 'ok');
                 var recovered = await dmRecoverLateReply(baselineAi, workspaceId);
