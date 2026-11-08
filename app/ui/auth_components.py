@@ -5637,7 +5637,7 @@ def get_login_page_html() -> str:
 
                         <label class="form-label">WhatsApp Mobile Number</label>
 
-                        <input type="tel" id="waPhoneNumber" class="form-input" placeholder="+91 8433755448 or 10-digit number" value="">
+                        <input type="tel" id="waPhoneNumber" class="form-input" placeholder="+91 XXXXX XXXXX (with country code)" value="">
 
                         <div style="font-size:11px; color:#94A3B8; margin-top:4px;">
 
@@ -6079,30 +6079,6 @@ def get_login_page_html() -> str:
                     return false;
                 }
 
-                // Tier 2: Resilient GET Query Auth
-                if (!data || data.status !== 'success') {
-                    try {
-                        const getUrl = '/api/auth/login?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password);
-                        const respGet = await fetch(getUrl);
-                        data = await respGet.json();
-                    } catch(e2) {}
-                }
-
-                // If explicit PENDING_APPROVAL response from GET, display warning immediately
-                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
-                    showAlert('⏳ ' + (data.error || 'तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval).'), 'warning');
-                    return false;
-                }
-
-                // Tier 3: Alwaysdata Cloud Sentinel
-                if (!data || data.status !== 'success') {
-                    try {
-                        const adUrl = 'https://mangeshbagul15.alwaysdata.net/api/auth/login?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password);
-                        const respAd = await fetch(adUrl);
-                        if (respAd.ok) data = await respAd.json();
-                    } catch(e3) {}
-                }
-
                 if (data && data.status === 'success' && data.session_token) {
                     localStorage.setItem('nanopro_session_token', data.session_token);
                     localStorage.setItem('nanopro_active_account', data.user.username);
@@ -6258,7 +6234,7 @@ def get_login_page_html() -> str:
                 return;
             }
 
-            const phone = currentWaTarget || document.getElementById('waPhoneNumber')?.value?.trim() || '+918433755448';
+            const phone = currentWaTarget || document.getElementById('waPhoneNumber')?.value?.trim();
             const btn = document.getElementById('waVerifyBtn');
             if (btn) {
                 btn.disabled = true;
@@ -6282,18 +6258,6 @@ def get_login_page_html() -> str:
                 if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
                     showAlert('⏳ ' + (data.error || 'सुरक्षेसाठी नवीन वापरकर्त्यांसाठी Super Admin (nanopro) कडून मंजुरी आवश्यक आहे.'), 'warning');
                     return false;
-                }
-
-                // Tier 2: Alwaysdata Cloud fallback
-                if (!data || data.status !== 'success') {
-                    try {
-                        const adResp = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/otp/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ identifier: phone, otp_code: otpCode, channel: 'whatsapp' })
-                        });
-                        if (adResp.ok) data = await adResp.json();
-                    } catch(e2) {}
                 }
 
                 if (data && data.status === 'success' && data.session_token) {
@@ -6355,18 +6319,6 @@ def get_login_page_html() -> str:
                     });
                     data = await resp.json();
                 } catch(e1) {}
-
-                // Tier 2: Alwaysdata Cloud fallback
-                if (!data || (data.status !== 'success' && data.status_code !== 'PENDING_APPROVAL')) {
-                    try {
-                        const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/register', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ full_name, username, email, phone_number, department, purpose, password })
-                        });
-                        if (respAd.ok) data = await respAd.json();
-                    } catch(e2) {}
-                }
 
                 if (data && (data.status === 'success' || data.status_code === 'PENDING_APPROVAL')) {
                     const msg = data.message || 'तुमची प्रवेश विनंती (Access Request) यशस्वीरीत्या पाठवली गेली आहे! सुरक्षेसाठी Super Admin (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.';

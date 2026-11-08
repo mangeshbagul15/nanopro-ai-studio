@@ -13015,35 +13015,6 @@ async def api_auth_login(req: AuthLoginRequest, request: Request):
     return resp
 
 
-@app.get("/api/auth/login")
-async def api_auth_login_get(request: Request, username: str = "", password: str = "", u: str = "", p: str = ""):
-    """Resilient GET authentication fallback for proxy layers and cross-origin authentication."""
-    from app.core.auth_manager import auth_manager
-    user = (username or u).strip()
-    pwd = (password or p).strip()
-    ip = request.client.host if request.client else "Unknown"
-    ua = request.headers.get("user-agent", "Unknown")
-    res = auth_manager.authenticate_user(
-        username=user,
-        password=pwd,
-        ip_address=ip,
-        user_agent=ua
-    )
-    status_code = 200 if res.get("status") == "success" else 401
-    resp = JSONResponse(res, status_code=status_code)
-    if res.get("status") == "success" and res.get("session_token"):
-        resp.set_cookie(
-            key="nanopro_session",
-            value=res["session_token"],
-            max_age=2592000,
-            httponly=False,
-            samesite="lax",
-            secure=False
-        )
-    return resp
-
-
-
 @app.post("/api/auth/logout")
 
 async def api_auth_logout(req: AuthLogoutRequest):
