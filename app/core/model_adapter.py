@@ -57,6 +57,14 @@ def _short_rate_limit_wait_seconds(err: Exception) -> Optional[float]:
         return None
     return max(0.5, seconds + 0.5)
 
+
+def _is_timeout_error(err: Exception) -> bool:
+    """SDK timeout errors (httpx.ReadTimeout, APITimeoutError) often have an
+    empty message, so string matching alone misses them and the adapter keeps
+    trying more models. Treat any timeout exception as provider-fatal."""
+    return isinstance(err, TimeoutError) or "timeout" in type(err).__name__.lower()
+
+
 try:
     from google.genai import types as _genai_types
 except ImportError:
@@ -406,7 +414,8 @@ class GroqAdapter(ModelProviderAdapter):
                 last_err = e
                 err_str = str(e).lower()
                 is_provider_fatal = (
-                    isinstance(e, (ConnectionError, TimeoutError, urllib.error.URLError))
+                    _is_timeout_error(e)
+                    or isinstance(e, (ConnectionError, urllib.error.URLError))
                     or "429" in str(e)
                     or "rate limit" in err_str
                     or "rate_limit" in err_str
@@ -435,18 +444,30 @@ class GeminiAdapter(ModelProviderAdapter):
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
         self.circuit_breaker = circuit_breaker
-        self._client = None
+        self._clients: Dict[int, Any] = {}
 
     def is_available(self) -> bool:
         k = self.api_key or os.environ.get("GEMINI_API_KEY", "")
         return bool(k and len(k) > 20)
 
-    def _get_client(self):
+    def _get_client(self, timeout: float = 30.0):
         k = self.api_key or os.environ.get("GEMINI_API_KEY", "")
-        if self._client is None and k:
+        if not k:
+            return None
+        # The google-genai SDK defaults to no network timeout and retries 5xx
+        # responses several times, so a single overloaded 503 could hold a chat
+        # request for minutes. Bound every call and disable SDK-level retries;
+        # the router already owns the provider fallback chain.
+        seconds = int(max(5.0, min(float(timeout or 30.0), 120.0)))
+        client = self._clients.get(seconds)
+        if client is None:
             from google import genai
-            self._client = genai.Client(api_key=k)
-        return self._client
+            client = genai.Client(
+                api_key=k,
+                http_options={"timeout": seconds * 1000, "retry_options": {"attempts": 1}},
+            )
+            self._clients[seconds] = client
+        return client
 
     def chat(
         self,
@@ -464,7 +485,7 @@ class GeminiAdapter(ModelProviderAdapter):
         if self.circuit_breaker and not self.circuit_breaker.can_execute("gemini"):
             raise ConnectionError("Gemini circuit breaker is OPEN. Fast-aborting request.")
 
-        client = self._get_client()
+        client = self._get_client(timeout)
         types = _genai_types
 
         target_model = "gemini-3.8-flash" if ("gemini" not in model.lower()) else model
@@ -524,7 +545,8 @@ class GeminiAdapter(ModelProviderAdapter):
                 last_err = e
                 err_str = str(e).lower()
                 is_provider_fatal = (
-                    isinstance(e, (ConnectionError, TimeoutError, urllib.error.URLError))
+                    _is_timeout_error(e)
+                    or isinstance(e, (ConnectionError, urllib.error.URLError))
                     or "429" in str(e)
                     or "resource_exhausted" in err_str
                     or "rate limit" in err_str
@@ -567,7 +589,8 @@ class GeminiAdapter(ModelProviderAdapter):
                 last_err = e
                 err_str = str(e).lower()
                 is_provider_fatal = (
-                    isinstance(e, (ConnectionError, TimeoutError, urllib.error.URLError))
+                    _is_timeout_error(e)
+                    or isinstance(e, (ConnectionError, urllib.error.URLError))
                     or "429" in str(e)
                     or "resource_exhausted" in err_str
                     or "rate limit" in err_str

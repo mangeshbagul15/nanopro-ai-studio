@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -368,23 +369,39 @@ def api_dm_table(request: Request, db_id: str, table: str, schema: str = "main")
     return JSONResponse({"status": "success", "table": details})
 
 
+CHAT_DEADLINE_SECONDS = 90.0
+
+
 @router.post("/chat")
 def api_dm_chat(req: ChatRequest, request: Request):
     user = _session_user(request)
     from app.core import data_modeling_ai as dm
 
+    # A degraded provider must never hold the request open indefinitely: the
+    # user message is already persisted, so the UI can recover the eventual
+    # assistant reply by polling the workspace messages endpoint.
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="dm-chat")
+    future = executor.submit(
+        dm.chat,
+        req.workspace_id,
+        req.message,
+        _user_label(user),
+        [item.dict() for item in req.attachments],
+        req.context.dict() if req.context else None,
+    )
     try:
-        result = dm.chat(
-            req.workspace_id,
-            req.message,
-            _user_label(user),
-            attachments=[item.dict() for item in req.attachments],
-            context=req.context.dict() if req.context else None,
+        result = future.result(timeout=CHAT_DEADLINE_SECONDS)
+    except concurrent.futures.TimeoutError:
+        return _error(
+            "The data copilot is taking longer than usual. Your message is saved and the reply will appear here when it finishes.",
+            504,
         )
     except ValueError as exc:
         return _error(str(exc))
     except Exception as exc:
         return _error(f"Data copilot failed: {exc}", 500)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
     return JSONResponse(result)
 
 

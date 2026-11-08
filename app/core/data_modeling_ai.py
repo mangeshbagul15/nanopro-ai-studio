@@ -100,6 +100,64 @@ def catalog_cached() -> Tuple[List[Dict[str, Any]], bool]:
     return data, bool(refreshing and stale)
 
 
+def _workspace_catalog_entry(workspace_id: str) -> Optional[Dict[str, Any]]:
+    ws = get_workspace(workspace_id) or {}
+    if not ws:
+        return None
+    return {
+        "id": "workspace:" + ws["id"],
+        "name": ws.get("name") or ws["id"],
+        "engine": "sqlite",
+        "kind": "workspace",
+        "writable": True,
+        "status": "live",
+        "workspace_id": ws["id"],
+        "schemas": ws.get("schemas") or [{"name": "main", "tables": []}],
+        "updated_at": ws.get("updated_at"),
+    }
+
+
+def catalog_for_chat(
+    workspace_id: str,
+    allowed_workspaces: Optional[set] = None,
+) -> List[Dict[str, Any]]:
+    """Catalog view for a chat turn that never blocks on a cold scan.
+
+    catalog_cached() returns the last snapshot immediately and refreshes live
+    introspection in the background. The active workspace is overlaid from its
+    own live SQLite file so a table created in the previous turn is always
+    visible even when the shared snapshot is stale. On a cold process (fresh
+    Render boot) we fall back to local workspace metadata only, so remote
+    warehouses are never dialled while the user is waiting for a reply.
+    """
+    catalog, _ = catalog_cached()
+    live_entry = _workspace_catalog_entry(workspace_id) if workspace_id else None
+    if live_entry:
+        catalog = [entry for entry in catalog if entry.get("id") != live_entry["id"]]
+        catalog.insert(0, live_entry)
+    if not catalog:
+        catalog = [
+            {
+                "id": "workspace:" + ws["id"],
+                "name": ws["name"],
+                "engine": "sqlite",
+                "kind": "workspace",
+                "writable": True,
+                "status": "live",
+                "workspace_id": ws["id"],
+                "schemas": ws.get("schemas", [{"name": "main", "tables": []}]),
+            }
+            for ws in _catalog_workspaces()
+        ]
+    if allowed_workspaces is not None:
+        catalog = [
+            entry
+            for entry in catalog
+            if entry.get("kind") != "workspace" or entry.get("workspace_id") in allowed_workspaces
+        ]
+    return catalog
+
+
 def refresh_catalog_async() -> Tuple[List[Dict[str, Any]], bool]:
     """Keep the last snapshot on screen and rescan slowly in the background."""
     with _catalog_lock:
@@ -996,8 +1054,13 @@ def _count_rows(conn: sqlite3.Connection, qualified: str) -> Optional[int]:
         conn.set_progress_handler(None, 0)
 
 
-def get_table_details(db_id: str, schema: str, table: str) -> Dict[str, Any]:
-    entry = find_catalog_entry(db_id)
+def get_table_details(
+    db_id: str,
+    schema: str,
+    table: str,
+    catalog: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    entry = find_catalog_entry(db_id, catalog)
     if not entry:
         raise ValueError("Database not found in catalog.")
     schema = (schema or "main").strip()
@@ -2232,7 +2295,7 @@ def _catalog_for_prompt(
     context: Optional[Dict[str, Any]] = None,
     allowed_workspaces: Optional[set] = None,
 ) -> str:
-    catalog = catalog_snapshot()
+    catalog = catalog_for_chat(workspace_id, allowed_workspaces)
     q = (question or "").lower()
     focus_db = str((context or {}).get("db_id") or "").strip()
     focus_schema = str((context or {}).get("schema") or "").strip()
@@ -2240,12 +2303,6 @@ def _catalog_for_prompt(
     lines: List[str] = []
     total_tables = 0
     for entry in catalog:
-        if (
-            entry.get("kind") == "workspace"
-            and allowed_workspaces is not None
-            and entry.get("workspace_id") not in allowed_workspaces
-        ):
-            continue
         table_names = [t["name"] for s in entry.get("schemas", []) for t in s.get("tables", [])]
         total_tables += len(table_names)
         header = (
@@ -2285,7 +2342,7 @@ def _catalog_for_prompt(
             if detailed:
                 for name in names[:120]:
                     try:
-                        details = get_table_details(entry["id"], schema.get("schema", schema["name"]), name)
+                        details = get_table_details(entry["id"], schema.get("schema", schema["name"]), name, catalog)
                         cols = ", ".join(
                             f"{c['name']} {c['data_type']}" + (" PK" if c.get("is_pk") else "")
                             for c in details.get("columns", [])
@@ -2492,13 +2549,7 @@ def _fallback_answer(
     message: str,
     allowed_workspaces: Optional[set] = None,
 ) -> Dict[str, Any]:
-    catalog = catalog_snapshot()
-    if allowed_workspaces is not None:
-        catalog = [
-            entry
-            for entry in catalog
-            if entry.get("kind") != "workspace" or entry.get("workspace_id") in allowed_workspaces
-        ]
+    catalog = catalog_for_chat(workspace_id, allowed_workspaces)
     db_total = len(catalog)
     lower = (message or "").lower()
     table_total = sum(1 for e in catalog for s in e.get("schemas", []) for _ in s.get("tables", []))
@@ -2510,7 +2561,7 @@ def _fallback_answer(
                 name = t["name"]
                 if name.lower() in lower:
                     try:
-                        details = get_table_details(entry["id"], schema.get("schema", schema["name"]), name)
+                        details = get_table_details(entry["id"], schema.get("schema", schema["name"]), name, catalog)
                         cols = ", ".join(f"{c['name']} ({c['data_type']})" for c in details.get("columns", []))
                         return {
                             "reply": f"{name} is in {entry['name']} · {schema['name']}. Columns: {cols}. Rows: {details.get('row_count')}. Ask me to query it or build a report.",
@@ -2523,11 +2574,11 @@ def _fallback_answer(
         ws = get_workspace(workspace_id) or {}
         ws_tables = [t["name"] for s in ws.get("schemas", []) for t in s.get("tables", [])]
         return {
-            "reply": f"NanoPro currently exposes {db_total} databases with about {table_total} tables. Your workspace has {len(ws_tables)} table(s): {', '.join(ws_tables) or 'none yet'}. The AI model is not connected right now, so I can only answer catalog questions — configure GROQ_API_KEY to enable full natural-language SQL.",
+            "reply": f"NanoPro currently exposes {db_total} databases with about {table_total} tables. Your workspace has {len(ws_tables)} table(s): {', '.join(ws_tables) or 'none yet'}. The AI provider is temporarily busy, so I can only answer catalog questions right now — please retry in a moment for full natural-language SQL.",
             "sql": None,
         }
     return {
-        "reply": "The AI model is not connected yet, so I cannot generate SQL for that request. I can still show the live catalog, table columns and workspace history. Ask 'list tables' or name a table to see its columns.",
+        "reply": "The AI provider is temporarily unavailable, so I cannot generate SQL for that request right now. I can still show the live catalog, table columns and workspace history. Ask 'list tables' or name a table to see its columns, and retry your request in a moment.",
         "sql": None,
     }
 
@@ -2644,13 +2695,7 @@ def _fast_intent(
             "action": None,
             "fast": True,
         }
-    catalog = catalog_snapshot(ttl=30.0)
-    if allowed_workspaces is not None:
-        catalog = [
-            entry
-            for entry in catalog
-            if entry.get("kind") != "workspace" or entry.get("workspace_id") in allowed_workspaces
-        ]
+    catalog = catalog_for_chat(workspace_id, allowed_workspaces)
 
     if re.fullmatch(
         r"(?:please\s+)?(?:list|show|display|what\s+are)\s+(?:me\s+)?(?:all\s+)?(?:databases?|dbs?|data\s+sources)\s*[?.!]?",
@@ -2694,7 +2739,7 @@ def _fast_intent(
             entry, schema, table = found
             try:
                 details = get_table_details(
-                    entry["id"], schema.get("schema") or schema.get("name") or "main", table["name"]
+                    entry["id"], schema.get("schema") or schema.get("name") or "main", table["name"], catalog
                 )
                 cols = ", ".join(
                     f"{c['name']} {c['data_type']}" + (" PK" if c.get("is_pk") else "")
@@ -3114,6 +3159,14 @@ def chat(
         else:
             note = f"Returned {result['row_count']} row(s)" + (" (preview truncated)" if result.get("truncated") else "")
         reply = (reply + f"\n\n{note}.").strip()
+
+    if result is not None or created_schema or created_workspace or run_id:
+        try:
+            with _catalog_lock:
+                _catalog_cache["at"] = 0.0
+            _refresh_catalog_async()
+        except Exception:
+            pass
 
     assistant = add_message(workspace_id, "assistant", reply, sql or "", meta, user=user)
     if is_first:
@@ -3613,7 +3666,12 @@ def _attachment_reply(
     if len(imports) == 1:
         item = imports[0]
         try:
-            details = get_table_details("workspace:" + workspace_id, item["schema"], item["table"])
+            details = get_table_details(
+                "workspace:" + workspace_id,
+                item["schema"],
+                item["table"],
+                catalog_for_chat(workspace_id),
+            )
             preview = {
                 "columns": [c["name"] for c in details.get("columns", [])],
                 "rows": details.get("sample", []),
@@ -3630,6 +3688,14 @@ def _attachment_reply(
         "latency_ms": latency_ms,
         "row_count": (preview or {}).get("row_count") or sum(int(i.get("rows_inserted") or 0) for i in imports) or 0,
     }
+    if imports:
+        try:
+            with _catalog_lock:
+                _catalog_cache["at"] = 0.0
+            _refresh_catalog_async()
+        except Exception:
+            pass
+
     assistant = add_message(workspace_id, "assistant", reply, "", meta, user=user)
     return {
         "status": "success",
