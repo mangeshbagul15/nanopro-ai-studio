@@ -653,3 +653,19 @@ def _start_dm_scheduler() -> None:
 
 
 _start_dm_scheduler()
+
+
+@router.get("/persistence/status")
+def persistence_status(request: Request):
+    _session_user(request)
+    from app.core import dm_persistence
+
+    return {"status": "success", **dm_persistence.status()}
+
+
+@router.post("/persistence/flush")
+def persistence_flush(request: Request):
+    _session_user(request)
+    from app.core import dm_persistence
+
+    return {"status": "success", **dm_persistence.snapshot_now()}

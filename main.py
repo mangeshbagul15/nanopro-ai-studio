@@ -1393,6 +1393,18 @@ def _execute_staged_boot_phases_2_and_3():
 
 async def startup_event():
 
+    try:
+        from app.core import dm_persistence
+
+        restored = dm_persistence.init()
+        if restored.get("status") == "ok" and (restored.get("rows") or restored.get("files")):
+            log_event(
+                f"Data Modeling storage restored from Neon: {restored.get('rows')} row(s), {restored.get('files')} file(s)",
+                component="BootSequence",
+            )
+    except Exception as exc:
+        log_event(f"Data Modeling persistence init failed: {exc}", level="WARNING", component="BootSequence")
+
     asyncio.create_task(autonomous_sentinel.start())
 
     def _integration_monitor_loop():
@@ -1426,6 +1438,18 @@ async def startup_event():
     import threading
 
     threading.Thread(target=_execute_staged_boot_phases_2_and_3, daemon=True, name="NanoPro-StagedBoot").start()
+
+
+@app.on_event("shutdown")
+
+async def shutdown_event():
+
+    try:
+        from app.core import dm_persistence
+
+        dm_persistence.flush()
+    except Exception as exc:
+        log_event(f"Data Modeling persistence flush failed: {exc}", level="WARNING", component="BootSequence")
 
 
 
