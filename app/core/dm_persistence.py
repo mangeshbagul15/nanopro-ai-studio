@@ -162,7 +162,7 @@ def _state_signature() -> Optional[str]:
     return "|".join(parts)
 
 
-def _export_state() -> Optional[bytes]:
+def _export_state() -> bytes:
     from app.core import data_modeling_ai as dm
 
     dm._ensure_schema()
@@ -170,8 +170,8 @@ def _export_state() -> Optional[bytes]:
     with db.get_connection() as conn:
         for table in DM_TABLES:
             payload[table] = [dict(row) for row in conn.execute(f"SELECT * FROM {table}").fetchall()]
-    if not any(payload.values()):
-        return None
+    # Upload even an empty payload: otherwise deleting the last workspace never
+    # reaches Neon and the previous snapshot resurrects it on the next boot.
     return gzip.compress(json.dumps(payload, ensure_ascii=False).encode("utf-8"), 6)
 
 
