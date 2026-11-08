@@ -230,6 +230,20 @@ class AuthManager:
                 now = time.time()
 
                 phone_clean = (phone_number or "").strip()
+                if phone_clean:
+                    phone_digits = "".join(c for c in phone_clean if c.isdigit())
+                    variants = {phone_clean, phone_digits}
+                    if len(phone_digits) >= 10:
+                        variants.add(f"+91{phone_digits[-10:]}")
+                    cursor.execute(
+                        f"SELECT id FROM users WHERE phone_number IN ({','.join('?' for _ in variants)})",
+                        list(variants),
+                    )
+                    if cursor.fetchone():
+                        return {
+                            "status": "error",
+                            "error": "This mobile number is already registered. Please log in with WhatsApp OTP instead.",
+                        }
                 allowed_views = ["dashboard", "universal_tech_video", "video_studio", "agent_grid"]
                 cursor.execute("""
                 INSERT INTO users (id, username, full_name, email, phone_number, password_hash, salt, role, status, created_at, last_active_at, allowed_views, access_mode, department, purpose)
@@ -242,6 +256,19 @@ class AuthManager:
                 """, (f"audit_{uuid.uuid4().hex[:12]}", user_id, username, f"Access Request: Dept={dept_clean}, Purpose={purpose_clean}", ip_address, user_agent, now))
 
                 conn.commit()
+
+            # Link every registration identifier so Google / WhatsApp OTP logins
+            # resolve back to this same account (and its chats/projects).
+            try:
+                from app.core.identity_resolver import link_identity
+
+                link_identity(user_id, "credentials", username)
+                link_identity(user_id, "email", email)
+                link_identity(user_id, "google", email)
+                if phone_clean:
+                    link_identity(user_id, "whatsapp", phone_clean)
+            except Exception as _link_exc:
+                log_event(f"Notice: registration identity linking: {_link_exc}", component="AuthManager", level="WARNING")
 
             # Create Security Approval in Action Approvals Gate
             try:
@@ -344,6 +371,18 @@ class AuthManager:
                 if not user and is_admin_alias:
                     cursor.execute("SELECT * FROM users WHERE username = 'nanopro'")
                     user = cursor.fetchone()
+
+                # Google / WhatsApp users may sign in with a linked identifier.
+                if not user:
+                    try:
+                        from app.core.identity_resolver import find_user_by_identifier
+
+                        linked_user = find_user_by_identifier(raw_identifier)
+                    except Exception:
+                        linked_user = None
+                    if linked_user:
+                        cursor.execute("SELECT * FROM users WHERE id = ?", (linked_user["id"],))
+                        user = cursor.fetchone()
 
                 if not user:
                     self._record_audit_log(None, raw_identifier, "FAILED_LOGIN", "User not found", ip_address, user_agent)
@@ -651,8 +690,25 @@ class AuthManager:
                 cursor = conn.cursor()
                 user = None
 
-                # Find by email first
-                if email_clean:
+                # Resolve through linked identities so Google SSO lands on the
+                # same account the person registered or used OTP with.
+                if email_clean or clerk_user_id:
+                    try:
+                        from app.core.identity_resolver import find_user_by_identifier
+
+                        linked_user = (
+                            find_user_by_identifier(email_clean, provider="google")
+                            if email_clean
+                            else find_user_by_identifier(clerk_user_id, provider="clerk")
+                        )
+                    except Exception:
+                        linked_user = None
+                    if linked_user:
+                        cursor.execute("SELECT * FROM users WHERE id = ?", (linked_user["id"],))
+                        user = cursor.fetchone()
+
+                # Find by email next
+                if not user and email_clean:
                     cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_clean,))
                     user = cursor.fetchone()
 
@@ -660,6 +716,9 @@ class AuthManager:
                 if not user and is_admin_user:
                     cursor.execute("SELECT * FROM users WHERE username = 'nanopro'")
                     user = cursor.fetchone()
+
+                if user is not None and not isinstance(user, dict):
+                    user = dict(user)
 
                 if user:
                     user_id = user["id"]
@@ -712,6 +771,18 @@ class AuthManager:
                             "status_code": "PENDING_APPROVAL",
                             "error": "Google प्रमाणीकरण यशस्वी झाले आहे, परंतु नवीन वापरकर्त्यांसाठी Super Admin (nanopro) कडून मंजुरी आवश्यक आहे."
                         }
+
+                # Persist the SSO identifiers against the canonical account.
+                try:
+                    from app.core.identity_resolver import _link_identity_on
+
+                    if email_clean:
+                        _link_identity_on(conn, user_id, "google", email_clean)
+                        _link_identity_on(conn, user_id, "email", email_clean)
+                    if clerk_user_id:
+                        _link_identity_on(conn, user_id, "clerk", clerk_user_id)
+                except Exception:
+                    pass
 
                 # Create active NanoPro session token
                 session_token = f"np_sess_{uuid.uuid4().hex}"
@@ -853,6 +924,12 @@ class AuthManager:
         from app.core.identity_resolver import is_admin_identity
         is_admin = is_admin_identity(clean_id)
         try:
+            from app.core.identity_resolver import find_user_by_identifier
+
+            linked_user = find_user_by_identifier(clean_id, provider=channel)
+        except Exception:
+            linked_user = None
+        try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
@@ -869,16 +946,26 @@ class AuthManager:
                     cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE id = ?", (otp_row["id"],))
 
                 user = None
-                if channel == "whatsapp":
-                    cursor.execute("SELECT * FROM users WHERE phone_number = ? OR email LIKE ?", (clean_id, f"%{clean_id[-10:]}%"))
+                if linked_user:
+                    cursor.execute("SELECT * FROM users WHERE id = ?", (linked_user["id"],))
                     user = cursor.fetchone()
-                else:
-                    cursor.execute("SELECT * FROM users WHERE email = ?", (clean_id,))
+                if not user and channel == "whatsapp":
+                    clean_digits = "".join(c for c in clean_id if c.isdigit())
+                    cursor.execute(
+                        "SELECT * FROM users WHERE phone_number IN (?, ?, ?) OR LOWER(email) = LOWER(?)",
+                        (clean_id, clean_digits, clean_id.lstrip("+"), clean_id),
+                    )
+                    user = cursor.fetchone()
+                elif not user:
+                    cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (clean_id,))
                     user = cursor.fetchone()
 
                 if is_admin and not user:
                     cursor.execute("SELECT * FROM users WHERE username = 'nanopro'")
                     user = cursor.fetchone()
+
+                if user is not None and not isinstance(user, dict):
+                    user = dict(user)
 
                 if user:
                     user_id = user["id"]
@@ -901,6 +988,12 @@ class AuthManager:
                     allowed_views = self._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user_role)
                     access_mode = (user["access_mode"] if "access_mode" in user.keys() else "MODIFY") or "MODIFY"
                     cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user_id))
+                    try:
+                        from app.core.identity_resolver import _link_identity_on
+
+                        _link_identity_on(conn, user_id, "whatsapp" if channel == "whatsapp" else "email", clean_id)
+                    except Exception:
+                        pass
                 else:
                     user_id = f"user_{uuid.uuid4().hex[:12]}"
                     digits_suffix = "".join(c for c in clean_id if c.isdigit())[-6:]
@@ -921,6 +1014,13 @@ class AuthManager:
                     VALUES (?, ?, ?, ?, ?, 'otp_verified', 'otp_salt', ?, ?, ?, ?, ?, ?, ?, 'General', 'WhatsApp OTP Signup')
                     """, (user_id, username, full_name, email, clean_id, user_role, init_status, now, now, now, json.dumps(allowed_views), access_mode))
                     conn.commit()
+                    try:
+                        from app.core.identity_resolver import _link_identity_on
+
+                        _link_identity_on(conn, user_id, "whatsapp" if channel == "whatsapp" else "email", clean_id)
+                        conn.commit()
+                    except Exception:
+                        pass
 
                     if not is_admin:
                         self._notify_telegram(

@@ -23,6 +23,7 @@ import json
 import re
 import sqlite3
 import time
+import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple
 from app.core.config import SQLITE_DB_PATH
 from app.core.logger import log_event
@@ -130,6 +131,153 @@ def resolve_canonical_username(identifier: str) -> str:
     # Clean username fallback
     sanitized = re.sub(r"[^A-Za-z0-9_.-]+", "_", clean.lower()).strip("_")
     return sanitized or "user"
+
+
+IDENTITY_PROVIDER_ALIASES: Dict[str, Tuple[str, ...]] = {
+    "google": ("google", "email", "clerk"),
+    "email": ("email", "google"),
+    "clerk": ("clerk", "google", "email"),
+    "whatsapp": ("whatsapp", "phone"),
+    "phone": ("phone", "whatsapp"),
+    "credentials": ("credentials",),
+}
+
+
+def _identity_key(provider: str, identifier: str) -> str:
+    """Normalizes an identifier so the same person matches across login channels."""
+    value = (identifier or "").strip()
+    if not value:
+        return ""
+    provider = (provider or "").strip().lower()
+    if provider in ("whatsapp", "sms", "phone"):
+        return _clean_phone(value) or value
+    return value.lower()
+
+
+def _identifier_variants(identifier: str) -> Set[str]:
+    value = (identifier or "").strip()
+    variants: Set[str] = {value.lower()} if value else set()
+    digits = "".join(c for c in value if c.isdigit())
+    if len(digits) >= 6:
+        variants.update({digits, f"+{digits}", f"91{digits}"})
+        if len(digits) == 10:
+            variants.update({f"+91{digits}", f"91{digits}"})
+        elif len(digits) == 12 and digits.startswith("91"):
+            variants.update({f"+{digits}", digits[2:]})
+    return {v for v in variants if v}
+
+
+def _link_identity_on(
+    conn,
+    user_id: str,
+    provider: str,
+    identifier: str,
+    verified: bool = True,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Links an identifier using the caller's connection (same transaction)."""
+    key = _identity_key(provider, identifier)
+    if not user_id or not key:
+        return False
+    try:
+        row = conn.execute(
+            "SELECT user_id FROM user_linked_identities WHERE LOWER(identifier) = LOWER(?)",
+            (key,),
+        ).fetchone()
+        if row and row[0] != user_id:
+            return False
+        conn.execute(
+            "INSERT OR IGNORE INTO user_linked_identities"
+            " (id, user_id, provider, identifier, linked_at, is_verified, metadata)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                f"ident_{uuid.uuid4().hex[:16]}",
+                user_id,
+                (provider or "generic").strip().lower(),
+                key,
+                time.time(),
+                1 if verified else 0,
+                json.dumps(metadata or {}),
+            ),
+        )
+        return True
+    except Exception as exc:
+        log_event(f"Identity link skipped: {exc}", component="IdentityResolver", level="WARNING")
+        return False
+
+
+def link_identity(
+    user_id: str,
+    provider: str,
+    identifier: str,
+    verified: bool = True,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Links a verified login identifier to a user without stealing another account's link."""
+    key = _identity_key(provider, identifier)
+    if not user_id or not key:
+        return False
+    try:
+        conn = sqlite3.connect(str(SQLITE_DB_PATH), timeout=10.0)
+        try:
+            with conn:
+                return _link_identity_on(conn, user_id, provider, identifier, verified, metadata)
+        finally:
+            conn.close()
+    except Exception as exc:
+        log_event(f"Identity link failed: {exc}", component="IdentityResolver", level="WARNING")
+        return False
+
+
+def find_user_by_identifier(identifier: str, provider: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """
+    Finds the canonical account owning a username, email, phone or linked identity.
+    Used by username/password, Google, WhatsApp OTP and Clerk logins so every
+    channel resolves to the same user and therefore the same chats/projects.
+    """
+    value = (identifier or "").strip()
+    if not value:
+        return None
+    variants = _identifier_variants(value)
+    if not variants:
+        return None
+    placeholders = ",".join("?" for _ in variants)
+    providers = IDENTITY_PROVIDER_ALIASES.get((provider or "").strip().lower())
+    try:
+        conn = sqlite3.connect(str(SQLITE_DB_PATH), timeout=5.0)
+        conn.row_factory = sqlite3.Row
+        try:
+            if providers:
+                p_ph = ",".join("?" for _ in providers)
+                row = conn.execute(
+                    f"SELECT u.id, u.username, u.role, u.status, u.full_name, u.email, u.phone_number"
+                    f" FROM user_linked_identities l JOIN users u ON u.id = l.user_id"
+                    f" WHERE LOWER(l.identifier) IN ({placeholders}) AND l.provider IN ({p_ph})"
+                    f" ORDER BY l.is_verified DESC LIMIT 1",
+                    [v.lower() for v in variants] + list(providers),
+                ).fetchone()
+                if row:
+                    return dict(row)
+            row = conn.execute(
+                f"SELECT u.id, u.username, u.role, u.status, u.full_name, u.email, u.phone_number"
+                f" FROM user_linked_identities l JOIN users u ON u.id = l.user_id"
+                f" WHERE LOWER(l.identifier) IN ({placeholders})"
+                f" ORDER BY l.is_verified DESC LIMIT 1",
+                [v.lower() for v in variants],
+            ).fetchone()
+            if row:
+                return dict(row)
+            row = conn.execute(
+                f"SELECT id, username, role, status, full_name, email, phone_number FROM users"
+                f" WHERE LOWER(username) IN ({placeholders}) OR LOWER(email) IN ({placeholders})"
+                f" OR phone_number IN ({placeholders}) OR id IN ({placeholders}) LIMIT 1",
+                [v.lower() for v in variants] * 4,
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+    except Exception:
+        return None
 
 
 def get_canonical_admin_profile() -> Dict[str, Any]:

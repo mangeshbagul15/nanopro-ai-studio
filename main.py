@@ -12857,9 +12857,21 @@ async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
 
             cursor = conn.cursor()
 
-            cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,))
+            # Google email must resolve to the account already registered with
+            # that email (username/password, WhatsApp OTP or earlier Google login).
+            try:
+                from app.core.identity_resolver import find_user_by_identifier
 
-            user = cursor.fetchone()
+                linked_user = find_user_by_identifier(email, provider="google")
+            except Exception:
+                linked_user = None
+
+            if linked_user:
+                cursor.execute("SELECT * FROM users WHERE id = ?", (linked_user["id"],))
+                user = cursor.fetchone()
+            else:
+                cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,))
+                user = cursor.fetchone()
 
             now = time.time()
 
@@ -12876,6 +12888,13 @@ async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
                 session_token = f"np_sess_{uuid.uuid4().hex}"
                 cursor.execute("INSERT INTO user_sessions (session_token, user_id, username, role, login_time, last_activity, ip_address, user_agent, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)", (session_token, user["id"], user["username"], user["role"], now, now, ip, ua))
                 cursor.execute("UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?", (now, now, user["id"]))
+                try:
+                    from app.core.identity_resolver import _link_identity_on
+
+                    _link_identity_on(conn, user["id"], "google", email)
+                    _link_identity_on(conn, user["id"], "email", email)
+                except Exception:
+                    pass
                 conn.commit()
 
                 allowed_views = auth_manager._parse_allowed_views(user["allowed_views"] if "allowed_views" in user.keys() else "*", user["role"])
@@ -12908,6 +12927,13 @@ async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
                     "INSERT INTO users (id, username, password_hash, salt, full_name, email, role, status, created_at, last_login_at, last_active_at, allowed_views, access_mode) VALUES (?, ?, 'google_oauth_hash', 'google_salt', ?, ?, 'user', 'PENDING_APPROVAL', ?, ?, ?, ?, 'READ_ONLY')",
                     (new_id, username, full_name, email, now, now, now, initial_allowed)
                 )
+                try:
+                    from app.core.identity_resolver import _link_identity_on
+
+                    _link_identity_on(conn, new_id, "google", email)
+                    _link_identity_on(conn, new_id, "email", email)
+                except Exception:
+                    pass
                 conn.commit()
 
                 try:
