@@ -432,26 +432,58 @@
             <!-- ============================================================= -->
             <div id="signupView" style="display:none;">
                 <form id="registerForm" onsubmit="handleRegister(event); return false;">
-                    <div class="form-group">
-                        <label class="form-label" for="regFullName">Full Name</label>
-                        <input type="text" id="regFullName" class="form-input" placeholder="e.g. Mangesh Bagul" required>
+                    <div style="background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.3); border-radius:10px; padding:12px; margin-bottom:16px;">
+                        <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:12.5px; color:#F59E0B; margin-bottom:4px;">
+                            <span>🛡️</span> Zero-Trust Enterprise Security Gate
+                        </div>
+                        <div style="font-size:11.5px; color:#CBD5E1; line-height:1.45;">
+                            सर्व नवीन खात्यांसाठी <b>Super Admin (nanopro)</b> कडून मंजुरी आवश्यक आहे. नोंदणीनंतर ॲडमिन मंजुरी दिल्यावरच लॉगिन करता येईल.
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="regUsername">Desired Username</label>
-                        <input type="text" id="regUsername" class="form-input" placeholder="e.g. mangesh15" required>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label" for="regFullName">Full Name *</label>
+                            <input type="text" id="regFullName" class="form-input" placeholder="उदा. Rahul Patil" autocomplete="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="regUsername">Desired Username *</label>
+                            <input type="text" id="regUsername" class="form-input" placeholder="उदा. rahul_p" autocomplete="username" required>
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label" for="regEmail">Email Address</label>
-                        <input type="email" id="regEmail" class="form-input" placeholder="e.g. name@example.com" required>
+                        <label class="form-label" for="regEmail">Work / Personal Email *</label>
+                        <input type="email" id="regEmail" class="form-input" placeholder="name@company.com" autocomplete="email" required>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label" for="regPhone">WhatsApp / Mobile Number</label>
-                        <input type="tel" id="regPhone" class="form-input" value="+918433755448" placeholder="+91 8433755448">
+                        <label class="form-label" for="regPhone">WhatsApp / Mobile Number *</label>
+                        <input type="tel" id="regPhone" class="form-input" placeholder="+91 9876543210" autocomplete="tel" required>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label" for="regPassword">Password (Min 8 chars)</label>
+                        <label class="form-label" for="regDept">Department / Role *</label>
+                        <select id="regDept" class="form-input" style="background:#0F172A; color:#F8FAFC; cursor:pointer;" required>
+                            <option value="Engineering & AI Architecture">🤖 Engineering & AI Architecture</option>
+                            <option value="Data Engineering & Analytics">📊 Data Engineering & Analytics</option>
+                            <option value="Data Science & ML">🔬 Data Science & ML</option>
+                            <option value="Product & Operations">🚀 Product & Operations</option>
+                            <option value="Business Management">💼 Business Management</option>
+                            <option value="Security & Compliance">🛡️ Security & Compliance</option>
+                            <option value="General">🌐 Other / General</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="regPurpose">Access Purpose / Justification *</label>
+                        <input type="text" id="regPurpose" class="form-input" placeholder="उदा. AI Data Modeling, Analytics & SQL Query Studio" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="regPassword">Secure Password (Min 8 chars, A-Z, 0-9, @#$) *</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="regPassword" class="form-input" placeholder="Create secure password" required style="padding-right: 42px;">
+                            <input type="password" id="regPassword" class="form-input" placeholder="••••••••••••" autocomplete="new-password" required style="padding-right: 42px;">
                             <button type="button" onclick="togglePasswordVisibility('regPassword', 'regEyeIcon')" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #94A3B8; padding: 4px; display: flex; align-items: center; justify-content: center; outline: none;" title="Toggle Password Visibility">
                                 <svg id="regEyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -460,12 +492,16 @@
                             </button>
                         </div>
                     </div>
-                    <button type="submit" id="regBtn" class="btn-primary" style="background:linear-gradient(135deg, #059669 0%, #10B981 100%);">
-                        📝 Register &amp; Activate Account
+
+                    <button type="submit" id="regBtn" class="btn-primary" style="background:linear-gradient(135deg, #0284C7 0%, #059669 100%); box-shadow:0 4px 15px rgba(5,150,105,0.3); font-size:13.5px; font-weight:700; padding:12px; margin-top:8px;">
+                        🚀 Submit Access Request (ॲडमिन मंजुरीसाठी पाठवा)
                     </button>
-                    <div class="auth-footer-toggle">
-                        <span>Already have an account?</span>
-                        <button type="button" onclick="showLoginView()" class="link-btn">Sign In to NanoPro</button>
+
+                    <div class="auth-footer-toggle" style="margin-top:14px; text-align:center;">
+                        <span>आधीच मंजूर खाते आहे का?</span>
+                        <button type="button" onclick="showLoginView()" class="link-btn" style="color:#38BDF8; font-weight:700; text-decoration:none;">
+                            Sign In to NanoPro →
+                        </button>
                     </div>
                 </form>
             </div>
@@ -652,6 +688,11 @@
                             }
                         };
                     }
+                }
+
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'तुमचे Google खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे.'), 'warning');
+                    return false;
                 }
 
                 if (data && data.status === 'success' && data.session_token) {
@@ -936,16 +977,28 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username, password })
                     });
-                    if (resp.ok) data = await resp.json();
+                    data = await resp.json();
                 } catch(e1) {}
+
+                // If explicit PENDING_APPROVAL response, display warning immediately and halt fallbacks
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval).'), 'warning');
+                    return false;
+                }
 
                 // Tier 2: GET query fallback
                 if (!data || data.status !== 'success') {
                     try {
                         const getUrl = '/api/auth/login?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password);
                         const respGet = await fetch(getUrl);
-                        if (respGet.ok) data = await respGet.json();
+                        data = await respGet.json();
                     } catch(e2) {}
+                }
+
+                // If explicit PENDING_APPROVAL response from GET, display warning immediately
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval).'), 'warning');
+                    return false;
                 }
 
                 // Tier 3: Alwaysdata Cloud Sentinel
@@ -1109,8 +1162,14 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ identifier: phone, otp_code: otpCode, channel: 'whatsapp' })
                     });
-                    if (resp.ok) data = await resp.json();
+                    data = await resp.json();
                 } catch(e1) {}
+
+                // If account is PENDING_APPROVAL, stop fallbacks and alert user directly
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'सुरक्षेसाठी नवीन वापरकर्त्यांसाठी Super Admin (nanopro) कडून मंजुरी आवश्यक आहे.'), 'warning');
+                    return false;
+                }
 
                 if (!data || data.status !== 'success') {
                     try {
@@ -1177,21 +1236,31 @@
             const username = (document.getElementById('regUsername')?.value || '').trim();
             const email = (document.getElementById('regEmail')?.value || '').trim();
             const phone = (document.getElementById('regPhone')?.value || '').trim();
+            const department = (document.getElementById('regDept')?.value || 'General').trim();
+            const purpose = (document.getElementById('regPurpose')?.value || 'Enterprise Access').trim();
             const password = (document.getElementById('regPassword')?.value || '').trim();
 
-            if (!fullName || !username || !email || !password) {
-                showAlert('Please fill in all required information.', 'warning');
+            if (!fullName || !username || !email || !password || !phone) {
+                showAlert('कृपया सर्व आवश्यक माहिती प्रविष्ट करा (Full Name, Username, Email, Phone, Password).', 'warning');
                 return;
             }
 
             if (btn) {
                 btn.disabled = true;
-                btn.innerText = 'Registering Account...';
+                btn.innerText = 'Submitting Access Request...';
             }
 
             try {
                 let data = null;
-                const regPayload = { full_name: fullName, username, email, phone_number: phone, password };
+                const regPayload = { 
+                    full_name: fullName, 
+                    username, 
+                    email, 
+                    phone_number: phone, 
+                    department, 
+                    purpose, 
+                    password 
+                };
 
                 try {
                     const resp = await fetch('/api/auth/register', {
@@ -1199,10 +1268,10 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(regPayload)
                     });
-                    if (resp.ok) data = await resp.json();
+                    data = await resp.json();
                 } catch(e1) {}
 
-                if (!data || data.status !== 'success') {
+                if (!data || (data.status !== 'success' && data.status_code !== 'PENDING_APPROVAL')) {
                     try {
                         const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/register', {
                             method: 'POST',
@@ -1213,8 +1282,9 @@
                     } catch(e2) {}
                 }
 
-                if (data && data.status === 'success') {
-                    showAlert('✅ ' + (data.message || 'Registration successful! Your account is active. Please log in.'), 'success');
+                if (data && (data.status === 'success' || data.status_code === 'PENDING_APPROVAL')) {
+                    const msg = data.message || 'तुमची प्रवेश विनंती (Access Request) यशस्वीरीत्या पाठवली गेली आहे! सुरक्षेसाठी Super Admin (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.';
+                    showAlert('⏳ ' + msg, 'success');
                     document.getElementById('registerForm')?.reset();
                     const uInput = document.getElementById('loginUsername');
                     if (uInput) uInput.value = username;
@@ -1222,16 +1292,16 @@
                         showLoginView();
                         const pInput = document.getElementById('loginPassword');
                         if (pInput) pInput.focus();
-                    }, 1200);
+                    }, 3500);
                 } else {
-                    showAlert((data && data.error) || 'Registration failed. Please try again.', 'error');
+                    showAlert((data && (data.error || data.message)) || 'Registration failed. Please try again.', 'error');
                 }
             } catch(err) {
                 showAlert('Registration error: ' + err.message, 'error');
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerText = '📝 Register & Activate Account';
+                    btn.innerText = '🚀 Submit Access Request (ॲडमिन मंजुरीसाठी पाठवा)';
                 }
             }
         }

@@ -5106,7 +5106,7 @@ def get_user_management_view_html() -> str:
 
                         <tbody id="adminUsersTableBody">
 
-                            <tr><td colspan="10" style="text-align:center; padding:18px; color:#94A3B8;">Loading users...</td></tr>
+                            <tr><td colspan="9" style="text-align:center; padding:18px; color:#94A3B8;">Loading users...</td></tr>
 
                         </tbody>
 
@@ -5939,6 +5939,11 @@ def get_login_page_html() -> str:
                     }
                 }
 
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'तुमचे Google खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे.'), 'warning');
+                    return false;
+                }
+
                 if (data && data.status === 'success' && data.session_token) {
 
                     localStorage.setItem('nanopro_session_token', data.session_token);
@@ -6114,16 +6119,28 @@ def get_login_page_html() -> str:
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username, password })
                     });
-                    if (resp.ok) data = await resp.json();
+                    data = await resp.json();
                 } catch(e1) {}
+
+                // If explicit PENDING_APPROVAL response, display warning immediately and halt fallbacks
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval).'), 'warning');
+                    return false;
+                }
 
                 // Tier 2: Resilient GET Query Auth
                 if (!data || data.status !== 'success') {
                     try {
                         const getUrl = '/api/auth/login?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password);
                         const respGet = await fetch(getUrl);
-                        if (respGet.ok) data = await respGet.json();
+                        data = await respGet.json();
                     } catch(e2) {}
+                }
+
+                // If explicit PENDING_APPROVAL response from GET, display warning immediately
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'तुमचे खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे (Pending Approval).'), 'warning');
+                    return false;
                 }
 
                 // Tier 3: Alwaysdata Cloud Sentinel
@@ -6326,8 +6343,14 @@ def get_login_page_html() -> str:
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ identifier: phone, otp_code: otpCode, channel: 'whatsapp' })
                     });
-                    if (resp.ok) data = await resp.json();
+                    data = await resp.json();
                 } catch(e1) {}
+
+                // If account is PENDING_APPROVAL, stop fallbacks and alert user directly
+                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
+                    showAlert('⏳ ' + (data.error || 'सुरक्षेसाठी नवीन वापरकर्त्यांसाठी Super Admin (nanopro) कडून मंजुरी आवश्यक आहे.'), 'warning');
+                    return false;
+                }
 
                 // Tier 2: Alwaysdata Cloud fallback
                 if (!data || data.status !== 'success') {
