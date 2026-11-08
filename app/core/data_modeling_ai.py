@@ -3035,6 +3035,53 @@ def _delivery_intent(workspace_id: str, message: str) -> Dict[str, Any]:
     return {"table": table, "schema": schema, "fmt": fmt, "limit": limit, "channels": channels or ["email", "telegram", "whatsapp"]}
 
 
+_SCALAR_NUMBER = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
+_ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+
+
+def _single_value_result(result: Dict[str, Any]) -> Optional[Tuple[str, Any]]:
+    """Return (alias, value) when the query resolves to one cell, else None."""
+    columns = result.get("columns") or []
+    rows = result.get("rows") or []
+    if len(columns) != 1 or len(rows) != 1 or not isinstance(rows[0], dict):
+        return None
+    alias = str(columns[0])
+    value = rows[0].get(alias)
+    if value is None or isinstance(value, bool):
+        return None
+    return alias, value
+
+
+def _format_scalar(value: Any) -> str:
+    if isinstance(value, float):
+        rounded = round(value, 2)
+        if abs(value - rounded) < 1e-6:
+            value = rounded
+        if float(value).is_integer():
+            return f"{int(value):,}"
+        return f"{value:,.2f}"
+    if isinstance(value, int):
+        return f"{value:,}"
+    return str(value)
+
+
+def _reply_mentions_value(reply: str, value: Any) -> bool:
+    """True when the model's prose already states the executed result value."""
+    text = reply or ""
+    if isinstance(value, (int, float)):
+        target = float(value)
+        for raw in _SCALAR_NUMBER.findall(_ISO_DATE.sub(" ", text)):
+            try:
+                candidate = float(raw.replace(",", ""))
+            except ValueError:
+                continue
+            if abs(candidate - target) <= max(0.005, abs(target) * 1e-9):
+                return True
+        return False
+    needle = str(value).strip().lower()
+    return bool(needle) and needle in text.lower()
+
+
 def chat(
     workspace_id: str,
     message: str,
@@ -3304,6 +3351,10 @@ def chat(
     if error:
         reply = (reply + f"\n\nSQL error: {error}").strip()
     elif result:
+        scalar = _single_value_result(result)
+        if scalar and not _reply_mentions_value(reply, scalar[1]):
+            alias, value = scalar
+            reply = f"{alias.replace('_', ' ').strip()} = {_format_scalar(value)}"
         if result.get("rows_affected") and not result.get("columns"):
             note = f"{result['rows_affected']} row(s) affected"
         else:
