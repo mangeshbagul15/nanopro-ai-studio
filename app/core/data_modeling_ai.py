@@ -79,7 +79,20 @@ def catalog_snapshot(ttl: float = 8.0) -> List[Dict[str, Any]]:
         if not refreshing:
             _refresh_catalog_async()
         return data
-    fresh = list_catalog()
+    # Cold process: let exactly one caller run the expensive global scan.
+    # Parallel cold builds on a 512MB instance can spike memory and restart
+    # the container, taking every workspace on the ephemeral disk with it.
+    if refreshing:
+        return []
+    with _catalog_lock:
+        if _catalog_refreshing["on"]:
+            return []
+        _catalog_refreshing["on"] = True
+    try:
+        fresh = list_catalog()
+    finally:
+        with _catalog_lock:
+            _catalog_refreshing["on"] = False
     if fresh:
         with _catalog_lock:
             _catalog_cache["data"] = fresh
