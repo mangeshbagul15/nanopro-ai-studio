@@ -131,22 +131,15 @@ class DuckDBChatStore:
 
         try:
             from app.core.database import db
-            from app.core.identity_resolver import is_admin_identity
 
             with db.get_connection() as sconn:
                 safe_user = (user or "").strip()
-                is_admin = is_admin_identity(safe_user)
 
-                # Fetch workspaces
-                if is_admin:
-                    cur = sconn.execute(
-                        "SELECT id, name, created_by, created_at, updated_at, project_id, pinned FROM dm_workspaces"
-                    )
-                else:
-                    cur = sconn.execute(
-                        "SELECT id, name, created_by, created_at, updated_at, project_id, pinned FROM dm_workspaces WHERE created_by = ?",
-                        (safe_user,),
-                    )
+                # Personal chats stay personal for every account, admin included.
+                cur = sconn.execute(
+                    "SELECT id, name, created_by, created_at, updated_at, project_id, pinned FROM dm_workspaces WHERE created_by = ?",
+                    (safe_user,),
+                )
                 ws_rows = cur.fetchall()
 
                 for row in ws_rows:
@@ -156,15 +149,10 @@ class DuckDBChatStore:
                     )
 
                 # Fetch projects
-                if is_admin:
-                    p_rows = sconn.execute(
-                        "SELECT id, name, created_by, created_at, updated_at FROM dm_projects"
-                    ).fetchall()
-                else:
-                    p_rows = sconn.execute(
-                        "SELECT id, name, created_by, created_at, updated_at FROM dm_projects WHERE created_by = ?",
-                        (safe_user,),
-                    ).fetchall()
+                p_rows = sconn.execute(
+                    "SELECT id, name, created_by, created_at, updated_at FROM dm_projects WHERE created_by = ?",
+                    (safe_user,),
+                ).fetchall()
 
                 for prow in p_rows:
                     conn.execute(

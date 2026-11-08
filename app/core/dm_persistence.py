@@ -289,6 +289,7 @@ def _export_files() -> Optional[bytes]:
         return None
     tmpdir = Path(tempfile.mkdtemp(prefix="dm_snapshot_"))
     buffer = tempfile.SpooledTemporaryFile(max_size=32 * 1024 * 1024)
+    added: list = []
     try:
         with tarfile.open(fileobj=buffer, mode="w:gz", compresslevel=6) as tar:
             index = 0
@@ -311,6 +312,7 @@ def _export_files() -> Optional[bytes]:
                     tar.add(str(copy), arcname=rel)
                 else:
                     tar.add(str(path), arcname=rel)
+                added.append(rel)
                 if tar.offset > MAX_SNAPSHOT_BYTES:
                     log_event(
                         "DM snapshot exceeds size budget; stopping at the current file",
@@ -318,6 +320,7 @@ def _export_files() -> Optional[bytes]:
                         component="DMPersistence",
                     )
                     break
+        _state["last_files"] = added[:100]
         buffer.seek(0)
         return buffer.read()
     finally:
@@ -531,6 +534,7 @@ def status() -> Dict[str, Any]:
         "last_error": _state.get("last_error") or "",
         "restored_state_rows": _state.get("restored_state_rows"),
         "restored_files": _state.get("restored_files"),
+        "files_in_last_snapshot": _state.get("last_files") or [],
         "state_signature": state_sig,
         "baseline_state": baseline[0],
         "files_signature": files_sig,

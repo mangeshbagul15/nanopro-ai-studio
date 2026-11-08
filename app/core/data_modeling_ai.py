@@ -378,7 +378,7 @@ def open_workspace_connection(workspace_id: str) -> sqlite3.Connection:
 
 def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]:
     _ensure_schema()
-    from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
+    from app.core.identity_resolver import resolve_canonical_username
     explicit_user = (user or "").strip()
     safe_user = resolve_canonical_username(explicit_user) if explicit_user else ""
     if safe_user:
@@ -403,7 +403,7 @@ def list_workspaces(user: str = "", light: bool = False) -> List[Dict[str, Any]]
             log_event(f"DuckDB list_workspaces fallback: {exc}", component="DataModeling", level="WARNING")
 
     with db.get_connection() as conn:
-        if not is_admin_identity(safe_user):
+        if safe_user:
             rows = _table_rows(
                 conn,
                 "SELECT w.*,"
@@ -624,7 +624,7 @@ def delete_workspace(workspace_id: str, user: str = "") -> Dict[str, Any]:
 
 def list_projects(user: str = "") -> List[Dict[str, Any]]:
     _ensure_schema()
-    from app.core.identity_resolver import resolve_canonical_username, is_admin_identity
+    from app.core.identity_resolver import resolve_canonical_username
     safe_user = resolve_canonical_username(user)
     if safe_user:
         try:
@@ -634,7 +634,7 @@ def list_projects(user: str = "") -> List[Dict[str, Any]]:
         except Exception:
             pass
     with db.get_connection() as conn:
-        if not is_admin_identity(safe_user):
+        if safe_user:
             rows = _table_rows(
                 conn,
                 "SELECT p.*, (SELECT COUNT(*) FROM dm_workspaces w WHERE w.project_id = p.id) AS chat_count"
