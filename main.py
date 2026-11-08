@@ -2029,9 +2029,10 @@ async def api_test_whatsapp_price_drop():
 
 @app.post("/api/vault/store")
 
-async def api_vault_store(req: CredentialStoreRequest):
+async def api_vault_store(req: CredentialStoreRequest, request: Request):
 
-    """Stores encrypted credentials into vault."""
+    """Stores encrypted credentials into vault (Super Admin only)."""
+    _require_admin_session(request)
 
     cred_id = credentials_vault.store_credential(
 
@@ -2063,9 +2064,10 @@ async def api_vault_store(req: CredentialStoreRequest):
 
 @app.get("/api/vault/list")
 
-async def api_vault_list():
+async def api_vault_list(request: Request):
 
-    """Returns masked list of stored credentials."""
+    """Returns masked list of stored credentials (Super Admin only)."""
+    _require_admin_session(request)
 
     creds = credentials_vault.list_credentials(mask=True)
 
@@ -2075,9 +2077,10 @@ async def api_vault_list():
 
 @app.delete("/api/vault/{cred_id}")
 
-async def api_vault_delete(cred_id: str):
+async def api_vault_delete(cred_id: str, request: Request):
 
-    """Deletes a credential from vault."""
+    """Deletes a credential from vault (Super Admin only)."""
+    _require_admin_session(request)
 
     credentials_vault.delete_credential(cred_id)
 
@@ -3806,6 +3809,20 @@ def _is_payment_admin(request: Request) -> bool:
 
         log_event(f"Payment admin check failed: {e}", level="WARNING", component="Payments")
         return False
+
+
+def _require_admin_session(request: Request) -> dict:
+    """Rejects requests that do not carry an active super-admin session."""
+    token = _payment_admin_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Admin login required.")
+    from app.core.auth_manager import auth_manager
+
+    session = auth_manager.validate_session(token)
+    user = (session or {}).get("user") or {}
+    if not session.get("is_valid") or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required.")
+    return user
 
 
 @app.get("/api/payments/config")
@@ -12782,72 +12799,50 @@ class GoogleLoginRequest(BaseModel):
 
 
 
+def _verify_google_id_token(credential: str) -> dict:
+    """Validates a Google ID token against Google and returns its verified claims."""
+    import json
+    import urllib.parse
+    import urllib.request
+
+    url = "https://oauth2.googleapis.com/tokeninfo?" + urllib.parse.urlencode({"id_token": credential})
+    req = urllib.request.Request(url, headers={"User-Agent": "NanoProAI/1.0"})
+    with urllib.request.urlopen(req, timeout=10.0) as resp:
+        claims = json.loads(resp.read().decode("utf-8"))
+    if str(claims.get("email_verified", "")).lower() not in ("true", "1"):
+        raise ValueError("Google account email is not verified.")
+    expected_aud = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+    if expected_aud and claims.get("aud") != expected_aud:
+        raise ValueError("Google token was issued for a different application.")
+    if not claims.get("email"):
+        raise ValueError("Google token does not contain an email address.")
+    return claims
+
+
 @app.post("/api/auth/google-login")
-
 async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
-
-    """Authenticates user via Google Sign-In with 30-day session cookie."""
-
+    """Authenticates a verified Google ID token with a 30-day session cookie."""
     from app.core.auth_manager import auth_manager
-    import uuid, json, time
+    import json
+    import time
+    import uuid
 
     ip = request.client.host if request.client else "Unknown"
-
     ua = request.headers.get("user-agent", "Unknown")
 
+    credential = (req.credential or "").strip()
+    if not credential:
+        return JSONResponse(
+            {"status": "error", "error": "Google credential required. Please use the official Google sign-in button."},
+            status_code=401,
+        )
+    try:
+        claims = _verify_google_id_token(credential)
+    except Exception as exc:
+        return JSONResponse({"status": "error", "error": f"Google verification failed: {exc}"}, status_code=401)
 
-
-    email = req.email
-
-    full_name = req.full_name or "Google User"
-
-
-
-    if req.credential and "." in req.credential:
-
-        try:
-
-            import base64, json
-
-            parts = req.credential.split(".")
-
-            if len(parts) >= 2:
-
-                payload_b64 = parts[1] + ("=" * (4 - len(parts[1]) % 4))
-
-                payload_json = json.loads(base64.urlsafe_b64decode(payload_b64.encode("utf-8")).decode("utf-8"))
-
-                email = payload_json.get("email") or email
-
-                full_name = payload_json.get("name") or full_name
-
-        except Exception:
-
-            pass
-
-
-
-    if not email:
-
-        return JSONResponse({"status": "error", "error": "Google खात्यातून ईमेल प्राप्त झाला नाही."}, status_code=400)
-
-
-
-    # Master Admin email match
-    from app.core.identity_resolver import is_admin_identity
-    if is_admin_identity(email):
-
-        admin_sess = auth_manager.authenticate_user("nanopro", "Divyam@123", ip_address=ip, user_agent=ua)
-
-        if admin_sess.get("status") == "success":
-
-            resp = JSONResponse(admin_sess)
-
-            resp.set_cookie(key="nanopro_session", value=admin_sess["session_token"], max_age=2592000, httponly=False, samesite="lax", secure=False)
-
-            return resp
-
-
+    email = (claims.get("email") or "").strip().lower()
+    full_name = claims.get("name") or req.full_name or "Google User"
 
     # Registered or new user provision
 
@@ -13232,9 +13227,11 @@ async def api_auth_clerk_verify(req: ClerkVerifyRequest, request: Request):
 
 @app.get("/api/admin/users/list")
 
-async def api_admin_users_list():
+async def api_admin_users_list(request: Request):
 
     """Lists all users for the Admin User Management panel."""
+    _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
@@ -13246,13 +13243,15 @@ async def api_admin_users_list():
 
 @app.post("/api/admin/users/approve")
 
-async def api_admin_users_approve(req: AdminApproveUserRequest):
+async def api_admin_users_approve(req: AdminApproveUserRequest, request: Request):
 
     """Approves a pending registration, making the user account active with designated feature permissions."""
+    admin = _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
-    res = auth_manager.approve_user(req.user_id, admin_username=req.admin_username, allowed_views=req.allowed_views, access_mode=req.access_mode)
+    res = auth_manager.approve_user(req.user_id, admin_username=admin.get("username") or "nanopro", allowed_views=req.allowed_views, access_mode=req.access_mode)
 
     return JSONResponse(res)
 
@@ -13260,13 +13259,15 @@ async def api_admin_users_approve(req: AdminApproveUserRequest):
 
 @app.post("/api/admin/users/permissions")
 
-async def api_admin_users_permissions(req: AdminUpdatePermissionsRequest):
+async def api_admin_users_permissions(req: AdminUpdatePermissionsRequest, request: Request):
 
     """Updates an existing user's feature permissions and access mode."""
+    admin = _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
-    res = auth_manager.update_user_permissions(req.user_id, admin_username=req.admin_username, allowed_views=req.allowed_views, access_mode=req.access_mode)
+    res = auth_manager.update_user_permissions(req.user_id, admin_username=admin.get("username") or "nanopro", allowed_views=req.allowed_views, access_mode=req.access_mode)
 
     return JSONResponse(res)
 
@@ -13274,9 +13275,11 @@ async def api_admin_users_permissions(req: AdminUpdatePermissionsRequest):
 
 @app.post("/api/admin/users/toggle")
 
-async def api_admin_users_toggle(req: AdminToggleUserRequest):
+async def api_admin_users_toggle(req: AdminToggleUserRequest, request: Request):
 
     """Toggles account status between ACTIVE and DISABLED."""
+    _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
@@ -13288,9 +13291,11 @@ async def api_admin_users_toggle(req: AdminToggleUserRequest):
 
 @app.post("/api/admin/users/reset_password")
 
-async def api_admin_users_reset_password(req: AdminResetPasswordRequest):
+async def api_admin_users_reset_password(req: AdminResetPasswordRequest, request: Request):
 
     """Admin-initiated password reset."""
+    _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
@@ -13302,13 +13307,15 @@ async def api_admin_users_reset_password(req: AdminResetPasswordRequest):
 
 @app.post("/api/admin/users/delete")
 
-async def api_admin_users_delete(req: AdminDeleteUserRequest):
+async def api_admin_users_delete(req: AdminDeleteUserRequest, request: Request):
 
     """Permanently deletes a user account (executable only by nanopro / superadmin)."""
+    admin = _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
-    res = auth_manager.delete_user(req.user_id, admin_username=req.admin_username)
+    res = auth_manager.delete_user(req.user_id, admin_username=admin.get("username") or "nanopro")
 
     return JSONResponse(res)
 
@@ -13316,13 +13323,15 @@ async def api_admin_users_delete(req: AdminDeleteUserRequest):
 
 @app.post("/api/admin/users/reject")
 
-async def api_admin_users_reject(req: AdminRejectUserRequest):
+async def api_admin_users_reject(req: AdminRejectUserRequest, request: Request):
 
     """Rejects a user registration (executable by nanopro / superadmin)."""
+    admin = _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
-    res = auth_manager.reject_user(req.user_id, admin_username=req.admin_username, reason=req.reason or "Admin rejected access")
+    res = auth_manager.reject_user(req.user_id, admin_username=admin.get("username") or "nanopro", reason=req.reason or "Admin rejected access")
 
     return JSONResponse(res)
 
@@ -13330,9 +13339,11 @@ async def api_admin_users_reject(req: AdminRejectUserRequest):
 
 @app.get("/api/admin/audit_logs")
 
-async def api_admin_audit_logs(limit: int = 40):
+async def api_admin_audit_logs(request: Request, limit: int = 40):
 
     """Returns real-time security and audit logs."""
+    _require_admin_session(request)
+
 
     from app.core.auth_manager import auth_manager
 
@@ -13460,9 +13471,10 @@ async def api_data_science_fraud_detection_scan(req: Optional[FraudScanRequest] 
 
 @app.post("/api/admin/space/prune")
 
-async def api_admin_space_prune():
+async def api_admin_space_prune(request: Request):
 
     """Enterprise Space Optimizer: Prunes old backup archives, temporary report exports, and vacuums SQLite database."""
+    _require_admin_session(request)
 
     res = backup_manager.prune_and_vacuum()
 
@@ -13554,9 +13566,10 @@ async def api_developer_resource_detail(resource_id: str):
 
 @app.post("/api/admin/system/emergency-reboot")
 
-async def api_admin_emergency_reboot():
+async def api_admin_emergency_reboot(request: Request):
 
     """Emergency Stop & Instant Warm Restart: Recycles NanoPro AI Studio engine, flushes SQLite WAL, resets connection pools, and re-synchronizes 305 agents."""
+    _require_admin_session(request)
 
     import time
 

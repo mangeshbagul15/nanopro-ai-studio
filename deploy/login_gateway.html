@@ -312,36 +312,6 @@
                         </svg>
                         <span id="googleBtnText">Continue with Google (Official OAuth)</span>
                     </button>
-                    <div style="text-align: center; margin-top: 6px; margin-bottom: 2px;">
-                        <a href="javascript:void(0)" onclick="showGooglePicker()" style="font-size: 11.5px; color: #38BDF8; text-decoration: none; font-weight: 600; opacity: 0.9;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">
-                            👥 Choose or Switch Google Account
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Google Account Inline Helper & Fast-Launch -->
-                <div id="googleAccountPicker" style="display:none; margin-bottom: 14px; padding: 12px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 12px; text-align: left; animation: fadeIn 0.2s ease-out;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #38BDF8; text-transform: uppercase; letter-spacing: 0.5px;">Google Official Authentication</span>
-                        <a href="javascript:void(0)" onclick="closeGooglePicker()" style="color: #94A3B8; font-size: 16px; text-decoration: none; line-height: 1;">&times;</a>
-                    </div>
-                    <div style="font-size: 11.5px; color: #CBD5E1; margin-bottom: 8px;">
-                        Select account or enter your Google Email:
-                    </div>
-                    <!-- Master Admin Fast Card -->
-                    <div onclick="selectQuickGoogleAccount('mangeshbagul15@gmail.com', 'Super Admin (Mangesh Bagul)')" style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 9px; cursor: pointer; margin-bottom: 10px; transition: all 0.15s;" onmouseover="this.style.borderColor='#38BDF8'" onmouseout="this.style.borderColor='rgba(56,189,248,0.25)'">
-                        <div style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #0284C7, #4F46E5); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #FFF;">M</div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 12px; font-weight: 700; color: #FFF;">Mangesh Bagul (Super Admin)</div>
-                            <div style="font-size: 11px; color: #94A3B8; overflow: hidden; text-overflow: ellipsis;">mangeshbagul15@gmail.com</div>
-                        </div>
-                        <span style="font-size: 11px; color: #10B981; font-weight: 800;">Launch &rarr;</span>
-                    </div>
-                    <!-- Other Google Email Option -->
-                    <div style="display: flex; gap: 6px;">
-                        <input type="email" id="customGoogleEmail" class="form-input" placeholder="name@gmail.com" style="padding: 8px 10px; font-size: 12px;">
-                        <button type="button" onclick="confirmCustomGoogleEmail()" class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 11.5px; white-space: nowrap;">Verify &amp; Launch</button>
-                    </div>
                 </div>
 
                 <div class="auth-divider">
@@ -603,109 +573,6 @@
         }
         window.switchLoginMethod = switchLoginMethod;
 
-        // Google Picker UI Controls
-        function closeGooglePicker() {
-            const p = document.getElementById('googleAccountPicker');
-            if (p) p.style.display = 'none';
-        }
-        window.closeGooglePicker = closeGooglePicker;
-
-        function showGooglePicker() {
-            const p = document.getElementById('googleAccountPicker');
-            if (p) {
-                p.style.display = 'block';
-                const c = document.getElementById('customGoogleEmail');
-                if (c) c.focus();
-            }
-        }
-        window.showGooglePicker = showGooglePicker;
-
-        async function selectQuickGoogleAccount(email, name) {
-            closeGooglePicker();
-            await authenticateWithBackendGoogle(email, name);
-        }
-        window.selectQuickGoogleAccount = selectQuickGoogleAccount;
-
-        async function confirmCustomGoogleEmail() {
-            const email = (document.getElementById('customGoogleEmail')?.value || '').trim();
-            if (!email) {
-                showAlert('Please enter your Google Email.', 'warning');
-                return;
-            }
-            closeGooglePicker();
-            await authenticateWithBackendGoogle(email, email.split('@')[0]);
-        }
-        window.confirmCustomGoogleEmail = confirmCustomGoogleEmail;
-
-        // Backend Google Authentication Helper (Zero Missing Fields)
-        async function authenticateWithBackendGoogle(email, fullName, credential) {
-            if (!email && !credential) return false;
-            showAlert('🔐 Verifying Google account: ' + (email || 'Identity Token') + ' ...', 'info');
-
-            try {
-                let data = null;
-                const payload = {
-                    email: (email || '').trim().toLowerCase(),
-                    full_name: fullName || 'Google User',
-                    credential: credential || ''
-                };
-
-                // Tier 1: Current Host (/api/auth/google-login)
-                try {
-                    const resp = await fetch('/api/auth/google-login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (resp.ok) data = await resp.json();
-                } catch(e1) {}
-
-                // Tier 2: Alwaysdata Cloud Sentinel
-                if (!data || data.status !== 'success') {
-                    try {
-                        const respAd = await fetch('https://mangeshbagul15.alwaysdata.net/api/auth/google-login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (respAd.ok) data = await respAd.json();
-                    } catch(e2) {}
-                }
-
-                if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
-                    showAlert('⏳ ' + (data.error || 'तुमचे Google खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे.'), 'warning');
-                    return false;
-                }
-
-                if (data && data.status === 'success' && data.session_token) {
-                    localStorage.setItem('nanopro_session_token', data.session_token);
-                    localStorage.setItem('nanopro_active_account', data.user.username);
-                    if (remember) {
-                        localStorage.setItem('nanopro_saved_username', username);
-                        localStorage.setItem('nanopro_remember_device', 'true');
-                    } else {
-                        localStorage.removeItem('nanopro_saved_username');
-                        localStorage.removeItem('nanopro_remember_device');
-                    }
-                    const cookieMaxAge = remember ? '; max-age=2592000' : '';
-                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/' + cookieMaxAge + '; SameSite=Lax';
-
-                    showAlert('✅ Official Google Authentication Verified! Launching NanoPro...', 'success');
-                    setTimeout(() => {
-                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
-                    }, 300);
-                    return true;
-                } else {
-                    showAlert((data && (data.message || data.error)) || 'Google Authentication Error.', 'error');
-                    return false;
-                }
-            } catch(err) {
-                showAlert('Google Sign-In Error: ' + err.message, 'error');
-                return false;
-            }
-        }
-        window.authenticateWithBackendGoogle = authenticateWithBackendGoogle;
-
         // Initialize Clerk SDK & Process OAuth Handshakes
         window.addEventListener('load', async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -768,7 +635,7 @@
                             const email = su.emailAddress || (su.verifications && su.verifications.externalAccount && su.verifications.externalAccount.emailAddress);
                             if (email) {
                                 const name = (su.firstName ? (su.firstName + ' ' + (su.lastName || '')) : '') || 'Google User';
-                                await authenticateWithBackendGoogle(email, name);
+                                await syncClerkSession();
                                 return;
                             }
                         }

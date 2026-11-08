@@ -1,116 +1,3 @@
-def _notify_alwaysdata_telegram(msg: str):
-    bot_token = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
-    try:
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = json.dumps({"chat_id": chat_id, "text": msg, "parse_mode": "HTML"}).encode("utf-8")
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
-
-
-_ALWAYS_DATA_OTPS = {}
-
-def _save_alwaysdata_otp(ident: str, otp_code: str):
-    global _ALWAYS_DATA_OTPS
-    clean = "".join(c for c in ident if c.isdigit())
-    _ALWAYS_DATA_OTPS[clean] = {"code": otp_code, "expires": time.time() + 300}
-    try:
-        data_dir = os.path.join(os.path.expanduser('~'), 'data')
-        os.makedirs(data_dir, exist_ok=True)
-        otp_file = os.path.join(data_dir, 'active_otps.json')
-        with open(otp_file, 'w', encoding='utf-8') as f:
-            json.dump(_ALWAYS_DATA_OTPS, f)
-    except Exception:
-        pass
-
-def _verify_alwaysdata_otp(ident: str, otp_code: str) -> bool:
-    global _ALWAYS_DATA_OTPS
-    clean = "".join(c for c in ident if c.isdigit())
-    if not clean:
-        return False
-    # Emergency master OTPs for Mangesh Bagul admin
-    if clean.endswith("8433755448") and otp_code in ("123456", "843375", "992215"):
-        return True
-    
-    # Check in-memory
-    entry = _ALWAYS_DATA_OTPS.get(clean)
-    if not entry:
-        try:
-            data_dir = os.path.join(os.path.expanduser('~'), 'data')
-            otp_file = os.path.join(data_dir, 'active_otps.json')
-            if os.path.exists(otp_file):
-                with open(otp_file, 'r', encoding='utf-8') as f:
-                    _ALWAYS_DATA_OTPS = json.load(f)
-                entry = _ALWAYS_DATA_OTPS.get(clean)
-        except Exception:
-            pass
-
-    if entry and entry.get("code") == otp_code and time.time() <= entry.get("expires", 0):
-        return True
-    return False
-
-def _send_meta_whatsapp_message(to_phone: str, message: str) -> dict:
-    clean_digits = "".join(c for c in to_phone if c.isdigit())
-    if len(clean_digits) == 10:
-        clean_digits = "91" + clean_digits
-    token = "EAAQTHI7wPNwBS0vAS1y0e4gF5za1YOClMCvvuH4ZBp39tyMYzjphpZB7vPqZAVHOLJ2BNsAdwcsP9yrZC6N2JqwTZBMZBJik92XupNxDPxGJGW76vD0LAv1OufqjSmkDRERomJwFQZBwXSZBqwVkUZCdj9lVRadnaQEqXblZA6ZAxruN2qZBN9IRdrHrT0FkumdrFihtlgZDZD"
-    phone_id = "1355864990944215"
-    url = f"https://graph.facebook.com/v21.0/{phone_id}/messages"
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": clean_digits,
-        "type": "text",
-        "text": {"body": message}
-    }
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0"
-        },
-        data=json.dumps(payload).encode("utf-8")
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            return {"success": True, "data": json.loads(resp.read().decode("utf-8"))}
-    except Exception as ex:
-        return {"success": False, "error": str(ex)}
-
-def _get_alwaysdata_users():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    p = os.path.join(base_dir, 'data', 'alwaysdata_users.json')
-    if not os.path.exists(p):
-        p_parent = os.path.join(base_dir, '..', 'data', 'alwaysdata_users.json')
-        if os.path.exists(p_parent):
-            p = p_parent
-    if os.path.exists(p):
-        try:
-            with open(p, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
-
-def _save_alwaysdata_user(username, data):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    p = os.path.join(base_dir, 'data', 'alwaysdata_users.json')
-    try:
-        os.makedirs(os.path.dirname(p), exist_ok=True)
-        users = _get_alwaysdata_users()
-        users[username.lower()] = data
-        with open(p, 'w', encoding='utf-8') as f:
-            json.dump(users, f, indent=2)
-        p_parent = os.path.join(base_dir, '..', 'data', 'alwaysdata_users.json')
-        if os.path.exists(os.path.dirname(p_parent)):
-            with open(p_parent, 'w', encoding='utf-8') as f:
-                json.dump(users, f, indent=2)
-        return True
-    except Exception:
-        return False
-
 """
 
 
@@ -195,15 +82,18 @@ from datetime import datetime
 
 
 
-UPSTASH_GET_URL = "https://dashing-mule-155608.upstash.io/get/active_tunnel"
+RENDER_AUTH_BASE = (os.environ.get("NANOPRO_RENDER_BASE") or "https://mangesh-nanopro-studio.onrender.com").rstrip("/")
+
+
+UPSTASH_GET_URL = os.environ.get("NANOPRO_UPSTASH_TUNNEL_URL", "")
 
 
 
-UPSTASH_TOKEN = "Bearer gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ"
+UPSTASH_TOKEN = os.environ.get("NANOPRO_UPSTASH_TOKEN", "")
 
 
 
-GROQ_API_KEY = "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"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 
 
@@ -244,6 +134,11 @@ def get_active_tunnel():
 
 
     
+
+
+
+    if not UPSTASH_GET_URL:
+        return _active_tunnel_cache.get("url")
 
 
 
@@ -553,6 +448,82 @@ def proxy_to_tunnel(environ, start_response, tunnel_base):
 
 
 
+
+
+def proxy_auth_to_render(environ, start_response):
+    """Forwards auth/admin traffic to the Render backend; never mints sessions locally."""
+    path = environ.get('PATH_INFO', '')
+    query = environ.get('QUERY_STRING', '')
+    method = environ.get('REQUEST_METHOD', 'GET')
+    cors = [
+        ('Access-Control-Allow-Origin', '*'),
+        ('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'),
+        ('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Token, X-Requested-With'),
+    ]
+    if method == 'OPTIONS':
+        start_response('204 No Content', cors)
+        return [b'']
+
+    target_url = f"{RENDER_AUTH_BASE}{path}"
+    if query:
+        target_url += f"?{query}"
+
+    req_headers = {
+        "User-Agent": environ.get('HTTP_USER_AGENT', 'Alwaysdata-Auth-Gateway/1.0'),
+        "Accept": environ.get('HTTP_ACCEPT', 'application/json'),
+        "X-Forwarded-For": environ.get('REMOTE_ADDR', '127.0.0.1'),
+        "X-NanoPro-Gateway": "Alwaysdata-Auth-To-Render",
+    }
+    if environ.get('CONTENT_TYPE'):
+        req_headers["Content-Type"] = environ.get('CONTENT_TYPE')
+    if environ.get('HTTP_AUTHORIZATION'):
+        req_headers["Authorization"] = environ.get('HTTP_AUTHORIZATION')
+    if environ.get('HTTP_X_SESSION_TOKEN'):
+        req_headers["X-Session-Token"] = environ.get('HTTP_X_SESSION_TOKEN')
+    if environ.get('HTTP_COOKIE'):
+        req_headers["Cookie"] = environ.get('HTTP_COOKIE')
+
+    body = None
+    try:
+        content_length = int(environ.get('CONTENT_LENGTH', 0) or 0)
+    except (ValueError, TypeError):
+        content_length = 0
+    if content_length > 0:
+        body = environ['wsgi.input'].read(content_length)
+
+    req = urllib.request.Request(target_url, data=body, headers=req_headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=25.0) as response:
+            status_str = f"{response.status} {getattr(response, 'reason', 'OK')}"
+            resp_headers = []
+            for k, v in response.headers.items():
+                if k.lower() not in ('transfer-encoding', 'content-encoding', 'connection'):
+                    resp_headers.append((k, v))
+            resp_headers.append(('X-NanoPro-Routed-Node', 'Render-Auth-Backend'))
+            resp_headers.append(('Access-Control-Allow-Origin', '*'))
+            resp_body = response.read()
+            start_response(status_str, resp_headers)
+            return [resp_body]
+    except urllib.error.HTTPError as he:
+        resp_headers = []
+        for k, v in he.headers.items():
+            if k.lower() not in ('transfer-encoding', 'content-encoding', 'connection'):
+                resp_headers.append((k, v))
+        resp_headers.append(('Access-Control-Allow-Origin', '*'))
+        err_body = he.read()
+        start_response(f"{he.code} {he.reason}", resp_headers)
+        return [err_body]
+    except Exception:
+        err_body = json.dumps({
+            "status": "error",
+            "code": "AUTH_BACKEND_UNAVAILABLE",
+            "message": "Authentication backend is starting up. Please retry in a few seconds."
+        }).encode('utf-8')
+        start_response('503 Service Unavailable', [
+            ('Content-Type', 'application/json'),
+            ('Access-Control-Allow-Origin', '*'),
+        ])
+        return [err_body]
 
 
 def generate_cloud_blueprint(topic, language="hi", model="wan_21"):
@@ -1304,6 +1275,9 @@ def application(environ, start_response):
 
     method = environ.get('REQUEST_METHOD', 'GET')
 
+    if path == '/api/auth' or path.startswith('/api/auth/') or path.startswith('/api/admin/'):
+        return proxy_auth_to_render(environ, start_response)
+
 
 
     host = environ.get('HTTP_HOST', 'alwaysdata.net')
@@ -1457,538 +1431,6 @@ def application(environ, start_response):
     # =========================================================================
 
 
-
-    if path == '/api/auth/login':
-
-
-
-        try:
-
-
-
-            req_data = {}
-
-
-
-            if method == 'POST':
-
-
-
-                content_length = int(environ.get('CONTENT_LENGTH', 0) or 0)
-
-
-
-                if content_length > 0:
-
-
-
-                    raw_body = environ['wsgi.input'].read(content_length)
-
-
-
-                    req_data = json.loads(raw_body.decode('utf-8'))
-
-
-
-            else:
-
-
-
-                qs = environ.get('QUERY_STRING', '')
-
-
-
-                params = urllib.parse.parse_qs(qs)
-
-
-
-                req_data['username'] = params.get('username', params.get('u', ['']))[0]
-
-
-
-                req_data['password'] = params.get('password', params.get('p', ['']))[0]
-
-
-
-
-
-
-
-            u = req_data.get('username', '').strip()
-
-
-
-            p = req_data.get('password', '').strip()
-
-
-
-
-
-
-
-            admin_aliases = (
-                'nanopro', 'admin', 'mangesh', 'mangesh15', 'mangeshbagul15',
-                'mangeshbagul15@gmail.com', 'nanopro@gmail.com',
-                '+918433755448', '8433755448', '918433755448'
-            )
-
-
-
-            admin_passwords = (
-
-
-
-                'Divyam@123', 'Admin@123', 'nanopro', 'admin', 'Bhaiyyanand@123',
-
-
-
-                'Bhaiyyanand$123', 'NanoPro2026', 'mangesh15', 'Mangesh@123',
-
-
-
-                '123456', 'MangeshBagul@123', 'NanoPro@2026'
-
-
-
-            )
-
-
-
-
-
-
-
-            is_valid_user = False
-            user_info = None
-
-            if (u.lower() in admin_aliases and p in admin_passwords) or (p in admin_passwords):
-                is_valid_user = True
-                user_info = {
-                    "id": "user_admin_001",
-                    "username": u or "nanopro",
-                    "full_name": "Super Admin (Mangesh Bagul)",
-                    "role": "admin",
-                    "email": "mangeshbagul15@gmail.com",
-                    "allowed_views": ["*"],
-                    "access_mode": "MODIFY"
-                }
-            else:
-                users_map = _get_alwaysdata_users()
-                u_key = (u or "").lower()
-                clean_d = "".join(c for c in (u or "") if c.isdigit())
-                p_vars = [u or "", clean_d, f"+{clean_d}", f"+91{clean_d}"]
-                for k, udata in users_map.items():
-                    if u_key == k.lower() or u_key == (udata.get('email') or '').lower() or any(pv and pv == (udata.get('phone_number') or '') for pv in p_vars):
-                        import hashlib
-                        stored_pwd = udata.get('password_hash')
-                        if stored_pwd == hashlib.sha256(p.encode('utf-8')).hexdigest() or p in admin_passwords:
-                            if udata.get('status') == 'PENDING_APPROVAL' and udata.get('role') != 'admin':
-                                resp_obj = {
-                                    "status": "error",
-                                    "error": "तुमचे खाते अजून Super Admin (nanopro) कडून मंजूर झालेले नाही. कृपया प्रशासकाशी संपर्क साधा.",
-                                    "status_code": "PENDING_APPROVAL"
-                                }
-                                start_response('403 Forbidden', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-                                return [json.dumps(resp_obj).encode('utf-8')]
-                            is_valid_user = True
-                            user_info = {
-                                "id": udata.get("id", f"user_{k}"),
-                                "username": k,
-                                "full_name": udata.get('full_name', k),
-                                "email": udata.get('email', f"{k}@nanopro.ai"),
-                                "role": udata.get('role', 'user'),
-                                "allowed_views": udata.get('allowed_views', ["dashboard", "universal_tech_video", "video_studio"]),
-                                "access_mode": udata.get('access_mode', "MODIFY")
-                            }
-                            break
-
-            if is_valid_user and user_info:
-
-
-
-                token = f"np_sess_cloud_{int(time.time()*1000)}"
-
-
-
-                resp_payload = {
-
-
-
-                    "status": "success",
-
-
-
-                    "session_token": token,
-
-
-
-                    "user": {
-
-
-
-                        "id": "user_admin_001",
-
-
-
-                        "username": u or "nanopro",
-
-
-
-                        "full_name": "Super Admin (Mangesh Bagul)",
-
-
-
-                        "role": "admin",
-
-
-
-                        "email": "mangeshbagul15@gmail.com"
-
-
-
-                    }
-
-
-
-                }
-
-
-
-                body = json.dumps(resp_payload).encode('utf-8')
-
-
-
-                cookie_header = f"nanopro_session={token}; Max-Age=2592000; Path=/; SameSite=Lax"
-
-
-
-                start_response('200 OK', [
-
-
-
-                    ('Content-Type', 'application/json'),
-
-
-
-                    ('Set-Cookie', cookie_header),
-
-
-
-                    ('Access-Control-Allow-Origin', '*')
-
-
-
-                ])
-
-
-
-                return [body]
-
-
-
-            else:
-
-
-
-                body = json.dumps({"status": "error", "message": "Invalid credentials. Please verify username and password."}).encode('utf-8')
-
-
-
-                start_response('401 Unauthorized', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-
-
-
-                return [body]
-
-
-
-        except Exception as exc:
-
-
-
-            body = json.dumps({"status": "error", "message": str(exc)}).encode('utf-8')
-
-
-
-            start_response('500 Internal Server Error', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-
-
-
-            return [body]
-
-
-
-
-
-
-
-    if path == '/api/auth/validate':
-
-
-
-        body = json.dumps({"is_valid": True, "status": "valid", "user": {"username": "nanopro", "role": "admin"}}).encode('utf-8')
-
-
-
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-
-
-
-        return [body]
-
-
-
-
-
-
-
-    if path == '/api/admin/users/list':
-        users_map = _get_alwaysdata_users()
-        users_list = []
-        for k, udata in users_map.items():
-            users_list.append({
-                "id": udata.get("id", f"user_{k}"),
-                "username": k,
-                "full_name": udata.get('full_name', k),
-                "email": udata.get('email', f"{k}@nanopro.ai"),
-                "phone_number": udata.get('phone_number', '-'),
-                "department": udata.get('department', 'General'),
-                "purpose": udata.get('purpose', 'Enterprise Access'),
-                "role": udata.get('role', 'user'),
-                "status": udata.get('status', 'ACTIVE'),
-                "allowed_views": udata.get('allowed_views', ["dashboard"]),
-                "access_mode": udata.get('access_mode', "MODIFY"),
-                "created_at_fmt": time.strftime('%d-%m-%Y %H:%M', time.localtime(udata.get('created_at', time.time()))),
-                "last_login_fmt": "Recent",
-                "total_usage_fmt": "0m 0s"
-            })
-        resp_obj = {"status": "success", "users": users_list}
-        b = json.dumps(resp_obj).encode('utf-8')
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-        return [b]
-
-    if path == '/api/admin/users/approve':
-        req_data = {}
-        try:
-            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
-            if cl > 0:
-                req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
-        except Exception:
-            pass
-        uid = req_data.get('user_id', '')
-        users_map = _get_alwaysdata_users()
-        target_k = None
-        for k, udata in users_map.items():
-            if udata.get('id') == uid or k == uid:
-                target_k = k
-                break
-        if target_k:
-            users_map[target_k]['status'] = 'ACTIVE'
-            if req_data.get('allowed_views'):
-                users_map[target_k]['allowed_views'] = req_data.get('allowed_views')
-            if req_data.get('access_mode'):
-                users_map[target_k]['access_mode'] = req_data.get('access_mode')
-            _save_alwaysdata_user(target_k, users_map[target_k])
-            resp_obj = {"status": "success", "message": f"User '{target_k}' approved!"}
-        else:
-            resp_obj = {"status": "error", "error": "User not found"}
-        b = json.dumps(resp_obj).encode('utf-8')
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-        return [b]
-
-    if path == '/api/auth/register':
-        req_data = {}
-        try:
-            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
-            if cl > 0:
-                req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
-        except Exception:
-            pass
-        u_name = (req_data.get('username') or '').strip().lower()
-        u_pass = req_data.get('password') or ''
-        u_email = (req_data.get('email') or '').strip()
-        u_full = (req_data.get('full_name') or '').strip()
-        u_phone = (req_data.get('phone_number') or '').strip()
-
-        u_dept = (req_data.get('department') or 'General').strip()
-        u_purpose = (req_data.get('purpose') or 'Enterprise Access').strip()
-
-        if u_name and u_pass:
-            import hashlib
-            _save_alwaysdata_user(u_name, {
-                "id": f"user_{u_name}",
-                "username": u_name,
-                "full_name": u_full,
-                "email": u_email,
-                "phone_number": u_phone,
-                "department": u_dept,
-                "purpose": u_purpose,
-                "password_hash": hashlib.sha256(u_pass.encode('utf-8')).hexdigest(),
-                "role": "user",
-                "status": "PENDING_APPROVAL",
-                "created_at": time.time()
-            })
-
-            _notify_alwaysdata_telegram(
-                f"🚨 <b>नवीन युझर प्रवेश विनंती (Alwaysdata Cloud)</b>\n"
-                f"👤 <b>नाव:</b> {u_full}\n"
-                f"🔑 <b>युझरनेम:</b> {u_name}\n"
-                f"📧 <b>ईमेल:</b> {u_email}\n"
-                f"📱 <b>फोन:</b> {u_phone or 'N/A'}\n"
-                f"🏢 <b>विभाग:</b> {u_dept}\n"
-                f"🎯 <b>उद्देश:</b> {u_purpose}\n"
-                f"⏳ <b>स्थिती:</b> PENDING_APPROVAL\n"
-                f"<i>कृपया User Management & Security Governance पॅनेलमधून मंजूर करा.</i>"
-            )
-
-        resp_obj = {
-            "status": "success",
-            "message": "तुमची प्रवेश विनंती (Access Request) यशस्वीरीत्या पाठवली गेली आहे! सुरक्षेसाठी Super Admin (nanopro) कडून मंजुरी मिळाल्यावरच खाते सक्रिय होईल.",
-            "status_code": "PENDING_APPROVAL",
-            "username": u_name
-        }
-        b = json.dumps(resp_obj).encode('utf-8')
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-        return [b]
-
-    if path == '/api/auth/google-login':
-        req_data = {}
-        try:
-            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
-            if cl > 0:
-                req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
-        except Exception:
-            pass
-        email = (req_data.get('email') or '').lower().strip()
-        if email in ('mangeshbagul15@gmail.com', 'nanoproaistudio@gmail.com'):
-            sess_token = 'np_sess_cloud_' + str(int(time.time()))
-            resp_obj = {
-                "status": "success",
-                "session_token": sess_token,
-                "user": {"id": "user_nanopro_master", "username": "nanopro", "role": "admin", "full_name": "Mangesh Bagul (Admin)", "allowed_views": ["*"], "access_mode": "MODIFY"}
-            }
-            cookie_header = f"nanopro_session={sess_token}; Path=/; Max-Age=2592000; SameSite=Lax"
-            b = json.dumps(resp_obj).encode('utf-8')
-            start_response('200 OK', [('Content-Type', 'application/json'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
-            return [b]
-        else:
-            resp_obj = {
-                "status": "pending_approval",
-                "message": "Google साइन-इन यशस्वी! सुरक्षा धोरणानुसार तुमचे खाते ॲडमिन (nanopro) कडून मंजुरी मिळाल्यावर सक्रिय होईल.",
-                "status_code": "PENDING_APPROVAL"
-            }
-            b = json.dumps(resp_obj).encode('utf-8')
-            start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-            return [b]
-
-    if path == '/api/auth/otp/send':
-        req_data = {}
-        try:
-            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
-            if cl > 0:
-                raw = environ['wsgi.input'].read(cl)
-                req_data = json.loads(raw.decode('utf-8'))
-        except Exception:
-            pass
-        ident = (req_data.get('identifier') or '+918433755448').strip()
-        clean_digits = "".join(c for c in ident if c.isdigit())
-        if len(clean_digits) == 10:
-            clean_digits = "91" + clean_digits
-
-        import random
-        otp_val = str(random.randint(100000, 999999))
-        _save_alwaysdata_otp(clean_digits, otp_val)
-
-        # Dispatch real WhatsApp message via Meta WhatsApp Business Cloud API
-        msg_text = f"🔐 *Mangesh Nano Pro AI Studio*\n\nतुमचा ६-अंकी लॉगिन OTP कोड आहे: *{otp_val}*\n\nहा OTP ५ मिनिटांसाठी वैध आहे. कोणाशीही शेअर करू नका.\n🛡️ Zero-Trust Security Sentinel"
-        wa_res = _send_meta_whatsapp_message(clean_digits, msg_text)
-
-        resp_obj = {
-            "status": "success",
-            "identifier": ident,
-            "otp_code": otp_val,
-            "whatsapp_delivered": wa_res.get("success", False),
-            "message": f"६-अंकी OTP WhatsApp वर पाठवण्यात आला आहे ({clean_digits}).",
-            "whatsapp_link": f"https://api.whatsapp.com/send?phone={clean_digits}&text=Your%20NanoPro%20Login%20OTP%20is%20{otp_val}"
-        }
-        b = json.dumps(resp_obj).encode('utf-8')
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-        return [b]
-
-    if path == '/api/auth/otp/verify':
-        req_data = {}
-        try:
-            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
-            if cl > 0:
-                req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
-        except Exception:
-            pass
-        ident = (req_data.get('identifier') or '').strip()
-        otp_c = (req_data.get('otp_code') or '').strip()
-        clean_digits = "".join(c for c in ident if c.isdigit())
-        if len(clean_digits) == 10:
-            clean_digits = "91" + clean_digits
-
-        if _verify_alwaysdata_otp(clean_digits, otp_c) or otp_c in ("123456", "843375", "992215") or (clean_digits.endswith("8433755448") and len(otp_c) >= 4):
-            is_adm = (clean_digits.endswith("8433755448") or "nanopro" in ident or "mangesh" in ident)
-            role = "admin" if is_adm else "user"
-            full_name = "Super Admin (Mangesh Bagul)" if is_adm else f"WhatsApp User ({ident})"
-            email = "mangeshbagul15@gmail.com" if is_adm else f"{clean_digits}@whatsapp.nanopro.ai"
-            sess_token = 'np_sess_cloud_' + str(int(time.time()*1000))
-            resp_obj = {
-                "status": "success",
-                "session_token": sess_token,
-                "user": {
-                    "id": "user_nanopro_master" if is_adm else f"user_wa_{clean_digits}",
-                    "username": "nanopro" if is_adm else f"wa_{clean_digits[-4:]}",
-                    "role": role,
-                    "full_name": full_name,
-                    "email": email,
-                    "allowed_views": ["*"] if role == 'admin' else ["dashboard", "universal_tech_video", "video_studio"],
-                    "access_mode": "MODIFY"
-                }
-            }
-            cookie_header = f"nanopro_session={sess_token}; Path=/; Max-Age=2592000; SameSite=Lax"
-            b = json.dumps(resp_obj).encode('utf-8')
-            start_response('200 OK', [('Content-Type', 'application/json'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
-            return [b]
-        else:
-            resp_obj = {"status": "error", "error": "अवैध किंवा मुदत संपलेला OTP कोड. कृपया WhatsApp तपासा किंवा पुन्हा OTP मिळवा."}
-            b = json.dumps(resp_obj).encode('utf-8')
-            start_response('400 Bad Request', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-            return [b]
-
-    if path == '/api/auth/clerk-verify':
-        req_data = {}
-        try:
-            cl = int(environ.get('CONTENT_LENGTH', 0) or 0)
-            if cl > 0:
-                req_data = json.loads(environ['wsgi.input'].read(cl).decode('utf-8'))
-        except Exception:
-            pass
-        email = (req_data.get('email') or '').strip()
-        user_id = req_data.get('user_id') or ''
-        full_name = req_data.get('full_name') or (email.split('@')[0] if email else 'Clerk User')
-        is_adm = (email.lower() in ['mangeshbagul15@gmail.com', 'nanopro@gmail.com'])
-        role = 'admin' if is_adm else 'user'
-        sess_token = 'np_sess_cloud_' + str(int(time.time()*1000))
-        resp_obj = {
-            "status": "success",
-            "session_token": sess_token,
-            "user": {
-                "id": user_id or f"user_clerk_{int(time.time())}",
-                "username": email.split('@')[0] if email else 'clerk_user',
-                "full_name": full_name,
-                "email": email,
-                "role": role,
-                "allowed_views": ["*"] if role == 'admin' else ["dashboard", "universal_tech_video", "video_studio"],
-                "access_mode": "MODIFY"
-            }
-        }
-        cookie_header = f"nanopro_session={sess_token}; Path=/; Max-Age=2592000; SameSite=Lax"
-        b = json.dumps(resp_obj).encode('utf-8')
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Set-Cookie', cookie_header), ('Access-Control-Allow-Origin', '*')])
-        return [b]
 
     if path == '/api/whatsapp/webhook':
         if method == 'GET':
@@ -2747,246 +2189,6 @@ def application(environ, start_response):
 
 
             return [body]
-
-
-
-
-
-
-
-    # 8. Zero-Trust Authentication Endpoints (When Laptop is Offline or Proxying)
-
-
-
-    if path == '/api/auth/login':
-
-
-
-        try:
-
-
-
-            req_data = {}
-
-
-
-            if method == 'POST':
-
-
-
-                content_length = int(environ.get('CONTENT_LENGTH', 0) or 0)
-
-
-
-                if content_length > 0:
-
-
-
-                    raw_body = environ['wsgi.input'].read(content_length)
-
-
-
-                    req_data = json.loads(raw_body.decode('utf-8'))
-
-
-
-            else:
-
-
-
-                qs = environ.get('QUERY_STRING', '')
-
-
-
-                params = urllib.parse.parse_qs(qs)
-
-
-
-                req_data['username'] = params.get('username', params.get('u', ['']))[0]
-
-
-
-                req_data['password'] = params.get('password', params.get('p', ['']))[0]
-
-
-
-            
-
-
-
-            u = req_data.get('username', '').strip()
-
-
-
-            p = req_data.get('password', '').strip()
-
-
-
-            
-
-
-
-            admin_aliases = (
-                'nanopro', 'admin', 'mangesh', 'mangesh15', 'mangeshbagul15',
-                'mangeshbagul15@gmail.com', 'nanopro@gmail.com',
-                '+918433755448', '8433755448', '918433755448'
-            )
-
-
-
-            admin_passwords = (
-
-
-
-                'Divyam@123', 'Admin@123', 'nanopro', 'admin', 'Bhaiyyanand@123',
-
-
-
-                'Bhaiyyanand', 'NanoPro2026', 'mangesh15', 'Mangesh@123',
-
-
-
-                '123456', 'MangeshBagul@123', 'NanoPro@2026'
-
-
-
-            )
-
-
-
-            if (u.lower() in admin_aliases and p in admin_passwords) or (p in admin_passwords):
-
-
-
-                token = f"np_sess_cloud_{int(time.time()*1000)}"
-
-
-
-                resp_payload = {
-
-
-
-                    "status": "success",
-
-
-
-                    "session_token": token,
-
-
-
-                    "user": {
-
-
-
-                        "id": "user_admin_001",
-
-
-
-                        "username": u or "nanopro",
-
-
-
-                        "full_name": "Super Admin (Mangesh Bagul)",
-
-
-
-                        "role": "admin",
-
-
-
-                        "email": "mangeshbagul15@gmail.com"
-
-
-
-                    }
-
-
-
-                }
-
-
-
-                body = json.dumps(resp_payload).encode('utf-8')
-
-
-
-                cookie_header = f"nanopro_session={token}; Max-Age=2592000; Path=/; SameSite=Lax"
-
-
-
-                start_response('200 OK', [
-
-
-
-                    ('Content-Type', 'application/json'),
-
-
-
-                    ('Set-Cookie', cookie_header),
-
-
-
-                    ('Access-Control-Allow-Origin', '*')
-
-
-
-                ])
-
-
-
-                return [body]
-
-
-
-            else:
-
-
-
-                body = json.dumps({"status": "error", "message": "Invalid credentials. Please verify username and password."}).encode('utf-8')
-
-
-
-                start_response('401 Unauthorized', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-
-
-
-                return [body]
-
-
-
-        except Exception as exc:
-
-
-
-            body = json.dumps({"status": "error", "message": str(exc)}).encode('utf-8')
-
-
-
-            start_response('500 Internal Server Error', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-
-
-
-            return [body]
-
-
-
-
-
-
-
-    if path == '/api/auth/validate' and method == 'POST':
-
-
-
-        body = json.dumps({"is_valid": True, "status": "valid", "user": {"username": "nanopro", "role": "admin"}}).encode('utf-8')
-
-
-
-        start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
-
-
-
-        return [body]
 
 
 

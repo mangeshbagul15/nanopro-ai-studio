@@ -141,14 +141,19 @@ class AuthManager:
         return key.hex(), salt
 
     def _ensure_default_admin(self):
-        """Ensures the master super-admin account 'nanopro' / 'Divyam@123' exists."""
+        """Creates the super-admin account without shipping a shared default password."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id FROM users WHERE username = 'nanopro'")
                 admin_row = cursor.fetchone()
                 if not admin_row:
-                    pwd_hash, salt = self._hash_password("Divyam@123")
+                    initial_password = (os.getenv("NANOPRO_ADMIN_PASSWORD") or "").strip()
+                    generated = False
+                    if not initial_password:
+                        initial_password = f"{uuid.uuid4().hex}Aa1!"
+                        generated = True
+                    pwd_hash, salt = self._hash_password(initial_password)
                     now = time.time()
                     cursor.execute("""
                     INSERT INTO users (id, username, full_name, email, password_hash, salt, role, status, created_at, last_login_at, last_active_at)
@@ -168,6 +173,13 @@ class AuthManager:
                     ))
                     conn.commit()
                     log_event("Default Super Admin 'nanopro' created and activated.", component="AuthManager")
+                    if generated:
+                        log_event(
+                            "NANOPRO_ADMIN_PASSWORD was not set. Generated one-time admin password: "
+                            f"{initial_password} — sign in, change it, and set the env var for future bootstraps.",
+                            component="AuthManager",
+                            level="WARNING",
+                        )
         except Exception as e:
             log_event(f"Error ensuring default admin: {e}", component="AuthManager", level="WARNING")
 
@@ -206,6 +218,9 @@ class AuthManager:
 
         if len(username) < 3 or len(username) > 20 or not re.match(r"^[a-zA-Z0-9_]+$", username):
             return {"status": "error", "error": "Username must be 3-20 characters and contain only letters/numbers (e.g. john_doe)."}
+
+        if username in {"nanopro", "admin", "administrator", "root", "superadmin", "system", "support", "mangesh", "mangeshbagul15"}:
+            return {"status": "error", "error": "This username is reserved. Please choose another."}
 
         if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
             return {"status": "error", "error": "Please enter a valid Email ID."}
@@ -328,17 +343,6 @@ class AuthManager:
         ident_lower = raw_identifier.lower()
         now = time.time()
 
-        ADMIN_ALIASES = [
-            "nanopro", "admin", "mangesh", "mangesh15", "mangeshbagul15",
-            "mangeshbagul15@gmail.com", "nanopro@gmail.com",
-            "+918433755448", "8433755448", "918433755448"
-        ]
-        ADMIN_PASSWORDS = [
-            "Divyam@123", "Admin@123", "nanopro", "admin", "Bhaiyyanand@123", 
-            "Bhaiyyanand$123", "NanoPro2026", "mangesh15", "Mangesh@123", 
-            "123456", "MangeshBagul@123", "NanoPro@2026"
-        ]
-
         # Extract digit variants for phone lookup
         clean_digits = "".join(c for c in raw_identifier if c.isdigit())
         phone_variants = [raw_identifier]
@@ -366,12 +370,6 @@ class AuthManager:
                 cursor.execute(query, params)
                 user = cursor.fetchone()
 
-                is_admin_alias = (ident_lower in ADMIN_ALIASES or "8433755448" in raw_identifier)
-
-                if not user and is_admin_alias:
-                    cursor.execute("SELECT * FROM users WHERE username = 'nanopro'")
-                    user = cursor.fetchone()
-
                 # Google / WhatsApp users may sign in with a linked identifier.
                 if not user:
                     try:
@@ -388,20 +386,12 @@ class AuthManager:
                     self._record_audit_log(None, raw_identifier, "FAILED_LOGIN", "User not found", ip_address, user_agent)
                     return {"status": "error", "error": "Invalid username or password!"}
 
-                is_admin_user = (user["username"] == "nanopro" or user["role"] == "admin" or is_admin_alias)
+                is_admin_user = (user["username"] == "nanopro" or user["role"] == "admin")
                 calc_hash, _ = self._hash_password(password, user["salt"])
-                is_admin_valid_pass = (is_admin_user and password in ADMIN_PASSWORDS)
 
-                if calc_hash != user["password_hash"] and not is_admin_valid_pass:
+                if calc_hash != user["password_hash"]:
                     self._record_audit_log(user["id"], raw_identifier, "FAILED_LOGIN", "Invalid password", ip_address, user_agent)
                     return {"status": "error", "error": "Invalid username or password!"}
-
-                # If admin used a verified master fallback password, synchronize hash in DB
-                if is_admin_valid_pass and calc_hash != user["password_hash"]:
-                    new_hash, new_salt = self._hash_password(password)
-                    cursor.execute("UPDATE users SET password_hash = ?, salt = ? WHERE username = 'nanopro'", (new_hash, new_salt))
-                    conn.commit()
-                    log_event(f"Admin '{user['username']}' authenticated via verified master credentials and synchronized in DB.", component="AuthManager")
 
                 # Check account status
                 if user["status"] == "PENDING_APPROVAL":
@@ -595,17 +585,19 @@ class AuthManager:
         # 1. Fetch Clerk configuration and credentials
         vault = CredentialsVault()
         clerk_cred = vault.get_credential("CLERK_AUTH")
-        secret_key = (clerk_cred.get("secret_value") if clerk_cred else None) or os.getenv("CLERK_SECRET_KEY", "sk_test_8ze9H690a4C2Q2KR37frDC83KSZdrw798PQIy4Oqbu")
+        secret_key = (clerk_cred.get("secret_value") if clerk_cred else None) or (os.getenv("CLERK_SECRET_KEY") or "").strip()
         meta = (clerk_cred.get("additional_metadata") if clerk_cred else {}) or {}
         jwks_url = meta.get("jwks_url", "https://adapted-muskrat-6801.clerk.accounts.dev/.well-known/jwks.json")
 
         headers = {
-            "Authorization": f"Bearer {secret_key}",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NanoProAI/1.0"
         }
+        if secret_key:
+            headers["Authorization"] = f"Bearer {secret_key}"
 
         verified = False
         verified_sub = None
+        trusted_email = ""
 
         # 2. Strategy A: Try JWT signature verification if token is passed and has '.'
         if clerk_token and "." in clerk_token:
@@ -618,12 +610,16 @@ class AuthManager:
                 if verified_sub:
                     clerk_user_id = verified_sub
                     verified = True
+                    # Only a signed claim can be trusted, never the request body.
+                    payload_email = (payload.get("email") or "").strip().lower()
+                    if payload_email and payload.get("email_verified") is not False:
+                        trusted_email = payload_email
             except Exception as jwt_ex:
                 log_event(f"Clerk JWT direct validation note: {jwt_ex}", component="AuthManager", level="WARNING")
 
         # 3. Strategy B: Verify session_id via Clerk Backend API if session_id provided or token starts with sess_
         target_sid = session_id or (clerk_token if (clerk_token and clerk_token.startswith("sess_")) else None)
-        if target_sid and not verified:
+        if target_sid and not verified and secret_key:
             try:
                 req_url = f"https://api.clerk.com/v1/sessions/{target_sid}"
                 req = urllib.request.Request(req_url, headers=headers)
@@ -637,7 +633,7 @@ class AuthManager:
                 log_event(f"Clerk Session API check note: {sess_ex}", component="AuthManager", level="WARNING")
 
         # 4. If we have clerk_user_id, enrich profile from Clerk backend
-        if clerk_user_id:
+        if clerk_user_id and secret_key:
             try:
                 u_url = f"https://api.clerk.com/v1/users/{clerk_user_id}"
                 req = urllib.request.Request(u_url, headers=headers)
@@ -645,29 +641,29 @@ class AuthManager:
                     if resp.status == 200:
                         u_data = json.loads(resp.read().decode())
                         verified = True  # Verified against live Clerk API
-                        # Extract email
+                        # Extract email verified by Clerk, not the request body.
+                        profile_email = ""
                         for em_obj in u_data.get("email_addresses", []):
-                            if em_obj.get("id") == u_data.get("primary_email_address_id") or not email:
-                                email = em_obj.get("email_address")
+                            if em_obj.get("id") == u_data.get("primary_email_address_id"):
+                                profile_email = em_obj.get("email_address") or ""
+                                break
+                        if not profile_email and u_data.get("email_addresses"):
+                            profile_email = u_data["email_addresses"][0].get("email_address") or ""
+                        trusted_email = (profile_email or "").strip().lower()
                         fn = u_data.get("first_name") or ""
                         ln = u_data.get("last_name") or ""
                         derived_name = f"{fn} {ln}".strip()
-                        if derived_name and not full_name:
+                        if derived_name:
                             full_name = derived_name
             except Exception as u_ex:
                 log_event(f"Clerk User API lookup note: {u_ex}", component="AuthManager", level="WARNING")
 
-        # Fallback verification: if email is present and client has signed in through Clerk SDK
-        if not verified and email:
-            # Client provided email and token from Clerk JS frontend
-            verified = True
-
-        if not verified and not email and not clerk_user_id:
+        if not verified:
             return {"status": "error", "error": "Clerk session verification failed. Invalid or expired token."}
 
         # 5. Map to Local User Database
         now = time.time()
-        email_clean = (email or "").strip().lower()
+        email_clean = trusted_email
         from app.core.identity_resolver import is_admin_identity
         is_admin_user = is_admin_identity(email_clean) or is_admin_identity(clerk_user_id)
 
@@ -822,14 +818,15 @@ class AuthManager:
         identifier = identifier.strip()
         if not identifier:
             return {"status": "error", "error": "Please enter your mobile number or email."}
+        if channel != "whatsapp":
+            return {"status": "error", "error": "Only WhatsApp OTP is supported. Please use WhatsApp or Google sign-in."}
 
-        clean_id = identifier
-        if channel == "whatsapp":
-            clean_digits = "".join(c for c in identifier if c.isdigit())
-            if len(clean_digits) == 10:
-                clean_id = f"+91{clean_digits}"
-            elif not clean_id.startswith("+"):
-                clean_id = f"+{clean_digits}"
+        clean_digits = "".join(c for c in identifier if c.isdigit())
+        if len(clean_digits) < 10:
+            return {"status": "error", "error": "Please enter a valid mobile number with country code."}
+        clean_id = f"+91{clean_digits}" if len(clean_digits) == 10 else (
+            identifier if identifier.startswith("+") else f"+{clean_digits}"
+        )
 
         otp_code = f"{random.randint(100000, 999999)}"
         now = time.time()
@@ -846,18 +843,19 @@ class AuthManager:
                 """, (otp_id, clean_id, otp_code, channel, now, expires_at))
                 conn.commit()
 
-            wa_link = None
-            if channel == "whatsapp":
-                msg = (
-                    f"🔐 *NanoPro AI Studio Login Verification*\n\n"
-                    f"Your 6-digit verification code is: *{otp_code}*\n\n"
-                    f"⏳ Valid for 5 minutes. Never share this code.\n"
-                    f"🛡️ Zero-Trust Security Sentinel"
-                )
-                res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
-                if not res.get("success"):
-                    res = communication_center.send_whatsapp_free_message(phone=clean_id, message=msg)
-                wa_link = res.get("whatsapp_web_link")
+            msg = (
+                f"🔐 *NanoPro AI Studio Login Verification*\n\n"
+                f"Your 6-digit verification code is: *{otp_code}*\n\n"
+                f"⏳ Valid for 5 minutes. Never share this code.\n"
+                f"🛡️ Zero-Trust Security Sentinel"
+            )
+            res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
+            delivered = bool(res.get("success"))
+            if not delivered:
+                res = communication_center.send_whatsapp_free_message(phone=clean_id, message=msg)
+                delivered = bool(res.get("delivered_via_api"))
+            if not delivered:
+                return {"status": "error", "error": "OTP delivery failed. Please try again in a moment."}
 
             # Instant Admin Telegram Alert (serves as immediate backup)
             time_str = time.strftime('%I:%M:%S %p', time.localtime(now))
@@ -874,8 +872,6 @@ class AuthManager:
                 "status": "success",
                 "message": f"6-digit OTP sent to your {channel.upper()} successfully.",
                 "identifier": clean_id,
-                "otp_code": otp_code,
-                "whatsapp_link": wa_link,
                 "expires_in_seconds": 300
             }
         except Exception as e:
@@ -897,14 +893,15 @@ class AuthManager:
         otp_code = otp_code.strip()
         if not identifier or not otp_code:
             return {"status": "error", "error": "Please enter both phone number and OTP code."}
+        if channel != "whatsapp":
+            return {"status": "error", "error": "Only WhatsApp OTP is supported. Please use WhatsApp or Google sign-in."}
 
-        clean_id = identifier
-        if channel == "whatsapp":
-            clean_digits = "".join(c for c in identifier if c.isdigit())
-            if len(clean_digits) == 10:
-                clean_id = f"+91{clean_digits}"
-            elif not clean_id.startswith("+"):
-                clean_id = f"+{clean_digits}"
+        clean_digits = "".join(c for c in identifier if c.isdigit())
+        if len(clean_digits) < 10:
+            return {"status": "error", "error": "Invalid mobile number."}
+        clean_id = f"+91{clean_digits}" if len(clean_digits) == 10 else (
+            identifier if identifier.startswith("+") else f"+{clean_digits}"
+        )
 
         now = time.time()
         from app.core.identity_resolver import is_admin_identity
@@ -925,7 +922,7 @@ class AuthManager:
                 """, (clean_id, otp_code, now))
                 otp_row = cursor.fetchone()
 
-                if not otp_row and not (is_admin or otp_code in ("123456", "992215", "843375")):
+                if not otp_row:
                     return {"status": "error", "error": "Invalid or expired OTP! Please try again."}
 
                 if otp_row:

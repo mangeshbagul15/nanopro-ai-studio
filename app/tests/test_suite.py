@@ -913,7 +913,7 @@ class ShapeCalculator:
         self.assertIn('status', d_gm)
         self.assertIn('success', d_gm)
 
-        # 5. Test Vault Store API
+        # 5. Vault APIs require an authenticated Super Admin session
         res_vstore = self.client.post('/api/vault/store', json={
             'service_name': 'TEST_INTEGRATION_DB',
             'credential_type': 'database',
@@ -922,21 +922,10 @@ class ShapeCalculator:
             'host': '10.0.0.5',
             'port': '5432'
         })
-        self.assertEqual(res_vstore.status_code, 200)
-        cred_id = res_vstore.json()['credential_id']
+        self.assertIn(res_vstore.status_code, (401, 403))
 
-        # 6. Test Vault List API
         res_vlist = self.client.get('/api/vault/list')
-        self.assertEqual(res_vlist.status_code, 200)
-        vcreds = res_vlist.json()['credentials']
-        stored_item = next((c for c in vcreds if c['service_name'] == 'TEST_INTEGRATION_DB'), None)
-        self.assertIsNotNone(stored_item)
-        self.assertEqual(stored_item['username'], 'db_user')
-        self.assertIn('•', stored_item['secret_value'])
-
-        # 7. Test Vault Delete API
-        res_vdel = self.client.delete(f'/api/vault/{cred_id}')
-        self.assertEqual(res_vdel.status_code, 200)
+        self.assertIn(res_vlist.status_code, (401, 403))
 
 
     # ==========================================

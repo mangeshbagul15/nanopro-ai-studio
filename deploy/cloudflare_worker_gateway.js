@@ -58,44 +58,50 @@ const CONFIG = {
 
 
 
-function checkEdgeAuth(request, url) {
+const EDGE_SESSION_CACHE = new Map();
+
+async function checkEdgeAuth(request, url, env) {
   const cookieStr = request.headers.get("Cookie") || "";
   const authHeader = request.headers.get("Authorization") || "";
   const tokenParam = url.searchParams.get("token") || "";
-  const clerkHandshake = url.searchParams.get("__clerk_handshake") || "";
-  const clerkToken = url.searchParams.get("__session") || "";
 
-  // NanoPro session token via query param
-  if (tokenParam && tokenParam.startsWith("np_sess_")) return true;
-  // Clerk handshake / session tokens
-  if (clerkHandshake) return true;
-  if (clerkToken) return true;
-  // Authorization header
-  if (authHeader && (authHeader.includes("np_sess_") || authHeader.includes("Bearer"))) return true;
-
-  // Cookie-based session detection
-  if (cookieStr.includes("nanopro_session=")) {
+  let token = "";
+  if (tokenParam.startsWith("np_sess_")) {
+    token = tokenParam;
+  } else if (authHeader.includes("np_sess_")) {
+    token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  } else if (cookieStr.includes("nanopro_session=")) {
     for (const part of cookieStr.split(";")) {
       if (part.includes("nanopro_session=")) {
         const val = part.split("nanopro_session=")[1].trim();
         if (val && !["undefined", "null", '""', "''"].includes(val)) {
-          return true;
+          token = val;
         }
       }
     }
   }
-  // Clerk __session cookie
-  if (cookieStr.includes("__session=")) {
-    for (const part of cookieStr.split(";")) {
-      if (part.includes("__session=")) {
-        const val = part.split("__session=")[1].trim();
-        if (val && !["undefined", "null", '""', "''"].includes(val)) {
-          return true;
-        }
-      }
+  if (!token.startsWith("np_sess_")) return false;
+
+  const now = Date.now();
+  const cached = EDGE_SESSION_CACHE.get(token);
+  if (cached && cached.expires > now) return cached.valid;
+
+  let valid = false;
+  try {
+    const renderBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+    const resp = await fetch(`${renderBase}/api/auth/validate?token=${encodeURIComponent(token)}`, {
+      headers: { "Accept": "application/json", "X-NanoPro-Gateway": "Cloudflare-Edge-Auth" },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      valid = data?.is_valid === true;
     }
+  } catch (_) {
+    valid = false;
   }
-  return false;
+  EDGE_SESSION_CACHE.set(token, { valid, expires: now + (valid ? 60000 : 10000) });
+  return valid;
 }
 
 export default {
@@ -144,7 +150,7 @@ export default {
     // ================================================================
     // If NOT authenticated → redirect to /login (the Zero-Trust gate)
     if ((path === "/" || path === "/dashboard") && !path.startsWith("/api/")) {
-      const isAuthed = checkEdgeAuth(request, url);
+      const isAuthed = await checkEdgeAuth(request, url, env);
       if (!isAuthed) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
@@ -156,12 +162,15 @@ export default {
 
     // -1. Legacy dashboard routes (edge-rendered status pages — still protected)
     if (path === "/dashboard/business") {
-      if (!checkEdgeAuth(request, url)) {
+      if (!(await checkEdgeAuth(request, url, env))) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
       return new Response(BUSINESS_DASH_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
     if (path === "/api/dashboard/business") {
+      if (!(await checkEdgeAuth(request, url, env))) {
+        return new Response(JSON.stringify({ status: "error", error: "Authentication required." }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
       const bm = await businessMetrics();
       const bs = await bankingSummary();
       const lv = await dashboardData();
@@ -169,6 +178,9 @@ export default {
     }
 
     if (path === "/api/dashboard/data") {
+      if (!(await checkEdgeAuth(request, url, env))) {
+        return new Response(JSON.stringify({ status: "error", error: "Authentication required." }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
       const out = await dashboardData();
       return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }
@@ -1252,7 +1264,7 @@ export default {
     // 5. AUTHENTICATED DASHBOARD — Serve real studio, NOT the old standby page
 
     if (request.headers.get("accept")?.includes("text/html") || path === "/" || path === "/dashboard") {
-      if (!checkEdgeAuth(request, url)) {
+      if (!(await checkEdgeAuth(request, url, env))) {
         return Response.redirect(`${url.origin}/login`, 302);
       }
 

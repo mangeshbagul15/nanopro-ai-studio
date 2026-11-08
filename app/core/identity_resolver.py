@@ -29,7 +29,7 @@ from app.core.config import SQLITE_DB_PATH
 from app.core.logger import log_event
 
 # Canonical Master Admin Identifiers for Mangesh Bagul (Super Admin)
-ADMIN_USERNAMES: Set[str] = {"nanopro", "admin", "mangesh", "mangeshbagul15", "superadmin"}
+ADMIN_USERNAMES: Set[str] = {"nanopro"}
 ADMIN_EMAILS: Set[str] = {
     "mangeshbagul15@gmail.com",
     "nanoproaistudio@gmail.com",
@@ -40,9 +40,6 @@ ADMIN_PHONES: Set[str] = {
     "8433755448",
     "+918433755448",
     "918433755448",
-    "992215",
-    "+91992215",
-    "9922",
 }
 ADMIN_USER_ID = "user_admin_001"
 
@@ -69,9 +66,6 @@ def is_admin_identity(identifier: str) -> bool:
         return True
     clean_p = _clean_phone(val)
     if clean_p and clean_p in ADMIN_PHONES:
-        return True
-    digits = "".join(c for c in val if c.isdigit())
-    if digits and any(digits.endswith(p.lstrip("+")) or p.lstrip("+").endswith(digits) for p in ADMIN_PHONES if len(digits) >= 6):
         return True
     return False
 

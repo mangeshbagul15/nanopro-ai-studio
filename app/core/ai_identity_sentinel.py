@@ -120,14 +120,14 @@ class SessionGuardWorker:
         cursor = conn.cursor()
         now = time.time()
 
-        # Update any sessions where user_id is admin or username is admin to canonical profile
+        # Update only the canonical admin account; usernames are never promoted to admin.
         cursor.execute("""
         UPDATE user_sessions SET
             user_id = 'user_admin_001',
             username = 'nanopro',
             role = 'admin',
             last_activity = ?
-        WHERE (LOWER(username) IN ('nanopro', 'mangesh', 'mangeshbagul15', 'admin') OR user_id = 'user_admin_001')
+        WHERE user_id = 'user_admin_001'
           AND is_active = 1
         """, (now,))
         repaired = cursor.rowcount

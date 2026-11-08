@@ -26,9 +26,9 @@ class TestAll46ViewsClientEndToEnd(unittest.TestCase):
         res = self.client.get("/api/models/list")
         self.assertEqual(res.status_code, 200)
 
-        # 2. Vault
+        # 2. Vault (requires Super Admin session)
         res = self.client.get("/api/vault/list")
-        self.assertEqual(res.status_code, 200)
+        self.assertIn(res.status_code, (401, 403))
 
         # 3. Connections
         res = self.client.get("/api/connections/list")
