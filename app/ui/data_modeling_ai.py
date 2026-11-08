@@ -701,6 +701,7 @@ def get_data_modeling_js() -> str:
         })(),
         columns: {},
         colLoading: {},
+        lastMessages: [],
         attachments: [],
         tableCtx: null,
         exportTarget: null,
@@ -759,10 +760,31 @@ def get_data_modeling_js() -> str:
         if (token && !headers['Authorization']) {
             headers['Authorization'] = 'Bearer ' + token;
         }
-        var res = await fetch('/api/data_modeling' + path, Object.assign({}, options, {
+        var timeoutMs = options.timeoutMs || 45000;
+        var fetchOptions = Object.assign({}, options, {
             headers: headers,
             credentials: 'same-origin'
-        }));
+        });
+        delete fetchOptions.timeoutMs;
+        var timer = null;
+        if (!fetchOptions.signal && window.AbortController) {
+            var controller = new AbortController();
+            fetchOptions.signal = controller.signal;
+            timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+        }
+        var res;
+        try {
+            res = await fetch('/api/data_modeling' + path, fetchOptions);
+        } catch (err) {
+            if (err && err.name === 'AbortError') {
+                var timeoutErr = new Error('The data backend is still working. I will keep checking for the reply.');
+                timeoutErr.timeout = true;
+                throw timeoutErr;
+            }
+            throw err;
+        } finally {
+            if (timer) clearTimeout(timer);
+        }
         if (res.status === 401) {
             throw new Error('Session expired. Please log in again.');
         }
@@ -771,7 +793,9 @@ def get_data_modeling_js() -> str:
         if (!res.ok || (data && data.status === 'error')) {
             var detail = data && (data.message || data.detail);
             if (detail && typeof detail === 'object') detail = JSON.stringify(detail);
-            throw new Error(detail || ('Request failed (' + res.status + ')'));
+            var apiErr = new Error(detail || ('Request failed (' + res.status + ')'));
+            apiErr.status = res.status;
+            throw apiErr;
         }
         return data || {};
     }
@@ -1971,6 +1995,7 @@ def get_data_modeling_js() -> str:
 
     window.dmRenderMessages = function (messages) {
         var box = $('dmMessages');
+        DM.lastMessages = messages || [];
         if (!box) return;
         if (!messages || !messages.length) {
             box.innerHTML = dmEmptyHtml();
@@ -1980,18 +2005,42 @@ def get_data_modeling_js() -> str:
         box.scrollTop = box.scrollHeight;
     };
 
-    window.dmLoadMessages = async function () {
+    window.dmLoadMessages = async function (silent) {
         if (!DM.workspaceId) {
             window.dmRenderMessages([]);
-            return;
+            return [];
         }
         try {
             var data = await dmApi('/workspaces/' + encodeURIComponent(DM.workspaceId) + '/messages');
-            window.dmRenderMessages(data.messages || []);
+            var messages = data.messages || [];
+            window.dmRenderMessages(messages);
+            return messages;
         } catch (err) {
-            dmToast(err.message, 'err');
+            if (!silent) dmToast(err.message, 'err');
+            return null;
         }
     };
+
+    async function dmRecoverLateReply(baselineAi, workspaceId) {
+        // The gateway can give up before Render's LLM call finishes. The backend
+        // still persists the assistant message, so poll until it shows up.
+        var deadline = Date.now() + 110000;
+        while (Date.now() < deadline) {
+            await new Promise(function (resolve) { setTimeout(resolve, 4000); });
+            if (DM.workspaceId !== workspaceId) return false;
+            try {
+                var data = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages', { timeoutMs: 20000 });
+                var messages = data.messages || [];
+                var aiCount = messages.filter(function (m) { return m.role !== 'user'; }).length;
+                if (aiCount > baselineAi) {
+                    window.dmRenderMessages(messages);
+                    dmToast('Reply received.', 'ok');
+                    return true;
+                }
+            } catch (err) { /* backend still busy - keep polling */ }
+        }
+        return false;
+    }
 
     window.dmUsePrompt = function (btn) {
         var prompt = btn.getAttribute('data-prompt') || '';
@@ -2230,8 +2279,16 @@ def get_data_modeling_js() -> str:
         dmAutoGrow(input);
         dmAppendLocalUser(text || ('Attached: ' + ready.map(function (att) { return att.filename; }).join(', ')), ready);
         dmAppendTyping();
+        var workspaceId = DM.workspaceId;
+        var baselineAi = (DM.lastMessages || []).filter(function (m) { return m.role !== 'user'; }).length;
+        if (!DM.lastMessages || !DM.lastMessages.length) {
+            try {
+                var seeded = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages', { timeoutMs: 20000 });
+                baselineAi = (seeded.messages || []).filter(function (m) { return m.role !== 'user'; }).length;
+            } catch (err) { /* baseline is only used for late-reply recovery */ }
+        }
         var payload = {
-            workspace_id: DM.workspaceId,
+            workspace_id: workspaceId,
             message: text,
             attachments: ready.map(function (att) { return { attachment_id: att.attachment_id }; })
         };
@@ -2241,7 +2298,8 @@ def get_data_modeling_js() -> str:
         try {
             var data = await dmApi('/chat', {
                 method: 'POST',
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                timeoutMs: 120000
             });
             dmRemoveTyping();
             if (data.schema_created) dmToast('Schema ' + data.schema_created.schema + ' created', 'ok');
@@ -2260,7 +2318,15 @@ def get_data_modeling_js() -> str:
             await dmLoadChats();
             window.dmLoadCatalog(false);
             dmUpdateHeader();
-            await dmLoadMessages();
+            await dmLoadMessages(true);
+            if (data.message && data.message.content) {
+                var shown = DM.lastMessages || [];
+                var hasReply = shown.some(function (m) { return m.role !== 'user' && m.content === data.message.content; });
+                if (!hasReply) {
+                    dmRemoveTyping();
+                    window.dmRenderMessages(shown.concat([data.message]));
+                }
+            }
             if (data.result) {
                 window.dmRenderResult(data.result);
             } else if (data.error) {
@@ -2269,9 +2335,22 @@ def get_data_modeling_js() -> str:
             dmRenderTree();
         } catch (err) {
             dmRemoveTyping();
+            if (err.timeout || err.status === 502 || err.status === 503 || err.status === 504 || err.status === 524) {
+                dmToast('Gateway is slow - checking the backend for your reply…', 'ok');
+                var recovered = await dmRecoverLateReply(baselineAi, workspaceId);
+                if (recovered) {
+                    await dmLoadChats();
+                    dmUpdateHeader();
+                    dmRenderTree();
+                    return;
+                }
+            }
             dmToast(err.message, 'err');
             var box = $('dmMessages');
-            if (box && !box.querySelector('.dm-msg.ai')) window.dmRenderMessages([]);
+            if (box && !box.querySelector('.dm-msg.ai')) {
+                var persisted = await dmLoadMessages(true);
+                if (!persisted || !persisted.length) window.dmRenderMessages([]);
+            }
         } finally {
             DM.sending = false;
             if (sendBtn) sendBtn.disabled = false;

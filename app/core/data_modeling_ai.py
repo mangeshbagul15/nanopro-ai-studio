@@ -920,9 +920,30 @@ def _snowflake_databases() -> List[str]:
     return names
 
 
+def _catalog_workspaces() -> List[Dict[str, Any]]:
+    """Every workspace with live table lists, independent of the viewing user."""
+    _ensure_schema()
+    with db.get_connection() as conn:
+        rows = _table_rows(conn, "SELECT * FROM dm_workspaces ORDER BY updated_at DESC")
+    for row in rows:
+        row["pinned"] = bool(row.get("pinned"))
+        row["project_id"] = row.get("project_id") or ""
+        schemas = [{"name": "main", "tables": []}]
+        try:
+            with open_workspace_connection(row["id"]) as wconn:
+                schemas[0]["tables"] = _sqlite_table_names(wconn, "main")
+                for schema in _workspace_schemas(row["id"]):
+                    schemas.append({"name": schema["schema_name"], "tables": _sqlite_table_names(wconn, schema["schema_name"])})
+        except Exception:
+            pass
+        row["schemas"] = schemas
+        row["table_count"] = sum(len(s["tables"]) for s in schemas)
+    return rows
+
+
 def list_catalog() -> List[Dict[str, Any]]:
     entries: List[Dict[str, Any]] = []
-    for ws in list_workspaces():
+    for ws in _catalog_workspaces():
         entries.append({
             "id": "workspace:" + ws["id"],
             "name": ws["name"],
@@ -2205,12 +2226,26 @@ def start_scheduler() -> bool:
 # AI chat
 # ----------------------------------------------------------------------------
 
-def _catalog_for_prompt(workspace_id: str, question: str) -> str:
+def _catalog_for_prompt(
+    workspace_id: str,
+    question: str,
+    context: Optional[Dict[str, Any]] = None,
+    allowed_workspaces: Optional[set] = None,
+) -> str:
     catalog = catalog_snapshot()
     q = (question or "").lower()
+    focus_db = str((context or {}).get("db_id") or "").strip()
+    focus_schema = str((context or {}).get("schema") or "").strip()
+    focus_table = str((context or {}).get("table") or "").strip()
     lines: List[str] = []
     total_tables = 0
     for entry in catalog:
+        if (
+            entry.get("kind") == "workspace"
+            and allowed_workspaces is not None
+            and entry.get("workspace_id") not in allowed_workspaces
+        ):
+            continue
         table_names = [t["name"] for s in entry.get("schemas", []) for t in s.get("tables", [])]
         total_tables += len(table_names)
         header = (
@@ -2232,8 +2267,21 @@ def _catalog_for_prompt(workspace_id: str, question: str) -> str:
             if not names:
                 continue
             # Workspace DBs always get full column detail. Other DBs get detail for
-            # tables named in the question, otherwise the table list only.
-            detailed = entry["kind"] == "workspace" or any(n.lower() in q for n in names)
+            # tables named in the question or explicitly selected in the UI, otherwise
+            # the table list only.
+            db_matches = not focus_db or entry["id"] == focus_db
+            schema_name = str(schema.get("schema") or schema.get("name") or "")
+            schema_matches = not focus_schema or schema_name.lower() == focus_schema.lower()
+            detailed = (
+                entry["kind"] == "workspace"
+                or any(n.lower() in q for n in names)
+                or bool(
+                    focus_table
+                    and db_matches
+                    and schema_matches
+                    and any(n.lower() == focus_table.lower() for n in names)
+                )
+            )
             if detailed:
                 for name in names[:120]:
                     try:
@@ -2264,10 +2312,25 @@ def _catalog_for_prompt(workspace_id: str, question: str) -> str:
     text = "\n".join(lines)
     if len(text) > MAX_CONTEXT_CHARS:
         text = text[:MAX_CONTEXT_CHARS] + "\n…catalog truncated…"
-    return f"TOTAL_TABLES={total_tables}\n" + text
+    focus_line = ""
+    if focus_table:
+        focus_line = (
+            f"SELECTED_CONTEXT: db={focus_db or 'active workspace'} schema={focus_schema or 'main'} "
+            f"table={focus_table}. When the user says \"this table\", \"it\" or omits the table name, "
+            "use this table and its real columns from the catalog.\n"
+        )
+    return focus_line + f"TOTAL_TABLES={total_tables}\n" + text
 
 
-def _system_prompt(workspace: Dict[str, Any]) -> str:
+def _system_prompt(workspace: Dict[str, Any], focus: Optional[Dict[str, Any]] = None) -> str:
+    focus_note = ""
+    if focus and focus.get("table"):
+        focus_note = (
+            f"FOCUS: the user has {focus.get('schema') or 'main'}.{focus['table']} selected in the UI "
+            f"(db={focus.get('db_id') or 'active workspace'}). Follow-up questions such as \"this table\", "
+            "\"its columns\" or \"insert a row\" refer to this table. Never swap in a different table "
+            "unless the user names one.\n"
+        )
     return (
         "You are NanoPro Data Copilot, a senior data engineer + data analyst + DBA embedded in a chat-first database studio. "
         "The user talks in plain language (English or Marathi/Hindi mixed) and NEVER writes SQL — you do everything for them. "
@@ -2306,7 +2369,11 @@ def _system_prompt(workspace: Dict[str, Any]) -> str:
         "13) To send an extract to the user return action=\"deliver_report\" with `table` or a read-only `sql`, `format` "
         "(csv|xlsx|pipe|tab), `limit` (default 100), `channels` (email, telegram, whatsapp), optional `recipient`, `phone` "
         "and `subject`. The platform saves the file on SFTP and returns the real path; quote that path in `reply`.\n"
+        "14) The platform executes your `sql` immediately and appends the real row count. Never say you cannot run SQL, "
+        "never tell the user to run it themselves, and never call the active workspace read-only. With target=\"workspace\" "
+        "your statement runs on the active writable workspace; describe the outcome in `reply`.\n"
         + DELIVERY_CONTRACT
+        + focus_note
         + f"Active workspace: {workspace['id']} — {workspace['name']}.\n"
     )
 
@@ -2420,8 +2487,18 @@ def _looks_like_sql(message: str) -> bool:
     )
 
 
-def _fallback_answer(workspace_id: str, message: str) -> Dict[str, Any]:
+def _fallback_answer(
+    workspace_id: str,
+    message: str,
+    allowed_workspaces: Optional[set] = None,
+) -> Dict[str, Any]:
     catalog = catalog_snapshot()
+    if allowed_workspaces is not None:
+        catalog = [
+            entry
+            for entry in catalog
+            if entry.get("kind") != "workspace" or entry.get("workspace_id") in allowed_workspaces
+        ]
     db_total = len(catalog)
     lower = (message or "").lower()
     table_total = sum(1 for e in catalog for s in e.get("schemas", []) for _ in s.get("tables", []))
@@ -2537,7 +2614,11 @@ def detect_chat_intent(message: str) -> str:
     return "data_analyst"
 
 
-def _fast_intent(workspace_id: str, message: str) -> Optional[Dict[str, Any]]:
+def _fast_intent(
+    workspace_id: str,
+    message: str,
+    allowed_workspaces: Optional[set] = None,
+) -> Optional[Dict[str, Any]]:
     """Deterministic intent parser. Answers the most common questions with zero
     model latency while the LLM stays available for everything else."""
     text = (message or "").strip()
@@ -2564,6 +2645,12 @@ def _fast_intent(workspace_id: str, message: str) -> Optional[Dict[str, Any]]:
             "fast": True,
         }
     catalog = catalog_snapshot(ttl=30.0)
+    if allowed_workspaces is not None:
+        catalog = [
+            entry
+            for entry in catalog
+            if entry.get("kind") != "workspace" or entry.get("workspace_id") in allowed_workspaces
+        ]
 
     if re.fullmatch(
         r"(?:please\s+)?(?:list|show|display|what\s+are)\s+(?:me\s+)?(?:all\s+)?(?:databases?|dbs?|data\s+sources)\s*[?.!]?",
@@ -2673,8 +2760,17 @@ _AI_REPLY_TTL = 300.0
 _AI_REPLY_MAX = 96
 
 
-def _reply_cache_key(workspace_id: str, message: str) -> str:
-    return workspace_id + "|" + re.sub(r"\s+", " ", (message or "").strip().lower())
+def _reply_cache_key(
+    workspace_id: str,
+    message: str,
+    focus: Optional[Dict[str, Any]] = None,
+) -> str:
+    key = workspace_id + "|" + re.sub(r"\s+", " ", (message or "").strip().lower())
+    if focus and focus.get("table"):
+        key += "|" + ".".join(
+            str(focus.get(part) or "") for part in ("db_id", "schema", "table")
+        ).lower()
+    return key
 
 
 def _reply_cache_get(key: str) -> Optional[Dict[str, Any]]:
@@ -2798,23 +2894,37 @@ def chat(
     add_message(workspace_id, "user", message, user=user)
     parsed: Dict[str, Any] = {}
     model_used = "fallback"
+    focus: Dict[str, str] = {}
+    if isinstance(context, dict):
+        focus = {
+            "db_id": str(context.get("db_id") or "").strip(),
+            "schema": str(context.get("schema") or "").strip(),
+            "table": str(context.get("table") or "").strip(),
+        }
+    allowed_workspaces: Optional[set] = None
+    if user:
+        try:
+            allowed_workspaces = {w["id"] for w in list_workspaces(user=user, light=True)}
+            allowed_workspaces.add(workspace_id)
+        except Exception:
+            allowed_workspaces = None
     task_type = detect_chat_intent(message)
     if _looks_like_sql(message):
         parsed = {"reply": "Running your SQL now.", "sql": message, "target": "workspace", "action": None}
         model_used = "direct-sql"
     else:
-        fast = _fast_intent(workspace_id, message)
+        fast = _fast_intent(workspace_id, message, allowed_workspaces)
         if fast:
             parsed = fast
             model_used = "fast-nlu"
         else:
-            cache_key = _reply_cache_key(workspace_id, message)
+            cache_key = _reply_cache_key(workspace_id, message, focus)
             cached = _reply_cache_get(cache_key)
             if cached:
                 parsed = cached
                 model_used = "cached-ai"
             else:
-                catalog_text = _catalog_for_prompt(workspace_id, message)
+                catalog_text = _catalog_for_prompt(workspace_id, message, focus, allowed_workspaces)
                 history_rows = get_messages(workspace_id, limit=12)[:-1]
                 history = "\n".join(f"{m['role']}: {m['content'][:600]}" for m in history_rows)
                 prompt = (
@@ -2829,7 +2939,7 @@ def chat(
                         prompt,
                         task_type=task_type,
                         schema={"type": "json_object"},
-                        system_prompt=_system_prompt(workspace),
+                        system_prompt=_system_prompt(workspace, focus),
                         timeout=45.0,
                         temperature=0.2,
                         max_tokens=3000,
@@ -2838,7 +2948,7 @@ def chat(
                     _reply_cache_put(cache_key, parsed)
                 except Exception as exc:
                     log_event(f"Data modeling AI unavailable: {exc}", level="WARNING", component="DataModeling")
-                    parsed = _fallback_answer(workspace_id, message)
+                    parsed = _fallback_answer(workspace_id, message, allowed_workspaces)
                     model_used = "fallback"
 
     action = (parsed.get("action") or "").strip().lower()

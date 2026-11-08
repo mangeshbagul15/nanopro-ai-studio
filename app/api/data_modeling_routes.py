@@ -109,6 +109,29 @@ def _error(message: str, status: int = 400) -> JSONResponse:
     return JSONResponse({"status": "error", "message": message}, status_code=status)
 
 
+def _visible_databases(databases: list, user_label: str) -> list:
+    """Hide other users' workspaces from the catalog while keeping shared DBs."""
+    from app.core import data_modeling_ai as dm
+
+    try:
+        allowed = {w["id"] for w in dm.list_workspaces(user=user_label, light=True)}
+    except Exception:
+        return databases
+    return [
+        entry
+        for entry in databases
+        if entry.get("kind") != "workspace" or entry.get("workspace_id") in allowed
+    ]
+
+
+def _owned_workspace(db_id: str, user_label: str):
+    from app.core import data_modeling_ai as dm
+
+    if not db_id.startswith("workspace:"):
+        return None
+    return dm.get_workspace(db_id.split(":", 1)[1], user=user_label)
+
+
 @router.get("/status")
 def api_dm_status(request: Request):
     _session_user(request)
@@ -314,25 +337,30 @@ def api_dm_create_schema(workspace_id: str, req: SchemaCreateRequest, request: R
 
 @router.get("/catalog")
 def api_dm_catalog(request: Request, refresh: bool = False, fast: bool = False):
-    _session_user(request)
+    user = _session_user(request)
+    user_label = _user_label(user)
     from app.core import data_modeling_ai as dm
 
     if refresh:
         databases, scanning = dm.refresh_catalog_async()
         if not scanning:
             databases = dm.catalog_snapshot(ttl=0)
-        return JSONResponse({"status": "success", "databases": databases, "scanning": scanning})
+        return JSONResponse({"status": "success", "databases": _visible_databases(databases, user_label), "scanning": scanning})
     if fast:
         databases, scanning = dm.catalog_cached()
-        return JSONResponse({"status": "success", "databases": databases, "scanning": scanning})
-    return JSONResponse({"status": "success", "databases": dm.catalog_snapshot(ttl=0 if refresh else 8.0)})
+        return JSONResponse({"status": "success", "databases": _visible_databases(databases, user_label), "scanning": scanning})
+    databases = dm.catalog_snapshot(ttl=0 if refresh else 8.0)
+    return JSONResponse({"status": "success", "databases": _visible_databases(databases, user_label)})
 
 
 @router.get("/table")
 def api_dm_table(request: Request, db_id: str, table: str, schema: str = "main"):
-    _session_user(request)
+    user = _session_user(request)
+    user_label = _user_label(user)
     from app.core import data_modeling_ai as dm
 
+    if db_id.startswith("workspace:") and not _owned_workspace(db_id, user_label):
+        return _error("Database not found in catalog.", 404)
     try:
         details = dm.get_table_details(db_id, schema, table)
     except Exception as exc:
@@ -579,9 +607,12 @@ def api_dm_table_download(
     schema: str = "main",
     format: str = "csv",
 ):
-    _session_user(request)
+    user = _session_user(request)
+    user_label = _user_label(user)
     from app.core import data_modeling_ai as dm
 
+    if db_id.startswith("workspace:") and not _owned_workspace(db_id, user_label):
+        return _error("Database not found in catalog.", 404)
     try:
         filename, content, media_type = dm.table_to_export(db_id, schema, table, format)
     except Exception as exc:

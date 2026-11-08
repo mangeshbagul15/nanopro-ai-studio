@@ -829,6 +829,42 @@ export default {
       }
     }
 
+    // Data Modeling by AI must run on Render only: it owns workspace SQLite state,
+    // the live catalog and a slow LLM call. AlwaysData would answer with a generic
+    // chat reply that is never persisted to the workspace.
+    const isDataModelingEndpoint = path.startsWith("/api/data_modeling") ||
+                                   path.startsWith("/api/data-modeling");
+    if (isDataModelingEndpoint) {
+      try {
+        const targetUrl = new URL(path + url.search, renderUrl);
+        const newHeaders = new Headers(request.headers);
+        newHeaders.delete("host");
+        newHeaders.set("Host", targetUrl.host);
+        newHeaders.set("X-Forwarded-Host", url.host);
+        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-DataModeling-Render-Direct");
+        const response = await fetch(targetUrl.toString(), {
+          method: request.method,
+          headers: newHeaders,
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+          redirect: "follow"
+        });
+        const fh = new Headers(response.headers);
+        fh.set("X-NanoPro-Routed-Node", renderUrl);
+        fh.set("X-NanoPro-Mode", "RENDER_DATA_MODELING_DIRECT");
+        fh.set("Access-Control-Allow-Origin", "*");
+        fh.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+        fh.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          status: "error",
+          code: "dm_backend_unreachable",
+          message: "Data Modeling service is starting up. Please retry in a few seconds.",
+          details: err.message
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
     // --- VIDEO MAKER ROUTING: Laptop required, graceful error if down ---
     if (isVideoEndpoint) {
       // Try laptop first (only for video/GPU endpoints)

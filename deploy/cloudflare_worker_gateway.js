@@ -956,6 +956,42 @@ export default {
       }
     }
 
+    // Data Modeling by AI owns its own workspace state (SQLite + live catalog) and
+    // runs an LLM call that can take 45s. AlwaysData answers this path with a
+    // generic chat reply that is never persisted, so it must never be a fallback.
+    const isDataModelingEndpoint = path.startsWith("/api/data_modeling") ||
+                                   path.startsWith("/api/data-modeling");
+    if (isDataModelingEndpoint) {
+      try {
+        const targetUrl = new URL(path + url.search, renderUrl);
+        const newHeaders = new Headers(request.headers);
+        newHeaders.delete("host");
+        newHeaders.set("Host", targetUrl.host);
+        newHeaders.set("X-Forwarded-Host", url.host);
+        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-DataModeling-Render-Direct");
+        const response = await fetch(targetUrl.toString(), {
+          method: request.method,
+          headers: newHeaders,
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+          redirect: "follow"
+        });
+        const fh = new Headers(response.headers);
+        fh.set("X-NanoPro-Routed-Node", renderUrl);
+        fh.set("X-NanoPro-Mode", "RENDER_DATA_MODELING_DIRECT");
+        fh.set("Access-Control-Allow-Origin", "*");
+        fh.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+        fh.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          status: "error",
+          code: "dm_backend_unreachable",
+          message: "Data Modeling service is starting up. Please retry in a few seconds.",
+          details: err.message
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
     // --- LAPTOP-ONLY ENDPOINTS (FFmpeg encoding — no cloud substitute) ---
     if (isLaptopOnlyEndpoint) {
       if (localTunnel) {
@@ -1089,6 +1125,8 @@ export default {
       // Video/AI endpoints need longer timeout — Groq/Gemini calls take 15-45s
       const isSlowEndpoint = path.startsWith("/api/sql_video") ||
                               path.startsWith("/api/video") ||
+                              path.startsWith("/api/data_modeling") ||
+                              path.startsWith("/api/data-modeling") ||
                               path === "/api/manager/chat" ||
                               path === "/api/prompt" ||
                               path.startsWith("/api/coding") ||

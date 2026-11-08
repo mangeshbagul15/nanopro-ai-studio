@@ -2054,7 +2054,15 @@ def application(environ, start_response):
         start_response('200 OK', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
         return [json.dumps(get_dynamic_office_live_state()).encode('utf-8')]
 
-    if path in ('/api/manager/chat', '/api/antigravity/chat', '/api/chat', '/api/data-modeling/chat', '/api/data_modeling/chat', '/api/copilot/chat', '/api/assistant/chat'):
+    if path in ('/api/data_modeling/chat', '/api/data-modeling/chat'):
+        start_response('503 Service Unavailable', [('Content-Type', 'application/json'), ('Access-Control-Allow-Origin', '*')])
+        return [json.dumps({
+            'status': 'error',
+            'code': 'DM_REQUIRES_RENDER',
+            'message': 'Data Modeling by AI runs only on the Render backend. Retry in a few seconds.'
+        }).encode('utf-8')]
+
+    if path in ('/api/manager/chat', '/api/antigravity/chat', '/api/chat', '/api/copilot/chat', '/api/assistant/chat'):
         try:
             req_len = int(environ.get('CONTENT_LENGTH', 0))
             body_bytes = environ['wsgi.input'].read(req_len) if req_len > 0 else b'{}'
