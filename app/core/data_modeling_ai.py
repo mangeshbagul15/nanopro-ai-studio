@@ -2650,6 +2650,20 @@ def _looks_like_sql(message: str) -> bool:
     )
 
 
+def _extract_direct_sql(message: str) -> str:
+    """Returns the SQL body when the user pastes or asks to run a statement."""
+    text = (message or "").strip()
+    marker = re.search(
+        r"\b(?:run|execute)\s+(?:this\s+|the\s+|following\s+)?sql\s*(?:exactly|now|here)?\s*[:\-]?\s*(.+)$",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if marker:
+        body = marker.group(1).strip()
+        return body if _looks_like_sql(body) else ""
+    return text if _looks_like_sql(text) else ""
+
+
 def _fallback_answer(
     workspace_id: str,
     message: str,
@@ -2725,6 +2739,19 @@ def detect_chat_intent(message: str) -> str:
     - 'data_analyst': SQL, queries, schemas, ETL, joins, aggregations (Codestral, Qwen, DeepSeek)
     """
     msg = (message or "").strip().lower()
+
+    # Structured SQL wins over greetings: data values such as "hello" inside an
+    # INSERT must not route the request to the dialogue model.
+    if re.search(
+        r"\b(create\s+(?:or\s+replace\s+)?(?:an?\s+|the\s+)?(?:table|view|index)\b|"
+        r"insert\s+(?:into\s+|rows?\s+into\s+)?[`\"\[]?(?:\w|\()|"
+        r"update\s+\w+\s+set\b|delete\s+from\b|alter\s+table\b|"
+        r"drop\s+(?:table|view|index)\b|truncate\s+table\b|"
+        r"select\b[^;\n]{0,300}\bfrom\b)",
+        msg,
+        re.IGNORECASE,
+    ):
+        return "data_analyst"
 
     # 1. Coding / Python / Scripting / Code Interpreter (Top priority if asking for code)
     code_patterns = [
@@ -3164,8 +3191,9 @@ def chat(
         except Exception:
             allowed_workspaces = None
     task_type = detect_chat_intent(message)
-    if _looks_like_sql(message):
-        parsed = {"reply": "Running your SQL now.", "sql": message, "target": "workspace", "action": None}
+    direct_sql = _extract_direct_sql(message)
+    if direct_sql:
+        parsed = {"reply": "Running your SQL now.", "sql": direct_sql, "target": "workspace", "action": None}
         model_used = "direct-sql"
     else:
         fast = _fast_intent(workspace_id, message, allowed_workspaces, focus)
@@ -3211,6 +3239,24 @@ def chat(
     if isinstance(sql, list):
         sql = " ".join(str(s) for s in sql)
     sql = (sql or "").strip() or None
+
+    # A recurring schedule only makes sense when the user actually asked for
+    # one; otherwise the model's "steps" are just the SQL to run now.
+    if action in ("create_schedule", "create_pipeline") and not re.search(
+        r"\b(schedule[sd]?|recurring|cron|daily|weekly|monthly|hourly|every\s+\w+|"
+        r"pipeline|automat(?:e|ion|ically)|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b",
+        message or "",
+        re.IGNORECASE,
+    ):
+        steps = parsed.get("steps") or []
+        salvaged = [str(step).strip() for step in steps if str(step).strip()] if isinstance(steps, list) else []
+        if not salvaged and sql:
+            salvaged = _split_sql_statements(sql)
+        if salvaged:
+            sql = ";\n".join(step.rstrip(";") for step in salvaged) + ";"
+            parsed["sql"] = sql
+        action = ""
+        parsed["action"] = ""
     forced_delivery = bool(re.search(r"\b(sftp|attachment)\b", message or "", re.IGNORECASE))
     if not action or forced_delivery:
         intent = _delivery_intent(workspace_id, message)
@@ -3331,6 +3377,30 @@ def chat(
     result = None
     run_id = None
     error = schedule_error or None
+    wants_write = bool(
+        re.search(
+            r"\b(create\s+(?:or\s+replace\s+)?(?:an?\s+|the\s+)?(?:table|view|index)\b|"
+            r"insert\s+(?:into\s+|rows?\s+into\s+)?[`\"\[]?(?:\w|\()|"
+            r"update\s+\w+\s+set\b|delete\s+from\b|alter\s+table\b|"
+            r"drop\s+(?:table|view|index)\b|truncate\s+table\b)",
+            message or "",
+            re.IGNORECASE,
+        )
+    )
+    if (
+        wants_write
+        and model_used != "direct-sql"
+        and not sql
+        and not error
+        and not schedule_handled
+        and not created_schema
+        and not created_workspace
+    ):
+        reply = (
+            "I could not turn that request into executable SQL, so nothing was "
+            "changed in your workspace. Please retry, or send the statement "
+            "directly, e.g. CREATE TABLE ...; INSERT INTO ...;"
+        )
     if sql and not created_schema and not schedule_handled:
         statements = _split_sql_statements(sql) if target.startswith("workspace:") else [sql]
         executed = 0
