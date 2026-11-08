@@ -672,24 +672,6 @@
                     } catch(e2) {}
                 }
 
-                // Tier 3: Master Admin verified fallback
-                if (!data || data.status !== 'success') {
-                    const emLow = (email || '').toLowerCase().trim();
-                    if (emLow === 'mangeshbagul15@gmail.com' || emLow === 'nanoproaistudio@gmail.com' || emLow.includes('mangesh')) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_google_' + Date.now(),
-                            user: {
-                                id: 'user_admin_001',
-                                username: 'nanopro',
-                                full_name: fullName || 'Super Admin (Mangesh Bagul)',
-                                role: 'admin',
-                                email: email || 'mangeshbagul15@gmail.com'
-                            }
-                        };
-                    }
-                }
-
                 if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
                     showAlert('⏳ ' + (data.error || 'तुमचे Google खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे.'), 'warning');
                     return false;
@@ -851,22 +833,6 @@
                     } catch(e2) {}
                 }
 
-                if (!data || data.status !== 'success') {
-                    const uEmail = (email || '').toLowerCase();
-                    const isAdmin = uEmail.includes('mangesh') || uEmail.includes('nanopro');
-                    data = {
-                        status: 'success',
-                        session_token: 'np_sess_clerk_' + Date.now(),
-                        user: {
-                            id: window.Clerk.user.id,
-                            username: isAdmin ? 'nanopro' : (uEmail.split('@')[0] || 'google_user'),
-                            full_name: window.Clerk.user.fullName || (isAdmin ? 'Super Admin (Mangesh Bagul)' : 'Google User'),
-                            role: isAdmin ? 'admin' : 'user',
-                            email: email
-                        }
-                    };
-                }
-
                 if (data && data.status === 'success' && data.session_token) {
                     localStorage.setItem('nanopro_session_token', data.session_token);
                     localStorage.setItem('nanopro_active_account', data.user.username);
@@ -1008,33 +974,6 @@
                         const respAd = await fetch(adUrl);
                         if (respAd.ok) data = await respAd.json();
                     } catch(e3) {}
-                }
-
-                // Tier 4: Direct Verified Super-Admin Instant Key
-                if (!data || data.status !== 'success') {
-                    const uLow = username.toLowerCase();
-                    const isAdmUser = [
-                        'nanopro', 'admin', 'mangesh', 'mangesh15', 'mangeshbagul15',
-                        'mangeshbagul15@gmail.com', 'nanopro@gmail.com',
-                        '+918433755448', '8433755448', '918433755448'
-                    ].includes(uLow) || uLow.includes('8433755448');
-                    const isAdmPass = [
-                        'Admin@123', 'Divyam@123', 'nanopro', 'admin', 
-                        'Bhaiyyanand@123', 'NanoPro2026', '123456', 'MangeshBagul@123'
-                    ].includes(password);
-                    if (isAdmUser && isAdmPass) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: {
-                                id: 'user_admin_001',
-                                username: 'nanopro',
-                                full_name: 'Super Admin (Mangesh Bagul)',
-                                role: 'admin',
-                                email: 'mangeshbagul15@gmail.com'
-                            }
-                        };
-                    }
                 }
 
                 if (data && data.status === 'success' && data.session_token) {
@@ -1180,25 +1119,6 @@
                         });
                         if (adResp.ok) data = await adResp.json();
                     } catch(e2) {}
-                }
-
-                // Tier 3: Admin & Permanently Allowed OTP verification
-                if (!data || data.status !== 'success') {
-                    const cleanPhone = phone.replace(/[^0-9]/g, '');
-                    const isAllowedAdmin = (cleanPhone.includes('8433755448') || cleanPhone.includes('9922') || ['843375', '123456', '992215'].includes(otpCode) || (cleanPhone.endsWith('8433755448') && otpCode.length >= 4));
-                    if (isAllowedAdmin) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: {
-                                id: 'user_admin_001',
-                                username: 'nanopro',
-                                full_name: 'Super Admin (Mangesh Bagul)',
-                                role: 'admin',
-                                email: 'mangeshbagul15@gmail.com'
-                            }
-                        };
-                    }
                 }
 
                 if (data && data.status === 'success' && data.session_token) {

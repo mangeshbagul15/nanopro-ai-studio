@@ -5928,17 +5928,6 @@ def get_login_page_html() -> str:
 
                 const data = await resp.json();
 
-                // Auto-recognize Mangesh Admin Phone
-                if (!data || data.status !== 'success') {
-                    if (currentWaTarget.includes('8433755448') || currentWaTarget.includes('9922')) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: { id: 'user_admin_001', username: 'nanopro', full_name: 'Super Admin (Mangesh Bagul)', role: 'admin', email: 'mangeshbagul15@gmail.com' }
-                        };
-                    }
-                }
-
                 if (data && (data.status_code === 'PENDING_APPROVAL' || data.status === 'pending_approval')) {
                     showAlert('⏳ ' + (data.error || 'तुमचे Google खाते ॲडमिन (nanopro) कडून मंजुरीच्या प्रतीक्षेत आहे.'), 'warning');
                     return false;
@@ -6152,25 +6141,6 @@ def get_login_page_html() -> str:
                     } catch(e3) {}
                 }
 
-                // Tier 4: Direct Verified Super-Admin Instant Key
-                if (!data || data.status !== 'success') {
-                    const isAdmUser = ['nanopro', 'admin', 'mangesh', 'mangesh15', 'mangeshbagul15'].includes(username.toLowerCase());
-                    const isAdmPass = ['Admin@123', 'Divyam@123', 'nanopro', 'admin', 'Bhaiyyanand@123', 'NanoPro2026', '123456'].includes(password);
-                    if (isAdmUser && isAdmPass) {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: {
-                                id: 'user_admin_001',
-                                username: 'nanopro',
-                                full_name: 'Super Admin (Mangesh Bagul)',
-                                role: 'admin',
-                                email: 'mangeshbagul15@gmail.com'
-                            }
-                        };
-                    }
-                }
-
                 if (data && data.status === 'success' && data.session_token) {
                     localStorage.setItem('nanopro_session_token', data.session_token);
                     localStorage.setItem('nanopro_active_account', data.user.username);
@@ -6362,23 +6332,6 @@ def get_login_page_html() -> str:
                         });
                         if (adResp.ok) data = await adResp.json();
                     } catch(e2) {}
-                }
-
-                // Tier 3: Mangesh Admin recognized phone fallback
-                if (!data || data.status !== 'success') {
-                    if (phone.includes('8433755448') || phone.includes('9922') || otpCode === '123456') {
-                        data = {
-                            status: 'success',
-                            session_token: 'np_sess_cloud_' + Date.now(),
-                            user: {
-                                id: 'user_admin_001',
-                                username: 'nanopro',
-                                full_name: 'Super Admin (Mangesh Bagul)',
-                                role: 'admin',
-                                email: 'mangeshbagul15@gmail.com'
-                            }
-                        };
-                    }
                 }
 
                 if (data && data.status === 'success' && data.session_token) {
