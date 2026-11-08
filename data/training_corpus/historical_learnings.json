@@ -1,5 +1,23 @@
 [
   {
+    "task_id": "task_1794128749172_6706a3",
+    "domain": "Manager_Agent_Orchestration",
+    "learned_on": "2026-11-08 14:35:49 IST",
+    "prompt": "NanoPro काय आहे? सविस्तर सांगा.",
+    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'NanoPro काय आहे? सविस्तर सांगा....'",
+    "output_preview": "## NanoPro AI Studio v33 – संपूर्ण परिचय  \n\n**NanoPro** हा **Mangesh Bagul** यांनी निर्मित, पूर्ण‑स्टॅक एंटरप्राइझ‑ग्रेड AI प्लॅटफॉर्म आहे. हा प्लॅटफॉर्म **NanoPro AI Studio v33** या आवृत्तीत कार्यरत आहे आणि खालील प्रमुख...",
+    "latency_ms": 6200.2
+  },
+  {
+    "task_id": "task_1794128604377_6706a3",
+    "domain": "Manager_Agent_Orchestration",
+    "learned_on": "2026-11-08 14:33:24 IST",
+    "prompt": "NanoPro काय आहे? सविस्तर सांगा.",
+    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'NanoPro काय आहे? सविस्तर सांगा....'",
+    "output_preview": "नमस्कार! मी **NanoPro Manager & Antigravity AI**, **मंगेश नॅनो प्रो एआय स्टुडिओ v33 (Mangesh Nano Pro AI Studio v33)** चा सर्वोच्च ड्युअल ऑटोनॉमस कमांडर आहे. ही संपूर्ण प्रणाली **मंगेश बागूल (Mangesh Bagul)** यांनी इंजिन...",
+    "latency_ms": 19191.9
+  },
+  {
     "task_id": "task_1792214809760_21db0c",
     "domain": "Manager_Agent_Orchestration",
     "learned_on": "2026-10-17 10:56:49 IST",
@@ -249,24 +267,6 @@
     "prompt": "Send an email to my recruiter asking for an interview update.",
     "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Send an email to my recruiter asking for an interv...'",
     "output_preview": "{'response': '✉️ **Email Draft Created — Approval Required Before Sending:**\\n\\n• **Recipient:** `recruiter@example.com`\\n• **Subject:** `Project Status & Interview Update`\\n• **Approval ID:** `appr_1792002677728`\\n\\n**M...",
-    "latency_ms": 95.0
-  },
-  {
-    "task_id": "task_1792002625354_742637",
-    "domain": "Manager_Agent_Orchestration",
-    "learned_on": "2026-10-15 00:00:25 IST",
-    "prompt": "Connect these two tables and show me customer balances.",
-    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Connect these two tables and show me customer bala...'",
-    "output_preview": "{'response': '📊 **Verified Table Inventory for `BANK_DB` (Snowflake Data Cloud / `L0_STAGING`):**\\n\\n| # | Table Name | Layer / Schema | Primary Key | Foreign Key | Records | Purpose |\\n|---|---|---|---|---|---|---|\\n| 1...",
-    "latency_ms": 95.0
-  },
-  {
-    "task_id": "task_1792002580587_bb093d",
-    "domain": "Manager_Agent_Orchestration",
-    "learned_on": "2026-10-14 23:59:40 IST",
-    "prompt": "Find open-source AI agents on GitHub.",
-    "distilled_pattern": "Learned solution for Manager_Agent_Orchestration: prompt pattern 'Find open-source AI agents on GitHub....'",
-    "output_preview": "{'response': \"🐙 **GitHub AI Project Explorer — 'ai agents' (4 repositories):**\\n\\n• **[obra/superpowers](https://github.com/obra/superpowers)** — ⭐ 299,071 stars | 🍴 26,716 forks\\n  - **Language & License:** `Shell` | Li...",
     "latency_ms": 95.0
   }
 ]

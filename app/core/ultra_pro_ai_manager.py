@@ -300,23 +300,41 @@ System status for '{p_clean}':
         }
 
     def _call_llm_inference(self, user_prompt: str, system_grounding: str, is_marathi: bool, is_hindi: bool) -> Optional[str]:
-        """Calls real LLM inference with fast cascade: Gemini -> Ollama -> None."""
+        """Calls real LLM inference with fast cascade: ModelManager (Groq LPU / OpenRouter / DeepSeek) -> Gemini -> Ollama -> None."""
         lang_instruction = "Respond in fluent, professional Marathi (मराठी)." if is_marathi else ("Respond in clear, professional Hindi (हिंदी)." if is_hindi else "Respond in clear, professional English.")
         full_system = f"""You are NanoPro Manager & Antigravity AI, the supreme dual autonomous commanders of Mangesh Nano Pro AI Studio v33.
-Engineered by Mangesh Bagul.
+Engineered and founded by Mangesh Bagul.
 {lang_instruction}
 
 CURRENT SYSTEM REALITY & GROUNDING:
 {system_grounding}
 
 CORE INSTRUCTIONS:
-1. Always be fully grounded in the live system state above. You know all 52 features, 10 server nodes, 21 database engines, 49 DuckDB Gold Marts, and 305 agents.
+1. Always be fully grounded in the live system state above. You know all 52 features, 10 server nodes, 21 database engines, 49 DuckDB Gold Marts, and 320 agents across 20 groups (A-T).
 2. Answer the user's specific question directly, thoroughly, and intelligently. Do NOT output a generic canned response.
 3. If the user asks in Marathi, respond in natural, fluent Marathi.
 4. If technical details, commands, or code are required, format them cleanly with markdown.
 5. If the user asks about system health, server manager, agents, or databases, provide real accurate counts and live URLs."""
 
-        # 1. Google Gemini Flash Lite / Flash
+        # 1. Primary: ModelManager (Groq LPU ultra-fast inference / OpenRouter / DeepSeek / Mistral)
+        try:
+            from app.core.model_adapter import model_manager
+            task_type = "dialogue" if not is_marathi else "general_chat"
+            combined_prompt = f"{full_system}\n\nUser Question:\n{user_prompt}"
+            content_out, model_used, _, _ = model_manager.route_and_execute(
+                combined_prompt,
+                task_type=task_type,
+                system_prompt=full_system,
+                max_tokens=1800,
+                temperature=0.3,
+                timeout=12.0,
+            )
+            if content_out and content_out.strip():
+                return content_out.strip()
+        except Exception:
+            pass
+
+        # 2. Secondary: Google Gemini Flash
         gemini_key = os.environ.get("GEMINI_API_KEY", "")
         if not gemini_key:
             try:
@@ -336,7 +354,7 @@ CORE INSTRUCTIONS:
                     system_instruction=full_system,
                     temperature=0.3
                 )
-                for model_candidate in ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest"]:
+                for model_candidate in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]:
                     try:
                         resp = client.models.generate_content(
                             model=model_candidate,
@@ -350,7 +368,7 @@ CORE INSTRUCTIONS:
             except Exception:
                 pass
 
-        # 2. Local Ollama Fast Fallback (qwen2.5-coder:3b, llama3.2:1b)
+        # 3. Local Ollama Fast Fallback (qwen2.5-coder:3b, llama3.2:1b)
         try:
             req_data = json.dumps({
                 "model": "qwen2.5-coder:3b",
