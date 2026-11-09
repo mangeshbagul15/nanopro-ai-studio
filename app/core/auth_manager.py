@@ -359,6 +359,10 @@ class AuthManager:
         ident_lower = raw_identifier.lower()
         now = time.time()
 
+        if (self._recent_event_count("FAILED_LOGIN", ident_lower, ip_address, 900) >= 5
+                or self._recent_ip_event_count("FAILED_LOGIN", ip_address, 900) >= 25):
+            return {"status": "error", "error": "Too many failed login attempts. Please wait 15 minutes and try again."}
+
         # Extract digit variants for phone lookup
         clean_digits = "".join(c for c in raw_identifier if c.isdigit())
         phone_variants = [raw_identifier]
@@ -851,6 +855,12 @@ class AuthManager:
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT COUNT(*) FROM auth_otps WHERE identifier = ? AND created_at >= ?",
+                    (clean_id, now - 600),
+                )
+                if int(cursor.fetchone()[0]) >= 5:
+                    return {"status": "error", "error": "Too many OTP requests. Please wait 10 minutes before trying again."}
                 cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE identifier = ? AND is_used = 0", (clean_id,))
                 otp_id = f"otp_{uuid.uuid4().hex[:12]}"
                 cursor.execute("""
@@ -921,6 +931,10 @@ class AuthManager:
         )
 
         now = time.time()
+        if (self._recent_event_count("FAILED_OTP", clean_id, ip_address, 300) >= 5
+                or self._recent_ip_event_count("FAILED_OTP", ip_address, 300) >= 25):
+            return {"status": "error", "error": "Too many invalid OTP attempts. Please request a new code after 5 minutes."}
+
         from app.core.identity_resolver import is_admin_identity
         is_admin = is_admin_identity(clean_id)
         try:
@@ -940,6 +954,12 @@ class AuthManager:
                 otp_row = cursor.fetchone()
 
                 if not otp_row:
+                    cursor.execute(
+                        "INSERT INTO user_audit_logs (id, user_id, username, event_type, details, ip_address, user_agent, duration_seconds, created_at) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (f"audit_{uuid.uuid4().hex[:12]}", None, clean_id, "FAILED_OTP", "Invalid or expired OTP", ip_address, user_agent, 0, now),
+                    )
+                    conn.commit()
                     return {"status": "error", "error": "Invalid or expired OTP! Please try again."}
 
                 if otp_row:
@@ -1364,6 +1384,39 @@ class AuthManager:
                 conn.commit()
         except Exception:
             pass
+
+    def _recent_event_count(self, event_type: str, identifier: str, ip_address: str, window_seconds: int) -> int:
+        """Counts recent audit events for a username from the same IP (brute-force throttle)."""
+        cutoff = time.time() - window_seconds
+        has_ip = bool(ip_address) and ip_address != "Unknown"
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT COUNT(*) FROM user_audit_logs WHERE event_type = ? AND created_at >= ? "
+                    "AND LOWER(username) = ? AND (? = 0 OR ip_address = ?)",
+                    (event_type, cutoff, (identifier or "").lower(), 1 if has_ip else 0, ip_address),
+                )
+                row = cursor.fetchone()
+                return int(row[0]) if row else 0
+        except Exception:
+            return 0
+
+    def _recent_ip_event_count(self, event_type: str, ip_address: str, window_seconds: int) -> int:
+        """Counts recent audit events from one IP across all identifiers (password spraying throttle)."""
+        if not ip_address or ip_address == "Unknown":
+            return 0
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT COUNT(*) FROM user_audit_logs WHERE event_type = ? AND created_at >= ? AND ip_address = ?",
+                    (event_type, time.time() - window_seconds, ip_address),
+                )
+                row = cursor.fetchone()
+                return int(row[0]) if row else 0
+        except Exception:
+            return 0
 
     def _notify_telegram(self, html_text: str):
         """Asynchronously dispatches Telegram notifications using the personal assistant agent."""
