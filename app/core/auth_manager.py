@@ -9,6 +9,7 @@ import re
 import time
 import json
 import uuid
+import hmac
 import hashlib
 import sqlite3
 from typing import Dict, Any, List, Optional, Tuple
@@ -201,6 +202,16 @@ class AuthManager:
                     )
                     conn.commit()
                     log_event("Super Admin password synchronized from NANOPRO_ADMIN_PASSWORD.", component="AuthManager")
+
+                if env_password:
+                    cursor.execute("SELECT password_hash, salt FROM users WHERE username = 'nanopro'")
+                    stored = cursor.fetchone()
+                    verify_hash, _ = self._hash_password(env_password, stored["salt"]) if stored else ("", "")
+                    log_event(
+                        "Admin credential bootstrap verify: "
+                        f"row_present={bool(stored)} stored_matches_env={bool(stored) and verify_hash == stored['password_hash']}",
+                        component="AuthManager",
+                    )
         except Exception as e:
             log_event(f"Error ensuring default admin: {e}", component="AuthManager", level="WARNING")
 
@@ -414,10 +425,36 @@ class AuthManager:
 
                 is_admin_user = (user["username"] == "nanopro" or user["role"] == "admin")
                 calc_hash, _ = self._hash_password(password, user["salt"])
+                password_matches = calc_hash == user["password_hash"]
 
-                if calc_hash != user["password_hash"]:
+                if not password_matches and is_admin_user:
+                    # NANOPRO_ADMIN_PASSWORD is the deployment-controlled bootstrap credential.
+                    # If the stored row drifted (e.g. stale bootstrap), re-sync it on a verified match.
+                    env_password = (os.getenv("NANOPRO_ADMIN_PASSWORD") or "").strip()
+                    if env_password and hmac.compare_digest(password.encode("utf-8"), env_password.encode("utf-8")):
+                        pwd_hash, salt = self._hash_password(env_password)
+                        cursor.execute("UPDATE users SET password_hash=?, salt=? WHERE id=?", (pwd_hash, salt, user["id"]))
+                        conn.commit()
+                        password_matches = True
+                        log_event(
+                            f"Admin credential drift healed from NANOPRO_ADMIN_PASSWORD for user_id={user['id']}",
+                            component="AuthManager",
+                            level="WARNING",
+                        )
+
+                if not password_matches:
+                    env_password = (os.getenv("NANOPRO_ADMIN_PASSWORD") or "").strip()
+                    submitted_matches_env = bool(env_password) and hmac.compare_digest(
+                        password.encode("utf-8"), env_password.encode("utf-8")
+                    )
                     self._record_audit_log(user["id"], raw_identifier, "FAILED_LOGIN", "Invalid password", ip_address, user_agent)
-                    log_event(f"Login rejected: password_mismatch user_id={user['id']}", component="AuthManager", level="WARNING")
+                    log_event(
+                        f"Login rejected: password_mismatch user_id={user['id']} "
+                        f"submitted_len={len(password)} env_len={len(env_password)} "
+                        f"submitted_matches_env={submitted_matches_env}",
+                        component="AuthManager",
+                        level="WARNING",
+                    )
                     return {"status": "error", "error": "Invalid username or password!"}
 
                 # Check account status
