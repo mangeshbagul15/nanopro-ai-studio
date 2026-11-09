@@ -484,7 +484,9 @@ class CommunicationCenter:
         message: str,
         access_token: Optional[str] = None,
         phone_number_id: Optional[str] = None,
-        template_name: Optional[str] = None
+        template_name: Optional[str] = None,
+        template_params: Optional[List[str]] = None,
+        language_code: str = "en_US"
     ) -> Dict[str, Any]:
         """
         Sends an official WhatsApp message via Meta (Facebook) WhatsApp Business Cloud API.
@@ -518,14 +520,22 @@ class CommunicationCenter:
         }
 
         if template_name:
+            template = {
+                "name": template_name,
+                "language": {"code": language_code}
+            }
+            if template_params:
+                template["components"] = [{
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": str(p)} for p in template_params
+                    ]
+                }]
             payload = {
                 "messaging_product": "whatsapp",
                 "to": clean_phone,
                 "type": "template",
-                "template": {
-                    "name": template_name,
-                    "language": {"code": "en_US"}
-                }
+                "template": template
             }
         else:
             payload = {

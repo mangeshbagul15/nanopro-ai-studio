@@ -919,13 +919,32 @@ class AuthManager:
                 f"⏳ Valid for 5 minutes. Never share this code.\n"
                 f"🛡️ Zero-Trust Security Sentinel"
             )
-            res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
+            otp_template = os.environ.get("WHATSAPP_CLOUD_OTP_TEMPLATE", "").strip()
+            otp_template_lang = os.environ.get("WHATSAPP_CLOUD_OTP_TEMPLATE_LANG", "en_US").strip() or "en_US"
+
+            # Business-initiated messages need an approved authentication template
+            # unless the user messaged the business number in the last 24h.
+            if otp_template:
+                res = communication_center.send_whatsapp_cloud_api(
+                    phone=clean_id,
+                    message=msg,
+                    template_name=otp_template,
+                    template_params=[otp_code],
+                    language_code=otp_template_lang,
+                )
+            else:
+                res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
             # A generic template fallback carries no OTP, so it is not a delivery success.
             delivered = bool(res.get("success")) and res.get("status") != "delivered_via_template_fallback"
-            if not delivered:
+            if not delivered and not otp_template:
                 res = communication_center.send_whatsapp_free_message(phone=clean_id, message=msg)
                 delivered = bool(res.get("delivered_via_api"))
             if not delivered:
+                log_event(
+                    f"WhatsApp OTP delivery failed for {clean_id}: {res.get('error') or res.get('status')}",
+                    component="AuthManager",
+                    level="ERROR",
+                )
                 return {"status": "error", "error": "OTP delivery failed. Please try again in a moment."}
 
             # Instant Admin Telegram Alert (serves as immediate backup)
