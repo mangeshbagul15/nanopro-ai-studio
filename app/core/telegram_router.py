@@ -250,6 +250,17 @@ def classify_telegram_message(text: str) -> str:
     return "news"
 
 
+def _fallback_bot(primary_category: str) -> tuple:
+    """Returns a configured bot when the category's own token is missing."""
+    news = BOT_ROUTING_MAP["news"]
+    if news["token"]:
+        return news["token"], news["username"]
+    for cat, info in BOT_ROUTING_MAP.items():
+        if cat != primary_category and info["token"]:
+            return info["token"], info["username"]
+    return "", ""
+
+
 def send_telegram_routed_message(
     category: Optional[str] = None,
     text: str = "",
@@ -277,13 +288,25 @@ def send_telegram_routed_message(
 
     primary_token = route_info["token"]
     primary_bot = route_info["username"]
+    fallback_used = False
+
+    if not primary_token:
+        primary_token, primary_bot = _fallback_bot(clean_cat)
+        if primary_token:
+            fallback_used = True
+            log_event(
+                f"No token configured for Telegram category [{clean_cat}]; "
+                f"delivering via {primary_bot}. Add the dedicated bot token env var to restore strict routing.",
+                level="WARNING",
+                component="TelegramRouter",
+            )
 
     # 1. Attempt dispatch to the strictly assigned specialized bot
     res = _dispatch_telegram_http(primary_token, target_chat_id, text, document_path=document_path, parse_mode=parse_mode)
     if res.get("success"):
         res["bot_used"] = primary_bot
         res["category"] = clean_cat
-        res["fallback_used"] = False
+        res["fallback_used"] = fallback_used
         res["status"] = "success"
         log_event(f"Telegram routed alert [{clean_cat}] delivered via {primary_bot}", component="TelegramRouter")
         return res

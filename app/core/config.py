@@ -102,8 +102,11 @@ DEFAULT_METADATA_MODELS = [
 # Telegram Multi-Bot Configurations (Specialized Channels)
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
 
+# Legacy single-bot token still deployed on Render; used as last-resort fallback
+_LEGACY_TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+
 # Bot 1: Tech News & AI Trends (@mangesh_technews_bot)
-TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "")
+TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN") or _LEGACY_TELEGRAM_BOT_TOKEN
 TELEGRAM_NEWS_BOT_USERNAME = "@mangesh_technews_bot"
 
 # Bot 2: System Health & Infrastructure Sentinel (@mangesh_health_monitor_bot)
