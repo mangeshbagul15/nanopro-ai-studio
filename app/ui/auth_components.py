@@ -5159,7 +5159,10 @@ def get_login_page_html() -> str:
     if os.path.exists(gateway_file):
         try:
             with open(gateway_file, "r", encoding="utf-8") as f:
-                return f.read()
+                gateway_html = f.read()
+            # An empty/truncated gateway asset would render a blank /login page.
+            if gateway_html.strip():
+                return gateway_html
         except Exception:
             pass
     return """<!DOCTYPE html>

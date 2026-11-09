@@ -3125,13 +3125,27 @@ def _reply_mentions_value(reply: str, value: Any) -> bool:
 _AML_TOPIC = re.compile(r"\baml\b|anti[- ]?money", re.IGNORECASE)
 _AML_STATUS = re.compile(r"\bstatus\b|\bprogress\b|\bresult\b|\bcompleted\b", re.IGNORECASE)
 _AML_ACTION = re.compile(r"\b(run|load|start|ingest|execute|reload|refresh|kara|karo|kra)\b", re.IGNORECASE)
+# Instructions such as "do not execute anything yet" are negated: the action word
+# must not be read as a command to start a pipeline run.
+_AML_NEGATED_CLAUSE = re.compile(
+    r"\b(?:do not|don't|dont|does not|doesn't|never|without|avoid|not to|no need to|not yet|not|"
+    r"nako|nakos|nahi)\b",
+    re.IGNORECASE,
+)
+_AML_CLAUSE_SPLIT = re.compile(r"(?<=[.!?;,\n])\s*|\s+[—–-]\s+")
+
+
+def _aml_unnegated_text(text: str) -> str:
+    """Drops clauses that forbid an action, so negated verbs never trigger a run."""
+    clauses = [c for c in _AML_CLAUSE_SPLIT.split(text or "") if c]
+    return " ".join(c for c in clauses if not _AML_NEGATED_CLAUSE.search(c))
 
 
 def _detect_aml_action(message: str) -> Optional[str]:
     text = message or ""
     if not _AML_TOPIC.search(text):
         return None
-    low = text.lower()
+    low = _aml_unnegated_text(text).lower()
     if re.search(r"\bincremental\b|\bappend\b|\bincrement\b", low):
         return "incremental"
     if re.search(r"\bfull\b|\breload\b|\bfresh\b|\binitial\b|\bfirst\b", low) and _AML_ACTION.search(low):

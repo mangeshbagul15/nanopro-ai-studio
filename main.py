@@ -1524,7 +1524,10 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
 
     # Zero-Trust Security Gateway: If unauthenticated, serve the Cyber-Luxe Login & Registration Gateway!
 
-    return HTMLResponse(get_login_page_html())
+    return HTMLResponse(
+        get_login_page_html(),
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
 
 
 
@@ -1534,11 +1537,9 @@ async def serve_logout_gateway():
 
     """Logs out user and redirects to login page."""
 
-    from fastapi.responses import RedirectResponse
+    resp = RedirectResponse(url="/login?logout=1", status_code=303)
 
-    resp = RedirectResponse(url="/login?logout=1")
-
-    resp.delete_cookie("nanopro_session")
+    resp.delete_cookie("nanopro_session", path="/")
 
     return resp
 
@@ -1553,8 +1554,11 @@ async def serve_login_gateway(request: Request, token: Optional[str] = None):
     if candidate_token:
         v_res = auth_manager.validate_session(candidate_token)
         if v_res.get("is_valid") and v_res.get("user"):
-            return RedirectResponse(url="/")
-    return HTMLResponse(get_login_page_html())
+            return RedirectResponse(url="/", status_code=303)
+    return HTMLResponse(
+        get_login_page_html(),
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
 
 
 
