@@ -8420,7 +8420,15 @@ let currentUser = null;
 
 let currentSessionToken = (function() {
 
-    let t = localStorage.getItem('nanopro_session_token');
+    // A fresh ?token= redirect (Google/returning login) must win over a stale
+    // localStorage token, otherwise the old session shadows the new one.
+    let t = new URLSearchParams(window.location.search).get('token');
+
+    if (!t) {
+
+        t = localStorage.getItem('nanopro_session_token');
+
+    }
 
     if (!t) {
 
@@ -8430,15 +8438,15 @@ let currentSessionToken = (function() {
 
     }
 
-    if (!t) {
-
-        t = new URLSearchParams(window.location.search).get('token');
-
-    }
-
     if (t) {
 
         try { localStorage.setItem('nanopro_session_token', t); } catch(e){}
+
+        if (window.location.search.indexOf('token=') !== -1 && window.history && history.replaceState) {
+
+            try { history.replaceState({}, document.title, window.location.pathname + window.location.hash); } catch(e){}
+
+        }
 
     }
 
