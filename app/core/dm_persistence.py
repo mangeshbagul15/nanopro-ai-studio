@@ -232,6 +232,16 @@ def _restore_state(blob: bytes) -> int:
                 conn.execute(sql, [row[c] for c in cols])
                 restored += 1
         conn.commit()
+
+    # A restored snapshot carries the admin row from the previous container.
+    # Re-assert the deployment-controlled bootstrap credential so the restore
+    # cannot silently revert NANOPRO_ADMIN_PASSWORD.
+    try:
+        from app.core.auth_manager import auth_manager
+
+        auth_manager._ensure_default_admin()
+    except Exception as exc:
+        log_event(f"Admin re-bootstrap after state restore failed: {exc}", level="WARNING", component="DMPersistence")
     return restored
 
 
