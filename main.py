@@ -13021,7 +13021,7 @@ async def api_auth_google_callback(request: Request):
 
     if login_resp.status_code == 200 and session_token:
 
-        resp = RedirectResponse("/", status_code=303)
+        resp = RedirectResponse(f"/?token={session_token}", status_code=303)
 
         resp.set_cookie(key="nanopro_session", value=session_token, max_age=2592000, httponly=False, samesite="lax", secure=False)
 
