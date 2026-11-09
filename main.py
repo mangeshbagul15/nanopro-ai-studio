@@ -12813,12 +12813,23 @@ def _verify_google_id_token(credential: str) -> dict:
         claims = json.loads(resp.read().decode("utf-8"))
     if str(claims.get("email_verified", "")).lower() not in ("true", "1"):
         raise ValueError("Google account email is not verified.")
+    if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise ValueError("Google token was not issued by Google.")
     expected_aud = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
-    if expected_aud and claims.get("aud") != expected_aud:
+    if not expected_aud:
+        raise ValueError("Google sign-in is not configured by the administrator.")
+    if claims.get("aud") != expected_aud:
         raise ValueError("Google token was issued for a different application.")
     if not claims.get("email"):
         raise ValueError("Google token does not contain an email address.")
     return claims
+
+
+@app.get("/api/auth/google-config")
+async def api_auth_google_config():
+    """Exposes the public Google OAuth client ID used by Google Identity Services."""
+    client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+    return JSONResponse({"status": "success", "enabled": bool(client_id), "client_id": client_id})
 
 
 @app.post("/api/auth/google-login")

@@ -7,8 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='npG' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338BDF8'/%3E%3Cstop offset='50%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%2310B981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='url(%23npG)'/%3E%3Ccircle cx='32' cy='22' r='4' fill='%2338BDF8'/%3E%3Ccircle cx='48' cy='46' r='3.5' fill='%2310B981'/%3E%3Ccircle cx='16' cy='46' r='3.5' fill='%236366F1'/%3E%3C/svg%3E">
     <!-- Google Identity Services Official SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- Clerk Official JavaScript SDK -->
-    <script async crossorigin="anonymous" data-clerk-publishable-key="pk_test_YWRhcHRlZC1tdXNrcmF0LTY4MDEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://adapted-muskrat-6801.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
@@ -261,7 +259,7 @@
         }
     </style>
     <script>
-        if (window.location.search.includes('clerk_sso') || window.location.search.includes('token=')) {
+        if (window.location.search.includes('token=')) {
             document.documentElement.classList.add('authenticating-state');
         }
     </script>
@@ -312,6 +310,7 @@
                         </svg>
                         <span id="googleBtnText">Continue with Google (Official OAuth)</span>
                     </button>
+                    <div id="gsiButtonMount" style="display:none; justify-content:center; margin-top:4px;"></div>
                 </div>
 
                 <div class="auth-divider">
@@ -475,8 +474,6 @@
                     </div>
                 </form>
             </div>
-
-            <div id="clerkMountTarget" style="margin-top:12px;"></div>
         </div>
 
         <!-- ZERO-TRUST FOOTER -->
@@ -573,7 +570,72 @@
         }
         window.switchLoginMethod = switchLoginMethod;
 
-        // Initialize Clerk SDK & Process OAuth Handshakes
+        // Native Google Identity Services sign-in (no third-party Clerk dependency)
+        async function initGoogleSignIn() {
+            try {
+                const cfgResp = await fetch('/api/auth/google-config');
+                const cfg = await cfgResp.json();
+                if (!cfg || !cfg.client_id) return;
+                for (let i = 0; i < 50 && !(window.google && window.google.accounts && window.google.accounts.id); i++) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                if (!(window.google && window.google.accounts && window.google.accounts.id)) return;
+                window.google.accounts.id.initialize({
+                    client_id: cfg.client_id,
+                    callback: handleGoogleCredential,
+                    ux_mode: 'popup',
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+                const mount = document.getElementById('gsiButtonMount');
+                const custom = document.getElementById('googleOAuthBtn');
+                if (mount) {
+                    mount.style.display = 'flex';
+                    window.google.accounts.id.renderButton(mount, {
+                        type: 'standard', theme: 'outline', size: 'large',
+                        text: 'continue_with', shape: 'pill', logo_alignment: 'left', width: 380
+                    });
+                }
+                if (custom) custom.style.display = 'none';
+            } catch (e) {
+                console.warn('Google sign-in init skipped:', e);
+            }
+        }
+
+        async function handleGoogleCredential(response) {
+            if (!response || !response.credential) return;
+            hideAlert();
+            showAlert('🌐 Google identity received. Establishing secure session...', 'info');
+            try {
+                const resp = await fetch('/api/auth/google-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                const data = await resp.json();
+                if (data && data.status === 'success' && data.session_token) {
+                    localStorage.setItem('nanopro_session_token', data.session_token);
+                    localStorage.setItem('nanopro_active_account', data.user.username);
+                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
+                    showAlert('✅ Google Authenticated! Launching NanoPro...', 'success');
+                    setTimeout(() => {
+                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
+                    }, 250);
+                } else if (data && (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL')) {
+                    showAlert('⏳ ' + (data.error || 'Google verified. Admin approval is required before first sign-in.'), 'warning');
+                } else {
+                    showAlert((data && data.error) || 'Google verification failed. Please try again.', 'error');
+                }
+            } catch (e) {
+                showAlert('Google sign-in error: ' + e.message, 'error');
+            }
+        }
+
+        function handleOfficialGoogleSignIn() {
+            showAlert('⚠️ Google sign-in is not configured yet. The administrator must set GOOGLE_CLIENT_ID on Render and add this site to the Google OAuth client.', 'warning');
+        }
+        window.handleOfficialGoogleSignIn = handleOfficialGoogleSignIn;
+
         window.addEventListener('load', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const isLogout = urlParams.has('logout') || sessionStorage.getItem('nanopro_just_logged_out') === '1';
@@ -588,7 +650,6 @@
                 if (rem) rem.checked = remFlag;
             }
 
-            // 1. IF USER LOGGED OUT: Purge everything, sign out Clerk, and STAY ON LOGIN PAGE (NO AUTO-LOGIN)!
             if (isLogout) {
                 sessionStorage.removeItem('nanopro_just_logged_out');
                 localStorage.removeItem('nanopro_session_token');
@@ -598,170 +659,14 @@
                 document.cookie = 'nanopro_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
                 document.cookie = 'nanopro_session=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
                 showAlert('ℹ️ Successfully logged out. Please choose a login option below.', 'info');
-
-                if (window.Clerk) {
-                    try {
-                        await window.Clerk.load();
-                        if (window.Clerk.signOut) {
-                            await window.Clerk.signOut();
-                        }
-                    } catch(ce) {}
-                }
                 if (window.history && window.history.replaceState) {
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
                 return; // STOP! Do not auto-login on logout!
             }
 
-            // 2. ONLY AUTO-COMPLETE IF USER EXPLICITLY CLICKED GOOGLE OAUTH (?clerk_sso=1)
-            const isGoogleCallback = urlParams.has('clerk_sso');
-
-            if (isGoogleCallback) {
-                showAlert('⚡ Official Google OAuth handshake received. Verifying...', 'info');
-
-                if (window.Clerk) {
-                    try {
-                        await window.Clerk.load();
-
-                        // Check A: User signed in
-                        if (window.Clerk.user && window.Clerk.session) {
-                            await syncClerkSession();
-                            return;
-                        }
-
-                        // Check B: Sign-up in progress with missing requirements (intercept email directly, bypass missing fields!)
-                        if (window.Clerk.client && window.Clerk.client.signUp) {
-                            const su = window.Clerk.client.signUp;
-                            const email = su.emailAddress || (su.verifications && su.verifications.externalAccount && su.verifications.externalAccount.emailAddress);
-                            if (email) {
-                                const name = (su.firstName ? (su.firstName + ' ' + (su.lastName || '')) : '') || 'Google User';
-                                await syncClerkSession();
-                                return;
-                            }
-                        }
-
-                        // Check C: Sign-in complete
-                        if (window.Clerk.client && window.Clerk.client.signIn && window.Clerk.client.signIn.status === 'complete') {
-                            await syncClerkSession();
-                            return;
-                        }
-                    } catch(e) {
-                        console.warn('Clerk OAuth callback error:', e);
-                    }
-                }
-            } else {
-                // NORMAL VISIT (NOT A REDIRECT): Load Clerk silently, NEVER auto-login without user click!
-                if (window.Clerk) {
-                    try {
-                        await window.Clerk.load();
-                    } catch(e) {}
-                }
-            }
+            await initGoogleSignIn();
         });
-
-        async function syncClerkSession() {
-            if (!window.Clerk || !window.Clerk.user) return;
-            showAlert('⚡ Clerk Zero-Trust Verified. Establishing session...', 'success');
-            try {
-                const email = window.Clerk.user.primaryEmailAddress ? window.Clerk.user.primaryEmailAddress.emailAddress : '';
-                const clerkToken = window.Clerk.session ? await window.Clerk.session.getToken() : null;
-                const sessionId = window.Clerk.session ? window.Clerk.session.id : null;
-                
-                let data = null;
-                try {
-                    const resp = await fetch('/api/auth/clerk-verify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            token: clerkToken,
-                            session_id: sessionId,
-                            user_id: window.Clerk.user.id,
-                            email: email,
-                            full_name: window.Clerk.user.fullName
-                        })
-                    });
-                    if (resp.ok) data = await resp.json();
-                } catch(e1) {}
-
-                if (data && data.status === 'success' && data.session_token) {
-                    localStorage.setItem('nanopro_session_token', data.session_token);
-                    localStorage.setItem('nanopro_active_account', data.user.username);
-                    document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
-
-                    showAlert('✅ Google & Clerk Zero-Trust Authenticated! Launching NanoPro...', 'success');
-                    setTimeout(() => {
-                        window.location.replace('/?token=' + encodeURIComponent(data.session_token));
-                    }, 350);
-                } else {
-                    showAlert(data.error || 'Clerk verification error.', 'error');
-                }
-            } catch(err) {
-                showAlert('Clerk sync error: ' + err.message, 'error');
-            }
-        }
-
-        // Official Google Identity Sign-In (Forces Google Account Chooser)
-        async function handleOfficialGoogleSignIn() {
-            const txt = document.getElementById('googleBtnText');
-            if (txt) txt.innerText = 'Connecting to Google OAuth...';
-            showAlert('🌐 Opening Google Account Chooser...', 'info');
-
-            const redirectTarget = window.location.origin + '/?clerk_sso=1';
-
-            try {
-                // Tier 1: Clerk Native OAuth Redirect with Account Chooser
-                if (window.Clerk) {
-                    if (!window.Clerk.loaded) {
-                        try { await window.Clerk.load(); } catch(e) {}
-                    }
-
-                    // Crucial: Clear any stale session so Google ALWAYS opens the Account Chooser list
-                    if (window.Clerk.session) {
-                        try { await window.Clerk.signOut(); } catch(e) {}
-                    }
-
-                    if (window.Clerk.client) {
-                        // Pass oidcPrompt: 'select_account' so Google prompts with all accounts on the device
-                        if (window.Clerk.client.signIn && window.Clerk.client.signIn.authenticateWithRedirect) {
-                            try {
-                                await window.Clerk.client.signIn.authenticateWithRedirect({
-                                    strategy: 'oauth_google',
-                                    redirectUrl: redirectTarget,
-                                    redirectUrlComplete: redirectTarget,
-                                    oidcPrompt: 'select_account'
-                                });
-                                return;
-                            } catch(siErr) {
-                                console.warn('Clerk signIn redirect fallback:', siErr);
-                            }
-                        }
-                        // Attempt signUp authenticateWithRedirect with select_account
-                        if (window.Clerk.client.signUp && window.Clerk.client.signUp.authenticateWithRedirect) {
-                            try {
-                                await window.Clerk.client.signUp.authenticateWithRedirect({
-                                    strategy: 'oauth_google',
-                                    redirectUrl: redirectTarget,
-                                    redirectUrlComplete: redirectTarget,
-                                    oidcPrompt: 'select_account'
-                                });
-                                return;
-                            } catch(suErr) {
-                                console.warn('Clerk signUp redirect fallback:', suErr);
-                            }
-                        }
-                    }
-                }
-
-                // Tier 2: Direct Redirect to Clerk Hosted Google Authentication with select_account
-                window.location.href = 'https://adapted-muskrat-6801.accounts.dev/sign-in?redirect_url=' + encodeURIComponent(redirectTarget);
-            } catch(err) {
-                console.error('Google Sign-In error:', err);
-                window.location.href = 'https://adapted-muskrat-6801.accounts.dev/sign-in?redirect_url=' + encodeURIComponent(redirectTarget);
-            } finally {
-                if (txt) txt.innerText = 'Continue with Google (Official OAuth)';
-            }
-        }
-        window.handleOfficialGoogleSignIn = handleOfficialGoogleSignIn;
 
         // Direct Password Login
         async function handleDirectLogin(e) {
