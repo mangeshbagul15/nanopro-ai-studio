@@ -763,13 +763,21 @@
 
             try {
                 let data = null;
+                let status = 0;
                 try {
-                    const resp = await fetch('/api/auth/otp/send', {
+                    const send = () => fetch('/api/auth/otp/send', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ identifier: phone, channel: 'whatsapp' })
                     });
-                    if (resp.ok) data = await resp.json();
+                    let resp = await send();
+                    if (resp.status === 503) {
+                        showAlert('NanoPro is waking up, retrying…', 'warning');
+                        await new Promise(r => setTimeout(r, 3000));
+                        resp = await send();
+                    }
+                    status = resp.status;
+                    data = await resp.json().catch(() => null);
                 } catch(e1) {}
 
                 if (data && data.status === 'success') {
@@ -792,7 +800,10 @@
                         otpInp.focus();
                     }
                 } else {
-                    showAlert((data && data.error) || 'Failed to send WhatsApp OTP. Please check phone number.', 'error');
+                    const fallbackMsg = status === 503
+                        ? 'NanoPro server is starting up. Please tap "Send WhatsApp OTP" again in a few seconds.'
+                        : 'Failed to send WhatsApp OTP. Please check phone number.';
+                    showAlert((data && data.error) || fallbackMsg, 'error');
                 }
             } catch(e) {
                 showAlert('OTP Dispatch Error: ' + e.message, 'error');
