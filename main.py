@@ -1993,9 +1993,11 @@ async def api_test_whatsapp_approval():
 
 @app.post("/api/amazon/test_whatsapp_price_drop")
 
-async def api_test_whatsapp_price_drop():
+async def api_test_whatsapp_price_drop(request: Request):
 
-    """Simulates an Amazon 24% price drop and triggers WhatsApp alert."""
+    """Simulates an Amazon 24% price drop and triggers WhatsApp alert (Super Admin only)."""
+
+    _require_admin_session(request)
 
     from app.core.communication_center import communication_center
 
@@ -13326,9 +13328,11 @@ async def api_admin_audit_logs(request: Request, limit: int = 40):
 
 @app.post("/api/telegram/send_diagnostics_now")
 
-async def api_telegram_send_diagnostics_now():
+async def api_telegram_send_diagnostics_now(request: Request):
 
-    """Immediately triggers and delivers the 3-hour diagnostics report to Telegram."""
+    """Immediately triggers and delivers the diagnostics report to Telegram (Super Admin only)."""
+
+    _require_admin_session(request)
 
     from app.core.telegram_diagnostics_scheduler import telegram_diagnostics_scheduler
 

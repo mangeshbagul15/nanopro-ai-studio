@@ -676,7 +676,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             "• **Specialist Pool:** 205 Autonomous Agents across Groups A through M standing by.\n\n"
             "### 🗄️ Active Multi-Database & Lakehouse Inventory:\n"
             "1. ❄️ **Snowflake Warehouse:** `BANK_DB` (L0_STAGING) — 142,500 records ✅\n"
-            "2. 🏛️ **Oracle Database XE:** 3 Synced Clusters (Local, Remote LAN, Tailscale) — `Divyam@123` active ✅\n"
+            "2. 🏛️ **Oracle Database XE:** 3 Synced Clusters (Local, Remote LAN, Tailscale) — `ORACLE_PASSWORD (env)` active ✅\n"
             "3. 🐘 **PostgreSQL Local:** `nanopro_db` (Port 5432) — Schema mapped ✅\n"
             "4. 💾 **SQLite Memory:** `studio_memory.db` — 25 persistent tables healthy ✅\n"
             "5. ☁️ **AWS S3 Data Lake:** `s3://nanopro-data-lake` — Iceberg Delta buffer online ✅\n\n"
@@ -1388,20 +1388,20 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
         ai_reply = (
             f"🗄️ **There are 4 Oracle Database XE instances configured and connected to Mangesh Nano Pro AI Studio:**\n\n"
             f"1. 🏛️ **`MY_ORACLE_XE_LOCAL` (Local Developer Core)**\n"
-            f"   • 🌐 Host: `127.0.0.1:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `Divyam@123`)\n"
+            f"   • 🌐 Host: `127.0.0.1:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             f"   • ⚡ Status: 🟢 `ONLINE` | Tables: `CUSTOMERS, ACCOUNT_MASTER, TXN_JOURNAL, BRANCH_MASTER, USER_ROLES, LOCAL_AUDIT_LOGS`\n\n"
             f"2. 🌐 **`MY_ORACLE_XE_REMOTE` (Remote LAN Production Staging)**\n"
-            f"   • 🌐 Host: `192.168.31.240:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `Divyam@123`)\n"
+            f"   • 🌐 Host: `192.168.31.240:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             f"   • ⚡ Status: 🟢 `ONLINE` | Tables: `CORE_TRANSACTION_FEED, CUSTOMER_CIF_REGISTRY, SAVINGS_LEDGER, NEFT_RTGS_CLEARING, DAILY_INTEREST_ACCRUAL` (~50,000+ records)\n\n"
             f"3. 🛡️ **`MY_ORACLE_XE_REMOTE_New` (Tailscale Encrypted VPN Mesh)**\n"
-            f"   • 🌐 Host: `100.112.86.83:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `Divyam@123`)\n"
+            f"   • 🌐 Host: `100.112.86.83:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             f"   • ⚡ Status: 🟢 `ONLINE` (High-Availability Remote Failover)\n"
             f"   • 📋 Tables: `DR_REPLICATED_ACCOUNTS, DR_CUSTOMER_VAULT, DR_TXN_MIRROR, REDO_TRANSPORT_BUFFER, FAILOVER_HEARTBEAT`\n\n"
             f"4. 🏛️ **`ORCL_LAN_240` (Core CBS Finacle Batch Server)**\n"
-            f"   • 🌐 Host: `192.168.31.240:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `Divyam@123`)\n"
+            f"   • 🌐 Host: `192.168.31.240:1521` | Service Name: `XEPDB1` | User: `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             f"   • ⚡ Status: 🟢 `ONLINE` (Finacle Core CBS Batch Processing)\n"
             f"   • 📋 Tables: `CBS_BATCH_JOBS, EOD_SETTLEMENT_QUEUE, INTERBANK_SWITCH_LOGS, CORE_DEPOSITS_REGISTER, ATM_SWITCH_JOURNAL`\n\n"
-            f"All 4 Oracle databases share Service Name `XEPDB1`, synchronized credentials (`Divyam@123`), and have distinct, workload-specific table inventories."
+            f"All 4 Oracle databases share Service Name `XEPDB1`, synchronized credentials (`ORACLE_PASSWORD (env)`), and have distinct, workload-specific table inventories."
         )
         return {"handled": True, "reply": ai_reply, "agent_id": "data_engineer"}
 
@@ -1629,20 +1629,20 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
     # =========================================================================
     has_pwd_keyword = any(k in p_lower for k in [
         "password badalla", "password badal", "password change", "update password",
-        "new password", "nava password", "password divyam", "divyam@123", "cred vaulte", "credential vault"
+        "new password", "nava password", "cred vaulte", "credential vault"
     ])
     has_oracle_or_db = any(k in p_lower for k in ["oracle", "db", "database", "connection", "nanopro"])
 
-    if (has_pwd_keyword and has_oracle_or_db) or ("divyam@123" in p_lower):
-        # Extract new password
-        pwd_match = re.search(r'(?:password(?:\s*(?:is|to|:|ahe|ha))?\s*|divyam@123)([^\s,;]+)', user_message, re.IGNORECASE)
-        new_pwd = "Divyam@123"
-        if "divyam@123" in user_message.lower():
-            new_pwd = "Divyam@123"
-        elif pwd_match:
+    if has_pwd_keyword and has_oracle_or_db:
+        # Require an explicit new password from the user; never fall back to a built-in one.
+        pwd_match = re.search(r'(?:password(?:\s*(?:is|to|:|ahe|ha))?\s*)([^\s,;]+)', user_message, re.IGNORECASE)
+        new_pwd = ""
+        if pwd_match:
             candidate = pwd_match.group(1).strip()
             if candidate and candidate.lower() not in ["ahe", "ha", "add", "kara", "kar", "to", "is"]:
                 new_pwd = candidate
+        if not new_pwd:
+            return {"handled": True, "reply": "🔐 Please provide the new password, e.g. `password <new-password>`.", "agent_id": "security_agent"}
 
         # Update all 3 Oracle connection profiles
         res_local = connection_manager.update_connection_password("MY_ORACLE_XE_LOCAL", new_pwd)
@@ -1652,7 +1652,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
         # Broadcast config change notification to Telegram
         comm_res = communication_center.notify_config_change(
             component="Oracle Database Vault",
-            change_details=f"Password updated to '{new_pwd}' for SYSTEM across LOCAL, REMOTE, and Tailscale instances.",
+            change_details="Password updated for SYSTEM across LOCAL, REMOTE, and Tailscale instances.",
             changed_by="Mangesh Bagul (AI Manager Autonomous Execution)"
         )
 
@@ -1665,7 +1665,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
 
         ai_reply = (
             f"🔐 **Oracle Database Credentials Successfully Updated in Vault & .env!**\n\n"
-            f"✅ **Password Changed to:** `{new_pwd}`\n"
+            f"✅ **Password:** updated (value hidden)\n"
             f"👤 **Username:** `SYSTEM` | **Port:** `1521` | **Service Name:** `XEPDB1`\n\n"
             f"### 🛡️ Synchronized Connection Profiles (AES-256-GCM Encrypted):\n"
             f"1. **`MY_ORACLE_XE_LOCAL`** (127.0.0.1) — Updated ✅\n"
@@ -1674,7 +1674,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             f"### 📡 Real-Time Multi-DB Health Status:\n"
             + "\n".join(status_lines) + "\n\n"
             f"### 📢 Automated Security Dispatch:\n"
-            f"• **Telegram Notification:** Sent to `@mangesh_technews_bot` (Chat ID: `1200023268`)\n"
+            f"• **Telegram Notification:** Sent to the configured health bot\n"
             f"• **Environment Sync:** `.env` updated with `ORACLE_PASSWORD={new_pwd}`.\n"
             f"• **Full Rights Confirmation:** You have full admin rights to change passwords and add new connections anytime without manual intervention."
         )
@@ -1888,20 +1888,20 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
         ai_reply = (
             "🗄️ **There are 4 Oracle Database XE instances configured and connected to Mangesh Nano Pro AI Studio:**\n\n"
             "1. 🏛️ **`MY_ORACLE_XE_LOCAL` (Local Developer Core)**\n"
-            "   - 🌐 **Host:** `127.0.0.1:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `Divyam@123`)\n"
+            "   - 🌐 **Host:** `127.0.0.1:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             "   - ⚡ **Status:** 🟢 ONLINE | Tables: `CUSTOMERS, ACCOUNT_MASTER, TXN_JOURNAL, BRANCH_MASTER, USER_ROLES, LOCAL_AUDIT_LOGS`\n\n"
             "2. 🌐 **`MY_ORACLE_XE_REMOTE` (Remote LAN Production Staging)**\n"
-            "   - 🌐 **Host:** `192.168.31.240:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `Divyam@123`)\n"
+            "   - 🌐 **Host:** `192.168.31.240:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             "   - ⚡ **Status:** 🟢 ONLINE | Tables: `CORE_TRANSACTION_FEED, CUSTOMER_CIF_REGISTRY, SAVINGS_LEDGER, NEFT_RTGS_CLEARING, DAILY_INTEREST_ACCRUAL` (~50,000+ records)\n\n"
             "3. 🛡️ **`MY_ORACLE_XE_REMOTE_New` (Tailscale Encrypted VPN Mesh)**\n"
-            "   - 🌐 **Host:** `100.112.86.83:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `Divyam@123`)\n"
+            "   - 🌐 **Host:** `100.112.86.83:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             "   - ⚡ **Status:** 🟢 ONLINE (High-Availability Remote Failover)\n"
             "   - 📋 **Tables:** `DR_REPLICATED_ACCOUNTS, DR_CUSTOMER_VAULT, DR_TXN_MIRROR, REDO_TRANSPORT_BUFFER, FAILOVER_HEARTBEAT`\n\n"
             "4. 🏛️ **`ORCL_LAN_240` (Core CBS Finacle Batch Server)**\n"
-            "   - 🌐 **Host:** `192.168.31.240:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `Divyam@123`)\n"
+            "   - 🌐 **Host:** `192.168.31.240:1521` | **Service Name:** `XEPDB1` | **User:** `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
             "   - ⚡ **Status:** 🟢 ONLINE (Finacle Core CBS Batch Processing)\n"
             "   - 📋 **Tables:** `CBS_BATCH_JOBS, EOD_SETTLEMENT_QUEUE, INTERBANK_SWITCH_LOGS, CORE_DEPOSITS_REGISTER, ATM_SWITCH_JOURNAL`\n\n"
-            "All 4 Oracle databases share Service Name `XEPDB1`, synchronized credentials (`Divyam@123`), and have distinct, workload-specific table inventories."
+            "All 4 Oracle databases share Service Name `XEPDB1`, synchronized credentials (`ORACLE_PASSWORD (env)`), and have distinct, workload-specific table inventories."
         )
         return {"handled": True, "reply": ai_reply, "agent_id": "data_engineer"}
 
@@ -2564,7 +2564,7 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
             f"### 👗 Style & Executive Fashion Trends:\n"
             f"• Minimalist ergonomic workwear, smart textiles, and sustainable corporate fashion taking center stage for 2026 tech leaders.\n\n"
             f"### 🛡️ NanoPro Studio Operational Vitals:\n"
-            f"• Multi-Oracle DB cluster monitored; Vault keys synchronized with `Divyam@123`.\n"
+            f"• Multi-Oracle DB cluster monitored; Vault keys synchronized with `ORACLE_PASSWORD (env)`.\n"
             f"• 4-Hour Job Radar active; 6-Hour MNC HR Outreach queue running smoothly.\n"
             f"• Have a productive and fulfilling day!"
         )

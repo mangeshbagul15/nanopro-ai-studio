@@ -90,7 +90,7 @@ class FederatedQueryEngine:
             port = int(cfg.get("port") or 1521)
             user = cfg.get("username") or "SYSTEM"
             svc = cfg.get("database_name") or "XEPDB1"
-            pw = os.environ.get("ORACLE_PASSWORD") or cfg.get("secret_value") or "Divyam@123"
+            pw = os.environ.get("ORACLE_PASSWORD") or cfg.get("secret_value") or ""
 
             oracledb_mod = None
             try:
@@ -193,7 +193,7 @@ class FederatedQueryEngine:
             try:
                 from app.core.connection_manager import connection_manager
                 cfg = connection_manager.get_connection_config("NANO_PRO_SNOWFLAKE", mask=False)
-                pw = os.environ.get("SNOWFLAKE_PASSWORD") or (cfg.get("secret_value") if cfg else "") or "Bhaiyyanand@123"
+                pw = os.environ.get("SNOWFLAKE_PASSWORD") or (cfg.get("secret_value") if cfg else "") or ""
                 conn = sf_mod.connect(
                     user=cfg.get("username", "mangeshbagul15"),
                     password=pw,

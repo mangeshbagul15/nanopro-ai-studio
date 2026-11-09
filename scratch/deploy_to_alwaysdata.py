@@ -5,7 +5,10 @@ from pathlib import Path
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 print("Connecting to Alwaysdata SSH...")
-client.connect('ssh-mangeshbagul15.alwaysdata.net', port=22, username='mangeshbagul15', password='Divyam@123', timeout=15)
+ssh_password = os.environ.get("ALWAYSDATA_SSH_PASSWORD", "")
+if not ssh_password:
+    raise SystemExit("Set ALWAYSDATA_SSH_PASSWORD before running this script.")
+client.connect('ssh-mangeshbagul15.alwaysdata.net', port=22, username=os.environ.get("ALWAYSDATA_SSH_USER", "mangeshbagul15"), password=ssh_password, timeout=15)
 print("Connected!")
 
 sftp = client.open_sftp()

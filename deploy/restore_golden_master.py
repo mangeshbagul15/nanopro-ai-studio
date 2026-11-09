@@ -26,6 +26,13 @@ def calculate_sha256(filepath: str) -> str:
         return hashlib.sha256(f.read()).hexdigest()
 
 def restore_golden_master(sync_cloud: bool = True, dry_run: bool = False) -> dict:
+    # The 2026-11-02 snapshot predates the auth hardening work and still contains
+    # master-password / hardcoded-OTP backdoors. Restoring it would reintroduce them.
+    return {
+        "status": "error",
+        "error": "Golden master restore is disabled: the snapshot contains pre-hardening auth backdoors. Use git history for rollback instead."
+    }
+
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     golden_dir = os.path.join(base_dir, 'deploy', 'golden_master')
     manifest_path = os.path.join(golden_dir, 'golden_master_manifest.json')
@@ -69,7 +76,11 @@ def restore_golden_master(sync_cloud: bool = True, dry_run: bool = False) -> dic
             print("\nConnecting to Alwaysdata to deploy golden master...")
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect('ssh-mangeshbagul15.alwaysdata.net', port=22, username='mangeshbagul15', password='Divyam@123', timeout=15)
+            ssh_user = os.environ.get("ALWAYSDATA_SSH_USER", "mangeshbagul15")
+            ssh_password = os.environ.get("ALWAYSDATA_SSH_PASSWORD", "")
+            if not ssh_password:
+                raise RuntimeError("ALWAYSDATA_SSH_PASSWORD is not set")
+            client.connect('ssh-mangeshbagul15.alwaysdata.net', port=22, username=ssh_user, password=ssh_password, timeout=15)
 
             sftp = client.open_sftp()
             sftp.put(os.path.join(base_dir, 'deploy', 'login_gateway.html'), 'login_gateway.html')

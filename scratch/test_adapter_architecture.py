@@ -3,8 +3,8 @@ import sys
 import time
 
 sys.path.insert(0, os.path.abspath("."))
-os.environ["GEMINI_API_KEY"] = "AQ.Ab8RN6KQsy8b90iALgALamKNnYZJkhT3KaY__J4d58eVlwfNSA"
-os.environ["GROQ_API_KEY"] = "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"
+if not os.environ.get("GROQ_API_KEY"):
+    raise SystemExit("Set GROQ_API_KEY to run this live adapter test.")
 
 print("1. Testing Groq client directly...")
 import groq

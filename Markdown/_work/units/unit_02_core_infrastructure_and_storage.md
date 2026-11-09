@@ -43,11 +43,11 @@ Provides central filesystem path resolution, thread-safe logging, SQLite persist
 ## Observed Issues
 - **U-UNIT02-01** | Category: Security | Severity: Critical | Location: `app/core/connection_manager.py:108,122,135,148-152`
   - Evidence: Hardcoded production secrets present as fallback literals in Python source:
-    - Snowflake password: `Bhaiyyanand@123`
-    - Oracle password: `Maharashtra@123`
-    - Gmail app password: `agunjgvexwcjudbx`
-    - AWS Secret Access Key: `/5XgACux2v974v+b2OAxcHWCucVcR/jIBo6JuQSo`
-    - AWS Bearer Token: `ABSKbWFuZ2VzaC1zdHVkaW8tYXQtMDc1NDczNzgxODA1...`
+    - Snowflake password: `<REDACTED>`
+    - Oracle password: `<REDACTED>`
+    - Gmail app password: `<REDACTED>`
+    - AWS Secret Access Key: `<REDACTED>`
+    - AWS Bearer Token: `<REDACTED>`
   - Fix: Redact and eliminate all hardcoded secrets from Python source files. Require loading exclusively from `.env` or prompt during initial setup.
 - **U-UNIT02-02** | Category: Reliability / Concurrency | Severity: Medium | Location: `app/core/database.py:26`
   - Evidence: `sqlite3.connect(..., check_same_thread=False)` is used across concurrent FastAPI request threads without write-ahead-log (WAL) pragma explicitly set on connection creation.

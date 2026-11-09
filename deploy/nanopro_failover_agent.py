@@ -9,20 +9,20 @@ can see who served the report.
 """
 import json, time, urllib.request, urllib.parse, urllib.error, os, sys, datetime
 
-CF_STATUS = "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/manager/status"
-UPSTASH = "https://dashing-mule-155608.upstash.io"
-UPSTASH_TOKEN = "Bearer gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ"
-NEON_HOST = "ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech"
-NEON_CONN = "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-CHAT_ID = "1200023268"
-BOT_REPORTS = "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4"
-BOT_HEALTH = "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4"
-EMAIL_RELAY = "https://script.google.com/macros/s/AKfycbx7J_Q5QUmArEq6IlagRc1s1vJEqw0mSFJ9HL7jtec5IioocovA1JY4tNBqdNQhmOOn/exec"
-EMAIL_SECRET = "49c62e3dcd3fe486d5de96f1123df5ad"
-EMAIL_TO = "nanoproaistudio@gmail.com"
-WA_TOKEN = "EAAQTHI7wPNwBS5bIsFeZCbUfaL1C0J6lO8JHolUJhRY60ZBYPd55TuEnXvfLJtllGtrhK2GqWTKQAnInCKfGaQzNjJgUhZALZBGGNBxpv4dN4lYkkx39TuXnCc2ZBZAfdmLyigXRWmWsbgPVCK0WKnOgC6LdWZB1JXmKPCWKPcGYZBvXnnx7dkBYZCWoALzJusAZDZD"
-WA_PHONE_ID = "1355864990944215"
-WA_TO = "918433755448"
+CF_STATUS = os.environ.get("NANOPRO_CF_STATUS_URL", "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/manager/status")
+UPSTASH = os.environ.get("NANOPRO_UPSTASH_URL", "")
+UPSTASH_TOKEN = os.environ.get("NANOPRO_UPSTASH_TOKEN", "")
+NEON_HOST = os.environ.get("NEON_HOST", "")
+NEON_CONN = os.environ.get("NEON_CONN", "")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+BOT_REPORTS = os.environ.get("TELEGRAM_REPORTS_BOT_TOKEN", "")
+BOT_HEALTH = os.environ.get("TELEGRAM_HEALTH_BOT_TOKEN", "")
+EMAIL_RELAY = os.environ.get("EMAIL_RELAY_URL", "")
+EMAIL_SECRET = os.environ.get("EMAIL_RELAY_SECRET", "")
+EMAIL_TO = os.environ.get("EMAIL_TO", "nanoproaistudio@gmail.com")
+WA_TOKEN = os.environ.get("WA_ACCESS_TOKEN", "")
+WA_PHONE_ID = os.environ.get("WA_PHONE_NUMBER_ID", "")
+WA_TO = os.environ.get("WA_TO_NUMBER", "")
 
 CHECK_EVERY = 600          # 10 min
 STALE_AFTER = 27 * 3600    # serve ourselves if no report for 27h
@@ -148,6 +148,16 @@ def save_state(st):
     json.dump(st, open(STATE, "w"))
 
 def main():
+    missing = [name for name, val in {
+        "NANOPRO_UPSTASH_URL": UPSTASH,
+        "NANOPRO_UPSTASH_TOKEN": UPSTASH_TOKEN,
+        "NEON_CONN": NEON_CONN,
+        "TELEGRAM_REPORTS_BOT_TOKEN": BOT_REPORTS,
+        "TELEGRAM_HEALTH_BOT_TOKEN": BOT_HEALTH,
+    }.items() if not val]
+    if missing:
+        log(f"failover agent disabled — missing env vars: {', '.join(missing)}")
+        return
     log("failover agent started")
     st = load_state()
     while True:

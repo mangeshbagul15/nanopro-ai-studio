@@ -1270,8 +1270,9 @@ from datetime import datetime
 # 1. Connect to Oracle XE and extract delta transactions
 def extract_oracle_delta():
     conn_oracle = oracledb.connect(
-        user='SYSTEM', password='Divyam@123',
-        host='127.0.0.1', port=1521, service_name='XEPDB1'
+        user=os.environ.get("ORACLE_USER", "SYSTEM"), password=os.environ.get("ORACLE_PASSWORD", ""),
+        host=os.environ.get("ORACLE_HOST", "127.0.0.1"), port=int(os.environ.get("ORACLE_PORT", "1521")),
+        service_name=os.environ.get("ORACLE_SERVICE_NAME", "XEPDB1")
     )
     query = '''
         SELECT 

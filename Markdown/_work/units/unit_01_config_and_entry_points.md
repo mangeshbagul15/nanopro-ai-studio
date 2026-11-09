@@ -52,7 +52,7 @@ Responsible for application initialization, dependency specification, environmen
 
 ## Observed Issues
 - **U-UNIT01-01** | Category: Security | Severity: High | Location: `.env.example:27-28`
-  - Evidence: Live Telegram bot token `8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs` and chat ID `1200023268` committed in cleartext inside `.env.example`.
+  - Evidence: Live Telegram bot token `<REDACTED>` and chat ID `<TELEGRAM_CHAT_ID>` were previously committed in cleartext; both were removed and must be rotated.
   - Fix: Remove production token from `.env.example`, replace with placeholder `<YOUR_TELEGRAM_BOT_TOKEN>`.
 - **U-UNIT01-02** | Category: Code Quality / Duplication | Severity: Medium | Location: `main.py:2115-2139`
   - Evidence: Duplicate synthesized routes `@app.get("/api/custom/please_modify_code_in_main_py")` appended twice by CodeArchitect at lines 2115 and 2129.

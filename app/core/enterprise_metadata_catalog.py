@@ -301,7 +301,7 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
         "engine_label": "Oracle Database XE",
         "engine_type": "Enterprise Relational Database Management System (RDBMS)",
         "service_name": "XEPDB1",
-        "default_credentials": "User: SYSTEM | Password: Divyam@123",
+        "default_credentials": "User: SYSTEM | Password: ORACLE_PASSWORD (env)",
         "databases": {
             "MY_ORACLE_XE_LOCAL": {
                 "name": "MY_ORACLE_XE_LOCAL",
@@ -599,7 +599,7 @@ class EnterpriseMetadataCatalog:
                     f"• **Engine:** Oracle Database XE (Host: `{ora_info.get('host')}` | Service: `{ora_info.get('service')}`)\n"
                     f"• **Label:** {ora_info.get('label', ora_key)}\n"
                     f"• **उद्देश (Why Created):** {ora_info.get('purpose')}\n"
-                    f"• **Credentials:** User: `SYSTEM` (Password: `Divyam@123`)\n"
+                    f"• **Credentials:** User: `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
                     f"• **Schemas:** `{', '.join(schemas.keys())}`\n"
                     f"• **Core Tables:** `{', '.join(schemas.get('XEPDB1', {}).get('tables', {}).keys() if isinstance(schemas.get('XEPDB1'), dict) and isinstance(schemas.get('XEPDB1').get('tables'), dict) else schemas.get('XEPDB1', {}).get('tables', []))}`"
                 )

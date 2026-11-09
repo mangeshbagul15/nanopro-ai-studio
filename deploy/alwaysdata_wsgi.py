@@ -1141,8 +1141,7 @@ def handle_cloud_chat(user_msg):
 
     # 1. Try Groq LPU (Sub-second inference)
     groq_keys = [
-        os.environ.get("GROQ_API_KEY", ""),
-        "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"
+        os.environ.get("GROQ_API_KEY", "")
     ]
     groq_key = next((k for k in groq_keys if k), "")
     if groq_key:

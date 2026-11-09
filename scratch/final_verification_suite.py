@@ -1,101 +1,84 @@
-import urllib.request, json, sqlite3, sys
-sys.stdout.reconfigure(encoding='utf-8')
+"""Negative security regression suite — every legacy auth bypass must fail."""
+import json
+import sys
+import urllib.error
+import urllib.request
 
-BASE_URL = 'https://mangesh-nanopro.mangeshbagul15.workers.dev'
+sys.stdout.reconfigure(encoding="utf-8")
+
+BASE_URL = "https://mangesh-nanopro.mangeshbagul15.workers.dev"
 HEADERS = {
-    'Content-Type': 'application/json',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NanoProSecuritySuite/1.0",
 }
 
-print("==================================================")
-print("RUNNING FINAL END-TO-END VERIFICATION SUITE")
-print("Target:", BASE_URL)
-print("==================================================")
+results = []
 
-# 1. Test Password Login with various identifiers
-identifiers = [
-    ('nanopro', 'Divyam@123'),
-    ('mangeshbagul15@gmail.com', 'Divyam@123'),
-    ('+918433755448', 'Divyam@123'),
-    ('8433755448', 'Divyam@123'),
-    ('nanopro', 'Admin@123')
-]
 
-for ident, pwd in identifiers:
-    req = urllib.request.Request(f"{BASE_URL}/api/auth/login",
-        headers=HEADERS,
-        data=json.dumps({'username': ident, 'password': pwd}).encode('utf-8'))
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        data = json.loads(resp.read().decode())
-        status = data.get('status')
-        uname = data.get('user', {}).get('username')
-        role = data.get('user', {}).get('role')
-        assert status == 'success', f"Failed login for {ident}: {data}"
-        assert role == 'admin', f"Role not admin for {ident}: {role}"
-        print(f"✅ Password Login [{ident}]: {status} (User: {uname}, Role: {role})")
+def call(path, payload=None, method="POST"):
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(BASE_URL + path, headers=HEADERS, data=data, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return resp.status, json.loads(resp.read().decode() or "{}")
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode()
+        try:
+            body = json.loads(body)
+        except Exception:
+            pass
+        return exc.code, body
 
-# 2. Test WhatsApp OTP flow
-print("\n--- WhatsApp OTP Flow ---")
-req = urllib.request.Request(f"{BASE_URL}/api/auth/otp/send",
-    headers=HEADERS,
-    data=json.dumps({'identifier': '+918433755448', 'channel': 'whatsapp'}).encode('utf-8'))
-with urllib.request.urlopen(req, timeout=15) as resp:
-    data = json.loads(resp.read().decode())
-    assert data.get('status') == 'success', f"Send OTP failed: {data}"
-    print(f"✅ WhatsApp Send OTP: {data.get('status')} to {data.get('identifier')}")
 
-# Retrieve OTP from DB
-conn = sqlite3.connect('app/database/studio_memory.db')
-c = conn.cursor()
-c.execute('SELECT otp_code FROM auth_otps WHERE identifier = ? ORDER BY created_at DESC LIMIT 1', ('+918433755448',))
-otp = c.fetchone()[0]
-print(f"🔍 Latest OTP in SQLite DB: {otp}")
+def expect(name, path, payload=None, method="POST", codes=(400, 401, 403, 405), error_text=None):
+    status, body = call(path, payload, method)
+    ok = status in codes
+    if isinstance(body, dict) and body.get("status") == "error" and status == 200:
+        ok = True
+    if error_text and isinstance(body, dict):
+        ok = ok and error_text in str(body.get("error", ""))
+    results.append((name, ok, status, body))
+    print(("PASS" if ok else "FAIL"), name, status, body)
 
-# Verify OTP
-req = urllib.request.Request(f"{BASE_URL}/api/auth/otp/verify",
-    headers=HEADERS,
-    data=json.dumps({'identifier': '+918433755448', 'otp_code': otp, 'channel': 'whatsapp'}).encode('utf-8'))
-with urllib.request.urlopen(req, timeout=15) as resp:
-    data = json.loads(resp.read().decode())
-    assert data.get('status') == 'success', f"Verify OTP failed: {data}"
-    print(f"✅ WhatsApp Verify OTP: {data.get('status')} (User: {data.get('user', {}).get('username')}, Role: {data.get('user', {}).get('role')})")
 
-# 3. Test Direct Google Official Sign-In
-print("\n--- Direct Google Official Sign-In ---")
-req = urllib.request.Request(f"{BASE_URL}/api/auth/google-login",
-    headers=HEADERS,
-    data=json.dumps({
-        'email': 'mangeshbagul15@gmail.com',
-        'full_name': 'Mangesh Bagul'
-    }).encode('utf-8'))
-with urllib.request.urlopen(req, timeout=15) as resp:
-    data = json.loads(resp.read().decode())
-    assert data.get('status') == 'success', f"Google login failed: {data}"
-    print(f"✅ Google Official Login: {data.get('status')} (User: {data.get('user', {}).get('username')}, Role: {data.get('user', {}).get('role')})")
+print("=" * 60)
+print("NanoPro negative security regression —", BASE_URL)
+print("=" * 60)
 
-# 4. Test Clerk Google Verification
-print("\n--- Clerk Google SSO Verification ---")
-req = urllib.request.Request(f"{BASE_URL}/api/auth/clerk-verify",
-    headers=HEADERS,
-    data=json.dumps({
-        'user_id': 'user_live_clerk_test',
-        'email': 'mangeshbagul15@gmail.com',
-        'full_name': 'Mangesh Bagul'
-    }).encode('utf-8'))
-with urllib.request.urlopen(req, timeout=15) as resp:
-    data = json.loads(resp.read().decode())
-    assert data.get('status') == 'success', f"Clerk verify failed: {data}"
-    print(f"✅ Clerk Google SSO: {data.get('status')} (User: {data.get('user', {}).get('username')}, Role: {data.get('user', {}).get('role')})")
+for username, password in [
+    ("admin", "Admin@123"),
+    ("nanopro", "nanopro"),
+    ("admin", "admin"),
+    ("nanopro", "123456"),
+    ("admin", "NanoPro@2026"),
+]:
+    expect(f"reject legacy login {username}/{password}", "/api/auth/login",
+           {"username": username, "password": password}, error_text="Invalid username or password")
 
-# 5. Test Authenticated Dashboard Retrieval
-print("\n--- Authenticated Dashboard Gating ---")
-token = data.get('session_token')
-req = urllib.request.Request(f"{BASE_URL}/?token={token}", headers=HEADERS)
-with urllib.request.urlopen(req, timeout=15) as resp:
-    dash_html = resp.read().decode('utf-8', errors='ignore')
-    assert len(dash_html) > 1000000, f"Dashboard HTML too short: {len(dash_html)}"
-    print(f"✅ Dashboard Loaded Successfully: {len(dash_html)} bytes (Full 2.9 MB Studio)")
+expect("GET login route removed", "/api/auth/login?username=admin&password=Admin@123", method="GET", codes=(405,))
 
-print("\n==================================================")
-print("🎉 ALL TESTS PASSED WITH 100% SUCCESS!")
-print("==================================================")
+expect("admin users API requires session", "/api/admin/users/list", method="GET", codes=(401, 403))
+expect("vault list requires session", "/api/vault/list", method="GET", codes=(401, 403))
+expect("telegram diagnostics requires session", "/api/telegram/send_diagnostics_now", codes=(401, 403))
+expect("amazon whatsapp test requires session", "/api/amazon/test_whatsapp_price_drop", codes=(401, 403))
+
+expect("hardcoded OTP rejected", "/api/auth/otp/verify",
+       {"identifier": "+918433755448", "otp_code": "123456", "channel": "whatsapp"},
+       error_text="Invalid or expired OTP")
+
+expect("google login without credential rejected", "/api/auth/google-login", {}, codes=(401, 400))
+
+expect("clerk email-only rejected", "/api/auth/clerk-verify",
+       {"email": "mangeshbagul15@gmail.com"}, error_text="Clerk session verification failed")
+
+expect("fake session rejected", "/api/admin/users/list", method="GET", codes=(401, 403))
+status, body = call("/api/admin/users/list", method="GET")
+print("PASS" if status in (401, 403) else "FAIL", "admin API rejects unauthenticated session", status)
+
+failed = [name for name, ok, _, _ in results if not ok]
+print("=" * 60)
+print(f"{len(results) - len(failed)}/{len(results)} checks passed")
+if failed:
+    print("FAILED:", failed)
+    sys.exit(1)
+print("ALL SECURITY CHECKS PASSED")

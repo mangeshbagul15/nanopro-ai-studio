@@ -32,9 +32,9 @@ const CONFIG = {
 
   UPSTREAMS: {
 
-    // Live Local Laptop Master Tunnel (Active when laptop is open)
+    // Live Local Laptop Master Tunnel (set LOCAL_TUNNEL_URL secret)
 
-    LOCAL_LAPTOP: "https://participants-honest-lives-permitted.trycloudflare.com",
+    LOCAL_LAPTOP: "",
 
     
 
@@ -111,6 +111,8 @@ export default {
     const url = new URL(request.url);
 
     const path = url.pathname;
+
+    hydrateConfig(env);
 
     // Handle CORS preflight (browser sends OPTIONS before cross-origin POST)
     if (request.method === "OPTIONS") {
@@ -732,21 +734,29 @@ export default {
 
     try {
 
-      const upstashRes = await fetch("https://dashing-mule-155608.upstash.io/get/active_tunnel", {
+      const upstashUrl = env?.UPSTASH_URL || "";
 
-        headers: { "Authorization": "Bearer gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ" },
+      const upstashToken = env?.UPSTASH_TOKEN || "";
 
-        cf: { cacheTtl: 15, cacheEverything: true }
+      if (upstashUrl && upstashToken) {
 
-      });
+        const upstashRes = await fetch(`${upstashUrl}/get/active_tunnel`, {
 
-      if (upstashRes.ok) {
+          headers: { "Authorization": `Bearer ${upstashToken}` },
 
-        const uData = await upstashRes.json();
+          cf: { cacheTtl: 15, cacheEverything: true }
 
-        if (uData && uData.result && typeof uData.result === "string" && uData.result.startsWith("https://")) {
+        });
 
-          dynamicTunnel = uData.result.trim();
+        if (upstashRes.ok) {
+
+          const uData = await upstashRes.json();
+
+          if (uData && uData.result && typeof uData.result === "string" && uData.result.startsWith("https://")) {
+
+            dynamicTunnel = uData.result.trim();
+
+          }
 
         }
 
@@ -759,9 +769,6 @@ export default {
     const localTunnel = dynamicTunnel;
 
 
-    const alwaysdataUrl = env?.ALWAYSDATA_URL || CONFIG.UPSTREAMS.CLOUD_ALWAYSDATA;
-
-    const pythonAnywhereUrl = env?.PYTHONANYWHERE_URL || CONFIG.UPSTREAMS.CLOUD_PYTHONANYWHERE;
 
 
 
@@ -961,7 +968,9 @@ export default {
 
     // --- ALL OTHER ENDPOINTS: Cloud-first (Render → AlwaysData → PythonAnywhere) ---
     // Laptop is NOT in this cascade. Zero dependency on laptop for normal operations.
-    let candidateUpstreams = [renderUrl, alwaysdataUrl, pythonAnywhereUrl];
+    // Auth and data traffic must never fall back to the legacy AlwaysData /
+    // PythonAnywhere gateways. Render is the single trusted API origin.
+    let candidateUpstreams = [renderUrl];
     if (env?.NORTHFLANK_URL) candidateUpstreams.push(env.NORTHFLANK_URL);
 
 
@@ -1308,6 +1317,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    hydrateConfig(env);
     if (await nanoPaused()) return;
     const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
     if (cycle === "HEALTH") {
@@ -1328,31 +1338,31 @@ export default {
 // NANOPRO CLOUD REPORTING ENGINE (Cloudflare Cron — 24/7, no laptop needed)
 // ============================================================================
 const REPORT_CFG = {
-  GROQ_API_KEY: "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",
-  CHAT_ID: "1200023268",
+  GROQ_API_KEY: "",
+  CHAT_ID: "",
   UPSTASH_URL: "https://dashing-mule-155608.upstash.io",
-  UPSTASH_TOKEN: "gQAAAAAAAl_YAAIgcDE3YjJhYzU4NTdiMDg0NmQ2ODA2MmIyMGVhZTdhMWNlYQ",
-  BOTS: {"reports": "8942359884:AAGHdKQdjp8xM7o-CsvQxU3b51-sSRG5nZ4", "news": "8693843358:AAHPJVgj4vEv-RtZgKYghyM7j7dQvkDN_Gs", "health": "8763728603:AAEVtIGt3kfpcOnBAac9dUksu6GeEf92MQ4", "career": "8776101055:AAGrj61YMnBvRuNOTjczdt-w93Ltx0FVnPA"},          // apk bot intentionally excluded (laptop-only)
+  UPSTASH_TOKEN: "",
+  BOTS: {"reports": "", "news": "", "health": "", "career": ""},          // apk bot intentionally excluded (laptop-only)
   SNOWFLAKE: {
     API_URL: "https://egpknwz-xh53504.snowflakecomputing.com/api/v2/statements",
     ISS: "EGPKNWZ-XH53504.MANGESHBAGUL15.SHA256:SNPW7JtL17Df3xeS6/VsZmpJWD0Zr8YmaQKC8EBZxSs=",
     WAREHOUSE: "COMPUTE_WH",
     FQ_TABLE: "BANK_DB.L0_STAGING.NANOPRO_REPORTS",
-    RSA_PKCS8_B64: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2ER1bDHfWM3Pn9Japf8ADV7Moi9zAzH+upaAFzg/o5OFnN8eKgAPsdNe4jZ1CqQBCfREIPMjLtSUIHLchRXmPxNHzrHc7g4GP9WrJr+2vUcA/OjUDRqsgAmTEx3sHpx7BE4NxOA/vR2AcLs2rzXIZ9/r/1KJ/CrY0TX70hjnJeCG9elk4QuATbiOfHaYyxLZ8c1rPTaAIdWJkYOpXzQApK2h5tfbQ/iilnHK4HbREZ5YF+Kw6SmdnFESOyCwEc6UqFaEl+JHo9/b6FPOSJCKgkfKKYOJUNzLWKTIIXN32Jd8HScluFamGut9d7lV7afPEvQULBLkaVMHcszVgZrg9AgMBAAECggEACax5dP6BxDRXVWebX7swHnKuTBpjqtd9de/1Q4myMmDYPHiWwMb82QymRPc6orGXGBv2vTYkQcqeAph//yO8CfBeasZATuhgXcqfl213wWfPFqzxkdB97tqhtGDtqmJDUeVHB8t/m+pHct07xAP2VZHlrhUuuHWpvmKwZa6swFsWPhEfaCXImZ7b623uI/jn11nEIVl1NDQSR8CcNssnyU0GxemXePBRj5ALk6/bFcaSlkPNcTDGJ6gIr/JE0aEtBBxXC+VAoFbn8ZBM5CZP/KFGJMoAf4QOA0gLkQhJtnwaqpoHo1RbdTrBjFi7hF/nqB38nA/vBAB9m+1MnOwSgwKBgQDgl14oZcVyEHfcMgKCcbOryLSmAEzjRlStBmwMeyvCgdIlrYm/9ei/j2tX1dmyXideQphlfTdwOTLsJIVTqrQ+ZA4yIsT3Uxs4EluzAGDkpMxG5nAtKm/TwXxD9MXGbag+8jPhpaoMao6r2zJROp5nwNJzyOnKsTkDmp7ulnBVgwKBgQDPh1KFpDiizdxl3Z+NO/8hJ7X4q0EyKoO5tIspzNhvLuRQUSa1fMOMgZ4VmRii+o34/cHOduwsBNTVmr/EvbtVxRu/6dQN13yKIlX7hAMeZlQp9pZxotiMQcx3yAAeOks68akFTFkHiE0UcSfHWSjc3uCgOkjfvIBOkRF0lhUPPwKBgCoe2U7UP2J0Cjamvme+cUbfXlnfpovdTdYhZTQ2CW/yLvpYAISa1urOOACCH9De7Z00+iXWhQYsBAvbkZGuax1kYHEwqiYEVQ+ACeiZQpK/AXyujQ07bzuUhvyrtEfRmwMrI2XHTwwDE/zRIC+xwbGNrSp/3LDh6eJuJi5y0mCHAoGAHeYfK4Xnav1BvaNac1yrezlfbD4wHGwnoj+ytQkAPbSBzFiEvS0Gd13NSstN011Jyw+0NmzHxefESioLaury7H6DavjjRkM/fB9KR/xS/rQ7d/hA4IpXrI1mSfOUoMZBRHLAqTTAtucaQ9Gxq3TbAEdUEYGUMjfUPH2GCEf/LL0CgYEAlmLun506A0cCF9uEjTBIP6BPTGa9/mcS5FDVwgVqiUtNCKliLWt3mdsQVaNqiUDUBkiFhRFYoNGCavOhQGMsAywmCAKAbWDx7Gn7n3Ftg5XBq0EOFrSf5f0UcoY1h3aRAxp/iUsMKt9zszT9L8hJFL9BzSIK5Ar6XGFeoi0Exkg="
+    RSA_PKCS8_B64: ""
   },
-  EMAIL_RELAY: "https://script.google.com/macros/s/AKfycbx7J_Q5QUmArEq6IlagRc1s1vJEqw0mSFJ9HL7jtec5IioocovA1JY4tNBqdNQhmOOn/exec",
-  EMAIL_RELAY_SECRET: "49c62e3dcd3fe486d5de96f1123df5ad",
+  EMAIL_RELAY: "",
+  EMAIL_RELAY_SECRET: "",
   EMAIL_TO: "nanoproaistudio@gmail.com",
-  WA_VERIFY_TOKEN: "nanopro_whatsapp_secret_2026",
-  WA_ACCESS_TOKEN: "EAAQTHI7wPNwBS5bIsFeZCbUfaL1C0J6lO8JHolUJhRY60ZBYPd55TuEnXvfLJtllGtrhK2GqWTKQAnInCKfGaQzNjJgUhZALZBGGNBxpv4dN4lYkkx39TuXnCc2ZBZAfdmLyigXRWmWsbgPVCK0WKnOgC6LdWZB1JXmKPCWKPcGYZBvXnnx7dkBYZCWoALzJusAZDZD",
-  WA_PHONE_NUMBER_ID: "1355864990944215",
-  WA_TO_NUMBER: "918433755448",
-  AWS_KEY: "AKIA3EUJGIXPAIJLEVDJ",
-  AWS_SECRET: "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",
+  WA_VERIFY_TOKEN: "",
+  WA_ACCESS_TOKEN: "",
+  WA_PHONE_NUMBER_ID: "",
+  WA_TO_NUMBER: "",
+  AWS_KEY: "",
+  AWS_SECRET: "",
   AWS_REGION: "ap-southeast-2",
   S3_BUCKET: "nanopro-data-lake-765865641438-ap-southeast-2-an",
   NEON_HOST: "ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech",
-  NEON_CONN: "postgresql://neondb_owner:npg_VWB8sLHgC3jX@ep-soft-paper-azc3am3u-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+  NEON_CONN: "",
   CRON_CYCLE_MAP: {
     "30 1 * * *": "BOD",   // 07:00 IST — Beginning of Day
     "30 3 * * *": "SOD",   // 09:00 IST — Start of Day
@@ -1361,6 +1371,32 @@ const REPORT_CFG = {
     "*/30 * * * *": "HEALTH" // every 30 min — watchdog + hourly intraday banking ingest
   }
 };
+
+function hydrateConfig(env) {
+  const e = env || {};
+  REPORT_CFG.GROQ_API_KEY = e.GROQ_API_KEY || "";
+  REPORT_CFG.CHAT_ID = e.TELEGRAM_CHAT_ID || "";
+  REPORT_CFG.UPSTASH_URL = e.UPSTASH_URL || REPORT_CFG.UPSTASH_URL;
+  REPORT_CFG.UPSTASH_TOKEN = e.UPSTASH_TOKEN || "";
+  REPORT_CFG.BOTS = {
+    reports: e.TELEGRAM_REPORTS_BOT_TOKEN || "",
+    news: e.TELEGRAM_NEWS_BOT_TOKEN || "",
+    health: e.TELEGRAM_HEALTH_BOT_TOKEN || "",
+    career: e.TELEGRAM_CAREER_BOT_TOKEN || ""
+  };
+  REPORT_CFG.EMAIL_RELAY = e.EMAIL_RELAY_URL || "";
+  REPORT_CFG.EMAIL_RELAY_SECRET = e.EMAIL_RELAY_SECRET || "";
+  REPORT_CFG.EMAIL_TO = e.EMAIL_TO || REPORT_CFG.EMAIL_TO;
+  REPORT_CFG.WA_VERIFY_TOKEN = e.WA_VERIFY_TOKEN || "";
+  REPORT_CFG.WA_ACCESS_TOKEN = e.WA_ACCESS_TOKEN || "";
+  REPORT_CFG.WA_PHONE_NUMBER_ID = e.WA_PHONE_NUMBER_ID || "";
+  REPORT_CFG.WA_TO_NUMBER = e.WA_TO_NUMBER || "";
+  REPORT_CFG.AWS_KEY = e.AWS_ACCESS_KEY_ID || "";
+  REPORT_CFG.AWS_SECRET = e.AWS_SECRET_ACCESS_KEY || "";
+  REPORT_CFG.NEON_CONN = e.NEON_CONN || "";
+  REPORT_CFG.SNOWFLAKE.RSA_PKCS8_B64 = e.SNOWFLAKE_RSA_PKCS8_B64 || "";
+  return REPORT_CFG;
+}
 
 async function groqReport(cycle, mode) {
   const istNow = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16) + " IST";

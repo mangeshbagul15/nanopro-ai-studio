@@ -219,7 +219,7 @@ class ConnectionManager:
             "TELEGRAM_ALERTS": os.environ.get("TELEGRAM_BOT_TOKEN") or _CONFIG_TELEGRAM_TOKEN or "",
             "DUCKDB_GOLD_LAKEHOUSE": "",
             "GOOGLE_BIGQUERY_SANDBOX": "",
-            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", "NanoPro@SFTP2026!"),
+            "CLOUD_SFTP_SERVER": os.environ.get("SFTP_PASSWORD", ""),
         }
 
         profiles = [
@@ -231,7 +231,7 @@ class ConnectionManager:
             ("GOOGLE_BIGQUERY_SANDBOX", "cloud_data_warehouse", "nanoproaistudio@gmail.com", "bigquery.googleapis.com", "443", "nanopro-lakehouse-sandbox", {"tier": "Always Free Sandbox", "quota": "10 GB Storage / 1 TB Query/mo"}),
             ("CLOUD_SFTP_SERVER", "sftp", os.environ.get("SFTP_USER", "nanopro_sftp"), "0.0.0.0", str(os.environ.get("SFTP_PORT", 2222)), "sftp_hub", {"protocols": ["SFTP", "SSH", "AWS S3 Sync"], "inbound": "data/sftp/inbound", "outbound": "data/sftp/outbound", "reports": "data/sftp/reports"}),
             ("GMAIL_SMTP", "smtp", "mangeshbagul15@gmail.com", "smtp.gmail.com", "587", "nanoproaistudio@gmail.com", {"protocol": "STARTTLS"}),
-            ("TELEGRAM_ALERTS", "messaging", "@mangesh_technews_bot", "api.telegram.org", "443", "1200023268", {"chat_id": "1200023268"})
+            ("TELEGRAM_ALERTS", "messaging", "@mangesh_technews_bot", "api.telegram.org", "443", os.environ.get("TELEGRAM_CHAT_ID", ""), {"chat_id": os.environ.get("TELEGRAM_CHAT_ID", "")})
         ]
         for name, kind, username, host, port, database_name, metadata in profiles:
             existing = credentials_vault.get_credential(name)
