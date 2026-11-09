@@ -100,7 +100,7 @@ DEFAULT_METADATA_MODELS = [
 ]
 
 # Telegram Multi-Bot Configurations (Specialized Channels)
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1200023268")
 
 # Bot 1: Tech News & AI Trends (@mangesh_technews_bot)
 TELEGRAM_NEWS_BOT_TOKEN = os.environ.get("TELEGRAM_NEWS_BOT_TOKEN", "")

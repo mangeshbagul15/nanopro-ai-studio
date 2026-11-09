@@ -6,8 +6,10 @@ to their dedicated category Telegram bots with zero cross-talk or leakage into N
 
 import os
 import json
+import mimetypes
 import urllib.request
 import urllib.parse
+import uuid
 from typing import Dict, Any, Optional
 from app.core.config import (
     TELEGRAM_CHAT_ID,
@@ -313,6 +315,20 @@ def _dispatch_telegram_http(
     if not token or not chat_id:
         return {"success": False, "error": "Missing bot token or chat ID"}
 
+    if document_path and os.path.isfile(document_path):
+        doc_res = _send_telegram_document(token, chat_id, document_path, text)
+        if doc_res.get("success"):
+            return doc_res
+        message_res = _send_telegram_message(token, chat_id, text, parse_mode)
+        message_res["document_error"] = doc_res.get("error")
+        return message_res
+
+    return _send_telegram_message(token, chat_id, text, parse_mode)
+
+
+def _send_telegram_message(
+    token: str, chat_id: str, text: str, parse_mode: Optional[str] = "HTML"
+) -> Dict[str, Any]:
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -351,6 +367,61 @@ def _dispatch_telegram_http(
                     return {"success": True, "response": parsed2, "fallback_mode": "plaintext"}
             except Exception as e_plain:
                 return {"success": False, "error": f"Plaintext fallback error: {str(e_plain)}"}
+        return {"success": False, "error": f"HTTP {e.code}: {err_msg}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _send_telegram_document(
+    token: str, chat_id: str, document_path: str, caption: str = ""
+) -> Dict[str, Any]:
+    """Uploads the report attachment via sendDocument (multipart/form-data)."""
+    url = f"https://api.telegram.org/bot{token}/sendDocument"
+    filename = os.path.basename(document_path)
+    mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    plain_caption = ""
+    try:
+        import re
+        plain_caption = re.sub(r'<[^>]*>', '', caption or "").strip()[:1000]
+    except Exception:
+        plain_caption = (caption or "")[:1000]
+
+    boundary = f"----NanoProBoundary{uuid.uuid4().hex}"
+    parts = []
+    for field, value in (("chat_id", chat_id), ("caption", plain_caption)):
+        if value:
+            parts.append(
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"{field}\"\r\n\r\n{value}\r\n".encode("utf-8")
+            )
+    try:
+        with open(document_path, "rb") as fh:
+            file_bytes = fh.read()
+    except Exception as e:
+        return {"success": False, "error": f"Document read error: {e}"}
+
+    parts.append(
+        (
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"document\"; filename=\"{filename}\"\r\n"
+            f"Content-Type: {mime}\r\n\r\n"
+        ).encode("utf-8")
+    )
+    parts.append(file_bytes)
+    parts.append(f"\r\n--{boundary}--\r\n".encode("utf-8"))
+    body = b"".join(parts)
+
+    headers = {
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "Content-Length": str(len(body)),
+        "User-Agent": "NanoProStudio/2.0",
+    }
+    try:
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=25.0) as resp:
+            resp_body = resp.read().decode("utf-8")
+            parsed = json.loads(resp_body) if resp_body.startswith("{") else {"raw": resp_body}
+            return {"success": True, "response": parsed, "document": filename}
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode("utf-8", errors="replace")
         return {"success": False, "error": f"HTTP {e.code}: {err_msg}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
