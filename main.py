@@ -12979,6 +12979,60 @@ async def api_auth_google_login(req: GoogleLoginRequest, request: Request):
 
 
 
+@app.post("/api/auth/google-callback")
+
+async def api_auth_google_callback(request: Request):
+
+    """Google Identity Services redirect-mode callback: verifies the posted credential, opens a session and returns to the studio."""
+
+    import hmac
+
+    import json
+
+    form = await request.form()
+
+    credential = str(form.get("credential") or "").strip()
+
+    form_csrf = str(form.get("g_csrf_token") or "").strip()
+
+    cookie_csrf = request.cookies.get("g_csrf_token") or ""
+
+    if not credential:
+
+        return RedirectResponse("/login?google=missing_credential", status_code=303)
+
+    if not form_csrf or not cookie_csrf or not hmac.compare_digest(form_csrf, cookie_csrf):
+
+        log_event("Google callback rejected: CSRF token mismatch", component="AuthManager", level="WARNING")
+
+        return RedirectResponse("/login?google=csrf", status_code=303)
+
+    login_resp = await api_auth_google_login(GoogleLoginRequest(credential=credential), request)
+
+    try:
+
+        data = json.loads(login_resp.body.decode("utf-8"))
+
+    except Exception:
+
+        data = {}
+
+    session_token = (data or {}).get("session_token")
+
+    if login_resp.status_code == 200 and session_token:
+
+        resp = RedirectResponse("/", status_code=303)
+
+        resp.set_cookie(key="nanopro_session", value=session_token, max_age=2592000, httponly=False, samesite="lax", secure=False)
+
+        return resp
+
+    reason = (data or {}).get("status") or "error"
+
+    return RedirectResponse(f"/login?google={reason}", status_code=303)
+
+
+
 @app.post("/api/auth/login")
 
 async def api_auth_login(req: AuthLoginRequest, request: Request):

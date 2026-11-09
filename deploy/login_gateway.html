@@ -583,7 +583,8 @@
                 window.google.accounts.id.initialize({
                     client_id: cfg.client_id,
                     callback: handleGoogleCredential,
-                    ux_mode: 'popup',
+                    ux_mode: 'redirect',
+                    login_uri: window.location.origin + '/api/auth/google-callback',
                     auto_select: false,
                     cancel_on_tap_outside: true
                 });
@@ -663,6 +664,21 @@
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
                 return; // STOP! Do not auto-login on logout!
+            }
+
+            const googleError = urlParams.get('google');
+            if (googleError) {
+                const messages = {
+                    pending_approval: '⏳ Google account verified. Admin approval is required before sign-in.',
+                    pending: '⏳ Google account verified. Admin approval is required before sign-in.',
+                    rejected: '❌ This Google account was rejected by the administrator.',
+                    disabled: '🔒 This account is disabled.',
+                    csrf: 'Security check failed. Please try Google sign-in again.',
+                    verify: 'Google verification failed. Please try again.',
+                    missing_credential: 'Google did not return a login credential. Please try again.',
+                    unreachable: 'Google sign-in service is starting up. Please retry in a few seconds.'
+                };
+                showAlert(messages[googleError] || 'Google sign-in did not complete. Please try again.', 'warning');
             }
 
             await initGoogleSignIn();

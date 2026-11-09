@@ -392,6 +392,33 @@ export default {
       }
     }
 
+    // Google redirect-mode callback posts a credential to Render, which answers
+    // with a 303 + Set-Cookie. Forward both untouched so the browser session
+    // cookie lands on the Worker origin.
+    if (path === "/api/auth/google-callback" && request.method === "POST") {
+      const renderBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+      try {
+        const targetUrl = new URL(path + url.search, renderBase);
+        const headers = new Headers(request.headers);
+        headers.delete("host");
+        headers.set("Host", targetUrl.host);
+        headers.set("X-Forwarded-Host", url.host);
+        headers.set("X-NanoPro-Gateway", "Cloudflare-Google-Callback-Render-Direct");
+        const response = await fetch(targetUrl.toString(), {
+          method: "POST",
+          headers,
+          body: await request.text(),
+          redirect: "manual"
+        });
+        const fh = new Headers(response.headers);
+        fh.set("X-NanoPro-Routed-Node", renderBase);
+        fh.set("X-NanoPro-Mode", "RENDER_GOOGLE_CALLBACK_DIRECT");
+        return new Response(response.body, { status: response.status, headers: fh });
+      } catch (err) {
+        return Response.redirect(`${url.origin}/login?google=unreachable`, 303);
+      }
+    }
+
     // E11. Server Manager Overview — Live parallel health probes from edge
     if (path === "/api/server-manager/overview") {
       const forceRefresh = url.searchParams.get("refresh") === "true";
