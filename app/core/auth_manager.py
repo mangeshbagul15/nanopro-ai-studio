@@ -866,7 +866,8 @@ class AuthManager:
                 f"🛡️ Zero-Trust Security Sentinel"
             )
             res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
-            delivered = bool(res.get("success"))
+            # A generic template fallback carries no OTP, so it is not a delivery success.
+            delivered = bool(res.get("success")) and res.get("status") != "delivered_via_template_fallback"
             if not delivered:
                 res = communication_center.send_whatsapp_free_message(phone=clean_id, message=msg)
                 delivered = bool(res.get("delivered_via_api"))
