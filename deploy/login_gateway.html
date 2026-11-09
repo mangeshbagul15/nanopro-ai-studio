@@ -632,8 +632,23 @@
             }
         }
 
-        function handleOfficialGoogleSignIn() {
-            showAlert('⚠️ Google sign-in is not configured yet. The administrator must set GOOGLE_CLIENT_ID on Render and add this site to the Google OAuth client.', 'warning');
+        async function handleOfficialGoogleSignIn() {
+            hideAlert();
+            try {
+                const cfg = await (await fetch('/api/auth/google-config')).json();
+                if (!cfg || !cfg.client_id) {
+                    showAlert('⚠️ Google sign-in is not configured yet. The administrator must set GOOGLE_CLIENT_ID on Render and add this site to the Google OAuth client.', 'warning');
+                    return;
+                }
+                if (window.google && window.google.accounts && window.google.accounts.id) {
+                    await initGoogleSignIn();
+                    showAlert('🌐 Google sign-in is ready. Please click the Google button above.', 'info');
+                    return;
+                }
+                showAlert('⚠️ Google sign-in could not load (network or ad-blocker). Please reload the page, or use password / WhatsApp OTP.', 'warning');
+            } catch (e) {
+                showAlert('Google sign-in error: ' + e.message, 'error');
+            }
         }
         window.handleOfficialGoogleSignIn = handleOfficialGoogleSignIn;
 
