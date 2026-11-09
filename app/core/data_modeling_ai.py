@@ -3224,8 +3224,9 @@ def _aml_chat_reply(workspace_id: str, message: str, user: str, action: str,
         "result": None,
         "model": "aml-pipeline",
         "latency_ms": round((time.time() - started_at) * 1000, 1),
-        "pipeline": {k: run.get(k) for k in ("run_id", "mode", "status", "counts", "s3_objects",
-                                             "snowflake", "report", "delivery", "error")},
+        "pipeline": aml.public_run({k: run.get(k) for k in ("run_id", "mode", "status", "counts",
+                                                            "s3_objects", "snowflake", "report",
+                                                            "delivery", "error")}),
     }
 
 

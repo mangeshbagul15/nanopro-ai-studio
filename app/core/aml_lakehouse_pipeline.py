@@ -9,6 +9,7 @@ the Data Modeling chat and the REST API can report progress.
 
 from __future__ import annotations
 
+import gc
 import json
 import os
 import random
@@ -218,6 +219,16 @@ def list_runs(limit: int = 20) -> List[Dict[str, Any]]:
 def last_run() -> Optional[Dict[str, Any]]:
     runs = list_runs(1)
     return runs[0] if runs else None
+
+
+def public_run(run: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """JSON-safe copy for API responses (numpy/Decimal/datetime become primitives)."""
+    if not run:
+        return run
+    try:
+        return json.loads(json.dumps(run, default=str))
+    except Exception:
+        return {k: v for k, v in run.items() if isinstance(v, (str, int, float, bool, type(None)))}
 
 
 # ---------------------------------------------------------------------------
@@ -1019,6 +1030,17 @@ def _fmt_money(value: Any) -> str:
     return f"₹{amount:,.0f}"
 
 
+def _plain(value: Any) -> Any:
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:
+            return str(value)
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
 def _html_table(frame: pd.DataFrame, limit: int = 25) -> str:
     if frame is None or frame.empty:
         return "<p style='color:#64748b'>No rows for this section.</p>"
@@ -1143,8 +1165,8 @@ def _build_report(run: Dict[str, Any], data: Dict[str, pd.DataFrame],
         "html_path": str(html_path),
         "xlsx_path": str(xlsx_path),
         "csv_files": files,
-        "kpi": {k: (None if pd.isna(v) else v) for k, v in dict(kpi).items()},
-        "customers": {k: (None if pd.isna(v) else v) for k, v in dict(customers).items()},
+        "kpi": {k: (None if pd.isna(v) else _plain(v)) for k, v in dict(kpi).items()},
+        "customers": {k: (None if pd.isna(v) else _plain(v)) for k, v in dict(customers).items()},
         "html": html,
     }
 
@@ -1256,6 +1278,8 @@ def _execute(run: Dict[str, Any]) -> None:
         run["snowflake"]["l0"] = _load_snowflake(frames, mode)
         _stage(run, "snowflake_l0", "success",
                {"tables": len(run["snowflake"]["l0"]), "seconds": round(time.time() - started, 2)})
+        del frames
+        gc.collect()
 
         _stage(run, "snowflake_l1_l2", "running", "Harmonize + curate")
         started = time.time()
@@ -1291,6 +1315,7 @@ def _execute(run: Dict[str, Any]) -> None:
                 "telegram": run["delivery"].get("telegram", {}).get("success")})
 
         run["status"] = "success"
+        gc.collect()
     except Exception as exc:
         run["status"] = "failed"
         run["error"] = f"{type(exc).__name__}: {exc}"

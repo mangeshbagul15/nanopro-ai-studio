@@ -434,6 +434,7 @@ def api_aml_run(req: AmlRunRequest, request: Request):
         return JSONResponse(run, status_code=409)
     if req.wait_seconds > 0:
         run = aml.wait_run(run["run_id"], timeout=min(float(req.wait_seconds), 85.0))
+    run = aml.public_run(run) or {}
     return JSONResponse({"status": "success" if run.get("status") == "success" else run.get("status"), "run": run})
 
 
@@ -442,7 +443,7 @@ def api_aml_status(run_id: str, request: Request):
     _session_user(request)
     from app.core import aml_lakehouse_pipeline as aml
 
-    run = aml.get_run(run_id)
+    run = aml.public_run(aml.get_run(run_id))
     if not run:
         return _error("AML pipeline run not found.", 404)
     return JSONResponse({"status": "success", "run": run})
@@ -453,7 +454,8 @@ def api_aml_runs(request: Request, limit: int = 10):
     _session_user(request)
     from app.core import aml_lakehouse_pipeline as aml
 
-    return JSONResponse({"status": "success", "runs": aml.list_runs(max(1, min(limit, 50)))})
+    runs = [aml.public_run(r) for r in aml.list_runs(max(1, min(limit, 50)))]
+    return JSONResponse({"status": "success", "runs": runs})
 
 
 @router.get("/schedules")
