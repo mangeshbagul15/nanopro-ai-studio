@@ -112,7 +112,7 @@ DDL: Dict[str, List[Tuple[str, str]]] = {
         ("ALERT_ID", "VARCHAR(32)"), ("TXN_ID", "VARCHAR(40)"), ("ACCOUNT_ID", "VARCHAR(24)"),
         ("ALERT_TYPE", "VARCHAR(48)"), ("RULE_CODE", "VARCHAR(16)"),
         ("ALERT_SCORE", "NUMBER(6,2)"), ("ALERT_TIMESTAMP", "TIMESTAMP_NTZ"),
-        ("STATUS", "VARCHAR(16)"),
+        ("STATUS", "VARCHAR(40)"),
     ],
 }
 
