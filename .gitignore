@@ -46,3 +46,7 @@ integrate_sftp_pipeline.py
 data/*.db
 data/*.db-wal
 data/*.db-shm
+# AML lakehouse runtime artifacts
+data/aml_runs/
+data/reports/aml/
+data/lakehouse/parquet_staging/

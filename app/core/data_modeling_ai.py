@@ -3122,6 +3122,113 @@ def _reply_mentions_value(reply: str, value: Any) -> bool:
     return bool(needle) and needle in text.lower()
 
 
+_AML_TOPIC = re.compile(r"\baml\b|anti[- ]?money", re.IGNORECASE)
+_AML_STATUS = re.compile(r"\bstatus\b|\bprogress\b|\bresult\b|\bcompleted\b", re.IGNORECASE)
+_AML_ACTION = re.compile(r"\b(run|load|start|ingest|execute|reload|refresh|kara|karo|kra)\b", re.IGNORECASE)
+
+
+def _detect_aml_action(message: str) -> Optional[str]:
+    text = message or ""
+    if not _AML_TOPIC.search(text):
+        return None
+    low = text.lower()
+    if re.search(r"\bincremental\b|\bappend\b|\bincrement\b", low):
+        return "incremental"
+    if re.search(r"\bfull\b|\breload\b|\bfresh\b|\binitial\b|\bfirst\b", low) and _AML_ACTION.search(low):
+        return "full"
+    if _AML_STATUS.search(low) and not re.search(r"\b(run|load|start)\b", low):
+        return "status"
+    if re.search(r"\breport\b", low) and re.search(r"\b(pathava|pathva|send|email|mail)\b", low):
+        return "status"
+    if _AML_ACTION.search(low):
+        return "full"
+    return None
+
+
+def _aml_chat_reply(workspace_id: str, message: str, user: str, action: str,
+                    started_at: float, is_first: bool) -> Dict[str, Any]:
+    from app.core import aml_lakehouse_pipeline as aml
+
+    run: Dict[str, Any] = {}
+    if action == "status":
+        run = aml.last_run() or {}
+        if not run:
+            reply = (
+                "No AML pipeline run found yet.\n\n"
+                "Send `run aml full load` to create the Snowflake L0/L1/L2 layers, land raw "
+                "Parquet in AWS S3, build the daily surveillance report and deliver it by email, "
+                "WhatsApp and Telegram."
+            )
+        else:
+            reply = aml.summary_lines(run)
+            if run.get("status") == "running":
+                reply += "\n\nThe run is still in progress. Send `aml status` again in a few seconds."
+    else:
+        mode = "INCREMENTAL" if action == "incremental" else "FULL"
+        run = aml.run_now(mode, user=user, wait_seconds=78.0)
+        if run.get("status") == "busy":
+            reply = (
+                "An AML pipeline run is already in progress"
+                + (f" ({run.get('active_run_id')})." if run.get("active_run_id") else ".")
+                + " Send `aml status` to see progress."
+            )
+        elif run.get("status") == "running":
+            reply = (
+                f"AML {mode.title()} load is still running — the report and delivery steps are "
+                f"finishing in the background.\n\n{aml.summary_lines(run)}\n\n"
+                "Send `aml status` in a few seconds for the final status."
+            )
+        else:
+            headline = "AML FULL LOAD completed" if mode == "FULL" else "AML INCREMENTAL LOAD completed"
+            if run.get("status") != "success":
+                headline = f"AML {mode.title()} load failed"
+            delivery = run.get("delivery") or {}
+            email = delivery.get("email") or {}
+            wa = delivery.get("whatsapp") or {}
+            tg = delivery.get("telegram") or {}
+            report = run.get("report") or {}
+            reply = (
+                f"{headline}: {run.get('run_id')}\n\n"
+                f"{aml.summary_lines(run)}\n\n"
+                f"Snowflake: BANK_DB L0_STAGING → L1_HARMONIZED → L2_CURATED\n"
+                f"Report: {report.get('report_day')} | email nanoproaistudio@gmail.com "
+                f"{'delivered' if email.get('success') else 'not confirmed'} | "
+                f"WhatsApp {'delivered' if wa.get('success') else 'not confirmed'} | "
+                f"Telegram {'delivered' if tg.get('success') else 'not confirmed'}"
+                + (f"\n\nError: {run.get('error')}" if run.get("error") else "")
+            )
+    meta = {
+        "kind": "aml_pipeline",
+        "aml_action": action,
+        "aml_run_id": run.get("run_id"),
+        "aml_status": run.get("status"),
+        "aml_mode": run.get("mode"),
+    }
+    assistant = add_message(workspace_id, "assistant", reply, "", meta, user=user)
+    if is_first:
+        title = message.replace("\n", " ").strip()
+        if len(title) > 48:
+            title = title[:48].rstrip() + "…"
+        try:
+            rename_workspace(workspace_id, title, user=user)
+        except Exception:
+            pass
+    return {
+        "status": "success",
+        "workspace": get_workspace(workspace_id, user=user),
+        "message": assistant,
+        "reply": reply,
+        "sql": "",
+        "target": "",
+        "error": run.get("error"),
+        "result": None,
+        "model": "aml-pipeline",
+        "latency_ms": round((time.time() - started_at) * 1000, 1),
+        "pipeline": {k: run.get(k) for k in ("run_id", "mode", "status", "counts", "s3_objects",
+                                             "snowflake", "report", "delivery", "error")},
+    }
+
+
 def chat(
     workspace_id: str,
     message: str,
@@ -3174,6 +3281,9 @@ def chat(
         return result
 
     add_message(workspace_id, "user", message, user=user)
+    aml_action = _detect_aml_action(message)
+    if aml_action:
+        return _aml_chat_reply(workspace_id, message, user, aml_action, started_at, is_first)
     parsed: Dict[str, Any] = {}
     model_used = "fallback"
     focus: Dict[str, str] = {}

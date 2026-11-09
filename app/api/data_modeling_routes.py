@@ -77,8 +77,12 @@ class ScheduleCreateRequest(BaseModel):
     target: str = ""
 
 
-class ScheduleToggleRequest(BaseModel):
-    enabled: bool
+class AmlRunRequest(BaseModel):
+    mode: str = "FULL"
+    wait_seconds: int = 60
+
+
+class ScheduleToggleRequest(BaseModel):    enabled: bool
 
 
 def _session_user(request: Request) -> dict:
@@ -418,6 +422,38 @@ def api_dm_chat(req: ChatRequest, request: Request):
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
     return JSONResponse(result)
+
+
+@router.post("/aml/run")
+def api_aml_run(req: AmlRunRequest, request: Request):
+    user = _session_user(request)
+    from app.core import aml_lakehouse_pipeline as aml
+
+    run = aml.start_run(req.mode, user=_user_label(user))
+    if run.get("status") == "busy":
+        return JSONResponse(run, status_code=409)
+    if req.wait_seconds > 0:
+        run = aml.wait_run(run["run_id"], timeout=min(float(req.wait_seconds), 85.0))
+    return JSONResponse({"status": "success" if run.get("status") == "success" else run.get("status"), "run": run})
+
+
+@router.get("/aml/status/{run_id}")
+def api_aml_status(run_id: str, request: Request):
+    _session_user(request)
+    from app.core import aml_lakehouse_pipeline as aml
+
+    run = aml.get_run(run_id)
+    if not run:
+        return _error("AML pipeline run not found.", 404)
+    return JSONResponse({"status": "success", "run": run})
+
+
+@router.get("/aml/runs")
+def api_aml_runs(request: Request, limit: int = 10):
+    _session_user(request)
+    from app.core import aml_lakehouse_pipeline as aml
+
+    return JSONResponse({"status": "success", "runs": aml.list_runs(max(1, min(limit, 50)))})
 
 
 @router.get("/schedules")
