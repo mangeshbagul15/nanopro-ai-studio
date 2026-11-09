@@ -145,10 +145,16 @@ class AuthManager:
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT id FROM users WHERE username = 'nanopro'")
+                cursor.execute("SELECT id, password_hash, salt FROM users WHERE username = 'nanopro'")
                 admin_row = cursor.fetchone()
+                env_password = (os.getenv("NANOPRO_ADMIN_PASSWORD") or "").strip()
+                if env_password:
+                    ok, reason = self.validate_password_criteria(env_password)
+                    if not ok:
+                        log_event(f"NANOPRO_ADMIN_PASSWORD rejected: {reason}", component="AuthManager", level="ERROR")
+                        env_password = ""
                 if not admin_row:
-                    initial_password = (os.getenv("NANOPRO_ADMIN_PASSWORD") or "").strip()
+                    initial_password = env_password
                     generated = False
                     if not initial_password:
                         initial_password = f"{uuid.uuid4().hex}Aa1!"
@@ -180,6 +186,16 @@ class AuthManager:
                             component="AuthManager",
                             level="WARNING",
                         )
+                elif env_password:
+                    calc_hash, _ = self._hash_password(env_password, admin_row["salt"])
+                    if calc_hash != admin_row["password_hash"]:
+                        pwd_hash, salt = self._hash_password(env_password)
+                        cursor.execute(
+                            "UPDATE users SET password_hash=?, salt=?, status='ACTIVE', role='admin' WHERE id='user_admin_001'",
+                            (pwd_hash, salt),
+                        )
+                        conn.commit()
+                        log_event("Super Admin password synchronized from NANOPRO_ADMIN_PASSWORD.", component="AuthManager")
         except Exception as e:
             log_event(f"Error ensuring default admin: {e}", component="AuthManager", level="WARNING")
 
