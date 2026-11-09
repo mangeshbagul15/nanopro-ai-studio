@@ -1294,13 +1294,17 @@ export default {
 
 
 
-    // Default JSON fallback
+    // Default JSON fallback — every API path must fail closed, never pretend success.
+
+    const isAuthPath = path.startsWith("/api/auth/") || path.startsWith("/api/admin/") || path.startsWith("/api/vault");
 
     return new Response(JSON.stringify({
 
-      status: "STANDBY_READY",
+      status: "error",
 
-      message: "NanoPro Cloud Edge is active. Endpoint accepted.",
+      error: isAuthPath
+        ? "Authentication backend unavailable. Please try again."
+        : "NanoPro Cloud Edge is active, but the backend is temporarily unavailable.",
 
       path: path,
 
@@ -1308,7 +1312,7 @@ export default {
 
     }, null, 2), {
 
-      status: 200,
+      status: 503,
 
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
 

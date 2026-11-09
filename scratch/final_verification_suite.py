@@ -1,6 +1,7 @@
 """Negative security regression suite — every legacy auth bypass must fail."""
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -9,13 +10,15 @@ sys.stdout.reconfigure(encoding="utf-8")
 BASE_URL = "https://mangesh-nanopro.mangeshbagul15.workers.dev"
 HEADERS = {
     "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NanoProSecuritySuite/1.0",
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 }
 
 results = []
 
 
 def call(path, payload=None, method="POST"):
+    time.sleep(0.8)
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(BASE_URL + path, headers=HEADERS, data=data, method=method)
     try:
@@ -71,9 +74,18 @@ expect("google login without credential rejected", "/api/auth/google-login", {},
 expect("clerk email-only rejected", "/api/auth/clerk-verify",
        {"email": "mangeshbagul15@gmail.com"}, error_text="Clerk session verification failed")
 
-expect("fake session rejected", "/api/admin/users/list", method="GET", codes=(401, 403))
-status, body = call("/api/admin/users/list", method="GET")
-print("PASS" if status in (401, 403) else "FAIL", "admin API rejects unauthenticated session", status)
+fake_req = urllib.request.Request(
+    BASE_URL + "/api/admin/users/list",
+    headers={**HEADERS, "Authorization": "Bearer np_sess_fake123"},
+)
+try:
+    with urllib.request.urlopen(fake_req, timeout=20) as fake_resp:
+        fake_status = fake_resp.status
+except urllib.error.HTTPError as exc:
+    fake_status = exc.code
+fake_ok = fake_status in (401, 403)
+results.append(("fake session rejected", fake_ok, fake_status, None))
+print("PASS" if fake_ok else "FAIL", "fake session rejected", fake_status)
 
 failed = [name for name, ok, _, _ in results if not ok]
 print("=" * 60)
