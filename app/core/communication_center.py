@@ -512,7 +512,8 @@ class CommunicationCenter:
                 "setup_url": "https://developers.facebook.com/"
             }
 
-        url = f"https://graph.facebook.com/v19.0/{phone_id}/messages"
+        api_version = os.environ.get("WHATSAPP_CLOUD_API_VERSION", "v23.0").strip() or "v23.0"
+        url = f"https://graph.facebook.com/{api_version}/{phone_id}/messages"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
