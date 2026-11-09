@@ -153,6 +153,13 @@ class AuthManager:
                     if not ok:
                         log_event(f"NANOPRO_ADMIN_PASSWORD rejected: {reason}", component="AuthManager", level="ERROR")
                         env_password = ""
+                log_event(
+                    "Admin credential bootstrap: "
+                    f"env_password_present={bool(env_password)} "
+                    f"env_password_length={len(env_password)} "
+                    f"existing_admin_row={bool(admin_row)}",
+                    component="AuthManager",
+                )
                 if not admin_row:
                     initial_password = env_password
                     generated = False
@@ -187,15 +194,13 @@ class AuthManager:
                             level="WARNING",
                         )
                 elif env_password:
-                    calc_hash, _ = self._hash_password(env_password, admin_row["salt"])
-                    if calc_hash != admin_row["password_hash"]:
-                        pwd_hash, salt = self._hash_password(env_password)
-                        cursor.execute(
-                            "UPDATE users SET password_hash=?, salt=?, status='ACTIVE', role='admin' WHERE id='user_admin_001'",
-                            (pwd_hash, salt),
-                        )
-                        conn.commit()
-                        log_event("Super Admin password synchronized from NANOPRO_ADMIN_PASSWORD.", component="AuthManager")
+                    pwd_hash, salt = self._hash_password(env_password)
+                    cursor.execute(
+                        "UPDATE users SET password_hash=?, salt=?, status='ACTIVE', role='admin' WHERE username = 'nanopro'",
+                        (pwd_hash, salt),
+                    )
+                    conn.commit()
+                    log_event("Super Admin password synchronized from NANOPRO_ADMIN_PASSWORD.", component="AuthManager")
         except Exception as e:
             log_event(f"Error ensuring default admin: {e}", component="AuthManager", level="WARNING")
 
@@ -404,6 +409,7 @@ class AuthManager:
 
                 if not user:
                     self._record_audit_log(None, raw_identifier, "FAILED_LOGIN", "User not found", ip_address, user_agent)
+                    log_event(f"Login rejected: identifier_not_found len={len(raw_identifier)}", component="AuthManager", level="WARNING")
                     return {"status": "error", "error": "Invalid username or password!"}
 
                 is_admin_user = (user["username"] == "nanopro" or user["role"] == "admin")
@@ -411,6 +417,7 @@ class AuthManager:
 
                 if calc_hash != user["password_hash"]:
                     self._record_audit_log(user["id"], raw_identifier, "FAILED_LOGIN", "Invalid password", ip_address, user_agent)
+                    log_event(f"Login rejected: password_mismatch user_id={user['id']}", component="AuthManager", level="WARNING")
                     return {"status": "error", "error": "Invalid username or password!"}
 
                 # Check account status
