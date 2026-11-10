@@ -19,9 +19,12 @@ from app.core.database import db
 
 SAFE_CLEANUP_CATEGORIES = ["temp_caches", "logs", "audio_cache", "cache", "reports"]
 
+FOOTPRINT_CACHE_SECONDS = 600
+
 class StorageInspector:
     def __init__(self):
         self.base_dir = BASE_DIR
+        self._footprint_cache: Dict[str, Any] = {"at": 0.0, "bytes": 0, "categories": {}}
 
     def _get_dir_size(self, path: Path) -> (int, int):
         total_size = 0
@@ -241,5 +244,116 @@ class StorageInspector:
             "freed_formatted": self._format_size(freed_bytes),
             "message": f"Safe cleanup of '{category}' completed successfully. Freed {self._format_size(freed_bytes)}."
         }
+
+    def measure_footprint(self, force: bool = False) -> Dict[str, Any]:
+        """Returns the app's own writable footprint (cached) so host-wide disk noise is separable."""
+        now = time.time()
+        if not force and now - float(self._footprint_cache.get("at") or 0) < FOOTPRINT_CACHE_SECONDS:
+            return self._footprint_cache
+
+        roots = {
+            "app_database": DATABASE_DIR,
+            "app_reports": REPORTS_DIR,
+            "app_backups": BACKUPS_DIR,
+            "app_logs": LOGS_DIR,
+            "app_cache": self.base_dir / "app" / "cache",
+            "data_sftp": self.base_dir / "data" / "sftp",
+            "data_modeling": self.base_dir / "data" / "modeling",
+            "data_lakehouse": self.base_dir / "data" / "lakehouse",
+            "data_ingestion": self.base_dir / "data_ingestion",
+        }
+        categories = {}
+        total = 0
+        for key, path in roots.items():
+            size, _ = self._get_dir_size(Path(path))
+            categories[key] = size
+            total += size
+
+        self._footprint_cache = {
+            "at": now,
+            "bytes": total,
+            "formatted": self._format_size(total),
+            "categories": {k: self._format_size(v) for k, v in categories.items()},
+        }
+        return self._footprint_cache
+
+    def run_housekeeping(self, report_days: int = 14, log_days: int = 14, keep_backups: int = 3) -> Dict[str, Any]:
+        """Runs bounded retention/compaction across generated artifacts. Safe to run repeatedly."""
+        before = self.measure_footprint(force=True)
+        report = {
+            "deleted_files": 0,
+            "reclaimed_bytes": 0,
+            "details": {},
+        }
+
+        def _prune_dir(path: Path, max_age_days: int) -> None:
+            cutoff = time.time() - max_age_days * 86400
+            removed = 0
+            freed = 0
+            if not path.exists():
+                return
+            for f in path.rglob("*"):
+                try:
+                    if not f.is_file() or f.name.endswith((".db", ".db-wal", ".db-shm")):
+                        continue
+                    if f.stat().st_mtime >= cutoff:
+                        continue
+                    sz = f.stat().st_size
+                    f.unlink(missing_ok=True)
+                    removed += 1
+                    freed += sz
+                except Exception:
+                    continue
+            report["deleted_files"] += removed
+            report["reclaimed_bytes"] += freed
+            report["details"][str(path)] = {"deleted": removed, "reclaimed_bytes": freed}
+
+        try:
+            from app.core.backup_manager import backup_manager
+            pruned = backup_manager.prune_and_vacuum(keep_backups=keep_backups, max_report_age_hours=report_days * 24)
+            report["details"]["backups"] = pruned
+            report["deleted_files"] += int(pruned.get("deleted_files") or 0)
+            report["reclaimed_bytes"] += int(float(pruned.get("reclaimed_mb") or 0) * 1024 * 1024)
+        except Exception as exc:
+            report["details"]["backups"] = {"error": str(exc)}
+
+        _prune_dir(REPORTS_DIR, report_days)
+        _prune_dir(LOGS_DIR, log_days)
+        _prune_dir(self.base_dir / "app" / "cache", report_days)
+        _prune_dir(self.base_dir / "app" / "temp_apks", report_days)
+        _prune_dir(self.base_dir / "data" / "modeling" / "attachments", 1)
+
+        try:
+            from app.core.cloud_sftp_hub import cloud_sftp_hub
+            sftp_res = cloud_sftp_hub.enforce_retention_policy(retention_days=20, purge_s3=False)
+            report["details"]["sftp_retention"] = {
+                "freed_bytes": sftp_res.get("bytes_freed"),
+                "purged_files": len(sftp_res.get("purged_files") or []),
+                "purged_dirs": len(sftp_res.get("purged_dirs") or []),
+            }
+        except Exception as exc:
+            report["details"]["sftp_retention"] = {"error": str(exc)}
+
+        try:
+            with db.get_connection() as conn:
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                conn.execute("VACUUM")
+            report["details"]["sqlite"] = {"checkpoint": "truncate", "vacuum": "ok"}
+        except Exception as exc:
+            report["details"]["sqlite"] = {"error": str(exc)}
+
+        after = self.measure_footprint(force=True)
+        freed = max(int(before.get("bytes") or 0) - int(after.get("bytes") or 0), 0)
+        report["status"] = "success"
+        report["footprint_before"] = before.get("formatted")
+        report["footprint_after"] = after.get("formatted")
+        report["reclaimed_bytes"] = max(report["reclaimed_bytes"], freed)
+        report["reclaimed_formatted"] = self._format_size(report["reclaimed_bytes"])
+        log_event(
+            f"Storage housekeeping: {report['deleted_files']} files, reclaimed {report['reclaimed_formatted']} "
+            f"(footprint {report['footprint_before']} → {report['footprint_after']}).",
+            component="StorageInspector",
+        )
+        return report
 
 storage_inspector = StorageInspector()

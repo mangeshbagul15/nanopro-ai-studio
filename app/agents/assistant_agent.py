@@ -1732,12 +1732,24 @@ class MonitoringAgent:
         if not db_ok:
             health_status = "CRITICAL"
             issues.append("Database connection check failed")
-        elif used_pct > 92.0:
+        elif used_pct > 98.0:
             health_status = "CRITICAL"
-            issues.append(f"Disk space critical ({used_pct}% used)")
-        elif used_pct > 80.0:
+            issues.append(f"Render host disk critical ({used_pct}% used)")
+        elif used_pct > 95.0:
             health_status = "WARNING"
-            issues.append(f"Disk space high ({used_pct}% used)")
+            issues.append(f"Render host disk high ({used_pct}% used)")
+
+        app_footprint: Dict[str, Any] = {}
+        try:
+            from app.core.storage_inspector import storage_inspector
+            app_footprint = storage_inspector.measure_footprint()
+            footprint_mb = round(int(app_footprint.get("bytes") or 0) / (1024 * 1024), 1)
+            if footprint_mb > 1200:
+                if health_status == "HEALTHY":
+                    health_status = "WARNING"
+                issues.append(f"App footprint high ({footprint_mb} MB writable data)")
+        except Exception:
+            app_footprint = {}
 
         # Prefer the actual container memory cgroup; otherwise report host memory if discoverable.
         host_total_mb = None
@@ -1856,7 +1868,17 @@ class MonitoringAgent:
                     else "ACTIVE"
                 )
             },
-            "disk": {"free_gb": free_gb, "total_gb": total_gb, "used_percentage": used_pct},
+            "disk": {
+                "free_gb": free_gb,
+                "total_gb": total_gb,
+                "used_percentage": used_pct,
+                "scope": "render_host_shared"
+            },
+            "app_footprint": {
+                "bytes": app_footprint.get("bytes"),
+                "formatted": app_footprint.get("formatted"),
+                "categories": app_footprint.get("categories")
+            },
             "database": {"healthy": db_ok, "size_bytes": db_size, "path": str(SQLITE_DB_PATH)},
             "task_metrics": {"recent_analyzed": len(tasks), "failed_count": failed_count, "failure_rate_pct": round(failure_rate * 100, 1)},
             "active_issues": issues,

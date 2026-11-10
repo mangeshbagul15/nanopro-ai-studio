@@ -81,6 +81,7 @@ class AutomationScheduler:
                 ("EOD_PIPELINE_CYCLE", "daily", "18:00", "End of Day (06:00 PM IST) — Daily reconciliation, trial balance verification, and multi-channel executive reports.", True),
                 ("SFTP_INBOUND_AUTO_INGEST", "minutes", "15", "Autonomous Cloud SFTP Inbound Poll — Scans /inbound/ for Pipe (|), CSV, and Excel (.xlsx) feeds and loads pipeline.", True),
                 ("SFTP_20DAY_RETENTION_PURGE", "daily", "00:00", "Autonomous 20-Day Storage Limit Sentinel — Automatically purges SFTP files, folders, and S3 mirror objects older than 20 days.", True),
+                ("STORAGE_RETENTION_OPTIMIZER", "daily", "01:30", "Disk Pressure Guard — Prunes reports/logs/caches older than 14 days, keeps only the latest 3 backups, checkpoints and vacuums SQLite, and re-enforces SFTP retention.", True),
                 ("DUCKDB_S3_CLOUD_BACKUP", "daily", "23:30", "Cloud Lakehouse Durability Sync — Mirrors local DuckDB Gold Marts to AWS S3 (s3://nanopro-data-lake-765865641438-ap-southeast-2-an/lakehouse/gold_marts.duckdb).", True),
                 ("TELEGRAM_APK_DISPATCHER", "hourly", "4", "Autonomous Telegram APK Dispatcher (@mangesh_apk_bot) — Discovers and delivers verified open-source APKs with configurable quantity & interval.", True),
                 ("ORACLE_S3_SNOWFLAKE_PIPELINE_INCREMENTAL", "minutes", "15", "Oracle watermark incremental polling every 15 minutes → S3 → Snowflake L0/L1/L2.", False),
@@ -462,6 +463,10 @@ class AutomationScheduler:
             from app.core.cloud_sftp_hub import cloud_sftp_hub
             res = cloud_sftp_hub.enforce_retention_policy(retention_days=20, purge_s3=True)
             return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+        elif name in ("storage_retention_optimizer", "storage_housekeeping", "disk_cleanup"):
+            from app.core.storage_inspector import storage_inspector
+            res = storage_inspector.run_housekeeping()
+            return json.dumps(res, default=str), "", 0 if res.get("status") == "success" else 1
         elif name in ("duckdb_s3_cloud_backup", "lakehouse_backup"):
             from app.core.etl_automation_pipeline import etl_pipeline
             res = etl_pipeline.backup_duckdb_to_s3()

@@ -5776,6 +5776,30 @@ async def api_cleanup_storage(category: str = Body(..., embed=True)):
     return JSONResponse(res)
 
 
+@app.post("/api/storage/housekeeping")
+
+async def api_storage_housekeeping():
+
+    """Runs retention, backup pruning, SQLite vacuum and cache cleanup; returns reclaimed space."""
+
+    from app.core.storage_inspector import storage_inspector
+
+    res = storage_inspector.run_housekeeping()
+
+    return JSONResponse(res)
+
+
+@app.get("/api/storage/footprint")
+
+async def api_storage_footprint():
+
+    """Returns the app's own writable footprint separately from the shared Render host disk."""
+
+    from app.core.storage_inspector import storage_inspector
+
+    return JSONResponse(storage_inspector.measure_footprint())
+
+
 
 # --- ADVANCED BACKGROUND DISCOVERY SCHEDULER & NOTIFICATIONS ---
 

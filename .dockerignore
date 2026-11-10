@@ -33,3 +33,15 @@ build/
 dist/
 scratch/
 .system_generated/
+
+# Runtime-generated data must not ship in the image (recreated at boot)
+app/reports/
+app/backups/
+app/logs/
+app/database/*.db-wal
+app/database/*.db-shm
+
+# Unused local demo warehouses (~180 MB) kept in git but excluded from deploys
+app/database/telecom_analytics_lakehouse.db
+app/database/semantic_vector_embeddings.db
+app/database/lakehouse_iceberg_emulation.db
