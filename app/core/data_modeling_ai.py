@@ -4168,7 +4168,60 @@ def _attachment_reply(
             dims = ""
             if info.get("width") and info.get("height"):
                 dims = f" ({info['width']}x{info['height']}px)"
-            notes.append(f"Image {filename}{dims} attached.")
+            mime = {
+                "png": "image/png",
+                "jpg": "image/jpeg",
+                "jpeg": "image/jpeg",
+                "webp": "image/webp",
+                "gif": "image/gif",
+                "bmp": "image/bmp",
+            }.get(str(info.get("image_format") or Path(filename).suffix.lstrip(".")).lower(), "image/png")
+            extracted = None
+            try:
+                from app.core.model_adapter import extract_table_from_image
+
+                extracted = extract_table_from_image(content, mime, hint=message or "")
+            except Exception as exc:
+                notes.append(f"Image {filename}: could not read a table ({exc}).")
+            if extracted and extracted.get("columns") and extracted.get("rows"):
+                buffer = io.StringIO()
+                writer = csv.writer(buffer)
+                writer.writerow(extracted["columns"])
+                for row in extracted["rows"]:
+                    if not isinstance(row, list):
+                        row = [row]
+                    writer.writerow(["" if cell is None else cell for cell in row])
+                stem = _safe_ident(Path(filename).stem or "image") or "image_data"
+                table_name = _safe_ident(extracted.get("title") or "") or stem
+                mode = "append" if _APPEND_RE.search(message or "") else "create"
+                try:
+                    result = import_table(
+                        workspace_id,
+                        f"{stem}.csv",
+                        buffer.getvalue().encode("utf-8"),
+                        table_name=table_name,
+                        mode=mode,
+                        schema="main",
+                    )
+                    result["attachment_id"] = info.get("attachment_id")
+                    result["filename"] = filename
+                    imports.append(result)
+                    qualified = f"{result['schema']}.{result['table']}"
+                    if result["mode"] == "create":
+                        notes.append(
+                            f"Read {result['rows_inserted']} row(s) from image {filename}{dims} into table "
+                            f"{qualified} ({len(extracted['columns'])} columns) using {extracted.get('model')}."
+                        )
+                    else:
+                        notes.append(
+                            f"Appended {result['rows_inserted']} row(s) read from image {filename} to {qualified}."
+                        )
+                except Exception as exc:
+                    notes.append(f"Image {filename}: table read failed ({exc}).")
+            elif not extracted:
+                notes.append(f"Image {filename}{dims} attached. Tables are read from invoices, statements or screenshots.")
+            else:
+                notes.append(f"Image {filename}{dims} attached, but no table was found in it.")
             continue
         plan = _resolve_import_plan(workspace_id, info, message, context)
         try:

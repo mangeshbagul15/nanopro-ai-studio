@@ -2321,3 +2321,65 @@ class ModelManager:
 
 model_manager = ModelManager()
 provider_circuit_breaker = model_manager.circuit_breaker
+
+
+def extract_table_from_image(
+    image_bytes: bytes,
+    mime_type: str = "image/png",
+    hint: str = "",
+) -> Optional[Dict[str, Any]]:
+    """Reads a table out of an invoice/statement screenshot via Gemini vision.
+
+    Runs entirely on the cloud API so the 512MB Render box never loads an OCR
+    model. Returns {"title", "columns", "rows", "model"} or None.
+    """
+    try:
+        gem = model_manager.gemini
+        if not image_bytes or not gem.is_available() or _genai_types is None:
+            return None
+        client = gem._get_client(60.0)
+        types = _genai_types
+        prompt = (
+            "Read the table inside this image (invoice, bank statement, receipt or screenshot). "
+            "Reply with strict JSON only: {\"title\": string, \"columns\": [string], \"rows\": [[cell]]}. "
+            "Copy header text exactly, one row per visual line, strip currency symbols and thousand "
+            "separators from numbers, use YYYY-MM-DD for dates. If no table exists return "
+            "{\"title\": \"\", \"columns\": [], \"rows\": []}."
+        )
+        if hint:
+            prompt += f" User note: {hint[:300]}"
+        part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+        for model_name in ("gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+            try:
+                resp = client.models.generate_content(
+                    model=model_name,
+                    contents=[part, prompt],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.1,
+                        max_output_tokens=8000,
+                    ),
+                )
+                text = (resp.text or "").strip()
+                if not text:
+                    continue
+                data = json.loads(text)
+                columns = [str(c) for c in (data.get("columns") or [])]
+                rows = data.get("rows") or []
+                if columns and rows:
+                    return {
+                        "title": str(data.get("title") or ""),
+                        "columns": columns,
+                        "rows": rows,
+                        "model": model_name,
+                    }
+            except Exception as exc:
+                log_event(
+                    f"Vision table extraction failed on {model_name}: {exc}",
+                    level="WARNING",
+                    component="ModelRouter",
+                )
+                continue
+    except Exception as exc:
+        log_event(f"Vision table extraction unavailable: {exc}", level="WARNING", component="ModelRouter")
+    return None
