@@ -301,7 +301,8 @@ def _ensure_schema() -> None:
                 "CREATE TABLE IF NOT EXISTS dm_workspaces ("
                 " id TEXT PRIMARY KEY, name TEXT NOT NULL, created_by TEXT DEFAULT '',"
                 " created_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
-                " project_id TEXT DEFAULT '', pinned INTEGER NOT NULL DEFAULT 0)"
+                " project_id TEXT DEFAULT '', pinned INTEGER NOT NULL DEFAULT 0,"
+                " read_only INTEGER NOT NULL DEFAULT 0)"
             )
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS dm_projects ("
@@ -313,6 +314,8 @@ def _ensure_schema() -> None:
                 conn.execute("ALTER TABLE dm_workspaces ADD COLUMN project_id TEXT DEFAULT ''")
             if "pinned" not in ws_columns:
                 conn.execute("ALTER TABLE dm_workspaces ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+            if "read_only" not in ws_columns:
+                conn.execute("ALTER TABLE dm_workspaces ADD COLUMN read_only INTEGER NOT NULL DEFAULT 0")
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS dm_messages ("
                 " id INTEGER PRIMARY KEY AUTOINCREMENT, workspace_id TEXT NOT NULL,"
@@ -756,9 +759,31 @@ def _touch_workspace(workspace_id: str) -> None:
         conn.commit()
 
 
+def _workspace_read_only(workspace_id: str) -> bool:
+    _ensure_schema()
+    with db.get_connection() as conn:
+        row = conn.execute("SELECT read_only FROM dm_workspaces WHERE id = ?", (workspace_id,)).fetchone()
+    return bool(row and int(row[0] or 0))
+
+
+def set_workspace_read_only(workspace_id: str, value: bool) -> Dict[str, Any]:
+    _ensure_schema()
+    with db.get_connection() as conn:
+        cur = conn.execute(
+            "UPDATE dm_workspaces SET read_only = ?, updated_at = ? WHERE id = ?",
+            (1 if value else 0, _now(), workspace_id),
+        )
+        conn.commit()
+        if not cur.rowcount:
+            raise ValueError("Chat not found.")
+    return {"workspace_id": workspace_id, "read_only": bool(value)}
+
+
 def create_schema(workspace_id: str, schema_name: str) -> Dict[str, Any]:
     _ensure_schema()
     _workspace_db_path(workspace_id)
+    if _workspace_read_only(workspace_id):
+        raise ValueError("This chat is read-only. Say 'unlock workspace' to allow changes.")
     name = _safe_ident(schema_name).lower()
     if name in ("main", "temp") or name.startswith("sqlite_"):
         raise ValueError("That schema name is reserved.")
@@ -1483,6 +1508,8 @@ def _execute_snowflake(statement: str, limit: int) -> Dict[str, Any]:
 def execute_sql(db_id: str, sql: str, limit: int = MAX_PREVIEW_ROWS, workspace_id: str = "") -> Dict[str, Any]:
     statement = _assert_single_statement(sql)
     is_read = bool(_READ_PREFIX.match(statement))
+    if not is_read and db_id.startswith("workspace:") and _workspace_read_only(db_id.split(":", 1)[1]):
+        raise ValueError("This chat is read-only. Say 'unlock workspace' to allow changes.")
     cache_key = f"{db_id}|{limit}|{statement}" if is_read else ""
     if is_read:
         with _SQL_CACHE_LOCK:
@@ -3031,6 +3058,36 @@ def _fast_intent(
             "action": None,
             "fast": True,
         }
+    lock_text = text.lower()
+    if len(text) <= 60 and re.search(r"\b(?:unlock|unfreeze)\b|read[\s-]?write", lock_text):
+        try:
+            set_workspace_read_only(workspace_id, False)
+            return {
+                "reply": "Read/write mode enabled for this chat. Writes are allowed again.",
+                "sql": None,
+                "target": "workspace",
+                "action": None,
+                "fast": True,
+            }
+        except Exception:
+            return None
+    if (
+        len(text) <= 60
+        and re.search(r"\bread[\s-]?only\b|\b(?:lock|freeze)\b", lock_text)
+        and not re.search(r"\b(?:sql|select|insert|update|table|account|login)\b", lock_text)
+    ):
+        try:
+            set_workspace_read_only(workspace_id, True)
+            return {
+                "reply": "This chat is read-only now. Reads, charts and profiles still work, but "
+                         "INSERT/UPDATE/CREATE and file imports are blocked. Say 'unlock workspace' to allow changes.",
+                "sql": None,
+                "target": "workspace",
+                "action": None,
+                "fast": True,
+            }
+        except Exception:
+            return None
     catalog = catalog_for_chat(workspace_id, allowed_workspaces)
 
     if re.fullmatch(
@@ -3994,6 +4051,8 @@ def import_table(workspace_id: str, filename: str, content: bytes, table_name: s
     _ensure_schema()
     if not get_workspace(workspace_id):
         raise ValueError("Workspace not found.")
+    if _workspace_read_only(workspace_id):
+        raise ValueError("This chat is read-only. Say 'unlock workspace' to allow changes.")
     header, body = _decode_rows(filename, content)
     columns = _dedupe_headers(header)
     table = _safe_ident(table_name or Path(filename or "imported_data").stem)
