@@ -65,6 +65,15 @@ def main():
         )
         check("profile runs without a model call", profile.get("model") == "fast-nlu")
 
+        dm.chat(wid, "remember: Amount is in INR, never paise", user=user)
+        shown = dm.chat(wid, "what do you remember", user=user)
+        check("workspace notes persist", "Amount is in INR" in (shown.get("reply") or ""), shown.get("reply"))
+        prompt = dm._system_prompt(dm.get_workspace(wid, user=user) or {})
+        check("workspace notes reach the model prompt", "Amount is in INR" in prompt)
+        dm.chat(wid, "forget notes", user=user)
+        cleared = dm.chat(wid, "what do you remember", user=user)
+        check("workspace notes clear", "No notes saved" in (cleared.get("reply") or ""), cleared.get("reply"))
+
         dm.chat(wid, "lock workspace", user=user)
         blocked = dm.chat(wid, "CREATE TABLE LOCK_PROBE (id INTEGER)", user=user)
         check(

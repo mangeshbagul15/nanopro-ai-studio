@@ -302,7 +302,7 @@ def _ensure_schema() -> None:
                 " id TEXT PRIMARY KEY, name TEXT NOT NULL, created_by TEXT DEFAULT '',"
                 " created_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
                 " project_id TEXT DEFAULT '', pinned INTEGER NOT NULL DEFAULT 0,"
-                " read_only INTEGER NOT NULL DEFAULT 0)"
+                " read_only INTEGER NOT NULL DEFAULT 0, instructions TEXT DEFAULT '')"
             )
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS dm_projects ("
@@ -316,6 +316,8 @@ def _ensure_schema() -> None:
                 conn.execute("ALTER TABLE dm_workspaces ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
             if "read_only" not in ws_columns:
                 conn.execute("ALTER TABLE dm_workspaces ADD COLUMN read_only INTEGER NOT NULL DEFAULT 0")
+            if "instructions" not in ws_columns:
+                conn.execute("ALTER TABLE dm_workspaces ADD COLUMN instructions TEXT DEFAULT ''")
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS dm_messages ("
                 " id INTEGER PRIMARY KEY AUTOINCREMENT, workspace_id TEXT NOT NULL,"
@@ -764,6 +766,26 @@ def _workspace_read_only(workspace_id: str) -> bool:
     with db.get_connection() as conn:
         row = conn.execute("SELECT read_only FROM dm_workspaces WHERE id = ?", (workspace_id,)).fetchone()
     return bool(row and int(row[0] or 0))
+
+
+def _workspace_instructions(workspace_id: str) -> str:
+    _ensure_schema()
+    with db.get_connection() as conn:
+        row = conn.execute("SELECT instructions FROM dm_workspaces WHERE id = ?", (workspace_id,)).fetchone()
+    return str(row[0] or "") if row else ""
+
+
+def set_workspace_instructions(workspace_id: str, value: str) -> None:
+    _ensure_schema()
+    text = (value or "").strip()[:2000]
+    with db.get_connection() as conn:
+        cur = conn.execute(
+            "UPDATE dm_workspaces SET instructions = ?, updated_at = ? WHERE id = ?",
+            (text, _now(), workspace_id),
+        )
+        conn.commit()
+        if not cur.rowcount:
+            raise ValueError("Chat not found.")
 
 
 def set_workspace_read_only(workspace_id: str, value: bool) -> Dict[str, Any]:
@@ -2582,6 +2604,16 @@ def _system_prompt(workspace: Dict[str, Any], focus: Optional[Dict[str, Any]] = 
             "Use the real fully qualified names from the catalog and never switch to another database unless "
             "the user names one.\n"
         )
+    notes = ""
+    try:
+        remembered = _workspace_instructions(workspace.get("id") or "")
+    except Exception:
+        remembered = ""
+    if remembered:
+        notes = (
+            "WORKSPACE NOTES the user asked you to remember for this chat; treat them as binding "
+            f"business rules when writing SQL and answers:\n{remembered}\n"
+        )
     return (
         "You are NanoPro Data Copilot, a senior data engineer + data analyst + DBA embedded in a chat-first database studio. "
         "The user talks in plain language (English or Marathi/Hindi mixed) and NEVER writes SQL — you do everything for them. "
@@ -2624,6 +2656,7 @@ def _system_prompt(workspace: Dict[str, Any], focus: Optional[Dict[str, Any]] = 
         "never tell the user to run it themselves, and never call the active workspace read-only. With target=\"workspace\" "
         "your statement runs on the active writable workspace; describe the outcome in `reply`.\n"
         + DELIVERY_CONTRACT
+        + notes
         + focus_note
         + f"Active workspace: {workspace['id']} — {workspace['name']}.\n"
     )
@@ -3088,6 +3121,54 @@ def _fast_intent(
             }
         except Exception:
             return None
+    note_match = re.match(
+        r"(?:remember|note)\b\s*(?:that|this)?\s*[:\-]?\s*(.+)$",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    ) or re.match(
+        r"(?:ya\s+goshti\s+)?lakshat\s+thev\s*[:\-]?\s*(.+)$",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if note_match:
+        note = note_match.group(1).strip()
+        if note:
+            current = _workspace_instructions(workspace_id)
+            combined = ((current + "\n- " + note) if current else ("- " + note)).strip()[-2000:]
+            set_workspace_instructions(workspace_id, combined)
+            return {
+                "reply": f"Noted for this chat: {note[:200]}. I will follow it in every answer and SQL here.",
+                "sql": None,
+                "target": "workspace",
+                "action": None,
+                "fast": True,
+            }
+    if re.fullmatch(
+        r"(?:what\s+do\s+you\s+remember|show\s+(?:me\s+)?(?:the\s+)?(?:workspace\s+)?(?:notes|memory)|memory\s+dakhav)\s*[?.!]?",
+        text,
+        re.IGNORECASE,
+    ):
+        current = _workspace_instructions(workspace_id)
+        return {
+            "reply": current if current else "No notes saved for this chat yet. Say 'remember: <rule>' to add one.",
+            "sql": None,
+            "target": "workspace",
+            "action": None,
+            "fast": True,
+        }
+    if re.fullmatch(
+        r"(?:forget|clear)\s+(?:all\s+)?(?:the\s+)?(?:notes|instructions|memory)\s*[?.!]?",
+        text,
+        re.IGNORECASE,
+    ):
+        set_workspace_instructions(workspace_id, "")
+        return {
+            "reply": "Cleared the saved notes for this chat.",
+            "sql": None,
+            "target": "workspace",
+            "action": None,
+            "fast": True,
+        }
     catalog = catalog_for_chat(workspace_id, allowed_workspaces)
 
     if re.fullmatch(
