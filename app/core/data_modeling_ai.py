@@ -2711,6 +2711,27 @@ def _looks_like_sql(message: str) -> bool:
     )
 
 
+_CHART_SUFFIX_RE = re.compile(
+    r"(?:\s+(?:(?:as|in)\s+)?(?:a\s+|an\s+)?(?:bar|column|line|pie|donut|area)\s+(?:chart|graph)"
+    r"|\s+(?:as|in)\s+(?:a\s+|an\s+)?(?:chart|graph))"
+    r"\s*[.!?]*\s*$",
+    re.IGNORECASE,
+)
+_DANGLING_SQL_TAIL_RE = re.compile(
+    r"\b(?:select|from|where|join|on|group|order|by|having|and|or|as|union|limit|offset|set|values|into)$",
+    re.IGNORECASE,
+)
+
+
+def _strip_chart_suffix(sql: str) -> str:
+    """Drops a trailing 'bar chart' hint so pasted SQL still parses."""
+    text = (sql or "").strip()
+    stripped = _CHART_SUFFIX_RE.sub("", text).strip()
+    if stripped == text or not stripped or _DANGLING_SQL_TAIL_RE.search(stripped):
+        return text
+    return stripped
+
+
 def _extract_direct_sql(message: str) -> str:
     """Returns the SQL body when the user pastes or asks to run a statement."""
     text = (message or "").strip()
@@ -2720,8 +2741,9 @@ def _extract_direct_sql(message: str) -> str:
         re.IGNORECASE | re.DOTALL,
     )
     if marker:
-        body = marker.group(1).strip()
+        body = _strip_chart_suffix(marker.group(1).strip())
         return body if _looks_like_sql(body) else ""
+    text = _strip_chart_suffix(text)
     return text if _looks_like_sql(text) else ""
 
 
