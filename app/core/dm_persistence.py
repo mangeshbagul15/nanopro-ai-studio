@@ -51,6 +51,10 @@ FILES_KIND = "dm_files"
 KEEP_SNAPSHOTS = 2
 CONNECT_TIMEOUT = 10
 SYNC_INTERVAL = max(2.0, float(os.environ.get("DM_SYNC_INTERVAL", "5")))
+# Full state re-uploads dominated the cloud egress bill: every request that
+# touches users.last_active_at changed the signature and pushed the whole
+# snapshot again. Throttle uploads independently of the cheap local check.
+MIN_UPLOAD_INTERVAL = max(SYNC_INTERVAL, float(os.environ.get("DM_MIN_UPLOAD_INTERVAL", "120")))
 MAX_SNAPSHOT_BYTES = int(os.environ.get("DM_SNAPSHOT_MAX_BYTES", str(120 * 1024 * 1024)))
 MAX_SNAPSHOT_FILES = 5000
 SKIP_SUFFIXES = (".duckdb", ".duckdb.wal", "-wal", "-shm", "-journal", ".tmp", ".lock")
@@ -195,8 +199,11 @@ def _state_signature() -> Optional[str]:
                 f"SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM {table}"
             ).fetchone()
             stamp = ""
-            if table in ("dm_workspaces", "dm_projects", "users"):
-                stamp = conn.execute(f"SELECT COALESCE(MAX(updated_at), '') FROM {table}" if table != "users" else "SELECT COALESCE(MAX(last_active_at), 0) FROM users").fetchone()[0] or ""
+            # users.last_active_at is bumped by every authenticated request, so
+            # it must not participate in the signature or every page poll would
+            # trigger a full snapshot upload.
+            if table in ("dm_workspaces", "dm_projects"):
+                stamp = conn.execute(f"SELECT COALESCE(MAX(updated_at), '') FROM {table}").fetchone()[0] or ""
             parts.append(f"{table}:{count}:{max_rowid}:{stamp}")
     return "|".join(parts)
 
@@ -480,12 +487,13 @@ def restore() -> Dict[str, Any]:
 
 def _loop() -> None:
     global _last_signature
+    last_upload = 0.0
     while not _stop.is_set():
         try:
             signature = (_state_signature(), _files_signature())
             _state["loop_iterations"] = int(_state.get("loop_iterations") or 0) + 1
             _state["last_check_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
-            if signature != _last_signature:
+            if signature != _last_signature and (time.monotonic() - last_upload) >= MIN_UPLOAD_INTERVAL:
                 _stop.wait(SYNC_INTERVAL)
                 settled = (_state_signature(), _files_signature())
                 if settled != signature:
@@ -495,6 +503,7 @@ def _loop() -> None:
                 # Keep the old baseline on failure so the next tick retries.
                 if snapshot_now().get("status") == "ok":
                     _last_signature = settled
+                    last_upload = time.monotonic()
         except Exception as exc:
             _state["last_error"] = str(exc)[:300]
             log_event(f"DM persistence sync error: {exc}", level="WARNING", component="DMPersistence")

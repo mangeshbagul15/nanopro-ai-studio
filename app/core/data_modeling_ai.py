@@ -3709,7 +3709,7 @@ def chat(
     context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     _ensure_schema()
-    workspace = get_workspace(workspace_id)
+    workspace = get_workspace(workspace_id, user=user)
     if not workspace:
         raise ValueError("Workspace not found.")
     message = (message or "").strip()

@@ -50,3 +50,9 @@ data/*.db-shm
 data/aml_runs/
 data/reports/aml/
 data/lakehouse/parquet_staging/
+
+# Local tunnel binary
+tools/
+
+# Local repair backups
+backups/stale_duckdb/

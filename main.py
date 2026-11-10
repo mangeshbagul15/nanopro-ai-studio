@@ -1287,11 +1287,14 @@ def _execute_staged_boot_phases_2_and_3():
 
     try:
 
-        log_event("=== [PHASE 3E] Starting Autonomous 30-Minute Live Career Email Dispatcher (T + 17s) ===", component="BootSequence")
+        if os.environ.get("NANOPRO_DISABLE_AUTONOMOUS_EMAIL", "").strip().lower() in ("1", "true", "yes"):
+            log_event("Phase 3E skipped: NANOPRO_DISABLE_AUTONOMOUS_EMAIL is set.", component="BootSequence")
+        else:
+            log_event("=== [PHASE 3E] Starting Autonomous 30-Minute Live Career Email Dispatcher (T + 17s) ===", component="BootSequence")
 
-        from app.agents.career_agent import career_hub_agent
+            from app.agents.career_agent import career_hub_agent
 
-        career_hub_agent.start_autonomous_email_dispatcher()
+            career_hub_agent.start_autonomous_email_dispatcher()
 
     except Exception as e:
 
