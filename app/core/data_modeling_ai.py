@@ -52,8 +52,21 @@ _schedule_run_lock = threading.Lock()
 _scheduler_start_lock = threading.Lock()
 _scheduler_thread: Optional[threading.Thread] = None
 
+# Repeated identical reads (chat retries, UI refreshes) are common on the free
+# worker, so read-only results are reused briefly. Any write clears the cache.
+_SQL_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+_SQL_CACHE_TTL = 60.0
+_SQL_CACHE_MAX = 120
+_SQL_CACHE_LOCK = threading.Lock()
+
+
+def _sql_cache_clear() -> None:
+    with _SQL_CACHE_LOCK:
+        _SQL_CACHE.clear()
+
 
 def invalidate_catalog() -> None:
+    _sql_cache_clear()
     with _catalog_lock:
         _catalog_cache["at"] = 0.0
         _catalog_cache["data"] = []
@@ -1468,6 +1481,28 @@ def _execute_snowflake(statement: str, limit: int) -> Dict[str, Any]:
 
 
 def execute_sql(db_id: str, sql: str, limit: int = MAX_PREVIEW_ROWS, workspace_id: str = "") -> Dict[str, Any]:
+    statement = _assert_single_statement(sql)
+    is_read = bool(_READ_PREFIX.match(statement))
+    cache_key = f"{db_id}|{limit}|{statement}" if is_read else ""
+    if is_read:
+        with _SQL_CACHE_LOCK:
+            hit = _SQL_CACHE.get(cache_key)
+            if hit and (time.time() - hit[0]) <= _SQL_CACHE_TTL:
+                cached = dict(hit[1])
+                cached["cached"] = True
+                return cached
+    result = _execute_sql_uncached(db_id, statement, limit, workspace_id)
+    with _SQL_CACHE_LOCK:
+        if is_read:
+            if len(_SQL_CACHE) >= _SQL_CACHE_MAX:
+                _SQL_CACHE.clear()
+            _SQL_CACHE[cache_key] = (time.time(), dict(result))
+        else:
+            _SQL_CACHE.clear()
+    return result
+
+
+def _execute_sql_uncached(db_id: str, sql: str, limit: int = MAX_PREVIEW_ROWS, workspace_id: str = "") -> Dict[str, Any]:
     statement = _assert_single_statement(sql)
     _assert_alter_allowed(statement)
     in_workspace = db_id.startswith("workspace:")
@@ -3136,6 +3171,60 @@ def _single_value_result(result: Dict[str, Any]) -> Optional[Tuple[str, Any]]:
     return alias, value
 
 
+_CHART_WORDS = re.compile(
+    r"\b(chart|graph|plot|bar|line|pie|donut|visuali[sz]e)\b|आलेख|चार्ट|ग्राफ|पाय",
+    re.IGNORECASE,
+)
+
+
+def _chart_payload(message: str, result: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Builds a compact chart spec from the result when the user asked for one."""
+    if not result or not result.get("columns") or not result.get("rows"):
+        return None
+    if not _CHART_WORDS.search(message or ""):
+        return None
+    columns = [str(c) for c in result.get("columns") or []]
+    rows = result.get("rows") or []
+    max_points = 40
+    rows = rows[:max_points]
+
+    def _num(value: Any) -> Optional[float]:
+        if value is None or isinstance(value, bool):
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        try:
+            return float(str(value).replace(",", "").strip())
+        except Exception:
+            return None
+
+    numeric: List[str] = []
+    for col in columns:
+        present = sum(1 for row in rows if _num(row.get(col)) is not None)
+        if present >= max(1, len(rows) // 2):
+            numeric.append(col)
+    if not numeric:
+        return None
+
+    label_col = next((c for c in columns if c not in numeric), columns[0])
+    labels = [("" if row.get(label_col) is None else str(row.get(label_col)))[:28] for row in rows]
+    series = [
+        {"name": col, "values": [(_num(row.get(col)) or 0.0) for row in rows]}
+        for col in numeric[:3]
+    ]
+    lowered = (message or "").lower()
+    if re.search(r"pie|donut|पाय", lowered):
+        chart_type = "pie"
+        series = series[:1]
+    elif re.search(r"\bline\b|trend|time series", lowered) or re.search(
+        r"date|month|day|year|week|_at$|_dt$", label_col, re.IGNORECASE
+    ):
+        chart_type = "line"
+    else:
+        chart_type = "bar"
+    return {"type": chart_type, "x": label_col, "labels": labels, "series": series}
+
+
 def _format_scalar(value: Any) -> str:
     if isinstance(value, float):
         rounded = round(value, 2)
@@ -3586,6 +3675,7 @@ def chat(
                 error = f"Statement {executed + 1} of {len(statements)} failed: {error}"
 
     latency_ms = round((time.time() - started_at) * 1000, 1)
+    chart = _chart_payload(message, result)
     meta = {
         "sql": sql,
         "target": target,
@@ -3597,6 +3687,8 @@ def chat(
         "latency_ms": latency_ms,
         "task_type": task_type,
         "fast_path": bool(parsed.get("fast")),
+        "chart": chart,
+        "cached": bool(result.get("cached")) if result else False,
         "workspace_created": created_workspace["id"] if created_workspace else None,
         "schema_created": created_schema["schema"] if created_schema else None,
         "schedule_created": created_schedule["schedule_id"] if created_schedule else None,

@@ -198,6 +198,10 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 #view-data_modeling_ai .dm-sql summary { cursor:pointer; padding:5px 9px; font-size:10.5px; font-weight:700; letter-spacing:.03em; color:#8FB8FF; text-transform:uppercase; }
 #view-data_modeling_ai .dm-sql pre { margin:0; padding:8px 10px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11.5px; line-height:1.55; color:#A8CBFF; overflow-x:auto; white-space:pre; border-top:1px solid var(--dm-line); }
 #view-data_modeling_ai .dm-msg-foot { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; }
+#view-data_modeling_ai .dm-chart { margin-top:9px; border:1px solid var(--dm-line); border-radius:9px; background:#070D16; padding:8px 8px 4px; overflow-x:auto; }
+#view-data_modeling_ai .dm-chart svg { display:block; width:100%; height:auto; min-width:320px; }
+#view-data_modeling_ai .dm-chart-legend { display:flex; gap:12px; flex-wrap:wrap; padding:2px 6px 6px; font-size:10.5px; color:#9DB1CB; }
+#view-data_modeling_ai .dm-chart-legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
 #view-data_modeling_ai .dm-tag { font-size:10px; font-weight:600; color:#9DB1CB; background:#121C2B; border:1px solid var(--dm-line); border-radius:999px; padding:2px 7px; }
 #view-data_modeling_ai .dm-tag.ok { color:#7EE787; border-color:rgba(63,185,80,.4); }
 #view-data_modeling_ai .dm-tag.err { color:#FF9B93; border-color:rgba(248,81,73,.4); }
@@ -2161,6 +2165,97 @@ def get_data_modeling_js() -> str:
             '</div></div>';
     }
 
+    function dmChartColors(i) {
+        return ['#38BDF8', '#34D399', '#FBBF24'][i % 3];
+    }
+
+    function dmChartNum(v) {
+        v = Number(v) || 0;
+        var abs = Math.abs(v);
+        if (abs >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+        if (abs >= 1000) return (v / 1000).toFixed(1) + 'k';
+        return String(Math.round(v * 100) / 100);
+    }
+
+    function dmChartHtml(chart) {
+        if (!chart || !chart.labels || !chart.labels.length || !chart.series || !chart.series.length) return '';
+        var W = 560, H = 240, padL = 48, padR = 12, padT = 16, padB = 36;
+        var iw = W - padL - padR, ih = H - padT - padB;
+        var labels = chart.labels.slice(0, 40), series = chart.series.slice(0, 3);
+        var values = [];
+        series.forEach(function (s) { (s.values || []).forEach(function (v) { values.push(Number(v) || 0); }); });
+        var maxV = Math.max.apply(null, values.concat([0]));
+        var minV = Math.min.apply(null, values.concat([0]));
+        if (maxV === minV) maxV = minV + 1;
+        var span = maxV - minV;
+        var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img">';
+        var legend = '';
+        var i;
+        if (chart.type === 'pie') {
+            var vals = (series[0].values || []).map(function (v) { return Math.max(0, Number(v) || 0); });
+            var total = vals.reduce(function (a, b) { return a + b; }, 0) || 1;
+            var cx = 140, cy = 112, r = 84, ang = -Math.PI / 2;
+            var colors = ['#38BDF8', '#34D399', '#FBBF24', '#F472B6', '#A78BFA', '#FB923C', '#22D3EE', '#4ADE80'];
+            for (i = 0; i < vals.length; i++) {
+                if (!vals[i]) continue;
+                var a2 = ang + (vals[i] / total) * Math.PI * 2;
+                var x1 = cx + r * Math.cos(ang), y1 = cy + r * Math.sin(ang);
+                var x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+                var large = (a2 - ang) > Math.PI ? 1 : 0;
+                svg += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(1) + ',' + y1.toFixed(1) +
+                    ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2.toFixed(1) + ',' + y2.toFixed(1) +
+                    ' Z" fill="' + colors[i % colors.length] + '" opacity="0.92"><title>' +
+                    dmEsc(labels[i] + ': ' + dmChartNum(vals[i])) + '</title></path>';
+                ang = a2;
+            }
+            for (i = 0; i < Math.min(labels.length, 8); i++) {
+                legend += '<span><i style="background:' + colors[i % colors.length] + '"></i>' + dmEsc(labels[i]) + '</span>';
+            }
+        } else {
+            for (i = 0; i <= 4; i++) {
+                var gy = padT + ih * i / 4;
+                svg += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="#152238"></line>';
+                svg += '<text x="' + (padL - 8) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="10" fill="#7C93B0">' + dmChartNum(maxV - span * i / 4) + '</text>';
+            }
+            var n = labels.length;
+            var step = Math.ceil(n / 10);
+            for (i = 0; i < n; i++) {
+                if (i % step) continue;
+                var lx = padL + iw * (n === 1 ? 0.5 : i / (n - 1));
+                svg += '<text x="' + lx + '" y="' + (H - 14) + '" text-anchor="middle" font-size="9.5" fill="#7C93B0">' + dmEsc(labels[i]) + '</text>';
+            }
+            if (chart.type === 'line') {
+                series.forEach(function (sr, si) {
+                    var pts = (sr.values || []).map(function (v, idx) {
+                        var x = padL + iw * (n === 1 ? 0.5 : idx / (n - 1));
+                        var y = padT + ih * (1 - ((Number(v) || 0) - minV) / span);
+                        return x.toFixed(1) + ',' + y.toFixed(1);
+                    });
+                    svg += '<polyline fill="none" stroke="' + dmChartColors(si) + '" stroke-width="2" points="' + pts.join(' ') + '"></polyline>';
+                });
+            } else {
+                var groupW = iw / Math.max(1, n);
+                var barW = Math.max(2, Math.min(26, groupW / (series.length + 0.6)));
+                series.forEach(function (sr, si) {
+                    (sr.values || []).forEach(function (v, idx) {
+                        var val = Number(v) || 0;
+                        var h = Math.max(1, Math.min(ih, ih * ((val - Math.min(0, minV)) / (span || 1))));
+                        var x0 = padL + groupW * idx + (groupW - barW * series.length) / 2 + barW * si;
+                        var y0 = padT + ih - h;
+                        svg += '<rect x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + barW.toFixed(1) +
+                            '" height="' + h.toFixed(1) + '" rx="2" fill="' + dmChartColors(si) + '" opacity="0.92"><title>' +
+                            dmEsc(labels[idx] + ': ' + dmChartNum(val)) + '</title></rect>';
+                    });
+                });
+            }
+            series.forEach(function (sr, si) {
+                legend += '<span><i style="background:' + dmChartColors(si) + '"></i>' + dmEsc(sr.name || ('series ' + (si + 1))) + '</span>';
+            });
+        }
+        svg += '</svg>';
+        return '<div class="dm-chart">' + svg + (legend ? '<div class="dm-chart-legend">' + legend + '</div>' : '') + '</div>';
+    }
+
     function dmMsgHtml(message) {
         var role = message.role === 'user' ? 'user' : 'ai';
         var meta = message.meta || {};
@@ -2170,6 +2265,9 @@ def get_data_modeling_js() -> str:
             '<div class="dm-bubble"><div class="dm-text">' + dmEsc(message.content || '') + '</div>';
         if (role === 'user') {
             html += dmAttachmentTagsHtml(meta.attachments);
+        }
+        if (role === 'ai' && meta.chart) {
+            html += dmChartHtml(meta.chart);
         }
         if (sql) {
             html += '<details class="dm-sql"><summary>SQL used by the AI</summary><pre>' + dmEsc(sql) + '</pre></details>';
@@ -2181,6 +2279,7 @@ def get_data_modeling_js() -> str:
             html += '<div class="dm-msg-foot">';
             if (meta.model) html += '<span class="dm-tag">' + dmEsc(meta.model) + '</span>';
             if (meta.fast_path) html += '<span class="dm-tag ok">instant NLU</span>';
+            if (meta.cached) html += '<span class="dm-tag ok">cached</span>';
             if (meta.latency_ms) {
                 var ms = Number(meta.latency_ms);
                 var speed = ms >= 1000 ? (ms / 1000).toFixed(1) + 's' : Math.round(ms) + 'ms';
