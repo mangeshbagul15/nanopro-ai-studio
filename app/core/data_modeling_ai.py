@@ -2978,7 +2978,7 @@ def _profile_table(
         if total_rows and non_null < total_rows:
             null_columns.append(name)
         lines.append(bit)
-        if 0 < uniq <= 12 and total_rows > 1 and len(top_notes) < 3:
+        if not _PROFILE_NUMERIC_RE.search(dtype) and 0 < uniq <= 12 and total_rows > 1 and len(top_notes) < 3:
             try:
                 top = execute_sql(
                     entry["id"],
