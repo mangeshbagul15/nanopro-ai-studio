@@ -1863,11 +1863,19 @@ def get_data_modeling_js() -> str:
         dmToast('Selection cleared', 'ok');
     };
 
+    function dmComposerDbName(dbId) {
+        var id = String(dbId || '');
+        var label = dmDbLabel(id);
+        if (label && label.length <= 46 && label.indexOf('\u2026') === -1) return label;
+        if (id.indexOf('workspace:') === 0) return id.slice(10);
+        var noScheme = id.replace(/^[a-z]+:/i, '');
+        return noScheme.split('/').pop() || noScheme;
+    }
+
     function dmInsertComposerPath(dbId, schema, table) {
         var input = $('dmInput');
         if (!input || !dbId || !table) return;
-        var dbLabel = String(dbId).indexOf('workspace:') === 0 ? String(dbId).slice(10) : String(dbId);
-        var text = dbLabel + '.' + (schema || 'main') + '.' + table;
+        var text = dmComposerDbName(dbId) + '.' + (schema || 'main') + '.' + table;
         var start = input.selectionStart == null ? input.value.length : input.selectionStart;
         var end = input.selectionEnd == null ? start : input.selectionEnd;
         if (start > end) { var tmp = start; start = end; end = tmp; }
