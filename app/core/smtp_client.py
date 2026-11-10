@@ -1350,7 +1350,7 @@ class SMTPClient:
         report_name: Optional[str] = None,
         data_source: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Sends an email via the Google Apps Script relay (HTTPS Port 443). Text body + one text attachment."""
+        """Sends an email via the Google Apps Script relay (HTTPS Port 443). Binary attachments go as base64."""
         submission_time = time.time()
         log_id = f"email_relay_{int(submission_time * 1000)}"
         cfg = self.get_relay_config()
@@ -1365,17 +1365,30 @@ class SMTPClient:
             "subject": subject,
             "text": body + (f"\n\nCC: {cc}" if cc else "") + (f"\nBCC: {bcc}" if bcc else "")
         }
+        if html_body:
+            payload["htmlBody"] = html_body
 
         if attachments:
+            import mimetypes
+
             for filepath in attachments:
                 p = Path(filepath)
-                if p.exists() and p.is_file() and p.stat().st_size <= 512_000:
-                    try:
+                if not (p.exists() and p.is_file()):
+                    continue
+                mime = mimetypes.guess_type(p.name)[0] or "application/octet-stream"
+                is_text = mime.startswith("text/") or mime in ("application/json", "application/xml")
+                try:
+                    if is_text and p.stat().st_size <= 512_000:
                         payload["attachmentName"] = p.name
                         payload["attachmentText"] = p.read_text(encoding="utf-8", errors="replace")
                         break
-                    except Exception as ex:
-                        log_event(f"Relay attachment error {p.name}: {ex}", component="SMTPClient", level="WARNING")
+                    if p.stat().st_size <= 5_000_000:
+                        payload["attachmentName"] = p.name
+                        payload["attachmentMime"] = mime
+                        payload["attachmentBase64"] = base64.b64encode(p.read_bytes()).decode("ascii")
+                        break
+                except Exception as ex:
+                    log_event(f"Relay attachment error {p.name}: {ex}", component="SMTPClient", level="WARNING")
 
         try:
             resp = requests.post(cfg["url"], json=payload, timeout=25.0)
