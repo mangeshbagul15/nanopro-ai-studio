@@ -27,6 +27,13 @@ from app.core.database import db, credentials_vault
 DEFAULT_PHONE = "+918433755448"
 HEARTBEAT_THRESHOLD_HOURS = 20.0  # Proactively refresh before 24h window closes
 HEARTBEAT_COOLDOWN_SECONDS = 43200  # Only send 1 heartbeat every 12 hours max
+# Template pings cannot open Meta's 24h service window (only an inbound user
+# message can), so the proactive heartbeat only spams the user on every boot.
+# Off by default; opt in explicitly with WHATSAPP_HEARTBEAT_ENABLED=1.
+HEARTBEAT_ENABLED = (os.environ.get("WHATSAPP_HEARTBEAT_ENABLED", "0").strip().lower() in ("1", "true", "on", "yes"))
+# Even when enabled, a freshly restarted container must not fire: Render
+# redeploys would otherwise send one template per deploy.
+HEARTBEAT_MIN_UPTIME_SECONDS = float(os.environ.get("WHATSAPP_HEARTBEAT_MIN_UPTIME", "21600"))
 
 class WhatsAppAutonomousGuardian:
     def __init__(self):
@@ -39,6 +46,7 @@ class WhatsAppAutonomousGuardian:
         self.last_outbound_time: float = 0.0
         self.last_heartbeat_time: float = 0.0
         self.last_health_status: str = "INITIALIZING"
+        self.started_at: float = time.time()
         self._init_database()
         self._load_state_from_db()
 
@@ -139,6 +147,7 @@ class WhatsAppAutonomousGuardian:
             "meta_cloud_api": "ONLINE",
             "permanent_webhook": "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/whatsapp/webhook",
             "guardian_daemon_active": self._running,
+            "proactive_heartbeat_enabled": HEARTBEAT_ENABLED,
             "zero_downtime_guarantee": "ENABLED — Auto-Template Fallback Active on 24h Window Expiry"
         }
 
@@ -167,12 +176,28 @@ class WhatsAppAutonomousGuardian:
             self._running = True
             self._thread = threading.Thread(target=self._guardian_loop, daemon=True, name="WhatsAppAutonomousGuardian")
             self._thread.start()
-        log_event("WhatsAppAutonomousGuardian background worker started. Zero-downtime WhatsApp protection active.", component="WhatsAppGuardian")
+        log_event(
+            "WhatsAppAutonomousGuardian background worker started. "
+            f"Proactive template heartbeat: {'ENABLED' if HEARTBEAT_ENABLED else 'DISABLED (opt in with WHATSAPP_HEARTBEAT_ENABLED=1)'}.",
+            component="WhatsAppGuardian",
+        )
 
     def stop(self):
         """Stops the guardian background daemon."""
         with self._lock:
             self._running = False
+
+    def _refresh_state_from_db(self):
+        """Re-reads durable timestamps so a restored SQLite state also wins."""
+        try:
+            with db.get_connection() as conn:
+                rows = dict(conn.execute("SELECT key, value FROM whatsapp_channel_state").fetchall())
+            if "last_heartbeat_time" in rows:
+                self.last_heartbeat_time = max(self.last_heartbeat_time, float(rows["last_heartbeat_time"]))
+            if "last_inbound_time" in rows:
+                self.last_inbound_time = max(self.last_inbound_time, float(rows["last_inbound_time"]))
+        except Exception:
+            pass
 
     def _guardian_loop(self):
         """Autonomous loop running every 15 minutes."""
@@ -180,12 +205,18 @@ class WhatsAppAutonomousGuardian:
         time.sleep(10)
         while self._running:
             try:
+                self._refresh_state_from_db()
                 now = time.time()
                 hours_since_inbound = (now - self.last_inbound_time) / 3600.0 if self.last_inbound_time > 0 else 999.0
-                hours_since_heartbeat = (now - self.last_heartbeat_time) / 3600.0 if self.last_heartbeat_time > 0 else 999.0
+                uptime = now - self.started_at
 
-                # If 24h window is about to expire (or already expired) and no heartbeat sent recently:
-                if hours_since_inbound >= HEARTBEAT_THRESHOLD_HOURS and (now - self.last_heartbeat_time) >= HEARTBEAT_COOLDOWN_SECONDS:
+                # Proactive template pings are opt-in and never fire on a fresh
+                # boot: every restart would otherwise resend one to the user.
+                if not HEARTBEAT_ENABLED:
+                    pass
+                elif uptime < HEARTBEAT_MIN_UPTIME_SECONDS:
+                    pass
+                elif hours_since_inbound >= HEARTBEAT_THRESHOLD_HOURS and (now - self.last_heartbeat_time) >= HEARTBEAT_COOLDOWN_SECONDS:
                     log_event(f"WhatsApp Guardian: Inbound idle for {round(hours_since_inbound, 1)}h (threshold={HEARTBEAT_THRESHOLD_HOURS}h). Triggering autonomous template keep-alive...", component="WhatsAppGuardian")
                     self.force_heartbeat(reason="proactive_window_keepalive")
 
