@@ -1863,6 +1863,25 @@ def get_data_modeling_js() -> str:
         dmToast('Selection cleared', 'ok');
     };
 
+    function dmInsertComposerPath(dbId, schema, table) {
+        var input = $('dmInput');
+        if (!input || !dbId || !table) return;
+        var dbLabel = String(dbId).indexOf('workspace:') === 0 ? String(dbId).slice(10) : String(dbId);
+        var text = dbLabel + '.' + (schema || 'main') + '.' + table;
+        var start = input.selectionStart == null ? input.value.length : input.selectionStart;
+        var end = input.selectionEnd == null ? start : input.selectionEnd;
+        if (start > end) { var tmp = start; start = end; end = tmp; }
+        var before = input.value.slice(0, start);
+        var after = input.value.slice(end);
+        if (before && !/[\s"'(]$/.test(before)) text = ' ' + text;
+        if (after && !/^[\s"'),.]/.test(after)) text = text + ' ';
+        input.value = before + text + after;
+        var pos = before.length + text.length;
+        input.focus();
+        input.setSelectionRange(pos, pos);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     function dmTreeDblClick(ev) {
         clearTimeout(dmSingleClickTimer);
         var el = ev.target.closest('[data-act]');
@@ -1875,8 +1894,11 @@ def get_data_modeling_js() -> str:
         if (act === 'db') { window.dmSetSelection(dbId, '', ''); return; }
         if (act === 'schema') { window.dmSetSelection(dbId, el.getAttribute('data-schema'), ''); return; }
         if (act === 'table') {
-            window.dmSetSelection(dbId, el.getAttribute('data-schema'), el.getAttribute('data-table'));
-            window.dmShowTable(dbId, el.getAttribute('data-schema'), el.getAttribute('data-table'));
+            var schema = el.getAttribute('data-schema');
+            var table = el.getAttribute('data-table');
+            window.dmSetSelection(dbId, schema, table);
+            dmInsertComposerPath(dbId, schema, table);
+            window.dmShowTable(dbId, schema, table);
         }
     }
 
