@@ -2912,6 +2912,94 @@ def _active_workspace_table(
     return found[0] if len(found) == 1 else None
 
 
+_PROFILE_TARGET_RE = re.compile(
+    r"(?:please\s+)?(?:(?:show|get|give|run|make|create|generate)\s+(?:me\s+)?)?"
+    r"(?:a\s+|the\s+)?(?:quick\s+|full\s+)?(?:data\s+)?"
+    r"(?:profile|insights?|quality\s+(?:check|report))"
+    r"(?:\s+(?:for|of|in|on)?\s*(" + _IDENT_TOKEN + r"))?\s*[?.!]?",
+    re.IGNORECASE,
+)
+_PROFILE_NUMERIC_RE = re.compile(r"INT|REAL|DOUB|DECIMAL|NUMERIC|FLOAT|NUMBER", re.IGNORECASE)
+
+
+def _profile_table(
+    entry: Dict[str, Any],
+    schema: Dict[str, Any],
+    table: Dict[str, Any],
+    catalog: List[Dict[str, Any]],
+) -> Optional[str]:
+    """Deterministic column profile built from aggregate SQL, no model call."""
+    source = _fast_query_source(entry, schema, table)
+    if not source:
+        return None
+    schema_name = schema.get("schema") or schema.get("name") or "main"
+    details = get_table_details(entry["id"], schema_name, table["name"], catalog)
+    columns = [c for c in details.get("columns", []) if c.get("name")]
+    if not columns:
+        return None
+    total = details.get("row_count")
+    lines = [
+        f"Data profile: {table['name']} ({entry['name']})",
+        f"Rows: {total if total is not None else 'unknown'} · Columns: {len(columns)}",
+    ]
+    null_columns: List[str] = []
+    top_notes: List[str] = []
+    profiled = columns[:15]
+    for column in profiled:
+        name = column["name"]
+        dtype = str(column.get("data_type") or "")
+        quoted = _quote(name)
+        try:
+            stats = execute_sql(
+                entry["id"],
+                f"SELECT COUNT(*) AS total, COUNT({quoted}) AS non_null,"
+                f" COUNT(DISTINCT {quoted}) AS uniq FROM {source}",
+            )
+            row = (stats.get("rows") or [{}])[0]
+        except Exception:
+            continue
+        total_rows = int(row.get("total") or 0)
+        non_null = int(row.get("non_null") or 0)
+        uniq = int(row.get("uniq") or 0)
+        pct = (non_null * 100.0 / total_rows) if total_rows else 0.0
+        bit = f"- {name} ({dtype or '?'}): {non_null}/{total_rows} non-null ({pct:.0f}%), {uniq} distinct"
+        if _PROFILE_NUMERIC_RE.search(dtype):
+            try:
+                nums = execute_sql(
+                    entry["id"],
+                    f"SELECT MIN({quoted}) AS mn, MAX({quoted}) AS mx, AVG({quoted}) AS av FROM {source}",
+                )
+                nrow = (nums.get("rows") or [{}])[0]
+                if nrow.get("mn") is not None:
+                    avg = round(float(nrow["av"]), 2) if nrow.get("av") is not None else "n/a"
+                    bit += f", min {nrow['mn']}, max {nrow['mx']}, avg {avg}"
+            except Exception:
+                pass
+        if total_rows and non_null < total_rows:
+            null_columns.append(name)
+        lines.append(bit)
+        if 0 < uniq <= 12 and total_rows > 1 and len(top_notes) < 3:
+            try:
+                top = execute_sql(
+                    entry["id"],
+                    f"SELECT {quoted} AS value, COUNT(*) AS c FROM {source}"
+                    f" GROUP BY {quoted} ORDER BY c DESC LIMIT 5",
+                )
+                parts = [f"{r.get('value')} × {r.get('c')}" for r in (top.get("rows") or [])]
+                if parts:
+                    top_notes.append(f"- {name} top values: " + ", ".join(parts))
+            except Exception:
+                pass
+    lines.extend(top_notes)
+    if null_columns:
+        lines.append("Nulls found in: " + ", ".join(null_columns))
+    else:
+        lines.append("No null values in the profiled columns.")
+    if len(columns) > len(profiled):
+        lines.append(f"(profiled the first {len(profiled)} of {len(columns)} columns)")
+    return "\n".join(lines)
+
+
 def _fast_intent(
     workspace_id: str,
     message: str,
@@ -2999,6 +3087,18 @@ def _fast_intent(
                 return {"reply": reply, "sql": None, "target": entry["id"], "action": None, "fast": True}
             except Exception:
                 return None
+
+    profile_match = _PROFILE_TARGET_RE.fullmatch(text)
+    if profile_match:
+        token = (profile_match.group(1) or "").strip()
+        found = _find_named_table(catalog, token) if token else _active_workspace_table(workspace_id, focus, catalog)
+        if found:
+            try:
+                profile = _profile_table(found[0], found[1], found[2], catalog)
+            except Exception:
+                profile = None
+            if profile:
+                return {"reply": profile, "sql": None, "target": found[0]["id"], "action": None, "fast": True}
 
     top_match = re.fullmatch(
         r"(?:please\s+)?(?:show|get|display|fetch|give|bring)\s+(?:me\s+)?(?:the\s+)?"
