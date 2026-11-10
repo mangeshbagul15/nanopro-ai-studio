@@ -3072,7 +3072,25 @@ def _delivery_intent(workspace_id: str, message: str) -> Dict[str, Any]:
             schema, table = table_map[candidate]
     if not table:
         return {}
-    return {"table": table, "schema": schema, "fmt": fmt, "limit": limit, "channels": channels or ["email", "telegram", "whatsapp"]}
+    phone = ""
+    phone_match = re.search(r"(?<![\w.])(\+?\d[\d\s-]{8,16}\d)(?![\w.])", text)
+    if phone_match:
+        digits = re.sub(r"\D", "", phone_match.group(1))
+        if 10 <= len(digits) <= 15:
+            phone = ("+" if phone_match.group(1).strip().startswith("+") else "") + digits
+    recipient = ""
+    email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
+    if email_match:
+        recipient = email_match.group(0)
+    return {
+        "table": table,
+        "schema": schema,
+        "fmt": fmt,
+        "limit": limit,
+        "channels": channels or ["email", "telegram", "whatsapp"],
+        "phone": phone,
+        "recipient": recipient,
+    }
 
 
 _SCALAR_NUMBER = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
@@ -3392,6 +3410,8 @@ def chat(
             parsed["format"] = parsed.get("format") or intent["fmt"]
             parsed["limit"] = intent["limit"]
             parsed["channels"] = parsed.get("channels") or intent["channels"]
+            parsed["phone"] = str(parsed.get("phone") or intent.get("phone") or "")
+            parsed["recipient"] = str(parsed.get("recipient") or intent.get("recipient") or "")
             parsed["sql"] = None
             sql = None
     target = (parsed.get("target") or "workspace").strip()
