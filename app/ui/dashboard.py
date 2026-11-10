@@ -1024,6 +1024,16 @@ def _get_raw_dashboard_html() -> str:
 
 
 
+        /* Top bar removed: it only repeated the sidebar identity/actions and ate chat space. */
+
+        #main-panel > header.global-header.workspace-topbar {
+
+            display: none !important;
+
+        }
+
+
+
         .header-left-group {
 
             display: flex;
@@ -6373,7 +6383,7 @@ def _get_raw_dashboard_html() -> str:
 
             <div style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px;">
 
-                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                <div onclick="openAccountSwitcherModal()" style="display:flex; align-items:center; gap:8px; overflow:hidden; cursor:pointer;" title="Profile / Switch account">
 
                     <div style="width:28px; height:28px; border-radius:50%; background:rgba(56,189,248,0.2); border:1px solid #38BDF8; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">👤</div>
 

@@ -1,6 +1,7 @@
 .wrangler
 __pycache__
 *.py
+*.gs
 golden_master
 wrangler.toml
 cloudflare_worker_gateway.js

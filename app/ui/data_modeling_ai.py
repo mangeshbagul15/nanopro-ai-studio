@@ -702,7 +702,7 @@ def get_data_modeling_js() -> str:
         })(),
         chatsOpen: localStorage.getItem('dm_chats_hidden') !== '1',
         explorerOpen: localStorage.getItem('dm_explorer_hidden') !== '1',
-        dataOpen: localStorage.getItem('dm_data_open') === '1',
+        dataOpen: false,
         dataHeight: parseInt(localStorage.getItem('dm_data_h') || '0', 10) || 250,
         workspaces: [],
         projects: [],
