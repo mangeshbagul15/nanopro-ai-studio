@@ -851,6 +851,30 @@ def get_data_modeling_js() -> str:
         try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* private mode */ }
     }
 
+    function dmReadJson(key) {
+        try {
+            var raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) { return null; }
+    }
+
+    // Paint the last known chat list immediately; the API refresh follows.
+    function dmHydrateCachedChats() {
+        if (!DM.workspaces || !DM.workspaces.length) {
+            var cachedWs = dmReadJson(dmUserKey('dm_ws_cache'));
+            if (cachedWs && cachedWs.length) DM.workspaces = cachedWs;
+        }
+        if (!DM.projects || !DM.projects.length) {
+            var cachedPrj = dmReadJson(dmUserKey('dm_prj_cache'));
+            if (cachedPrj && cachedPrj.length) DM.projects = cachedPrj;
+        }
+        if (DM.workspaces && DM.workspaces.length) {
+            dmPickActiveChat();
+            dmRenderChats();
+            dmUpdateHeader();
+        }
+    }
+
     function dmTableHtml(columns, rows) {
         columns = columns || [];
         rows = rows || [];
@@ -1116,6 +1140,7 @@ def get_data_modeling_js() -> str:
                 var data = await dmApi('/workspaces?light=true');
                 workspaces = data.workspaces || [];
                 DM.workspaces = workspaces;
+                dmSaveJson(dmUserKey('dm_ws_cache'), workspaces);
             } catch (err) {
                 dmToast(err.message, 'err');
                 return DM.workspaces;
@@ -1134,6 +1159,7 @@ def get_data_modeling_js() -> str:
                 var data = await dmApi('/projects');
                 projects = data.projects || [];
                 DM.projects = projects;
+                dmSaveJson(dmUserKey('dm_prj_cache'), projects);
             } catch (err) {
                 dmToast(err.message, 'err');
                 return DM.projects;
@@ -2974,6 +3000,7 @@ def get_data_modeling_js() -> str:
 
             DM.catalog = dmCachedCatalog();
             window.dmRenderTree();
+            dmHydrateCachedChats();
             dmRenderChats();
             window.dmRenderMessages([]);
             dmUpdateHeader();
