@@ -1815,6 +1815,7 @@ def get_data_modeling_js() -> str:
         clearTimeout(DM.pollTimer);
         DM.pollTimer = setTimeout(async function () {
             if (!DM.scanning || DM.pollTries > 16) { DM.scanning = false; return; }
+            if (document.hidden) { dmPollCatalog(); return; }
             DM.pollTries++;
             try {
                 var data = await dmApi('/catalog?fast=1');
@@ -1828,7 +1829,7 @@ def get_data_modeling_js() -> str:
             } catch (err) {
                 DM.scanning = false;
             }
-        }, 1400);
+        }, 3000);
     }
 
     window.dmLoadCatalog = async function (refresh) {
@@ -2315,7 +2316,7 @@ def get_data_modeling_js() -> str:
         var workspaceId = DM.workspaceId;
         return dmCoalesce('messages:' + workspaceId, 0, async function () {
             try {
-                var data = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages');
+                var data = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages?limit=150');
                 var messages = data.messages || [];
                 window.dmRenderMessages(messages);
                 return messages;
@@ -2326,19 +2327,23 @@ def get_data_modeling_js() -> str:
         });
     };
 
-    async function dmRecoverLateReply(baselineAi, workspaceId) {
+    function dmMaxMessageId(list) {
+        return (list || []).reduce(function (mx, m) { return Math.max(mx, Number(m.id) || 0); }, 0);
+    }
+
+    async function dmRecoverLateReply(baselineId, workspaceId) {
         // The gateway can give up before Render's LLM call finishes. The backend
-        // still persists the assistant message, so poll until it shows up.
+        // still persists the assistant message, so poll a small tail until a
+        // newer message id appears, then load the transcript once.
         var deadline = Date.now() + 110000;
         while (Date.now() < deadline) {
-            await new Promise(function (resolve) { setTimeout(resolve, 4000); });
+            await new Promise(function (resolve) { setTimeout(resolve, 6000); });
             if (DM.workspaceId !== workspaceId) return false;
             try {
-                var data = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages', { timeoutMs: 20000 });
-                var messages = data.messages || [];
-                var aiCount = messages.filter(function (m) { return m.role !== 'user'; }).length;
-                if (aiCount > baselineAi) {
-                    window.dmRenderMessages(messages);
+                var data = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages?limit=30', { timeoutMs: 20000 });
+                var newest = dmMaxMessageId(data.messages);
+                if (newest > baselineId) {
+                    await window.dmLoadMessages(true);
                     dmToast('Reply received.', 'ok');
                     return true;
                 }
@@ -2585,11 +2590,11 @@ def get_data_modeling_js() -> str:
         dmAppendLocalUser(text || ('Attached: ' + ready.map(function (att) { return att.filename; }).join(', ')), ready);
         dmAppendTyping();
         var workspaceId = DM.workspaceId;
-        var baselineAi = (DM.lastMessages || []).filter(function (m) { return m.role !== 'user'; }).length;
+        var baselineId = dmMaxMessageId(DM.lastMessages);
         if (!DM.lastMessages || !DM.lastMessages.length) {
             try {
-                var seeded = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages', { timeoutMs: 20000 });
-                baselineAi = (seeded.messages || []).filter(function (m) { return m.role !== 'user'; }).length;
+                var seeded = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages?limit=50', { timeoutMs: 20000 });
+                baselineId = dmMaxMessageId(seeded.messages);
             } catch (err) { /* baseline is only used for late-reply recovery */ }
         }
         var payload = {
@@ -2664,7 +2669,7 @@ def get_data_modeling_js() -> str:
             }
             if (err.timeout || err.status === 502 || err.status === 503 || err.status === 504 || err.status === 524) {
                 dmToast('Gateway is slow - checking the backend for your reply…', 'ok');
-                var recovered = await dmRecoverLateReply(baselineAi, workspaceId);
+                var recovered = await dmRecoverLateReply(baselineId, workspaceId);
                 if (recovered) {
                     await dmLoadChats();
                     dmUpdateHeader();

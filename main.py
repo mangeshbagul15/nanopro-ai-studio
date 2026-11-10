@@ -54,7 +54,7 @@ sys.path.insert(0, str(BASE_DIR.parent))
 
 from fastapi import FastAPI, Form, Body, Query, HTTPException, UploadFile, File, Request, BackgroundTasks
 
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, Response
 
 from starlette.background import BackgroundTask
 
@@ -1500,9 +1500,24 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
 
         if v_res.get("is_valid") and v_res.get("user"):
 
-            resp = HTMLResponse(get_dashboard_html())
+            import hashlib
 
-            resp.headers["Cache-Control"] = "no-store, must-revalidate"
+            html = get_dashboard_html()
+
+            etag = '"' + hashlib.sha1(html.encode("utf-8")).hexdigest()[:20] + '"'
+
+            if (request.headers.get("if-none-match") or "").strip() in (etag, "W/" + etag):
+
+                return Response(
+                    status_code=304,
+                    headers={"ETag": etag, "Cache-Control": "private, no-cache, must-revalidate"},
+                )
+
+            resp = HTMLResponse(html)
+
+            resp.headers["ETag"] = etag
+
+            resp.headers["Cache-Control"] = "private, no-cache, must-revalidate"
 
             resp.set_cookie(
 
@@ -2342,11 +2357,11 @@ async def get_stats():
 
 @app.get("/api/logs/live")
 
-async def get_live_logs():
+async def get_live_logs(limit: int = 200):
 
-    """Returns full global live execution activity logs in real-time."""
+    """Returns the most recent execution logs; clients can request a smaller tail."""
 
-    return JSONResponse({"logs": get_recent_logs(200)})
+    return JSONResponse({"logs": get_recent_logs(max(10, min(limit, 200)))})
 
 
 

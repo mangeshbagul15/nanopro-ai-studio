@@ -2698,7 +2698,7 @@ def get_admin_mobile_hub_html() -> str:
         function initHub() {
             if (hubPollInterval) clearInterval(hubPollInterval);
             fetchHubData(false);
-            hubPollInterval = setInterval(() => fetchHubData(false), 3000);
+            hubPollInterval = setInterval(() => { if (!document.hidden) fetchHubData(false); }, 15000);
         }
 
         window.refreshHubData = fetchHubData;

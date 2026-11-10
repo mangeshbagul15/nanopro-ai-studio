@@ -25991,6 +25991,8 @@ function navigateHistory(direction) {
 
         async function pollStatsAndAgents() {
 
+            if (document.hidden) return;
+
             if (isPollingStats) return;
 
             isPollingStats = true;
@@ -26057,13 +26059,15 @@ function navigateHistory(direction) {
 
         async function pollLogs() {
 
+            if (document.hidden) return;
+
             if (isPollingLogs) return;
 
             isPollingLogs = true;
 
             try {
 
-                const res = await fetch('/api/logs/live');
+                const res = await fetch('/api/logs/live?limit=80');
 
                 const d = await res.json();
 
@@ -39970,9 +39974,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => { try { pollStatsAndAgents(); } catch(e) {} }, 1000);
 
-            setTimeout(() => { try { nanoProSetInterval(pollStatsAndAgents, 6000); } catch(e) {} }, 2500);
+            setTimeout(() => { try { nanoProSetInterval(pollStatsAndAgents, 30000); } catch(e) {} }, 2500);
 
-            setTimeout(() => { try { nanoProSetInterval(pollLogs, 8000); } catch(e) {} }, 3500);
+            setTimeout(() => { try { nanoProSetInterval(pollLogs, 30000); } catch(e) {} }, 3500);
 
             setTimeout(() => { try { initPanoramicCanvas(); } catch(e) {} }, 4000);
 
@@ -45508,17 +45512,19 @@ ${d.preview}`;
 
             refreshLive3dNodes();
 
-            // Poll every 5 seconds
+            // Poll every 15 seconds while the tab is visible
 
             if (_liveAgentPollTimer) clearInterval(_liveAgentPollTimer);
 
             _liveAgentPollTimer = setInterval(() => {
 
+                if (document.hidden) return;
+
                 refreshLiveAgentStats();
 
                 refreshLive3dNodes();
 
-            }, 5000);
+            }, 15000);
 
         }
 
@@ -62490,6 +62496,7 @@ function startNanoAutonomousLivePulse() {
     if (nanoLivePulseTimer) clearInterval(nanoLivePulseTimer);
     nanoLivePulseTimer = setInterval(() => {
         try {
+            if (document.hidden) return;
             if (typeof currentActiveView !== 'undefined') {
                 if (currentActiveView === 'server_manager_agents') {
                     if (typeof refreshServerManagerOverview === 'function') refreshServerManagerOverview(false);
@@ -62498,7 +62505,7 @@ function startNanoAutonomousLivePulse() {
                 }
             }
         } catch(e){}
-    }, 3500);
+    }, 15000);
 }
 
 if (typeof document !== 'undefined') {
