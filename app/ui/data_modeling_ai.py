@@ -99,8 +99,9 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 #view-data_modeling_ai .dm-panel-title { flex:1; min-width:0; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#A9BBD4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #view-data_modeling_ai .dm-panel-tools { display:flex; align-items:center; gap:2px; }
 #view-data_modeling_ai .dm-panel-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 6px 12px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
-#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar, #view-data_modeling_ai .dm-tree::-webkit-scrollbar, #view-data_modeling_ai .dm-messages::-webkit-scrollbar, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar { width:9px; height:9px; }
-#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-messages::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar-thumb { background:#2A3A50; border-radius:8px; }
+#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar, #view-data_modeling_ai .dm-tree::-webkit-scrollbar, #view-data_modeling_ai .dm-messages::-webkit-scrollbar, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar, #view-data_modeling_ai .dm-table-wrap::-webkit-scrollbar, #view-data_modeling_ai .dm-sql pre::-webkit-scrollbar { width:10px; height:10px; }
+#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-messages::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-table-wrap::-webkit-scrollbar-thumb, #view-data_modeling_ai .dm-sql pre::-webkit-scrollbar-thumb { background:#3B5472; border-radius:8px; border:2px solid transparent; background-clip:content-box; }
+#view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar-thumb:hover, #view-data_modeling_ai .dm-tree::-webkit-scrollbar-thumb:hover, #view-data_modeling_ai .dm-messages::-webkit-scrollbar-thumb:hover, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar-thumb:hover, #view-data_modeling_ai .dm-table-wrap::-webkit-scrollbar-thumb:hover, #view-data_modeling_ai .dm-sql pre::-webkit-scrollbar-thumb:hover { background:#4F6E92; background-clip:content-box; }
 #view-data_modeling_ai .dm-panel-scroll::-webkit-scrollbar-track, #view-data_modeling_ai .dm-tree::-webkit-scrollbar-track, #view-data_modeling_ai .dm-messages::-webkit-scrollbar-track, #view-data_modeling_ai .dm-data-body::-webkit-scrollbar-track { background:transparent; }
 #view-data_modeling_ai .dm-sec { margin-bottom:8px; }
 #view-data_modeling_ai .dm-sec-head { display:flex; align-items:center; gap:6px; padding:6px 8px 5px; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dm-dim); }
@@ -184,12 +185,12 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 #view-data_modeling_ai .dm-chat-title { font-size:13.5px; font-weight:600; color:#F2F6FC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #view-data_modeling_ai .dm-chat-sub { margin-top:1px; font-size:11px; color:var(--dm-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #view-data_modeling_ai .dm-chat-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; }
-#view-data_modeling_ai .dm-messages { flex:1 1 auto; min-height:170px; overflow-y:auto; overscroll-behavior:contain; padding:16px 16px 10px; display:flex; flex-direction:column; gap:13px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
-#view-data_modeling_ai .dm-msg { display:flex; gap:9px; align-items:flex-start; }
+#view-data_modeling_ai .dm-messages { flex:1 1 auto; min-height:170px; overflow-x:auto; overflow-y:auto; overscroll-behavior:contain; padding:16px 16px 10px; display:flex; flex-direction:column; gap:13px; scrollbar-width:thin; scrollbar-color:#3B5472 transparent; scrollbar-gutter:stable; }
+#view-data_modeling_ai .dm-msg { display:flex; gap:9px; align-items:flex-start; min-width:0; max-width:100%; }
 #view-data_modeling_ai .dm-msg.user { flex-direction:row-reverse; }
 #view-data_modeling_ai .dm-avatar { flex:0 0 auto; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; letter-spacing:.03em; background:#1B2739; color:#AFC1D8; border:1px solid var(--dm-line-2); }
 #view-data_modeling_ai .dm-msg.ai .dm-avatar { background:linear-gradient(135deg,#2F81F7,#1F6FEB); color:#FFF; border-color:transparent; }
-#view-data_modeling_ai .dm-bubble { max-width:min(780px,88%); background:var(--dm-panel); border:1px solid var(--dm-line); border-radius:11px; padding:10px 12px; }
+#view-data_modeling_ai .dm-bubble { max-width:min(780px,88%); min-width:0; background:var(--dm-panel); border:1px solid var(--dm-line); border-radius:11px; padding:10px 12px; }
 #view-data_modeling_ai .dm-msg.user .dm-bubble { background:rgba(47,129,247,.14); border-color:rgba(76,141,255,.35); }
 #view-data_modeling_ai .dm-text { font-size:13px; line-height:1.62; color:#DFE9F6; white-space:pre-wrap; word-break:break-word; }
 #view-data_modeling_ai .dm-msg.user .dm-text { color:#EAF2FF; }
@@ -225,17 +226,17 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 #view-data_modeling_ai .dm-data-actions { display:flex; align-items:center; gap:5px; flex:0 0 auto; }
 #view-data_modeling_ai .dm-data-toggle svg { transition:transform .15s; }
 #view-data_modeling_ai .dm-app.data-collapsed .dm-data-toggle svg { transform:rotate(180deg); }
-#view-data_modeling_ai .dm-data-body { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:10px 12px 14px; scrollbar-width:thin; scrollbar-color:#2A3A50 transparent; }
+#view-data_modeling_ai .dm-data-body { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:10px 12px 14px; scrollbar-width:thin; scrollbar-color:#3B5472 transparent; scrollbar-gutter:stable both-edges; }
 #view-data_modeling_ai .dm-data-empty { display:flex; align-items:center; justify-content:center; height:100%; min-height:110px; padding:16px 20px; text-align:center; font-size:12px; line-height:1.6; color:var(--dm-dim); }
 #view-data_modeling_ai .dm-stat-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
 #view-data_modeling_ai .dm-stat { font-size:10.5px; font-weight:600; color:#C6D4E6; background:#121C2B; border:1px solid var(--dm-line); border-radius:999px; padding:3px 9px; }
 #view-data_modeling_ai .dm-sec-title { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dm-dim); margin:12px 0 6px; }
 #view-data_modeling_ai .dm-note-line { font-size:11.5px; color:var(--dm-muted); margin-bottom:8px; line-height:1.55; }
 #view-data_modeling_ai .dm-data-body pre { margin:0; background:#070D16; border:1px solid var(--dm-line); border-radius:7px; padding:8px 10px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px; line-height:1.55; color:#A8CBFF; overflow:auto; white-space:pre-wrap; }
-#view-data_modeling_ai .dm-table-wrap { overflow:auto; border:1px solid var(--dm-line); border-radius:8px; max-width:100%; }
-#view-data_modeling_ai table.dm-dtable { border-collapse:collapse; width:100%; font-size:11.5px; }
+#view-data_modeling_ai .dm-table-wrap { overflow:auto; border:1px solid var(--dm-line); border-radius:8px; max-width:100%; scrollbar-width:thin; scrollbar-color:#3B5472 transparent; scrollbar-gutter:stable; }
+#view-data_modeling_ai table.dm-dtable { border-collapse:collapse; width:max-content; min-width:100%; font-size:11.5px; }
 #view-data_modeling_ai table.dm-dtable th { position:sticky; top:0; z-index:1; background:#16202F; color:#9DC0FF; text-align:left; font-weight:600; padding:6px 10px; border-bottom:1px solid var(--dm-line-2); white-space:nowrap; }
-#view-data_modeling_ai table.dm-dtable td { padding:5px 10px; border-bottom:1px solid #16202F; color:#D6E2F2; white-space:nowrap; max-width:340px; overflow:hidden; text-overflow:ellipsis; }
+#view-data_modeling_ai table.dm-dtable td { padding:5px 10px; border-bottom:1px solid #16202F; color:#D6E2F2; white-space:nowrap; }
 #view-data_modeling_ai table.dm-dtable tr:last-child td { border-bottom:0; }
 #view-data_modeling_ai table.dm-dtable tbody tr:hover td { background:rgba(76,141,255,.06); }
 #view-data_modeling_ai .dm-muted { color:var(--dm-dim); font-size:12px; padding:8px 2px; }
