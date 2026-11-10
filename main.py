@@ -1502,6 +1502,8 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
 
             resp = HTMLResponse(get_dashboard_html())
 
+            resp.headers["Cache-Control"] = "no-store, must-revalidate"
+
             resp.set_cookie(
 
                 key="nanopro_session",

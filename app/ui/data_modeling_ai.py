@@ -488,7 +488,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
           </button>
         </div>
         <input type="file" id="dmAttachInput" multiple hidden accept=".csv,.tsv,.xlsx,.xlsm,.json,.png,.jpg,.jpeg,.webp,.gif,.bmp" onchange="dmAttachmentChosen(this)">
-        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; attach CSV / Excel / JSON or an image; say &quot;new table&quot; or &quot;append to this table&quot;</div>
+        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; double-click a table in Explorer to insert schema.table &middot; attach CSV / Excel / JSON or an image; say &quot;new table&quot; or &quot;append to this table&quot;</div>
       </div>
 
       <section class="dm-data" id="dmDataPanel">
