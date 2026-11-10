@@ -418,9 +418,9 @@ def get_auth_injection() -> str:
 
 .pwd-rule-item.valid { color: #10B981; }
 
-.pwd-rule-item.valid::before { content: 'âœ”'; font-weight: bold; }
+.pwd-rule-item.valid::before { content: '✔'; font-weight: bold; }
 
-.pwd-rule-item.invalid::before { content: 'â—‹'; }
+.pwd-rule-item.invalid::before { content: '○'; }
 
 
 
@@ -1624,7 +1624,7 @@ def get_auth_injection() -> str:
 
         <div class="auth-header">
 
-            <div class="auth-logo-badge">ðŸ›¡ï¸ Enterprise Security Gateway</div>
+            <div class="auth-logo-badge">🛡️ Enterprise Security Gateway</div>
 
             <h1 class="auth-title">MANGESH NANO PRO</h1>
 
@@ -1658,9 +1658,9 @@ def get_auth_injection() -> str:
 
                 <div style="font-size:11px; color:#94A3B8; margin-bottom:8px; font-weight:600; display:flex; justify-content:space-between; align-items:center;">
 
-                    <span>ðŸ‘¥ Saved Accounts on this Device:</span>
+                    <span>👥 Saved Accounts on this Device:</span>
 
-                    <span style="color:#38BDF8; font-size:10px; cursor:pointer;" onclick="openAccountSwitcherModal()">Manage All â†—</span>
+                    <span style="color:#38BDF8; font-size:10px; cursor:pointer;" onclick="openAccountSwitcherModal()">Manage All ↗</span>
 
                 </div>
 
@@ -1676,7 +1676,7 @@ def get_auth_injection() -> str:
 
                 <div class="auth-form-group">
 
-                    <label>Username (à¤¯à¥à¤à¤°à¤¨à¥‡à¤®)</label>
+                    <label>Username (युझरनेम)</label>
 
                     <input type="text" id="loginUsername" class="auth-input" placeholder="e.g. nanopro" required autocomplete="username" />
 
@@ -1684,9 +1684,9 @@ def get_auth_injection() -> str:
 
                 <div class="auth-form-group">
 
-                    <label>Password (à¤ªà¤¾à¤¸à¤µà¤°à¥à¤¡)</label>
+                    <label>Password (पासवर्ड)</label>
 
-                    <input type="password" id="loginPassword" class="auth-input" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="current-password" />
+                    <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••••••" required autocomplete="current-password" />
 
                 </div>
 
@@ -1696,17 +1696,17 @@ def get_auth_injection() -> str:
 
                         <input type="checkbox" id="rememberCredentialsCheckbox" checked style="accent-color:#38BDF8; width:16px; height:16px; cursor:pointer;" />
 
-                        <span>Save Credentials on this device (à¤•à¥à¤°à¥‡à¤¡à¥‡à¤‚à¤¶à¤¿à¤¯à¤²à¥à¤¸ à¤¸à¥‡à¤µà¥à¤¹ à¤ à¥‡à¤µà¤¾)</span>
+                        <span>Save Credentials on this device (क्रेडेंशियल्स सेव्ह ठेवा)</span>
 
                     </label>
 
                 </div>
 
-                <button type="submit" id="loginSubmitBtn" class="auth-btn-primary">ðŸ” Sign In (Surakshit Login)</button>
+                <button type="submit" id="loginSubmitBtn" class="auth-btn-primary">🔐 Sign In (Surakshit Login)</button>
 
                 <div class="auth-footer-hint" style="color: #64748b; font-size: 11px; margin-top: 10px;">
 
-                    ðŸ›¡ï¸ Enterprise Hardware-Bound 256-Bit TLS Secured Access
+                    🛡️ Enterprise Hardware-Bound 256-Bit TLS Secured Access
 
                 </div>
 
@@ -1720,7 +1720,7 @@ def get_auth_injection() -> str:
 
                 <div class="auth-form-group">
 
-                    <label>Full Name (à¤ªà¥‚à¤°à¥à¤£ à¤¨à¤¾à¤µ)</label>
+                    <label>Full Name (पूर्ण नाव)</label>
 
                     <input type="text" id="regFullName" class="auth-input" placeholder="e.g. Rahul Sharma" required />
 
@@ -1736,7 +1736,7 @@ def get_auth_injection() -> str:
 
                 <div class="auth-form-group">
 
-                    <label>Email ID (à¤ˆà¤®à¥‡à¤²)</label>
+                    <label>Email ID (ईमेल)</label>
 
                     <input type="email" id="regEmail" class="auth-input" placeholder="e.g. user@company.com" required />
 
@@ -1744,9 +1744,9 @@ def get_auth_injection() -> str:
 
                 <div class="auth-form-group">
 
-                    <label>Password (à¤ªà¤¾à¤¸à¤µà¤°à¥à¤¡)</label>
+                    <label>Password (पासवर्ड)</label>
 
-                    <input type="password" id="regPassword" class="auth-input" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" oninput="checkPasswordRules(this.value)" required />
+                    <input type="password" id="regPassword" class="auth-input" placeholder="••••••••••••" oninput="checkPasswordRules(this.value)" required />
 
                     
 
@@ -1768,7 +1768,7 @@ def get_auth_injection() -> str:
 
                 </div>
 
-                <button type="submit" id="regSubmitBtn" class="auth-btn-primary">ðŸ“ Create Account (Submit for Approval)</button>
+                <button type="submit" id="regSubmitBtn" class="auth-btn-primary">📝 Create Account (Submit for Approval)</button>
 
                 <div class="auth-footer-hint">
 
@@ -1802,13 +1802,13 @@ def get_auth_injection() -> str:
 
                 <h3 style="margin:0; font-size:16px; font-weight:800; color:#38BDF8; display:flex; align-items:center; gap:8px;">
 
-                    ðŸ‘¥ Switch Account / à¤–à¤¾à¤¤à¥‡ à¤¬à¤¦à¤²à¤¾
+                    👥 Switch Account / खाते बदला
 
                 </h3>
 
                 <div style="font-size:11.5px; color:#94A3B8; margin-top:3px;">
 
-                    Saved accounts on this device (à¤¯à¤¾ à¤¡à¤¿à¤µà¥à¤¹à¤¾à¤‡à¤¸à¤µà¤°à¥€à¤² à¤–à¤¾à¤¤à¥€)
+                    Saved accounts on this device (या डिव्हाइसवरील खाती)
 
                 </div>
 
@@ -1838,13 +1838,13 @@ def get_auth_injection() -> str:
 
                 <button type="button" onclick="openAuthGatewayModal('login', true)" style="flex:1; padding:9px; background:linear-gradient(135deg, #0284C7, #2563EB); border:none; border-radius:8px; color:#FFFFFF; font-weight:700; font-size:12px; cursor:pointer;">
 
-                    âž• Add Another Account
+                    ➕ Add Another Account
 
                 </button>
 
                 <button type="button" onclick="openAuthGatewayModal('register', true)" style="flex:1; padding:9px; background:rgba(16,185,129,0.15); border:1px solid #10B981; border-radius:8px; color:#6EE7B7; font-weight:700; font-size:12px; cursor:pointer;">
 
-                    ðŸ“ New User Sign Up
+                    📝 New User Sign Up
 
                 </button>
 
@@ -1886,7 +1886,7 @@ def get_auth_injection() -> str:
 
                 <h3 style="margin:0; font-size:16px; font-weight:800; color:#38BDF8; display:flex; align-items:center; gap:8px;">
 
-                    ðŸ›¡ï¸ User RBAC Permissions &amp; Feature Allocation
+                    🛡️ User RBAC Permissions &amp; Feature Allocation
 
                 </h3>
 
@@ -1930,7 +1930,7 @@ def get_auth_injection() -> str:
 
                     <div>
 
-                        <div style="font-weight:700; color:#38BDF8; font-size:13px;">âœï¸ MODIFY (Full Control &amp; Edit)</div>
+                        <div style="font-weight:700; color:#38BDF8; font-size:13px;">✏️ MODIFY (Full Control &amp; Edit)</div>
 
                         <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
 
@@ -1950,7 +1950,7 @@ def get_auth_injection() -> str:
 
                     <div>
 
-                        <div style="font-weight:700; color:#F59E0B; font-size:13px;">ðŸ‘ï¸ READ_ONLY (View Only)</div>
+                        <div style="font-weight:700; color:#F59E0B; font-size:13px;">👁️ READ_ONLY (View Only)</div>
 
                         <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
 
@@ -1970,11 +1970,11 @@ def get_auth_injection() -> str:
 
             <div class="perm-section-title" style="display:flex; justify-content:space-between; align-items:center;">
 
-                <span>2. Device-Specific Feature Allocation (à¤¸à¤¾à¤§à¤¨ à¤ªà¥à¤°à¤•à¤¾à¤°)</span>
+                <span>2. Device-Specific Feature Allocation (साधन प्रकार)</span>
 
                 <span style="font-size:11px; color:#94A3B8; font-weight:normal; text-transform:none;">
 
-                    Desktop à¤µà¤° à¤®à¥‹à¤ à¥‡ à¤Ÿà¥‚à¤²à¥à¤¸, Mobile à¤µà¤° à¤¸à¥à¤Ÿà¤¸à¥à¤Ÿà¥€à¤¤ à¥²à¤ª-à¤²à¤¾à¤ˆà¤• à¤«à¥€à¤šà¤°à¥à¤¸ à¤¦à¥à¤¯à¤¾.
+                    Desktop वर मोठे टूल्स, Mobile वर सुटसुटीत ॲप-लाईक फीचर्स द्या.
 
                 </span>
 
@@ -1988,13 +1988,13 @@ def get_auth_injection() -> str:
 
                 <button type="button" class="perm-device-tab active" id="permTabDesktop" onclick="switchPermDeviceTab('desktop')">
 
-                    ðŸ’» Desktop / Laptop Features
+                    💻 Desktop / Laptop Features
 
                 </button>
 
                 <button type="button" class="perm-device-tab" id="permTabMobile" onclick="switchPermDeviceTab('mobile')">
 
-                    ðŸ“± Mobile Browser Features
+                    📱 Mobile Browser Features
 
                 </button>
 
@@ -2002,23 +2002,23 @@ def get_auth_injection() -> str:
 
 
 
-            <!-- â”€â”€ DESKTOP FEATURES CONTAINER â”€â”€ -->
+            <!-- ── DESKTOP FEATURES CONTAINER ── -->
 
             <div id="permContainerDesktop">
 
                 <div class="perm-actions-toolbar">
 
-                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true, 'desktop')">âœ… Select All Desktop</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true, 'desktop')">✅ Select All Desktop</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false, 'desktop')">âŒ Clear All</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false, 'desktop')">❌ Clear All</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('data_stack', 'desktop')">ðŸ“Š Data Stack</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('data_stack', 'desktop')">📊 Data Stack</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('ai_stack', 'desktop')">ðŸ¤– AI Stack</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('ai_stack', 'desktop')">🤖 AI Stack</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('media_comm', 'desktop')">ðŸ’¬ Comm &amp; Media</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('media_comm', 'desktop')">💬 Comm &amp; Media</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="copyPermFeatures('desktop', 'mobile')" style="background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8;">ðŸ“‹ Copy to Mobile</button>
+                    <button type="button" class="perm-preset-btn" onclick="copyPermFeatures('desktop', 'mobile')" style="background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8;">📋 Copy to Mobile</button>
 
                 </div>
 
@@ -2248,19 +2248,19 @@ def get_auth_injection() -> str:
 
 
 
-            <!-- â”€â”€ MOBILE FEATURES CONTAINER (DEFAULT COMPACT) â”€â”€ -->
+            <!-- ── MOBILE FEATURES CONTAINER (DEFAULT COMPACT) ── -->
 
             <div id="permContainerMobile" style="display:none;">
 
                 <div class="perm-actions-toolbar">
 
-                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('recommended_mobile', 'mobile')" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFFFFF; font-weight:700;">âš¡ Recommended Mobile Setup</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectPermPreset('recommended_mobile', 'mobile')" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFFFFF; font-weight:700;">⚡ Recommended Mobile Setup</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="copyPermFeatures('mobile', 'desktop')" style="background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8;">ðŸ“‹ Copy from Desktop</button>
+                    <button type="button" class="perm-preset-btn" onclick="copyPermFeatures('mobile', 'desktop')" style="background:rgba(56,189,248,0.15); border-color:#38BDF8; color:#38BDF8;">📋 Copy from Desktop</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true, 'mobile')">âœ… Select All Mobile</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(true, 'mobile')">✅ Select All Mobile</button>
 
-                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false, 'mobile')">âŒ Clear All</button>
+                    <button type="button" class="perm-preset-btn" onclick="selectAllPermFeatures(false, 'mobile')">❌ Clear All</button>
 
                 </div>
 
@@ -2280,9 +2280,9 @@ def get_auth_injection() -> str:
 
                         </div>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="dashboard" checked> Studio Overview â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="dashboard" checked> Studio Overview ⭐</label>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="ai_manager" checked> AI Manager Chat â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="ai_manager" checked> AI Manager Chat ⭐</label>
 
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g1" value="ai_office"> AI Agent Office</label>
 
@@ -2358,9 +2358,9 @@ def get_auth_injection() -> str:
 
                         </div>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="amazon_tracker" checked> Amazon Price Tracker â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="amazon_tracker" checked> Amazon Price Tracker ⭐</label>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="assistant" checked> Reminders &amp; Tasks â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="assistant" checked> Reminders &amp; Tasks ⭐</label>
 
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g4" value="automation_scheduler"> Task Scheduler</label>
 
@@ -2382,15 +2382,15 @@ def get_auth_injection() -> str:
 
                         </div>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="communication" checked> WhatsApp / Telegram Hub â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="communication" checked> WhatsApp / Telegram Hub ⭐</label>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="telegram_agent" checked> Telegram AI Agent â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="telegram_agent" checked> Telegram AI Agent ⭐</label>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="whatsapp_hub" checked> WhatsApp Two-Way AI â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="whatsapp_hub" checked> WhatsApp Two-Way AI ⭐</label>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="news_center" checked> News Center â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="news_center" checked> News Center ⭐</label>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="approvals" checked> 1-Click Action Approvals â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g5" value="approvals" checked> 1-Click Action Approvals ⭐</label>
 
                     </div>
 
@@ -2408,7 +2408,7 @@ def get_auth_injection() -> str:
 
                         </div>
 
-                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="career_hub" checked> Career &amp; Job Radar â­</label>
+                        <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="career_hub" checked> Career &amp; Job Radar ⭐</label>
 
                         <label class="perm-item-row"><input type="checkbox" class="perm-cb mobile-cb g6" value="shopping_services"> Shopping Services</label>
 
@@ -2432,7 +2432,7 @@ def get_auth_injection() -> str:
 
             <button type="button" id="permModalSaveBtn" class="btn btn-primary" onclick="submitUserPermissions()" style="background:linear-gradient(135deg, #0284C7 0%, #2563EB 100%); padding:8px 20px; font-weight:700;">
 
-                ðŸ’¾ Save &amp; Apply Permissions
+                💾 Save &amp; Apply Permissions
 
             </button>
 
@@ -2690,9 +2690,9 @@ function renderAccountSwitcherModal() {
 
             <div style="text-align:center; padding:20px; color:#94A3B8; font-size:12px; background:rgba(30,41,59,0.4); border-radius:12px; border:1px dashed rgba(255,255,255,0.1);">
 
-                à¤¯à¤¾ à¤¡à¤¿à¤µà¥à¤¹à¤¾à¤‡à¤¸à¤µà¤° à¤•à¥‹à¤£à¤¤à¥‡à¤¹à¥€ à¤¸à¥‡à¤µà¥à¤¹ à¤•à¥‡à¤²à¥‡à¤²à¥‡ à¤–à¤¾à¤¤à¥‡ à¤¨à¤¾à¤¹à¥€.<br>
+                या डिव्हाइसवर कोणतेही सेव्ह केलेले खाते नाही.<br>
 
-                à¤¨à¤µà¥€à¤¨ à¤–à¤¾à¤¤à¥‡ à¤²à¥‰à¤—à¤¿à¤¨ à¤•à¤¿à¤‚à¤µà¤¾ à¤¸à¤¾à¤‡à¤¨-à¤…à¤ª à¤•à¤°à¤£à¥à¤¯à¤¾à¤¸à¤¾à¤ à¥€ à¤–à¤¾à¤²à¥€à¤² à¤¬à¤Ÿà¤£ à¤µà¤¾à¤ªà¤°à¤¾.
+                नवीन खाते लॉगिन किंवा साइन-अप करण्यासाठी खालील बटण वापरा.
 
             </div>
 
@@ -2726,7 +2726,7 @@ function renderAccountSwitcherModal() {
 
                     <div style="width:36px; height:36px; border-radius:50%; background:radial-gradient(circle, ${isAdmin ? '#10B981' : '#38BDF8'}, #0F172A); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; color:#FFF; box-shadow:0 0 10px rgba(0,0,0,0.5);">
 
-                        ${isAdmin ? 'ðŸ‘‘' : 'ðŸ‘¤'}
+                        ${isAdmin ? '👑' : '👤'}
 
                     </div>
 
@@ -2752,7 +2752,7 @@ function renderAccountSwitcherModal() {
 
                         <span style="font-size:10px; font-weight:800; color:#10B981; background:rgba(16,185,129,0.15); border:1px solid #10B981; padding:3px 8px; border-radius:12px;">
 
-                            ðŸŸ¢ Active
+                            🟢 Active
 
                         </span>
 
@@ -2760,7 +2760,7 @@ function renderAccountSwitcherModal() {
 
                         <button type="button" onclick="switchToAccount('${acc.username}')" style="background:linear-gradient(135deg, #0284C7, #2563EB); border:none; color:#FFF; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">
 
-                            Switch ðŸ”„
+                            Switch 🔄
 
                         </button>
 
@@ -2808,7 +2808,7 @@ function renderAuthSavedAccountsChooser() {
 
             <button type="button" onclick="switchToAccount('${a.username}')" style="display:flex; align-items:center; gap:5px; background:rgba(15,23,42,0.8); border:1px solid ${isAdmin ? '#10B981' : '#38BDF8'}; color:#FFFFFF; padding:4px 10px; border-radius:14px; font-size:11px; font-weight:700; cursor:pointer;">
 
-                <span>${isAdmin ? 'ðŸ‘‘' : 'ðŸ‘¤'}</span>
+                <span>${isAdmin ? '👑' : '👤'}</span>
 
                 <span>${a.username}</span>
 
@@ -2872,7 +2872,7 @@ async function switchToAccount(targetUsername) {
 
                 onAuthSuccess(data.user);
 
-                if (typeof showHubToast === 'function') showHubToast(`Switched to: ${acc.username}`, 'success', 'ðŸ‘¤');
+                if (typeof showHubToast === 'function') showHubToast(`Switched to: ${acc.username}`, 'success', '👤');
 
                 return;
 
@@ -2912,7 +2912,7 @@ async function switchToAccount(targetUsername) {
 
                 onAuthSuccess(data.user);
 
-                if (typeof showHubToast === 'function') showHubToast(`Switched to: ${acc.username}`, 'success', 'ðŸ‘¤');
+                if (typeof showHubToast === 'function') showHubToast(`Switched to: ${acc.username}`, 'success', '👤');
 
                 return;
 
@@ -2936,7 +2936,7 @@ async function switchToAccount(targetUsername) {
 
     if (pInput) { pInput.value = ''; pInput.focus(); }
 
-    showAuthAlert(`Krupaya '${acc.username}' à¤¸à¤¾à¤ à¥€ à¤ªà¤¾à¤¸à¤µà¤°à¥à¤¡ à¤Ÿà¤¾à¤•à¤¾.`, 'warning');
+    showAuthAlert(`Krupaya '${acc.username}' साठी पासवर्ड टाका.`, 'warning');
 
 }
 
@@ -3166,7 +3166,7 @@ async function handleAuthLogin(e) {
 
         btn.disabled = false;
 
-        btn.innerText = 'ðŸ” Sign In (Surakshit Login)';
+        btn.innerText = '🔐 Sign In (Surakshit Login)';
 
     }
 
@@ -3250,7 +3250,7 @@ async function handleAuthRegister(e) {
 
         btn.disabled = false;
 
-        btn.innerText = 'ðŸ“ Create Account (Submit for Approval)';
+        btn.innerText = '📝 Create Account (Submit for Approval)';
 
     }
 
@@ -3442,7 +3442,7 @@ function updateHeaderUserProfile(user) {
 
                 <div onclick="openAccountSwitcherModal()" style="font-size:12px; color:#E2E8F0; background:rgba(30,41,59,0.85); padding:5px 14px; border-radius:20px; border:1px solid rgba(56,189,248,0.35); display:inline-flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.4);" title="Click to view profile / Switch account">
 
-                    <span>ðŸ‘¤</span>
+                    <span>👤</span>
 
                     <b style="color:#38BDF8;">${user.username}</b>
 
@@ -3452,13 +3452,13 @@ function updateHeaderUserProfile(user) {
 
                 <button type="button" onclick="openAccountSwitcherModal()" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38BDF8; padding:5px 11px; border-radius:20px; cursor:pointer; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" title="Switch Account">
 
-                    ðŸ”„ Switch
+                    🔄 Switch
 
                 </button>
 
                 <button type="button" onclick="performLogout()" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#FCA5A5; padding:5px 12px; border-radius:20px; cursor:pointer; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" title="Logout">
 
-                    ðŸšª Logout
+                    🚪 Logout
 
                 </button>
 
@@ -3474,13 +3474,13 @@ function updateHeaderUserProfile(user) {
 
                 <button type="button" onclick="openAuthGatewayModal('login', true)" style="background:rgba(56,189,248,0.12); border:1px solid #38BDF8; color:#38BDF8; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Sign in to your account">
 
-                    ðŸ” Login
+                    🔐 Login
 
                 </button>
 
                 <button type="button" onclick="openAuthGatewayModal('register', true)" style="background:linear-gradient(135deg, #0284C7, #06B6D4); border:none; color:#FFFFFF; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 10px rgba(6,182,212,0.3); transition:all 0.2s;" title="Create free account">
 
-                    ðŸ“ Sign Up
+                    📝 Sign Up
 
                 </button>
 
@@ -3542,7 +3542,7 @@ function startInactivityTracker(user) {
 
 async function triggerAutoLogout() {
 
-    alert('â±ï¸ Security Alert: 15-Minute inactivity mule session auto-logout zale ahe. Krupaya punha login kara.');
+    alert('⏱️ Security Alert: 15-Minute inactivity mule session auto-logout zale ahe. Krupaya punha login kara.');
 
     await performLogout(true);
 
@@ -4080,7 +4080,7 @@ async function submitUserPermissions() {
 
         if (data.status === 'success') {
 
-            alert('âœ… ' + (data.message || 'Permissions yashasviritya lagu karnyayt aale!'));
+            alert('✅ ' + (data.message || 'Permissions yashasviritya lagu karnyayt aale!'));
 
             closePermissionsModal();
 
@@ -4102,7 +4102,7 @@ async function submitUserPermissions() {
 
             btn.disabled = false;
 
-            btn.innerText = 'ðŸ’¾ Save & Apply Permissions';
+            btn.innerText = '💾 Save & Apply Permissions';
 
         }
 
@@ -4131,11 +4131,11 @@ function applyUserPermissions(user) {
     const userBadgeEl = document.getElementById('headerUserRoleBadge');
     if (userBadgeEl) {
         if (isSuperAdmin) {
-            userBadgeEl.innerHTML = '<span class="badge" style="background:rgba(16,185,129,0.2); color:#10B981; border:1px solid #10B981; font-size:11px; padding:2px 8px; border-radius:12px;">ðŸ‘‘ Master Admin</span>';
+            userBadgeEl.innerHTML = '<span class="badge" style="background:rgba(16,185,129,0.2); color:#10B981; border:1px solid #10B981; font-size:11px; padding:2px 8px; border-radius:12px;">👑 Master Admin</span>';
         } else if (user.access_mode === 'READ_ONLY') {
-            userBadgeEl.innerHTML = '<span class="badge" style="background:rgba(234,179,8,0.2); color:#EAB308; border:1px solid #EAB308; font-size:11px; padding:2px 8px; border-radius:12px;">ðŸ”’ Read-Only</span>';
+            userBadgeEl.innerHTML = '<span class="badge" style="background:rgba(234,179,8,0.2); color:#EAB308; border:1px solid #EAB308; font-size:11px; padding:2px 8px; border-radius:12px;">🔒 Read-Only</span>';
         } else {
-            userBadgeEl.innerHTML = '<span class="badge" style="background:rgba(56,189,248,0.2); color:#38BDF8; border:1px solid #38BDF8; font-size:11px; padding:2px 8px; border-radius:12px;">âš¡ Member</span>';
+            userBadgeEl.innerHTML = '<span class="badge" style="background:rgba(56,189,248,0.2); color:#38BDF8; border:1px solid #38BDF8; font-size:11px; padding:2px 8px; border-radius:12px;">⚡ Member</span>';
         }
     }
 
@@ -4213,7 +4213,7 @@ window.checkViewAllowed = function(viewName, showAlert = false) {
     // Admin-only views
     const adminOnlyViews = ['user_management', 'admin_mobile_hub', 'startup_recovery', 'approvals'];
     if (adminOnlyViews.includes(viewName)) {
-        if (showAlert) alert("âš ï¸ à¤¹à¤¾ à¤µà¤¿à¤­à¤¾à¤— à¤•à¥‡à¤µà¤³ Master Admin (nanopro) à¤¸à¤¾à¤ à¥€ à¤°à¤¾à¤–à¥€à¤µ à¤†à¤¹à¥‡.");
+        if (showAlert) alert("⚠️ हा विभाग केवळ Master Admin (nanopro) साठी राखीव आहे.");
         return false;
     }
 
@@ -4235,7 +4235,7 @@ window.checkViewAllowed = function(viewName, showAlert = false) {
     if (allowedList.includes(viewName)) return true;
 
     if (showAlert) {
-        alert("âš ï¸ à¤¯à¤¾ à¤«à¤¿à¤šà¤°à¤¸à¤¾à¤ à¥€ ('" + viewName + "') à¤¤à¥à¤®à¥à¤¹à¤¾à¤²à¤¾ à¤ªà¤°à¤µà¤¾à¤¨à¤—à¥€ à¤¨à¤¾à¤¹à¥€. à¤•à¥ƒà¤ªà¤¯à¤¾ Master Admin (nanopro) à¤•à¤¡à¥‚à¤¨ à¤®à¤‚à¤œà¥à¤°à¥€ à¤˜à¥à¤¯à¤¾.");
+        alert("⚠️ या फिचरसाठी ('" + viewName + "') तुम्हाला परवानगी नाही. कृपया Master Admin (nanopro) कडून मंजुरी घ्या.");
     }
     return false;
 };
@@ -4309,27 +4309,27 @@ async function loadAdminUsers() {
 
             if (u.status === 'PENDING_APPROVAL') {
 
-                statusBadge = `<button type="button" class="modern-badge-btn badge-status-pending" onclick="openUserPermissionsById('${u.id}', 'approve')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: à¤¯à¥à¤à¤°à¤²à¤¾ à¤®à¤‚à¤œà¥‚à¤° à¤•à¤°à¤¾ à¤†à¤£à¤¿ à¤«à¤¿à¤šà¤°à¥à¤¸ à¤¦à¥à¤¯à¤¾ (Click to Approve)"><span class="badge-dot dot-amber-pulse"></span>â³ Pending <span class="badge-hint-tag">Review âš¡</span></button>`;
+                statusBadge = `<button type="button" class="modern-badge-btn badge-status-pending" onclick="openUserPermissionsById('${u.id}', 'approve')" title="क्लिक करा: युझरला मंजूर करा आणि फिचर्स द्या (Click to Approve)"><span class="badge-dot dot-amber-pulse"></span>⏳ Pending <span class="badge-hint-tag">Review ⚡</span></button>`;
 
             } else if (u.status === 'ACTIVE') {
 
                 if (u.username === 'nanopro') {
 
-                    statusBadge = `<span class="modern-badge badge-master-active"><span class="badge-dot dot-emerald"></span>ðŸ‘‘ Active <span class="badge-hint-tag">Master</span></span>`;
+                    statusBadge = `<span class="modern-badge badge-master-active"><span class="badge-dot dot-emerald"></span>👑 Active <span class="badge-hint-tag">Master</span></span>`;
 
                 } else {
 
-                    statusBadge = `<button type="button" class="modern-badge-btn badge-status-active" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: à¤–à¤¾à¤¤à¥‡ à¤¤à¤¾à¤¤à¥à¤ªà¥à¤°à¤¤à¥‡ à¤¡à¤¿à¤¸à¥‡à¤¬à¤² à¤•à¤°à¤¾ (Click to Disable)"><span class="badge-dot dot-emerald"></span>âœ… Active <span class="badge-hint-tag">â‡„</span></button>`;
+                    statusBadge = `<button type="button" class="modern-badge-btn badge-status-active" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="क्लिक करा: खाते तात्पुरते डिसेबल करा (Click to Disable)"><span class="badge-dot dot-emerald"></span>✅ Active <span class="badge-hint-tag">⇄</span></button>`;
 
                 }
 
             } else if (u.status === 'REJECTED') {
 
-                statusBadge = `<span class="modern-badge badge-status-rejected" title="à¤¯à¤¾ à¤¯à¥à¤à¤°à¤šà¥€ à¤¨à¥‹à¤‚à¤¦à¤£à¥€ à¤¨à¤¾à¤•à¤¾à¤°à¤£à¥à¤¯à¤¾à¤¤ à¤†à¤²à¥€ à¤†à¤¹à¥‡ (Rejected)"><span class="badge-dot dot-red"></span>ðŸš« Rejected</span>`;
+                statusBadge = `<span class="modern-badge badge-status-rejected" title="या युझरची नोंदणी नाकारण्यात आली आहे (Rejected)"><span class="badge-dot dot-red"></span>🚫 Rejected</span>`;
 
             } else {
 
-                statusBadge = `<button type="button" class="modern-badge-btn badge-status-disabled" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: à¤–à¤¾à¤¤à¥‡ à¤ªà¥à¤¨à¥à¤¹à¤¾ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤•à¤°à¤¾ (Click to Enable)"><span class="badge-dot dot-slate"></span>ðŸ”’ Disabled <span class="badge-hint-tag">â‡„</span></button>`;
+                statusBadge = `<button type="button" class="modern-badge-btn badge-status-disabled" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="क्लिक करा: खाते पुन्हा सक्रिय करा (Click to Enable)"><span class="badge-dot dot-slate"></span>🔒 Disabled <span class="badge-hint-tag">⇄</span></button>`;
 
             }
 
@@ -4343,15 +4343,15 @@ async function loadAdminUsers() {
 
             if (u.username === 'nanopro') {
 
-                modeBadge = `<span class="modern-badge badge-master-mode"><span class="badge-dot dot-cyan"></span>âœï¸ Full Modify <span class="badge-hint-tag">Unrestricted</span></span>`;
+                modeBadge = `<span class="modern-badge badge-master-mode"><span class="badge-dot dot-cyan"></span>✏️ Full Modify <span class="badge-hint-tag">Unrestricted</span></span>`;
 
             } else if (mode === 'READ_ONLY') {
 
-                modeBadge = `<button type="button" class="modern-badge-btn badge-mode-readonly" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: âœï¸ MODIFY à¤®à¥‹à¤¡à¤®à¤§à¥à¤¯à¥‡ à¤¬à¤¦à¤²à¤¾ (Click to switch to MODIFY)"><span class="badge-dot dot-amber-pulse"></span>ðŸ‘ï¸ Read-Only <span class="badge-hint-tag">â‡„</span></button>`;
+                modeBadge = `<button type="button" class="modern-badge-btn badge-mode-readonly" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: ✏️ MODIFY मोडमध्ये बदला (Click to switch to MODIFY)"><span class="badge-dot dot-amber-pulse"></span>👁️ Read-Only <span class="badge-hint-tag">⇄</span></button>`;
 
             } else {
 
-                modeBadge = `<button type="button" class="modern-badge-btn badge-mode-modify" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: ðŸ‘ï¸ READ-ONLY à¤®à¥‹à¤¡à¤®à¤§à¥à¤¯à¥‡ à¤¬à¤¦à¤²à¤¾ (Click to switch to READ-ONLY)"><span class="badge-dot dot-cyan"></span>âœï¸ Modify <span class="badge-hint-tag">â‡„</span></button>`;
+                modeBadge = `<button type="button" class="modern-badge-btn badge-mode-modify" onclick="quickToggleUserAccessMode('${u.id}', '${mode}')" title="क्लिक करा: 👁️ READ-ONLY मोडमध्ये बदला (Click to switch to READ-ONLY)"><span class="badge-dot dot-cyan"></span>✏️ Modify <span class="badge-hint-tag">⇄</span></button>`;
 
             }
 
@@ -4369,9 +4369,9 @@ async function loadAdminUsers() {
 
                 featuresBadge = `
 
-                    <button type="button" class="modern-badge-btn badge-master-features" onclick="openUserPermissionsById('${u.id}', 'update')" title="Super Admin: à¤¸à¤°à¥à¤µ 42 à¤«à¤¿à¤šà¤°à¥à¤¸ à¤‰à¤ªà¤²à¤¬à¥à¤§ à¤†à¤¹à¥‡à¤¤ (Click to customize)">
+                    <button type="button" class="modern-badge-btn badge-master-features" onclick="openUserPermissionsById('${u.id}', 'update')" title="Super Admin: सर्व 42 फिचर्स उपलब्ध आहेत (Click to customize)">
 
-                        <span class="badge-dot dot-purple"></span>âš¡ All (42/42) <span class="badge-hint-tag">Full Suite âœŽ</span>
+                        <span class="badge-dot dot-purple"></span>⚡ All (42/42) <span class="badge-hint-tag">Full Suite ✎</span>
 
                     </button>
 
@@ -4389,9 +4389,9 @@ async function loadAdminUsers() {
 
                 featuresBadge = `
 
-                    <button type="button" class="modern-badge-btn badge-feat-custom" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: Desktop à¤†à¤£à¤¿ Mobile à¤«à¤¿à¤šà¤°à¥à¤¸ à¤¨à¤¿à¤µà¤¡à¤¾/à¤¬à¤¦à¤²à¤¾ (Click to customize features)">
+                    <button type="button" class="modern-badge-btn badge-feat-custom" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: Desktop आणि Mobile फिचर्स निवडा/बदला (Click to customize features)">
 
-                        <span class="badge-dot dot-purple"></span>ðŸ’» ${dCount} <span style="opacity:0.4;">|</span> ðŸ“± ${mCount} <span class="badge-hint-tag">âœŽ</span>
+                        <span class="badge-dot dot-purple"></span>💻 ${dCount} <span style="opacity:0.4;">|</span> 📱 ${mCount} <span class="badge-hint-tag">✎</span>
 
                     </button>
 
@@ -4401,9 +4401,9 @@ async function loadAdminUsers() {
 
                 featuresBadge = `
 
-                    <button type="button" class="modern-badge-btn badge-feat-all" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: à¤µà¤¿à¤¶à¤¿à¤·à¥à¤Ÿ à¤«à¤¿à¤šà¤°à¥à¤¸ à¤¨à¤¿à¤µà¤¡à¤¾ à¤•à¤¿à¤‚à¤µà¤¾ à¤¬à¤¦à¤²à¤¾ (Click to customize features)">
+                    <button type="button" class="modern-badge-btn badge-feat-all" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
 
-                        <span class="badge-dot dot-emerald"></span>âš™ï¸ All (Sarva 42) <span class="badge-hint-tag">âœŽ</span>
+                        <span class="badge-dot dot-emerald"></span>⚙️ All (Sarva 42) <span class="badge-hint-tag">✎</span>
 
                     </button>
 
@@ -4415,9 +4415,9 @@ async function loadAdminUsers() {
 
                 featuresBadge = `
 
-                    <button type="button" class="modern-badge-btn badge-feat-custom" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¤¾: à¤µà¤¿à¤¶à¤¿à¤·à¥à¤Ÿ à¤«à¤¿à¤šà¤°à¥à¤¸ à¤¨à¤¿à¤µà¤¡à¤¾ à¤•à¤¿à¤‚à¤µà¤¾ à¤¬à¤¦à¤²à¤¾ (Click to customize features)">
+                    <button type="button" class="modern-badge-btn badge-feat-custom" onclick="openUserPermissionsById('${u.id}', '${actionType}')" title="क्लिक करा: विशिष्ट फिचर्स निवडा किंवा बदला (Click to customize features)">
 
-                        <span class="badge-dot dot-purple"></span>âš™ï¸ ${count} Features <span class="badge-hint-tag">âœŽ</span>
+                        <span class="badge-dot dot-purple"></span>⚙️ ${count} Features <span class="badge-hint-tag">✎</span>
 
                     </button>
 
@@ -4437,11 +4437,11 @@ async function loadAdminUsers() {
 
                     <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
 
-                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="à¤®à¤‚à¤œà¥‚à¤° à¤•à¤°à¤¾ à¤†à¤£à¤¿ à¤«à¤¿à¤šà¤°à¥à¤¸ à¤¦à¥à¤¯à¤¾ (Approve with custom features)">ðŸ›¡ï¸ Approve</button>
+                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="मंजूर करा आणि फिचर्स द्या (Approve with custom features)">🛡️ Approve</button>
 
-                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="à¤¨à¥‹à¤‚à¤¦à¤£à¥€ à¤¨à¤¾à¤•à¤¾à¤°à¤¾ (Reject registration)">ðŸš« Reject</button>
+                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="नोंदणी नाकारा (Reject registration)">🚫 Reject</button>
 
-                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="à¤•à¤¾à¤¯à¤®à¤šà¥‡ à¤¹à¤Ÿà¤µà¤¾ (Permanently delete)">ðŸ—‘ï¸ Delete</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा (Permanently delete)">🗑️ Delete</button>
 
                     </div>
 
@@ -4453,9 +4453,9 @@ async function loadAdminUsers() {
 
                     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
 
-                        <button type="button" class="btn-action-sm" style="background:linear-gradient(135deg, #0284C7, #0369A1); color:#FFFFFF; font-weight:700; border:1px solid #38BDF8; padding:5px 10px; border-radius:6px;" onclick="openUserPermissionsById('${u.id}', 'update')">âš™ï¸ Admin Views</button>
+                        <button type="button" class="btn-action-sm" style="background:linear-gradient(135deg, #0284C7, #0369A1); color:#FFFFFF; font-weight:700; border:1px solid #38BDF8; padding:5px 10px; border-radius:6px;" onclick="openUserPermissionsById('${u.id}', 'update')">⚙️ Admin Views</button>
 
-                        <span class="modern-badge badge-master-active" style="padding:3px 8px; font-size:10px;">ðŸ‘‘ Master</span>
+                        <span class="modern-badge badge-master-active" style="padding:3px 8px; font-size:10px;">👑 Master</span>
 
                     </div>
 
@@ -4467,9 +4467,9 @@ async function loadAdminUsers() {
 
                     <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
 
-                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="à¤ªà¥à¤¨à¥à¤¹à¤¾ à¤µà¤¿à¤šà¤¾à¤° à¤•à¤°à¥‚à¤¨ à¤®à¤‚à¤œà¥‚à¤° à¤•à¤°à¤¾ (Re-approve user)">ðŸ›¡ï¸ Re-Approve</button>
+                        <button type="button" class="btn-action-sm btn-approve" onclick="openUserPermissionsById('${u.id}', 'approve')" title="पुन्हा विचार करून मंजूर करा (Re-approve user)">🛡️ Re-Approve</button>
 
-                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="à¤•à¤¾à¤¯à¤®à¤šà¥‡ à¤¹à¤Ÿà¤µà¤¾ (Permanently delete)">ðŸ—‘ï¸ Delete</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा (Permanently delete)">🗑️ Delete</button>
 
                     </div>
 
@@ -4481,13 +4481,13 @@ async function loadAdminUsers() {
 
                     <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
 
-                        <button type="button" class="btn-action-sm btn-permissions-luxe" onclick="openUserPermissionsById('${u.id}', 'update')" title="à¤ªà¤°à¤µà¤¾à¤¨à¤—à¥à¤¯à¤¾ à¤¬à¤¦à¤²à¤¾ (Permissions &amp; feature access)">âš™ï¸ Permissions</button>
+                        <button type="button" class="btn-action-sm btn-permissions-luxe" onclick="openUserPermissionsById('${u.id}', 'update')" title="परवानग्या बदला (Permissions &amp; feature access)">⚙️ Permissions</button>
 
-                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="à¤–à¤¾à¤¤à¥‡ à¤¤à¤¾à¤¤à¥à¤ªà¥à¤°à¤¤à¥‡ à¤¡à¤¿à¤¸à¥‡à¤¬à¤² à¤•à¤°à¤¾">ðŸ”’ Disable</button>
+                        <button type="button" class="btn-action-sm btn-disable" onclick="toggleUserStatus('${u.id}', 'DISABLED')" title="खाते तात्पुरते डिसेबल करा">🔒 Disable</button>
 
-                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="à¥²à¤•à¥à¤¸à¥‡à¤¸ à¤¨à¤¾à¤•à¤¾à¤°à¤¾ (Revoke &amp; Reject)">ðŸš« Reject</button>
+                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="ॲक्सेस नाकारा (Revoke &amp; Reject)">🚫 Reject</button>
 
-                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="à¤•à¤¾à¤¯à¤®à¤šà¥‡ à¤¹à¤Ÿà¤µà¤¾ (Delete)">ðŸ—‘ï¸ Delete</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा (Delete)">🗑️ Delete</button>
 
                     </div>
 
@@ -4499,13 +4499,13 @@ async function loadAdminUsers() {
 
                     <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
 
-                        <button type="button" class="btn-action-sm btn-permissions-luxe" onclick="openUserPermissionsById('${u.id}', 'update')" title="à¤ªà¤°à¤µà¤¾à¤¨à¤—à¥à¤¯à¤¾ à¤¬à¤¦à¤²à¤¾">âš™ï¸ Permissions</button>
+                        <button type="button" class="btn-action-sm btn-permissions-luxe" onclick="openUserPermissionsById('${u.id}', 'update')" title="परवानग्या बदला">⚙️ Permissions</button>
 
-                        <button type="button" class="btn-action-sm btn-enable" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="à¤–à¤¾à¤¤à¥‡ à¤ªà¥à¤¨à¥à¤¹à¤¾ à¤¸à¥à¤°à¥‚ à¤•à¤°à¤¾">âœ… Enable</button>
+                        <button type="button" class="btn-action-sm btn-enable" onclick="toggleUserStatus('${u.id}', 'ACTIVE')" title="खाते पुन्हा सुरू करा">✅ Enable</button>
 
-                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="à¤¨à¥‹à¤‚à¤¦à¤£à¥€ à¤¨à¤¾à¤•à¤¾à¤°à¤¾">ðŸš« Reject</button>
+                        <button type="button" class="btn-action-sm btn-reject-luxe" onclick="rejectUserAccount('${u.id}', '${u.username}')" title="नोंदणी नाकारा">🚫 Reject</button>
 
-                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="à¤•à¤¾à¤¯à¤®à¤šà¥‡ à¤¹à¤Ÿà¤µà¤¾">ðŸ—‘ï¸ Delete</button>
+                        <button type="button" class="btn-action-sm btn-delete" onclick="deleteUserAccount('${u.id}', '${u.username}')" title="कायमचे हटवा">🗑️ Delete</button>
 
                     </div>
 
@@ -4606,7 +4606,7 @@ async function quickToggleUserAccessMode(userId, currentMode) {
 
     if (u.username === 'nanopro') {
 
-        alert('Super Admin à¤–à¤¾à¤¤à¥‡ à¤•à¤¾à¤¯à¤® MODIFY à¤®à¥‹à¤¡à¤®à¤§à¥à¤¯à¥‡ à¤°à¤¾à¤¹à¤¤à¥‡!');
+        alert('Super Admin खाते कायम MODIFY मोडमध्ये राहते!');
 
         return;
 
@@ -4616,9 +4616,9 @@ async function quickToggleUserAccessMode(userId, currentMode) {
 
     const confirmMsg = (newMode === 'READ_ONLY')
 
-        ? `à¤¯à¥à¤à¤° '${u.username}' à¤šà¥‡ à¤à¤•à¥à¤¸à¥‡à¤¸ à¤®à¥‹à¤¡ à¤¬à¤¦à¤²à¥‚à¤¨ 'ðŸ‘ï¸ READ-ONLY' à¤•à¤°à¤¾à¤¯à¤šà¥‡ à¤†à¤¹à¥‡ à¤•à¤¾? (à¤¡à¥‡à¤Ÿà¤¾ à¤à¤¡à¤¿à¤Ÿ à¤¬à¤‚à¤¦ à¤¹à¥‹à¤ˆà¤²)`
+        ? `युझर '${u.username}' चे एक्सेस मोड बदलून '👁️ READ-ONLY' करायचे आहे का? (डेटा एडिट बंद होईल)`
 
-        : `à¤¯à¥à¤à¤° '${u.username}' à¤šà¥‡ à¤à¤•à¥à¤¸à¥‡à¤¸ à¤®à¥‹à¤¡ à¤¬à¤¦à¤²à¥‚à¤¨ 'âœï¸ MODIFY' à¤•à¤°à¤¾à¤¯à¤šà¥‡ à¤†à¤¹à¥‡ à¤•à¤¾? (à¤ªà¥‚à¤°à¥à¤£ à¤…à¤§à¤¿à¤•à¤¾à¤° à¤®à¤¿à¤³à¤¤à¥€à¤²)`;
+        : `युझर '${u.username}' चे एक्सेस मोड बदलून '✏️ MODIFY' करायचे आहे का? (पूर्ण अधिकार मिळतील)`;
 
     
 
@@ -4652,7 +4652,7 @@ async function quickToggleUserAccessMode(userId, currentMode) {
 
         if (data.status === 'success') {
 
-            alert('âœ… ' + (data.message || 'Access mode à¤¯à¤¶à¤¸à¥à¤µà¥€à¤°à¥€à¤¤à¥à¤¯à¤¾ à¤¬à¤¦à¤²à¤²à¤¾!'));
+            alert('✅ ' + (data.message || 'Access mode यशस्वीरीत्या बदलला!'));
 
             loadAdminUsers();
 
@@ -4676,7 +4676,7 @@ async function deleteUserAccount(userId, username) {
 
     if (username === 'nanopro') {
 
-        alert('ðŸš« Super Admin "nanopro" à¤šà¥‡ à¤–à¤¾à¤¤à¥‡ à¤¹à¤Ÿà¤µà¤¤à¤¾ (Delete) à¤¯à¥‡à¤£à¤¾à¤° à¤¨à¤¾à¤¹à¥€!');
+        alert('🚫 Super Admin "nanopro" चे खाते हटवता (Delete) येणार नाही!');
 
         return;
 
@@ -4684,7 +4684,7 @@ async function deleteUserAccount(userId, username) {
 
     const confirmed = confirm(
 
-        `âš ï¸ à¤¸à¤¾à¤µà¤§à¤¾à¤¨!\n\nà¤¨à¤•à¥à¤•à¥€ à¤¯à¥à¤à¤° '${username}' à¤•à¤¾à¤¯à¤®à¤¸à¥à¤µà¤°à¥‚à¤ªà¥€ à¤¹à¤Ÿà¤µà¤¾à¤¯à¤šà¤¾ (Delete) à¤†à¤¹à¥‡ à¤•à¤¾?\n\nà¤¯à¤¾à¤®à¥à¤³à¥‡ à¤¯à¥à¤à¤°à¤šà¥‡ à¤¸à¤°à¥à¤µ à¤¸à¤¤à¥à¤°, à¤ªà¤°à¤µà¤¾à¤¨à¤—à¥à¤¯à¤¾ à¤†à¤£à¤¿ à¥²à¤•à¥à¤¸à¥‡à¤¸ à¤¤à¥à¤µà¤°à¤¿à¤¤ à¤•à¤¾à¤¯à¤®à¤šà¥‡ à¤¨à¤·à¥à¤Ÿ à¤¹à¥‹à¤¤à¥€à¤².`
+        `⚠️ सावधान!\n\nनक्की युझर '${username}' कायमस्वरूपी हटवायचा (Delete) आहे का?\n\nयामुळे युझरचे सर्व सत्र, परवानग्या आणि ॲक्सेस त्वरित कायमचे नष्ट होतील.`
 
     );
 
@@ -4714,13 +4714,13 @@ async function deleteUserAccount(userId, username) {
 
         if (data.status === 'success') {
 
-            alert('âœ… ' + (data.message || `à¤¯à¥à¤à¤° '${username}' à¤¯à¤¶à¤¸à¥à¤µà¥€à¤°à¥€à¤¤à¥à¤¯à¤¾ à¤¹à¤Ÿà¤µà¤£à¥à¤¯à¤¾à¤¤ à¤†à¤²à¤¾ à¤†à¤¹à¥‡.`));
+            alert('✅ ' + (data.message || `युझर '${username}' यशस्वीरीत्या हटवण्यात आला आहे.`));
 
             loadAdminUsers();
 
         } else {
 
-            alert('Truti: ' + (data.error || 'à¤¯à¥à¤à¤° à¤¹à¤Ÿà¤µà¤¤à¤¾ à¤†à¤²à¤¾ à¤¨à¤¾à¤¹à¥€.'));
+            alert('Truti: ' + (data.error || 'युझर हटवता आला नाही.'));
 
         }
 
@@ -4738,7 +4738,7 @@ async function rejectUserAccount(userId, username) {
 
     if (username === 'nanopro') {
 
-        alert('ðŸš« Super Admin "nanopro" à¤šà¥‡ à¤–à¤¾à¤¤à¥‡ à¤¨à¤¾à¤•à¤¾à¤°à¤¤à¤¾ (Reject) à¤¯à¥‡à¤£à¤¾à¤° à¤¨à¤¾à¤¹à¥€!');
+        alert('🚫 Super Admin "nanopro" चे खाते नाकारता (Reject) येणार नाही!');
 
         return;
 
@@ -4746,9 +4746,9 @@ async function rejectUserAccount(userId, username) {
 
     const reason = prompt(
 
-        `à¤¯à¥à¤à¤° '${username}' à¤šà¥€ à¤¨à¥‹à¤‚à¤¦à¤£à¥€/à¤–à¤¾à¤¤à¥‡ à¤¨à¤¾à¤•à¤¾à¤°à¤¾à¤¯à¤šà¥‡ (Reject) à¤†à¤¹à¥‡ à¤•à¤¾?\n\nà¤¨à¤¾à¤•à¤¾à¤°à¤£à¥à¤¯à¤¾à¤šà¥‡ à¤•à¤¾à¤°à¤£ à¤ªà¥à¤°à¤µà¤¿à¤·à¥à¤Ÿ à¤•à¤°à¤¾ (à¤•à¤¿à¤‚à¤µà¤¾ à¤¤à¤¸à¥‡à¤š OK à¤•à¤°à¤¾):`,
+        `युझर '${username}' ची नोंदणी/खाते नाकारायचे (Reject) आहे का?\n\nनाकारण्याचे कारण प्रविष्ट करा (किंवा तसेच OK करा):`,
 
-        'à¤ªà¥à¤°à¤µà¥‡à¤¶ à¤ªà¤°à¤µà¤¾à¤£à¤—à¥€ à¤¨à¤¾à¤•à¤¾à¤°à¤²à¥€ (Access Denied by Admin)'
+        'प्रवेश परवाणगी नाकारली (Access Denied by Admin)'
 
     );
 
@@ -4780,13 +4780,13 @@ async function rejectUserAccount(userId, username) {
 
         if (data.status === 'success') {
 
-            alert('âœ… ' + (data.message || `à¤¯à¥à¤à¤° '${username}' à¤šà¥€ à¤¨à¥‹à¤‚à¤¦à¤£à¥€ à¤¨à¤¾à¤•à¤¾à¤°à¤£à¥à¤¯à¤¾à¤¤ à¤†à¤²à¥€ à¤†à¤¹à¥‡.`));
+            alert('✅ ' + (data.message || `युझर '${username}' ची नोंदणी नाकारण्यात आली आहे.`));
 
             loadAdminUsers();
 
         } else {
 
-            alert('Truti: ' + (data.error || 'à¤¯à¥à¤à¤° à¤¨à¤¾à¤•à¤¾à¤°à¤¤à¤¾ à¤†à¤²à¤¾ à¤¨à¤¾à¤¹à¥€.'));
+            alert('Truti: ' + (data.error || 'युझर नाकारता आला नाही.'));
 
         }
 
@@ -4812,13 +4812,13 @@ async function triggerTelegramDiagnosticsNow() {
 
         const data = await resp.json();
 
-        alert('âœ… 3-Hour System Health Audit report Telegram var tatkal send zala ahe!');
+        alert('✅ 3-Hour System Health Audit report Telegram var tatkal send zala ahe!');
 
     } catch(e) { alert('Truti: ' + e.message); }
 
     finally {
 
-        if (btn) { btn.disabled = false; btn.innerText = 'ðŸ“± Send Telegram Health Audit Now'; }
+        if (btn) { btn.disabled = false; btn.innerText = '📱 Send Telegram Health Audit Now'; }
 
     }
 
@@ -4934,7 +4934,7 @@ def get_user_management_view_html() -> str:
 
                         <div style="width:48px; height:48px; border-radius:50%; background:radial-gradient(circle, #38BDF8 20%, #1E40AF 90%); display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(56,189,248,0.4); font-size:24px;">
 
-                            ðŸ›¡ï¸
+                            🛡️
 
                         </div>
 
@@ -4962,13 +4962,13 @@ def get_user_management_view_html() -> str:
 
                         <button type="button" id="btnTriggerTelegramDiag" class="btn btn-primary" onclick="triggerTelegramDiagnosticsNow()" style="background:#0284C7; font-weight:700; font-size:11.5px; padding:7px 14px;">
 
-                            ðŸ“± Send Telegram Health Audit Now
+                            📱 Send Telegram Health Audit Now
 
                         </button>
 
                         <button type="button" class="btn btn-secondary" onclick="loadAdminUsers()" style="font-size:11.5px; padding:7px 14px;">
 
-                            ðŸ”„ Refresh Users
+                            🔄 Refresh Users
 
                         </button>
 
@@ -5036,7 +5036,7 @@ def get_user_management_view_html() -> str:
 
                     <h3 style="margin:0; font-size:14px; font-weight:700; color:#38BDF8; display:flex; align-items:center; gap:6px;">
 
-                        ðŸ‘¥ User Approvals &amp; Role Directory
+                        👥 User Approvals &amp; Role Directory
 
                     </h3>
 
@@ -5096,7 +5096,7 @@ def get_user_management_view_html() -> str:
 
                     <h3 style="margin:0; font-size:14px; font-weight:700; color:#10B981; display:flex; align-items:center; gap:6px;">
 
-                        ðŸ“œ Security Audit Trail &amp; Login History
+                        📜 Security Audit Trail &amp; Login History
 
                     </h3>
 
@@ -5175,7 +5175,7 @@ def get_login_page_html() -> str:
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Mangesh Nano Pro â€” Zero-Trust Security Gateway</title>
+    <title>Mangesh Nano Pro — Zero-Trust Security Gateway</title>
 
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='npG' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338BDF8'/%3E%3Cstop offset='50%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%2310B981'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='url(%23npG)'/%3E%3Ccircle cx='32' cy='22' r='4' fill='%2338BDF8'/%3E%3Ccircle cx='48' cy='46' r='3.5' fill='%2310B981'/%3E%3Ccircle cx='16' cy='46' r='3.5' fill='%236366F1'/%3E%3C/svg%3E">
 
@@ -5559,11 +5559,11 @@ def get_login_page_html() -> str:
 
             <div class="shield-specs">
 
-                <div class="shield-spec-item">ðŸ”’ Session Guard</div>
+                <div class="shield-spec-item">🔒 Session Guard</div>
 
-                <div class="shield-spec-item">ðŸ’¬ WhatsApp OTP</div>
+                <div class="shield-spec-item">💬 WhatsApp OTP</div>
 
-                <div class="shield-spec-item">âš¡ Zero DOM-Leak</div>
+                <div class="shield-spec-item">⚡ Zero DOM-Leak</div>
 
             </div>
 
@@ -5575,11 +5575,11 @@ def get_login_page_html() -> str:
 
         <div class="tab-bar">
 
-            <button type="button" class="tab-btn active" id="tabDirect" onclick="switchMainTab('direct')">ðŸ” Direct Login</button>
+            <button type="button" class="tab-btn active" id="tabDirect" onclick="switchMainTab('direct')">🔐 Direct Login</button>
 
-            <button type="button" class="tab-btn" id="tabWhatsapp" onclick="switchMainTab('whatsapp')">ðŸ’¬ WhatsApp OTP</button>
+            <button type="button" class="tab-btn" id="tabWhatsapp" onclick="switchMainTab('whatsapp')">💬 WhatsApp OTP</button>
 
-            <button type="button" class="tab-btn" id="tabRegister" onclick="switchMainTab('register')">ðŸ“ Request Access</button>
+            <button type="button" class="tab-btn" id="tabRegister" onclick="switchMainTab('register')">📝 Request Access</button>
 
         </div>
 
@@ -5630,7 +5630,7 @@ def get_login_page_html() -> str:
                             <input type="checkbox" id="rememberMe"> Remember this device
                         </label>
                     </div>
-                    <button type="button" id="loginBtn" onclick="handleDirectLogin(event)" class="btn-submit">ðŸ” Verify &amp; Launch NanoPro</button>
+                    <button type="button" id="loginBtn" onclick="handleDirectLogin(event)" class="btn-submit">🔐 Verify &amp; Launch NanoPro</button>
                 </form>
             </div>
 
@@ -5660,7 +5660,7 @@ def get_login_page_html() -> str:
 
                     <button type="button" id="waSendBtn" onclick="handleSendWaOtp()" class="btn-whatsapp">
 
-                        ðŸ“² Send WhatsApp OTP
+                        📲 Send WhatsApp OTP
 
                     </button>
 
@@ -5688,15 +5688,15 @@ def get_login_page_html() -> str:
 
                     <button type="button" id="waVerifyBtn" onclick="handleVerifyWaOtp()" class="btn-whatsapp">
 
-                        ðŸ”“ Verify &amp; Launch NanoPro
+                        🔓 Verify &amp; Launch NanoPro
 
                     </button>
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11.5px;">
 
-                        <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">â† Change Number</a>
+                        <a href="javascript:void(0)" onclick="resetWaStep()" style="color:#94A3B8; text-decoration:underline;">← Change Number</a>
 
-                        <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">Open in WhatsApp â†—</a>
+                        <a href="javascript:void(0)" id="waWebActionLink" target="_blank" style="color:#10B981; font-weight:700; display:none;">Open in WhatsApp ↗</a>
 
                     </div>
 
@@ -5865,7 +5865,7 @@ def get_login_page_html() -> str:
 
             if (!window.Clerk || !window.Clerk.user) return;
 
-            showAlert('âš¡ Clerk Zero-Trust Verified. Establishing session...', 'success');
+            showAlert('⚡ Clerk Zero-Trust Verified. Establishing session...', 'success');
 
             try {
 
@@ -5914,7 +5914,7 @@ def get_login_page_html() -> str:
 
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
 
-                    showAlert('âœ… Clerk Authenticated! Launching NanoPro...', 'success');
+                    showAlert('✅ Clerk Authenticated! Launching NanoPro...', 'success');
 
                     setTimeout(() => {
 
@@ -5992,7 +5992,7 @@ def get_login_page_html() -> str:
         async function handleOfficialGoogleSignIn() {
             const txt = document.getElementById('googleBtnText');
             if (txt) txt.innerText = 'Connecting to Google OAuth...';
-            showAlert('ðŸŒ Redirecting to official Google Account Chooser...', 'info');
+            showAlert('🌐 Redirecting to official Google Account Chooser...', 'info');
 
             try {
                 if (!window.Clerk) {
@@ -6062,7 +6062,7 @@ def get_login_page_html() -> str:
             const remember = document.getElementById('rememberMe')?.checked ?? false;
 
             if (!username || !password) {
-                showAlert('à¤•à¥ƒà¤ªà¤¯à¤¾ Username à¤†à¤£à¤¿ Password à¤ªà¥à¤°à¤µà¤¿à¤·à¥à¤Ÿ à¤•à¤°à¤¾.', 'warning');
+                showAlert('कृपया Username आणि Password प्रविष्ट करा.', 'warning');
                 return false;
             }
 
@@ -6110,7 +6110,7 @@ def get_login_page_html() -> str:
                         localStorage.removeItem('nanopro_saved_accounts');
                     }
 
-                    showAlert('âœ… Access Granted! Loading workspace...', 'success');
+                    showAlert('✅ Access Granted! Loading workspace...', 'success');
                     window.location.href = '/?token=' + encodeURIComponent(data.session_token);
                     return false;
                 } else {
@@ -6121,7 +6121,7 @@ def get_login_page_html() -> str:
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerText = 'ðŸ” Verify & Launch NanoPro';
+                    btn.innerText = '🔐 Verify & Launch NanoPro';
                 }
             }
             return false;
@@ -6144,7 +6144,7 @@ def get_login_page_html() -> str:
 
             if (!phone) {
 
-                showAlert('à¤•à¥ƒà¤ªà¤¯à¤¾ à¤µà¥ˆà¤§ WhatsApp à¤¨à¤‚à¤¬à¤° à¤Ÿà¤¾à¤•à¤¾.', 'warning');
+                showAlert('कृपया वैध WhatsApp नंबर टाका.', 'warning');
 
                 return;
 
@@ -6178,7 +6178,7 @@ def get_login_page_html() -> str:
 
                     currentWaTarget = data.identifier || phone;
 
-                    document.getElementById('waTargetDisplay').innerText = 'ðŸ’¬ Code sent to: ' + currentWaTarget;
+                    document.getElementById('waTargetDisplay').innerText = '💬 Code sent to: ' + currentWaTarget;
 
                     document.getElementById('waStepRequest').style.display = 'none';
 
@@ -6198,7 +6198,7 @@ def get_login_page_html() -> str:
 
 
 
-                    showAlert('âœ… à¥¬-à¤…à¤‚à¤•à¥€ OTP à¤ªà¤¾à¤ à¤µà¤£à¥à¤¯à¤¾à¤¤ à¤†à¤²à¤¾ à¤†à¤¹à¥‡. WhatsApp à¤šà¥‡à¤• à¤•à¤°à¤¾!', 'success');
+                    showAlert('✅ ६-अंकी OTP पाठवण्यात आला आहे. WhatsApp चेक करा!', 'success');
 
                     document.getElementById('waOtpCode').focus();
 
@@ -6216,7 +6216,7 @@ def get_login_page_html() -> str:
 
                 btn.disabled = false;
 
-                btn.innerText = 'ðŸ“² Send WhatsApp OTP';
+                btn.innerText = '📲 Send WhatsApp OTP';
 
             }
 
@@ -6241,7 +6241,7 @@ def get_login_page_html() -> str:
         async function handleVerifyWaOtp() {
             const otpCode = document.getElementById('waOtpCode')?.value?.trim();
             if (!otpCode || otpCode.length < 6) {
-                showAlert('à¤•à¥ƒà¤ªà¤¯à¤¾ à¥¬-à¤…à¤‚à¤•à¥€ OTP à¤ªà¥à¤°à¤µà¤¿à¤·à¥à¤Ÿ à¤•à¤°à¤¾.', 'warning');
+                showAlert('कृपया ६-अंकी OTP प्रविष्ट करा.', 'warning');
                 return;
             }
 
@@ -6276,19 +6276,19 @@ def get_login_page_html() -> str:
                     localStorage.setItem('nanopro_active_account', data.user.username);
                     document.cookie = 'nanopro_session=' + encodeURIComponent(data.session_token) + '; path=/; max-age=2592000; SameSite=Lax';
 
-                    showAlert('âœ… WhatsApp OTP Verified! Loading workspace...', 'success');
+                    showAlert('✅ WhatsApp OTP Verified! Loading workspace...', 'success');
                     window.location.href = '/?token=' + encodeURIComponent(data.session_token);
                 } else if (data && (data.status === 'pending_approval' || data.status_code === 'PENDING_APPROVAL')) {
-                    showAlert('â³ <b>' + (data.message || data.error || 'WhatsApp OTP à¤ªà¤¡à¤¤à¤¾à¤³à¤²à¤¾ à¤—à¥‡à¤²à¤¾ à¤†à¤¹à¥‡! à¥²à¤¡à¤®à¤¿à¤¨ à¤®à¤‚à¤œà¥à¤°à¥€à¤¨à¤‚à¤¤à¤° à¤–à¤¾à¤¤à¥‡ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤¹à¥‹à¤ˆà¤².') + '</b>', 'warning');
+                    showAlert('⏳ <b>' + (data.message || data.error || 'WhatsApp OTP पडताळला गेला आहे! ॲडमिन मंजुरीनंतर खाते सक्रिय होईल.') + '</b>', 'warning');
                 } else {
-                    showAlert((data && data.error) || 'à¤…à¤µà¥ˆà¤§ OTP à¤•à¥‹à¤¡. à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥à¤¨à¥à¤¹à¤¾ à¤ªà¥à¤°à¤¯à¤¤à¥à¤¨ à¤•à¤°à¤¾.', 'error');
+                    showAlert((data && data.error) || 'अवैध OTP कोड. कृपया पुन्हा प्रयत्न करा.', 'error');
                 }
             } catch(e) {
                 showAlert('OTP Verification Error: ' + e.message, 'error');
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerText = 'ðŸ”“ Verify & Launch NanoPro';
+                    btn.innerText = '🔓 Verify & Launch NanoPro';
                 }
             }
         }

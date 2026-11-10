@@ -469,6 +469,27 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 
       <div class="dm-messages" id="dmMessages"></div>
 
+      <div class="dm-composer">
+        <div class="dm-attach-strip" id="dmAttachStrip"></div>
+        <div class="dm-ctx" id="dmCtxBar" hidden>
+          <span class="dm-ctx-label">Using</span>
+          <span class="dm-ctx-level" id="dmCtxLevel">DB</span>
+          <span class="dm-ctx-path" id="dmCtxPath"></span>
+          <button type="button" class="dm-ctx-x" onclick="dmClearSelection()" title="Clear the selected database, schema or table">&times;</button>
+        </div>
+        <div class="dm-compose-row">
+          <button class="dm-attach-btn" id="dmAttachBtn" type="button" onclick="dmPickAttachment()" title="Attach a CSV, Excel, JSON file or an image">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.4 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <textarea id="dmInput" rows="1" placeholder="Ask anything or attach a file &mdash; &quot;create a new table from this Excel&quot; / &quot;append this data to this table&quot;&hellip;"></textarea>
+          <button class="dm-send" id="dmSend" onclick="dmSendMessage()" title="Send (Enter)">
+            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <input type="file" id="dmAttachInput" multiple hidden accept=".csv,.tsv,.xlsx,.xlsm,.json,.png,.jpg,.jpeg,.webp,.gif,.bmp" onchange="dmAttachmentChosen(this)">
+        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; attach CSV / Excel / JSON or an image; say &quot;new table&quot; or &quot;append to this table&quot;</div>
+      </div>
+
       <section class="dm-data" id="dmDataPanel">
         <div class="dm-data-head">
           <span class="dm-data-title" id="dmDataTitle">Data</span>
@@ -497,31 +518,10 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
           </div>
         </div>
         <div class="dm-data-body" id="dmDataBody">
-          <div class="dm-data-empty">Select a table in the Explorer or ask a question &mdash; tables and query results open here, below the chat.</div>
+          <div class="dm-data-empty">Select a table in the Explorer or ask a question &mdash; tables and query results open here, below the chat box.</div>
         </div>
         <div class="dm-grip-h" id="dmDataGrip" title="Drag to resize"></div>
       </section>
-
-      <div class="dm-composer">
-        <div class="dm-attach-strip" id="dmAttachStrip"></div>
-        <div class="dm-ctx" id="dmCtxBar" hidden>
-          <span class="dm-ctx-label">Using</span>
-          <span class="dm-ctx-level" id="dmCtxLevel">DB</span>
-          <span class="dm-ctx-path" id="dmCtxPath"></span>
-          <button type="button" class="dm-ctx-x" onclick="dmClearSelection()" title="Clear the selected database, schema or table">&times;</button>
-        </div>
-        <div class="dm-compose-row">
-          <button class="dm-attach-btn" id="dmAttachBtn" type="button" onclick="dmPickAttachment()" title="Attach a CSV, Excel, JSON file or an image">
-            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.4 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-          </button>
-          <textarea id="dmInput" rows="1" placeholder="Ask anything or attach a file &mdash; &quot;create a new table from this Excel&quot; / &quot;append this data to this table&quot;&hellip;"></textarea>
-          <button class="dm-send" id="dmSend" onclick="dmSendMessage()" title="Send (Enter)">
-            <svg class="dm-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-          </button>
-        </div>
-        <input type="file" id="dmAttachInput" multiple hidden accept=".csv,.tsv,.xlsx,.xlsm,.json,.png,.jpg,.jpeg,.webp,.gif,.bmp" onchange="dmAttachmentChosen(this)">
-        <div class="dm-hint">Enter to send &middot; Shift+Enter for a new line &middot; attach CSV / Excel / JSON or an image; say &quot;new table&quot; or &quot;append to this table&quot;</div>
-      </div>
     </main>
   </div>
 
@@ -702,7 +702,7 @@ def get_data_modeling_js() -> str:
         })(),
         chatsOpen: localStorage.getItem('dm_chats_hidden') !== '1',
         explorerOpen: localStorage.getItem('dm_explorer_hidden') !== '1',
-        dataOpen: localStorage.getItem('dm_data_open') !== '0',
+        dataOpen: localStorage.getItem('dm_data_open') === '1',
         dataHeight: parseInt(localStorage.getItem('dm_data_h') || '0', 10) || 250,
         workspaces: [],
         projects: [],
