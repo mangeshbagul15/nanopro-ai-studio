@@ -2482,6 +2482,17 @@ def _catalog_for_prompt(
             f"table={focus_table}. When the user says \"this table\", \"it\" or omits the table name, "
             "use this table and its real columns from the catalog.\n"
         )
+    elif focus_schema:
+        focus_line = (
+            f"SELECTED_CONTEXT: db={focus_db or 'active workspace'} schema={focus_schema} "
+            "(a schema is selected, not a table). When the user says \"this schema\", \"in here\" or names "
+            "an unqualified table, resolve it inside this schema.\n"
+        )
+    elif focus_db:
+        focus_line = (
+            f"SELECTED_CONTEXT: db={focus_db} (a whole database is selected). When the user says "
+            "\"this database\" or names an unqualified schema/table, resolve it inside this database.\n"
+        )
     return focus_line + f"TOTAL_TABLES={total_tables}\n" + text
 
 
@@ -2493,6 +2504,21 @@ def _system_prompt(workspace: Dict[str, Any], focus: Optional[Dict[str, Any]] = 
             f"(db={focus.get('db_id') or 'active workspace'}). Follow-up questions such as \"this table\", "
             "\"its columns\" or \"insert a row\" refer to this table. Never swap in a different table "
             "unless the user names one.\n"
+        )
+    elif focus and focus.get("schema"):
+        focus_note = (
+            f"FOCUS: the user has schema {focus['schema']} selected in the UI "
+            f"(db={focus.get('db_id') or 'active workspace'}). Follow-up questions such as \"this schema\", "
+            "\"in here\", \"this database\" or an unqualified table name refer to this schema. "
+            "Use the real fully qualified name db.schema.table from the catalog and never switch to another "
+            "database or schema unless the user names one.\n"
+        )
+    elif focus and focus.get("db_id"):
+        focus_note = (
+            f"FOCUS: the user has database {focus['db_id']} selected in the UI. Follow-up questions such as "
+            "\"this database\", \"this db\", \"in here\" or an unqualified schema/table name refer to it. "
+            "Use the real fully qualified names from the catalog and never switch to another database unless "
+            "the user names one.\n"
         )
     return (
         "You are NanoPro Data Copilot, a senior data engineer + data analyst + DBA embedded in a chat-first database studio. "
@@ -3001,7 +3027,7 @@ def _reply_cache_key(
     focus: Optional[Dict[str, Any]] = None,
 ) -> str:
     key = workspace_id + "|" + re.sub(r"\s+", " ", (message or "").strip().lower())
-    if focus and focus.get("table"):
+    if focus and (focus.get("db_id") or focus.get("schema") or focus.get("table")):
         key += "|" + ".".join(
             str(focus.get(part) or "") for part in ("db_id", "schema", "table")
         ).lower()
