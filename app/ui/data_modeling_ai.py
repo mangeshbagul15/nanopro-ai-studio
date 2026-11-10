@@ -337,7 +337,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 }
 @media (max-height:620px) {
   #view-data_modeling_ai .dm-messages { min-height:120px; }
-  #view-data_modeling_ai .dm-data { min-height:96px; }
+  #view-data_modeling_ai .dm-data { min-height:180px; }
 }
 </style>
 
