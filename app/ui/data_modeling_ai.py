@@ -773,6 +773,32 @@ def get_data_modeling_js() -> str:
         DM.toastTimer = setTimeout(function () { el.className = 'dm-toast'; }, 4200);
     }
 
+    // The dashboard shell calls initDataModeling() from several places at boot
+    // (nav click, MutationObserver, shell click). Without coalescing each call
+    // re-fired the same GETs and the single worker queued them, so the
+    // Chats & Projects list took ~10s instead of ~1s.
+    function dmCoalesce(key, ttlMs, fn) {
+        DM._once = DM._once || {};
+        var now = Date.now();
+        var rec = DM._once[key];
+        if (rec) {
+            if (rec.promise) return rec.promise;
+            if (now - rec.at < ttlMs) return Promise.resolve(rec.value);
+        }
+        rec = { at: now, value: undefined, promise: null };
+        DM._once[key] = rec;
+        rec.promise = Promise.resolve().then(fn).then(function (value) {
+            rec.at = Date.now();
+            rec.value = value;
+            rec.promise = null;
+            return value;
+        }, function (err) {
+            delete DM._once[key];
+            throw err;
+        });
+        return rec.promise;
+    }
+
     async function dmApi(path, options) {
         options = options || {};
         var headers = Object.assign({}, options.headers || {});
@@ -1083,28 +1109,38 @@ def get_data_modeling_js() -> str:
         return DM.workspaceId;
     }
 
-    window.dmLoadChats = async function () {
-        try {
-            var data = await dmApi('/workspaces?light=true');
-            DM.workspaces = data.workspaces || [];
-        } catch (err) {
-            dmToast(err.message, 'err');
-        }
-        dmPickActiveChat();
-        dmRenderChats();
-        dmUpdateHeader();
-        return DM.workspaces;
+    window.dmLoadChats = function () {
+        return dmCoalesce('chats', 0, async function () {
+            var workspaces;
+            try {
+                var data = await dmApi('/workspaces?light=true');
+                workspaces = data.workspaces || [];
+                DM.workspaces = workspaces;
+            } catch (err) {
+                dmToast(err.message, 'err');
+                return DM.workspaces;
+            }
+            dmPickActiveChat();
+            dmRenderChats();
+            dmUpdateHeader();
+            return workspaces;
+        });
     };
 
-    window.dmLoadProjects = async function () {
-        try {
-            var data = await dmApi('/projects');
-            DM.projects = data.projects || [];
-        } catch (err) {
-            dmToast(err.message, 'err');
-        }
-        dmRenderChats();
-        return DM.projects;
+    window.dmLoadProjects = function () {
+        return dmCoalesce('projects', 0, async function () {
+            var projects;
+            try {
+                var data = await dmApi('/projects');
+                projects = data.projects || [];
+                DM.projects = projects;
+            } catch (err) {
+                dmToast(err.message, 'err');
+                return DM.projects;
+            }
+            dmRenderChats();
+            return projects;
+        });
     };
 
     window.dmSelectChat = async function (workspaceId) {
@@ -2146,20 +2182,23 @@ def get_data_modeling_js() -> str:
         box.scrollTop = box.scrollHeight;
     };
 
-    window.dmLoadMessages = async function (silent) {
+    window.dmLoadMessages = function (silent) {
         if (!DM.workspaceId) {
             window.dmRenderMessages([]);
-            return [];
+            return Promise.resolve([]);
         }
-        try {
-            var data = await dmApi('/workspaces/' + encodeURIComponent(DM.workspaceId) + '/messages');
-            var messages = data.messages || [];
-            window.dmRenderMessages(messages);
-            return messages;
-        } catch (err) {
-            if (!silent) dmToast(err.message, 'err');
-            return null;
-        }
+        var workspaceId = DM.workspaceId;
+        return dmCoalesce('messages:' + workspaceId, 0, async function () {
+            try {
+                var data = await dmApi('/workspaces/' + encodeURIComponent(workspaceId) + '/messages');
+                var messages = data.messages || [];
+                window.dmRenderMessages(messages);
+                return messages;
+            } catch (err) {
+                if (!silent) dmToast(err.message, 'err');
+                return null;
+            }
+        });
     };
 
     async function dmRecoverLateReply(baselineAi, workspaceId) {
@@ -2917,53 +2956,40 @@ def get_data_modeling_js() -> str:
 
     window.initDataModeling = function () {
         if (!$('dmShell')) return;
+        if (DM._bootPromise) return DM._bootPromise;
         if (DM.inited) {
             dmFit();
             dmApplyPanels();
             dmApplyData();
-            Promise.all([
-                window.dmLoadProjects(),
-                window.dmLoadChats(),
-                dmApi('/active_state').catch(function () { return {}; })
-            ]).then(function (results) {
-                var activeState = (results && results[2]) ? results[2] : {};
-                if (activeState && activeState.active_workspace_id && dmFindWorkspace(activeState.active_workspace_id)) {
-                    DM.workspaceId = activeState.active_workspace_id;
-                } else {
-                    dmPickActiveChat();
-                }
-                dmRenderChats();
-                dmUpdateHeader();
-                window.dmRenderTree();
-                return window.dmLoadMessages().then(dmRestoreDraft);
-            }).catch(function () {});
-            return;
+        } else {
+            DM.inited = true;
+            if (window.innerWidth <= 1180) {
+                DM.chatsOpen = false;
+                DM.explorerOpen = false;
+            }
+            dmBind();
+            dmApplyPanels();
+            dmApplyData();
+            dmFit();
+
+            DM.catalog = dmCachedCatalog();
+            window.dmRenderTree();
+            dmRenderChats();
+            window.dmRenderMessages([]);
+            dmUpdateHeader();
+            window.dmEmptyData();
+
+            dmLoadStatus();
+            window.dmLoadSfStatus();
+            dmLoadCatalog(false);
         }
-        DM.inited = true;
-        if (window.innerWidth <= 1180) {
-            DM.chatsOpen = false;
-            DM.explorerOpen = false;
-        }
-        dmBind();
-        dmApplyPanels();
-        dmApplyData();
-        dmFit();
 
-        DM.catalog = dmCachedCatalog();
-        window.dmRenderTree();
-        dmRenderChats();
-        window.dmRenderMessages([]);
-        dmUpdateHeader();
-        window.dmEmptyData();
-
-        dmLoadStatus();
-        window.dmLoadSfStatus();
-        dmLoadCatalog(false);
-
-        Promise.all([
+        DM._bootPromise = Promise.all([
             window.dmLoadProjects(),
             window.dmLoadChats(),
-            dmApi('/active_state').catch(function () { return {}; })
+            dmCoalesce('active_state', 4000, function () {
+                return dmApi('/active_state').catch(function () { return {}; });
+            })
         ]).then(async function (results) {
             var activeState = (results && results[2]) ? results[2] : {};
             if (activeState && activeState.active_workspace_id && dmFindWorkspace(activeState.active_workspace_id)) {
@@ -2982,6 +3008,8 @@ def get_data_modeling_js() -> str:
             }
         }).catch(function (err) {
             console.warn('initDataModeling startup err:', err);
+        }).then(function () {
+            DM._bootPromise = null;
         });
     };
 
