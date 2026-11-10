@@ -2980,6 +2980,12 @@ _PROFILE_TARGET_RE = re.compile(
     re.IGNORECASE,
 )
 _PROFILE_NUMERIC_RE = re.compile(r"INT|REAL|DOUB|DECIMAL|NUMERIC|FLOAT|NUMBER", re.IGNORECASE)
+_DUPLICATES_RE = re.compile(
+    r"(?:please\s+)?(?:(?:find|show|check|list)\s+)?duplicates?\s+"
+    r"(?:in|of|for)?\s*(?P<table>[A-Za-z_][\w$]*(?:\.[A-Za-z_][\w$]*){0,2})"
+    r"(?:\s+(?:by|on)\s+(?P<cols>[A-Za-z_][\w$]*(?:\s*,\s*[A-Za-z_][\w$]*)*))?\s*[?.!]?",
+    re.IGNORECASE,
+)
 
 
 def _profile_table(
@@ -3237,6 +3243,64 @@ def _fast_intent(
                 profile = None
             if profile:
                 return {"reply": profile, "sql": None, "target": found[0]["id"], "action": None, "fast": True}
+
+    dup_match = _DUPLICATES_RE.fullmatch(text)
+    if dup_match:
+        found = _find_named_table(catalog, dup_match.group("table"))
+        if found:
+            entry, schema, table = found
+            source = _fast_query_source(entry, schema, table)
+            if source:
+                schema_name = schema.get("schema") or schema.get("name") or "main"
+                try:
+                    details = get_table_details(entry["id"], schema_name, table["name"], catalog)
+                except Exception:
+                    details = {}
+                known = [str(c.get("name") or "") for c in details.get("columns", []) if c.get("name")]
+                requested = [p.strip() for p in (dup_match.group("cols") or "").split(",") if p.strip()]
+                columns = []
+                for wanted in requested:
+                    match = next((name for name in known if name.lower() == wanted.lower()), None)
+                    if not match:
+                        return {
+                            "reply": f"{wanted} is not a column of {table['name']}. Columns: "
+                                     + (", ".join(known) or "none"),
+                            "sql": None,
+                            "target": entry["id"],
+                            "action": None,
+                            "fast": True,
+                        }
+                    columns.append(match)
+                if not columns:
+                    columns = known
+                if columns:
+                    grouped = ", ".join(_quote(name) for name in columns)
+                    sql = (
+                        f"SELECT {grouped}, COUNT(*) AS occurrences FROM {source}"
+                        f" GROUP BY {grouped} HAVING COUNT(*) > 1 ORDER BY occurrences DESC LIMIT 20"
+                    )
+                    try:
+                        result = execute_sql(entry["id"], sql)
+                        rows = result.get("rows") or []
+                    except Exception as exc:
+                        return {
+                            "reply": f"Could not check duplicates: {exc}",
+                            "sql": None,
+                            "target": entry["id"],
+                            "action": None,
+                            "fast": True,
+                        }
+                    scope = f" by {', '.join(columns)}" if requested else ""
+                    if not rows:
+                        reply = f"No duplicate rows found in {table['name']}{scope}."
+                    else:
+                        preview = "; ".join(
+                            ", ".join(f"{name}={row.get(name)}" for name in columns)
+                            + f" ×{row.get('occurrences')}"
+                            for row in rows[:5]
+                        )
+                        reply = f"Found {len(rows)} duplicate group(s) in {table['name']}{scope}. Top: {preview}"
+                    return {"reply": reply, "sql": sql, "target": entry["id"], "action": None, "fast": True}
 
     top_match = re.fullmatch(
         r"(?:please\s+)?(?:show|get|display|fetch|give|bring)\s+(?:me\s+)?(?:the\s+)?"

@@ -65,6 +65,20 @@ def main():
         )
         check("profile runs without a model call", profile.get("model") == "fast-nlu")
 
+        dupes = dm.chat(wid, "duplicates in EVAL_TXN by Category", user=user)
+        dupe_reply = dupes.get("reply") or ""
+        check(
+            "duplicates finder reports the repeated category",
+            "Shopping" in dupe_reply and "\u00d72" in dupe_reply and dupes.get("model") == "fast-nlu",
+            dupe_reply[:220],
+        )
+        clean = dm.chat(wid, "duplicates in EVAL_TXN by Merchant", user=user)
+        check(
+            "duplicates finder clears a unique column",
+            "No duplicate rows found" in (clean.get("reply") or ""),
+            (clean.get("reply") or "")[:220],
+        )
+
         dm.chat(wid, "remember: Amount is in INR, never paise", user=user)
         shown = dm.chat(wid, "what do you remember", user=user)
         check("workspace notes persist", "Amount is in INR" in (shown.get("reply") or ""), shown.get("reply"))
