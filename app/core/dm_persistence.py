@@ -489,7 +489,8 @@ def _loop() -> None:
                 _stop.wait(SYNC_INTERVAL)
                 settled = (_state_signature(), _files_signature())
                 if settled != signature:
-                    _last_signature = settled
+                    # Still changing: leave the baseline alone so the settled
+                    # state is uploaded on the next tick instead of skipped.
                     continue
                 # Keep the old baseline on failure so the next tick retries.
                 if snapshot_now().get("status") == "ok":
