@@ -56,3 +56,6 @@ tools/
 
 # Local repair backups
 backups/stale_duckdb/
+
+# Local wrangler tool state
+deploy/.wrangler/
