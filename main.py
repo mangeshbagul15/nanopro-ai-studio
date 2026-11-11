@@ -1516,8 +1516,6 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
 
     from app.ui.auth_components import get_login_page_html
 
-    from app.ui.dashboard import get_dashboard_html
-
 
 
     candidate_token = token or request.cookies.get("nanopro_session")
@@ -1542,7 +1540,13 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
 
             import hashlib
 
-            html = get_dashboard_html()
+            from app.ui.v2_shell import get_v2_html
+
+            _user = v_res.get("user") or {}
+
+            _name = _user.get("username") or _user.get("name") or _user.get("email") or ""
+
+            html = get_v2_html(_name)
 
             etag = '"' + hashlib.sha1(html.encode("utf-8")).hexdigest()[:20] + '"'
 
@@ -1585,6 +1589,42 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
         get_login_page_html(),
         headers={"Cache-Control": "no-store, must-revalidate"},
     )
+
+
+
+@app.get("/legacy", response_class=HTMLResponse)
+
+async def serve_legacy_dashboard(request: Request, token: Optional[str] = None):
+
+    """Legacy monolith console, kept for deep links into existing workspaces."""
+
+    from app.core.auth_manager import auth_manager
+
+    from app.ui.dashboard import get_dashboard_html
+
+    candidate_token = token or request.cookies.get("nanopro_session")
+
+    if not candidate_token:
+
+        auth_hdr = request.headers.get("authorization", "")
+
+        if auth_hdr.lower().startswith("bearer "):
+
+            candidate_token = auth_hdr[7:].strip()
+
+    if candidate_token:
+
+        v_res = auth_manager.validate_session(candidate_token)
+
+        if v_res.get("is_valid") and v_res.get("user"):
+
+            resp = HTMLResponse(get_dashboard_html())
+
+            resp.headers["Cache-Control"] = "private, no-cache, must-revalidate"
+
+            return resp
+
+    return RedirectResponse(url="/", status_code=303)
 
 
 
