@@ -49,6 +49,14 @@ header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .chip.bad i{background:var(--red);box-shadow:0 0 10px var(--red)}
 h1{font-size:20px;font-weight:600;margin:22px 0 2px;letter-spacing:.01em}
 h1 span{color:var(--dim);font-weight:400}
+.ask{display:flex;gap:8px;margin-top:14px}
+.ask input{flex:1;min-width:0;background:rgba(10,16,28,.7);border:1px solid var(--line);
+  border-radius:12px;color:var(--ink);padding:11px 14px;font:inherit;outline:none}
+.ask input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+.ask button{border:1px solid var(--line);background:rgba(34,211,238,.12);color:var(--ink);
+  border-radius:12px;padding:0 16px;cursor:pointer;font:inherit}
+.ask button:hover{border-color:var(--cyan)}
+.ans{white-space:pre-wrap;font-size:13px;line-height:1.55;padding:2px 0 10px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:16px}
 .card{position:relative;text-align:left;padding:15px 15px 13px;border-radius:16px;cursor:pointer;
   border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);
@@ -141,6 +149,11 @@ footer a:hover{color:var(--ink)}
 </header>
 
 <h1>Control tower <span>· __USER_NAME__</span></h1>
+
+<form class="ask" id="ask">
+  <input id="ask-input" placeholder="Ask NanoPro — status, pipelines, agents…" autocomplete="off" aria-label="Ask NanoPro" />
+  <button type="submit" aria-label="Send">→</button>
+</form>
 
 <div class="grid" id="grid"></div>
 
@@ -287,6 +300,37 @@ async function openCard(card){
 }
 
 $("#d-close").addEventListener("click", () => $("#drawer").classList.remove("open"));
+
+$("#ask-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); $("#ask").requestSubmit(); }
+});
+
+$("#ask").addEventListener("submit", async e => {
+  e.preventDefault();
+  const q = $("#ask-input").value.trim();
+  if (!q) return;
+  $("#d-title").textContent = "NanoPro";
+  $("#d-body").innerHTML = '<div class="mut">Thinking…</div>';
+  $("#drawer").classList.add("open");
+  try {
+    const r = await fetch("/api/v2/chat", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: q})
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((d && d.detail) || ("HTTP " + r.status));
+    $("#d-title").textContent = d.intent || "answer";
+    $("#d-body").innerHTML = '<div class="ans">' + esc(d.answer || "") + '</div>' +
+      '<div class="row"><span>intent</span><span>' + esc(d.intent || "—") + '</span></div>' +
+      '<div class="row"><span>model</span><span>' + esc(d.model || "rules") + '</span></div>' +
+      '<div class="row"><span>latency</span><span>' + (Number(d.latency_ms) || 0) + ' ms</span></div>' +
+      '<a class="open-link" href="/legacy">Open full workspace →</a>';
+    $("#ask-input").value = "";
+  } catch (err) {
+    $("#d-body").innerHTML = '<div class="mut">' + esc(err.message || String(err)) + '</div>';
+  }
+});
 
 const station = {agents:[], groups:{}, loaded:false, filter:"", q:"", shown:72, raf:0};
 

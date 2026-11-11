@@ -50,6 +50,7 @@ DANGER_PREFIXES = (
     "/api/de_modern/",
     "/api/manager/",
     "/api/antigravity/",
+    "/api/v2/",
 )
 
 ADMIN_PREFIXES = ("/api/admin/", "/api/vault/", "/api/backup/")

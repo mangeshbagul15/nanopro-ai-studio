@@ -14755,6 +14755,10 @@ from app.api.data_modeling_routes import router as data_modeling_router
 
 app.include_router(data_modeling_router)
 
+from app.core.ai_command_router import router as ai_command_router
+
+app.include_router(ai_command_router)
+
 
 
 @app.get("/api/cluster/status")

@@ -15,6 +15,7 @@ AI_PREFIXES = (
     "/api/manager/",
     "/api/antigravity/",
     "/api/data_modeling/",
+    "/api/v2/",
     "/api/research/",
     "/api/coding/",
     "/api/career/",
