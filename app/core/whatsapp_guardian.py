@@ -131,11 +131,22 @@ class WhatsAppAutonomousGuardian:
         
         # Two-way window status
         is_window_open = (self.last_inbound_time > 0) and (hours_since_inbound < 24.0)
-        
-        state_label = "24H_FREE_WINDOW_ACTIVE" if is_window_open else "AUTONOMOUS_TEMPLATE_ACTIVE"
-        
+
+        # Report what is actually true instead of a fixed all-green label:
+        # outside the 24h window only approved templates can be sent at all.
+        if not (has_token and has_phone_id):
+            status = "UNCONFIGURED"
+        elif not self._running:
+            status = "DAEMON_STOPPED"
+        elif is_window_open:
+            status = "ACTIVE"
+        else:
+            status = "IDLE_TEMPLATE_ONLY"
+
+        state_label = "24H_FREE_WINDOW_ACTIVE" if is_window_open else "TEMPLATE_REQUIRED"
+
         return {
-            "status": "HEALTHY_100_PERCENT",
+            "status": status,
             "channel_mode": state_label,
             "two_way_free_chat_open": is_window_open,
             "hours_since_last_inbound": round(hours_since_inbound, 1),
@@ -144,11 +155,13 @@ class WhatsAppAutonomousGuardian:
             "last_inbound_sender": self.last_inbound_sender or "Mangesh Bagul",
             "target_user_phone": DEFAULT_PHONE,
             "credentials_configured": has_token and has_phone_id,
-            "meta_cloud_api": "ONLINE",
+            "meta_cloud_api": "CONFIGURED" if (has_token and has_phone_id) else "UNCONFIGURED",
             "permanent_webhook": "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/whatsapp/webhook",
             "guardian_daemon_active": self._running,
             "proactive_heartbeat_enabled": HEARTBEAT_ENABLED,
-            "zero_downtime_guarantee": "ENABLED — Auto-Template Fallback Active on 24h Window Expiry"
+            "template_fallback": ("available when credentials are configured"
+                                  if (has_token and has_phone_id)
+                                  else "unavailable until Meta credentials are set")
         }
 
     def force_heartbeat(self, reason: str = "manual_or_proactive") -> Dict[str, Any]:

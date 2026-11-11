@@ -460,7 +460,7 @@ Instructions:
             guardian_info = {}
 
         return {
-            "status": "healthy_guaranteed",
+            "status": "healthy" if guardian_info.get("credentials_configured") else "not_configured",
             "guardian": guardian_info,
             "provider": "Meta WhatsApp Business Cloud API",
             "phone_number_id": phone_id,

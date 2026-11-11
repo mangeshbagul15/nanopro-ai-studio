@@ -4343,33 +4343,69 @@ async def api_telegram_diagnose():
 
         diag["getMe_error"] = str(e)
 
+    hook_url = ""
+
     try:
 
-        req = urllib.request.Request(f"https://api.telegram.org/bot{bot_token}/getUpdates")
+        req = urllib.request.Request(f"https://api.telegram.org/bot{bot_token}/getWebhookInfo")
 
         with urllib.request.urlopen(req, timeout=10) as r:
 
-            up_data = json.loads(r.read().decode())
+            hook = json.loads(r.read().decode()).get("result") or {}
 
-            diag["getUpdates"] = up_data
+            hook_url = hook.get("url") or ""
 
-            if up_data.get("result"):
+            diag["webhook"] = {
 
-                latest_chat = up_data["result"][-1].get("message", {}).get("chat", {})
+                "configured": bool(hook_url),
 
-                if latest_chat.get("id"):
+                "url": hook_url,
 
-                    detected_id = str(latest_chat["id"])
+                "pending_update_count": hook.get("pending_update_count", 0),
 
-                    diag["auto_detected_chat_id"] = detected_id
+                "last_error_message": hook.get("last_error_message", "")
 
-                    diag["sender_name"] = latest_chat.get("first_name", "") + " " + latest_chat.get("last_name", "")
-
-                    personal_assistant_agent.telegram_chat_id = detected_id
+            }
 
     except Exception as e:
 
-        diag["getUpdates_error"] = str(e)
+        diag["webhook_error"] = str(e)
+
+    # getUpdates is rejected with 409 while a webhook is registered, so only ask
+    # for updates when no webhook owns the stream.
+    if hook_url:
+
+        diag["getUpdates_skipped"] = "webhook active"
+
+    else:
+
+        try:
+
+            req = urllib.request.Request(f"https://api.telegram.org/bot{bot_token}/getUpdates")
+
+            with urllib.request.urlopen(req, timeout=10) as r:
+
+                up_data = json.loads(r.read().decode())
+
+                diag["getUpdates"] = up_data
+
+                if up_data.get("result"):
+
+                    latest_chat = up_data["result"][-1].get("message", {}).get("chat", {})
+
+                    if latest_chat.get("id"):
+
+                        detected_id = str(latest_chat["id"])
+
+                        diag["auto_detected_chat_id"] = detected_id
+
+                        diag["sender_name"] = latest_chat.get("first_name", "") + " " + latest_chat.get("last_name", "")
+
+                        personal_assistant_agent.telegram_chat_id = detected_id
+
+        except Exception as e:
+
+            diag["getUpdates_error"] = str(e)
 
     return JSONResponse(diag)
 
@@ -5972,6 +6008,72 @@ async def api_telegram_command(req: TelegramCommandRequest):
     res = personal_assistant_agent.process_telegram_command(user_id=req.user_id, text=req.message)
 
     return JSONResponse(res)
+
+
+
+@app.post("/api/telegram/webhook")
+
+async def api_telegram_webhook(request: Request):
+
+    """Receives Telegram updates. Public by design; the router's allowlist decides who gets replies."""
+
+    import hmac
+
+    try:
+
+        update = await request.json()
+
+    except Exception:
+
+        return JSONResponse({"ok": True})
+
+    secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()
+
+    if secret:
+
+        sent = request.headers.get("x-telegram-bot-api-secret-token", "")
+
+        if not hmac.compare_digest(sent, secret):
+
+            raise HTTPException(status_code=403, detail="Invalid webhook secret")
+
+    msg = update.get("message") or update.get("edited_message") or {}
+
+    chat_id = (msg.get("chat") or {}).get("id")
+
+    text = (msg.get("text") or "").strip()
+
+    if not chat_id or not text:
+
+        return JSONResponse({"ok": True})
+
+    res = {}
+
+    try:
+
+        res = personal_assistant_agent.process_telegram_command(user_id=str(chat_id), text=text) or {}
+
+    except Exception as exc:
+
+        log_event(f"Telegram webhook command failed: {exc}", level="WARNING", component="TelegramAgent")
+
+    reply = (res.get("reply") or "").strip()
+
+    if reply:
+
+        from app.core.telegram_router import send_telegram_routed_message
+
+        threading.Thread(
+
+            target=send_telegram_routed_message,
+
+            kwargs={"text": reply, "chat_id": str(chat_id)},
+
+            daemon=True
+
+        ).start()
+
+    return JSONResponse({"ok": True})
 
 
 

@@ -226,7 +226,7 @@ try { document.cookie = "g_state=; Max-Age=0; path=/; SameSite=Lax"; } catch (e)
 })();
 const CARDS = [
   {id:"pipelines", glyph:"⛓", name:"Pipelines", hint:"BOD · SOD · T1 · EOD", api:"/api/scheduler/tasks",
-   metric:d => { const t = list(d); const on = t.filter(x => x.enabled === 1 || x.enabled === true || x.enabled === "1").length;
+   metric:d => { const t = list(d); const on = t.filter(isTaskOn).length;
      return [on, "of " + t.length + " live"]; }},
   {id:"datamodel", glyph:"◈", name:"Data Modeling", hint:"AI schema & SQL", api:"/api/data_modeling/status",
    metric:() => ["AI", "ready"]},
@@ -256,6 +256,12 @@ const list = d => {
   return [];
 };
 const countDeep = d => Array.isArray(d) ? d.length : (d && typeof d === "object" ? Object.keys(d).length : 0);
+const isTaskOn = x => {
+  if (!x) return false;
+  const v = x.is_enabled !== undefined && x.is_enabled !== null ? x.is_enabled : x.enabled;
+  const paused = x.is_paused === 1 || x.is_paused === true || x.is_paused === "1";
+  return !paused && (v === 1 || v === true || v === "1");
+};
 
 async function get(p){
   const r = await fetch(p, {credentials:"same-origin", headers:{"Accept":"application/json"}});
@@ -530,7 +536,7 @@ async function boot(){
 
   if (tasks.status === "fulfilled") {
     const t = list(tasks.value);
-    const on = t.filter(x => x.enabled === 1 || x.enabled === true || x.enabled === "1").length;
+    const on = t.filter(isTaskOn).length;
     chip("c-tasks", on ? "ok" : "warn", "TASKS <b>" + on + " on</b>");
     setVal("pipelines", on, "of " + t.length + " live");
   } else chip("c-tasks", "warn", "TASKS <b>—</b>");

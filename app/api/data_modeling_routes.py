@@ -86,11 +86,9 @@ class ScheduleToggleRequest(BaseModel):    enabled: bool
 
 
 def _session_user(request: Request) -> dict:
-    token = (request.cookies.get("nanopro_session") or "").strip()
-    if not token:
-        auth_header = (request.headers.get("Authorization") or "").strip()
-        if auth_header.lower().startswith("bearer "):
-            token = auth_header[7:].strip()
+    from app.core.api_auth import extract_session_token
+
+    token = extract_session_token(request).strip()
     if not token:
         raise HTTPException(status_code=401, detail="Login required.")
     try:
