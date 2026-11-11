@@ -7987,7 +7987,7 @@ async def api_communication_ledger(limit: int = 50):
 
     from app.core.communication_center import communication_center
 
-    return JSONResponse({"status": "success", "ledger": communication_center.get_recent_dispatches(limit)})
+    return JSONResponse({"status": "success", "ledger": communication_center.get_communication_ledger(limit)})
 
 
 
