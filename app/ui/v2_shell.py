@@ -312,21 +312,30 @@ function chip(id, cls, text){
 function renderPayload(d){
   const rows = [];
   const push = (k, v) => { if (v !== undefined && v !== null && typeof v !== "object") rows.push([k, v]); };
-  const items = Array.isArray(d) ? d : (d && typeof d === "object" ? list(d) : []);
-  items.slice(0, 10).forEach((it, i) => {
-    if (it && typeof it === "object") {
-      const label = it.name || it.task_name || it.title || it.id || ("item " + (i + 1));
-      const state = it.status || it.state || (it.enabled !== undefined ? (it.enabled ? "enabled" : "off") : "");
-      rows.push([label, state]);
-    } else push("item " + (i + 1), it);
-  });
-  if (items.length > 10) rows.push(["more", (items.length - 10) + " hidden"]);
-  if (d && typeof d === "object" && !Array.isArray(d)) {
-    Object.keys(d).slice(0, 12).forEach(k => {
+  const renderItems = (items, prefix) => {
+    items.slice(0, 10).forEach((it, i) => {
+      if (it && typeof it === "object") {
+        const label = it.name || it.task_name || it.title || it.id || (prefix + " " + (i + 1));
+        const state = it.status || it.state || (it.enabled !== undefined ? (it.enabled ? "enabled" : "off") : "");
+        rows.push([label, state]);
+      } else push(prefix + " " + (i + 1), it);
+    });
+    if (items.length > 10) rows.push([prefix, "+" + (items.length - 10) + " more"]);
+  };
+  if (Array.isArray(d)) renderItems(d, "item");
+  else if (d && typeof d === "object") {
+    Object.keys(d).slice(0, 16).forEach(k => {
       const v = d[k];
-      if (Array.isArray(v)) { if (v !== items) rows.push([k, v.length + " items"]); }
-      else if (v && typeof v === "object") rows.push([k, Object.keys(v).length + " keys"]);
-      else push(k, v);
+      if (Array.isArray(v)) {
+        if (v.length && typeof v[0] === "object") renderItems(v, k);
+        else if (v.every(x => x === null || typeof x !== "object"))
+          rows.push([k, v.slice(0, 6).join(", ") + (v.length > 6 ? " +" + (v.length - 6) : "")]);
+        else rows.push([k, v.length + " items"]);
+      } else if (v && typeof v === "object") {
+        const ks = Object.keys(v);
+        if (ks.length <= 6) ks.forEach(kk => push(k + "." + kk, v[kk]));
+        else rows.push([k, ks.length + " keys"]);
+      } else push(k, v);
     });
   }
   if (!rows.length) return '<div class="mut">No data yet.</div>';
