@@ -3574,9 +3574,13 @@ async def api_video_pipeline_generate_multistage(req: MultiStagePipelineRequest)
 
 @app.post("/api/coding/execute")
 
-async def api_coding_execute(req: CodingRequest):
+async def api_coding_execute(req: CodingRequest, request: Request):
 
     """Handles code generation, explanation, debugging, and testing."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     log_event(f"Coding Agent action [{req.action}] in {req.language}", component="CodingAgent")
 
@@ -6753,6 +6757,8 @@ async def api_restart_failed_tasks():
 
 async def api_execute_workflow(
 
+    request: Request,
+
     prompt: str = Body('Fetch data from Snowflake, generate an Excel report, and email it to nanoproaistudio@gmail.com'),
 
     recipient: str = Body('nanoproaistudio@gmail.com'),
@@ -6760,6 +6766,10 @@ async def api_execute_workflow(
     connection: str = Body('NANO_PRO_SNOWFLAKE')
 
 ):
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     from app.core.autonomous_operations_manager import autonomous_ops_manager
 
@@ -7583,7 +7593,11 @@ class FederatedQueryRequest(BaseModel):
 
 @app.post('/api/data_engineer/execute_query')
 
-async def api_de_execute_query(req: FederatedQueryRequest):
+async def api_de_execute_query(req: FederatedQueryRequest, request: Request):
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     from app.database.federated_query_engine import federated_query_engine
 
@@ -7643,7 +7657,11 @@ class PythonExecuteRequest(BaseModel):
 
 @app.post('/api/data_engineer/execute_python')
 
-async def api_de_execute_python(req: PythonExecuteRequest):
+async def api_de_execute_python(req: PythonExecuteRequest, request: Request):
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     from app.database.federated_query_engine import federated_query_engine
 
@@ -10577,9 +10595,13 @@ async def api_banking_db_query(req: BankingQueryExecuteRequest):
 
 @app.post("/api/banking/python/execute")
 
-async def api_banking_python_execute(req: BankingPythonExecuteRequest):
+async def api_banking_python_execute(req: BankingPythonExecuteRequest, request: Request):
 
     """Runs Python Data Engineering script capturing stdout, stderr, and timings."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     res = banking_pipeline_engine.execute_python_code(req.code)
 
@@ -11069,9 +11091,13 @@ async def api_sql_studio_structure(table_name: str):
 
 @app.post("/api/sql_studio/execute")
 
-async def api_sql_studio_execute(req: SqlStudioExecReq):
+async def api_sql_studio_execute(req: SqlStudioExecReq, request: Request):
 
     """Executes SQL query (SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER) on chosen database."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     try:
 
@@ -11567,16 +11593,20 @@ async def api_de_modern_catlog_export_full(
 
 @app.post("/api/de_modern/lab/execute_code")
 
-async def api_de_modern_lab_code(req: DeLabCodeReq):
+async def api_de_modern_lab_code(req: DeLabCodeReq, request: Request):
 
+    from app.core.api_auth import require_session
+    require_session(request)
     return JSONResponse(modern_de.execute_lab_code(req.language, req.code, req.limit or 50, req.target_db, req.target_schema))
 
 
 
 @app.post("/api/de_modern/lab/execute_ddl")
 
-async def api_de_modern_lab_ddl(req: DeLabDdlReq):
+async def api_de_modern_lab_ddl(req: DeLabDdlReq, request: Request):
 
+    from app.core.api_auth import require_session
+    require_session(request)
     return JSONResponse(modern_de.execute_visual_ddl(req.target_db, req.target_schema, req.ddl_type, req.spec))
 
 
@@ -15103,6 +15133,10 @@ async def api_qa_full_test():
 async def api_qa_deploy(req: Request):
 
     """Triggers autonomous git commit and live deployment."""
+
+    from app.core.api_auth import require_admin_session
+
+    require_admin_session(req)
 
     from app.core.autonomous_qa_engine import autonomous_qa_engine
 
