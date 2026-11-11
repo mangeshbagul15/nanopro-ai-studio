@@ -1592,6 +1592,37 @@ async def serve_dashboard(request: Request, token: Optional[str] = None):
 
 
 
+# Google One Tap's g_state cookie holds raw JSON, which makes Cloudflare drop the
+# Cookie header on Worker -> Render subrequests and 401s every API call. Clear it
+# and send the session token explicitly so the dashboard stays authenticated.
+_SESSION_BRIDGE = """<script>
+(function(){
+  try { document.cookie = "g_state=; Max-Age=0; path=/; SameSite=Lax"; } catch(e){}
+  function tok(){
+    var t = "";
+    try { t = localStorage.getItem("nanopro_session_token") || ""; } catch(e){}
+    if (!/^np_sess_/.test(t)) {
+      var m = document.cookie.match(/(?:^|;\\s*)nanopro_session=([^;]+)/);
+      if (m) { try { t = decodeURIComponent(m[1]); } catch(e){ t = m[1]; } }
+    }
+    return /^np_sess_/.test(t) ? t : "";
+  }
+  var native = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    try {
+      var t = tok();
+      if (t && typeof input === "string") {
+        init = init || {};
+        init.headers = new Headers(init.headers || {});
+        if (!init.headers.has("X-Session-Token")) init.headers.set("X-Session-Token", t);
+      }
+    } catch(e){}
+    return native(input, init);
+  };
+})();
+</script>"""
+
+
 @app.get("/legacy", response_class=HTMLResponse)
 
 async def serve_legacy_dashboard(request: Request, token: Optional[str] = None):
@@ -1618,7 +1649,12 @@ async def serve_legacy_dashboard(request: Request, token: Optional[str] = None):
 
         if v_res.get("is_valid") and v_res.get("user"):
 
-            resp = HTMLResponse(get_dashboard_html())
+            html = get_dashboard_html()
+
+            if "</head>" in html:
+                html = html.replace("</head>", _SESSION_BRIDGE + "</head>", 1)
+
+            resp = HTMLResponse(html)
 
             resp.headers["Cache-Control"] = "private, no-cache, must-revalidate"
 

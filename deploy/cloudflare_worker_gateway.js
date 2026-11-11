@@ -88,7 +88,7 @@ async function checkEdgeAuth(request, url, env) {
 
   let valid = false;
   try {
-    const renderBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+    const renderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
     const resp = await fetch(`${renderBase}/api/auth/validate?token=${encodeURIComponent(token)}`, {
       headers: { "Accept": "application/json", "X-NanoPro-Gateway": "Cloudflare-Edge-Auth" },
       signal: AbortSignal.timeout(8000)
@@ -200,21 +200,48 @@ export default {
     // NanoPro core functionality (chat, stats, health) = ALWAYS available.
     // ================================================================
 
-    // E1. Edge Health Check — ALWAYS returns 200 (edge is always alive)
+    // E1. Health — edge stays alive, but must report the real backend state.
+    // The edge alone cannot know whether Render is up, so probe it instead of
+    // claiming 100% uptime regardless (that masked a suspended backend before).
     if (path === "/api/health" || path === "/api/monitoring/health") {
+      const backendBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
+      const probe = { url: backendBase, reachable: false, http_status: 0, latency_ms: 0 };
+      const startedAt = Date.now();
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const upstream = await fetch(new URL("/api/monitoring/health", backendBase).toString(), {
+          headers: { "User-Agent": "NanoPro-Edge-Health/1.0", "Accept": "application/json" },
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        probe.http_status = upstream.status;
+        probe.latency_ms = Date.now() - startedAt;
+        probe.reachable = upstream.ok;
+        if (upstream.ok && path === "/api/monitoring/health") {
+          // Real backend payload for the monitoring screen.
+          const body = await upstream.text();
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+              "Cache-Control": "no-store",
+              "X-NanoPro-Routed-Node": backendBase
+            }
+          });
+        }
+      } catch (_) {
+        probe.latency_ms = Date.now() - startedAt;
+      }
       return new Response(JSON.stringify({
-        status: "success",
+        status: probe.reachable ? "success" : "degraded",
         server: "cloudflare-edge",
-        mode: "EDGE_PRIMARY",
-        uptime: "100%",
+        mode: probe.reachable ? "EDGE_PROXIED" : "EDGE_ONLY",
+        backend: probe,
         timestamp: new Date().toISOString(),
-        backends: {
-          render: "checked_via_proxy",
-          alwaysdata: "checked_via_proxy",
-          pythonanywhere: "checked_via_proxy"
-        },
         edge_features: ["auth", "ai_chat", "crons", "dashboard", "telegram", "whatsapp", "banking", "reports"]
-      }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" } });
     }
 
     // E2. AI Manager Chat — Render-first, edge Groq only when Render is unreachable.
@@ -230,7 +257,7 @@ export default {
         return new Response(JSON.stringify({ status: "error", error: "Message is required" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
       }
 
-      const renderChatBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+      const renderChatBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
       try {
         const chatUrl = new URL("/api/manager/chat", renderChatBase);
         const chatHeaders = new Headers(request.headers);
@@ -404,7 +431,7 @@ export default {
     // password logins all resolve to the same canonical account. The old edge
     // handler minted an admin session for every phone, breaking tenant isolation.
     if ((path === "/api/auth/otp/send" || path === "/api/auth/otp/verify") && request.method === "POST") {
-      const renderBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+      const renderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
       try {
         const targetUrl = new URL(path + url.search, renderBase);
         const headers = new Headers(request.headers);
@@ -434,7 +461,7 @@ export default {
     // with a 303 + Set-Cookie. Forward both untouched so the browser session
     // cookie lands on the Worker origin.
     if (path === "/api/auth/google-callback" && request.method === "POST") {
-      const renderBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+      const renderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
       try {
         const targetUrl = new URL(path + url.search, renderBase);
         const headers = new Headers(request.headers);
@@ -480,7 +507,7 @@ export default {
       // Node definitions (matching server_manager_hub.py)
       const NODES = [
         { id: "node_cloud_cloudflare_edge", name: "Cloudflare Global Edge Gateway", platform: "Cloudflare Worker", region: "Global Edge", role: "EDGE_GATEWAY_LB", url: "https://mangesh-nanopro.mangeshbagul15.workers.dev", capabilities: ["Global Anycast", "Gateway Routing", "Edge OTP", "Edge AI"] },
-        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://mangesh-nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "Oracle", "AWS S3"] },
+        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "Oracle", "AWS S3"] },
         { id: "node_cloud_alwaysdata", name: "Alwaysdata Cloud Sentinel", platform: "WSGI Python", region: "Paris (EU)", role: "CLOUD_SENTINEL_24_7", url: "https://mangeshbagul15.alwaysdata.net", capabilities: ["Cloud Sentinel", "Cron Worker"] },
         { id: "node_cloud_pythonanywhere", name: "PythonAnywhere Cloud Sentinel", platform: "WSGI Python", region: "Virginia (US)", role: "CLOUD_SENTINEL_24_7", url: "https://mangeshbagul15.pythonanywhere.com", capabilities: ["Status Sentinel", "Crons"] },
         { id: "node_laptop_master", name: "Local Laptop Master", platform: "Windows 11 (RTX 3050)", region: "Mumbai (Local)", role: "LOCAL_MASTER", url: null, capabilities: ["GPU Video", "Ollama 3B", "DuckDB", "FFmpeg"] },
@@ -845,7 +872,7 @@ export default {
     // Laptop: ONLY for video maker / GPU endpoints (checked separately)
     // ================================================================
 
-    const renderUrl = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+    const renderUrl = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
 
     // Endpoints that REQUIRE local laptop GPU (FFmpeg video encoding ONLY)
     // Everything else (storyboard, TTS, voice, image gen) runs on Render cloud

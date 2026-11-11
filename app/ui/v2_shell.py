@@ -196,6 +196,34 @@ footer a:hover{color:var(--ink)}
 </div>
 
 <script>
+// Google One Tap stores g_state with raw JSON, and Cloudflare drops the whole
+// Cookie header on the Render subrequest when it sees those characters — every
+// authenticated card then 401s. Clear it, and carry the session token
+// explicitly so live data loads through the Worker regardless.
+try { document.cookie = "g_state=; Max-Age=0; path=/; SameSite=Lax"; } catch (e) {}
+(function () {
+  function sessionToken() {
+    let t = "";
+    try { t = localStorage.getItem("nanopro_session_token") || ""; } catch (e) {}
+    if (!/^np_sess_/.test(t)) {
+      const m = document.cookie.match(/(?:^|;\s*)nanopro_session=([^;]+)/);
+      if (m) { try { t = decodeURIComponent(m[1]); } catch (e) { t = m[1]; } }
+    }
+    return /^np_sess_/.test(t) ? t : "";
+  }
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    try {
+      const t = sessionToken();
+      if (t && typeof input === "string") {
+        init = init || {};
+        init.headers = new Headers(init.headers || {});
+        if (!init.headers.has("X-Session-Token")) init.headers.set("X-Session-Token", t);
+      }
+    } catch (e) {}
+    return nativeFetch(input, init);
+  };
+})();
 const CARDS = [
   {id:"pipelines", glyph:"⛓", name:"Pipelines", hint:"BOD · SOD · T1 · EOD", api:"/api/scheduler/tasks",
    metric:d => { const t = list(d); const on = t.filter(x => x.enabled === 1 || x.enabled === true || x.enabled === "1").length;
