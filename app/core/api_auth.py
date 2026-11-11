@@ -5,9 +5,44 @@ public endpoint would let any stranger drive the host. Every executive route
 accepts the same three credentials the rest of the app already issues:
 X-Session-Token, an Authorization bearer token, or the nanopro_session cookie.
 """
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, Request
+
+
+def _clean_bearer(auth_header: str) -> str:
+    auth_header = (auth_header or "").strip()
+    if auth_header.lower().startswith("bearer "):
+        return auth_header[7:].strip()
+    return auth_header
+
+
+def session_user_from_headers(
+    cookie_header: str = "",
+    x_session_token: str = "",
+    authorization: str = "",
+) -> Optional[Dict[str, Any]]:
+    """Validates a session token supplied via any of the API's credential carriers."""
+    token = (x_session_token or "").strip() or _clean_bearer(authorization)
+    if not token and cookie_header:
+        from http.cookies import SimpleCookie
+
+        try:
+            jar = SimpleCookie()
+            jar.load(cookie_header)
+            morsel = jar.get("nanopro_session")
+            token = morsel.value.strip() if morsel else ""
+        except Exception:
+            token = ""
+    if not token:
+        return None
+    from app.core.auth_manager import auth_manager
+
+    result = auth_manager.validate_session(token) or {}
+    user = result.get("user") or {}
+    if not result.get("is_valid") or not user:
+        return None
+    return user
 
 
 def extract_session_token(request: Request) -> str:

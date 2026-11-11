@@ -216,6 +216,62 @@ def egress_status() -> dict:
     }
 
 
+_audit_day_marker = None
+
+
+def egress_audit() -> dict:
+    """Projects month-end usage from the app meter and grades the risk."""
+    from datetime import datetime, timedelta, timezone
+
+    status = egress_status()
+    used = status["used_bytes"]
+    now = datetime.now(timezone.utc)
+    next_month = datetime(now.year + (1 if now.month == 12 else 0), (now.month % 12) + 1, 1)
+    days_in_month = (next_month - timedelta(days=1)).day
+    elapsed = max(now.day, 1)
+    projected = int(used / elapsed * days_in_month)
+    if projected >= HARD_LIMIT:
+        verdict = "critical"
+    elif projected >= SOFT_LIMIT:
+        verdict = "risk"
+    elif projected >= SOFT_LIMIT * 0.8:
+        verdict = "watch"
+    else:
+        verdict = "ok"
+    return {
+        **status,
+        "day_of_month": now.day,
+        "days_in_month": days_in_month,
+        "days_left": max(days_in_month - now.day, 0),
+        "avg_per_day_gb": round(used / (1024 ** 3) / elapsed, 3),
+        "projected_month_gb": round(projected / (1024 ** 3), 2),
+        "verdict": verdict,
+        "note": "App-side meter only; reconcile against the Render billing CSV (no Render API key is configured).",
+    }
+
+
+def egress_daily_check() -> None:
+    """Logs one audit line per UTC day from whichever node holds the scheduler lease."""
+    global _audit_day_marker
+    from datetime import datetime, timezone
+
+    from app.core.logger import log_event
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if _audit_day_marker == today:
+        return
+    _audit_day_marker = today
+    audit = egress_audit()
+    level = "WARNING" if audit["verdict"] in ("risk", "critical") else "INFO"
+    log_event(
+        f"Daily egress audit [{audit['month']}]: used={audit['used_gb']} GB, "
+        f"avg/day={audit['avg_per_day_gb']} GB, projected={audit['projected_month_gb']} GB, "
+        f"verdict={audit['verdict']}",
+        level=level,
+        component="EgressGuard",
+    )
+
+
 def _allow(client_ip: str) -> bool:
     if RATE_LIMIT_PER_MINUTE <= 0:
         return True

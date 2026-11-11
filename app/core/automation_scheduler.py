@@ -655,6 +655,8 @@ class AutomationScheduler:
                 if not is_leader():
                     time.sleep(10)
                     continue
+                from app.core.egress_guard import egress_daily_check
+                egress_daily_check()
                 now_utc = datetime.now(timezone.utc)
                 tasks = db.list_automation_tasks()
                 for task in tasks:

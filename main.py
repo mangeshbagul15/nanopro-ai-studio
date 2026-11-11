@@ -388,6 +388,7 @@ from app.ui.dashboard import get_dashboard_html
 
 from app.core.runtime_profile import cloud_safe_mode, is_blocked_heavy_path
 from app.core.egress_guard import EgressGuardMiddleware
+from app.core.concurrency_guard import concurrency_status
 
 app = FastAPI(title="Mangesh Nano Pro AI Studio")
 
@@ -416,6 +417,12 @@ async def _cloud_heavy_lane_guard(request: Request, call_next):
 
 
 app.add_middleware(EgressGuardMiddleware)
+
+from app.core.action_auth_middleware import ActionAuthMiddleware
+from app.core.concurrency_guard import ConcurrencyGuardMiddleware
+
+app.add_middleware(ActionAuthMiddleware)
+app.add_middleware(ConcurrencyGuardMiddleware)
 
 
 
@@ -2287,6 +2294,17 @@ async def api_runtime_egress():
     return JSONResponse(egress_status())
 
 
+@app.get("/api/runtime/egress/audit")
+
+async def api_runtime_egress_audit():
+
+    """Month-end bandwidth projection and risk verdict."""
+
+    from app.core.egress_guard import egress_audit
+
+    return JSONResponse(egress_audit())
+
+
 
 @app.get("/api/runtime/profile")
 
@@ -2321,6 +2339,8 @@ async def api_runtime_profile():
         "rca_interval_seconds": rca_incident_sentinel.check_interval_seconds,
 
         "disabled_schedules": sorted(t.get("name") for t in tasks if not t.get("is_enabled")),
+
+        "concurrency": concurrency_status(),
 
     })
 
