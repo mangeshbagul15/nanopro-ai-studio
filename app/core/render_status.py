@@ -133,7 +133,11 @@ def _account_fields() -> Dict[str, Any]:
     if isinstance(service, dict):
         if isinstance(service.get("service"), dict):
             service = service["service"]
-        suspended = "yes" if service.get("suspended") else "no"
+        flag = service.get("suspended")
+        if isinstance(flag, str):
+            suspended = "yes" if flag.strip().lower() == "suspended" else "no"
+        else:
+            suspended = "yes" if flag else "no"
 
     minutes = _build_minutes(deploys)
     if minutes is None:
