@@ -548,9 +548,17 @@ async function boot(){
 
   if (health.status === "fulfilled") {
     const h = health.value;
+    const b = h.backend || {};
     const used = h.memory ? h.memory.used_percentage : null;
-    chip("c-core", "ok", "CORE <b>" + (used != null ? used + "% RAM" : (h.health_status || "ok")) + "</b>");
-    $("#f-host").textContent = (h.server_tier || "cloud") + " · " + (h.os_platform || "").split("-").slice(0, 2).join(" ");
+    if (used != null) chip("c-core", "ok", "CORE <b>" + used + "% RAM</b>");
+    else {
+      const up = h.status === "success" || h.health_status === "HEALTHY" || b.reachable === true;
+      chip("c-core", up ? "ok" : "bad", "CORE <b>" + (up ? "up" : "down") +
+        (up && b.latency_ms ? " " + b.latency_ms + "ms" : "") + "</b>");
+    }
+    const host = h.server_tier || (h.server === "cloudflare-edge" ? "cloudflare-edge" : "cloud");
+    const os = (h.os_platform || "").split("-").slice(0, 2).join(" ");
+    $("#f-host").textContent = host + (os ? " · " + os : (b.http_status ? " · backend " + b.http_status : ""));
   } else chip("c-core", "bad", "CORE <b>down</b>");
 
   if (egress.status === "fulfilled") {
