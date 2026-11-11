@@ -67,6 +67,48 @@ footer{margin-top:26px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;
   font-size:11.5px;color:var(--dim);border-top:1px solid rgba(255,255,255,.06);padding-top:14px}
 footer a{color:var(--dim);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,.2)}
 footer a:hover{color:var(--ink)}
+#station{position:fixed;inset:0;z-index:7;display:flex;flex-direction:column;overflow:hidden;
+  background:rgba(4,6,12,.965);backdrop-filter:blur(18px);
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.22,.61,.36,1)}
+#station.open{transform:none}
+.sbar{display:flex;align-items:center;gap:14px;padding:14px 18px;
+  border-bottom:1px solid rgba(34,211,238,.18)}
+.xbtn{background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;
+  padding:6px 12px;cursor:pointer;font:inherit}
+.xbtn:hover{border-color:rgba(34,211,238,.5)}
+.sbar .total{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.meta{color:var(--dim);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase}
+.sbody{flex:1;display:grid;grid-template-columns:250px 1fr;gap:14px;padding:14px 18px;overflow:hidden}
+.glist{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:6px}
+.gitem{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border-radius:9px;
+  background:none;border:0;color:inherit;font:inherit;cursor:pointer;text-align:left;font-size:12px}
+.gitem:hover{background:rgba(34,211,238,.08)}
+.gitem.on{background:rgba(34,211,238,.14)}
+.gitem b{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
+.gitem small{color:var(--dim);font-size:10px}
+.smain{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+#orbits{width:100%;height:220px;flex:0 0 auto;border:1px solid var(--line);border-radius:14px;
+  background:radial-gradient(60% 80% at 50% 50%,rgba(34,211,238,.07),transparent 72%)}
+.search{display:flex;gap:8px}
+.search input{flex:1;background:rgba(10,16,28,.7);border:1px solid var(--line);border-radius:10px;
+  color:var(--ink);padding:9px 12px;font:inherit;outline:none;min-width:0}
+.search input:focus{border-color:var(--cyan)}
+.roster{overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));
+  gap:8px;align-content:start;padding-bottom:16px}
+.agent{padding:9px 11px;border:1px solid rgba(255,255,255,.07);border-radius:11px;
+  background:rgba(10,16,28,.6);font-size:11.5px;min-width:0}
+.agent .an{display:block;font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent .ag{color:var(--dim);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.agent .st{float:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.agent .st.run{color:var(--lime)}
+.more{grid-column:1/-1;padding:9px;border:1px dashed var(--line);border-radius:10px;
+  background:none;color:var(--dim);cursor:pointer;font:inherit}
+.more:hover{color:var(--ink)}
+@media(max-width:760px){
+  .sbody{grid-template-columns:1fr;overflow:auto}
+  .glist{max-height:150px}
+  #orbits{height:165px}
+}
 #drawer{position:fixed;z-index:5;inset:auto 0 0 0;max-height:72vh;overflow:auto;
   transform:translateY(102%);transition:transform .24s cubic-bezier(.22,.61,.36,1);
   background:rgba(6,10,18,.96);border-top:1px solid rgba(34,211,238,.35);
@@ -110,6 +152,31 @@ footer a:hover{color:var(--ink)}
 </footer>
 </div>
 
+<div id="station" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Agent Station">
+  <div class="sbar">
+    <button id="s-back" class="xbtn" type="button" aria-label="Back">←</button>
+    <div>
+      <div class="meta">Holographic Station</div>
+      <div class="total" id="s-total">—</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="meta">Active</div>
+      <div class="total" id="s-active" style="font-size:18px">—</div>
+    </div>
+  </div>
+  <div class="sbody">
+    <div class="glist" id="s-groups"></div>
+    <div class="smain">
+      <canvas id="orbits" aria-hidden="true"></canvas>
+      <div class="search">
+        <input id="s-search" placeholder="Find agent" autocomplete="off" aria-label="Find agent" />
+        <button class="xbtn" id="s-clear" type="button">Clear</button>
+      </div>
+      <div class="roster" id="s-roster"></div>
+    </div>
+  </div>
+</div>
+
 <div id="drawer" role="dialog" aria-modal="false" aria-label="Module detail">
   <div class="dhead"><h3 id="d-title">—</h3><button id="d-close">Close</button></div>
   <div class="dbody" id="d-body"></div>
@@ -127,7 +194,7 @@ const CARDS = [
   {id:"databases", glyph:"▤", name:"Databases", hint:"Neon · DuckDB · BigQuery", api:"/api/database/databases",
    metric:d => [list(d).length, "sources"]},
   {id:"agents", glyph:"✦", name:"Agent Station", hint:"305 enterprise agents", api:"/api/agents/list",
-   metric:d => [list(d).length, "agents"]},
+   station:true, metric:d => [list(d).length, "agents"]},
   {id:"comms", glyph:"✉", name:"Communication", hint:"Email · Telegram · WhatsApp", api:"/api/emails/delivery-history",
    metric:d => [list(d).length, "recent"]},
   {id:"video", glyph:"▶", name:"Video Studio", hint:"Universal video maker", api:"/api/video/2026_matrix_catalog",
@@ -161,7 +228,7 @@ CARDS.forEach(c => {
   b.className = "card"; b.type = "button";
   b.innerHTML = '<div class="gl">' + c.glyph + '</div><h2>' + c.name + '</h2><p>' + c.hint + '</p>' +
                 '<div class="val" id="v-' + c.id + '">—</div>';
-  b.addEventListener("click", () => openCard(c, b));
+  b.addEventListener("click", () => (c.station ? openStation() : openCard(c, b)));
   grid.appendChild(b);
 });
 
@@ -220,6 +287,150 @@ async function openCard(card){
 }
 
 $("#d-close").addEventListener("click", () => $("#drawer").classList.remove("open"));
+
+const station = {agents:[], groups:{}, loaded:false, filter:"", q:"", shown:72, raf:0};
+
+async function openStation(){
+  $("#station").classList.add("open");
+  $("#station").setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  if (!station.loaded) {
+    $("#s-total").textContent = "…";
+    try {
+      const d = await get("/api/agents/list");
+      station.agents = list(d);
+      station.groups = (d && d.group_summaries) || {};
+    } catch (e) { /* surface as offline */ }
+    station.loaded = true;
+  }
+  renderStation();
+  startOrbits();
+}
+
+function closeStation(){
+  $("#station").classList.remove("open");
+  $("#station").setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  cancelAnimationFrame(station.raf);
+}
+
+function renderStation(){
+  const all = station.agents;
+  const active = all.filter(x => /Running|Assigned|Retrying/.test(x.state || "")).length;
+  $("#s-total").textContent = all.length ? all.length + " agents" : "offline";
+  $("#s-active").textContent = active;
+  const box = $("#s-groups");
+  box.innerHTML = "";
+  let entries = Object.entries(station.groups || {}).filter(([, v]) => v && v.count > 0);
+  if (!entries.length) {
+    const counts = {};
+    all.forEach(x => { const g = x.group || "?"; counts[g] = (counts[g] || 0) + 1; });
+    entries = Object.keys(counts).sort().map(k => [k, {name: k, count: counts[k], active: 0}]);
+  }
+  const allBtn = document.createElement("button");
+  allBtn.className = "gitem" + (station.filter ? "" : " on");
+  allBtn.type = "button";
+  allBtn.innerHTML = "<span>All groups</span><b>" + all.length + "</b>";
+  allBtn.onclick = () => { station.filter = ""; renderStation(); };
+  box.appendChild(allBtn);
+  entries.forEach(([k, v]) => {
+    const b = document.createElement("button");
+    b.className = "gitem" + (station.filter === k ? " on" : "");
+    b.type = "button";
+    b.innerHTML = "<span>" + esc(k) + " · " + esc(v.name || "") + "</span><b>" + (v.count || 0) + "</b>" +
+                  (v.active ? "<small>" + v.active + " ✓</small>" : "");
+    b.onclick = () => { station.filter = station.filter === k ? "" : k; renderStation(); };
+    box.appendChild(b);
+  });
+  renderRoster();
+}
+
+function renderRoster(){
+  const box = $("#s-roster");
+  const q = station.q.trim().toLowerCase();
+  const rows = station.agents.filter(x => {
+    if (station.filter && x.group !== station.filter) return false;
+    if (!q) return true;
+    const hay = ((x.name || "") + " " + (x.role || "") + " " + (x.group_name || "") + " " + (x.agent_id || "")).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
+  const shown = rows.slice(0, station.shown);
+  box.innerHTML = shown.map(x => {
+    const running = /Running|Assigned|Retrying/.test(x.state || "");
+    return '<div class="agent"><span class="st' + (running ? " run" : "") + '">' + esc(x.state || "Idle") + '</span>' +
+      '<span class="an">' + esc(x.name || x.agent_id || "agent") + '</span>' +
+      '<span class="ag">' + esc((x.group || "") + " · " + (x.role || x.group_name || "")) + '</span></div>';
+  }).join("");
+  if (!shown.length) box.innerHTML = '<div class="mut">No agents match.</div>';
+  if (rows.length > shown.length) {
+    const more = document.createElement("button");
+    more.className = "more";
+    more.type = "button";
+    more.textContent = "Show " + Math.min(120, rows.length - shown.length) + " more";
+    more.onclick = () => { station.shown += 120; renderRoster(); };
+    box.appendChild(more);
+  }
+}
+
+function startOrbits(){
+  const cv = $("#orbits");
+  if (!cv || !cv.getContext) return;
+  cancelAnimationFrame(station.raf);
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ctx = cv.getContext("2d");
+  const groups = [...new Set(station.agents.map(x => x.group || "?"))].sort();
+  const per = {}, seen = {};
+  const dots = station.agents.map(x => {
+    const gi = Math.max(0, groups.indexOf(x.group || "?"));
+    per[gi] = (per[gi] || 0) + 1;
+    seen[gi] = (seen[gi] || 0) + 1;
+    return {gi, k: seen[gi], total: 0, hue: (gi * 23 + 188) % 360};
+  });
+  dots.forEach(d => { d.total = per[d.gi]; });
+
+  function frame(t){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2;
+    const maxR = Math.min(w, h) / 2 - 10;
+    const base = 26, step = groups.length > 1 ? (maxR - base) / (groups.length - 1) : 0;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(34,211,238,.10)";
+    groups.forEach((_, gi) => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, base + gi * step, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    dots.forEach(d => {
+      const r = base + d.gi * step;
+      const a = (d.k / Math.max(1, d.total)) * Math.PI * 2 + t * (0.00012 + d.gi * 0.00001);
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1.7, 0, Math.PI * 2);
+      ctx.fillStyle = "hsla(" + d.hue + ",92%,66%,.9)";
+      ctx.fill();
+    });
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "650 22px Inter,system-ui,sans-serif";
+    ctx.fillStyle = "rgba(230,241,255,.92)";
+    ctx.fillText(String(station.agents.length), cx, cy - 4);
+    ctx.font = "500 9px Inter,system-ui,sans-serif";
+    ctx.fillStyle = "rgba(124,139,163,.9)";
+    ctx.fillText("AGENTS", cx, cy + 14);
+    if (!reduce) station.raf = requestAnimationFrame(frame);
+  }
+  station.raf = requestAnimationFrame(frame);
+}
+
+$("#s-back").addEventListener("click", closeStation);
+$("#s-search").addEventListener("input", e => { station.q = e.target.value; station.shown = 72; renderRoster(); });
+$("#s-clear").addEventListener("click", () => { station.q = ""; $("#s-search").value = ""; renderRoster(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeStation(); });
 
 async function boot(){
   const [health, profile, egress, tasks] = await Promise.allSettled([
