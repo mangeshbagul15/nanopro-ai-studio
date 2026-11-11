@@ -37,9 +37,14 @@ def _fmt_bytes(value: float) -> str:
 
 
 def _uptime_hours() -> float:
+    """Age of this process, not the shared host kernel's uptime."""
     try:
+        with open("/proc/self/stat", "r", encoding="utf-8") as fh:
+            after_comm = fh.read().rsplit(")", 1)[1].split()
+        start_ticks = float(after_comm[19])
         with open("/proc/uptime", "r", encoding="utf-8") as fh:
-            return float(fh.read().split()[0]) / 3600.0
+            host_uptime = float(fh.read().split()[0])
+        return max((host_uptime - start_ticks / float(os.sysconf("SC_CLK_TCK"))) / 3600.0, 0.0)
     except Exception:
         return 0.0
 
