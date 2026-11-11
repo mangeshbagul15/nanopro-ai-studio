@@ -651,6 +651,10 @@ class AutomationScheduler:
         """Continuous polling loop evaluating scheduled tasks every 10 seconds."""
         while self.is_running:
             try:
+                from app.core.scheduler_lease import is_leader
+                if not is_leader():
+                    time.sleep(10)
+                    continue
                 now_utc = datetime.now(timezone.utc)
                 tasks = db.list_automation_tasks()
                 for task in tasks:

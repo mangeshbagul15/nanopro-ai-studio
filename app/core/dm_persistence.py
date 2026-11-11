@@ -410,6 +410,11 @@ def _upload(conn, kind: str, blob: bytes) -> bool:
             (kind, kind, KEEP_SNAPSHOTS),
         )
     conn.commit()
+    try:
+        from app.core.egress_guard import record_egress
+        record_egress(len(blob), "dm_snapshot")
+    except Exception:
+        pass
     return True
 
 

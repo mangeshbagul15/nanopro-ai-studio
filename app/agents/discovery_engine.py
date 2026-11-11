@@ -7,6 +7,7 @@ Handles:
 4. Background recurring discovery schedules and live job monitoring
 """
 
+import os
 import time
 import json
 import urllib.request
@@ -408,6 +409,10 @@ class DiscoveryEngine:
             poll_seconds = max(30.0, float(os.environ.get("DISCOVERY_POLL_INTERVAL", "180" if cloud_safe_mode() else "30")))
             while self._scheduler_running:
                 try:
+                    from app.core.scheduler_lease import is_leader
+                    if not is_leader():
+                        time.sleep(poll_seconds)
+                        continue
                     schedules = db.list_discovery_schedules()
                     now = time.time()
                     for sched in schedules:

@@ -387,6 +387,7 @@ from app.ui.dashboard import get_dashboard_html
 
 
 from app.core.runtime_profile import cloud_safe_mode, is_blocked_heavy_path
+from app.core.egress_guard import EgressGuardMiddleware
 
 app = FastAPI(title="Mangesh Nano Pro AI Studio")
 
@@ -412,6 +413,9 @@ async def _cloud_heavy_lane_guard(request: Request, call_next):
             },
         )
     return await call_next(request)
+
+
+app.add_middleware(EgressGuardMiddleware)
 
 
 
@@ -2237,6 +2241,18 @@ async def api_monitoring_health():
     res = monitoring_agent.get_system_health()
 
     return JSONResponse(res)
+
+
+
+@app.get("/api/runtime/egress")
+
+async def api_runtime_egress():
+
+    """Monthly outbound-byte budget and protection mode."""
+
+    from app.core.egress_guard import egress_status
+
+    return JSONResponse(egress_status())
 
 
 
