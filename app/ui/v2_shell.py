@@ -318,9 +318,25 @@ function unent(v){
     .replace(/&(amp|quot|lt|gt|nbsp);/g, (m, n) => ({amp:"&",quot:'"',lt:"<",gt:">",nbsp:" "}[n]));
 }
 
+const KEY_LABELS = {
+  bt_verdict: "Verdict", bt_mode: "Throttle mode", http_responses: "HTTP responses",
+  service_initiated: "Service-initiated", service_sources: "Top source",
+  websocket_responses: "WebSocket responses", private_link: "Private link",
+  soft_warn_at: "Soft warning at", heavy_pause_at: "Heavy pause at", suspend_at: "Suspension at",
+  instance_uptime: "Instance uptime", instance_limit: "Instance limit",
+  pipeline_minutes: "Pipeline minutes", custom_domains: "Custom domains",
+  latest_deploy: "Latest deploy", api_source: "Data source", checked_at: "Checked at",
+  avg_per_day: "Avg per day", used_gb: "Used", by_category: "By category",
+  projected_month_gb: "Projected month", day: "Day", month: "Month"
+};
+const prettyKey = k => {
+  if (KEY_LABELS[k]) return KEY_LABELS[k];
+  const s = String(k).replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 function renderPayload(d){
   const rows = [];
-  const push = (k, v) => { if (v !== undefined && v !== null && typeof v !== "object") rows.push([k, v]); };
+  const push = (k, v) => { if (v !== undefined && v !== null && typeof v !== "object") rows.push([prettyKey(k), v]); };
   const renderItems = (items, prefix) => {
     items.slice(0, 10).forEach((it, i) => {
       if (it && typeof it === "object") {
@@ -336,17 +352,17 @@ function renderPayload(d){
   };
   if (Array.isArray(d)) renderItems(d, "item");
   else if (d && typeof d === "object") {
-    Object.keys(d).slice(0, 16).forEach(k => {
+    Object.keys(d).slice(0, 24).forEach(k => {
       const v = d[k];
       if (Array.isArray(v)) {
         if (v.length && typeof v[0] === "object") renderItems(v, k);
         else if (v.every(x => x === null || typeof x !== "object"))
-          rows.push([k, v.slice(0, 6).join(", ") + (v.length > 6 ? " +" + (v.length - 6) : "")]);
-        else rows.push([k, v.length + " items"]);
+          rows.push([prettyKey(k), v.slice(0, 6).join(", ") + (v.length > 6 ? " +" + (v.length - 6) : "")]);
+        else rows.push([prettyKey(k), v.length + " items"]);
       } else if (v && typeof v === "object") {
         const ks = Object.keys(v);
         if (ks.length <= 6) ks.forEach(kk => push(k + "." + kk, v[kk]));
-        else rows.push([k, ks.length + " keys"]);
+        else rows.push([prettyKey(k), ks.length + " keys"]);
       } else push(k, v);
     });
   }
