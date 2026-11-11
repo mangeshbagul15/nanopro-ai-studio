@@ -1616,7 +1616,7 @@ async def serve_login_gateway(request: Request, token: Optional[str] = None):
 
 @app.post("/api/manager/chat")
 
-async def api_manager_chat(req: ChatRequest):
+async def api_manager_chat(req: ChatRequest, request: Request):
 
     """
 
@@ -1627,6 +1627,10 @@ async def api_manager_chat(req: ChatRequest):
     probes 21 databases, and integrates live internet intelligence.
 
     """
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     # Check credentials in message
 
@@ -1678,9 +1682,13 @@ async def api_manager_chat(req: ChatRequest):
 
 @app.post("/api/manager/execute-plan")
 
-async def api_manager_execute_plan(req: Optional[ChatRequest] = None):
+async def api_manager_execute_plan(request: Request, req: Optional[ChatRequest] = None):
 
     """Direct execution trigger for an approved implementation plan."""
+
+    from app.core.api_auth import require_admin_session
+
+    require_admin_session(request)
 
     sess = req.session_id if req else "default"
 
@@ -1692,9 +1700,13 @@ async def api_manager_execute_plan(req: Optional[ChatRequest] = None):
 
 @app.get("/api/manager/history")
 
-async def api_manager_history(session_id: str = "default"):
+async def api_manager_history(request: Request, session_id: str = "default"):
 
     """Returns persistent chat conversation history."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     history = db.get_chat_history(session_id=session_id, limit=50)
 
@@ -1706,7 +1718,7 @@ async def api_manager_history(session_id: str = "default"):
 
 @app.post("/api/antigravity/chat")
 
-async def api_antigravity_chat(req: AntigravityChatRequest):
+async def api_antigravity_chat(req: AntigravityChatRequest, request: Request):
 
     """
 
@@ -1716,6 +1728,10 @@ async def api_antigravity_chat(req: AntigravityChatRequest):
 
     """
 
+    from app.core.api_auth import require_session
+
+    require_session(request)
+
     res = ultra_pro_ai_manager.chat_ultra_pro(req.message, session_id=req.session_id)
 
     return JSONResponse(res)
@@ -1724,13 +1740,17 @@ async def api_antigravity_chat(req: AntigravityChatRequest):
 
 @app.post("/api/antigravity/sync")
 
-async def api_antigravity_sync(req: Optional[AntigravitySyncRequest] = None):
+async def api_antigravity_sync(request: Request, req: Optional[AntigravitySyncRequest] = None):
 
     """
 
     Bidirectional synchronization between Mobile, GitHub, and Local Laptop.
 
     """
+
+    from app.core.api_auth import require_admin_session
+
+    require_admin_session(request)
 
     c_msg = req.commit_message if req else None
 
@@ -1762,9 +1782,13 @@ async def api_antigravity_status():
 
 @app.get("/api/antigravity/history")
 
-async def api_antigravity_history(session_id: str = "antigravity_default"):
+async def api_antigravity_history(request: Request, session_id: str = "antigravity_default"):
 
     """Returns Antigravity persistent chat conversation history."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     history = db.get_chat_history(session_id=session_id, limit=50)
 
@@ -1776,9 +1800,13 @@ async def api_antigravity_history(session_id: str = "antigravity_default"):
 
 @app.get("/api/approvals/list")
 
-async def api_list_approvals(status: Optional[str] = None):
+async def api_list_approvals(request: Request, status: Optional[str] = None):
 
     """Returns approvals queue."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
 
     return JSONResponse({"approvals": db.list_approvals(status=status)})
 
@@ -1786,9 +1814,13 @@ async def api_list_approvals(status: Optional[str] = None):
 
 @app.post("/api/approvals/decide")
 
-async def api_decide_approval(req: ApprovalDecisionRequest):
+async def api_decide_approval(req: ApprovalDecisionRequest, request: Request):
 
     """Approves or rejects a sensitive action and executes approved tasks immediately."""
+
+    from app.core.api_auth import require_admin_session
+
+    require_admin_session(request)
 
     from app.core.connection_manager import connection_manager
 
