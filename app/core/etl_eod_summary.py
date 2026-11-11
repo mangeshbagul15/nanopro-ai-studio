@@ -350,9 +350,19 @@ class ETLEODScheduler:
                 today = now.strftime("%Y-%m-%d")
                 h, m  = now.hour, now.minute
 
+                # Both hosts run this loop, so only the lane leader may send.
+                # Otherwise one slot would deliver two Telegram/WhatsApp/email
+                # copies at 06:00, 08:00, 18:00 and 19:00.
+                from app.core.runtime_profile import cloud_safe_mode
+                from app.core.scheduler_lease import is_leader
+
+                can_send = is_leader("cloud" if cloud_safe_mode() else "local")
+
                 for slot_h, slot_m, action, label in SLOTS:
                     slot_key = f"{today}_{action}"
                     if h == slot_h and m == slot_m and slot_key not in self._last_runs:
+                        if not can_send:
+                            continue
                         self._last_runs[slot_key] = now.isoformat()
                         log_event(f"ETL Scheduler: {label} triggered", component="ETLEODSummary")
 

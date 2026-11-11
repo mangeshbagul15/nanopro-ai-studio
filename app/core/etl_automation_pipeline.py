@@ -88,6 +88,8 @@ from app.core.logger import log_event
 
 from app.core.config import BASE_DIR, TELEGRAM_CHAT_ID
 
+_CYCLE_LOCK = threading.Lock()
+
 
 
 # 
@@ -3152,6 +3154,8 @@ class ETLAutomationPipeline:
                 for dim_name, dim_cols in star.get("dims", {}).items():
                     col_ddl = ", ".join([f'"{c}" VARCHAR(256)' for c in dim_cols])
                     cur.execute(f'CREATE TABLE IF NOT EXISTS "{dim_name}" ({col_ddl}, "CREATED_AT" TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP())')
+                    for c in dim_cols:
+                        cur.execute(f'ALTER TABLE "{dim_name}" ADD COLUMN IF NOT EXISTS "{c}" VARCHAR(256)')
                     
                     # Insert records if payload provided
                     if star_payload and dim_name in star_payload.get("dims", {}):
@@ -3169,6 +3173,8 @@ class ETLAutomationPipeline:
                 for fact_name, fact_cols in star.get("facts", {}).items():
                     col_ddl = ", ".join([f'"{c}" VARCHAR(256)' for c in fact_cols])
                     cur.execute(f'CREATE TABLE IF NOT EXISTS "{fact_name}" ({col_ddl}, "CREATED_AT" TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP())')
+                    for c in fact_cols:
+                        cur.execute(f'ALTER TABLE "{fact_name}" ADD COLUMN IF NOT EXISTS "{c}" VARCHAR(256)')
 
                     # Insert records if payload provided
                     if star_payload and fact_name in star_payload.get("facts", {}):
@@ -3274,6 +3280,10 @@ class ETLAutomationPipeline:
             for dim_name, dim_cols in star.get("dims", {}).items():
                 col_ddl = ", ".join([f'"{c}" VARCHAR' for c in dim_cols])
                 con.execute(f'CREATE TABLE IF NOT EXISTS "{dim_name}" ({col_ddl})')
+                # DIM_DATE is shared by every project, so the table usually already
+                # exists from an earlier project with a narrower column set.
+                for c in dim_cols:
+                    con.execute(f'ALTER TABLE "{dim_name}" ADD COLUMN IF NOT EXISTS "{c}" VARCHAR')
                 if star_payload and dim_name in star_payload.get("dims", {}):
                     rows = star_payload["dims"][dim_name]
                     if rows:
@@ -3289,6 +3299,8 @@ class ETLAutomationPipeline:
             for fact_name, fact_cols in star.get("facts", {}).items():
                 col_ddl = ", ".join([f'"{c}" VARCHAR' for c in fact_cols])
                 con.execute(f'CREATE TABLE IF NOT EXISTS "{fact_name}" ({col_ddl})')
+                for c in fact_cols:
+                    con.execute(f'ALTER TABLE "{fact_name}" ADD COLUMN IF NOT EXISTS "{c}" VARCHAR')
                 if star_payload and fact_name in star_payload.get("facts", {}):
                     rows = star_payload["facts"][fact_name]
                     if rows:
@@ -3784,30 +3796,33 @@ class ETLAutomationPipeline:
     # =========================================================================
     # Operational Cycle Execution Methods (BOD, SOD, FULL_LOAD, INCREMENTAL, EOD)
     # =========================================================================
+    # A host that boots mid-day sees several cycles overdue at once. Pipeline
+    # cycles share the Oracle/S3/Snowflake connections, so they queue on one
+    # lock instead of running concurrently.
+    def _locked_cycle(self, cycle: str, rows: int, load_mode: str) -> Dict[str, Any]:
+        with _CYCLE_LOCK:
+            log_event(f"Triggering {cycle} Pipeline Cycle...", component="ETLPipeline")
+            return self.run_all_projects(rows_per_project=rows, cycle=cycle, load_mode=load_mode)
+
     def run_bod_cycle(self) -> Dict[str, Any]:
         """Beginning of Day (06:00 AM IST) - System check, opening validation, and Full Load."""
-        log_event("Triggering BOD (Beginning of Day) Pipeline Cycle...", component="ETLPipeline")
-        return self.run_all_projects(rows_per_project=150, cycle="BOD", load_mode=self.FULL_LOAD)
+        return self._locked_cycle("BOD", 150, self.FULL_LOAD)
 
     def run_sod_cycle(self) -> Dict[str, Any]:
         """Start of Day (08:00 AM IST) - Account opening positions and limits."""
-        log_event("Triggering SOD (Start of Day) Pipeline Cycle...", component="ETLPipeline")
-        return self.run_all_projects(rows_per_project=100, cycle="SOD", load_mode=self.INCREMENTAL_LOAD)
+        return self._locked_cycle("SOD", 100, self.INCREMENTAL_LOAD)
 
     def run_full_load_cycle(self) -> Dict[str, Any]:
         """Full Load - Complete table truncate and fresh bulk reload across all projects."""
-        log_event("Triggering FULL_LOAD Pipeline Cycle...", component="ETLPipeline")
-        return self.run_all_projects(rows_per_project=200, cycle="FULL_LOAD", load_mode=self.FULL_LOAD)
+        return self._locked_cycle("FULL_LOAD", 200, self.FULL_LOAD)
 
     def run_incremental_cycle(self) -> Dict[str, Any]:
         """Incremental T-1 Delta - Ingests new transactions since last watermark."""
-        log_event("Triggering INCREMENTAL (T-1) Pipeline Cycle...", component="ETLPipeline")
-        return self.run_all_projects(rows_per_project=80, cycle="T-1", load_mode=self.INCREMENTAL_LOAD)
+        return self._locked_cycle("T-1", 80, self.INCREMENTAL_LOAD)
 
     def run_eod_cycle(self) -> Dict[str, Any]:
         """End of Day (06:00 PM IST) - Daily reconciliation, trial balance, and EOD summary."""
-        log_event("Triggering EOD (End of Day) Pipeline Cycle...", component="ETLPipeline")
-        return self.run_all_projects(rows_per_project=150, cycle="EOD", load_mode=self.INCREMENTAL_LOAD)
+        return self._locked_cycle("EOD", 150, self.INCREMENTAL_LOAD)
 
     def run_sftp_pipeline(self, generate_test_files: bool = True, rows: int = 40) -> Dict[str, Any]:
         """
@@ -3997,18 +4012,31 @@ class ETLScheduler:
 
     def _loop(self):
         while not self._stop.is_set():
+            # Pipeline cycles belong to the laptop lane: the cloud host runs the
+            # thin gateway profile, and without this gate it would execute (and
+            # duplicate) BOD/SOD/EOD from Render as well.
+            from app.core.runtime_profile import cloud_safe_mode
+            from app.core.scheduler_lease import is_leader
+
+            if cloud_safe_mode() or not is_leader("local"):
+                self._stop.wait(30)
+                continue
+
             now = datetime.datetime.now()
             h, m = now.hour, now.minute
             today = now.strftime("%Y-%m-%d")
             weekday = now.weekday()   # 0=Monday
             dom = now.day             # day of month
 
-            # Daily schedules (BOD, SOD, DAILY_10AM, EOD)
-            for key, cfg in self.SCHEDULES.items():
-                slot = f"{today}_{key}"
-                if h == cfg["hour"] and m == cfg["minute"] and slot not in self._last_run:
-                    self._last_run[slot] = now.isoformat()
-                    self.trigger_cycle_safely(key, reason="scheduled")
+            # Daily schedules (BOD, SOD, DAILY_10AM, EOD) are owned by the task
+            # scheduler, which tracks runs, retries and next-run times. Firing
+            # them here as well would execute every cycle twice.
+            if os.environ.get("ETL_SCHEDULER_OWN_DAILY", "0").strip().lower() in ("1", "true", "yes", "on"):
+                for key, cfg in self.SCHEDULES.items():
+                    slot = f"{today}_{key}"
+                    if h == cfg["hour"] and m == cfg["minute"] and slot not in self._last_run:
+                        self._last_run[slot] = now.isoformat()
+                        self.trigger_cycle_safely(key, reason="scheduled")
 
             # Weekly — Monday 08:00
             slot_w = f"{today}_WEEKLY"

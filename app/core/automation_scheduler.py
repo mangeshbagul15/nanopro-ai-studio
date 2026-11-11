@@ -651,8 +651,11 @@ class AutomationScheduler:
         """Continuous polling loop evaluating scheduled tasks every 10 seconds."""
         while self.is_running:
             try:
+                from app.core.runtime_profile import cloud_safe_mode
                 from app.core.scheduler_lease import is_leader
-                if not is_leader():
+                # The cloud lane only owns cloud-safe jobs; pipeline tasks are
+                # disabled there, so it must not hold the local lane's lease.
+                if not is_leader("cloud" if cloud_safe_mode() else "local"):
                     time.sleep(10)
                     continue
                 from app.core.egress_guard import egress_daily_check
