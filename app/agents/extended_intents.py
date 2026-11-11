@@ -16,6 +16,39 @@ from app.agents.benchmark_and_drills import handle_benchmark_and_drills
 from app.core.conversational_intelligence import conversational_intelligence
 from app.core.lakehouse_omni_commander import lakehouse_omni_commander
 
+def _automailer_health_lines() -> List[str]:
+    """Reports the configured email providers and the real delivery ledger."""
+    providers = []
+    if os.environ.get("GMAIL_API_CLIENT_ID") and os.environ.get("GMAIL_API_CLIENT_SECRET"):
+        providers.append("Gmail API")
+    if os.environ.get("EMAIL_RELAY_URL") and os.environ.get("EMAIL_RELAY_SECRET"):
+        providers.append("Apps Script relay")
+    if os.environ.get("RESEND_API_KEY"):
+        providers.append("Resend")
+    if os.environ.get("BREVO_API_KEY"):
+        providers.append("Brevo")
+    if os.environ.get("GMAIL_APP_PASSWORD") or os.environ.get("SMTP_PASSWORD"):
+        providers.append("Gmail SMTP")
+    try:
+        entries = communication_center.get_communication_ledger(limit=200, channel="email")
+    except Exception:
+        entries = []
+    sent = sum(1 for e in entries if str(e.get("status")).lower() in ("sent", "delivered", "success"))
+    failed = len(entries) - sent
+    if entries:
+        ledger = f"{sent} sent / {failed} failed across the last {len(entries)}"
+        last = entries[0].get("formatted_time") or "unknown"
+    else:
+        ledger = "no email dispatches recorded yet"
+        last = "never"
+    return [
+        f"- **Email providers:** {', '.join(providers) if providers else 'not configured'}",
+        f"- **Delivery ledger:** {ledger}",
+        f"- **Last email dispatch:** {last}",
+        f"- **Telegram broadcast:** chat `{os.environ.get('TELEGRAM_CHAT_ID') or 'not set'}`",
+    ]
+
+
 def _extract_sql_query(msg: str) -> Optional[str]:
     """Extracts clean SELECT query statement from natural language chat prompt."""
     m1 = re.search(r'(SELECT\b[\s\S]+?;)', msg, re.IGNORECASE)
@@ -452,11 +485,13 @@ def dispatch_lakehouse_omni_commander(p_lower: str, user_message: str) -> Option
                 notif = t.get("notification_pref") or {}
                 recips = notif.get("recipients", ["Admin (nanoproaistudio@gmail.com)"])
                 recip_str = ", ".join(recips) if isinstance(recips, list) else str(recips)
-                md.append(f"| {idx} | `{t['name']}` | {t['schedule_type']} | `{t['recurrence_expr']}` | `{t.get('next_run_at') or 'Active'}` | 📧 {recip_str} | **{t['last_status']} ✅** |")
+                last_run = t.get("last_run_at") or "never"
+                md.append(
+                    f"| {idx} | `{t['name']}` | {t.get('schedule_type') or '—'} | `{t.get('recurrence_expr') or '—'}` | "
+                    f"`{t.get('next_run_at') or '—'}` | 📧 {recip_str} | **{t.get('last_status') or 'UNKNOWN'}** · last run `{last_run}` |"
+                )
             md.append("\n### 📧 ऑटो-मेलर हेल्थ (AutoMailer Health):")
-            md.append("- **SMTP सर्व्हर:** Gmail TLS Port 587 (Configured & Vault Active)")
-            md.append("- **डिलिव्हरी यश दर:** **100% Success** (Zero undelivered errors)")
-            md.append("- **Telegram ब्रॉडकास्ट:** Chat ID `1200023268` (Active Live Alerts)")
+            md.extend(_automailer_health_lines())
             md.append("\n💡 **तुम्ही मला सहज मराठीत सांगू शकता:**")
             md.append("- *\"हा डेली होतोय ना, तर याला उद्या नको पाठवू, परवापासून रेग्युलर कर\"*")
             md.append("- *\"या टास्कमध्ये rahul@company.com या युजरला पण ॲड कर\"*")
@@ -953,11 +988,13 @@ def handle_extended_intents(p_lower: str, user_message: str, session_id: str = "
                 notif = t.get("notification_pref") or {}
                 recips = notif.get("recipients", ["Admin (nanoproaistudio@gmail.com)"])
                 recip_str = ", ".join(recips) if isinstance(recips, list) else str(recips)
-                md.append(f"| {idx} | `{t['name']}` | {t['schedule_type']} | `{t['recurrence_expr']}` | `{t.get('next_run_at') or 'Active'}` | 📧 {recip_str} | **{t['last_status']} ✅** |")
+                last_run = t.get("last_run_at") or "never"
+                md.append(
+                    f"| {idx} | `{t['name']}` | {t.get('schedule_type') or '—'} | `{t.get('recurrence_expr') or '—'}` | "
+                    f"`{t.get('next_run_at') or '—'}` | 📧 {recip_str} | **{t.get('last_status') or 'UNKNOWN'}** · last run `{last_run}` |"
+                )
             md.append("\n### 📧 ऑटो-मेलर हेल्थ (AutoMailer Health):")
-            md.append("- **SMTP सर्व्हर:** Gmail TLS Port 587 (Configured & Vault Active)")
-            md.append("- **डिलिव्हरी यश दर:** **100% Success** (Zero undelivered errors)")
-            md.append("- **Telegram ब्रॉडकास्ट:** Chat ID `1200023268` (Active Live Alerts)")
+            md.extend(_automailer_health_lines())
             md.append("\n💡 **तुम्ही मला सहज मराठीत सांगू शकता:**")
             md.append("- *\"हा डेली होतोय ना, तर याला उद्या नको पाठवू, परवापासून रेग्युलर कर\"*")
             md.append("- *\"या टास्कमध्ये rahul@company.com या युजरला पण ॲड कर\"*")

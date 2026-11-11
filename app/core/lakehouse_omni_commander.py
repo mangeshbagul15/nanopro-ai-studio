@@ -370,14 +370,18 @@ class LakehouseOmniCommander:
             tasks = db.list_automation_tasks()
             res = []
             for t in tasks:
+                flag = t.get("is_enabled", t.get("enabled"))
+                paused = str(t.get("is_paused", "")).lower() in ("1", "true")
+                enabled = (not paused) and str(flag).lower() in ("1", "true")
                 res.append({
                     "id": t.get("id"),
-                    "name": t.get("name"),
+                    "name": t.get("name") or t.get("task_name") or t.get("id"),
                     "schedule_type": t.get("schedule_type"),
                     "recurrence_expr": t.get("recurrence_expr"),
                     "next_run_at": t.get("next_run_at") or t.get("next_run"),
-                    "last_status": t.get("last_status") or "ACTIVE",
-                    "is_enabled": bool(t.get("is_enabled", 1)),
+                    "last_run_at": t.get("last_run_at"),
+                    "last_status": t.get("last_status") or ("PAUSED" if paused else ("READY" if enabled else "DISABLED")),
+                    "is_enabled": enabled,
                     "notification_pref": t.get("notification_pref") or {"email": True, "telegram": True}
                 })
             return res
