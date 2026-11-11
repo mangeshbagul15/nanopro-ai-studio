@@ -132,7 +132,7 @@ const CARDS = [
    metric:d => [list(d).length, "recent"]},
   {id:"video", glyph:"▶", name:"Video Studio", hint:"Universal video maker", api:"/api/video/2026_matrix_catalog",
    metric:d => [countDeep(d), "presets"]},
-  {id:"payments", glyph:"◧", name:"Payments", hint:"Gateway & plans", api:"/api/payments/plans",
+  {id:"payments", glyph:"₹", name:"Payments", hint:"Gateway & plans", api:"/api/payments/plans",
    metric:d => [list(d).length, "plans"]},
   {id:"monitor", glyph:"◎", name:"Monitoring", hint:"Health · egress · jobs", api:"/api/operations/state",
    metric:d => ["LIVE", (d && (d.status || d.health_status)) || "ok"]},
@@ -181,19 +181,19 @@ function chip(id, cls, text){
 function renderPayload(d){
   const rows = [];
   const push = (k, v) => { if (v !== undefined && v !== null && typeof v !== "object") rows.push([k, v]); };
-  if (Array.isArray(d)) {
-    d.slice(0, 10).forEach((it, i) => {
-      if (it && typeof it === "object") {
-        const label = it.name || it.task_name || it.title || it.id || ("item " + (i + 1));
-        const state = it.status || it.state || (it.enabled !== undefined ? (it.enabled ? "enabled" : "off") : "");
-        rows.push([label, state]);
-      } else push("item " + (i + 1), it);
-    });
-    if (d.length > 10) rows.push(["more", (d.length - 10) + " hidden"]);
-  } else if (d && typeof d === "object") {
+  const items = Array.isArray(d) ? d : (d && typeof d === "object" ? list(d) : []);
+  items.slice(0, 10).forEach((it, i) => {
+    if (it && typeof it === "object") {
+      const label = it.name || it.task_name || it.title || it.id || ("item " + (i + 1));
+      const state = it.status || it.state || (it.enabled !== undefined ? (it.enabled ? "enabled" : "off") : "");
+      rows.push([label, state]);
+    } else push("item " + (i + 1), it);
+  });
+  if (items.length > 10) rows.push(["more", (items.length - 10) + " hidden"]);
+  if (d && typeof d === "object" && !Array.isArray(d)) {
     Object.keys(d).slice(0, 12).forEach(k => {
       const v = d[k];
-      if (Array.isArray(v)) rows.push([k, v.length + " items"]);
+      if (Array.isArray(v)) { if (v !== items) rows.push([k, v.length + " items"]); }
       else if (v && typeof v === "object") rows.push([k, Object.keys(v).length + " keys"]);
       else push(k, v);
     });
