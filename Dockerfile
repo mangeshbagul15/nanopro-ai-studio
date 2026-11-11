@@ -2,15 +2,23 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install essential system dependencies (ffmpeg, sqlite3, curl)
+# Install essential system dependencies (ffmpeg, sqlite3, curl, git)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     sqlite3 \
+    git \
+    openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
+RUN git config --system --add safe.directory /app
+
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8000 \
+    GIT_AUTHOR_NAME="NanoPro Agent" \
+    GIT_AUTHOR_EMAIL="nanopro@localhost" \
+    GIT_COMMITTER_NAME="NanoPro Agent" \
+    GIT_COMMITTER_EMAIL="nanopro@localhost"
 
 # Install Python requirements
 COPY requirements.txt .

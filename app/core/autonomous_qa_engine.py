@@ -218,31 +218,78 @@ class AutonomousQAEngine:
 
     def execute_autonomous_git_deploy(self, commit_message: str) -> Dict[str, Any]:
         """
-        Autonomous Git commit and push to trigger live deployment on Render,
-        Alwaysdata, and Cloudflare.
+        Deploys the current tree. Local checkouts commit and push to GitHub.
+        Container images ship without .git (see .dockerignore), so they trigger
+        the service's Render deploy hook instead of attempting a push.
         """
+        repo_dir = str(BASE_DIR)
         try:
-            # 1. Git Add
-            subprocess.run(["git", "add", "app/", "data/"], check=True, timeout=10)
-            
-            # 2. Git Commit
-            c_res = subprocess.run(["git", "commit", "-m", commit_message], capture_output=True, text=True, timeout=10)
-            if c_res.returncode != 0 and "nothing to commit" in c_res.stdout.lower():
+            subprocess.run(["git", "--version"], cwd=repo_dir, capture_output=True, text=True, timeout=5, check=True)
+        except FileNotFoundError:
+            return {"status": "error", "message": "git is not installed in this runtime. Rebuild the image (git is now in the Dockerfile)."}
+        except subprocess.CalledProcessError as e:
+            return {"status": "error", "message": f"git preflight failed: {(e.stderr or '').strip()}"}
+        except Exception as e:
+            return {"status": "error", "message": f"git preflight failed: {e}"}
+
+        hook_url = (os.environ.get("RENDER_DEPLOY_HOOK_URL") or "").strip()
+
+        if not (Path(repo_dir) / ".git").exists():
+            if not hook_url:
+                return {
+                    "status": "error",
+                    "message": "This runtime is a container copy without .git. Set RENDER_DEPLOY_HOOK_URL to deploy from here."
+                }
+            try:
+                import urllib.request
+                req = urllib.request.Request(hook_url, data=b"", method="POST")
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    ok = 200 <= resp.status < 300
+                if ok:
+                    log_event("[AutonomousQA] Render deploy hook triggered from the cloud runtime.", component="AutonomousQA")
+                    return {"status": "success", "message": "Triggered a fresh Render deploy of the latest commit."}
+                return {"status": "error", "message": f"Render deploy hook returned HTTP {resp.status}."}
+            except Exception as e:
+                return {"status": "error", "message": f"Render deploy hook failed: {e}"}
+
+        token = (os.environ.get("GITHUB_TOKEN") or "").strip()
+
+        def _run(args, timeout):
+            return subprocess.run(args, cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
+
+        def _redact(text):
+            text = (text or "").strip()
+            return text.replace(token, "***") if token else text
+
+        try:
+            _run(["git", "config", "user.name", "NanoPro Agent"], 5)
+            _run(["git", "config", "user.email", "nanopro@localhost"], 5)
+            if token:
+                origin = _run(["git", "remote", "get-url", "origin"], 5)
+                origin_url = (origin.stdout or "").strip()
+                if origin_url.startswith("https://") and "@github.com" not in origin_url:
+                    _run(["git", "remote", "set-url", "origin",
+                          origin_url.replace("https://", f"https://x-access-token:{token}@", 1)], 5)
+
+            _run(["git", "add", "app/", "data/"], 30)
+            c_res = _run(["git", "commit", "-m", commit_message], 30)
+            if c_res.returncode != 0 and "nothing to commit" in (c_res.stdout or "").lower():
                 return {"status": "success", "message": "Working tree is already clean and synchronized with origin/main."}
 
-            # 3. Git Push
-            p_res = subprocess.run(["git", "push", "origin", "main"], capture_output=True, text=True, timeout=25)
+            p_res = _run(["git", "push", "origin", "main"], 60)
             if p_res.returncode == 0:
                 log_event(f"[AutonomousQA] Autonomous live deploy pushed to origin/main: '{commit_message}'", component="AutonomousQA")
                 return {
                     "status": "success",
-                    "message": f"Successfully committed and pushed to GitHub main. Live deployment triggered on Render & Cloudflare.",
+                    "message": "Successfully committed and pushed to GitHub main. Live deployment triggered on Render & Cloudflare.",
                     "commit_message": commit_message
                 }
-            else:
-                return {"status": "error", "message": f"Git push error: {p_res.stderr.strip()}"}
+            stderr = _redact(p_res.stderr)
+            if "Authentication failed" in stderr or "could not read Username" in stderr or "Permission denied" in stderr:
+                return {"status": "error", "message": "Git push needs write access. Set GITHUB_TOKEN (repo contents: read/write) in the runtime env."}
+            return {"status": "error", "message": f"Git push error: {stderr}"}
         except Exception as e:
-            return {"status": "error", "message": f"Git deploy execution exception: {e}"}
+            return {"status": "error", "message": f"Git deploy execution exception: {_redact(str(e))}"}
 
     def start_continuous_testing_sentinel(self, interval_seconds: int = 60):
         """Starts 24/7 autonomous test & self-healing sentinel in background."""
