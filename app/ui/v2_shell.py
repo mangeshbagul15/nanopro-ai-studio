@@ -263,13 +263,27 @@ const isTaskOn = x => {
   return !paused && (v === 1 || v === true || v === "1");
 };
 
+let apiActive = 0; const apiQueue = [];
+function apiSlot(){
+  return new Promise(resolve => {
+    if (apiActive < 4) { apiActive++; resolve(); } else apiQueue.push(resolve);
+  });
+}
+function apiFree(){
+  apiActive--;
+  const next = apiQueue.shift();
+  if (next) { apiActive++; next(); }
+}
 async function get(p){
-  for (let attempt = 0; ; attempt++) {
-    const r = await fetch(p, {credentials:"same-origin", headers:{"Accept":"application/json"}});
-    if (r.ok) return r.json();
-    if (r.status !== 429 || attempt >= 1) throw new Error(r.status);
-    await new Promise(done => setTimeout(done, 1500));
-  }
+  await apiSlot();
+  try {
+    for (let attempt = 0; ; attempt++) {
+      const r = await fetch(p, {credentials:"same-origin", headers:{"Accept":"application/json"}});
+      if (r.ok) return r.json();
+      if (r.status !== 429 || attempt >= 1) throw new Error(r.status);
+      await new Promise(done => setTimeout(done, 1500));
+    }
+  } finally { apiFree(); }
 }
 
 const grid = $("#grid");

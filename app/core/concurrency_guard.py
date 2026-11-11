@@ -38,7 +38,7 @@ class ConcurrencyGuardMiddleware:
         cloud = is_cloud()
         self.pools: Dict[str, Dict[str, int]] = {
             "ai": {"active": 0, "limit": _int_env("NANOPRO_AI_CONCURRENCY", 2 if cloud else 8), "rejected": 0},
-            "api": {"active": 0, "limit": _int_env("NANOPRO_API_CONCURRENCY", 6 if cloud else 32), "rejected": 0},
+            "api": {"active": 0, "limit": _int_env("NANOPRO_API_CONCURRENCY", 12 if cloud else 32), "rejected": 0},
         }
         self.rejected_total = 0
         _instance = self
