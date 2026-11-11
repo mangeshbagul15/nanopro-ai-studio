@@ -54,7 +54,25 @@ def classify_intent(message: str) -> str:
 
 
 def _collect_facts(intent: str) -> Dict[str, Any]:
-    facts: Dict[str, Any] = {}
+    facts: Dict[str, Any] = {
+        "platform": {
+            "name": "NanoPro OS (NanoPro AI Studio)",
+            "what": (
+                "One login for autonomous data pipelines, a SQL and data-modeling copilot, "
+                "a 320-agent fleet, multi-channel communication (email, Telegram, WhatsApp), "
+                "video tooling, payments and live monitoring."
+            ),
+            "lanes": (
+                "The web app and light tasks run on the cloud lane; heavy banking "
+                "pipelines run on the owner's laptop lane."
+            ),
+            "modules": [
+                "Pipelines", "Data Modeling", "Infra & Security", "Databases",
+                "Agent Station", "Communication", "Video Studio", "Payments",
+                "Monitoring", "Signals",
+            ],
+        }
+    }
     try:
         from app.core.runtime_profile import cloud_safe_mode, is_cloud
 

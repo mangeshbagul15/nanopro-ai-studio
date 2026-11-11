@@ -17,6 +17,7 @@ _SHELL = """<!DOCTYPE html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>NanoPro OS</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='%2338BDF8'/%3E%3C/svg%3E" />
 <style>
 :root{
   --bg:#04060c; --panel:rgba(12,18,32,.72); --line:rgba(94,234,212,.16);
