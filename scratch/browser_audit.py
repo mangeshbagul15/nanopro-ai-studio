@@ -93,7 +93,7 @@ def main():
                 break
             page.wait_for_timeout(1500)
 
-        report["top_strip"] = {k: chip_state(k) for k in ("c-health", "c-egress", "c-ai", "c-tasks")}
+        report["top_strip"] = {k: chip_state(k) for k in ("c-core", "c-egress", "c-ai", "c-tasks")}
         card_report = {}
         ids = []
         for i in range(n_cards):
