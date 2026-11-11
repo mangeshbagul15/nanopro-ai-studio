@@ -34,6 +34,45 @@ class AutomationScheduler:
         self._running_jobs: Dict[str, Dict[str, Any]] = {}
         self._disable_legacy_demo_tasks()
         self._ensure_pipeline_tasks_seeded()
+        self._reconcile_cloud_profile()
+
+    CLOUD_LOCAL_LANE_TASKS = {
+        "SFTP_INBOUND_AUTO_INGEST": "The SFTP hub runs on the laptop",
+        "SFTP_20DAY_RETENTION_PURGE": "SFTP retention belongs to the laptop hub",
+        "DUCKDB_S3_CLOUD_BACKUP": "Gold marts mirror runs from the laptop",
+        "TELEGRAM_APK_DISPATCHER": "APK binaries are served from the laptop",
+        "BOD_PIPELINE_CYCLE": "Oracle/S3/Snowflake full load runs from the laptop",
+        "SOD_PIPELINE_CYCLE": "Oracle/S3/Snowflake start-of-day runs from the laptop",
+        "DAILY_T1_INCREMENTAL_PIPELINE": "Oracle watermark ingestion runs from the laptop",
+        "EOD_PIPELINE_CYCLE": "EOD reconciliation and dispatch run from the laptop",
+    }
+
+    def _reconcile_cloud_profile(self):
+        """On the free cloud host, keep only schedules that do not depend on the laptop lane."""
+        try:
+            from app.core.runtime_profile import cloud_safe_mode
+            if not cloud_safe_mode():
+                return
+            opt_in = os.environ.get("NANOPRO_CLOUD_PIPELINE_JOBS", "0").strip().lower() in ("1", "true", "yes", "on")
+            blocked = dict(self.CLOUD_LOCAL_LANE_TASKS)
+            if opt_in:
+                blocked = {name: reason for name, reason in blocked.items() if "PIPELINE" not in name}
+            for task in db.list_automation_tasks():
+                name = task.get("name")
+                if name in blocked and task.get("is_enabled"):
+                    db.update_automation_task(task["id"], {
+                        "is_enabled": 0,
+                        "status": "Disabled",
+                        "last_status": "Cloud profile: local lane only",
+                        "next_run_at": "",
+                        "description": f"{task.get('description') or ''} [Cloud-safe: {blocked[name]}]",
+                    })
+                    log_event(
+                        f"Cloud profile disabled [{name}]: {blocked[name]}.",
+                        component="AutomationScheduler",
+                    )
+        except Exception as exc:
+            log_event(f"Cloud schedule reconciliation failed: {exc}", level="WARNING", component="AutomationScheduler")
 
     def _disable_legacy_demo_tasks(self):
         """Disable only the two known auto-seeded inline scripts that print mock transfer success."""

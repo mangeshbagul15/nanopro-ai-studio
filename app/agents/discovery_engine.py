@@ -404,6 +404,8 @@ class DiscoveryEngine:
         self._scheduler_running = True
 
         def _worker():
+            from app.core.runtime_profile import cloud_safe_mode
+            poll_seconds = max(30.0, float(os.environ.get("DISCOVERY_POLL_INTERVAL", "180" if cloud_safe_mode() else "30")))
             while self._scheduler_running:
                 try:
                     schedules = db.list_discovery_schedules()
@@ -413,7 +415,7 @@ class DiscoveryEngine:
                             self.execute_single_schedule(dict(sched))
                 except Exception as e:
                     log_event(f"Scheduler worker exception: {e}", level="ERROR", component="DiscoveryEngine")
-                time.sleep(30) # High-frequency 30s polling cycle
+                time.sleep(poll_seconds)
 
         self._scheduler_thread = threading.Thread(target=_worker, daemon=True, name="DiscoveryEngine-Worker")
         self._scheduler_thread.start()

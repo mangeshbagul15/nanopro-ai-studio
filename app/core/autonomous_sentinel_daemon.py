@@ -33,6 +33,9 @@ class AutonomousSentinelDaemon:
         
         # State file
         self.state_file = os.path.join("data", "autonomous_sentinel_state.json")
+        from app.core.runtime_profile import cloud_safe_mode
+        default_interval = "120" if cloud_safe_mode() else "4"
+        self.loop_interval_seconds = max(4.0, float(os.environ.get("SENTINEL_LOOP_INTERVAL", default_interval)))
         self._load_state()
 
     def _load_state(self):
@@ -104,7 +107,7 @@ class AutonomousSentinelDaemon:
             except Exception as e:
                 self.log_activity("Manager Sentinel", "Core Operations", f"Auto-recovering sentinel loop: {str(e)}", "HEALED")
                 
-            await asyncio.sleep(4.0)
+            await asyncio.sleep(self.loop_interval_seconds)
 
     async def _run_automated_qa_cycle(self):
         """Real synthetic tests across all 52 enterprise features."""

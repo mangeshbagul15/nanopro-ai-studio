@@ -386,6 +386,8 @@ from app.ui.dashboard import get_dashboard_html
 
 
 
+from app.core.runtime_profile import cloud_safe_mode, is_blocked_heavy_path
+
 app = FastAPI(title="Mangesh Nano Pro AI Studio")
 
 
@@ -393,6 +395,23 @@ app = FastAPI(title="Mangesh Nano Pro AI Studio")
 from fastapi.middleware.gzip import GZipMiddleware
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+@app.middleware("http")
+async def _cloud_heavy_lane_guard(request: Request, call_next):
+    if is_blocked_heavy_path(request.url.path):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "local_lane_required",
+                "path": request.url.path,
+                "message": (
+                    "This feature runs on the local compute lane (laptop), not the free cloud host. "
+                    "Open NanoPro on the laptop tunnel or set NANOPRO_HEAVY_LANE=1 on a paid host."
+                ),
+            },
+        )
+    return await call_next(request)
 
 
 
@@ -1217,7 +1236,9 @@ def _execute_staged_boot_phases_2_and_3():
         connection_manager.start_autonomous_sentinel()
 
         from app.core.ai_identity_sentinel import ai_identity_director
-        ai_identity_director.start_background_sentinel(interval_seconds=60.0)
+        ai_identity_director.start_background_sentinel(
+            interval_seconds=300.0 if cloud_safe_mode() else 60.0
+        )
 
     except Exception as e:
 
@@ -1287,8 +1308,8 @@ def _execute_staged_boot_phases_2_and_3():
 
     try:
 
-        if os.environ.get("NANOPRO_DISABLE_AUTONOMOUS_EMAIL", "").strip().lower() in ("1", "true", "yes"):
-            log_event("Phase 3E skipped: NANOPRO_DISABLE_AUTONOMOUS_EMAIL is set.", component="BootSequence")
+        if cloud_safe_mode() or os.environ.get("NANOPRO_DISABLE_AUTONOMOUS_EMAIL", "").strip().lower() in ("1", "true", "yes"):
+            log_event("Phase 3E skipped: autonomous email dispatcher runs on the local lane.", component="BootSequence")
         else:
             log_event("=== [PHASE 3E] Starting Autonomous 30-Minute Live Career Email Dispatcher (T + 17s) ===", component="BootSequence")
 
@@ -1348,6 +1369,8 @@ def _execute_staged_boot_phases_2_and_3():
 
         from app.core.rca_incident_sentinel import rca_incident_sentinel
 
+        rca_incident_sentinel.check_interval_seconds = 300 if cloud_safe_mode() else 60
+
         rca_incident_sentinel.start()
 
     except Exception as e:
@@ -1366,11 +1389,14 @@ def _execute_staged_boot_phases_2_and_3():
 
         from app.core.cluster_mesh_engine import cluster_mesh
 
-        cluster_mesh.start()
+        if cloud_safe_mode():
+            log_event("Phase 3I skipped: cluster mesh and DB load balancer run on the local lane.", component="BootSequence")
+        else:
+            cluster_mesh.start()
 
-        from app.database.db_load_balancer import db_load_balancer
+            from app.database.db_load_balancer import db_load_balancer
 
-        db_load_balancer.start()
+            db_load_balancer.start()
 
     except Exception as e:
 
@@ -2211,6 +2237,44 @@ async def api_monitoring_health():
     res = monitoring_agent.get_system_health()
 
     return JSONResponse(res)
+
+
+
+@app.get("/api/runtime/profile")
+
+async def api_runtime_profile():
+
+    """Shows which execution profile and compute lane this instance is running."""
+
+    from app.core import runtime_profile
+
+    from app.core.autonomous_sentinel_daemon import autonomous_sentinel
+
+    from app.core.rca_incident_sentinel import rca_incident_sentinel
+
+    try:
+
+        tasks = db.list_automation_tasks()
+
+    except Exception:
+
+        tasks = []
+
+    return JSONResponse({
+
+        "environment": "cloud" if runtime_profile.is_cloud() else "local",
+
+        "cloud_safe_mode": runtime_profile.cloud_safe_mode(),
+
+        "heavy_lane_enabled": runtime_profile.heavy_lane_enabled(),
+
+        "sentinel_loop_seconds": autonomous_sentinel.loop_interval_seconds,
+
+        "rca_interval_seconds": rca_incident_sentinel.check_interval_seconds,
+
+        "disabled_schedules": sorted(t.get("name") for t in tasks if not t.get("is_enabled")),
+
+    })
 
 
 
