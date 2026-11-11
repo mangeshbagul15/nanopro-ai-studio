@@ -193,7 +193,7 @@ const CARDS = [
    metric:d => [d.cloud_safe_mode ? "SAFE" : "OPEN", d.environment || "cloud"]},
   {id:"databases", glyph:"▤", name:"Databases", hint:"Neon · DuckDB · BigQuery", api:"/api/database/databases",
    metric:d => [list(d).length, "sources"]},
-  {id:"agents", glyph:"✦", name:"Agent Station", hint:"305 enterprise agents", api:"/api/agents/list",
+  {id:"agents", glyph:"✦", name:"Agent Station", hint:"Enterprise agent fleet", api:"/api/agents/list",
    station:true, metric:d => [list(d).length, "agents"]},
   {id:"comms", glyph:"✉", name:"Communication", hint:"Email · Telegram · WhatsApp", api:"/api/emails/delivery-history",
    metric:d => [list(d).length, "recent"]},
