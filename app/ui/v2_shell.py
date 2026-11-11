@@ -310,18 +310,27 @@ function chip(id, cls, text){
   el.innerHTML = "<i></i>" + text;
 }
 
+function unent(v){
+  return String(v)
+    .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n))
+    .replace(/&(amp|quot|lt|gt|nbsp);/g, (m, n) => ({amp:"&",quot:'"',lt:"<",gt:">",nbsp:" "}[n]));
+}
+
 function renderPayload(d){
   const rows = [];
   const push = (k, v) => { if (v !== undefined && v !== null && typeof v !== "object") rows.push([k, v]); };
   const renderItems = (items, prefix) => {
     items.slice(0, 10).forEach((it, i) => {
       if (it && typeof it === "object") {
-        const label = it.name || it.task_name || it.title || it.id || (prefix + " " + (i + 1));
-        const state = it.status || it.state || (it.enabled !== undefined ? (it.enabled ? "enabled" : "off") : "");
+        let label = it.name || it.task_name || it.title || it.subject || it.id || (prefix + " " + (i + 1));
+        if (it.channel && it.recipient) label = it.channel + " · " + (it.subject || it.recipient);
+        let state = it.status || it.state || (it.enabled !== undefined ? (it.enabled ? "enabled" : "off") : "");
+        if (!state && it.total_display) state = it.total_display;
+        if (state && it.formatted_time) state += " · " + it.formatted_time;
         rows.push([label, state]);
       } else push(prefix + " " + (i + 1), it);
     });
-    if (items.length > 10) rows.push([prefix, "+" + (items.length - 10) + " more"]);
+    if (items.length > 10) rows.push([prefix + " total", items.length]);
   };
   if (Array.isArray(d)) renderItems(d, "item");
   else if (d && typeof d === "object") {
@@ -340,7 +349,7 @@ function renderPayload(d){
     });
   }
   if (!rows.length) return '<div class="mut">No data yet.</div>';
-  return rows.map(([k, v]) => '<div class="row"><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>').join("");
+  return rows.map(([k, v]) => '<div class="row"><span>' + esc(unent(k)) + '</span><span>' + esc(unent(v)) + '</span></div>').join("");
 }
 
 function esc(v){
