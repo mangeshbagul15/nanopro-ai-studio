@@ -85,15 +85,19 @@ def _collect_facts(intent: str) -> Dict[str, Any]:
             from app.core.database import db
 
             tasks = db.list_automation_tasks()
-            enabled = [t for t in tasks if str(t.get("enabled")) in ("1", "True", "true")]
+
+            def task_on(t):
+                flag = t.get("is_enabled", t.get("enabled"))
+                paused = str(t.get("is_paused", "")).lower() in ("1", "true")
+                return not paused and str(flag).lower() in ("1", "true")
+
+            enabled = [t for t in tasks if task_on(t)]
             facts["tasks"] = {
                 "total": len(tasks),
                 "enabled": len(enabled),
                 "enabled_names": [t.get("task_name") or t.get("name") for t in enabled][:12],
                 "disabled_names": [
-                    t.get("task_name") or t.get("name")
-                    for t in tasks
-                    if str(t.get("enabled")) not in ("1", "True", "true")
+                    t.get("task_name") or t.get("name") for t in tasks if not task_on(t)
                 ][:12],
             }
         except Exception:

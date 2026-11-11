@@ -264,9 +264,12 @@ const isTaskOn = x => {
 };
 
 async function get(p){
-  const r = await fetch(p, {credentials:"same-origin", headers:{"Accept":"application/json"}});
-  if(!r.ok) throw new Error(r.status);
-  return r.json();
+  for (let attempt = 0; ; attempt++) {
+    const r = await fetch(p, {credentials:"same-origin", headers:{"Accept":"application/json"}});
+    if (r.ok) return r.json();
+    if (r.status !== 429 || attempt >= 1) throw new Error(r.status);
+    await new Promise(done => setTimeout(done, 1500));
+  }
 }
 
 const grid = $("#grid");
