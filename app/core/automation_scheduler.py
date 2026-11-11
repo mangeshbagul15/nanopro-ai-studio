@@ -637,6 +637,12 @@ class AutomationScheduler:
         """Starts background scheduler daemon."""
         if self.is_running:
             return
+        try:
+            stale = db.mark_interrupted_task_runs()
+            if stale:
+                log_event(f"Marked {stale} stale task run(s) as Interrupted after restart.", component="AutomationScheduler")
+        except Exception as exc:
+            log_event(f"Stale run cleanup failed: {exc}", level="WARNING", component="AutomationScheduler")
         self.is_running = True
         self._worker_thread = threading.Thread(target=self._daemon_loop, daemon=True)
         self._worker_thread.start()

@@ -31,6 +31,15 @@ from typing import Dict, Any, List, Optional
 from app.core.logger import log_event
 from app.core.config import BASE_DIR, TELEGRAM_APK_BOT_TOKEN, TELEGRAM_APK_BOT_USERNAME, TELEGRAM_CHAT_ID
 
+import re
+
+_BOT_TOKEN_RE = re.compile(r"bot\d{6,}:[A-Za-z0-9_-]+")
+
+
+def _safe_err(exc) -> str:
+    """httpx/requests embed the request URL in exception text, which carries the bot token."""
+    return _BOT_TOKEN_RE.sub("bot<redacted>", str(exc))
+
 # APK temp download dir
 APK_TEMP_DIR = BASE_DIR / "app" / "temp_apks"
 APK_TEMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -776,7 +785,7 @@ def _send_telegram_button_message(caption: str, button_text: str, button_url: st
             log_event(f"[APKBot] Button send failed: {data2.get('description')}", level="WARNING", component="APKDispatcher")
             return False
     except Exception as e:
-        log_event(f"[APKBot] Button message exception: {e}", level="WARNING", component="APKDispatcher")
+        log_event(f"[APKBot] Button message exception: {_safe_err(e)}", level="WARNING", component="APKDispatcher")
         return False
 
 
@@ -824,7 +833,7 @@ def _send_large_apk_in_parts(apk_path: Path, caption: str, chunk_size_mb: float 
             time.sleep(2)
         return success_all
     except Exception as e:
-        log_event(f"[APKBot] Large APK multi-part delivery failed: {e}", level="WARNING", component="APKDispatcher")
+        log_event(f"[APKBot] Large APK multi-part delivery failed: {_safe_err(e)}", level="WARNING", component="APKDispatcher")
         return False
     finally:
         for pf in part_files:
@@ -895,7 +904,7 @@ def _send_apk_to_telegram(apk_path: Path, caption: str, parse_mode: str = "HTML"
             log_event(f"[APKBot] Send failed completely: {data2.get('description')}", level="WARNING", component="APKDispatcher")
             return False
     except Exception as e:
-        log_event(f"[APKBot] Send exception: {e}", level="WARNING", component="APKDispatcher")
+        log_event(f"[APKBot] Send exception: {_safe_err(e)}", level="WARNING", component="APKDispatcher")
         if fallback_url:
             return _send_telegram_button_message(caption, "⬇️ Direct Download APK", fallback_url)
         return False
@@ -1152,7 +1161,7 @@ class APKScheduler:
                     res = discover_and_send_apks(count=self.COUNT)
                     log_event(f"[APKBot] Delivered {res.get('sent_count', 0)} APKs to @mangesh_apk_bot successfully.", component="APKDispatcher")
                 except Exception as e:
-                    log_event(f"[APKBot] Scheduler cycle error: {e}", level="WARNING", component="APKDispatcher")
+                    log_event(f"[APKBot] Scheduler cycle error: {_safe_err(e)}", level="WARNING", component="APKDispatcher")
 
             target_wait = max(300, interval_min * 60)
             elapsed = 0

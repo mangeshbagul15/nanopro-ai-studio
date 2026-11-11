@@ -1983,7 +1983,10 @@ class DatabaseManager:
     def record_task_run(self, run_data: Dict[str, Any]) -> str:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            rid = run_data.get("run_id") or f"run_{int(time.time()*1000)}"
+            # Millisecond timestamps collide when several tasks start in the same
+            # scheduler sweep, and the INSERT OR REPLACE below would overwrite one
+            # task's run history (and results) with another's.
+            rid = run_data.get("run_id") or f"run_{uuid.uuid4().hex[:16]}"
             cursor.execute("""
             INSERT OR REPLACE INTO task_execution_runs (
                 run_id, task_id, task_name, trigger_type, start_time, end_time,
@@ -2006,6 +2009,20 @@ class DatabaseManager:
             ))
             conn.commit()
             return rid
+
+    @sqlite_retry()
+    def mark_interrupted_task_runs(self) -> int:
+        """Close out runs left 'Running' by a host that stopped mid-task."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE task_execution_runs SET status = 'Interrupted',"
+                " error_details = 'Host stopped before the task finished.'"
+                " WHERE status = 'Running'"
+            )
+            count = cursor.rowcount
+            conn.commit()
+            return count
 
     @sqlite_retry()
     def update_task_run(self, run_id: str, updates: Dict[str, Any]) -> bool:
