@@ -4,8 +4,8 @@ compatibility_date = "2025-01-01"
 workers_dev = true
 
 [vars]
-# Local app served through a Cloudflare quick tunnel while Render is suspended.
-RENDER_MIRROR_URL = "https://term-warrior-kid-ranging.trycloudflare.com"
+# Render free web service hosting NanoPro.
+RENDER_MIRROR_URL = "https://nanopro-studio.onrender.com"
 
 [assets]
 directory = "."
