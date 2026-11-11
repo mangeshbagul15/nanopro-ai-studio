@@ -12,7 +12,7 @@ import json
 import os
 import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 FREE_BANDWIDTH_GB = 5.0
@@ -107,6 +107,9 @@ def _latest_deploy(deploys: Any) -> str:
         if not isinstance(deploy, dict):
             continue
         state = str(deploy.get("status") or "unknown")
+        commit = deploy.get("commit") or {}
+        if isinstance(commit, dict) and commit.get("id"):
+            state += f" · commit {str(commit['id'])[:8]}"
         finished = _parse_ts(deploy.get("finishedAt")) or _parse_ts(deploy.get("createdAt"))
         if finished:
             return f"{state} · {finished.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC"
@@ -181,6 +184,7 @@ def _compose() -> Dict[str, Any]:
         "month": now.strftime("%Y-%m"),
         "day": f"day {now.day} · {audit.get('days_left')} days left",
         "bandwidth": f"{audit.get('used_gb')} GB of {FREE_BANDWIDTH_GB:g} GB ({percent}%)",
+        "bandwidth_remaining": _fmt_bytes(max(limit_bytes - used_bytes, 0)),
         "projected": f"{audit.get('projected_month_gb')} GB by month end",
         "bt_verdict": verdict,
         "bt_mode": audit.get("mode") or "normal",
@@ -211,3 +215,108 @@ def render_status(force: bool = False) -> Dict[str, Any]:
     _cache["data"] = data
     _cache["at"] = now
     return data
+
+
+def build_render_daily_report(data: Dict[str, Any]) -> str:
+    stamp = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d %H:%M IST")
+    lines = [
+        "*NanoPro - Render Daily Report*",
+        stamp,
+        f"Service: {os.environ.get('RENDER_SERVICE_NAME') or 'nanopro-studio'}",
+        "App process: running on Render",
+    ]
+    fields = (
+        ("Plan", "plan"),
+        ("Suspended", "suspended"),
+        ("Latest deploy", "latest_deploy"),
+        ("Bandwidth (app meter)", "bandwidth"),
+        ("Bandwidth remaining (estimate)", "bandwidth_remaining"),
+        ("Month-end projection", "projected"),
+        ("Usage risk", "bt_verdict"),
+        ("Protection mode", "bt_mode"),
+        ("HTTP responses", "http_responses"),
+        ("Service-initiated traffic", "service_initiated"),
+        ("Average daily traffic", "avg_per_day"),
+        ("Process uptime", "instance_uptime"),
+        ("Instance-hour limit", "instance_limit"),
+        ("Build time estimate", "pipeline_minutes"),
+        ("Heavy-feature throttle", "soft_warn_at"),
+        ("Heavy-feature pause", "heavy_pause_at"),
+        ("Free bandwidth limit", "suspend_at"),
+        ("Sources", "api_source"),
+    )
+    lines.extend(f"{label}: {data.get(key) or 'not available'}" for label, key in fields)
+    lines.append("CPU/RAM: not collected by this report; check the Render dashboard.")
+    lines.append("App bandwidth and build-time figures are estimates; Render billing is authoritative.")
+    return "\n".join(lines)
+
+
+def send_daily_render_report(recipient: str = "+918433755448") -> Dict[str, Any]:
+    if not os.environ.get("RENDER"):
+        return {"status": "skipped", "reason": "render_only"}
+
+    from app.core import dm_persistence
+    from app.core.communication_center import communication_center
+    from app.core.whatsapp_guardian import whatsapp_guardian
+
+    phone = str(recipient).strip().removeprefix("+")
+    if not phone.isascii() or not phone.isdigit() or not 11 <= len(phone) <= 15:
+        return {"status": "error", "reason": "invalid_recipient"}
+    day = datetime.now(timezone(timedelta(hours=5, minutes=30))).date().isoformat()
+    result = {"report_date": day, "recipient": phone}
+    conn = None
+    try:
+        conn = dm_persistence._connect()
+        with conn.cursor() as cur:
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS nanopro_render_report_delivery ("
+                " report_date TEXT NOT NULL, recipient TEXT NOT NULL, state TEXT NOT NULL,"
+                " report_text TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),"
+                " PRIMARY KEY (report_date, recipient))"
+            )
+            cur.execute(
+                "SELECT state FROM nanopro_render_report_delivery WHERE report_date = %s AND recipient = %s",
+                (day, phone),
+            )
+            row = cur.fetchone()
+        conn.commit()
+        if row and row[0] != "pending":
+            return {**result, "status": row[0], "already_attempted": True}
+
+        report = build_render_daily_report(render_status(force=True))
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO nanopro_render_report_delivery (report_date, recipient, state, report_text)"
+                " VALUES (%s, %s, 'pending', %s) ON CONFLICT (report_date, recipient) DO NOTHING",
+                (day, phone, report),
+            )
+        conn.commit()
+        if not whatsapp_guardian.is_window_open_for(phone):
+            return {**result, "status": "pending", "reason": "whatsapp_reply_required"}
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE nanopro_render_report_delivery SET state = 'sending', updated_at = now()"
+                " WHERE report_date = %s AND recipient = %s AND state = 'pending' RETURNING report_text",
+                (day, phone),
+            )
+            claimed = cur.fetchone()
+        conn.commit()
+        if not claimed:
+            return {**result, "status": "sending", "already_attempted": True}
+
+        sent = communication_center.send_whatsapp_cloud_api(phone=phone, message=claimed[0], sensitive=True)
+        state = "accepted" if sent.get("success") and sent.get("status") == "accepted" and sent.get("message_id") else "failed"
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE nanopro_render_report_delivery SET state = %s, updated_at = now()"
+                " WHERE report_date = %s AND recipient = %s",
+                (state, day, phone),
+            )
+        conn.commit()
+        return {**result, "status": state}
+    except Exception:
+        return {**result, "status": "error", "reason": "report_dispatch_failed"}
+    finally:
+        if conn is not None:
+            conn.close()

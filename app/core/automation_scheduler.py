@@ -477,6 +477,13 @@ class AutomationScheduler:
         """Executes native Nano Pro studio application maintenance jobs."""
         name = task.get("name", "").lower()
         
+        if name == "render_daily_whatsapp_report":
+            from app.core.render_status import send_daily_render_report
+
+            recipient = json.loads(task.get("script_content") or "{}").get("recipient", "+918433755448")
+            result = send_daily_render_report(recipient)
+            return json.dumps(result), "", 0 if result.get("status") in {"accepted", "pending", "sending", "skipped"} else 1
+
         # Enterprise Cloud Lakehouse & SFTP Scheduled Pipelines
         if name in ("bod_pipeline_cycle", "bod"):
             from app.core.etl_automation_pipeline import etl_pipeline
