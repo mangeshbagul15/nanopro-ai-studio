@@ -39,6 +39,7 @@ DANGER_PREFIXES = (
     "/api/document/",
     "/api/assistant/",
     "/api/automation/",
+    "/api/scheduler/",
     "/api/identity/",
     "/api/data_modeling/",
     "/api/data_analyst/",

@@ -13,6 +13,8 @@ Provides 100% Lifetime Free (No Card Ever) cloud-triggered automation:
 
 from __future__ import annotations
 
+import hmac
+import os
 import time
 from typing import Dict, Any
 from fastapi import APIRouter, Request
@@ -27,6 +29,33 @@ router = APIRouter(prefix="/api/cron", tags=["CronJobOrgGateway"])
 CRON_AUDIT_LOGS = []
 
 import threading
+
+
+def _cycle_refusal(request: Request):
+    """Heavy EOD/BOD cycles and their message dispatch belong to the local lane.
+
+    The public cron URLs are callable by anyone, so the free cloud host must
+    refuse them: a stranger could otherwise burn CPU/bandwidth and trigger
+    email/Telegram/WhatsApp sends. When NANOPRO_CRON_SECRET is configured the
+    caller must also present it, which keeps the laptop lane closed as well.
+    """
+    from app.core.runtime_profile import cloud_safe_mode
+
+    if cloud_safe_mode():
+        return JSONResponse(status_code=409, content={
+            "success": False,
+            "status": "LOCAL_LANE_ONLY",
+            "error": "Heavy pipeline cycles run on the laptop lane, not the free cloud host.",
+        })
+    expected = (os.environ.get("NANOPRO_CRON_SECRET") or "").strip()
+    if expected:
+        supplied = (request.headers.get("X-Cron-Secret") or request.query_params.get("secret") or "").strip()
+        if not hmac.compare_digest(supplied, expected):
+            return JSONResponse(status_code=403, content={
+                "success": False,
+                "error": "Invalid or missing cron secret.",
+            })
+    return None
 
 def _run_in_background(target_func, cron_key, task_id, start_time):
     def worker():
@@ -78,6 +107,9 @@ async def cron_bod_trigger(request: Request):
     Beginning of Day (06:00 AM IST) cron-job.org trigger.
     Enqueues or runs full load validation across the cluster.
     """
+    refusal = _cycle_refusal(request)
+    if refusal:
+        return refusal
     log_event("[CronGateway] External BOD Webhook triggered from cron-job.org.", component="CronGateway")
     start = time.time()
     try:
@@ -102,6 +134,9 @@ async def cron_sod_trigger(request: Request):
     Start of Day (08:00 AM IST) cron-job.org trigger.
     Incremental update for day's opening positions.
     """
+    refusal = _cycle_refusal(request)
+    if refusal:
+        return refusal
     log_event("[CronGateway] External SOD Webhook triggered from cron-job.org.", component="CronGateway")
     start = time.time()
     try:
@@ -125,6 +160,9 @@ async def cron_t1_trigger(request: Request):
     Daily T-1 (10:00 AM IST) cron-job.org trigger.
     Incremental delta transaction ingestion and audit ledger updates.
     """
+    refusal = _cycle_refusal(request)
+    if refusal:
+        return refusal
     log_event("[CronGateway] External T-1 Webhook triggered from cron-job.org.", component="CronGateway")
     start = time.time()
     try:
@@ -148,6 +186,9 @@ async def cron_eod_trigger(request: Request):
     End of Day (06:00 PM IST) cron-job.org trigger.
     Reconciles all 9 banking projects, generates summary, and dispatches email/telegram.
     """
+    refusal = _cycle_refusal(request)
+    if refusal:
+        return refusal
     log_event("[CronGateway] External EOD Webhook triggered from cron-job.org.", component="CronGateway")
     start = time.time()
     try:
