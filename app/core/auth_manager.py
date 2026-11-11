@@ -871,12 +871,73 @@ class AuthManager:
             log_event(f"Error handling verified Clerk session: {e}", component="AuthManager", level="ERROR")
             return {"status": "error", "error": f"Clerk authentication error: {str(e)}"}
 
+    @staticmethod
+    def _normalize_phone(identifier: str) -> Optional[str]:
+        value = str(identifier or "").strip()
+        if not re.fullmatch(r"\+?[0-9 ()-]+", value):
+            return None
+        digits = re.sub(r"[^0-9]", "", value)
+        if len(digits) == 10:
+            digits = "91" + digits
+        return "+" + digits if re.fullmatch(r"[1-9][0-9]{10,14}", digits) else None
+
+    @staticmethod
+    def _whatsapp_otp_text(otp_code: str) -> str:
+        return (
+            "*NanoPro AI Studio Login Verification*\n\n"
+            f"Your 6-digit verification code is: *{otp_code}*\n\n"
+            "Valid for 5 minutes. Never share this code."
+        )
+
+    @staticmethod
+    def _whatsapp_login_link() -> str:
+        bot = "".join(c for c in os.environ.get("WHATSAPP_BOT_NUMBER", "15556737622") if c.isdigit())
+        return f"https://wa.me/{bot}?text=LOGIN"
+
+    def _issue_otp(self, clean_id: str, channel: str = "whatsapp") -> Dict[str, Any]:
+        import secrets
+
+        otp_code = f"{secrets.randbelow(900000) + 100000}"
+        now = time.time()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM auth_otps WHERE identifier = ? AND created_at >= ?",
+                (clean_id, now - 600),
+            )
+            if int(cursor.fetchone()[0]) >= 5:
+                return {"status": "error", "error": "Too many OTP requests. Please wait 10 minutes before trying again."}
+            cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE identifier = ? AND is_used = 0", (clean_id,))
+            cursor.execute("""
+            INSERT INTO auth_otps (id, identifier, otp_code, channel, created_at, expires_at, is_used)
+            VALUES (?, ?, ?, ?, ?, ?, 0)
+            """, (f"otp_{uuid.uuid4().hex[:12]}", clean_id, otp_code, channel, now, now + 300))
+            conn.commit()
+        return {"status": "success", "otp_code": otp_code}
+
+    def send_otp_on_whatsapp_request(self, from_number: str) -> Dict[str, Any]:
+        """Issue a code only in response to an authenticated WhatsApp LOGIN message."""
+        from app.core.communication_center import communication_center
+
+        clean_id = self._normalize_phone(from_number)
+        if not clean_id:
+            return {"status": "error", "error": "invalid sender"}
+        issued = self._issue_otp(clean_id)
+        if issued.get("status") != "success":
+            return issued
+        res = communication_center.send_whatsapp_cloud_api(
+            phone=clean_id, message=self._whatsapp_otp_text(issued["otp_code"]), sensitive=True,
+        )
+        accepted = bool(res.get("success")) and res.get("status") != "delivered_via_template_fallback"
+        log_event(
+            f"WhatsApp LOGIN reply OTP for {clean_id}: accepted={accepted}",
+            component="AuthManager",
+            level="INFO" if accepted else "ERROR",
+        )
+        return {"status": "success" if accepted else "error", "identifier": clean_id}
+
     def generate_and_send_otp(self, identifier: str, channel: str = "whatsapp", ip_address: str = "Unknown") -> Dict[str, Any]:
-        """
-        Generates a 6-digit OTP and dispatches it via WhatsApp or Email,
-        also sending an instant backup notification to the Admin Telegram bot.
-        """
-        import random
+        """Send a WhatsApp code, or ask the user to open a service window first."""
         from app.core.communication_center import communication_center
 
         identifier = identifier.strip()
@@ -885,45 +946,29 @@ class AuthManager:
         if channel != "whatsapp":
             return {"status": "error", "error": "Only WhatsApp OTP is supported. Please use WhatsApp or Google sign-in."}
 
-        clean_digits = "".join(c for c in identifier if c.isdigit())
-        if len(clean_digits) < 10:
+        clean_id = self._normalize_phone(identifier)
+        if not clean_id:
             return {"status": "error", "error": "Please enter a valid mobile number with country code."}
-        clean_id = f"+91{clean_digits}" if len(clean_digits) == 10 else (
-            identifier if identifier.startswith("+") else f"+{clean_digits}"
-        )
-
-        otp_code = f"{random.randint(100000, 999999)}"
-        now = time.time()
-        expires_at = now + 300  # 5 minutes
 
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT COUNT(*) FROM auth_otps WHERE identifier = ? AND created_at >= ?",
-                    (clean_id, now - 600),
-                )
-                if int(cursor.fetchone()[0]) >= 5:
-                    return {"status": "error", "error": "Too many OTP requests. Please wait 10 minutes before trying again."}
-                cursor.execute("UPDATE auth_otps SET is_used = 1 WHERE identifier = ? AND is_used = 0", (clean_id,))
-                otp_id = f"otp_{uuid.uuid4().hex[:12]}"
-                cursor.execute("""
-                INSERT INTO auth_otps (id, identifier, otp_code, channel, created_at, expires_at, is_used)
-                VALUES (?, ?, ?, ?, ?, ?, 0)
-                """, (otp_id, clean_id, otp_code, channel, now, expires_at))
-                conn.commit()
-
-            msg = (
-                f"🔐 *NanoPro AI Studio Login Verification*\n\n"
-                f"Your 6-digit verification code is: *{otp_code}*\n\n"
-                f"⏳ Valid for 5 minutes. Never share this code.\n"
-                f"🛡️ Zero-Trust Security Sentinel"
-            )
             otp_template = os.environ.get("WHATSAPP_CLOUD_OTP_TEMPLATE", "").strip()
             otp_template_lang = os.environ.get("WHATSAPP_CLOUD_OTP_TEMPLATE_LANG", "en_US").strip() or "en_US"
 
-            # Business-initiated messages need an approved authentication template
-            # unless the user messaged the business number in the last 24h.
+            from app.core.whatsapp_guardian import whatsapp_guardian
+            if not otp_template and not whatsapp_guardian.is_window_open_for(clean_id):
+                return {
+                    "status": "pending",
+                    "delivery": "reply_required",
+                    "message": "Send LOGIN to the NanoPro WhatsApp bot from this number, then enter the code received there.",
+                    "whatsapp_link": self._whatsapp_login_link(),
+                    "identifier": clean_id,
+                }
+
+            issued = self._issue_otp(clean_id, channel)
+            if issued.get("status") != "success":
+                return issued
+            otp_code = issued["otp_code"]
+            msg = self._whatsapp_otp_text(otp_code)
             if otp_template:
                 res = communication_center.send_whatsapp_cloud_api(
                     phone=clean_id,
@@ -931,42 +976,24 @@ class AuthManager:
                     template_name=otp_template,
                     template_params=[otp_code],
                     language_code=otp_template_lang,
+                    sensitive=True,
                 )
             else:
-                res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg)
-            # A generic template fallback carries no OTP, so it is not a delivery success.
-            delivered = bool(res.get("success")) and res.get("status") != "delivered_via_template_fallback"
-            if not delivered and not otp_template:
-                res = communication_center.send_whatsapp_free_message(phone=clean_id, message=msg)
-                delivered = bool(res.get("delivered_via_api"))
-            if not delivered:
-                log_event(
-                    f"WhatsApp OTP delivery failed for {clean_id}: {res.get('error') or res.get('status')}",
-                    component="AuthManager",
-                    level="ERROR",
-                )
+                res = communication_center.send_whatsapp_cloud_api(phone=clean_id, message=msg, sensitive=True)
+            if not res.get("success"):
+                log_event("WhatsApp OTP dispatch failed.", component="AuthManager", level="ERROR")
                 return {"status": "error", "error": "OTP delivery failed. Please try again in a moment."}
-
-            # Instant Admin Telegram Alert (serves as immediate backup)
-            time_str = time.strftime('%I:%M:%S %p', time.localtime(now))
-            self._notify_telegram(
-                f"📲 <b>NanoPro OTP Request (OTP Sent)</b>\n"
-                f"📟 <b>Channel:</b> {channel.upper()}\n"
-                f"🎯 <b>Target:</b> {clean_id}\n"
-                f"🔢 <b>OTP Code:</b> <code>{otp_code}</code>\n"
-                f"🌐 <b>IP:</b> {ip_address}\n"
-                f"🕒 <b>Time:</b> {time_str}"
-            )
 
             return {
                 "status": "success",
-                "message": f"6-digit OTP sent to your {channel.upper()} successfully.",
+                "delivery": "accepted",
+                "message": "WhatsApp accepted the OTP message. Enter the code when it arrives.",
                 "identifier": clean_id,
                 "expires_in_seconds": 300
             }
-        except Exception as e:
-            log_event(f"Error generating OTP: {e}", component="AuthManager", level="ERROR")
-            return {"status": "error", "error": f"Error sending OTP: {str(e)}"}
+        except Exception:
+            log_event("Error dispatching WhatsApp OTP.", component="AuthManager", level="ERROR")
+            return {"status": "error", "error": "Unable to send OTP. Please try again in a moment."}
 
     def verify_otp_and_login(
         self,
@@ -981,17 +1008,14 @@ class AuthManager:
         """
         identifier = identifier.strip()
         otp_code = otp_code.strip()
-        if not identifier or not otp_code:
-            return {"status": "error", "error": "Please enter both phone number and OTP code."}
+        if not identifier or not re.fullmatch(r"[0-9]{6}", otp_code):
+            return {"status": "error", "error": "Please enter your phone number and a 6-digit OTP code."}
         if channel != "whatsapp":
             return {"status": "error", "error": "Only WhatsApp OTP is supported. Please use WhatsApp or Google sign-in."}
 
-        clean_digits = "".join(c for c in identifier if c.isdigit())
-        if len(clean_digits) < 10:
+        clean_id = self._normalize_phone(identifier)
+        if not clean_id:
             return {"status": "error", "error": "Invalid mobile number."}
-        clean_id = f"+91{clean_digits}" if len(clean_digits) == 10 else (
-            identifier if identifier.startswith("+") else f"+{clean_digits}"
-        )
 
         now = time.time()
         if (self._recent_event_count("FAILED_OTP", clean_id, ip_address, 300) >= 5

@@ -364,7 +364,7 @@
                         <div class="form-group">
                             <label class="form-label" for="waPhoneNumber">WhatsApp Mobile Number</label>
                             <input type="tel" id="waPhoneNumber" class="form-input" value="" placeholder="+91 XXXXX XXXXX (with country code)" onkeydown="if(event.key==='Enter') handleSendWaOtp()">
-                            <div class="form-hint">A 6-digit OTP will be sent instantly to your WhatsApp.</div>
+                            <div class="form-hint">Request a WhatsApp code. You may need to send LOGIN to the NanoPro bot first.</div>
                         </div>
                         <button type="button" id="waSendBtn" onclick="handleSendWaOtp()" class="btn-whatsapp">
                             📲 Send WhatsApp OTP
@@ -795,20 +795,25 @@
                     data = await resp.json().catch(() => null);
                 } catch(e1) {}
 
-                if (data && data.status === 'success') {
+                if (data && (data.status === 'success' || data.status === 'pending')) {
+                    const replyRequired = data.delivery === 'reply_required';
                     currentWaTarget = data.identifier || phone;
                     const disp = document.getElementById('waTargetDisplay');
-                    if (disp) disp.innerText = '💬 Code sent to WhatsApp: ' + currentWaTarget;
+                    if (disp) disp.innerText = (replyRequired ? 'Send LOGIN from WhatsApp: ' : 'WhatsApp code requested for: ') + currentWaTarget;
                     document.getElementById('waStepRequest').style.display = 'none';
                     document.getElementById('waStepVerify').style.display = 'block';
 
                     const linkBtn = document.getElementById('waWebActionLink');
-                    if (linkBtn && data.whatsapp_link) {
-                        linkBtn.href = data.whatsapp_link;
-                        linkBtn.style.display = 'inline-block';
+                    if (linkBtn) {
+                        linkBtn.style.display = replyRequired ? 'inline-block' : 'none';
+                        if (replyRequired) {
+                            linkBtn.href = data.whatsapp_link;
+                            linkBtn.rel = 'noopener noreferrer';
+                            linkBtn.textContent = 'Open WhatsApp and send LOGIN';
+                        }
                     }
 
-                    showAlert('✅ 6-digit OTP sent. Please check WhatsApp and enter the OTP.', 'success');
+                    showAlert(data.message || 'Enter the code received on WhatsApp.', replyRequired ? 'warning' : 'success');
                     const otpInp = document.getElementById('waOtpCode');
                     if (otpInp) {
                         otpInp.value = ''; // Strictly empty! User manually enters OTP from mobile WhatsApp
@@ -842,7 +847,7 @@
 
         async function handleVerifyWaOtp() {
             const otpCode = (document.getElementById('waOtpCode')?.value || '').trim();
-            if (!otpCode || otpCode.length < 6) {
+            if (!/^[0-9]{6}$/.test(otpCode)) {
                 showAlert('Please enter the 6-digit OTP.', 'warning');
                 return;
             }

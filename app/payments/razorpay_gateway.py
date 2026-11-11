@@ -197,7 +197,6 @@ def save_credentials(key_id: str, key_secret: str) -> Dict[str, Any]:
             service_name="RAZORPAY",
             credential_type="payment_gateway",
             secret_value=key_secret,
-            description="Razorpay Payment Gateway",
             additional_info={"key_id": key_id},
         )
     except Exception as exc:
@@ -522,20 +521,36 @@ def verify_payment(order_id: str, payment_id: str, signature: str) -> Dict[str, 
             headers={"Authorization": _auth_header(key_id, key_secret)},
             timeout=15,
         )
-        if response.status_code < 400:
-            payment = response.json()
-            if payment.get("order_id") != order_id:
-                raise PaymentError("Payment does not belong to this order.", code="payment_order_mismatch", status_code=400)
-            if int(payment.get("amount", 0)) != int(row["amount_paise"]):
-                raise PaymentError("Paid amount does not match the order.", code="amount_mismatch", status_code=400)
-            if payment.get("status") not in ("captured", "authorized"):
-                raise PaymentError(
-                    f"Payment is not captured yet (status: {payment.get('status')}).",
-                    code="payment_not_captured",
-                    status_code=409,
-                )
     except requests.RequestException as exc:
-        log_event(f"Razorpay verification fetch skipped: {exc}", level="WARNING", component="Payments")
+        log_event(f"Razorpay verification network error: {exc}", level="ERROR", component="Payments")
+        raise PaymentError("Could not reach Razorpay. Please retry.", code="gateway_unreachable", status_code=502) from exc
+
+    if response.status_code >= 400:
+        raise PaymentError("Razorpay rejected payment verification.", code="gateway_rejected", status_code=502)
+
+    try:
+        payment = response.json()
+        if not isinstance(payment, dict):
+            raise ValueError("Payment response must be an object.")
+        amount = payment.get("amount")
+        if type(amount) is not int:
+            raise ValueError("Payment amount must be an integer in paise.")
+        expected_amount = int(row["amount_paise"])
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise PaymentError("Invalid response from Razorpay.", code="invalid_gateway_response", status_code=502) from exc
+
+    if payment.get("order_id") != order_id:
+        raise PaymentError("Payment does not belong to this order.", code="payment_order_mismatch", status_code=400)
+    if amount != expected_amount:
+        raise PaymentError("Paid amount does not match the order.", code="amount_mismatch", status_code=400)
+    if payment.get("currency") != (row.get("currency") or CURRENCY):
+        raise PaymentError("Paid currency does not match the order.", code="currency_mismatch", status_code=400)
+    if payment.get("status") != "captured":
+        raise PaymentError(
+            f"Payment is not captured yet (status: {payment.get('status')}).",
+            code="payment_not_captured",
+            status_code=409,
+        )
 
     _mark_paid(order_id, payment_id, "test" if key_id.startswith("rzp_test_") else "live")
     plan = plan_summary(PLANS.get(row["plan_id"]) or PLANS["ai_awaaz_starter"])

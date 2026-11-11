@@ -727,25 +727,23 @@ export default {
         const mode = url.searchParams.get("hub.mode");
         const tok = url.searchParams.get("hub.verify_token");
         const chal = url.searchParams.get("hub.challenge");
-        if (mode === "subscribe" && tok === REPORT_CFG.WA_VERIFY_TOKEN) {
+        if (REPORT_CFG.WA_VERIFY_TOKEN && mode === "subscribe" && tok === REPORT_CFG.WA_VERIFY_TOKEN) {
           return new Response(chal, { status: 200 });
         }
         return new Response("forbidden", { status: 403 });
       }
       if (request.method === "POST") {
+        const renderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
         try {
-          const body = await request.json();
-          ctx.waitUntil((async () => {
-            await fetch(`${REPORT_CFG.UPSTASH_URL}/lpush/nanopro_wa_log`, {
-              method: "POST",
-              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}`, "Content-Type": "application/json" },
-              body: JSON.stringify(JSON.stringify({ at: new Date().toISOString(), body }).slice(0, 3000))
-            });
-            await fetch(`${REPORT_CFG.UPSTASH_URL}/ltrim/nanopro_wa_log/0/20`, { method: "POST", headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` } });
-            await handleWhatsApp(body);
-          })());
-        } catch (_) {}
-        return new Response("ok");
+          const headers = new Headers(request.headers);
+          headers.delete("host");
+          const response = await fetch(new URL(path, renderBase), {
+            method: "POST", headers, body: request.body, redirect: "manual"
+          });
+          return new Response(response.body, { status: response.status, headers: response.headers });
+        } catch (_) {
+          return new Response("Webhook service unavailable", { status: 503 });
+        }
       }
       return new Response("method", { status: 405 });
     }

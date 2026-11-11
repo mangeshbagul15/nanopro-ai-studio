@@ -109,7 +109,24 @@ class WhatsAppAutonomousGuardian:
         self._save_state("last_inbound_time", str(now))
         self._save_state("last_inbound_text", text)
         self._save_state("last_inbound_sender", self.last_inbound_sender)
+        digits = "".join(c for c in str(phone) if c.isdigit())
+        if digits:
+            self._save_state(f"inbound:{digits}", str(now))
         log_event(f"WhatsApp Guardian: Recorded inbound message from {phone}. 24h window refreshed!", component="WhatsAppGuardian")
+
+    def is_window_open_for(self, phone: str) -> bool:
+        """True when this number messaged the business within Meta's 24h service window."""
+        digits = "".join(c for c in str(phone) if c.isdigit())
+        if not digits:
+            return False
+        try:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT value FROM whatsapp_channel_state WHERE key = ?", (f"inbound:{digits}",))
+                row = cursor.fetchone()
+            return bool(row) and (time.time() - float(row[0])) < 23.5 * 3600
+        except Exception:
+            return False
 
     def record_outbound(self, phone: str, status: str, message_id: Optional[str] = None):
         """Called whenever an outbound message is dispatched."""

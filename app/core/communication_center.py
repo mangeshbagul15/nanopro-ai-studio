@@ -486,7 +486,8 @@ class CommunicationCenter:
         phone_number_id: Optional[str] = None,
         template_name: Optional[str] = None,
         template_params: Optional[List[str]] = None,
-        language_code: str = "en_US"
+        language_code: str = "en_US",
+        sensitive: bool = False
     ) -> Dict[str, Any]:
         """
         Sends an official WhatsApp message via Meta (Facebook) WhatsApp Business Cloud API.
@@ -532,6 +533,13 @@ class CommunicationCenter:
                         {"type": "text", "text": str(p)} for p in template_params
                     ]
                 }]
+                if sensitive and len(template_params) == 1:
+                    template["components"].append({
+                        "type": "button",
+                        "sub_type": "url",
+                        "index": "0",
+                        "parameters": [{"type": "text", "text": str(template_params[0])}]
+                    })
             payload = {
                 "messaging_product": "whatsapp",
                 "to": clean_phone,
@@ -559,7 +567,7 @@ class CommunicationCenter:
                 err_msg = err_dict.get("message", resp.text)
 
                 # AUTONOMOUS 24-HOUR RECOVERY: If 24h window closed, auto-fallback to Meta Approved Template!
-                if (err_code == 131047 or "24 hours" in err_msg.lower()) and not template_name:
+                if not sensitive and not template_name and (err_code == 131047 or "24 hours" in err_msg.lower()):
                     log_event(f"WhatsApp 24h window closed for {clean_phone} - Autonomously sending Meta Approved Template recovery ping...", component="CommunicationCenter", level="WARNING")
                     template_payload = {
                         "messaging_product": "whatsapp",
@@ -574,12 +582,12 @@ class CommunicationCenter:
                     t_data = t_resp.json() if t_resp.content else {}
                     t_msg_id = t_data.get("messages", [{}])[0].get("id") if t_data.get("messages") else None
                     if t_resp.status_code == 200 and t_msg_id:
-                        log_event(f"Autonomous Meta Template successfully delivered to {clean_phone} [ID: {t_msg_id}]! Channel restored.", component="CommunicationCenter")
+                        log_event(f"Autonomous Meta Template accepted for {clean_phone} [ID: {t_msg_id}]!", component="CommunicationCenter")
                         try:
                             from app.core.telegram_router import send_telegram_routed_message
                             send_telegram_routed_message(
                                 category="health",
-                                text=f"📱 <b>WhatsApp 24h Window Auto-Recovered</b>\n\nTemplate ping delivered to WhatsApp!\n\n<b>Original Alert:</b>\n{message[:800]}",
+                                text=f"📱 <b>WhatsApp 24h Window Auto-Recovered</b>\n\nTemplate ping accepted by WhatsApp!\n\n<b>Original Alert:</b>\n{message[:800]}",
                                 parse_mode="HTML"
                             )
                         except Exception:
@@ -596,7 +604,11 @@ class CommunicationCenter:
                         }
 
                 # Otherwise handle error
+                if sensitive:
+                    err_msg = "WhatsApp authentication message was not accepted."
                 log_event(f"WhatsApp Cloud API failed ({resp.status_code}): {err_msg}", level="ERROR", component="CommunicationCenter")
+                if sensitive:
+                    return {"success": False, "error": err_msg}
                 try:
                     from app.core.telegram_router import send_telegram_routed_message
                     send_telegram_routed_message(
@@ -611,21 +623,23 @@ class CommunicationCenter:
             # Success
             msg_id = resp_data.get("messages", [{}])[0].get("id")
             wa_id  = resp_data.get("contacts", [{}])[0].get("wa_id")
-            delivered = bool(msg_id)
+            accepted = bool(msg_id)
+            metadata = {"provider": "Meta WhatsApp Cloud API", "message_id": msg_id, "wa_id": wa_id}
+            if not sensitive:
+                metadata["response"] = resp_data
             self.record_ledger_entry(
                 channel="whatsapp",
                 process_name="whatsapp_meta_cloud_api",
                 sender=f"Meta WhatsApp Cloud ({phone_id})",
                 recipient=clean_phone,
-                subject="Official WhatsApp Business Notification",
-                status="sent" if delivered else "failed",
-                summary_text=message[:150],
-                metadata={"provider": "Meta WhatsApp Cloud API", "response": resp_data,
-                          "message_id": msg_id, "wa_id": wa_id}
+                subject="Authentication message" if sensitive else "Official WhatsApp Business Notification",
+                status="sent" if accepted else "failed",
+                summary_text="Authentication message" if sensitive else message[:150],
+                metadata=metadata
             )
             return {
-                "success": delivered,
-                "status":  "delivered" if delivered else "accepted_not_confirmed",
+                "success": accepted,
+                "status":  "accepted" if accepted else "accepted_not_confirmed",
                 "provider": "Meta WhatsApp Business Cloud API",
                 "recipient": clean_phone,
                 "message_id": msg_id,
@@ -633,8 +647,10 @@ class CommunicationCenter:
                 "response": resp_data
             }
         except Exception as e:
-            err_msg = str(e)
+            err_msg = "WhatsApp authentication message dispatch failed." if sensitive else str(e)
             log_event(f"WhatsApp dispatch exception: {err_msg}", level="ERROR", component="CommunicationCenter")
+            if sensitive:
+                return {"success": False, "error": err_msg}
             try:
                 from app.core.telegram_router import send_telegram_routed_message
                 send_telegram_routed_message(

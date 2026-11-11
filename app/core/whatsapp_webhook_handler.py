@@ -12,6 +12,8 @@ import os
 import re
 import time
 import json
+import hashlib
+import hmac
 import threading
 import urllib.request
 import urllib.parse
@@ -22,13 +24,12 @@ from app.core.database import db, credentials_vault
 from app.core.model_adapter import model_manager
 from app.core.communication_center import communication_center
 
-DEFAULT_VERIFY_TOKEN = "nanopro_whatsapp_secret_2026"
 PROCESSED_MESSAGE_IDS = set()
 PROCESSED_LOCK = threading.Lock()
 
 class WhatsAppWebhookHandler:
     def __init__(self):
-        self.verify_token = os.environ.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN", DEFAULT_VERIFY_TOKEN)
+        self.verify_token = os.environ.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "").strip()
         self.last_inbound_time: float = 0.0
         self.last_inbound_text: str = ""
         self.last_inbound_sender: str = ""
@@ -36,11 +37,7 @@ class WhatsAppWebhookHandler:
         self.last_outbound_status: str = ""
 
     def verify_webhook(self, mode: Optional[str], token: Optional[str], challenge: Optional[str]) -> Tuple[bool, Optional[str]]:
-        """
-        Handles Meta WhatsApp Webhook Verification Handshake.
-        When configuring Webhook in Meta Developer Portal, Meta sends:
-        GET /api/whatsapp/webhook?hub.mode=subscribe&hub.challenge=1158201444&hub.verify_token=nanopro_whatsapp_secret_2026
-        """
+        """Validate Meta's subscription verification handshake."""
         stored_cred = credentials_vault.get_credential("WHATSAPP_BUSINESS_CLOUD")
         expected_token = self.verify_token
         if stored_cred and stored_cred.get("additional_metadata"):
@@ -48,12 +45,20 @@ class WhatsAppWebhookHandler:
             if meta.get("webhook_verify_token"):
                 expected_token = meta["webhook_verify_token"]
 
-        if mode == "subscribe" and token == expected_token:
-            log_event(f"WhatsApp Webhook verified successfully (Challenge: {challenge})", component="WhatsAppWebhook")
+        if expected_token and mode == "subscribe" and hmac.compare_digest(token or "", expected_token):
+            log_event("WhatsApp Webhook verified successfully.", component="WhatsAppWebhook")
             return True, challenge
-        
-        log_event(f"WhatsApp Webhook verification failed. Received token: '{token}', expected: '{expected_token}'", level="WARNING", component="WhatsAppWebhook")
+
+        log_event("WhatsApp Webhook verification failed.", level="WARNING", component="WhatsAppWebhook")
         return False, None
+
+    @staticmethod
+    def verify_payload_signature(raw_body: bytes, signature: str) -> bool:
+        secret = (os.environ.get("WHATSAPP_APP_SECRET") or "").strip()
+        if not secret or not re.fullmatch(r"sha256=[0-9a-f]{64}", signature or ""):
+            return False
+        expected = "sha256=" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, signature)
 
     def process_incoming_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -183,6 +188,11 @@ class WhatsAppWebhookHandler:
                     user_query = "तुमचा व्हॉईस मेसेज मिळाला आहे, कृपया प्रश्न पुन्हा विचारा."
 
             if not user_query:
+                return
+
+            if user_query.strip().upper() in {"LOGIN", "OTP", "NANOPRO LOGIN", "NANOPRO OTP"}:
+                from app.core.auth_manager import auth_manager
+                auth_manager.send_otp_on_whatsapp_request(from_number)
                 return
 
             # 2. Formulate domain response with NanoPro intelligence
@@ -467,7 +477,7 @@ Instructions:
             "test_bot_number": test_number,
             "target_user_phone": target_number,
             "permanent_webhook_url": "https://mangesh-nanopro.mangeshbagul15.workers.dev/api/whatsapp/webhook",
-            "verify_token": self.verify_token,
+            "signature_verification_configured": bool((os.environ.get("WHATSAPP_APP_SECRET") or "").strip()),
             "two_way_window_open": is_window_open,
             "hours_since_last_inbound": round(hours_since, 1),
             "last_inbound_text": self.last_inbound_text or "No inbound messages received in this session",

@@ -8177,19 +8177,20 @@ async def api_whatsapp_webhook_receive(request: Request):
 
     """
 
+    import json
     from app.core.whatsapp_webhook_handler import whatsapp_webhook_handler
 
+    raw_body = await request.body()
+    if not whatsapp_webhook_handler.verify_payload_signature(raw_body, request.headers.get("X-Hub-Signature-256", "")):
+        return JSONResponse({"status": "forbidden", "error": "Invalid webhook signature"}, status_code=403)
     try:
-
-        payload = await request.json()
-
-        res = whatsapp_webhook_handler.process_incoming_payload(payload)
-
-        return JSONResponse(res)
-
-    except Exception as e:
-
-        return JSONResponse({"status": "error", "error": str(e)}, status_code=200)
+        payload = json.loads(raw_body)
+    except (ValueError, UnicodeDecodeError):
+        return JSONResponse({"status": "error", "error": "Invalid webhook payload"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"status": "error", "error": "Invalid webhook payload"}, status_code=400)
+    res = whatsapp_webhook_handler.process_incoming_payload(payload)
+    return JSONResponse(res, status_code=200 if res.get("status") == "accepted" else 503)
 
 
 
@@ -13593,7 +13594,7 @@ async def api_auth_otp_send(req: AuthOtpSendRequest, request: Request):
 
     res = auth_manager.generate_and_send_otp(identifier=req.identifier, channel=req.channel or "whatsapp", ip_address=ip)
 
-    status_code = 200 if res.get("status") == "success" else 400
+    status_code = 200 if res.get("status") in {"success", "pending"} else 400
 
     return JSONResponse(res, status_code=status_code)
 
