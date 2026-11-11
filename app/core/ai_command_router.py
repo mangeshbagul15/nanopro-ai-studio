@@ -37,6 +37,14 @@ class AskRequest(BaseModel):
     session_id: Optional[str] = None
 
 
+def _scrub(text: str) -> str:
+    """Strip keyed URL parameters and bearer tokens before anything is logged."""
+    import re
+
+    out = re.sub(r"(key|api_key|token|access_token)=[^&\s\"']+", r"\1=***", text or "")
+    return re.sub(r"Bearer\s+[A-Za-z0-9._\-]+", "Bearer ***", out)
+
+
 def classify_intent(message: str) -> str:
     text = (message or "").lower()
     for name, words in INTENTS:
@@ -177,7 +185,7 @@ async def api_v2_chat(req: AskRequest):
                     prompt,
                     system_prompt=SYSTEM_PROMPT,
                     models=[candidate],
-                    timeout=20.0,
+                    timeout=9.0,
                     allow_fallback=False,
                 )
                 text = (content or "").strip()
@@ -187,8 +195,19 @@ async def api_v2_chat(req: AskRequest):
                     break
                 chain.append(candidate + ": empty")
             except Exception as exc:
-                # Exception type only: provider errors can embed request URLs.
+                # Exception type only in the response: provider errors can embed
+                # keyed request URLs. The scrubbed detail goes to the server log.
                 chain.append(candidate + ": " + type(exc).__name__)
+                try:
+                    from app.core.logger import log_event
+
+                    log_event(
+                        f"AI router: {candidate} failed: {type(exc).__name__}: {_scrub(str(exc))[:160]}",
+                        level="WARNING",
+                        component="AICommandRouter",
+                    )
+                except Exception:
+                    pass
     if not answer:
         answer = _facts_answer(intent, facts)
         model = "rules"

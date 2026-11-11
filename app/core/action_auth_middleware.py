@@ -50,6 +50,7 @@ DANGER_PREFIXES = (
     "/api/de_modern/",
     "/api/manager/",
     "/api/antigravity/",
+    "/api/logs/",
     "/api/v2/",
 )
 
