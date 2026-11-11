@@ -178,8 +178,9 @@ async def api_v2_chat(req: AskRequest):
     if model_manager is not None:
         # One shot per provider in this exact order: Gemini first, Groq second.
         # allow_fallback=False preserves the order because the manager otherwise
-        # sorts Groq ahead of Gemini.
-        for candidate in ("gemini-3.8-flash", "openai/gpt-oss-120b"):
+        # sorts Groq ahead of Gemini. gemini-3.8-flash is listed by the API but
+        # hangs on this key (30s+), so 3.5-flash is the working newest model.
+        for candidate in ("gemini-3.5-flash", "openai/gpt-oss-120b"):
             try:
                 content, used, _mode = model_manager.execute_with_fallback(
                     prompt,
