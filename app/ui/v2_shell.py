@@ -280,7 +280,7 @@ async function get(p){
     for (let attempt = 0; ; attempt++) {
       const r = await fetch(p, {credentials:"same-origin", headers:{"Accept":"application/json"}});
       if (r.ok) return r.json();
-      if (r.status !== 429 || attempt >= 1) throw new Error(r.status);
+      if ((r.status !== 429 && r.status !== 503) || attempt >= 1) throw new Error(r.status);
       await new Promise(done => setTimeout(done, 1500));
     }
   } finally { apiFree(); }
@@ -364,12 +364,17 @@ $("#ask").addEventListener("submit", async e => {
   $("#d-body").innerHTML = '<div class="mut">Thinking…</div>';
   $("#drawer").classList.add("open");
   try {
-    const r = await fetch("/api/v2/chat", {
-      method: "POST", credentials: "same-origin",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({message: q})
-    });
-    const d = await r.json().catch(() => ({}));
+    let r, d = {};
+    for (let attempt = 0; ; attempt++) {
+      r = await fetch("/api/v2/chat", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: q})
+      });
+      d = await r.json().catch(() => ({}));
+      if (r.ok || r.status !== 503 || attempt >= 1) break;
+      await new Promise(done => setTimeout(done, 2000));
+    }
     if (!r.ok) throw new Error((d && d.detail) || ("HTTP " + r.status));
     $("#d-title").textContent = d.intent || "answer";
     $("#d-body").innerHTML = '<div class="ans">' + esc(d.answer || "") + '</div>' +
