@@ -50,6 +50,17 @@ STATE_KIND = "dm_state"
 FILES_KIND = "dm_files"
 KEEP_SNAPSHOTS = 2
 CONNECT_TIMEOUT = 10
+
+
+def _node_name() -> str:
+    return "cloud" if (os.environ.get("RENDER") or os.environ.get("IS_CLOUD")) else "laptop"
+
+
+def _kind(base: str) -> str:
+    """One snapshot slot per node: a laptop flush must never overwrite the
+    cloud state, or the next redeploy restores stale users and sessions."""
+    node = _node_name()
+    return base if node == "cloud" else f"{base}_{node}"
 SYNC_INTERVAL = max(2.0, float(os.environ.get("DM_SYNC_INTERVAL", "5")))
 # Full state re-uploads dominated the cloud egress bill: every request that
 # touches users.last_active_at changed the signature and pushed the whole
@@ -428,8 +439,8 @@ def snapshot_now() -> Dict[str, Any]:
             state_blob = _export_state()
             conn = _connect()
             _ensure_remote(conn)
-            files_uploaded = _upload(conn, FILES_KIND, files) if files else False
-            state_uploaded = _upload(conn, STATE_KIND, state_blob) if state_blob else False
+            files_uploaded = _upload(conn, _kind(FILES_KIND), files) if files else False
+            state_uploaded = _upload(conn, _kind(STATE_KIND), state_blob) if state_blob else False
             total = len(files or b"") + len(state_blob or b"")
             _state.update(
                 last_sync_at=time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -462,8 +473,8 @@ def restore() -> Dict[str, Any]:
     try:
         conn = _connect()
         _ensure_remote(conn)
-        state_blob = _latest_snapshot(conn, STATE_KIND)
-        files_blob = _latest_snapshot(conn, FILES_KIND)
+        state_blob = _latest_snapshot(conn, _kind(STATE_KIND))
+        files_blob = _latest_snapshot(conn, _kind(FILES_KIND))
         restored_rows = 0
         restored_files = 0
         if state_blob:
@@ -549,6 +560,9 @@ def status() -> Dict[str, Any]:
     baseline = _last_signature or (None, None)
     return {
         "enabled": enabled(),
+        "node": _node_name(),
+        "state_kind": _kind(STATE_KIND),
+        "files_kind": _kind(FILES_KIND),
         "running": bool(_thread and _thread.is_alive()),
         "initialized": bool(_state.get("enabled")),
         "pid": os.getpid(),
