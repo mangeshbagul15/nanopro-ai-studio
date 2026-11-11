@@ -217,15 +217,52 @@ export default {
       }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }
 
-    // E2. AI Manager Chat — Direct Groq API call from edge (zero Python dependency)
+    // E2. AI Manager Chat — Render-first, edge Groq only when Render is unreachable.
+    // The deployed app owns agents, tools, approvals and DM persistence, so edge
+    // replies must stay a fallback rather than the primary chat path.
     if (path === "/api/manager/chat" && request.method === "POST") {
+      const rawBody = await request.text();
+      let body = {};
+      try { body = JSON.parse(rawBody); } catch (_) {}
+      const userMessage = body.message || body.prompt || "";
+      const sessionId = body.session_id || "edge_default";
+      if (!userMessage) {
+        return new Response(JSON.stringify({ status: "error", error: "Message is required" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+
+      const renderChatBase = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
       try {
-        const body = await request.json();
-        const userMessage = body.message || body.prompt || "";
-        const sessionId = body.session_id || "edge_default";
-        if (!userMessage) {
-          return new Response(JSON.stringify({ status: "error", error: "Message is required" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        const chatUrl = new URL("/api/manager/chat", renderChatBase);
+        const chatHeaders = new Headers(request.headers);
+        chatHeaders.delete("host");
+        chatHeaders.set("Host", chatUrl.host);
+        chatHeaders.set("X-Forwarded-Host", url.host);
+        chatHeaders.set("X-NanoPro-Gateway", "Cloudflare-Chat-Render-First");
+        const chatController = new AbortController();
+        const chatTimeout = setTimeout(() => chatController.abort(), 58000);
+        let upstream;
+        try {
+          upstream = await fetch(chatUrl.toString(), {
+            method: "POST",
+            headers: chatHeaders,
+            body: rawBody,
+            signal: chatController.signal
+          });
+        } finally {
+          clearTimeout(chatTimeout);
         }
+        if (upstream.ok) {
+          const fh = new Headers(upstream.headers);
+          fh.set("Access-Control-Allow-Origin", "*");
+          fh.set("X-NanoPro-Routed-Node", renderChatBase);
+          fh.set("X-NanoPro-Mode", "RENDER_CHAT");
+          return new Response(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers: fh });
+        }
+      } catch (_) {
+        // Render cold-starting or down — fall through to the edge answer.
+      }
+
+      try {
 
         // System prompt for NanoPro Manager Agent
         const systemPrompt = `You are NanoPro AI Studio Manager Agent — Mangesh Bagul's personal AI operating center. You are running on Cloudflare Edge (zero Python dependency mode). Respond concisely and helpfully. You can discuss AI, data engineering, cloud architecture, coding, and general topics. If the user asks about data engineering pipelines, video making, or GPU tasks, inform them those require the Render backend or local laptop GPU. For all other queries, provide full assistance directly.`;
@@ -261,6 +298,7 @@ export default {
         return new Response(JSON.stringify({
           status: "success",
           reply: reply,
+          response: reply,
           text: reply,
           session_id: sessionId,
           model: "openai/gpt-oss-120b",

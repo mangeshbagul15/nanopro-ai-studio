@@ -26719,7 +26719,7 @@ function navigateHistory(direction) {
 
 
 
-            let bodyHtml = formatMarkdownChat(data.response || '');
+            let bodyHtml = formatMarkdownChat(data.response || data.reply || data.text || '');
 
 
 
