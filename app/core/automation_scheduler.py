@@ -139,6 +139,21 @@ class AutomationScheduler:
                     "notification_pref": {"email": True, "telegram": True},
                     "is_enabled": enabled,
                 })
+            if os.environ.get("RENDER") and not any(str(name).lower() == "render_daily_whatsapp_report" for name in existing):
+                self.create_task({
+                    "name": "RENDER_DAILY_WHATSAPP_REPORT",
+                    "description": "Daily 10:00 IST Render details; closed WhatsApp window remains pending; no template or Telegram fallback.",
+                    "task_type": "scheduled_job",
+                    "script_content": json.dumps({"recipient": "+918433755448"}),
+                    "schedule_type": "daily",
+                    "recurrence_expr": "10:00",
+                    "timezone": "Asia/Kolkata",
+                    "timeout_sec": 90,
+                    "retry_policy": {"max_retries": 0, "retry_interval_sec": 60},
+                    "notification_pref": {"email": False, "telegram": False, "whatsapp": False},
+                    "is_enabled": True,
+                    "is_paused": False,
+                })
         except Exception as exc:
             log_event(f"Could not register pipeline schedules: {exc}", level="WARNING", component="AutomationScheduler")
 

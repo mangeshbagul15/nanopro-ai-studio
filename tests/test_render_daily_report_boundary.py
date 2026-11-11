@@ -575,6 +575,50 @@ class RenderDailyReportBoundaryTests(unittest.TestCase):
                 h.scheduler._execute_app_job({"name": "render_daily_whatsapp_report", "script_content": content})
                 self.assertEqual(h.native_sender.call_args.args, ("+" + PHONE,))
 
+    def test_render_boot_registers_missing_report_once_without_sending(self):
+        h = self.boundary
+        cases = [
+            ({}, None),
+            ({"RENDER": "true"}, None),
+            ({"RENDER": "true"}, {"name": "RENDER_DAILY_WHATSAPP_REPORT", "is_enabled": False, "is_paused": True}),
+            ({"RENDER": "true"}, {"name": "render_daily_whatsapp_report", "is_enabled": False}),
+        ]
+        for env, existing in cases:
+            with self.subTest(env=env, existing=existing):
+                tasks = [existing] if existing is not None else []
+                database = SimpleNamespace(
+                    list_automation_tasks=Mock(side_effect=lambda: list(tasks)),
+                    update_automation_task=Mock(),
+                )
+                scope = extract_definitions(
+                    "app/core/automation_scheduler.py", {"_ensure_pipeline_tasks_seeded"},
+                    {**h.namespace, "os": SimpleNamespace(environ=env), "db": database, "log_event": Mock()},
+                    class_name="AutomationScheduler",
+                )
+                scheduler = scope["AutomationScheduler"]()
+                scheduler.create_task = Mock(side_effect=tasks.append)
+                scheduler._ensure_pipeline_tasks_seeded()
+                scheduler._ensure_pipeline_tasks_seeded()
+                reports = [call.args[0] for call in scheduler.create_task.call_args_list
+                           if call.args[0]["name"] == "RENDER_DAILY_WHATSAPP_REPORT"]
+                if env and existing is None:
+                    self.assertEqual(len(reports), 1)
+                    report = reports[0]
+                    self.assertEqual(report["task_type"], "scheduled_job")
+                    self.assertEqual(json.loads(report["script_content"]), {"recipient": "+" + PHONE})
+                    self.assertEqual((report["schedule_type"], report["recurrence_expr"], report["timezone"]),
+                                     ("daily", "10:00", "Asia/Kolkata"))
+                    self.assertEqual(report["retry_policy"]["max_retries"], 0)
+                    self.assertEqual(report["notification_pref"], {"email": False, "telegram": False, "whatsapp": False})
+                    self.assertTrue(report["is_enabled"])
+                    self.assertFalse(report["is_paused"])
+                else:
+                    self.assertEqual(reports, [])
+                database.update_automation_task.assert_not_called()
+        h.connect.assert_not_called()
+        h.sender.assert_not_called()
+        self.assertEqual(h.imports, [])
+
     def test_daily_1000_schedule_is_ist_independent_of_input_timezone(self):
         h = self.boundary
         cases = [
