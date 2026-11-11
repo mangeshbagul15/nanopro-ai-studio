@@ -59,3 +59,6 @@ backups/stale_duckdb/
 
 # Local wrangler tool state
 deploy/.wrangler/
+
+# Local scratch debug artifacts (may contain credentials)
+scratch/private/
