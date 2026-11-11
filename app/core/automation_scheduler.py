@@ -142,7 +142,7 @@ class AutomationScheduler:
             if os.environ.get("RENDER") and not any(str(name).lower() == "render_daily_whatsapp_report" for name in existing):
                 self.create_task({
                     "name": "RENDER_DAILY_WHATSAPP_REPORT",
-                    "description": "Daily 10:00 IST Render details; closed WhatsApp window remains pending; no template or Telegram fallback.",
+                    "description": "Daily 10:00 IST Render details via text or the approved NanoPro Utility template; one attempt, no generic ping or Telegram fallback.",
                     "task_type": "scheduled_job",
                     "script_content": json.dumps({"recipient": "+918433755448"}),
                     "schedule_type": "daily",

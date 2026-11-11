@@ -478,6 +478,37 @@ class CommunicationCenter:
             "message": "Direct automated WhatsApp delivery succeeded." if dispatched else "1-Click WhatsApp link generated. Click to send instantly for free."
         }
 
+    def get_whatsapp_template(self, template_id: str) -> Dict[str, Any]:
+        if not template_id.isascii() or not template_id.isdigit():
+            return {}
+        session = None
+        try:
+            token = os.environ.get("WHATSAPP_CLOUD_ACCESS_TOKEN")
+            if not token:
+                credential = credentials_vault.get_credential("WHATSAPP_BUSINESS_CLOUD")
+                token = (credential or {}).get("secret_value")
+            if not token:
+                return {}
+            api_version = os.environ.get("WHATSAPP_CLOUD_API_VERSION", "v25.0").strip() or "v25.0"
+            session = requests.Session()
+            response = session.get(
+                f"https://graph.facebook.com/{api_version}/{template_id}",
+                headers={"Authorization": f"Bearer {token}"},
+                params={"fields": "id,name,status,category,language,components"},
+                timeout=8,
+            )
+            if response.status_code != 200:
+                return {}
+            data = response.json()
+            if not isinstance(data, dict) or "error" in data:
+                return {}
+            return {key: data.get(key) for key in ("id", "name", "status", "category", "language", "components")}
+        except Exception:
+            return {}
+        finally:
+            if session is not None:
+                session.close()
+
     def send_whatsapp_cloud_api(
         self,
         phone: str,

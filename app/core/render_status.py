@@ -21,6 +21,17 @@ FREE_INSTANCE_HOURS = 750
 FREE_CUSTOM_DOMAINS = 2
 API_TIMEOUT = 4.0
 API_CACHE_SECONDS = 60.0
+REPORT_TEMPLATE_ID = "1443140931240355"
+REPORT_TEMPLATE_NAME = "nanopro_render_daily_report_v1"
+REPORT_TEMPLATE_LANGUAGE = "en"
+REPORT_TEMPLATE_BODY = (
+    "Your requested daily NanoPro Render service report for {{1}}.\n"
+    "Service and deployment: {{2}}.\n"
+    "Bandwidth and protection (app estimates): {{3}}.\n"
+    "Runtime and account limits: {{4}}.\n"
+    "CPU/RAM are not collected by this report."
+)
+REPORT_TEMPLATE_FOOTER = "App estimates; Render billing is authoritative."
 
 _cache: Dict[str, Any] = {"at": 0.0, "data": None}
 
@@ -222,7 +233,7 @@ def build_render_daily_report(data: Dict[str, Any]) -> str:
     lines = [
         "*NanoPro - Render Daily Report*",
         stamp,
-        f"Service: {os.environ.get('RENDER_SERVICE_NAME') or 'nanopro-studio'}",
+        f"Service: {' '.join((os.environ.get('RENDER_SERVICE_NAME') or 'nanopro-studio').split())}",
         "App process: running on Render",
     ]
     fields = (
@@ -245,10 +256,41 @@ def build_render_daily_report(data: Dict[str, Any]) -> str:
         ("Free bandwidth limit", "suspend_at"),
         ("Sources", "api_source"),
     )
-    lines.extend(f"{label}: {data.get(key) or 'not available'}" for label, key in fields)
+    lines.extend(f"{label}: {' '.join(str(data.get(key) or 'not available').split())}" for label, key in fields)
     lines.append("CPU/RAM: not collected by this report; check the Render dashboard.")
     lines.append("App bandwidth and build-time figures are estimates; Render billing is authoritative.")
     return "\n".join(lines)
+
+
+def render_report_template_approved(template: Dict[str, Any]) -> bool:
+    if not isinstance(template, dict) or any(template.get(key) != value for key, value in (
+        ("id", REPORT_TEMPLATE_ID), ("name", REPORT_TEMPLATE_NAME),
+        ("status", "APPROVED"), ("category", "UTILITY"), ("language", REPORT_TEMPLATE_LANGUAGE),
+    )):
+        return False
+    components = template.get("components")
+    return (
+        isinstance(components, list) and len(components) == 2
+        and all(isinstance(component, dict) for component in components)
+        and any(component.get("type") == "BODY" and component.get("text") == REPORT_TEMPLATE_BODY for component in components)
+        and any(component.get("type") == "FOOTER" and component.get("text") == REPORT_TEMPLATE_FOOTER for component in components)
+    )
+
+
+def build_render_report_template_params(report: str) -> list[str]:
+    lines = report.splitlines()
+    values = dict(line.split(": ", 1) for line in lines[2:] if ": " in line)
+    groups = (
+        ("Service", "App process", "Plan", "Suspended", "Latest deploy"),
+        ("Bandwidth (app meter)", "Bandwidth remaining (estimate)", "Month-end projection",
+         "Usage risk", "Protection mode", "HTTP responses", "Service-initiated traffic", "Average daily traffic"),
+        ("Process uptime", "Instance-hour limit", "Build time estimate", "Heavy-feature throttle",
+         "Heavy-feature pause", "Free bandwidth limit", "Sources"),
+    )
+    return [" ".join(lines[1].split())] + [
+        "; ".join(f"{label}: {' '.join(values.get(label, 'not available').split())}" for label in group)
+        for group in groups
+    ]
 
 
 def send_daily_render_report(recipient: str = "+918433755448") -> Dict[str, Any]:
@@ -291,8 +333,11 @@ def send_daily_render_report(recipient: str = "+918433755448") -> Dict[str, Any]
                 (day, phone, report),
             )
         conn.commit()
-        if not whatsapp_guardian.is_window_open_for(phone):
-            return {**result, "status": "pending", "reason": "whatsapp_reply_required"}
+        use_template = not whatsapp_guardian.is_window_open_for(phone)
+        if use_template:
+            template = communication_center.get_whatsapp_template(REPORT_TEMPLATE_ID)
+            if not render_report_template_approved(template):
+                return {**result, "status": "pending", "reason": "report_template_not_approved"}
 
         with conn.cursor() as cur:
             cur.execute(
@@ -305,7 +350,15 @@ def send_daily_render_report(recipient: str = "+918433755448") -> Dict[str, Any]
         if not claimed:
             return {**result, "status": "sending", "already_attempted": True}
 
-        sent = communication_center.send_whatsapp_cloud_api(phone=phone, message=claimed[0], sensitive=True)
+        if use_template:
+            sent = communication_center.send_whatsapp_cloud_api(
+                phone=phone, message=claimed[0], sensitive=True,
+                template_name=REPORT_TEMPLATE_NAME,
+                template_params=build_render_report_template_params(claimed[0]),
+                language_code=REPORT_TEMPLATE_LANGUAGE,
+            )
+        else:
+            sent = communication_center.send_whatsapp_cloud_api(phone=phone, message=claimed[0], sensitive=True)
         state = "accepted" if sent.get("success") and sent.get("status") == "accepted" and sent.get("message_id") else "failed"
         with conn.cursor() as cur:
             cur.execute(
