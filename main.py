@@ -6619,6 +6619,38 @@ async def api_send_test_email(req: Optional[TestEmailPayload] = None, recipient:
 
     res = smtp_client.send_test_email(recipient=target, provider=provider)
 
+    try:
+
+        from app.core.communication_center import communication_center
+
+        delivered = bool(res.get("success"))
+
+        communication_center.record_ledger_entry(
+
+            channel="email",
+
+            process_name="connection_test",
+
+            sender="mangeshbagul15@gmail.com",
+
+            recipient=res.get("recipient") or target,
+
+            subject=res.get("subject") or "Email integration test",
+
+            status="sent" if delivered else "failed",
+
+            error_message=None if delivered else str(res.get("error") or res.get("status") or "delivery failed"),
+
+            summary_text="Manual email connection test",
+
+            metadata={"provider": res.get("provider")},
+
+        )
+
+    except Exception:
+
+        pass
+
     return JSONResponse(res)
 
 

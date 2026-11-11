@@ -236,7 +236,7 @@ const CARDS = [
    metric:d => [list(d).length, "sources"]},
   {id:"agents", glyph:"✦", name:"Agent Station", hint:"Enterprise agent fleet", api:"/api/agents/list",
    station:true, metric:d => [list(d).length, "agents"]},
-  {id:"comms", glyph:"✉", name:"Communication", hint:"Email · Telegram · WhatsApp", api:"/api/emails/delivery-history",
+  {id:"comms", glyph:"✉", name:"Communication", hint:"Email · Telegram · WhatsApp", api:"/api/communication/ledger",
    metric:d => [list(d).length, "recent"]},
   {id:"video", glyph:"▶", name:"Video Studio", hint:"Universal video maker", api:"/api/video/2026_matrix_catalog",
    metric:d => [countDeep(d), "presets"]},
