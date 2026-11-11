@@ -245,6 +245,8 @@ const CARDS = [
    metric:d => [list(d).length, "plans"]},
   {id:"monitor", glyph:"◎", name:"Monitoring", hint:"Health · egress · jobs", api:"/api/operations/state",
    metric:d => ["LIVE", (d && (d.status || d.health_status)) || "ok"]},
+  {id:"render", glyph:"☁", name:"Render Cloud", hint:"Bandwidth · builds · hours", api:"/api/v2/render",
+   metric:d => { const m = /([\d.]+) GB of/.exec((d && d.bandwidth) || ""); return [m ? m[1] : "—", "GB of 5"]; }},
   {id:"news", glyph:"◫", name:"Signals", hint:"Market & news feed", api:"/api/news/articles",
    metric:d => [list(d).length, "articles"]},
 ];
@@ -360,12 +362,14 @@ async function openCard(card){
   $("#d-title").textContent = card.name;
   $("#d-body").innerHTML = '<div class="mut">Loading…</div>';
   $("#drawer").classList.add("open");
+  const link = card.id === "render"
+    ? '<a class="open-link" href="https://dashboard.render.com/" target="_blank" rel="noopener">Render dashboard ↗</a>'
+    : '<a class="open-link" href="/legacy">Open full workspace →</a>';
   try {
     const d = await get(card.api);
-    $("#d-body").innerHTML = renderPayload(d) + '<a class="open-link" href="/legacy">Open full workspace →</a>';
+    $("#d-body").innerHTML = renderPayload(d) + link;
   } catch (e) {
-    $("#d-body").innerHTML = '<div class="mut">Not available on this lane (' + e.message + ').</div>' +
-      '<a class="open-link" href="/legacy">Open full workspace →</a>';
+    $("#d-body").innerHTML = '<div class="mut">Not available on this lane (' + e.message + ').</div>' + link;
   }
 }
 

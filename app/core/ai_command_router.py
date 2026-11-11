@@ -9,9 +9,11 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, Optional, Tuple
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
+from app.core.api_auth import require_session
 
 router = APIRouter(prefix="/api/v2", tags=["AICommandRouter"])
 
@@ -160,6 +162,13 @@ def _facts_answer(intent: str, facts: Dict[str, Any]) -> str:
             f"AI slots {conc.get('ai_active', 0)}/{conc.get('ai_limit', 0)}."
         )
     return "Facts only: " + ", ".join(f"{k}={v}" for k, v in facts.items() if not isinstance(v, dict))
+
+
+@router.get("/render")
+async def api_v2_render(_user: Dict[str, Any] = Depends(require_session)):
+    from app.core.render_status import render_status
+
+    return JSONResponse(render_status())
 
 
 @router.post("/chat")
