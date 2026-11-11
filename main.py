@@ -6011,6 +6011,50 @@ async def api_telegram_command(req: TelegramCommandRequest):
 
 
 
+TELEGRAM_WEBHOOK_CATEGORIES = {"news", "health", "career", "reports"}
+
+
+def _answer_telegram_update(update: dict, category: Optional[str] = None) -> None:
+
+    msg = update.get("message") or update.get("edited_message") or {}
+
+    chat_id = (msg.get("chat") or {}).get("id")
+
+    text = (msg.get("text") or "").strip()
+
+    if not chat_id or not text:
+
+        return
+
+    res = {}
+
+    try:
+
+        res = personal_assistant_agent.process_telegram_command(user_id=str(chat_id), text=text) or {}
+
+    except Exception as exc:
+
+        log_event(f"Telegram webhook command failed: {exc}", level="WARNING", component="TelegramAgent")
+
+    reply = (res.get("reply") or "").strip()
+
+    if not reply:
+
+        return
+
+    from app.core.telegram_router import send_telegram_routed_message
+
+    threading.Thread(
+
+        target=send_telegram_routed_message,
+
+        kwargs={"category": category, "text": reply, "chat_id": str(chat_id)},
+
+        daemon=True
+
+    ).start()
+
+
 @app.post("/api/telegram/webhook")
 
 async def api_telegram_webhook(request: Request):
@@ -6037,41 +6081,9 @@ async def api_telegram_webhook(request: Request):
 
             raise HTTPException(status_code=403, detail="Invalid webhook secret")
 
-    msg = update.get("message") or update.get("edited_message") or {}
+    category = (request.query_params.get("category") or "").strip().lower()
 
-    chat_id = (msg.get("chat") or {}).get("id")
-
-    text = (msg.get("text") or "").strip()
-
-    if not chat_id or not text:
-
-        return JSONResponse({"ok": True})
-
-    res = {}
-
-    try:
-
-        res = personal_assistant_agent.process_telegram_command(user_id=str(chat_id), text=text) or {}
-
-    except Exception as exc:
-
-        log_event(f"Telegram webhook command failed: {exc}", level="WARNING", component="TelegramAgent")
-
-    reply = (res.get("reply") or "").strip()
-
-    if reply:
-
-        from app.core.telegram_router import send_telegram_routed_message
-
-        threading.Thread(
-
-            target=send_telegram_routed_message,
-
-            kwargs={"text": reply, "chat_id": str(chat_id)},
-
-            daemon=True
-
-        ).start()
+    _answer_telegram_update(update, category if category in TELEGRAM_WEBHOOK_CATEGORIES else None)
 
     return JSONResponse({"ok": True})
 
