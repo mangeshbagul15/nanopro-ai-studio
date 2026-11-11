@@ -150,6 +150,7 @@ async def api_v2_chat(req: AskRequest):
             "intent": intent,
             "answer": _facts_answer(intent, facts),
             "model": "rules",
+            "chain": ["facts-only"],
             "latency_ms": int((time.time() - started) * 1000),
             "facts": facts,
         })
@@ -159,13 +160,13 @@ async def api_v2_chat(req: AskRequest):
         f"USER QUESTION:\n{message}\n\n"
         "Reply with the answer only."
     )
-    answer, model, ai_state = "", "", "unavailable"
-    attempts: list = []
+    answer, model = "", ""
+    chain: list = []
     try:
         from app.core.model_adapter import model_manager
     except Exception as exc:
         model_manager = None
-        attempts.append(f"import: {str(exc)[:80]}")
+        chain.append("import: " + type(exc).__name__)
     if model_manager is not None:
         # One shot per provider in this exact order: Gemini first, Groq second.
         # allow_fallback=False preserves the order because the manager otherwise
@@ -181,22 +182,23 @@ async def api_v2_chat(req: AskRequest):
                 )
                 text = (content or "").strip()
                 if text:
-                    answer, model, ai_state = text, used, "ok"
+                    answer, model = text, used
+                    chain.append(candidate + ": ok")
                     break
-                attempts.append(f"{candidate}: empty")
+                chain.append(candidate + ": empty")
             except Exception as exc:
-                attempts.append(f"{candidate}: {str(exc)[:80]}")
+                # Exception type only: provider errors can embed request URLs.
+                chain.append(candidate + ": " + type(exc).__name__)
     if not answer:
         answer = _facts_answer(intent, facts)
         model = "rules"
-        ai_state = "degraded: " + "; ".join(attempts) if attempts else "degraded"
 
     return JSONResponse({
         "status": "success",
         "intent": intent,
         "answer": answer,
         "model": model or "unknown",
-        "ai": ai_state,
+        "chain": chain,
         "latency_ms": int((time.time() - started) * 1000),
         "facts": facts,
     })
