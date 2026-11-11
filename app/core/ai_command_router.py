@@ -186,7 +186,9 @@ async def api_v2_chat(req: AskRequest):
                     prompt,
                     system_prompt=SYSTEM_PROMPT,
                     models=[candidate],
-                    timeout=9.0,
+                    # Gemini answers in ~7-9s from the free Render lane, so the
+                    # budget leaves headroom while still handing over to Groq.
+                    timeout=12.0,
                     allow_fallback=False,
                 )
                 text = (content or "").strip()
