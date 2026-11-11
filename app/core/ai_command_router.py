@@ -160,22 +160,36 @@ async def api_v2_chat(req: AskRequest):
         "Reply with the answer only."
     )
     answer, model, ai_state = "", "", "unavailable"
+    attempts: list = []
     try:
         from app.core.model_adapter import model_manager
-
-        content, model, _mode = model_manager.execute_with_fallback(
-            prompt,
-            system_prompt=SYSTEM_PROMPT,
-            models=["gemini-3.8-flash", "openai/gpt-oss-120b"],
-            timeout=20.0,
-            allow_fallback=True,
-        )
-        answer = (content or "").strip()
-        ai_state = "ok" if answer else "empty"
     except Exception as exc:
+        model_manager = None
+        attempts.append(f"import: {str(exc)[:80]}")
+    if model_manager is not None:
+        # One shot per provider in this exact order: Gemini first, Groq second.
+        # allow_fallback=False preserves the order because the manager otherwise
+        # sorts Groq ahead of Gemini.
+        for candidate in ("gemini-3.8-flash", "openai/gpt-oss-120b"):
+            try:
+                content, used, _mode = model_manager.execute_with_fallback(
+                    prompt,
+                    system_prompt=SYSTEM_PROMPT,
+                    models=[candidate],
+                    timeout=20.0,
+                    allow_fallback=False,
+                )
+                text = (content or "").strip()
+                if text:
+                    answer, model, ai_state = text, used, "ok"
+                    break
+                attempts.append(f"{candidate}: empty")
+            except Exception as exc:
+                attempts.append(f"{candidate}: {str(exc)[:80]}")
+    if not answer:
         answer = _facts_answer(intent, facts)
         model = "rules"
-        ai_state = f"degraded: {str(exc)[:120]}"
+        ai_state = "degraded: " + "; ".join(attempts) if attempts else "degraded"
 
     return JSONResponse({
         "status": "success",
