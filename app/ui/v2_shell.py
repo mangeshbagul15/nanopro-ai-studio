@@ -352,7 +352,7 @@ function renderPayload(d){
   };
   if (Array.isArray(d)) renderItems(d, "item");
   else if (d && typeof d === "object") {
-    Object.keys(d).slice(0, 24).forEach(k => {
+    Object.keys(d).slice(0, 40).forEach(k => {
       const v = d[k];
       if (Array.isArray(v)) {
         if (v.length && typeof v[0] === "object") renderItems(v, k);
