@@ -24113,12 +24113,29 @@ Ready for message compilation and automated dispatch.
 
                 if (vp) {
                     vp.scrollTop = 0;
-                    if (viewName === 'data_modeling_ai') {
+                    if (viewName === 'data_modeling_ai' || viewName === 'global_ai_lab') {
                         vp.style.padding = '0';
                         vp.style.overflow = 'hidden';
                     } else {
                         vp.style.padding = '';
                         vp.style.overflow = '';
+                    }
+                }
+
+                // Toggle body view state classes
+                if (document.body) {
+                    document.body.classList.toggle('in-global_ai_lab', viewName === 'global_ai_lab');
+                    document.body.classList.toggle('in-data_modeling_ai', viewName === 'data_modeling_ai');
+                }
+
+                // Hide floating Dynamic Island in Global AI Lab so it never covers controls/topbar
+                const dynIsland = document.getElementById('nanoDynamicIsland');
+                if (dynIsland) {
+                    if (viewName === 'global_ai_lab' || viewName === 'data_modeling_ai') {
+                        dynIsland.style.setProperty('display', 'none', 'important');
+                        dynIsland.classList.remove('expanded');
+                    } else if (localStorage.getItem('nano_island_dismissed') !== 'true') {
+                        dynIsland.style.removeProperty('display');
                     }
                 }
 

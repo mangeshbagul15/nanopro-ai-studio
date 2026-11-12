@@ -34,6 +34,19 @@ def get_2026_modern_trends_css() -> str:
 }
 
 /* --- Dynamic Island (#233) --- */
+/* CRITICAL: Completely hide and remove Dynamic Island overlay on Global AI Lab and full-bleed studios */
+body:has(#view-global_ai_lab.active) .nano-dynamic-island,
+body:has(#view-global_ai_lab[style*="display: flex"]) .nano-dynamic-island,
+body:has(#view-global_ai_lab[style*="display: block"]) .nano-dynamic-island,
+body.in-global_ai_lab .nano-dynamic-island,
+body:has(#view-data_modeling_ai.active) .nano-dynamic-island,
+body.in-data_modeling_ai .nano-dynamic-island {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translate(-50%, -100px) !important;
+}
 .nano-dynamic-island {
     position: fixed;
     top: 14px;
@@ -367,6 +380,7 @@ def get_2026_modern_trends_html() -> str:
             <span id="islandLiveText">NanoPro AI Studio</span>
             <span class="island-chip" id="islandActiveModelBadge">305 AGENTS</span>
         </span>
+        <button type="button" class="island-close-btn" onclick="dismissDynamicIsland(event)" title="Close and dismiss" style="background:none; border:none; color:#64748B; font-size:16px; cursor:pointer; padding:0 4px; margin-left:6px; line-height:1; display:flex; align-items:center; justify-content:center;">&times;</button>
     </div>
     
     <div class="island-expanded-content" id="islandExpandedContent">
@@ -489,7 +503,29 @@ function toggleCyberSoundFx() {
 }
 
 // --- 2. Dynamic Island Controller (#233) ---
+function dismissDynamicIsland(e) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    const island = document.getElementById('nanoDynamicIsland');
+    if (island) {
+        island.style.setProperty('display', 'none', 'important');
+        island.classList.remove('expanded');
+    }
+    try { localStorage.setItem('nano_island_dismissed', 'true'); } catch(err){}
+}
+
 function toggleDynamicIsland(e) {
+    // If currently in global_ai_lab or data_modeling_ai, never expand
+    const activeLab = document.querySelector('#view-global_ai_lab.active') || 
+                      document.querySelector('#view-global_ai_lab[style*="display: flex"]') ||
+                      document.querySelector('#view-global_ai_lab[style*="display: block"]');
+    if (activeLab || document.body.classList.contains('in-global_ai_lab')) {
+        const island = document.getElementById('nanoDynamicIsland');
+        if (island) island.style.setProperty('display', 'none', 'important');
+        return;
+    }
     const island = document.getElementById('nanoDynamicIsland');
     if (!island) return;
     island.classList.toggle('expanded');

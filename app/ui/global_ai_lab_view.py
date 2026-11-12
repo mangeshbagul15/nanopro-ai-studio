@@ -37,6 +37,20 @@ body:has(#view-global_ai_lab.active) #main-content-viewport,
   overflow: hidden !important;
 }
 
+/* CRITICAL: Never allow floating Dynamic Island or overlays to cover Global AI Lab controls */
+#nanoDynamicIsland,
+.nano-dynamic-island,
+body:has(#view-global_ai_lab.active) #nanoDynamicIsland,
+body:has(#view-global_ai_lab.active) .nano-dynamic-island,
+body.in-global_ai_lab #nanoDynamicIsland,
+body.in-global_ai_lab .nano-dynamic-island {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translate(-50%, -100px) !important;
+}
+
 #view-global_ai_lab .ailab-app {
   --al-bg: #0B1119;
   --al-panel: #0F1724;
@@ -1032,6 +1046,13 @@ body:has(#view-global_ai_lab.active) #main-content-viewport,
   // -------------------------------------------------------------
   window.initGlobalAILab = async function() {
     console.log("[GlobalAILab] Initializing studio workspace...");
+    try {
+      const island = document.getElementById('nanoDynamicIsland');
+      if (island) {
+        island.style.setProperty('display', 'none', 'important');
+        island.classList.remove('expanded');
+      }
+    } catch (_) {}
     ailabInitGrip();
     ailabHydrateLocalStorage();
     await ailabLoadHistory();
