@@ -10,7 +10,7 @@ from typing import Iterable, Optional, Tuple
 
 from app.core.api_auth import session_user_from_headers
 
-EXEMPT_PATHS = frozenset({"/api/whatsapp/webhook", "/api/telegram/webhook"})
+EXEMPT_PATHS = frozenset({"/api/whatsapp/webhook", "/api/telegram/webhook", "/mcp", "/api/mcp", "/mcp/manifest", "/api/mcp/tools", "/api/cloud/supabase/status", "/api/cloud/firebase/status"})
 
 DANGER_PREFIXES = (
     "/api/admin/",

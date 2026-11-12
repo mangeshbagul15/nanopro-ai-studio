@@ -15447,6 +15447,81 @@ async def api_identity_sentinel_heal():
     return JSONResponse(ai_identity_director.execute_self_healing_cycle())
 
 
+# =========================================================================
+# UNIVERSAL MODEL CONTEXT PROTOCOL (MCP) SERVER ENDPOINTS
+# =========================================================================
+
+@app.post("/mcp")
+@app.post("/api/mcp")
+async def api_mcp_endpoint(request: Request):
+    """Processes official Model Context Protocol (MCP) JSON-RPC 2.0 requests."""
+    from app.core.mcp_server import mcp_server
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error: Invalid JSON"}}, status_code=400)
+    response_data = mcp_server.handle_json_rpc(body)
+    return JSONResponse(response_data)
+
+
+@app.get("/mcp/manifest")
+async def api_mcp_manifest():
+    """Returns official MCP server discovery manifest, capabilities, and tool schemas."""
+    from app.core.mcp_server import mcp_server
+    return JSONResponse({
+        "server": mcp_server.SERVER_NAME,
+        "version": mcp_server.SERVER_VERSION,
+        "protocol": mcp_server.PROTOCOL_VERSION,
+        "tools_count": len(mcp_server._tools_manifest),
+        "resources_count": len(mcp_server._resources_manifest),
+        "prompts_count": len(mcp_server._prompts_manifest),
+        "tools": mcp_server._tools_manifest,
+        "resources": mcp_server._resources_manifest,
+        "prompts": mcp_server._prompts_manifest,
+    })
+
+
+@app.get("/api/mcp/tools")
+async def api_mcp_tools():
+    """Lists available NanoPro MCP tools for AI assistants."""
+    from app.core.mcp_server import mcp_server
+    return JSONResponse({"status": "success", "tools": mcp_server._tools_manifest})
+
+
+# =========================================================================
+# CLOUD PLATFORM INTEGRATIONS: SUPABASE & FIREBASE
+# =========================================================================
+
+@app.get("/api/cloud/supabase/status")
+async def api_supabase_status():
+    """Returns live metadata and health diagnostics for Supabase Cloud PostgreSQL."""
+    from app.core.supabase_engine import supabase_engine
+    return JSONResponse(supabase_engine.get_project_metadata())
+
+
+@app.post("/api/cloud/supabase/sync")
+async def api_supabase_sync():
+    """Synchronizes studio metrics and active agent counts to Supabase Cloud."""
+    from app.core.supabase_engine import supabase_engine
+    from app.core.render_status import render_status
+    return JSONResponse(supabase_engine.sync_telemetry(render_status()))
+
+
+@app.get("/api/cloud/firebase/status")
+async def api_firebase_status():
+    """Returns live metadata and health diagnostics for Google Firebase Cloud."""
+    from app.core.firebase_engine import firebase_engine
+    return JSONResponse(firebase_engine.get_project_metadata())
+
+
+@app.post("/api/cloud/firebase/sync")
+async def api_firebase_sync():
+    """Synchronizes studio telemetry and active agent counts to Firebase Firestore."""
+    from app.core.firebase_engine import firebase_engine
+    from app.core.render_status import render_status
+    return JSONResponse(firebase_engine.sync_telemetry(render_status()))
+
+
 if __name__ == "__main__":
 
     run_server()

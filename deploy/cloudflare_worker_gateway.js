@@ -1,4 +1,4 @@
-﻿/**
+/**
 
  * Mangesh Nano Pro AI Studio - Central Master Cloudflare Gateway Worker
 
@@ -913,6 +913,42 @@ export default {
           status: "error",
           code: "gateway_unreachable",
           message: "Payment service is temporarily unavailable. Please retry in a moment."
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
+    // Universal Model Context Protocol (MCP) and Cloud Services (Supabase & Firebase)
+    const isMcpOrCloudEndpoint = path === "/mcp" ||
+                                 path === "/api/mcp" ||
+                                 path === "/mcp/manifest" ||
+                                 path.startsWith("/api/mcp") ||
+                                 path.startsWith("/api/cloud/");
+    if (isMcpOrCloudEndpoint) {
+      try {
+        const targetUrl = new URL(path + url.search, renderUrl);
+        const newHeaders = new Headers(request.headers);
+        newHeaders.delete("host");
+        newHeaders.set("Host", targetUrl.host);
+        newHeaders.set("X-Forwarded-Host", url.host);
+        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-MCP-Render-Direct");
+        const response = await fetch(targetUrl.toString(), {
+          method: request.method,
+          headers: newHeaders,
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+          redirect: "follow"
+        });
+        const fh = new Headers(response.headers);
+        fh.set("X-NanoPro-Routed-Node", renderUrl);
+        fh.set("X-NanoPro-Mode", "RENDER_MCP_DIRECT");
+        fh.set("Access-Control-Allow-Origin", "*");
+        fh.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        fh.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          status: "error",
+          code: "mcp_gateway_error",
+          message: "Universal MCP gateway service is starting up. Please retry in a moment."
         }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
       }
     }
