@@ -82,7 +82,7 @@ from datetime import datetime
 
 
 
-RENDER_AUTH_BASE = (os.environ.get("NANOPRO_RENDER_BASE") or "https://mangesh-nanopro-studio.onrender.com").rstrip("/")
+RENDER_AUTH_BASE = (os.environ.get("NANOPRO_RENDER_BASE") or "https://nanopro-studio.onrender.com").rstrip("/")
 
 
 UPSTASH_GET_URL = os.environ.get("NANOPRO_UPSTASH_TUNNEL_URL", "")

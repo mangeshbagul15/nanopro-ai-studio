@@ -997,7 +997,7 @@ class DeveloperResourceFinder:
                 "code_snippet": (
                     "import qrcode\n\n"
                     "qr = qrcode.QRCode(box_size=10, border=4)\n"
-                    "qr.add_data('https://mangesh-nanopro-studio.onrender.com')\n"
+                    "qr.add_data('https://nanopro-studio.onrender.com')\n"
                     "qr.make(fit=True)\n"
                     "img = qr.make_image(fill_color='black', back_color='white')\n"
                     "img.save('nanopro_qr.png')\n"

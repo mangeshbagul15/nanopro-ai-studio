@@ -72,7 +72,7 @@ KNOWN_CLUSTER_SERVERS = [
         "role": "CLOUD_RENDER",
         "is_cloud": 1,
         "hostname": "render-hobby-app",
-        "public_url": "https://mangesh-nanopro-studio.onrender.com",
+        "public_url": "https://nanopro-studio.onrender.com",
         "capabilities": ["API_SERVER", "WEB_DASHBOARD", "SENTINEL_MONITOR"]
     },
     {

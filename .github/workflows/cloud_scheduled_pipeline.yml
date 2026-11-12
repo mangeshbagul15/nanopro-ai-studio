@@ -60,7 +60,7 @@ jobs:
       - name: Trigger Cloud Pipeline on Render Cloud Server
         run: |
           CYCLE="${{ steps.cycle_step.outputs.cycle }}"
-          BASE_URL="https://mangesh-nanopro-studio.onrender.com"
+          BASE_URL="https://nanopro-studio.onrender.com"
           echo "Executing Autonomous Cloud Pipeline: $CYCLE via $BASE_URL"
           
           if [ "$CYCLE" = "SFTP_CLEANUP_20D" ]; then
@@ -81,7 +81,7 @@ jobs:
 
       - name: Verification & Health Ping
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://mangesh-nanopro-studio.onrender.com/api/health")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://nanopro-studio.onrender.com/api/health")
           echo "Render Cloud Health Check: HTTP $STATUS"
           if [ "$STATUS" -eq "200" ]; then
             echo "SUCCESS: NanoPro Cloud Lakehouse Pipeline executed successfully without laptop dependence!"

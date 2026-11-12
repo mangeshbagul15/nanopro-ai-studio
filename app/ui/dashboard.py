@@ -12741,7 +12741,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <div><b>Failover Readiness:</b> Automated SecOps DR Replica Active</div>
 
-                    <div><b>Render Cloud:</b> <code>mangesh-nanopro-studio.onrender.com</code> (24/7)</div>
+                    <div><b>Render Cloud:</b> <code>nanopro-studio.onrender.com</code> (24/7)</div>
 
                     <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
 

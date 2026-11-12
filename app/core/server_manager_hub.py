@@ -237,7 +237,7 @@ class ServerManagerHub:
                 "platform": "Render Web Service",
                 "region": "Oregon (US)",
                 "role": "CLOUD_WEB_SERVICE",
-                "url": os.environ.get("NANOPRO_RENDER_HEALTH_URL", "https://mangesh-nanopro-studio.onrender.com"),
+                "url": os.environ.get("NANOPRO_RENDER_HEALTH_URL", "https://nanopro-studio.onrender.com"),
                 "capabilities": ["NanoPro Web App", "FastAPI API"],
             },
             {

@@ -374,7 +374,7 @@ response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin')
 response.headers['Access-Control-Allow-Credentials'] = 'true'""",
         "attack_vector": """Evil.com sends XHR with credentials; server returns requested bank balance and grants evil.com read access.""",
         "secure_remediation": """# SECURE: Strict whitelist of authorized trusted domains:
-ALLOWED_ORIGINS = {'https://mangesh-nanopro-studio.onrender.com'}
+ALLOWED_ORIGINS = {'https://nanopro-studio.onrender.com'}
 origin = request.headers.get('Origin')
 if origin in ALLOWED_ORIGINS:
     response.headers['Access-Control-Allow-Origin'] = origin""",

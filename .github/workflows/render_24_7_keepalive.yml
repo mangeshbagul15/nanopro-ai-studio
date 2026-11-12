@@ -14,7 +14,7 @@ jobs:
       - name: Heartbeat Request
         run: |
           echo "Pinging NanoPro AI Studio on Render to ensure 24/7 uptime..."
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 35 "https://mangesh-nanopro-studio.onrender.com/api/health")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 35 "https://nanopro-studio.onrender.com/api/health")
           echo "Keep-Alive Ping Result: HTTP $STATUS"
           if [ "$STATUS" -eq "200" ]; then
             echo "SUCCESS: NanoPro AI Studio is fully live and running in the cloud 24/7!"

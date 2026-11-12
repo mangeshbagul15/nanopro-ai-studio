@@ -2,8 +2,8 @@
 > **Enterprise Autonomous Multi-Agent Operations & Cloud Lakehouse Platform**  
 > **Final Production Status:** Active & Live (100% Operational)  
 > **Last Finalized Release:** `v11.0 BigQuery Connected + /login Fix` at **06:10 PM IST (06-Nov-2026)**  
-> **24/7 Cloud Production URL:** [https://mangesh-nanopro-studio.onrender.com](https://mangesh-nanopro-studio.onrender.com)  
-> **Master Admin Portal:** [https://mangesh-nanopro-studio.onrender.com/#user_management](https://mangesh-nanopro-studio.onrender.com/#user_management)  
+> **24/7 Cloud Production URL:** [https://nanopro-studio.onrender.com](https://nanopro-studio.onrender.com)  
+> **Master Admin Portal:** [https://nanopro-studio.onrender.com/#user_management](https://nanopro-studio.onrender.com/#user_management)  
 
 ---
 

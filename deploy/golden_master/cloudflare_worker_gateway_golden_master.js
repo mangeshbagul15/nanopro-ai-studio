@@ -1,4 +1,4 @@
-﻿/**
+/**
 
  * Mangesh Nano Pro AI Studio - Central Master Cloudflare Gateway Worker
 
@@ -446,7 +446,7 @@ export default {
       // Node definitions (matching server_manager_hub.py)
       const NODES = [
         { id: "node_cloud_cloudflare_edge", name: "Cloudflare Global Edge Gateway", platform: "Cloudflare Worker", region: "Global Edge", role: "EDGE_GATEWAY_LB", url: "https://mangesh-nanopro.mangeshbagul15.workers.dev", capabilities: ["Global Anycast", "Gateway Routing", "Edge OTP", "Edge AI"] },
-        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://mangesh-nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "Oracle", "AWS S3"] },
+        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "Oracle", "AWS S3"] },
         { id: "node_cloud_alwaysdata", name: "Alwaysdata Cloud Sentinel", platform: "WSGI Python", region: "Paris (EU)", role: "CLOUD_SENTINEL_24_7", url: "https://mangeshbagul15.alwaysdata.net", capabilities: ["Cloud Sentinel", "Cron Worker"] },
         { id: "node_cloud_pythonanywhere", name: "PythonAnywhere Cloud Sentinel", platform: "WSGI Python", region: "Virginia (US)", role: "CLOUD_SENTINEL_24_7", url: "https://mangeshbagul15.pythonanywhere.com", capabilities: ["Status Sentinel", "Crons"] },
         { id: "node_laptop_master", name: "Local Laptop Master", platform: "Windows 11 (RTX 3050)", region: "Mumbai (Local)", role: "LOCAL_MASTER", url: null, capabilities: ["GPU Video", "Ollama 3B", "DuckDB", "FFmpeg"] },
@@ -786,7 +786,7 @@ export default {
     // Laptop: ONLY for video maker / GPU endpoints (checked separately)
     // ================================================================
 
-    const renderUrl = env?.RENDER_MIRROR_URL || "https://mangesh-nanopro-studio.onrender.com";
+    const renderUrl = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
 
     // Endpoints that REQUIRE local laptop GPU (video encoding, image gen)
     const isVideoEndpoint = path.startsWith("/api/sql_video") ||

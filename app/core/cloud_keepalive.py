@@ -20,7 +20,7 @@ from typing import Dict, Any, Optional
 
 from app.core.logger import log_event
 
-RENDER_PUBLIC_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://mangesh-nanopro-studio.onrender.com")
+RENDER_PUBLIC_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://nanopro-studio.onrender.com")
 PING_INTERVAL_SECONDS = int(os.environ.get("KEEP_ALIVE_INTERVAL", "540"))  # 9 minutes (Render sleeps at 15m)
 
 class CloudKeepAliveEngine:

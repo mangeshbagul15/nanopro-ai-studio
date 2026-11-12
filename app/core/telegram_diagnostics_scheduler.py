@@ -18,7 +18,7 @@ from app.core.logger import log_event
 class TelegramDiagnosticsScheduler:
     def __init__(self):
         self.interval_seconds = 3 * 3600  # 3 hours (10800 seconds)
-        self.cloud_url = "https://mangesh-nanopro-studio.onrender.com"
+        self.cloud_url = "https://nanopro-studio.onrender.com"
         self._is_running = False
         self._thread = None
 

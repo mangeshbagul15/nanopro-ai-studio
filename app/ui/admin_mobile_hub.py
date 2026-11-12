@@ -2528,7 +2528,7 @@ def get_admin_mobile_hub_html() -> str:
                     title: 'Render Cloud 24/7 Keep-Alive',
                     sub: 'Zero Sleep Proactive Heartbeat',
                     kpis: [
-                        mkKpi('Target Host', 'Render Cloud', 'mangesh-nanopro-studio', '#38BDF8'),
+                        mkKpi('Target Host', 'Render Cloud', 'nanopro-studio', '#38BDF8'),
                         mkKpi('Ping Interval', '540s (9 mins)', 'Proactive wake', '#10B981'),
                         mkKpi('Last Latency', pingMs, 'Render edge latency', '#C084FC'),
                         mkKpi('Uptime', '100.0%', 'Zero cold-starts', '#FBBF24')

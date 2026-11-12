@@ -438,8 +438,8 @@ def build_user_manual(output_pdf, assets_dir):
         ("Document Type", "Official User Operations Manual & Business Guide (Minglish + English Mix)"),
         ("Production Release", "v9.0 Lakehouse Omni Commander (100% Production Ready)"),
         ("Final Approval Time", "15-Oct-2026 at 06:45 PM IST"),
-        ("24/7 Cloud Live URL", "https://mangesh-nanopro-studio.onrender.com"),
-        ("Master Admin Portal", "https://mangesh-nanopro-studio.onrender.com/#user_management"),
+        ("24/7 Cloud Live URL", "https://nanopro-studio.onrender.com"),
+        ("Master Admin Portal", "https://nanopro-studio.onrender.com/#user_management"),
         ("Target Audience", "Business Analysts, Banking Operations, Branch Managers & End Users")
     ]
     story.extend(make_cover_page(
@@ -544,7 +544,7 @@ def build_user_manual(output_pdf, assets_dir):
     story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor("#0284C7"), spaceAfter=6))
     
     steps_guide = [
-        ("Step 1: Open Cloud URL", "Tumchya mobile kiva laptop browser madhe <b>https://mangesh-nanopro-studio.onrender.com</b> hi secure link open kara. Kontahi VPN kiva installation required nahi."),
+        ("Step 1: Open Cloud URL", "Tumchya mobile kiva laptop browser madhe <b>https://nanopro-studio.onrender.com</b> hi secure link open kara. Kontahi VPN kiva installation required nahi."),
         ("Step 2: Secure Login", "Login screen var tumcha authorized User ID ani Password taka. <i>(Security sathi login screen varun admin password complete remove kela ahe, so konachya hati lagnyachi risk nahi.)</i>"),
         ("Step 3: Natural Language Prompt", "Chat box madhe regular Minglish/English madhe prompt type kara kiva mic var bola. E.g., <i>'Cutoff kadhi ghetla ani aaj EOD settlement zale ka?'</i>"),
         ("Step 4: Cross-Database Join", "Jar Oracle ani Snowflake data merge karaycha asel, tr fakt mhana: <i>'GAM ani CUSTOMER_MASTER join kar and sample dakhav'</i>. NanoPro automatically matching keys find out karun 5-row preview dakhavel."),
@@ -659,7 +659,7 @@ def build_admin_developer_manual(output_pdf, assets_dir):
         ("Final Approval Timestamp", "15-Oct-2026 at 06:45 PM IST"),
         ("GitHub Repository", "https://github.com/mangeshbagul15/nanopro-ai-studio"),
         ("24/7 Cloud Hosting", "Render Cloud Native (Zero-Card Free Tier Architecture)"),
-        ("Master Admin Portal", "https://mangesh-nanopro-studio.onrender.com/#user_management"),
+        ("Master Admin Portal", "https://nanopro-studio.onrender.com/#user_management"),
         ("Lead Architect & Founder", "Mangesh Bagul & Autonomous AI Core Team")
     ]
     story.extend(make_cover_page(

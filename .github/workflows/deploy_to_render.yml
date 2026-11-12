@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "Checking Render health..."
           for i in 1 2 3; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "https://mangesh-nanopro-studio.onrender.com/api/health")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "https://nanopro-studio.onrender.com/api/health")
             echo "Attempt $i: HTTP $STATUS"
             if [ "$STATUS" -eq "200" ]; then
               echo "SUCCESS: Render is healthy!"
