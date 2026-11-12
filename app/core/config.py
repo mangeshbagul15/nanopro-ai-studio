@@ -142,3 +142,6 @@ default_port = int(os.environ.get("PORT", 7860 if os.environ.get("SPACE_ID") els
 
 SERVER_HOST = os.environ.get("STUDIO_HOST", os.environ.get("HOST", default_host))
 SERVER_PORT = int(os.environ.get("STUDIO_PORT", default_port))
+
+# OpenRouter Unified Multi-Model Gateway (432+ Models)
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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").strip()

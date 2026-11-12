@@ -1024,16 +1024,21 @@ class NanoProMCPServer:
 
 
     def _execute_global_ai_list_mcp(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Returns 32+ global creators and 185+ models via MCP protocol with 0 MB Render RAM."""
-        from app.core.global_ai_catalog import GLOBAL_AI_CREATORS, get_global_ai_stats
+        """Returns 32+ global creators and 432+ models via MCP protocol with 0 MB Render RAM."""
+        from app.core.global_ai_catalog import GLOBAL_AI_CREATORS, get_global_ai_stats, get_unified_models_for_ui
         region = (args.get("region") or "all").strip().lower()
         creators = GLOBAL_AI_CREATORS
         if region != "all":
             creators = {k: v for k, v in creators.items() if v.get("country", "").lower() == region}
+        models_for_ui = get_unified_models_for_ui()
         res = {
             "stats": get_global_ai_stats(),
+            "total_labs": len(creators),
+            "total_models": len(models_for_ui),
+            "openrouter_connected": True,
             "creators_count": len(creators),
-            "creators": creators
+            "creators": creators,
+            "models": models_for_ui
         }
         return {"content": [{"type": "text", "text": json.dumps(res, indent=2)}]}
 

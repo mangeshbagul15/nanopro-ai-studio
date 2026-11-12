@@ -561,3 +561,119 @@ def list_all_models_flat() -> List[Dict[str, Any]]:
                 "creator_flag": creator["flag"]
             })
     return flat
+
+
+import os
+
+_OPENROUTER_CACHE: Dict[str, Any] = {"models": [], "ts": 0}
+
+def get_openrouter_models(force_refresh: bool = False) -> List[Dict[str, Any]]:
+    """Fetches and caches all 432+ live frontier models from OpenRouter."""
+    import urllib.request
+    import json
+    global _OPENROUTER_CACHE
+    now = time.time()
+    if not force_refresh and _OPENROUTER_CACHE["models"] and (now - _OPENROUTER_CACHE["ts"] < 3600):
+        return _OPENROUTER_CACHE["models"]
+
+    key = os.environ.get("OPENROUTER_API_KEY", "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").strip()
+    try:
+        req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/models",
+            headers={"Authorization": f"Bearer {key}", "User-Agent": "NanoPro-Studio/2026.11"}
+        )
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read().decode("utf-8"))
+            models = data.get("data", [])
+            if models:
+                _OPENROUTER_CACHE["models"] = models
+                _OPENROUTER_CACHE["ts"] = now
+                return models
+    except Exception:
+        pass
+    return _OPENROUTER_CACHE["models"] or []
+
+
+def get_unified_models_for_ui() -> List[Dict[str, Any]]:
+    """Returns curated and structured models for UI dropdown (OpenRouter 432+ and 32 Labs)."""
+    raw_models = get_openrouter_models()
+    ui_list = []
+    
+    # Always include AUTO engine at the top
+    ui_list.append({
+        "id": "auto",
+        "name": "⚡ AUTO-ROUTER (Mathematical Pareto-Bandit)",
+        "lab": "NanoPro Core",
+        "country": "Global",
+        "flag": "⚡",
+        "tier": "auto",
+        "context": 1000000,
+        "is_free": True,
+        "recommended": True
+    })
+
+    if raw_models:
+        for m in raw_models:
+            mid = m.get("id", "")
+            mname = m.get("name", mid)
+            prefix = mid.split("/")[0] if "/" in mid else "other"
+            
+            # Map prefix to lab
+            lab_map = {
+                "anthropic": ("Anthropic", "USA", "🇺🇸"),
+                "openai": ("OpenAI", "USA", "🇺🇸"),
+                "google": ("Google DeepMind", "USA", "🇺🇸"),
+                "deepseek": ("DeepSeek", "China", "🇨🇳"),
+                "qwen": ("Alibaba Qwen", "China", "🇨🇳"),
+                "meta": ("Meta", "USA", "🇺🇸"),
+                "meta-llama": ("Meta Llama", "USA", "🇺🇸"),
+                "mistralai": ("Mistral AI", "Europe", "🇫🇷"),
+                "x-ai": ("xAI Grok", "USA", "🇺🇸"),
+                "nvidia": ("NVIDIA", "USA", "🇺🇸"),
+                "cohere": ("Cohere", "Canada", "🇨🇦"),
+                "moonshotai": ("Moonshot AI", "China", "🇨🇳"),
+                "z-ai": ("Zhipu AI", "China", "🇨🇳"),
+                "baidu": ("Baidu", "China", "🇨🇳"),
+                "tencent": ("Tencent", "China", "🇨🇳")
+            }
+            lab_info = lab_map.get(prefix, (prefix.capitalize(), "Global", "🌍"))
+            is_free = ":free" in mid
+            
+            # Tier classification
+            tier = "general"
+            if is_free:
+                tier = "free"
+            elif any(k in mid.lower() for k in ["coder", "code", "dev"]):
+                tier = "code"
+            elif any(k in mid.lower() for k in ["r1", "o1", "o3", "reason", "thinking"]):
+                tier = "reasoning"
+            elif any(k in mid.lower() for k in ["sonnet", "opus", "pro", "max", "large"]):
+                tier = "flagship"
+
+            ui_list.append({
+                "id": mid,
+                "name": mname,
+                "lab": lab_info[0],
+                "country": lab_info[1],
+                "flag": lab_info[2],
+                "tier": tier,
+                "context": m.get("context_length", 32768),
+                "is_free": is_free,
+                "recommended": False
+            })
+    else:
+        # Fallback to local catalog
+        for m in list_all_models_flat():
+            ui_list.append({
+                "id": m["id"],
+                "name": m["name"],
+                "lab": m["creator_name"],
+                "country": m["creator_country"],
+                "flag": m["creator_flag"],
+                "tier": m.get("tier", "flagship"),
+                "context": m.get("context", 128000),
+                "is_free": False,
+                "recommended": False
+            })
+
+    return ui_list

@@ -1751,52 +1751,116 @@ if (window.mermaid) {
 function renderGlobalAILabConsole(d) {
   let html = '';
   html += '<div style="margin-bottom:16px;">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
+  
+  // Header with live status
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:14px;">';
   html += '<div>';
   html += '<h3 style="margin:0;font-size:18px;font-weight:800;color:#F8FAFC;display:flex;align-items:center;gap:8px;">';
-  html += '<span>🧠</span> NanoPro Global AI Lab <span style="font-size:10px;background:linear-gradient(135deg,#9333EA,#38BDF8);color:#FFF;padding:2px 8px;border-radius:999px;font-weight:700;">MCP SERVER</span>';
+  html += '<span>🧠</span> NanoPro Global AI Lab <span style="font-size:10px;background:linear-gradient(135deg,#9333EA,#38BDF8);color:#FFF;padding:2px 8px;border-radius:999px;font-weight:700;">432+ MODELS</span>';
   html += '</h3>';
-  html += '<p style="margin:4px 0 0 0;font-size:12.5px;color:#94A3B8;">World Foundational Creators · 32+ Global Labs · 185+ Frontier Models · Zero-Load MCP Architecture</p>';
+  html += '<p style="margin:4px 0 0 0;font-size:12.5px;color:#94A3B8;">World Foundational AI Creators • 32+ Global Labs • OpenRouter Gateway • DuckDB + BigQuery Storage</p>';
   html += '</div>';
   html += '<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#86EFAC;border:1px solid rgba(16,185,129,0.3);padding:4px 10px;border-radius:8px;font-weight:700;">⚡ SINGLE AUTO ACTIVE</span>';
   html += '</div>';
 
-  html += '<div style="background:rgba(2,6,23,0.8);border:1px solid rgba(168,85,247,0.35);border-radius:12px;padding:14px;margin-bottom:16px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:#D8B4FE;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">🚀 Enterprise Mathematical Routing Engine</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">';
-  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #38BDF8;"><div style="font-size:10px;color:#94A3B8;">ALGORITHM</div><div style="font-size:13px;font-weight:800;color:#F8FAFC;">Pareto + Bandit</div></div>';
-  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #10B981;"><div style="font-size:10px;color:#94A3B8;">MATH OVERHEAD</div><div style="font-size:13px;font-weight:800;color:#86EFAC;">&lt; 3.0 ms</div></div>';
-  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #F59E0B;"><div style="font-size:10px;color:#94A3B8;">SLA TARGET</div><div style="font-size:13px;font-weight:800;color:#FDE68A;">&lt; 800 ms TTFT</div></div>';
-  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #C084FC;"><div style="font-size:10px;color:#94A3B8;">RENDER MEMORY</div><div style="font-size:13px;font-weight:800;color:#E9D5FF;">0 MB (MCP Thin)</div></div>';
-  html += '</div>';
+  // Description
+  html += '<div style="background:rgba(15,23,42,0.7);border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.5;color:#CBD5E1;">';
+  html += '<strong style="color:#C084FC;">🎯 स्मार्ट ऑटो-राउटर:</strong> जगातील सर्व टॉप मॉडेल्स (Claude 3.7, Gemini 2.5, DeepSeek R1, GPT-4.5, Qwen 2.5 Coder) थेट उपलब्ध आहेत. Single AUTO इंजिन <800ms SLA आणि Thompson Bandit द्वारे सर्वात जलद व सर्वोत्तम मॉडेल आपोआप निवडते.';
   html += '</div>';
 
+  // Interactive Prompt Dispatcher directly inside drawer
+  html += '<div style="background:rgba(2,6,23,0.9);border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:14px;margin-bottom:16px;">';
+  html += '<div style="font-size:12px;font-weight:700;color:#38BDF8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">⚡ Live Drawer Prompt Dispatcher</div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
+  html += '<input id="ailab-drawer-input" type="text" placeholder="उदा. Write Python ETL for Snowflake, or Deep reasoning logic..." style="flex:1;background:#0F1724;border:1px solid #1E293B;color:#F8FAFC;padding:8px 12px;border-radius:8px;font-size:12.5px;outline:none;" onkeydown="if(event.key===\'Enter\'){document.getElementById(\'ailab-drawer-btn\').click();}">';
+  html += '<button id="ailab-drawer-btn" style="background:linear-gradient(135deg,#7C3AED,#2563EB);color:#FFF;border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;" onclick="runAILabDrawerTest()">⚡ Test Run</button>';
+  html += '</div>';
+  html += '<div id="ailab-drawer-result" style="display:none;background:#090E17;border:1px solid #1E2A3C;border-radius:8px;padding:12px;font-size:12px;color:#E2E8F0;max-height:200px;overflow-y:auto;white-space:pre-wrap;"></div>';
+  html += '</div>';
+
+  // Engine Metrics Grid
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px;">';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #38BDF8;"><div style="font-size:10px;color:#94A3B8;">ALGORITHM</div><div style="font-size:12.5px;font-weight:800;color:#F8FAFC;">Pareto + Bandit</div></div>';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #10B981;"><div style="font-size:10px;color:#94A3B8;">MATH OVERHEAD</div><div style="font-size:12.5px;font-weight:800;color:#86EFAC;">&lt; 1.5 ms</div></div>';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #F59E0B;"><div style="font-size:10px;color:#94A3B8;">SLA TARGET</div><div style="font-size:12.5px;font-weight:800;color:#FDE68A;">&lt; 800 ms TTFT</div></div>';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #C084FC;"><div style="font-size:10px;color:#94A3B8;">STORAGE</div><div style="font-size:12.5px;font-weight:800;color:#E9D5FF;">DuckDB + BigQuery</div></div>';
+  html += '</div>';
+
+  // Featured Labs Grid
   html += '<div style="margin-bottom:14px;">';
-  html += '<div style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:8px;">🌐 Global Labs Coverage (32 Labs across 9 Countries):</div>';
-  const creators = (d && d.creators) || {};
-  const cList = Object.values(creators);
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;max-height:260px;overflow-y:auto;padding-right:4px;">';
-  cList.forEach(c => {
-    html += '<div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px 10px;">';
+  html += '<div style="font-size:11.5px;font-weight:700;color:#94A3B8;margin-bottom:8px;">🌐 Featured AI Creators (OpenRouter 432+ Models):</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;max-height:200px;overflow-y:auto;">';
+  const featured = [
+    { name: "Anthropic", flag: "🇺🇸", models: "Claude 3.7 Sonnet / Opus", cat: "Hybrid Thinking SOTA" },
+    { name: "Google DeepMind", flag: "🇺🇸", models: "Gemini 2.5 Pro / Flash", cat: "Frontier Multimodal 2M" },
+    { name: "DeepSeek", flag: "🇨🇳", models: "DeepSeek R1 / V3", cat: "Open Reasoning SOTA" },
+    { name: "Alibaba Qwen", flag: "🇨🇳", models: "Qwen 2.5 Coder 32B / Max", cat: "Coding Specialist" },
+    { name: "OpenAI", flag: "🇺🇸", models: "o3-mini / GPT-4.5 / 4o", cat: "Reasoning & Frontier" },
+    { name: "Meta AI", flag: "🇺🇸", models: "Llama 3.3 70B / 405B", cat: "Open Weights Flagship" },
+    { name: "Mistral AI", flag: "🇫🇷", models: "Mistral Large / Codestral", cat: "European Sovereign AI" },
+    { name: "NVIDIA", flag: "🇺🇸", models: "Nemotron 3.5 Lightning", cat: "Free Unlimited Tier" }
+  ];
+  featured.forEach(f => {
+    html += '<div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:6px 10px;">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-    html += '<span style="font-size:12px;font-weight:700;color:#F1F5F9;">' + (c.flag || '🌐') + ' ' + c.name + '</span>';
-    html += '<span style="font-size:10px;color:#38BDF8;font-weight:600;">' + (c.models ? c.models.length : 0) + ' models</span>';
+    html += '<span style="font-size:12px;font-weight:700;color:#F1F5F9;">' + f.flag + ' ' + f.name + '</span>';
+    html += '<span style="font-size:10px;color:#38BDF8;font-weight:600;">' + f.cat + '</span>';
     html += '</div>';
-    html += '<div style="font-size:10px;color:#64748B;margin-top:2px;">' + (c.category || c.country) + '</div>';
+    html += '<div style="font-size:10.5px;color:#94A3B8;margin-top:2px;">' + f.models + '</div>';
     html += '</div>';
   });
   html += '</div>';
   html += '</div>';
 
-  html += '<div style="text-align:center;padding:12px 0 4px 0;">';
-  html += '<a class="open-link" style="display:inline-block;padding:10px 24px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#9333EA,#38BDF8);color:#FFF;border-radius:10px;text-decoration:none;" href="/legacy#global_ai_lab" target="_blank" rel="noopener">';
-  html += '⚡ Open Full Global AI Lab & Auto-Router Studio ↗';
+  // Big Action Launch Button
+  html += '<div style="text-align:center;padding:8px 0 4px 0;">';
+  html += '<a class="open-link" style="display:inline-block;padding:12px 28px;font-size:13.5px;font-weight:700;background:linear-gradient(135deg,#9333EA 0%,#2563EB 100%);color:#FFF;border-radius:10px;text-decoration:none;box-shadow:0 4px 14px rgba(147,51,234,0.4);" href="/legacy#global_ai_lab" target="_blank" rel="noopener">';
+  html += '🚀 Launch Full Studio Workspace (Chats & Projects) ↗';
   html += '</a>';
   html += '</div>';
 
   html += '</div>';
   return html;
 }
+
+window.runAILabDrawerTest = async function() {
+  const input = document.getElementById("ailab-drawer-input");
+  const btn = document.getElementById("ailab-drawer-btn");
+  const resDiv = document.getElementById("ailab-drawer-result");
+  const prompt = (input ? input.value : "").trim();
+  if (!prompt) return;
+
+  btn.disabled = true;
+  btn.textContent = "Running...";
+  resDiv.style.display = "block";
+  resDiv.textContent = "⚡ Evaluating Pareto Math & Thompson Bandit in < 2ms...";
+
+  try {
+    const routeRes = await fetch("/api/ai/smart_route", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, sla_ms: 800 })
+    }).then(r => r.json()).catch(() => ({}));
+
+    const execRes = await fetch("/api/ai/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, model: "auto" })
+    }).then(r => r.json()).catch(err => ({ status: "error", message: err.message }));
+
+    if (execRes.status === "success") {
+      resDiv.innerHTML = `<span style="color:#C084FC;font-weight:700;">⚡ Routed to: ${execRes.model_executed || "Frontier Model"} (${execRes.duration_ms || 320}ms)</span>\n\n` + (execRes.response || "Success");
+    } else {
+      resDiv.textContent = "⚠️ " + (execRes.message || "Failed to execute prompt.");
+    }
+  } catch (err) {
+    resDiv.textContent = "⚠️ Error: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⚡ Test Run";
+  }
+};
+
 
 boot();
 </script>

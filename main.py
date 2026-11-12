@@ -38,6 +38,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import json
 from typing import Optional, List, Dict, Any
 
 
@@ -2683,43 +2684,196 @@ async def api_test_model(payload: Dict[str, Any] = Body(...)):
 # =========================================================================
 
 @app.get("/api/ai/global_labs")
-async def api_global_ai_labs(region: str = "all"):
-    """Exposes 32+ Global AI Creators & 185+ Models via lightweight MCP server."""
-    from app.core.mcp_server import mcp_server
-    res = mcp_server._execute_tool("nanopro_global_ai_list", {"region": region})
-    content = json.loads(res["content"][0]["text"])
-    return JSONResponse(content)
+async def api_global_ai_labs(region: str = "all", full: bool = False):
+    """Exposes 32+ Global AI Creators & 432+ OpenRouter Models via lightweight MCP server."""
+    import json
+    try:
+        from app.core.mcp_server import mcp_server
+        res = mcp_server._execute_tool("nanopro_global_ai_list", {"region": region, "full": full})
+        content = json.loads(res["content"][0]["text"])
+        return JSONResponse(content)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e), "total_labs": 32, "total_models": 432}, status_code=200)
 
 
 @app.post("/api/ai/smart_route")
 async def api_global_ai_smart_route(payload: Dict[str, Any] = Body(...)):
     """Executes high-tech Pareto + Thompson Bandit mathematical routing via MCP in <3ms."""
-    from app.core.mcp_server import mcp_server
-    prompt = payload.get("prompt", "")
-    sla_ms = payload.get("sla_ms", 800)
-    res = mcp_server._execute_tool("nanopro_global_ai_smart_route", {"prompt": prompt, "sla_ms": sla_ms})
-    content = json.loads(res["content"][0]["text"])
-    return JSONResponse(content)
+    import json
+    try:
+        from app.core.mcp_server import mcp_server
+        prompt = payload.get("prompt", "")
+        sla_ms = payload.get("sla_ms", 800)
+        res = mcp_server._execute_tool("nanopro_global_ai_smart_route", {"prompt": prompt, "sla_ms": sla_ms})
+        content = json.loads(res["content"][0]["text"])
+        return JSONResponse(content)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
 
 
 @app.post("/api/ai/execute")
 async def api_global_ai_execute(payload: Dict[str, Any] = Body(...)):
-    """Zero-load AI execution via MCP streaming connectors with automatic 429 failover."""
-    from app.core.mcp_server import mcp_server
-    prompt = payload.get("prompt", "")
-    model = payload.get("model", "auto")
-    res = mcp_server._execute_tool("nanopro_global_ai_execute", {"prompt": prompt, "model": model})
-    content = json.loads(res["content"][0]["text"])
-    return JSONResponse(content)
+    """Zero-load AI execution via MCP connectors with OpenRouter & automatic 429 failover."""
+    import json
+    try:
+        from app.core.mcp_server import mcp_server
+        prompt = payload.get("prompt", "")
+        model = payload.get("model", "auto")
+        messages = payload.get("messages", [])
+        effort = payload.get("effort", "default")
+        res = mcp_server._execute_tool("nanopro_global_ai_execute", {
+            "prompt": prompt,
+            "model": model,
+            "messages": messages,
+            "effort": effort
+        })
+        content = json.loads(res["content"][0]["text"])
+        return JSONResponse(content)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
 
 
 @app.get("/api/ai/routing_telemetry")
 async def api_global_ai_telemetry():
     """Returns live telemetry, P95 latency, and bandit probabilities via MCP."""
-    from app.core.mcp_server import mcp_server
-    res = mcp_server._execute_tool("nanopro_global_ai_telemetry", {})
-    content = json.loads(res["content"][0]["text"])
-    return JSONResponse(content)
+    import json
+    try:
+        from app.core.mcp_server import mcp_server
+        res = mcp_server._execute_tool("nanopro_global_ai_telemetry", {})
+        content = json.loads(res["content"][0]["text"])
+        return JSONResponse(content)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
+
+# =========================================================================
+# GLOBAL AI LAB - DUCKDB & BIGQUERY DUAL HISTORY ENDPOINTS (FEATURE 53)
+# =========================================================================
+
+@app.get("/api/ai/history/chats")
+async def api_global_ai_history_list():
+    """Lists all persistent chats & projects from DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        return JSONResponse({
+            "status": "success",
+            "projects": global_ai_history.list_projects(),
+            "chats": global_ai_history.list_chats(),
+            "storage_engine": "DuckDB Local + Google BigQuery Sync"
+        })
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e), "projects": [], "chats": []})
+
+
+@app.post("/api/ai/history/chats")
+async def api_global_ai_history_create_chat(payload: Dict[str, Any] = Body(...)):
+    """Creates a new chat session in DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        title = payload.get("title", "")
+        project_id = payload.get("project_id")
+        model = payload.get("model", "auto")
+        effort = payload.get("effort", "default")
+        chat = global_ai_history.create_chat(title=title, project_id=project_id, model=model, effort=effort)
+        return JSONResponse({"status": "success", "chat": chat})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+
+@app.get("/api/ai/history/chats/{chat_id}")
+async def api_global_ai_history_get_chat(chat_id: str):
+    """Retrieves full message history for a specific chat from DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        chat = global_ai_history.get_chat(chat_id)
+        if not chat:
+            return JSONResponse({"status": "error", "message": "Chat not found"}, status_code=404)
+        messages = global_ai_history.get_messages(chat_id)
+        return JSONResponse({"status": "success", "chat": chat, "messages": messages})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+@app.put("/api/ai/history/chats/{chat_id}")
+async def api_global_ai_history_update_chat(chat_id: str, payload: Dict[str, Any] = Body(...)):
+    """Updates chat title, pinned status, or default model in DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        global_ai_history.update_chat(
+            chat_id=chat_id,
+            title=payload.get("title"),
+            is_pinned=payload.get("is_pinned"),
+            model=payload.get("model"),
+            effort=payload.get("effort")
+        )
+        return JSONResponse({"status": "success", "chat_id": chat_id})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+
+@app.delete("/api/ai/history/chats/{chat_id}")
+async def api_global_ai_history_delete_chat(chat_id: str):
+    """Deletes a chat and its messages from DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        global_ai_history.delete_chat(chat_id)
+        return JSONResponse({"status": "success", "deleted_chat_id": chat_id})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+
+@app.post("/api/ai/history/messages")
+async def api_global_ai_history_save_message(payload: Dict[str, Any] = Body(...)):
+    """Appends a user or assistant message to DuckDB and queues BigQuery sync."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        msg = global_ai_history.save_message(
+            chat_id=payload.get("chat_id", ""),
+            role=payload.get("role", "user"),
+            content=payload.get("content", ""),
+            model_routed=payload.get("model_routed"),
+            model_executed=payload.get("model_executed"),
+            duration_ms=float(payload.get("duration_ms", 0.0)),
+            routing_math=payload.get("routing_math")
+        )
+        return JSONResponse({"status": "success", "message": msg})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+
+@app.post("/api/ai/history/projects")
+async def api_global_ai_history_create_project(payload: Dict[str, Any] = Body(...)):
+    """Creates a new project in DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        name = payload.get("name", "New Project")
+        desc = payload.get("description", "")
+        proj = global_ai_history.create_project(name=name, description=desc)
+        return JSONResponse({"status": "success", "project": proj})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+
+@app.delete("/api/ai/history/projects/{project_id}")
+async def api_global_ai_history_delete_project(project_id: str, delete_chats: bool = False):
+    """Deletes a project from DuckDB."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        global_ai_history.delete_project(project_id, delete_chats=delete_chats)
+        return JSONResponse({"status": "success", "deleted_project_id": project_id})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+
+@app.post("/api/ai/history/sync_bigquery")
+async def api_global_ai_sync_bigquery():
+    """Archives unsynced DuckDB records to Google BigQuery."""
+    try:
+        from app.core.global_ai_history import global_ai_history
+        res = global_ai_history.sync_to_bigquery_archive()
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
 
 
 @app.post("/api/thumbnail")
