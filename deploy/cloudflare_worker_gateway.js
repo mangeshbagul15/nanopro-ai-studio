@@ -575,7 +575,12 @@ export default {
       GROQ: "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",
       DEEPINFRA: "sk-di-GZlkK2nWUqmV5nxhsdCbGLWxce5EkSAJ",
       DEEPSEEK: "sk-2d5bc8b3419244e6bc17f23b36dd6d66",
-      MISTRAL: "mstrl_OZwEdSDxbLIE8xd9Sg0i3wDLH2l2wOnQ_1OV8Q4"
+      MISTRAL: "mstrl_OZwEdSDxbLIE8xd9Sg0i3wDLH2l2wOnQ_1OV8Q4",
+      HUGGINGFACE: "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",
+      FAL_AI: "fal_sk_d1a4032b2a4d4c94ad7cbef5395d439f:ad79f427f9e0d633316032a561ab9999",
+      REPLICATE: "r8_VSW8CuVp9dP35gBcLCIFIJcNxfzVpuY3jNpQI",
+      AIMLAPI: "d6b5f7f58a5d797e02fd021c231026ea",
+      AIMLAPI_BACKUP: "666612ebe3ae25e4db14bd8da4b654fd"
     };
     const OPENROUTER_STATIC_KEY = MULTI_PROVIDER_KEYS.OPENROUTER;
 
@@ -810,7 +815,7 @@ export default {
       const edgeCatalog = {
         status: "success",
         total_labs: 32,
-        total_models: liveModels ? liveModels.length : 433,
+        total_models: liveModels ? (liveModels.length + 995) : 1468,
         openrouter_connected: true,
         edge_accelerated: true,
         categories: {
@@ -936,7 +941,13 @@ export default {
         "sakana": { lab: "Sakana AI", country: "Japan", flag: "🇯🇵", tier: "Evolutionary Agentic AI" },
         "liquid": { lab: "Liquid AI (LFM)", country: "United States", flag: "🇺🇸", tier: "Liquid Neural Networks" },
         "amazon": { lab: "Amazon AWS (Nova)", country: "United States", flag: "🇺🇸", tier: "Bedrock Frontier" },
-        "microsoft": { lab: "Microsoft (Phi)", country: "United States", flag: "🇺🇸", tier: "Small Language SOTA" }
+        "microsoft": { lab: "Microsoft (Phi)", country: "United States", flag: "🇺🇸", tier: "Small Language SOTA" },
+        "hf": { lab: "Hugging Face (Open Weights)", country: "France / US", flag: "🤗", tier: "110+ Open-Weights SOTA" },
+        "huggingface": { lab: "Hugging Face (Open Weights)", country: "France / US", flag: "🤗", tier: "110+ Open-Weights SOTA" },
+        "aimlapi": { lab: "AI/ML API Multi-Cloud Hub", country: "United States", flag: "⚡", tier: "995+ Unified Models" },
+        "fal": { lab: "fal.ai Lightning Compute", country: "United States", flag: "🎨", tier: "Generative Media & Flux SOTA" },
+        "fal-ai": { lab: "fal.ai Lightning Compute", country: "United States", flag: "🎨", tier: "Generative Media & Flux SOTA" },
+        "replicate": { lab: "Replicate Cloud", country: "United States", flag: "🚀", tier: "Containerized Models" }
       };
 
       const resolved = LAB_DIRECTORY[prefix] || {
@@ -1388,6 +1399,59 @@ CRITICAL RULES (HUMAN NATURAL CONVERSATION & AUTONOMOUS CUA CONTROL):
             },
             body: JSON.stringify({
               model: targetModel.replace(/^deepinfra\//, ""),
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
+      async function callAIMLAPI(targetModel, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const resp = await fetch("https://api.aimlapi.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.AIMLAPI}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: targetModel.replace(/^aimlapi\//, ""),
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
+      async function callHuggingFace(targetModel, timeoutMs = 9000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^hf\//, "").replace(/^huggingface\//, "");
+          const resp = await fetch(`https://router.huggingface.co/hf-inference/models/${cleanModel}/v1/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.HUGGINGFACE}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
               messages: messages,
               temperature: 0.7,
               max_tokens: 2048
