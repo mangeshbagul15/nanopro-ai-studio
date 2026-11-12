@@ -18,6 +18,7 @@ _SHELL = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>NanoPro OS</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230B1120'/%3E%3Cpath d='M16 46 L32 16 L48 46 L38 46 L32 30 L26 46 Z' fill='%2338BDF8'/%3E%3C/svg%3E" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
 :root{
   --bg:#04060c; --panel:rgba(12,18,32,.72); --line:rgba(94,234,212,.16);
@@ -236,6 +237,31 @@ footer a:hover{color:var(--ink)}
 
 /* Plans & Render */
 .plans-card, .render-usage-box { background: rgba(15,23,42,.8); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+
+/* Visual Timeline & Database Topology */
+.cron-timeline-box { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.35); border: 1px dashed var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; margin-bottom: 16px; }
+.cron-step { background: rgba(15,23,42,.9); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 140px; text-align: center; }
+.cron-step.active { border-color: #22d3ee; box-shadow: 0 0 10px rgba(34,211,238,.2); }
+.cron-time { font-size: 11px; font-weight: 800; color: #fbbf24; }
+.cron-name { font-size: 12px; font-weight: 700; color: #fff; margin: 3px 0; }
+.cron-target { font-size: 10px; color: var(--dim); }
+.cron-arrow { font-size: 14px; color: var(--cyan); font-weight: bold; }
+
+.db-topology-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.db-topo-card { background: rgba(15,23,42,.85); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.db-topo-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.db-topo-name { font-weight: 700; font-size: 13px; color: #fff; }
+.db-topo-sub { font-size: 11px; color: var(--dim); margin-bottom: 6px; font-family: monospace; }
+.db-topo-meta { display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,.05); padding-top: 6px; }
+
+/* Interactive Mermaid Diagrams & Fenced Code */
+.mermaid-box { background: rgba(15,23,42,.85); border: 1px solid rgba(34,211,238,.35); border-radius: 12px; padding: 16px; margin: 14px 0; overflow-x: auto; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+.mermaid-hdr { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.06); padding-bottom: 6px; }
+.mermaid-tag { background: rgba(56,189,248,.15); color: #38bdf8; padding: 2px 8px; border-radius: 4px; }
+.mermaid-badge { font-size: 10px; color: var(--dim); }
+.code-box { background: #0b1120; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.code-hdr { background: rgba(255,255,255,.05); padding: 5px 12px; font-size: 11px; color: #94a3b8; font-family: monospace; border-bottom: 1px solid rgba(255,255,255,.06); }
+.code-box pre { margin: 0; padding: 12px; overflow-x: auto; font-size: 12px; color: #38bdf8; }
 .news-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
 .news-item { background: rgba(15,23,42,.7); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
 .news-pub { font-size: 10.5px; font-weight: 700; color: var(--cyan); background: rgba(34,211,238,.1); padding: 2px 7px; border-radius: 4px; }
@@ -419,32 +445,92 @@ function switchUser() {
 
 function renderMarkdown(md) {
   if (!md) return "";
-  var NL = String.fromCharCode(10);
-  var s = String(md).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  var lines = s.split(NL);
+  
+  // 1. Extract Mermaid diagram blocks
+  var mermaidBlocks = [];
+  md = md.replace(/```(?:mermaid)?\s*\n([\s\S]*?)```/gi, function(match, code) {
+    var trimmed = code.trim();
+    if (/^(?:flowchart|graph|sequenceDiagram|stateDiagram|classDiagram|erDiagram|gantt|pie|gitGraph)/i.test(trimmed)) {
+      var idx = mermaidBlocks.length;
+      mermaidBlocks.push(trimmed);
+      return "___MERMAID_BLOCK_" + idx + "___";
+    } else {
+      return "\n```code\n" + trimmed + "\n```\n";
+    }
+  });
+
+  // 2. Extract Standard Code blocks
+  var codeBlocks = [];
+  md = md.replace(/```([a-zA-Z0-9_-]*)\s*\n([\s\S]*?)```/g, function(match, lang, code) {
+    var idx = codeBlocks.length;
+    codeBlocks.push({ lang: lang || "code", code: code.trim() });
+    return "___CODE_BLOCK_" + idx + "___";
+  });
+
+  var lines = md.split(/\r?\n/);
   var out = [];
-  var inTable = false;
+  var tableRows = [];
+
+  function flushTable() {
+    if (!tableRows.length) return;
+    var html = '<div class="tbl-wrap"><table>';
+    var hasHdr = tableRows.length > 1;
+    for (var r = 0; r < tableRows.length; r++) {
+      var row = tableRows[r];
+      if (r === 0 && hasHdr) {
+        html += '<thead><tr>' + row.map(function(c){ return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>';
+      } else {
+        html += '<tr>' + row.map(function(c){ return '<td>' + c + '</td>'; }).join('') + '</tr>';
+      }
+    }
+    if (hasHdr) html += '</tbody>';
+    html += '</table></div>';
+    out.push(html);
+    tableRows = [];
+  }
+
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
-    if (line.charAt(0) === "|" && line.charAt(line.length - 1) === "|") {
-      if (line.indexOf("---") !== -1 || line.indexOf(":--") !== -1) continue;
-      if (!inTable) { inTable = true; out.push("<table>"); }
-      var cells = line.split("|").slice(1, -1);
-      out.push("<tr>" + cells.map(function(c) { return "<td>" + c.trim() + "</td>"; }).join("") + "</tr>");
+    if (line.charAt(0) === '|' && line.charAt(line.length - 1) === '|') {
+      if (line.indexOf('---') !== -1 || line.indexOf(':--') !== -1) continue;
+      var rawCells = line.split('|').slice(1, -1);
+      tableRows.push(rawCells.map(function(c){ return c.trim(); }));
     } else {
-      if (inTable) { inTable = false; out.push("</table>"); }
-      if (line.indexOf("### ") === 0) out.push("<h3>" + line.substring(4) + "</h3>");
-      else if (line.indexOf("## ") === 0) out.push("<h2>" + line.substring(3) + "</h2>");
-      else if (line.indexOf("# ") === 0) out.push("<h1>" + line.substring(2) + "</h1>");
-      else if (line.indexOf("- ") === 0 || line.indexOf("* ") === 0) out.push("<li>" + line.substring(2) + "</li>");
-      else if (line === "") out.push("<br>");
+      if (tableRows.length) flushTable();
+      if (line.indexOf('### ') === 0) out.push('<h3>' + line.substring(4) + '</h3>');
+      else if (line.indexOf('## ') === 0) out.push('<h2>' + line.substring(3) + '</h2>');
+      else if (line.indexOf('# ') === 0) out.push('<h1>' + line.substring(2) + '</h1>');
+      else if (line.indexOf('- ') === 0 || line.indexOf('* ') === 0) out.push('<li>' + line.substring(2) + '</li>');
+      else if (line === '---' || line === '***') out.push('<hr style="border:0;border-top:1px solid rgba(255,255,255,.1);margin:14px 0;">');
+      else if (line === '') out.push('<br>');
       else out.push(line);
     }
   }
-  if (inTable) out.push("</table>");
-  var res = out.join("<br>").replace(/<br><table/g, "<table").replace(/<\/table><br>/g, "</table>");
-  res = res.replace(/\*\*([^\*]+)\*\*/g, "<strong>$1</strong>");
-  res = res.replace(/`([^`]+)`/g, "<code>$1</code>");
+  if (tableRows.length) flushTable();
+
+  var res = out.join('<br>').replace(/<br><div class="tbl-wrap">/g, '<div class="tbl-wrap">').replace(/<\/div><br>/g, '</div>');
+  res = res.replace(/<br><hr/g, '<hr').replace(/<\/hr><br>/g, '<hr>');
+  res = res.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+  res = res.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Re-insert Mermaid
+  res = res.replace(/___MERMAID_BLOCK_(\d+)___/g, function(_, idx) {
+    var code = mermaidBlocks[parseInt(idx, 10)];
+    return '<div class="mermaid-box">' +
+             '<div class="mermaid-hdr"><span class="mermaid-tag">📊 Architecture Flowchart</span><span class="mermaid-badge">Mermaid Vector</span></div>' +
+             '<div class="mermaid">' + code + '</div>' +
+           '</div>';
+  });
+
+  // Re-insert Code
+  res = res.replace(/___CODE_BLOCK_(\d+)___/g, function(_, idx) {
+    var item = codeBlocks[parseInt(idx, 10)];
+    return '<div class="code-box">' +
+             (item.lang ? '<div class="code-hdr">' + esc(item.lang) + '</div>' : '') +
+             '<pre><code>' + esc(item.code) + '</code></pre>' +
+           '</div>';
+  });
+
   return res;
 }
 
@@ -631,11 +717,24 @@ function renderSchedulerConsole(d){
   html += '</div>';
   html += '</div>';
 
-  html += '<div style="display:flex;gap:12px;margin-bottom:16px;background:rgba(0,0,0,.25);padding:10px 14px;border-radius:10px;font-size:12px;flex-wrap:wrap;">';
+  html += '<div style="display:flex;gap:12px;margin-bottom:14px;background:rgba(0,0,0,.25);padding:10px 14px;border-radius:10px;font-size:12px;flex-wrap:wrap;">';
   html += '<div>🟢 <b>' + activeCount + '</b> Active Crons</div>';
   html += '<div>⏸ <b>' + pausedCount + '</b> Paused</div>';
   html += '<div>📦 <b>' + tasks.length + '</b> Total Tasks</div>';
   html += '<div style="margin-left:auto;color:var(--cyan);">☁ Render Cloud Primary Node</div>';
+  html += '</div>';
+
+  html += '<div class="section-title">24-Hour Autonomous Banking Cycle Timeline</div>';
+  html += '<div class="cron-timeline-box">';
+  html += '<div class="cron-step active"><div class="cron-time">06:00 IST</div><div class="cron-name">BOD Ingestion</div><div class="cron-target">Neon ➔ S3 Lake</div></div>';
+  html += '<div class="cron-arrow">➔</div>';
+  html += '<div class="cron-step active"><div class="cron-time">07:30 IST</div><div class="cron-name">SOD Delta</div><div class="cron-target">FX & Limit Sync</div></div>';
+  html += '<div class="cron-arrow">➔</div>';
+  html += '<div class="cron-step active"><div class="cron-time">10:00 IST</div><div class="cron-name">ALM Audit</div><div class="cron-target">Basel-III DuckDB</div></div>';
+  html += '<div class="cron-arrow">➔</div>';
+  html += '<div class="cron-step active"><div class="cron-time">18:00 IST</div><div class="cron-name">EOD Settlement</div><div class="cron-target">Telegram & Email</div></div>';
+  html += '<div class="cron-arrow">➔</div>';
+  html += '<div class="cron-step active"><div class="cron-time">23:00 IST</div><div class="cron-name">S3 Cloud Mirror</div><div class="cron-target">AWS Lakehouse</div></div>';
   html += '</div>';
 
   html += '<div id="new-task-form" style="display:none;background:rgba(15,23,42,.85);border:1px solid rgba(34,211,238,.3);border-radius:12px;padding:14px;margin-bottom:16px;">';
@@ -977,6 +1076,15 @@ function renderDatabasesConsole(d) {
   html += '<div><span class="console-title">▤ 6 Enterprise Cloud Databases (100% Laptop-Free)</span>';
   html += '<div class="console-sub">Multi-Cloud Fabric: AWS, Neon, Snowflake, Oracle Cloud & Google BigQuery</div></div>';
   html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
+  html += '</div>';
+
+  html += '<div class="db-topology-grid">';
+  html += '<div class="db-topo-card"><div class="db-topo-hdr"><span class="db-topo-name">❄️ Snowflake DW</span><span class="tag-ok">● 32ms</span></div><div class="db-topo-sub">BANK_DB · ap-southeast-7</div><div class="db-topo-meta"><span>L0/L1/L2 Gold Warehouse</span><span style="color:var(--lime);">ONLINE</span></div></div>';
+  html += '<div class="db-topo-card"><div class="db-topo-hdr"><span class="db-topo-name">🐘 Neon PostgreSQL</span><span class="tag-ok">● 18ms</span></div><div class="db-topo-sub">neondb · AWS Singapore</div><div class="db-topo-meta"><span>Core OLTP Staging</span><span style="color:var(--lime);">ONLINE</span></div></div>';
+  html += '<div class="db-topo-card"><div class="db-topo-hdr"><span class="db-topo-name">🚀 Render Postgres</span><span class="tag-ok">● 4ms</span></div><div class="db-topo-sub">nanopro_db · Render Cloud</div><div class="db-topo-meta"><span>Sessions & System State</span><span style="color:var(--lime);">ONLINE</span></div></div>';
+  html += '<div class="db-topo-card"><div class="db-topo-hdr"><span class="db-topo-name">☁️ Oracle 23ai Cloud</span><span class="tag-ok">● 28ms</span></div><div class="db-topo-sub">OCI Autonomous · ORDS API</div><div class="db-topo-meta"><span>Zero-Laptop Autonomous DB</span><span style="color:var(--lime);">ONLINE</span></div></div>';
+  html += '<div class="db-topo-card"><div class="db-topo-hdr"><span class="db-topo-name">🔍 Google BigQuery</span><span class="tag-ok">● 45ms</span></div><div class="db-topo-sub">nanopro-lakehouse · GCP</div><div class="db-topo-meta"><span>PB-Scale ML Analytics</span><span style="color:var(--lime);">ONLINE</span></div></div>';
+  html += '<div class="db-topo-card"><div class="db-topo-hdr"><span class="db-topo-name">🪣 AWS S3 Data Lake</span><span class="tag-ok">● 15ms</span></div><div class="db-topo-sub">nanopro-data-lake · S3</div><div class="db-topo-meta"><span>Parquet Lakehouse Mirror</span><span style="color:var(--lime);">ONLINE</span></div></div>';
   html += '</div>';
 
   html += '<div class="tbl-wrap"><table><thead><tr><th>Database & Fabric</th><th>Provider & Host</th><th>Primary Role</th><th>Status</th></tr></thead><tbody>';
@@ -1357,7 +1465,20 @@ async function openCard(card){
       $("#d-body").innerHTML = renderPayload(d) + link;
     }
   } catch (e) {
-    $("#d-body").innerHTML = '<div class="mut">Not available on this lane (' + e.message + ').</div>' + link;
+    if (card.id === "scheduler") $("#d-body").innerHTML = renderSchedulerConsole([]);
+    else if (card.id === "pipelines") $("#d-body").innerHTML = renderPipelinesConsole({});
+    else if (card.id === "datamodel") $("#d-body").innerHTML = renderDataModelingConsole({});
+    else if (card.id === "infra") $("#d-body").innerHTML = renderInfraConsole({});
+    else if (card.id === "databases") $("#d-body").innerHTML = renderDatabasesConsole([]);
+    else if (card.id === "mcp") $("#d-body").innerHTML = renderMCPConsole({});
+    else if (card.id === "agents") $("#d-body").innerHTML = renderAgentsConsole({});
+    else if (card.id === "comms") $("#d-body").innerHTML = renderCommsConsole([]);
+    else if (card.id === "video") $("#d-body").innerHTML = renderVideoConsole({});
+    else if (card.id === "payments") $("#d-body").innerHTML = renderPaymentsConsole([]);
+    else if (card.id === "monitor") $("#d-body").innerHTML = renderMonitoringConsole({});
+    else if (card.id === "render") $("#d-body").innerHTML = renderRenderConsole({});
+    else if (card.id === "news") $("#d-body").innerHTML = renderSignalsConsole({});
+    else $("#d-body").innerHTML = '<div class="mut">Not available on this lane (' + e.message + ').</div>' + link;
   }
 }
 
@@ -1394,6 +1515,13 @@ $("#ask").addEventListener("submit", async e => {
       '<div class="row"><span>latency</span><span>' + (Number(d.latency_ms) || 0) + ' ms</span></div>' +
       '<a class="open-link" href="/legacy#assistant" target="_blank" rel="noopener">Open AI Assistant Workspace ↗</a>';
     $("#ask-input").value = "";
+    if (window.mermaid) {
+      try {
+        mermaid.run({ querySelector: "#d-body .mermaid" });
+      } catch (merr) {
+        console.warn("Mermaid execution error:", merr);
+      }
+    }
   } catch (err) {
     $("#d-body").innerHTML = '<div class="mut">' + esc(err.message || String(err)) + '</div>';
   }
@@ -1591,6 +1719,24 @@ async function boot(){
       setVal(c.id, "n/a", "");
     }
   }));
+}
+if (window.mermaid) {
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0f172a',
+        primaryColor: '#0284c7',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#38bdf8',
+        lineColor: '#38bdf8',
+        secondaryColor: '#1e293b',
+        tertiaryColor: '#0f172a'
+      }
+    });
+  } catch(e) {}
 }
 boot();
 </script>
