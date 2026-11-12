@@ -302,7 +302,7 @@ class NanoProMCPServer:
             },
             {
                 "name": "nanopro_global_ai_execute",
-                "description": "Executes AI prompt through zero-load streaming connectors using the mathematically selected optimal model with automatic 429 failover.",
+                "description": "Executes AI prompt through zero-load streaming connectors using any requested model (4,750+ models across 23 sovereign providers including Krutrim, Poe, Parasail, Arcee, Eden AI, Requesty, NVIDIA NIM, SambaNova, Cloudflare Workers AI, Novita, DeepInfra, Mistral, DeepSeek, Groq, Hugging Face, OpenRouter) or 'auto' for intelligent mathematical routing with automatic 429 failover. Strictly 0 MB Render RAM overhead.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1083,6 +1083,8 @@ class NanoProMCPServer:
                 "country": prov.get("country", "Global"),
                 "flag": prov.get("flag", "🌐"),
                 "tier": prov.get("tier", "Frontier"),
+                "render_load": "0 MB",
+                "zero_suspension_shield": "Active",
                 "date_formatted": now_dt.strftime("%d %b %Y, %I:%M:%S %p"),
                 "timestamp": now_dt.isoformat(),
                 "mode": mode,
