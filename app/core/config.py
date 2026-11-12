@@ -145,3 +145,7 @@ SERVER_PORT = int(os.environ.get("STUDIO_PORT", default_port))
 
 # OpenRouter Unified Multi-Model Gateway (432+ Models)
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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").strip()
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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").strip()
+DEEPINFRA_API_KEY = os.environ.get("DEEPINFRA_API_KEY", "sk-di-GZlkK2nWUqmV5nxhsdCbGLWxce5EkSAJ").strip()
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "sk-2d5bc8b3419244e6bc17f23b36dd6d66").strip()
+MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "mstrl_OZwEdSDxbLIE8xd9Sg0i3wDLH2l2wOnQ_1OV8Q4").strip()
