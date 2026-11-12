@@ -1480,18 +1480,8 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    hydrateConfig(env);
-    if (await nanoPaused()) return;
-    const cycle = REPORT_CFG.CRON_CYCLE_MAP[event.cron] || "SCHEDULED";
-    if (cycle === "HEALTH") {
-      const minute = new Date(event.scheduledTime ?? Date.now()).getUTCMinutes();
-      ctx.waitUntil((async () => {
-        await runHealthMonitor();
-        if (minute < 30) await ingestBankingData("INTRADAY", "INCREMENTAL_LOAD"); // once/hour — free tier max is 5 crons
-      })());
-    } else {
-      ctx.waitUntil(runReportCycle(cycle));
-    }
+    // Cloudflare Crons Decommissioned: All 24/7 automation is unified exclusively on Render Cloud
+    return;
   }
 
 };

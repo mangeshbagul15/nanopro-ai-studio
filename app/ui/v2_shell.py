@@ -157,6 +157,22 @@ footer a:hover{color:var(--ink)}
 .mut{color:var(--dim);font-size:12px}
 .open-link{display:inline-block;margin-top:14px;color:var(--cyan);text-decoration:none;font-size:12.5px}
 @media(max-width:520px){h1{font-size:17px}.chips{width:100%;margin-left:0}}
+
+.task-card{background:rgba(15,23,42,.7);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:12px;transition:all .2s}
+.task-card:hover{border-color:rgba(34,211,238,.35);background:rgba(15,23,42,.9)}
+.task-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.task-name{font-size:13.5px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.task-lineage{font-size:11.5px;color:var(--cyan);margin-bottom:8px;font-family:monospace}
+.task-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11.5px;color:var(--dim);background:rgba(0,0,0,.25);padding:8px 10px;border-radius:8px;margin-bottom:10px}
+.task-actions{display:flex;gap:8px;flex-wrap:wrap}
+.task-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--ink);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.task-btn:hover{background:rgba(34,211,238,.18);border-color:var(--cyan);color:#fff}
+.task-btn.run{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3);color:#4ade80}
+.task-btn.run:hover{background:rgba(34,197,94,.3);border-color:#4ade80}
+.task-btn.danger{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:#f87171}
+.task-btn.danger:hover{background:rgba(239,68,68,.3);border-color:#f87171}
+@media(max-width:600px){.task-meta{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -310,9 +326,11 @@ function renderMarkdown(md) {
 }
 
 const CARDS = [
-  {id:"pipelines", glyph:"⛓", name:"Pipelines", hint:"BOD · SOD · T1 · EOD", api:"/api/scheduler/tasks",
+  {id:"scheduler", glyph:"⏱", name:"Task Scheduler", hint:"Crons · Airflow DAGs · Triggers", api:"/api/scheduler/tasks",
    metric:d => { const t = list(d); const on = t.filter(isTaskOn).length;
-     return [on, "of " + t.length + " live"]; }},
+     return [on, "of " + t.length + " crons"]; }},
+  {id:"pipelines", glyph:"⛓", name:"Pipelines", hint:"L0 ➔ L1 ➔ L2 Medallion", api:"/api/operations/state",
+   metric:d => ["ACTIVE", "Lakehouse"]},
   {id:"datamodel", glyph:"◈", name:"Data Modeling", hint:"AI schema & SQL", api:"/api/data_modeling/status",
    metric:() => ["AI", "ready"]},
   {id:"infra", glyph:"⬡", name:"Infra & Security", hint:"Cloud · auth · guards", api:"/api/runtime/profile",
@@ -420,6 +438,245 @@ const prettyKey = k => {
   const s = String(k).replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
+
+function naturalSchedule(type, expr){
+  if (!type) return "On-demand";
+  var t = String(type).toLowerCase();
+  var e = String(expr || "").trim();
+  if (t === "daily") {
+    var parts = e.split(":");
+    var h = parseInt(parts[0], 10) || 0;
+    var m = parts[1] || "00";
+    var ampm = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12 || 12;
+    return "Every day at " + (h12 < 10 ? "0" + h12 : h12) + ":" + m + " " + ampm + " IST";
+  }
+  if (t === "minutes") return "Every " + e + " minutes";
+  if (t === "hourly") return "Every " + e + " hours";
+  if (t === "cron") return "Cron expression: " + e;
+  return t + " " + e;
+}
+
+function getTaskTargetLineage(name, desc){
+  var n = String(name || "").toUpperCase();
+  if (n.indexOf("BOD") !== -1) return "🎯 Oracle XE ➔ AWS S3 ➔ Snowflake L0-L1-L2 ➔ DuckDB Marts (91 Tables)";
+  if (n.indexOf("SOD") !== -1) return "🎯 FX Card Rates, Limits & Intraday Delta ➔ Snowflake Live";
+  if (n.indexOf("DAILY_T1") !== -1) return "🎯 Delta Watermark Ingestion ➔ All 9 Banking Projects";
+  if (n.indexOf("EOD") !== -1) return "🎯 Trial Balance Reconciliation ➔ Email / WhatsApp / Telegram Ledger";
+  if (n.indexOf("SFTP_INBOUND") !== -1) return "🎯 SFTP /inbound/ (Pipe, CSV, XLSX) ➔ Parquet Lakehouse";
+  if (n.indexOf("SFTP_20DAY") !== -1) return "🎯 Storage Sentinel ➔ Purge files & S3 objects older than 20 days";
+  if (n.indexOf("STORAGE_RETENTION") !== -1) return "🎯 Disk Pressure Guard ➔ Checkpoint & Vacuum SQLite Database";
+  if (n.indexOf("DUCKDB_S3") !== -1) return "🎯 DuckDB Gold Marts ➔ AWS S3 Cloud Mirror (ap-southeast-2)";
+  if (n.indexOf("TELEGRAM_APK") !== -1) return "🎯 Telegram APK Dispatcher (@mangesh_apk_bot)";
+  if (n.indexOf("WHATSAPP") !== -1) return "🎯 Meta WhatsApp Cloud API (+918433755448)";
+  if (n.indexOf("INCREMENTAL") !== -1) return "🎯 15-Minute Incremental Watermark S3 ➔ Snowflake";
+  return "🎯 " + (desc || "Autonomous Enterprise Pipeline");
+}
+
+function renderSchedulerConsole(d){
+  var tasks = list(d);
+  var activeCount = 0;
+  var pausedCount = 0;
+  for (var i = 0; i < tasks.length; i++) {
+    if (tasks[i].is_paused) pausedCount++;
+    else if (tasks[i].is_enabled) activeCount++;
+  }
+  
+  var html = '<div class="scheduler-wrap">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">';
+  html += '<div>';
+  html += '<div style="font-size:15px;font-weight:700;color:var(--ink);">⏱ Enterprise Task Scheduler & DAG Orchestrator</div>';
+  html += '<div style="font-size:11.5px;color:var(--dim);margin-top:2px;">Apache Airflow / EventBridge Spec · 24/7 Render Cloud Live</div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;">';
+  html += '<button type="button" class="task-btn run" onclick="toggleNewTaskForm()">+ New Task</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshSchedulerView()">🔄 Refresh</button>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div style="display:flex;gap:12px;margin-bottom:16px;background:rgba(0,0,0,.25);padding:10px 14px;border-radius:10px;font-size:12px;flex-wrap:wrap;">';
+  html += '<div>🟢 <b>' + activeCount + '</b> Active Crons</div>';
+  html += '<div>⏸ <b>' + pausedCount + '</b> Paused</div>';
+  html += '<div>📦 <b>' + tasks.length + '</b> Total Tasks</div>';
+  html += '<div style="margin-left:auto;color:var(--cyan);">☁ Render Cloud Primary Node</div>';
+  html += '</div>';
+
+  html += '<div id="new-task-form" style="display:none;background:rgba(15,23,42,.85);border:1px solid rgba(34,211,238,.3);border-radius:12px;padding:14px;margin-bottom:16px;">';
+  html += '<div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--cyan);">Create New Automation Task</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
+  html += '<input id="nt-name" placeholder="Task Name (e.g. DAILY_BANKING_ETL)" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;" />';
+  html += '<select id="nt-type" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;">';
+  html += '<option value="daily">Daily at specific time (e.g. 06:00)</option>';
+  html += '<option value="minutes">Interval in minutes (e.g. 15)</option>';
+  html += '<option value="hourly">Interval in hours (e.g. 4)</option>';
+  html += '<option value="cron">Standard Cron (e.g. 30 1 * * *)</option>';
+  html += '</select>';
+  html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px;">';
+  html += '<input id="nt-expr" placeholder="Recurrence Value (e.g. 07:30 or 15)" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;" />';
+  html += '<input id="nt-desc" placeholder="Description & Target (e.g. Extract Oracle delta to S3 & notify Telegram)" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;" />';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;">';
+  html += '<button type="button" class="task-btn run" onclick="submitCreateTask()">Save & Deploy Task</button>';
+  html += '<button type="button" class="task-btn" onclick="toggleNewTaskForm()">Cancel</button>';
+  html += '</div>';
+  html += '</div>';
+
+  if (!tasks.length) {
+    html += '<div class="mut">No scheduled tasks found in database.</div>';
+  } else {
+    for (var j = 0; j < tasks.length; j++) {
+      var t = tasks[j];
+      var isPaused = Boolean(t.is_paused);
+      var isOff = !t.is_enabled;
+      var badge = '<span style="background:rgba(34,197,94,.18);color:#4ade80;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;">ACTIVE ●</span>';
+      if (isOff) badge = '<span style="background:rgba(239,68,68,.18);color:#f87171;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;">DISABLED</span>';
+      else if (isPaused) badge = '<span style="background:rgba(245,158,11,.18);color:#fbbf24;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;">PAUSED ⏸</span>';
+
+      html += '<div class="task-card" id="tc-' + t.id + '">';
+      html += '<div class="task-card-hdr">';
+      html += '<div class="task-name">' + esc(t.name) + '</div>';
+      html += '<div>' + badge + '</div>';
+      html += '</div>';
+
+      html += '<div class="task-lineage">' + esc(getTaskTargetLineage(t.name, t.description)) + '</div>';
+
+      html += '<div class="task-meta">';
+      html += '<div>🗓 <b>Schedule:</b> ' + esc(naturalSchedule(t.schedule_type, t.recurrence_expr)) + '</div>';
+      html += '<div>⏭ <b>Next Run:</b> ' + (t.next_run_at ? esc(t.next_run_at) + ' IST' : 'Scheduled') + '</div>';
+      html += '<div>⏳ <b>Last Run:</b> ' + (t.last_run_at ? esc(t.last_run_at) : 'Completed in cycle') + '</div>';
+      html += '<div>📊 <b>Status:</b> ' + esc(t.last_status || t.status || 'Ready') + '</div>';
+      html += '</div>';
+
+            html += '<div class="task-actions">';
+      html += '<button type="button" class="task-btn run" data-tid="' + t.id + '" data-tname="' + esc(t.name) + '" onclick="triggerTaskNow(this.dataset.tid, this.dataset.tname)" title="Execute immediately">▶ Run Now</button>';
+      if (isPaused) {
+        html += '<button type="button" class="task-btn" data-tid="' + t.id + '" onclick="resumeTask(this.dataset.tid)" title="Resume scheduled executions">▶ Resume</button>';
+      } else {
+        html += '<button type="button" class="task-btn" data-tid="' + t.id + '" onclick="pauseTask(this.dataset.tid)" title="Temporarily halt schedule">⏸ Pause</button>';
+      }
+      html += '<button type="button" class="task-btn" data-tid="' + t.id + '" data-tname="' + esc(t.name) + '" data-ttype="' + esc(t.schedule_type) + '" data-texpr="' + esc(t.recurrence_expr) + '" onclick="editTaskTime(this.dataset.tid, this.dataset.tname, this.dataset.ttype, this.dataset.texpr)" title="Modify execution time">✏ Change Time</button>';
+      html += '<button type="button" class="task-btn danger" data-tid="' + t.id + '" data-tname="' + esc(t.name) + '" onclick="deleteTask(this.dataset.tid, this.dataset.tname)" title="Delete automation task">🗑 Delete</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function toggleNewTaskForm(){
+  var f = document.getElementById("new-task-form");
+  if (f) f.style.display = f.style.display === "none" ? "block" : "none";
+}
+
+async function triggerTaskNow(taskId, name){
+  if (!confirm("Execute task '" + name + "' immediately on Render Cloud?")) return;
+  try {
+    var r = await fetch("/api/scheduler/tasks/" + taskId + "/run_now", { method: "POST" });
+    var d = await r.json();
+    alert("Task '" + name + "' dispatched successfully!\nStatus: " + (d.status || "Executing"));
+    refreshSchedulerView();
+  } catch (e) {
+    alert("Trigger failed: " + e.message);
+  }
+}
+
+async function pauseTask(taskId){
+  try {
+    await fetch("/api/scheduler/tasks/" + taskId + "/pause", { method: "POST" });
+    refreshSchedulerView();
+  } catch (e) {
+    alert("Pause failed: " + e.message);
+  }
+}
+
+async function resumeTask(taskId){
+  try {
+    await fetch("/api/scheduler/tasks/" + taskId + "/resume", { method: "POST" });
+    refreshSchedulerView();
+  } catch (e) {
+    alert("Resume failed: " + e.message);
+  }
+}
+
+async function editTaskTime(taskId, name, type, currExpr){
+  var newVal = prompt("Enter new recurrence schedule for '" + name + "' (" + type + "):\nExample: 06:30 for daily, or 15 for minutes", currExpr);
+  if (!newVal || newVal.trim() === currExpr) return;
+  try {
+    var r = await fetch("/api/scheduler/tasks/" + taskId, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recurrence_expr: newVal.trim() })
+    });
+    if (r.ok) {
+      alert("Schedule updated to: " + newVal.trim());
+      refreshSchedulerView();
+    } else {
+      alert("Failed to update schedule (HTTP " + r.status + ")");
+    }
+  } catch (e) {
+    alert("Update error: " + e.message);
+  }
+}
+
+async function deleteTask(taskId, name){
+  if (!confirm("Are you sure you want to permanently delete task '" + name + "'?")) return;
+  try {
+    var r = await fetch("/api/scheduler/tasks/" + taskId, { method: "DELETE" });
+    if (r.ok) {
+      refreshSchedulerView();
+    } else {
+      alert("Failed to delete task (HTTP " + r.status + ")");
+    }
+  } catch (e) {
+    alert("Delete error: " + e.message);
+  }
+}
+
+async function submitCreateTask(){
+  var name = (document.getElementById("nt-name").value || "").trim();
+  var type = document.getElementById("nt-type").value;
+  var expr = (document.getElementById("nt-expr").value || "").trim();
+  var desc = (document.getElementById("nt-desc").value || "").trim();
+  if (!name || !expr) {
+    alert("Please enter a Task Name and Recurrence Value.");
+    return;
+  }
+  try {
+    var r = await fetch("/api/scheduler/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name,
+        task_type: "scheduled_job",
+        schedule_type: type,
+        recurrence_expr: expr,
+        description: desc || ("Custom " + type + " automation task"),
+        timezone: "Asia/Kolkata",
+        is_enabled: true
+      })
+    });
+    if (r.ok) {
+      alert("New automation task '" + name + "' created and deployed!");
+      refreshSchedulerView();
+    } else {
+      alert("Failed to create task (HTTP " + r.status + ")");
+    }
+  } catch (e) {
+    alert("Creation error: " + e.message);
+  }
+}
+
+async function refreshSchedulerView(){
+  var scCard = CARDS.find(function(c){ return c.id === "scheduler"; });
+  if (scCard) {
+    var d = await get(scCard.api);
+    document.getElementById("d-body").innerHTML = renderSchedulerConsole(d);
+  }
+}
+
 function renderPayload(d){
   const rows = [];
   const push = (k, v) => { if (v !== undefined && v !== null && typeof v !== "object") rows.push([prettyKey(k), v]); };
@@ -473,7 +730,11 @@ async function openCard(card){
        : '<a class="open-link" href="/legacy">Open full workspace →</a>');
   try {
     const d = await get(card.api);
-    $("#d-body").innerHTML = renderPayload(d) + link;
+    if (card.id === "scheduler") {
+      $("#d-body").innerHTML = renderSchedulerConsole(d);
+    } else {
+      $("#d-body").innerHTML = renderPayload(d) + link;
+    }
   } catch (e) {
     $("#d-body").innerHTML = '<div class="mut">Not available on this lane (' + e.message + ').</div>' + link;
   }
