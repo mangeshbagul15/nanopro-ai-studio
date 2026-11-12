@@ -1,5 +1,26 @@
 [
   {
+    "id": "rep_log_1794456265642",
+    "timestamp": "2026-11-12 09:34:25 IST",
+    "project_code": "proj_credit_card",
+    "report_name": "Credit_Card_EOD_Settlement_Ledger",
+    "cadence": "Daily (T-1)",
+    "file_size_mb": 6.2,
+    "rule_applied": "OVER_5MB_RULE_SFTP_REFERENCE",
+    "attachment_included": false,
+    "sftp_repo_path": "/var/sftp/data/reports/BANKING_RECON/Credit_Card_EOD_Settlement_Ledger_2026-11-12.xlsx",
+    "sftp_checksum_sha256": "240d7c618392e22ba8312e126e11140af05fc5d72b25984b4eb316ca8e32faa4",
+    "to_recipients": "nanoproaistudio1@gmail.com",
+    "cc_recipients": "",
+    "bcc_recipients": "",
+    "records_count": 850200,
+    "total_transaction_amount_inr": "\u20b9 12,450,800,000",
+    "email_status": "ERROR: All email providers and Telegram fallback failed.",
+    "l0_data_arrival": "2026-11-12 08:34:25 IST",
+    "l1_scd2_arrival": "2026-11-12 09:04:25 IST",
+    "l2_gold_arrival": "2026-11-12 09:34:25 IST"
+  },
+  {
     "id": "rep_log_001",
     "timestamp": "2026-10-12 06:30:14 IST",
     "project_code": "AML_SURVEILLANCE",
