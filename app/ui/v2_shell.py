@@ -517,14 +517,28 @@ async function get(p){
 }
 
 const grid = $("#grid");
-CARDS.forEach(c => {
-  const b = document.createElement("button");
-  b.className = "card"; b.type = "button";
-  b.innerHTML = '<div class="gl">' + c.glyph + '</div><h2>' + c.name + '</h2><p>' + c.hint + '</p>' +
-                '<div class="val" id="v-' + c.id + '">—</div>';
-  b.addEventListener("click", () => (c.station ? openStation() : openCard(c, b)));
-  grid.appendChild(b);
-});
+const staticCards = grid ? grid.querySelectorAll(".card") : [];
+if (staticCards.length > 0) {
+  // Hydrate existing SSR cards - attach click handlers without duplicate creation
+  staticCards.forEach(b => {
+    const cid = b.getAttribute("data-cid");
+    const c = CARDS.find(item => item.id === cid);
+    if (c) {
+      b.addEventListener("click", () => (c.station ? openStation() : openCard(c, b)));
+    }
+  });
+} else if (grid) {
+  // Fallback: build dynamically only if SSR grid is empty
+  CARDS.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "card"; b.type = "button";
+    b.setAttribute("data-cid", c.id);
+    b.innerHTML = '<div class="gl">' + c.glyph + '</div><h2>' + c.name + '</h2><p>' + c.hint + '</p>' +
+                  '<div class="val" id="v-' + c.id + '">—</div>';
+    b.addEventListener("click", () => (c.station ? openStation() : openCard(c, b)));
+    grid.appendChild(b);
+  });
+}
 
 function setVal(id, value, unit){
   const el = document.getElementById("v-" + id);
