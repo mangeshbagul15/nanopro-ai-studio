@@ -574,7 +574,12 @@ export default {
       OPENROUTER: "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",
       GROQ: "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",
       DEEPINFRA: "sk-di-GZlkK2nWUqmV5nxhsdCbGLWxce5EkSAJ",
-      DEEPSEEK: "sk-2d5bc8b3419244e6bc17f23b36dd6d66",
+      DEEPSEEK: "sk-d633fc52cbe041e2a87372a8c2639615",
+      ARCEE: "rcai-c472ef2f4f2ad7362f6decf31f65c047",
+      PARASAIL: "psk-nano6dc5de4t-PtQ50R9kBFZAbECjwk6W",
+      KRUTRIM: "JcMcoC72Osu3suH8oVvy-2An4",
+      POE: "sk-poe-Q_PHEUPo8oUxy-FGHxCy4y2cMbtJSx5y0hprJLGDXcY",
+      BASETEN_2: "b10_opZ4nBmj.wzha2FItX9WeW0bgaQAlSqSXOsV2v0XY",
       MISTRAL: "mstrl_OZwEdSDxbLIE8xd9Sg0i3wDLH2l2wOnQ_1OV8Q4",
       HUGGINGFACE: "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",
       FAL_AI: "fal_sk_d1a4032b2a4d4c94ad7cbef5395d439f:ad79f427f9e0d633316032a561ab9999",
@@ -683,7 +688,29 @@ export default {
               // FriendliAI, TheSean & Baseten
               { id: "friendli/meta-llama-3.1-8b-instruct", name: "FriendliAI Llama 3.1 8B (PeriFlow)", lab: "FriendliAI", country: "South Korea / Global", flag: "🚀", tier: "High-Throughput Serverless", context: 131072, is_free: true },
               { id: "thesean/ship-like/claude-haiku-4-5", name: "TheSean Claude Haiku 4.5", lab: "TheSean AI", country: "Global", flag: "⚡", tier: "Ultra-Low Latency", context: 200000, is_free: false },
-              { id: "baseten/deepseek-ai/DeepSeek-V4.1-Flash", name: "Baseten DeepSeek V4.1 Flash", lab: "Baseten", country: "United States", flag: "🏗️", tier: "Dedicated Truss Inference", context: 65536, is_free: false }
+              { id: "baseten/deepseek-ai/DeepSeek-V4.1-Flash", name: "Baseten DeepSeek V4.1 Flash", lab: "Baseten", country: "United States", flag: "🏗️", tier: "Dedicated Truss Inference", context: 65536, is_free: false },
+              // Ola Krutrim Cloud (India's Sovereign AI Cloud)
+              { id: "krutrim/Qwen3.6-27B", name: "Krutrim Qwen 3.6 27B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", context: 32768, is_free: true },
+              { id: "krutrim/gpt-oss-120b", name: "Krutrim GPT OSS 120B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", context: 8192, is_free: true },
+              { id: "krutrim/gemma-4-31b-it", name: "Krutrim Gemma 4 31B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", context: 16384, is_free: true },
+              { id: "krutrim/GLM-5.3-Flash", name: "Krutrim GLM 5.3 Flash", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", context: 32768, is_free: true },
+              { id: "krutrim/gpt-oss-20b", name: "Krutrim GPT OSS 20B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", context: 8192, is_free: true },
+              // Poe API (303 Unified Bot Models)
+              { id: "poe/gemini-4-hydrogen", name: "Poe Gemini 4 Hydrogen", lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "Unified Bot Fabric", context: 1048576, is_free: false },
+              { id: "poe/grok-4.7", name: "Poe Grok 4.7", lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "Frontier Knowledge", context: 500000, is_free: false },
+              { id: "poe/kimi-k3.1-pro", name: "Poe Kimi K3.1 Pro", lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "Ultra Long Context 1M", context: 1048576, is_free: false },
+              { id: "poe/claude-sonnet-5.5", name: "Poe Claude Sonnet 5.5", lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "Coding & Reasoning SOTA", context: 200000, is_free: false },
+              { id: "poe/mistral-large-4", name: "Poe Mistral Large 4", lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "European Flagship", context: 131072, is_free: false },
+              { id: "poe/mercury-3-vercel", name: "Poe Mercury 3 Diffusion", lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "Diffusion LLM", context: 1000000, is_free: false },
+              // Parasail GPU Network (107 Models)
+              { id: "parasail/parasail-llama-33-70b-fp8", name: "Parasail Llama 3.3 70B FP8", lab: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "Decentralized GPU", context: 131072, is_free: true },
+              { id: "parasail/parasail-qwen25-vl-72b-instruct", name: "Parasail Qwen 2.5 VL 72B", lab: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "Vision-Language SOTA", context: 32768, is_free: false },
+              { id: "parasail/parasail-skyfall-36b-v2-fp8", name: "Parasail Skyfall 36B v2", lab: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "Creative & Coding", context: 65536, is_free: false },
+              { id: "parasail/parasail-llama-4-maverick-instruct-fp8", name: "Parasail Llama 4 Maverick", lab: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "Next-Gen Open Weights", context: 131072, is_free: false },
+              // Arcee AI (Domain-Specialized SLMs)
+              { id: "arcee/zai-org/glm-5.3-flash", name: "Arcee GLM 5.3 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain SLM", context: 32768, is_free: true },
+              { id: "arcee/deepseek/deepseek-v4.1-flash", name: "Arcee DeepSeek V4.1 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain SLM", context: 65536, is_free: false },
+              { id: "arcee/moonshotai/kimi-k3.1-pro", name: "Arcee Kimi K3.1 Pro", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Long Context SLM", context: 1048576, is_free: false }
             ];
 
             const combinedModels = [...providerAddons, ...models];
@@ -719,7 +746,7 @@ export default {
 
       const messages = seedMessages[targetChatId] || [
         { role: "user", content: "Initialize high-performance AI session with database context.", timestamp: nowTs - 1800000 },
-        { role: "assistant", content: "### 🧠 Session Initialized\n\nConnected to DuckDB Local Lakehouse, Snowflake Warehouse, BigQuery, and AWS Data Lake with 4,330+ Unified Frontier Models active.", model_name: "Single AUTO Mathematical Engine", flag: "⚡", timestamp: nowTs - 1790000 }
+        { role: "assistant", content: "### 🧠 Session Initialized\n\nConnected to DuckDB Local Lakehouse, Snowflake Warehouse, BigQuery, and AWS Data Lake with 4,750+ Unified Frontier Models active.", model_name: "Single AUTO Mathematical Engine", flag: "⚡", timestamp: nowTs - 1790000 }
       ];
 
       return new Response(JSON.stringify({
@@ -1099,7 +1126,6 @@ export default {
         "baidu": { lab: "Baidu (ERNIE)", country: "China", flag: "🇨🇳", tier: "Enterprise Knowledge" },
         "tencent": { lab: "Tencent (Hunyuan)", country: "China", flag: "🇨🇳", tier: "Enterprise Scale" },
         "sarvam": { lab: "Sarvam AI", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI" },
-        "krutrim": { lab: "Krutrim AI", country: "India", flag: "🇮🇳", tier: "Indic Multilingual SOTA" },
         "tii": { lab: "TII (Falcon)", country: "United Arab Emirates", flag: "🇦🇪", tier: "Desert Sovereign SOTA" },
         "sakana": { lab: "Sakana AI", country: "Japan", flag: "🇯🇵", tier: "Evolutionary Agentic AI" },
         "liquid": { lab: "Liquid AI (LFM)", country: "United States", flag: "🇺🇸", tier: "Liquid Neural Networks" },
@@ -1123,7 +1149,12 @@ export default {
         "edenai": { lab: "Eden AI", country: "France / Europe", flag: "🌿", tier: "1,311+ Global Multimodal Catalog" },
         "friendli": { lab: "FriendliAI", country: "South Korea / Global", flag: "🚀", tier: "PeriFlow High-Throughput Engine" },
         "thesean": { lab: "TheSean AI", country: "Global", flag: "⚡", tier: "Ultra-Low Latency Inference" },
-        "baseten": { lab: "Baseten", country: "United States", flag: "🏗️", tier: "Truss Dedicated Inference" }
+        "baseten": { lab: "Baseten", country: "United States", flag: "🏗️", tier: "Truss Dedicated Inference" },
+        "krutrim": { lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI Cloud" },
+        "ola": { lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI Cloud" },
+        "poe": { lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "300+ Unified Bot Fabric" },
+        "parasail": { lab: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "100+ Decentralized GPU Models" },
+        "arcee": { lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain Specialized SLMs" }
       };
 
       const resolved = LAB_DIRECTORY[prefix] || {
@@ -1794,6 +1825,114 @@ CRITICAL RULES (HUMAN NATURAL CONVERSATION & AUTONOMOUS CUA CONTROL):
         }
       }
 
+      async function callKrutrimAI(targetModel, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^krutrim\//, "");
+          const resp = await fetch("https://cloud.olakrutrim.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.KRUTRIM}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
+      async function callPoeAI(targetModel, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^poe\//, "");
+          const resp = await fetch("https://api.poe.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.POE}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
+      async function callParasailAI(targetModel, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^parasail\//, "");
+          const resp = await fetch("https://api.parasail.io/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.PARASAIL}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
+      async function callArceeAI(targetModel, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^arcee\//, "");
+          const resp = await fetch("https://api.arcee.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.ARCEE}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
       async function callNovitaAI(targetModel, timeoutMs = 8000) {
         const controller = new AbortController();
         const tid = setTimeout(() => controller.abort(), timeoutMs);
@@ -2030,6 +2169,35 @@ CRITICAL RULES (HUMAN NATURAL CONVERSATION & AUTONOMOUS CUA CONTROL):
           if (!resp || !resp.ok) {
             activeProvider = "OPENROUTER_FALLBACK";
             resp = await callOR("deepseek/deepseek-chat", 8500);
+          }
+        } else if (model.startsWith("krutrim/")) {
+          activeProvider = "KRUTRIM_AI_CLOUD";
+          resp = await callKrutrimAI(model, 6500);
+          if (!resp || !resp.ok) {
+            activeProvider = "OPENROUTER_FALLBACK";
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 8500);
+          }
+        } else if (model.startsWith("poe/")) {
+          activeProvider = "POE_API_FABRIC";
+          resp = await callPoeAI(model, 6500);
+          if (!resp || !resp.ok) {
+            activeProvider = "OPENROUTER_FALLBACK";
+            const fallbackModel = model.replace(/^poe\//, "");
+            resp = await callOR(fallbackModel, 8500);
+          }
+        } else if (model.startsWith("parasail/")) {
+          activeProvider = "PARASAIL_GPU_NETWORK";
+          resp = await callParasailAI(model, 6500);
+          if (!resp || !resp.ok) {
+            activeProvider = "OPENROUTER_FALLBACK";
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 8500);
+          }
+        } else if (model.startsWith("arcee/")) {
+          activeProvider = "ARCEE_AI_SLM";
+          resp = await callArceeAI(model, 6500);
+          if (!resp || !resp.ok) {
+            activeProvider = "OPENROUTER_FALLBACK";
+            resp = await callOR("qwen/qwen-2.5-72b-instruct", 8500);
           }
         } else if (model.startsWith("@cf/") || model.startsWith("cf/")) {
           activeProvider = "CLOUDFLARE_WORKERS_AI";

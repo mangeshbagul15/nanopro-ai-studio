@@ -1829,7 +1829,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>
       <div class="ailab-conn-badge" id="ailabConnBadge" title="OpenRouter + DuckDB + BigQuery Active">
         <span class="ailab-pulse-dot"></span>
-        <span id="ailabConnText">4,330+ Models Unified Mesh</span>
+        <span id="ailabConnText">4,750+ Models Unified Mesh</span>
       </div>
     </div>
 
@@ -1930,8 +1930,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span style="font-size:11px;color:#10B981;margin-left:4px;pointer-events:none;">▼</span>
       </div>
 
-      <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,330+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
-        <span>🔍 4,330+ Models</span>
+      <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,750+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
+        <span>🔍 4,750+ Models</span>
       </button>
     </div>
 
@@ -2069,7 +2069,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <!-- Empty Hero State -->
         <div class="ailab-hero" id="ailabEmptyHero">
           <h2>🧠 NanoPro Global AI Lab</h2>
-          <p>World Foundational AI Creators • 4,330+ Unified Models • OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq • Pareto Engine</p>
+          <p>World Foundational AI Creators • 4,750+ Unified Models • OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq • Pareto Engine</p>
           
           <div class="ailab-pill-grid">
             <div class="ailab-pill-card" onclick="ailabSelectPreset('Write a high-performance Python FastAPI service with Pydantic v2 schemas and JWT auth.')">
@@ -2190,17 +2190,21 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span style="font-size:20px;">🌐</span>
         <div>
           <h4 style="margin:0;font-size:16px;color:#F8FAFC;font-weight:800;">Global Frontier AI Model Registry</h4>
-          <p style="margin:0;font-size:11.5px;color:#94A3B8;">4,330+ Unified Models across OpenRouter (473), AI/ML API (995), Hugging Face (110+), Fal.ai, Replicate &amp; Groq</p>
+          <p style="margin:0;font-size:11.5px;color:#94A3B8;">4,750+ Unified Models across OpenRouter (473), AI/ML API (995), Hugging Face (110+), Fal.ai, Replicate &amp; Groq</p>
         </div>
       </div>
       <button type="button" class="ailab-modal-close" onclick="ailabCloseModelCatalogModal()">&times;</button>
     </div>
     <div class="ailab-modal-search">
       <span style="font-size:16px;color:#8B5CF6;">🔍</span>
-      <input type="text" id="ailabModelSearchInput" placeholder="Search 4,330+ models by name, lab, provider, or capability (e.g. claude, deepseek, flux, qwen, free)..." oninput="ailabFilterModels()">
+      <input type="text" id="ailabModelSearchInput" placeholder="Search 4,750+ models by name, lab, provider, or capability (e.g. claude, deepseek, flux, qwen, free)..." oninput="ailabFilterModels()">
     </div>
     <div class="ailab-modal-pills">
-      <button type="button" class="ailab-pill is-active" onclick="ailabFilterModelCategory('all', this)">All Mesh (4,330+)</button>
+      <button type="button" class="ailab-pill is-active" onclick="ailabFilterModelCategory('all', this)">All Mesh (4,750+)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('krutrim', this)">🇮🇳 Krutrim AI (Ola)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('poe', this)">⚡ Poe by Quora (303)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('parasail', this)">⛵ Parasail (107)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('arcee', this)">🏹 Arcee AI (SLMs)</button>
       <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('edenai', this)">🌿 Eden AI (1,311)</button>
       <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('requesty', this)">🌐 Requesty AI (750)</button>
       <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('cf_ai', this)">☁️ Cloudflare Workers AI (150+)</button>
@@ -2615,7 +2619,12 @@ body.in-global_ai_lab .nano-dynamic-island {
       "edenai": { lab_name: "Eden AI", country: "France / Europe", flag: "🌿", tier: "1,311+ Global Multimodal Catalog" },
       "friendli": { lab_name: "FriendliAI", country: "South Korea / Global", flag: "🚀", tier: "PeriFlow High-Throughput Engine" },
       "thesean": { lab_name: "TheSean AI", country: "Global", flag: "⚡", tier: "Ultra-Low Latency Inference" },
-      "baseten": { lab_name: "Baseten", country: "United States", flag: "🏗️", tier: "Truss Dedicated Inference" }
+      "baseten": { lab_name: "Baseten", country: "United States", flag: "🏗️", tier: "Truss Dedicated Inference" },
+      "krutrim": { lab_name: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI Cloud" },
+      "ola": { lab_name: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI Cloud" },
+      "poe": { lab_name: "Poe by Quora", country: "United States", flag: "⚡", tier: "300+ Unified Bot Fabric" },
+      "parasail": { lab_name: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "100+ Decentralized GPU Models" },
+      "arcee": { lab_name: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain Specialized SLMs" }
     };
 
     if (DIRECTORY[prefix]) {
@@ -2647,7 +2656,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       
       const badge = $id("ailabConnText");
       if (badge) {
-        badge.textContent = "4,330+ Models Unified Mesh";
+        badge.textContent = "4,750+ Models Unified Mesh";
       }
       if (data.models && data.models.length > 0) {
         cachedCatalogModels = data.models;
@@ -3029,7 +3038,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span class="ailab-route-hud-badge">⚡ Evaluating Pareto Frontier &amp; Semantic Vectors...</span>
         <span class="ailab-route-hud-meta">&lt; 3.0 ms math overhead</span>
       </div>
-      <div class="ailab-bubble" style="color:#94A3B8;">Generating intelligent response across 4,330+ frontier models...</div>
+      <div class="ailab-bubble" style="color:#94A3B8;">Generating intelligent response across 4,750+ frontier models...</div>
     `;
     container.appendChild(assistantPlaceholder);
     container.scrollTop = container.scrollHeight;
@@ -3659,7 +3668,29 @@ body.in-global_ai_lab .nano-dynamic-island {
           // FriendliAI, TheSean & Baseten
           { id: "friendli/meta-llama-3.1-8b-instruct", name: "FriendliAI Llama 3.1 8B (PeriFlow)", lab: "FriendliAI", country: "South Korea / Global", flag: "🚀", is_free: true },
           { id: "thesean/ship-like/claude-haiku-4-5", name: "TheSean Claude Haiku 4.5", lab: "TheSean AI", country: "Global", flag: "⚡", is_free: false },
-          { id: "baseten/deepseek-ai/DeepSeek-V4.1-Flash", name: "Baseten DeepSeek V4.1 Flash", lab: "Baseten", country: "United States", flag: "🏗️", is_free: false }
+          { id: "baseten/deepseek-ai/DeepSeek-V4.1-Flash", name: "Baseten DeepSeek V4.1 Flash", lab: "Baseten", country: "United States", flag: "🏗️", is_free: false },
+          // Ola Krutrim Cloud (India's Sovereign AI Cloud)
+          { id: "krutrim/Qwen3.6-27B", name: "Krutrim Qwen 3.6 27B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", is_free: true },
+          { id: "krutrim/gpt-oss-120b", name: "Krutrim GPT OSS 120B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", is_free: true },
+          { id: "krutrim/gemma-4-31b-it", name: "Krutrim Gemma 4 31B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", is_free: true },
+          { id: "krutrim/GLM-5.3-Flash", name: "Krutrim GLM 5.3 Flash", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", is_free: true },
+          { id: "krutrim/gpt-oss-20b", name: "Krutrim GPT OSS 20B", lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign Cloud", is_free: true },
+          // Poe API (303 Unified Bot Models)
+          { id: "poe/gemini-4-hydrogen", name: "Poe Gemini 4 Hydrogen", lab: "Poe by Quora", country: "United States", flag: "⚡", is_free: false },
+          { id: "poe/grok-4.7", name: "Poe Grok 4.7", lab: "Poe by Quora", country: "United States", flag: "⚡", is_free: false },
+          { id: "poe/kimi-k3.1-pro", name: "Poe Kimi K3.1 Pro", lab: "Poe by Quora", country: "United States", flag: "⚡", is_free: false },
+          { id: "poe/claude-sonnet-5.5", name: "Poe Claude Sonnet 5.5", lab: "Poe by Quora", country: "United States", flag: "⚡", is_free: false },
+          { id: "poe/mistral-large-4", name: "Poe Mistral Large 4", lab: "Poe by Quora", country: "United States", flag: "⚡", is_free: false },
+          { id: "poe/mercury-3-vercel", name: "Poe Mercury 3 Diffusion", lab: "Poe by Quora", country: "United States", flag: "⚡", is_free: false },
+          // Parasail GPU Network (107 Models)
+          { id: "parasail/parasail-llama-33-70b-fp8", name: "Parasail Llama 3.3 70B FP8", lab: "Parasail GPU Network", country: "Global", flag: "⛵", is_free: true },
+          { id: "parasail/parasail-qwen25-vl-72b-instruct", name: "Parasail Qwen 2.5 VL 72B", lab: "Parasail GPU Network", country: "Global", flag: "⛵", is_free: false },
+          { id: "parasail/parasail-skyfall-36b-v2-fp8", name: "Parasail Skyfall 36B v2", lab: "Parasail GPU Network", country: "Global", flag: "⛵", is_free: false },
+          { id: "parasail/parasail-llama-4-maverick-instruct-fp8", name: "Parasail Llama 4 Maverick", lab: "Parasail GPU Network", country: "Global", flag: "⛵", is_free: false },
+          // Arcee AI (Domain-Specialized SLMs)
+          { id: "arcee/zai-org/glm-5.3-flash", name: "Arcee GLM 5.3 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: true },
+          { id: "arcee/deepseek/deepseek-v4.1-flash", name: "Arcee DeepSeek V4.1 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: false },
+          { id: "arcee/moonshotai/kimi-k3.1-pro", name: "Arcee Kimi K3.1 Pro", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: false }
         ];
       }
 
@@ -3667,6 +3698,10 @@ body.in-global_ai_lab .nano-dynamic-island {
         const prov = ailabResolveModelProvenance(m.id);
         const mName = (m.name || prov.clean_name || m.id || "");
         const isFree = m.is_free || m.id.includes(":free");
+        if (currentCatalogCategory === "krutrim" && !m.id.startsWith("krutrim/") && !(m.lab && m.lab.includes("Krutrim"))) return false;
+        if (currentCatalogCategory === "poe" && !m.id.startsWith("poe/") && !(m.lab && m.lab.includes("Poe"))) return false;
+        if (currentCatalogCategory === "parasail" && !m.id.startsWith("parasail/") && !(m.lab && m.lab.includes("Parasail"))) return false;
+        if (currentCatalogCategory === "arcee" && !m.id.startsWith("arcee/") && !(m.lab && m.lab.includes("Arcee"))) return false;
         if (currentCatalogCategory === "edenai" && !m.id.startsWith("edenai/") && !(m.lab && m.lab.includes("Eden"))) return false;
         if (currentCatalogCategory === "requesty" && !m.id.startsWith("requesty/") && !(m.lab && m.lab.includes("Requesty"))) return false;
         if (currentCatalogCategory === "cf_ai" && !m.id.startsWith("@cf/") && !m.id.startsWith("cf/") && !(m.lab && m.lab.includes("Cloudflare"))) return false;
