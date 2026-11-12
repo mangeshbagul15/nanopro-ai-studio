@@ -274,7 +274,60 @@ footer a:hover{color:var(--ink)}
   <button type="submit" aria-label="Send">→</button>
 </form>
 
-<div class="grid" id="grid"></div>
+<div class="grid" id="grid">
+  <button class="card" type="button" data-cid="scheduler">
+    <div class="gl">⏱</div><h2>Task Scheduler</h2><p>Crons · Airflow DAGs · Triggers</p>
+    <div class="val" id="v-scheduler">9 of 11 crons</div>
+  </button>
+  <button class="card" type="button" data-cid="pipelines">
+    <div class="gl">⛓</div><h2>Pipelines</h2><p>L0 ➔ L1 ➔ L2 Medallion</p>
+    <div class="val" id="v-pipelines">ACTIVE Lakehouse</div>
+  </button>
+  <button class="card" type="button" data-cid="datamodel">
+    <div class="gl">◈</div><h2>Data Modeling</h2><p>AI schema & SQL</p>
+    <div class="val" id="v-datamodel">AI ready</div>
+  </button>
+  <button class="card" type="button" data-cid="infra">
+    <div class="gl">⬡</div><h2>Infra & Security</h2><p>Cloud · auth · guards</p>
+    <div class="val" id="v-infra">SAFE cloud</div>
+  </button>
+  <button class="card" type="button" data-cid="databases">
+    <div class="gl">▤</div><h2>Databases</h2><p>Neon · DuckDB · BigQuery</p>
+    <div class="val" id="v-databases">6 cloud DBs</div>
+  </button>
+  <button class="card" type="button" data-cid="mcp">
+    <div class="gl">🔌</div><h2>MCP Server</h2><p>BigQuery · Supabase · Tools</p>
+    <div class="val" id="v-mcp">13 tools</div>
+  </button>
+  <button class="card" type="button" data-cid="agents" data-station="true">
+    <div class="gl">✦</div><h2>Agent Station</h2><p>Enterprise agent fleet</p>
+    <div class="val" id="v-agents">320 agents</div>
+  </button>
+  <button class="card" type="button" data-cid="comms">
+    <div class="gl">✉</div><h2>Communication</h2><p>Email · Telegram · WhatsApp</p>
+    <div class="val" id="v-comms">3 channels</div>
+  </button>
+  <button class="card" type="button" data-cid="video">
+    <div class="gl">▶</div><h2>Video Studio</h2><p>Universal video maker</p>
+    <div class="val" id="v-video">40 presets</div>
+  </button>
+  <button class="card" type="button" data-cid="payments">
+    <div class="gl">₹</div><h2>Payments</h2><p>Gateway & plans</p>
+    <div class="val" id="v-payments">1 plans</div>
+  </button>
+  <button class="card" type="button" data-cid="monitor">
+    <div class="gl">◎</div><h2>Monitoring</h2><p>Health · egress · jobs</p>
+    <div class="val" id="v-monitor">LIVE ok</div>
+  </button>
+  <button class="card" type="button" data-cid="render">
+    <div class="gl">☁</div><h2>Render Cloud</h2><p>Bandwidth · builds · hours</p>
+    <div class="val" id="v-render">0.083 GB of 5</div>
+  </button>
+  <button class="card" type="button" data-cid="news">
+    <div class="gl">◫</div><h2>Signals</h2><p>Market & news feed</p>
+    <div class="val" id="v-news">6 articles</div>
+  </button>
+</div>
 
 <footer>
   <span id="f-ver">v2026.11</span>
@@ -748,6 +801,44 @@ async function refreshSchedulerView(){
 }
 
 
+
+let currentOpenCard = null;
+
+function refreshCurrentCard() {
+  if (currentOpenCard) {
+    openCard(currentOpenCard);
+  }
+}
+
+function navigateToScheduler() {
+  var sc = CARDS.find(function(c) { return c.id === "scheduler"; });
+  if (sc) openCard(sc);
+}
+
+function testWhatsAppPing() {
+  alert("WhatsApp Ping: Triggering certified template delivery to +918433755448 via Meta WhatsApp Cloud API...");
+}
+
+function testTelegramPing() {
+  alert("Telegram Ping: Triggering priority alert to Telegram Chat ID 1200023268 (@mangesh_reports_bot)...");
+}
+
+function generateQuickSQL() {
+  var inp = document.getElementById("dm-quick-sql");
+  var val = inp ? inp.value.trim() : "";
+  alert("AI Copilot Text-to-SQL: Translating query: " + (val || "High-risk AML transactions above 10 Lakhs"));
+}
+
+function triggerShortsBlueprint() {
+  var inp = document.getElementById("vid-prompt");
+  var val = inp ? inp.value.trim() : "";
+  alert("9:16 Shorts Generator: Blueprint created via MCP for: " + (val || "Core Banking EOD Settlement Highlights"));
+}
+
+function triggerBODNow() {
+  triggerTaskNow("task_bod", "BOD_PIPELINE_CYCLE");
+}
+
 /* ==========================================================
    ENTERPRISE CONSOLE RENDERERS (13 DEDICATED VISUAL VIEWS)
    ========================================================== */
@@ -757,7 +848,7 @@ function renderPipelinesConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">⛓ Medallion Data Engineering Pipelines</span>';
   html += '<div class="console-sub">Multi-Hop Architecture: Bronze ➔ Silver ➔ Gold ➔ DuckDB Marts</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'pipelines\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="pipeline-flow-diagram">';
@@ -780,8 +871,8 @@ function renderPipelinesConsole(d) {
   html += '</tbody></table></div>';
 
   html += '<div style="margin-top:14px;display:flex;gap:8px;">';
-  html += '<button type="button" class="task-btn run" onclick="triggerTaskNow(\'task_bod\', \'BOD_PIPELINE_CYCLE\')">▶ Trigger Ingestion Now</button>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'scheduler\';}))">View in Task Scheduler →</button>';
+  html += '<button type="button" class="task-btn run" onclick="triggerBODNow()">▶ Trigger Ingestion Now</button>';
+  html += '<button type="button" class="task-btn" onclick="navigateToScheduler()">View in Task Scheduler →</button>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -792,7 +883,7 @@ function renderDataModelingConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">◈ AI Data Modeling Studio & Copilot</span>';
   html += '<div class="console-sub">Schema Architecture, Text-to-SQL, ER Diagrams & Universal DB Explorer</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'datamodel\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="ai-status-card">';
@@ -816,7 +907,7 @@ function renderDataModelingConsole(d) {
   html += '<div class="section-title">Instant Natural Language Text-to-SQL</div>';
   html += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
   html += '<input id="dm-quick-sql" placeholder="e.g. Generate high-risk AML transactions above ₹10 Lakhs with customer PAN..." style="flex:1;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:#fff;font-size:12px;" />';
-  html += '<button type="button" class="task-btn run" onclick="alert(\'Generating SQL with AI Copilot...\')">Generate SQL</button>';
+  html += '<button type="button" class="task-btn run" onclick="generateQuickSQL()">Generate SQL</button>';
   html += '</div>';
 
   html += '<div style="display:flex;gap:8px;">';
@@ -831,7 +922,7 @@ function renderInfraConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">⬡ Enterprise Cloud Infrastructure & Security Shield</span>';
   html += '<div class="console-sub">Zero-Trust Architecture · AES-256 Vault · Global Edge · Safe Execution</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'infra\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="security-grid">';
@@ -858,7 +949,7 @@ function renderDatabasesConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">▤ 6 Enterprise Cloud Databases (100% Laptop-Free)</span>';
   html += '<div class="console-sub">Multi-Cloud Fabric: AWS, Neon, Snowflake, Oracle Cloud & Google BigQuery</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'databases\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="tbl-wrap"><table><thead><tr><th>Database & Fabric</th><th>Provider & Host</th><th>Primary Role</th><th>Status</th></tr></thead><tbody>';
@@ -882,7 +973,7 @@ function renderMCPConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">🔌 Model Context Protocol (MCP) Server (13 Tools)</span>';
   html += '<div class="console-sub">Smart Offloading Protocol · Heavy Queries & AI Blueprints without RAM Load</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'mcp\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="tbl-wrap"><table><thead><tr><th>Tool Name</th><th>Category</th><th>Description & Smart Offloading Benefit</th><th>Status</th></tr></thead><tbody>';
@@ -913,7 +1004,7 @@ function renderAgentsConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">✦ 320 Specialized Enterprise AI Agents Fleet</span>';
   html += '<div class="console-sub">20 Functional Groups (A-T) · Autonomous Delegation & Task Execution</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'agents\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div style="display:flex;gap:10px;margin-bottom:12px;background:rgba(0,0,0,.25);padding:10px 14px;border-radius:10px;font-size:12px;">';
@@ -942,7 +1033,7 @@ function renderCommsConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">✉ Multi-Channel Communication Center</span>';
   html += '<div class="console-sub">Verified Channels: Gmail SMTP, Telegram Bot Network & Meta WhatsApp Cloud</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'comms\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="comms-grid">';
@@ -956,8 +1047,8 @@ function renderCommsConsole(d) {
   html += '</div>';
 
   html += '<div style="margin-top:14px;display:flex;gap:8px;">';
-  html += '<button type="button" class="task-btn run" onclick="alert(\'Sending WhatsApp test ping to +918433755448...\')">Test WhatsApp Ping</button>';
-  html += '<button type="button" class="task-btn" onclick="alert(\'Sending Telegram test ping to Chat ID 1200023268...\')">Test Telegram Ping</button>';
+  html += '<button type="button" class="task-btn run" onclick="testWhatsAppPing()">Test WhatsApp Ping</button>';
+  html += '<button type="button" class="task-btn" onclick="testTelegramPing()">Test Telegram Ping</button>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -968,7 +1059,7 @@ function renderVideoConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">▶ 2026 AI Universal Video Studio</span>';
   html += '<div class="console-sub">40 Generation Presets · Zero-Hang Cascade Router · 9:16 Vertical Shorts</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'video\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="tbl-wrap"><table><thead><tr><th>Preset Model</th><th>Provider</th><th>Specialization</th><th>Execution Tier</th></tr></thead><tbody>';
@@ -982,7 +1073,7 @@ function renderVideoConsole(d) {
   html += '<div class="section-title">Create 9:16 Vertical AI Short Video</div>';
   html += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
   html += '<input id="vid-prompt" placeholder="Enter video topic, script or banking news summary..." style="flex:1;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:#fff;font-size:12px;" />';
-  html += '<button type="button" class="task-btn run" onclick="alert(\'Video Blueprint dispatched via MCP!\')">Generate 9:16 Short</button>';
+  html += '<button type="button" class="task-btn run" onclick="triggerShortsBlueprint()">Generate 9:16 Short</button>';
   html += '</div>';
 
   html += '<div><a class="open-link" href="/legacy" target="_blank" rel="noopener">Open Full Video Maker Workspace ↗</a></div>';
@@ -995,7 +1086,7 @@ function renderPaymentsConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">₹ Commercial Billing & Gateway Hub</span>';
   html += '<div class="console-sub">Multi-Gateway Integration · GST Invoicing · Instant UPI Activation</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'payments\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="plans-card">';
@@ -1024,7 +1115,7 @@ function renderMonitoringConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">◎ Live System Health Telemetry</span>';
   html += '<div class="console-sub">24/7 Container Resource Monitoring · Zero-Hang Guard · Failover Standby</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'monitor\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="telemetry-grid">';
@@ -1050,7 +1141,7 @@ function renderRenderConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">☁ Render Cloud Primary Node Infrastructure</span>';
   html += '<div class="console-sub">Linux Cloud Container · Singapore Region · 750h Free VM Pool</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'render\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   html += '<div class="render-usage-box">';
@@ -1081,7 +1172,7 @@ function renderSignalsConsole(d) {
   html += '<div class="console-hdr">';
   html += '<div><span class="console-title">◫ Real-Time Market Signals & Live News Wire</span>';
   html += '<div class="console-sub">Autonomous News Agent · ABP Majha (मराठी), Aaj Tak, Reuters & TechCrunch</div></div>';
-  html += '<button type="button" class="task-btn" onclick="openCard(CARDS.find(function(c){return c.id===\'news\';}))">⟳ Live Refresh</button>';
+  html += '<button type="button" class="task-btn" onclick="refreshCurrentCard()">⟳ Live Refresh</button>';
   html += '</div>';
 
   if (!articles.length) {
@@ -1148,6 +1239,7 @@ function esc(v){
 }
 
 async function openCard(card){
+  currentOpenCard = card;
   $("#d-title").textContent = card.name;
   $("#d-body").innerHTML = '<div class="mut">Loading…</div>';
   $("#drawer").classList.add("open");
