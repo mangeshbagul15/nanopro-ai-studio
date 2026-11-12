@@ -178,6 +178,21 @@ export default {
       // (This logic runs through the normal proxy cascade below.)
     }
 
+    if (path === "/legacy") {
+      if (!(await checkEdgeAuth(request, url, env))) {
+        return Response.redirect(`${url.origin}/login`, 302);
+      }
+      if (env.ASSETS) {
+        const dashResp = await env.ASSETS.fetch(new Request("https://dummy.host/complete_nanopro_dashboard.html"));
+        if (dashResp.ok) {
+          const finalHeaders = new Headers(dashResp.headers);
+          finalHeaders.set("X-NanoPro-Mode", "EDGE_LEGACY_DASHBOARD");
+          finalHeaders.set("Access-Control-Allow-Origin", "*");
+          return new Response(dashResp.body, { status: dashResp.status, headers: finalHeaders });
+        }
+      }
+    }
+
     // -1. Legacy dashboard routes (edge-rendered status pages — still protected)
     if (path === "/dashboard/business") {
       if (!(await checkEdgeAuth(request, url, env))) {
