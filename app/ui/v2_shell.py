@@ -1772,7 +1772,7 @@ function renderGlobalAILabConsole(d) {
   html += '<div style="background:rgba(2,6,23,0.9);border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:14px;margin-bottom:16px;">';
   html += '<div style="font-size:12px;font-weight:700;color:#38BDF8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">⚡ Live Drawer Prompt Dispatcher</div>';
   html += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
-  html += '<input id="ailab-drawer-input" type="text" placeholder="उदा. Write Python ETL for Snowflake, or Deep reasoning logic..." style="flex:1;background:#0F1724;border:1px solid #1E293B;color:#F8FAFC;padding:8px 12px;border-radius:8px;font-size:12.5px;outline:none;" onkeydown="if(event.key===\'Enter\'){document.getElementById(\'ailab-drawer-btn\').click();}">';
+  html += '<input id="ailab-drawer-input" type="text" placeholder="उदा. Write Python ETL for Snowflake, or Deep reasoning logic..." style="flex:1;background:#0F1724;border:1px solid #1E293B;color:#F8FAFC;padding:8px 12px;border-radius:8px;font-size:12.5px;outline:none;" onkeydown="if(event.keyCode===13)runAILabDrawerTest()">';
   html += '<button id="ailab-drawer-btn" style="background:linear-gradient(135deg,#7C3AED,#2563EB);color:#FFF;border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;" onclick="runAILabDrawerTest()">⚡ Test Run</button>';
   html += '</div>';
   html += '<div id="ailab-drawer-result" style="display:none;background:#090E17;border:1px solid #1E2A3C;border-radius:8px;padding:12px;font-size:12px;color:#E2E8F0;max-height:200px;overflow-y:auto;white-space:pre-wrap;"></div>';
