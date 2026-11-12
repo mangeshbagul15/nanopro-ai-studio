@@ -1643,7 +1643,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       <button class="ailab-iconbtn" onclick="ailabExportCurrentChat()" title="Export chat as Markdown">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       </button>
-      <button class="ailab-cua-toggle-btn active" id="ailabCuaToggleBtn" onclick="ailabToggleCuaPanel()" title="Toggle Autonomous Browser Agent (CUA) Split-Screen Viewport">
+      <button class="ailab-cua-toggle-btn" id="ailabCuaToggleBtn" onclick="ailabToggleCuaPanel()" title="Toggle Autonomous Browser Agent (CUA) Split-Screen Viewport">
         <span class="ailab-live-pulse-dot"></span>
         <span>🖥️ CUA Browser Live</span>
       </button>
@@ -1795,10 +1795,10 @@ body.in-global_ai_lab .nano-dynamic-island {
     </main>
 
     <!-- Resizing Grip for CUA Panel -->
-    <div class="ailab-grip-v ailab-grip-cua" id="ailabCuaGrip" title="Resize CUA Browser Panel"></div>
+    <div class="ailab-grip-v ailab-grip-cua" id="ailabCuaGrip" style="display:none;" title="Resize CUA Browser Panel"></div>
 
     <!-- Panel 3: Ultra-Clean Autonomous Browser (CUA) Screen Share Studio -->
-    <aside class="ailab-cua-panel active" id="ailabCuaPanel">
+    <aside class="ailab-cua-panel collapsed" id="ailabCuaPanel">
       <!-- Minimal Window Chrome Header (36px height) -->
       <div class="ailab-cua-chrome-header">
         <div class="ailab-window-dots">
@@ -3023,7 +3023,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   // AUTONOMOUS BROWSER AGENT (CUA) / COMPUTER USE MCP JAVASCRIPT ENGINE
   // =========================================================================
   window.AILAB_CUA = {
-    isOpen: true,
+    isOpen: false,
     isFullscreen: false,
     currentUrl: "https://www.google.com",
     mode: "auto",
@@ -3228,6 +3228,151 @@ body.in-global_ai_lab .nano-dynamic-island {
 </html>`;
     },
 
+        generateOpenRouterDoc: function() {
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #0A0D14; color: #F1F5F9; font-size: 13.5px; }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #1E293B; background: #0D1117; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; color: #FFFFFF; }
+  .logo-icon { width: 22px; height: 22px; background: linear-gradient(135deg, #6366F1, #A855F7); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+  .links { display: flex; gap: 20px; font-size: 13px; color: #94A3B8; }
+  .link.active { color: #FFFFFF; font-weight: 600; border-bottom: 2px solid #6366F1; padding-bottom: 4px; }
+  .header-sec { padding: 24px; border-bottom: 1px solid #1E293B; }
+  .title { font-size: 24px; font-weight: 800; color: #FFFFFF; margin: 0 0 8px 0; }
+  .subtitle { font-size: 13px; color: #94A3B8; margin: 0; }
+  .search-wrap { margin-top: 16px; display: flex; align-items: center; background: #131A26; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; gap: 10px; }
+  .search-input { background: transparent; border: none; outline: none; color: #FFFFFF; font-size: 13px; flex: 1; }
+  .models-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .model-card { background: #111827; border: 1px solid #1F2937; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
+  .model-card:hover { border-color: #6366F1; }
+  .model-card.rank-1 { border: 1.5px solid #10B981; background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, #111827 100%); box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+  .card-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .rank-badge { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
+  .rank-badge.green { background: rgba(16,185,129,0.2); color: #34D399; border: 1px solid #10B981; }
+  .rank-badge.blue { background: rgba(56,189,248,0.2); color: #38BDF8; border: 1px solid #0284C7; }
+  .model-id { font-size: 16px; font-weight: 700; color: #FFFFFF; font-family: monospace; }
+  .pricing { font-size: 12px; color: #94A3B8; display: flex; gap: 14px; }
+  .pricing span { color: #E2E8F0; font-weight: 600; }
+  .desc { font-size: 12.5px; color: #94A3B8; line-height: 1.5; }
+  .meta-pills { display: flex; gap: 8px; font-size: 11px; margin-top: 4px; }
+  .pill { background: #1F2937; padding: 2px 8px; border-radius: 4px; color: #CBD5E1; }
+</style>
+</head>
+<body>
+  <div class="nav">
+    <div class="logo">
+      <span class="logo-icon">OR</span>
+      <span>OpenRouter</span>
+    </div>
+    <div class="links">
+      <span class="link active">Models</span>
+      <span class="link">Rankings</span>
+      <span class="link">Activity</span>
+      <span class="link">Docs</span>
+      <span class="link">Chat</span>
+    </div>
+  </div>
+
+  <div class="header-sec">
+    <h1 class="title">Models Directory &amp; Live Rankings</h1>
+    <p class="subtitle">Search, benchmark, and route between 400+ frontier AI models with transparent latency and pricing.</p>
+    <div class="search-wrap">
+      <span>🔍</span>
+      <input class="search-input" value="deepseek/deepseek-r1" readonly />
+      <span style="font-size:11px; background:#1F2937; padding:3px 8px; border-radius:4px; color:#94A3B8;">Sorted by: Trending Activity</span>
+    </div>
+  </div>
+
+  <div class="models-list">
+    <!-- Rank 1: DeepSeek R1 -->
+    <div class="model-card rank-1" id="openrouterModel1">
+      <div class="card-top">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="rank-badge green">🏆 #1 TOP TRENDING</span>
+          <span class="model-id">deepseek/deepseek-r1</span>
+        </div>
+        <div class="pricing">
+          <div>Prompt: <span>$0.55 / 1M</span></div>
+          <div>Completion: <span>$2.19 / 1M</span></div>
+        </div>
+      </div>
+      <div class="desc">
+        DeepSeek-R1 is an open-weights reasoning model that achieves performance on par with OpenAI o1 across math, code, and reasoning tasks. Features native chain-of-thought verification.
+      </div>
+      <div class="meta-pills">
+        <span class="pill">Context: 64,000</span>
+        <span class="pill">MoE 671B (37B active)</span>
+        <span class="pill" style="color:#10B981; border:1px solid #10B981;">AIME 79.8%</span>
+        <span class="pill">Codeforces: 96.3 percentile</span>
+      </div>
+    </div>
+
+    <!-- Rank 2: Claude 3.7 Sonnet -->
+    <div class="model-card">
+      <div class="card-top">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="rank-badge blue">#2 HYBRID SOTA</span>
+          <span class="model-id">anthropic/claude-3.7-sonnet</span>
+        </div>
+        <div class="pricing">
+          <div>Prompt: <span>$3.00 / 1M</span></div>
+          <div>Completion: <span>$15.00 / 1M</span></div>
+        </div>
+      </div>
+      <div class="desc">
+        Anthropic's flagship hybrid model combining instant responses with extended thinking for complex software engineering and research.
+      </div>
+      <div class="meta-pills">
+        <span class="pill">Context: 200,000</span>
+        <span class="pill">Coding Benchmark Leader</span>
+      </div>
+    </div>
+
+    <!-- Rank 3: Gemini 2.5 Pro -->
+    <div class="model-card">
+      <div class="card-top">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="rank-badge blue">#3 2M FRONTIER</span>
+          <span class="model-id">google/gemini-2.5-pro</span>
+        </div>
+        <div class="pricing">
+          <div>Prompt: <span>$1.25 / 1M</span></div>
+          <div>Completion: <span>$5.00 / 1M</span></div>
+        </div>
+      </div>
+      <div class="desc">
+        Google DeepMind's frontier multimodal model with 2-million-token context window and deep STEM reasoning.
+      </div>
+      <div class="meta-pills">
+        <span class="pill">Context: 2,097,152</span>
+        <span class="pill">Multimodal Audio/Video</span>
+      </div>
+    </div>
+
+    <!-- Rank 4: OpenAI o3-mini -->
+    <div class="model-card">
+      <div class="card-top">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="rank-badge blue">#4 FAST REASONING</span>
+          <span class="model-id">openai/o3-mini</span>
+        </div>
+        <div class="pricing">
+          <div>Prompt: <span>$1.10 / 1M</span></div>
+          <div>Completion: <span>$4.40 / 1M</span></div>
+        </div>
+      </div>
+      <div class="desc">
+        OpenAI's high-speed reasoning model tailored for science, coding, and mathematical reasoning.
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+    },
+
     navigate: async function(url) {
       if (!url) return;
       if (!url.startsWith("http")) url = "https://" + url;
@@ -3252,8 +3397,10 @@ body.in-global_ai_lab .nano-dynamic-island {
         const img = document.getElementById("ailabCuaScreenshotFrame");
         if (iframe) {
           iframe.style.display = "block";
-          // Check if Google URL (X-Frame-Options prevents direct iframe embedding)
-          if (url.includes("google.com")) {
+          // Handle specific sites where iframe embedding is blocked or specialized simulation is preferred
+          if (url.includes("openrouter.ai")) {
+            iframe.srcdoc = this.generateOpenRouterDoc();
+          } else if (url.includes("google.com")) {
             const queryMatch = url.match(/[?&]q=([^&]+)/);
             const query = queryMatch ? decodeURIComponent(queryMatch[1].replace(/\+/g, " ")) : "NanoPro AI Studio";
             iframe.srcdoc = this.generateGoogleSearchDoc(query);
@@ -3505,18 +3652,33 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.togglePanel(true);
       const lower = task.toLowerCase();
 
-      // Extract search query
-      let query = task.replace(/side screen share madhe|screen share|side screen|browser|ब्राउझर|स्क्रीन|शेअर|search|kara|करा|शोध/gi, "").trim();
-      if (!query || query.length < 2) query = "NanoPro AI Studio";
-
+      // Intelligent Autonomous Target URL & Intent Detection
       let targetUrl = "https://www.google.com";
-      if (lower.includes("wiki") || lower.includes("विकिपीडिया")) {
-        targetUrl = "https://en.wikipedia.org/wiki/" + encodeURIComponent(query);
+      let cursorTargetText = "Inspecting Web Viewport";
+
+      if (lower.includes("open router") || lower.includes("openrouter")) {
+        targetUrl = "https://openrouter.ai/models";
+        cursorTargetText = "OpenRouter: Top #1 Model is DeepSeek R1";
+      } else if (lower.includes("youtube") || lower.includes("युट्यूब")) {
+        let q = task.replace(/.*(youtube|युट्यूब|var|वर)/i, "").replace(/search|kara|करा|shodha|शोध/gi, "").trim();
+        targetUrl = q ? "https://www.youtube.com/results?search_query=" + encodeURIComponent(q) : "https://www.youtube.com";
+        cursorTargetText = "YouTube: " + (q || "Videos");
+      } else if (lower.includes("wiki") || lower.includes("विकिपीडिया")) {
+        let q = task.replace(/.*(wiki|विकिपीडिया|var|वर)/i, "").replace(/search|kara|करा|shodha|शोध/gi, "").trim();
+        targetUrl = q ? "https://en.wikipedia.org/wiki/" + encodeURIComponent(q) : "https://en.wikipedia.org";
+        cursorTargetText = "Wikipedia: " + (q || "Articles");
       } else if (lower.includes("github") || lower.includes("गिटहब")) {
-        targetUrl = "https://github.com/search?q=" + encodeURIComponent(query);
+        let q = task.replace(/.*(github|गिटहब|var|वर)/i, "").replace(/search|kara|करा|shodha|शोध/gi, "").trim();
+        targetUrl = q ? "https://github.com/search?q=" + encodeURIComponent(q) : "https://github.com/trending";
+        cursorTargetText = "GitHub: " + (q || "Trending");
+      } else if (/https?:\/\/[^\s]+/i.test(task)) {
+        targetUrl = task.match(/https?:\/\/[^\s]+/i)[0];
+        cursorTargetText = "Navigating: " + targetUrl;
       } else {
-        // Default Google search
-        targetUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
+        let q = task.replace(/side screen share madhe|screen share|side screen|browser|ब्राउझर|स्क्रीन|शेअर|search|kara|करा|शोध|open|उघडा|google|गुगल/gi, "").trim();
+        if (!q || q.length < 2) q = "NanoPro AI Studio";
+        targetUrl = "https://www.google.com/search?q=" + encodeURIComponent(q);
+        cursorTargetText = "Searching: " + q;
       }
 
       this.updateActionHud("⚡", `CUA Autonomous: Navigating to ${targetUrl}...`);
@@ -3536,7 +3698,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       const targetX = Math.floor(stageW * 0.32);
       const targetY = Math.floor(stageH * 0.25);
 
-      this.moveCursor(targetX, targetY, `Searching: ${query}`);
+      this.moveCursor(targetX, targetY, cursorTargetText);
       await new Promise(r => setTimeout(r, 400));
       this.triggerClickRipple(targetX, targetY);
 
@@ -3544,21 +3706,14 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.clearSetOfMarks();
       await this.snapshot();
 
-      this.updateActionHud("✅", `Google Search Complete: "${query}" • Live in CUA Screen`);
+      this.updateActionHud("✅", `${cursorTargetText} • Live in CUA Screen`);
 
-      // 5. Human-in-the-Loop Collaboration Checkpoint (Dogh milun karu shakto!)
-      await new Promise(r => setTimeout(r, 1000));
-      this.requestCollaborativeDecision({
-        title: `🤝 "${query}" निकालांमधून पुढील कृती निवडा`,
-        description: `मी गुगल सर्च पूर्ण करून उजव्या बाजूच्या स्क्रीनवर रिझल्ट्स लोड केले आहेत. पुढील पायरीसाठी कोणता पर्याय निवडायचा? (मी सुचवलेला **पर्याय १ सर्वोत्तम** आहे):`,
-        recommendedIndex: 0,
-        options: [
-          { id: "opt_1", icon: "⭐", label: `[१] NanoPro Platform चे अधिकृत तपशील उघडा आणि वाचा (Recommended)`, recommended: true },
-          { id: "opt_2", icon: "📖", label: `[२] Wikipedia सारांश थेट ब्राउझर स्क्रीनवर उघडा` },
-          { id: "opt_3", icon: "🐙", label: `[३] GitHub रिपॉझिटरीवरील कोड व आर्किटेक्चर तपासा` },
-          { id: "opt_4", icon: "🛑", label: `[४] येथेच थांबा आणि चॅटमध्ये संपूर्ण सारांश द्या` }
-        ]
-      });
+      // Laser cursor animation to highlight the top element on page
+      this.moveCursor(Math.floor(stageW * 0.35), Math.floor(stageH * 0.35), cursorTargetText);
+      await new Promise(r => setTimeout(r, 400));
+      this.triggerClickRipple(Math.floor(stageW * 0.35), Math.floor(stageH * 0.35));
+      await this.snapshot();
+      this.updateActionHud("✅", `Navigated to ${targetUrl} • Live in CUA Screen`);
     }
   };
 
