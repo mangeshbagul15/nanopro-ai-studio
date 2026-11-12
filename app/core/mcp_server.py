@@ -1070,10 +1070,21 @@ class NanoProMCPServer:
                 models=[model_id, "gemini-3.8-flash", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"]
             )
             GLOBAL_AI_ROUTER.bandit.record_feedback(model_id, success=True, latency_ms=(time.time() - start_t) * 1000)
+            from app.core.global_ai_catalog import resolve_model_provenance
+            from datetime import datetime
+            prov = resolve_model_provenance(used_model)
+            now_dt = datetime.now()
             res = {
                 "status": "success",
                 "model_routed": model_id,
                 "model_executed": used_model,
+                "model_name": prov.get("model_name", used_model),
+                "lab_name": prov.get("lab_name", "Global AI"),
+                "country": prov.get("country", "Global"),
+                "flag": prov.get("flag", "🌐"),
+                "tier": prov.get("tier", "Frontier"),
+                "date_formatted": now_dt.strftime("%d %b %Y, %I:%M:%S %p"),
+                "timestamp": now_dt.isoformat(),
                 "mode": mode,
                 "duration_ms": round((time.time() - start_t) * 1000, 2),
                 "response": content,

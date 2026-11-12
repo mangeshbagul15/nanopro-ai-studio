@@ -677,3 +677,97 @@ def get_unified_models_for_ui() -> List[Dict[str, Any]]:
             })
 
     return ui_list
+
+
+def resolve_model_provenance(model_id: str) -> Dict[str, Any]:
+    """Resolves sovereign country, lab provenance, tier, and clean name for any model worldwide."""
+    if not model_id or model_id == "auto":
+        return {
+            "model_id": "auto",
+            "model_name": "Single AUTO Mathematical Engine",
+            "lab_name": "NanoPro Mathematical Dispatcher",
+            "country": "Global Sovereign Mesh",
+            "flag": "⚡",
+            "tier": "Pareto-Bandit Router"
+        }
+
+    mid = model_id.lower()
+    parts = mid.split("/")
+    prefix = parts[0] if len(parts) > 1 else "global"
+    raw_name = parts[1] if len(parts) > 1 else parts[0]
+
+    clean_name = raw_name.replace(":free", " (Free)").replace("-", " ").title()
+
+    lab_map = {
+        "anthropic": ("Anthropic", "United States", "🇺🇸", "Frontier Cognitive & Code"),
+        "openai": ("OpenAI", "United States", "🇺🇸", "Frontier Commercial & Reasoning"),
+        "google": ("Google DeepMind", "United States", "🇺🇸", "Frontier Multimodal 2M"),
+        "deepseek": ("DeepSeek AI", "China", "🇨🇳", "Open Reasoning SOTA"),
+        "qwen": ("Alibaba Cloud (Qwen)", "China", "🇨🇳", "Frontier Coding & Multilingual"),
+        "alibaba": ("Alibaba Cloud (Qwen)", "China", "🇨🇳", "Frontier Coding & Multilingual"),
+        "meta": ("Meta AI", "United States", "🇺🇸", "Open-Weights Frontier"),
+        "meta-llama": ("Meta AI (Llama)", "United States", "🇺🇸", "Open-Weights Frontier"),
+        "mistralai": ("Mistral AI", "France", "🇫🇷", "European Sovereign Frontier"),
+        "mistral": ("Mistral AI", "France", "🇫🇷", "European Sovereign Frontier"),
+        "x-ai": ("xAI (Grok)", "United States", "🇺🇸", "Truth-Seeking Frontier"),
+        "nvidia": ("NVIDIA AI", "United States", "🇺🇸", "Accelerated Inference SOTA"),
+        "cohere": ("Cohere", "Canada", "🇨🇦", "Enterprise NLP & Embeddings"),
+        "moonshotai": ("Moonshot AI (Kimi)", "China", "🇨🇳", "Long Context Frontier"),
+        "moonshot": ("Moonshot AI (Kimi)", "China", "🇨🇳", "Long Context Frontier"),
+        "z-ai": ("Zhipu AI (GLM)", "China", "🇨🇳", "Chinese SOTA Frontier"),
+        "zhipu": ("Zhipu AI (GLM)", "China", "🇨🇳", "Chinese SOTA Frontier"),
+        "thudm": ("Zhipu AI / Tsinghua", "China", "🇨🇳", "Bilingual Foundation"),
+        "glm": ("Zhipu AI (GLM)", "China", "🇨🇳", "Chinese SOTA Frontier"),
+        "01-ai": ("01.AI (Kai-Fu Lee)", "China", "🇨🇳", "High Performance Foundation"),
+        "yi": ("01.AI (Yi)", "China", "🇨🇳", "High Performance Foundation"),
+        "baidu": ("Baidu (ERNIE)", "China", "🇨🇳", "Industrial Enterprise AI"),
+        "ernie": ("Baidu (ERNIE)", "China", "🇨🇳", "Industrial Enterprise AI"),
+        "tencent": ("Tencent (Hunyuan)", "China", "🇨🇳", "Enterprise Foundation"),
+        "hunyuan": ("Tencent (Hunyuan)", "China", "🇨🇳", "Enterprise Foundation"),
+        "bytedance": ("ByteDance (Doubao)", "China", "🇨🇳", "Ultra High-Throughput Omni"),
+        "doubao": ("ByteDance (Doubao)", "China", "🇨🇳", "Ultra High-Throughput Omni"),
+        "stepfun": ("StepFun (Jieyue)", "China", "🇨🇳", "Reasoning Step-1"),
+        "minimax": ("MiniMax", "China", "🇨🇳", "Multimodal Voice & Text"),
+        "sensetime": ("SenseTime (SenseNova)", "China", "🇨🇳", "Computer Vision & LLM"),
+        "sarvam": ("Sarvam AI", "India", "🇮🇳", "Indic Sovereign Frontier"),
+        "krutrim": ("Krutrim AI (Ola)", "India", "🇮🇳", "Indic Foundation Leader"),
+        "ola": ("Krutrim AI (Ola)", "India", "🇮🇳", "Indic Foundation Leader"),
+        "bharatgen": ("BharatGen (IIT Bombay)", "India", "🇮🇳", "National Sovereign AI"),
+        "tii": ("Technology Innovation Institute", "United Arab Emirates", "🇦🇪", "Falcon Sovereign"),
+        "falcon": ("Technology Innovation Institute", "United Arab Emirates", "🇦🇪", "Falcon Sovereign"),
+        "sakana": ("Sakana AI", "Japan", "🇯🇵", "Evolutionary Foundation"),
+        "cyberagent": ("CyberAgent", "Japan", "🇯🇵", "Japanese Enterprise AI"),
+        "naver": ("Naver (HyperCLOVA X)", "South Korea", "🇰🇷", "Korean Sovereign Frontier"),
+        "hyperclova": ("Naver (HyperCLOVA X)", "South Korea", "🇰🇷", "Korean Sovereign Frontier"),
+        "upstage": ("Upstage (Solar DUS)", "South Korea", "🇰🇷", "Depth-Up-Scaled Foundation"),
+        "solar": ("Upstage (Solar DUS)", "South Korea", "🇰🇷", "Depth-Up-Scaled Foundation"),
+        "writer": ("Writer AI (Palmyra)", "United States", "🇺🇸", "Enterprise Workflows"),
+        "perplexity": ("Perplexity AI (Sonar)", "United States", "🇺🇸", "Search Grounded Online"),
+        "groq": ("Groq LPU", "United States", "🇺🇸", "Deterministic Fast LPUs"),
+        "cerebras": ("Cerebras CS-3", "United States", "🇺🇸", "Wafer-Scale Inference"),
+        "ai21": ("AI21 Labs (Jamba)", "Israel", "🇮🇱", "Mamba-Transformer Hybrid"),
+        "aleph-alpha": ("Aleph Alpha (Luminous)", "Germany", "🇩🇪", "European Explainable AI")
+    }
+
+    if prefix in lab_map:
+        info = lab_map[prefix]
+        return {
+            "model_id": model_id,
+            "model_name": clean_name,
+            "lab_name": info[0],
+            "country": info[1],
+            "flag": info[2],
+            "tier": info[3]
+        }
+
+    # Dynamic Discovery Fallback for any newly launched lab in the world
+    inferred_lab = prefix.replace("-", " ").replace("_", " ").title()
+    return {
+        "model_id": model_id,
+        "model_name": clean_name,
+        "lab_name": inferred_lab,
+        "country": "Global Sovereign AI",
+        "flag": "🌐",
+        "tier": "Dynamic Frontier Model"
+    }
+
