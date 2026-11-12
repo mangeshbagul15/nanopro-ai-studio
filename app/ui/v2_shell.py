@@ -514,7 +514,7 @@ function renderSchedulerConsole(d){
   html += '</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px;">';
   html += '<input id="nt-expr" placeholder="Recurrence Value (e.g. 07:30 or 15)" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;" />';
-  html += '<input id="nt-desc" placeholder="Description & Target (e.g. Extract Oracle delta to S3 & notify Telegram)" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;" />';
+  html += '<input id="nt-desc" placeholder="Description & Target (e.g. Extract Postgres delta to S3 & notify Telegram)" style="background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;padding:8px;color:#fff;font-size:12px;" />';
   html += '</div>';
   html += '<div style="display:flex;gap:8px;">';
   html += '<button type="button" class="task-btn run" onclick="submitCreateTask()">Save & Deploy Task</button>';
