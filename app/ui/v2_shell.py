@@ -319,6 +319,8 @@ const CARDS = [
    metric:d => [d.cloud_safe_mode ? "SAFE" : "OPEN", d.environment || "cloud"]},
   {id:"databases", glyph:"▤", name:"Databases", hint:"Neon · DuckDB · BigQuery", api:"/api/database/databases",
    metric:d => [list(d).length, "sources"]},
+  {id:"mcp", glyph:"🔌", name:"MCP Server", hint:"BigQuery · Supabase · Tools", api:"/mcp/manifest",
+   metric:d => [d.tools_count || (d.tools && d.tools.length) || 9, "tools"]},
   {id:"agents", glyph:"✦", name:"Agent Station", hint:"Enterprise agent fleet", api:"/api/agents/list",
    station:true, metric:d => [list(d).length, "agents"]},
   {id:"comms", glyph:"✉", name:"Communication", hint:"Email · Telegram · WhatsApp", api:"/api/communication/ledger",
@@ -466,7 +468,9 @@ async function openCard(card){
   $("#drawer").classList.add("open");
   const link = card.id === "render"
     ? '<a class="open-link" href="https://dashboard.render.com/" target="_blank" rel="noopener">Render dashboard ↗</a>'
-    : '<a class="open-link" href="/legacy">Open full workspace →</a>';
+    : (card.id === "mcp"
+       ? '<a class="open-link" href="/mcp/manifest" target="_blank" rel="noopener">Inspect MCP manifest ↗</a>'
+       : '<a class="open-link" href="/legacy">Open full workspace →</a>');
   try {
     const d = await get(card.api);
     $("#d-body").innerHTML = renderPayload(d) + link;
