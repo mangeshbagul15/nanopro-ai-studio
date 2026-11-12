@@ -34,18 +34,18 @@ def get_2026_modern_trends_css() -> str:
 }
 
 /* --- Dynamic Island (#233) --- */
-/* CRITICAL: Completely hide and remove Dynamic Island overlay on Global AI Lab and full-bleed studios */
-body:has(#view-global_ai_lab.active) .nano-dynamic-island,
-body:has(#view-global_ai_lab[style*="display: flex"]) .nano-dynamic-island,
-body:has(#view-global_ai_lab[style*="display: block"]) .nano-dynamic-island,
-body.in-global_ai_lab .nano-dynamic-island,
-body:has(#view-data_modeling_ai.active) .nano-dynamic-island,
-body.in-data_modeling_ai .nano-dynamic-island {
+/* CRITICAL: Permanently hide and disable Dynamic Island overlay across all views */
+.nano-dynamic-island, #nanoDynamicIsland {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
-    transform: translate(-50%, -100px) !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translate(-50%, -300px) !important;
 }
 .nano-dynamic-island {
     position: fixed;
@@ -371,48 +371,6 @@ def get_2026_modern_trends_html() -> str:
 
 <!-- Cursor Spotlight (#59, #60) -->
 <div id="nanoCursorSpotlight"></div>
-
-<!-- Dynamic Island (#233) -->
-<div class="nano-dynamic-island" id="nanoDynamicIsland" onclick="toggleDynamicIsland(event)">
-    <div style="display:flex; align-items:center; gap:8px;">
-        <span class="island-pulse-dot"></span>
-        <span class="island-label">
-            <span id="islandLiveText">NanoPro AI Studio</span>
-            <span class="island-chip" id="islandActiveModelBadge">305 AGENTS</span>
-        </span>
-        <button type="button" class="island-close-btn" onclick="dismissDynamicIsland(event)" title="Close and dismiss" style="background:none; border:none; color:#64748B; font-size:16px; cursor:pointer; padding:0 4px; margin-left:6px; line-height:1; display:flex; align-items:center; justify-content:center;">&times;</button>
-    </div>
-    
-    <div class="island-expanded-content" id="islandExpandedContent">
-        <div class="island-grid">
-            <div class="island-metric-card">
-                <div class="island-metric-val" id="islandMetricActive">278</div>
-                <div class="island-metric-lbl">Active Agents</div>
-            </div>
-            <div class="island-metric-card">
-                <div class="island-metric-val" id="islandMetricThroughput">1.62M</div>
-                <div class="island-metric-lbl">Recs / Sec</div>
-            </div>
-            <div class="island-metric-card">
-                <div class="island-metric-val" id="islandMetricLatency">24ms</div>
-                <div class="island-metric-lbl">Groq LPU</div>
-            </div>
-        </div>
-        <div class="island-action-bar">
-            <button type="button" class="btn btn-secondary" onclick="openCommandPalette(); event.stopPropagation();" style="font-size:10.5px; padding:3px 8px;">
-                <span class="nano-kbd">Ctrl+K</span> Spotlight
-            </button>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <button type="button" class="btn btn-secondary" id="btnToggleSoundFx" onclick="toggleCyberSoundFx(); event.stopPropagation();" style="font-size:10.5px; padding:3px 8px;" title="Toggle Futuristic Cyber Audio FX">
-                    <span id="soundFxIcon">&#128266;</span> FX Sound
-                </button>
-                <button type="button" class="btn btn-primary" onclick="switchView('ai_manager'); event.stopPropagation();" style="font-size:10.5px; padding:3px 8px;">
-                    Manager &rarr;
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Command Palette Modal (#106) -->
 <div class="nano-command-backdrop" id="nanoCommandPaletteBackdrop" onclick="closeCommandPalette(event)">
