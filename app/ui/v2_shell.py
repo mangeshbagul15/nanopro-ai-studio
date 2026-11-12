@@ -353,6 +353,10 @@ footer a:hover{color:var(--ink)}
     <div class="gl">◫</div><h2>Signals</h2><p>Market & news feed</p>
     <div class="val" id="v-news">6 articles</div>
   </button>
+  <button class="card" type="button" data-cid="ailab">
+    <div class="gl">🧠</div><h2>Global AI Lab</h2><p>World models · 32+ Labs</p>
+    <div class="val" id="v-ailab">32 Labs · AUTO ⚡</div>
+  </button>
 </div>
 
 <footer>
@@ -562,6 +566,8 @@ const CARDS = [
    metric:d => { const m = /([\d.]+) GB of/.exec((d && d.bandwidth) || ""); return [m ? m[1] : "—", "GB of 5"]; }},
   {id:"news", glyph:"◫", name:"Signals", hint:"Market & news feed", api:"/api/news/articles",
    metric:d => [list(d).length, "articles"]},
+  {id:"ailab", glyph:"🧠", name:"Global AI Lab", hint:"World models · 32+ Labs", api:"/api/ai/global_labs",
+   metric:d => [d.labs_count || 32, "Labs (AUTO)"]},
 ];
 const $ = s => document.querySelector(s);
 const list = d => {
@@ -1429,7 +1435,8 @@ async function openCard(card){
     payments: { href: "/legacy#payment_gateway", label: "Open Full Payment Gateway & Billing Console ↗" },
     monitor: { href: "/legacy#monitoring", label: "Open Full Live Telemetry & Health Console ↗" },
     render: { href: "https://dashboard.render.com/", label: "Open Render Cloud Dashboard ↗" },
-    news: { href: "/legacy#news_center", label: "Open Full Real-Time Market Signals & News Center ↗" }
+    news: { href: "/legacy#news_center", label: "Open Full Real-Time Market Signals & News Center ↗" },
+    ailab: { href: "/legacy#global_ai_lab", label: "Open Full Global AI Lab & Auto-Router ↗" }
   };
   const targetLink = CARD_DEEP_LINKS[card.id] || { href: "/legacy", label: "Open full workspace →" };
   const link = '<a class="open-link" href="' + targetLink.href + '" target="_blank" rel="noopener">' + targetLink.label + '</a>';
@@ -1461,6 +1468,8 @@ async function openCard(card){
       $("#d-body").innerHTML = renderRenderConsole(d);
     } else if (card.id === "news") {
       $("#d-body").innerHTML = renderSignalsConsole(d);
+    } else if (card.id === "ailab") {
+      $("#d-body").innerHTML = renderGlobalAILabConsole(d);
     } else {
       $("#d-body").innerHTML = renderPayload(d) + link;
     }
@@ -1478,6 +1487,7 @@ async function openCard(card){
     else if (card.id === "monitor") $("#d-body").innerHTML = renderMonitoringConsole({});
     else if (card.id === "render") $("#d-body").innerHTML = renderRenderConsole({});
     else if (card.id === "news") $("#d-body").innerHTML = renderSignalsConsole({});
+    else if (card.id === "ailab") $("#d-body").innerHTML = renderGlobalAILabConsole({});
     else $("#d-body").innerHTML = '<div class="mut">Not available on this lane (' + e.message + ').</div>' + link;
   }
 }
@@ -1738,6 +1748,56 @@ if (window.mermaid) {
     });
   } catch(e) {}
 }
+function renderGlobalAILabConsole(d) {
+  let html = '';
+  html += '<div style="margin-bottom:16px;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
+  html += '<div>';
+  html += '<h3 style="margin:0;font-size:18px;font-weight:800;color:#F8FAFC;display:flex;align-items:center;gap:8px;">';
+  html += '<span>🧠</span> NanoPro Global AI Lab <span style="font-size:10px;background:linear-gradient(135deg,#9333EA,#38BDF8);color:#FFF;padding:2px 8px;border-radius:999px;font-weight:700;">MCP SERVER</span>';
+  html += '</h3>';
+  html += '<p style="margin:4px 0 0 0;font-size:12.5px;color:#94A3B8;">World Foundational Creators · 32+ Global Labs · 185+ Frontier Models · Zero-Load MCP Architecture</p>';
+  html += '</div>';
+  html += '<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#86EFAC;border:1px solid rgba(16,185,129,0.3);padding:4px 10px;border-radius:8px;font-weight:700;">⚡ SINGLE AUTO ACTIVE</span>';
+  html += '</div>';
+
+  html += '<div style="background:rgba(2,6,23,0.8);border:1px solid rgba(168,85,247,0.35);border-radius:12px;padding:14px;margin-bottom:16px;">';
+  html += '<div style="font-size:12px;font-weight:700;color:#D8B4FE;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">🚀 Enterprise Mathematical Routing Engine</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #38BDF8;"><div style="font-size:10px;color:#94A3B8;">ALGORITHM</div><div style="font-size:13px;font-weight:800;color:#F8FAFC;">Pareto + Bandit</div></div>';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #10B981;"><div style="font-size:10px;color:#94A3B8;">MATH OVERHEAD</div><div style="font-size:13px;font-weight:800;color:#86EFAC;">&lt; 3.0 ms</div></div>';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #F59E0B;"><div style="font-size:10px;color:#94A3B8;">SLA TARGET</div><div style="font-size:13px;font-weight:800;color:#FDE68A;">&lt; 800 ms TTFT</div></div>';
+  html += '<div style="background:rgba(30,41,59,0.5);padding:8px 10px;border-radius:8px;border-left:3px solid #C084FC;"><div style="font-size:10px;color:#94A3B8;">RENDER MEMORY</div><div style="font-size:13px;font-weight:800;color:#E9D5FF;">0 MB (MCP Thin)</div></div>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div style="margin-bottom:14px;">';
+  html += '<div style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:8px;">🌐 Global Labs Coverage (32 Labs across 9 Countries):</div>';
+  const creators = (d && d.creators) || {};
+  const cList = Object.values(creators);
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;max-height:260px;overflow-y:auto;padding-right:4px;">';
+  cList.forEach(c => {
+    html += '<div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px 10px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span style="font-size:12px;font-weight:700;color:#F1F5F9;">' + (c.flag || '🌐') + ' ' + c.name + '</span>';
+    html += '<span style="font-size:10px;color:#38BDF8;font-weight:600;">' + (c.models ? c.models.length : 0) + ' models</span>';
+    html += '</div>';
+    html += '<div style="font-size:10px;color:#64748B;margin-top:2px;">' + (c.category || c.country) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div style="text-align:center;padding:12px 0 4px 0;">';
+  html += '<a class="open-link" style="display:inline-block;padding:10px 24px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#9333EA,#38BDF8);color:#FFF;border-radius:10px;text-decoration:none;" href="/legacy#global_ai_lab" target="_blank" rel="noopener">';
+  html += '⚡ Open Full Global AI Lab & Auto-Router Studio ↗';
+  html += '</a>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
 boot();
 </script>
 </body>

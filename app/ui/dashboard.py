@@ -64,6 +64,13 @@ def get_dashboard_html() -> str:
 
     )
 
+    # Inject the Global AI Lab Workspace View (Feature 53 - MCP Powered)
+    from app.ui.global_ai_lab_view import get_global_ai_lab_html
+    processed = processed.replace(
+        '<div class="workspace-view" id="view-models_hub">',
+        get_global_ai_lab_html() + '\n<div class="workspace-view" id="view-models_hub">'
+    )
+
 
 
     # Inject SQL Short Video Client-Side JavaScript Engine
@@ -5812,6 +5819,16 @@ def _get_raw_dashboard_html() -> str:
                         <span class="nav-item-icon">&#9889;</span>
 
                         <span class="nav-item-label">AI Model Hub</span>
+
+                    </li>
+
+                    <li class="nav-item" onclick="switchView('global_ai_lab')" data-tooltip="Global AI Lab (32+ World Creators · 185+ Models · MCP Single Auto-Router)">
+
+                        <span class="nav-item-icon" style="color:#A855F7;">&#129504;</span>
+
+                        <span class="nav-item-label" style="font-weight:700; color:#E9D5FF;">Global AI Lab</span>
+
+                        <span class="badge" style="font-size:8px; background:linear-gradient(135deg, #9333EA, #38BDF8); color:#FFF; padding:2px 5px; border-radius:6px; margin-left:auto;">AUTO &#9889;</span>
 
                     </li>
 

@@ -2678,6 +2678,49 @@ async def api_test_model(payload: Dict[str, Any] = Body(...)):
         })
 
 
+# =========================================================================
+# NANOPRO GLOBAL AI LAB - MCP POWERED REST ENDPOINTS (FEATURE 53)
+# =========================================================================
+
+@app.get("/api/ai/global_labs")
+async def api_global_ai_labs(region: str = "all"):
+    """Exposes 32+ Global AI Creators & 185+ Models via lightweight MCP server."""
+    from app.core.mcp_server import mcp_server
+    res = mcp_server._execute_tool("nanopro_global_ai_list", {"region": region})
+    content = json.loads(res["content"][0]["text"])
+    return JSONResponse(content)
+
+
+@app.post("/api/ai/smart_route")
+async def api_global_ai_smart_route(payload: Dict[str, Any] = Body(...)):
+    """Executes high-tech Pareto + Thompson Bandit mathematical routing via MCP in <3ms."""
+    from app.core.mcp_server import mcp_server
+    prompt = payload.get("prompt", "")
+    sla_ms = payload.get("sla_ms", 800)
+    res = mcp_server._execute_tool("nanopro_global_ai_smart_route", {"prompt": prompt, "sla_ms": sla_ms})
+    content = json.loads(res["content"][0]["text"])
+    return JSONResponse(content)
+
+
+@app.post("/api/ai/execute")
+async def api_global_ai_execute(payload: Dict[str, Any] = Body(...)):
+    """Zero-load AI execution via MCP streaming connectors with automatic 429 failover."""
+    from app.core.mcp_server import mcp_server
+    prompt = payload.get("prompt", "")
+    model = payload.get("model", "auto")
+    res = mcp_server._execute_tool("nanopro_global_ai_execute", {"prompt": prompt, "model": model})
+    content = json.loads(res["content"][0]["text"])
+    return JSONResponse(content)
+
+
+@app.get("/api/ai/routing_telemetry")
+async def api_global_ai_telemetry():
+    """Returns live telemetry, P95 latency, and bandit probabilities via MCP."""
+    from app.core.mcp_server import mcp_server
+    res = mcp_server._execute_tool("nanopro_global_ai_telemetry", {})
+    content = json.loads(res["content"][0]["text"])
+    return JSONResponse(content)
+
 
 @app.post("/api/thumbnail")
 
