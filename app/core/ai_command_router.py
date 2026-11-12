@@ -29,6 +29,7 @@ INTENTS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("data", ("database", "sql", "schema", "table", "bigquery", "duckdb", "neon", "snowflake", "lakehouse", "postgres", "oracle")),
     ("comms", ("email", "telegram", "whatsapp", "sms", "mail", "message", "deliver", "bot", "notify")),
     ("security", ("security", "auth", "login", "access", "secret", "permission", "otp", "role")),
+    ("mcp", ("mcp", "model context protocol", "jsonrpc", "mcp server", "tools")),
 )
 
 SYSTEM_PROMPT = """You are the Omni-Capable AI Assistant and Control Tower Brain for NanoPro AI Studio (developed by Mangesh Bagul).
@@ -213,6 +214,30 @@ def _facts_answer(intent: str, facts: Dict[str, Any], query: str = "") -> str:
     tasks = facts.get("tasks") or {}
     agents = facts.get("agents") or {}
     health = facts.get("server_health") or {}
+
+    # 0. MCP (Model Context Protocol) Queries
+    if any(k in q for k in ("mcp", "model context protocol", "jsonrpc")):
+        return (
+            "### 🔌 NanoPro Universal Model Context Protocol (MCP) Server\n\n"
+            "NanoPro runs a lightweight, built-in JSON-RPC 2.0 MCP server directly inside FastAPI with **zero background RAM overhead**.\n\n"
+            "| Parameter | Specification | Status |\n"
+            "| :--- | :--- | :--- |\n"
+            "| **Standard Endpoint** | `/mcp` and `/api/mcp` | **ACTIVE** |\n"
+            "| **Protocol Version** | 2024-11-05 | Compliant |\n"
+            "| **Total Tools** | 9 Enterprise Tools | Ready |\n"
+            "| **External DB Access** | Google BigQuery, DuckDB, Supabase, SQLite | Targeted & Safe |\n"
+            "| **Server RAM Footprint** | 0 MB extra background memory | Lean & Clean |\n\n"
+            "**Registered MCP Tools:**\n"
+            "- `nanopro_query_database`: Multi-engine read-only SQL (DuckDB, BigQuery, Supabase, SQLite)\n"
+            "- `nanopro_bigquery_query`: Direct analytical queries on Google BigQuery Sandbox\n"
+            "- `nanopro_supabase_query`: PostgREST table querying from Supabase Cloud PostgreSQL\n"
+            "- `nanopro_supabase_sync`: Real-time state sync to Supabase\n"
+            "- `nanopro_firebase_sync`: Real-time state sync to Google Firebase Firestore\n"
+            "- `nanopro_health`: Render cloud and Gateway telemetry\n"
+            "- `nanopro_list_agents`: 320 Autonomous Agents registry\n"
+            "- `nanopro_create_916_short`: 9:16 Shorts & Reels viral blueprint generator\n"
+            "- `nanopro_telegram_alert`: Multi-bot Telegram broadcast alerts\n"
+        )
 
     # 1. Lakehouse & Snowflake Layer Comparison
     if any(k in q for k in ("snowflake", "l0", "l1", "l2", "medallion", "lakehouse", "layer")):
