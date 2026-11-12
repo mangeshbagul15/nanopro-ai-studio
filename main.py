@@ -1683,15 +1683,20 @@ async def serve_login_gateway(request: Request, token: Optional[str] = None):
     """Explicit login gateway for user switching or OTP verification if needed."""
     from app.ui.auth_components import get_login_page_html
     from app.core.auth_manager import auth_manager
-    candidate_token = token or request.cookies.get("nanopro_session")
-    if candidate_token:
-        v_res = auth_manager.validate_session(candidate_token)
-        if v_res.get("is_valid") and v_res.get("user"):
-            return RedirectResponse(url="/", status_code=303)
-    return HTMLResponse(
+    is_logout_or_switch = bool(request.query_params.get("logout") or request.query_params.get("switch"))
+    if not is_logout_or_switch:
+        candidate_token = token or request.cookies.get("nanopro_session")
+        if candidate_token:
+            v_res = auth_manager.validate_session(candidate_token)
+            if v_res.get("is_valid") and v_res.get("user"):
+                return RedirectResponse(url="/", status_code=303)
+    response = HTMLResponse(
         get_login_page_html(),
         headers={"Cache-Control": "no-store, must-revalidate"},
     )
+    if is_logout_or_switch:
+        response.delete_cookie("nanopro_session", path="/")
+    return response
 
 
 

@@ -57,7 +57,29 @@ h1 span{color:var(--dim);font-weight:400}
 .ask button{border:1px solid var(--line);background:rgba(34,211,238,.12);color:var(--ink);
   border-radius:12px;padding:0 16px;cursor:pointer;font:inherit}
 .ask button:hover{border-color:var(--cyan)}
-.ans{white-space:pre-wrap;font-size:13px;line-height:1.55;padding:2px 0 10px}
+.tower-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:22px 0 6px}
+.tower-hdr h1{margin:0;font-size:20px;font-weight:600;letter-spacing:.01em}
+.tower-hdr h1 span{color:var(--dim);font-weight:400}
+.user-action-bar{display:flex;align-items:center;gap:8px}
+.btn-user-action{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s ease;border:1px solid var(--line);background:rgba(15,23,42,.8);color:#94a3b8}
+.btn-user-action:hover{color:#f8fafc;border-color:var(--cyan);background:rgba(34,211,238,.12);transform:translateY(-1px)}
+.btn-switch{color:#38bdf8;border-color:rgba(56,189,248,.3)}
+.btn-switch:hover{border-color:#38bdf8;background:rgba(56,189,248,.18)}
+.btn-logout{color:#f87171;border-color:rgba(248,113,113,.3)}
+.btn-logout:hover{color:#fca5a5;border-color:#ef4444;background:rgba(239,68,68,.18)}
+.ans{font-size:13px;line-height:1.6;padding:2px 0 12px;color:#e2e8f0;word-break:break-word}
+.ans table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px;background:rgba(15,23,42,.6);border-radius:8px;overflow:hidden}
+.ans th,.ans td{padding:8px 12px;border:1px solid rgba(148,163,184,.15);text-align:left}
+.ans th{background:rgba(30,41,59,.8);color:#38bdf8;font-weight:700}
+.ans tr:nth-child(even){background:rgba(15,23,42,.35)}
+.ans pre{background:#0b1120;border:1px solid #1e293b;border-radius:8px;padding:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;margin:12px 0;color:#38bdf8}
+.ans code{background:rgba(56,189,248,.1);color:#38bdf8;padding:2px 6px;border-radius:4px;font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.ans pre code{background:transparent;padding:0;color:#e2e8f0}
+.ans ul,.ans ol{padding-left:20px;margin:8px 0}
+.ans li{margin:4px 0}
+.ans h2,.ans h3,.ans h4{color:#f8fafc;margin:14px 0 6px}
+.ans blockquote{border-left:3px solid #38bdf8;padding-left:12px;color:#94a3b8;margin:8px 0}
+.ans strong{color:#f8fafc}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:16px}
 .card{position:relative;text-align:left;padding:15px 15px 13px;border-radius:16px;cursor:pointer;
   border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);
@@ -149,7 +171,17 @@ footer a:hover{color:var(--ink)}
   </div>
 </header>
 
-<h1>Control tower <span>· __USER_NAME__</span></h1>
+<div class="tower-hdr">
+  <h1>Control tower <span>· __USER_NAME__</span></h1>
+  <div class="user-action-bar">
+    <button type="button" class="btn-user-action btn-switch" onclick="switchUser()" title="Switch user / login with different credentials">
+      <span>👤</span> Switch User
+    </button>
+    <button type="button" class="btn-user-action btn-logout" onclick="performLogout()" title="Sign out completely">
+      <span>🚪</span> Sign out
+    </button>
+  </div>
+</div>
 
 <form class="ask" id="ask">
   <input id="ask-input" placeholder="Ask NanoPro — status, pipelines, agents…" autocomplete="off" aria-label="Ask NanoPro" />
@@ -162,7 +194,7 @@ footer a:hover{color:var(--ink)}
   <span id="f-ver">v2026.11</span>
   <span id="f-host">—</span>
   <a href="/legacy">Legacy console</a>
-  <a href="/logout" style="margin-left:auto">Sign out</a>
+  <a href="javascript:void(0)" onclick="performLogout()" style="margin-left:auto;cursor:pointer;" title="Sign out completely">Sign out 🚪</a>
 </footer>
 </div>
 
@@ -225,6 +257,101 @@ try { document.cookie = "g_state=; Max-Age=0; path=/; SameSite=Lax"; } catch (e)
     return nativeFetch(input, init);
   };
 })();
+function performLogout() {
+  try { localStorage.removeItem("nanopro_session_token"); } catch(e) {}
+  try { sessionStorage.clear(); } catch(e) {}
+  document.cookie = "nanopro_session=; Max-Age=0; path=/; SameSite=Lax";
+  document.cookie = "nanopro_session=; Max-Age=0; path=/; domain=" + location.hostname + "; SameSite=Lax";
+  try {
+    fetch("/api/auth/logout", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({session_token: sessionToken()})
+    }).catch(function(){});
+  } catch(e) {}
+  window.location.replace("/login?logout=1&t=" + Date.now());
+}
+
+function switchUser() {
+  try { localStorage.removeItem("nanopro_session_token"); } catch(e) {}
+  try { sessionStorage.clear(); } catch(e) {}
+  document.cookie = "nanopro_session=; Max-Age=0; path=/; SameSite=Lax";
+  window.location.replace("/login?switch=1&t=" + Date.now());
+}
+
+function renderMarkdown(md) {
+  if (!md) return "";
+  let s = String(md);
+  
+  // Escape HTML tags to prevent XSS except formatting
+  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // Code blocks
+  s = s.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    return '<pre><code class="lang-' + (lang || 'text') + '">' + code.trim() + '</code></pre>';
+  });
+
+  // Inline code
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Tables
+  const lines = s.split('\n');
+  let inTable = false;
+  let tableHtml = [];
+  let outLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('|') && line.endsWith('|')) {
+      if (!inTable) {
+        inTable = true;
+        tableHtml = ['<table>'];
+      }
+      // Check if separator line
+      if (/^\|\s*[-:]+[-| :]*\|$/.test(line)) {
+        continue;
+      }
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      const isHeader = tableHtml.length === 1;
+      const tag = isHeader ? 'th' : 'td';
+      tableHtml.push('<tr>' + cells.map(c => '<' + tag + '>' + c + '</' + tag + '>').join('') + '</tr>');
+    } else {
+      if (inTable) {
+        inTable = false;
+        tableHtml.push('</table>');
+        outLines.push(tableHtml.join(''));
+        tableHtml = [];
+      }
+      outLines.push(lines[i]);
+    }
+  }
+  if (inTable) {
+    tableHtml.push('</table>');
+    outLines.push(tableHtml.join(''));
+  }
+  s = outLines.join('\n');
+
+  // Headers
+  s = s.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  s = s.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  s = s.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+  // Bold & Italic
+  s = s.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+
+  // Blockquotes
+  s = s.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+  // Unordered list items
+  s = s.replace(/^[-*] (.*$)/gim, '<li>$1</li>');
+
+  // Newlines to <br> outside tags
+  s = s.replace(/\n\n+/g, '<br><br>');
+
+  return s;
+}
+
 const CARDS = [
   {id:"pipelines", glyph:"⛓", name:"Pipelines", hint:"BOD · SOD · T1 · EOD", api:"/api/scheduler/tasks",
    metric:d => { const t = list(d); const on = t.filter(isTaskOn).length;
@@ -415,8 +542,8 @@ $("#ask").addEventListener("submit", async e => {
       await new Promise(done => setTimeout(done, 2000));
     }
     if (!r.ok) throw new Error((d && d.detail) || ("HTTP " + r.status));
-    $("#d-title").textContent = d.intent || "answer";
-    $("#d-body").innerHTML = '<div class="ans">' + esc(d.answer || "") + '</div>' +
+    $("#d-title").textContent = d.intent || "NanoPro AI Copilot";
+    $("#d-body").innerHTML = '<div class="ans">' + renderMarkdown(d.answer || "") + '</div>' +
       '<div class="row"><span>intent</span><span>' + esc(d.intent || "—") + '</span></div>' +
       '<div class="row"><span>model</span><span>' + esc(d.model || "rules") + '</span></div>' +
       '<div class="row"><span>latency</span><span>' + (Number(d.latency_ms) || 0) + ' ms</span></div>' +
