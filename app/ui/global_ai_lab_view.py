@@ -872,7 +872,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
 
 /* =========================================================================
-   AUTONOMOUS BROWSER AGENT (CUA) / COMPUTER USE STUDIO STYLES
+   SLEEK MODERN AUTONOMOUS BROWSER (CUA) STUDIO (MAC/ARC STYLE)
    ========================================================================= */
 #view-global_ai_lab .ailab-cua-toggle-btn {
   display: inline-flex;
@@ -931,14 +931,14 @@ body.in-global_ai_lab .nano-dynamic-island {
 
 /* CUA Right Panel */
 #view-global_ai_lab .ailab-cua-panel {
-  width: 540px;
-  min-width: 380px;
-  max-width: 55vw;
+  width: 50%;
+  min-width: 420px;
+  max-width: 65vw;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--al-panel);
-  border-left: 1px solid var(--al-line);
+  background: #080D14;
+  border-left: 1.5px solid rgba(56, 189, 248, 0.3);
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
@@ -952,29 +952,41 @@ body.in-global_ai_lab .nano-dynamic-island {
   display: none !important;
 }
 
-/* CUA Header */
-#view-global_ai_lab .ailab-cua-header {
+/* Browser Window Header Chrome (macOS Dots & Status) */
+#view-global_ai_lab .ailab-cua-chrome-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  background: linear-gradient(180deg, #0F1724 0%, #0B1119 100%);
+  padding: 8px 12px;
+  background: #0F1724;
   border-bottom: 1px solid var(--al-line);
   flex-shrink: 0;
 }
-#view-global_ai_lab .ailab-cua-title-wrap {
+#view-global_ai_lab .ailab-window-dots {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
 }
-#view-global_ai_lab .ailab-cua-title {
-  font-size: 13px;
-  font-weight: 800;
+#view-global_ai_lab .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+#view-global_ai_lab .dot.red { background: #EF4444; }
+#view-global_ai_lab .dot.yellow { background: #F59E0B; }
+#view-global_ai_lab .dot.green { background: #10B981; }
+
+#view-global_ai_lab .ailab-cua-chrome-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
   color: #F8FAFC;
-  letter-spacing: -0.01em;
 }
 #view-global_ai_lab .ailab-badge-cua {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   background: rgba(56, 189, 248, 0.15);
   border: 1px solid rgba(56, 189, 248, 0.4);
@@ -982,59 +994,31 @@ body.in-global_ai_lab .nano-dynamic-island {
   padding: 1px 6px;
   border-radius: 4px;
 }
-#view-global_ai_lab .ailab-cua-subtitle {
-  font-size: 10.5px;
-  color: #94A3B8;
-}
-#view-global_ai_lab .ailab-cua-head-actions {
+#view-global_ai_lab .ailab-cua-chrome-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-#view-global_ai_lab .ailab-cua-status-badge {
+#view-global_ai_lab .ailab-cua-live-pill {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  padding: 3px 8px;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 2px 7px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   color: #10B981;
 }
 
-/* Hardware & Safety Metrics Bar */
-#view-global_ai_lab .ailab-cua-metrics-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 12px;
-  background: #080D14;
-  border-bottom: 1px solid rgba(30, 43, 62, 0.8);
-  font-size: 10px;
-  flex-shrink: 0;
-}
-#view-global_ai_lab .ailab-cua-metric-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-#view-global_ai_lab .ailab-metric-lbl {
-  color: #64748B;
-  font-weight: 700;
-}
-#view-global_ai_lab .ailab-metric-val {
-  font-weight: 600;
-}
-
-/* Omnibox Bar */
+/* Modern Browser Omnibox Bar */
 #view-global_ai_lab .ailab-cua-omnibox-bar {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  background: #0F1724;
+  padding: 6px 12px;
+  background: #0B1119;
   border-bottom: 1px solid var(--al-line);
   flex-shrink: 0;
 }
@@ -1048,8 +1032,8 @@ body.in-global_ai_lab .nano-dynamic-island {
   border: 1px solid var(--al-line);
   border-radius: 5px;
   color: var(--al-muted);
-  width: 26px;
-  height: 26px;
+  width: 25px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1066,7 +1050,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   align-items: center;
   gap: 6px;
   background: #080D14;
-  border: 1px solid var(--al-line);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 6px;
   padding: 3px 8px;
 }
@@ -1089,40 +1073,17 @@ body.in-global_ai_lab .nano-dynamic-island {
   color: #0B1119;
   font-weight: 800;
   font-size: 10px;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 4px;
   cursor: pointer;
 }
-#view-global_ai_lab .ailab-cua-mode-select {
-  background: #080D14;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #38BDF8;
-  border-radius: 5px;
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 4px 6px;
-  outline: none;
-  cursor: pointer;
-}
-
-/* Quick Bookmark Chips */
-#view-global_ai_lab .ailab-cua-bookmarks {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: #0B1119;
-  border-bottom: 1px solid var(--al-line);
-  overflow-x: auto;
-  flex-shrink: 0;
-}
 #view-global_ai_lab .ailab-cua-chip {
-  background: rgba(30, 43, 62, 0.7);
+  background: rgba(30, 43, 62, 0.6);
   border: 1px solid var(--al-line);
   border-radius: 4px;
   color: #94A3B8;
-  font-size: 10px;
-  padding: 2px 7px;
+  font-size: 9.5px;
+  padding: 2px 6px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -1132,43 +1093,18 @@ body.in-global_ai_lab .nano-dynamic-island {
   color: #F8FAFC;
 }
 
-/* Live Viewport Stage */
+/* Full Height Live Screen Share Viewport Stage */
 #view-global_ai_lab .ailab-cua-viewport-container {
   flex: 1 1 0% !important;
-  min-height: 220px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background: #000000;
-  overflow: hidden;
-}
-#view-global_ai_lab .ailab-cua-watermark {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 800;
-  color: #10B981;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  z-index: 60;
-  pointer-events: none;
-}
-#view-global_ai_lab .ailab-cua-screen-stage {
-  flex: 1;
   width: 100%;
   height: 100%;
   position: relative;
-  overflow: hidden;
   background: #FFFFFF;
+  overflow: hidden;
+  display: flex;
 }
 #view-global_ai_lab .ailab-cua-iframe {
+  flex: 1;
   width: 100%;
   height: 100%;
   border: none;
@@ -1176,10 +1112,11 @@ body.in-global_ai_lab .nano-dynamic-island {
   display: block;
 }
 #view-global_ai_lab .ailab-cua-screenshot-frame {
+  flex: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #0F1724;
+  background: #080D14;
   display: none;
 }
 
@@ -1258,26 +1195,24 @@ body.in-global_ai_lab .nano-dynamic-island {
   border-radius: 2px;
 }
 
-/* Action HUD Pill */
+/* Floating Action HUD */
 #view-global_ai_lab .ailab-cua-action-hud {
   position: absolute;
   bottom: 8px;
-  left: 12px;
-  right: 12px;
-  background: rgba(11, 17, 25, 0.92);
-  backdrop-filter: blur(8px);
+  left: 10px;
+  right: 10px;
+  background: rgba(11, 17, 25, 0.94);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
   z-index: 60;
   font-size: 11px;
 }
-#view-global_ai_lab .ailab-action-icon {
-  font-size: 14px;
-}
+#view-global_ai_lab .ailab-action-icon { font-size: 13px; }
 #view-global_ai_lab .ailab-action-desc {
   flex: 1;
   color: #E2E8F0;
@@ -1287,44 +1222,29 @@ body.in-global_ai_lab .nano-dynamic-island {
   text-overflow: ellipsis;
 }
 
-/* Execution Console & Planner */
-#view-global_ai_lab .ailab-cua-console {
+/* Sleek Floating Bottom Control Dock */
+#view-global_ai_lab .ailab-cua-bottom-dock {
   background: #0B1119;
   border-top: 1px solid var(--al-line);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  max-height: 250px;
+  padding: 8px 12px;
+  gap: 6px;
 }
-#view-global_ai_lab .ailab-cua-console-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: #0F1724;
-  border-bottom: 1px solid var(--al-line);
-}
-#view-global_ai_lab .ailab-step-counter {
-  font-size: 10px;
-  color: #38BDF8;
-  font-weight: 700;
-}
-#view-global_ai_lab .ailab-cua-task-input-wrap {
+#view-global_ai_lab .ailab-cua-task-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  background: #080D14;
-  border-bottom: 1px solid var(--al-line);
 }
 #view-global_ai_lab .ailab-cua-task-input {
   flex: 1;
-  background: transparent;
-  border: 1px solid var(--al-line);
+  background: #080D14;
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 5px;
   padding: 5px 8px;
   color: #F8FAFC;
-  font-size: 11.5px;
+  font-size: 11px;
   outline: none;
 }
 #view-global_ai_lab .ailab-cua-task-input:focus {
@@ -1336,143 +1256,31 @@ body.in-global_ai_lab .nano-dynamic-island {
   border-radius: 5px;
   color: #FFFFFF;
   font-weight: 800;
-  font-size: 11px;
-  padding: 6px 12px;
+  font-size: 10.5px;
+  padding: 5px 11px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-#view-global_ai_lab .ailab-cua-scenarios {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  background: #0B1119;
-  border-bottom: 1px solid var(--al-line);
-  overflow-x: auto;
-}
-#view-global_ai_lab .ailab-scenario-pill {
-  background: rgba(30, 43, 62, 0.5);
-  border: 1px solid var(--al-line);
-  border-radius: 4px;
-  color: #94A3B8;
-  font-size: 9.5px;
-  padding: 2px 6px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-#view-global_ai_lab .ailab-scenario-pill:hover {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: #38BDF8;
-  color: #F8FAFC;
-}
-
-/* Step Timeline */
-#view-global_ai_lab .ailab-cua-step-timeline {
-  display: flex;
-  flex-direction: column;
   gap: 4px;
-  padding: 8px 12px;
-  overflow-y: auto;
-  max-height: 100px;
-}
-#view-global_ai_lab .ailab-step-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
-  background: rgba(15, 23, 36, 0.7);
-  border-left: 2px solid #38BDF8;
-  border-radius: 0 4px 4px 0;
-  font-size: 10.5px;
-}
-#view-global_ai_lab .ailab-step-item.success {
-  border-left-color: #10B981;
-}
-#view-global_ai_lab .ailab-step-item.running {
-  border-left-color: #F59E0B;
-  background: rgba(245, 158, 11, 0.1);
-}
-#view-global_ai_lab .step-num {
-  font-weight: 800;
-  color: #38BDF8;
-  width: 16px;
-  text-align: center;
-}
-#view-global_ai_lab .step-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-#view-global_ai_lab .step-title {
-  color: #F8FAFC;
-  font-weight: 700;
-}
-#view-global_ai_lab .step-sub {
-  color: #94A3B8;
-  font-size: 9px;
-  font-family: monospace;
-}
-#view-global_ai_lab .step-badge {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(56, 189, 248, 0.15);
-  color: #38BDF8;
-}
-
-/* DuckDB & BigQuery Lakehouse Telemetry Card */
-#view-global_ai_lab .ailab-cua-telemetry-card {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 6px 12px;
-  background: #060A10;
-  border-top: 1px solid var(--al-line);
-}
-#view-global_ai_lab .telemetry-col {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-#view-global_ai_lab .telemetry-lbl {
-  font-size: 8.5px;
-  color: #64748B;
-  font-weight: 700;
-}
-#view-global_ai_lab .telemetry-val {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #E2E8F0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-
-/* Frames Strip */
-#view-global_ai_lab .ailab-cua-frames-strip {
+#view-global_ai_lab .ailab-cua-chips-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  padding: 4px 12px 6px 12px;
-  background: #060A10;
+}
+#view-global_ai_lab .ailab-cua-presets {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   overflow-x: auto;
 }
-#view-global_ai_lab .ailab-frame-thumb {
-  width: 48px;
-  height: 32px;
-  border: 1px solid var(--al-line);
-  border-radius: 3px;
-  background: #0F1724;
-  object-fit: cover;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-#view-global_ai_lab .ailab-frame-thumb:hover {
-  border-color: #38BDF8;
+#view-global_ai_lab .ailab-cua-telemetry-badge {
+  font-size: 9px;
+  color: #94A3B8;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ---------------- Model Catalog Discovery Modal ---------------- */
@@ -1622,6 +1430,53 @@ body.in-global_ai_lab .nano-dynamic-island {
   font-size: 11px;
   color: #64748B;
   background: rgba(11, 19, 43, 0.6);
+}
+
+
+/* Interactive Suggestion Hint Chips */
+#view-global_ai_lab .ailab-hint-group {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#view-global_ai_lab .ailab-hint-lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #C084FC;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#view-global_ai_lab .ailab-hint-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#view-global_ai_lab .ailab-hint-chip {
+  background: #0F172A;
+  border: 1.5px solid #38BDF8;
+  color: #38BDF8;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.15);
+}
+#view-global_ai_lab .ailab-hint-chip:hover {
+  background: #38BDF8;
+  color: #0B1119;
+  transform: translateY(-1.5px);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
 }
 
 /* ---------------- Bottom Input Cockpit ---------------- */
@@ -1942,47 +1797,31 @@ body.in-global_ai_lab .nano-dynamic-island {
     <!-- Resizing Grip for CUA Panel -->
     <div class="ailab-grip-v ailab-grip-cua" id="ailabCuaGrip" title="Resize CUA Browser Panel"></div>
 
-    <!-- Panel 3: Autonomous Browser Agent (CUA) / Computer Use Studio -->
+    <!-- Panel 3: Sleek Autonomous Browser Agent (CUA) Studio -->
     <aside class="ailab-cua-panel active" id="ailabCuaPanel">
-      <!-- CUA Top Header -->
-      <div class="ailab-cua-header">
-        <div class="ailab-cua-title-wrap">
-          <div style="display:flex;align-items:center;gap:7px;">
-            <span style="font-size:16px;">🖥️</span>
-            <span class="ailab-cua-title">Autonomous Browser Agent</span>
-            <span class="ailab-badge-cua">CUA • Set-of-Marks</span>
-          </div>
-          <div class="ailab-cua-subtitle">Claude Computer Use • Browser-Use • GUI Agent • Zero-Load MCP</div>
+      <!-- Browser Window Header Chrome (macOS Dots & Title) -->
+      <div class="ailab-cua-chrome-header">
+        <div class="ailab-window-dots">
+          <span class="dot red" onclick="ailabToggleCuaPanel(false)" title="Close CUA Viewport"></span>
+          <span class="dot yellow" onclick="ailabToggleCuaPanel()" title="Minimize"></span>
+          <span class="dot green" onclick="ailabToggleCuaFullscreen()" title="Fullscreen"></span>
         </div>
-        <div class="ailab-cua-head-actions">
-          <div class="ailab-cua-status-badge" id="ailabCuaStatusBadge">
+        <div class="ailab-cua-chrome-title">
+          <span>🖥️ Autonomous Browser (CUA)</span>
+          <span class="ailab-badge-cua">Claude / Browser-Use MCP</span>
+        </div>
+        <div class="ailab-cua-chrome-right">
+          <div class="ailab-cua-live-pill">
             <span class="ailab-live-pulse-dot"></span>
-            <span id="ailabCuaStatusText">LIVE SCREEN SHARE</span>
+            <span>LIVE SCREEN SHARE</span>
           </div>
-          <button class="ailab-iconbtn" onclick="ailabCuaSnapshot()" title="Capture Screenshot to DuckDB/BigQuery">📸</button>
-          <button class="ailab-iconbtn" onclick="ailabCuaReload()" title="Reload Browser Viewport">🔄</button>
-          <button class="ailab-iconbtn" onclick="ailabToggleCuaFullscreen()" title="Toggle Fullscreen Viewport">⛶</button>
-          <button class="ailab-iconbtn" onclick="ailabToggleCuaPanel()" title="Close CUA Panel">✕</button>
+          <button class="ailab-iconbtn" onclick="ailabCuaSnapshot()" title="Capture Frame">📸</button>
+          <button class="ailab-iconbtn" onclick="ailabToggleCuaFullscreen()" title="Fullscreen">⛶</button>
+          <button class="ailab-iconbtn" onclick="ailabToggleCuaPanel(false)" title="Close">✕</button>
         </div>
       </div>
 
-      <!-- Resource & Hardware Metrics Bar -->
-      <div class="ailab-cua-metrics-bar">
-        <div class="ailab-cua-metric-item">
-          <span class="ailab-metric-lbl">HARDWARE:</span>
-          <span class="ailab-metric-val" style="color:#10B981;">💻 Local Laptop (GPU/CPU/RAM)</span>
-        </div>
-        <div class="ailab-cua-metric-item">
-          <span class="ailab-metric-lbl">RENDER OVERHEAD:</span>
-          <span class="ailab-metric-val" style="color:#38BDF8;">🛡️ 0 MB (Zero Risk)</span>
-        </div>
-        <div class="ailab-cua-metric-item">
-          <span class="ailab-metric-lbl">STORAGE:</span>
-          <span class="ailab-metric-val" style="color:#C084FC;">🦆 DuckDB + 🏛️ BigQuery</span>
-        </div>
-      </div>
-
-      <!-- Browser Omnibox & Navigation Controls -->
+      <!-- Modern Browser Omnibox Bar -->
       <div class="ailab-cua-omnibox-bar">
         <div class="ailab-cua-nav-btns">
           <button class="ailab-nav-btn" onclick="ailabCuaBack()" title="Back">◀</button>
@@ -1994,130 +1833,60 @@ body.in-global_ai_lab .nano-dynamic-island {
           <input type="text" class="ailab-cua-url-input" id="ailabCuaUrlInput" value="https://en.wikipedia.org" placeholder="Enter URL or search term..." onkeydown="if(event.key==='Enter')ailabCuaGoUrl()">
           <button class="ailab-cua-go-btn" onclick="ailabCuaGoUrl()">Go</button>
         </div>
-        <div class="ailab-cua-mode-select-wrap">
-          <select class="ailab-cua-mode-select" id="ailabCuaModeSelect" onchange="ailabCuaChangeMode(this.value)">
-            <option value="auto">🤖 Agent Drive (CUA)</option>
-            <option value="inspect">👁️ Inspect DOM</option>
-            <option value="interactive">👤 User Control</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Quick Target Bookmarks -->
-      <div class="ailab-cua-bookmarks">
-        <span style="font-size:10px;color:#64748B;font-weight:700;margin-right:4px;">FAST TARGETS:</span>
         <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://en.wikipedia.org')">Wikipedia</button>
-        <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://news.ycombinator.com')">Hacker News</button>
-        <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://github.com/trending')">GitHub Trending</button>
         <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://google.com')">Google</button>
-        <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://arxiv.org')">arXiv AI</button>
+        <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://news.ycombinator.com')">HN</button>
+        <button class="ailab-cua-chip" onclick="ailabCuaNavigate('https://github.com/trending')">GitHub</button>
       </div>
 
-      <!-- Live Screen Share Viewport Container -->
+      <!-- Full Height Live Screen Share Viewport Stage -->
       <div class="ailab-cua-viewport-container" id="ailabCuaViewportContainer">
-        <!-- Live Watermark Banner -->
-        <div class="ailab-cua-watermark">
-          <span class="ailab-live-pulse-dot"></span>
-          <span>LIVE SCREEN SHARE • LOCAL PLAYWRIGHT CUA</span>
+        <iframe class="ailab-cua-iframe" id="ailabCuaIframe" src="https://en.wikipedia.org" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+        <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrame" alt="Playwright Frame" style="display:none;">
+
+        <!-- Visual Agent Laser Cursor -->
+        <div class="ailab-cua-cursor" id="ailabCuaCursor">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.5">
+            <path d="M3 3l7 18 3-7 7-3L3 3z"/>
+          </svg>
+          <span class="ailab-cua-cursor-label" id="ailabCuaCursorLabel">Agent CUA</span>
         </div>
 
-        <!-- Viewport Frame / Screen Canvas -->
-        <div class="ailab-cua-screen-stage" id="ailabCuaScreenStage">
-          <!-- Simulated / Real Browser Surface -->
-          <iframe class="ailab-cua-iframe" id="ailabCuaIframe" src="https://en.wikipedia.org" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
-          
-          <!-- Fallback / Playwright Frame Capture Image Surface -->
-          <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrame" alt="Playwright Frame" style="display:none;">
+        <!-- Click Ripple Layer -->
+        <div class="ailab-cua-click-ripple" id="ailabCuaClickRipple"></div>
 
-          <!-- Visual Agent Cursor (Laser Pointer) -->
-          <div class="ailab-cua-cursor" id="ailabCuaCursor">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.5">
-              <path d="M3 3l7 18 3-7 7-3L3 3z"/>
-            </svg>
-            <span class="ailab-cua-cursor-label" id="ailabCuaCursorLabel">Agent CUA</span>
-          </div>
+        <!-- Set-of-Marks Bounding Boxes Overlay -->
+        <div class="ailab-cua-som-overlay" id="ailabCuaSomOverlay"></div>
 
-          <!-- Click Ripple Animation Layer -->
-          <div class="ailab-cua-click-ripple" id="ailabCuaClickRipple"></div>
-
-          <!-- Set-of-Marks Bounding Boxes Overlay (Claude Computer Use / Browser-Use) -->
-          <div class="ailab-cua-som-overlay" id="ailabCuaSomOverlay"></div>
-        </div>
-
-        <!-- Active Action HUD Pill -->
+        <!-- Floating Action HUD -->
         <div class="ailab-cua-action-hud" id="ailabCuaActionHud">
           <span class="ailab-action-icon" id="ailabCuaActionIcon">⚡</span>
-          <span class="ailab-action-desc" id="ailabCuaActionDesc">CUA Ready: Enter task below or prompt in main chat</span>
+          <span class="ailab-action-desc" id="ailabCuaActionDesc">CUA Ready • Screen share active on local laptop</span>
         </div>
       </div>
 
-      <!-- Autonomous Multi-Step Execution Console -->
-      <div class="ailab-cua-console">
-        <div class="ailab-cua-console-head">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;color:#38BDF8;">⚡</span>
-            <span style="font-size:11px;font-weight:700;color:#F8FAFC;text-transform:uppercase;letter-spacing:0.04em;">End-to-End Multi-Step Execution Planner</span>
-          </div>
-          <span class="ailab-step-counter" id="ailabCuaStepCounter">0 Steps Active</span>
-        </div>
-
-        <!-- Autonomous Task Input & Dispatch -->
-        <div class="ailab-cua-task-input-wrap">
-          <input type="text" class="ailab-cua-task-input" id="ailabCuaTaskInput" placeholder="Enter browser task (e.g. Search AI papers on Wikipedia and extract overview)..." onkeydown="if(event.key==='Enter')ailabCuaRunTask()">
+      <!-- Sleek Floating Bottom Control Dock -->
+      <div class="ailab-cua-bottom-dock">
+        <div class="ailab-cua-task-row">
+          <input type="text" class="ailab-cua-task-input" id="ailabCuaTaskInput" placeholder="Ask browser agent to search, click or scrape web..." onkeydown="if(event.key==='Enter')ailabCuaRunTask()">
           <button class="ailab-cua-exec-btn" onclick="ailabCuaRunTask()">
-            <span>Execute CUA</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <span>Execute</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
         </div>
-
-        <!-- Quick Scenario Presets -->
-        <div class="ailab-cua-scenarios">
-          <button class="ailab-scenario-pill" onclick="ailabCuaPresetScenario('wiki')">🔍 Wikipedia AI Search</button>
-          <button class="ailab-scenario-pill" onclick="ailabCuaPresetScenario('hn')">📰 HackerNews Top Story</button>
-          <button class="ailab-scenario-pill" onclick="ailabCuaPresetScenario('github')">🐙 GitHub Trend Extract</button>
-          <button class="ailab-scenario-pill" onclick="ailabCuaPresetScenario('som')">🎯 Set-of-Marks DOM Scan</button>
-        </div>
-
-        <!-- Execution Trace / Step Timeline -->
-        <div class="ailab-cua-step-timeline" id="ailabCuaStepTimeline">
-          <!-- Steps rendered here dynamically -->
-          <div class="ailab-step-item idle">
-            <span class="step-num">⚡</span>
-            <div class="step-details">
-              <div class="step-title">Autonomous Browser Agent Standby</div>
-              <div class="step-sub">Ready for end-to-end multi-step web execution via MCP</div>
-            </div>
-            <span class="step-badge">MCP IDLE</span>
+        <div class="ailab-cua-chips-row">
+          <div class="ailab-cua-presets">
+            <button class="ailab-cua-chip" onclick="ailabCuaPresetScenario('wiki')">🔍 Wiki AI</button>
+            <button class="ailab-cua-chip" onclick="ailabCuaPresetScenario('hn')">📰 HackerNews</button>
+            <button class="ailab-cua-chip" onclick="ailabCuaPresetScenario('github')">🐙 GitHub Trend</button>
+            <button class="ailab-cua-chip" onclick="ailabCuaPresetScenario('som')">🎯 Set-of-Marks</button>
           </div>
-        </div>
-
-        <!-- DuckDB & BigQuery Lakehouse Telemetry Card -->
-        <div class="ailab-cua-telemetry-card">
-          <div class="telemetry-col">
-            <span class="telemetry-lbl">DUCKDB BUFFER</span>
-            <span class="telemetry-val" id="ailabCuaDuckDbCount">12 Actions</span>
+          <div class="ailab-cua-telemetry-badge" id="ailabCuaTelemetryBadge">
+            <span>🦆 DuckDB • 🏛️ BigQuery • 💻 Local Laptop (0 MB Render RAM)</span>
           </div>
-          <div class="telemetry-col">
-            <span class="telemetry-lbl">BIGQUERY PARTITION</span>
-            <span class="telemetry-val">2026_Q1 / lakehouse</span>
-          </div>
-          <div class="telemetry-col">
-            <span class="telemetry-lbl">RENDER OVERHEAD</span>
-            <span class="telemetry-val" style="color:#10B981;">0.0 MB RAM</span>
-          </div>
-          <div class="telemetry-col">
-            <span class="telemetry-lbl">LOCAL BRIDGE</span>
-            <span class="telemetry-val" id="ailabCuaBridgeStatus">💻 Local Laptop Ready</span>
-          </div>
-        </div>
-
-        <!-- Recent Screenshot Frames Strip -->
-        <div class="ailab-cua-frames-strip" id="ailabCuaFramesStrip">
-          <!-- Frame thumbnails dynamically added here -->
         </div>
       </div>
     </aside>
-
   </div>
 </div>
 
@@ -3064,13 +2833,47 @@ body.in-global_ai_lab .nano-dynamic-island {
       html = html.replace(`__AILAB_MERMAID_${idx}__`, mermaidHtml);
     });
 
+        // 11. Parse Interactive Suggestion Chips / Hints: [HINT: Option 1 | Option 2 | Option 3]
+    html = html.replace(/\[HINT:\s*([^\]]+)\]/gi, (match, hintStr) => {
+      const options = hintStr.split('|').map(o => o.trim()).filter(Boolean);
+      let chipsHtml = '<div class="ailab-hint-group"><span class="ailab-hint-lbl">💡 सुचवलेले पर्याय (1-Tap Suggestions):</span><div class="ailab-hint-chips">';
+      options.forEach(opt => {
+        const safeText = encodeURIComponent(opt);
+        chipsHtml += `<button type="button" class="ailab-hint-chip" onclick="ailabSendHint(decodeURIComponent('${safeText}'))"><span>${opt}</span></button>`;
+      });
+      chipsHtml += '</div></div>';
+      return chipsHtml;
+    });
+
     return html;
   }
 
   function ailabRenderMermaidBlocks() {
     try {
       if (window.mermaid) {
-        window.mermaid.run({ querySelector: '.ailab-mermaid-container pre.mermaid' });
+        window.mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'loose',
+          theme: 'dark',
+          suppressErrorRendering: true
+        });
+        document.querySelectorAll('.ailab-mermaid-container pre.mermaid').forEach((el) => {
+          if (el.dataset.processed) return;
+          try {
+            const graphDef = (el.textContent || "").trim();
+            if (!graphDef) return;
+            const id = "mermaid_" + Math.random().toString(36).slice(2, 9);
+            window.mermaid.render(id, graphDef).then(({ svg }) => {
+              el.parentElement.innerHTML = svg;
+            }).catch(err => {
+              console.warn("[Mermaid Handled]", err);
+              el.parentElement.innerHTML = `<div class="ailab-ascii-card" style="border:1px solid rgba(56,189,248,0.4);"><div style="font-size:10.5px;color:#38BDF8;margin-bottom:4px;font-weight:700;">📊 Architecture Flow Structure</div><pre style="margin:0;font-size:11px;color:#E2E8F0;">${escapeHtml(graphDef)}</pre></div>`;
+            });
+            el.dataset.processed = "true";
+          } catch (e) {
+            el.parentElement.innerHTML = `<div class="ailab-ascii-card"><pre>${escapeHtml(el.textContent)}</pre></div>`;
+          }
+        });
       } else {
         ailabEnsureMermaid();
       }
@@ -3327,6 +3130,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       const panel = document.getElementById("ailabCuaPanel");
       const grip = document.getElementById("ailabCuaGrip");
       const btn = document.getElementById("ailabCuaToggleBtn");
+      const sidebar = document.getElementById("ailabSidebar");
       if (!panel) return;
 
       const shouldOpen = force !== undefined ? force : panel.classList.contains("collapsed");
@@ -3335,12 +3139,20 @@ body.in-global_ai_lab .nano-dynamic-island {
         panel.classList.add("active");
         if (grip) grip.style.display = "";
         if (btn) btn.classList.add("active");
+        // Auto-collapse sidebar when CUA opens so chat & browser get full 50-50 split screen!
+        if (sidebar && !sidebar.classList.contains("collapsed")) {
+          sidebar.classList.add("collapsed");
+        }
         this.isOpen = true;
       } else {
         panel.classList.add("collapsed");
         panel.classList.remove("active");
         if (grip) grip.style.display = "none";
         if (btn) btn.classList.remove("active");
+        // Restore sidebar when CUA closes
+        if (sidebar && sidebar.classList.contains("collapsed")) {
+          sidebar.classList.remove("collapsed");
+        }
         this.isOpen = false;
       }
     },
