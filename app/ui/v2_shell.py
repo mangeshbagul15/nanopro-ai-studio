@@ -281,75 +281,33 @@ function switchUser() {
 
 function renderMarkdown(md) {
   if (!md) return "";
-  let s = String(md);
-  
-  // Escape HTML tags to prevent XSS except formatting
-  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-  // Code blocks
-  s = s.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(_, lang, code) {
-    return '<pre><code class="lang-' + (lang || 'text') + '">' + code.trim() + '</code></pre>';
-  });
-
-  // Inline code
-  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Tables
-  const lines = s.split('\n');
-  let inTable = false;
-  let tableHtml = [];
-  let outLines = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('|') && line.endsWith('|')) {
-      if (!inTable) {
-        inTable = true;
-        tableHtml = ['<table>'];
-      }
-      // Check if separator line
-      if (/^\|\s*[-:]+[-| :]*\|$/.test(line)) {
-        continue;
-      }
-      const cells = line.split('|').slice(1, -1).map(c => c.trim());
-      const isHeader = tableHtml.length === 1;
-      const tag = isHeader ? 'th' : 'td';
-      tableHtml.push('<tr>' + cells.map(c => '<' + tag + '>' + c + '</' + tag + '>').join('') + '</tr>');
+  var NL = String.fromCharCode(10);
+  var s = String(md).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  var lines = s.split(NL);
+  var out = [];
+  var inTable = false;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (line.charAt(0) === "|" && line.charAt(line.length - 1) === "|") {
+      if (line.indexOf("---") !== -1 || line.indexOf(":--") !== -1) continue;
+      if (!inTable) { inTable = true; out.push("<table>"); }
+      var cells = line.split("|").slice(1, -1);
+      out.push("<tr>" + cells.map(function(c) { return "<td>" + c.trim() + "</td>"; }).join("") + "</tr>");
     } else {
-      if (inTable) {
-        inTable = false;
-        tableHtml.push('</table>');
-        outLines.push(tableHtml.join(''));
-        tableHtml = [];
-      }
-      outLines.push(lines[i]);
+      if (inTable) { inTable = false; out.push("</table>"); }
+      if (line.indexOf("### ") === 0) out.push("<h3>" + line.substring(4) + "</h3>");
+      else if (line.indexOf("## ") === 0) out.push("<h2>" + line.substring(3) + "</h2>");
+      else if (line.indexOf("# ") === 0) out.push("<h1>" + line.substring(2) + "</h1>");
+      else if (line.indexOf("- ") === 0 || line.indexOf("* ") === 0) out.push("<li>" + line.substring(2) + "</li>");
+      else if (line === "") out.push("<br>");
+      else out.push(line);
     }
   }
-  if (inTable) {
-    tableHtml.push('</table>');
-    outLines.push(tableHtml.join(''));
-  }
-  s = outLines.join('\n');
-
-  // Headers
-  s = s.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-  s = s.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  s = s.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-  // Bold & Italic
-  s = s.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
-
-  // Blockquotes
-  s = s.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-  // Unordered list items
-  s = s.replace(/^[-*] (.*$)/gim, '<li>$1</li>');
-
-  // Newlines to <br> outside tags
-  s = s.replace(/\n\n+/g, '<br><br>');
-
-  return s;
+  if (inTable) out.push("</table>");
+  var res = out.join("<br>").replace(/<br><table/g, "<table").replace(/<\/table><br>/g, "</table>");
+  res = res.replace(/\*\*([^\*]+)\*\*/g, "<strong>$1</strong>");
+  res = res.replace(/`([^`]+)`/g, "<code>$1</code>");
+  return res;
 }
 
 const CARDS = [
@@ -498,7 +456,9 @@ function renderPayload(d){
 }
 
 function esc(v){
-  return String(v).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]));
+  if (v == null) return "";
+  var s = String(v);
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 async function openCard(card){
