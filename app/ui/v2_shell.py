@@ -452,26 +452,26 @@ function renderMarkdown(md) {
   
   // 1. Extract Mermaid diagram blocks
   var mermaidBlocks = [];
-  md = md.replace(/```(?:mermaid)?\s*\n([\s\S]*?)```/gi, function(match, code) {
+  md = md.replace(/```(?:mermaid)?\s*\\n([\s\S]*?)```/gi, function(match, code) {
     var trimmed = code.trim();
     if (/^(?:flowchart|graph|sequenceDiagram|stateDiagram|classDiagram|erDiagram|gantt|pie|gitGraph)/i.test(trimmed)) {
       var idx = mermaidBlocks.length;
       mermaidBlocks.push(trimmed);
       return "___MERMAID_BLOCK_" + idx + "___";
     } else {
-      return "\n```code\n" + trimmed + "\n```\n";
+      return "\\n```code\\n" + trimmed + "\\n```\\n";
     }
   });
 
   // 2. Extract Standard Code blocks
   var codeBlocks = [];
-  md = md.replace(/```([a-zA-Z0-9_-]*)\s*\n([\s\S]*?)```/g, function(match, lang, code) {
+  md = md.replace(/```([a-zA-Z0-9_-]*)\s*\\n([\s\S]*?)```/g, function(match, lang, code) {
     var idx = codeBlocks.length;
     codeBlocks.push({ lang: lang || "code", code: code.trim() });
     return "___CODE_BLOCK_" + idx + "___";
   });
 
-  var lines = md.split(/\r?\n/);
+  var lines = md.split(/\\r?\\n/);
   var out = [];
   var tableRows = [];
 
@@ -518,7 +518,7 @@ function renderMarkdown(md) {
   res = res.replace(/`([^`]+)`/g, '<code>$1</code>');
 
   // Re-insert Mermaid
-  res = res.replace(/___MERMAID_BLOCK_(\d+)___/g, function(_, idx) {
+  res = res.replace(/___MERMAID_BLOCK_(\\d+)___/g, function(_, idx) {
     var code = mermaidBlocks[parseInt(idx, 10)];
     return '<div class="mermaid-box">' +
              '<div class="mermaid-hdr"><span class="mermaid-tag">📊 Architecture Flowchart</span><span class="mermaid-badge">Mermaid Vector</span></div>' +
@@ -527,7 +527,7 @@ function renderMarkdown(md) {
   });
 
   // Re-insert Code
-  res = res.replace(/___CODE_BLOCK_(\d+)___/g, function(_, idx) {
+  res = res.replace(/___CODE_BLOCK_(\\d+)___/g, function(_, idx) {
     var item = codeBlocks[parseInt(idx, 10)];
     return '<div class="code-box">' +
              (item.lang ? '<div class="code-hdr">' + esc(item.lang) + '</div>' : '') +
