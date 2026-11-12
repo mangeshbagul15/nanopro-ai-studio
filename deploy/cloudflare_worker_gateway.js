@@ -1037,11 +1037,12 @@ CRITICAL RULES (HUMAN NATURAL CONVERSATION & AUTONOMOUS CUA CONTROL):
           duration_ms: Math.min(Date.now() - t0, 380),
           timestamp: nowDt.toISOString(),
           date_formatted: nowDt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-          response: `मी तुमच्या उजव्या बाजूच्या साइड स्क्रीन शेअर (CUA Viewport) मध्ये थेट **Google Search** सुरू केले आहे! 🖥️⚡\n\n` +
+          response: `मी उजव्या बाजूच्या साइड स्क्रीन शेअर (CUA Viewport) मध्ये स्वतः थेट **Google Search** सुरू केले आहे! 🖥️⚡\n\n` +
+                    `- **स्वायत्त अंमलबजावणी:** मुख्य काम मी स्वतः ब्राउझरवर करत आहे.\n` +
                     `- **सर्च क्वेरी:** \`${queryClean}\`\n` +
-                    `- **हार्डवेअर:** स्थानिक लॅपटॉप CPU/GPU/RAM वर सक्रिय (Render वर 0 MB लोड)\n` +
-                    `- **लाइव्ह स्क्रीन:** उजव्या बाजूच्या ब्राउझरमध्ये Google चे निकाल आणि **Agent CUA** लेझर कर्सर फिरताना पाहा!\n\n` +
-                    `[HINT: 🔍 Google चे रिझल्ट्स स्क्रॅप करा | 📰 टॉप ३ लिंक्स उघडा | 📸 स्क्रीनशॉट सेव्ह करा]`,
+                    `- **हार्डवेअर:** स्थानिक लॅपटॉप CPU/GPU/RAM (Render वर 0 MB भार)\n` +
+                    `- **🤝 मानवी सहकार्य (HITL):** खालीलपैकी कोणत्या पर्यायाने पुढे जायचे? मी सुचवलेला **पर्याय १ सर्वोत्तम (Recommended)** आहे:\n\n` +
+                    `[HINT: ⭐ पर्याय १ (Recommended): NanoPro अधिकृत तपशील उघडा | 📖 पर्याय २: Wikipedia सारांश वाचा | 🐙 पर्याय ३: GitHub कोडिंग तपासा]`,
           routing_decision: { selected_model: "cua/playwright-mcp", pareto_utility: 0.99, sla_target_ms: 800, sla_met: true }
         }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
       }
