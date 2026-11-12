@@ -193,8 +193,7 @@ footer a:hover{color:var(--ink)}
 <footer>
   <span id="f-ver">v2026.11</span>
   <span id="f-host">—</span>
-  <a href="/legacy">Legacy console</a>
-  <a href="javascript:void(0)" onclick="performLogout()" style="margin-left:auto;cursor:pointer;" title="Sign out completely">Sign out 🚪</a>
+  <a href="/legacy" style="margin-left:auto">Legacy console →</a>
 </footer>
 </div>
 
