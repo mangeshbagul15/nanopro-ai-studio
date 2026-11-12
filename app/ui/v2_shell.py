@@ -699,6 +699,11 @@ function renderSchedulerConsole(d){
     }
   }
 
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#automation_scheduler" target="_blank" rel="noopener">Open Full Task Scheduler & Airflow DAGs ↗</a>';
+  html += '<a class="open-link" href="/legacy#task_history" target="_blank" rel="noopener" style="color:var(--dim);">View Execution History & Run Audits ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -884,8 +889,9 @@ function renderPipelinesConsole(d) {
   html += '<tr><td><b>cbs</b></td><td>Core Banking Finacle General Ledger Reconciliation</td><td>Daily BOD 06:00</td><td><span class="tag-ok">● ACTIVE</span></td><td>Snowflake Gold</td></tr>';
   html += '</tbody></table></div>';
 
-  html += '<div style="margin-top:14px;display:flex;gap:8px;">';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
   html += '<button type="button" class="task-btn run" onclick="triggerBODNow()">▶ Trigger Ingestion Now</button>';
+  html += '<a class="open-link" href="/legacy#data_engineer" target="_blank" rel="noopener">Open Full Data Engineering & Lakehouse Workspace ↗</a>';
   html += '<button type="button" class="task-btn" onclick="navigateToScheduler()">View in Task Scheduler →</button>';
   html += '</div>';
   html += '</div>';
@@ -924,8 +930,9 @@ function renderDataModelingConsole(d) {
   html += '<button type="button" class="task-btn run" onclick="generateQuickSQL()">Generate SQL</button>';
   html += '</div>';
 
-  html += '<div style="display:flex;gap:8px;">';
-  html += '<a class="open-link" href="/legacy" target="_blank" rel="noopener">Open Full Data Modeling Studio ↗</a>';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#data_modeling_ai" target="_blank" rel="noopener">Open Full AI Data Modeling Studio ↗</a>';
+  html += '<a class="open-link" href="/legacy#data_analyst" target="_blank" rel="noopener" style="color:var(--dim);">Open Query Lab & Schema Explorer ↗</a>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -954,6 +961,12 @@ function renderInfraConsole(d) {
   html += '<tr><td><b>Sentinel Loop Interval</b></td><td>4.0 seconds autonomous health heartbeat</td></tr>';
   html += '<tr><td><b>Network Encryption</b></td><td>HTTPS / TLS 1.3 Strict Transport Security (HSTS)</td></tr>';
   html += '</tbody></table></div>';
+
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#cyber_lab" target="_blank" rel="noopener">Open Full Cyber Security Operations Center ↗</a>';
+  html += '<a class="open-link" href="/legacy#vault" target="_blank" rel="noopener" style="color:var(--dim);">Open Cloud Credentials Vault ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -978,6 +991,12 @@ function renderDatabasesConsole(d) {
   html += '<div style="margin-top:12px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);border-radius:8px;padding:10px 14px;font-size:11.5px;color:var(--cyan);">';
   html += '✓ 100% Zero-Laptop Architecture: Even if your laptop is turned off or offline, all 6 cloud databases and data pipelines execute 24/7 autonomously on Render Cloud without interruption.';
   html += '</div>';
+
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#storage_dashboard" target="_blank" rel="noopener">Open Full Cloud Database & Storage Explorer ↗</a>';
+  html += '<a class="open-link" href="/legacy#data_engineer" target="_blank" rel="noopener" style="color:var(--dim);">Open 91-Table Banking Data Catalog ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -1006,7 +1025,10 @@ function renderMCPConsole(d) {
   html += '<tr><td><b>nanopro_pipeline_trigger</b></td><td>Orchestration</td><td>Allows agents to trigger automated pipeline cycles on demand.</td><td><span class="tag-ok">READY</span></td></tr>';
   html += '</tbody></table></div>';
 
-  html += '<div style="margin-top:12px;"><a class="open-link" href="/mcp/manifest" target="_blank" rel="noopener">Inspect Full MCP Manifest (JSON-RPC) ↗</a></div>';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/mcp/manifest" target="_blank" rel="noopener">Inspect Full MCP Manifest (JSON-RPC) ↗</a>';
+  html += '<a class="open-link" href="/legacy#free_apis" target="_blank" rel="noopener" style="color:var(--dim);">Open Developer API & Tool Catalog ↗</a>';
+  html += '</div>';
   html += '</div>';
   return html;
 }
@@ -1037,7 +1059,9 @@ function renderAgentsConsole(d) {
   html += '<div class="agent-card"><div class="ag-hdr"><span class="ag-name">Communication Agent</span><span class="tag-ok">ACTIVE</span></div><div class="ag-grp">Group T · Multi-Channel Dispatcher</div><div class="ag-desc">Dispatches verified reports to WhatsApp, Telegram bots & Gmail SMTP.</div></div>';
   html += '</div>';
 
-  html += '<div style="margin-top:14px;"><a class="open-link" href="/legacy" target="_blank" rel="noopener">Open Agent Fleet Station & Assign Tasks →</a></div>';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#agent_control" target="_blank" rel="noopener">Open Full 320 AI Agent Command Station ↗</a>';
+  html += '</div>';
   html += '</div>';
   return html;
 }
@@ -1060,10 +1084,16 @@ function renderCommsConsole(d) {
   html += '🟢 Official Origin Watermark: <b>[NanoPro Official Cloud · Render]</b> is stamped on every genuine outgoing notification. All ghost/legacy alerts from other servers have been permanently neutralized.';
   html += '</div>';
 
-  html += '<div style="margin-top:14px;display:flex;gap:8px;">';
+  html += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
   html += '<button type="button" class="task-btn run" onclick="testWhatsAppPing()">Test WhatsApp Ping</button>';
   html += '<button type="button" class="task-btn" onclick="testTelegramPing()">Test Telegram Ping</button>';
   html += '</div>';
+
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#communication" target="_blank" rel="noopener">Open Full Communication Center & Messaging Hub ↗</a>';
+  html += '<a class="open-link" href="/legacy#telegram_agent" target="_blank" rel="noopener" style="color:var(--dim);">Open Telegram Agent Operations ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -1090,7 +1120,10 @@ function renderVideoConsole(d) {
   html += '<button type="button" class="task-btn run" onclick="triggerShortsBlueprint()">Generate 9:16 Short</button>';
   html += '</div>';
 
-  html += '<div><a class="open-link" href="/legacy" target="_blank" rel="noopener">Open Full Video Maker Workspace ↗</a></div>';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#universal_tech_video" target="_blank" rel="noopener">Open Full 2026 Universal Video Studio ↗</a>';
+  html += '<a class="open-link" href="/legacy#python_video" target="_blank" rel="noopener" style="color:var(--dim);">Open Python Reel Studio ↗</a>';
+  html += '</div>';
   html += '</div>';
   return html;
 }
@@ -1120,6 +1153,11 @@ function renderPaymentsConsole(d) {
   html += '<tr><td><b>Cashfree</b></td><td>Instant Bank Transfer & UPI AutoPay</td><td>Instant</td><td><span class="tag-ok">● CONFIGURED</span></td></tr>';
   html += '<tr><td><b>Stripe</b></td><td>International Visa / Mastercard / Amex (USD, EUR)</td><td>T+2 Standard</td><td><span class="tag-ok">● READY</span></td></tr>';
   html += '</tbody></table></div>';
+
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#payment_gateway" target="_blank" rel="noopener">Open Full Payment Gateway & Billing Console ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -1146,6 +1184,11 @@ function renderMonitoringConsole(d) {
   html += '<tr><td><b>Multi-Cloud Ingress</b></td><td><span class="tag-ok">Cloudflare Edge ➔ Render Container (Protected)</span></td></tr>';
   html += '<tr><td><b>Active Agent Execution Threads</b></td><td>320 Specialized Agents on Standby</td></tr>';
   html += '</tbody></table></div>';
+
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#monitoring" target="_blank" rel="noopener">Open Full Live Telemetry & Health Console ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -1175,7 +1218,10 @@ function renderRenderConsole(d) {
   html += '<tr><td><b>Container Health</b></td><td><span class="tag-ok">● RUNNING 24/7 (Zero Sleep Mode)</span></td></tr>';
   html += '</tbody></table></div>';
 
-  html += '<div style="margin-top:14px;"><a class="open-link" href="https://dashboard.render.com/" target="_blank" rel="noopener">Open Render Cloud Dashboard ↗</a></div>';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="https://dashboard.render.com/" target="_blank" rel="noopener">Open Render Cloud Dashboard ↗</a>';
+  html += '<a class="open-link" href="/legacy#monitoring" target="_blank" rel="noopener" style="color:var(--dim);">View Live Telemetry Metrics ↗</a>';
+  html += '</div>';
   html += '</div>';
   return html;
 }
@@ -1206,6 +1252,11 @@ function renderSignalsConsole(d) {
     }
     html += '</div>';
   }
+
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<a class="open-link" href="/legacy#news_center" target="_blank" rel="noopener">Open Full Real-Time Market Signals & News Center ↗</a>';
+  html += '</div>';
+
   html += '</div>';
   return html;
 }
@@ -1257,11 +1308,23 @@ async function openCard(card){
   $("#d-title").textContent = card.name;
   $("#d-body").innerHTML = '<div class="mut">Loading…</div>';
   $("#drawer").classList.add("open");
-  const link = card.id === "render"
-    ? '<a class="open-link" href="https://dashboard.render.com/" target="_blank" rel="noopener">Render dashboard ↗</a>'
-    : (card.id === "mcp"
-       ? '<a class="open-link" href="/mcp/manifest" target="_blank" rel="noopener">Inspect MCP manifest ↗</a>'
-       : '<a class="open-link" href="/legacy">Open full workspace →</a>');
+  const CARD_DEEP_LINKS = {
+    scheduler: { href: "/legacy#automation_scheduler", label: "Open Full Task Scheduler & Airflow DAGs ↗" },
+    pipelines: { href: "/legacy#data_engineer", label: "Open Full Data Engineering & Lakehouse Workspace ↗" },
+    datamodel: { href: "/legacy#data_modeling_ai", label: "Open Full AI Data Modeling Studio ↗" },
+    infra: { href: "/legacy#cyber_lab", label: "Open Full Cyber Security Operations Center ↗" },
+    databases: { href: "/legacy#storage_dashboard", label: "Open Full Cloud Database & Storage Explorer ↗" },
+    mcp: { href: "/mcp/manifest", label: "Inspect Full MCP Manifest (JSON-RPC) ↗" },
+    agents: { href: "/legacy#agent_control", label: "Open Full 320 AI Agent Command Station ↗" },
+    comms: { href: "/legacy#communication", label: "Open Full Communication Center & Messaging Hub ↗" },
+    video: { href: "/legacy#universal_tech_video", label: "Open Full 2026 Universal Video Studio ↗" },
+    payments: { href: "/legacy#payment_gateway", label: "Open Full Payment Gateway & Billing Console ↗" },
+    monitor: { href: "/legacy#monitoring", label: "Open Full Live Telemetry & Health Console ↗" },
+    render: { href: "https://dashboard.render.com/", label: "Open Render Cloud Dashboard ↗" },
+    news: { href: "/legacy#news_center", label: "Open Full Real-Time Market Signals & News Center ↗" }
+  };
+  const targetLink = CARD_DEEP_LINKS[card.id] || { href: "/legacy", label: "Open full workspace →" };
+  const link = '<a class="open-link" href="' + targetLink.href + '" target="_blank" rel="noopener">' + targetLink.label + '</a>';
   try {
     const d = await get(card.api);
     if (card.id === "scheduler") {
@@ -1329,7 +1392,7 @@ $("#ask").addEventListener("submit", async e => {
       '<div class="row"><span>intent</span><span>' + esc(d.intent || "—") + '</span></div>' +
       '<div class="row"><span>model</span><span>' + esc(d.model || "rules") + '</span></div>' +
       '<div class="row"><span>latency</span><span>' + (Number(d.latency_ms) || 0) + ' ms</span></div>' +
-      '<a class="open-link" href="/legacy">Open full workspace →</a>';
+      '<a class="open-link" href="/legacy#assistant" target="_blank" rel="noopener">Open AI Assistant Workspace ↗</a>';
     $("#ask-input").value = "";
   } catch (err) {
     $("#d-body").innerHTML = '<div class="mut">' + esc(err.message || String(err)) + '</div>';
