@@ -37,14 +37,8 @@ class AutomationScheduler:
         self._reconcile_cloud_profile()
 
     CLOUD_LOCAL_LANE_TASKS = {
-        "SFTP_INBOUND_AUTO_INGEST": "The SFTP hub runs on the laptop",
-        "SFTP_20DAY_RETENTION_PURGE": "SFTP retention belongs to the laptop hub",
-        "DUCKDB_S3_CLOUD_BACKUP": "Gold marts mirror runs from the laptop",
-        "TELEGRAM_APK_DISPATCHER": "APK binaries are served from the laptop",
-        "BOD_PIPELINE_CYCLE": "Oracle/S3/Snowflake full load runs from the laptop",
-        "SOD_PIPELINE_CYCLE": "Oracle/S3/Snowflake start-of-day runs from the laptop",
-        "DAILY_T1_INCREMENTAL_PIPELINE": "Oracle watermark ingestion runs from the laptop",
-        "EOD_PIPELINE_CYCLE": "EOD reconciliation and dispatch run from the laptop",
+        # All banking data pipelines (BOD, SOD, T-1, EOD, S3 Mirror) are 100% Cloud-Native
+        # and execute 24/7 autonomously on Render Cloud without requiring the user's laptop.
     }
 
     def _reconcile_cloud_profile(self):

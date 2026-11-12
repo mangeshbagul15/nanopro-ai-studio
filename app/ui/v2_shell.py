@@ -459,11 +459,11 @@ function naturalSchedule(type, expr){
 
 function getTaskTargetLineage(name, desc){
   var n = String(name || "").toUpperCase();
-  if (n.indexOf("BOD") !== -1) return "🎯 Oracle XE ➔ AWS S3 ➔ Snowflake L0-L1-L2 ➔ DuckDB Marts (91 Tables)";
+  if (n.indexOf("BOD") !== -1) return "🎯 Cloud OLTP (Neon / Render Postgres) ➔ AWS S3 Lake ➔ Snowflake L0-L1-L2 ➔ Cloud Marts (91 Tables)";
   if (n.indexOf("SOD") !== -1) return "🎯 FX Card Rates, Limits & Intraday Delta ➔ Snowflake Live";
   if (n.indexOf("DAILY_T1") !== -1) return "🎯 Delta Watermark Ingestion ➔ All 9 Banking Projects";
   if (n.indexOf("EOD") !== -1) return "🎯 Trial Balance Reconciliation ➔ Email / WhatsApp / Telegram Ledger";
-  if (n.indexOf("SFTP_INBOUND") !== -1) return "🎯 SFTP /inbound/ (Pipe, CSV, XLSX) ➔ Parquet Lakehouse";
+  if (n.indexOf("SFTP_INBOUND") !== -1) return "🎯 Cloud SFTP /inbound/ (Pipe, CSV, XLSX) ➔ Parquet Lakehouse";
   if (n.indexOf("SFTP_20DAY") !== -1) return "🎯 Storage Sentinel ➔ Purge files & S3 objects older than 20 days";
   if (n.indexOf("STORAGE_RETENTION") !== -1) return "🎯 Disk Pressure Guard ➔ Checkpoint & Vacuum SQLite Database";
   if (n.indexOf("DUCKDB_S3") !== -1) return "🎯 DuckDB Gold Marts ➔ AWS S3 Cloud Mirror (ap-southeast-2)";
@@ -576,7 +576,7 @@ async function triggerTaskNow(taskId, name){
   try {
     var r = await fetch("/api/scheduler/tasks/" + taskId + "/run_now", { method: "POST" });
     var d = await r.json();
-    alert("Task '" + name + "' dispatched successfully!\nStatus: " + (d.status || "Executing"));
+    alert("Task '" + name + "' dispatched successfully! Status: " + (d.status || "Executing"));
     refreshSchedulerView();
   } catch (e) {
     alert("Trigger failed: " + e.message);
@@ -602,7 +602,7 @@ async function resumeTask(taskId){
 }
 
 async function editTaskTime(taskId, name, type, currExpr){
-  var newVal = prompt("Enter new recurrence schedule for '" + name + "' (" + type + "):\nExample: 06:30 for daily, or 15 for minutes", currExpr);
+  var newVal = prompt("Enter new recurrence schedule for '" + name + "' (" + type + ") (e.g. 06:30 for daily, or 15 for minutes):", currExpr);
   if (!newVal || newVal.trim() === currExpr) return;
   try {
     var r = await fetch("/api/scheduler/tasks/" + taskId, {
