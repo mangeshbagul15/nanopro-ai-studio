@@ -130,6 +130,22 @@ export default {
     // ================================================================
     // 0. ZERO-TRUST LOGIN GATEWAY — Serve login page, never proxy it
     // ================================================================
+    if (path === "/logout") {
+      return new Response('<!DOCTYPE html><html><head><script>' +
+        'try{localStorage.removeItem("nanopro_session_token");}catch(e){}' +
+        'try{sessionStorage.clear();}catch(e){}' +
+        'document.cookie="nanopro_session=; Max-Age=0; path=/; SameSite=Lax";' +
+        'document.cookie="nanopro_session=; Max-Age=0; path=/; domain=" + location.hostname + "; SameSite=Lax";' +
+        'window.location.replace("/login?logout=1&t=" + Date.now());' +
+        '</script></head><body>Logging out...</body></html>', {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html",
+          "Set-Cookie": "nanopro_session=; Max-Age=0; Path=/; SameSite=Lax",
+        }
+      });
+    }
+
     if (path === "/login") {
       // Serve the official login_gateway.html from static assets
       if (env.ASSETS) {
