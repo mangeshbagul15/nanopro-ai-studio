@@ -353,6 +353,17 @@ def _send_telegram_message(
     token: str, chat_id: str, text: str, parse_mode: Optional[str] = "HTML"
 ) -> Dict[str, Any]:
     url = f"https://api.telegram.org/bot{token}/sendMessage"
+    
+    # Official Origin Watermark (Prevents confusion from legacy fly.io/alwaysdata/pythonanywhere runners)
+    official_tag_html = "\n\n🟢 <i>[NanoPro Official Cloud · Render]</i>"
+    official_tag_plain = "\n\n🟢 [NanoPro Official Cloud · Render]"
+    if parse_mode == "HTML":
+        if "NanoPro Official Cloud" not in text:
+            text = text + official_tag_html
+    else:
+        if "NanoPro Official Cloud" not in text:
+            text = text + official_tag_plain
+
     payload = {
         "chat_id": chat_id,
         "text": text,
