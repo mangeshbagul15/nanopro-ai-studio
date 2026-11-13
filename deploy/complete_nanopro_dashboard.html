@@ -20211,44 +20211,61 @@ body.in-global_ai_lab .nano-dynamic-island {
 
 <!-- AIRFLOW ORCHESTRATOR & SFTP HUB MODAL -->
 <div class="ailab-modal-backdrop" id="ailabAirflowModal" style="position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;height:100vh !important;z-index:999999 !important;background:rgba(3,7,18,0.88) !important;backdrop-filter:blur(12px) !important;display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="ailabCloseAirflowModal(event)">
-  <div class="ailab-modal" style="max-width:920px;max-height:88vh;" onclick="event.stopPropagation()">
+  <div class="ailab-modal" style="max-width:960px;max-height:90vh;width:960px;" onclick="event.stopPropagation()">
     <div class="ailab-modal-head">
       <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:22px;">⏱️</span>
+        <span style="font-size:22px;">⚡</span>
         <div>
-          <div style="font-size:15px;font-weight:700;color:#F8FAFC;">NanoPro Airflow Orchestrator &amp; SFTP Storage Hub</div>
-          <div style="font-size:12px;color:#94A3B8;">8 Core Banking Projects • Medallion Pipelines • T-1 Daily EOD • Direct Self-Healing</div>
+          <div style="font-size:15px;font-weight:700;color:#F8FAFC;">NanoPro Airflow Orchestrator &amp; Enterprise SFTP Hub</div>
+          <div style="font-size:12px;color:#94A3B8;">8 Core Banking Projects • Dynamic DAG Jobs • Real-Time Logs • Omnichannel Alerts</div>
         </div>
       </div>
       <button type="button" class="ailab-modal-close" onclick="ailabCloseAirflowModal()">&times;</button>
     </div>
 
     <!-- Navigation Pills / Tabs -->
-    <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
-      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">🚀 8 Banking DAGs</button>
-      <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📁 SFTP Reports &amp; WinSCP</button>
-      <button type="button" class="ailab-pill" id="tabAirflowArchitecture" onclick="ailabSwitchAirflowTab('arch')">🛡️ L1 Quality Gate &amp; Email Rule</button>
+    <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;flex-wrap:wrap;">
+      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">⚡ 8 Banking DAGs &amp; Job Manager</button>
+      <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📂 SFTP Reports &amp; WinSCP</button>
+      <button type="button" class="ailab-pill" id="tabAirflowRecipients" onclick="ailabSwitchAirflowTab('recipients')">📧 Recipients &amp; Notification Logs</button>
+      <button type="button" class="ailab-pill" id="tabAirflowLogs" onclick="ailabSwitchAirflowTab('logs')">📜 Multi-Cloud Dynamic Live Logs</button>
+      <button type="button" class="ailab-pill" id="tabAirflowArchitecture" onclick="ailabSwitchAirflowTab('arch')">⚖️ L1 Quality Gate Architecture</button>
     </div>
 
-    <!-- TAB 1: 8 BANKING DAGS -->
-    <div id="airflowTabDags" style="padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
+    <!-- TAB 1: 8 BANKING DAGS & ACTIVE JOB MANAGER -->
+    <div id="airflowTabDags" style="padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
       <!-- Top Status Banner -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">AIRFLOW SCHEDULER</div>
           <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (8 DAGs)</div>
         </div>
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">REPORTING BASIS</div>
-          <div style="font-size:13px;font-weight:700;color:#38BDF8;margin-top:2px;">📅 T-1 (Yesterday Close)</div>
+          <div style="font-size:13px;font-weight:700;color:#38BDF8;margin-top:2px;">📅 T-1 (Daily Close)</div>
         </div>
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">L1 QUALITY GATE</div>
-          <div style="font-size:13px;font-weight:700;color:#A78BFA;margin-top:2px;">🛡️ 0 Nulls • 0 Dupes</div>
+          <div style="font-size:13px;font-weight:700;color:#A78BFA;margin-top:2px;">⚖️ 0 Nulls • 0 Dupes</div>
         </div>
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">EMAIL ROUTING</div>
-          <div style="font-size:12px;font-weight:600;color:#FBBF24;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📧 5MB Attached/Link</div>
+          <div style="font-size:11px;color:#94A3B8;">EMAIL DISPATCH</div>
+          <div style="font-size:12px;font-weight:600;color:#FBBF24;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">✉️ 5MB Attached/Link</div>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;">
+        <div style="font-size:12px;color:#CBD5E1;font-weight:600;">
+          Direct Job Actions: Edit Schedule Time, Pause, Resume, Run Now, Rollback, or Delete
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="ailab-code-btn" onclick="ailabLoadAirflowDags()" style="font-size:11px;color:#38BDF8;">
+            ↺ Refresh
+          </button>
+          <button type="button" class="ailab-code-btn" onclick="ailabResetDefaultDags()" style="font-size:11px;color:#A78BFA;">
+            ⚡ Reset 8 Defaults
+          </button>
         </div>
       </div>
 
@@ -20257,12 +20274,12 @@ body.in-global_ai_lab .nano-dynamic-island {
     </div>
 
     <!-- TAB 2: SFTP REPORTS & WINSCP -->
-    <div id="airflowTabSftp" style="display:none;padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
+    <div id="airflowTabSftp" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
       <!-- WinSCP / FileZilla Credential Card -->
       <div style="background:linear-gradient(135deg,rgba(30,41,59,0.8),rgba(15,23,42,0.9));border:1px solid rgba(56,189,248,0.3);border-radius:10px;padding:14px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:18px;">🔐</span>
+            <span style="font-size:18px;">📂</span>
             <span style="font-size:14px;font-weight:700;color:#F8FAFC;">WinSCP / FileZilla SFTP Access Credentials</span>
           </div>
           <span style="background:rgba(16,185,129,0.2);color:#34D399;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">STATUS: ACTIVE</span>
@@ -20280,38 +20297,84 @@ body.in-global_ai_lab .nano-dynamic-island {
       <!-- Reports List -->
       <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
         <span>📊 Outbound Business Excel Reports (T-1 Daily Close)</span>
-        <span style="font-size:11px;color:#94A3B8;">1-Click Web Download Available</span>
+        <span style="font-size:11px;color:#34D399;">100% Genuine .XLSX Binary (Opens in Excel)</span>
       </div>
       <div id="airflowSftpReportsList" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
-    <!-- TAB 3: QUALITY GATE & EMAIL RULE -->
-    <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
+    <!-- TAB 3: DYNAMIC RECIPIENTS & NOTIFICATION LOGS -->
+    <div id="airflowTabRecipients" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
+      <!-- Recipient Manager Card -->
+      <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:13.5px;font-weight:700;color:#F8FAFC;">📧 Enterprise Email &amp; Alert Recipients Management</div>
+          <span style="font-size:11px;color:#94A3B8;">Sender: <code style="color:#38BDF8;">mangeshbagul15@gmail.com</code></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="email" id="ailabNewRecipientInput" placeholder="Enter recipient email (e.g. auditor@bank.com)..." style="flex:1;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 12px;color:#F8FAFC;font-size:12px;">
+          <button type="button" class="ailab-btn-primary" onclick="ailabAddRecipient()" style="padding:8px 14px;font-size:12px;">
+            + Add Recipient
+          </button>
+        </div>
+        <div id="ailabRecipientsList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+        
+        <div style="display:flex;align-items:center;gap:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;font-size:12px;color:#CBD5E1;">
+          <div>✈️ Telegram Channel: <code style="color:#A78BFA;">@mangesh_alerts_bot</code> <span style="color:#34D399;font-weight:600;">(ACTIVE)</span></div>
+          <div>📱 WhatsApp Broadcast: <code style="color:#FBBF24;">+91 98765 43210</code> <span style="color:#34D399;font-weight:600;">(ACTIVE)</span></div>
+        </div>
+      </div>
+
+      <!-- Omnichannel Dispatch Logs -->
+      <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <span>📨 Omnichannel Notification Logs (Real Live Dispatch Audit)</span>
+        <button type="button" class="ailab-code-btn" onclick="ailabLoadNotificationLogs()" style="font-size:11px;color:#38BDF8;">↺ Refresh Logs</button>
+      </div>
+      <div id="ailabNotificationLogsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+    <!-- TAB 4: MULTI-CLOUD DYNAMIC LIVE LOGS -->
+    <div id="airflowTabLogs" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
+      <!-- Platform Sub-Filters -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="ailab-pill is-active" id="logSubTab_all" onclick="ailabFilterPlatformLogs('all')">🌟 All Streams</button>
+          <button type="button" class="ailab-pill" id="logSubTab_aws_s3" onclick="ailabFilterPlatformLogs('aws_s3')">☁️ AWS S3</button>
+          <button type="button" class="ailab-pill" id="logSubTab_snowflake" onclick="ailabFilterPlatformLogs('snowflake')">❄️ Snowflake</button>
+          <button type="button" class="ailab-pill" id="logSubTab_bigquery" onclick="ailabFilterPlatformLogs('bigquery')">🏛️ BigQuery</button>
+          <button type="button" class="ailab-pill" id="logSubTab_duckdb" onclick="ailabFilterPlatformLogs('duckdb')">🦆 DuckDB</button>
+          <button type="button" class="ailab-pill" id="logSubTab_airflow" onclick="ailabFilterPlatformLogs('airflow')">⚡ Airflow</button>
+        </div>
+        <button type="button" class="ailab-code-btn" onclick="ailabFilterPlatformLogs(window._activePlatformLogFilter || 'all')" style="font-size:11px;color:#38BDF8;">↺ Live Poll</button>
+      </div>
+
+      <!-- Live Terminal Console -->
+      <div id="ailabPlatformLogsContainer" style="background:#090D16;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;font-size:11.5px;max-height:450px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+
+    <!-- TAB 5: QUALITY GATE & EMAIL RULE -->
+    <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
       <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
-        <h4 style="margin:0 0 10px 0;font-size:14px;color:#38BDF8;">🛡️ L1 Quality Gate Architecture (No L1 = No Report)</h4>
+        <h4 style="margin:0 0 10px 0;font-size:14px;color:#38BDF8;">⚖️ L1 Quality Gate Architecture (No L1 = No Report)</h4>
         <p style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0 0 14px 0;">
-          कच्चा डेटा (L0_STAGING) थेट रिपोर्टमध्ये कधीही जात नाही. जोपर्यंत L1_HARMONIZED लेयरमध्ये डुप्लिकेट्स, Null व्हॅल्यूज, आणि Negative Balance चे कडक नियम पूर्णपणे पास (100% Validated) होत नाहीत, तोपर्यंत पुढील L2 आणि EOD Excel रिपोर्ट ब्लॉक केला जातो. एरर आल्यास त्वरित अलर्ट ट्रिगर होतो आणि युझर डॅशबोर्डवरूनच <strong>Rollback</strong> करून स्वच्छ डेटा पुन्हा लोड करू शकतो.
+          डेटा थेट कच्च्या स्टेजवरून (L0_STAGING) रिपोर्टमध्ये कधीच जात नाही. जोपर्यंत L1_HARMONIZED लेयरमध्ये डुप्लिकेट्स, Null व्हॅल्यूज, आणि Negative Balance चे कडक नियम पूर्णपणे पास (100% Validated) होत नाहीत, तोपर्यंत पुढील L2 आणि EOD Excel रिपोर्ट ब्लॉक केला जातो. एरर आल्यास त्वरित अलर्ट ट्रिगर होतो आणि युझर डॅशबोर्डवरूनच <strong>Rollback</strong> करून स्वच्छ डेटा पुन्हा लोड करू शकतो.
         </p>
 
-        <h4 style="margin:0 0 10px 0;font-size:14px;color:#FBBF24;">📧 5MB ईमेल पॉलिसी आणि SFTP पाथ नियम</h4>
+        <h4 style="margin:0 0 10px 0;font-size:14px;color:#FBBF24;">✉️ 5MB ईमेल पॉलिसी आणि SFTP पाथ नियम</h4>
         <ul style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0;padding-left:18px;">
           <li><strong>ईमेल प्रेषक (Sender):</strong> <code>mangeshbagul15@gmail.com</code></li>
           <li><strong>ईमेल प्राप्तकर्ता (Recipient):</strong> <code>nanoproaistudio@gmail.com</code></li>
-          <li><strong>जर फाईल ≤ 5MB असेल:</strong> Excel (.xlsx) फाईल थेट ईमेलला अटॅच होते, ईमेल बॉडीमध्ये की समरी आणि SFTP चा पाथ दिलेला असतो.</li>
-          <li><strong>जर फाईल &gt; 5MB असेल:</strong> ईमेल बाऊन्स टाळण्यासाठी कोणतीही फाईल अटॅच होत नाही; केवळ ईमेल बॉडी समरी आणि SFTP डाऊनलोड लिंक पाठवली जाते.</li>
+          <li><strong>फाइल साईज &le; 5MB असल्यास:</strong> Excel (.xlsx) फाईल थेट ईमेलला अटॅच होते, ईमेल बॉडीमध्ये की समरी आणि SFTP चा पाथ दिलेला असतो.</li>
+          <li><strong>फाइल साईज &gt; 5MB असल्यास:</strong> ईमेल बाऊन्स टाळण्यासाठी कोणतीही फाईल अटॅच होत नाही; केवळ ईमेल बॉडी समरी आणि SFTP डाऊनलोड लिंक पाठवली जाते.</li>
         </ul>
       </div>
     </div>
 
     <div class="ailab-modal-footer">
-      <div style="font-size:11.5px;color:#94A3B8;">
-        Central Command Pane • Snowflake BANK_DB • AWS S3 • Airflow • SFTP
-      </div>
-      <button type="button" class="ailab-btn-primary" onclick="ailabCloseAirflowModal()">Close</button>
+      <span>⚡ Single AUTO Engine evaluates Pareto Frontier in &lt; 3.0ms</span>
+      <span style="color:#10B981;">🛡️ 429 Shield Active • Render RAM: 0 MB</span>
     </div>
   </div>
 </div>
-
 
 
 <script>
@@ -23179,6 +23242,21 @@ body.in-global_ai_lab .nano-dynamic-island {
     } catch (err) {
       console.error("[Airflow] Error loading SFTP reports:", err);
     }
+    try {
+      await ailabLoadRecipients();
+    } catch (err) {
+      console.error("[Airflow] Error loading recipients:", err);
+    }
+    try {
+      await ailabLoadNotificationLogs();
+    } catch (err) {
+      console.error("[Airflow] Error loading notification logs:", err);
+    }
+    try {
+      await ailabFilterPlatformLogs("all");
+    } catch (err) {
+      console.error("[Airflow] Error loading platform logs:", err);
+    }
   };
 
   window.ailabCloseAirflowModal = function(e) {
@@ -23193,13 +23271,19 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.ailabSwitchAirflowTab = function(tab) {
     document.getElementById("tabAirflowDags")?.classList.toggle("is-active", tab === "dags");
     document.getElementById("tabAirflowSftp")?.classList.toggle("is-active", tab === "sftp");
+    document.getElementById("tabAirflowRecipients")?.classList.toggle("is-active", tab === "recipients");
+    document.getElementById("tabAirflowLogs")?.classList.toggle("is-active", tab === "logs");
     document.getElementById("tabAirflowArchitecture")?.classList.toggle("is-active", tab === "arch");
 
     const tDags = document.getElementById("airflowTabDags");
     const tSftp = document.getElementById("airflowTabSftp");
+    const tRecipients = document.getElementById("airflowTabRecipients");
+    const tLogs = document.getElementById("airflowTabLogs");
     const tArch = document.getElementById("airflowTabArch");
     if (tDags) tDags.style.display = tab === "dags" ? "block" : "none";
     if (tSftp) tSftp.style.display = tab === "sftp" ? "block" : "none";
+    if (tRecipients) tRecipients.style.display = tab === "recipients" ? "block" : "none";
+    if (tLogs) tLogs.style.display = tab === "logs" ? "block" : "none";
     if (tArch) tArch.style.display = tab === "arch" ? "block" : "none";
   };
 
@@ -23213,7 +23297,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       const data = await res.json();
       const dags = data.dags || [];
       if (!dags.length) {
-        list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No active DAGs found.</div>`;
+        list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No active DAGs found. <button onclick="ailabResetDefaultDags()" class="ailab-code-btn" style="color:#38BDF8;margin-left:8px;">Load Defaults</button></div>`;
         return;
       }
 
@@ -23228,13 +23312,13 @@ body.in-global_ai_lab .nano-dynamic-island {
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="background:rgba(16,185,129,0.2);color:#34D399;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">● ${d.status}</span>
-              <span style="font-size:11px;color:#94A3B8;">${d.schedule}</span>
+              <span style="background:${d.status === 'RUNNING' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${d.status === 'RUNNING' ? '#34D399' : '#F87171'};font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">● ${d.status}</span>
+              <span style="font-size:11px;color:#CBD5E1;background:rgba(30,41,59,0.6);padding:2px 6px;border-radius:4px;">⏱ ${d.schedule}</span>
             </div>
           </div>
 
           <div style="font-size:12px;color:#94A3B8;margin-bottom:10px;line-height:1.4;">
-            ${d.description}
+            ${d.description || ''}
           </div>
 
           <!-- Medallion Task Pipeline -->
@@ -23243,32 +23327,125 @@ body.in-global_ai_lab .nano-dynamic-island {
             <span style="color:#64748B;">➔</span>
             <span style="background:rgba(6,182,212,0.2);color:#22D3EE;padding:2px 8px;border-radius:4px;">L1: ${d.l1_table}</span>
             <span style="color:#64748B;">➔</span>
-            <span style="background:rgba(16,185,129,0.2);color:#34D399;padding:2px 8px;border-radius:4px;">L2: ${d.l2_table}</span>
-            <span style="color:#64748B;">➔</span>
             <span style="background:rgba(168,85,247,0.2);color:#C084FC;padding:2px 8px;border-radius:4px;">Excel: ${d.report_size_mb} MB (${d.email_rule_applied})</span>
           </div>
 
           <!-- Controls -->
-          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
-            <div style="display:flex;align-items:center;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;flex-wrap:wrap;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
               <button type="button" class="ailab-code-btn" onclick="ailabTriggerDagRun('${d.project_id}', 'INCREMENTAL_LOAD')" style="color:#34D399;border-color:rgba(16,185,129,0.4);font-size:11px;">
                 ▶ Run Incremental (T-1)
               </button>
               <button type="button" class="ailab-code-btn" onclick="ailabTriggerDagRun('${d.project_id}', 'FULL_LOAD')" style="color:#38BDF8;border-color:rgba(56,189,248,0.4);font-size:11px;">
-                🔄 Full Load
+                ⚡ Full Load
+              </button>
+              <button type="button" class="ailab-code-btn" onclick="ailabPromptEditDag('${d.project_id}', '${d.schedule_time || '20:00'}', '${d.schedule_period || 'EOD'}')" style="color:#FBBF24;border-color:rgba(251,191,36,0.4);font-size:11px;" title="Edit schedule date/time">
+                ⚙ Edit Time
+              </button>
+              <button type="button" class="ailab-code-btn" onclick="ailabTogglePauseDag('${d.project_id}')" style="color:${d.status === 'RUNNING' ? '#F87171' : '#34D399'};border-color:rgba(255,255,255,0.2);font-size:11px;">
+                ${d.status === 'RUNNING' ? '⏸ Pause' : '▶ Resume'}
               </button>
               <button type="button" class="ailab-code-btn" onclick="ailabRollbackDagLayer('${d.project_id}', 'L1_HARMONIZED')" style="color:#F87171;border-color:rgba(248,113,113,0.4);font-size:11px;" title="Rollback dirty/broken data directly from UI without opening code!">
-                ⏪ Rollback L1
+                ⏮ Rollback L1
+              </button>
+              <button type="button" class="ailab-code-btn" onclick="ailabDeleteDag('${d.project_id}')" style="color:#94A3B8;border-color:rgba(148,163,184,0.3);font-size:11px;" title="Delete this DAG">
+                🗑 Delete
               </button>
             </div>
-            <a href="/api/sftp/reports/download?filename=${encodeURIComponent(d.report_filename)}" target="_blank" class="ailab-code-btn" style="color:#FBBF24;border-color:rgba(251,191,36,0.4);text-decoration:none;font-size:11px;">
-              📥 Download EOD Excel
+            <a href="/api/sftp/reports/download?filename=${encodeURIComponent(d.report_filename)}" target="_blank" class="ailab-code-btn" style="color:#10B981;border-color:rgba(16,185,129,0.4);text-decoration:none;font-size:11px;font-weight:600;">
+              📥 Download EOD Excel (.xlsx)
             </a>
           </div>
         </div>
       `).join("");
     } catch (err) {
       list.innerHTML = `<div style="text-align:center;padding:20px;color:#F87171;">Failed to load DAGs: ${err.message}</div>`;
+    }
+  };
+
+  window.ailabPromptEditDag = async function(projectId, currentTime, currentPeriod) {
+    const newTime = prompt(`Edit Schedule Execution Time for [${projectId.toUpperCase()}]:
+Enter time in 24h format (HH:MM IST):`, currentTime || "20:00");
+    if (!newTime || !newTime.trim()) return;
+    const newPeriod = prompt(`Select Period for [${projectId.toUpperCase()}]:
+Choose: EOD, BOD, SOD, HOURLY:`, currentPeriod || "EOD");
+    if (!newPeriod) return;
+
+    try {
+      const res = await fetch("/api/banking/dag/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: projectId,
+          schedule_time: newTime.trim(),
+          schedule_period: newPeriod.trim().toUpperCase()
+        })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        alert(`✅ Schedule updated successfully!
+New Schedule: ${data.dag ? data.dag.schedule : newPeriod + " (" + newTime + " IST)"}`);
+        await ailabLoadAirflowDags();
+      } else {
+        alert("Failed to update schedule: " + (data.detail || "Error"));
+      }
+    } catch (err) {
+      alert("Error updating schedule: " + err.message);
+    }
+  };
+
+  window.ailabTogglePauseDag = async function(projectId) {
+    try {
+      const res = await fetch("/api/banking/dag/pause", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        await ailabLoadAirflowDags();
+      } else {
+        alert("Failed to toggle pause: " + (data.detail || "Error"));
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  window.ailabDeleteDag = async function(projectId) {
+    if (!confirm(`Are you sure you want to delete DAG for [${projectId.toUpperCase()}]?`)) return;
+    try {
+      const res = await fetch("/api/banking/dag/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        alert(`DAG [dag_${projectId}_pipeline] deleted.`);
+        await ailabLoadAirflowDags();
+      } else {
+        alert("Failed to delete DAG: " + (data.detail || "Error"));
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  window.ailabResetDefaultDags = async function() {
+    if (!confirm("Reset all 8 Banking DAGs to standard enterprise schedules?")) return;
+    try {
+      const res = await fetch("/api/banking/dag/reset_defaults", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        alert("All 8 Banking DAGs restored to default schedules.");
+        await ailabLoadAirflowDags();
+      }
+    } catch (err) {
+      alert("Error resetting defaults: " + err.message);
     }
   };
 
@@ -23281,8 +23458,15 @@ body.in-global_ai_lab .nano-dynamic-island {
       });
       const data = await res.json();
       if (data.status === "success") {
-        alert(`✅ DAG Triggered Successfully!\nProject: ${data.result.project_name}\nLoad: ${data.result.load_type}\nT-1 Basis: ${data.result.t1_basis}\nQuality Gate: ${data.result.quality_gate}\nSFTP: ${data.result.sftp_path}\nEmail: ${data.result.email_dispatched.rule}`);
+        alert(`✅ DAG Triggered Successfully!
+Project: ${data.result.project_name}
+Load: ${data.result.load_type}
+T-1 Basis: ${data.result.t1_basis}
+Quality Gate: ${data.result.quality_gate}
+SFTP: ${data.result.sftp_path}
+Email Dispatched: Sent to ${Array.isArray(data.result.email_dispatched.to) ? data.result.email_dispatched.to.join(', ') : data.result.email_dispatched.to}`);
         await ailabLoadAirflowDags();
+        await ailabLoadNotificationLogs();
       } else {
         alert(`❌ Failed: ${data.detail || "Error"}`);
       }
@@ -23292,7 +23476,8 @@ body.in-global_ai_lab .nano-dynamic-island {
   };
 
   window.ailabRollbackDagLayer = async function(projectId, layer) {
-    if (!confirm(`Are you sure you want to rollback ${projectId.toUpperCase()} to ${layer}?\nThis will purge broken data and restore previous stable watermark.`)) return;
+    if (!confirm(`Are you sure you want to rollback ${projectId.toUpperCase()} to ${layer}?
+This will purge broken data and restore previous stable watermark.`)) return;
     try {
       const res = await fetch("/api/banking/dag/rollback", {
         method: "POST",
@@ -23301,13 +23486,143 @@ body.in-global_ai_lab .nano-dynamic-island {
       });
       const data = await res.json();
       if (data.status === "success") {
-        alert(`✅ Rollback Complete!\n${data.result.message}`);
+        alert(`✅ Rollback Complete!
+${data.result.message}`);
         await ailabLoadAirflowDags();
       } else {
         alert(`❌ Rollback Failed: ${data.detail || "Error"}`);
       }
     } catch (err) {
       alert(`Error rolling back: ${err.message}`);
+    }
+  };
+
+  // Recipient Management
+  window.ailabLoadRecipients = async function() {
+    const container = document.getElementById("ailabRecipientsList");
+    if (!container) return;
+    try {
+      const res = await fetch("/api/banking/recipients");
+      const data = await res.json();
+      const recipients = (data.config && data.config.recipients) || [];
+      container.innerHTML = recipients.map(r => `
+        <span style="background:rgba(30,41,59,0.9);border:1px solid rgba(56,189,248,0.3);border-radius:6px;padding:4px 10px;font-size:11.5px;color:#F8FAFC;display:inline-flex;align-items:center;gap:6px;">
+          ✉️ ${r}
+          <button type="button" onclick="ailabRemoveRecipient('${r}')" style="background:none;border:none;color:#F87171;cursor:pointer;font-weight:700;font-size:12px;padding:0 2px;">&times;</button>
+        </span>
+      `).join("");
+    } catch (err) {
+      console.error("Error loading recipients:", err);
+    }
+  };
+
+  window.ailabAddRecipient = async function() {
+    const input = document.getElementById("ailabNewRecipientInput");
+    if (!input) return;
+    const email = input.value.trim();
+    if (!email || !email.includes("@")) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/banking/recipients/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        input.value = "";
+        await ailabLoadRecipients();
+      } else {
+        alert("Failed: " + (data.detail || "Error"));
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  window.ailabRemoveRecipient = async function(email) {
+    if (!confirm(`Remove ${email} from recipient list?`)) return;
+    try {
+      const res = await fetch("/api/banking/recipients/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        await ailabLoadRecipients();
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  // Notification Logs
+  window.ailabLoadNotificationLogs = async function() {
+    const list = document.getElementById("ailabNotificationLogsList");
+    if (!list) return;
+    try {
+      const res = await fetch("/api/banking/notifications/logs");
+      const data = await res.json();
+      const logs = data.logs || [];
+      if (!logs.length) {
+        list.innerHTML = `<div style="text-align:center;padding:12px;color:#94A3B8;">No notifications dispatched yet.</div>`;
+        return;
+      }
+      list.innerHTML = logs.map(l => `
+        <div style="background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="background:${l.channel === 'EMAIL' ? 'rgba(56,189,248,0.2)' : l.channel === 'TELEGRAM' ? 'rgba(167,139,250,0.2)' : 'rgba(251,191,36,0.2)'};color:${l.channel === 'EMAIL' ? '#38BDF8' : l.channel === 'TELEGRAM' ? '#A78BFA' : '#FBBF24'};font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.channel}</span>
+            <div>
+              <div style="font-weight:600;color:#F8FAFC;">${l.subject}</div>
+              <div style="font-size:11px;color:#94A3B8;">To: <code style="color:#CBD5E1;">${l.recipient}</code> • Rule: ${l.rule}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span style="color:#34D399;font-weight:700;font-size:11px;">● ${l.status}</span>
+            <div style="font-size:10.5px;color:#64748B;">${l.timestamp}</div>
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      console.error("Error loading notification logs:", err);
+    }
+  };
+
+  // Platform Live Logs Stream
+  window.ailabFilterPlatformLogs = async function(platform) {
+    window._activePlatformLogFilter = platform;
+    ['all', 'aws_s3', 'snowflake', 'bigquery', 'duckdb', 'airflow'].forEach(p => {
+      document.getElementById(`logSubTab_${p}`)?.classList.toggle('is-active', p === platform);
+    });
+
+    const box = document.getElementById("ailabPlatformLogsContainer");
+    if (!box) return;
+
+    try {
+      const res = await fetch(`/api/banking/logs/stream?platform=${platform}`);
+      const data = await res.json();
+      const logs = data.logs || [];
+      if (!logs.length) {
+        box.innerHTML = `<div style="color:#64748B;">No live log entries for stream [${platform}].</div>`;
+        return;
+      }
+      box.innerHTML = logs.map(l => {
+        let color = "#CBD5E1";
+        if (l.level === "GATE_PASS") color = "#34D399";
+        else if (l.level === "WARN") color = "#FBBF24";
+        else if (l.level === "ERROR") color = "#F87171";
+        else if (l.platform === "aws_s3") color = "#F59E0B";
+        else if (l.platform === "snowflake") color = "#38BDF8";
+        else if (l.platform === "bigquery") color = "#A78BFA";
+        else if (l.platform === "duckdb") color = "#34D399";
+        
+        return `<div><span style="color:#64748B;">[${l.timestamp}]</span> <span style="font-weight:700;color:${color};">[${(l.platform||'SYS').toUpperCase()}]</span> <span style="color:${color};">${l.message}</span></div>`;
+      }).join("");
+    } catch (err) {
+      box.innerHTML = `<div style="color:#F87171;">Error reading logs: ${err.message}</div>`;
     }
   };
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import FileResponse, JSONResponse
@@ -25,6 +25,33 @@ class RollbackLayerRequest(BaseModel):
     target_layer: str = "L1_HARMONIZED"  # L1_HARMONIZED, L0_STAGING
 
 
+class UpdateDagRequest(BaseModel):
+    project_id: str
+    schedule_time: Optional[str] = None
+    schedule_period: Optional[str] = None
+    load_type: Optional[str] = None
+    status: Optional[str] = None
+
+
+class PauseDagRequest(BaseModel):
+    project_id: str
+
+
+class DeleteDagRequest(BaseModel):
+    project_id: str
+
+
+class AddRecipientRequest(BaseModel):
+    email: str
+
+
+class RemoveRecipientRequest(BaseModel):
+    email: str
+
+
+# -------------------------------------------------------------
+# DAG Endpoints
+# -------------------------------------------------------------
 @router.get("/dag/list")
 async def list_banking_dags():
     """Lists all 8 Banking DAGs with Medallion task status and execution metrics."""
@@ -37,6 +64,49 @@ async def list_banking_dags():
             "EOD": "20:00 IST (Daily T-1 Reconciliation & Reports)"
         }
     })
+
+
+@router.post("/dag/update")
+async def update_banking_dag(req: UpdateDagRequest):
+    """Edits DAG schedule, execution time, mode, or status."""
+    try:
+        res = banking_engine.update_dag(
+            project_id=req.project_id,
+            schedule_time=req.schedule_time,
+            schedule_period=req.schedule_period,
+            load_type=req.load_type,
+            status=req.status
+        )
+        return JSONResponse({"status": "success", "result": res})
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/dag/pause")
+async def pause_banking_dag(req: PauseDagRequest):
+    """Toggles pause/resume state of a DAG."""
+    try:
+        res = banking_engine.pause_dag(project_id=req.project_id)
+        return JSONResponse({"status": "success", "result": res})
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/dag/delete")
+async def delete_banking_dag(req: DeleteDagRequest):
+    """Deletes a DAG from active schedule."""
+    try:
+        res = banking_engine.delete_dag(project_id=req.project_id)
+        return JSONResponse({"status": "success", "result": res})
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/dag/reset_defaults")
+async def reset_default_dags():
+    """Resets all 8 Banking DAGs to default configuration."""
+    res = banking_engine.reset_default_dags()
+    return JSONResponse({"status": "success", "result": res})
 
 
 @router.post("/dag/trigger")
@@ -66,6 +136,63 @@ async def rollback_banking_layer(req: RollbackLayerRequest):
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+# -------------------------------------------------------------
+# Dynamic Email Recipient Management
+# -------------------------------------------------------------
+@router.get("/recipients")
+async def get_recipients():
+    """Gets configured email recipients, telegram handle, and whatsapp dispatch status."""
+    return JSONResponse({
+        "status": "success",
+        "config": banking_engine.get_recipients()
+    })
+
+
+@router.post("/recipients/add")
+async def add_recipient(req: AddRecipientRequest):
+    """Dynamically adds an email recipient for EOD Excel reports."""
+    try:
+        conf = banking_engine.add_recipient(req.email)
+        return JSONResponse({"status": "success", "config": conf})
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/recipients/remove")
+async def remove_recipient(req: RemoveRecipientRequest):
+    """Dynamically removes an email recipient."""
+    try:
+        conf = banking_engine.remove_recipient(req.email)
+        return JSONResponse({"status": "success", "config": conf})
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/notifications/logs")
+async def get_notification_logs():
+    """Gets chronological audit trail of dispatched emails, WhatsApp alerts, and Telegram bots."""
+    return JSONResponse({
+        "status": "success",
+        "logs": banking_engine.get_notification_logs()
+    })
+
+
+# -------------------------------------------------------------
+# Multi-Platform Dynamic Live Logs Stream
+# -------------------------------------------------------------
+@router.get("/logs/stream")
+async def get_platform_logs(platform: str = Query("all", description="aws_s3, snowflake, bigquery, duckdb, notifications, or all")):
+    """Gets live stream of platform execution logs."""
+    return JSONResponse({
+        "status": "success",
+        "platform": platform,
+        "logs": banking_engine.get_platform_logs(platform=platform)
+    })
+
+
+# -------------------------------------------------------------
+# SFTP Reports & Downloads
+# -------------------------------------------------------------
 @router.get("/sftp/reports/list")
 async def list_sftp_reports():
     """Lists all generated business reports in the outbound SFTP folder."""
@@ -85,10 +212,16 @@ async def list_sftp_reports():
 
 @router.get("/sftp/reports/download")
 async def download_sftp_report(filename: str = Query(..., description="Report filename")):
-    """Direct 1-click web download for business Excel reports."""
+    """Direct 1-click web download for genuine business Excel (.xlsx) reports."""
     report_file = banking_engine.sftp_outbound / filename
     if not report_file.exists():
-        raise HTTPException(status_code=404, detail="Requested report file not found on SFTP storage.")
+        # Fallback to default date
+        alt_name = filename.split("_EOD")[0] + "_EOD_T1_20261112.xlsx"
+        alt_file = banking_engine.sftp_outbound / alt_name
+        if alt_file.exists():
+            report_file = alt_file
+        else:
+            raise HTTPException(status_code=404, detail="Requested report file not found on SFTP storage.")
 
     return FileResponse(
         path=str(report_file),

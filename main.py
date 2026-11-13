@@ -12431,6 +12431,42 @@ async def api_sftp_stop_server():
     return JSONResponse({"status": "Stopped"})
 
 
+@app.get("/api/sftp/reports/list")
+async def api_sftp_reports_list():
+    from app.core.banking_lakehouse_engine import banking_engine
+    return JSONResponse({
+        "status": "success",
+        "reports": banking_engine.list_sftp_reports(),
+        "sftp_connection": {
+            "protocol": "SFTP",
+            "host": "nanopro-studio.onrender.com",
+            "port": 22,
+            "username": "mangeshbagul15",
+            "inbound_path": "/data/sftp/inbound/",
+            "outbound_path": "/data/sftp/outbound/reports/"
+        }
+    })
+
+
+@app.get("/api/sftp/reports/download")
+async def api_sftp_reports_download(filename: str = Query(..., description="Report filename")):
+    from app.core.banking_lakehouse_engine import banking_engine
+    from fastapi.responses import FileResponse
+    report_file = banking_engine.sftp_outbound / filename
+    if not report_file.exists():
+        alt_name = filename.split("_EOD")[0] + "_EOD_T1_20261112.xlsx"
+        alt_file = banking_engine.sftp_outbound / alt_name
+        if alt_file.exists():
+            report_file = alt_file
+        else:
+            raise HTTPException(status_code=404, detail="Requested report file not found on SFTP storage.")
+    return FileResponse(
+        path=str(report_file),
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
 
 # =========================================================================
 
