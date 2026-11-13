@@ -358,9 +358,17 @@ class GlobalAIHistoryEngine:
         finally:
             conn.close()
 
+    def _project_owned(self, conn, project_id: str, user_key: str) -> bool:
+        row = conn.execute(
+            "SELECT 1 FROM projects WHERE id = ? AND user_key = ? AND COALESCE(deleted, FALSE) = FALSE",
+            [project_id, user_key],
+        ).fetchone()
+        return row is not None
+
     def create_chat(self, title: str = "", project_id: Optional[str] = None, model: str = "auto", effort: str = "default", user_key: str = "") -> Dict[str, Any]:
         c_id = f"chat_{uuid.uuid4().hex[:8]}"
         now = time.time()
+        project_id = project_id or None
         record = {
             "id": c_id, "project_id": project_id, "title": (title or "").strip() or "New AI Chat Session",
             "model": model, "effort": effort, "is_pinned": False, "message_count": 0,
@@ -369,6 +377,8 @@ class GlobalAIHistoryEngine:
         with self._write_lock:
             conn = self._get_connection()
             try:
+                if project_id and not self._project_owned(conn, project_id, user_key):
+                    raise ValueError("Project not found for this user")
                 conn.execute(
                     "INSERT INTO chats (id, project_id, title, model, effort, is_pinned, message_count, created_at, updated_at, user_key, deleted) VALUES (?, ?, ?, ?, ?, FALSE, 0, ?, ?, ?, FALSE)",
                     [c_id, project_id, record["title"], model, effort, now, now, user_key],
@@ -378,7 +388,7 @@ class GlobalAIHistoryEngine:
                 conn.close()
         return record
 
-    def update_chat(self, chat_id: str, user_key: str, title: Optional[str] = None, is_pinned: Optional[bool] = None, model: Optional[str] = None, effort: Optional[str] = None, project_id: Optional[str] = None) -> bool:
+    def update_chat(self, chat_id: str, user_key: str, title: Optional[str] = None, is_pinned: Optional[bool] = None, model: Optional[str] = None, effort: Optional[str] = None, project_id: Optional[str] = None, move_to_project: bool = False) -> bool:
         with self._write_lock:
             conn = self._get_connection()
             try:
@@ -397,8 +407,11 @@ class GlobalAIHistoryEngine:
                     record["model"] = model
                 if effort is not None:
                     record["effort"] = effort
-                if project_id is not None:
-                    record["project_id"] = project_id or None
+                if move_to_project:
+                    target = project_id or None
+                    if target and not self._project_owned(conn, target, user_key):
+                        raise ValueError("Project not found for this user")
+                    record["project_id"] = target
                 record["updated_at"] = time.time()
                 conn.execute(
                     "UPDATE chats SET project_id = ?, title = ?, model = ?, effort = ?, is_pinned = ?, updated_at = ? WHERE id = ? AND user_key = ?",

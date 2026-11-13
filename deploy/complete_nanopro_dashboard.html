@@ -20887,6 +20887,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
+          <button class="ailab-code-btn" onclick="ailabMoveCurrentChat()">📁 Move</button>
           <button class="ailab-code-btn" onclick="ailabRenameCurrentChat()">✏️ Rename</button>
           <button class="ailab-code-btn" onclick="ailabClearMessages()">🧹 Clear</button>
           <button class="ailab-code-btn" onclick="ailabSyncBigQuery()">☁️ Sync BigQuery</button>
@@ -21255,7 +21256,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     storageOwner: null,
     historyStorage: null,
     pendingAttachments: [],
-    restoreRetries: 0
+    restoreRetries: 0,
+    expandedProjects: {}
   };
 
   // Helper selectors
@@ -21740,6 +21742,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects));
       } catch (_) {}
       ailabRenderSidebar();
+      ailabRenderActiveProjectTag();
       ailabRenderHistoryStatus();
       if (AILAB.activeChatId && !AILAB.chats.some(c => c.id === AILAB.activeChatId)) {
         AILAB.activeChatId = null;
@@ -21771,7 +21774,11 @@ body.in-global_ai_lab .nano-dynamic-island {
       AILAB.chats = data.chats || [];
       AILAB.projects = data.projects || [];
       AILAB.historyStorage = data.storage || AILAB.historyStorage;
+      if (AILAB.activeChatId && !AILAB.chats.some(c => c.id === AILAB.activeChatId)) {
+        AILAB.activeChatId = null;
+      }
       ailabRenderSidebar();
+      ailabRenderActiveProjectTag();
       ailabRenderHistoryStatus();
       return true;
     } catch (_) {
@@ -22066,59 +22073,75 @@ body.in-global_ai_lab .nano-dynamic-island {
     chatsList.innerHTML = "";
     projectsList.innerHTML = "";
 
+    const projectIds = {};
+    AILAB.projects.forEach(p => { projectIds[p.id] = p; });
+
     const pinned = AILAB.chats.filter(c => c.is_pinned);
-    const unpinned = AILAB.chats.filter(c => !c.is_pinned);
+    // Chats whose project was deleted fall back to Recent instead of disappearing.
+    const standalone = AILAB.chats.filter(c => !c.is_pinned && (!c.project_id || !projectIds[c.project_id]));
 
     $id("ailabPinnedCount").textContent = pinned.length;
-    $id("ailabRecentCount").textContent = unpinned.length;
+    $id("ailabRecentCount").textContent = standalone.length;
     $id("ailabProjectCount").textContent = AILAB.projects.length;
 
-    // Render Pinned
     if (pinned.length === 0) {
       pinnedList.innerHTML = '<div style="font-size:11px;color:#64748B;padding:4px 8px;">No pinned chats</div>';
     } else {
       pinned.forEach(c => pinnedList.appendChild(ailabCreateChatRow(c)));
     }
 
-    // Render Recent Unpinned
-    if (unpinned.length === 0) {
-      chatsList.innerHTML = '<div style="font-size:11px;color:#64748B;padding:4px 8px;">No active chats</div>';
+    if (standalone.length === 0) {
+      chatsList.innerHTML = '<div style="font-size:11px;color:#64748B;padding:4px 8px;">No standalone chats</div>';
     } else {
-      unpinned.forEach(c => chatsList.appendChild(ailabCreateChatRow(c)));
+      standalone.forEach(c => chatsList.appendChild(ailabCreateChatRow(c)));
     }
 
-    // Render Projects
     if (AILAB.projects.length === 0) {
       projectsList.innerHTML = '<div style="font-size:11px;color:#64748B;padding:4px 8px;">No projects yet</div>';
-    } else {
-      AILAB.projects.forEach(p => {
-        const pDiv = document.createElement("div");
-        pDiv.className = "ailab-row";
-        pDiv.innerHTML = `
-          <span>📁</span>
-          <span class="ailab-row-title">${escapeHtml(p.name)}</span>
-          <div class="ailab-row-actions">
-            <button class="ailab-rowact" onclick="event.stopPropagation();ailabNewChat('${p.id}')" title="New chat in project">+</button>
-            <button class="ailab-rowact" onclick="event.stopPropagation();ailabRenameProject('${p.id}')" title="Rename project">✏️</button>
-            <button class="ailab-rowact" onclick="event.stopPropagation();ailabDeleteProject('${p.id}')" title="Delete project">🗑️</button>
-          </div>
-        `;
-        pDiv.onclick = () => ailabFilterByProject(p.id);
-        projectsList.appendChild(pDiv);
-      });
+      return;
     }
+    AILAB.projects.forEach(p => {
+      const projectChats = AILAB.chats.filter(c => c.project_id === p.id);
+      const isExpanded = !!AILAB.expandedProjects[p.id];
+      const pDiv = document.createElement("div");
+      pDiv.className = "ailab-row" + (AILAB.activeProjectId === p.id ? " is-active" : "");
+      pDiv.innerHTML = `
+        <span>${isExpanded ? "📂" : "📁"}</span>
+        <span class="ailab-row-title">${escapeHtml(p.name)}</span>
+        <span class="ailab-row-badge">${projectChats.length}</span>
+        <div class="ailab-row-actions">
+          <button class="ailab-rowact" onclick="event.stopPropagation();ailabNewChat('${p.id}')" title="New chat in project">+</button>
+          <button class="ailab-rowact" onclick="event.stopPropagation();ailabRenameProject('${p.id}')" title="Rename project">✏️</button>
+          <button class="ailab-rowact" onclick="event.stopPropagation();ailabDeleteProject('${p.id}')" title="Delete project">🗑️</button>
+        </div>
+      `;
+      pDiv.onclick = () => ailabToggleProject(p.id);
+      projectsList.appendChild(pDiv);
+
+      if (!isExpanded) return;
+      if (projectChats.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:11px;color:#64748B;padding:2px 8px 6px 30px;";
+        empty.textContent = "No chats yet — press + to start one in this project.";
+        projectsList.appendChild(empty);
+      } else {
+        projectChats.forEach(c => projectsList.appendChild(ailabCreateChatRow(c, true)));
+      }
+    });
   }
 
-  function ailabCreateChatRow(c) {
+  function ailabCreateChatRow(c, nested) {
     const row = document.createElement("div");
     row.className = "ailab-row" + (c.id === AILAB.activeChatId ? " is-active" : "");
     row.id = `chat-row-${c.id}`;
+    if (nested) row.style.paddingLeft = "26px";
     row.innerHTML = `
       <span>💬</span>
       <span class="ailab-row-title">${escapeHtml(c.title || "Untitled Session")}</span>
       <span class="ailab-row-badge">${c.message_count || 0}</span>
       <div class="ailab-row-actions">
         <button class="ailab-rowact" onclick="event.stopPropagation();ailabTogglePin('${c.id}')" title="Pin/Unpin">📌</button>
+        <button class="ailab-rowact" onclick="event.stopPropagation();ailabMoveChat('${c.id}')" title="Move to project">📁</button>
         <button class="ailab-rowact" onclick="event.stopPropagation();ailabRenameChat('${c.id}')" title="Rename chat">✏️</button>
         <button class="ailab-rowact" onclick="event.stopPropagation();ailabDeleteChat('${c.id}')" title="Delete">🗑️</button>
       </div>
@@ -22126,6 +22149,60 @@ body.in-global_ai_lab .nano-dynamic-island {
     row.onclick = () => ailabSelectChat(c.id);
     return row;
   }
+
+  window.ailabToggleProject = function(projectId) {
+    const open = !AILAB.expandedProjects[projectId];
+    AILAB.expandedProjects[projectId] = open;
+    AILAB.activeProjectId = open ? projectId : null;
+    ailabRenderSidebar();
+  };
+
+  window.ailabRenderActiveProjectTag = function() {
+    const tag = $id("ailabActiveProjectTag");
+    if (!tag) return;
+    const chat = AILAB.chats.find(c => c.id === AILAB.activeChatId);
+    const project = chat && chat.project_id ? AILAB.projects.find(p => p.id === chat.project_id) : null;
+    tag.textContent = project ? `📁 ${project.name}` : "Standalone Task";
+    tag.title = project ? "This chat belongs to a project" : "This chat is not inside a project";
+  };
+
+  window.ailabMoveChat = async function(chatId) {
+    const chat = AILAB.chats.find(c => c.id === chatId);
+    if (!chat) return;
+    if (AILAB.projects.length === 0) {
+      alert("No projects yet — create one first (folder icon in the Chats & Projects header).");
+      return;
+    }
+    const list = AILAB.projects.map((p, i) => `${i + 1}. ${p.name}`).join("\n");
+    const answer = prompt(`Move "${chat.title}" to project:\n\n0. No project (standalone)\n${list}\n\nEnter a number:`, "0");
+    if (answer === null) return;
+    const index = parseInt(answer, 10);
+    let targetId = null;
+    if (index >= 1 && index <= AILAB.projects.length) targetId = AILAB.projects[index - 1].id;
+    else if (index !== 0) {
+      alert("Enter a number from the list, or 0 for no project.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/ai/history/chats/${chatId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: targetId })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.message || `Move failed (HTTP ${res.status}).`);
+        return;
+      }
+      chat.project_id = targetId;
+      if (targetId) AILAB.expandedProjects[targetId] = true;
+      ailabRenderSidebar();
+      ailabRenderActiveProjectTag();
+      ailabRefreshHistory();
+    } catch (e) {
+      alert("Move failed — history storage unreachable.");
+    }
+  };
 
   // -------------------------------------------------------------
   // CHAT SELECTION & MESSAGE STREAMING
@@ -22135,9 +22212,14 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   window.ailabSelectChat = async function(chatId) {
     AILAB.activeChatId = chatId;
-    ailabRenderSidebar();
-
     const activeChat = AILAB.chats.find(c => c.id === chatId);
+    if (activeChat) {
+      AILAB.activeProjectId = activeChat.project_id || null;
+      if (activeChat.project_id) AILAB.expandedProjects[activeChat.project_id] = true;
+    }
+    ailabRenderSidebar();
+    ailabRenderActiveProjectTag();
+
     if (activeChat) {
       const titleEl = $id("ailabActiveTitle");
       if (titleEl) titleEl.textContent = activeChat.title || "AI Session";
@@ -22669,10 +22751,13 @@ body.in-global_ai_lab .nano-dynamic-island {
       const chatObj = data.chat;
       AILAB.chats.unshift(chatObj);
       AILAB.activeChatId = chatObj.id;
+      AILAB.activeProjectId = chatObj.project_id || null;
+      if (chatObj.project_id) AILAB.expandedProjects[chatObj.project_id] = true;
       AILAB.messages = [];
       AILAB.chatIndexCache[chatObj.id] = [];
       try { localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats)); } catch (_) {}
       ailabRenderSidebar();
+      ailabRenderActiveProjectTag();
       ailabRenderMessages();
       $id("ailabActiveTitle").textContent = chatObj.title;
       $id("ailabPromptInput").focus();
@@ -22697,6 +22782,8 @@ body.in-global_ai_lab .nano-dynamic-island {
       const data = await res.json();
       if (data.project) {
         AILAB.projects.unshift(data.project);
+        AILAB.expandedProjects[data.project.id] = true;
+        AILAB.activeProjectId = data.project.id;
         try { localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects)); } catch (_) {}
         ailabRenderSidebar();
       } else {
@@ -22741,7 +22828,11 @@ body.in-global_ai_lab .nano-dynamic-island {
         return;
       }
       AILAB.projects = AILAB.projects.filter(p => p.id !== projectId);
+      delete AILAB.expandedProjects[projectId];
+      if (AILAB.activeProjectId === projectId) AILAB.activeProjectId = null;
+      AILAB.chats.forEach(c => { if (c.project_id === projectId) c.project_id = null; });
       ailabRenderSidebar();
+      ailabRenderActiveProjectTag();
       ailabRefreshHistory();
     } catch (e) {
       alert("Delete failed — history storage unreachable.");
@@ -22790,6 +22881,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       AILAB.messages = [];
     }
     ailabRenderSidebar();
+    ailabRenderActiveProjectTag();
     if (AILAB.activeChatId) {
       ailabSelectChat(AILAB.activeChatId);
     } else {
@@ -22832,6 +22924,11 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.ailabRenameCurrentChat = function() {
     if (!AILAB.activeChatId) return;
     ailabRenameChat(AILAB.activeChatId);
+  };
+
+  window.ailabMoveCurrentChat = function() {
+    if (!AILAB.activeChatId) return alert("Select a chat first.");
+    ailabMoveChat(AILAB.activeChatId);
   };
 
   window.ailabClearMessages = function() {

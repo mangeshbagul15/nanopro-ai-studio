@@ -2799,15 +2799,18 @@ async def api_global_ai_history_list(request: Request, hydrate: bool = True):
 
 @app.post("/api/ai/history/chats")
 async def api_global_ai_history_create_chat(request: Request, payload: Dict[str, Any] = Body(...)):
-    """Creates a chat session owned by the signed-in account."""
+    """Creates a chat session owned by the signed-in account, optionally inside a project."""
     user_key = _history_user_key(request)
-    chat = _history_engine().create_chat(
-        title=payload.get("title", ""),
-        project_id=payload.get("project_id"),
-        model=payload.get("model", "auto"),
-        effort=payload.get("effort", "default"),
-        user_key=user_key,
-    )
+    try:
+        chat = _history_engine().create_chat(
+            title=payload.get("title", ""),
+            project_id=payload.get("project_id"),
+            model=payload.get("model", "auto"),
+            effort=payload.get("effort", "default"),
+            user_key=user_key,
+        )
+    except ValueError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=404)
     return JSONResponse({"status": "success", "chat": chat})
 
 
@@ -2824,17 +2827,21 @@ async def api_global_ai_history_get_chat(chat_id: str, request: Request):
 
 @app.put("/api/ai/history/chats/{chat_id}")
 async def api_global_ai_history_update_chat(chat_id: str, request: Request, payload: Dict[str, Any] = Body(...)):
-    """Renames, pins, or re-models a chat; the change is mirrored to BigQuery."""
+    """Renames, pins, re-models, or moves a chat between projects."""
     user_key = _history_user_key(request)
-    updated = _history_engine().update_chat(
-        chat_id=chat_id,
-        user_key=user_key,
-        title=payload.get("title"),
-        is_pinned=payload.get("is_pinned"),
-        model=payload.get("model"),
-        effort=payload.get("effort"),
-        project_id=payload.get("project_id"),
-    )
+    try:
+        updated = _history_engine().update_chat(
+            chat_id=chat_id,
+            user_key=user_key,
+            title=payload.get("title"),
+            is_pinned=payload.get("is_pinned"),
+            model=payload.get("model"),
+            effort=payload.get("effort"),
+            project_id=payload.get("project_id"),
+            move_to_project="project_id" in payload,
+        )
+    except ValueError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=404)
     if not updated:
         return JSONResponse({"status": "error", "message": "Chat not found"}, status_code=404)
     return JSONResponse({"status": "success", "chat_id": chat_id, "chat": _history_engine().get_chat(chat_id, user_key)})
