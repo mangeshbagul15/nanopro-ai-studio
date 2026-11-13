@@ -43,6 +43,38 @@ class ManagerAgent:
         password, service id, email, mobile number) and automatically secures them into the vault.
         """
         p = prompt.strip()
+        # Provider API keys land in the vault under their canonical env name so the
+        # model router can use them without a Render environment change.
+        provider_names = {
+            "OPENROUTER_API_KEY": "openrouter", "OPENROUTER": "openrouter",
+            "GROQ_API_KEY": "groq", "GEMINI_API_KEY": "gemini", "GOOGLE_API_KEY": "gemini",
+            "OPENAI_API_KEY": "openai", "ANTHROPIC_API_KEY": "anthropic",
+            "DEEPSEEK_API_KEY": "deepseek", "MISTRAL_API_KEY": "mistral",
+            "COHERE_API_KEY": "cohere", "SAMBANOVA_API_KEY": "sambanova",
+        }
+        env_match = re.search(r"\b([A-Z][A-Z0-9_]{2,40}_API_KEY)\s*[=:]\s*([^\s,;]+)", p)
+        bare_or_key = re.search(r"\b(sk-or-v1-[0-9a-fA-F]{20,})\b", p)
+        chosen_env = ""
+        provider_key = ""
+        if env_match and env_match.group(1) in provider_names:
+            chosen_env, provider_key = env_match.group(1), env_match.group(2).strip()
+        elif bare_or_key and "openrouter" in p.lower():
+            chosen_env, provider_key = "OPENROUTER_API_KEY", bare_or_key.group(1)
+        if chosen_env and provider_key:
+            credentials_vault.store_credential(
+                service_name=chosen_env,
+                credential_type="api_key",
+                secret_value=provider_key,
+                additional_info={"provider": provider_names[chosen_env]},
+            )
+            log_event(f"Provider key for [{provider_names[chosen_env]}] stored in Vault", component="AIManager")
+            return {
+                "detected": True,
+                "credential_id": chosen_env,
+                "service": provider_names[chosen_env],
+                "saved_fields": ["api_key"],
+            }
+
         # Regex patterns for credential keywords
         has_cred = any(k in p.lower() for k in [
             "password", "pass:", "pwd:", "user:", "username", "host:", "hostname",

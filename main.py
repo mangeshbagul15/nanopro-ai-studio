@@ -2757,6 +2757,37 @@ async def api_global_ai_telemetry():
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
 
+
+@app.get("/api/ai/providers/status")
+async def api_ai_providers_status():
+    """Configured-or-not and breaker state per provider. Never returns key material."""
+    try:
+        from app.core.model_adapter import model_manager
+        cb = model_manager.circuit_breaker
+        adapters = {
+            "groq": model_manager.groq,
+            "gemini": model_manager.gemini,
+            "openrouter": model_manager.openrouter,
+            "deepseek": model_manager.deepseek,
+            "openai": model_manager.openai,
+            "anthropic": model_manager.claude,
+            "mistral": model_manager.mistral,
+            "cohere": model_manager.cohere,
+            "sambanova": model_manager.sambanova,
+        }
+        providers = {}
+        for name, adapter in adapters.items():
+            try:
+                providers[name] = {
+                    "configured": bool(adapter.is_available()),
+                    "circuit": cb.get_state(name),
+                }
+            except Exception as exc:
+                providers[name] = {"configured": False, "circuit": "unknown", "error": type(exc).__name__}
+        return JSONResponse({"status": "success", "providers": providers})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
+
 # =========================================================================
 # GLOBAL AI LAB - PER-USER CHAT HISTORY (DUCKDB + BIGQUERY, FEATURE 53)
 # =========================================================================

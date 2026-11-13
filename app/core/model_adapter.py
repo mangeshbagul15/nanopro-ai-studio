@@ -21,6 +21,45 @@ import re as _re
 
 _MAX_RATE_LIMIT_WAIT_S = 20.0
 
+_SECRET_CACHE: Dict[str, Tuple[float, str]] = {}
+_SECRET_CACHE_TTL_S = 60.0
+_SECRET_CACHE_LOCK = threading.Lock()
+
+
+def _provider_secret(env_name: str) -> str:
+    """Provider key from the environment, then the encrypted credential vault.
+
+    Keys saved through Connection Manager / the manager agent land in the vault,
+    not the process environment, so the router must read both or a stored key
+    looks "missing" on the next request. Results are cached briefly: is_available()
+    runs on every routed call and the vault is a SQLite read.
+    """
+    now = time.time()
+    with _SECRET_CACHE_LOCK:
+        cached = _SECRET_CACHE.get(env_name)
+        if cached and (now - cached[0]) < _SECRET_CACHE_TTL_S:
+            return cached[1]
+
+    value = (os.environ.get(env_name) or "").strip()
+    if not value:
+        aliases = [env_name]
+        if env_name.endswith("_API_KEY"):
+            aliases.append(env_name[: -len("_API_KEY")].lower())
+        try:
+            from app.core.database import credentials_vault
+            for alias in aliases:
+                cred = credentials_vault.get_credential(alias)
+                if cred and (cred.get("secret_value") or "").strip():
+                    value = cred["secret_value"].strip()
+                    break
+        except Exception:
+            value = ""
+
+    with _SECRET_CACHE_LOCK:
+        _SECRET_CACHE[env_name] = (now, value)
+    return value
+
+
 
 def _is_rate_limit_error(err: Exception) -> bool:
     """Quota/throttle failures are per-model, not provider outages.
@@ -451,16 +490,16 @@ class GeminiAdapter(ModelProviderAdapter):
     - gemini-3.1-flash-lite: Resilient fast fallback
     """
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
+        self.api_key = api_key or ""
         self.circuit_breaker = circuit_breaker
         self._clients: Dict[int, Any] = {}
 
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("GEMINI_API_KEY", "")
+        k = self.api_key or _provider_secret("GEMINI_API_KEY")
         return bool(k and len(k) > 20)
 
     def _get_client(self, timeout: float = 30.0):
-        k = self.api_key or os.environ.get("GEMINI_API_KEY", "")
+        k = self.api_key or _provider_secret("GEMINI_API_KEY")
         if not k:
             return None
         # The google-genai SDK defaults to no network timeout and retries 5xx
@@ -1134,12 +1173,12 @@ class OpenRouterAdapter(ModelProviderAdapter):
     Provides access to Llama 3.3, Qwen 2.5, Nemotron, Mistral, and Claude/GPT fallback models.
     """
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        self.api_key = api_key or ""
         self.base_url = "https://openrouter.ai/api/v1"
         self.circuit_breaker = circuit_breaker
 
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        k = self.api_key or _provider_secret("OPENROUTER_API_KEY")
         return bool(k and k.startswith("sk-or-"))
 
     def chat(
@@ -1151,7 +1190,7 @@ class OpenRouterAdapter(ModelProviderAdapter):
         timeout: float = 60.0,
         **kwargs
     ) -> Tuple[str, Any]:
-        k = self.api_key or os.environ.get("OPENROUTER_API_KEY", "")
+        k = self.api_key or _provider_secret("OPENROUTER_API_KEY")
         if not k:
             raise ValueError("OpenRouter API Key is not configured. Set OPENROUTER_API_KEY environment variable.")
 
