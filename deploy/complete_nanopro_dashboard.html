@@ -24574,7 +24574,6 @@ body.in-global_ai_lab .nano-dynamic-island {
       const strict = "\n\nIMPORTANT: Answer with ONE JSON object only, action names goto/click/type/press/scroll/done. No prose, no markdown, no code fences, no XML.";
       let lastErr = null;
       for (let attempt = 1; attempt <= 3; attempt++) {
-        const useSmart = attempt === 1 ? this.escalate : attempt === 2;
         try {
           const text = await askModel(
             attempt === 1 ? "" : strict,

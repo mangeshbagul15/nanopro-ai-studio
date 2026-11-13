@@ -371,6 +371,13 @@ class GroqAdapter(ModelProviderAdapter):
         default_max_tokens = 768 if (is_dialogue and not schema) else 2048
         max_tokens_val = kwargs.get("max_tokens") or default_max_tokens
 
+        # Groq exposes reasoning_effort only on the gpt-oss family; sending it to
+        # other ids is a 400, which would cost the whole request.
+        reasoning = kwargs.get("reasoning") if isinstance(kwargs.get("reasoning"), dict) else {}
+        reasoning_effort = str(reasoning.get("effort") or "").lower()
+        if reasoning_effort not in ("low", "medium", "high"):
+            reasoning_effort = ""
+
         last_err = None
         for m in unique_models:
             t_start = time.time()
@@ -382,6 +389,8 @@ class GroqAdapter(ModelProviderAdapter):
                     "timeout": timeout,
                     "max_tokens": max_tokens_val
                 }
+                if reasoning_effort and "gpt-oss" in m.lower():
+                    call_kwargs["reasoning_effort"] = reasoning_effort
                 if schema:
                     call_kwargs["response_format"] = {"type": "json_object"}
                 resp = client.chat.completions.create(**call_kwargs)

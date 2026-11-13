@@ -1073,7 +1073,7 @@ class NanoProMCPServer:
         try:
             content, used_model, mode = model_manager.execute_with_fallback(
                 prompt=prompt,
-                models=[model_id, "gemini-3.8-flash", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"],
+                models=[model_id, "openai/gpt-oss-120b", "gemini-3.8-flash", "qwen/qwen3.8-27b"],
                 reasoning=reasoning
             )
             GLOBAL_AI_ROUTER.bandit.record_feedback(model_id, success=True, latency_ms=(time.time() - start_t) * 1000)
