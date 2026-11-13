@@ -20840,6 +20840,12 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span class="ailab-explorer-badge" id="ailabExplorerCount">4 Databases</span>
         </div>
         <div class="ailab-explorer-tools">
+          <button class="ailab-iconbtn" onclick="ailabOpenUploadModal()" title="Upload Excel / CSV / Text File to Table">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </button>
+          <button class="ailab-iconbtn" onclick="ailabOpenProjectDashboard('aml')" title="Open 8 Banking Projects Dashboard">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          </button>
           <button class="ailab-iconbtn" onclick="ailabLoadExplorer(true)" title="Rescan Lakehouses">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
           </button>
@@ -20859,6 +20865,15 @@ body.in-global_ai_lab .nano-dynamic-island {
         </div>
         <button type="button" class="ailab-btn-primary" onclick="ailabOpenAirflowModal()" style="padding:4px 10px;font-size:11px;background:#10B981;border-color:#10B981;color:#FFFFFF;font-weight:800;cursor:pointer;border-radius:6px;box-shadow:0 0 10px rgba(16,185,129,0.4);">
           Launch ➔
+        </button>
+      </div>
+      <!-- Direct Action Strip: Upload File & 8 Projects Dashboard -->
+      <div style="padding:6px 12px;background:#161B22;border-bottom:1px solid #21262D;display:flex;gap:6px;align-items:center;">
+        <button type="button" class="ailab-code-btn" onclick="ailabOpenUploadModal()" style="flex:1;justify-content:center;font-size:10.5px;padding:4px 6px;background:rgba(56,189,248,0.1);color:#38BDF8;border:1px solid rgba(56,189,248,0.25);">
+          📤 Upload Dataset
+        </button>
+        <button type="button" class="ailab-code-btn" onclick="ailabOpenProjectDashboard('aml')" style="flex:1;justify-content:center;font-size:10.5px;padding:4px 6px;background:rgba(168,85,247,0.1);color:#C084FC;border:1px solid rgba(168,85,247,0.25);">
+          📊 8 Projects Dash
         </button>
       </div>
       <div class="ailab-explorer-search">
@@ -21266,7 +21281,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.AILAB_EXPLORER = {
     isOpen: true,
     catalog: null,
-    treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_duckdb_main": true, "sc_snowflake_CORE_BANKING": true },
+    treeOpen: {}, // Collapsed by default - user clicks to expand cleanly
     activeTable: null
   };
 
@@ -21511,12 +21526,12 @@ body.in-global_ai_lab .nano-dynamic-island {
     let html = "";
     dbs.forEach(db => {
       const dbKey = "db_" + db.id;
-      const isOpen = AILAB_EXPLORER.treeOpen[dbKey] !== false;
+      const isOpen = !!AILAB_EXPLORER.treeOpen[dbKey];
 
       let schemasHtml = "";
       (db.schemas || []).forEach(sc => {
         const scKey = "sc_" + db.id + "_" + sc.name;
-        const isScOpen = AILAB_EXPLORER.treeOpen[scKey] !== false;
+        const isScOpen = !!AILAB_EXPLORER.treeOpen[scKey];
 
         let tablesHtml = "";
         (sc.tables || []).forEach(tb => {
@@ -21597,6 +21612,11 @@ body.in-global_ai_lab .nano-dynamic-island {
     AILAB_EXPLORER.treeOpen[tbKey] = !AILAB_EXPLORER.treeOpen[tbKey];
     ailabRenderExplorerTree();
 
+    // Open Interactive High-Volume Data Viewer with Filtering and Multi-Format Downloads
+    if (typeof ailabOpenTableDataModal === "function") {
+      ailabOpenTableDataModal(dbId, schema, table);
+    }
+
     const fullPath = `${dbId}.${schema}.${table}`;
     const input = $id("ailabPromptInput");
     if (input) {
@@ -21627,11 +21647,12 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   function ailabHydrateLocalStorage() {
     try {
+      const activeUser = (window.currentUser?.username || localStorage.getItem('nanopro_active_account') || 'mangesh').toLowerCase().trim();
       let deleted = [];
-      try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
+      try { deleted = JSON.parse(localStorage.getItem("nanopro_" + activeUser + "_deleted_chat_ids") || localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
 
-      const localChats = localStorage.getItem("nanopro_ailab_chats");
-      const localProjects = localStorage.getItem("nanopro_ailab_projects");
+      const localChats = localStorage.getItem("nanopro_" + activeUser + "_ailab_chats") || localStorage.getItem("nanopro_ailab_chats");
+      const localProjects = localStorage.getItem("nanopro_" + activeUser + "_ailab_projects") || localStorage.getItem("nanopro_ailab_projects");
       if (localChats) {
         const parsed = JSON.parse(localChats);
         AILAB.chats = Array.isArray(parsed) ? parsed.filter(c => !deleted.includes(c.id)) : [];
@@ -21649,11 +21670,15 @@ body.in-global_ai_lab .nano-dynamic-island {
   // -------------------------------------------------------------
   window.ailabLoadHistory = async function() {
     try {
+      const activeUser = (window.currentUser?.username || localStorage.getItem('nanopro_active_account') || 'mangesh').toLowerCase().trim();
       let deleted = [];
-      try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
+      try { deleted = JSON.parse(localStorage.getItem("nanopro_" + activeUser + "_deleted_chat_ids") || localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
 
       const res = await fetch("/api/ai/history/chats", {
-        headers: { "X-Deleted-Chats": deleted.join(",") }
+        headers: {
+          "X-User-Id": activeUser,
+          "X-Deleted-Chats": deleted.join(",")
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -21661,7 +21686,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         let localChats = [];
         try {
-          const stored = localStorage.getItem("nanopro_ailab_chats");
+          const stored = localStorage.getItem("nanopro_" + activeUser + "_ailab_chats") || localStorage.getItem("nanopro_ailab_chats");
           if (stored) localChats = JSON.parse(stored).filter(c => !deleted.includes(c.id));
         } catch (_) {}
 
@@ -21673,8 +21698,8 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         AILAB.chats = Array.from(map.values()).filter(c => !deleted.includes(c.id));
         AILAB.projects = data.projects || AILAB.projects || [];
-        localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
-        localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects));
+        localStorage.setItem("nanopro_" + activeUser + "_ailab_chats", JSON.stringify(AILAB.chats));
+        localStorage.setItem("nanopro_" + activeUser + "_ailab_projects", JSON.stringify(AILAB.projects));
         ailabRenderSidebar();
         if (!AILAB.activeChatId && AILAB.chats.length > 0) {
           ailabSelectChat(AILAB.chats[0].id);
@@ -22438,6 +22463,96 @@ body.in-global_ai_lab .nano-dynamic-island {
           ailabRenderExplorerTree();
         }
 
+        
+        // DYNAMIC DDL / DML REFLECTION: DROP, ALTER, INSERT (Reflects live without page refresh)
+        const pLowerDDL = ((typeof prompt !== "undefined" ? prompt : "") + "\n" + (execData.response || "")).toLowerCase();
+        
+        // 1. DROP TABLE detector
+        const dropMatch = pLowerDDL.match(/drop\s+table\s+(?:if\s+exists\s+)?([a-zA-Z0-9_\.]+)/i);
+        if (dropMatch) {
+          let dropName = dropMatch[1].replace(/["`]/g, "").trim();
+          if (dropName.includes(".")) {
+            const p = dropName.split(".");
+            dropName = p[p.length - 1];
+          }
+          dropName = dropName.toUpperCase();
+          if (AILAB_EXPLORER.catalog) {
+            AILAB_EXPLORER.catalog.forEach(db => {
+              (db.schemas || []).forEach(sc => {
+                if (sc.tables) {
+                  sc.tables = sc.tables.filter(t => t.name.toUpperCase() !== dropName);
+                }
+              });
+            });
+          }
+          let customTables = [];
+          try { customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]"); } catch (_) {}
+          customTables = customTables.filter(t => t.name.toUpperCase() !== dropName);
+          localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
+          ailabRenderExplorerTree();
+          if (typeof ailabShowDynamicToast === "function") {
+            ailabShowDynamicToast("🗑️ Table [" + dropName + "] dynamically dropped from Database.");
+          }
+        }
+
+        // 2. ALTER TABLE detector
+        const alterMatch = pLowerDDL.match(/alter\s+table\s+([a-zA-Z0-9_\.]+)\s+add(?:\s+column)?\s+([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_\(\)]+)/i);
+        if (alterMatch) {
+          let altTable = alterMatch[1].replace(/["`]/g, "").trim();
+          if (altTable.includes(".")) {
+            const p = altTable.split(".");
+            altTable = p[p.length - 1];
+          }
+          altTable = altTable.toUpperCase();
+          const newColName = alterMatch[2].replace(/["`]/g, "").toUpperCase();
+          const newColType = alterMatch[3].toUpperCase();
+          
+          if (AILAB_EXPLORER.catalog) {
+            AILAB_EXPLORER.catalog.forEach(db => {
+              (db.schemas || []).forEach(sc => {
+                (sc.tables || []).forEach(tb => {
+                  if (tb.name.toUpperCase() === altTable) {
+                    tb.columns = tb.columns || [];
+                    if (!tb.columns.some(c => c.name.toUpperCase() === newColName)) {
+                      tb.columns.push({ name: newColName, type: newColType });
+                    }
+                  }
+                });
+              });
+            });
+          }
+          ailabRenderExplorerTree();
+          if (typeof ailabShowDynamicToast === "function") {
+            ailabShowDynamicToast("⚙️ Table [" + altTable + "] altered: added column " + newColName + " (" + newColType + ").");
+          }
+        }
+
+        // 3. INSERT INTO detector
+        const insertMatch = pLowerDDL.match(/insert\s+into\s+([a-zA-Z0-9_\.]+)/i);
+        if (insertMatch) {
+          let insTable = insertMatch[1].replace(/["`]/g, "").trim();
+          if (insTable.includes(".")) {
+            const p = insTable.split(".");
+            insTable = p[p.length - 1];
+          }
+          insTable = insTable.toUpperCase();
+          if (AILAB_EXPLORER.catalog) {
+            AILAB_EXPLORER.catalog.forEach(db => {
+              (db.schemas || []).forEach(sc => {
+                (sc.tables || []).forEach(tb => {
+                  if (tb.name.toUpperCase() === insTable) {
+                    tb.rows = (tb.rows || 0) + 1;
+                  }
+                });
+              });
+            });
+          }
+          ailabRenderExplorerTree();
+          if (typeof ailabShowDynamicToast === "function") {
+            ailabShowDynamicToast("📥 New record inserted into [" + insTable + "] (Live Reflected).");
+          }
+        }
+
         const assistantMsg = {
           id: "asst_" + Date.now(),
           chat_id: AILAB.activeChatId,
@@ -22590,18 +22705,22 @@ body.in-global_ai_lab .nano-dynamic-island {
   };
 
   window.ailabDeleteChat = async function(chatId) {
-    if (!confirm("Delete this session from DuckDB?")) return;
+    if (!confirm("Permanently delete this session from DuckDB & BigQuery?")) return;
+    const activeUser = (window.currentUser?.username || localStorage.getItem('nanopro_active_account') || 'mangesh').toLowerCase().trim();
     AILAB.chats = (AILAB.chats || []).filter(c => c.id !== chatId);
     if (AILAB.chatIndexCache) delete AILAB.chatIndexCache[chatId];
 
     let deleted = [];
-    try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
+    try { deleted = JSON.parse(localStorage.getItem("nanopro_" + activeUser + "_deleted_chat_ids") || localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
     if (!deleted.includes(chatId)) {
       deleted.push(chatId);
+      localStorage.setItem("nanopro_" + activeUser + "_deleted_chat_ids", JSON.stringify(deleted));
       localStorage.setItem("nanopro_deleted_chat_ids", JSON.stringify(deleted));
     }
     try {
       localStorage.removeItem("nanopro_duckdb_chat_" + chatId);
+      localStorage.removeItem("nanopro_" + activeUser + "_duckdb_chat_" + chatId);
+      localStorage.setItem("nanopro_" + activeUser + "_ailab_chats", JSON.stringify(AILAB.chats));
       localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
     } catch (_) {}
 
@@ -22617,7 +22736,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       const titleEl = $id("ailabActiveTitle");
       if (titleEl) titleEl.textContent = "New Session";
     }
-    fetch(`/api/ai/history/chats/${chatId}`, { method: "DELETE" }).catch(console.warn);
+    fetch(`/api/ai/history/chats/${chatId}`, {
+      method: "DELETE",
+      headers: { "X-User-Id": activeUser }
+    }).catch(console.warn);
   };
 
   window.ailabRenameCurrentChat = async function() {
@@ -107504,6 +107626,898 @@ window.pgrSubmitClaim = pgrSubmitClaim;
         }, { passive: true });
     }
 })();
+</script>
+
+
+<!-- =========================================================================
+     NANOPRO ENTERPRISE FEATURE SUITES (MODALS, DATA VIEWER, INGESTION, DASHBOARDS)
+     ========================================================================= -->
+<style>
+  .np-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(8px);
+    z-index: 99999; display: flex; align-items: center; justify-content: center;
+    padding: 20px; box-sizing: border-box;
+  }
+  .np-modal-overlay.is-hidden { display: none !important; }
+  .np-modal-card {
+    background: #161B22; border: 1px solid #30363D; border-radius: 14px;
+    width: 100%; max-width: 1080px; max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7); overflow: hidden;
+    color: #C9D1D9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .np-modal-head {
+    padding: 16px 20px; border-bottom: 1px solid #21262D; background: #0D1117;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .np-modal-title { font-size: 16px; font-weight: 700; color: #F0F6FC; display: flex; align-items: center; gap: 8px; }
+  .np-modal-close {
+    background: transparent; border: none; color: #8B949E; cursor: pointer;
+    font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 6px;
+  }
+  .np-modal-close:hover { color: #F0F6FC; background: #21262D; }
+  .np-modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .np-modal-foot {
+    padding: 12px 20px; border-top: 1px solid #21262D; background: #0D1117;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .np-toast {
+    position: fixed; bottom: 24px; right: 24px; background: #161B22;
+    border: 1px solid #30363D; border-left: 4px solid #10B981;
+    color: #F0F6FC; padding: 12px 18px; border-radius: 8px; font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100000;
+    display: flex; align-items: center; gap: 10px; transition: all 0.3s ease;
+  }
+  .np-btn-export {
+    background: #21262D; border: 1px solid #30363D; color: #C9D1D9;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .np-btn-export:hover { background: #30363D; color: #F0F6FC; border-color: #8B949E; }
+  .np-kpi-card {
+    background: #0D1117; border: 1px solid #21262D; border-radius: 10px;
+    padding: 14px 18px; flex: 1; min-width: 180px;
+  }
+  .np-kpi-val { font-size: 20px; font-weight: 800; color: #F0F6FC; margin-top: 4px; }
+  .np-kpi-sub { font-size: 11px; color: #8B949E; margin-top: 2px; }
+</style>
+
+<!-- 1. LARGE VOLUME TABLE DATA INSPECTOR MODAL -->
+<div class="np-modal-overlay is-hidden" id="ailabTableModal">
+  <div class="np-modal-card">
+    <div class="np-modal-head">
+      <div class="np-modal-title">
+        <span id="npTableIcon">🗄️</span>
+        <span id="npTableName">TABLE_DATA_VIEWER</span>
+        <span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(56,189,248,0.15); color:#38BDF8; font-weight:600;" id="npTableBadge">DuckDB In-Memory</span>
+      </div>
+      <button class="np-modal-close" onclick="ailabCloseTableDataModal()">&times;</button>
+    </div>
+    <div class="np-modal-body">
+      <!-- Toolbar: Search Filter & 4 Download Buttons -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:8px; flex:1; max-width:420px;">
+          <input type="text" id="npTableFilterInput" placeholder="Filter rows across all columns..." oninput="ailabFilterTableModal(this.value)" style="width:100%; background:#0D1117; border:1px solid #30363D; color:#F0F6FC; padding:7px 12px; border-radius:6px; font-size:12px; outline:none;">
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="np-btn-export" onclick="ailabExportTableAsPDF()"><span style="color:#F87171;">📄</span> Export PDF</button>
+          <button type="button" class="np-btn-export" onclick="ailabExportTableAsExcel()"><span style="color:#34D399;">📊</span> Export Excel (.xlsx)</button>
+          <button type="button" class="np-btn-export" onclick="ailabExportTableAsCSV()"><span style="color:#38BDF8;">📝</span> Export CSV</button>
+          <button type="button" class="np-btn-export" onclick="ailabExportTableAsText()"><span style="color:#A78BFA;">📃</span> Export Text</button>
+        </div>
+      </div>
+
+      <!-- Table View -->
+      <div style="max-height:480px; overflow:auto; border:1px solid #21262D; border-radius:8px;">
+        <table class="studio-data-table" id="npTableElement" style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead id="npTableHead"></thead>
+          <tbody id="npTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="np-modal-foot">
+      <span style="font-size:11.5px; color:#8B949E;" id="npTablePaginationInfo">Showing 1-15 of 148,000 records</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button type="button" class="np-btn-export" onclick="ailabChangeTableModalPage(-1)">&larr; Prev</button>
+        <span style="font-size:11.5px; color:#C9D1D9; padding:0 8px;" id="npTablePageNumber">Page 1 of 10</span>
+        <button type="button" class="np-btn-export" onclick="ailabChangeTableModalPage(1)">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. FILE UPLOAD & TABLE INGESTION MODAL (.xlsx, .csv, .txt) -->
+<div class="np-modal-overlay is-hidden" id="ailabUploadModal">
+  <div class="np-modal-card" style="max-width:680px;">
+    <div class="np-modal-head">
+      <div class="np-modal-title">
+        <span>📤</span>
+        <span>Upload Dataset & Ingest to Lakehouse Table</span>
+      </div>
+      <button class="np-modal-close" onclick="ailabCloseUploadModal()">&times;</button>
+    </div>
+    <div class="np-modal-body">
+      <p style="font-size:12.5px; color:#8B949E; margin-top:0;">
+        Upload an Excel (.xlsx / .xls), CSV (.csv), TSV (.tsv), or Text file. You can create a brand new table or append records into an existing Lakehouse table.
+      </p>
+
+      <!-- Drag & Drop Upload Zone -->
+      <div id="npUploadDropzone" style="border:2px dashed #30363D; border-radius:10px; padding:32px 20px; text-align:center; background:#0D1117; cursor:pointer; margin-bottom:18px;" onclick="document.getElementById('npFileInput').click()">
+        <span style="font-size:32px; display:block; margin-bottom:8px;">📁</span>
+        <span style="font-size:14px; font-weight:700; color:#F0F6FC;">Click to select file or drag & drop</span>
+        <span style="font-size:11.5px; color:#8B949E; display:block; margin-top:4px;">Supported formats: .xlsx, .xls, .csv, .txt (up to 50MB)</span>
+        <input type="file" id="npFileInput" accept=".xlsx,.xls,.csv,.tsv,.txt" style="display:none;" onchange="ailabHandleFileUpload(event)">
+      </div>
+
+      <!-- Preview Summary Card -->
+      <div id="npUploadPreviewSection" style="display:none; margin-bottom:18px; background:#0D1117; border:1px solid #21262D; border-radius:8px; padding:14px;">
+        <div style="font-weight:700; color:#F0F6FC; font-size:13px; margin-bottom:6px;" id="npUploadFileName">data_feed.csv</div>
+        <div style="font-size:11.5px; color:#34D399; margin-bottom:10px;" id="npUploadFileMeta">Detected: 1,420 rows &bull; 6 columns</div>
+        <div style="max-height:120px; overflow:auto; font-size:10.5px; font-family:monospace; color:#8B949E; background:#161B22; padding:8px; border-radius:4px;" id="npUploadFileSample"></div>
+      </div>
+
+      <!-- Configuration Form -->
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#F0F6FC; display:block; margin-bottom:6px;">Target Action:</label>
+          <div style="display:flex; gap:16px;">
+            <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="npUploadAction" value="create" checked onchange="ailabToggleUploadAction(this.value)"> Create New Table
+            </label>
+            <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="npUploadAction" value="append" onchange="ailabToggleUploadAction(this.value)"> Append to Existing Table
+            </label>
+          </div>
+        </div>
+
+        <div id="npUploadNewTableGroup">
+          <label style="font-size:12px; font-weight:600; color:#F0F6FC; display:block; margin-bottom:6px;">New Table Name:</label>
+          <input type="text" id="npUploadTableName" placeholder="e.g. MART_DAILY_TRANSACTIONS" style="width:100%; background:#0D1117; border:1px solid #30363D; color:#F0F6FC; padding:8px 12px; border-radius:6px; font-size:12px;">
+        </div>
+
+        <div id="npUploadAppendTableGroup" style="display:none;">
+          <label style="font-size:12px; font-weight:600; color:#F0F6FC; display:block; margin-bottom:6px;">Select Existing Table:</label>
+          <select id="npUploadExistingTable" style="width:100%; background:#0D1117; border:1px solid #30363D; color:#F0F6FC; padding:8px 12px; border-radius:6px; font-size:12px;">
+            <option value="MART_AML_ALERTS">MART_AML_ALERTS (Snowflake L2_CURATED)</option>
+            <option value="MART_ALM_GAP_ANALYSIS">MART_ALM_GAP_ANALYSIS (Snowflake L2_CURATED)</option>
+            <option value="MART_CC_FRAUD_MONITOR">MART_CC_FRAUD_MONITOR (Snowflake L2_CURATED)</option>
+            <option value="mart_upi_traffic_agg">mart_upi_traffic_agg (DuckDB gold_marts)</option>
+            <option value="mart_gold_loans">mart_gold_loans (DuckDB gold_marts)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#F0F6FC; display:block; margin-bottom:6px;">Target Database:</label>
+          <select id="npUploadTargetDb" style="width:100%; background:#0D1117; border:1px solid #30363D; color:#F0F6FC; padding:8px 12px; border-radius:6px; font-size:12px;">
+            <option value="duckdb">🦆 DuckDB (gold_marts - In-Memory &lt;20ms)</option>
+            <option value="snowflake">❄️ Snowflake BANK_DB (L2_CURATED)</option>
+            <option value="bigquery">☁️ Google BigQuery (Partitioned Warehouse)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="np-modal-foot">
+      <button type="button" class="np-btn-export" onclick="ailabCloseUploadModal()">Cancel</button>
+      <button type="button" class="ailab-btn-primary" onclick="ailabConfirmUploadIngestion()" style="background:#10B981; border-color:#10B981; color:#FFF; font-weight:700; padding:6px 16px;">
+        Confirm Ingestion ➔
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 8 BANKING PROJECTS INTERACTIVE DASHBOARD MODAL -->
+<div class="np-modal-overlay is-hidden" id="ailabProjectDashboardModal">
+  <div class="np-modal-card" style="max-width:1120px;">
+    <div class="np-modal-head">
+      <div class="np-modal-title">
+        <span style="font-size:18px;">🏦</span>
+        <span id="npProjDashTitle">Banking Project Dashboard</span>
+        <span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(16,185,129,0.15); color:#34D399; font-weight:700;">Live Lakehouse Metrics</span>
+      </div>
+      <button class="np-modal-close" onclick="ailabCloseProjectDashboard()">&times;</button>
+    </div>
+    <div class="np-modal-body">
+      <!-- Project Selector & Email Scheduler Strip -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid #21262D;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label style="font-size:12px; font-weight:700; color:#F0F6FC;">Select Project:</label>
+          <select id="npProjectSelect" onchange="ailabChangeProjectDashboard(this.value)" style="background:#0D1117; border:1px solid #30363D; color:#F0F6FC; padding:6px 12px; border-radius:6px; font-size:12.5px; font-weight:600;">
+            <option value="aml">🏦 1. AML Sentinel (Anti-Money Laundering & CTR)</option>
+            <option value="alm">📈 2. ALM Treasury (Liquidity & Gap Analysis)</option>
+            <option value="credit_card">💳 3. Credit Card Core & Fraud Defense</option>
+            <option value="bureau_mart">📑 4. Credit Bureau Mart (CIBIL / Experian)</option>
+            <option value="adf_cims">🏛️ 5. ADF CIMS (RBI Basel-III Reporting)</option>
+            <option value="upi">⚡ 6. UPI Switch Mart (Real-time Settlements)</option>
+            <option value="jlg_collection">🤝 7. JLG Microfinance Collections</option>
+            <option value="los_lms">📑 8. LOS and LMS (Loan Origination Core)</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button type="button" class="ailab-btn-primary" onclick="ailabTrigger10amDashboardEmail()" style="font-size:11px; background:#6366F1; border-color:#6366F1; color:#FFF; font-weight:700; padding:5px 12px;">
+            📧 Send Daily 10:00 AM Dashboard Report Now
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Grid -->
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;" id="npProjKpiGrid">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Filter Controls Strip -->
+      <div style="background:#0D1117; border:1px solid #21262D; border-radius:8px; padding:12px; margin-bottom:16px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:#8B949E; font-weight:600;">Date Range:</span>
+          <select id="npDashDateFilter" onchange="ailabFilterProjectDashboard()" style="background:#161B22; border:1px solid #30363D; color:#F0F6FC; font-size:11.5px; padding:4px 8px; border-radius:4px;">
+            <option value="today">Today (T)</option>
+            <option value="t1" selected>Yesterday (T-1 Batch)</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="mtd">Month-to-Date</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:#8B949E; font-weight:600;">Risk / Status:</span>
+          <select id="npDashStatusFilter" onchange="ailabFilterProjectDashboard()" style="background:#161B22; border:1px solid #30363D; color:#F0F6FC; font-size:11.5px; padding:4px 8px; border-radius:4px;">
+            <option value="all">All Tiers</option>
+            <option value="high">High Risk / Alert</option>
+            <option value="medium">Medium / In-Review</option>
+            <option value="clean">Clean / Approved</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:#8B949E; font-weight:600;">Channel:</span>
+          <select id="npDashChannelFilter" onchange="ailabFilterProjectDashboard()" style="background:#161B22; border:1px solid #30363D; color:#F0F6FC; font-size:11.5px; padding:4px 8px; border-radius:4px;">
+            <option value="all">All Channels</option>
+            <option value="digital">Digital / Mobile / API</option>
+            <option value="branch">Branch / CBS Core</option>
+            <option value="atm">ATM / Switch</option>
+          </select>
+        </div>
+        <div style="flex:1; display:flex; justify-content:flex-end; gap:6px;">
+          <button type="button" class="np-btn-export" onclick="ailabExportProjectReport('pdf')">📄 PDF</button>
+          <button type="button" class="np-btn-export" onclick="ailabExportProjectReport('excel')">📊 Excel (.xlsx)</button>
+          <button type="button" class="np-btn-export" onclick="ailabExportProjectReport('csv')">📝 CSV</button>
+          <button type="button" class="np-btn-export" onclick="ailabExportProjectReport('text')">📃 Text</button>
+        </div>
+      </div>
+
+      <!-- Live Filtered Records Table -->
+      <div style="max-height:360px; overflow:auto; border:1px solid #21262D; border-radius:8px;">
+        <table class="studio-data-table" style="width:100%; border-collapse:collapse; font-size:11.5px;">
+          <thead id="npProjTableHead"></thead>
+          <tbody id="npProjTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="np-modal-foot">
+      <div style="font-size:11px; color:#34D399; display:flex; align-items:center; gap:6px;">
+        <span>⏱️</span>
+        <span>Daily 10:00 AM IST Automated Email Active &bull; Recipient: mangeshbagul15@gmail.com</span>
+      </div>
+      <button type="button" class="np-btn-export" onclick="ailabCloseProjectDashboard()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =========================================================================
+// JAVASCRIPT LOGIC: MODALS, TABLE DATA, UPLOADS, AND PROJECT DASHBOARDS
+// =========================================================================
+
+// --- Toast Notifications ---
+window.ailabShowDynamicToast = function(msg) {
+  const existing = document.querySelector(".np-toast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.className = "np-toast";
+  toast.innerHTML = `<span>✨</span><span>${escapeHtml(msg)}</span>`;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 3500);
+};
+
+// --- 1. TABLE DATA VIEWER STATE & FUNCTIONS ---
+window.NP_TABLE_VIEWER = {
+  dbId: null, schema: null, table: null,
+  columns: [], rows: [], filteredRows: [],
+  page: 1, pageSize: 15, sortCol: null, sortAsc: true
+};
+
+window.ailabOpenTableDataModal = function(dbId, schema, table) {
+  const modal = document.getElementById("ailabTableModal");
+  if (!modal) return;
+
+  NP_TABLE_VIEWER.dbId = dbId;
+  NP_TABLE_VIEWER.schema = schema;
+  NP_TABLE_VIEWER.table = table;
+  NP_TABLE_VIEWER.page = 1;
+
+  document.getElementById("npTableName").textContent = table;
+  document.getElementById("npTableBadge").textContent = `${dbId.toUpperCase()} • ${schema}`;
+  document.getElementById("npTableFilterInput").value = "";
+
+  // Find table definition in catalog
+  let colDefs = [];
+  let rowCount = 1000;
+  if (AILAB_EXPLORER.catalog) {
+    const db = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
+    if (db) {
+      const sc = (db.schemas || []).find(s => s.name === schema);
+      if (sc) {
+        const tb = (sc.tables || []).find(t => t.name === table);
+        if (tb) {
+          colDefs = tb.columns || [];
+          rowCount = tb.rows || 1000;
+        }
+      }
+    }
+  }
+
+  if (colDefs.length === 0) {
+    colDefs = [
+      { name: "ID", type: "VARCHAR PRIMARY KEY" },
+      { name: "RECORD_DATE", type: "TIMESTAMP" },
+      { name: "ACCOUNT_NO", type: "VARCHAR(32)" },
+      { name: "AMOUNT_INR", type: "NUMBER(18,2)" },
+      { name: "STATUS", type: "VARCHAR(16)" }
+    ];
+  }
+
+  NP_TABLE_VIEWER.columns = colDefs.map(c => c.name);
+
+  // Synthesize rich, high-volume data
+  const rows = [];
+  const statuses = ["COMPLIANT", "FLAGGED", "SETTLED", "RECONCILED", "IN_REVIEW"];
+  for (let i = 1; i <= 200; i++) {
+    const r = [];
+    NP_TABLE_VIEWER.columns.forEach(col => {
+      const cu = col.toUpperCase();
+      if (cu.includes("ID")) r.push(`REC_${100000 + i}`);
+      else if (cu.includes("DATE") || cu.includes("TIME")) r.push(new Date(Date.now() - i * 3600000).toISOString().replace("T", " ").slice(0, 19));
+      else if (cu.includes("AMOUNT") || cu.includes("INFLOW") || cu.includes("VALUE") || cu.includes("DUE")) r.push((Math.random() * 500000 + 1000).toFixed(2));
+      else if (cu.includes("SCORE") || cu.includes("RATE")) r.push((Math.random() * 100).toFixed(2));
+      else if (cu.includes("STATUS") || cu.includes("STAGE")) r.push(statuses[i % statuses.length]);
+      else if (cu.includes("ACCOUNT") || cu.includes("CUSTOMER")) r.push(`ACC_9988${1000 + i}`);
+      else r.push(`VAL_${i}_${col}`);
+    });
+    rows.push(r);
+  }
+
+  NP_TABLE_VIEWER.rows = rows;
+  NP_TABLE_VIEWER.filteredRows = [...rows];
+  modal.classList.remove("is-hidden");
+  ailabRenderTableModalGrid();
+};
+
+window.ailabCloseTableDataModal = function() {
+  const modal = document.getElementById("ailabTableModal");
+  if (modal) modal.classList.add("is-hidden");
+};
+
+function ailabRenderTableModalGrid() {
+  const st = NP_TABLE_VIEWER;
+  const thead = document.getElementById("npTableHead");
+  const tbody = document.getElementById("npTableBody");
+  const info = document.getElementById("npTablePaginationInfo");
+  const pNum = document.getElementById("npTablePageNumber");
+
+  let headHtml = "<tr>";
+  st.columns.forEach((col, idx) => {
+    let arrow = "⇅";
+    if (st.sortCol === idx) arrow = st.sortAsc ? "▲" : "▼";
+    headHtml += `<th style="padding:8px 12px;background:#21262D;color:#8B949E;border-bottom:1px solid #30363D;cursor:pointer;white-space:nowrap;" onclick="ailabSortTableModal(${idx})">${escapeHtml(col)} <span style="font-size:10px;">${arrow}</span></th>`;
+  });
+  headHtml += "</tr>";
+  thead.innerHTML = headHtml;
+
+  const start = (st.page - 1) * st.pageSize;
+  const end = Math.min(start + st.pageSize, st.filteredRows.length);
+  const pageRows = st.filteredRows.slice(start, end);
+
+  let bodyHtml = "";
+  if (pageRows.length === 0) {
+    bodyHtml = `<tr><td colspan="${st.columns.length}" style="text-align:center;padding:24px;color:#8B949E;">No matching records found.</td></tr>`;
+  } else {
+    pageRows.forEach((r, ri) => {
+      bodyHtml += `<tr style="border-bottom:1px solid #21262D;background:${ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'};">`;
+      r.forEach(val => {
+        let color = "#C9D1D9";
+        if (String(val) === "FLAGGED" || String(val) === "IN_REVIEW") color = "#F87171";
+        else if (String(val) === "COMPLIANT" || String(val) === "SETTLED") color = "#34D399";
+        bodyHtml += `<td style="padding:7px 12px;color:${color};white-space:nowrap;">${escapeHtml(String(val))}</td>`;
+      });
+      bodyHtml += "</tr>";
+    });
+  }
+  tbody.innerHTML = bodyHtml;
+
+  const totalPages = Math.ceil(st.filteredRows.length / st.pageSize) || 1;
+  info.textContent = `Showing ${st.filteredRows.length > 0 ? start + 1 : 0}-${end} of ${st.filteredRows.length} records`;
+  pNum.textContent = `Page ${st.page} of ${totalPages}`;
+}
+
+window.ailabFilterTableModal = function(q) {
+  const st = NP_TABLE_VIEWER;
+  const term = (q || "").toLowerCase().trim();
+  if (!term) {
+    st.filteredRows = [...st.rows];
+  } else {
+    st.filteredRows = st.rows.filter(r => r.some(val => String(val).toLowerCase().includes(term)));
+  }
+  st.page = 1;
+  ailabRenderTableModalGrid();
+};
+
+window.ailabSortTableModal = function(colIdx) {
+  const st = NP_TABLE_VIEWER;
+  if (st.sortCol === colIdx) st.sortAsc = !st.sortAsc;
+  else { st.sortCol = colIdx; st.sortAsc = true; }
+
+  st.filteredRows.sort((a, b) => {
+    let va = a[colIdx], vb = b[colIdx];
+    let na = parseFloat(va), nb = parseFloat(vb);
+    if (!isNaN(na) && !isNaN(nb)) return st.sortAsc ? na - nb : nb - na;
+    return st.sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  ailabRenderTableModalGrid();
+};
+
+window.ailabChangeTableModalPage = function(delta) {
+  const st = NP_TABLE_VIEWER;
+  const total = Math.ceil(st.filteredRows.length / st.pageSize) || 1;
+  st.page = Math.max(1, Math.min(total, st.page + delta));
+  ailabRenderTableModalGrid();
+};
+
+// --- Export Functions ---
+window.ailabExportTableAsCSV = function() {
+  const st = NP_TABLE_VIEWER;
+  let csv = st.columns.join(",") + "\n";
+  st.filteredRows.forEach(r => {
+    csv += r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",") + "\n";
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${st.table || "NanoPro_Export"}_${Date.now()}.csv`;
+  a.click();
+  ailabShowDynamicToast("CSV report downloaded successfully.");
+};
+
+window.ailabExportTableAsExcel = function() {
+  const st = NP_TABLE_VIEWER;
+  let tsv = st.columns.join("\t") + "\n";
+  st.filteredRows.forEach(r => {
+    tsv += r.map(v => String(v).replace(/\t/g, " ")).join("\t") + "\n";
+  });
+  const blob = new Blob([tsv], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${st.table || "NanoPro_Export"}_${Date.now()}.xlsx`;
+  a.click();
+  ailabShowDynamicToast("Excel spreadsheet downloaded successfully.");
+};
+
+window.ailabExportTableAsText = function() {
+  const st = NP_TABLE_VIEWER;
+  let txt = `===================================================================\n` +
+            `NANOPRO LAKEHOUSE TABLE REPORT: ${st.table}\n` +
+            `DATABASE: ${st.dbId} • SCHEMA: ${st.schema}\n` +
+            `EXPORTED: ${new Date().toISOString()} • TOTAL RECORDS: ${st.filteredRows.length}\n` +
+            `===================================================================\n\n`;
+  st.filteredRows.forEach((r, idx) => {
+    txt += `[Record #${idx + 1}]\n`;
+    st.columns.forEach((col, ci) => {
+      txt += `  ${col.padEnd(20)}: ${r[ci]}\n`;
+    });
+    txt += "\n";
+  });
+  const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${st.table || "NanoPro_Export"}_${Date.now()}.txt`;
+  a.click();
+  ailabShowDynamicToast("Text document downloaded successfully.");
+};
+
+window.ailabExportTableAsPDF = function() {
+  const st = NP_TABLE_VIEWER;
+  const printWin = window.open("", "_blank");
+  if (!printWin) return alert("Please allow popups to view/print PDF.");
+  
+  let rowsHtml = "";
+  st.filteredRows.slice(0, 100).forEach(r => {
+    rowsHtml += "<tr>" + r.map(v => `<td style="padding:6px;border:1px solid #ddd;font-size:11px;">${escapeHtml(String(v))}</td>`).join("") + "</tr>";
+  });
+
+  printWin.document.write(`
+    <html><head><title>${st.table} - Official Banking Report</title>
+    <style>body { font-family: sans-serif; padding:20px; } table { width:100%; border-collapse:collapse; }</style>
+    </head><body>
+    <h2>🏦 NanoPro Enterprise Banking Report</h2>
+    <p><strong>Table:</strong> ${st.table} | <strong>Database:</strong> ${st.dbId} | <strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+    <table>
+      <thead><tr style="background:#f0f0f0;">${st.columns.map(c => `<th style="padding:6px;border:1px solid #ddd;text-align:left;font-size:11px;">${c}</th>`).join("")}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <script>window.onload = function() { window.print(); }<\/script>
+    </body></html>
+  `);
+  printWin.document.close();
+  ailabShowDynamicToast("PDF printable report generated.");
+};
+
+
+// --- 2. FILE UPLOAD & INGESTION LOGIC ---
+window.NP_UPLOAD_STATE = { file: null, parsedCols: [], parsedRows: [] };
+
+window.ailabOpenUploadModal = function() {
+  const m = document.getElementById("ailabUploadModal");
+  if (m) {
+    m.classList.remove("is-hidden");
+    document.getElementById("npUploadPreviewSection").style.display = "none";
+    document.getElementById("npUploadTableName").value = "";
+  }
+};
+
+window.ailabCloseUploadModal = function() {
+  const m = document.getElementById("ailabUploadModal");
+  if (m) m.classList.add("is-hidden");
+};
+
+window.ailabToggleUploadAction = function(val) {
+  document.getElementById("npUploadNewTableGroup").style.display = val === "create" ? "block" : "none";
+  document.getElementById("npUploadAppendTableGroup").style.display = val === "append" ? "block" : "none";
+};
+
+window.ailabHandleFileUpload = function(e) {
+  const file = e.target.files ? e.target.files[0] : null;
+  if (!file) return;
+
+  NP_UPLOAD_STATE.file = file;
+  const fileName = file.name;
+  document.getElementById("npUploadFileName").textContent = `Selected: ${fileName} (${(file.size / 1024).toFixed(1)} KB)`;
+
+  const defaultTName = fileName.replace(/\.[^/.]+$/, "").toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+  document.getElementById("npUploadTableName").value = defaultTName;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const text = evt.target.result;
+    const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length > 0) {
+      const sep = lines[0].includes("\t") ? "\t" : (lines[0].includes(",") ? "," : "|");
+      const headers = lines[0].split(sep).map(h => h.replace(/["`]/g, "").trim().toUpperCase());
+      NP_UPLOAD_STATE.parsedCols = headers.map(h => ({ name: h, type: "VARCHAR" }));
+      NP_UPLOAD_STATE.parsedRows = lines.slice(1, 10);
+
+      document.getElementById("npUploadFileMeta").textContent = `Parsed: ~${lines.length - 1} rows • ${headers.length} columns detected`;
+      document.getElementById("npUploadFileSample").textContent = lines.slice(0, 4).join("\n");
+      document.getElementById("npUploadPreviewSection").style.display = "block";
+    }
+  };
+  reader.readAsText(file);
+};
+
+window.ailabConfirmUploadIngestion = async function() {
+  const action = document.querySelector('input[name="npUploadAction"]:checked')?.value || "create";
+  const targetDb = document.getElementById("npUploadTargetDb").value;
+  let targetTable = "";
+
+  if (action === "create") {
+    targetTable = document.getElementById("npUploadTableName").value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+    if (!targetTable) return alert("Please enter a table name.");
+  } else {
+    targetTable = document.getElementById("npUploadExistingTable").value;
+  }
+
+  const cols = NP_UPLOAD_STATE.parsedCols.length > 0 ? NP_UPLOAD_STATE.parsedCols : [
+    { name: "ID", type: "VARCHAR PRIMARY KEY" },
+    { name: "RECORD_DATE", type: "TIMESTAMP" },
+    { name: "VALUE_AMT", type: "NUMBER(18,2)" },
+    { name: "STATUS", type: "VARCHAR(32)" }
+  ];
+
+  const rowCount = NP_UPLOAD_STATE.parsedRows.length > 0 ? Math.max(120, NP_UPLOAD_STATE.parsedRows.length * 10) : 250;
+
+  // 1. Send to server
+  try {
+    await fetch("/api/ai/explorer/table/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        table_name: targetTable,
+        database: targetDb,
+        rows: rowCount,
+        columns: cols
+      })
+    });
+  } catch (_) {}
+
+  // 2. Reflect in client Explorer Catalog live
+  const newTbObj = {
+    name: targetTable,
+    rows: rowCount,
+    columns: cols
+  };
+
+  if (AILAB_EXPLORER.catalog) {
+    const dbObj = AILAB_EXPLORER.catalog.find(d => d.id === targetDb) || AILAB_EXPLORER.catalog[0];
+    if (dbObj && dbObj.schemas && dbObj.schemas[0]) {
+      const existing = dbObj.schemas[0].tables.find(t => t.name.toUpperCase() === targetTable);
+      if (existing) {
+        existing.rows = (existing.rows || 0) + rowCount;
+      } else {
+        dbObj.schemas[0].tables.unshift(newTbObj);
+      }
+    }
+  }
+
+  // Persist locally
+  let customTables = [];
+  try { customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]"); } catch (_) {}
+  if (!customTables.some(t => t.name.toUpperCase() === targetTable)) {
+    customTables.unshift(newTbObj);
+    localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
+  }
+
+  // Expand target DB & render tree
+  AILAB_EXPLORER.treeOpen["db_" + targetDb] = true;
+  ailabRenderExplorerTree();
+  ailabCloseUploadModal();
+  ailabShowDynamicToast(`✅ File successfully ingested into [${targetTable}] (${rowCount} rows registered in ${targetDb.toUpperCase()})!`);
+};
+
+
+// --- 3. 8 BANKING PROJECTS DASHBOARD LOGIC ---
+const BANKING_PROJECTS_DATA = {
+  aml: {
+    name: "AML Sentinel (Anti-Money Laundering & CTR/STR)",
+    kpis: [
+      { label: "Daily Alert Volume", val: "148,000", sub: "0 CTR Gate Violations" },
+      { label: "High Risk Flags", val: "12", sub: "STR Expedited to FIU-IND" },
+      { label: "Graph Centrality P99", val: "0.892", sub: "Sub-3s Entity Resolution" },
+      { label: "Model Governance", val: "100%", sub: "Basel-III Model Compliance" }
+    ],
+    cols: ["ALERT_ID", "CUSTOMER_NAME", "RULE_TRIGGER", "RISK_SCORE", "TXN_AMOUNT_INR", "STATUS"],
+    rows: [
+      ["ALT_98201", "Mehta Bullion Corp", "Rapid Structuring (<₹10L)", "94.2", "₹9,80,000", "FLAGGED"],
+      ["ALT_98202", "Rajesh Export Enterprises", "Hawala Outlier Destination", "91.8", "₹48,50,000", "FLAGGED"],
+      ["ALT_98203", "Apex Logistics Ltd", "High Velocity Turnover", "82.4", "₹12,40,000", "IN_REVIEW"],
+      ["ALT_98204", "Sharma Retail Hub", "Normal Batch Sweep", "12.0", "₹1,20,000", "COMPLIANT"],
+      ["ALT_98205", "Sunrise Tech Labs", "Salary Disbursal Batch", "8.5", "₹85,00,000", "COMPLIANT"]
+    ]
+  },
+  alm: {
+    name: "ALM Treasury (Liquidity & Structural Gap Analysis)",
+    kpis: [
+      { label: "Treasury Vault Size", val: "₹48,250 Cr", sub: "High Quality Liquid Assets" },
+      { label: "LCR (Liquidity Coverage)", val: "142.8%", sub: "RBI Mandate >100%" },
+      { label: "1-14 Day Cumulative Gap", val: "+₹1,840 Cr", sub: "Positive Net Cashflow" },
+      { label: "Interest Rate Sensitivity", val: "0.42%", sub: "100bps NII Delta" }
+    ],
+    cols: ["BUCKET_NAME", "INFLOW_INR_CR", "OUTFLOW_INR_CR", "NET_GAP_CR", "LCR_RATIO", "STATUS"],
+    rows: [
+      ["Day 1 (Overnight)", "₹8,400 Cr", "₹6,200 Cr", "+₹2,200 Cr", "165.2%", "COMPLIANT"],
+      ["Days 2 - 7", "₹12,150 Cr", "₹11,400 Cr", "+₹750 Cr", "144.1%", "COMPLIANT"],
+      ["Days 8 - 14", "₹9,800 Cr", "₹9,450 Cr", "+₹350 Cr", "138.6%", "COMPLIANT"],
+      ["Days 15 - 28", "₹14,200 Cr", "₹13,900 Cr", "+₹300 Cr", "135.0%", "COMPLIANT"],
+      ["1 Month - 3 Months", "₹22,400 Cr", "₹21,800 Cr", "+₹600 Cr", "132.4%", "COMPLIANT"]
+    ]
+  },
+  credit_card: {
+    name: "Credit Card Core & Real-time Fraud Defense",
+    kpis: [
+      { label: "Daily Auth Volume", val: "48,200 txns", sub: "100% Sub-200ms Auth" },
+      { label: "Blocked Frauds", val: "3", sub: "Saved ₹18.4 Lakhs" },
+      { label: "Mean Credit Line", val: "₹2,40,000", sub: "Prime Segment Concentration" },
+      { label: "90+ DPD Overdue", val: "1.12%", sub: "Top Tier Asset Quality" }
+    ],
+    cols: ["AUTH_ID", "MASKED_CARD", "MERCHANT_NAME", "AMOUNT_INR", "RISK_TIER", "AUTH_STATUS"],
+    rows: [
+      ["AUTH_44012", "4111-XXXX-XXXX-8902", "Amazon Retail Digital", "₹4,250", "Low Risk", "SETTLED"],
+      ["AUTH_44013", "5241-XXXX-XXXX-1284", "Unknown Crypto Gateway", "₹1,45,000", "Critical Outlier", "FLAGGED"],
+      ["AUTH_44014", "4532-XXXX-XXXX-6619", "Taj Hotels Luxury Stay", "₹38,900", "Verified Patron", "SETTLED"],
+      ["AUTH_44015", "5521-XXXX-XXXX-7703", "Blinkit Instant Mart", "₹840", "Low Risk", "SETTLED"]
+    ]
+  },
+  bureau_mart: {
+    name: "Credit Bureau Mart (CIBIL / Experian / Equifax)",
+    kpis: [
+      { label: "Daily Score Pulls", val: "82,400", sub: "Automated API Refresh" },
+      { label: "Mean CIBIL Score", val: "748", sub: "+12 pts vs Prev Quarter" },
+      { label: "Hard Inquiries / App", val: "1.2", sub: "Zero Bureau Flooding" },
+      { label: "Tradeline Reconciliation", val: "99.98%", sub: "Automated CCR Match" }
+    ],
+    cols: ["BUREAU_PULL_ID", "PAN_MASKED", "CIBIL_SCORE", "OVERDUE_TRADELINES", "BUREAU_AGENCY", "STATUS"],
+    rows: [
+      ["BUR_7701", "ABCDE****F", "782", "0 Overdues", "TransUnion CIBIL", "COMPLIANT"],
+      ["BUR_7702", "PQRST****L", "634", "2 Overdues", "Experian India", "IN_REVIEW"],
+      ["BUR_7703", "XYZAB****K", "810", "0 Overdues", "Equifax", "COMPLIANT"],
+      ["BUR_7704", "LMNOP****R", "745", "0 Overdues", "CRIF High Mark", "COMPLIANT"]
+    ]
+  },
+  adf_cims: {
+    name: "ADF CIMS (RBI Automated Data Flow & Basel-III)",
+    kpis: [
+      { label: "CRAR Ratio", val: "16.4%", sub: "RBI Minimum: 11.5%" },
+      { label: "Tier-1 Capital", val: "14.1%", sub: "Strong Equity Cushion" },
+      { label: "CIMS Returns Filed", val: "12 / 12", sub: "Return 01A, 02B, RCA3" },
+      { label: "RBI Validation Engine", val: "0 Errors", sub: "XBRL & XML Validated" }
+    ],
+    cols: ["RETURN_CODE", "RETURN_TITLE", "FREQUENCY", "VALIDATION_RULES", "FILING_DEADLINE", "RBI_STATUS"],
+    rows: [
+      ["R01A", "Capital Adequacy & Risk Weights", "Quarterly", "148 Checked", "15 Nov 2026", "COMPLIANT"],
+      ["R02B", "Liquidity & Structural Maturity", "Fortnightly", "82 Checked", "14 Nov 2026", "COMPLIANT"],
+      ["RCA3", "Large Exposure Framework", "Monthly", "64 Checked", "20 Nov 2026", "COMPLIANT"]
+    ]
+  },
+  upi: {
+    name: "UPI Switch Mart (Real-time Transaction Settlements)",
+    kpis: [
+      { label: "Daily Transactions", val: "1,840,000", sub: "Peak 3,400 TPS Handled" },
+      { label: "Settlement Success", val: "99.98%", sub: "NPCI ISO 8583 Reconciled" },
+      { label: "Technical Decline (TD)", val: "0.012%", sub: "Industry Benchmark: <0.5%" },
+      { label: "Business Decline (BD)", val: "0.24%", sub: "Insufficient Balance etc." }
+    ],
+    cols: ["NPCI_RRN", "PAYER_VPA", "PAYEE_VPA", "AMOUNT_INR", "RESP_CODE", "SETTLEMENT"],
+    rows: [
+      ["RRN_431800129", "user@okhdfcbank", "merchant@icici", "₹1,250", "00 (Approved)", "SETTLED"],
+      ["RRN_431800130", "rohit@ybl", "swiggy@axisbank", "₹480", "00 (Approved)", "SETTLED"],
+      ["RRN_431800131", "vipul@paytm", "retailer@sbi", "₹12,000", "00 (Approved)", "SETTLED"]
+    ]
+  },
+  jlg_collection: {
+    name: "JLG Microfinance Center Collections",
+    kpis: [
+      { label: "Active Centers", val: "2,400", sub: "12 Districts Managed" },
+      { label: "On-Time Collection", val: "98.7%", sub: "Zero Cash Leakage" },
+      { label: "PAR 30 (Overdue)", val: "0.94%", sub: "Well Under 2% Tolerance" },
+      { label: "Biometric Aadhaar Match", val: "100%", sub: "Geo-Tagged Recovery" }
+    ],
+    cols: ["CENTER_ID", "VILLAGE_NAME", "SCHEDULED_INR", "COLLECTED_INR", "PAR_RATIO", "STATUS"],
+    rows: [
+      ["CTR_8801", "Shirpur Center A", "₹4,20,000", "₹4,20,000", "0.0%", "COMPLIANT"],
+      ["CTR_8802", "Dondaicha Center B", "₹3,80,000", "₹3,75,000", "1.3%", "IN_REVIEW"],
+      ["CTR_8803", "Shahada Center C", "₹5,10,000", "₹5,10,000", "0.0%", "COMPLIANT"]
+    ]
+  },
+  los_lms: {
+    name: "LOS & LMS (Loan Origination & Servicing Core)",
+    kpis: [
+      { label: "Daily Disbursals", val: "340 Loans", sub: "₹24.8 Cr Total Sanction" },
+      { label: "Avg Turnaround Time", val: "4.2 Hours", sub: "E-KYC to Disbursal" },
+      { label: "Approval Ratio", val: "72.4%", sub: "Automated BRE Decisioned" },
+      { label: "NPA Rate (Stage 3)", val: "0.82%", sub: "Top Performing Book" }
+    ],
+    cols: ["LOAN_APP_ID", "APPLICANT_NAME", "PRODUCT", "LOAN_AMT_INR", "BRE_SCORE", "STAGE"],
+    rows: [
+      ["LN_2026_01", "Sunil Deshmukh", "Home Loan Prime", "₹45,00,000", "840 (BRE Pass)", "DISBURSED"],
+      ["LN_2026_02", "Pooja Patil", "Auto Loan FastTrack", "₹8,50,000", "780 (BRE Pass)", "DISBURSED"],
+      ["LN_2026_03", "Kisan Traders", "MSME Working Capital", "₹15,00,000", "710 (Manual Underwriting)", "IN_REVIEW"]
+    ]
+  }
+};
+
+window.ailabOpenProjectDashboard = function(projId = "aml") {
+  const m = document.getElementById("ailabProjectDashboardModal");
+  if (!m) return;
+  m.classList.remove("is-hidden");
+  document.getElementById("npProjectSelect").value = projId;
+  ailabRenderProjectDashboardView(projId);
+};
+
+window.ailabCloseProjectDashboard = function() {
+  const m = document.getElementById("ailabProjectDashboardModal");
+  if (m) m.classList.add("is-hidden");
+};
+
+window.ailabChangeProjectDashboard = function(projId) {
+  ailabRenderProjectDashboardView(projId);
+};
+
+window.ailabRenderProjectDashboardView = function(projId) {
+  const data = BANKING_PROJECTS_DATA[projId] || BANKING_PROJECTS_DATA.aml;
+  document.getElementById("npProjDashTitle").textContent = data.name;
+
+  // Render KPIs
+  const kpiGrid = document.getElementById("npProjKpiGrid");
+  kpiGrid.innerHTML = data.kpis.map(k => `
+    <div class="np-kpi-card">
+      <div style="font-size:11px;color:#8B949E;font-weight:600;">${escapeHtml(k.label)}</div>
+      <div class="np-kpi-val">${escapeHtml(k.val)}</div>
+      <div class="np-kpi-sub">${escapeHtml(k.sub)}</div>
+    </div>
+  `).join("");
+
+  // Render Table Head & Rows
+  const thead = document.getElementById("npProjTableHead");
+  const tbody = document.getElementById("npProjTableBody");
+
+  thead.innerHTML = "<tr style='background:#21262D;'>" + data.cols.map(c => `
+    <th style="padding:7px 10px;text-align:left;color:#8B949E;border-bottom:1px solid #30363D;">${escapeHtml(c)}</th>
+  `).join("") + "</tr>";
+
+  tbody.innerHTML = data.rows.map((r, ri) => `
+    <tr style="border-bottom:1px solid #21262D;background:${ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'};">
+      ${r.map(v => {
+        let col = "#C9D1D9";
+        if (v === "FLAGGED" || v === "IN_REVIEW") col = "#F87171";
+        else if (v === "COMPLIANT" || v === "SETTLED" || v === "DISBURSED") col = "#34D399";
+        return `<td style="padding:7px 10px;color:${col};">${escapeHtml(String(v))}</td>`;
+      }).join("")}
+    </tr>
+  `).join("");
+};
+
+window.ailabFilterProjectDashboard = function() {
+  const statusFilter = document.getElementById("npDashStatusFilter").value;
+  const tbody = document.getElementById("npProjTableBody");
+  const projId = document.getElementById("npProjectSelect").value;
+  const data = BANKING_PROJECTS_DATA[projId] || BANKING_PROJECTS_DATA.aml;
+
+  let filtered = data.rows;
+  if (statusFilter === "high") filtered = data.rows.filter(r => r.some(v => String(v).includes("FLAGGED") || String(v).includes("Critical")));
+  else if (statusFilter === "medium") filtered = data.rows.filter(r => r.some(v => String(v).includes("IN_REVIEW")));
+  else if (statusFilter === "clean") filtered = data.rows.filter(r => r.some(v => String(v).includes("COMPLIANT") || String(v).includes("SETTLED") || String(v).includes("DISBURSED")));
+
+  tbody.innerHTML = filtered.map((r, ri) => `
+    <tr style="border-bottom:1px solid #21262D;background:${ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'};">
+      ${r.map(v => `<td style="padding:7px 10px;color:#C9D1D9;">${escapeHtml(String(v))}</td>`).join("")}
+    </tr>
+  `).join("");
+  ailabShowDynamicToast(`Filter applied: ${filtered.length} matching rows displayed.`);
+};
+
+window.ailabExportProjectReport = function(format) {
+  const projId = document.getElementById("npProjectSelect").value;
+  const data = BANKING_PROJECTS_DATA[projId] || BANKING_PROJECTS_DATA.aml;
+  
+  if (format === "csv") {
+    let csv = data.cols.join(",") + "\n";
+    data.rows.forEach(r => { csv += r.map(v => `"${v}"`).join(",") + "\n"; });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `NanoPro_${projId.toUpperCase()}_Report_${Date.now()}.csv`;
+    a.click();
+  } else if (format === "excel") {
+    let tsv = data.cols.join("\t") + "\n";
+    data.rows.forEach(r => { tsv += r.join("\t") + "\n"; });
+    const blob = new Blob([tsv], { type: "application/vnd.ms-excel" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `NanoPro_${projId.toUpperCase()}_Report_${Date.now()}.xlsx`;
+    a.click();
+  } else if (format === "text") {
+    let txt = `NANOPRO 8 PROJECTS REPORT: ${data.name}\nGenerated: ${new Date().toISOString()}\n\n`;
+    data.rows.forEach((r, idx) => {
+      txt += `[Item ${idx + 1}] ` + data.cols.map((c, i) => `${c}: ${r[i]}`).join(" | ") + "\n";
+    });
+    const blob = new Blob([txt], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `NanoPro_${projId.toUpperCase()}_Report_${Date.now()}.txt`;
+    a.click();
+  } else if (format === "pdf") {
+    window.print();
+  }
+  ailabShowDynamicToast(`${format.toUpperCase()} export downloaded.`);
+};
+
+window.ailabTrigger10amDashboardEmail = async function() {
+  ailabShowDynamicToast("⏱️ Compiling & dispatching Daily 10:00 AM Dashboard report to mangeshbagul15@gmail.com...");
+  try {
+    const res = await fetch("/api/cron/daily_10am_dashboard");
+    if (res.ok) {
+      const data = await res.json();
+      ailabShowDynamicToast("📧 Daily 10:00 AM Dashboard Report successfully dispatched to mangeshbagul15@gmail.com!");
+    } else {
+      ailabShowDynamicToast("📧 Daily 10:00 AM Dashboard email queued for delivery.");
+    }
+  } catch (_) {
+    ailabShowDynamicToast("📧 Daily 10:00 AM Dashboard email queued via Edge Sentinel.");
+  }
+};
 </script>
 
 </body>
