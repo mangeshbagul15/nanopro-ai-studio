@@ -26,6 +26,21 @@ _SECRET_CACHE_TTL_S = 60.0
 _SECRET_CACHE_LOCK = threading.Lock()
 
 
+def _provider_secrets(env_name: str) -> List[str]:
+    """All configured keys for one provider, primary first.
+
+    Backup accounts live under NAME_2, NAME_3, ... Each Groq key has its own
+    rate bucket, so rotating on a 429 keeps a long agent run alive.
+    """
+    names = [env_name] + [f"{env_name}_{i}" for i in range(2, 8)]
+    out: List[str] = []
+    for name in names:
+        value = _provider_secret(name)
+        if value and value not in out:
+            out.append(value)
+    return out
+
+
 def _provider_secret(env_name: str) -> str:
     """Provider key from the environment, then the encrypted credential vault.
 
@@ -353,21 +368,29 @@ class GroqAdapter(ModelProviderAdapter):
     - openai/gpt-oss-20b: Sub-second conversational responses and quick greetings
     """
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("GROQ_API_KEY", "")
+        self.api_key = api_key or ""
         self.circuit_breaker = circuit_breaker
-        self._client = None
+        self._clients: Dict[str, Any] = {}
+
+    def _keys(self) -> List[str]:
+        keys = _provider_secrets("GROQ_API_KEY")
+        if self.api_key and self.api_key not in keys:
+            keys.insert(0, self.api_key)
+        return [k for k in keys if k.startswith("gsk_")]
 
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("GROQ_API_KEY", "")
-        return bool(k and k.startswith("gsk_"))
+        return bool(self._keys())
 
-    def _get_client(self):
-        k = self.api_key or os.environ.get("GROQ_API_KEY", "")
-        if self._client is None and k:
+    def _get_client(self, key: str = ""):
+        keys = self._keys()
+        k = key or (keys[0] if keys else "")
+        if not k:
+            return None
+        if k not in self._clients:
             import groq
             # max_retries=0 eliminates the internal 9s-34s backoff sleep on 429 rate limits
-            self._client = groq.Groq(api_key=k, max_retries=0)
-        return self._client
+            self._clients[k] = groq.Groq(api_key=k, max_retries=0)
+        return self._clients[k]
 
     def chat(
         self,
@@ -379,13 +402,12 @@ class GroqAdapter(ModelProviderAdapter):
         allow_fallback: bool = True,
         **kwargs
     ) -> Tuple[str, Any]:
-        if not self.is_available():
+        keys = self._keys()
+        if not keys:
             raise ValueError("Groq API Key is not configured. Set GROQ_API_KEY environment variable.")
-        
+
         if self.circuit_breaker and not self.circuit_breaker.can_execute("groq"):
             raise ConnectionError("Groq circuit breaker is OPEN. Fast-aborting request.")
-
-        client = self._get_client()
 
         messages = []
         if system_prompt:
@@ -423,65 +445,75 @@ class GroqAdapter(ModelProviderAdapter):
             reasoning_effort = ""
 
         last_err = None
-        for m in unique_models:
-            t_start = time.time()
-            try:
-                call_kwargs: Dict[str, Any] = {
-                    "model": m,
-                    "messages": messages,
-                    "temperature": 0.35,
-                    "timeout": timeout,
-                    "max_tokens": max_tokens_val
-                }
-                if reasoning_effort and "gpt-oss" in m.lower():
-                    call_kwargs["reasoning_effort"] = reasoning_effort
-                if schema:
-                    call_kwargs["response_format"] = {"type": "json_object"}
-                resp = client.chat.completions.create(**call_kwargs)
-                content = resp.choices[0].message.content.strip()
-                if content:
-                    dur_sec = max(0.0001, time.time() - t_start)
-                    t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
-                    token_count = 0
-                    if hasattr(resp, "usage") and resp.usage:
-                        raw_tc = getattr(resp.usage, "completion_tokens", 0)
-                        if isinstance(raw_tc, (int, float)):
-                            token_count = int(raw_tc)
-                    if token_count <= 0 and content:
-                        token_count = max(1, len(content.split()))
-                    tps = round(token_count / dur_sec, 2)
-
-                    if self.circuit_breaker:
-                        self.circuit_breaker.record_success("groq")
-
-                    telemetry = TelemetryDict({
-                        "latency_ms": t_dur_ms,
-                        "token_count": token_count,
-                        "tps": tps,
+        for key_index, key in enumerate(keys):
+            client = self._get_client(key)
+            more_keys = key_index < (len(keys) - 1)
+            for m in unique_models:
+                t_start = time.time()
+                try:
+                    call_kwargs: Dict[str, Any] = {
                         "model": m,
-                        "provider": "groq-lpu",
-                        "mode": f"groq-lpu:{m}"
-                    })
-                    return content, telemetry
-            except Exception as e:
-                last_err = e
-                err_str = str(e).lower()
-                is_provider_fatal = (
-                    _is_timeout_error(e)
-                    or isinstance(e, (ConnectionError, urllib.error.URLError))
-                    or "429" in str(e)
-                    or "rate limit" in err_str
-                    or "rate_limit" in err_str
-                    or any(k in err_str for k in ["connection", "disconnect", "remote", "closed", "reset", "network", "timeout", "quota", "unauthorized"])
-                    or any(c in str(e) for c in ["401", "502", "503", "504", "529"])
-                )
-                if self.circuit_breaker:
-                    self.circuit_breaker.record_failure("groq", e)
-                # On provider-level fatal failures (429 rate limit or network down), do NOT loop through
-                # remaining models on Groq; raise immediately so ModelManager cascades without delay.
-                if is_provider_fatal:
-                    raise e
-                continue
+                        "messages": messages,
+                        "temperature": 0.35,
+                        "timeout": timeout,
+                        "max_tokens": max_tokens_val
+                    }
+                    if reasoning_effort and "gpt-oss" in m.lower():
+                        call_kwargs["reasoning_effort"] = reasoning_effort
+                    if schema:
+                        call_kwargs["response_format"] = {"type": "json_object"}
+                    resp = client.chat.completions.create(**call_kwargs)
+                    content = resp.choices[0].message.content.strip()
+                    if content:
+                        dur_sec = max(0.0001, time.time() - t_start)
+                        t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                        token_count = 0
+                        if hasattr(resp, "usage") and resp.usage:
+                            raw_tc = getattr(resp.usage, "completion_tokens", 0)
+                            if isinstance(raw_tc, (int, float)):
+                                token_count = int(raw_tc)
+                        if token_count <= 0 and content:
+                            token_count = max(1, len(content.split()))
+                        tps = round(token_count / dur_sec, 2)
+
+                        if self.circuit_breaker:
+                            self.circuit_breaker.record_success("groq")
+
+                        telemetry = TelemetryDict({
+                            "latency_ms": t_dur_ms,
+                            "token_count": token_count,
+                            "tps": tps,
+                            "model": m,
+                            "provider": "groq-lpu",
+                            "mode": f"groq-lpu:{m}"
+                        })
+                        return content, telemetry
+                except Exception as e:
+                    last_err = e
+                    err_str = str(e).lower()
+                    is_provider_fatal = (
+                        _is_timeout_error(e)
+                        or isinstance(e, (ConnectionError, urllib.error.URLError))
+                        or "429" in str(e)
+                        or "rate limit" in err_str
+                        or "rate_limit" in err_str
+                        or any(k in err_str for k in ["connection", "disconnect", "remote", "closed", "reset", "network", "timeout", "quota", "unauthorized"])
+                        or any(c in str(e) for c in ["401", "402", "502", "503", "504", "529"])
+                    )
+                    # Throttled or rejected key: the next account has its own bucket.
+                    if is_provider_fatal and more_keys:
+                        log_event(
+                            f"Groq key {key_index + 1}/{len(keys)} failed ({err_str[:80]}); rotating to backup key",
+                            level="WARNING", component="ModelRouter"
+                        )
+                        break
+                    if self.circuit_breaker:
+                        self.circuit_breaker.record_failure("groq", e)
+                    # On provider-level fatal failures (429 rate limit or network down), do NOT loop through
+                    # remaining models on Groq; raise immediately so ModelManager cascades without delay.
+                    if is_provider_fatal:
+                        raise e
+                    continue
 
         raise RuntimeError(f"Groq LPU execution failed across {unique_models}: {last_err}")
 
@@ -805,13 +837,18 @@ class DeepSeekAdapter(ModelProviderAdapter):
     - deepseek-reasoner: DeepSeek-R1 state-of-the-art chain-of-thought reasoning, mathematics, logic & debugging
     """
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        self.api_key = api_key or ""
         self.base_url = (base_url or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip("/")
         self.circuit_breaker = circuit_breaker
 
+    def _keys(self) -> List[str]:
+        keys = _provider_secrets("DEEPSEEK_API_KEY")
+        if self.api_key and self.api_key not in keys:
+            keys.insert(0, self.api_key)
+        return [k for k in keys if k.startswith("sk-")]
+
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("DEEPSEEK_API_KEY", "")
-        return bool(k and k.startswith("sk-"))
+        return bool(self._keys())
 
     def chat(
         self,
@@ -822,7 +859,8 @@ class DeepSeekAdapter(ModelProviderAdapter):
         timeout: float = 60.0,
         **kwargs
     ) -> Tuple[str, Any]:
-        k = self.api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        keys = self._keys()
+        k = kwargs.pop("_key_override", "") or (keys[0] if keys else "")
         if not k:
             raise ValueError("DeepSeek API Key is not configured. Set DEEPSEEK_API_KEY environment variable.")
 
@@ -884,6 +922,14 @@ class DeepSeekAdapter(ModelProviderAdapter):
                 })
                 return content, telemetry
         except Exception as e:
+            backup = next((x for x in self._keys() if x and x != k), "")
+            if backup:
+                log_event(
+                    f"DeepSeek primary key failed ({str(e)[:80]}); retrying with the backup account",
+                    level="WARNING", component="ModelRouter"
+                )
+                return self.chat(model, prompt, schema=schema, system_prompt=system_prompt,
+                                 timeout=timeout, _key_override=backup, **kwargs)
             if self.circuit_breaker:
                 self.circuit_breaker.record_failure("deepseek", e)
             raise e
@@ -895,12 +941,12 @@ class OpenAIAdapter(ModelProviderAdapter):
     Provides direct access to GPT-4o, GPT-4o-mini, GPT-4.1, Whisper, and DALL-E 3 models.
     """
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        self.api_key = api_key or ""
         self.base_url = "https://api.openai.com/v1"
         self.circuit_breaker = circuit_breaker
 
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("OPENAI_API_KEY", "")
+        k = self.api_key or _provider_secret("OPENAI_API_KEY")
         return bool(k and k.startswith("sk-"))
 
     def chat(
@@ -912,7 +958,7 @@ class OpenAIAdapter(ModelProviderAdapter):
         timeout: float = 60.0,
         **kwargs
     ) -> Tuple[str, Any]:
-        k = self.api_key or os.environ.get("OPENAI_API_KEY", "")
+        k = self.api_key or _provider_secret("OPENAI_API_KEY")
         if not k:
             raise ValueError("OpenAI API Key is not configured. Set OPENAI_API_KEY environment variable.")
 
@@ -1000,12 +1046,12 @@ class ClaudeAdapter(ModelProviderAdapter):
     World's leading code architecture, reasoning, and context window model.
     """
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        self.api_key = api_key or ""
         self.base_url = "https://api.anthropic.com/v1"
         self.circuit_breaker = circuit_breaker
 
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        k = self.api_key or _provider_secret("ANTHROPIC_API_KEY")
         return bool(k and (k.startswith("sk-ant-") or k.startswith("sk-")))
 
     def chat(
@@ -1017,7 +1063,7 @@ class ClaudeAdapter(ModelProviderAdapter):
         timeout: float = 60.0,
         **kwargs
     ) -> Tuple[str, Any]:
-        k = self.api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        k = self.api_key or _provider_secret("ANTHROPIC_API_KEY")
         if not k:
             raise ValueError("Anthropic API Key is not configured. Set ANTHROPIC_API_KEY environment variable.")
 
@@ -1273,12 +1319,12 @@ class MistralAdapter(ModelProviderAdapter):
     Features specialized software engineering models: codestral-latest, mistral-large-latest, and mistral-small-latest.
     """
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
-        self.api_key = api_key or os.environ.get("MISTRAL_API_KEY", "")
+        self.api_key = api_key or ""
         self.base_url = "https://api.mistral.ai/v1"
         self.circuit_breaker = circuit_breaker
 
     def is_available(self) -> bool:
-        k = self.api_key or os.environ.get("MISTRAL_API_KEY", "")
+        k = self.api_key or _provider_secret("MISTRAL_API_KEY")
         return bool(k and k.startswith("mstrl_"))
 
     def chat(
@@ -1290,7 +1336,7 @@ class MistralAdapter(ModelProviderAdapter):
         timeout: float = 60.0,
         **kwargs
     ) -> Tuple[str, Any]:
-        k = self.api_key or os.environ.get("MISTRAL_API_KEY", "")
+        k = self.api_key or _provider_secret("MISTRAL_API_KEY")
         if not k:
             raise ValueError("Mistral API Key is not configured. Set MISTRAL_API_KEY environment variable.")
 

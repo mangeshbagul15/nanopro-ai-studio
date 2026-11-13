@@ -52,27 +52,50 @@ class ManagerAgent:
             "DEEPSEEK_API_KEY": "deepseek", "MISTRAL_API_KEY": "mistral",
             "COHERE_API_KEY": "cohere", "SAMBANOVA_API_KEY": "sambanova",
         }
-        env_match = re.search(r"\b([A-Z][A-Z0-9_]{2,40}_API_KEY)\s*[=:]\s*([^\s,;]+)", p)
-        bare_or_key = re.search(r"\b(sk-or-v1-[0-9a-fA-F]{20,})\b", p)
-        chosen_env = ""
-        provider_key = ""
-        if env_match and env_match.group(1) in provider_names:
-            chosen_env, provider_key = env_match.group(1), env_match.group(2).strip()
-        elif bare_or_key and "openrouter" in p.lower():
-            chosen_env, provider_key = "OPENROUTER_API_KEY", bare_or_key.group(1)
-        if chosen_env and provider_key:
+        # Accept numbered backup accounts (GROQ_API_KEY_2/_3, DEEPSEEK_API_KEY_2, ...)
+        # and store each pair in one pass; the router reads NAME + NAME_2..NAME_7.
+        env_matches = list(re.finditer(
+            r"\b([A-Z][A-Z0-9_]{2,40}_API_KEY(?:_\d{1,2})?)\s*[=:]\s*([^\s,;`'\"]+)", p
+        ))
+        base_of = lambda name: re.sub(r"_\d{1,2}$", "", name)
+        stored: List[Dict[str, str]] = []
+        for m in env_matches:
+            env_name, key_val = m.group(1), m.group(2).strip()
+            base = base_of(env_name)
+            if base not in provider_names or not key_val or key_val.lower() in ("your_key", "x", "placeholder"):
+                continue
+            if any(s["credential_id"] == env_name for s in stored):
+                continue
             credentials_vault.store_credential(
-                service_name=chosen_env,
+                service_name=env_name,
                 credential_type="api_key",
-                secret_value=provider_key,
-                additional_info={"provider": provider_names[chosen_env]},
+                secret_value=key_val,
+                additional_info={"provider": provider_names[base]},
             )
-            log_event(f"Provider key for [{provider_names[chosen_env]}] stored in Vault", component="AIManager")
+            stored.append({"credential_id": env_name, "service": provider_names[base]})
+        if not stored:
+            bare_or_key = re.search(r"\b(sk-or-v1-[0-9a-fA-F]{20,})\b", p)
+            if bare_or_key and "openrouter" in p.lower():
+                credentials_vault.store_credential(
+                    service_name="OPENROUTER_API_KEY",
+                    credential_type="api_key",
+                    secret_value=bare_or_key.group(1),
+                    additional_info={"provider": "openrouter"},
+                )
+                stored.append({"credential_id": "OPENROUTER_API_KEY", "service": "openrouter"})
+        if stored:
+            by_service: Dict[str, int] = {}
+            for s in stored:
+                by_service[s["service"]] = by_service.get(s["service"], 0) + 1
+            summary = ", ".join(f"{k} x{v}" for k, v in by_service.items())
+            log_event(f"Provider keys stored in Vault: {summary}", component="AIManager")
             return {
                 "detected": True,
-                "credential_id": chosen_env,
-                "service": provider_names[chosen_env],
+                "credential_id": stored[0]["credential_id"],
+                "service": stored[0]["service"],
                 "saved_fields": ["api_key"],
+                "stored": stored,
+                "summary": summary,
             }
 
         # Regex patterns for credential keywords
