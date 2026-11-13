@@ -3574,7 +3574,37 @@ CRITICAL OPERATIONAL RULES:
 
     if (path === "/api/ai/execute" && request.method === "POST") {
       let body = {};
-      try { body = await request.json(); } catch (_) {}
+      try { body = await request.clone().json(); } catch (_) {}
+      // The CUA planner sends agent:"cua". Its prompts talk about browsers and
+      // searches, so they must never hit the edge intent templates below —
+      // never return canned text to an agent that parses JSON actions.
+      if (body && body.agent === "cua") {
+        const cuaRenderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
+        try {
+          const targetUrl = new URL(path + url.search, cuaRenderBase);
+          const headers = new Headers(request.headers);
+          headers.delete("host");
+          headers.set("Host", targetUrl.host);
+          headers.set("X-Forwarded-Host", url.host);
+          headers.set("X-NanoPro-Gateway", "Cloudflare-CUA-Planner-Render-Direct");
+          const response = await fetch(targetUrl.toString(), {
+            method: "POST",
+            headers,
+            body: await request.text(),
+            signal: AbortSignal.timeout(75000)
+          });
+          const fh = new Headers(response.headers);
+          fh.set("X-NanoPro-Routed-Node", cuaRenderBase);
+          fh.set("X-NanoPro-Mode", "RENDER_CUA_PLANNER_DIRECT");
+          fh.set("Access-Control-Allow-Origin", "*");
+          return new Response(response.body, { status: response.status, headers: fh });
+        } catch (err) {
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "CUA planner backend is unreachable. Please retry in a few seconds."
+          }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+      }
       const prompt = body.prompt || "";
       const model = body.model || "auto";
       const rawMessages = body.messages || [{ role: "user", content: prompt }];

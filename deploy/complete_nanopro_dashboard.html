@@ -24222,6 +24222,8 @@ body.in-global_ai_lab .nano-dynamic-island {
 
     parseAction: function (text) {
       let raw = String(text || "").trim();
+      const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (fence && fence[1].indexOf("{") !== -1) raw = fence[1].trim();
       raw = raw.replace(/^```(?:json)?/i, "").replace(/```\s*$/, "").trim();
       const start = raw.indexOf("{");
       if (start === -1) throw new Error("model did not return JSON");
@@ -24282,6 +24284,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           prompt: system + "\n\n" + observation,
           model: (window.AILAB && AILAB.selectedModel) || "auto",
           effort: (window.AILAB && AILAB.selectedEffort) || "default",
+          agent: "cua",
           messages: []
         }),
         signal: AbortSignal.timeout(70000)
@@ -24289,7 +24292,30 @@ body.in-global_ai_lab .nano-dynamic-island {
       const data = await res.json().catch(() => ({}));
       const text = data.response || data.message || data.text || "";
       if (!text) throw new Error(data.message || "model returned an empty response");
-      return this.parseAction(text);
+      this.lastModel = data.model_executed || data.model_name || this.lastModel || "";
+      try {
+        return this.parseAction(text);
+      } catch (firstErr) {
+        this.logLine("warn", "Model reply was not JSON (" + this.lastModel + "), retrying once…");
+        const retryRes = await fetch("/api/ai/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: system + "\n\n" + observation + "\n\nIMPORTANT: Answer with ONE JSON object only. No prose, no markdown, no code fences.",
+            model: (window.AILAB && AILAB.selectedModel) || "auto",
+            effort: (window.AILAB && AILAB.selectedEffort) || "default",
+            agent: "cua",
+            messages: []
+          }),
+          signal: AbortSignal.timeout(70000)
+        });
+        const retryData = await retryRes.json().catch(() => ({}));
+        const retryText = retryData.response || retryData.message || retryData.text || "";
+        if (retryText) {
+          try { return this.parseAction(retryText); } catch (_) {}
+        }
+        throw new Error("model did not return JSON: " + String(text).slice(0, 120).replace(/\s+/g, " "));
+      }
     },
 
     describeAction: function (plan) {
@@ -24391,7 +24417,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           this.updateActionHud("🤖", "Step " + this.step + " — planning…");
           const plan = await this.plan(task, snap);
           const action = String(plan.action || "").toLowerCase();
-          this.logLine("thought", "Step " + this.step + ": " + (plan.thought || action));
+          this.logLine("thought", "Step " + this.step + (this.lastModel ? " · " + this.lastModel : "") + ": " + (plan.thought || action));
           this.updateActionHud("🤖", plan.thought || action);
 
           if (action === "done") {
