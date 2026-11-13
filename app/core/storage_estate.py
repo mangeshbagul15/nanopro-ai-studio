@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 from app.core.config import BASE_DIR, SQLITE_DB_PATH
 
 CACHE_TTL_SECONDS = 45.0
+BIGQUERY_SANDBOX_CAP_BYTES = 10 * 1024 ** 3  # documented Always Free Sandbox storage quota
 SOURCE_DEADLINE_SECONDS = 9.0
 
 _cache: Dict[str, Any] = {"at": 0.0, "data": None}
@@ -288,7 +289,9 @@ def _bigquery_usage() -> Dict[str, Any]:
             return _source(
                 "bigquery", "BigQuery", f"{project} (__TABLES__ metadata)", "cloud",
                 used_bytes=0,
-                detail="Service account is connected but the project holds 0 datasets; measured 0 B",
+                total_bytes=BIGQUERY_SANDBOX_CAP_BYTES,
+                free_bytes=BIGQUERY_SANDBOX_CAP_BYTES,
+                detail="Service account is connected but the project holds 0 datasets; measured 0 B of the 10 GB sandbox cap",
                 latency_ms=(time.perf_counter() - started) * 1000,
                 no_fixed_quota=True,
                 auth_source=auth_source,
@@ -311,7 +314,9 @@ def _bigquery_usage() -> Dict[str, Any]:
             return _source(
                 "bigquery", "BigQuery", f"{project} (__TABLES__ metadata)", "cloud",
                 used_bytes=used,
-                detail=f"{datasets} datasets, {tables} tables by size_bytes"
+                total_bytes=BIGQUERY_SANDBOX_CAP_BYTES,
+                free_bytes=max(0, BIGQUERY_SANDBOX_CAP_BYTES - used),
+                detail=f"{datasets} datasets, {tables} tables by size_bytes; 10 GB sandbox cap"
                        + (f"; {len(failures)} dataset(s) unreadable" if failures else ""),
                 latency_ms=(time.perf_counter() - started) * 1000,
                 no_fixed_quota=True,
@@ -459,7 +464,7 @@ def measure_storage_estate(force: bool = False) -> Dict[str, Any]:
 
     result = {
         "status": "success",
-        "code_revision": "storage-estate-4",
+        "code_revision": "storage-estate-5",
         "generated_at": now,
         "generated_at_iso": datetime.now().astimezone().isoformat(timespec="seconds"),
         "sources": sources,
