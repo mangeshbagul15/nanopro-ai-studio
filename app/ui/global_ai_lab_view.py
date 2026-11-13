@@ -2266,7 +2266,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span style="font-size:11px;color:#10B981;margin-left:4px;pointer-events:none;">▼</span>
       </div>
 
-      <button type="button" class="ailab-browse-btn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, Medallion DAGs & SFTP Hub" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#34D399;font-weight:700;">
+      <button type="button" class="ailab-browse-btn" id="ailabAirflowTopbarBtn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, Medallion DAGs & SFTP Hub" style="background:rgba(16,185,129,0.22) !important;border:1.5px solid #10B981 !important;box-shadow:0 0 12px rgba(16,185,129,0.4) !important;color:#34D399 !important;font-weight:800 !important;cursor:pointer !important;z-index:999 !important;display:inline-flex !important;align-items:center !important;gap:5px !important;">
+        <span class="ailab-pulse-dot" style="background:#10B981 !important;box-shadow:0 0 6px #10B981 !important;width:7px;height:7px;border-radius:50%;display:inline-block;"></span>
         <span>⏱️ Airflow &amp; SFTP</span>
       </button>
       <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,750+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
@@ -2359,6 +2360,9 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span class="ailab-explorer-badge" id="ailabExplorerCount">4 Databases</span>
         </div>
         <div class="ailab-explorer-tools">
+          <button type="button" class="ailab-iconbtn" onclick="ailabOpenAirflowModal()" title="Open Airflow Orchestrator & SFTP Hub" style="width:auto;padding:0 8px;gap:4px;color:#34D399;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.15);font-weight:700;font-size:11px;cursor:pointer;">
+            <span>⏱️ Airflow</span>
+          </button>
           <button class="ailab-iconbtn" onclick="ailabLoadExplorer(true)" title="Rescan Lakehouses">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
           </button>
@@ -2366,6 +2370,19 @@ body.in-global_ai_lab .nano-dynamic-island {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
         </div>
+      </div>
+      <!-- Persistent Airflow & SFTP Action Card inside Explorer -->
+      <div style="padding:8px 12px;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(6,182,212,0.1));border-bottom:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span style="font-size:16px;">⏱️</span>
+          <div>
+            <div style="font-size:11.5px;font-weight:800;color:#F8FAFC;">Airflow Orchestrator</div>
+            <div style="font-size:10px;color:#34D399;">8 DAGs • EOD T-1 • SFTP Hub</div>
+          </div>
+        </div>
+        <button type="button" class="ailab-btn-primary" onclick="ailabOpenAirflowModal()" style="padding:4px 10px;font-size:11px;background:#10B981;border-color:#10B981;color:#FFFFFF;font-weight:800;cursor:pointer;border-radius:6px;box-shadow:0 0 10px rgba(16,185,129,0.4);">
+          Launch ➔
+        </button>
       </div>
       <div class="ailab-explorer-search">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -2533,8 +2550,51 @@ body.in-global_ai_lab .nano-dynamic-island {
         </div>
       </div>
 
+
+
+      <button type="button" class="ailab-modal-close" onclick="ailabCloseModelCatalogModal()">&times;</button>
+    </div>
+    <div class="ailab-modal-search">
+      <span style="font-size:16px;color:#8B5CF6;">🔍</span>
+      <input type="text" id="ailabModelSearchInput" placeholder="Search 4,750+ models by name, lab, provider, or capability (e.g. claude, deepseek, flux, qwen, free)..." oninput="ailabFilterModels()">
+    </div>
+    <div class="ailab-modal-pills">
+      <button type="button" class="ailab-pill is-active" onclick="ailabFilterModelCategory('all', this)">All Mesh (4,750+)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('krutrim', this)">🇮🇳 Krutrim AI (Ola)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('poe', this)">⚡ Poe by Quora (303)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('parasail', this)">⛵ Parasail (107)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('arcee', this)">🏹 Arcee AI (SLMs)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('edenai', this)">🌿 Eden AI (1,311)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('requesty', this)">🌐 Requesty AI (750)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('cf_ai', this)">☁️ Cloudflare Workers AI (150+)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('novita', this)">🚀 Novita AI (99)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('nvidia', this)">🟢 NVIDIA NIM (83)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('sambanova', this)">⚡ SambaNova (RDU)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('openrouter', this)">⚡ OpenRouter (473)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('aimlapi', this)">🚀 AI/ML API (995)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('deepinfra', this)">🧠 DeepInfra (177)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('mistral', this)">🇫🇷 Mistral Direct (56)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('hf', this)">🤗 Hugging Face (110+)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('groq', this)">⚡ Groq LPUs (11)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('friendli_thesean', this)">🚀 Friendli &amp; TheSean</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('deepseek', this)">🇨🇳 DeepSeek Direct</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('fal_replicate', this)">🎨 Fal.ai &amp; Replicate</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('free', this)">🆓 Free Tier</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('reasoning', this)">🧠 Reasoning SOTA</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('code', this)">💻 Code Specialists</button>
+    </div>
+    <div class="ailab-modal-grid" id="ailabModelModalGrid">
+      <!-- Dynamically filled with model cards -->
+    </div>
+    <div class="ailab-modal-footer">
+      <span>⚡ Single AUTO Engine evaluates Pareto Frontier in &lt; 3.0ms</span>
+      <span style="color:#10B981;">🛡️ 429 Shield Active • Render RAM: 0 MB</span>
+    </div>
+  </div>
+</div>
+
 <!-- AIRFLOW ORCHESTRATOR & SFTP HUB MODAL -->
-<div class="ailab-modal-backdrop" id="ailabAirflowModal" onclick="ailabCloseAirflowModal(event)">
+<div class="ailab-modal-backdrop" id="ailabAirflowModal" style="position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;height:100vh !important;z-index:999999 !important;background:rgba(3,7,18,0.88) !important;backdrop-filter:blur(12px) !important;display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="ailabCloseAirflowModal(event)">
   <div class="ailab-modal" style="max-width:920px;max-height:88vh;" onclick="event.stopPropagation()">
     <div class="ailab-modal-head">
       <div style="display:flex;align-items:center;gap:10px;">
@@ -2636,46 +2696,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   </div>
 </div>
 
-      <button type="button" class="ailab-modal-close" onclick="ailabCloseModelCatalogModal()">&times;</button>
-    </div>
-    <div class="ailab-modal-search">
-      <span style="font-size:16px;color:#8B5CF6;">🔍</span>
-      <input type="text" id="ailabModelSearchInput" placeholder="Search 4,750+ models by name, lab, provider, or capability (e.g. claude, deepseek, flux, qwen, free)..." oninput="ailabFilterModels()">
-    </div>
-    <div class="ailab-modal-pills">
-      <button type="button" class="ailab-pill is-active" onclick="ailabFilterModelCategory('all', this)">All Mesh (4,750+)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('krutrim', this)">🇮🇳 Krutrim AI (Ola)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('poe', this)">⚡ Poe by Quora (303)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('parasail', this)">⛵ Parasail (107)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('arcee', this)">🏹 Arcee AI (SLMs)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('edenai', this)">🌿 Eden AI (1,311)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('requesty', this)">🌐 Requesty AI (750)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('cf_ai', this)">☁️ Cloudflare Workers AI (150+)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('novita', this)">🚀 Novita AI (99)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('nvidia', this)">🟢 NVIDIA NIM (83)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('sambanova', this)">⚡ SambaNova (RDU)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('openrouter', this)">⚡ OpenRouter (473)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('aimlapi', this)">🚀 AI/ML API (995)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('deepinfra', this)">🧠 DeepInfra (177)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('mistral', this)">🇫🇷 Mistral Direct (56)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('hf', this)">🤗 Hugging Face (110+)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('groq', this)">⚡ Groq LPUs (11)</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('friendli_thesean', this)">🚀 Friendli &amp; TheSean</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('deepseek', this)">🇨🇳 DeepSeek Direct</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('fal_replicate', this)">🎨 Fal.ai &amp; Replicate</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('free', this)">🆓 Free Tier</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('reasoning', this)">🧠 Reasoning SOTA</button>
-      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('code', this)">💻 Code Specialists</button>
-    </div>
-    <div class="ailab-modal-grid" id="ailabModelModalGrid">
-      <!-- Dynamically filled with model cards -->
-    </div>
-    <div class="ailab-modal-footer">
-      <span>⚡ Single AUTO Engine evaluates Pareto Frontier in &lt; 3.0ms</span>
-      <span style="color:#10B981;">🛡️ 429 Shield Active • Render RAM: 0 MB</span>
-    </div>
-  </div>
-</div>
+
 
 <script>
 (function() {
@@ -5523,17 +5544,34 @@ body.in-global_ai_lab .nano-dynamic-island {
   // AIRFLOW ORCHESTRATOR & SFTP HUB CONTROLLER
   // =========================================================================
   window.ailabOpenAirflowModal = async function() {
+    console.log("[Airflow] Opening Airflow Orchestrator & SFTP Modal...");
     const modal = document.getElementById("ailabAirflowModal");
-    if (!modal) return;
+    if (!modal) {
+      console.error("[Airflow] Modal element #ailabAirflowModal not found!");
+      alert("Airflow modal element not found!");
+      return;
+    }
+    modal.style.display = "flex";
     modal.classList.add("is-open");
-    await ailabLoadAirflowDags();
-    await ailabLoadSftpReports();
+    try {
+      await ailabLoadAirflowDags();
+    } catch (err) {
+      console.error("[Airflow] Error loading DAGs:", err);
+    }
+    try {
+      await ailabLoadSftpReports();
+    } catch (err) {
+      console.error("[Airflow] Error loading SFTP reports:", err);
+    }
   };
 
   window.ailabCloseAirflowModal = function(e) {
     if (e && e.target !== e.currentTarget && !e.target.classList.contains("ailab-modal-close")) return;
     const modal = document.getElementById("ailabAirflowModal");
-    if (modal) modal.classList.remove("is-open");
+    if (modal) {
+      modal.style.display = "none";
+      modal.classList.remove("is-open");
+    }
   };
 
   window.ailabSwitchAirflowTab = function(tab) {
