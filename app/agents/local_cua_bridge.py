@@ -78,7 +78,17 @@ SNAPSHOT_JS = r"""
       const v = String(el.value || '');
       shownValue = v.length > 40 ? '(filled, ' + v.length + ' chars)' : v;
     }
-    const label = (el.innerText || (tag === 'select' ? '' : shownValue) || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '')
+    let label = (el.innerText || (tag === 'select' ? '' : shownValue) || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '');
+    if (!label && el.id) {
+      // Text inputs usually carry no innerText; the visible caption lives in an
+      // associated <label for=...> or a wrapping <label>.
+      try {
+        const forLabel = document.querySelector('label[for="' + CSS.escape(el.id) + '"]');
+        const wrapLabel = el.closest('label');
+        label = (forLabel && forLabel.innerText) || (wrapLabel && wrapLabel.innerText) || '';
+      } catch (e) {}
+    }
+    label = String(label || '')
       .replace(/\s+/g, ' ').trim().slice(0, 90);
     if (!label && !isField) continue;
     const r = el.getBoundingClientRect();
@@ -93,6 +103,13 @@ SNAPSHOT_JS = r"""
       w: Math.round(r.width),
       h: Math.round(r.height)
     };
+    if (el.required || el.getAttribute('aria-required') === 'true') entry.required = true;
+    if (tag === 'select') {
+      const opts = Array.from(el.options || []).slice(0, 12).map(function (o) {
+        return String(o.value || '').slice(0, 24) + '=' + String(o.text || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+      });
+      if (opts.length) entry.options = opts.join('; ').slice(0, 200);
+    }
     if (checkable) entry.checked = !!el.checked;
     let invalid = false;
     try { invalid = !!(el.matches && el.matches(':invalid')); } catch (e) { invalid = false; }
@@ -129,7 +146,8 @@ SNAPSHOT_JS = r"""
     scroll: {
       y: Math.round(window.scrollY),
       height: Math.round(document.documentElement.scrollHeight),
-      viewport: window.innerHeight
+      viewport: window.innerHeight,
+      width: window.innerWidth
     }
   };
 }

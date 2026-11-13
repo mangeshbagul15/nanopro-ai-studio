@@ -1258,7 +1258,16 @@ class OpenRouterAdapter(ModelProviderAdapter):
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+        # Vision grounding: the CUA bridge sends a JPEG data URL so a vision model
+        # can locate the target when DOM indexes fail (canvas, shadow DOM, iframes).
+        image = str(kwargs.get("image") or "").strip()
+        if image.startswith("data:image/"):
+            messages.append({"role": "user", "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": image}},
+            ]})
+        else:
+            messages.append({"role": "user", "content": prompt})
 
         payload = {
             "model": m_clean,

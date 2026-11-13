@@ -314,6 +314,10 @@ class NanoProMCPServer:
                             "type": "string",
                             "description": "Model ID to invoke, or 'auto' for intelligent mathematical routing",
                             "default": "auto"
+                        },
+                        "image": {
+                            "type": "string",
+                            "description": "Optional screenshot data URL (data:image/jpeg;base64,...) for vision grounding"
                         }
                     },
                     "required": ["prompt"]
@@ -1070,11 +1074,19 @@ class NanoProMCPServer:
         elif effort in ("reasoning", "architecture"):
             reasoning = {"effort": "high"}
         from app.core.model_adapter import model_manager
+        image = str(args.get("image") or "").strip()
         try:
+            # A screenshot is only meaningful to the requested vision model; text-only
+            # fallbacks would hallucinate coordinates, so they are not chained here.
+            models = [model_id] if image.startswith("data:image/") else [
+                model_id, "openai/gpt-oss-120b", "gemini-3.8-flash", "qwen/qwen3.8-27b"
+            ]
             content, used_model, mode = model_manager.execute_with_fallback(
                 prompt=prompt,
-                models=[model_id, "openai/gpt-oss-120b", "gemini-3.8-flash", "qwen/qwen3.8-27b"],
-                reasoning=reasoning
+                models=models,
+                reasoning=reasoning,
+                allow_fallback=not image.startswith("data:image/"),
+                image=image or None,
             )
             GLOBAL_AI_ROUTER.bandit.record_feedback(model_id, success=True, latency_ms=(time.time() - start_t) * 1000)
             from app.core.global_ai_catalog import resolve_model_provenance

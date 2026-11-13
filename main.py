@@ -2737,7 +2737,8 @@ async def api_global_ai_execute(payload: Dict[str, Any] = Body(...)):
             "prompt": prompt,
             "model": model,
             "messages": messages,
-            "effort": effort
+            "effort": effort,
+            "image": payload.get("image", ""),
         })
         content = json.loads(res["content"][0]["text"])
         return JSONResponse(content)

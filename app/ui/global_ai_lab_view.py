@@ -6407,7 +6407,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       const elements = (obs.elements || []).slice(0, 90);
       const elementLines = elements
         .map((e) => "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' +
-          (e.checked ? " (checked)" : "") + (e.invalid ? " (invalid)" : "") + (e.disabled ? " (disabled)" : "") + (e.href ? " -> " + e.href : ""))
+          (e.checked ? " (checked)" : "") + (e.invalid ? " (invalid)" : "") + (e.required ? " (required)" : "") +
+          (e.disabled ? " (disabled)" : "") + (e.options ? " options={" + e.options + "}" : "") +
+          (e.href ? " -> " + e.href : ""))
         .join("\n");
       const system = [
         "You are NanoPro CUA, an autonomous browser agent driving a real Chromium window.",
@@ -6417,6 +6419,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         "Rules:",
         "- Use these action names exactly: goto (not navigate/open), click (not left_click), type, press, scroll, done.",
         "- Use only element indexes from the provided list.",
+        "- Elements marked (required) must be filled before submit. A select lists its choices as options={value=Label; ...}: use select{index,value:\"<value before =>\"}.",
+        "- If a click target has no index or the index fails, you may click by coordinates: click{x,y} in viewport pixels (viewport size is in SCROLL).",
         "- Headings and paragraphs have no index: select their exact text with select_text{text:\"exact phrase from VISIBLE TEXT\"}.",
         "- If SELECTED TEXT already holds the target text, do NOT select again — the next step is copy.",
         "- If LAST COPY already matches what the task asked for, return done instead of copying again.",
@@ -6663,6 +6667,61 @@ body.in-global_ai_lab .nano-dynamic-island {
       return this.squadParse(text);
     },
 
+    // Screenshot grounding: when DOM indexes fail or an action changes nothing,
+    // a vision model looks at the live frame and returns a click point instead.
+    visionPlan: async function (task, snap) {
+      if ((this.visionUsed || 0) >= 3) return null;
+      let frame = null;
+      try { frame = await this.bridge("/frame", null, 9000); } catch (_) { return null; }
+      if (!frame || !frame.ok || !frame.screenshot) return null;
+      const vw = (snap && snap.scroll && snap.scroll.width) || 1280;
+      const vh = (snap && snap.scroll && snap.scroll.viewport) || 800;
+      this.visionUsed = (this.visionUsed || 0) + 1;
+      const system = [
+        "You are NanoPro CUA's vision module looking at a live browser screenshot.",
+        "Locate the single control the task needs for its next step.",
+        'Reply with ONE JSON object and nothing else: {"thought":"max 12 words","x_pct":0.0-1.0,"y_pct":0.0-1.0}',
+        "x_pct/y_pct are the fraction of the screenshot width/height at the centre of the target control.",
+        "Choose only what is visible in the screenshot. Never target password, OTP or payment fields."
+      ].join("\n");
+      const observation = [
+        "TASK: " + task,
+        "URL: " + ((frame && frame.url) || (snap && snap.url) || ""),
+        "VIEWPORT: " + vw + "x" + vh,
+        "PAGE TEXT:",
+        String((snap && snap.text) || "").slice(0, 1200)
+      ].join("\n");
+      try {
+        const res = await fetch("/api/ai/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: system + "\n\n" + observation,
+            model: "openrouter@nvidia/nemotron-3.5-super-vl:free",
+            effort: "fast",
+            agent: "cua-vision",
+            messages: [],
+            image: frame.screenshot
+          }),
+          signal: AbortSignal.timeout(45000)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || (data && data.status === "error")) throw new Error((data && data.error) || ("HTTP " + res.status));
+        const text = String(data.response || data.message || data.text || "");
+        const m = text.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("vision returned no JSON");
+        const v = JSON.parse(m[0]);
+        const x = Math.round(Number(v.x_pct) * vw);
+        const y = Math.round(Number(v.y_pct) * vh);
+        if (!isFinite(x) || !isFinite(y) || x <= 0 || y <= 0 || x >= vw || y >= vh) throw new Error("vision coordinates out of range");
+        this.logLine("act", "👁️ Vision grounding: " + (v.thought || "target located") + " (" + x + "," + y + ")");
+        return { action: "click", x: x, y: y, thought: v.thought || "vision-grounding click", _vision: true };
+      } catch (err) {
+        this.logLine("warn", "Vision grounding unavailable: " + err.message);
+        return null;
+      }
+    },
+
     runTask: async function (taskText) {
       const task = String(taskText || "").trim();
       if (!task) return;
@@ -6693,6 +6752,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.repeatCount = 0;
       this.scrollStreak = 0;
       this.planFails = 0;
+      this.visionUsed = 0;
       this.clearTaskLog();
       this.logLine("task", "TASK: " + task);
       this.updateActionHud("🧭", "Reading the page…");
@@ -6740,18 +6800,23 @@ body.in-global_ai_lab .nano-dynamic-island {
               // Let the Critic agent read the page instead of blindly retrying.
               this.logLine("warn", "Same action again — Critic is re-reading the page");
               this.escalateModel("an action repeated without any page change");
-              let criticNote = "";
-              try {
-                const review = await this.criticReview(task, snap, plan, { ok: false, error: "no visible page change" });
-                if (review && review.note) {
-                  criticNote = review.note;
-                  this.logLine("warn", "🕵️ Critic: " + criticNote);
-                }
-              } catch (_) {}
-              pendingNote = "SYSTEM NOTE: your previous action produced no visible change and you were about to repeat it. " +
-                (criticNote ? "CRITIC AGENT says: " + criticNote + " " : "") +
-                "Look for red validation/error text in VISIBLE TEXT and for required (*) fields that are still empty. Fill the missing field or choose a different element — do NOT repeat the same click/index.";
-              continue;
+              const vision = await this.visionPlan(task, snap);
+              if (vision) {
+                plan = vision;
+              } else {
+                let criticNote = "";
+                try {
+                  const review = await this.criticReview(task, snap, plan, { ok: false, error: "no visible page change" });
+                  if (review && review.note) {
+                    criticNote = review.note;
+                    this.logLine("warn", "🕵️ Critic: " + criticNote);
+                  }
+                } catch (_) {}
+                pendingNote = "SYSTEM NOTE: your previous action produced no visible change and you were about to repeat it. " +
+                  (criticNote ? "CRITIC AGENT says: " + criticNote + " " : "") +
+                  "Look for red validation/error text in VISIBLE TEXT and for required (*) fields that are still empty. Fill the missing field or choose a different element — do NOT repeat the same click/index.";
+                continue;
+              }
             }
             if (this.repeatCount >= 4) {
               this.logLine("warn", "Stopped: the same action repeated 4 times without any change.");
@@ -6830,6 +6895,20 @@ body.in-global_ai_lab .nano-dynamic-island {
                 this.logLine("warn", "🕵️ Critic: " + criticNote);
               }
             } catch (_) {}
+            const vision = await this.visionPlan(task, snap);
+            if (vision) {
+              const vres = await this.bridge("/act", vision, 90000);
+              if (vres && vres.ok !== false) {
+                this.logLine("act", "👁️ Vision click landed at " + vision.x + "," + vision.y);
+                if (typeof vres.x === "number" && typeof vres.y === "number") {
+                  this.moveCursor(vres.x, vres.y, "vision click");
+                  this.triggerClickRipple(vres.x, vres.y);
+                }
+                await new Promise((r) => setTimeout(r, 300));
+                continue;
+              }
+              this.logLine("warn", "Vision click did not land: " + ((vres && vres.error) || "unknown error"));
+            }
             pendingNote = "SYSTEM NOTE: your previous action failed with: " + (result.error || "unknown error") + ". " +
               (criticNote ? "CRITIC AGENT says: " + criticNote + " " : "") +
               "Do not repeat it. Re-check the INTERACTIVE ELEMENTS list, scroll the target into view, or pick a different element or approach.";
