@@ -94,8 +94,14 @@ SNAPSHOT_JS = r"""
       h: Math.round(r.height)
     };
     if (checkable) entry.checked = !!el.checked;
+    let invalid = false;
+    try { invalid = !!(el.matches && el.matches(':invalid')); } catch (e) { invalid = false; }
+    if (el.getAttribute('aria-invalid') === 'true') invalid = true;
+    if (invalid) entry.invalid = true;
     if (el.disabled) entry.disabled = true;
     elements.push(entry);
+    if (invalid) formBits.push('invalid[' + entry.i + '] "' + label + '"');
+    if (tag === 'input' && shownValue && !checkable) formBits.push('value[' + entry.i + '] "' + shownValue + '"');
     if (tag === 'select') {
       const opt = el.options ? el.options[el.selectedIndex] : null;
       formBits.push('select[' + entry.i + '] "' + label + '" = "' + String(opt ? opt.text : el.value || '').replace(/\s+/g, ' ').trim().slice(0, 40) + '"');

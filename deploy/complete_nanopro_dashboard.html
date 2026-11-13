@@ -24400,6 +24400,20 @@ body.in-global_ai_lab .nano-dynamic-island {
         finished: "done", finish: "done", complete: "done"
       };
       const raw = String(plan.action || "").toLowerCase().replace(/\s+/g, "_");
+      if (!raw) {
+        // Some models nest the step: {"thought": "...", "click": {"index": 4}}
+        const known = ["goto", "click", "type", "fill", "press", "scroll", "wait", "back", "select", "select_text",
+          "copy", "paste", "download", "upload", "drag", "save_secret", "ask_user", "done"];
+        for (const k of Object.keys(plan)) {
+          if (known.indexOf(k) === -1) continue;
+          const v = plan[k];
+          delete plan[k];
+          plan.action = alias[k] || k;
+          if (v && typeof v === "object" && !Array.isArray(v)) Object.assign(plan, v);
+          else if (v != null && ["click", "type", "fill", "press", "select", "download", "upload"].indexOf(k) !== -1) plan.index = v;
+          break;
+        }
+      }
       if (alias[raw]) plan.action = alias[raw];
       if (raw === "scroll_down") plan.direction = plan.direction || "down";
       if (raw === "scroll_up") plan.direction = plan.direction || "up";
@@ -24468,7 +24482,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       const elements = (obs.elements || []).slice(0, 90);
       const elementLines = elements
         .map((e) => "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' +
-          (e.checked ? " (checked)" : "") + (e.disabled ? " (disabled)" : "") + (e.href ? " -> " + e.href : ""))
+          (e.checked ? " (checked)" : "") + (e.invalid ? " (invalid)" : "") + (e.disabled ? " (disabled)" : "") + (e.href ? " -> " + e.href : ""))
         .join("\n");
       const system = [
         "You are NanoPro CUA, an autonomous browser agent driving a real Chromium window.",
@@ -24493,6 +24507,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         "- Keep text fields short; one click or one field per step.",
         "- FORMS: required fields are marked with *. If you clicked submit and the page shows red validation text, or nothing changed, do NOT click submit again. Read the error text and fill the empty required field first (open dropdowns and pick an option).",
         "- FORM STATE lists radios/checkboxes that are already checked and the current select values. If the value you need is already set there, do not click it again — move to the next field or submit.",
+        "- If FORM STATE or an element is marked (invalid), that field is blocking the form. Fill the invalid field before clicking submit again.",
         "- If your last action produced no visible change, the next action must be different: pick the missing field, another element, or scroll to the error."
       ].join("\n");
       const observation = [
@@ -24649,6 +24664,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.lastCopied = "";
       this.lastActionKey = "";
       this.lastSnapSig = null;
+      this.doneGuardFired = false;
       this.repeatCount = 0;
       this.scrollStreak = 0;
       this.planFails = 0;
@@ -24717,6 +24733,15 @@ body.in-global_ai_lab .nano-dynamic-island {
           }
 
           if (action === "done") {
+            const invalidEls = (snap.elements || []).filter((e) => e.invalid);
+            if (invalidEls.length && !this.doneGuardFired) {
+              this.doneGuardFired = true;
+              this.logLine("warn", "Form still has invalid fields — not finishing yet");
+              pendingNote = "SYSTEM NOTE: you tried to finish, but these fields are still marked invalid: " +
+                invalidEls.map((e) => "[" + e.i + "] " + (e.label || e.tag)).join(", ") +
+                ". Fill them first, or use ask_user if the task truly does not allow it.";
+              continue;
+            }
             this.logLine("done", "✅ " + (plan.summary || "Task complete."));
             this.updateActionHud("✅", plan.summary || "Task complete");
             this.lastSummary = plan.summary || "Task complete.";
