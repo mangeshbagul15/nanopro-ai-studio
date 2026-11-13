@@ -6255,8 +6255,57 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (stage) stage.classList.remove("has-log");
     },
 
+    normalizePlan: function (plan) {
+      if (!plan || typeof plan !== "object") return plan;
+      const alias = {
+        navigate: "goto", open: "goto", visit: "goto", go: "goto", go_to: "goto", open_url: "goto",
+        left_click: "click", right_click: "click", double_click: "click", click_element: "click",
+        type_text: "type", typewrite: "type", input_text: "type", fill: "fill",
+        key: "press", press_key: "press", key_press: "press",
+        scroll_down: "scroll", scroll_up: "scroll",
+        select_option: "select", drag_and_drop: "drag",
+        finished: "done", finish: "done", complete: "done"
+      };
+      const raw = String(plan.action || "").toLowerCase().replace(/\s+/g, "_");
+      if (alias[raw]) plan.action = alias[raw];
+      if (raw === "scroll_down") plan.direction = plan.direction || "down";
+      if (raw === "scroll_up") plan.direction = plan.direction || "up";
+      if (typeof plan.index === "string" && /^\d+$/.test(plan.index)) plan.index = parseInt(plan.index, 10);
+      if (Array.isArray(plan.coordinate) && plan.coordinate.length >= 2) {
+        plan.x = Number(plan.coordinate[0]);
+        plan.y = Number(plan.coordinate[1]);
+      }
+      return plan;
+    },
+
+    parseXmlToolCall: function (text) {
+      const fn = text.match(/<function=([^>\s]+)>/i);
+      if (!fn) return null;
+      const args = {};
+      const re = /<parameter=([\w]+)>\s*([\s\S]*?)\s*<\/parameter>/gi;
+      let m;
+      while ((m = re.exec(text))) args[m[1]] = m[2].trim();
+      const plan = { action: String(args.action || fn[1]), thought: "computer_use tool call" };
+      if (args.coordinate) {
+        const nums = (args.coordinate.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+        if (nums.length >= 2) { plan.x = nums[0]; plan.y = nums[1]; }
+      }
+      if (args.text) plan.text = args.text;
+      if (args.url) plan.url = args.url;
+      if (args.key) plan.key = args.key;
+      if (args.summary) plan.summary = args.summary;
+      if (args.message) plan.message = args.message;
+      if (args.amount != null) plan.pixels = Number(args.amount) || 600;
+      return plan;
+    },
+
     parseAction: function (text) {
       let raw = String(text || "").trim();
+      if (!raw) throw new Error("planner returned an empty response");
+      if (/<function=/i.test(raw)) {
+        const xmlPlan = this.parseXmlToolCall(raw);
+        if (xmlPlan && xmlPlan.action) return this.normalizePlan(xmlPlan);
+      }
       const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
       if (fence && fence[1].indexOf("{") !== -1) raw = fence[1].trim();
       raw = raw.replace(/^```(?:json)?/i, "").replace(/```\s*$/, "").trim();
@@ -6278,7 +6327,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (end === -1) throw new Error("model returned incomplete JSON");
       const parsed = JSON.parse(raw.slice(start, end + 1));
       if (!parsed.action) throw new Error("model response has no action");
-      return parsed;
+      return this.normalizePlan(parsed);
     },
 
     plan: async function (task, obs) {
@@ -6290,8 +6339,9 @@ body.in-global_ai_lab .nano-dynamic-island {
         "You are NanoPro CUA, an autonomous browser agent driving a real Chromium window.",
         "Take exactly one step at a time and reply with ONE JSON object, nothing else.",
         'Schema: {"thought":"one short sentence","action":"goto|click|type|press|scroll|wait|back|select|select_text|copy|paste|download|upload|drag|save_secret|ask_user|done", ...fields}',
-        "Fields: goto{url}; click{index,button,clicks}; type{index,text,enter}; press{key}; scroll{direction,pixels}; wait{ms}; select{index,value}; select_text{index,text?}; copy{}; paste{index,text?}; download{index}; upload{index,path}; drag{from,to} or drag{from,dx,dy}; save_secret{provider,value}; ask_user{message,options}; done{summary}.",
+        "Fields: goto{url}; click{index,button,clicks} or click{x,y}; type{index,text,enter}; press{key}; scroll{direction,pixels}; wait{ms}; select{index,value}; select_text{index,text?}; copy{}; paste{index,text?}; download{index}; upload{index,path}; drag{from,to} or drag{from,dx,dy}; save_secret{provider,value}; ask_user{message,options}; done{summary}.",
         "Rules:",
+        "- Use these action names exactly: goto (not navigate/open), click (not left_click), type, press, scroll, done.",
         "- Use only element indexes from the provided list.",
         "- Headings and paragraphs have no index: select their exact text with select_text{text:\"exact phrase from VISIBLE TEXT\"}.",
         "- If SELECTED TEXT already holds the target text, do NOT select again — the next step is copy.",
@@ -6324,40 +6374,34 @@ body.in-global_ai_lab .nano-dynamic-island {
         elementLines
       ].join("\n");
 
-      const res = await fetch("/api/ai/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: system + "\n\n" + observation,
-          model: (window.AILAB && AILAB.selectedModel) || "auto",
-          effort: (window.AILAB && AILAB.selectedEffort) || "default",
-          agent: "cua",
-          messages: []
-        }),
-        signal: AbortSignal.timeout(70000)
-      });
-      const data = await res.json().catch(() => ({}));
-      const text = data.response || data.message || data.text || "";
-      this.lastModel = data.model_executed || data.model_name || this.lastModel || "";
-      try {
-        if (!text) throw new Error("planner returned an empty response");
-        return this.parseAction(text);
-      } catch (firstErr) {
-        this.logLine("warn", "Planner reply was unusable (" + firstErr.message + "), retrying once…");
-        const retryRes = await fetch("/api/ai/execute", {
+      const askModel = async (suffix, modelOverride) => {
+        const res = await fetch("/api/ai/execute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            prompt: system + "\n\n" + observation + "\n\nIMPORTANT: Answer with ONE JSON object only. No prose, no markdown, no code fences.",
-            model: (window.AILAB && AILAB.selectedModel) || "auto",
+            prompt: system + "\n\n" + observation + (suffix || ""),
+            model: modelOverride || (window.AILAB && AILAB.selectedModel) || "auto",
             effort: (window.AILAB && AILAB.selectedEffort) || "default",
             agent: "cua",
             messages: []
           }),
           signal: AbortSignal.timeout(70000)
         });
-        const retryData = await retryRes.json().catch(() => ({}));
-        const retryText = retryData.response || retryData.message || retryData.text || "";
+        const data = await res.json().catch(() => ({}));
+        this.lastModel = data.model_executed || data.model_name || this.lastModel || "";
+        return data.response || data.message || data.text || "";
+      };
+
+      let text = "";
+      try {
+        text = await askModel("");
+        return this.parseAction(text);
+      } catch (firstErr) {
+        this.logLine("warn", "Planner reply was unusable (" + firstErr.message + "), retrying once…");
+        const retryText = await askModel(
+          "\n\nIMPORTANT: Answer with ONE JSON object only, action names goto/click/type/press/scroll/done. No prose, no markdown, no code fences, no XML.",
+          "qwen/qwen3.8-27b"
+        );
         if (retryText) {
           try { return this.parseAction(retryText); } catch (_) {}
         }
@@ -6368,7 +6412,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     describeAction: function (plan) {
       switch (String(plan.action || "").toLowerCase()) {
         case "goto": return 'navigated to ' + (plan.url || "");
-        case "click": return "clicked [" + plan.index + "]";
+        case "click": return plan.index != null ? ("clicked [" + plan.index + "]") : ("clicked at " + (plan.x != null ? plan.x : "?") + "," + (plan.y != null ? plan.y : "?"));
         case "type": return 'typed into [' + plan.index + "]";
         case "press": return "pressed " + (plan.key || "Enter");
         case "scroll": return "scrolled " + (plan.direction || "down");
@@ -6554,7 +6598,7 @@ body.in-global_ai_lab .nano-dynamic-island {
               this.logLine("act", "🖱️ Selected " + result.selected_len + " characters — next step can copy");
             }
             if (result && typeof result.x === "number" && typeof result.y === "number") {
-              const label = plan.action === "click" ? "[" + plan.index + "]" : plan.action;
+              const label = plan.action === "click" ? (plan.index != null ? "[" + plan.index + "]" : "click") : plan.action;
               this.moveCursor(result.x, result.y, label);
               if (plan.action === "click" || plan.action === "download" || plan.action === "drag") {
                 this.triggerClickRipple(result.x, result.y);
