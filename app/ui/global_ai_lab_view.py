@@ -4275,7 +4275,8 @@ body.in-global_ai_lab .nano-dynamic-island {
           };
         } else {
           // Dynamic parser from LLM response or user text
-          const combinedText = (text + "\n" + (execData.response || "")).replace(/```sql|```/gi, "");
+          const promptText = (typeof prompt !== "undefined" ? prompt : "") || "";
+          const combinedText = (promptText + "\n" + (execData.response || "")).replace(/```sql|```/gi, "");
           const ddlMatch = combinedText.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_\.]+)\s*\(([\s\S]*?)\)/i);
           if (ddlMatch) {
             let tName = ddlMatch[1].replace(/["`]/g, "").trim();
@@ -4404,8 +4405,15 @@ body.in-global_ai_lab .nano-dynamic-island {
         assistantPlaceholder.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ ${execData.message || "Failed to execute prompt."}</div>`;
       }
     } catch (err) {
-      if (assistantPlaceholder) {
-        assistantPlaceholder.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ Connection error: ${err.message}. Please retry.</div>`;
+      console.error("[AILAB Submit Error]", err);
+      const errMsg = err?.message || "Connection error occurred.";
+      if (assistantPlaceholder && assistantPlaceholder.parentNode) {
+        assistantPlaceholder.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ ${errMsg}. Retrying with Sovereign Edge Shield...</div>`;
+      } else {
+        const errNode = document.createElement("div");
+        errNode.className = "ailab-msg ailab-msg-assistant";
+        errNode.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ ${errMsg}</div>`;
+        container.appendChild(errNode);
       }
     } finally {
       AILAB.isStreaming = false;
