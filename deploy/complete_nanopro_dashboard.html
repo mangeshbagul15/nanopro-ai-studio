@@ -19554,26 +19554,45 @@ body.in-global_ai_lab .nano-dynamic-island {
 /* Visual Agent Laser Cursor */
 #view-global_ai_lab .ailab-cua-cursor {
   position: absolute;
-  top: 80px;
-  left: 120px;
-  width: 24px;
-  height: 24px;
-  z-index: 70;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  z-index: 120;
   pointer-events: none;
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  opacity: 0;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.65));
+  transition: left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 2px;
 }
+#view-global_ai_lab .ailab-cua-cursor.is-visible { opacity: 1; }
+#view-global_ai_lab .ailab-cua-cursor.is-clicking svg {
+  animation: cuaCursorPress 0.28s ease-out;
+  transform-origin: 3px 3px;
+}
+@keyframes cuaCursorPress {
+  0% { transform: scale(1); }
+  45% { transform: scale(0.72); }
+  100% { transform: scale(1); }
+}
+#view-global_ai_lab .ailab-cua-cursor svg { flex: 0 0 auto; }
 #view-global_ai_lab .ailab-cua-cursor-label {
-  background: #EF4444;
+  margin-top: 14px;
+  background: linear-gradient(135deg, #EF4444, #B91C1C);
   color: #FFFFFF;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 3px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.2px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
   white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Click Ripple Layer */
@@ -22853,13 +22872,8 @@ body.in-global_ai_lab .nano-dynamic-island {
       content_type: "markdown",
       created_at: Date.now() / 1000
     };
-        // Autonomous Browser Control directly from main chat!
-    const pLower = prompt.toLowerCase();
+    // Autonomous Browser Control directly from the main chat
     const isBrowserIntent = /https?:\/\//i.test(prompt) || /(browse|browser|ब्राउझर|\bcua\b|screen share|स्क्रीन शेअर|google|गुगल|search the web|वेबवर शोध|open the (site|website|page|url)|साइट उघड|वेबसाइट उघड)/i.test(prompt);
-    if (isBrowserIntent && window.AILAB_CUA) {
-      window.AILAB_CUA.togglePanel(true);
-      window.AILAB_CUA.runAutonomousTask(prompt);
-    }
 
     AILAB.pendingAttachments = [];
     ailabRenderAttachments();
@@ -22906,6 +22920,69 @@ body.in-global_ai_lab .nano-dynamic-island {
     container.scrollTop = container.scrollHeight;
 
     try {
+      // Chat → local CUA: run the task on the laptop Chromium and answer here.
+      if (isBrowserIntent && window.AILAB_CUA) {
+        const cua = window.AILAB_CUA;
+        const nameEl = assistantPlaceholder.querySelector(".ailab-asst-name span");
+        if (nameEl) nameEl.textContent = "Autonomous Browser Agent (Local CUA)…";
+        const labEl = assistantPlaceholder.querySelector(".ailab-asst-lab");
+        if (labEl) labEl.textContent = "Laptop Chromium";
+        const badgeEl = assistantPlaceholder.querySelector(".ailab-asst-latency-badge");
+        if (badgeEl) badgeEl.textContent = "Executing";
+        const bubbleEl = assistantPlaceholder.querySelector(".ailab-asst-bubble");
+        if (bubbleEl) bubbleEl.innerHTML = '<span class="ailab-spinner-dot"></span><span>Driving the local browser — watch the arrow cursor in the side screen share.</span>';
+
+        cua.togglePanel(true);
+        const summary = await cua.runTask(prompt);
+        assistantPlaceholder.remove();
+
+        const acts = (cua.log || []).filter(l => l.kind === "act").slice(-12).map((l, i) => (i + 1) + ". " + l.text);
+        const notes = (cua.log || []).filter(l => l.kind === "done" || l.kind === "secret").slice(-4).map(l => "- " + l.text);
+        const md = [
+          "### 🌐 Local Browser Agent — Task Report",
+          "",
+          "> " + summary,
+          "",
+          "| Field | Value |",
+          "| :--- | :--- |",
+          "| **Planner model** | " + (cua.lastModel || "auto (edge-routed)") + " |",
+          "| **Steps run** | " + (cua.step || 0) + " / " + (cua.maxSteps || 24) + " |",
+          "| **Current page** | " + String(cua.lastUrl || "—").replace(/\|/g, "\\|") + " |",
+          "| **Execution** | Laptop Chromium — local GPU/CPU/RAM/disk, Render untouched |",
+          acts.length ? "\n**Actions performed**\n\n" + acts.join("\n") : "",
+          notes.length ? "\n**Highlights**\n\n" + notes.join("\n") : ""
+        ].filter(Boolean).join("\n");
+
+        const cuaMsg = {
+          id: "asst_" + Date.now(),
+          chat_id: AILAB.activeChatId,
+          role: "assistant",
+          content: md,
+          content_type: "markdown",
+          model_routed: "local/cua-agent",
+          model_executed: cua.lastModel || "auto",
+          model_name: "NanoPro Local Browser Agent",
+          lab_name: "NanoPro Autonomous Engine",
+          country: "Local Laptop",
+          flag: "🖥️",
+          date_formatted: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+          duration_ms: 0,
+          routing_math: {},
+          created_at: Date.now() / 1000
+        };
+        AILAB.messages.push(cuaMsg);
+        container.appendChild(ailabCreateMessageNode(cuaMsg));
+        container.scrollTop = container.scrollHeight;
+        ailabRenderMermaidBlocks();
+        if (AILAB.activeChatId) {
+          AILAB.chatIndexCache[AILAB.activeChatId] = AILAB.messages;
+          try { localStorage.setItem("nanopro_duckdb_chat_" + AILAB.activeChatId, JSON.stringify(AILAB.messages)); } catch (_) {}
+          localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
+        }
+        ailabSaveMessage(cuaMsg).then(() => ailabRefreshHistory());
+        return;
+      }
+
       // 3. Mathematical Smart Routing Call
       const routeRes = await fetch("/api/ai/smart_route", {
         method: "POST",
@@ -24183,20 +24260,50 @@ body.in-global_ai_lab .nano-dynamic-island {
     moveCursor: function (x, y, label) {
       const cursor = document.getElementById("ailabCuaCursor");
       const cursorLbl = document.getElementById("ailabCuaCursorLabel");
-      if (!cursor) return;
-      cursor.style.left = x + "px";
-      cursor.style.top = y + "px";
+      const stage = document.getElementById("ailabCuaViewportContainer");
+      const img = document.getElementById("ailabCuaScreenshotFrame");
+      if (!cursor || !stage || !img) return;
+      const sr = stage.getBoundingClientRect();
+      const ir = img.getBoundingClientRect();
+      if (!ir.width || !ir.height) return;
+      const nw = img.naturalWidth || 1280;
+      const nh = img.naturalHeight || 800;
+      const scale = Math.min(ir.width / nw, ir.height / nh);
+      // The frame uses object-fit: contain + object-position: top center, so the
+      // letterbox padding is split horizontally and sits entirely below.
+      const padX = (ir.width - nw * scale) / 2;
+      const left = (ir.left - sr.left) + padX + x * scale;
+      const top = (ir.top - sr.top) + y * scale;
+      cursor.style.left = left + "px";
+      cursor.style.top = top + "px";
+      cursor.classList.add("is-visible");
       if (cursorLbl && label) cursorLbl.innerText = label;
     },
 
     triggerClickRipple: function (x, y) {
       const ripple = document.getElementById("ailabCuaClickRipple");
-      if (!ripple) return;
-      ripple.style.left = x + "px";
-      ripple.style.top = y + "px";
+      const stage = document.getElementById("ailabCuaViewportContainer");
+      const img = document.getElementById("ailabCuaScreenshotFrame");
+      const cursor = document.getElementById("ailabCuaCursor");
+      if (!ripple || !stage || !img) return;
+      const sr = stage.getBoundingClientRect();
+      const ir = img.getBoundingClientRect();
+      if (!ir.width || !ir.height) return;
+      const nw = img.naturalWidth || 1280;
+      const nh = img.naturalHeight || 800;
+      const scale = Math.min(ir.width / nw, ir.height / nh);
+      const left = (ir.left - sr.left) + (ir.width - nw * scale) / 2 + x * scale;
+      const top = (ir.top - sr.top) + y * scale;
+      ripple.style.left = left + "px";
+      ripple.style.top = top + "px";
       ripple.classList.remove("pulsing");
       void ripple.offsetWidth;
       ripple.classList.add("pulsing");
+      if (cursor) {
+        cursor.classList.remove("is-clicking");
+        void cursor.offsetWidth;
+        cursor.classList.add("is-clicking");
+      }
     },
 
     escapeHtml: function (value) {
@@ -24409,18 +24516,19 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (this.running) {
         this.queue.push(task);
         this.logLine("warn", "Task queued — " + this.queue.length + " waiting. The laptop browser runs one task at a time.");
-        return;
+        return "Task queued — the browser is finishing the previous task first.";
       }
       this.togglePanel(true);
       await this.pingBridge();
       if (!this.online) {
         this.logLine("error", "Local browser bridge is offline — start start_cua_bridge.bat on the laptop.");
-        return;
+        return "Local browser bridge is offline. Run start_cua_bridge.bat on the laptop, then send the task again.";
       }
 
       this.running = true;
       this.abort = false;
       this.step = 0;
+      this.lastSummary = "";
       this.taskText = task;
       this.userAnswer = "";
       this.lastCopied = "";
@@ -24451,6 +24559,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             if (this.repeatCount >= 3) {
               this.logLine("warn", "Stopped: the same action repeated 3 times. Try rephrasing the task.");
               this.updateActionHud("⚠️", "Repeated the same action — stopped");
+              this.lastSummary = "I stopped because the same action repeated three times. Rephrase the task slightly and try again.";
               break;
             }
           }
@@ -24459,6 +24568,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           if (action === "done") {
             this.logLine("done", "✅ " + (plan.summary || "Task complete."));
             this.updateActionHud("✅", plan.summary || "Task complete");
+            this.lastSummary = plan.summary || "Task complete.";
             break;
           }
           if (action === "ask_user") {
@@ -24492,23 +24602,24 @@ body.in-global_ai_lab .nano-dynamic-island {
             if (plan.action === "select_text" && result && result.selected_len) {
               this.logLine("act", "🖱️ Selected " + result.selected_len + " characters — next step can copy");
             }
-            const stage = document.getElementById("ailabCuaViewportContainer");
-            const stageW = stage ? stage.offsetWidth : 640;
-            const scale = stageW / 1280;
             if (result && typeof result.x === "number" && typeof result.y === "number") {
               const label = plan.action === "click" ? "[" + plan.index + "]" : plan.action;
-              this.moveCursor(result.x * scale, result.y * scale, label);
-              if (plan.action === "click" || plan.action === "download") {
-                this.triggerClickRipple(result.x * scale, result.y * scale);
+              this.moveCursor(result.x, result.y, label);
+              if (plan.action === "click" || plan.action === "download" || plan.action === "drag") {
+                this.triggerClickRipple(result.x, result.y);
               }
             }
           }
           await new Promise((r) => setTimeout(r, 300));
         }
-        if (this.step >= this.maxSteps) this.logLine("warn", "Step limit reached before the task finished.");
+        if (this.step >= this.maxSteps) {
+          this.logLine("warn", "Step limit reached before the task finished.");
+          this.lastSummary = "I hit the step limit before finishing. Send a narrower task to continue.";
+        }
       } catch (err) {
         this.logLine("error", "Stopped: " + err.message);
         this.updateActionHud("⚠️", "Agent stopped: " + err.message);
+        this.lastSummary = "Stopped: " + err.message;
       } finally {
         this.running = false;
         const frame = await this.bridge("/frame", null, 8000).catch(() => null);
@@ -24518,6 +24629,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           setTimeout(() => this.runTask(next), 500);
         }
       }
+      return this.lastSummary || "Task finished.";
     },
 
     runAutonomousTask: function (taskText) {

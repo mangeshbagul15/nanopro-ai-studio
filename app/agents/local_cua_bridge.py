@@ -156,6 +156,7 @@ class BrowserBridge:
         self.started_at = time.time()
         self.downloads = []
         self._download_tasks = set()
+        self.last_point = {"x": VIEWPORT["width"] / 2, "y": VIEWPORT["height"] / 2}
 
     async def start(self):
         self.playwright = await async_playwright().start()
@@ -732,6 +733,12 @@ async def handle_act(request):
     payload = await request.json()
     async with BRIDGE.lock:
         result = await BRIDGE.act(payload)
+        if isinstance(result, dict):
+            if result.get("x") is not None and result.get("y") is not None:
+                BRIDGE.last_point = {"x": result["x"], "y": result["y"]}
+            elif result.get("ok"):
+                result["x"] = BRIDGE.last_point["x"]
+                result["y"] = BRIDGE.last_point["y"]
         state = await BRIDGE.state()
         await BRIDGE.capture()
     return web.json_response({**result, **state})
