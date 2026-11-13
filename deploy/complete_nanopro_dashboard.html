@@ -20756,6 +20756,172 @@ body.in-global_ai_lab .nano-dynamic-island {
   #view-global_ai_lab .ailab-canvas-head .ailab-code-btn .lbl { display: none; }
 }
 
+/* ===================================================================== */
+/* CUA — real browser agent panel                                        */
+/* ===================================================================== */
+#view-global_ai_lab .ailab-cua-screenshot-frame {
+  display: block;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: top center;
+  background: #080D14;
+}
+#view-global_ai_lab .ailab-cua-live-pill {
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  cursor: pointer;
+  font-family: inherit;
+}
+#view-global_ai_lab .ailab-cua-live-pill.is-offline {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.12);
+  color: #F87171;
+}
+#view-global_ai_lab .ailab-cua-offline {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.08), transparent 60%), #080D14;
+  z-index: 30;
+}
+#view-global_ai_lab .ailab-cua-offline-card {
+  max-width: 460px;
+  background: #0F1724;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 18px 20px;
+  color: #CBD5E1;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+#view-global_ai_lab .ailab-cua-offline-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin-bottom: 6px;
+}
+#view-global_ai_lab .ailab-cua-offline-card p {
+  margin: 0 0 10px;
+  color: #94A3B8;
+}
+#view-global_ai_lab .ailab-cua-offline-card ol {
+  margin: 0 0 12px 18px;
+  padding: 0;
+}
+#view-global_ai_lab .ailab-cua-offline-card li {
+  margin-bottom: 4px;
+}
+#view-global_ai_lab .ailab-cua-offline-card code {
+  background: #111A29;
+  color: #7DD3FC;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11.5px;
+}
+#view-global_ai_lab .ailab-cua-offline-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+#view-global_ai_lab .ailab-cua-bridge-input {
+  flex: 1;
+  min-width: 0;
+  background: #080D14;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #E2E8F0;
+  font-family: ui-monospace, monospace;
+  font-size: 11.5px;
+  outline: none;
+}
+#view-global_ai_lab .ailab-cua-offline-btn {
+  background: #111A29;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #CBD5E1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#view-global_ai_lab .ailab-cua-offline-btn.primary {
+  background: #10B981;
+  border-color: #10B981;
+  color: #04120C;
+}
+#view-global_ai_lab .ailab-cua-tasklog {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 46px;
+  max-height: 34%;
+  overflow-y: auto;
+  display: none;
+  background: rgba(8, 13, 20, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #CBD5E1;
+  z-index: 40;
+  backdrop-filter: blur(6px);
+}
+#view-global_ai_lab .ailab-cua-tasklog.is-open {
+  display: block;
+}
+#view-global_ai_lab .ailab-cua-logline {
+  margin-bottom: 3px;
+  word-break: break-word;
+}
+#view-global_ai_lab .ailab-cua-logline .ts {
+  color: #475569;
+  margin-right: 6px;
+}
+#view-global_ai_lab .ailab-cua-logline.thought { color: #A78BFA; }
+#view-global_ai_lab .ailab-cua-logline.act { color: #7DD3FC; }
+#view-global_ai_lab .ailab-cua-logline.done { color: #34D399; font-weight: 700; }
+#view-global_ai_lab .ailab-cua-logline.warn { color: #FBBF24; }
+#view-global_ai_lab .ailab-cua-logline.error { color: #F87171; }
+#view-global_ai_lab .ailab-cua-logline.task { color: #E2E8F0; font-weight: 700; }
+#view-global_ai_lab .ailab-cua-logline.secret { color: #34D399; }
+#view-global_ai_lab .ailab-cua-ask {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 54px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: #0F1724;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 10px;
+  padding: 12px;
+  z-index: 50;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
+}
+#view-global_ai_lab .ailab-cua-ask.is-open {
+  display: flex;
+}
+#view-global_ai_lab .ailab-cua-ask-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #FDE68A;
+}
+#view-global_ai_lab .ailab-cua-ask-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 </style>
 
 <div class="ailab-app">
@@ -21135,35 +21301,46 @@ body.in-global_ai_lab .nano-dynamic-island {
     <!-- Resizing Grip for CUA Panel -->
     <div class="ailab-grip-v ailab-grip-cua" id="ailabCuaGrip" style="display:none;" title="Resize CUA Browser Panel"></div>
 
-    <!-- Panel 3: Ultra-Clean Autonomous Browser (CUA) Screen Share Studio -->
+    <!-- Panel 3: Real autonomous browser (CUA) mirrored from the local Chromium -->
     <aside class="ailab-cua-panel collapsed" id="ailabCuaPanel">
-      <!-- Minimal Window Chrome Header (36px height) -->
       <div class="ailab-cua-chrome-header">
         <div class="ailab-window-dots">
-          <span class="dot red" onclick="ailabToggleCuaPanel(false)" title="Close CUA Viewport"></span>
+          <span class="dot red" onclick="ailabToggleCuaPanel(false)" title="Close browser view"></span>
           <span class="dot yellow" onclick="ailabToggleCuaPanel()" title="Minimize"></span>
           <span class="dot green" onclick="ailabToggleCuaFullscreen()" title="Fullscreen"></span>
         </div>
         <div class="ailab-cua-chrome-url" id="ailabCuaChromeUrl">
           <span class="ailab-ssl-lock">🔒</span>
-          <span class="ailab-url-text" id="ailabCuaUrlText">https://www.google.com</span>
+          <span class="ailab-url-text" id="ailabCuaUrlText">about:blank</span>
         </div>
         <div class="ailab-cua-chrome-right">
-          <div class="ailab-cua-live-pill">
-            <span class="ailab-live-pulse-dot"></span>
-            <span>LIVE SCREEN SHARE</span>
-          </div>
+          <button class="ailab-cua-live-pill" id="ailabCuaBridgePill" onclick="AILAB_CUA.pingBridge(true)" title="Check the local browser bridge">BRIDGE…</button>
+          <button class="ailab-iconbtn" onclick="AILAB_CUA.clearTaskLog()" title="Clear agent log">🧹</button>
           <button class="ailab-iconbtn" onclick="ailabToggleCuaFullscreen()" title="Fullscreen">⛶</button>
           <button class="ailab-iconbtn" onclick="ailabToggleCuaPanel(false)" title="Close">✕</button>
         </div>
       </div>
 
-      <!-- Pure 100% Full-Height Screen Share Viewport Surface -->
       <div class="ailab-cua-viewport-container" id="ailabCuaViewportContainer">
-        <iframe class="ailab-cua-iframe" id="ailabCuaIframe" src="https://www.google.com" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
-        <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrame" alt="Playwright Frame" style="display:none;">
+        <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrame" alt="Live browser frame from the local Chromium">
 
-        <!-- Visual Agent Laser Cursor -->
+        <div class="ailab-cua-offline" id="ailabCuaOfflineCard">
+          <div class="ailab-cua-offline-card">
+            <div class="ailab-cua-offline-title">🖥️ Local browser bridge बंद आहे</div>
+            <p>AI ला खरा browser लागतो. तो तुमच्या laptop वरच चालतो — Render वर Chromium चालू शकत नाही.</p>
+            <ol>
+              <li><code>start_cua_bridge.bat</code> डबल-क्लिक करा</li>
+              <li>Chromium विंडो उघडेल — ती बंद करू नका</li>
+              <li>खाली <b>Retry</b> दाबा</li>
+            </ol>
+            <div class="ailab-cua-offline-row">
+              <input id="ailabCuaBridgeInput" class="ailab-cua-bridge-input" spellcheck="false">
+              <button class="ailab-cua-offline-btn" onclick="AILAB_CUA.saveBridgeURL()">Save</button>
+              <button class="ailab-cua-offline-btn primary" onclick="AILAB_CUA.pingBridge(true)">Retry</button>
+            </div>
+          </div>
+        </div>
+
         <div class="ailab-cua-cursor" id="ailabCuaCursor">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.5">
             <path d="M3 3l7 18 3-7 7-3L3 3z"/>
@@ -21171,17 +21348,15 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span class="ailab-cua-cursor-label" id="ailabCuaCursorLabel">Agent CUA</span>
         </div>
 
-        <!-- Click Ripple Layer -->
         <div class="ailab-cua-click-ripple" id="ailabCuaClickRipple"></div>
 
-        <!-- Set-of-Marks Bounding Boxes Overlay -->
-        <div class="ailab-cua-som-overlay" id="ailabCuaSomOverlay"></div>
-
-        <!-- Floating Action HUD -->
         <div class="ailab-cua-action-hud" id="ailabCuaActionHud">
           <span class="ailab-action-icon" id="ailabCuaActionIcon">⚡</span>
-          <span class="ailab-action-desc" id="ailabCuaActionDesc">CUA Ready • Screen share active on local laptop</span>
+          <span class="ailab-action-desc" id="ailabCuaActionDesc">CUA idle — start the local bridge to drive a real browser</span>
         </div>
+
+        <div class="ailab-cua-tasklog" id="ailabCuaTaskLog"></div>
+        <div class="ailab-cua-ask" id="ailabCuaAsk"></div>
       </div>
     </aside>
   </div>
@@ -22680,7 +22855,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     };
         // Autonomous Browser Control directly from main chat!
     const pLower = prompt.toLowerCase();
-    const isBrowserIntent = /google|search|शोध|बघ|उघड|browse|browser|ब्राउझर|स्क्रीन|screen|share|शेअर|cua|वेब|website|url|http/i.test(pLower);
+    const isBrowserIntent = /https?:\/\//i.test(prompt) || /(browse|browser|ब्राउझर|\bcua\b|screen share|स्क्रीन शेअर|google|गुगल|search the web|वेबवर शोध|open the (site|website|page|url)|साइट उघड|वेबसाइट उघड)/i.test(prompt);
     if (isBrowserIntent && window.AILAB_CUA) {
       window.AILAB_CUA.togglePanel(true);
       window.AILAB_CUA.runAutonomousTask(prompt);
@@ -23816,104 +23991,84 @@ body.in-global_ai_lab .nano-dynamic-island {
   // =========================================================================
   // AUTONOMOUS BROWSER AGENT (CUA) / COMPUTER USE MCP JAVASCRIPT ENGINE
   // =========================================================================
+  // =========================================================================
+  // CUA — real browser agent
+  // The page JS plans each step with /api/ai/execute, then drives a local
+  // Playwright Chromium through the CUA bridge (start_cua_bridge.bat).
+  // Nothing is simulated: every frame in this panel is a screenshot of the
+  // browser window running on the laptop.
+  // =========================================================================
   window.AILAB_CUA = {
     isOpen: false,
     isFullscreen: false,
-    currentUrl: "https://www.google.com",
-    mode: "auto",
-    steps: [],
-    history: [],
-    frames: [],
-    duckdbCount: 12,
-    localBridgeUrl: "http://127.0.0.1:8765",
-    localBridgeOnline: false,
+    online: false,
+    running: false,
+    abort: false,
+    step: 0,
+    maxSteps: 24,
+    log: [],
+    frameTimer: null,
+    bridgeURL: "http://127.0.0.1:8765",
+    taskText: "",
+    userAnswer: "",
+    lastUrl: "",
 
-    init: async function() {
-      this.checkLocalBridge();
+    init: function () {
+      this.bridgeURL = localStorage.getItem("nanopro_cua_bridge") || this.bridgeURL;
       this.initGripResize();
+      this.pingBridge();
+      setInterval(() => { if (!this.running && this.isOpen) this.pingBridge(); }, 20000);
     },
 
-    checkLocalBridge: async function() {
-      try {
-        const resp = await fetch(this.localBridgeUrl + "/status", { method: "GET", mode: "cors", signal: AbortSignal.timeout(1200) });
-        if (resp.ok) {
-          this.localBridgeOnline = true;
-          console.log("[CUA] Local Playwright Bridge Connected!");
-        }
-      } catch (_) {
-        this.localBridgeOnline = false;
-      }
-    },
-
-    initGripResize: function() {
+    initGripResize: function () {
       const grip = document.getElementById("ailabCuaGrip");
       const panel = document.getElementById("ailabCuaPanel");
       if (!grip || !panel) return;
-
-      let isDragging = false;
-      let startX = 0;
-      let startW = 0;
-
+      let dragging = false, startX = 0, startW = 0;
       grip.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startW = panel.offsetWidth;
-        grip.classList.add("resizing");
+        dragging = true; startX = e.clientX; startW = panel.offsetWidth;
         document.body.style.userSelect = "none";
       });
-
       window.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
+        if (!dragging) return;
         const dx = startX - e.clientX;
-        const newW = Math.max(360, Math.min(window.innerWidth * 0.7, startW + dx));
-        panel.style.width = newW + "px";
+        panel.style.width = Math.max(360, Math.min(window.innerWidth * 0.7, startW + dx)) + "px";
       });
-
       window.addEventListener("mouseup", () => {
-        if (isDragging) {
-          isDragging = false;
-          grip.classList.remove("resizing");
-          document.body.style.userSelect = "";
-        }
+        if (dragging) { dragging = false; document.body.style.userSelect = ""; }
       });
     },
 
-    togglePanel: function(force) {
+    togglePanel: function (force) {
       const panel = document.getElementById("ailabCuaPanel");
       const grip = document.getElementById("ailabCuaGrip");
       const btn = document.getElementById("ailabCuaToggleBtn");
       const sidebar = document.getElementById("ailabSidebar");
       if (!panel) return;
-
       const shouldOpen = force !== undefined ? force : panel.classList.contains("collapsed");
       if (shouldOpen) {
         panel.classList.remove("collapsed");
         panel.classList.add("active");
         if (grip) grip.style.display = "";
         if (btn) btn.classList.add("active");
-        // Auto-collapse both sidebars so chat & browser share spacious 50-50 screen!
-        if (sidebar && !sidebar.classList.contains("collapsed")) {
-          sidebar.classList.add("collapsed");
-        }
+        if (sidebar && !sidebar.classList.contains("collapsed")) sidebar.classList.add("collapsed");
         const appShell = document.getElementById("app-shell");
-        if (appShell && !appShell.classList.contains("sidebar-collapsed")) {
-          appShell.classList.add("sidebar-collapsed");
-        }
+        if (appShell && !appShell.classList.contains("sidebar-collapsed")) appShell.classList.add("sidebar-collapsed");
         this.isOpen = true;
+        this.pingBridge();
+        this.startFrames();
       } else {
         panel.classList.add("collapsed");
         panel.classList.remove("active");
         if (grip) grip.style.display = "none";
         if (btn) btn.classList.remove("active");
-        // Restore sidebar when CUA closes
-        if (sidebar && sidebar.classList.contains("collapsed")) {
-          sidebar.classList.remove("collapsed");
-        }
+        if (sidebar && sidebar.classList.contains("collapsed")) sidebar.classList.remove("collapsed");
         this.isOpen = false;
+        this.stopFrames();
       }
     },
 
-    toggleFullscreen: function() {
+    toggleFullscreen: function () {
       const panel = document.getElementById("ailabCuaPanel");
       if (!panel) return;
       this.isFullscreen = !this.isFullscreen;
@@ -23936,584 +24091,94 @@ body.in-global_ai_lab .nano-dynamic-island {
       }
     },
 
-        generateGoogleSearchDoc: function(query) {
-      const q = query || "NanoPro AI Studio";
-      return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<style>
-  body { font-family: Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #FFFFFF; color: #202124; font-size: 14px; }
-  .header { display: flex; align-items: center; padding: 18px 24px 12px; border-bottom: 1px solid #EBEBEB; gap: 20px; }
-  .google-logo { font-size: 24px; font-weight: bold; letter-spacing: -1px; text-decoration: none; cursor: pointer; flex-shrink: 0; }
-  .g-blue { color: #4285F4; } .g-red { color: #EA4335; } .g-yellow { color: #FBBC05; } .g-green { color: #34A853; }
-  .search-box { display: flex; align-items: center; flex: 1; max-width: 680px; height: 44px; background: #FFFFFF; border: 1px solid #DFE1E5; border-radius: 24px; padding: 0 16px; box-shadow: 0 1px 6px rgba(32,33,36,0.18); gap: 12px; }
-  .search-input { flex: 1; border: none; outline: none; font-size: 15px; color: #202124; background: transparent; }
-  .search-icon { color: #9AA0A6; font-size: 16px; }
-  .tabs { display: flex; gap: 20px; padding: 0 24px; border-bottom: 1px solid #EBEBEB; font-size: 13px; color: #5F6368; }
-  .tab { padding: 12px 4px; cursor: pointer; border-bottom: 3px solid transparent; }
-  .tab.active { color: #1A73E8; border-bottom-color: #1A73E8; font-weight: bold; }
-  .main { padding: 16px 24px; max-width: 720px; }
-  .stats { font-size: 12px; color: #70757A; margin-bottom: 18px; }
-  .result { margin-bottom: 24px; }
-  .result-url { font-size: 12px; color: #202124; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-  .result-url span { color: #5F6368; }
-  .result-title { font-size: 19px; color: #1A0DAB; text-decoration: none; cursor: pointer; line-height: 1.3; font-weight: 400; display: block; margin-bottom: 4px; }
-  .result-title:hover { text-decoration: underline; }
-  .result-desc { font-size: 13.5px; color: #4D5156; line-height: 1.58; }
-  .mark-badge { background: #FEF08A; color: #854D0E; border: 1px solid #CA8A04; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-right: 6px; }
-  .card-highlight { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 16px; margin: 12px 0 20px 0; border-left: 4px solid #3B82F6; }
-
-  /* ------------------------------------------------------------- */
-  /* DATA MODELING EXPLORER (AWS, Snowflake, BigQuery, DuckDB)    */
-  /* ------------------------------------------------------------- */
-  .ailab-explorer {
-    position: relative;
-    width: 270px;
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    background: #090E17;
-    border-right: 1px solid var(--ailab-border);
-    transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s;
-  }
-  .ailab-explorer.is-hidden {
-    display: none !important;
-  }
-  .ailab-explorer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 40px;
-    padding: 0 10px 0 12px;
-    border-bottom: 1px solid var(--ailab-border);
-    background: rgba(15, 23, 42, 0.6);
-    flex-shrink: 0;
-  }
-  .ailab-explorer-title {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #F8FAFC;
-    letter-spacing: 0.3px;
-  }
-  .ailab-explorer-badge {
-    font-size: 9.5px;
-    background: rgba(139, 92, 246, 0.15);
-    color: #C084FC;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 600;
-  }
-  .ailab-explorer-tools {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .ailab-explorer-search {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    background: #070B12;
-    border-bottom: 1px solid #1E293B;
-    flex-shrink: 0;
-  }
-  .ailab-explorer-search input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: #F8FAFC;
-    font-size: 11.5px;
-    outline: none;
-  }
-  .ailab-explorer-search input::placeholder {
-    color: #475569;
-  }
-  .ailab-explorer-tree {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 6px 4px;
-  }
-  .ailab-explorer-tree::-webkit-scrollbar {
-    width: 4px;
-  }
-  .ailab-explorer-tree::-webkit-scrollbar-thumb {
-    background: #1E293B;
-    border-radius: 4px;
-  }
-  .ailab-tree-node {
-    margin-bottom: 2px;
-    font-size: 11.5px;
-  }
-  .ailab-tree-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    border-radius: 5px;
-    cursor: pointer;
-    color: #CBD5E1;
-    user-select: none;
-    transition: background 0.12s, color 0.12s;
-  }
-  .ailab-tree-row:hover {
-    background: rgba(148, 163, 184, 0.08);
-    color: #FFFFFF;
-  }
-  .ailab-tree-row.is-active {
-    background: rgba(139, 92, 246, 0.2);
-    color: #C084FC;
-    font-weight: 600;
-  }
-  .ailab-tree-arrow {
-    font-size: 9px;
-    color: #64748B;
-    width: 12px;
-    text-align: center;
-    transition: transform 0.14s;
-  }
-  .ailab-tree-arrow.is-expanded {
-    transform: rotate(90deg);
-  }
-  .ailab-tree-children {
-    padding-left: 14px;
-    display: none;
-  }
-  .ailab-tree-children.is-expanded {
-    display: block;
-  }
-  .ailab-tree-badge {
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 4px;
-    margin-left: auto;
-    font-family: monospace;
-  }
-  .ailab-explorer-foot {
-    height: 28px;
-    padding: 0 10px;
-    background: #070B12;
-    border-top: 1px solid #1E293B;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-  }
-  .ailab-grip-v#ailabExplorerGrip {
-    position: absolute;
-    top: 0;
-    right: -3px;
-    bottom: 0;
-    width: 6px;
-    cursor: col-resize;
-    z-index: 20;
-  }
-
-</style>
-</head>
-<body>
-  <div class="header">
-    <div class="google-logo">
-      <span class="g-blue">G</span><span class="g-red">o</span><span class="g-yellow">o</span><span class="g-blue">g</span><span class="g-green">l</span><span class="g-red">e</span>
-    </div>
-    <div class="search-box" id="googleSearchBox">
-      <span class="search-icon">🔍</span>
-      <input class="search-input" id="googleSearchInput" value="${q.replace(/"/g, '&quot;')}" />
-      <span style="cursor:pointer; color:#4285F4; font-weight:bold;">🎙️</span>
-      <span style="cursor:pointer; color:#EA4335;">📷</span>
-    </div>
-  </div>
-  <div class="tabs">
-    <div class="tab active">All</div>
-    <div class="tab">News</div>
-    <div class="tab">Images</div>
-    <div class="tab">Videos</div>
-    <div class="tab">Maps</div>
-    <div class="tab">More</div>
-  </div>
-  <div class="main">
-    <div class="stats">About 2,140,000 results (0.34 seconds) &bull; Verified via DuckDB &amp; BigQuery Live Cache</div>
-
-    <div class="card-highlight" id="topAnswerCard">
-      <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#2563EB; font-weight:700; margin-bottom:4px;">
-        <span class="mark-badge">[1]</span> AI Operations Sentinel &bull; Knowledge Overview
-      </div>
-      <div style="font-size:15px; font-weight:600; color:#0F172A; margin-bottom:6px;">
-        ${q} &mdash; Official Information &amp; Architecture
-      </div>
-      <div style="font-size:13px; color:#334155; line-height:1.5;">
-        Autonomous CUA Browser Agent operating directly from the central chat. Powered by local laptop GPU/CPU/RAM with 0 MB overhead on cloud services. Full real-time audit streaming into DuckDB &amp; Google BigQuery lakehouse.
-      </div>
-    </div>
-
-    <div class="result" id="resCard1">
-      <div class="result-url"><span class="mark-badge">[2]</span> https://nanopro.ai <span>&rsaquo; studio &rsaquo; operations</span></div>
-      <a class="result-title" href="#res1">${q} - Official NanoPro AI Platform</a>
-      <div class="result-desc">Comprehensive intelligence center featuring 320 autonomous AI agents, Pareto + Thompson multi-model auto-routing, and zero-risk sandboxed browser execution.</div>
-    </div>
-
-    <div class="result" id="resCard2">
-      <div class="result-url"><span class="mark-badge">[3]</span> https://en.wikipedia.org <span>&rsaquo; wiki &rsaquo; ${encodeURIComponent(q)}</span></div>
-      <a class="result-title" href="#res2">${q} - Wikipedia Overview</a>
-      <div class="result-desc">General encyclopedic reference, architectural documentation, operational specifications, and verified foundational knowledge.</div>
-    </div>
-
-    <div class="result" id="resCard3">
-      <div class="result-url"><span class="mark-badge">[4]</span> https://github.com <span>&rsaquo; nanopro &rsaquo; core</span></div>
-      <a class="result-title" href="#res3">GitHub - NanoPro: Zero-Overhead CUA &amp; Lakehouse</a>
-      <div class="result-desc">High-speed client-side execution harness using local laptop hardware. Real-time streaming sync with DuckDB and Google BigQuery partitions.</div>
-    </div>
-  </div>
-</body>
-</html>`;
+    saveBridgeURL: function () {
+      const input = document.getElementById("ailabCuaBridgeInput");
+      const value = input ? input.value.trim().replace(/\/+$/, "") : "";
+      if (value) {
+        this.bridgeURL = value;
+        localStorage.setItem("nanopro_cua_bridge", value);
+      }
+      this.pingBridge(true);
     },
 
-        generateOpenRouterDoc: function() {
-      return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #0A0D14; color: #F1F5F9; font-size: 13.5px; }
-  .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #1E293B; background: #0D1117; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; color: #FFFFFF; }
-  .logo-icon { width: 22px; height: 22px; background: linear-gradient(135deg, #6366F1, #A855F7); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
-  .links { display: flex; gap: 20px; font-size: 13px; color: #94A3B8; }
-  .link.active { color: #FFFFFF; font-weight: 600; border-bottom: 2px solid #6366F1; padding-bottom: 4px; }
-  .header-sec { padding: 24px; border-bottom: 1px solid #1E293B; }
-  .title { font-size: 24px; font-weight: 800; color: #FFFFFF; margin: 0 0 8px 0; }
-  .subtitle { font-size: 13px; color: #94A3B8; margin: 0; }
-  .search-wrap { margin-top: 16px; display: flex; align-items: center; background: #131A26; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; gap: 10px; }
-  .search-input { background: transparent; border: none; outline: none; color: #FFFFFF; font-size: 13px; flex: 1; }
-  .models-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; }
-  .model-card { background: #111827; border: 1px solid #1F2937; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
-  .model-card:hover { border-color: #6366F1; }
-  .model-card.rank-1 { border: 1.5px solid #10B981; background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, #111827 100%); box-shadow: 0 0 20px rgba(16,185,129,0.15); }
-  .card-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-  .rank-badge { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
-  .rank-badge.green { background: rgba(16,185,129,0.2); color: #34D399; border: 1px solid #10B981; }
-  .rank-badge.blue { background: rgba(56,189,248,0.2); color: #38BDF8; border: 1px solid #0284C7; }
-  .model-id { font-size: 16px; font-weight: 700; color: #FFFFFF; font-family: monospace; }
-  .pricing { font-size: 12px; color: #94A3B8; display: flex; gap: 14px; }
-  .pricing span { color: #E2E8F0; font-weight: 600; }
-  .desc { font-size: 12.5px; color: #94A3B8; line-height: 1.5; }
-  .meta-pills { display: flex; gap: 8px; font-size: 11px; margin-top: 4px; }
-  .pill { background: #1F2937; padding: 2px 8px; border-radius: 4px; color: #CBD5E1; }
-
-  /* ------------------------------------------------------------- */
-  /* DATA MODELING EXPLORER (AWS, Snowflake, BigQuery, DuckDB)    */
-  /* ------------------------------------------------------------- */
-  .ailab-explorer {
-    position: relative;
-    width: 270px;
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    background: #090E17;
-    border-right: 1px solid var(--ailab-border);
-    transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s;
-  }
-  .ailab-explorer.is-hidden {
-    display: none !important;
-  }
-  .ailab-explorer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 40px;
-    padding: 0 10px 0 12px;
-    border-bottom: 1px solid var(--ailab-border);
-    background: rgba(15, 23, 42, 0.6);
-    flex-shrink: 0;
-  }
-  .ailab-explorer-title {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #F8FAFC;
-    letter-spacing: 0.3px;
-  }
-  .ailab-explorer-badge {
-    font-size: 9.5px;
-    background: rgba(139, 92, 246, 0.15);
-    color: #C084FC;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 600;
-  }
-  .ailab-explorer-tools {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .ailab-explorer-search {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    background: #070B12;
-    border-bottom: 1px solid #1E293B;
-    flex-shrink: 0;
-  }
-  .ailab-explorer-search input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: #F8FAFC;
-    font-size: 11.5px;
-    outline: none;
-  }
-  .ailab-explorer-search input::placeholder {
-    color: #475569;
-  }
-  .ailab-explorer-tree {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 6px 4px;
-  }
-  .ailab-explorer-tree::-webkit-scrollbar {
-    width: 4px;
-  }
-  .ailab-explorer-tree::-webkit-scrollbar-thumb {
-    background: #1E293B;
-    border-radius: 4px;
-  }
-  .ailab-tree-node {
-    margin-bottom: 2px;
-    font-size: 11.5px;
-  }
-  .ailab-tree-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    border-radius: 5px;
-    cursor: pointer;
-    color: #CBD5E1;
-    user-select: none;
-    transition: background 0.12s, color 0.12s;
-  }
-  .ailab-tree-row:hover {
-    background: rgba(148, 163, 184, 0.08);
-    color: #FFFFFF;
-  }
-  .ailab-tree-row.is-active {
-    background: rgba(139, 92, 246, 0.2);
-    color: #C084FC;
-    font-weight: 600;
-  }
-  .ailab-tree-arrow {
-    font-size: 9px;
-    color: #64748B;
-    width: 12px;
-    text-align: center;
-    transition: transform 0.14s;
-  }
-  .ailab-tree-arrow.is-expanded {
-    transform: rotate(90deg);
-  }
-  .ailab-tree-children {
-    padding-left: 14px;
-    display: none;
-  }
-  .ailab-tree-children.is-expanded {
-    display: block;
-  }
-  .ailab-tree-badge {
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 4px;
-    margin-left: auto;
-    font-family: monospace;
-  }
-  .ailab-explorer-foot {
-    height: 28px;
-    padding: 0 10px;
-    background: #070B12;
-    border-top: 1px solid #1E293B;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-  }
-  .ailab-grip-v#ailabExplorerGrip {
-    position: absolute;
-    top: 0;
-    right: -3px;
-    bottom: 0;
-    width: 6px;
-    cursor: col-resize;
-    z-index: 20;
-  }
-
-</style>
-</head>
-<body>
-  <div class="nav">
-    <div class="logo">
-      <span class="logo-icon">OR</span>
-      <span>OpenRouter</span>
-    </div>
-    <div class="links">
-      <span class="link active">Models</span>
-      <span class="link">Rankings</span>
-      <span class="link">Activity</span>
-      <span class="link">Docs</span>
-      <span class="link">Chat</span>
-    </div>
-  </div>
-
-  <div class="header-sec">
-    <h1 class="title">Models Directory &amp; Live Rankings</h1>
-    <p class="subtitle">Search, benchmark, and route between 400+ frontier AI models with transparent latency and pricing.</p>
-    <div class="search-wrap">
-      <span>🔍</span>
-      <input class="search-input" value="deepseek/deepseek-r1" readonly />
-      <span style="font-size:11px; background:#1F2937; padding:3px 8px; border-radius:4px; color:#94A3B8;">Sorted by: Trending Activity</span>
-    </div>
-  </div>
-
-  <div class="models-list">
-    <!-- Rank 1: DeepSeek R1 -->
-    <div class="model-card rank-1" id="openrouterModel1">
-      <div class="card-top">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="rank-badge green">🏆 #1 TOP TRENDING</span>
-          <span class="model-id">deepseek/deepseek-r1</span>
-        </div>
-        <div class="pricing">
-          <div>Prompt: <span>$0.55 / 1M</span></div>
-          <div>Completion: <span>$2.19 / 1M</span></div>
-        </div>
-      </div>
-      <div class="desc">
-        DeepSeek-R1 is an open-weights reasoning model that achieves performance on par with OpenAI o1 across math, code, and reasoning tasks. Features native chain-of-thought verification.
-      </div>
-      <div class="meta-pills">
-        <span class="pill">Context: 64,000</span>
-        <span class="pill">MoE 671B (37B active)</span>
-        <span class="pill" style="color:#10B981; border:1px solid #10B981;">AIME 79.8%</span>
-        <span class="pill">Codeforces: 96.3 percentile</span>
-      </div>
-    </div>
-
-    <!-- Rank 2: Claude 3.7 Sonnet -->
-    <div class="model-card">
-      <div class="card-top">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="rank-badge blue">#2 HYBRID SOTA</span>
-          <span class="model-id">anthropic/claude-3.7-sonnet</span>
-        </div>
-        <div class="pricing">
-          <div>Prompt: <span>$3.00 / 1M</span></div>
-          <div>Completion: <span>$15.00 / 1M</span></div>
-        </div>
-      </div>
-      <div class="desc">
-        Anthropic's flagship hybrid model combining instant responses with extended thinking for complex software engineering and research.
-      </div>
-      <div class="meta-pills">
-        <span class="pill">Context: 200,000</span>
-        <span class="pill">Coding Benchmark Leader</span>
-      </div>
-    </div>
-
-    <!-- Rank 3: Gemini 2.5 Pro -->
-    <div class="model-card">
-      <div class="card-top">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="rank-badge blue">#3 2M FRONTIER</span>
-          <span class="model-id">google/gemini-2.5-pro</span>
-        </div>
-        <div class="pricing">
-          <div>Prompt: <span>$1.25 / 1M</span></div>
-          <div>Completion: <span>$5.00 / 1M</span></div>
-        </div>
-      </div>
-      <div class="desc">
-        Google DeepMind's frontier multimodal model with 2-million-token context window and deep STEM reasoning.
-      </div>
-      <div class="meta-pills">
-        <span class="pill">Context: 2,097,152</span>
-        <span class="pill">Multimodal Audio/Video</span>
-      </div>
-    </div>
-
-    <!-- Rank 4: OpenAI o3-mini -->
-    <div class="model-card">
-      <div class="card-top">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="rank-badge blue">#4 FAST REASONING</span>
-          <span class="model-id">openai/o3-mini</span>
-        </div>
-        <div class="pricing">
-          <div>Prompt: <span>$1.10 / 1M</span></div>
-          <div>Completion: <span>$4.40 / 1M</span></div>
-        </div>
-      </div>
-      <div class="desc">
-        OpenAI's high-speed reasoning model tailored for science, coding, and mathematical reasoning.
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
+    bridge: async function (path, body, timeoutMs) {
+      const res = await fetch(this.bridgeURL + path, {
+        method: body ? "POST" : "GET",
+        headers: body ? { "Content-Type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(timeoutMs || 30000)
+      });
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok && res.status !== 400) {
+        throw new Error(data.error || ("bridge HTTP " + res.status));
+      }
+      return data;
     },
 
-    navigate: async function(url) {
-      if (!url) return;
-      if (!url.startsWith("http")) url = "https://" + url;
-      this.currentUrl = url;
-      const urlText = document.getElementById("ailabCuaUrlText");
-      if (urlText) urlText.innerText = url;
+    pingBridge: async function () {
+      try {
+        const info = await this.bridge("/status", null, 3000);
+        this.setOnline(true, info);
+      } catch (_) {
+        this.setOnline(false);
+      }
+    },
 
-      this.updateActionHud("🌐", `browser_navigate("${url}")`);
+    setOnline: function (ok, info) {
+      this.online = ok;
+      const pill = document.getElementById("ailabCuaBridgePill");
+      const offline = document.getElementById("ailabCuaOfflineCard");
+      if (pill) {
+        pill.classList.toggle("is-offline", !ok);
+        pill.innerHTML = ok
+          ? '<span class="ailab-live-pulse-dot"></span><span>LIVE · LOCAL CHROMIUM</span>'
+          : '<span>BRIDGE OFFLINE</span>';
+      }
+      if (offline) offline.style.display = ok ? "none" : "flex";
+      if (ok && info && info.url) {
+        const urlText = document.getElementById("ailabCuaUrlText");
+        if (urlText) urlText.textContent = info.url;
+      }
+      if (ok) this.startFrames(); else this.stopFrames();
+    },
 
-      if (this.localBridgeOnline) {
+    startFrames: function () {
+      if (this.frameTimer || !this.isOpen) return;
+      this.frameTimer = setInterval(async () => {
+        if (!this.online) return;
         try {
-          const resp = await fetch(this.localBridgeUrl + "/navigate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: url })
-          });
-          const res = await resp.json();
-          if (res.screenshot) this.setScreenshotSurface(res.screenshot);
+          const frame = await this.bridge("/frame", null, 8000);
+          if (frame && frame.ok) this.updateFrame(frame);
         } catch (_) {}
-      } else {
-        const iframe = document.getElementById("ailabCuaIframe");
-        const img = document.getElementById("ailabCuaScreenshotFrame");
-        if (iframe) {
-          iframe.style.display = "block";
-          // Handle specific sites where iframe embedding is blocked or specialized simulation is preferred
-          if (url.includes("openrouter.ai")) {
-            iframe.srcdoc = this.generateOpenRouterDoc();
-          } else if (url.includes("google.com")) {
-            const queryMatch = url.match(/[?&]q=([^&]+)/);
-            const query = queryMatch ? decodeURIComponent(queryMatch[1].replace(/\+/g, " ")) : "NanoPro AI Studio";
-            iframe.srcdoc = this.generateGoogleSearchDoc(query);
-          } else {
-            iframe.removeAttribute("srcdoc");
-            iframe.src = url;
-          }
-        }
-        if (img) img.style.display = "none";
-      }
-
-      this.logToDuckDBAndBigQuery("browser_navigate", { url: url });
+      }, 900);
     },
 
-    setScreenshotSurface: function(src) {
-      const iframe = document.getElementById("ailabCuaIframe");
+    stopFrames: function () {
+      if (this.frameTimer) { clearInterval(this.frameTimer); this.frameTimer = null; }
+    },
+
+    updateFrame: function (frame) {
       const img = document.getElementById("ailabCuaScreenshotFrame");
-      if (iframe) iframe.style.display = "none";
-      if (img) {
+      if (img && frame.screenshot) {
+        img.src = frame.screenshot;
         img.style.display = "block";
-        img.src = src;
+      }
+      if (frame.url) {
+        this.lastUrl = frame.url;
+        const urlText = document.getElementById("ailabCuaUrlText");
+        if (urlText) urlText.textContent = frame.url;
       }
     },
 
-    moveCursor: function(x, y, label) {
+    updateActionHud: function (icon, text) {
+      const iconEl = document.getElementById("ailabCuaActionIcon");
+      const descEl = document.getElementById("ailabCuaActionDesc");
+      if (iconEl) iconEl.innerText = icon;
+      if (descEl) descEl.innerText = text;
+    },
+
+    moveCursor: function (x, y, label) {
       const cursor = document.getElementById("ailabCuaCursor");
       const cursorLbl = document.getElementById("ailabCuaCursorLabel");
       if (!cursor) return;
@@ -24522,7 +24187,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (cursorLbl && label) cursorLbl.innerText = label;
     },
 
-    triggerClickRipple: function(x, y) {
+    triggerClickRipple: function (x, y) {
       const ripple = document.getElementById("ailabCuaClickRipple");
       if (!ripple) return;
       ripple.style.left = x + "px";
@@ -24532,280 +24197,303 @@ body.in-global_ai_lab .nano-dynamic-island {
       ripple.classList.add("pulsing");
     },
 
-    click: async function(selector, x, y) {
-      this.updateActionHud("🖱️", `browser_click("${selector || (x + ',' + y)}")`);
-      const stage = document.getElementById("ailabCuaScreenStage") || document.getElementById("ailabCuaViewportContainer");
-      const stageW = stage ? stage.offsetWidth : 600;
-      const stageH = stage ? stage.offsetHeight : 450;
+    escapeHtml: function (value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    },
 
-      const targetX = x !== undefined ? x : Math.floor(stageW * 0.45);
-      const targetY = y !== undefined ? y : Math.floor(stageH * 0.35);
+    logLine: function (kind, text) {
+      const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      this.log.push({ stamp, kind, text });
+      if (this.log.length > 80) this.log.shift();
+      const box = document.getElementById("ailabCuaTaskLog");
+      if (!box) return;
+      box.classList.add("is-open");
+      box.innerHTML = this.log
+        .map((l) => '<div class="ailab-cua-logline ' + l.kind + '"><span class="ts">' + l.stamp + "</span>" + this.escapeHtml(l.text) + "</div>")
+        .join("");
+      box.scrollTop = box.scrollHeight;
+    },
 
-      this.moveCursor(targetX, targetY, "Clicking...");
-      await new Promise(r => setTimeout(r, 300));
-      this.triggerClickRipple(targetX, targetY);
+    clearTaskLog: function () {
+      this.log = [];
+      const box = document.getElementById("ailabCuaTaskLog");
+      if (box) { box.innerHTML = ""; box.classList.remove("is-open"); }
+    },
 
-      if (this.localBridgeOnline) {
-        try {
-          const resp = await fetch(this.localBridgeUrl + "/click", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ selector: selector, x: targetX, y: targetY })
-          });
-          const res = await resp.json();
-          if (res.screenshot) this.setScreenshotSurface(res.screenshot);
-        } catch (_) {}
+    parseAction: function (text) {
+      let raw = String(text || "").trim();
+      raw = raw.replace(/^```(?:json)?/i, "").replace(/```\s*$/, "").trim();
+      const start = raw.indexOf("{");
+      if (start === -1) throw new Error("model did not return JSON");
+      let depth = 0, end = -1, inString = false, escaped = false;
+      for (let i = start; i < raw.length; i++) {
+        const ch = raw[i];
+        if (inString) {
+          if (escaped) escaped = false;
+          else if (ch === "\\") escaped = true;
+          else if (ch === '"') inString = false;
+          continue;
+        }
+        if (ch === '"') inString = true;
+        else if (ch === "{") depth++;
+        else if (ch === "}") { depth--; if (depth === 0) { end = i; break; } }
       }
-
-      this.logToDuckDBAndBigQuery("browser_click", { selector, x: targetX, y: targetY });
+      if (end === -1) throw new Error("model returned incomplete JSON");
+      const parsed = JSON.parse(raw.slice(start, end + 1));
+      if (!parsed.action) throw new Error("model response has no action");
+      return parsed;
     },
 
-    typeText: async function(selector, text) {
-      this.updateActionHud("⌨️", `browser_type("${selector}", "${text}")`);
-      const stage = document.getElementById("ailabCuaScreenStage") || document.getElementById("ailabCuaViewportContainer");
-      const stageW = stage ? stage.offsetWidth : 600;
-      const targetX = Math.floor(stageW * 0.4);
-      const targetY = 120;
+    plan: async function (task, obs) {
+      const elements = (obs.elements || []).slice(0, 90);
+      const elementLines = elements
+        .map((e) => "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' + (e.href ? " -> " + e.href : ""))
+        .join("\n");
+      const system = [
+        "You are NanoPro CUA, an autonomous browser agent driving a real Chromium window.",
+        "Take exactly one step at a time and reply with ONE JSON object, nothing else.",
+        'Schema: {"thought":"one short sentence","action":"goto|click|type|press|scroll|wait|back|select|save_secret|ask_user|done", ...fields}',
+        "Fields: goto{url}; click{index}; type{index,text,enter}; press{key}; scroll{direction}; wait{ms}; select{index,value}; save_secret{provider,value}; ask_user{message,options}; done{summary}.",
+        "Rules:",
+        "- Use only element indexes from the provided list.",
+        "- Never type passwords, OTPs, card numbers or payment details. If a login, OTP, CAPTCHA or payment screen appears, use ask_user and stop there.",
+        "- save_secret only when the exact secret value is visible on the page and the task asks you to capture it. Never invent a value.",
+        "- When the task is finished, return done with a short summary of what you verified.",
+        "- Keep text fields short; one click or one field per step."
+      ].join("\n");
+      const observation = [
+        "TASK: " + task,
+        "STEP: " + this.step + "/" + this.maxSteps,
+        "URL: " + (obs.url || ""),
+        "TITLE: " + (obs.title || ""),
+        "SCROLL: " + JSON.stringify(obs.scroll || {}),
+        "",
+        "VISIBLE TEXT:",
+        String(obs.text || "").slice(0, 2800),
+        "",
+        "INTERACTIVE ELEMENTS:",
+        elementLines
+      ].join("\n");
 
-      this.moveCursor(targetX, targetY, `Typing: ${text}...`);
-      await new Promise(r => setTimeout(r, 250));
-
-      if (this.localBridgeOnline) {
-        try {
-          const resp = await fetch(this.localBridgeUrl + "/type", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ selector: selector, text: text })
-          });
-          const res = await resp.json();
-          if (res.screenshot) this.setScreenshotSurface(res.screenshot);
-        } catch (_) {}
-      }
-
-      this.logToDuckDBAndBigQuery("browser_type", { selector, text });
-    },
-
-    renderSetOfMarks: function() {
-      const som = document.getElementById("ailabCuaSomOverlay");
-      if (!som) return;
-      som.innerHTML = `
-        <div class="ailab-som-tag" style="top:50px;left:40px;width:180px;height:28px;"><span class="ailab-som-badge">[1] Search Box</span></div>
-        <div class="ailab-som-tag" style="top:50px;left:230px;width:60px;height:28px;"><span class="ailab-som-badge">[2] Search Button</span></div>
-        <div class="ailab-som-tag" style="top:110px;left:40px;width:340px;height:80px;"><span class="ailab-som-badge">[3] Primary Result</span></div>
-        <div class="ailab-som-tag" style="top:210px;left:40px;width:280px;height:35px;"><span class="ailab-som-badge">[4] Link Card</span></div>
-      `;
-      this.updateActionHud("🎯", "vision_inspect: Set-of-Marks targets detected");
-    },
-
-    clearSetOfMarks: function() {
-      const som = document.getElementById("ailabCuaSomOverlay");
-      if (som) som.innerHTML = "";
-    },
-
-    snapshot: async function() {
-      this.updateActionHud("📸", "browser_screenshot: Capturing frame to DuckDB/BigQuery");
-      this.logToDuckDBAndBigQuery("browser_screenshot", { frame_idx: this.frames.length + 1, url: this.currentUrl });
-    },
-
-    updateActionHud: function(icon, text) {
-      const iconEl = document.getElementById("ailabCuaActionIcon");
-      const descEl = document.getElementById("ailabCuaActionDesc");
-      if (iconEl) iconEl.innerText = icon;
-      if (descEl) descEl.innerText = text;
-    },
-
-    logToDuckDBAndBigQuery: function(action, payload) {
-      this.duckdbCount++;
-      fetch("/api/ai/cua/history", {
+      const res = await fetch("/api/ai/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: action,
-          payload: payload,
-          timestamp: Date.now() / 1000,
-          hardware: "Local Laptop GPU/CPU/RAM",
-          render_load: "0 MB"
-        })
-      }).catch(console.warn);
+          prompt: system + "\n\n" + observation,
+          model: (window.AILAB && AILAB.selectedModel) || "auto",
+          effort: (window.AILAB && AILAB.selectedEffort) || "default",
+          messages: []
+        }),
+        signal: AbortSignal.timeout(70000)
+      });
+      const data = await res.json().catch(() => ({}));
+      const text = data.response || data.message || data.text || "";
+      if (!text) throw new Error(data.message || "model returned an empty response");
+      return this.parseAction(text);
     },
 
-    // Autonomous Execution called directly from the chat!
-        activeCheckpoint: null,
+    describeAction: function (plan) {
+      switch (String(plan.action || "").toLowerCase()) {
+        case "goto": return 'navigated to ' + (plan.url || "");
+        case "click": return "clicked [" + plan.index + "]";
+        case "type": return 'typed into [' + plan.index + "]";
+        case "press": return "pressed " + (plan.key || "Enter");
+        case "scroll": return "scrolled " + (plan.direction || "down");
+        case "back": return "went back";
+        case "select": return "selected a value";
+        case "wait": return "waited";
+        default: return plan.action || "";
+      }
+    },
 
-    // Human-in-the-Loop Collaboration: Request User Guidance / Approval
-    requestCollaborativeDecision: function(checkpoint) {
-      this.activeCheckpoint = checkpoint;
-      const cardId = "hitl_" + Math.random().toString(36).slice(2, 9);
-      
-      // Update CUA Viewport HUD & Cursor
-      this.updateActionHud("🤝", "HITL Checkpoint: Waiting for user choice in chat...");
-      this.moveCursor(200, 150, "🤝 Awaiting User Choice in Chat");
-
-      // Build options HTML
-      let optionsHtml = "";
-      (checkpoint.options || []).forEach((opt, idx) => {
-        const isRec = opt.recommended || idx === (checkpoint.recommendedIndex || 0);
-        const safeLabel = encodeURIComponent(opt.label || opt.text || `Option ${idx+1}`);
-        const safeId = encodeURIComponent(opt.id || `opt_${idx+1}`);
-        optionsHtml += `
-          <button type="button" class="ailab-hitl-btn ${isRec ? 'recommended' : ''}" 
-                  onclick="ailabChooseHitlOption(decodeURIComponent('${safeId}'), decodeURIComponent('${safeLabel}'), '${cardId}')">
-            <span>${opt.icon || '👉'} ${opt.label || opt.text}</span>
-            ${isRec ? '<span class="ailab-hitl-rec-tag">Recommended ⭐</span>' : ''}
-          </button>
-        `;
+    askUser: function (message, options) {
+      return new Promise((resolve) => {
+        const box = document.getElementById("ailabCuaAsk");
+        if (!box) { resolve("continue"); return; }
+        const choices = (options && options.length ? options : []).slice(0, 4).map(String);
+        box.classList.add("is-open");
+        box.innerHTML =
+          '<div class="ailab-cua-ask-title">🤝 ' + this.escapeHtml(message) + "</div>" +
+          '<div class="ailab-cua-ask-opts"></div>';
+        const holder = box.querySelector(".ailab-cua-ask-opts");
+        const finish = (value) => {
+          box.classList.remove("is-open");
+          box.innerHTML = "";
+          this.userAnswer = value;
+          resolve(value);
+        };
+        choices.forEach((choice) => {
+          const b = document.createElement("button");
+          b.className = "ailab-hitl-btn";
+          b.textContent = choice;
+          b.onclick = () => finish(choice);
+          holder.appendChild(b);
+        });
+        const doneBtn = document.createElement("button");
+        doneBtn.className = "ailab-hitl-btn recommended";
+        doneBtn.textContent = "✅ मी स्वतः केलं — पुढे चला";
+        doneBtn.onclick = () => finish("The user completed this step manually. Continue from the current page.");
+        holder.appendChild(doneBtn);
       });
+    },
 
+    saveSecret: async function (plan) {
+      const provider = String(plan.provider || "").trim();
+      const value = String(plan.value || "").trim();
+      if (!provider || !value) {
+        this.logLine("error", "save_secret needs both provider and value.");
+        return;
+      }
+      try {
+        const res = await fetch("/api/ai/cua/secrets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: provider, value: value, source_url: this.lastUrl, note: this.taskText })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
+        this.logLine("secret", "🔐 " + provider + " key encrypted into the vault (" + (data.masked || "masked") + ")");
+        this.updateActionHud("🔐", provider + " key saved to the server vault");
+      } catch (err) {
+        this.logLine("error", "Could not save the key: " + err.message);
+      }
+    },
+
+    runTask: async function (taskText) {
+      const task = String(taskText || "").trim();
+      if (!task) return;
+      if (this.running) { this.logLine("warn", "A task is already running."); return; }
+      this.togglePanel(true);
+      await this.pingBridge();
+      if (!this.online) {
+        this.logLine("error", "Local browser bridge is offline — start start_cua_bridge.bat on the laptop.");
+        return;
+      }
+
+      this.running = true;
+      this.abort = false;
+      this.step = 0;
+      this.taskText = task;
+      this.userAnswer = "";
+      this.clearTaskLog();
+      this.logLine("task", "TASK: " + task);
+      this.updateActionHud("🧭", "Reading the page…");
+
+      let pendingNote = "";
+      try {
+        while (this.step < this.maxSteps && !this.abort) {
+          this.step++;
+          const snap = await this.bridge("/snapshot", {}, 40000);
+          if (!snap || snap.ok === false) throw new Error((snap && snap.error) || "could not read the page");
+          if (pendingNote) { snap.text = pendingNote + "\n\n" + (snap.text || ""); pendingNote = ""; }
+          if (snap.url) { this.lastUrl = snap.url; const u = document.getElementById("ailabCuaUrlText"); if (u) u.textContent = snap.url; }
+
+          this.updateActionHud("🤖", "Step " + this.step + " — planning…");
+          const plan = await this.plan(task, snap);
+          const action = String(plan.action || "").toLowerCase();
+          this.logLine("thought", "Step " + this.step + ": " + (plan.thought || action));
+          this.updateActionHud("🤖", plan.thought || action);
+
+          if (action === "done") {
+            this.logLine("done", "✅ " + (plan.summary || "Task complete."));
+            this.updateActionHud("✅", plan.summary || "Task complete");
+            break;
+          }
+          if (action === "ask_user") {
+            this.logLine("warn", "Waiting for you: " + (plan.message || ""));
+            this.updateActionHud("🤝", "Waiting for your input in the panel");
+            await this.askUser(plan.message || "Your input is needed.", plan.options || []);
+            pendingNote = "USER RESPONSE: " + this.userAnswer;
+            continue;
+          }
+          if (action === "save_secret") {
+            await this.saveSecret(plan);
+            continue;
+          }
+
+          const result = await this.bridge("/act", plan, 60000);
+          if (result && result.ok === false) {
+            this.logLine("error", "Action failed: " + (result.error || "unknown error"));
+            this.updateActionHud("⚠️", "Action failed: " + (result.error || "unknown error"));
+          } else {
+            this.logLine("act", this.describeAction(plan));
+            if (plan.action === "click" && typeof plan.index === "number") {
+              const el = (snap.elements || []).find((e) => e.i === plan.index);
+              if (el) {
+                const stage = document.getElementById("ailabCuaViewportContainer");
+                const stageW = stage ? stage.offsetWidth : 640;
+                const scale = stageW / 1280;
+                this.moveCursor(el.x * scale, el.y * scale, "[" + plan.index + "] " + el.tag);
+                this.triggerClickRipple(el.x * scale, el.y * scale);
+              }
+            }
+          }
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        if (this.step >= this.maxSteps) this.logLine("warn", "Step limit reached before the task finished.");
+      } catch (err) {
+        this.logLine("error", "Stopped: " + err.message);
+        this.updateActionHud("⚠️", "Agent stopped: " + err.message);
+      } finally {
+        this.running = false;
+        const frame = await this.bridge("/frame", null, 8000).catch(() => null);
+        if (frame && frame.ok) this.updateFrame(frame);
+      }
+    },
+
+    runAutonomousTask: function (taskText) {
+      return this.runTask(taskText);
+    },
+
+    // Human-in-the-loop card used by chat actions
+    requestCollaborativeDecision: function (checkpoint) {
+      const cardId = "hitl_" + Math.random().toString(36).slice(2, 9);
+      this.updateActionHud("🤝", "Waiting for your choice in chat…");
       const container = document.getElementById("ailabMessagesContainer");
       if (!container) return;
-
       const card = document.createElement("div");
       card.className = "ailab-msg ailab-msg-assistant";
       card.id = cardId;
-      card.innerHTML = `
-        <div class="ailab-bubble" style="background:transparent; padding:0; border:none;">
-          <div class="ailab-hitl-card">
-            <div class="ailab-hitl-header">
-              <span class="ailab-hitl-badge">🤝 Autonomous Agent &amp; User Pair-Programming</span>
-              <span class="ailab-hitl-agent">CUA Browser Pilot &bull; HITL Checkpoint</span>
-            </div>
-            <div class="ailab-hitl-title">${checkpoint.title || "🤔 पुढील कृतीची निवड (Next Action Required)"}</div>
-            <div class="ailab-hitl-desc">${checkpoint.description || "ब्राउझर एजंटला पुढील कृती करण्यासाठी तुमची मदत किंवा संमती हवी आहे:"}</div>
-            <div class="ailab-hitl-options" id="${cardId}_opts">
-              ${optionsHtml}
-            </div>
-          </div>
-        </div>
-      `;
+      card.innerHTML =
+        '<div class="ailab-bubble" style="background:transparent; padding:0; border:none;">' +
+        '<div class="ailab-hitl-card">' +
+        '<div class="ailab-hitl-header"><span class="ailab-hitl-badge">🤝 Autonomous Agent &amp; User Pair-Programming</span><span class="ailab-hitl-agent">CUA Browser Pilot &bull; HITL Checkpoint</span></div>' +
+        '<div class="ailab-hitl-title">' + this.escapeHtml(checkpoint.title || "🤔 पुढील कृतीची निवड") + "</div>" +
+        '<div class="ailab-hitl-desc">' + this.escapeHtml(checkpoint.description || "ब्राउझर एजंटला पुढील कृती करण्यासाठी तुमची मदत हवी आहे:") + "</div>" +
+        '<div class="ailab-hitl-options" id="' + cardId + '_opts"></div>' +
+        "</div></div>";
       container.appendChild(card);
       container.scrollTop = container.scrollHeight;
 
-      this.logToDuckDBAndBigQuery("hitl_checkpoint_requested", {
-        title: checkpoint.title,
-        options_count: (checkpoint.options || []).length
+      const holder = document.getElementById(cardId + "_opts");
+      (checkpoint.options || []).forEach((opt, idx) => {
+        const isRec = opt.recommended || idx === (checkpoint.recommendedIndex || 0);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ailab-hitl-btn" + (isRec ? " recommended" : "");
+        btn.textContent = (opt.icon || "👉") + " " + (opt.label || opt.text || "Option " + (idx + 1));
+        btn.addEventListener("click", () => {
+          if (window.ailabChooseHitlOption) {
+            window.ailabChooseHitlOption(opt.id || "opt_" + (idx + 1), opt.label || opt.text || "", cardId);
+          }
+        });
+        if (holder) holder.appendChild(btn);
       });
     },
 
-    // Resume execution when user picks an option
-    resumeWithUserChoice: async function(choiceId, choiceLabel, cardId) {
-      const optsEl = document.getElementById(`${cardId}_opts`);
+    resumeWithUserChoice: async function (choiceId, choiceLabel, cardId) {
+      const optsEl = document.getElementById(cardId + "_opts");
       if (optsEl) {
-        optsEl.innerHTML = `
-          <div class="ailab-hitl-approved">
-            <span>✅</span>
-            <span><strong>तुम्ही निवडलेला पर्याय:</strong> ${choiceLabel} &mdash; ब्राउझर एजंट थेट अंमलबजावणी करत आहे...</span>
-          </div>
-        `;
+        optsEl.innerHTML =
+          '<div class="ailab-hitl-approved"><span>✅</span><span><strong>तुम्ही निवडलेला पर्याय:</strong> ' +
+          this.escapeHtml(choiceLabel) + " &mdash; एजंट पुढे जात आहे…</span></div>";
       }
-
-      this.updateActionHud("⚡", `Approved: "${choiceLabel}" • Executing in Browser...`);
-      this.moveCursor(320, 220, `Executing: ${choiceLabel}`);
-      this.triggerClickRipple(320, 220);
-
-      this.logToDuckDBAndBigQuery("hitl_decision_granted", {
-        choice_id: choiceId,
-        choice_label: choiceLabel,
-        timestamp: Date.now() / 1000
-      });
-
-      // Execute approved action in browser
-      if (choiceId === "opt_1" || choiceId.includes("nanopro") || choiceId.includes("1")) {
-        // Option 1: Explore official result
-        await new Promise(r => setTimeout(r, 600));
-        const iframe = document.getElementById("ailabCuaIframe");
-        if (iframe) {
-          iframe.srcdoc = this.generateGoogleSearchDoc("NanoPro AI Studio - Architecture & Operations Center");
-        }
-        this.updateActionHud("✅", "NanoPro Platform Opened & Verified Live");
-        this.moveCursor(360, 280, "✅ Verified Live Data");
-        await this.snapshot();
-      } else if (choiceId === "opt_2" || choiceId.includes("wiki") || choiceId.includes("2")) {
-        // Option 2: Wikipedia
-        await this.navigate("https://en.wikipedia.org/wiki/Artificial_intelligence");
-      } else if (choiceId === "opt_3" || choiceId.includes("github") || choiceId.includes("3")) {
-        // Option 3: GitHub
-        await this.navigate("https://github.com/search?q=nanopro+ai");
-      } else {
-        // General query
-        await this.snapshot();
-        this.updateActionHud("✅", `Action Completed: ${choiceLabel}`);
-      }
-      this.activeCheckpoint = null;
-    },
-
-    runAutonomousTask: async function(promptText) {
-      const task = (promptText || "").trim();
-      if (!task) return;
-
-      this.togglePanel(true);
-      const lower = task.toLowerCase();
-
-      // Intelligent Autonomous Target URL & Intent Detection
-      let targetUrl = "https://www.google.com";
-      let cursorTargetText = "Inspecting Web Viewport";
-
-      if (lower.includes("open router") || lower.includes("openrouter")) {
-        targetUrl = "https://openrouter.ai/models";
-        cursorTargetText = "OpenRouter: Top #1 Model is DeepSeek R1";
-      } else if (lower.includes("youtube") || lower.includes("युट्यूब")) {
-        let q = task.replace(/.*(youtube|युट्यूब|var|वर)/i, "").replace(/search|kara|करा|shodha|शोध/gi, "").trim();
-        targetUrl = q ? "https://www.youtube.com/results?search_query=" + encodeURIComponent(q) : "https://www.youtube.com";
-        cursorTargetText = "YouTube: " + (q || "Videos");
-      } else if (lower.includes("wiki") || lower.includes("विकिपीडिया")) {
-        let q = task.replace(/.*(wiki|विकिपीडिया|var|वर)/i, "").replace(/search|kara|करा|shodha|शोध/gi, "").trim();
-        targetUrl = q ? "https://en.wikipedia.org/wiki/" + encodeURIComponent(q) : "https://en.wikipedia.org";
-        cursorTargetText = "Wikipedia: " + (q || "Articles");
-      } else if (lower.includes("github") || lower.includes("गिटहब")) {
-        let q = task.replace(/.*(github|गिटहब|var|वर)/i, "").replace(/search|kara|करा|shodha|शोध/gi, "").trim();
-        targetUrl = q ? "https://github.com/search?q=" + encodeURIComponent(q) : "https://github.com/trending";
-        cursorTargetText = "GitHub: " + (q || "Trending");
-      } else if (/https?:\/\/[^\s]+/i.test(task)) {
-        targetUrl = task.match(/https?:\/\/[^\s]+/i)[0];
-        cursorTargetText = "Navigating: " + targetUrl;
-      } else {
-        let q = task.replace(/side screen share madhe|screen share|side screen|browser|ब्राउझर|स्क्रीन|शेअर|search|kara|करा|शोध|open|उघडा|google|गुगल/gi, "").trim();
-        if (!q || q.length < 2) q = "NanoPro AI Studio";
-        targetUrl = "https://www.google.com/search?q=" + encodeURIComponent(q);
-        cursorTargetText = "Searching: " + q;
-      }
-
-      // Step 1: Navigate to target URL
-      this.updateActionHud("🧭", `[Step 1/4: Target Navigation] -> ${targetUrl}`);
-      await this.navigate(targetUrl);
-      await new Promise(r => setTimeout(r, 400));
-
-      // Step 2: Set-of-Marks Scan
-      this.updateActionHud("🔍", `[Step 2/4: Set-of-Marks Scan] -> Scanned marks [1], [2], [3]`);
-      this.renderSetOfMarks();
-      await new Promise(r => setTimeout(r, 500));
-
-      // Step 3: Animate Laser Cursor to Mark [1] & Extract
-      const stage = document.getElementById("ailabCuaViewportContainer");
-      const stageW = stage ? stage.offsetWidth : 600;
-      const stageH = stage ? stage.offsetHeight : 450;
-      const targetX1 = Math.floor(stageW * 0.32);
-      const targetY1 = Math.floor(stageH * 0.24);
-
-      this.moveCursor(targetX1, targetY1, "[1] Extracting Citation");
-      await new Promise(r => setTimeout(r, 400));
-      this.triggerClickRipple(targetX1, targetY1);
-
-      // Step 4: Animate Laser Cursor to Mark [2] & End-to-End Resolution
-      this.updateActionHud("📑", `[Step 3/4: Content Extraction] -> Extracted live citations into DuckDB`);
-      const targetX2 = Math.floor(stageW * 0.36);
-      const targetY2 = Math.floor(stageH * 0.36);
-      await new Promise(r => setTimeout(r, 400));
-      this.moveCursor(targetX2, targetY2, "[2] Indexed Knowledge");
-      this.triggerClickRipple(targetX2, targetY2);
-
-      await new Promise(r => setTimeout(r, 500));
-      await this.snapshot();
-      this.updateActionHud("✅", `[Step 4/4: End-to-End Resolution Complete] • 3 Citations Extracted • 0 MB Load on Render`);
+      this.updateActionHud("⚡", 'Approved: "' + choiceLabel + '"');
+      this.userAnswer = choiceLabel;
     }
   };
 
-  
-  // Global 1-Tap Hint Dispatcher
+    // Global 1-Tap Hint Dispatcher
   window.ailabHandleActionClick = function(text) {
     if (!text) return;
     const lower = text.toLowerCase();

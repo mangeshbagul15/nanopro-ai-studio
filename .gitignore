@@ -69,3 +69,7 @@ scratch/private/
 /scripts/test_live_drawer.py
 
 artifacts/
+
+# CUA browser profile (local Playwright user data)
+.cua_profile/
+.cua_profile_test/

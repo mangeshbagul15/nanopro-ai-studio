@@ -1,182 +1,543 @@
 # -*- coding: utf-8 -*-
 """
-local_cua_bridge.py:
-=============================================================================
-NanoPro Local Computer Use Agent (CUA) / Autonomous Browser Bridge
-=============================================================================
-Runs EXCLUSIVELY on the user's LOCAL LAPTOP using local CPU, GPU, RAM & SSD.
-Guarantees ZERO MB memory / CPU load on Render cloud servers.
-Connects directly to Playwright Chromium and provides a lightweight MCP HTTP
-API for the NanoPro Global AI Lab right-side split-screen viewport.
+NanoPro CUA Bridge — real remote-controlled Chromium on the local laptop.
 
-Usage:
-    python app/agents/local_cua_bridge.py [--port 8765] [--headed]
+The Global AI Lab panel drives this daemon over HTTP. Every action the agent
+takes happens in a visible Chromium window on this machine, so the user and the
+agent observe the same screen. Nothing heavy runs on Render.
+
+Start it with:
+    start_cua_bridge.bat
+    python app/agents/local_cua_bridge.py --headed
+
+Endpoints (all CORS-enabled, loopback only):
+    GET  /status      bridge + page state
+    GET  /frame       latest JPEG screenshot of the controlled page
+    POST /navigate    {"url": "https://..."}
+    POST /snapshot    page text + numbered interactive elements
+    POST /act         {"action": "click|type|press|scroll|goto|back|select|wait|hover", ...}
+    POST /reset       fresh blank tab
+    GET  /            human readable help page
 """
 
-import os
-import sys
-import json
-import base64
+import argparse
 import asyncio
+import base64
+import ipaddress
+import os
+import socket
+import sys
+import time
+import urllib.parse
+
 from aiohttp import web
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except Exception:
+    pass
 
 try:
     from playwright.async_api import async_playwright
 except ImportError:
-    print("[Error] Playwright is not installed. Run: pip install playwright && playwright install chromium")
+    print("[CUA Bridge] Playwright missing. Run: pip install playwright && playwright install chromium")
     sys.exit(1)
 
-PORT = 8765
-BROWSER_INSTANCE = None
-PLAYWRIGHT_OBJ = None
-PAGE_INSTANCE = None
-HEADED = "--headed" in sys.argv
 
-# CORS Middleware
+VIEWPORT = {"width": 1280, "height": 800}
+MAX_ELEMENTS = 160
+MAX_TEXT = 7000
+DEFAULT_URL = "about:blank"
+
+SNAPSHOT_JS = r"""
+() => {
+  const looksVisible = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 3 || r.height < 3) return false;
+    if (r.bottom < -40 || r.top > window.innerHeight * 1.5) return false;
+    const s = getComputedStyle(el);
+    return s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0';
+  };
+  const selector = 'a[href],button,input,textarea,select,summary,[role="button"],[role="link"],[role="tab"],[role="menuitem"],[contenteditable="true"],[onclick]';
+  const nodes = Array.from(document.querySelectorAll(selector));
+  const registry = [];
+  const elements = [];
+  for (const el of nodes) {
+    if (!looksVisible(el)) continue;
+    const tag = el.tagName.toLowerCase();
+    const isField = tag === 'input' || tag === 'textarea' || tag === 'select';
+    const label = (el.innerText || el.value || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '')
+      .replace(/\s+/g, ' ').trim().slice(0, 90);
+    if (!label && !isField) continue;
+    const r = el.getBoundingClientRect();
+    elements.push({
+      i: elements.length,
+      tag: tag,
+      type: (el.getAttribute('type') || '').toLowerCase(),
+      label: label,
+      href: tag === 'a' ? String(el.getAttribute('href') || '').slice(0, 120) : '',
+      x: Math.round(r.left),
+      y: Math.round(r.top),
+      w: Math.round(r.width),
+      h: Math.round(r.height)
+    });
+    registry.push(el);
+    if (elements.length >= __MAX_ELEMENTS__) break;
+  }
+  window.__NANOPRO_CUA_ELS = registry;
+  const bodyText = (document.body ? document.body.innerText : '') || '';
+  const text = bodyText.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, __MAX_TEXT__);
+  return {
+    url: location.href,
+    title: document.title,
+    text: text,
+    elements: elements,
+    scroll: {
+      y: Math.round(window.scrollY),
+      height: Math.round(document.documentElement.scrollHeight),
+      viewport: window.innerHeight
+    }
+  };
+}
+"""
+
+
+def _is_public_url(url: str):
+    """Refuse non-web schemes and private/loopback targets so the daemon cannot be
+    turned into a probe for the laptop's own network."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except Exception:
+        return False, "invalid url"
+    if parsed.scheme not in ("http", "https"):
+        return False, "only http and https are allowed"
+    host = parsed.hostname or ""
+    if not host:
+        return False, "missing host"
+    if host.lower() in ("localhost", "localhost.localdomain"):
+        return False, "localhost is blocked"
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False, f"cannot resolve {host}"
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            continue
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+            return False, f"private address blocked ({ip})"
+    return True, "ok"
+
+
+def _normalize_url(url: str) -> str:
+    url = (url or "").strip()
+    if not url:
+        return ""
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    return url
+
+
+class BrowserBridge:
+    def __init__(self, headless: bool, profile_dir: str):
+        self.headless = headless
+        self.profile_dir = profile_dir
+        self.lock = asyncio.Lock()
+        self.playwright = None
+        self.context = None
+        self.page = None
+        self.last_frame = b""
+        self.last_frame_at = 0.0
+        self.started_at = time.time()
+
+    async def start(self):
+        self.playwright = await async_playwright().start()
+        self.context = await self.playwright.chromium.launch_persistent_context(
+            user_data_dir=self.profile_dir,
+            headless=self.headless,
+            viewport=VIEWPORT,
+            args=[
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--window-size=1280,880",
+            ],
+        )
+        self.context.on("page", self._track_page)
+        pages = self.context.pages
+        self.page = pages[0] if pages else await self.context.new_page()
+        print(f"[CUA Bridge] Chromium ready (headless={self.headless}, profile={self.profile_dir})")
+
+    def _track_page(self, page):
+        self.page = page
+
+    async def stop(self):
+        try:
+            if self.context:
+                await self.context.close()
+        except Exception:
+            pass
+        try:
+            if self.playwright:
+                await self.playwright.stop()
+        except Exception:
+            pass
+
+    async def ensure_page(self):
+        if self.page and not self.page.is_closed():
+            return self.page
+        if self.context is None:
+            raise RuntimeError("browser not started")
+        self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
+        return self.page
+
+    async def settle(self, ms=450):
+        page = await self.ensure_page()
+        try:
+            await page.wait_for_load_state("domcontentloaded", timeout=5000)
+        except Exception:
+            pass
+        await asyncio.sleep(ms / 1000.0)
+
+    async def capture(self):
+        page = await self.ensure_page()
+        try:
+            frame = await page.screenshot(type="jpeg", quality=70, timeout=8000)
+            self.last_frame = frame
+            self.last_frame_at = time.time()
+        except Exception:
+            pass
+        return self.last_frame
+
+    async def state(self):
+        page = await self.ensure_page()
+        title = ""
+        try:
+            title = await page.title()
+        except Exception:
+            pass
+        return {"url": page.url, "title": title}
+
+    async def navigate(self, url):
+        page = await self.ensure_page()
+        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        await self.settle(600)
+
+    async def snapshot(self):
+        page = await self.ensure_page()
+        js = SNAPSHOT_JS.replace("__MAX_ELEMENTS__", str(MAX_ELEMENTS)).replace("__MAX_TEXT__", str(MAX_TEXT))
+        try:
+            data = await page.evaluate(js)
+        except Exception as exc:
+            data = {"url": page.url, "title": "", "text": "", "elements": [], "scroll": {}, "error": str(exc)}
+        return data
+
+    async def act(self, payload):
+        page = await self.ensure_page()
+        action = (payload.get("action") or "").strip().lower()
+
+        if action in ("goto", "navigate"):
+            url = _normalize_url(payload.get("url") or payload.get("text") or "")
+            ok, reason = _is_public_url(url)
+            if not ok:
+                return {"ok": False, "error": reason}
+            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            await self.settle(600)
+            return {"ok": True}
+
+        if action == "back":
+            await page.go_back(wait_until="domcontentloaded", timeout=20000)
+            await self.settle(500)
+            return {"ok": True}
+
+        if action == "click":
+            idx = payload.get("index")
+            point = None
+            pages_before = len(self.context.pages)
+            if idx is not None:
+                point = await page.evaluate(
+                    """(i) => {
+                        const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                        if (!el) return null;
+                        el.scrollIntoView({block: 'center', inline: 'center'});
+                        const r = el.getBoundingClientRect();
+                        if (!r.width && !r.height) {
+                            el.click();
+                            return {x: null, y: null};
+                        }
+                        return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+                    }""",
+                    int(idx),
+                )
+                if point is None:
+                    return {"ok": False, "error": "element index not found; take a fresh snapshot"}
+                if point.get("x") is not None:
+                    await page.mouse.move(float(point["x"]), float(point["y"]))
+                    await asyncio.sleep(0.12)
+                    await page.mouse.click(float(point["x"]), float(point["y"]))
+            elif payload.get("x") is not None and payload.get("y") is not None:
+                point = {"x": float(payload["x"]), "y": float(payload["y"])}
+                await page.mouse.click(point["x"], point["y"])
+            else:
+                return {"ok": False, "error": "click needs index or x/y"}
+
+            await asyncio.sleep(0.6)
+            # Links with target=_blank (or window.open) spawn a tab; the agent
+            # must follow it or the next snapshot reads the wrong document.
+            if len(self.context.pages) > pages_before:
+                newest = self.context.pages[-1]
+                try:
+                    await newest.wait_for_load_state("domcontentloaded", timeout=15000)
+                except Exception:
+                    pass
+                self.page = newest
+                await self.settle(600)
+                return {"ok": True, "x": (point or {}).get("x"), "y": (point or {}).get("y"), "tab": "new"}
+            await self.settle(700)
+            return {"ok": True, "x": (point or {}).get("x"), "y": (point or {}).get("y")}
+
+        if action in ("type", "fill"):
+            idx = payload.get("index")
+            text = payload.get("text") or ""
+            if idx is not None:
+                focused = await page.evaluate(
+                    """(i) => {
+                        const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                        if (!el) return false;
+                        el.scrollIntoView({block: 'center', inline: 'center'});
+                        el.focus();
+                        if (el.select) { try { el.select(); } catch (e) {} }
+                        return true;
+                    }""",
+                    int(idx),
+                )
+                if not focused:
+                    return {"ok": False, "error": "element index not found; take a fresh snapshot"}
+            await page.keyboard.type(text, delay=18)
+            await asyncio.sleep(0.15)
+            if payload.get("enter"):
+                await page.keyboard.press("Enter")
+            await self.settle(600)
+            return {"ok": True}
+
+        if action == "press":
+            key = payload.get("key") or "Enter"
+            await page.keyboard.press(key)
+            await self.settle(500)
+            return {"ok": True}
+
+        if action == "hover":
+            idx = payload.get("index")
+            if idx is None:
+                return {"ok": False, "error": "hover needs index"}
+            await page.evaluate(
+                """(i) => {
+                    const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                    if (el) el.scrollIntoView({block: 'center', inline: 'center'});
+                }""",
+                int(idx),
+            )
+            await asyncio.sleep(0.2)
+            return {"ok": True}
+
+        if action == "scroll":
+            direction = (payload.get("direction") or "down").lower()
+            pixels = int(payload.get("pixels") or 600)
+            if direction == "top":
+                await page.evaluate("window.scrollTo({top: 0, behavior: 'smooth'})")
+            elif direction == "bottom":
+                await page.evaluate("window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})")
+            else:
+                await page.mouse.wheel(0, pixels if direction == "down" else -pixels)
+            await self.settle(450)
+            return {"ok": True}
+
+        if action == "select":
+            idx = payload.get("index")
+            value = payload.get("value")
+            if idx is None:
+                return {"ok": False, "error": "select needs index"}
+            changed = await page.evaluate(
+                """([i, v]) => {
+                    const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                    if (!el) return false;
+                    el.value = v;
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                    el.dispatchEvent(new Event('change', {bubbles: true}));
+                    return true;
+                }""",
+                [int(idx), value],
+            )
+            if not changed:
+                return {"ok": False, "error": "element index not found"}
+            await self.settle(450)
+            return {"ok": True}
+
+        if action == "wait":
+            await asyncio.sleep(max(0.2, min(10.0, float(payload.get("ms") or 1000) / 1000.0)))
+            return {"ok": True}
+
+        return {"ok": False, "error": f"unknown action '{action}'"}
+
+    async def reset(self):
+        if self.page and not self.page.is_closed():
+            try:
+                await self.page.close()
+            except Exception:
+                pass
+        self.page = await self.context.new_page()
+        self.last_frame = b""
+        await self.settle(200)
+
+
+BRIDGE = None
+
+
 @web.middleware
 async def cors_middleware(request, handler):
     if request.method == "OPTIONS":
-        response = web.Response(status=200)
+        response = web.Response(status=204)
     else:
         try:
             response = await handler(request)
-        except web.HTTPException as ex:
-            response = ex
+        except web.HTTPException as exc:
+            response = exc
+        except Exception as exc:
+            response = web.json_response({"ok": False, "error": str(exc)}, status=500)
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    # Chrome's Private Network Access preflight
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
     return response
 
-async def init_browser(app):
-    global PLAYWRIGHT_OBJ, BROWSER_INSTANCE, PAGE_INSTANCE
-    print(f"[CUA Bridge] Initializing local Playwright Chromium (Headed={HEADED})...")
-    PLAYWRIGHT_OBJ = await async_playwright().start()
-    BROWSER_INSTANCE = await PLAYWRIGHT_OBJ.chromium.launch(
-        headless=not HEADED,
-        args=["--disable-web-security", "--no-sandbox"]
-    )
-    context = await BROWSER_INSTANCE.new_context(
-        viewport={"width": 1280, "height": 800},
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 NanoPro-CUA/2026"
-    )
-    PAGE_INSTANCE = await context.new_page()
-    try:
-        await PAGE_INSTANCE.goto("https://en.wikipedia.org", timeout=15000, wait_until="domcontentloaded")
-    except Exception:
-        pass
-    print(f"[CUA Bridge] Local Browser ready! Listening on http://127.0.0.1:{PORT}")
 
-async def cleanup_browser(app):
-    global BROWSER_INSTANCE, PLAYWRIGHT_OBJ
-    print("[CUA Bridge] Shutting down browser...")
-    if BROWSER_INSTANCE:
-        await BROWSER_INSTANCE.close()
-    if PLAYWRIGHT_OBJ:
-        await PLAYWRIGHT_OBJ.stop()
-
-# Handlers
 async def handle_status(request):
-    return web.json_response({
-        "status": "online",
-        "engine": "Playwright Chromium (Local Laptop Hardware)",
-        "hardware": "Local Laptop GPU/CPU/RAM",
-        "render_load": "0 MB (Render Bypassed)",
-        "current_url": PAGE_INSTANCE.url if PAGE_INSTANCE else "about:blank"
-    })
+    async with BRIDGE.lock:
+        state = await BRIDGE.state()
+    return web.json_response(
+        {
+            "status": "online",
+            "engine": "Playwright Chromium (local laptop)",
+            "headless": BRIDGE.headless,
+            "profile": os.path.abspath(BRIDGE.profile_dir),
+            "pid": os.getpid(),
+            "uptime_s": round(time.time() - BRIDGE.started_at, 1),
+            "url": state["url"],
+            "title": state["title"],
+        }
+    )
 
-async def handle_screenshot(request):
-    if not PAGE_INSTANCE:
-        return web.json_response({"error": "Browser not initialized"}, status=500)
-    shot_bytes = await PAGE_INSTANCE.screenshot(type="jpeg", quality=75)
-    b64 = base64.b64encode(shot_bytes).decode("utf-8")
-    return web.json_response({
-        "status": "success",
-        "url": PAGE_INSTANCE.url,
-        "title": await PAGE_INSTANCE.title(),
-        "screenshot": f"data:image/jpeg;base64,{b64}",
-        "timestamp": asyncio.get_event_loop().time()
-    })
+
+async def handle_frame(request):
+    async with BRIDGE.lock:
+        frame = await BRIDGE.capture()
+        state = await BRIDGE.state()
+    if not frame:
+        return web.json_response({"ok": False, "error": "no frame captured yet"}, status=503)
+    return web.json_response(
+        {
+            "ok": True,
+            "url": state["url"],
+            "title": state["title"],
+            "screenshot": "data:image/jpeg;base64," + base64.b64encode(frame).decode("ascii"),
+            "ts": time.time(),
+        }
+    )
+
 
 async def handle_navigate(request):
-    data = await request.json()
-    url = data.get("url", "https://en.wikipedia.org")
-    if not url.startswith("http"):
-        url = "https://" + url
-    print(f"[CUA Bridge] Navigating to: {url}")
-    await PAGE_INSTANCE.goto(url, timeout=30000, wait_until="domcontentloaded")
-    shot_bytes = await PAGE_INSTANCE.screenshot(type="jpeg", quality=75)
-    b64 = base64.b64encode(shot_bytes).decode("utf-8")
-    return web.json_response({
-        "status": "success",
-        "url": PAGE_INSTANCE.url,
-        "title": await PAGE_INSTANCE.title(),
-        "screenshot": f"data:image/jpeg;base64,{b64}"
-    })
+    payload = await request.json()
+    url = _normalize_url(payload.get("url") or "")
+    ok, reason = _is_public_url(url)
+    if not ok:
+        return web.json_response({"ok": False, "error": reason}, status=400)
+    async with BRIDGE.lock:
+        await BRIDGE.navigate(url)
+        state = await BRIDGE.state()
+        await BRIDGE.capture()
+    return web.json_response({"ok": True, **state})
 
-async def handle_click(request):
-    data = await request.json()
-    selector = data.get("selector")
-    x = data.get("x")
-    y = data.get("y")
-    print(f"[CUA Bridge] Click: selector={selector}, x={x}, y={y}")
-    if selector:
-        await PAGE_INSTANCE.click(selector, timeout=5000)
-    elif x is not None and y is not None:
-        await PAGE_INSTANCE.mouse.click(float(x), float(y))
-    await asyncio.sleep(0.3)
-    shot_bytes = await PAGE_INSTANCE.screenshot(type="jpeg", quality=75)
-    b64 = base64.b64encode(shot_bytes).decode("utf-8")
-    return web.json_response({
-        "status": "success",
-        "url": PAGE_INSTANCE.url,
-        "screenshot": f"data:image/jpeg;base64,{b64}"
-    })
 
-async def handle_type(request):
-    data = await request.json()
-    selector = data.get("selector")
-    text = data.get("text", "")
-    print(f"[CUA Bridge] Type into {selector}: '{text}'")
-    if selector:
-        await PAGE_INSTANCE.fill(selector, text)
-    else:
-        await PAGE_INSTANCE.keyboard.type(text)
-    await asyncio.sleep(0.3)
-    shot_bytes = await PAGE_INSTANCE.screenshot(type="jpeg", quality=75)
-    b64 = base64.b64encode(shot_bytes).decode("utf-8")
-    return web.json_response({
-        "status": "success",
-        "url": PAGE_INSTANCE.url,
-        "screenshot": f"data:image/jpeg;base64,{b64}"
-    })
+async def handle_snapshot(request):
+    async with BRIDGE.lock:
+        data = await BRIDGE.snapshot()
+        await BRIDGE.capture()
+    return web.json_response({"ok": True, **data})
 
-async def handle_scroll(request):
-    data = await request.json()
-    direction = data.get("direction", "down")
-    pixels = data.get("pixels", 300)
-    dy = pixels if direction == "down" else -pixels
-    await PAGE_INSTANCE.evaluate(f"window.scrollBy({{ top: {dy}, behavior: 'smooth' }})")
-    await asyncio.sleep(0.3)
-    shot_bytes = await PAGE_INSTANCE.screenshot(type="jpeg", quality=75)
-    b64 = base64.b64encode(shot_bytes).decode("utf-8")
-    return web.json_response({
-        "status": "success",
-        "url": PAGE_INSTANCE.url,
-        "screenshot": f"data:image/jpeg;base64,{b64}"
-    })
 
-def create_app():
-    app = web.Application(middlewares=[cors_middleware])
+async def handle_act(request):
+    payload = await request.json()
+    async with BRIDGE.lock:
+        result = await BRIDGE.act(payload)
+        state = await BRIDGE.state()
+        await BRIDGE.capture()
+    return web.json_response({**result, **state})
+
+
+async def handle_reset(request):
+    async with BRIDGE.lock:
+        await BRIDGE.reset()
+    return web.json_response({"ok": True})
+
+
+async def handle_index(request):
+    html = """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NanoPro CUA Bridge</title>
+<style>body{font-family:system-ui;background:#0B111C;color:#E2E8F0;padding:40px;line-height:1.6}
+code{background:#111a29;padding:2px 6px;border-radius:4px;color:#7DD3FC} a{color:#38BDF8}</style></head>
+<body><h2>NanoPro CUA Bridge is running</h2>
+<p>This Chromium instance is controlled by the Global AI Lab in NanoPro Studio.</p>
+<p>Health check: <a href="/status">/status</a> &middot; Live frame: <a href="/frame">/frame</a></p>
+<p>Keep this window open while the agent works. Close it to stop the bridge.</p>
+<p>Started with <code>python app/agents/local_cua_bridge.py --headed</code>.</p>
+</body></html>"""
+    return web.Response(text=html, content_type="text/html")
+
+
+async def init_app(app):
+    await BRIDGE.start()
+
+
+async def cleanup_app(app):
+    if BRIDGE:
+        await BRIDGE.stop()
+
+
+def create_app(headless: bool, profile_dir: str):
+    global BRIDGE
+    BRIDGE = BrowserBridge(headless=headless, profile_dir=profile_dir)
+    app = web.Application(middlewares=[cors_middleware], client_max_size=4 * 1024 * 1024)
+    app.router.add_get("/", handle_index)
     app.router.add_get("/status", handle_status)
-    app.router.add_get("/screenshot", handle_screenshot)
+    app.router.add_get("/frame", handle_frame)
     app.router.add_post("/navigate", handle_navigate)
-    app.router.add_post("/click", handle_click)
-    app.router.add_post("/type", handle_type)
-    app.router.add_post("/scroll", handle_scroll)
-    app.on_startup.append(init_browser)
-    app.on_cleanup.append(cleanup_browser)
+    app.router.add_post("/snapshot", handle_snapshot)
+    app.router.add_post("/act", handle_act)
+    app.router.add_post("/reset", handle_reset)
+    app.on_startup.append(init_app)
+    app.on_cleanup.append(cleanup_app)
     return app
 
+
+def main():
+    parser = argparse.ArgumentParser(description="NanoPro CUA browser bridge")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("CUA_BRIDGE_PORT", "8765")))
+    parser.add_argument("--headless", action="store_true", help="run without a visible window (default is visible)")
+    parser.add_argument("--headed", action="store_true", help="force a visible window")
+    parser.add_argument("--profile", default=os.environ.get("CUA_PROFILE_DIR", os.path.join(os.getcwd(), ".cua_profile")))
+    args = parser.parse_args()
+
+    headless = args.headless and not args.headed
+    os.makedirs(args.profile, exist_ok=True)
+    print("=" * 70)
+    print(" NanoPro CUA Bridge  |  real Chromium on this machine")
+    print(f" Listening on http://127.0.0.1:{args.port}  (visible window: {not headless})")
+    print(" Keep this window running while the AI agent browses.")
+    print("=" * 70)
+    web.run_app(create_app(headless, args.profile), host="127.0.0.1", port=args.port, print=None)
+
+
 if __name__ == "__main__":
-    app = create_app()
-    web.run_app(app, host="127.0.0.1", port=PORT)
+    main()

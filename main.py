@@ -2961,6 +2961,67 @@ async def api_global_ai_history_storage_status(request: Request):
     return JSONResponse(_history_engine().storage_status(user_key))
 
 
+@app.post("/api/ai/cua/secrets")
+async def api_cua_store_secret(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Stores a credential the browser agent captured, encrypted at rest.
+
+    The plaintext is written straight into the AES-256-GCM vault and never
+    echoed back; callers only ever see the masked form.
+    """
+    from app.core.database import mask_credential
+
+    user_key = _history_user_key(request)
+    provider = str(payload.get("provider") or "").strip()
+    value = str(payload.get("value") or "").strip()
+    if not provider or not value:
+        raise HTTPException(status_code=400, detail="provider and value are required")
+    if len(provider) > 120 or len(value) > 8000:
+        raise HTTPException(status_code=400, detail="credential is too large")
+
+    from app.core.global_ai_history import user_fingerprint
+
+    credential_id = credentials_vault.store_credential(
+        service_name=provider,
+        credential_type="api_key",
+        secret_value=value,
+        additional_info={
+            "source_url": str(payload.get("source_url") or "")[:500],
+            "note": str(payload.get("note") or "")[:500],
+            "captured_by": "cua_agent",
+            "captured_for": user_fingerprint(user_key),
+        },
+    )
+    return JSONResponse(
+        {
+            "status": "success",
+            "id": credential_id,
+            "provider": provider,
+            "masked": mask_credential(value),
+        }
+    )
+
+
+@app.get("/api/ai/cua/secrets")
+async def api_cua_list_secrets(request: Request):
+    """Lists credentials captured by the browser agent, masked."""
+    _history_user_key(request)
+    rows = []
+    for row in credentials_vault.list_credentials(mask=True):
+        meta = row.get("additional_metadata") or {}
+        if meta.get("captured_by") != "cua_agent":
+            continue
+        rows.append(
+            {
+                "id": row.get("id"),
+                "provider": row.get("service_name"),
+                "masked": row.get("secret_value"),
+                "source_url": meta.get("source_url", ""),
+                "updated_at": row.get("updated_at"),
+            }
+        )
+    return JSONResponse({"status": "success", "secrets": rows})
+
+
 
 @app.post("/api/thumbnail")
 
