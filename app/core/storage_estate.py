@@ -267,40 +267,41 @@ def _bigquery_usage() -> Dict[str, Any]:
                 last_error = str(exc)[:200]
                 continue
 
-        # TABLE_STORAGE is not enabled on every project. Fall back to measured
-        # table metadata (num_bytes) instead of reporting the project as unknown.
+        # TABLE_STORAGE is not enabled on every project. Fall back to per-dataset
+        # __TABLES__ metadata, which still reports real size_bytes.
         try:
-            scanned = 0
-            truncated = False
-            for dataset in client.list_datasets(max_results=6):
-                datasets += 1
-                for item in client.list_tables(dataset.dataset_id, max_results=60):
-                    if scanned >= 25:
-                        truncated = True
-                        break
-                    try:
-                        table = client.get_table(item.reference)
-                        used += int(table.num_bytes or 0)
-                        tables += 1
-                        scanned += 1
-                    except Exception:
-                        continue
-                if truncated:
-                    break
-            if scanned:
+            dataset_ids = [dataset.dataset_id for dataset in client.list_datasets(max_results=10)]
+        except Exception as exc:
+            dataset_ids = []
+            last_error = f"{last_error}; dataset list failed: {str(exc)[:160]}"
+        if not dataset_ids:
+            last_error = last_error or "The service account cannot list any BigQuery datasets."
+        else:
+            failures = []
+            for dataset_id in dataset_ids:
+                try:
+                    query = (
+                        f"SELECT COALESCE(SUM(size_bytes), 0) AS bytes, COUNT(*) AS tables "
+                        f"FROM `{project}.{dataset_id}.__TABLES__`"
+                    )
+                    rows = list(client.query(query).result(timeout=5))
+                    if rows:
+                        used += int(rows[0]["bytes"] or 0)
+                        tables += int(rows[0]["tables"] or 0)
+                        datasets += 1
+                except Exception as exc:
+                    failures.append(f"{dataset_id}: {str(exc)[:80]}")
+            if datasets:
                 return _source(
-                    "bigquery", "BigQuery", f"{project} (table metadata)", "cloud",
+                    "bigquery", "BigQuery", f"{project} (__TABLES__ metadata)", "cloud",
                     used_bytes=used,
-                    detail=f"{datasets} datasets, {tables} tables by num_bytes"
-                           f"{'; scan capped at 25 tables' if truncated else ''}",
+                    detail=f"{datasets} datasets, {tables} tables by size_bytes"
+                           + (f"; {len(failures)} dataset(s) unreadable" if failures else ""),
                     latency_ms=(time.perf_counter() - started) * 1000,
                     no_fixed_quota=True,
                     auth_source=auth_source,
-                    truncated=truncated,
                 )
-            last_error = last_error or "No BigQuery datasets or tables were visible to this service account."
-        except Exception as exc:
-            last_error = f"{last_error}; metadata fallback failed: {str(exc)[:160]}" if last_error else str(exc)[:200]
+            last_error = "; ".join(failures)[:300] or last_error
 
         return _source(
             "bigquery", "BigQuery", f"{project} (INFORMATION_SCHEMA)", "cloud",
@@ -442,6 +443,7 @@ def measure_storage_estate(force: bool = False) -> Dict[str, Any]:
 
     result = {
         "status": "success",
+        "code_revision": "storage-estate-3",
         "generated_at": now,
         "generated_at_iso": datetime.now().astimezone().isoformat(timespec="seconds"),
         "sources": sources,
