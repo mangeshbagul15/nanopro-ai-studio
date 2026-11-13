@@ -6271,6 +6271,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (raw === "scroll_down") plan.direction = plan.direction || "down";
       if (raw === "scroll_up") plan.direction = plan.direction || "up";
       if (typeof plan.index === "string" && /^\d+$/.test(plan.index)) plan.index = parseInt(plan.index, 10);
+      if (plan.amount != null && plan.pixels == null && !isNaN(Number(plan.amount))) plan.pixels = Number(plan.amount);
       if (Array.isArray(plan.coordinate) && plan.coordinate.length >= 2) {
         plan.x = Number(plan.coordinate[0]);
         plan.y = Number(plan.coordinate[1]);
