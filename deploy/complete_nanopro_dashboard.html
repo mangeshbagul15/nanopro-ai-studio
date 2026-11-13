@@ -20928,6 +20928,33 @@ body.in-global_ai_lab .nano-dynamic-island {
     if (btn) btn.classList.toggle("is-active", !isHidden);
   };
 
+  window.ailabRestoreCustomTables = function() {
+    try {
+      const customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]");
+      if (customTables.length > 0 && AILAB_EXPLORER.catalog) {
+        const duck = AILAB_EXPLORER.catalog.find(d => d.id === "duckdb");
+        if (duck && duck.schemas && duck.schemas[0]) {
+          customTables.forEach(ct => {
+            if (!duck.schemas[0].tables.some(t => t.name.toLowerCase() === ct.name.toLowerCase())) {
+              duck.schemas[0].tables.unshift(ct);
+            }
+          });
+        }
+        const snw = AILAB_EXPLORER.catalog.find(d => d.id === "snowflake");
+        if (snw && snw.schemas) {
+          const l2 = snw.schemas.find(s => s.name === "L2_CURATED") || snw.schemas[0];
+          if (l2) {
+            customTables.forEach(ct => {
+              if (!l2.tables.some(t => t.name.toLowerCase() === ct.name.toLowerCase())) {
+                l2.tables.unshift(ct);
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+  };
+
   window.ailabLoadExplorer = async function(forceRefresh = false) {
     const tree = $id("ailabExplorerTree");
     if (!tree) return;
@@ -20937,6 +20964,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (res.ok) {
         const data = await res.json();
         AILAB_EXPLORER.catalog = data.databases || [];
+        ailabRestoreCustomTables();
         ailabRenderExplorerTree();
         return;
       }
@@ -21081,6 +21109,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       }
     ];
 
+    ailabRestoreCustomTables();
     ailabRenderExplorerTree();
   };
 
@@ -21214,9 +21243,15 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   function ailabHydrateLocalStorage() {
     try {
+      let deleted = [];
+      try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
+
       const localChats = localStorage.getItem("nanopro_ailab_chats");
       const localProjects = localStorage.getItem("nanopro_ailab_projects");
-      if (localChats) AILAB.chats = JSON.parse(localChats);
+      if (localChats) {
+        const parsed = JSON.parse(localChats);
+        AILAB.chats = Array.isArray(parsed) ? parsed.filter(c => !deleted.includes(c.id)) : [];
+      }
       if (localProjects) AILAB.projects = JSON.parse(localProjects);
       ailabRenderSidebar();
       if (AILAB.chats.length > 0 && !AILAB.activeChatId) {
@@ -21230,18 +21265,35 @@ body.in-global_ai_lab .nano-dynamic-island {
   // -------------------------------------------------------------
   window.ailabLoadHistory = async function() {
     try {
-      const res = await fetch("/api/ai/history/chats");
+      let deleted = [];
+      try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
+
+      const res = await fetch("/api/ai/history/chats", {
+        headers: { "X-Deleted-Chats": deleted.join(",") }
+      });
       if (res.ok) {
         const data = await res.json();
-        if (data.chats && data.chats.length > 0) {
-          AILAB.chats = data.chats;
-          AILAB.projects = data.projects || [];
-          localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
-          localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects));
-          ailabRenderSidebar();
-          if (!AILAB.activeChatId && AILAB.chats.length > 0) {
-            ailabSelectChat(AILAB.chats[0].id);
-          }
+        const serverChats = (data.chats || []).filter(c => !deleted.includes(c.id));
+
+        let localChats = [];
+        try {
+          const stored = localStorage.getItem("nanopro_ailab_chats");
+          if (stored) localChats = JSON.parse(stored).filter(c => !deleted.includes(c.id));
+        } catch (_) {}
+
+        const map = new Map();
+        localChats.forEach(c => map.set(c.id, c));
+        serverChats.forEach(c => {
+          if (!map.has(c.id)) map.set(c.id, c);
+        });
+
+        AILAB.chats = Array.from(map.values()).filter(c => !deleted.includes(c.id));
+        AILAB.projects = data.projects || AILAB.projects || [];
+        localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
+        localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects));
+        ailabRenderSidebar();
+        if (!AILAB.activeChatId && AILAB.chats.length > 0) {
+          ailabSelectChat(AILAB.chats[0].id);
         }
       }
     } catch (e) {
@@ -21920,6 +21972,52 @@ body.in-global_ai_lab .nano-dynamic-island {
       assistantPlaceholder.remove();
 
       if (execData.status === "success") {
+        // AUTONOMOUS DDL & TABLE CREATION HANDLING (Chat-Driven Table Creation)
+        if (execData.action === "CREATE_TABLE" && execData.table_name) {
+          const newTb = {
+            name: execData.table_name,
+            rows: 0,
+            columns: execData.columns || [
+              { name: "ID", type: "VARCHAR PRIMARY KEY" },
+              { name: "CREATED_AT", type: "TIMESTAMP" },
+              { name: "STATUS", type: "VARCHAR" }
+            ]
+          };
+
+          if (AILAB_EXPLORER.catalog) {
+            const duck = AILAB_EXPLORER.catalog.find(d => d.id === "duckdb");
+            if (duck && duck.schemas && duck.schemas[0]) {
+              if (!duck.schemas[0].tables.some(t => t.name.toLowerCase() === newTb.name.toLowerCase())) {
+                duck.schemas[0].tables.unshift(newTb);
+              }
+            }
+            const snw = AILAB_EXPLORER.catalog.find(d => d.id === "snowflake");
+            if (snw && snw.schemas) {
+              const l2 = snw.schemas.find(s => s.name === "L2_CURATED") || snw.schemas[0];
+              if (l2 && !l2.tables.some(t => t.name.toLowerCase() === newTb.name.toLowerCase())) {
+                l2.tables.unshift(newTb);
+              }
+            }
+          }
+
+          let customTables = [];
+          try { customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]"); } catch (_) {}
+          if (!customTables.some(t => t.name.toLowerCase() === newTb.name.toLowerCase())) {
+            customTables.unshift(newTb);
+            localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
+          }
+
+          const expPanel = $id("ailabExplorer");
+          if (expPanel && expPanel.classList.contains("is-hidden")) {
+            ailabToggleExplorer();
+          }
+          AILAB_EXPLORER.treeOpen["db_duckdb"] = true;
+          AILAB_EXPLORER.treeOpen["sc_duckdb_gold_marts"] = true;
+          AILAB_EXPLORER.treeOpen["db_snowflake"] = true;
+          AILAB_EXPLORER.treeOpen["sc_snowflake_L2_CURATED"] = true;
+          ailabRenderExplorerTree();
+        }
+
         const assistantMsg = {
           id: "asst_" + Date.now(),
           chat_id: AILAB.activeChatId,
@@ -21958,6 +22056,12 @@ body.in-global_ai_lab .nano-dynamic-island {
         container.appendChild(ailabCreateMessageNode(assistantMsg));
         container.scrollTop = container.scrollHeight;
         ailabRenderMermaidBlocks();
+
+        if (AILAB.activeChatId) {
+          AILAB.chatIndexCache[AILAB.activeChatId] = AILAB.messages;
+          try { localStorage.setItem("nanopro_duckdb_chat_" + AILAB.activeChatId, JSON.stringify(AILAB.messages)); } catch (_) {}
+          localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
+        }
 
         // Save assistant message to DuckDB
         fetch("/api/ai/history/messages", {
@@ -22060,14 +22164,32 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   window.ailabDeleteChat = async function(chatId) {
     if (!confirm("Delete this session from DuckDB?")) return;
-    AILAB.chats = AILAB.chats.filter(c => c.id !== chatId);
+    AILAB.chats = (AILAB.chats || []).filter(c => c.id !== chatId);
+    if (AILAB.chatIndexCache) delete AILAB.chatIndexCache[chatId];
+
+    let deleted = [];
+    try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
+    if (!deleted.includes(chatId)) {
+      deleted.push(chatId);
+      localStorage.setItem("nanopro_deleted_chat_ids", JSON.stringify(deleted));
+    }
+    try {
+      localStorage.removeItem("nanopro_duckdb_chat_" + chatId);
+      localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
+    } catch (_) {}
+
     if (AILAB.activeChatId === chatId) {
       AILAB.activeChatId = AILAB.chats.length > 0 ? AILAB.chats[0].id : null;
       AILAB.messages = [];
     }
     ailabRenderSidebar();
-    if (AILAB.activeChatId) ailabSelectChat(AILAB.activeChatId);
-    else ailabRenderMessages();
+    if (AILAB.activeChatId) {
+      ailabSelectChat(AILAB.activeChatId);
+    } else {
+      ailabRenderMessages();
+      const titleEl = $id("ailabActiveTitle");
+      if (titleEl) titleEl.textContent = "New Session";
+    }
     fetch(`/api/ai/history/chats/${chatId}`, { method: "DELETE" }).catch(console.warn);
   };
 
@@ -24200,6 +24322,26 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   window.ailabSendHint = function(text) {
     if (!text) return;
+    if (text.includes("Airflow") || text.includes("SFTP")) {
+      ailabOpenAirflowModal();
+      return;
+    }
+    if (text.includes("Explorer")) {
+      const exp = $id("ailabExplorer");
+      if (exp && exp.classList.contains("is-hidden")) ailabToggleExplorer();
+      AILAB_EXPLORER.treeOpen["db_duckdb"] = true;
+      AILAB_EXPLORER.treeOpen["db_snowflake"] = true;
+      ailabRenderExplorerTree();
+      return;
+    }
+    if (text.includes("नवीन टेबल") || text.includes("नवीनच टेबल") || text.includes("Create Table")) {
+      const input = document.getElementById("ailabPromptInput");
+      if (input) {
+        input.value = "CREATE TABLE mart_gold_loans (id VARCHAR PRIMARY KEY, customer_id VARCHAR, loan_amount NUMBER(18,2), gold_weight_grams FLOAT, interest_rate FLOAT);";
+        input.focus();
+      }
+      return;
+    }
     const input = document.getElementById("ailabPromptInput");
     if (input) {
       input.value = text;
