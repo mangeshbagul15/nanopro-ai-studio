@@ -24260,11 +24260,14 @@ body.in-global_ai_lab .nano-dynamic-island {
         "Fields: goto{url}; click{index,button,clicks}; type{index,text,enter}; press{key}; scroll{direction,pixels}; wait{ms}; select{index,value}; select_text{index,text?}; copy{}; paste{index,text?}; download{index}; upload{index,path}; drag{from,to} or drag{from,dx,dy}; save_secret{provider,value}; ask_user{message,options}; done{summary}.",
         "Rules:",
         "- Use only element indexes from the provided list.",
+        "- Headings and paragraphs have no index: select their exact text with select_text{text:\"exact phrase from VISIBLE TEXT\"}.",
+        "- If SELECTED TEXT already holds the target text, do NOT select again — the next step is copy.",
+        "- If LAST COPY already matches what the task asked for, return done instead of copying again.",
         "- Never type passwords, OTPs, card numbers or payment details. If a login, OTP, CAPTCHA or payment screen appears, use ask_user and stop there.",
         "- save_secret only when the exact secret value is visible on the page and the task asks you to capture it. Never invent a value.",
         "- download clicks a download link/button; the file is saved on the user's laptop in Downloads\\NanoProCUA.",
         "- upload needs an absolute local path. If the task needs a file and no path is given, use ask_user to request it.",
-        "- To copy page text: select_text on the element first, then copy. paste inserts the clipboard or the text you pass into the indexed field.",
+        "- To copy page text: select_text first (pass the exact visible text when the element has no index), then copy in the next step. paste inserts the clipboard or the text you pass into the indexed field.",
         "- drag moves a slider or drag target: pass from plus to, or from plus dx/dy pixel offsets.",
         "- When the task is finished, return done with a short summary of what you verified.",
         "- Keep text fields short; one click or one field per step."
@@ -24278,6 +24281,9 @@ body.in-global_ai_lab .nano-dynamic-island {
         "",
         "VISIBLE TEXT:",
         String(obs.text || "").slice(0, 2800),
+        "",
+        "SELECTED TEXT: " + (obs.selection ? JSON.stringify(String(obs.selection).slice(0, 300)) : "(nothing selected)"),
+        "LAST COPY: " + (this.lastCopied ? JSON.stringify(String(this.lastCopied).slice(0, 300)) : "(nothing copied yet)"),
         "",
         "INTERACTIVE ELEMENTS:",
         elementLines
@@ -24333,7 +24339,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         case "scroll": return "scrolled " + (plan.direction || "down");
         case "back": return "went back";
         case "select": return "selected a value";
-        case "select_text": return "selected text in [" + plan.index + "]";
+        case "select_text": return plan.text ? ('selected "' + String(plan.text).slice(0, 40) + '"') : "selected text in [" + plan.index + "]";
         case "copy": return "copied the selection";
         case "paste": return "pasted into the focused field";
         case "download": return "clicked download [" + plan.index + "]";
@@ -24417,6 +24423,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.step = 0;
       this.taskText = task;
       this.userAnswer = "";
+      this.lastCopied = "";
+      this.lastActionKey = "";
+      this.repeatCount = 0;
       this.clearTaskLog();
       this.logLine("task", "TASK: " + task);
       this.updateActionHud("🧭", "Reading the page…");
@@ -24434,6 +24443,17 @@ body.in-global_ai_lab .nano-dynamic-island {
           const plan = await this.plan(task, snap);
           const action = String(plan.action || "").toLowerCase();
           this.logLine("thought", "Step " + this.step + (this.lastModel ? " · " + this.lastModel : "") + ": " + (plan.thought || action));
+
+          if (action !== "done" && action !== "ask_user" && action !== "save_secret") {
+            const actionKey = JSON.stringify([action, plan.index, plan.text, plan.url, plan.from, plan.to, plan.path]);
+            if (actionKey === this.lastActionKey) this.repeatCount++;
+            else { this.lastActionKey = actionKey; this.repeatCount = 1; }
+            if (this.repeatCount >= 3) {
+              this.logLine("warn", "Stopped: the same action repeated 3 times. Try rephrasing the task.");
+              this.updateActionHud("⚠️", "Repeated the same action — stopped");
+              break;
+            }
+          }
           this.updateActionHud("🤖", plan.thought || action);
 
           if (action === "done") {
@@ -24466,7 +24486,11 @@ body.in-global_ai_lab .nano-dynamic-island {
               this.logLine("act", "⬆️ Uploaded " + result.uploaded + " (" + Math.round((result.size || 0) / 1024) + " KB)");
             }
             if (result && result.copied_len) {
+              this.lastCopied = result.preview || "";
               this.logLine("act", "📋 Copied " + result.copied_len + " characters");
+            }
+            if (plan.action === "select_text" && result && result.selected_len) {
+              this.logLine("act", "🖱️ Selected " + result.selected_len + " characters — next step can copy");
             }
             const stage = document.getElementById("ailabCuaViewportContainer");
             const stageW = stage ? stage.offsetWidth : 640;

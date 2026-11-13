@@ -94,6 +94,7 @@ SNAPSHOT_JS = r"""
     url: location.href,
     title: document.title,
     text: text,
+    selection: String((window.getSelection && window.getSelection().toString()) || '').slice(0, 300),
     elements: elements,
     scroll: {
       y: Math.round(window.scrollY),
@@ -433,43 +434,70 @@ class BrowserBridge:
 
         if action in ("select_text", "highlight"):
             idx = payload.get("index")
-            if idx is None:
-                return {"ok": False, "error": "select_text needs index"}
             phrase = payload.get("text") or ""
-            picked = await page.evaluate(
-                """([i, phrase]) => {
-                    const el = (window.__NANOPRO_CUA_ELS || [])[i];
-                    if (!el) return {ok: false};
-                    el.scrollIntoView({block: 'center', inline: 'center'});
-                    const sel = window.getSelection();
-                    sel.removeAllRanges();
-                    const range = document.createRange();
-                    if (phrase) {
-                        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-                        let node, found = null;
-                        while ((node = walker.nextNode())) {
-                            const pos = node.nodeValue.indexOf(phrase);
-                            if (pos !== -1) { found = {node: node, pos: pos}; break; }
-                        }
-                        if (found) {
-                            range.setStart(found.node, found.pos);
-                            range.setEnd(found.node, found.pos + phrase.length);
+            if idx is None and not phrase:
+                return {"ok": False, "error": "select_text needs an element index or the exact text to select"}
+            if idx is not None:
+                picked = await page.evaluate(
+                    """([i, phrase]) => {
+                        const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                        if (!el) return {ok: false};
+                        el.scrollIntoView({block: 'center', inline: 'center'});
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        const range = document.createRange();
+                        if (phrase) {
+                            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+                            let node, found = null;
+                            while ((node = walker.nextNode())) {
+                                const pos = node.nodeValue.indexOf(phrase);
+                                if (pos !== -1) { found = {node: node, pos: pos}; break; }
+                            }
+                            if (found) {
+                                range.setStart(found.node, found.pos);
+                                range.setEnd(found.node, found.pos + phrase.length);
+                            } else {
+                                range.selectNodeContents(el);
+                            }
                         } else {
                             range.selectNodeContents(el);
                         }
-                    } else {
-                        range.selectNodeContents(el);
-                    }
-                    sel.addRange(range);
-                    const r = el.getBoundingClientRect();
-                    return {ok: true, selected: String(sel.toString() || '').slice(0, 400), x: r.left + r.width / 2, y: r.top + r.height / 2};
-                }""",
-                [int(idx), phrase],
-            )
+                        sel.addRange(range);
+                        const r = el.getBoundingClientRect();
+                        return {ok: true, selected: String(sel.toString() || '').slice(0, 400), x: r.left + r.width / 2, y: r.top + r.height / 2};
+                    }""",
+                    [int(idx), phrase],
+                )
+            else:
+                picked = await page.evaluate(
+                    """(phrase) => {
+                        const root = document.body || document.documentElement;
+                        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+                        let node;
+                        while ((node = walker.nextNode())) {
+                            const text = node.nodeValue || '';
+                            const pos = text.indexOf(phrase);
+                            if (pos === -1) continue;
+                            const host = node.parentElement;
+                            if (!host) continue;
+                            const range = document.createRange();
+                            range.setStart(node, pos);
+                            range.setEnd(node, pos + phrase.length);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                            host.scrollIntoView({block: 'center', inline: 'center'});
+                            const r = host.getBoundingClientRect();
+                            return {ok: true, selected: phrase, x: r.left + r.width / 2, y: r.top + r.height / 2};
+                        }
+                        return {ok: false};
+                    }""",
+                    phrase,
+                )
             if not picked or not picked.get("ok"):
-                return {"ok": False, "error": "element index not found"}
+                return {"ok": False, "error": "text not found on the page"}
             await asyncio.sleep(0.2)
-            return {"ok": True, "selected_len": len(picked.get("selected") or ""), "x": picked.get("x"), "y": picked.get("y")}
+            return {"ok": True, "selected_len": len(picked.get("selected") or ""), "selected": picked.get("selected"), "x": picked.get("x"), "y": picked.get("y")}
 
         if action == "copy":
             await page.keyboard.press("Control+C")
