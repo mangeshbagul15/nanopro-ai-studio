@@ -2709,14 +2709,28 @@ body.in-global_ai_lab .nano-dynamic-island {
 /* ===================================================================== */
 /* CUA — real browser agent panel                                        */
 /* ===================================================================== */
+#view-global_ai_lab .ailab-cua-frame-stack {
+  flex: 1 1 0%;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
 #view-global_ai_lab .ailab-cua-screenshot-frame {
+  position: absolute;
+  inset: 0;
   display: block;
-  flex: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: top center;
   background: #080D14;
+  opacity: 0;
+  transition: opacity 0.16s linear;
+  pointer-events: none;
+}
+#view-global_ai_lab .ailab-cua-screenshot-frame.is-live {
+  opacity: 1;
 }
 #view-global_ai_lab .ailab-cua-live-pill {
   border: 1px solid rgba(16, 185, 129, 0.4);
@@ -3272,7 +3286,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>
 
       <div class="ailab-cua-viewport-container" id="ailabCuaViewportContainer">
-        <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrame" alt="Live browser frame from the local Chromium">
+        <div class="ailab-cua-frame-stack">
+          <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrame" alt="Live browser frame from the local Chromium">
+          <img class="ailab-cua-screenshot-frame" id="ailabCuaScreenshotFrameB" alt="">
+        </div>
 
         <div class="ailab-cua-offline" id="ailabCuaOfflineCard">
           <div class="ailab-cua-offline-card">
@@ -6179,10 +6196,16 @@ body.in-global_ai_lab .nano-dynamic-island {
     },
 
     updateFrame: function (frame) {
-      const img = document.getElementById("ailabCuaScreenshotFrame");
-      if (img && frame.screenshot) {
-        img.src = frame.screenshot;
-        img.style.display = "block";
+      const a = document.getElementById("ailabCuaScreenshotFrame");
+      const b = document.getElementById("ailabCuaScreenshotFrameB");
+      if (a && b && frame.screenshot) {
+        const next = a.classList.contains("is-live") ? b : a;
+        const prev = next === a ? b : a;
+        if (next.src !== frame.screenshot) {
+          const swap = () => { next.classList.add("is-live"); prev.classList.remove("is-live"); };
+          next.src = frame.screenshot;
+          if (next.decode) next.decode().then(swap).catch(swap); else next.onload = swap;
+        }
       }
       if (frame.url) {
         this.lastUrl = frame.url;
@@ -6375,7 +6398,9 @@ body.in-global_ai_lab .nano-dynamic-island {
         "- When the task is finished, return done with a short summary of what you verified.",
         "- If the answer (title, heading, quote, price…) is already inside VISIBLE TEXT, return done with it now — do not scroll to look for it.",
         "- Do not scroll more than twice in a row; if the answer is still not visible, return done and say what you did see.",
-        "- Keep text fields short; one click or one field per step."
+        "- Keep text fields short; one click or one field per step.",
+        "- FORMS: required fields are marked with *. If you clicked submit and the page shows red validation text, or nothing changed, do NOT click submit again. Read the error text and fill the empty required field first (open dropdowns and pick an option).",
+        "- If your last action produced no visible change, the next action must be different: pick the missing field, another element, or scroll to the error."
       ].join("\n");
       const observation = [
         "TASK: " + task,
@@ -6568,10 +6593,16 @@ body.in-global_ai_lab .nano-dynamic-island {
             const actionKey = JSON.stringify([action, plan.index, plan.text, plan.url, plan.from, plan.to, plan.path, plan.key, plan.value]);
             if (actionKey === this.lastActionKey) this.repeatCount++;
             else { this.lastActionKey = actionKey; this.repeatCount = 1; }
-            if (this.repeatCount >= 3) {
-              this.logLine("warn", "Stopped: the same action repeated 3 times. Try rephrasing the task.");
+            if (this.repeatCount === 2) {
+              // Let the agent read the validation error instead of blindly retrying.
+              this.logLine("warn", "Same action again — re-reading the page for validation errors");
+              pendingNote = "SYSTEM NOTE: your previous action produced no visible change and you were about to repeat it. Look for red validation/error text in VISIBLE TEXT and for required (*) fields that are still empty. Fill the missing field or choose a different element — do NOT repeat the same click/index.";
+              continue;
+            }
+            if (this.repeatCount >= 4) {
+              this.logLine("warn", "Stopped: the same action repeated 4 times without any change.");
               this.updateActionHud("⚠️", "Repeated the same action — stopped");
-              this.lastSummary = "I stopped because the same action repeated three times. Rephrase the task slightly and try again.";
+              this.lastSummary = "I stopped because one action kept repeating with no visible change. The page needs a different approach.";
               break;
             }
           }
