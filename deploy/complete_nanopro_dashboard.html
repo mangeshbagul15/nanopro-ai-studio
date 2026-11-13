@@ -24550,9 +24550,11 @@ body.in-global_ai_lab .nano-dynamic-island {
       // failed actions, planner hiccups). A free router is the last safety net.
       const manualModel = (window.AILAB && AILAB.selectedModel && AILAB.selectedModel !== "auto") ? AILAB.selectedModel : "";
       const FAST_MODEL = manualModel || "qwen/qwen3.8-27b";
-      // Free frontier model: the paid catalog answers 402 until credits are
-      // added, so escalation defaults to the strongest model that runs free.
-      const SMART_MODEL = manualModel || "nvidia/nemotron-3-ultra-550b-a55b:free";
+      // Escalation must stay fast and reliable: gpt-oss-120b answers in seconds
+      // with high reasoning. Free frontier models are queued (7-30s), so they are
+      // the last-resort planner, not the default escalation step.
+      const SMART_MODEL = manualModel || "openai/gpt-oss-120b";
+      const FRONTIER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
       const uiEffort = (window.AILAB && AILAB.selectedEffort) || "default";
       const effortFor = (smart) => {
         if (uiEffort === "fast") return "fast";
@@ -24585,7 +24587,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         try {
           const text = await askModel(
             attempt === 1 ? "" : strict,
-            attempt === 1 ? (this.escalate ? SMART_MODEL : FAST_MODEL) : (attempt === 2 ? SMART_MODEL : "openrouter/free"),
+            attempt === 1 ? (this.escalate ? SMART_MODEL : FAST_MODEL) : (attempt === 2 ? SMART_MODEL : FRONTIER_MODEL),
             attempt === 1 && !this.escalate ? effortFor(false) : effortFor(true)
           );
           if (!text) throw new Error("planner returned an empty response (HTTP " + lastHttp + ")");
@@ -24727,7 +24729,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           (e.checked ? " (checked)" : "") + (e.invalid ? " (invalid)" : "") + (e.disabled ? " (disabled)" : "")
         ).join("\n")
       ].join("\n");
-      const text = await this.squadAsk(system, observation, "nvidia/nemotron-3.5-super-vl:free", "fast");
+      const text = await this.squadAsk(system, observation, "openai/gpt-oss-120b", "fast");
       return this.squadParse(text);
     },
 
@@ -24747,7 +24749,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         "VISIBLE TEXT:",
         String(snap.text || "").slice(0, 2200)
       ].join("\n");
-      const model = this.escalate ? "nvidia/nemotron-3-ultra-550b-a55b:free" : "qwen/qwen3.8-27b";
+      const model = this.escalate ? "openai/gpt-oss-120b" : "qwen/qwen3.8-27b";
       const text = await this.squadAsk(system, observation, model, this.escalate ? "reasoning" : "fast");
       return this.squadParse(text);
     },
