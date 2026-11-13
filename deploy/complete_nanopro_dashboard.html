@@ -24558,8 +24558,9 @@ body.in-global_ai_lab .nano-dynamic-island {
           const action = String(plan.action || "").toLowerCase();
           this.logLine("thought", "Step " + this.step + (this.lastModel ? " · " + this.lastModel : "") + ": " + (plan.thought || action));
 
-          if (action !== "done" && action !== "ask_user" && action !== "save_secret") {
-            const actionKey = JSON.stringify([action, plan.index, plan.text, plan.url, plan.from, plan.to, plan.path]);
+          if (action !== "done" && action !== "ask_user" && action !== "save_secret" &&
+              action !== "scroll" && action !== "wait") {
+            const actionKey = JSON.stringify([action, plan.index, plan.text, plan.url, plan.from, plan.to, plan.path, plan.key, plan.value]);
             if (actionKey === this.lastActionKey) this.repeatCount++;
             else { this.lastActionKey = actionKey; this.repeatCount = 1; }
             if (this.repeatCount >= 3) {
