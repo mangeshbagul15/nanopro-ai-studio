@@ -2657,6 +2657,120 @@ CRITICAL OPERATIONAL RULES:
       }
 
 
+      // 3.5 LIVE DATABASE STORAGE INTENT — measured telemetry only
+      const isStorageTopic = /(storage|space|disk|capacity|free|used|स्पेस|जागा|स्टोरेज|क्षमता|शिल्लक|बाकी)/i.test(pLower);
+      const isStorageEngine = /(snowflake|s3|duckdb|bigquery|sqlite|database|\bdb\b|lakehouse|warehouse|डेटाबेस|डेटा)/i.test(pLower);
+      if (isStorageTopic && isStorageEngine) {
+        const renderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
+        let estate = null;
+        let estateError = "";
+        try {
+          const sr = await fetch(`${renderBase}/api/health/storage`, { signal: AbortSignal.timeout(12000) });
+          if (sr.ok) {
+            estate = await sr.json();
+          } else {
+            estateError = `storage endpoint returned HTTP ${sr.status}`;
+          }
+        } catch (err) {
+          estateError = err?.message || "storage endpoint unreachable";
+        }
+
+        // Fallback: /api/health still exposes measured host disk + footprint, so never invent numbers.
+        let health = null;
+        if (!estate) {
+          try {
+            const hr = await fetch(`${renderBase}/api/health`, { signal: AbortSignal.timeout(4000) });
+            if (hr.ok) health = await hr.json();
+          } catch (_) {}
+        }
+
+        const nowDt = new Date();
+        const clean = (value) => String(value == null ? "" : value).replace(/\|/g, "/").replace(/\s+/g, " ").trim();
+
+        if (estate && Array.isArray(estate.sources)) {
+          const statusLabel = (s) => {
+            if (s.status === "live") return "✅ LIVE";
+            if (s.status === "not_configured") return "⚠️ NOT CONFIGURED";
+            if (s.status === "driver_missing") return "⚠️ DRIVER MISSING";
+            if (s.status === "timeout") return "⏱ TIMEOUT";
+            return "🔌 UNREACHABLE";
+          };
+          const rows = estate.sources.map((s) => {
+            const used = s.used_formatted || (s.used_bytes ? `${s.used_bytes} B` : "—");
+            let limit = "No fixed quota";
+            if (s.free_formatted) limit = `${s.free_formatted} free`;
+            else if (s.total_formatted) limit = `${s.total_formatted} total`;
+            else if (s.status !== "live") limit = clean(s.reason || "—");
+            let detail = clean(s.detail || "");
+            if (s.status !== "live" && s.reason) detail = clean(s.reason);
+            if (s.status === "live" && s.latency_ms != null) detail = `${detail}${detail ? " · " : ""}${Math.round(s.latency_ms)}ms`;
+            return `| **${clean(s.name)}** | ${used} | ${limit} | ${statusLabel(s)} | ${detail || "—"} |`;
+          }).join("\n");
+          const summary = estate.summary || {};
+          const liveCount = summary.live_sources ?? 0;
+          const totalCount = summary.total_sources ?? estate.sources.length;
+          return new Response(JSON.stringify({
+            status: "success",
+            model_routed: "autonomous/storage-telemetry",
+            model_executed: "render/storage-estate",
+            model_name: "NanoPro Storage Telemetry (live measurements)",
+            lab_name: "NanoPro Infrastructure Sentinel",
+            country: "United States (AWS us-east-1)",
+            flag: "🇺🇸",
+            tier: "Live Telemetry",
+            duration_ms: Date.now() - t0,
+            timestamp: nowDt.toISOString(),
+            date_formatted: nowDt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+            response: `### 💾 Live Database & Disk Storage (Measured)\n\n` +
+              `| Engine | Used | Free / Limit | Status | Details |\n` +
+              `| :--- | ---: | ---: | :--- | :--- |\n` +
+              `${rows}\n\n` +
+              `**Measured:** ${estate.generated_at_iso || nowDt.toISOString()} · **Live sources:** ${liveCount}/${totalCount} · **Local app data:** ${summary.local_used_formatted || "—"} · **Cloud used:** ${summary.cloud_used_formatted || "—"}\n\n` +
+              `> ${clean((estate.notes || [])[0] || "All values are measured live.")}`,
+            routing_decision: { selected_model: "render/storage-estate", pareto_utility: 1.0, sla_target_ms: 800, sla_met: true }
+          }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        if (health) {
+          const disk = health.disk || {};
+          const footprint = health.app_footprint || {};
+          const database = health.database || {};
+          const diskLine = disk.free_gb != null ? `| **Render Host Disk (shared)** | ${disk.used_percentage ?? "—"}% used | ${disk.free_gb} GB free of ${disk.total_gb} GB | ✅ LIVE | ${clean(disk.scope || "render_host_shared")} |\n` : "";
+          const footprintLine = footprint.bytes != null ? `| **NanoPro App Footprint** | ${clean(footprint.formatted || footprint.bytes + " B")} | No fixed quota | ✅ LIVE | writable app data |\n` : "";
+          const databaseLine = database.size_bytes != null ? `| **SQLite Studio DB** | ${(database.size_bytes / (1024 * 1024)).toFixed(2)} MB | No fixed quota | ✅ LIVE | ${clean(database.path || "studio_memory.db")} |\n` : "";
+          return new Response(JSON.stringify({
+            status: "success",
+            model_routed: "autonomous/storage-telemetry",
+            model_executed: "render/health-disk-fallback",
+            model_name: "NanoPro Storage Telemetry (host disk fallback)",
+            lab_name: "NanoPro Infrastructure Sentinel",
+            country: "United States (AWS us-east-1)",
+            flag: "🇺🇸",
+            tier: "Live Telemetry",
+            duration_ms: Date.now() - t0,
+            timestamp: nowDt.toISOString(),
+            date_formatted: nowDt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+            response: `### 💾 Live Disk Storage (Measured)\n\n` +
+              `| Engine | Used | Free / Limit | Status | Details |\n` +
+              `| :--- | ---: | ---: | :--- | :--- |\n` +
+              `${diskLine}${footprintLine}${databaseLine}\n` +
+              `**Measured:** ${health.timestamp ? new Date(health.timestamp * 1000).toISOString() : nowDt.toISOString()}\n\n` +
+              `> Cloud warehouse sizes are not shown because the per-engine telemetry endpoint failed (${clean(estateError) || "no response"}). Only measured values are reported.`,
+            routing_decision: { selected_model: "render/health-disk-fallback", pareto_utility: 1.0, sla_target_ms: 800, sla_met: true }
+          }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        return new Response(JSON.stringify({
+          status: "error",
+          model_routed: "autonomous/storage-telemetry",
+          model_executed: "render/storage-estate",
+          model_name: "NanoPro Storage Telemetry",
+          response: `### ⚠️ Storage telemetry unavailable\n\nRender did not return live storage measurements (${clean(estateError) || "no response"}). No storage figures are shown because estimating them would be misleading.`,
+          message: "Live storage telemetry is unavailable. Please retry in a few seconds."
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+
+
 // 4. RENDER CLOUD & PLATFORM HEALTH INTENT
       if (pLower.includes("render") || ((pLower.includes("server") || pLower.includes("backend") || pLower.includes("node") || pLower.includes("system")) && (pLower.includes("health") || pLower.includes("status") || pLower.includes("uptime") || pLower.includes("ram") || pLower.includes("cpu")))) {
         const renderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";

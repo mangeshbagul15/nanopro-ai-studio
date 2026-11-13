@@ -4697,14 +4697,20 @@ body.in-global_ai_lab .nano-dynamic-island {
     // 3. Escape HTML on prose text
     let html = escapeHtml(text);
 
-    // 4. Parse Markdown Tables:
-    html = html.replace(/(?:^|\n)((?:\|[^\n]+\|\r?\n)+)/g, (match, tableText) => {
+    // 4. Parse Markdown Tables (tolerate a missing trailing pipe on any row)
+    html = html.replace(/(?:^|\n)((?:[ \t]*\|[^\n]*\r?\n){2,})/g, (match, tableText) => {
       const lines = tableText.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       if (lines.length < 2) return match;
-      if (!lines[1].match(/^\|(\s*:?-+:?\s*\|)+$/)) return match;
+      if (!/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/.test(lines[1])) return match;
 
-      const parseRow = (line) => line.slice(1, -1).split('|').map(c => c.trim());
+      const parseRow = (line) => {
+        let row = line.trim();
+        if (row.startsWith('|')) row = row.slice(1);
+        if (row.endsWith('|')) row = row.slice(0, -1);
+        return row.split('|').map(c => c.trim());
+      };
       const headerCells = parseRow(lines[0]);
+      if (headerCells.length < 2) return match;
       let tableHtml = '<div class="ailab-table-wrap"><table class="ailab-cyber-table"><thead><tr>';
       headerCells.forEach(c => { tableHtml += `<th>${c}</th>`; });
       tableHtml += '</tr></thead><tbody>';

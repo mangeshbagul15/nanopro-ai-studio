@@ -2440,6 +2440,18 @@ async def api_health_alias():
 
 
 
+@app.get("/api/health/storage")
+
+async def api_health_storage(fresh: bool = False):
+
+    """Live storage telemetry per engine: host disk, local DBs and cloud warehouses."""
+
+    from app.core.storage_estate import measure_storage_estate
+
+    return JSONResponse(measure_storage_estate(force=fresh))
+
+
+
 @app.get("/api/monitoring/keepalive")
 
 async def api_monitoring_keepalive():
