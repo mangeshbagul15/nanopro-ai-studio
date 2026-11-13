@@ -1438,10 +1438,15 @@ body.in-global_ai_lab .nano-dynamic-island {
   flex: 1 1 0% !important;
   width: 100%;
   height: calc(100% - 36px) !important;
+  box-sizing: border-box;
   position: relative;
   background: #FFFFFF;
   overflow: hidden;
   display: flex;
+  transition: padding-bottom 0.22s ease;
+}
+#view-global_ai_lab .ailab-cua-viewport-container.has-log {
+  padding-bottom: min(240px, 42%);
 }
 #view-global_ai_lab .ailab-cua-iframe {
   flex: 1;
@@ -2790,8 +2795,8 @@ body.in-global_ai_lab .nano-dynamic-island {
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: 46px;
-  max-height: 34%;
+  bottom: 48px;
+  max-height: min(180px, 30%);
   overflow-y: auto;
   display: none;
   background: rgba(8, 13, 20, 0.92);
@@ -6234,6 +6239,8 @@ body.in-global_ai_lab .nano-dynamic-island {
       const box = document.getElementById("ailabCuaTaskLog");
       if (!box) return;
       box.classList.add("is-open");
+      const stage = document.getElementById("ailabCuaViewportContainer");
+      if (stage) stage.classList.add("has-log");
       box.innerHTML = this.log
         .map((l) => '<div class="ailab-cua-logline ' + l.kind + '"><span class="ts">' + l.stamp + "</span>" + this.escapeHtml(l.text) + "</div>")
         .join("");
@@ -6244,6 +6251,8 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.log = [];
       const box = document.getElementById("ailabCuaTaskLog");
       if (box) { box.innerHTML = ""; box.classList.remove("is-open"); }
+      const stage = document.getElementById("ailabCuaViewportContainer");
+      if (stage) stage.classList.remove("has-log");
     },
 
     parseAction: function (text) {
