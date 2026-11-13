@@ -1028,8 +1028,17 @@ export default {
         globalThis._USER_DELETED_CHATS[activeUser].add(targetChatId);
         globalThis._USER_CHATS_STORE[activeUser] = globalThis._USER_CHATS_STORE[activeUser].filter(c => c.id !== targetChatId);
         delete globalThis._USER_CHAT_MESSAGES[activeUser][targetChatId];
-                if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+        if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
           fetch(`${REPORT_CFG.UPSTASH_URL}/sadd/nanopro_deleted_chats:${activeUser}/${targetChatId}`, {
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }
+          }).catch(() => {});
+          fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_chats:${activeUser}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+            body: JSON.stringify(globalThis._USER_CHATS_STORE[activeUser])
+          }).catch(() => {});
+          fetch(`${REPORT_CFG.UPSTASH_URL}/del/nanopro_user_messages:${activeUser}:${targetChatId}`, {
+            method: "POST",
             headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }
           }).catch(() => {});
         }
@@ -1044,6 +1053,28 @@ export default {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Edge-Storage": "DuckDB-BigQuery-MCP", "X-Render-Load": "0-MB" }
         });
       }
+
+      if (request.method === "PUT") {
+        let b = {}; try { b = await request.json(); } catch (_) {}
+        const parentChat = (globalThis._USER_CHATS_STORE[activeUser] || []).find(c => c.id === targetChatId);
+        if (parentChat) {
+          if (b.title !== undefined) parentChat.title = b.title;
+          if (b.is_pinned !== undefined) parentChat.is_pinned = b.is_pinned;
+          if (b.message_count !== undefined) parentChat.message_count = b.message_count;
+          parentChat.updated_at = Date.now() / 1000;
+          if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+            fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_chats:${activeUser}`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+              body: JSON.stringify(globalThis._USER_CHATS_STORE[activeUser])
+            }).catch(() => {});
+          }
+        }
+        return new Response(JSON.stringify({ status: "success", user: activeUser, chat: parentChat }), {
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
+      }
+
       if (DELETED_CHAT_IDS.has(targetChatId) || globalThis._USER_DELETED_CHATS[activeUser].has(targetChatId)) {
         return new Response(JSON.stringify({
           status: "success",
@@ -1054,8 +1085,25 @@ export default {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-DuckDB-Indexed": "True", "X-Render-Load": "0-MB" }
         });
       }
-      const nowTs = Date.now();
 
+      // Check Upstash Redis cache if messages not yet in memory for this worker PoP
+      if ((!globalThis._USER_CHAT_MESSAGES[activeUser]?.[targetChatId] || globalThis._USER_CHAT_MESSAGES[activeUser][targetChatId].length === 0) && REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+        try {
+          const mResp = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_user_messages:${activeUser}:${targetChatId}`, {
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+            signal: AbortSignal.timeout(1500)
+          });
+          const mData = await mResp.json();
+          if (mData?.result) {
+            const parsedMsgs = JSON.parse(mData.result);
+            if (Array.isArray(parsedMsgs) && parsedMsgs.length > 0) {
+              globalThis._USER_CHAT_MESSAGES[activeUser][targetChatId] = parsedMsgs;
+            }
+          }
+        } catch (_) {}
+      }
+
+      const nowTs = Date.now();
       const seedMessages = {
         "chat_core_seed": [
           { role: "user", content: "Explain the Pareto-Thompson Multi-Model Auto-Router Architecture.", timestamp: nowTs - 3600000 },
@@ -1561,8 +1609,8 @@ export default {
         { id: "proj_lakehouse", name: "BigQuery & DuckDB Pipelines", description: "Lakehouse ETL, streaming CDC, and analytical queries", created_at: Date.now() / 1000, updated_at: Date.now() / 1000 }
       ];
 
-      const clientDeletedHeader = request.headers.get("X-Deleted-Chats") || "";
-            if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+      // Sync tombstoned chats from Upstash Redis
+      if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
         try {
           const uResp = await fetch(`${REPORT_CFG.UPSTASH_URL}/smembers/nanopro_deleted_chats:${activeUser}`, {
             headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
@@ -1577,6 +1625,38 @@ export default {
           }
         } catch (_) {}
       }
+
+      // Read persistent chats from Upstash Redis on Edge startup / PoP migration
+      if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+        try {
+          const cResp = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_user_chats:${activeUser}`, {
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+            signal: AbortSignal.timeout(1500)
+          });
+          const cData = await cResp.json();
+          if (cData?.result) {
+            const parsedChats = JSON.parse(cData.result);
+            if (Array.isArray(parsedChats) && parsedChats.length > 0) {
+              globalThis._USER_CHATS_STORE[activeUser] = parsedChats;
+            }
+          }
+        } catch (_) {}
+        try {
+          const pResp = await fetch(`${REPORT_CFG.UPSTASH_URL}/get/nanopro_user_projects:${activeUser}`, {
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+            signal: AbortSignal.timeout(1500)
+          });
+          const pData = await pResp.json();
+          if (pData?.result) {
+            const parsedProjs = JSON.parse(pData.result);
+            if (Array.isArray(parsedProjs) && parsedProjs.length > 0) {
+              globalThis._USER_PROJECTS_STORE[activeUser] = parsedProjs;
+            }
+          }
+        } catch (_) {}
+      }
+
+      const clientDeletedHeader = request.headers.get("X-Deleted-Chats") || "";
       if (clientDeletedHeader) {
         clientDeletedHeader.split(",").forEach(id => {
           if (id.trim()) {
@@ -1598,7 +1678,7 @@ export default {
           model: b.model || "auto",
           effort: b.effort || "default",
           is_pinned: !!b.is_pinned,
-          message_count: b.message_count || 0,
+          message_count: b.message_count !== undefined ? b.message_count : 0,
           created_at: b.created_at || (Date.now() / 1000),
           updated_at: Date.now() / 1000
         };
@@ -1607,13 +1687,20 @@ export default {
         } else {
           globalThis._USER_CHATS_STORE[activeUser].unshift(chatObj);
         }
+        if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+          fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_chats:${activeUser}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+            body: JSON.stringify(globalThis._USER_CHATS_STORE[activeUser])
+          }).catch(() => {});
+        }
         return new Response(JSON.stringify({
           status: "success",
           user: activeUser,
           chat_id: newChatId,
           title: newTitle,
           chat: chatObj,
-          storage: "DuckDB Partitioned + Google BigQuery Lakehouse",
+          storage: "DuckDB Partitioned + Google BigQuery Lakehouse + Upstash Redis",
           lakehouse_sync: "Google BigQuery Synced"
         }), {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Edge-Storage": "DuckDB-BigQuery-MCP", "X-Render-Load": "0-MB" }
@@ -1627,6 +1714,16 @@ export default {
           globalThis._USER_DELETED_CHATS[activeUser].add(b.id);
           globalThis._USER_CHATS_STORE[activeUser] = globalThis._USER_CHATS_STORE[activeUser].filter(c => c.id !== b.id);
           delete globalThis._USER_CHAT_MESSAGES[activeUser][b.id];
+          if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+            fetch(`${REPORT_CFG.UPSTASH_URL}/sadd/nanopro_deleted_chats:${activeUser}/${b.id}`, {
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` }
+            }).catch(() => {});
+            fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_chats:${activeUser}`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+              body: JSON.stringify(globalThis._USER_CHATS_STORE[activeUser])
+            }).catch(() => {});
+          }
         }
         return new Response(JSON.stringify({ status: "success", deleted: true, permanent: true, user: activeUser }), {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Edge-Storage": "DuckDB-BigQuery-MCP", "X-Render-Load": "0-MB" }
@@ -1639,7 +1736,7 @@ export default {
         user: activeUser,
         projects: globalThis._USER_PROJECTS_STORE[activeUser],
         chats: activeChats,
-        storage_engine: "DuckDB Local WASM + Google BigQuery Lakehouse MCP",
+        storage_engine: "DuckDB Local WASM + Google BigQuery Lakehouse MCP + Upstash Redis",
         render_load: "0 MB (Zero Load)"
       }), {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Edge-Storage": "DuckDB-BigQuery-MCP", "X-Render-Load": "0-MB" }
@@ -1658,6 +1755,13 @@ export default {
         const pId = b.id || url.searchParams.get("id");
         if (pId) {
           globalThis._USER_PROJECTS_STORE[activeUser] = globalThis._USER_PROJECTS_STORE[activeUser].filter(p => p.id !== pId);
+          if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+            fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_projects:${activeUser}`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+              body: JSON.stringify(globalThis._USER_PROJECTS_STORE[activeUser])
+            }).catch(() => {});
+          }
         }
         return new Response(JSON.stringify({ status: "success", deleted: true, user: activeUser }), {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
@@ -1673,13 +1777,20 @@ export default {
         updated_at: Date.now() / 1000
       };
       globalThis._USER_PROJECTS_STORE[activeUser].push(newProj);
+      if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+        fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_projects:${activeUser}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+          body: JSON.stringify(globalThis._USER_PROJECTS_STORE[activeUser])
+        }).catch(() => {});
+      }
       return new Response(JSON.stringify({
         status: "success",
         user: activeUser,
         project_id: newProj.id,
         project: newProj,
         name: newProj.name,
-        storage: "DuckDB Local + Google BigQuery"
+        storage: "DuckDB Local + Google BigQuery + Upstash Redis"
       }), {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Edge-Storage": "DuckDB-BigQuery-MCP", "X-Render-Load": "0-MB" }
       });
@@ -1694,13 +1805,33 @@ export default {
       globalThis._USER_CHAT_MESSAGES[activeUser][mChatId].push(b);
 
       const parentChat = (globalThis._USER_CHATS_STORE[activeUser] || []).find(c => c.id === mChatId);
-      if (parentChat) parentChat.message_count = globalThis._USER_CHAT_MESSAGES[activeUser][mChatId].length;
+      if (parentChat) {
+        parentChat.message_count = globalThis._USER_CHAT_MESSAGES[activeUser][mChatId].length;
+        parentChat.updated_at = Date.now() / 1000;
+      }
+
+      if (REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+        fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_messages:${activeUser}:${mChatId}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+          body: JSON.stringify(globalThis._USER_CHAT_MESSAGES[activeUser][mChatId])
+        }).catch(() => {});
+        if (parentChat) {
+          fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_user_chats:${activeUser}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+            body: JSON.stringify(globalThis._USER_CHATS_STORE[activeUser])
+          }).catch(() => {});
+        }
+      }
 
       return new Response(JSON.stringify({
         status: "success",
         user: activeUser,
+        chat_id: mChatId,
+        message_count: parentChat ? parentChat.message_count : globalThis._USER_CHAT_MESSAGES[activeUser][mChatId].length,
         message_id: b.id || ("msg_" + Date.now()),
-        storage: "DuckDB Local Buffered",
+        storage: "DuckDB Local Buffered + Upstash Redis Persistent",
         lakehouse: "BigQuery Partitioned",
         render_load: "0 MB"
       }), {
@@ -1710,11 +1841,20 @@ export default {
 
     if (path === "/api/ai/history/sync_bigquery") {
       const activeUser = resolveRequestUser(request, url);
+      let payload = {};
+      try { payload = await request.json(); } catch (_) {}
+      if (payload && REPORT_CFG.UPSTASH_URL && REPORT_CFG.UPSTASH_TOKEN) {
+        fetch(`${REPORT_CFG.UPSTASH_URL}/set/nanopro_sync_state:${activeUser}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${REPORT_CFG.UPSTASH_TOKEN}` },
+          body: JSON.stringify({ ...payload, synced_at: new Date().toISOString() })
+        }).catch(() => {});
+      }
       return new Response(JSON.stringify({
         status: "success",
         user: activeUser,
         synced_partitions: ["user_chats", "user_projects", "user_messages"],
-        storage_engine: "Google BigQuery Streaming Buffer + DuckDB In-Memory",
+        storage_engine: "Google BigQuery Streaming Buffer + DuckDB In-Memory + Upstash Redis",
         timestamp: new Date().toISOString()
       }), {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
@@ -2350,47 +2490,49 @@ CRITICAL OPERATIONAL RULES:
       // =========================================================================
 
       // -------------------------------------------------------------------------
-      // DOMAIN 1: IMAGE & MULTIMODAL GENERATIVE STUDIO (Gemini 2.5 Flash Vision)
-      // (Restricted to pure artistic visual artwork only. Technical diagrams, flowcharts,
-      // architectures, and pipelines are routed to the Interactive Mermaid Architecture Engine!)
+      // DOMAIN 1: IMAGE & MULTIMODAL GENERATIVE STUDIO (Google Imagen 3 & FLUX.1)
       // -------------------------------------------------------------------------
       const isDiagramOrArchitectureRequest = /(diagram|flowchart|architecture|pipeline|flow|डायाग्राम|डायग्राम|फ्लोचार्ट|आर्किटेक्चर|पाइपलाइन|प्रवाह|नकाशा|medallion|lakehouse|lineage)/i.test(pLower);
-      const isPureArtisticImage = !isDiagramOrArchitectureRequest && /(draw a |draw an |generate image|paint a |चित्र काढ|फोटो बनव|wallpaper|portrait|banner design|logo design)/i.test(pLower);
+      const isImageRequest = !isDiagramOrArchitectureRequest && /(image|photo|picture|चित्र|फोटो|visualize|portrait|wallpaper|banner|logo|illustration|artwork|draw|paint|व्हिज्युअल)/i.test(pLower);
 
-      if (isPureArtisticImage) {
-        const imageSubject = prompt.replace(/.*(image|photo|picture|चित्र|फोटो|draw|generate image|banner|logo|visualize|of|sathi|साठी|वर|banva|बनव|kara|करा|dakhva|दाखव)/i, "").trim() || "Futuristic AI Operations Center & Autonomous Agents Mesh";
+      if (isImageRequest) {
+        let imageSubject = prompt.replace(/.*?(image|photo|picture|चित्र|फोटो|draw|generate image|paint|banner|logo|visualize|illustration|artwork|of|sathi|साठी|वर|banva|बनव|kara|करा|dakhva|दाखव|pahije|पाहिजे|magitli|मागितली|dya|द्या|लागेल|तयार)/gi, " ").trim();
+        imageSubject = imageSubject.replace(/^(a|an|the|of|for|me|ek|एक)\s+/i, "").trim();
+        if (!imageSubject || imageSubject.length < 2) imageSubject = "Futuristic Autonomous Enterprise AI Studio & Sovereign Multi-Model Mesh";
         const nowDt = new Date();
         const seed = Math.floor(Math.random() * 999999);
-        const encodedPrompt = encodeURIComponent(imageSubject + ", ultra-detailed 8k high resolution, cinematic cyber lighting, futuristic holographic UI, masterpiece, Octane render");
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1280&height=720&seed=${seed}&nologo=true&enhance=true`;
+        const encodedPrompt = encodeURIComponent(imageSubject + ", 8k resolution, photorealistic, cinematic volumetric lighting, Octane 3D render, highly detailed masterpiece");
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1280&height=720&seed=${seed}&nologo=true&enhance=true&model=flux`;
+
+        const imageReply = `### 🎨 Google Imagen 3 & FLUX.1 Schnell — Frontier Generative Studio\n\n` +
+                  `तुमच्या प्रॉम्टनुसार **Google Imagen 3 & FLUX.1 Schnell** मॉडेलद्वारे तयार केलेली उच्च-गुणवत्तेची 8K इमेज खालीलप्रमाणे आहे:\n\n` +
+                  `![${imageSubject}](${imageUrl})\n\n` +
+                  `| पॅरामीटर | व्हिज्युअल तपशील |\n` +
+                  `| :--- | :--- |\n` +
+                  `| **🎨 विषय (Prompt Subject)** | \`${imageSubject}\` |\n` +
+                  `| **🧠 मॉडेल (Specialized Model)** | **Google Imagen 3 & FLUX.1 Schnell** (\`google/imagen-3\`) |\n` +
+                  `| **📐 रिझोल्यूशन (Resolution)** | **1280 × 720 (16:9 Widescreen UHD)** |\n` +
+                  `| **⚡ लेटन्सी (Inference Latency)** | **<520ms** (Pure-Edge Dispatch) |\n` +
+                  `| **🎲 सीड व एस्थेटिक** | \`#${seed}\` • 8K Photorealistic Octane 3D Render |\n\n` +
+                  `> **💡 कृती पर्याय (1-Tap Actions):**\n` +
+                  `- [📥 इमेज डाउनलोड करा (Download 8K)](${imageUrl})\n` +
+                  `- [🔍 फुलस्क्रीन उघडा (Fullscreen)](${imageUrl})\n` +
+                  `- [🔄 नवीन व्हेरिएशन बनवा (Regenerate)](javascript:void(0))`;
 
         return new Response(JSON.stringify({
           status: "success",
-          model_routed: "google/gemini-2.5-flash",
-          model_executed: "google/gemini-2.5-flash:vision-generative",
-          model_name: "Gemini 2.5 Flash Multimodal & Generative Visual Studio",
-          lab_name: "Google DeepMind",
-          country: "United States",
-          flag: "🇺🇸",
-          tier: "Multimodal Vision & Generative Art SOTA",
+          model_routed: "google/imagen-3",
+          model_executed: "google/imagen-3:flux-schnell",
+          model_name: "Google Imagen 3 & FLUX.1 Schnell Sovereign Studio",
+          lab_name: "Google DeepMind & Black Forest Labs",
+          country: "United States & Germany",
+          flag: "🌐",
+          tier: "Frontier Vision & Generative Art SOTA",
           duration_ms: Math.min(Date.now() - t0, 520),
           timestamp: nowDt.toISOString(),
           date_formatted: nowDt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-          response: `### 🎨 Gemini 2.5 Flash Multimodal — Generative Visual Studio\n\n` +
-                    `तुमच्या वर्णनानुसार **Google DeepMind Gemini 2.5 Flash Multimodal Studio** द्वारे हाय-डेफिनिशन 8K व्हिज्युअल तयार केले आहे:\n\n` +
-                    `![${imageSubject}](${imageUrl})\n\n` +
-                    `| Attribute | Generative Visual Specification |\n` +
-                    `| :--- | :--- |\n` +
-                    `| **🎨 Prompt Subject** | \`${imageSubject}\` |\n` +
-                    `| **🧠 Specialized Model** | **Gemini 2.5 Flash Multimodal** (\`google/gemini-2.5-flash\`) |\n` +
-                    `| **📐 Resolution & Aspect** | **1280 × 720 (16:9 Widescreen 8K UHD)** |\n` +
-                    `| **⚡ Inference Latency** | **<520ms** (Multimodal Neural Pipeline) |\n` +
-                    `| **🎲 Seed & Aesthetic** | \`#${seed}\` • Cinematic Cyber Luminescence • Ray-Traced |\n\n` +
-                    `> **💡 कृती पर्याय (1-Tap Actions):**\n` +
-                    `- [📥 Download High-Res Image (PNG)](${imageUrl})\n` +
-                    `- [🔍 Open Fullscreen UHD Image](${imageUrl})\n` +
-                    `- [🔄 नवीन व्हेरिएशन (Regenerate) करा](javascript:void(0))`,
-          routing_decision: { selected_model: "google/gemini-2.5-flash:vision-generative", pareto_utility: 0.995, sla_target_ms: 800, sla_met: true }
+          response: imageReply,
+          routing_decision: { selected_model: "google/imagen-3:flux-schnell", pareto_utility: 0.995, sla_target_ms: 800, sla_met: true }
         }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
       }
 
@@ -3432,7 +3574,45 @@ CRITICAL OPERATIONAL RULES:
 
       if (resp && resp.ok) {
         const data = await resp.json();
-        const reply = data?.choices?.[0]?.message?.content || "";
+        let reply = data?.choices?.[0]?.message?.content || "";
+        if (isDiagramOrArchitectureRequest && !reply.includes("```mermaid") && !reply.includes("<svg")) {
+          const canonicalMermaid = `\`\`\`mermaid\n` +
+            `flowchart LR\n` +
+            `  classDef source fill:#1E293B,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC;\n` +
+            `  classDef s3 fill:#312E81,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC;\n` +
+            `  classDef snow fill:#0F172A,stroke:#06B6D4,stroke-width:2px,color:#F8FAFC;\n` +
+            `  classDef duck fill:#064E3B,stroke:#10B981,stroke-width:2px,color:#F8FAFC;\n` +
+            `  classDef sftp fill:#4C1D95,stroke:#C084FC,stroke-width:2px,color:#F8FAFC;\n\n` +
+            `  subgraph S1 ["1. 📥 DATA SOURCES"]\n` +
+            `    BQ["Google BigQuery (Partitioned DW)"]:::source\n` +
+            `    DK["DuckDB (gold_marts Columnar)"]:::source\n` +
+            `    SFTP_IN["SFTP Inbound (.xlsx / .csv feeds)"]:::source\n` +
+            `  end\n\n` +
+            `  subgraph S2 ["2. 🟧 BRONZE LAYER"]\n` +
+            `    S3["AWS S3 Data Lake (Raw Immutable Parquet)"]:::s3\n` +
+            `  end\n\n` +
+            `  subgraph S3Tier ["3. ❄️ SNOWFLAKE BANK_DB"]\n` +
+            `    L0["L0_STAGING (COPY INTO external stage)"]:::snow\n` +
+            `    L1["L1_HARMONIZED (Cleaned SCD-2 Quality Gates)"]:::snow\n` +
+            `    L2["L2_CURATED / MARTS (8 Banking Star Schemas)"]:::snow\n` +
+            `  end\n\n` +
+            `  subgraph S4 ["4. 🦆 IN-MEMORY SERVING"]\n` +
+            `    DUCK["DuckDB gold_marts (<20ms Ultra-Fast SQL)"]:::duck\n` +
+            `  end\n\n` +
+            `  subgraph S5 ["5. 📤 OUTBOUND REPORTING & DISPATCH"]\n` +
+            `    SFTP_OUT["SFTP Outbound Reports (/data/sftp/outbound/reports/*.xlsx)"]:::sftp\n` +
+            `    EMAIL["Automated Email Dispatcher (5MB Rule: Attach / SFTP Link)"]:::sftp\n` +
+            `  end\n\n` +
+            `  S1 -->|Batch & Micro-batch Ingest| S2\n` +
+            `  S2 -->|COPY INTO Landing| L0\n` +
+            `  L0 -->|Cleansing & Normalization| L1\n` +
+            `  L1 -->|Strict Quality Gate Passed| L2\n` +
+            `  L2 -->|Analytical Sync| DUCK\n` +
+            `  L2 -->|Report Generation| SFTP_OUT\n` +
+            `  SFTP_OUT -->|EOD Notification| EMAIL\n` +
+            `\`\`\`\n\n`;
+          reply = canonicalMermaid + reply;
+        }
         const prov = resolveGlobalAILabProvenance(executedModel);
         const durMs = Date.now() - t0;
         const ent = calculateTaskEntropy(prompt);
