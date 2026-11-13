@@ -4857,7 +4857,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         const md = [
           "### 🌐 Local Browser Agent — Task Report",
           "",
-          "> " + summary,
+          summary,
           "",
           "| Field | Value |",
           "| :--- | :--- |",
