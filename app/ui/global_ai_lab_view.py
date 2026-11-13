@@ -4872,7 +4872,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (isBrowserIntent && window.AILAB_CUA) {
         const cua = window.AILAB_CUA;
         const nameEl = assistantPlaceholder.querySelector(".ailab-asst-name span");
-        if (nameEl) nameEl.textContent = "Autonomous Browser Agent (Local CUA)…";
+        if (nameEl) nameEl.textContent = "NanoPro CUA (Local Browser Agent)…";
         const labEl = assistantPlaceholder.querySelector(".ailab-asst-lab");
         if (labEl) labEl.textContent = "Laptop Chromium";
         const badgeEl = assistantPlaceholder.querySelector(".ailab-asst-latency-badge");
@@ -4887,7 +4887,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         const acts = (cua.log || []).filter(l => l.kind === "act").slice(-12).map((l, i) => (i + 1) + ". " + l.text);
         const notes = (cua.log || []).filter(l => l.kind === "done" || l.kind === "secret").slice(-4).map(l => "- " + l.text);
         const md = [
-          "### 🌐 Local Browser Agent — Task Report",
+          "### 🌐 NanoPro CUA — Local Browser Agent Report",
           "",
           summary,
           "",
@@ -6376,7 +6376,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     plan: async function (task, obs) {
       const elements = (obs.elements || []).slice(0, 90);
       const elementLines = elements
-        .map((e) => "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' + (e.href ? " -> " + e.href : ""))
+        .map((e) => "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' +
+          (e.checked ? " (checked)" : "") + (e.disabled ? " (disabled)" : "") + (e.href ? " -> " + e.href : ""))
         .join("\n");
       const system = [
         "You are NanoPro CUA, an autonomous browser agent driving a real Chromium window.",
@@ -6395,11 +6396,12 @@ body.in-global_ai_lab .nano-dynamic-island {
         "- upload needs an absolute local path. If the task needs a file and no path is given, use ask_user to request it.",
         "- To copy page text: select_text first (pass the exact visible text when the element has no index), then copy in the next step. paste inserts the clipboard or the text you pass into the indexed field.",
         "- drag moves a slider or drag target: pass from plus to, or from plus dx/dy pixel offsets.",
-        "- When the task is finished, return done with a short summary of what you verified.",
+        "- When the task is finished, return done with a short summary of what you verified. Speak in first person as NanoPro CUA and name yourself in the summary (for example: \"NanoPro CUA filled and submitted the form — the page confirmed the submission.\").",
         "- If the answer (title, heading, quote, price…) is already inside VISIBLE TEXT, return done with it now — do not scroll to look for it.",
         "- Do not scroll more than twice in a row; if the answer is still not visible, return done and say what you did see.",
         "- Keep text fields short; one click or one field per step.",
         "- FORMS: required fields are marked with *. If you clicked submit and the page shows red validation text, or nothing changed, do NOT click submit again. Read the error text and fill the empty required field first (open dropdowns and pick an option).",
+        "- FORM STATE lists radios/checkboxes that are already checked and the current select values. If the value you need is already set there, do not click it again — move to the next field or submit.",
         "- If your last action produced no visible change, the next action must be different: pick the missing field, another element, or scroll to the error."
       ].join("\n");
       const observation = [
@@ -6408,6 +6410,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         "URL: " + (obs.url || ""),
         "TITLE: " + (obs.title || ""),
         "SCROLL: " + JSON.stringify(obs.scroll || {}),
+        "FORM STATE: " + (obs.formState ? String(obs.formState).slice(0, 500) : "(no checkboxes, radios or selects on the page)"),
         "",
         "VISIBLE TEXT:",
         String(obs.text || "").slice(0, 2800),
@@ -6554,6 +6557,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.userAnswer = "";
       this.lastCopied = "";
       this.lastActionKey = "";
+      this.lastSnapSig = null;
       this.repeatCount = 0;
       this.scrollStreak = 0;
       this.planFails = 0;
@@ -6571,6 +6575,9 @@ body.in-global_ai_lab .nano-dynamic-island {
           const snap = await this.bridge("/snapshot", {}, 40000);
           if (!snap || snap.ok === false) throw new Error((snap && snap.error) || "could not read the page");
           if (pendingNote) { snap.text = pendingNote + "\n\n" + (snap.text || ""); pendingNote = ""; }
+          const snapSig = snap.sig || ((snap.url || "") + "|" + (snap.text || "").length + "|" + JSON.stringify(snap.scroll || {}));
+          const pageChanged = this.lastSnapSig != null && snapSig !== this.lastSnapSig;
+          this.lastSnapSig = snapSig;
           if (snap.url) { this.lastUrl = snap.url; const u = document.getElementById("ailabCuaUrlText"); if (u) u.textContent = snap.url; }
 
           this.updateActionHud("🤖", "Step " + this.step + " — planning…");
@@ -6592,7 +6599,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           if (action !== "done" && action !== "ask_user" && action !== "save_secret" &&
               action !== "scroll" && action !== "wait") {
             const actionKey = JSON.stringify([action, plan.index, plan.text, plan.url, plan.from, plan.to, plan.path, plan.key, plan.value]);
-            if (actionKey === this.lastActionKey) this.repeatCount++;
+            if (actionKey === this.lastActionKey && !pageChanged) this.repeatCount++;
             else { this.lastActionKey = actionKey; this.repeatCount = 1; }
             if (this.repeatCount === 2) {
               // Let the agent read the validation error instead of blindly retrying.

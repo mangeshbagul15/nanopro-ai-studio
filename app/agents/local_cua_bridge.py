@@ -65,36 +65,60 @@ SNAPSHOT_JS = r"""
   const nodes = Array.from(document.querySelectorAll(selector));
   const registry = [];
   const elements = [];
+  const formBits = [];
   for (const el of nodes) {
     if (!looksVisible(el)) continue;
     const tag = el.tagName.toLowerCase();
+    const type = (el.getAttribute('type') || '').toLowerCase();
     const isField = tag === 'input' || tag === 'textarea' || tag === 'select';
-    const label = (el.innerText || el.value || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '')
+    const checkable = tag === 'input' && (type === 'checkbox' || type === 'radio');
+    // Never expose long values (API keys, tokens) or password/textarea contents to the planner.
+    let shownValue = '';
+    if (tag === 'input' && type !== 'password' && type !== 'hidden') {
+      const v = String(el.value || '');
+      shownValue = v.length > 40 ? '(filled, ' + v.length + ' chars)' : v;
+    }
+    const label = (el.innerText || (tag === 'select' ? '' : shownValue) || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '')
       .replace(/\s+/g, ' ').trim().slice(0, 90);
     if (!label && !isField) continue;
     const r = el.getBoundingClientRect();
-    elements.push({
+    const entry = {
       i: elements.length,
       tag: tag,
-      type: (el.getAttribute('type') || '').toLowerCase(),
+      type: type,
       label: label,
       href: tag === 'a' ? String(el.getAttribute('href') || '').slice(0, 120) : '',
       x: Math.round(r.left),
       y: Math.round(r.top),
       w: Math.round(r.width),
       h: Math.round(r.height)
-    });
+    };
+    if (checkable) entry.checked = !!el.checked;
+    if (el.disabled) entry.disabled = true;
+    elements.push(entry);
+    if (tag === 'select') {
+      const opt = el.options ? el.options[el.selectedIndex] : null;
+      formBits.push('select[' + entry.i + '] "' + label + '" = "' + String(opt ? opt.text : el.value || '').replace(/\s+/g, ' ').trim().slice(0, 40) + '"');
+    }
+    if (checkable) formBits.push((el.checked ? 'checked[' : 'unchecked[') + entry.i + '] "' + label + '"');
     registry.push(el);
     if (elements.length >= __MAX_ELEMENTS__) break;
   }
   window.__NANOPRO_CUA_ELS = registry;
   const bodyText = (document.body ? document.body.innerText : '') || '';
   const text = bodyText.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, __MAX_TEXT__);
+  const formState = formBits.join('; ').slice(0, 500);
+  const sigSource = location.href + '|' + text + '|' + formState + '|' + Math.round(window.scrollY / 40) + '|' + elements.length;
+  let h1 = 0x811c9dc5;
+  for (let k = 0; k < sigSource.length; k++) { h1 ^= sigSource.charCodeAt(k); h1 = (h1 * 0x01000193) >>> 0; }
+  const sig = h1.toString(16) + ':' + sigSource.length;
   return {
     url: location.href,
     title: document.title,
     text: text,
     selection: String((window.getSelection && window.getSelection().toString()) || '').slice(0, 300),
+    formState: formState,
+    sig: sig,
     elements: elements,
     scroll: {
       y: Math.round(window.scrollY),
