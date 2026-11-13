@@ -5921,12 +5921,14 @@ body.in-global_ai_lab .nano-dynamic-island {
     taskText: "",
     userAnswer: "",
     lastUrl: "",
+    lastModel: "",
+    queue: [],
 
     init: function () {
       this.bridgeURL = localStorage.getItem("nanopro_cua_bridge") || this.bridgeURL;
       this.initGripResize();
       this.pingBridge();
-      setInterval(() => { if (!this.running && this.isOpen) this.pingBridge(); }, 20000);
+      setInterval(() => { if (!this.running && this.isOpen) this.pingBridge(); }, 6000);
     },
 
     initGripResize: function () {
@@ -6163,12 +6165,16 @@ body.in-global_ai_lab .nano-dynamic-island {
       const system = [
         "You are NanoPro CUA, an autonomous browser agent driving a real Chromium window.",
         "Take exactly one step at a time and reply with ONE JSON object, nothing else.",
-        'Schema: {"thought":"one short sentence","action":"goto|click|type|press|scroll|wait|back|select|save_secret|ask_user|done", ...fields}',
-        "Fields: goto{url}; click{index}; type{index,text,enter}; press{key}; scroll{direction}; wait{ms}; select{index,value}; save_secret{provider,value}; ask_user{message,options}; done{summary}.",
+        'Schema: {"thought":"one short sentence","action":"goto|click|type|press|scroll|wait|back|select|select_text|copy|paste|download|upload|drag|save_secret|ask_user|done", ...fields}',
+        "Fields: goto{url}; click{index,button,clicks}; type{index,text,enter}; press{key}; scroll{direction,pixels}; wait{ms}; select{index,value}; select_text{index,text?}; copy{}; paste{index,text?}; download{index}; upload{index,path}; drag{from,to} or drag{from,dx,dy}; save_secret{provider,value}; ask_user{message,options}; done{summary}.",
         "Rules:",
         "- Use only element indexes from the provided list.",
         "- Never type passwords, OTPs, card numbers or payment details. If a login, OTP, CAPTCHA or payment screen appears, use ask_user and stop there.",
         "- save_secret only when the exact secret value is visible on the page and the task asks you to capture it. Never invent a value.",
+        "- download clicks a download link/button; the file is saved on the user's laptop in Downloads\\NanoProCUA.",
+        "- upload needs an absolute local path. If the task needs a file and no path is given, use ask_user to request it.",
+        "- To copy page text: select_text on the element first, then copy. paste inserts the clipboard or the text you pass into the indexed field.",
+        "- drag moves a slider or drag target: pass from plus to, or from plus dx/dy pixel offsets.",
         "- When the task is finished, return done with a short summary of what you verified.",
         "- Keep text fields short; one click or one field per step."
       ].join("\n");
@@ -6236,6 +6242,12 @@ body.in-global_ai_lab .nano-dynamic-island {
         case "scroll": return "scrolled " + (plan.direction || "down");
         case "back": return "went back";
         case "select": return "selected a value";
+        case "select_text": return "selected text in [" + plan.index + "]";
+        case "copy": return "copied the selection";
+        case "paste": return "pasted into the focused field";
+        case "download": return "clicked download [" + plan.index + "]";
+        case "upload": return "uploaded " + (plan.path || "a file");
+        case "drag": return "dragged [" + plan.from + "] onto [" + plan.to + "]";
         case "wait": return "waited";
         default: return plan.action || "";
       }
@@ -6297,7 +6309,11 @@ body.in-global_ai_lab .nano-dynamic-island {
     runTask: async function (taskText) {
       const task = String(taskText || "").trim();
       if (!task) return;
-      if (this.running) { this.logLine("warn", "A task is already running."); return; }
+      if (this.running) {
+        this.queue.push(task);
+        this.logLine("warn", "Task queued — " + this.queue.length + " waiting. The laptop browser runs one task at a time.");
+        return;
+      }
       this.togglePanel(true);
       await this.pingBridge();
       if (!this.online) {
@@ -6346,20 +6362,29 @@ body.in-global_ai_lab .nano-dynamic-island {
             continue;
           }
 
-          const result = await this.bridge("/act", plan, 60000);
+          const result = await this.bridge("/act", plan, 90000);
           if (result && result.ok === false) {
             this.logLine("error", "Action failed: " + (result.error || "unknown error"));
             this.updateActionHud("⚠️", "Action failed: " + (result.error || "unknown error"));
           } else {
             this.logLine("act", this.describeAction(plan));
-            if (plan.action === "click" && typeof plan.index === "number") {
-              const el = (snap.elements || []).find((e) => e.i === plan.index);
-              if (el) {
-                const stage = document.getElementById("ailabCuaViewportContainer");
-                const stageW = stage ? stage.offsetWidth : 640;
-                const scale = stageW / 1280;
-                this.moveCursor(el.x * scale, el.y * scale, "[" + plan.index + "] " + el.tag);
-                this.triggerClickRipple(el.x * scale, el.y * scale);
+            if (result && result.download && result.download.path) {
+              this.logLine("done", "⬇️ Saved " + result.download.name + " (" + Math.round((result.download.size || 0) / 1024) + " KB) → " + result.download.path);
+            }
+            if (result && result.uploaded) {
+              this.logLine("act", "⬆️ Uploaded " + result.uploaded + " (" + Math.round((result.size || 0) / 1024) + " KB)");
+            }
+            if (result && result.copied_len) {
+              this.logLine("act", "📋 Copied " + result.copied_len + " characters");
+            }
+            const stage = document.getElementById("ailabCuaViewportContainer");
+            const stageW = stage ? stage.offsetWidth : 640;
+            const scale = stageW / 1280;
+            if (result && typeof result.x === "number" && typeof result.y === "number") {
+              const label = plan.action === "click" ? "[" + plan.index + "]" : plan.action;
+              this.moveCursor(result.x * scale, result.y * scale, label);
+              if (plan.action === "click" || plan.action === "download") {
+                this.triggerClickRipple(result.x * scale, result.y * scale);
               }
             }
           }
@@ -6373,6 +6398,10 @@ body.in-global_ai_lab .nano-dynamic-island {
         this.running = false;
         const frame = await this.bridge("/frame", null, 8000).catch(() => null);
         if (frame && frame.ok) this.updateFrame(frame);
+        if (this.queue.length) {
+          const next = this.queue.shift();
+          setTimeout(() => this.runTask(next), 500);
+        }
       }
     },
 

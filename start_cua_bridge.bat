@@ -29,6 +29,10 @@ echo.
 echo  A Chromium window will open. Keep BOTH windows running while the
 echo  agent works - closing them stops the agent.
 echo.
+echo  The agent can click, type, scroll, select, copy, paste, drag,
+echo  download (saved to %%USERPROFILE%%\Downloads\NanoProCUA) and upload
+echo  local files. Everything runs on THIS laptop, not on Render.
+echo.
 python app\agents\local_cua_bridge.py --headed
 echo.
 echo Bridge stopped.

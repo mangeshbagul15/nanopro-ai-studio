@@ -15,7 +15,7 @@ Endpoints (all CORS-enabled, loopback only):
     GET  /frame       latest JPEG screenshot of the controlled page
     POST /navigate    {"url": "https://..."}
     POST /snapshot    page text + numbered interactive elements
-    POST /act         {"action": "click|type|press|scroll|goto|back|select|wait|hover", ...}
+    POST /act         {"action": "click|type|press|scroll|goto|back|select|wait|hover|select_text|copy|paste|download|upload|drag", ...}
     POST /reset       fresh blank tab
     GET  /            human readable help page
 """
@@ -50,6 +50,7 @@ VIEWPORT = {"width": 1280, "height": 800}
 MAX_ELEMENTS = 160
 MAX_TEXT = 7000
 DEFAULT_URL = "about:blank"
+DOWNLOAD_DIR = os.path.join(os.path.expanduser("~"), "Downloads", "NanoProCUA")
 
 SNAPSHOT_JS = r"""
 () => {
@@ -60,7 +61,7 @@ SNAPSHOT_JS = r"""
     const s = getComputedStyle(el);
     return s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0';
   };
-  const selector = 'a[href],button,input,textarea,select,summary,[role="button"],[role="link"],[role="tab"],[role="menuitem"],[contenteditable="true"],[onclick]';
+  const selector = 'a[href],button,input,textarea,select,summary,[role="button"],[role="link"],[role="tab"],[role="menuitem"],[role="slider"],[aria-valuenow],[draggable="true"],[contenteditable="true"],[onclick]';
   const nodes = Array.from(document.querySelectorAll(selector));
   const registry = [];
   const elements = [];
@@ -152,6 +153,8 @@ class BrowserBridge:
         self.last_frame = b""
         self.last_frame_at = 0.0
         self.started_at = time.time()
+        self.downloads = []
+        self._download_tasks = set()
 
     async def start(self):
         self.playwright = await async_playwright().start()
@@ -159,6 +162,8 @@ class BrowserBridge:
             user_data_dir=self.profile_dir,
             headless=self.headless,
             viewport=VIEWPORT,
+            accept_downloads=True,
+            permissions=["clipboard-read", "clipboard-write"],
             args=[
                 "--no-sandbox",
                 "--disable-blink-features=AutomationControlled",
@@ -168,10 +173,42 @@ class BrowserBridge:
         self.context.on("page", self._track_page)
         pages = self.context.pages
         self.page = pages[0] if pages else await self.context.new_page()
+        self._watch_downloads(self.page)
         print(f"[CUA Bridge] Chromium ready (headless={self.headless}, profile={self.profile_dir})")
+
+    def _watch_downloads(self, page):
+        if page is None:
+            return
+        try:
+            page.on("download", self._on_download)
+        except Exception:
+            pass
+
+    def _on_download(self, download):
+        async def _save():
+            try:
+                os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+                name = download.suggested_filename or f"download-{int(time.time())}"
+                target = os.path.join(DOWNLOAD_DIR, name)
+                stem, ext = os.path.splitext(name)
+                n = 1
+                while os.path.exists(target):
+                    target = os.path.join(DOWNLOAD_DIR, f"{stem} ({n}){ext}")
+                    n += 1
+                await download.save_as(target)
+                size = os.path.getsize(target) if os.path.exists(target) else 0
+                self.downloads.append({"name": os.path.basename(target), "path": target, "size": size})
+                self.downloads = self.downloads[-10:]
+            except Exception as exc:
+                self.downloads.append({"name": "", "path": "", "size": 0, "error": str(exc)})
+
+        task = asyncio.create_task(_save())
+        self._download_tasks.add(task)
+        task.add_done_callback(self._download_tasks.discard)
 
     def _track_page(self, page):
         self.page = page
+        self._watch_downloads(page)
 
     async def stop(self):
         try:
@@ -276,10 +313,21 @@ class BrowserBridge:
                 if point.get("x") is not None:
                     await page.mouse.move(float(point["x"]), float(point["y"]))
                     await asyncio.sleep(0.12)
-                    await page.mouse.click(float(point["x"]), float(point["y"]))
+                    await page.mouse.click(
+                        float(point["x"]),
+                        float(point["y"]),
+                        button=(payload.get("button") or "left").lower(),
+                        click_count=max(1, min(3, int(payload.get("clicks") or 1))),
+                    )
             elif payload.get("x") is not None and payload.get("y") is not None:
                 point = {"x": float(payload["x"]), "y": float(payload["y"])}
-                await page.mouse.click(point["x"], point["y"])
+                await page.mouse.move(point["x"], point["y"])
+                await page.mouse.click(
+                    point["x"],
+                    point["y"],
+                    button=(payload.get("button") or "left").lower(),
+                    click_count=max(1, min(3, int(payload.get("clicks") or 1))),
+                )
             else:
                 return {"ok": False, "error": "click needs index or x/y"}
 
@@ -301,26 +349,29 @@ class BrowserBridge:
         if action in ("type", "fill"):
             idx = payload.get("index")
             text = payload.get("text") or ""
+            point = None
             if idx is not None:
                 focused = await page.evaluate(
                     """(i) => {
                         const el = (window.__NANOPRO_CUA_ELS || [])[i];
-                        if (!el) return false;
+                        if (!el) return null;
                         el.scrollIntoView({block: 'center', inline: 'center'});
                         el.focus();
                         if (el.select) { try { el.select(); } catch (e) {} }
-                        return true;
+                        const r = el.getBoundingClientRect();
+                        return {x: r.left + r.width / 2, y: r.top + r.height / 2};
                     }""",
                     int(idx),
                 )
                 if not focused:
                     return {"ok": False, "error": "element index not found; take a fresh snapshot"}
+                point = focused
             await page.keyboard.type(text, delay=18)
             await asyncio.sleep(0.15)
             if payload.get("enter"):
                 await page.keyboard.press("Enter")
             await self.settle(600)
-            return {"ok": True}
+            return {"ok": True, "x": (point or {}).get("x"), "y": (point or {}).get("y")}
 
         if action == "press":
             key = payload.get("key") or "Enter"
@@ -332,15 +383,20 @@ class BrowserBridge:
             idx = payload.get("index")
             if idx is None:
                 return {"ok": False, "error": "hover needs index"}
-            await page.evaluate(
+            point = await page.evaluate(
                 """(i) => {
                     const el = (window.__NANOPRO_CUA_ELS || [])[i];
-                    if (el) el.scrollIntoView({block: 'center', inline: 'center'});
+                    if (!el) return null;
+                    el.scrollIntoView({block: 'center', inline: 'center'});
+                    const r = el.getBoundingClientRect();
+                    return {x: r.left + r.width / 2, y: r.top + r.height / 2};
                 }""",
                 int(idx),
             )
+            if point:
+                await page.mouse.move(float(point["x"]), float(point["y"]))
             await asyncio.sleep(0.2)
-            return {"ok": True}
+            return {"ok": True, "x": (point or {}).get("x"), "y": (point or {}).get("y")}
 
         if action == "scroll":
             direction = (payload.get("direction") or "down").lower()
@@ -374,6 +430,182 @@ class BrowserBridge:
                 return {"ok": False, "error": "element index not found"}
             await self.settle(450)
             return {"ok": True}
+
+        if action in ("select_text", "highlight"):
+            idx = payload.get("index")
+            if idx is None:
+                return {"ok": False, "error": "select_text needs index"}
+            phrase = payload.get("text") or ""
+            picked = await page.evaluate(
+                """([i, phrase]) => {
+                    const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                    if (!el) return {ok: false};
+                    el.scrollIntoView({block: 'center', inline: 'center'});
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    const range = document.createRange();
+                    if (phrase) {
+                        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+                        let node, found = null;
+                        while ((node = walker.nextNode())) {
+                            const pos = node.nodeValue.indexOf(phrase);
+                            if (pos !== -1) { found = {node: node, pos: pos}; break; }
+                        }
+                        if (found) {
+                            range.setStart(found.node, found.pos);
+                            range.setEnd(found.node, found.pos + phrase.length);
+                        } else {
+                            range.selectNodeContents(el);
+                        }
+                    } else {
+                        range.selectNodeContents(el);
+                    }
+                    sel.addRange(range);
+                    const r = el.getBoundingClientRect();
+                    return {ok: true, selected: String(sel.toString() || '').slice(0, 400), x: r.left + r.width / 2, y: r.top + r.height / 2};
+                }""",
+                [int(idx), phrase],
+            )
+            if not picked or not picked.get("ok"):
+                return {"ok": False, "error": "element index not found"}
+            await asyncio.sleep(0.2)
+            return {"ok": True, "selected_len": len(picked.get("selected") or ""), "x": picked.get("x"), "y": picked.get("y")}
+
+        if action == "copy":
+            await page.keyboard.press("Control+C")
+            await asyncio.sleep(0.25)
+            try:
+                copied = await page.evaluate("() => navigator.clipboard.readText()")
+            except Exception:
+                copied = ""
+            return {"ok": True, "copied_len": len(copied or ""), "preview": (copied or "")[:160]}
+
+        if action == "paste":
+            text = payload.get("text")
+            idx = payload.get("index")
+            point = None
+            if idx is not None:
+                point = await page.evaluate(
+                    """(i) => {
+                        const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                        if (!el) return null;
+                        el.scrollIntoView({block: 'center', inline: 'center'});
+                        el.focus();
+                        const r = el.getBoundingClientRect();
+                        return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+                    }""",
+                    int(idx),
+                )
+                if point is None:
+                    return {"ok": False, "error": "element index not found; take a fresh snapshot"}
+            if text is None:
+                try:
+                    text = await page.evaluate("() => navigator.clipboard.readText()")
+                except Exception:
+                    text = ""
+            if not text:
+                return {"ok": False, "error": "nothing to paste"}
+            try:
+                await page.evaluate("(t) => navigator.clipboard.writeText(t)", text)
+            except Exception:
+                pass
+            await page.keyboard.press("Control+V")
+            await asyncio.sleep(0.25)
+            await self.settle(400)
+            return {"ok": True, "pasted_len": len(text), "x": (point or {}).get("x"), "y": (point or {}).get("y")}
+
+        if action == "download":
+            idx = payload.get("index")
+            if idx is None:
+                return {"ok": False, "error": "download needs the index of the download link/button"}
+            point = await page.evaluate(
+                """(i) => {
+                    const el = (window.__NANOPRO_CUA_ELS || [])[i];
+                    if (!el) return null;
+                    el.scrollIntoView({block: 'center', inline: 'center'});
+                    const r = el.getBoundingClientRect();
+                    return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+                }""",
+                int(idx),
+            )
+            if not point:
+                return {"ok": False, "error": "element index not found; take a fresh snapshot"}
+            before = len(self.downloads)
+            pages_before = len(self.context.pages)
+            await page.mouse.click(float(point["x"]), float(point["y"]))
+            for _ in range(50):
+                if len(self.downloads) > before:
+                    break
+                await asyncio.sleep(0.1)
+            if len(self.context.pages) > pages_before:
+                self.page = self.context.pages[-1]
+                self._watch_downloads(self.page)
+                await self.settle(500)
+            await self.settle(300)
+            if len(self.downloads) > before:
+                return {"ok": True, "download": self.downloads[-1], "x": point["x"], "y": point["y"]}
+            return {"ok": False, "error": "no download started — the element may not be a download link", "x": point["x"], "y": point["y"]}
+
+        if action == "upload":
+            idx = payload.get("index")
+            path = (payload.get("path") or "").strip().strip('"')
+            if idx is None or not path:
+                return {"ok": False, "error": "upload needs index and an absolute file path"}
+            if not os.path.isabs(path):
+                return {"ok": False, "error": "upload path must be absolute"}
+            if not os.path.isfile(path):
+                return {"ok": False, "error": f"file not found: {path}"}
+            try:
+                handle = await page.evaluate_handle(
+                    "(i) => (window.__NANOPRO_CUA_ELS || [])[i]", int(idx)
+                )
+                element = handle.as_element()
+                if element is None:
+                    return {"ok": False, "error": "element index not found"}
+                await element.set_input_files(path)
+            except Exception as exc:
+                return {"ok": False, "error": f"upload failed: {exc}"}
+            await self.settle(500)
+            return {"ok": True, "uploaded": os.path.basename(path), "size": os.path.getsize(path)}
+
+        if action == "drag":
+            src = payload.get("from")
+            dst = payload.get("to")
+            if src is None:
+                return {"ok": False, "error": "drag needs a from element index"}
+            if dst is None and payload.get("dx") is None and payload.get("dy") is None:
+                return {"ok": False, "error": "drag needs a to element index or dx/dy offset"}
+            coords = await page.evaluate(
+                """([a, b]) => {
+                    const els = window.__NANOPRO_CUA_ELS || [];
+                    const one = els[a];
+                    if (!one) return null;
+                    one.scrollIntoView({block: 'center', inline: 'center'});
+                    const r1 = one.getBoundingClientRect();
+                    const out = {x1: r1.left + r1.width / 2, y1: r1.top + r1.height / 2, x2: null, y2: null};
+                    if (b !== null) {
+                        const two = els[b];
+                        if (!two) return null;
+                        const r2 = two.getBoundingClientRect();
+                        out.x2 = r2.left + r2.width / 2;
+                        out.y2 = r2.top + r2.height / 2;
+                    }
+                    return out;
+                }""",
+                [int(src), None if dst is None else int(dst)],
+            )
+            if not coords:
+                return {"ok": False, "error": "element index not found"}
+            x2 = coords["x2"] if coords["x2"] is not None else coords["x1"] + float(payload.get("dx") or 0)
+            y2 = coords["y2"] if coords["y2"] is not None else coords["y1"] + float(payload.get("dy") or 0)
+            await page.mouse.move(coords["x1"], coords["y1"])
+            await page.mouse.down()
+            await asyncio.sleep(0.15)
+            await page.mouse.move((coords["x1"] + x2) / 2, (coords["y1"] + y2) / 2, steps=8)
+            await page.mouse.move(x2, y2, steps=8)
+            await page.mouse.up()
+            await self.settle(500)
+            return {"ok": True, "x": x2, "y": y2}
 
         if action == "wait":
             await asyncio.sleep(max(0.2, min(10.0, float(payload.get("ms") or 1000) / 1000.0)))
