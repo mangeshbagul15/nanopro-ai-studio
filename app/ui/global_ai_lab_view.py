@@ -1512,16 +1512,18 @@ body.in-global_ai_lab .nano-dynamic-island {
   border: 2.5px solid #EF4444;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 69;
+  z-index: 119;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.3);
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45), 0 0 14px rgba(239, 68, 68, 0.55);
 }
 #view-global_ai_lab .ailab-cua-click-ripple.pulsing {
-  animation: cuaRippleAnim 0.5s ease-out forwards;
+  animation: cuaRippleAnim 0.9s ease-out forwards;
 }
 @keyframes cuaRippleAnim {
   0% { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); }
+  55% { opacity: 0.85; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
 }
 
 /* Set-of-Marks Bounding Boxes Overlay */
@@ -6127,6 +6129,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (ok && info && info.url) {
         const urlText = document.getElementById("ailabCuaUrlText");
         if (urlText) urlText.textContent = info.url;
+      }
+      if (!this.running) {
+        if (ok) this.updateActionHud("🖱️", "CUA ready — the red arrow shows every move and click");
+        else this.updateActionHud("⚡", "CUA idle — start the local bridge to drive a real browser");
       }
       if (ok) this.startFrames(); else this.stopFrames();
     },
