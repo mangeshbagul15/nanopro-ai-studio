@@ -1063,11 +1063,18 @@ class NanoProMCPServer:
             model_id = req_model
 
         start_t = time.time()
+        effort = str(args.get("effort") or "default").lower()
+        reasoning = None
+        if effort == "fast":
+            reasoning = {"effort": "low"}
+        elif effort in ("reasoning", "architecture"):
+            reasoning = {"effort": "high"}
         from app.core.model_adapter import model_manager
         try:
             content, used_model, mode = model_manager.execute_with_fallback(
                 prompt=prompt,
-                models=[model_id, "gemini-3.8-flash", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"]
+                models=[model_id, "gemini-3.8-flash", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"],
+                reasoning=reasoning
             )
             GLOBAL_AI_ROUTER.bandit.record_feedback(model_id, success=True, latency_ms=(time.time() - start_t) * 1000)
             from app.core.global_ai_catalog import resolve_model_provenance

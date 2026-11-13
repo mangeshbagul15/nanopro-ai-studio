@@ -1151,6 +1151,11 @@ class OpenRouterAdapter(ModelProviderAdapter):
 
         t_start = time.time()
         m_clean = model if model and ("/" in model or ":free" in model) else "liquid/lfm-2.5-2.6b:free"
+        # openrouter@<vendor>/<model> forces a catalog model through OpenRouter,
+        # bypassing the direct-provider adapters (openrouter/auto and openrouter/free
+        # are real OpenRouter meta-models and must not be stripped).
+        if m_clean.lower().startswith("openrouter@"):
+            m_clean = m_clean[len("openrouter@"):]
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -1162,6 +1167,9 @@ class OpenRouterAdapter(ModelProviderAdapter):
         }
         if schema:
             payload["response_format"] = {"type": "json_object"}
+        reasoning = kwargs.get("reasoning")
+        if reasoning and m_clean.lower() not in ("openrouter/free",):
+            payload["reasoning"] = reasoning
 
         try:
             req = urllib.request.Request(
@@ -1816,6 +1824,10 @@ class ModelManager:
         deterministically map to OllamaAdapter without cloud misrouting.
         """
         m_lower = model.lower()
+
+        # 0. Explicit OpenRouter override: openrouter@<vendor>/<model>
+        if m_lower.startswith("openrouter@"):
+            return self.openrouter, "openrouter-cloud"
 
         # 1. Deterministic Groq Cloud LPU models
         if "gpt-oss" in m_lower or "qwen3.8" in m_lower or "groq" in m_lower:

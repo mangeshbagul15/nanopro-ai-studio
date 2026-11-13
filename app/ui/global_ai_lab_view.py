@@ -3016,6 +3016,16 @@ body.in-global_ai_lab .nano-dynamic-island {
             <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (&lt;300ms SLA)</option>
             <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
           </optgroup>
+          <optgroup label="🆕 Nov 2026 Frontier (live OpenRouter catalog)">
+            <option value="openrouter@openai/gpt-6.1-terra">GPT-6.1 Terra (Frontier Thinking, 1M ctx)</option>
+            <option value="openrouter@google/gemini-4-hydrogen">Gemini 4 Hydrogen (Fast Frontier, 1M ctx)</option>
+            <option value="openrouter@anthropic/claude-fable-5.2">Claude Fable 5.2 (Deep Reasoning)</option>
+            <option value="openrouter@moonshotai/kimi-k3.1-pro">Kimi K3.1 Pro (1M ctx)</option>
+            <option value="openrouter@minimax/minimax-m3.1-flash">MiniMax M3.1 Flash (Cheap + Fast)</option>
+            <option value="openrouter@deepseek/deepseek-v4.1-flash-1017">DeepSeek V4.1 Flash (1M ctx)</option>
+            <option value="inclusionai/ling-3.2-flash:free">Ling 3.2 Flash (Free Frontier)</option>
+            <option value="nvidia/nemotron-3.5-super-vl:free">Nemotron 3.5 Super VL (Free, Vision)</option>
+          </optgroup>
           <optgroup label="🇺🇸 OpenAI Frontier">
             <option value="openai/o3-mini">OpenAI o3-mini (High-Speed Reasoning)</option>
             <option value="openai/gpt-4o">OpenAI GPT-4o (Omni)</option>
@@ -6438,14 +6448,26 @@ body.in-global_ai_lab .nano-dynamic-island {
       ].join("\n");
 
       let lastHttp = 0;
-      const askModel = async (suffix, modelOverride) => {
+      // CUA model policy: a sub-second model for normal steps, and a frontier
+      // thinking model once the page gets tricky (validation, no-change repeats,
+      // failed actions, planner hiccups). A free router is the last safety net.
+      const manualModel = (window.AILAB && AILAB.selectedModel && AILAB.selectedModel !== "auto") ? AILAB.selectedModel : "";
+      const FAST_MODEL = manualModel || "qwen/qwen3.8-27b";
+      const SMART_MODEL = manualModel || "openrouter@openai/gpt-6.1-terra";
+      const uiEffort = (window.AILAB && AILAB.selectedEffort) || "default";
+      const effortFor = (smart) => {
+        if (uiEffort === "fast") return "fast";
+        if (uiEffort === "reasoning" || uiEffort === "architecture") return "reasoning";
+        return smart ? "reasoning" : "fast";
+      };
+      const askModel = async (suffix, modelOverride, effortOverride) => {
         const res = await fetch("/api/ai/execute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: system + "\n\n" + observation + (suffix || ""),
-            model: modelOverride || (window.AILAB && AILAB.selectedModel) || "auto",
-            effort: (window.AILAB && AILAB.selectedEffort) || "default",
+            model: modelOverride || manualModel || "auto",
+            effort: effortOverride || uiEffort,
             agent: "cua",
             messages: []
           }),
@@ -6461,14 +6483,20 @@ body.in-global_ai_lab .nano-dynamic-island {
       const strict = "\n\nIMPORTANT: Answer with ONE JSON object only, action names goto/click/type/press/scroll/done. No prose, no markdown, no code fences, no XML.";
       let lastErr = null;
       for (let attempt = 1; attempt <= 3; attempt++) {
+        const useSmart = attempt === 1 ? this.escalate : attempt === 2;
         try {
-          const text = await askModel(attempt === 1 ? "" : strict, attempt === 2 ? "qwen/qwen3.8-27b" : (attempt === 3 ? "openrouter/free" : null));
+          const text = await askModel(
+            attempt === 1 ? "" : strict,
+            attempt === 1 ? (this.escalate ? SMART_MODEL : FAST_MODEL) : (attempt === 2 ? SMART_MODEL : "openrouter/free"),
+            attempt === 1 && !this.escalate ? effortFor(false) : effortFor(true)
+          );
           if (!text) throw new Error("planner returned an empty response (HTTP " + lastHttp + ")");
           return this.parseAction(text);
         } catch (err) {
           lastErr = err;
+          this.escalate = true;
           if (attempt < 3) {
-            this.logLine("warn", "Planner attempt " + attempt + " failed (" + err.message + "), retrying…");
+            this.logLine("warn", "Planner attempt " + attempt + " failed (" + err.message + "), retrying with a deeper model…");
             await new Promise((r) => setTimeout(r, 600 * attempt));
           }
         }
@@ -6549,6 +6577,83 @@ body.in-global_ai_lab .nano-dynamic-island {
       }
     },
 
+    escalateModel: function (reason) {
+      if (this.escalate) return;
+      this.escalate = true;
+      this.logLine("warn", "🧠 Manager: deeper-thinking model engaged — " + reason);
+    },
+
+    // ---- CUA Squad: independent model calls that cross-check the Pilot ----
+    squadAsk: async function (systemText, observationText, model, effort) {
+      const res = await fetch("/api/ai/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: systemText + "\n\n" + observationText,
+          model: model,
+          effort: effort || "fast",
+          agent: "cua-squad",
+          messages: []
+        }),
+        signal: AbortSignal.timeout(45000)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data && data.status === "error" && data.error) throw new Error(String(data.error).slice(0, 160));
+      return String(data.response || data.message || data.text || "");
+    },
+
+    squadParse: function (text) {
+      const m = String(text || "").match(/\{[\s\S]*\}/);
+      if (!m) return null;
+      try { return JSON.parse(m[0]); } catch (_) { return null; }
+    },
+
+    criticReview: async function (task, snap, action, outcome) {
+      const system = [
+        "You are the Critic agent in NanoPro CUA's browser squad.",
+        "The Pilot agent just acted; the page state below is the result. Judge whether the action achieved its intent.",
+        'Reply with ONE JSON object: {"verdict":"ok|problem","note":"max 30 words naming the concrete next action"}',
+        "Look for: constraint-invalid fields, disabled buttons, wrong element, unchanged values, modals/ads blocking the form, or a missing required field."
+      ].join("\n");
+      const observation = [
+        "TASK: " + task,
+        "LAST ACTION: " + JSON.stringify(action),
+        "OUTCOME: " + (outcome && outcome.ok === false ? "FAILED: " + (outcome.error || "unknown") : "no visible page change"),
+        "URL: " + (snap.url || ""),
+        "FORM STATE: " + (snap.formState || "(none)"),
+        "VISIBLE TEXT:",
+        String(snap.text || "").slice(0, 1800),
+        "INTERACTIVE ELEMENTS:",
+        (snap.elements || []).slice(0, 50).map((e) =>
+          "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' +
+          (e.checked ? " (checked)" : "") + (e.invalid ? " (invalid)" : "") + (e.disabled ? " (disabled)" : "")
+        ).join("\n")
+      ].join("\n");
+      const text = await this.squadAsk(system, observation, "openrouter/free", "fast");
+      return this.squadParse(text);
+    },
+
+    verifyCompletion: async function (task, snap, summary) {
+      const system = [
+        "You are the Verifier agent in NanoPro CUA's browser squad.",
+        "The Pilot claims the task is complete. Check the page evidence, not the claim.",
+        'Reply with ONE JSON object: {"verified":true|false,"reason":"max 25 words"}',
+        "Verify only when the page itself shows the outcome (success message, expected value, target page/state)."
+      ].join("\n");
+      const observation = [
+        "TASK: " + task,
+        "PILOT CLAIM: " + (summary || "(no summary)"),
+        "URL: " + (snap.url || ""),
+        "TITLE: " + (snap.title || ""),
+        "FORM STATE: " + (snap.formState || "(none)"),
+        "VISIBLE TEXT:",
+        String(snap.text || "").slice(0, 2200)
+      ].join("\n");
+      const model = this.escalate ? "openrouter@openai/gpt-6.1-terra" : "qwen/qwen3.8-27b";
+      const text = await this.squadAsk(system, observation, model, this.escalate ? "reasoning" : "fast");
+      return this.squadParse(text);
+    },
+
     runTask: async function (taskText) {
       const task = String(taskText || "").trim();
       if (!task) return;
@@ -6574,6 +6679,8 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.lastActionKey = "";
       this.lastSnapSig = null;
       this.doneGuardFired = false;
+      this.escalate = false;
+      this.verifiedDone = false;
       this.repeatCount = 0;
       this.scrollStreak = 0;
       this.planFails = 0;
@@ -6594,6 +6701,9 @@ body.in-global_ai_lab .nano-dynamic-island {
           const snapSig = snap.sig || ((snap.url || "") + "|" + (snap.text || "").length + "|" + JSON.stringify(snap.scroll || {}));
           const pageChanged = this.lastSnapSig != null && snapSig !== this.lastSnapSig;
           this.lastSnapSig = snapSig;
+          if (this.step > 1 && (snap.elements || []).some((e) => e.invalid)) {
+            this.escalateModel("a required field is still invalid");
+          }
           if (snap.url) { this.lastUrl = snap.url; const u = document.getElementById("ailabCuaUrlText"); if (u) u.textContent = snap.url; }
 
           this.updateActionHud("🤖", "Step " + this.step + " — planning…");
@@ -6610,7 +6720,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             continue;
           }
           const action = String(plan.action || "").toLowerCase();
-          this.logLine("thought", "Step " + this.step + (this.lastModel ? " · " + this.lastModel : "") + ": " + (plan.thought || action));
+          this.logLine("thought", "Step " + this.step + " · Manager (" + (this.lastModel || "auto") + "): " + (plan.thought || action));
 
           if (action !== "done" && action !== "ask_user" && action !== "save_secret" &&
               action !== "scroll" && action !== "wait") {
@@ -6618,9 +6728,20 @@ body.in-global_ai_lab .nano-dynamic-island {
             if (actionKey === this.lastActionKey && !pageChanged) this.repeatCount++;
             else { this.lastActionKey = actionKey; this.repeatCount = 1; }
             if (this.repeatCount === 2) {
-              // Let the agent read the validation error instead of blindly retrying.
-              this.logLine("warn", "Same action again — re-reading the page for validation errors");
-              pendingNote = "SYSTEM NOTE: your previous action produced no visible change and you were about to repeat it. Look for red validation/error text in VISIBLE TEXT and for required (*) fields that are still empty. Fill the missing field or choose a different element — do NOT repeat the same click/index.";
+              // Let the Critic agent read the page instead of blindly retrying.
+              this.logLine("warn", "Same action again — Critic is re-reading the page");
+              this.escalateModel("an action repeated without any page change");
+              let criticNote = "";
+              try {
+                const review = await this.criticReview(task, snap, plan, { ok: false, error: "no visible page change" });
+                if (review && review.note) {
+                  criticNote = review.note;
+                  this.logLine("warn", "🕵️ Critic: " + criticNote);
+                }
+              } catch (_) {}
+              pendingNote = "SYSTEM NOTE: your previous action produced no visible change and you were about to repeat it. " +
+                (criticNote ? "CRITIC AGENT says: " + criticNote + " " : "") +
+                "Look for red validation/error text in VISIBLE TEXT and for required (*) fields that are still empty. Fill the missing field or choose a different element — do NOT repeat the same click/index.";
               continue;
             }
             if (this.repeatCount >= 4) {
@@ -6646,10 +6767,29 @@ body.in-global_ai_lab .nano-dynamic-island {
             if (invalidEls.length && !this.doneGuardFired) {
               this.doneGuardFired = true;
               this.logLine("warn", "Form still has invalid fields — not finishing yet");
+              this.escalateModel("the form still has invalid fields");
               pendingNote = "SYSTEM NOTE: you tried to finish, but these fields are still marked invalid: " +
                 invalidEls.map((e) => "[" + e.i + "] " + (e.label || e.tag)).join(", ") +
                 ". Fill them first, or use ask_user if the task truly does not allow it.";
               continue;
+            }
+            if (!this.verifiedDone) {
+              this.verifiedDone = true;
+              this.updateActionHud("🧪", "Verifier is checking the page…");
+              this.logLine("act", "🧪 Verifier is checking the result on the page");
+              let check = null;
+              try {
+                check = await this.verifyCompletion(task, snap, plan.summary || "");
+              } catch (_) {}
+              if (check && check.verified === true) {
+                this.logLine("act", "🧪 Verifier confirmed: " + (check.reason || "result visible on the page"));
+              } else if (check && check.verified === false) {
+                this.escalateModel("the Verifier did not find the result on the page");
+                this.logLine("warn", "🧪 Verifier: " + (check.reason || "result not visible yet"));
+                pendingNote = "SYSTEM NOTE: the Verifier agent checked the page and did NOT see the task result: " +
+                  (check.reason || "not visible") + ". Continue working until the page itself shows the result, or use ask_user to explain the blocker.";
+                continue;
+              }
             }
             this.logLine("done", "✅ " + (plan.summary || "Task complete."));
             this.updateActionHud("✅", plan.summary || "Task complete");
@@ -6672,7 +6812,18 @@ body.in-global_ai_lab .nano-dynamic-island {
           if (result && result.ok === false) {
             this.logLine("error", "Action failed: " + (result.error || "unknown error"));
             this.updateActionHud("⚠️", "Action failed: " + (result.error || "unknown error"));
-            pendingNote = "SYSTEM NOTE: your previous action failed with: " + (result.error || "unknown error") + ". Do not repeat it. Re-check the INTERACTIVE ELEMENTS list, scroll the target into view, or pick a different element or approach.";
+            this.escalateModel("an action failed in the browser");
+            let criticNote = "";
+            try {
+              const review = await this.criticReview(task, snap, plan, result);
+              if (review && review.note) {
+                criticNote = review.note;
+                this.logLine("warn", "🕵️ Critic: " + criticNote);
+              }
+            } catch (_) {}
+            pendingNote = "SYSTEM NOTE: your previous action failed with: " + (result.error || "unknown error") + ". " +
+              (criticNote ? "CRITIC AGENT says: " + criticNote + " " : "") +
+              "Do not repeat it. Re-check the INTERACTIVE ELEMENTS list, scroll the target into view, or pick a different element or approach.";
           } else {
             this.logLine("act", this.describeAction(plan));
             if (result && result.download && result.download.path) {
