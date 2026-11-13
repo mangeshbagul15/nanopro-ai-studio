@@ -4859,7 +4859,8 @@ body.in-global_ai_lab .nano-dynamic-island {
           "| **Planner model** | " + (cua.lastModel || "auto (edge-routed)") + " |",
           "| **Steps run** | " + (cua.step || 0) + " / " + (cua.maxSteps || 24) + " |",
           "| **Current page** | " + String(cua.lastUrl || "—").replace(/\|/g, "\\|") + " |",
-          "| **Execution** | Laptop Chromium — local GPU/CPU/RAM/disk, Render untouched |",
+          "",
+          "Executed on **your laptop's Chromium** — local GPU/CPU/RAM/disk, Render only planned the steps.",
           acts.length ? "\n**Actions performed**\n\n" + acts.join("\n") : "",
           notes.length ? "\n**Highlights**\n\n" + notes.join("\n") : ""
         ].filter(Boolean).join("\n");
@@ -6328,12 +6329,12 @@ body.in-global_ai_lab .nano-dynamic-island {
       });
       const data = await res.json().catch(() => ({}));
       const text = data.response || data.message || data.text || "";
-      if (!text) throw new Error(data.message || "model returned an empty response");
       this.lastModel = data.model_executed || data.model_name || this.lastModel || "";
       try {
+        if (!text) throw new Error("planner returned an empty response");
         return this.parseAction(text);
       } catch (firstErr) {
-        this.logLine("warn", "Model reply was not JSON (" + this.lastModel + "), retrying once…");
+        this.logLine("warn", "Planner reply was unusable (" + firstErr.message + "), retrying once…");
         const retryRes = await fetch("/api/ai/execute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -6351,7 +6352,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         if (retryText) {
           try { return this.parseAction(retryText); } catch (_) {}
         }
-        throw new Error("model did not return JSON: " + String(text).slice(0, 120).replace(/\s+/g, " "));
+        throw new Error("planner did not return JSON twice (" + firstErr.message + ")");
       }
     },
 
@@ -6453,6 +6454,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.lastActionKey = "";
       this.repeatCount = 0;
       this.scrollStreak = 0;
+      this.planFails = 0;
       this.clearTaskLog();
       this.logLine("task", "TASK: " + task);
       this.updateActionHud("🧭", "Reading the page…");
@@ -6467,7 +6469,18 @@ body.in-global_ai_lab .nano-dynamic-island {
           if (snap.url) { this.lastUrl = snap.url; const u = document.getElementById("ailabCuaUrlText"); if (u) u.textContent = snap.url; }
 
           this.updateActionHud("🤖", "Step " + this.step + " — planning…");
-          const plan = await this.plan(task, snap);
+          let plan;
+          try {
+            plan = await this.plan(task, snap);
+            this.planFails = 0;
+          } catch (planErr) {
+            this.planFails = (this.planFails || 0) + 1;
+            this.logLine("warn", "Planner hiccup: " + planErr.message + " (retry " + this.planFails + "/2)");
+            if (this.planFails > 2) throw planErr;
+            this.step--;
+            await new Promise((r) => setTimeout(r, 1500));
+            continue;
+          }
           const action = String(plan.action || "").toLowerCase();
           this.logLine("thought", "Step " + this.step + (this.lastModel ? " · " + this.lastModel : "") + ": " + (plan.thought || action));
 
