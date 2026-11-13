@@ -2758,133 +2758,200 @@ async def api_global_ai_telemetry():
         return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
 
 # =========================================================================
-# GLOBAL AI LAB - DUCKDB & BIGQUERY DUAL HISTORY ENDPOINTS (FEATURE 53)
+# GLOBAL AI LAB - PER-USER CHAT HISTORY (DUCKDB + BIGQUERY, FEATURE 53)
 # =========================================================================
+# DuckDB is the working set; BigQuery holds the durable copy that survives a
+# Render restart. Every handler is scoped to the signed-in account, so one
+# login can never read or delete another account's chats or projects.
+
+def _history_user_key(request: Request) -> str:
+    from app.core.api_auth import require_session
+    user = require_session(request)
+    user_key = str(user.get("id") or user.get("username") or "").strip()
+    if not user_key:
+        raise HTTPException(status_code=401, detail="Session has no user identity.")
+    return user_key
+
+
+def _history_engine():
+    from app.core.global_ai_history import global_ai_history
+    return global_ai_history
+
 
 @app.get("/api/ai/history/chats")
-async def api_global_ai_history_list():
-    """Lists all persistent chats & projects from DuckDB."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        return JSONResponse({
-            "status": "success",
-            "projects": global_ai_history.list_projects(),
-            "chats": global_ai_history.list_chats(),
-            "storage_engine": "DuckDB Local + Google BigQuery Sync"
-        })
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e), "projects": [], "chats": []})
+async def api_global_ai_history_list(request: Request, hydrate: bool = True):
+    """Lists this account's chats and projects, restoring them from BigQuery first."""
+    from app.core.global_ai_history import user_fingerprint
+
+    user_key = _history_user_key(request)
+    engine = _history_engine()
+    restore = engine.restore_user(user_key, wait_seconds=8.0 if hydrate else 0.0)
+    payload = {
+        "status": "success",
+        "owner": user_fingerprint(user_key),
+        "projects": engine.list_projects(user_key),
+        "chats": engine.list_chats(user_key),
+        "restore": restore,
+        "storage": engine.storage_status(user_key),
+    }
+    return JSONResponse(payload, headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/ai/history/chats")
-async def api_global_ai_history_create_chat(payload: Dict[str, Any] = Body(...)):
-    """Creates a new chat session in DuckDB."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        title = payload.get("title", "")
-        project_id = payload.get("project_id")
-        model = payload.get("model", "auto")
-        effort = payload.get("effort", "default")
-        chat = global_ai_history.create_chat(title=title, project_id=project_id, model=model, effort=effort)
-        return JSONResponse({"status": "success", "chat": chat})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+async def api_global_ai_history_create_chat(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Creates a chat session owned by the signed-in account."""
+    user_key = _history_user_key(request)
+    chat = _history_engine().create_chat(
+        title=payload.get("title", ""),
+        project_id=payload.get("project_id"),
+        model=payload.get("model", "auto"),
+        effort=payload.get("effort", "default"),
+        user_key=user_key,
+    )
+    return JSONResponse({"status": "success", "chat": chat})
 
 
 @app.get("/api/ai/history/chats/{chat_id}")
-async def api_global_ai_history_get_chat(chat_id: str):
-    """Retrieves full message history for a specific chat from DuckDB."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        chat = global_ai_history.get_chat(chat_id)
-        if not chat:
-            return JSONResponse({"status": "error", "message": "Chat not found"}, status_code=404)
-        messages = global_ai_history.get_messages(chat_id)
-        return JSONResponse({"status": "success", "chat": chat, "messages": messages})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+async def api_global_ai_history_get_chat(chat_id: str, request: Request):
+    """Returns the chat and its messages, only for the owning account."""
+    user_key = _history_user_key(request)
+    engine = _history_engine()
+    chat = engine.get_chat(chat_id, user_key)
+    if not chat:
+        return JSONResponse({"status": "error", "message": "Chat not found"}, status_code=404)
+    return JSONResponse({"status": "success", "chat": chat, "messages": engine.get_messages(chat_id, user_key)})
 
 
 @app.put("/api/ai/history/chats/{chat_id}")
-async def api_global_ai_history_update_chat(chat_id: str, payload: Dict[str, Any] = Body(...)):
-    """Updates chat title, pinned status, or default model in DuckDB."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        global_ai_history.update_chat(
-            chat_id=chat_id,
-            title=payload.get("title"),
-            is_pinned=payload.get("is_pinned"),
-            model=payload.get("model"),
-            effort=payload.get("effort")
-        )
-        return JSONResponse({"status": "success", "chat_id": chat_id})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+async def api_global_ai_history_update_chat(chat_id: str, request: Request, payload: Dict[str, Any] = Body(...)):
+    """Renames, pins, or re-models a chat; the change is mirrored to BigQuery."""
+    user_key = _history_user_key(request)
+    updated = _history_engine().update_chat(
+        chat_id=chat_id,
+        user_key=user_key,
+        title=payload.get("title"),
+        is_pinned=payload.get("is_pinned"),
+        model=payload.get("model"),
+        effort=payload.get("effort"),
+        project_id=payload.get("project_id"),
+    )
+    if not updated:
+        return JSONResponse({"status": "error", "message": "Chat not found"}, status_code=404)
+    return JSONResponse({"status": "success", "chat_id": chat_id, "chat": _history_engine().get_chat(chat_id, user_key)})
 
 
 @app.delete("/api/ai/history/chats/{chat_id}")
-async def api_global_ai_history_delete_chat(chat_id: str):
-    """Deletes a chat and its messages from DuckDB."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        global_ai_history.delete_chat(chat_id)
-        return JSONResponse({"status": "success", "deleted_chat_id": chat_id})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+async def api_global_ai_history_delete_chat(chat_id: str, request: Request):
+    """Deletes a chat and its messages, and writes the tombstone to BigQuery."""
+    user_key = _history_user_key(request)
+    if not _history_engine().delete_chat(chat_id, user_key):
+        return JSONResponse({"status": "error", "message": "Chat not found"}, status_code=404)
+    return JSONResponse({"status": "success", "deleted_chat_id": chat_id})
 
 
 @app.post("/api/ai/history/messages")
-async def api_global_ai_history_save_message(payload: Dict[str, Any] = Body(...)):
-    """Appends a user or assistant message to DuckDB and queues BigQuery sync."""
+async def api_global_ai_history_save_message(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Appends a message (text, Mermaid diagram, image link) and queues the BigQuery copy."""
+    user_key = _history_user_key(request)
+    metadata = {k: payload.get(k) for k in ("model_name", "lab_name", "flag", "country", "date_formatted")}
     try:
-        from app.core.global_ai_history import global_ai_history
-        msg = global_ai_history.save_message(
+        msg = _history_engine().save_message(
             chat_id=payload.get("chat_id", ""),
             role=payload.get("role", "user"),
             content=payload.get("content", ""),
             model_routed=payload.get("model_routed"),
             model_executed=payload.get("model_executed"),
-            duration_ms=float(payload.get("duration_ms", 0.0)),
-            routing_math=payload.get("routing_math")
+            duration_ms=float(payload.get("duration_ms") or 0.0),
+            routing_math=payload.get("routing_math"),
+            user_key=user_key,
+            content_type=payload.get("content_type", "markdown"),
+            metadata=metadata,
         )
-        return JSONResponse({"status": "success", "message": msg})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+    except ValueError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=404)
+    return JSONResponse({"status": "success", "message": msg})
 
 
 @app.post("/api/ai/history/projects")
-async def api_global_ai_history_create_project(payload: Dict[str, Any] = Body(...)):
-    """Creates a new project in DuckDB."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        name = payload.get("name", "New Project")
-        desc = payload.get("description", "")
-        proj = global_ai_history.create_project(name=name, description=desc)
-        return JSONResponse({"status": "success", "project": proj})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+async def api_global_ai_history_create_project(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Creates a project owned by the signed-in account."""
+    user_key = _history_user_key(request)
+    proj = _history_engine().create_project(
+        name=payload.get("name", "New Project"),
+        description=payload.get("description", ""),
+        user_key=user_key,
+    )
+    return JSONResponse({"status": "success", "project": proj})
+
+
+@app.put("/api/ai/history/projects/{project_id}")
+async def api_global_ai_history_rename_project(project_id: str, request: Request, payload: Dict[str, Any] = Body(...)):
+    """Renames a project."""
+    user_key = _history_user_key(request)
+    if not _history_engine().rename_project(project_id, payload.get("name", ""), user_key):
+        return JSONResponse({"status": "error", "message": "Project not found"}, status_code=404)
+    return JSONResponse({"status": "success", "project_id": project_id})
 
 
 @app.delete("/api/ai/history/projects/{project_id}")
-async def api_global_ai_history_delete_project(project_id: str, delete_chats: bool = False):
-    """Deletes a project from DuckDB."""
+async def api_global_ai_history_delete_project(project_id: str, request: Request, delete_chats: bool = False):
+    """Deletes a project, optionally with its chats."""
+    user_key = _history_user_key(request)
+    if not _history_engine().delete_project(project_id, delete_chats=delete_chats, user_key=user_key):
+        return JSONResponse({"status": "error", "message": "Project not found"}, status_code=404)
+    return JSONResponse({"status": "success", "deleted_project_id": project_id})
+
+
+@app.post("/api/ai/history/attachments")
+async def api_global_ai_history_add_attachment(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Stores an image/diagram/architecture attachment with the chat."""
+    user_key = _history_user_key(request)
     try:
-        from app.core.global_ai_history import global_ai_history
-        global_ai_history.delete_project(project_id, delete_chats=delete_chats)
-        return JSONResponse({"status": "success", "deleted_project_id": project_id})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+        attachment = _history_engine().add_attachment(
+            chat_id=payload.get("chat_id", ""),
+            user_key=user_key,
+            name=payload.get("name", "attachment"),
+            mime_type=payload.get("mime_type", "application/octet-stream"),
+            data_base64=payload.get("data", ""),
+            kind=payload.get("kind", "image"),
+        )
+    except ValueError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=400)
+    return JSONResponse({"status": "success", "attachment": attachment})
+
+
+@app.get("/api/ai/history/attachments/{attachment_id}")
+async def api_global_ai_history_get_attachment(attachment_id: str, request: Request):
+    """Serves an attachment back to its owner only."""
+    import base64 as _base64
+
+    user_key = _history_user_key(request)
+    attachment = _history_engine().get_attachment(attachment_id, user_key)
+    if not attachment:
+        return JSONResponse({"status": "error", "message": "Attachment not found"}, status_code=404)
+    try:
+        content = _base64.b64decode(attachment["data"] or "")
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Attachment payload is unreadable"}, status_code=500)
+    return Response(
+        content=content,
+        media_type=attachment.get("mime_type") or "application/octet-stream",
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 @app.post("/api/ai/history/sync_bigquery")
-async def api_global_ai_sync_bigquery():
-    """Archives unsynced DuckDB records to Google BigQuery."""
-    try:
-        from app.core.global_ai_history import global_ai_history
-        res = global_ai_history.sync_to_bigquery_archive()
-        return JSONResponse(res)
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+async def api_global_ai_sync_bigquery(request: Request):
+    """Pushes every queued DuckDB row into the BigQuery durable archive."""
+    _history_user_key(request)
+    return JSONResponse(_history_engine().sync_now())
+
+
+@app.get("/api/ai/history/storage_status")
+async def api_global_ai_history_storage_status(request: Request):
+    """Reports restore state, pending sync rows and the BigQuery archive status."""
+    user_key = _history_user_key(request)
+    return JSONResponse(_history_engine().storage_status(user_key))
 
 
 

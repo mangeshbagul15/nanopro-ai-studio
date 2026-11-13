@@ -2699,6 +2699,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           </button>
         </div>
       </div>
+      <div id="ailabHistoryStatus" style="font-size:10.5px;color:#64748B;padding:0 12px 6px;line-height:1.35;">Loading your chats…</div>
 
       <div class="ailab-sidebar-scroll" id="ailabSidebarScroll">
         <!-- Pinned Chats -->
@@ -2724,10 +2725,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>
 
       <div class="ailab-storage-footer">
-        <span title="DuckDB In-Browser Columnar Store">🦆 DuckDB Local</span>
+        <span id="ailabStorageEngineLabel" title="DuckDB working set + BigQuery durable archive">🦆 DuckDB · 🏛️ BigQuery</span>
         <span style="color:#C084FC;">•</span>
-        <button type="button" id="ailabBqSyncBtn" onclick="AILAB_DUCKDB.syncToBigQuery()" title="Sync to Google BigQuery Lakehouse" style="background:none;border:none;color:#38BDF8;font-size:11px;font-weight:700;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;">
-          <span>🏛️ Sync BigQuery</span>
+        <button type="button" id="ailabBqSyncBtn" onclick="AILAB_DUCKDB.syncToBigQuery()" title="Sync to Google BigQuery durable archive" style="background:none;border:none;color:#38BDF8;font-size:11px;font-weight:700;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;">
+          <span id="ailabBqSyncLabel">🏛️ Sync BigQuery</span>
         </button>
       </div>
     </aside>
@@ -2832,14 +2833,17 @@ body.in-global_ai_lab .nano-dynamic-island {
       <!-- Bottom Command Input Cockpit -->
       <div class="ailab-input-cockpit">
         <div class="ailab-input-box">
+          <div id="ailabAttachmentChips" style="display:none;flex-wrap:wrap;gap:6px;padding:0 0 8px;"></div>
           <textarea
             class="ailab-textarea"
             id="ailabPromptInput"
-            placeholder="Ask anything, design software, or run math... (Enter to send, Shift+Enter for newline)"
+            placeholder="Ask anything, design software, or run math... (Enter to send, Shift+Enter for newline, paste images)"
             rows="1"
             onkeydown="ailabHandleKey(event)"
             oninput="ailabAutoResize(this)"
+            onpaste="ailabHandlePaste(event)"
           ></textarea>
+          <input type="file" id="ailabAttachInput" accept="image/*" multiple style="display:none;" onchange="ailabHandleAttachmentFiles(this.files);this.value='';" />
 
           <div class="ailab-input-actions">
             <div class="ailab-input-tags">
@@ -2848,6 +2852,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             </div>
 
             <div style="display:flex;align-items:center;gap:8px;">
+              <button class="ailab-code-btn" title="Attach image, flowchart or architecture diagram" onclick="document.getElementById('ailabAttachInput').click()">📎 Attach</button>
               <button class="ailab-btn-primary" id="ailabSendBtn" onclick="ailabSubmitPrompt()">
                 <span>Dispatch</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
@@ -2858,7 +2863,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         <div class="ailab-cockpit-footer">
           <span>⚡ Mathematical Dispatch: Pareto Utility + Thompson 429 Shield</span>
-          <span>Storage: DuckDB (Local) + BigQuery (Archive) • Render RAM: 0 MB</span>
+          <span>Storage: 🦆 DuckDB working set • 🏛️ BigQuery durable archive • <span id="ailabStorageEngineLabel">per-account history</span></span>
         </div>
       </div>
     </main>
@@ -3155,7 +3160,10 @@ body.in-global_ai_lab .nano-dynamic-island {
     isStreaming: false,
     selectedModel: "auto",
     selectedEffort: "default",
-    cacheLoaded: false
+    cacheLoaded: false,
+    storageOwner: null,
+    historyStorage: null,
+    pendingAttachments: []
   };
 
   // Helper selectors
@@ -3530,63 +3538,128 @@ body.in-global_ai_lab .nano-dynamic-island {
     ailabInitExplorer();
   };
 
-  function ailabHydrateLocalStorage() {
+  function ailabClearOwnedCache() {
     try {
-      let deleted = [];
-      try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
-
-      const localChats = localStorage.getItem("nanopro_ailab_chats");
-      const localProjects = localStorage.getItem("nanopro_ailab_projects");
-      if (localChats) {
-        const parsed = JSON.parse(localChats);
-        AILAB.chats = Array.isArray(parsed) ? parsed.filter(c => !deleted.includes(c.id)) : [];
-      }
-      if (localProjects) AILAB.projects = JSON.parse(localProjects);
-      ailabRenderSidebar();
-      if (AILAB.chats.length > 0 && !AILAB.activeChatId) {
-        ailabSelectChat(AILAB.chats[0].id);
-      }
+      Object.keys(localStorage).forEach(k => {
+        if (k.indexOf("nanopro_duckdb_chat_") === 0 || k === "nanopro_ailab_chats" || k === "nanopro_ailab_projects" || k === "nanopro_deleted_chat_ids") {
+          localStorage.removeItem(k);
+        }
+      });
     } catch (_) {}
+    AILAB.chatIndexCache = {};
   }
 
+  function ailabHydrateLocalStorage() {
+    // Chat and project lists are server-authoritative (DuckDB + BigQuery, scoped to the
+    // signed-in account). Only the per-chat message cache survives a reload.
+    AILAB.chats = [];
+    AILAB.projects = [];
+    ailabRenderSidebar();
+  }
+
+  window.ailabSetHistoryStatus = function(kind, text) {
+    const el = $id("ailabHistoryStatus");
+    if (!el) return;
+    const colors = { ready: "#34D399", pending: "#FBBF24", error: "#F87171", idle: "#64748B" };
+    el.style.color = colors[kind] || colors.idle;
+    el.textContent = text;
+  };
+
+  window.ailabRenderHistoryStatus = function() {
+    const s = AILAB.historyStorage || {};
+    const cloud = s.cloud || {};
+    const parts = [];
+    if (AILAB.storageOwner) parts.push(`👤 Account ${AILAB.storageOwner}`);
+    if (s.restored === "ok") {
+      const counts = s.restore_counts || {};
+      const restored = ["projects", "chats", "messages", "attachments"].reduce((sum, key) => sum + ((counts[key] || {}).inserted || 0), 0);
+      parts.push(restored > 0 ? `${restored} row(s) restored from BigQuery` : "BigQuery archive checked");
+    } else if (s.restored === "failed") {
+      parts.push("BigQuery restore failed");
+    } else if (s.restored === "pending") {
+      parts.push("Restoring from BigQuery…");
+    }
+    if (s.pending_sync_rows > 0) parts.push(`${s.pending_sync_rows} row(s) pending upload`);
+    else if (s.last_sync_at) parts.push("BigQuery in sync");
+    if (!cloud.configured) parts.push(cloud.error ? "BigQuery not reachable" : "BigQuery not configured");
+    const kind = s.last_error ? "pending" : (s.restored === "failed" || cloud.configured === false ? "error" : "ready");
+    ailabSetHistoryStatus(kind, parts.join(" • ") || "Loading your chats…");
+
+    const label = $id("ailabBqSyncLabel");
+    if (label) {
+      label.textContent = s.pending_sync_rows > 0 ? `🏛️ Sync BigQuery (${s.pending_sync_rows})` : "🏛️ Sync BigQuery";
+    }
+    const engine = $id("ailabStorageEngineLabel");
+    if (engine) {
+      engine.textContent = cloud.configured
+        ? (s.pending_sync_rows > 0 ? `${s.pending_sync_rows} row(s) awaiting BigQuery upload` : "DuckDB + BigQuery in sync")
+        : (cloud.error ? "BigQuery archive unreachable" : "BigQuery archive not configured");
+    }
+    const tag = $id("ailabActiveStorageTag");
+    if (tag) {
+      tag.innerHTML = s.pending_sync_rows > 0
+        ? `🦆 DuckDB • 🏛️ BigQuery ${s.pending_sync_rows} pending`
+        : `🦆 DuckDB • 🏛️ BigQuery in sync`;
+    }
+  };
+
   // -------------------------------------------------------------
-  // DUCKDB & BIGQUERY HISTORY API
+  // PER-USER HISTORY API (DuckDB + BigQuery)
   // -------------------------------------------------------------
   window.ailabLoadHistory = async function() {
     try {
-      let deleted = [];
-      try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
-
-      const res = await fetch("/api/ai/history/chats", {
-        headers: { "X-Deleted-Chats": deleted.join(",") }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const serverChats = (data.chats || []).filter(c => !deleted.includes(c.id));
-
-        let localChats = [];
-        try {
-          const stored = localStorage.getItem("nanopro_ailab_chats");
-          if (stored) localChats = JSON.parse(stored).filter(c => !deleted.includes(c.id));
-        } catch (_) {}
-
-        const map = new Map();
-        localChats.forEach(c => map.set(c.id, c));
-        serverChats.forEach(c => {
-          if (!map.has(c.id)) map.set(c.id, c);
-        });
-
-        AILAB.chats = Array.from(map.values()).filter(c => !deleted.includes(c.id));
-        AILAB.projects = data.projects || AILAB.projects || [];
+      const res = await fetch("/api/ai/history/chats?hydrate=1", { cache: "no-store" });
+      if (res.status === 401) {
+        ailabSetHistoryStatus("error", "Session expired — please log in again to load your chats.");
+        return;
+      }
+      if (!res.ok) {
+        ailabSetHistoryStatus("error", `History service unavailable (HTTP ${res.status}).`);
+        return;
+      }
+      const data = await res.json();
+      if (data.owner && AILAB.storageOwner && data.owner !== AILAB.storageOwner) {
+        ailabClearOwnedCache();
+        AILAB.activeChatId = null;
+        AILAB.messages = [];
+      }
+      AILAB.storageOwner = data.owner || AILAB.storageOwner;
+      AILAB.chats = data.chats || [];
+      AILAB.projects = data.projects || [];
+      AILAB.historyStorage = data.storage || null;
+      try {
         localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
         localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects));
-        ailabRenderSidebar();
-        if (!AILAB.activeChatId && AILAB.chats.length > 0) {
-          ailabSelectChat(AILAB.chats[0].id);
-        }
+      } catch (_) {}
+      ailabRenderSidebar();
+      ailabRenderHistoryStatus();
+      if (AILAB.activeChatId && !AILAB.chats.some(c => c.id === AILAB.activeChatId)) {
+        AILAB.activeChatId = null;
+        AILAB.messages = [];
+        ailabRenderMessages();
+      }
+      if (!AILAB.activeChatId && AILAB.chats.length > 0) {
+        ailabSelectChat(AILAB.chats[0].id);
       }
     } catch (e) {
-      console.warn("[GlobalAILab] DuckDB history fetch fallback:", e);
+      console.warn("[GlobalAILab] history fetch failed:", e);
+      ailabSetHistoryStatus("error", "Could not reach history storage. Retrying on next action.");
+    }
+  };
+
+  window.ailabRefreshHistory = async function() {
+    try {
+      const res = await fetch("/api/ai/history/chats?hydrate=0", { cache: "no-store" });
+      if (!res.ok) return false;
+      const data = await res.json();
+      AILAB.chats = data.chats || [];
+      AILAB.projects = data.projects || [];
+      AILAB.historyStorage = data.storage || AILAB.historyStorage;
+      ailabRenderSidebar();
+      ailabRenderHistoryStatus();
+      return true;
+    } catch (_) {
+      return false;
     }
   };
 
@@ -3884,7 +3957,11 @@ body.in-global_ai_lab .nano-dynamic-island {
         pDiv.innerHTML = `
           <span>📁</span>
           <span class="ailab-row-title">${escapeHtml(p.name)}</span>
-          <button class="ailab-rowact" onclick="event.stopPropagation();ailabNewChat('${p.id}')" title="New chat in project">+</button>
+          <div class="ailab-row-actions">
+            <button class="ailab-rowact" onclick="event.stopPropagation();ailabNewChat('${p.id}')" title="New chat in project">+</button>
+            <button class="ailab-rowact" onclick="event.stopPropagation();ailabRenameProject('${p.id}')" title="Rename project">✏️</button>
+            <button class="ailab-rowact" onclick="event.stopPropagation();ailabDeleteProject('${p.id}')" title="Delete project">🗑️</button>
+          </div>
         `;
         pDiv.onclick = () => ailabFilterByProject(p.id);
         projectsList.appendChild(pDiv);
@@ -3902,6 +3979,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       <span class="ailab-row-badge">${c.message_count || 0}</span>
       <div class="ailab-row-actions">
         <button class="ailab-rowact" onclick="event.stopPropagation();ailabTogglePin('${c.id}')" title="Pin/Unpin">📌</button>
+        <button class="ailab-rowact" onclick="event.stopPropagation();ailabRenameChat('${c.id}')" title="Rename chat">✏️</button>
         <button class="ailab-rowact" onclick="event.stopPropagation();ailabDeleteChat('${c.id}')" title="Delete">🗑️</button>
       </div>
     `;
@@ -3956,16 +4034,22 @@ body.in-global_ai_lab .nano-dynamic-island {
 
     // 2. ULTRA-FAST ASYNC BACKGROUND SYNC (< 3ms from Cloudflare Edge / DuckDB)
     try {
-      const res = await fetch(`/api/ai/history/chats/${chatId}`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`/api/ai/history/chats/${chatId}`, { signal: AbortSignal.timeout(8000), cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         const serverMessages = data.messages || [];
-        if (serverMessages.length > 0 || !foundInCache) {
-          AILAB.messages = serverMessages;
-          AILAB.chatIndexCache[chatId] = serverMessages;
-          try { localStorage.setItem("nanopro_duckdb_chat_" + chatId, JSON.stringify(serverMessages)); } catch (_) {}
+        AILAB.messages = serverMessages;
+        AILAB.chatIndexCache[chatId] = serverMessages;
+        try { localStorage.setItem("nanopro_duckdb_chat_" + chatId, JSON.stringify(serverMessages)); } catch (_) {}
+        ailabRenderMessages();
+      } else if (res.status === 404) {
+        AILAB.chats = AILAB.chats.filter(c => c.id !== chatId);
+        if (AILAB.activeChatId === chatId) {
+          AILAB.activeChatId = null;
+          AILAB.messages = [];
           ailabRenderMessages();
         }
+        ailabRenderSidebar();
       }
     } catch (_) {
       if (!foundInCache && AILAB.messages && AILAB.messages.length > 0) {
@@ -4012,7 +4096,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           </span>
           <span class="ailab-user-time">⏰ ${formattedTime}</span>
         </div>
-        <div class="ailab-bubble ailab-user-bubble">${escapeHtml(msg.content)}</div>
+        <div class="ailab-bubble ailab-user-bubble">${ailabFormatUserContent(msg.content)}</div>
       `;
     } else {
       const modelId = msg.model_executed || msg.model_routed || "google/gemini-2.5-flash";
@@ -4112,6 +4196,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         ${footerHtml}
       `;
     }
+    ailabHydrateAttachmentImages(wrap);
     return wrap;
   }
 
@@ -4161,11 +4246,13 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.ailabSubmitPrompt = async function() {
     const input = $id("ailabPromptInput");
     const prompt = input.value.trim();
-    if (!prompt || AILAB.isStreaming) return;
+    const pending = (AILAB.pendingAttachments || []).slice();
+    if ((!prompt && pending.length === 0) || AILAB.isStreaming) return;
 
-    // Create chat if none exists
+    // A prompt cannot be stored without a chat row: create one first, and stop if that fails.
     if (!AILAB.activeChatId) {
-      await ailabNewChat("");
+      const created = await ailabNewChat("");
+      if (!created) return;
     }
 
     input.value = "";
@@ -4175,12 +4262,19 @@ body.in-global_ai_lab .nano-dynamic-island {
     sendBtn.disabled = true;
     sendBtn.innerHTML = `<span>Thinking...</span>`;
 
+    const attachmentMarkdown = pending.map(a => `![${a.name}](${a.url})`).join("\n");
+    const displayedContent = [prompt, attachmentMarkdown].filter(Boolean).join("\n\n");
+    const modelPrompt = pending.length
+      ? `${prompt}\n\n[User attached ${pending.length} image(s)/diagram(s) to this chat: ${pending.map(a => a.name).join(", ")}]`.trim()
+      : prompt;
+
     // 1. Append User Message to UI & DuckDB
     const userMsg = {
       id: "usr_" + Date.now(),
       chat_id: AILAB.activeChatId,
       role: "user",
-      content: prompt,
+      content: displayedContent,
+      content_type: "markdown",
       created_at: Date.now() / 1000
     };
         // Autonomous Browser Control directly from main chat!
@@ -4191,17 +4285,19 @@ body.in-global_ai_lab .nano-dynamic-island {
       window.AILAB_CUA.runAutonomousTask(prompt);
     }
 
+    AILAB.pendingAttachments = [];
+    ailabRenderAttachments();
     AILAB.messages.push(userMsg);
     const container = $id("ailabMessagesContainer");
     container.appendChild(ailabCreateMessageNode(userMsg));
     container.scrollTop = container.scrollHeight;
 
-    // Save to DuckDB in background
+    // Save to DuckDB, then mirror to the BigQuery archive
     fetch("/api/ai/history/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userMsg)
-    }).catch(console.warn);
+    }).then(() => ailabRefreshHistory()).catch(console.warn);
 
     // 2. Add placeholder assistant bubble with pulse
     const assistantPlaceholder = document.createElement("div");
@@ -4240,7 +4336,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       const routeRes = await fetch("/api/ai/smart_route", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, sla_ms: 800 })
+        body: JSON.stringify({ prompt: modelPrompt, sla_ms: 800 })
       }).then(r => r.json()).catch(() => ({}));
 
       const routedModel = routeRes.selected_model || AILAB.selectedModel;
@@ -4250,7 +4346,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: prompt,
+          prompt: modelPrompt,
           model: AILAB.selectedModel === "auto" ? "auto" : AILAB.selectedModel,
           effort: AILAB.selectedEffort,
           messages: AILAB.messages.map(m => ({ role: m.role, content: m.content }))
@@ -4348,6 +4444,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           chat_id: AILAB.activeChatId,
           role: "assistant",
           content: execData.response || "No response received.",
+          content_type: "markdown",
           model_routed: execData.model_routed,
           model_executed: execData.model_executed,
           model_name: execData.model_name,
@@ -4395,12 +4492,8 @@ body.in-global_ai_lab .nano-dynamic-island {
           body: JSON.stringify(assistantMsg)
         }).catch(console.warn);
 
-        // Update chat title in sidebar if needed
-        const currentChat = AILAB.chats.find(c => c.id === AILAB.activeChatId);
-        if (currentChat && currentChat.title.startsWith("New AI Chat")) {
-          currentChat.title = prompt.slice(0, 40);
-          ailabRenderSidebar();
-        }
+        // Server auto-titles the chat from the first prompt; re-read the list so the sidebar matches.
+        ailabRefreshHistory();
       } else {
         assistantPlaceholder.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ ${execData.message || "Failed to execute prompt."}</div>`;
       }
@@ -4438,25 +4531,27 @@ body.in-global_ai_lab .nano-dynamic-island {
         })
       });
       const data = await res.json();
-      const chatObj = data.chat || {
-        id: data.chat_id || ("chat_" + Date.now()),
-        title: data.title || "New AI Chat Session",
-        project_id: projectId || null,
-        model: AILAB.selectedModel,
-        effort: AILAB.selectedEffort,
-        message_count: 0,
-        created_at: Date.now() / 1000
-      };
+      if (!res.ok || !data.chat) {
+        ailabSetHistoryStatus("error", data.message || `Could not create chat (HTTP ${res.status}).`);
+        if (res.status === 401) alert("Session expired — please log in again.");
+        return false;
+      }
+      const chatObj = data.chat;
       AILAB.chats.unshift(chatObj);
       AILAB.activeChatId = chatObj.id;
       AILAB.messages = [];
-      localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
+      AILAB.chatIndexCache[chatObj.id] = [];
+      try { localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats)); } catch (_) {}
       ailabRenderSidebar();
       ailabRenderMessages();
       $id("ailabActiveTitle").textContent = chatObj.title;
       $id("ailabPromptInput").focus();
+      ailabRefreshHistory();
+      return true;
     } catch (e) {
       console.warn("Error creating chat:", e);
+      ailabSetHistoryStatus("error", "Could not reach history storage.");
+      return false;
     }
   };
 
@@ -4472,10 +4567,55 @@ body.in-global_ai_lab .nano-dynamic-island {
       const data = await res.json();
       if (data.project) {
         AILAB.projects.unshift(data.project);
-        localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects));
+        try { localStorage.setItem("nanopro_ailab_projects", JSON.stringify(AILAB.projects)); } catch (_) {}
         ailabRenderSidebar();
+      } else {
+        alert(data.message || "Could not create the project.");
       }
-    } catch (_) {}
+    } catch (e) {
+      alert("Could not reach history storage.");
+    }
+  };
+
+  window.ailabRenameProject = async function(projectId) {
+    const project = AILAB.projects.find(p => p.id === projectId);
+    const newName = prompt("Rename Project:", project ? project.name : "");
+    if (!newName || !newName.trim()) return;
+    try {
+      const res = await fetch(`/api/ai/history/projects/${projectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.message || `Rename failed (HTTP ${res.status}).`);
+        return;
+      }
+      if (project) project.name = newName.trim();
+      ailabRenderSidebar();
+      ailabRefreshHistory();
+    } catch (e) {
+      alert("Rename failed — history storage unreachable.");
+    }
+  };
+
+  window.ailabDeleteProject = async function(projectId) {
+    const project = AILAB.projects.find(p => p.id === projectId);
+    if (!confirm(`Delete project "${project ? project.name : projectId}"? Its chats stay in Recent Chats.`)) return;
+    try {
+      const res = await fetch(`/api/ai/history/projects/${projectId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.message || `Delete failed (HTTP ${res.status}).`);
+        return;
+      }
+      AILAB.projects = AILAB.projects.filter(p => p.id !== projectId);
+      ailabRenderSidebar();
+      ailabRefreshHistory();
+    } catch (e) {
+      alert("Delete failed — history storage unreachable.");
+    }
   };
 
   window.ailabTogglePin = async function(chatId) {
@@ -4495,16 +4635,21 @@ body.in-global_ai_lab .nano-dynamic-island {
   };
 
   window.ailabDeleteChat = async function(chatId) {
-    if (!confirm("Delete this session from DuckDB?")) return;
+    if (!confirm("Delete this chat and its messages from DuckDB + BigQuery?")) return;
+    try {
+      const res = await fetch(`/api/ai/history/chats/${chatId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && res.status !== 404) {
+        alert(data.message || `Delete failed (HTTP ${res.status}).`);
+        return;
+      }
+    } catch (e) {
+      alert("Delete failed — history storage unreachable. Nothing was removed.");
+      return;
+    }
+
     AILAB.chats = (AILAB.chats || []).filter(c => c.id !== chatId);
     if (AILAB.chatIndexCache) delete AILAB.chatIndexCache[chatId];
-
-    let deleted = [];
-    try { deleted = JSON.parse(localStorage.getItem("nanopro_deleted_chat_ids") || "[]"); } catch (_) {}
-    if (!deleted.includes(chatId)) {
-      deleted.push(chatId);
-      localStorage.setItem("nanopro_deleted_chat_ids", JSON.stringify(deleted));
-    }
     try {
       localStorage.removeItem("nanopro_duckdb_chat_" + chatId);
       localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
@@ -4522,22 +4667,41 @@ body.in-global_ai_lab .nano-dynamic-island {
       const titleEl = $id("ailabActiveTitle");
       if (titleEl) titleEl.textContent = "New Session";
     }
-    fetch(`/api/ai/history/chats/${chatId}`, { method: "DELETE" }).catch(console.warn);
+    ailabRefreshHistory();
   };
 
-  window.ailabRenameCurrentChat = async function() {
+  window.ailabRenameChat = async function(chatId) {
+    const chat = AILAB.chats.find(c => c.id === chatId);
+    const newTitle = prompt("Rename Chat:", chat ? chat.title : "");
+    if (!newTitle || !newTitle.trim()) return;
+    const title = newTitle.trim();
+    try {
+      const res = await fetch(`/api/ai/history/chats/${chatId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.message || `Rename failed (HTTP ${res.status}).`);
+        return;
+      }
+      const saved = data.chat || {};
+      if (chat) chat.title = saved.title || title;
+      if (AILAB.activeChatId === chatId) {
+        const titleEl = $id("ailabActiveTitle");
+        if (titleEl) titleEl.textContent = saved.title || title;
+      }
+      ailabRenderSidebar();
+      ailabRefreshHistory();
+    } catch (e) {
+      alert("Rename failed — history storage unreachable.");
+    }
+  };
+
+  window.ailabRenameCurrentChat = function() {
     if (!AILAB.activeChatId) return;
-    const currentChat = AILAB.chats.find(c => c.id === AILAB.activeChatId);
-    const newTitle = prompt("Rename Session:", currentChat ? currentChat.title : "");
-    if (!newTitle) return;
-    if (currentChat) currentChat.title = newTitle;
-    $id("ailabActiveTitle").textContent = newTitle;
-    ailabRenderSidebar();
-    fetch(`/api/ai/history/chats/${AILAB.activeChatId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle })
-    }).catch(console.warn);
+    ailabRenameChat(AILAB.activeChatId);
   };
 
   window.ailabClearMessages = function() {
@@ -4546,19 +4710,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     ailabRenderMessages();
   };
 
-  window.ailabSyncBigQuery = async function() {
-    const btn = event.target;
-    const orig = btn.textContent;
-    btn.textContent = "Syncing...";
-    try {
-      const res = await fetch("/api/ai/history/sync_bigquery", { method: "POST" });
-      const d = await res.json();
-      alert(`BigQuery Sync Complete: ${d.status} (${d.synced_count || 0} messages archived).`);
-    } catch (e) {
-      alert("BigQuery Sync: Buffered locally in DuckDB.");
-    } finally {
-      btn.textContent = orig;
-    }
+  window.ailabSyncBigQuery = function() {
+    AILAB_DUCKDB.syncToBigQuery();
   };
 
   window.ailabExportCurrentChat = function() {
@@ -4632,6 +4785,149 @@ body.in-global_ai_lab .nano-dynamic-island {
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 180) + "px";
   };
+
+  // -------------------------------------------------------------
+  // ATTACHMENTS (images, flowcharts, architecture diagrams)
+  // -------------------------------------------------------------
+  const AILAB_ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
+
+  window.ailabRenderAttachments = function() {
+    const box = $id("ailabAttachmentChips");
+    if (!box) return;
+    const items = AILAB.pendingAttachments || [];
+    if (items.length === 0) {
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+    box.style.display = "flex";
+    box.innerHTML = items.map(a => `
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#101A2A;border:1px solid #1E293B;border-radius:8px;padding:4px 8px;font-size:11px;color:#CBD5E1;">
+        <img src="${a.preview}" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:5px;border:1px solid #334155;" />
+        <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.name)}</span>
+        <button type="button" onclick="ailabRemoveAttachment('${a.id}')" title="Remove attachment" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0;">✕</button>
+      </span>
+    `).join("");
+  };
+
+  window.ailabRemoveAttachment = function(attachmentId) {
+    AILAB.pendingAttachments = (AILAB.pendingAttachments || []).filter(a => {
+      if (a.id !== attachmentId) return true;
+      try { if (a.preview) URL.revokeObjectURL(a.preview); } catch (_) {}
+      return false;
+    });
+    ailabRenderAttachments();
+  };
+
+  function ailabReadFileBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const raw = String(reader.result || "");
+        resolve(raw.indexOf(",") >= 0 ? raw.split(",")[1] : raw);
+      };
+      reader.onerror = () => reject(reader.error || new Error("Could not read file"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  window.ailabUploadAttachment = async function(file) {
+    if (!file) return;
+    if (!/^image\//i.test(file.type || "")) {
+      alert("Only image, diagram or screenshot files can be attached.");
+      return;
+    }
+    if (file.size > AILAB_ATTACHMENT_MAX_BYTES) {
+      alert("That image is larger than 4 MB. Please compress it and try again.");
+      return;
+    }
+    if (!AILAB.activeChatId) {
+      const created = await ailabNewChat("");
+      if (!created) return;
+    }
+    const preview = URL.createObjectURL(file);
+    try {
+      const data = await ailabReadFileBase64(file);
+      const res = await fetch("/api/ai/history/attachments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: AILAB.activeChatId,
+          name: file.name || "image.png",
+          mime_type: file.type || "image/png",
+          kind: "image",
+          data: data
+        })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.attachment) {
+        URL.revokeObjectURL(preview);
+        alert(payload.message || `Attachment upload failed (HTTP ${res.status}).`);
+        return;
+      }
+      const att = payload.attachment;
+      AILAB.pendingAttachments.push({
+        id: att.id,
+        name: att.name || file.name || "image.png",
+        url: `/api/ai/history/attachments/${att.id}`,
+        preview: preview
+      });
+      ailabRenderAttachments();
+      ailabRefreshHistory();
+    } catch (e) {
+      URL.revokeObjectURL(preview);
+      alert("Attachment upload failed — history storage unreachable.");
+    }
+  };
+
+  window.ailabHandleAttachmentFiles = function(fileList) {
+    Array.from(fileList || []).forEach(file => ailabUploadAttachment(file));
+  };
+
+  window.ailabHandlePaste = function(e) {
+    try {
+      const items = (e.clipboardData && e.clipboardData.items) || [];
+      const images = [];
+      for (const item of items) {
+        if (item.kind === "file" && /^image\//i.test(item.type)) {
+          const f = item.getAsFile();
+          if (f) images.push(f);
+        }
+      }
+      if (images.length > 0) {
+        e.preventDefault();
+        images.forEach(f => ailabUploadAttachment(f));
+      }
+    } catch (_) {}
+  };
+
+  function ailabHydrateAttachmentImages(root) {
+    const scope = root || document;
+    scope.querySelectorAll("img[data-ailab-src]").forEach(img => {
+      if (img.dataset.hydrated) return;
+      img.dataset.hydrated = "1";
+      fetch(img.dataset.ailabSrc, { cache: "no-store" })
+        .then(res => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.blob();
+        })
+        .then(blob => { img.src = URL.createObjectURL(blob); })
+        .catch(() => {
+          const fallback = document.createElement("span");
+          fallback.textContent = "🖼️ attachment unavailable";
+          fallback.style.color = "#F87171";
+          fallback.style.fontSize = "11px";
+          img.replaceWith(fallback);
+        });
+    });
+  }
+
+  function ailabFormatUserContent(text) {
+    return escapeHtml(text || "")
+      .replace(/!\[([^\]]*)\]\((\/api\/ai\/history\/attachments\/[^\s\)\"\']+)\)/g, (match, alt, url) =>
+        `<span style="display:block;margin-top:6px;"><img data-ailab-src="${url}" alt="${alt || 'attachment'}" style="max-width:240px;border-radius:8px;border:1px solid #334155;display:block;" /></span>`)
+      .replace(/\n/g, "<br>");
+  }
 
   window.ailabHandleKey = function(e) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -4730,13 +5026,14 @@ body.in-global_ai_lab .nano-dynamic-island {
       return `<div class="ailab-ascii-card"><pre>${boxText.trim()}</pre></div>`;
     });
 
-    // 6. Headers
-        // 7.5 Markdown Images: ![alt](url)
-    html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)\"\']+)\)/g, (match, alt, url) => {
+    // 7.5 Markdown Images: ![alt](url) — http(s) or owner-only stored attachments
+    html = html.replace(/!\[([^\]]*)\]\(([^)\s\"\']+)\)/g, (match, alt, url) => {
       const cleanUrl = url.replace(/&amp;/g, '&');
+      const isStored = /^\/api\/ai\/history\/attachments\//.test(cleanUrl);
+      const imgAttr = isStored ? `data-ailab-src="${cleanUrl}"` : `src="${cleanUrl}"`;
       return `<div class="ailab-image-card">
         <div class="ailab-image-wrap">
-          <img src="${cleanUrl}" alt="${alt || 'AI Visual'}" loading="lazy" style="max-width:100%; border-radius:10px; border:1px solid #1E293B; box-shadow:0 8px 24px rgba(0,0,0,0.4);" />
+          <img ${imgAttr} alt="${alt || 'AI Visual'}" loading="lazy" style="max-width:100%; border-radius:10px; border:1px solid #1E293B; box-shadow:0 8px 24px rgba(0,0,0,0.4);" />
         </div>
         <div class="ailab-image-caption">🎨 ${alt || 'Generated High-Resolution Visual'}</div>
       </div>`;
@@ -4863,26 +5160,26 @@ body.in-global_ai_lab .nano-dynamic-island {
       return [{ status: "Executed on DuckDB in-browser WASM columnar store", rows_affected: 0 }];
     },
     syncToBigQuery: async function() {
+      const btn = $id("ailabBqSyncBtn");
+      const orig = btn ? btn.innerHTML : "";
       try {
-        const btn = $id("ailabBqSyncBtn");
         if (btn) btn.innerHTML = `<span>⏳ Syncing BigQuery...</span>`;
-        const res = await fetch("/api/ai/history/sync_bigquery", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: AILAB.activeChatId,
-            messages: AILAB.messages,
-            projects: AILAB.projects,
-            timestamp: Date.now()
-          })
-        });
-        const data = await res.json();
-        if (btn) btn.innerHTML = `<span>🏛️ BigQuery Synced</span>`;
-        const tag = $id("ailabActiveStorageTag");
-        if (tag) tag.innerHTML = `🦆 DuckDB Synced • 🏛️ BigQuery Synced`;
-        alert(`✅ BigQuery Lakehouse Sync Success!\n\nLakehouse: Google BigQuery\nDataset: nanopro_ai_studio\nTable: chat_history (Date Partitioned)\nSynced Rows: ${AILAB.messages.length}\nRender RAM Overhead: 0 MB (Edge MCP Architecture)`);
+        const res = await fetch("/api/ai/history/sync_bigquery", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        const cloud = data.cloud || {};
+        const lines = [`Archive status: ${data.status || "unknown"}`];
+        lines.push(`Rows uploaded this run: ${data.synced || 0}`);
+        lines.push(`Rows still queued in DuckDB: ${data.pending || 0}`);
+        if (cloud.configured === false) {
+          lines.push(`BigQuery unavailable: ${cloud.error || "no service account configured"}`);
+        }
+        alert(lines.join("\n"));
       } catch (e) {
-        alert("Buffered in DuckDB. Will auto-sync on next turn.");
+        alert(`BigQuery sync failed: ${e.message || e}`);
+      } finally {
+        if (btn) btn.innerHTML = orig || `<span>🏛️ BigQuery</span>`;
+        ailabRefreshHistory();
       }
     }
   };
