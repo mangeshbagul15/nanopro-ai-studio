@@ -24527,6 +24527,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         lastHttp = res.status;
         const data = await res.json().catch(() => ({}));
         this.lastModel = data.model_executed || data.model_name || this.lastModel || "";
+        if (data && data.status === "error" && data.error) throw new Error(String(data.error).slice(0, 200));
         return data.response || data.message || data.text || "";
       };
 
@@ -24534,7 +24535,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       let lastErr = null;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          const text = await askModel(attempt === 1 ? "" : strict, attempt === 3 ? "qwen/qwen3.8-27b" : null);
+          const text = await askModel(attempt === 1 ? "" : strict, attempt === 2 ? "qwen/qwen3.8-27b" : (attempt === 3 ? "openrouter/free" : null));
           if (!text) throw new Error("planner returned an empty response (HTTP " + lastHttp + ")");
           return this.parseAction(text);
         } catch (err) {
@@ -24730,6 +24731,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           if (result && result.ok === false) {
             this.logLine("error", "Action failed: " + (result.error || "unknown error"));
             this.updateActionHud("⚠️", "Action failed: " + (result.error || "unknown error"));
+            pendingNote = "SYSTEM NOTE: your previous action failed with: " + (result.error || "unknown error") + ". Do not repeat it. Re-check the INTERACTIVE ELEMENTS list, scroll the target into view, or pick a different element or approach.";
           } else {
             this.logLine("act", this.describeAction(plan));
             if (result && result.download && result.download.path) {

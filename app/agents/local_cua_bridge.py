@@ -243,7 +243,7 @@ class BrowserBridge:
     async def capture(self):
         page = await self.ensure_page()
         try:
-            frame = await page.screenshot(type="jpeg", quality=70, timeout=8000)
+            frame = await page.screenshot(type="jpeg", quality=68, timeout=8000, animations="disabled", caret="hide")
             self.last_frame = frame
             self.last_frame_at = time.time()
         except Exception:
