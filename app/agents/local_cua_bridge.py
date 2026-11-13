@@ -78,15 +78,18 @@ SNAPSHOT_JS = r"""
       const v = String(el.value || '');
       shownValue = v.length > 40 ? '(filled, ' + v.length + ' chars)' : v;
     }
-    let label = (el.innerText || (tag === 'select' ? '' : shownValue) || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '');
-    if (!label && el.id) {
-      // Text inputs usually carry no innerText; the visible caption lives in an
-      // associated <label for=...> or a wrapping <label>.
+    let label = el.innerText || (tag === 'select' ? '' : '');
+    if (!String(label).trim()) {
+      // Text inputs and checkboxes usually carry no innerText; the visible caption
+      // lives in an associated <label for=...> or a wrapping <label>.
       try {
-        const forLabel = document.querySelector('label[for="' + CSS.escape(el.id) + '"]');
+        const forLabel = el.id ? document.querySelector('label[for="' + CSS.escape(el.id) + '"]') : null;
         const wrapLabel = el.closest('label');
         label = (forLabel && forLabel.innerText) || (wrapLabel && wrapLabel.innerText) || '';
       } catch (e) {}
+    }
+    if (!String(label).trim()) {
+      label = shownValue || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('name') || el.getAttribute('alt') || '';
     }
     label = String(label || '')
       .replace(/\s+/g, ' ').trim().slice(0, 90);
