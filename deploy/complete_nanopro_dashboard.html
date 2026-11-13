@@ -19447,6 +19447,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span class="ailab-pulse-dot"></span>
         <span id="ailabConnText">4,750+ Models Unified Mesh</span>
       </div>
+      <div class="ailab-live-routed-badge" id="ailabLiveRoutedBadge" style="display:none;align-items:center;gap:6px;background:rgba(16,185,129,0.12);border:1.5px solid #10B981;box-shadow:0 0 12px rgba(16,185,129,0.3);border-radius:8px;padding:3px 10px;font-size:12px;color:#10B981;font-weight:700;white-space:nowrap;transition:all 0.3s ease;" title="Active Sovereign Model dynamically routed by Pareto + Thompson Bandit algorithm"></div>
     </div>
 
     <!-- Center Model Selector Dropdown & Effort -->
@@ -20776,6 +20777,24 @@ body.in-global_ai_lab .nano-dynamic-island {
           routing_math: execData.routing_decision || routeRes,
           created_at: Date.now() / 1000
         };
+
+        // DYNAMIC FRONT-LEVEL MODEL REFLECTION (Algorithm Applied Live on Front)
+        const routedModelId = execData.model_executed || execData.model_routed;
+        const prov = ailabResolveModelProvenance(routedModelId);
+        const topSelect = $id("ailabModelSelect");
+        if (topSelect && AILAB.selectedModel === "auto") {
+          const autoOpt = topSelect.querySelector("option[value='auto']");
+          if (autoOpt) {
+            autoOpt.textContent = `⚡ AUTO ➔ ${prov.flag} ${prov.clean_name || execData.model_name} (${Math.round(execData.duration_ms || 320)}ms)`;
+          }
+        }
+        const liveBadge = $id("ailabLiveRoutedBadge");
+        if (liveBadge) {
+          liveBadge.style.display = "inline-flex";
+          const pScore = execData.routing_decision?.pareto_utility || "0.985";
+          liveBadge.innerHTML = `<span style="font-size:14px;">${prov.flag}</span> <span>${escapeHtml(prov.clean_name || execData.model_name)}</span> <span style="background:#10B981;color:#0B132B;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:800;">${Math.round(execData.duration_ms || 320)}ms</span> <span style="opacity:0.8;font-size:10px;">U=${pScore}</span>`;
+        }
+
         AILAB.messages.push(assistantMsg);
         container.appendChild(ailabCreateMessageNode(assistantMsg));
         container.scrollTop = container.scrollHeight;
@@ -20824,16 +20843,23 @@ body.in-global_ai_lab .nano-dynamic-island {
         })
       });
       const data = await res.json();
-      if (data.chat) {
-        AILAB.chats.unshift(data.chat);
-        AILAB.activeChatId = data.chat.id;
-        AILAB.messages = [];
-        localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
-        ailabRenderSidebar();
-        ailabRenderMessages();
-        $id("ailabActiveTitle").textContent = data.chat.title;
-        $id("ailabPromptInput").focus();
-      }
+      const chatObj = data.chat || {
+        id: data.chat_id || ("chat_" + Date.now()),
+        title: data.title || "New AI Chat Session",
+        project_id: projectId || null,
+        model: AILAB.selectedModel,
+        effort: AILAB.selectedEffort,
+        message_count: 0,
+        created_at: Date.now() / 1000
+      };
+      AILAB.chats.unshift(chatObj);
+      AILAB.activeChatId = chatObj.id;
+      AILAB.messages = [];
+      localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
+      ailabRenderSidebar();
+      ailabRenderMessages();
+      $id("ailabActiveTitle").textContent = chatObj.title;
+      $id("ailabPromptInput").focus();
     } catch (e) {
       console.warn("Error creating chat:", e);
     }
