@@ -2119,8 +2119,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
       </button>
       <div class="ailab-brand">
-        <span>🧠 NanoPro Global AI Lab</span>
-        <span class="ailab-brand-badge">Frontier AI</span>
+        <span>🧠 NanoPro AI Lab</span>
+        <span class="ailab-brand-badge">Frontier</span>
       </div>
       <div class="ailab-conn-badge" id="ailabConnBadge" title="OpenRouter + DuckDB + BigQuery Active">
         <span class="ailab-pulse-dot"></span>
@@ -2266,12 +2266,12 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span style="font-size:11px;color:#10B981;margin-left:4px;pointer-events:none;">▼</span>
       </div>
 
-      <button type="button" class="ailab-browse-btn" id="ailabAirflowTopbarBtn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, Medallion DAGs & SFTP Hub" style="background:rgba(16,185,129,0.22) !important;border:1.5px solid #10B981 !important;box-shadow:0 0 12px rgba(16,185,129,0.4) !important;color:#34D399 !important;font-weight:800 !important;cursor:pointer !important;z-index:999 !important;display:inline-flex !important;align-items:center !important;gap:5px !important;">
-        <span class="ailab-pulse-dot" style="background:#10B981 !important;box-shadow:0 0 6px #10B981 !important;width:7px;height:7px;border-radius:50%;display:inline-block;"></span>
-        <span>⏱️ Airflow &amp; SFTP</span>
+      <button type="button" class="ailab-browse-btn" id="ailabAirflowTopbarBtn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, 8 Medallion DAGs & SFTP Hub" style="background:rgba(16,185,129,0.22) !important;border:1.5px solid #10B981 !important;box-shadow:0 0 10px rgba(16,185,129,0.4) !important;color:#34D399 !important;font-weight:800 !important;cursor:pointer !important;z-index:999 !important;display:inline-flex !important;align-items:center !important;gap:4px !important;padding:0 7px !important;height:30px !important;">
+        <span class="ailab-pulse-dot" style="background:#10B981 !important;box-shadow:0 0 6px #10B981 !important;width:6px;height:6px;border-radius:50%;display:inline-block;"></span>
+        <span>⏱️ Airflow</span>
       </button>
       <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,750+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
-        <span>🔍 4,750+ Models</span>
+        <span>🔍 Models</span>
       </button>
     </div>
 
@@ -2285,10 +2285,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       </button>
       <button class="ailab-cua-toggle-btn" id="ailabCuaToggleBtn" onclick="ailabToggleCuaPanel()" title="Toggle Autonomous Browser Agent (CUA) Split-Screen Viewport">
         <span class="ailab-live-pulse-dot"></span>
-        <span>🖥️ CUA Browser Live</span>
+        <span>🖥️ CUA</span>
       </button>
       <button class="ailab-code-btn ailab-topbar-sync-btn" onclick="ailabLoadLiveModels(true)" title="Auto-discover new world labs & models in real-time" style="color:#38BDF8;border-color:rgba(56,189,248,0.3);">
-        <span>🔄 Sync World Labs</span>
+        <span>🔄 Sync</span>
       </button>
       <button class="ailab-btn-primary ailab-topbar-new-chat-btn" onclick="ailabNewChat('')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -2360,9 +2360,6 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span class="ailab-explorer-badge" id="ailabExplorerCount">4 Databases</span>
         </div>
         <div class="ailab-explorer-tools">
-          <button type="button" class="ailab-iconbtn" onclick="ailabOpenAirflowModal()" title="Open Airflow Orchestrator & SFTP Hub" style="width:auto;padding:0 8px;gap:4px;color:#34D399;border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.15);font-weight:700;font-size:11px;cursor:pointer;">
-            <span>⏱️ Airflow</span>
-          </button>
           <button class="ailab-iconbtn" onclick="ailabLoadExplorer(true)" title="Rescan Lakehouses">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
           </button>
@@ -2756,109 +2753,6 @@ body.in-global_ai_lab .nano-dynamic-island {
     <div class="ailab-modal-footer">
       <span>⚡ Single AUTO Engine evaluates Pareto Frontier in &lt; 3.0ms</span>
       <span style="color:#10B981;">🛡️ 429 Shield Active • Render RAM: 0 MB</span>
-    </div>
-  </div>
-</div>
-
-<!-- AIRFLOW ORCHESTRATOR & SFTP HUB MODAL -->
-<div class="ailab-modal-backdrop" id="ailabAirflowModal" style="position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;height:100vh !important;z-index:999999 !important;background:rgba(3,7,18,0.88) !important;backdrop-filter:blur(12px) !important;display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="ailabCloseAirflowModal(event)">
-  <div class="ailab-modal" style="max-width:920px;max-height:88vh;" onclick="event.stopPropagation()">
-    <div class="ailab-modal-head">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:22px;">⏱️</span>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:#F8FAFC;">NanoPro Airflow Orchestrator &amp; SFTP Storage Hub</div>
-          <div style="font-size:12px;color:#94A3B8;">8 Core Banking Projects • Medallion Pipelines • T-1 Daily EOD • Direct Self-Healing</div>
-        </div>
-      </div>
-      <button type="button" class="ailab-modal-close" onclick="ailabCloseAirflowModal()">&times;</button>
-    </div>
-
-    <!-- Navigation Pills / Tabs -->
-    <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
-      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">🚀 8 Banking DAGs</button>
-      <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📁 SFTP Reports &amp; WinSCP</button>
-      <button type="button" class="ailab-pill" id="tabAirflowArchitecture" onclick="ailabSwitchAirflowTab('arch')">🛡️ L1 Quality Gate &amp; Email Rule</button>
-    </div>
-
-    <!-- TAB 1: 8 BANKING DAGS -->
-    <div id="airflowTabDags" style="padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
-      <!-- Top Status Banner -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">AIRFLOW SCHEDULER</div>
-          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (8 DAGs)</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">REPORTING BASIS</div>
-          <div style="font-size:13px;font-weight:700;color:#38BDF8;margin-top:2px;">📅 T-1 (Yesterday Close)</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">L1 QUALITY GATE</div>
-          <div style="font-size:13px;font-weight:700;color:#A78BFA;margin-top:2px;">🛡️ 0 Nulls • 0 Dupes</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">EMAIL ROUTING</div>
-          <div style="font-size:12px;font-weight:600;color:#FBBF24;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📧 5MB Attached/Link</div>
-        </div>
-      </div>
-
-      <!-- DAGs List Container -->
-      <div id="airflowDagsList" style="display:flex;flex-direction:column;gap:12px;"></div>
-    </div>
-
-    <!-- TAB 2: SFTP REPORTS & WINSCP -->
-    <div id="airflowTabSftp" style="display:none;padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
-      <!-- WinSCP / FileZilla Credential Card -->
-      <div style="background:linear-gradient(135deg,rgba(30,41,59,0.8),rgba(15,23,42,0.9));border:1px solid rgba(56,189,248,0.3);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:18px;">🔐</span>
-            <span style="font-size:14px;font-weight:700;color:#F8FAFC;">WinSCP / FileZilla SFTP Access Credentials</span>
-          </div>
-          <span style="background:rgba(16,185,129,0.2);color:#34D399;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">STATUS: ACTIVE</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;color:#CBD5E1;">
-          <div><strong style="color:#94A3B8;">Host:</strong> <code>nanopro-studio.onrender.com</code></div>
-          <div><strong style="color:#94A3B8;">Port:</strong> <code>22</code></div>
-          <div><strong style="color:#94A3B8;">Username:</strong> <code>mangeshbagul15</code></div>
-          <div><strong style="color:#94A3B8;">Inbound Drop Path:</strong> <code>/data/sftp/inbound/</code></div>
-          <div><strong style="color:#94A3B8;">Outbound Reports:</strong> <code>/data/sftp/outbound/reports/</code></div>
-          <div><strong style="color:#94A3B8;">Supported:</strong> <code>.csv, .xlsx, | delimited</code></div>
-        </div>
-      </div>
-
-      <!-- Reports List -->
-      <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <span>📊 Outbound Business Excel Reports (T-1 Daily Close)</span>
-        <span style="font-size:11px;color:#94A3B8;">1-Click Web Download Available</span>
-      </div>
-      <div id="airflowSftpReportsList" style="display:flex;flex-direction:column;gap:8px;"></div>
-    </div>
-
-    <!-- TAB 3: QUALITY GATE & EMAIL RULE -->
-    <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
-      <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
-        <h4 style="margin:0 0 10px 0;font-size:14px;color:#38BDF8;">🛡️ L1 Quality Gate Architecture (No L1 = No Report)</h4>
-        <p style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0 0 14px 0;">
-          कच्चा डेटा (L0_STAGING) थेट रिपोर्टमध्ये कधीही जात नाही. जोपर्यंत L1_HARMONIZED लेयरमध्ये डुप्लिकेट्स, Null व्हॅल्यूज, आणि Negative Balance चे कडक नियम पूर्णपणे पास (100% Validated) होत नाहीत, तोपर्यंत पुढील L2 आणि EOD Excel रिपोर्ट ब्लॉक केला जातो. एरर आल्यास त्वरित अलर्ट ट्रिगर होतो आणि युझर डॅशबोर्डवरूनच <strong>Rollback</strong> करून स्वच्छ डेटा पुन्हा लोड करू शकतो.
-        </p>
-
-        <h4 style="margin:0 0 10px 0;font-size:14px;color:#FBBF24;">📧 5MB ईमेल पॉलिसी आणि SFTP पाथ नियम</h4>
-        <ul style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0;padding-left:18px;">
-          <li><strong>ईमेल प्रेषक (Sender):</strong> <code>mangeshbagul15@gmail.com</code></li>
-          <li><strong>ईमेल प्राप्तकर्ता (Recipient):</strong> <code>nanoproaistudio@gmail.com</code></li>
-          <li><strong>जर फाईल ≤ 5MB असेल:</strong> Excel (.xlsx) फाईल थेट ईमेलला अटॅच होते, ईमेल बॉडीमध्ये की समरी आणि SFTP चा पाथ दिलेला असतो.</li>
-          <li><strong>जर फाईल &gt; 5MB असेल:</strong> ईमेल बाऊन्स टाळण्यासाठी कोणतीही फाईल अटॅच होत नाही; केवळ ईमेल बॉडी समरी आणि SFTP डाऊनलोड लिंक पाठवली जाते.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="ailab-modal-footer">
-      <div style="font-size:11.5px;color:#94A3B8;">
-        Central Command Pane • Snowflake BANK_DB • AWS S3 • Airflow • SFTP
-      </div>
-      <button type="button" class="ailab-btn-primary" onclick="ailabCloseAirflowModal()">Close</button>
     </div>
   </div>
 </div>
