@@ -3163,7 +3163,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     cacheLoaded: false,
     storageOwner: null,
     historyStorage: null,
-    pendingAttachments: []
+    pendingAttachments: [],
+    restoreRetries: 0
   };
 
   // Helper selectors
@@ -3607,16 +3608,32 @@ body.in-global_ai_lab .nano-dynamic-island {
   // PER-USER HISTORY API (DuckDB + BigQuery)
   // -------------------------------------------------------------
   window.ailabLoadHistory = async function() {
+    let res = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        res = await fetch("/api/ai/history/chats?hydrate=1", { cache: "no-store" });
+        if (res.ok || (res.status >= 400 && res.status < 500)) break;
+      } catch (_) {
+        res = null;
+      }
+      if (attempt < 2) {
+        ailabSetHistoryStatus("pending", "History service is starting up…");
+        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+      }
+    }
+    if (!res) {
+      ailabSetHistoryStatus("error", "Could not reach history storage. Retrying on next action.");
+      return;
+    }
+    if (res.status === 401) {
+      ailabSetHistoryStatus("error", "Session expired — please log in again to load your chats.");
+      return;
+    }
+    if (!res.ok) {
+      ailabSetHistoryStatus("error", `History service unavailable (HTTP ${res.status}).`);
+      return;
+    }
     try {
-      const res = await fetch("/api/ai/history/chats?hydrate=1", { cache: "no-store" });
-      if (res.status === 401) {
-        ailabSetHistoryStatus("error", "Session expired — please log in again to load your chats.");
-        return;
-      }
-      if (!res.ok) {
-        ailabSetHistoryStatus("error", `History service unavailable (HTTP ${res.status}).`);
-        return;
-      }
       const data = await res.json();
       if (data.owner && AILAB.storageOwner && data.owner !== AILAB.storageOwner) {
         ailabClearOwnedCache();
@@ -3641,9 +3658,17 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (!AILAB.activeChatId && AILAB.chats.length > 0) {
         ailabSelectChat(AILAB.chats[0].id);
       }
+      const restore = data.restore || {};
+      if (restore.status === "pending" && AILAB.restoreRetries < 3) {
+        // BigQuery restore continues in the background after the 8s wait; re-read once it lands.
+        AILAB.restoreRetries += 1;
+        setTimeout(() => ailabLoadHistory(), 8000);
+      } else if (restore.status === "ok") {
+        AILAB.restoreRetries = 0;
+      }
     } catch (e) {
       console.warn("[GlobalAILab] history fetch failed:", e);
-      ailabSetHistoryStatus("error", "Could not reach history storage. Retrying on next action.");
+      ailabSetHistoryStatus("error", "Could not read history storage. Retrying on next action.");
     }
   };
 
@@ -3661,6 +3686,30 @@ body.in-global_ai_lab .nano-dynamic-island {
     } catch (_) {
       return false;
     }
+  };
+
+  // A message that never reaches the server is a message lost on the next restart,
+  // so retry once instead of relying on a single fire-and-forget POST.
+  window.ailabSaveMessage = async function(message) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch("/api/ai/history/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(message),
+          signal: AbortSignal.timeout(15000)
+        });
+        if (res.ok) return true;
+        if (res.status === 401) {
+          ailabSetHistoryStatus("error", "Session expired — this message was not saved.");
+          return false;
+        }
+        if (res.status >= 400 && res.status < 500) break;
+      } catch (_) {}
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1200));
+    }
+    ailabSetHistoryStatus("error", "A message could not be saved to history. Check your connection.");
+    return false;
   };
 
   // -------------------------------------------------------------
@@ -4293,11 +4342,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     container.scrollTop = container.scrollHeight;
 
     // Save to DuckDB, then mirror to the BigQuery archive
-    fetch("/api/ai/history/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userMsg)
-    }).then(() => ailabRefreshHistory()).catch(console.warn);
+    ailabSaveMessage(userMsg).then(() => ailabRefreshHistory());
 
     // 2. Add placeholder assistant bubble with pulse
     const assistantPlaceholder = document.createElement("div");
@@ -4485,15 +4530,9 @@ body.in-global_ai_lab .nano-dynamic-island {
           localStorage.setItem("nanopro_ailab_chats", JSON.stringify(AILAB.chats));
         }
 
-        // Save assistant message to DuckDB
-        fetch("/api/ai/history/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(assistantMsg)
-        }).catch(console.warn);
-
-        // Server auto-titles the chat from the first prompt; re-read the list so the sidebar matches.
-        ailabRefreshHistory();
+        // Save assistant message to DuckDB, then re-read the list so the sidebar
+        // picks up the server-side auto-title and real message counts.
+        ailabSaveMessage(assistantMsg).then(() => ailabRefreshHistory());
       } else {
         assistantPlaceholder.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ ${execData.message || "Failed to execute prompt."}</div>`;
       }
