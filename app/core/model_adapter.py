@@ -1260,7 +1260,9 @@ class OpenRouterAdapter(ModelProviderAdapter):
                 })
                 return content, telemetry
         except Exception as e:
-            if self.circuit_breaker:
+            # 402 means this model costs money the account does not have; free
+            # models on the same account still work, so do not trip the breaker.
+            if self.circuit_breaker and not ("402" in str(e) or "payment required" in str(e).lower()):
                 self.circuit_breaker.record_failure("openrouter", e)
             raise e
 
@@ -2256,9 +2258,11 @@ class ModelManager:
             except Exception as e:
                 t_dur_ms = max(0.1, round((time.time() - t_start) * 1000, 1))
                 last_error = str(e)
-                if not _is_rate_limit_error(e):
+                is_payment_error = "402" in str(e) or "payment required" in str(e).lower()
+                if not _is_rate_limit_error(e) and not is_payment_error:
                     failed_providers_this_call.add(norm_prov)
-                self.circuit_breaker.record_failure(norm_prov, e)
+                if not is_payment_error:
+                    self.circuit_breaker.record_failure(norm_prov, e)
 
                 with self._telemetry_lock:
                     if model not in self.telemetry:

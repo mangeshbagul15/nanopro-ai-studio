@@ -21107,15 +21107,21 @@ body.in-global_ai_lab .nano-dynamic-island {
             <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (&lt;300ms SLA)</option>
             <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
           </optgroup>
-          <optgroup label="🆕 Nov 2026 Frontier (live OpenRouter catalog)">
+          <optgroup label="🆓 Free Frontier (verified working)">
+            <option value="nvidia/nemotron-3-ultra-550b-a55b:free">Nemotron 3 Ultra 550B (1M ctx, thinking)</option>
+            <option value="nvidia/nemotron-3.5-super-vl:free">Nemotron 3.5 Super VL (Fast, Vision)</option>
+            <option value="nvidia/nemotron-3.5-lightning:free">Nemotron 3.5 Lightning (Fast)</option>
+            <option value="baidu/ernie-5.5-flash-preview:free">Baidu ERNIE 5.5 Flash (1M ctx)</option>
+            <option value="google/gemma-4-31b-it:free">Gemma 4 31B (Free)</option>
+            <option value="inclusionai/ling-3.2-flash:free">Ling 3.2 Flash (Free)</option>
+          </optgroup>
+          <optgroup label="💳 Nov 2026 Paid Frontier (needs OpenRouter credits)">
             <option value="openrouter@openai/gpt-6.1-terra">GPT-6.1 Terra (Frontier Thinking, 1M ctx)</option>
             <option value="openrouter@google/gemini-4-hydrogen">Gemini 4 Hydrogen (Fast Frontier, 1M ctx)</option>
             <option value="openrouter@anthropic/claude-fable-5.2">Claude Fable 5.2 (Deep Reasoning)</option>
             <option value="openrouter@moonshotai/kimi-k3.1-pro">Kimi K3.1 Pro (1M ctx)</option>
             <option value="openrouter@minimax/minimax-m3.1-flash">MiniMax M3.1 Flash (Cheap + Fast)</option>
             <option value="openrouter@deepseek/deepseek-v4.1-flash-1017">DeepSeek V4.1 Flash (1M ctx)</option>
-            <option value="inclusionai/ling-3.2-flash:free">Ling 3.2 Flash (Free Frontier)</option>
-            <option value="nvidia/nemotron-3.5-super-vl:free">Nemotron 3.5 Super VL (Free, Vision)</option>
           </optgroup>
           <optgroup label="🇺🇸 OpenAI Frontier">
             <option value="openai/o3-mini">OpenAI o3-mini (High-Speed Reasoning)</option>
@@ -24544,7 +24550,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       // failed actions, planner hiccups). A free router is the last safety net.
       const manualModel = (window.AILAB && AILAB.selectedModel && AILAB.selectedModel !== "auto") ? AILAB.selectedModel : "";
       const FAST_MODEL = manualModel || "qwen/qwen3.8-27b";
-      const SMART_MODEL = manualModel || "openrouter@openai/gpt-6.1-terra";
+      // Free frontier model: the paid catalog answers 402 until credits are
+      // added, so escalation defaults to the strongest model that runs free.
+      const SMART_MODEL = manualModel || "nvidia/nemotron-3-ultra-550b-a55b:free";
       const uiEffort = (window.AILAB && AILAB.selectedEffort) || "default";
       const effortFor = (smart) => {
         if (uiEffort === "fast") return "fast";
@@ -24719,7 +24727,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           (e.checked ? " (checked)" : "") + (e.invalid ? " (invalid)" : "") + (e.disabled ? " (disabled)" : "")
         ).join("\n")
       ].join("\n");
-      const text = await this.squadAsk(system, observation, "openrouter/free", "fast");
+      const text = await this.squadAsk(system, observation, "nvidia/nemotron-3.5-super-vl:free", "fast");
       return this.squadParse(text);
     },
 
@@ -24739,7 +24747,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         "VISIBLE TEXT:",
         String(snap.text || "").slice(0, 2200)
       ].join("\n");
-      const model = this.escalate ? "openrouter@openai/gpt-6.1-terra" : "qwen/qwen3.8-27b";
+      const model = this.escalate ? "nvidia/nemotron-3-ultra-550b-a55b:free" : "qwen/qwen3.8-27b";
       const text = await this.squadAsk(system, observation, model, this.escalate ? "reasoning" : "fast");
       return this.squadParse(text);
     },
