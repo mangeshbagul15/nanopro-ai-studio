@@ -1888,87 +1888,132 @@ Universal URLs:
 - Edge Gateway: https://mangesh-nanopro.mangeshbagul15.workers.dev/
 - Cloud Backend: https://nanopro-studio.onrender.com (Render Cloud Web Service)
 
-🏛️ CANONICAL DATA PIPELINE & LAKEHOUSE ARCHITECTURE (VERIFIED GROUND TRUTH):
-Our Enterprise Banking Lakehouse operates strictly on this verified Medallion lineage:
-1. 📥 DATA SOURCES (स्त्रोत):
-   - Google BigQuery (Partitioned analytical data warehouse tables)
-   - DuckDB (Local in-memory analytical columnar store / WASM gold_marts)
-   - SFTP Inbound Feeds (.xlsx multi-sheet workbooks and .csv batch feeds placed in /data/sftp/inbound/)
-   [CRITICAL: Oracle CBS, Supabase, Neon are NOT data sources in this core pipeline!]
+🌐 WHAT IS NANOPRO? (COMPLETE ENTERPRISE PLATFORM OVERVIEW):
+NanoPro is an Enterprise AI Studio, Multi-Cloud Data Lakehouse, and Sovereign Autonomous Agent Mesh engineered by Mangesh Bagul.
+It operates across 8 synchronized, production-grade architectural layers with 0 MB Render RAM overhead on Cloudflare Workers Edge:
 
-2. 🟧 CLOUD STORAGE & LANDING (BRONZE LAYER):
-   - AWS S3 Data Lake (Bucket: s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/)
-   - Landing vault for raw immutable Parquet feeds and batch payloads.
+LAYER 1: 🖥️ UI & WORKSPACE FABRIC (ANTIGRAVITY MATTE DESIGN):
+- Antigravity / Claude Code-inspired modern matte dark design (#0D1117 background, #161B22 cards, soft #C9D1D9 text, zero harsh glow).
+- Multi-View Workspace Navigation:
+  * #dashboard: Real-time Executive KPIs, Banking Metrics, System Health, and Quick Actions.
+  * #global_ai_lab: Frontier AI Multi-Model Mesh (4,750+ models), Pareto Auto-Router, Interactive Chat, and Mathematical Details Accordion.
+  * #airflow_hub: Apache Airflow 8 Production DAGs Manager, EOD T-1 Batch Processing, and WinSCP SFTP Hub.
+  * #sql_studio: Live SQL & DDL Query IDE with multi-database execution against DuckDB, Snowflake, BigQuery.
+- Database Explorer Tree (4 Synchronized Databases):
+  * 🦆 DuckDB (In-memory gold_marts for sub-20ms queries)
+  * ❄️ Snowflake (BANK_DB enterprise staging & curated schemas)
+  * ☁️ Google BigQuery (Partitioned analytical data warehouse tables)
+  * 🟧 AWS S3 (Bronze Data Lake immutable parquet storage)
+- Dynamic SQL DDL Parser: Typing "CREATE TABLE ..." in chat dynamically registers the table in DuckDB metadata and renders it into the Explorer Tree in real time!
+- Native Mermaid SVG Renderer: Compiles \`\`\`mermaid ... \`\`\` markdown blocks into interactive graphical flowcharts directly inside chat bubbles!
 
-3. ❄️ CENTRAL LAKEHOUSE & HARMONIZATION (SNOWFLAKE BANK_DB):
-   - L0_STAGING: Raw landing tier populated via COPY INTO from AWS S3 external stages.
-   - L1_HARMONIZED: Cleansed, SCD-2 historical normalization tier with strict Quality Gates:
-     * 0 Nulls allowed in Primary Keys
-     * Zero duplicate records
-     * Check constraints & balance invariants verified (No L1 pass = No Report generated!)
-   - L2_CURATED / L2_MARTS: Curated departmental marts and Star Schemas for all 8 Banking Projects.
+LAYER 2: ☁️ EDGE COMPUTING & SECURITY MESH (CLOUDFLARE WORKERS):
+- Cloudflare Workers Serverless Gateway (https://mangesh-nanopro.mangeshbagul15.workers.dev/).
+- Zero-Trust Session Authentication Gate protecting all studio views.
+- Direct Static Asset Serving: complete_nanopro_dashboard.html served straight from Edge Assets (<5ms TTFT, 0 MB Render RAM).
+- Universal MCP 2.0 (Model Context Protocol) Tools manifest.
+- Multi-Cloud Sovereign API Gateway with automatic 429 shield and sub-second failover.
 
-4. 🦆 IN-MEMORY ANALYTICAL SERVING (DUCKDB gold_marts):
-   - In-memory high-speed analytical marts (gold_marts) providing sub-20ms SQL query execution.
-   - Fully synchronized with Google BigQuery partitioned tables.
+LAYER 3: 🚀 CLOUD BACKEND & MICROSERVICES (RENDER CLOUD):
+- Python 3.11, FastAPI & Uvicorn on Linux x86_64 (https://nanopro-studio.onrender.com).
+- 24/7 Keep-Alive Background Sentinel preventing idle server sleep.
+- Automated Scheduled Crons:
+  * BOD (Beginning of Day) at 08:30 IST
+  * SOD (Start of Day) at 09:00 IST
+  * EOD (End of Day Batch) at 18:30 IST
+  * T-1 Reconciliation & Regulatory Sweep at 20:00 IST
+- System Telemetry & Vitals Probe (/api/health) monitoring RAM (<300MB/512MB), CPU load, and worker states.
 
-5. 📤 OUTBOUND REPORTING & SFTP DISTRIBUTION:
-   - SFTP Outbound: Multi-sheet genuine Microsoft Excel workbooks (.xlsx) generated for each domain in /data/sftp/outbound/reports/
-     (e.g., AML_EOD_T1_20261112.xlsx, ALM_EOD_T1_20261112.xlsx, etc.).
-   - Access & Download Channels:
-     a) Web 1-Click Direct Download & WinSCP SFTP Client via the Airflow & SFTP Hub.
-     b) Automated Email Notifications:
-        - Sender: mangeshbagul15@gmail.com
-        - Default Recipient: nanoproaistudio@gmail.com
-        - 5MB Business Rule:
-          * If Report Size <= 5MB: Directly attached as .xlsx file + summary table in body.
-          * If Report Size > 5MB: SFTP download link/path + executive summary table in body.
+LAYER 4: 🏛️ CANONICAL DATA PIPELINE & MEDALLION LAKEHOUSE:
+- 1. Ingestion: Google BigQuery (Partitioned analytical DW) + DuckDB (Local in-memory gold_marts) + SFTP Inbound Feeds (.xlsx multi-sheet workbooks and .csv batch feeds placed in /data/sftp/inbound/).
+     [CRITICAL: Oracle CBS, Supabase, Neon are NOT data sources in this core pipeline!]
+- 2. Bronze Layer: AWS S3 Data Lake (Bucket: s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/) raw immutable Parquet landing vault.
+- 3. Silver & Gold Central Lakehouse: Snowflake BANK_DB:
+     * L0_STAGING: Raw landing tier populated via COPY INTO from AWS S3 external stages.
+     * L1_HARMONIZED: Cleansed SCD-2 normalization tier with strict Quality Gates:
+       - 0 Nulls allowed in Primary Keys
+       - Zero duplicate records
+       - Check constraints & balance invariants verified (No L1 pass = No Report generated!)
+     * L2_CURATED / L2_MARTS: Curated departmental marts and Star Schemas for all 8 Banking Projects.
+- 4. In-Memory Analytical Serving: DuckDB gold_marts providing sub-20ms SQL query execution, synchronized with BigQuery.
+- 5. Outbound Distribution & Reporting:
+     * SFTP Server at /data/sftp/outbound/reports/ generating genuine multi-sheet .xlsx workbooks (e.g. AML_EOD_T1_20261112.xlsx).
+     * Channels: Web 1-Click Direct Download, WinSCP SFTP Client, and Automated Email Notifications.
+     * Email Rule: Sender mangeshbagul15@gmail.com, Recipient nanoproaistudio@gmail.com.
+       - If Report Size <= 5MB: Directly attached as .xlsx file + summary table in body.
+       - If Report Size > 5MB: Secure SFTP download link/path + executive summary table in body.
 
-🏦 THE 8 CORE BANKING PROJECTS & ACTUAL BUSINESS TABLES:
+LAYER 5: 🏦 THE 8 CORE BANKING PROJECTS & ACTUAL BUSINESS TABLES:
 1. AML (Anti-Money Laundering):
-   - L0: RAW_AML_ALERTS | L1: FACT_AML_CASES_CLEANSED | L2: MART_AML_STR_REGULATORY
-   - Business Purpose: Suspicious transaction monitoring, CTR/STR regulatory disclosures (FIU-IND), KYC risk profiling.
+   - Tables: RAW_AML_ALERTS ➔ FACT_AML_CASES_CLEANSED ➔ MART_AML_STR_REGULATORY
+   - Purpose: Suspicious transaction monitoring, CTR/STR regulatory disclosures (FIU-IND), KYC risk profiling.
    - Report: AML_EOD_T1_*.xlsx
 2. ALM (Asset Liability Management):
-   - L0: RAW_ALM_CASHFLOWS | L1: FACT_ALM_MATURITY_BUCKETS | L2: MART_ALM_LIQUIDITY_GAP
-   - Business Purpose: Structural liquidity gap analysis, IRRBB (Interest Rate Risk in Banking Book), dynamic maturity buckets, LCR monitoring.
+   - Tables: RAW_ALM_CASHFLOWS ➔ FACT_ALM_MATURITY_BUCKETS ➔ MART_ALM_LIQUIDITY_GAP
+   - Purpose: Structural liquidity gap analysis, IRRBB (Interest Rate Risk in Banking Book), dynamic maturity buckets, LCR monitoring.
    - Report: ALM_EOD_T1_*.xlsx
-3. Credit Card:
-   - L0: RAW_CC_TRANSACTIONS | L1: FACT_CC_CLEANSED_TXNS | L2: MART_CC_DELINQUENCY_REV
-   - Business Purpose: Daily authorization ledger, revolving balance interest accruals, delinquency tracking (30/60/90 DPD, SMA-0/1/2, NPA).
+3. Credit Card Operations:
+   - Tables: RAW_CC_TRANSACTIONS ➔ FACT_CC_CLEANSED_TXNS ➔ MART_CC_DELINQUENCY_REV
+   - Purpose: Daily authorization ledger, revolving balance interest accruals, delinquency tracking (30/60/90 DPD, SMA-0/1/2, NPA).
    - Report: CREDIT_CARD_EOD_T1_*.xlsx
 4. Bureau Mart (CIBIL / Experian):
-   - L0: RAW_BUREAU_CIBIL_FEEDS | L1: FACT_BUREAU_MATCHED_SCORES | L2: MART_BUREAU_RISK_MIGRATION
-   - Business Purpose: CIBIL TUDF reporting, monthly bureau pulls, credit score migration cohorts, probability of default (PD).
+   - Tables: RAW_BUREAU_CIBIL_FEEDS ➔ FACT_BUREAU_MATCHED_SCORES ➔ MART_BUREAU_RISK_MIGRATION
+   - Purpose: CIBIL TUDF reporting, monthly bureau pulls, credit score migration cohorts, probability of default (PD).
    - Report: BUREAU_MART_EOD_T1_*.xlsx
 5. ADF CIMS (RBI Reporting):
-   - L0: RAW_CIMS_RETURNS_INGEST | L1: FACT_CIMS_HARMONIZED_RETS | L2: MART_CIMS_BASEL3_DISCLOSURE
-   - Business Purpose: Automated Data Flow for Reserve Bank of India CIMS portal, Basel-III CRAR (Capital to Risk-weighted Assets Ratio), Form A returns, SLR/CRR buffers.
+   - Tables: RAW_CIMS_RETURNS_INGEST ➔ FACT_CIMS_HARMONIZED_RETS ➔ MART_CIMS_BASEL3_DISCLOSURE
+   - Purpose: Automated Data Flow for Reserve Bank of India CIMS portal, Basel-III CRAR (Capital to Risk-weighted Assets Ratio), Form A returns, SLR/CRR buffers.
    - Report: ADF_CIMS_EOD_T1_*.xlsx
 6. UPI (Real-Time Payments & Switch Settlement):
-   - L0: RAW_UPI_SWITCH_FEED | L1: FACT_UPI_SETTLED_TXNS | L2: MART_UPI_SWITCH_SETTLEMENT
-   - Business Purpose: NPCI UPI switch daily settlements, high-throughput txn clearing, VPA dispute adjudication, chargeback settlement.
+   - Tables: RAW_UPI_SWITCH_FEED ➔ FACT_UPI_SETTLED_TXNS ➔ MART_UPI_SWITCH_SETTLEMENT
+   - Purpose: NPCI UPI switch daily settlements, high-throughput txn clearing, VPA dispute adjudication, chargeback settlement.
    - Report: UPI_EOD_T1_*.xlsx
 7. JLG-Non JLG Collection (Microfinance & Rural Banking):
-   - L0: RAW_JLG_COLLECTIONS_FEED | L1: FACT_JLG_RECONCILED_DUES | L2: MART_JLG_PAR_RECOVERY
-   - Business Purpose: Joint Liability Group microfinance, center meeting recovery schedules, Portfolio at Risk (PAR 30/60/90), field officer collection reconciliations.
+   - Tables: RAW_JLG_COLLECTIONS_FEED ➔ FACT_JLG_RECONCILED_DUES ➔ MART_JLG_PAR_RECOVERY
+   - Purpose: Joint Liability Group microfinance, center meeting recovery schedules, Portfolio at Risk (PAR 30/60/90), field officer collection reconciliations.
    - Report: JLG_COLLECTION_EOD_T1_*.xlsx
 8. LOS and LMS (Loan Origination & Servicing):
-   - L0: RAW_LOS_LMS_APPLICATIONS | L1: FACT_LOS_LMS_SERVICED_LOANS | L2: MART_LOS_LMS_NPA_PROVISIONING
-   - Business Purpose: Loan Origination System (underwriting, KYC sanctioning) and Loan Management System (disbursement, EMI schedules, interest servicing, IRAC NPA provisioning).
+   - Tables: RAW_LOS_LMS_APPLICATIONS ➔ FACT_LOS_LMS_SERVICED_LOANS ➔ MART_LOS_LMS_NPA_PROVISIONING
+   - Purpose: Loan Origination System (underwriting, KYC sanctioning) and Loan Management System (disbursement, EMI schedules, interest servicing, IRAC NPA provisioning).
    - Report: LOS_LMS_EOD_T1_*.xlsx
 
+LAYER 6: 🤖 ORCHESTRATION, AUTONOMOUS AGENTS & CUA:
+- Apache Airflow: 8 production DAGs for EOD batch processing, hourly incremental runs, and SFTP synchronization.
+- 320 Autonomous Agents: Self-healing, data quality enforcement, schema reconciliation, and error recovery agents.
+- Autonomous Computer Use Agent (CUA): Powered by Claude 3.7 Computer Use SOTA, Set-of-Marks DOM element tagging, autonomous web research, and live side-screen browser viewport.
+
+LAYER 7: ⚡ FRONTIER AI UNIFIED MESH & PARETO AUTO-ROUTER:
+- 4,750+ unified models across 23 sovereign providers (Meta, Alibaba Qwen, DeepSeek, Mistral, Groq LPUs, SambaNova RDUs, NVIDIA NIM, Krutrim, Poe, Cloudflare Workers AI).
+- Multi-Objective Pareto Utility Maximization:
+  U(m) = w_q * Q + w_s * Affinity - w_l * max(0, (L - SLA)/SLA) + lambda * theta_m
+- Contextual Thompson Bandit sampling with real-time Shannon Entropy measurement.
+
+LAYER 8: 📤 MULTI-CHANNEL COMMUNICATION FABRIC:
+- 5 Telegram Bots: @mangesh_reports_bot (Executive Briefings), @mangesh_health_monitor_bot (Vitals), @mangesh_career_study_bot (Study & Drills), @mangesh_technews_bot (Tech Feed), @mangesh_apk_bot (APK Dispatcher).
+- Meta WhatsApp Business Cloud API direct integration.
+- Automated SMTP / Resend Email Notification Dispatcher.
+
 CRITICAL OPERATIONAL RULES:
-1. 🧠 NATURAL, HUMAN CONVERSATION (मराठी & ENGLISH):
-   - When asked about NanoPro data pipeline, data sources, AWS, Snowflake, Airflow, or the 8 banking projects, ALWAYS explain the real architecture accurately.
-   - NEVER hallucinate Kafka, Supabase, Neon Postgres, or Oracle CBS into the data pipeline!
-   - Provide crisp, direct, executive-level summaries.
-2. 🛠️ TABLE CREATION & DDL ACTIONS:
-   - When the user asks to create a table (e.g. "create table ...", "new table banva", "table create kara"):
-     * Formulate clean, production-grade SQL DDL.
-     * State that the table is registered in DuckDB in-memory Lakehouse and Snowflake BANK_DB.
-     * The response will be executed by NanoPro to show in the Explorer panel!
-3. 💡 INTERACTIVE SUGGESTION CHIPS:
+1. 📊 MANDATORY MERMAID DIAGRAMS FOR ANY DIAGRAM / FLOWCHART / ARCHITECTURE / PIPELINE QUERY:
+   - When the user asks for "diagram", "flowchart", "architecture", "flow", "pipline dakhva", "diagram flow", "image madhya dya diagram", "आकृती", "प्रवाह", "नकाशा", "आर्किटेक्चर":
+   - You MUST ALWAYS generate a complete, valid Mermaid flowchart inside a \`\`\`mermaid ... \`\`\` code block!
+   - Use 'flowchart TD' or 'flowchart LR' with standard node syntax (e.g., A["Label"] --> B["Label"]). NEVER mix sequenceDiagram keywords like 'participant' into a flowchart!
+   - Syntax pattern:
+     \`\`\`mermaid
+     flowchart LR
+       S1["📥 Data Sources (BigQuery + DuckDB + SFTP)"] --> S2["🟧 AWS S3 Bronze Data Lake"]
+       S2 --> S3["❄️ Snowflake BANK_DB (L0 ➔ L1 ➔ L2)"]
+       S3 --> S4["🦆 DuckDB In-Memory gold_marts (<20ms)"]
+       S3 --> S5["📤 SFTP Outbound (.xlsx) & Email Dispatcher"]
+     \`\`\`
+   - The dashboard natively compiles your Mermaid code into an interactive SVG visual diagram!
+   - Do NOT say "I cannot generate images" or give plain text only. Give the Mermaid diagram first, followed by clear Marathi/English explanations!
+2. 🧠 NATURAL, HUMAN CONVERSATION (मराठी & ENGLISH):
+   - Answer comprehensively with full deep knowledge of NanoPro across UI, Edge, Backend, Lakehouse, Airflow, AI Mesh, and Comms.
+   - NEVER hallucinate Kafka, Supabase, Neon Postgres, or Oracle CBS into the core data pipeline!
+3. 🛠️ TABLE CREATION & DDL ACTIONS:
+   - Formulate clean production-grade SQL DDL when asked to create tables; state that the table is registered in DuckDB and Snowflake.
+4. 💡 INTERACTIVE SUGGESTION CHIPS:
    - End responses with 2-3 interactive suggestion hints: [HINT: 🔍 पर्याय १ | 📊 पर्याय २ | ⚡ पर्याय ३]`;
 
     // Core Edge Multi-Model Dispatcher (0 MB Render Load)
@@ -1983,8 +2028,13 @@ CRITICAL OPERATIONAL RULES:
 
       // -------------------------------------------------------------------------
       // DOMAIN 1: IMAGE & MULTIMODAL GENERATIVE STUDIO (Gemini 2.5 Flash Vision)
+      // (Restricted to pure artistic visual artwork only. Technical diagrams, flowcharts,
+      // architectures, and pipelines are routed to the Interactive Mermaid Architecture Engine!)
       // -------------------------------------------------------------------------
-      if (/(image|photo|picture|चित्र|फोटो|draw|generate image|banner|logo|visual|ui mockup|render chart|visualize|आकृती|ड्रॉ)/i.test(pLower)) {
+      const isDiagramOrArchitectureRequest = /(diagram|flowchart|architecture|pipeline|flow|डायाग्राम|डायग्राम|फ्लोचार्ट|आर्किटेक्चर|पाइपलाइन|प्रवाह|नकाशा|medallion|lakehouse|lineage)/i.test(pLower);
+      const isPureArtisticImage = !isDiagramOrArchitectureRequest && /(draw a |draw an |generate image|paint a |चित्र काढ|फोटो बनव|wallpaper|portrait|banner design|logo design)/i.test(pLower);
+
+      if (isPureArtisticImage) {
         const imageSubject = prompt.replace(/.*(image|photo|picture|चित्र|फोटो|draw|generate image|banner|logo|visualize|of|sathi|साठी|वर|banva|बनव|kara|करा|dakhva|दाखव)/i, "").trim() || "Futuristic AI Operations Center & Autonomous Agents Mesh";
         const nowDt = new Date();
         const seed = Math.floor(Math.random() * 999999);
@@ -2182,8 +2232,12 @@ CRITICAL OPERATIONAL RULES:
       // =========================================================================
       // LLM DISPATCH WITH DEEP NANOPRO KNOWLEDGE INJECTION
       // =========================================================================
+      let dynamicSystemContent = NANOPRO_MASTER_SYSTEM_PROMPT;
+      if (isDiagramOrArchitectureRequest) {
+        dynamicSystemContent += "\n\nCRITICAL MANDATE: The user explicitly requested an architecture/pipeline/system diagram or visual (\"" + prompt + "\"). You MUST output a complete, valid Mermaid diagram enclosed in ```mermaid ... ``` code fences using 'flowchart TD' or 'flowchart LR'. Show all actual components and connections clearly. Then provide a clean, structured explanation in authentic Marathi or English.";
+      }
       const messages = [
-        { role: "system", content: NANOPRO_MASTER_SYSTEM_PROMPT },
+        { role: "system", content: dynamicSystemContent },
         ...rawMessages
       ];
 
@@ -3088,11 +3142,136 @@ CRITICAL OPERATIONAL RULES:
       const pCheckEdge = prompt.toLowerCase();
 
       let edgeKnowledge = "";
-      if (/(pipeline|डेटा|पाइपलाइन|lakehouse|medallion|architecture|s3|snowflake|bigquery|sftp|kasa)/i.test(pCheckEdge)) {
+      if (/(diagram|flow|flowchart|डायग्राम|फ्लोचार्ट|नकाशा|प्रवाह)/i.test(pCheckEdge) || /(architecture|आर्किटेक्चर)/i.test(pCheckEdge)) {
+        if (/(complete|सर्व|सगळ|संपूर्ण|platform|full|studio)/i.test(pCheckEdge)) {
+          // Complete NanoPro Platform 8-Layer Architecture Mermaid Diagram
+          edgeKnowledge = `### 🏛️ NanoPro Enterprise Studio — संपूर्ण आर्किटेक्चर फ्लो डायग्राम (Complete Architecture)\n\n` +
+            `\`\`\`mermaid\n` +
+            `flowchart TD\n` +
+            `  subgraph UI["🖥️ 1. UI & Workspace Layer (Antigravity Matte Theme)"]\n` +
+            `    DASH["📊 Executive Dashboard (#dashboard)"]\n` +
+            `    AILAB["🧠 Global AI Lab (#global_ai_lab)"]\n` +
+            `    AIRFLOW_HUB["⏱️ Airflow & SFTP Hub (#airflow_hub)"]\n` +
+            `    SQL_IDE["⚡ SQL Studio & Table DDL IDE (#sql_studio)"]\n` +
+            `    CUA_VIEW["🌐 CUA Autonomous Browser Viewport"]\n` +
+            `  end\n\n` +
+            `  subgraph Edge["☁️ 2. Edge Security & Routing Mesh (Cloudflare Workers)"]\n` +
+            `    CF_GATE["⚡ Cloudflare Workers Edge Gateway (<5ms TTFT)"]\n` +
+            `    AUTH_GATE["🛡️ Zero-Trust Session Authentication"]\n` +
+            `    ROUTER_ENGINE["🎯 Pareto Frontier Multi-Objective Auto-Router"]\n` +
+            `    MCP_TOOLS["🔌 Universal MCP 2.0 Tools Manifest"]\n` +
+            `  end\n\n` +
+            `  subgraph Backend["🚀 3. Cloud Backend & Microservices (Render Cloud)"]\n` +
+            `    FASTAPI["⚡ Python 3.11 / FastAPI REST Core (0 MB RAM on Edge)"]\n` +
+            `    CRON_SENTINEL["⏰ 24/7 Crons: BOD (08:30) • SOD (09:00) • EOD (18:30) • T-1 (20:00)"]\n` +
+            `    HEALTH_VITALS["🩺 Telemetry & Vitals Probe (/api/health)"]\n` +
+            `  end\n\n` +
+            `  subgraph Lakehouse["🏛️ 4. Canonical Medallion Lakehouse Pipeline"]\n` +
+            `    subgraph Sources["📥 Data Sources"]\n` +
+            `      BQ["Google BigQuery (Partitioned DW)"]\n` +
+            `      DK_SRC["DuckDB (gold_marts Columnar)"]\n` +
+            `      SFTP_IN["SFTP Inbound Feeds (.xlsx / .csv)"]\n` +
+            `    end\n` +
+            `    subgraph Bronze["🟧 Bronze Tier (AWS S3)"]\n` +
+            `      S3_LAKE["AWS S3 Data Lake (Raw Immutable Parquet)"]\n` +
+            `    end\n` +
+            `    subgraph SilverGold["❄️ Central Lakehouse (Snowflake BANK_DB)"]\n` +
+            `      L0["L0_STAGING (External Stages COPY INTO)"]\n` +
+            `      L1["L1_HARMONIZED (Quality Gates: 0 Nulls/Dups)"]\n` +
+            `      L2["L2_CURATED (8 Banking Domain Star Schemas)"]\n` +
+            `    end\n` +
+            `    subgraph Serving["🦆 Serving Tier"]\n` +
+            `      DUCK_SERV["DuckDB In-Memory gold_marts (<20ms SQL)"]\n` +
+            `    end\n` +
+            `  end\n\n` +
+            `  subgraph Projects["🏦 5. The 8 Core Banking Projects"]\n` +
+            `    P1["1. AML (Anti-Money Laundering)"]\n` +
+            `    P2["2. ALM (Asset Liability Management)"]\n` +
+            `    P3["3. Credit Card Operations"]\n` +
+            `    P4["4. Bureau Mart (CIBIL/Experian)"]\n` +
+            `    P5["5. ADF CIMS (RBI Basel-III Returns)"]\n` +
+            `    P6["6. UPI Switch Settlements"]\n` +
+            `    P7["7. JLG Microfinance Collections"]\n` +
+            `    P8["8. LOS & LMS Loan Lifecycle"]\n` +
+            `  end\n\n` +
+            `  subgraph Orchestration["🤖 6. Autonomous Agents & Orchestration"]\n` +
+            `    AIRFLOW_DAGS["⏱️ Apache Airflow (8 Production DAGs)"]\n` +
+            `    AUTO_AGENTS["🛡️ 320 Autonomous Sentinel & Self-Healing Agents"]\n` +
+            `    CUA_AGENT["🖱️ Claude 3.7 Computer Use Agent (Set-of-Marks DOM)"]\n` +
+            `  end\n\n` +
+            `  subgraph AIMesh["⚡ 7. Frontier AI Unified Mesh (4,750+ Models)"]\n` +
+            `    LLAMA["Meta Llama 3.3 70B (Data Architect)"]\n` +
+            `    QWEN["Qwen 2.5 Coder 32B (SQL/DDL)"]\n` +
+            `    DEEPSEEK["DeepSeek V3 / R1 (Logic & Math)"]\n` +
+            `    GROQ["Groq Deterministic LPUs (Sub-300ms)"]\n` +
+            `  end\n\n` +
+            `  subgraph Comms["📤 8. Multi-Channel Distribution & Delivery"]\n` +
+            `    SFTP_OUT["📁 SFTP Outbound Server (/data/sftp/outbound/reports/*.xlsx)"]\n` +
+            `    EMAIL_OUT["📧 Automated Email (5MB Rule: <=5MB attach, >5MB link)"]\n` +
+            `    TG_BOTS["🤖 5 Telegram Bots (@mangesh_reports_bot, etc.)"]\n` +
+            `    WA_BOT["📱 WhatsApp Business Cloud API"]\n` +
+            `  end\n\n` +
+            `  UI <--> Edge\n` +
+            `  Edge <--> Backend\n` +
+            `  Sources --> Bronze\n` +
+            `  Bronze --> SilverGold\n` +
+            `  SilverGold --> Serving\n` +
+            `  SilverGold --> Projects\n` +
+            `  Orchestration --> Lakehouse\n` +
+            `  Orchestration --> Projects\n` +
+            `  Edge <--> AIMesh\n` +
+            `  Serving --> SFTP_OUT\n` +
+            `  Projects --> SFTP_OUT\n` +
+            `  SFTP_OUT --> EMAIL_OUT\n` +
+            `  Backend --> TG_BOTS\n` +
+            `  Backend --> WA_BOT\n` +
+            `\`\`\`\n\n` +
+            `NanoPro चे हे **८ मुख्य आर्किटेक्चरल स्तरांचे (8-Layer Full-Stack)** इंटिग्रेटेड डिझाइन आहे, ज्यामध्ये Frontend UI, Edge Mesh, Cloud Backend, Medallion Lakehouse, 8 Banking Projects, Orchestration/Agents, Multi-Model AI Mesh आणि Multi-Channel Outbound Delivery यांचा समावेश आहे.`;
+        } else {
+          // Canonical Data Pipeline Mermaid Diagram
+          edgeKnowledge = `### 🏛️ NanoPro Enterprise Lakehouse — डेटा पाइपलाइन फ्लो डायग्राम\n\n` +
+            `\`\`\`mermaid\n` +
+            `flowchart LR\n` +
+            `  subgraph S1["1. 📥 DATA SOURCES"]\n` +
+            `    BQ["Google BigQuery\n(Partitioned DW)"]\n` +
+            `    DK["DuckDB\n(Local gold_marts)"]\n` +
+            `    SFTP_IN["SFTP Inbound Feeds\n(.xlsx / .csv feeds)"]\n` +
+            `  end\n\n` +
+            `  subgraph S2["2. 🟧 BRONZE LAYER"]\n` +
+            `    S3["AWS S3 Data Lake\n(s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/)\nImmutable Raw Parquet Vault"]\n` +
+            `  end\n\n` +
+            `  subgraph S3Tier["3. ❄️ SNOWFLAKE BANK_DB"]\n` +
+            `    L0["L0_STAGING\n(COPY INTO external stage)"]\n` +
+            `    L1["L1_HARMONIZED\n(Quality Gates:\n0 Nulls | 0 Duplicates)"]\n` +
+            `    L2["L2_CURATED / MARTS\n(8 Banking Star Schemas)"]\n` +
+            `  end\n\n` +
+            `  subgraph S4["4. 🦆 IN-MEMORY SERVING"]\n` +
+            `    DUCK["DuckDB gold_marts\n(<20ms Ultra-Fast SQL)"]\n` +
+            `  end\n\n` +
+            `  subgraph S5["5. 📤 OUTBOUND & DELIVERY"]\n` +
+            `    SFTP_OUT["SFTP Outbound Reports\n(/data/sftp/outbound/reports/*.xlsx)"]\n` +
+            `    EMAIL["Automated Email Dispatcher\n(mangeshbagul15@gmail.com)\n5MB Rule: Attached / Link"]\n` +
+            `  end\n\n` +
+            `  S1 -->|Batch & Micro-batch Ingest| S2\n` +
+            `  S2 -->|COPY INTO Landing| L0\n` +
+            `  L0 -->|Cleansing & Normalization| L1\n` +
+            `  L1 -->|Strict Quality Gate Passed| L2\n` +
+            `  L2 -->|Analytical Sync| DUCK\n` +
+            `  L2 -->|Report Generation| SFTP_OUT\n` +
+            `  SFTP_OUT -->|EOD Notification| EMAIL\n` +
+            `\`\`\`\n\n` +
+            `NanoPro ची डेटा पाइपलाइन ही **Medallion Architecture (Bronze ➔ Silver ➔ Gold)** वर आधारित आहे:\n\n` +
+            `1. **📥 डेटा स्त्रोत (Data Sources)**: Google BigQuery + DuckDB (In-Memory gold_marts) + SFTP Inbound (.xlsx/.csv). *(Oracle DB, Supabase, Neon हे या पाइपलाइनमध्ये नाहीत)*.\n` +
+            `2. **🟧 क्लाउड डेटा लेक (Bronze Layer)**: AWS S3 Data Lake (\`s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/\`) Raw Parquet स्वरूपात डेटा गोळा करतो.\n` +
+            `3. **❄️ एंटरप्राइझ वेअरहाऊस (Silver/Gold Layer)**: Snowflake \`BANK_DB\` (Cleaned Silver Tables & Aggregated Gold Data Marts).\n` +
+            `4. **⏱️ ऑर्केस्ट्रेशन (Orchestration Engine)**: Apache Airflow (8 Production DAGs, EOD T-1 Batch Processing, Hourly Incremental, SFTP Hub Sync).\n` +
+            `5. **📤 आउटबाउंड डिलिव्हरी (Outbound Reports)**: SFTP Server वर \`.xlsx\` आणि \`.csv\` रिपोर्ट्स तयार होतात, आणि ते अधिकृत ईमेल्सना आपोआप पाठवले जातात.`;
+        }
+      } else if (/(pipeline|डेटा|पाइपलाइन|lakehouse|medallion|s3|snowflake|bigquery|sftp|kasa)/i.test(pCheckEdge)) {
         edgeKnowledge = `### 🏛️ NanoPro Enterprise Lakehouse — अधिकृत डेटा पाइपलाइन\n\n` +
           `NanoPro ची डेटा पाइपलाइन ही **Medallion Architecture (Bronze ➔ Silver ➔ Gold)** वर आधारित आहे:\n\n` +
           `1. **📥 डेटा स्त्रोत (Data Sources)**: Google BigQuery + DuckDB (In-Memory gold_marts) + SFTP Inbound (.xlsx/.csv). *(Oracle DB, Supabase, Neon हे या पाइपलाइनमध्ये नाहीत)*.\n` +
-          `2. **🟧 क्लाउड डेटा लेक (Bronze Layer)**: AWS S3 Data Lake (\`s3://nanopro-data-lake-765866160161/bronze/\`) Raw Parquet स्वरूपात डेटा गोळा करतो.\n` +
+          `2. **🟧 क्लाउड डेटा लेक (Bronze Layer)**: AWS S3 Data Lake (\`s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/\`) Raw Parquet स्वरूपात डेटा गोळा करतो.\n` +
           `3. **❄️ एंटरप्राइझ वेअरहाऊस (Silver/Gold Layer)**: Snowflake \`BANK_DB\` (Cleaned Silver Tables & Aggregated Gold Data Marts).\n` +
           `4. **⏱️ ऑर्केस्ट्रेशन (Orchestration Engine)**: Apache Airflow (8 Production DAGs, EOD T-1 Batch Processing, Hourly Incremental, SFTP Hub Sync).\n` +
           `5. **📤 आउटबाउंड डिलिव्हरी (Outbound Reports)**: SFTP Server वर \`.xlsx\` आणि \`.csv\` रिपोर्ट्स तयार होतात, आणि ते अधिकृत ईमेल्सना आपोआप पाठवले जातात.`;
