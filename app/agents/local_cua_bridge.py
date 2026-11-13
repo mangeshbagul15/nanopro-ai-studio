@@ -284,12 +284,12 @@ class BrowserBridge:
                 return {"ok": False, "error": reason}
             await page.goto(url, wait_until="domcontentloaded", timeout=45000)
             await self.settle(600)
-            return {"ok": True}
+            return {"ok": True, "x": VIEWPORT["width"] / 2, "y": VIEWPORT["height"] / 2}
 
         if action == "back":
             await page.go_back(wait_until="domcontentloaded", timeout=20000)
             await self.settle(500)
-            return {"ok": True}
+            return {"ok": True, "x": VIEWPORT["width"] / 2, "y": VIEWPORT["height"] / 2}
 
         if action == "click":
             idx = payload.get("index")
@@ -410,7 +410,7 @@ class BrowserBridge:
             else:
                 await page.mouse.wheel(0, pixels if direction == "down" else -pixels)
             await self.settle(450)
-            return {"ok": True}
+            return {"ok": True, "x": VIEWPORT["width"] / 2, "y": VIEWPORT["height"] / 2}
 
         if action == "select":
             idx = payload.get("index")

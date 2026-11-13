@@ -1470,18 +1470,33 @@ body.in-global_ai_lab .nano-dynamic-island {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   z-index: 120;
   pointer-events: none;
   opacity: 0;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.65));
-  transition: left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.85)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.7));
+  transition: left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
   display: flex;
   align-items: flex-start;
   gap: 2px;
 }
 #view-global_ai_lab .ailab-cua-cursor.is-visible { opacity: 1; }
+#view-global_ai_lab .ailab-cua-cursor.is-active::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0.75);
+  animation: cuaCursorHalo 1.3s ease-out infinite;
+}
+@keyframes cuaCursorHalo {
+  0% { transform: scale(0.45); opacity: 0.95; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
 #view-global_ai_lab .ailab-cua-cursor.is-clicking svg {
   animation: cuaCursorPress 0.28s ease-out;
   transform-origin: 3px 3px;
@@ -3277,7 +3292,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         </div>
 
         <div class="ailab-cua-cursor" id="ailabCuaCursor">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.5">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.6">
             <path d="M3 3l7 18 3-7 7-3L3 3z"/>
           </svg>
           <span class="ailab-cua-cursor-label" id="ailabCuaCursorLabel">Agent CUA</span>
@@ -6375,6 +6390,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         elementLines
       ].join("\n");
 
+      let lastHttp = 0;
       const askModel = async (suffix, modelOverride) => {
         const res = await fetch("/api/ai/execute", {
           method: "POST",
@@ -6388,26 +6404,28 @@ body.in-global_ai_lab .nano-dynamic-island {
           }),
           signal: AbortSignal.timeout(70000)
         });
+        lastHttp = res.status;
         const data = await res.json().catch(() => ({}));
         this.lastModel = data.model_executed || data.model_name || this.lastModel || "";
         return data.response || data.message || data.text || "";
       };
 
-      let text = "";
-      try {
-        text = await askModel("");
-        return this.parseAction(text);
-      } catch (firstErr) {
-        this.logLine("warn", "Planner reply was unusable (" + firstErr.message + "), retrying once…");
-        const retryText = await askModel(
-          "\n\nIMPORTANT: Answer with ONE JSON object only, action names goto/click/type/press/scroll/done. No prose, no markdown, no code fences, no XML.",
-          "qwen/qwen3.8-27b"
-        );
-        if (retryText) {
-          try { return this.parseAction(retryText); } catch (_) {}
+      const strict = "\n\nIMPORTANT: Answer with ONE JSON object only, action names goto/click/type/press/scroll/done. No prose, no markdown, no code fences, no XML.";
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const text = await askModel(attempt === 1 ? "" : strict, attempt === 3 ? "qwen/qwen3.8-27b" : null);
+          if (!text) throw new Error("planner returned an empty response (HTTP " + lastHttp + ")");
+          return this.parseAction(text);
+        } catch (err) {
+          lastErr = err;
+          if (attempt < 3) {
+            this.logLine("warn", "Planner attempt " + attempt + " failed (" + err.message + "), retrying…");
+            await new Promise((r) => setTimeout(r, 600 * attempt));
+          }
         }
-        throw new Error("planner did not return JSON twice (" + firstErr.message + ")");
       }
+      throw lastErr;
     },
 
     describeAction: function (plan) {
@@ -6512,6 +6530,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.clearTaskLog();
       this.logLine("task", "TASK: " + task);
       this.updateActionHud("🧭", "Reading the page…");
+      this.moveCursor(640, 400, "starting");
+      const cursorEl = document.getElementById("ailabCuaCursor");
+      if (cursorEl) cursorEl.classList.add("is-active");
 
       let pendingNote = "";
       try {
@@ -6529,10 +6550,10 @@ body.in-global_ai_lab .nano-dynamic-island {
             this.planFails = 0;
           } catch (planErr) {
             this.planFails = (this.planFails || 0) + 1;
-            this.logLine("warn", "Planner hiccup: " + planErr.message + " (retry " + this.planFails + "/2)");
-            if (this.planFails > 2) throw planErr;
+            this.logLine("warn", "Planner hiccup: " + planErr.message + " (retry " + this.planFails + "/1)");
+            if (this.planFails > 1) throw planErr;
             this.step--;
-            await new Promise((r) => setTimeout(r, 1500));
+            await new Promise((r) => setTimeout(r, 2000));
             continue;
           }
           const action = String(plan.action || "").toLowerCase();
@@ -6618,6 +6639,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         this.lastSummary = "Stopped: " + err.message;
       } finally {
         this.running = false;
+        const cursorEl = document.getElementById("ailabCuaCursor");
+        if (cursorEl) cursorEl.classList.remove("is-active");
         const frame = await this.bridge("/frame", null, 8000).catch(() => null);
         if (frame && frame.ok) this.updateFrame(frame);
         if (this.queue.length) {
