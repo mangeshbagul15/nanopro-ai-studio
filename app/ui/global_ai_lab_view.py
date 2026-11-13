@@ -6161,17 +6161,21 @@ body.in-global_ai_lab .nano-dynamic-island {
 
     startFrames: function () {
       if (this.frameTimer || !this.isOpen) return;
-      this.frameTimer = setInterval(async () => {
-        if (!this.online) return;
-        try {
-          const frame = await this.bridge("/frame", null, 8000);
-          if (frame && frame.ok) this.updateFrame(frame);
-        } catch (_) {}
-      }, 900);
+      const tick = async () => {
+        if (!this.isOpen) { this.frameTimer = null; return; }
+        if (this.online) {
+          try {
+            const frame = await this.bridge("/frame", null, 8000);
+            if (frame && frame.ok) this.updateFrame(frame);
+          } catch (_) {}
+        }
+        this.frameTimer = setTimeout(tick, this.running ? 420 : 1100);
+      };
+      this.frameTimer = setTimeout(tick, 0);
     },
 
     stopFrames: function () {
-      if (this.frameTimer) { clearInterval(this.frameTimer); this.frameTimer = null; }
+      if (this.frameTimer) { clearTimeout(this.frameTimer); this.frameTimer = null; }
     },
 
     updateFrame: function (frame) {
