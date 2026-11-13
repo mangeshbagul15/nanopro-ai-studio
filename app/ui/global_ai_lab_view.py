@@ -2660,42 +2660,116 @@ body.in-global_ai_lab .nano-dynamic-island {
 
     // Fallback static seed catalog
     AILAB_EXPLORER.catalog = [
-      {
-        id: "duckdb", name: "DuckDB Local Lakehouse", kind: "duckdb", icon: "🦆",
-        schemas: [{ name: "main", tables: [
-          { name: "ai_conversations", rows: 1420, columns: [{ name: "id", type: "VARCHAR PRIMARY KEY" }, { name: "chat_id", type: "VARCHAR" }, { name: "role", type: "VARCHAR" }, { name: "content", type: "TEXT" }, { name: "created_at", type: "TIMESTAMP" }] },
-          { name: "banking_transactions_cdc", rows: 28400, columns: [{ name: "tx_id", type: "BIGINT PRIMARY KEY" }, { name: "account_no", type: "VARCHAR" }, { name: "amount", type: "DECIMAL(18,2)" }, { name: "cdc_operation", type: "VARCHAR" }, { name: "branch_code", type: "VARCHAR" }] },
-          { name: "analytics_summary", rows: 365, columns: [{ name: "report_date", type: "DATE PRIMARY KEY" }, { name: "daily_volume", type: "DECIMAL(20,2)" }, { name: "tx_count", type: "INTEGER" }] }
-        ]}]
-      },
-      {
-        id: "snowflake", name: "Snowflake Enterprise Warehouse", kind: "snowflake", icon: "❄️",
-        schemas: [
-          { name: "CORE_BANKING", tables: [
-            { name: "TRANSACTIONS_RAW", rows: 1250000, columns: [{ name: "TRANSACTION_ID", type: "VARCHAR(64)" }, { name: "SRC_ACCOUNT", type: "VARCHAR(32)" }, { name: "DEST_ACCOUNT", type: "VARCHAR(32)" }, { name: "AMOUNT_USD", type: "NUMBER(18,4)" }, { name: "STATUS", type: "VARCHAR(16)" }] },
-            { name: "ACCOUNTS_DIM", rows: 45000, columns: [{ name: "ACCOUNT_KEY", type: "NUMBER" }, { name: "ACCOUNT_NUMBER", type: "VARCHAR(32)" }, { name: "CUSTOMER_NAME", type: "VARCHAR(128)" }] }
-          ]},
-          { name: "ANALYTICS", tables: [
-            { name: "MONTHLY_METRICS", rows: 120, columns: [{ name: "MONTH_YEAR", type: "VARCHAR(7)" }, { name: "TOTAL_REVENUE", type: "NUMBER(20,2)" }, { name: "FRAUD_RATIO", type: "FLOAT" }] }
-          ]}
-        ]
-      },
-      {
-        id: "bigquery", name: "Google BigQuery Lakehouse", kind: "bigquery", icon: "☁️",
-        schemas: [{ name: "nanopro_analytics", tables: [
-          { name: "lakehouse_audit_logs", rows: 840000, columns: [{ name: "event_id", type: "STRING" }, { name: "event_timestamp", type: "TIMESTAMP" }, { name: "actor", type: "STRING" }, { name: "action", type: "STRING" }] },
-          { name: "model_inferences_2026", rows: 54000, columns: [{ name: "request_id", type: "STRING" }, { name: "provider", type: "STRING" }, { name: "model_id", type: "STRING" }, { name: "latency_ms", type: "FLOAT64" }] },
-          { name: "customer_segments", rows: 8200, columns: [{ name: "customer_id", type: "STRING" }, { name: "rfm_score", type: "INT64" }, { name: "segment_label", type: "STRING" }] }
-        ]}]
-      },
-      {
-        id: "aws", name: "AWS Cloud Data Lake (Athena / S3)", kind: "aws", icon: "🟧",
-        schemas: [{ name: "aws_athena_curated", tables: [
-          { name: "s3_silver_orders", rows: 450000, columns: [{ name: "order_id", type: "string" }, { name: "order_date", type: "date" }, { name: "net_amount", type: "double" }, { name: "s3_partition_dt", type: "string" }] },
-          { name: "s3_gold_revenue", rows: 1825, columns: [{ name: "snapshot_date", type: "date" }, { name: "gross_sales", type: "double" }, { name: "discounts", type: "double" }] }
-        ]}]
-      }
-    ];
+          {
+            id: "duckdb",
+            name: "DuckDB Local Lakehouse (gold_marts)",
+            kind: "duckdb",
+            icon: "🦆",
+            schemas: [
+              {
+                name: "gold_marts",
+                tables: [
+                  { name: "ai_conversations", rows: 1420, columns: [{ name: "id", type: "VARCHAR PRIMARY KEY" }, { name: "chat_id", type: "VARCHAR" }, { name: "role", type: "VARCHAR" }, { name: "content", type: "TEXT" }, { name: "created_at", type: "TIMESTAMP" }] },
+                  { name: "banking_transactions_cdc", rows: 28400, columns: [{ name: "tx_id", type: "BIGINT PRIMARY KEY" }, { name: "account_no", type: "VARCHAR" }, { name: "amount", type: "DECIMAL(18,2)" }, { name: "cdc_operation", type: "VARCHAR" }, { name: "branch_code", type: "VARCHAR" }] },
+                  { name: "dim_customer_master", rows: 1740, columns: [{ name: "customer_id", type: "VARCHAR" }, { name: "customer_name", type: "VARCHAR" }, { name: "segment", type: "VARCHAR" }] },
+                  { name: "analytics_summary", rows: 365, columns: [{ name: "report_date", type: "DATE PRIMARY KEY" }, { name: "daily_volume", type: "DECIMAL(20,2)" }, { name: "tx_count", type: "INTEGER" }] }
+                ]
+              }
+            ]
+          },
+          {
+            id: "snowflake",
+            name: "Snowflake Enterprise DW (BANK_DB)",
+            kind: "snowflake",
+            icon: "❄️",
+            schemas: [
+              {
+                name: "L0_STAGING",
+                tables: [
+                  { name: "RAW_CUSTOMERS", rows: 145000, columns: [{ name: "CUSTOMER_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "FULL_NAME", type: "VARCHAR(128)" }, { name: "CITY", type: "VARCHAR(80)" }, { name: "KYC_STATUS", type: "VARCHAR(16)" }, { name: "INGESTED_AT", type: "TIMESTAMP_NTZ" }] },
+                  { name: "RAW_TRANSACTIONS", rows: 1250000, columns: [{ name: "TXN_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "SRC_ACCOUNT", type: "VARCHAR(32)" }, { name: "DEST_ACCOUNT", type: "VARCHAR(32)" }, { name: "AMOUNT", type: "NUMBER(18,2)" }, { name: "TXN_TYPE", type: "VARCHAR(16)" }, { name: "TXN_DATE", type: "TIMESTAMP_NTZ" }] },
+                  { name: "RAW_ACCOUNTS", rows: 84000, columns: [{ name: "ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "ACCOUNT_TYPE", type: "VARCHAR(16)" }, { name: "BALANCE", type: "NUMBER(18,2)" }, { name: "BRANCH_CODE", type: "VARCHAR(16)" }] },
+                  { name: "NANOPRO_LIVE_DATA", rows: 48200, columns: [{ name: "SOURCE", type: "VARCHAR(32)" }, { name: "PAYLOAD", type: "VARIANT" }, { name: "CREATED_AT", type: "TIMESTAMP_NTZ" }] },
+                  { name: "NANOPRO_REPORTS", rows: 365, columns: [{ name: "REPORT_NAME", type: "VARCHAR(128)" }, { name: "CONTENT", type: "TEXT" }, { name: "CREATED_AT", type: "TIMESTAMP_NTZ" }] },
+                  { name: "NANOPRO_HEALTH_LOG", rows: 14200, columns: [{ name: "UPSTREAM", type: "VARCHAR(64)" }, { name: "STATUS", type: "VARCHAR(16)" }, { name: "LATENCY_MS", type: "NUMBER" }] }
+                ]
+              },
+              {
+                name: "L1_HARMONIZED",
+                tables: [
+                  { name: "CUSTOMERS_CLEANSED", rows: 142800, columns: [{ name: "CUSTOMER_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CLEANSED_NAME", type: "VARCHAR(128)" }, { name: "STANDARDIZED_CITY", type: "VARCHAR(80)" }, { name: "IS_ACTIVE", type: "BOOLEAN" }] },
+                  { name: "TRANSACTIONS_ENRICHED", rows: 1248000, columns: [{ name: "TXN_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "ACCOUNT_NO", type: "VARCHAR(32)" }, { name: "NET_AMOUNT", type: "NUMBER(18,2)" }, { name: "CHANNEL", type: "VARCHAR(16)" }, { name: "FRAUD_FLAG", type: "BOOLEAN" }] },
+                  { name: "ACCOUNT_BALANCES", rows: 84000, columns: [{ name: "ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "AVAILABLE_BAL", type: "NUMBER(18,2)" }, { name: "HOLD_BAL", type: "NUMBER(18,2)" }, { name: "LAST_UPDATED", type: "TIMESTAMP_NTZ" }] }
+                ]
+              },
+              {
+                name: "L2_CURATED",
+                tables: [
+                  { name: "DIM_CUSTOMER_MASTER", rows: 142800, columns: [{ name: "CUSTOMER_SK", type: "NUMBER PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "SEGMENT", type: "VARCHAR(32)" }, { name: "LIFETIME_VALUE", type: "NUMBER(20,2)" }] },
+                  { name: "FACT_DAILY_SETTLEMENT", rows: 1825, columns: [{ name: "SETTLEMENT_DATE", type: "DATE PRIMARY KEY" }, { name: "TOTAL_TX_COUNT", type: "NUMBER" }, { name: "GROSS_CREDIT", type: "NUMBER(22,2)" }, { name: "GROSS_DEBIT", type: "NUMBER(22,2)" }, { name: "NET_SETTLEMENT", type: "NUMBER(22,2)" }] },
+                  { name: "EOD_FINANCIAL_SUMMARY", rows: 365, columns: [{ name: "EOD_DATE", type: "DATE PRIMARY KEY" }, { name: "CLOSING_LIQUIDITY", type: "NUMBER(22,2)" }, { name: "RECONCILED_FLAG", type: "BOOLEAN" }, { name: "AUDIT_HASH", type: "VARCHAR(64)" }] },
+                  { name: "KPI_EXECUTIVE_SUMMARY", rows: 52, columns: [{ name: "WEEK_NO", type: "VARCHAR(10) PRIMARY KEY" }, { name: "ACTIVE_USERS", type: "NUMBER" }, { name: "CHURN_RATE", type: "FLOAT" }, { name: "NIM_RATIO", type: "FLOAT" }] }
+                ]
+              },
+              {
+                name: "SALES",
+                tables: [
+                  { name: "SALES_ORDERS", rows: 54000, columns: [{ name: "ORDER_ID", type: "NUMBER PRIMARY KEY" }, { name: "CUSTOMER_NAME", type: "VARCHAR(120)" }, { name: "CITY", type: "VARCHAR(80)" }, { name: "AMOUNT", type: "NUMBER(12,2)" }] },
+                  { name: "V_REGION_REVENUE", rows: 12, columns: [{ name: "CITY", type: "VARCHAR(80)" }, { name: "TOTAL_ORDERS", type: "NUMBER" }, { name: "TOTAL_REVENUE", type: "NUMBER(18,2)" }] }
+                ]
+              }
+            ]
+          },
+          {
+            id: "aws",
+            name: "AWS S3 Lakehouse (765865641438)",
+            kind: "aws",
+            icon: "🟧",
+            schemas: [
+              {
+                name: "bronze_l0",
+                tables: [
+                  { name: "transactions_2026.parquet", rows: 150000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/banking/transactions_2026.parquet" }, { name: "size", type: "42.8 MB" }, { name: "format", type: "SNAPPY_PARQUET" }] },
+                  { name: "raw_customers.parquet", rows: 84000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/banking/raw_customers.parquet" }, { name: "size", type: "16.4 MB" }, { name: "format", type: "PARQUET" }] },
+                  { name: "incoming_stream.parquet", rows: 48200, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/cbs/incoming_stream.parquet" }, { name: "size", type: "14.1 MB" }, { name: "format", type: "PARQUET" }] }
+                ]
+              },
+              {
+                name: "silver_l1",
+                tables: [
+                  { name: "customers_cleansed.parquet", rows: 78400, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/banking/customers_cleansed.parquet" }, { name: "size", type: "18.2 MB" }, { name: "format", type: "PARQUET" }] },
+                  { name: "transactions_enriched.parquet", rows: 124800, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/banking/transactions_enriched.parquet" }, { name: "size", type: "34.5 MB" }, { name: "format", type: "PARQUET" }] },
+                  { name: "account_balances.parquet", rows: 62000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/banking/account_balances.parquet" }, { name: "size", type: "12.8 MB" }, { name: "format", type: "PARQUET" }] }
+                ]
+              },
+              {
+                name: "gold_l2",
+                tables: [
+                  { name: "dim_customer_master.parquet", rows: 1740, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/gold/marts/dim_customer_master.parquet" }, { name: "size", type: "8.4 MB" }, { name: "format", type: "PARQUET" }] },
+                  { name: "fact_daily_settlement.parquet", rows: 1825, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/gold/marts/fact_daily_settlement.parquet" }, { name: "size", type: "6.2 MB" }, { name: "format", type: "PARQUET" }] },
+                  { name: "gold_marts.duckdb", rows: 49000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/lakehouse/gold_marts.duckdb" }, { name: "size", type: "18.9 MB" }, { name: "format", type: "DUCKDB_DATABASE" }] }
+                ]
+              }
+            ]
+          },
+          {
+            id: "bigquery",
+            name: "Google BigQuery Lakehouse",
+            kind: "bigquery",
+            icon: "☁️",
+            schemas: [
+              {
+                name: "nanopro_lakehouse",
+                tables: [
+                  { name: "lakehouse_audit_logs", rows: 840000, columns: [{ name: "event_id", type: "STRING" }, { name: "event_timestamp", type: "TIMESTAMP" }, { name: "actor", type: "STRING" }, { name: "action", type: "STRING" }] },
+                  { name: "model_inferences_2026", rows: 54000, columns: [{ name: "request_id", type: "STRING" }, { name: "provider", type: "STRING" }, { name: "model_id", type: "STRING" }, { name: "latency_ms", type: "FLOAT64" }] },
+                  { name: "eod_settlement_archive", rows: 12500, columns: [{ name: "settlement_date", type: "DATE" }, { name: "batch_id", type: "STRING" }, { name: "total_cleared", type: "NUMERIC" }] },
+                  { name: "customer_segments", rows: 8200, columns: [{ name: "customer_id", type: "STRING" }, { name: "rfm_score", type: "INT64" }, { name: "segment_label", type: "STRING" }] }
+                ]
+              }
+            ]
+          }
+        ];
 
     ailabRenderExplorerTree();
   };
