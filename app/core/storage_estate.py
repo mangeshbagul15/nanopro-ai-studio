@@ -266,6 +266,42 @@ def _bigquery_usage() -> Dict[str, Any]:
             except Exception as exc:
                 last_error = str(exc)[:200]
                 continue
+
+        # TABLE_STORAGE is not enabled on every project. Fall back to measured
+        # table metadata (num_bytes) instead of reporting the project as unknown.
+        try:
+            scanned = 0
+            truncated = False
+            for dataset in client.list_datasets(max_results=6):
+                datasets += 1
+                for item in client.list_tables(dataset.dataset_id, max_results=60):
+                    if scanned >= 25:
+                        truncated = True
+                        break
+                    try:
+                        table = client.get_table(item.reference)
+                        used += int(table.num_bytes or 0)
+                        tables += 1
+                        scanned += 1
+                    except Exception:
+                        continue
+                if truncated:
+                    break
+            if scanned:
+                return _source(
+                    "bigquery", "BigQuery", f"{project} (table metadata)", "cloud",
+                    used_bytes=used,
+                    detail=f"{datasets} datasets, {tables} tables by num_bytes"
+                           f"{'; scan capped at 25 tables' if truncated else ''}",
+                    latency_ms=(time.perf_counter() - started) * 1000,
+                    no_fixed_quota=True,
+                    auth_source=auth_source,
+                    truncated=truncated,
+                )
+            last_error = last_error or "No BigQuery datasets or tables were visible to this service account."
+        except Exception as exc:
+            last_error = f"{last_error}; metadata fallback failed: {str(exc)[:160]}" if last_error else str(exc)[:200]
+
         return _source(
             "bigquery", "BigQuery", f"{project} (INFORMATION_SCHEMA)", "cloud",
             status="unreachable", reason=last_error or "TABLE_STORAGE view returned no rows.",
