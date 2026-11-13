@@ -15144,6 +15144,9 @@ from app.core.ai_command_router import router as ai_command_router
 
 app.include_router(ai_command_router)
 
+from app.api.banking_orchestrator_routes import router as banking_orchestrator_router
+app.include_router(banking_orchestrator_router)
+
 
 
 @app.get("/api/cluster/status")

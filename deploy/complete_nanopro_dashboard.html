@@ -19882,6 +19882,9 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span style="font-size:11px;color:#10B981;margin-left:4px;pointer-events:none;">▼</span>
       </div>
 
+      <button type="button" class="ailab-browse-btn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, Medallion DAGs & SFTP Hub" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#34D399;font-weight:700;">
+        <span>⏱️ Airflow &amp; SFTP</span>
+      </button>
       <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,750+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
         <span>🔍 4,750+ Models</span>
       </button>
@@ -20145,6 +20148,110 @@ body.in-global_ai_lab .nano-dynamic-island {
           <p style="margin:0;font-size:11.5px;color:#94A3B8;">4,750+ Unified Models across OpenRouter (473), AI/ML API (995), Hugging Face (110+), Fal.ai, Replicate &amp; Groq</p>
         </div>
       </div>
+
+<!-- AIRFLOW ORCHESTRATOR & SFTP HUB MODAL -->
+<div class="ailab-modal-backdrop" id="ailabAirflowModal" onclick="ailabCloseAirflowModal(event)">
+  <div class="ailab-modal" style="max-width:920px;max-height:88vh;" onclick="event.stopPropagation()">
+    <div class="ailab-modal-head">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">⏱️</span>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#F8FAFC;">NanoPro Airflow Orchestrator &amp; SFTP Storage Hub</div>
+          <div style="font-size:12px;color:#94A3B8;">8 Core Banking Projects • Medallion Pipelines • T-1 Daily EOD • Direct Self-Healing</div>
+        </div>
+      </div>
+      <button type="button" class="ailab-modal-close" onclick="ailabCloseAirflowModal()">&times;</button>
+    </div>
+
+    <!-- Navigation Pills / Tabs -->
+    <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
+      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">🚀 8 Banking DAGs</button>
+      <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📁 SFTP Reports &amp; WinSCP</button>
+      <button type="button" class="ailab-pill" id="tabAirflowArchitecture" onclick="ailabSwitchAirflowTab('arch')">🛡️ L1 Quality Gate &amp; Email Rule</button>
+    </div>
+
+    <!-- TAB 1: 8 BANKING DAGS -->
+    <div id="airflowTabDags" style="padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
+      <!-- Top Status Banner -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
+          <div style="font-size:11px;color:#94A3B8;">AIRFLOW SCHEDULER</div>
+          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (8 DAGs)</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
+          <div style="font-size:11px;color:#94A3B8;">REPORTING BASIS</div>
+          <div style="font-size:13px;font-weight:700;color:#38BDF8;margin-top:2px;">📅 T-1 (Yesterday Close)</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
+          <div style="font-size:11px;color:#94A3B8;">L1 QUALITY GATE</div>
+          <div style="font-size:13px;font-weight:700;color:#A78BFA;margin-top:2px;">🛡️ 0 Nulls • 0 Dupes</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
+          <div style="font-size:11px;color:#94A3B8;">EMAIL ROUTING</div>
+          <div style="font-size:12px;font-weight:600;color:#FBBF24;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📧 5MB Attached/Link</div>
+        </div>
+      </div>
+
+      <!-- DAGs List Container -->
+      <div id="airflowDagsList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+
+    <!-- TAB 2: SFTP REPORTS & WINSCP -->
+    <div id="airflowTabSftp" style="display:none;padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
+      <!-- WinSCP / FileZilla Credential Card -->
+      <div style="background:linear-gradient(135deg,rgba(30,41,59,0.8),rgba(15,23,42,0.9));border:1px solid rgba(56,189,248,0.3);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">🔐</span>
+            <span style="font-size:14px;font-weight:700;color:#F8FAFC;">WinSCP / FileZilla SFTP Access Credentials</span>
+          </div>
+          <span style="background:rgba(16,185,129,0.2);color:#34D399;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">STATUS: ACTIVE</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;color:#CBD5E1;">
+          <div><strong style="color:#94A3B8;">Host:</strong> <code>nanopro-studio.onrender.com</code></div>
+          <div><strong style="color:#94A3B8;">Port:</strong> <code>22</code></div>
+          <div><strong style="color:#94A3B8;">Username:</strong> <code>mangeshbagul15</code></div>
+          <div><strong style="color:#94A3B8;">Inbound Drop Path:</strong> <code>/data/sftp/inbound/</code></div>
+          <div><strong style="color:#94A3B8;">Outbound Reports:</strong> <code>/data/sftp/outbound/reports/</code></div>
+          <div><strong style="color:#94A3B8;">Supported:</strong> <code>.csv, .xlsx, | delimited</code></div>
+        </div>
+      </div>
+
+      <!-- Reports List -->
+      <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <span>📊 Outbound Business Excel Reports (T-1 Daily Close)</span>
+        <span style="font-size:11px;color:#94A3B8;">1-Click Web Download Available</span>
+      </div>
+      <div id="airflowSftpReportsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- TAB 3: QUALITY GATE & EMAIL RULE -->
+    <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(88vh - 180px);">
+      <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
+        <h4 style="margin:0 0 10px 0;font-size:14px;color:#38BDF8;">🛡️ L1 Quality Gate Architecture (No L1 = No Report)</h4>
+        <p style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0 0 14px 0;">
+          कच्चा डेटा (L0_STAGING) थेट रिपोर्टमध्ये कधीही जात नाही. जोपर्यंत L1_HARMONIZED लेयरमध्ये डुप्लिकेट्स, Null व्हॅल्यूज, आणि Negative Balance चे कडक नियम पूर्णपणे पास (100% Validated) होत नाहीत, तोपर्यंत पुढील L2 आणि EOD Excel रिपोर्ट ब्लॉक केला जातो. एरर आल्यास त्वरित अलर्ट ट्रिगर होतो आणि युझर डॅशबोर्डवरूनच <strong>Rollback</strong> करून स्वच्छ डेटा पुन्हा लोड करू शकतो.
+        </p>
+
+        <h4 style="margin:0 0 10px 0;font-size:14px;color:#FBBF24;">📧 5MB ईमेल पॉलिसी आणि SFTP पाथ नियम</h4>
+        <ul style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0;padding-left:18px;">
+          <li><strong>ईमेल प्रेषक (Sender):</strong> <code>mangeshbagul15@gmail.com</code></li>
+          <li><strong>ईमेल प्राप्तकर्ता (Recipient):</strong> <code>nanoproaistudio@gmail.com</code></li>
+          <li><strong>जर फाईल ≤ 5MB असेल:</strong> Excel (.xlsx) फाईल थेट ईमेलला अटॅच होते, ईमेल बॉडीमध्ये की समरी आणि SFTP चा पाथ दिलेला असतो.</li>
+          <li><strong>जर फाईल &gt; 5MB असेल:</strong> ईमेल बाऊन्स टाळण्यासाठी कोणतीही फाईल अटॅच होत नाही; केवळ ईमेल बॉडी समरी आणि SFTP डाऊनलोड लिंक पाठवली जाते.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ailab-modal-footer">
+      <div style="font-size:11.5px;color:#94A3B8;">
+        Central Command Pane • Snowflake BANK_DB • AWS S3 • Airflow • SFTP
+      </div>
+      <button type="button" class="ailab-btn-primary" onclick="ailabCloseAirflowModal()">Close</button>
+    </div>
+  </div>
+</div>
+
       <button type="button" class="ailab-modal-close" onclick="ailabCloseModelCatalogModal()">&times;</button>
     </div>
     <div class="ailab-modal-search">
@@ -20273,119 +20380,145 @@ body.in-global_ai_lab .nano-dynamic-island {
         return;
       }
     } catch (_) {}
-
-    // Fallback static seed catalog
+    // Fallback static seed catalog - 8 Core Banking Projects (Snowflake BANK_DB, AWS S3, DuckDB, BigQuery)
     AILAB_EXPLORER.catalog = [
+      {
+        id: "snowflake",
+        name: "Snowflake Enterprise DW (BANK_DB)",
+        kind: "snowflake",
+        icon: "❄️",
+        schemas: [
           {
-            id: "duckdb",
-            name: "DuckDB Local Lakehouse (gold_marts)",
-            kind: "duckdb",
-            icon: "🦆",
-            schemas: [
-              {
-                name: "gold_marts",
-                tables: [
-                  { name: "ai_conversations", rows: 1420, columns: [{ name: "id", type: "VARCHAR PRIMARY KEY" }, { name: "chat_id", type: "VARCHAR" }, { name: "role", type: "VARCHAR" }, { name: "content", type: "TEXT" }, { name: "created_at", type: "TIMESTAMP" }] },
-                  { name: "banking_transactions_cdc", rows: 28400, columns: [{ name: "tx_id", type: "BIGINT PRIMARY KEY" }, { name: "account_no", type: "VARCHAR" }, { name: "amount", type: "DECIMAL(18,2)" }, { name: "cdc_operation", type: "VARCHAR" }, { name: "branch_code", type: "VARCHAR" }] },
-                  { name: "dim_customer_master", rows: 1740, columns: [{ name: "customer_id", type: "VARCHAR" }, { name: "customer_name", type: "VARCHAR" }, { name: "segment", type: "VARCHAR" }] },
-                  { name: "analytics_summary", rows: 365, columns: [{ name: "report_date", type: "DATE PRIMARY KEY" }, { name: "daily_volume", type: "DECIMAL(20,2)" }, { name: "tx_count", type: "INTEGER" }] }
-                ]
-              }
+            name: "L0_STAGING",
+            description: "Raw Landing Tier (Append-Only feeds from AWS S3 Bronze & SFTP Inbound)",
+            tables: [
+              { name: "RAW_AML_ALERTS", rows: 148000, columns: [{ name: "ALERT_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "ACCOUNT_NO", type: "VARCHAR(32)" }, { name: "RULE_CODE", type: "VARCHAR(16)" }, { name: "RISK_SCORE", type: "NUMBER(5,2)" }, { name: "ALERT_DATE", type: "TIMESTAMP_NTZ" }] },
+              { name: "RAW_ALM_CASHFLOWS", rows: 215000, columns: [{ name: "FLOW_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "ACCOUNT_NO", type: "VARCHAR(32)" }, { name: "BUCKET_ID", type: "VARCHAR(16)" }, { name: "CASH_INFLOW", type: "NUMBER(18,2)" }, { name: "CASH_OUTFLOW", type: "NUMBER(18,2)" }, { name: "MATURITY_DATE", type: "DATE" }] },
+              { name: "RAW_CC_TRANSACTIONS", rows: 1450000, columns: [{ name: "AUTH_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "CARD_NO_TOKEN", type: "VARCHAR(64)" }, { name: "AMOUNT", type: "NUMBER(12,2)" }, { name: "MERCHANT_CATEGORY", type: "VARCHAR(8)" }, { name: "AUTH_STATUS", type: "VARCHAR(16)" }] },
+              { name: "RAW_BUREAU_FEEDS", rows: 320000, columns: [{ name: "BUREAU_PULL_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "PAN_TOKEN", type: "VARCHAR(64)" }, { name: "CIBIL_SCORE", type: "INTEGER" }, { name: "OVERDUE_AMOUNT", type: "NUMBER(15,2)" }, { name: "DPD_BUCKET", type: "VARCHAR(16)" }] },
+              { name: "RAW_ADF_CIMS_RETURNS", rows: 64000, columns: [{ name: "RETURN_CODE", type: "VARCHAR(32) PRIMARY KEY" }, { name: "SECTION_ID", type: "VARCHAR(16)" }, { name: "REPORTING_DATE", type: "DATE" }, { name: "RWA_AMOUNT", type: "NUMBER(22,2)" }, { name: "CAPITAL_TIER1", type: "NUMBER(22,2)" }] },
+              { name: "RAW_UPI_SWITCH", rows: 2100000, columns: [{ name: "RRN", type: "VARCHAR(32) PRIMARY KEY" }, { name: "PAYER_VPA", type: "VARCHAR(64)" }, { name: "PAYEE_VPA", type: "VARCHAR(64)" }, { name: "AMOUNT", type: "NUMBER(12,2)" }, { name: "RESP_CODE", type: "VARCHAR(8)" }] },
+              { name: "RAW_JLG_COLLECTIONS", rows: 410000, columns: [{ name: "COLLECTION_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "CENTER_ID", type: "VARCHAR(32)" }, { name: "GROUP_ID", type: "VARCHAR(32)" }, { name: "EMI_COLLECTED", type: "NUMBER(12,2)" }, { name: "PAR_STATUS", type: "VARCHAR(16)" }] },
+              { name: "RAW_LOS_LMS_LOANS", rows: 185000, columns: [{ name: "LOAN_ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "APP_ID", type: "VARCHAR(32)" }, { name: "SANCTION_AMOUNT", type: "NUMBER(15,2)" }, { name: "DISBURSED_AMOUNT", type: "NUMBER(15,2)" }, { name: "ASSET_CLASS", type: "VARCHAR(16)" }] }
             ]
           },
           {
-            id: "snowflake",
-            name: "Snowflake Enterprise DW (BANK_DB)",
-            kind: "snowflake",
-            icon: "❄️",
-            schemas: [
-              {
-                name: "L0_STAGING",
-                tables: [
-                  { name: "RAW_CUSTOMERS", rows: 145000, columns: [{ name: "CUSTOMER_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "FULL_NAME", type: "VARCHAR(128)" }, { name: "CITY", type: "VARCHAR(80)" }, { name: "KYC_STATUS", type: "VARCHAR(16)" }, { name: "INGESTED_AT", type: "TIMESTAMP_NTZ" }] },
-                  { name: "RAW_TRANSACTIONS", rows: 1250000, columns: [{ name: "TXN_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "SRC_ACCOUNT", type: "VARCHAR(32)" }, { name: "DEST_ACCOUNT", type: "VARCHAR(32)" }, { name: "AMOUNT", type: "NUMBER(18,2)" }, { name: "TXN_TYPE", type: "VARCHAR(16)" }, { name: "TXN_DATE", type: "TIMESTAMP_NTZ" }] },
-                  { name: "RAW_ACCOUNTS", rows: 84000, columns: [{ name: "ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "ACCOUNT_TYPE", type: "VARCHAR(16)" }, { name: "BALANCE", type: "NUMBER(18,2)" }, { name: "BRANCH_CODE", type: "VARCHAR(16)" }] },
-                  { name: "NANOPRO_LIVE_DATA", rows: 48200, columns: [{ name: "SOURCE", type: "VARCHAR(32)" }, { name: "PAYLOAD", type: "VARIANT" }, { name: "CREATED_AT", type: "TIMESTAMP_NTZ" }] },
-                  { name: "NANOPRO_REPORTS", rows: 365, columns: [{ name: "REPORT_NAME", type: "VARCHAR(128)" }, { name: "CONTENT", type: "TEXT" }, { name: "CREATED_AT", type: "TIMESTAMP_NTZ" }] },
-                  { name: "NANOPRO_HEALTH_LOG", rows: 14200, columns: [{ name: "UPSTREAM", type: "VARCHAR(64)" }, { name: "STATUS", type: "VARCHAR(16)" }, { name: "LATENCY_MS", type: "NUMBER" }] }
-                ]
-              },
-              {
-                name: "L1_HARMONIZED",
-                tables: [
-                  { name: "CUSTOMERS_CLEANSED", rows: 142800, columns: [{ name: "CUSTOMER_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CLEANSED_NAME", type: "VARCHAR(128)" }, { name: "STANDARDIZED_CITY", type: "VARCHAR(80)" }, { name: "IS_ACTIVE", type: "BOOLEAN" }] },
-                  { name: "TRANSACTIONS_ENRICHED", rows: 1248000, columns: [{ name: "TXN_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "ACCOUNT_NO", type: "VARCHAR(32)" }, { name: "NET_AMOUNT", type: "NUMBER(18,2)" }, { name: "CHANNEL", type: "VARCHAR(16)" }, { name: "FRAUD_FLAG", type: "BOOLEAN" }] },
-                  { name: "ACCOUNT_BALANCES", rows: 84000, columns: [{ name: "ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "AVAILABLE_BAL", type: "NUMBER(18,2)" }, { name: "HOLD_BAL", type: "NUMBER(18,2)" }, { name: "LAST_UPDATED", type: "TIMESTAMP_NTZ" }] }
-                ]
-              },
-              {
-                name: "L2_CURATED",
-                tables: [
-                  { name: "DIM_CUSTOMER_MASTER", rows: 142800, columns: [{ name: "CUSTOMER_SK", type: "NUMBER PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "SEGMENT", type: "VARCHAR(32)" }, { name: "LIFETIME_VALUE", type: "NUMBER(20,2)" }] },
-                  { name: "FACT_DAILY_SETTLEMENT", rows: 1825, columns: [{ name: "SETTLEMENT_DATE", type: "DATE PRIMARY KEY" }, { name: "TOTAL_TX_COUNT", type: "NUMBER" }, { name: "GROSS_CREDIT", type: "NUMBER(22,2)" }, { name: "GROSS_DEBIT", type: "NUMBER(22,2)" }, { name: "NET_SETTLEMENT", type: "NUMBER(22,2)" }] },
-                  { name: "EOD_FINANCIAL_SUMMARY", rows: 365, columns: [{ name: "EOD_DATE", type: "DATE PRIMARY KEY" }, { name: "CLOSING_LIQUIDITY", type: "NUMBER(22,2)" }, { name: "RECONCILED_FLAG", type: "BOOLEAN" }, { name: "AUDIT_HASH", type: "VARCHAR(64)" }] },
-                  { name: "KPI_EXECUTIVE_SUMMARY", rows: 52, columns: [{ name: "WEEK_NO", type: "VARCHAR(10) PRIMARY KEY" }, { name: "ACTIVE_USERS", type: "NUMBER" }, { name: "CHURN_RATE", type: "FLOAT" }, { name: "NIM_RATIO", type: "FLOAT" }] }
-                ]
-              },
-              {
-                name: "SALES",
-                tables: [
-                  { name: "SALES_ORDERS", rows: 54000, columns: [{ name: "ORDER_ID", type: "NUMBER PRIMARY KEY" }, { name: "CUSTOMER_NAME", type: "VARCHAR(120)" }, { name: "CITY", type: "VARCHAR(80)" }, { name: "AMOUNT", type: "NUMBER(12,2)" }] },
-                  { name: "V_REGION_REVENUE", rows: 12, columns: [{ name: "CITY", type: "VARCHAR(80)" }, { name: "TOTAL_ORDERS", type: "NUMBER" }, { name: "TOTAL_REVENUE", type: "NUMBER(18,2)" }] }
-                ]
-              }
+            name: "L1_HARMONIZED",
+            description: "Cleansed & Quality Gate Validated Tier (SCD-2 Historical Normalization)",
+            tables: [
+              { name: "FACT_AML_CASES_CLEANSED", rows: 146200, columns: [{ name: "CASE_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "STR_ELIGIBLE", type: "BOOLEAN" }, { name: "INVESTIGATOR_ID", type: "VARCHAR(32)" }] },
+              { name: "FACT_ALM_MATURITY_BUCKETS", rows: 214800, columns: [{ name: "BUCKET_CODE", type: "VARCHAR(16) PRIMARY KEY" }, { name: "NET_LIQUIDITY_GAP", type: "NUMBER(20,2)" }, { name: "CUMULATIVE_GAP_PCT", type: "FLOAT" }] },
+              { name: "FACT_CC_CLEANSED_TXNS", rows: 1448500, columns: [{ name: "TXN_KEY", type: "VARCHAR(64) PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "DELINQUENCY_STAGE", type: "VARCHAR(16)" }, { name: "FINANCE_CHARGE", type: "NUMBER(12,2)" }] },
+              { name: "FACT_BUREAU_MATCHED_SCORES", rows: 318400, columns: [{ name: "CUSTOMER_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CREDIT_TIER", type: "VARCHAR(16)" }, { name: "PROBABILITY_OF_DEFAULT", type: "FLOAT" }] },
+              { name: "FACT_CIMS_HARMONIZED_RETS", rows: 63900, columns: [{ name: "FORM_CODE", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CRAR_RATIO", type: "FLOAT" }, { name: "COMPLIANCE_STATUS", type: "VARCHAR(16)" }] },
+              { name: "FACT_UPI_SETTLED_TXNS", rows: 2098000, columns: [{ name: "SETTLEMENT_REF", type: "VARCHAR(64) PRIMARY KEY" }, { name: "CLEARING_CYCLE", type: "VARCHAR(16)" }, { name: "NET_FEE_INR", type: "NUMBER(10,2)" }] },
+              { name: "FACT_JLG_RECONCILED_DUES", rows: 409200, columns: [{ name: "GROUP_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "RECOVERY_RATE_PCT", type: "FLOAT" }, { name: "NPA_EXPOSURE", type: "NUMBER(15,2)" }] },
+              { name: "FACT_LOS_LMS_SERVICED_LOANS", rows: 184600, columns: [{ name: "LOAN_ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "CURRENT_PRINCIPAL", type: "NUMBER(15,2)" }, { name: "OVERDUE_DAYS", type: "INTEGER" }, { name: "NPA_STAGE", type: "VARCHAR(16)" }] }
             ]
           },
           {
-            id: "aws",
-            name: "AWS S3 Lakehouse (765865641438)",
-            kind: "aws",
-            icon: "🟧",
-            schemas: [
-              {
-                name: "bronze_l0",
-                tables: [
-                  { name: "transactions_2026.parquet", rows: 150000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/banking/transactions_2026.parquet" }, { name: "size", type: "42.8 MB" }, { name: "format", type: "SNAPPY_PARQUET" }] },
-                  { name: "raw_customers.parquet", rows: 84000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/banking/raw_customers.parquet" }, { name: "size", type: "16.4 MB" }, { name: "format", type: "PARQUET" }] },
-                  { name: "incoming_stream.parquet", rows: 48200, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/cbs/incoming_stream.parquet" }, { name: "size", type: "14.1 MB" }, { name: "format", type: "PARQUET" }] }
-                ]
-              },
-              {
-                name: "silver_l1",
-                tables: [
-                  { name: "customers_cleansed.parquet", rows: 78400, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/banking/customers_cleansed.parquet" }, { name: "size", type: "18.2 MB" }, { name: "format", type: "PARQUET" }] },
-                  { name: "transactions_enriched.parquet", rows: 124800, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/banking/transactions_enriched.parquet" }, { name: "size", type: "34.5 MB" }, { name: "format", type: "PARQUET" }] },
-                  { name: "account_balances.parquet", rows: 62000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/banking/account_balances.parquet" }, { name: "size", type: "12.8 MB" }, { name: "format", type: "PARQUET" }] }
-                ]
-              },
-              {
-                name: "gold_l2",
-                tables: [
-                  { name: "dim_customer_master.parquet", rows: 1740, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/gold/marts/dim_customer_master.parquet" }, { name: "size", type: "8.4 MB" }, { name: "format", type: "PARQUET" }] },
-                  { name: "fact_daily_settlement.parquet", rows: 1825, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/gold/marts/fact_daily_settlement.parquet" }, { name: "size", type: "6.2 MB" }, { name: "format", type: "PARQUET" }] },
-                  { name: "gold_marts.duckdb", rows: 49000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/lakehouse/gold_marts.duckdb" }, { name: "size", type: "18.9 MB" }, { name: "format", type: "DUCKDB_DATABASE" }] }
-                ]
-              }
-            ]
-          },
-          {
-            id: "bigquery",
-            name: "Google BigQuery Lakehouse",
-            kind: "bigquery",
-            icon: "☁️",
-            schemas: [
-              {
-                name: "nanopro_lakehouse",
-                tables: [
-                  { name: "lakehouse_audit_logs", rows: 840000, columns: [{ name: "event_id", type: "STRING" }, { name: "event_timestamp", type: "TIMESTAMP" }, { name: "actor", type: "STRING" }, { name: "action", type: "STRING" }] },
-                  { name: "model_inferences_2026", rows: 54000, columns: [{ name: "request_id", type: "STRING" }, { name: "provider", type: "STRING" }, { name: "model_id", type: "STRING" }, { name: "latency_ms", type: "FLOAT64" }] },
-                  { name: "eod_settlement_archive", rows: 12500, columns: [{ name: "settlement_date", type: "DATE" }, { name: "batch_id", type: "STRING" }, { name: "total_cleared", type: "NUMERIC" }] },
-                  { name: "customer_segments", rows: 8200, columns: [{ name: "customer_id", type: "STRING" }, { name: "rfm_score", type: "INT64" }, { name: "segment_label", type: "STRING" }] }
-                ]
-              }
+            name: "L2_CURATED",
+            description: "Curated Analytical Marts & Star Schema (Executive EOD Reporting T-1)",
+            tables: [
+              { name: "MART_AML_STR_REGULATORY", rows: 12400, columns: [{ name: "DISCLOSURE_ID", type: "VARCHAR(64) PRIMARY KEY" }, { name: "FIU_IND_SENT", type: "BOOLEAN" }, { name: "TOTAL_ALERT_VALUE", type: "NUMBER(22,2)" }] },
+              { name: "MART_ALM_LIQUIDITY_GAP", rows: 365, columns: [{ name: "REPORT_DATE", type: "DATE PRIMARY KEY" }, { name: "STRESS_TEST_SURPLUS", type: "NUMBER(22,2)" }, { name: "LCR_PERCENTAGE", type: "FLOAT" }] },
+              { name: "MART_CC_DELINQUENCY_REV", rows: 54200, columns: [{ name: "BILLING_CYCLE", type: "VARCHAR(16) PRIMARY KEY" }, { name: "TOTAL_REVOLVING_BOOK", type: "NUMBER(22,2)" }, { name: "PAR_90_PLUS_PCT", type: "FLOAT" }] },
+              { name: "MART_BUREAU_RISK_MIGRATION", rows: 28500, columns: [{ name: "COHORT_MONTH", type: "VARCHAR(16) PRIMARY KEY" }, { name: "DOWNGRADE_COUNT", type: "INTEGER" }, { name: "EXPECTED_LOSS_INR", type: "NUMBER(22,2)" }] },
+              { name: "MART_CIMS_BASEL3_DISCLOSURE", rows: 52, columns: [{ name: "QUARTER_ID", type: "VARCHAR(16) PRIMARY KEY" }, { name: "TIER1_CAPITAL_ADEQUACY", type: "FLOAT" }, { name: "LEVERAGE_RATIO", type: "FLOAT" }] },
+              { name: "MART_UPI_SWITCH_SETTLEMENT", rows: 1825, columns: [{ name: "SETTLEMENT_DATE", type: "DATE PRIMARY KEY" }, { name: "NPCI_VOLUME_CLEARED", type: "NUMBER" }, { name: "SUCCESS_RATE_PCT", type: "FLOAT" }] },
+              { name: "MART_JLG_PAR_RECOVERY", rows: 18400, columns: [{ name: "BRANCH_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "ZERO_PAR_CENTERS_COUNT", type: "INTEGER" }, { name: "TOTAL_OVERDUE", type: "NUMBER(18,2)" }] },
+              { name: "MART_LOS_LMS_NPA_PROVISIONING", rows: 9800, columns: [{ name: "PORTFOLIO_ID", type: "VARCHAR(32) PRIMARY KEY" }, { name: "GROSS_NPA_PCT", type: "FLOAT" }, { name: "PROVISION_COVERAGE_RATIO", type: "FLOAT" }] },
+              { name: "DIM_CUSTOMER_360", rows: 145000, columns: [{ name: "CUSTOMER_SK", type: "NUMBER PRIMARY KEY" }, { name: "CUSTOMER_ID", type: "VARCHAR(32)" }, { name: "FULL_NAME", type: "VARCHAR(128)" }, { name: "RISK_CATEGORY", type: "VARCHAR(16)" }] },
+              { name: "DIM_ACCOUNT_MASTER", rows: 84000, columns: [{ name: "ACCOUNT_NO", type: "VARCHAR(32) PRIMARY KEY" }, { name: "PRODUCT_CODE", type: "VARCHAR(16)" }, { name: "OPEN_DATE", type: "DATE" }, { name: "BRANCH_CODE", type: "VARCHAR(16)" }] }
             ]
           }
-        ];
+        ]
+      },
+      {
+        id: "aws",
+        name: "AWS S3 Lakehouse (765865641438)",
+        kind: "aws",
+        icon: "🟧",
+        schemas: [
+          {
+            name: "bronze_l0",
+            description: "Raw Parquet Lakehouse Vault (ap-southeast-2)",
+            tables: [
+              { name: "aml_raw_alerts.parquet", rows: 148000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/aml/raw_alerts.parquet" }, { name: "size", type: "28.4 MB" }, { name: "format", type: "SNAPPY_PARQUET" }] },
+              { name: "alm_cashflows_raw.parquet", rows: 215000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/alm/cashflows_raw.parquet" }, { name: "size", type: "41.2 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "credit_card_txns_raw.parquet", rows: 1450000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/credit_card/txns_raw.parquet" }, { name: "size", type: "164.8 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "bureau_cibil_raw.parquet", rows: 320000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/bureau/cibil_raw.parquet" }, { name: "size", type: "52.6 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "cims_rbi_returns_raw.parquet", rows: 64000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/cims/returns_raw.parquet" }, { name: "size", type: "18.3 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "upi_switch_raw.parquet", rows: 2100000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/upi/switch_raw.parquet" }, { name: "size", type: "210.5 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "jlg_collections_raw.parquet", rows: 410000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/jlg/collections_raw.parquet" }, { name: "size", type: "62.4 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "los_lms_loans_raw.parquet", rows: 185000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/bronze/los_lms/loans_raw.parquet" }, { name: "size", type: "36.8 MB" }, { name: "format", type: "PARQUET" }] }
+            ]
+          },
+          {
+            name: "silver_l1",
+            description: "Cleansed & Deduplicated Parquet Layer",
+            tables: [
+              { name: "aml_cases_cleansed.parquet", rows: 146200, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/aml/cases_cleansed.parquet" }, { name: "size", type: "26.1 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "alm_maturity_buckets.parquet", rows: 214800, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/alm/maturity_buckets.parquet" }, { name: "size", type: "38.9 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "credit_card_cleansed.parquet", rows: 1448500, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/credit_card/cleansed.parquet" }, { name: "size", type: "152.0 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "bureau_matched_scores.parquet", rows: 318400, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/bureau/matched_scores.parquet" }, { name: "size", type: "48.2 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "cims_harmonized_returns.parquet", rows: 63900, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/cims/harmonized.parquet" }, { name: "size", type: "16.5 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "upi_settled_txns.parquet", rows: 2098000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/upi/settled_txns.parquet" }, { name: "size", type: "194.2 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "jlg_reconciled_dues.parquet", rows: 409200, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/jlg/reconciled.parquet" }, { name: "size", type: "58.1 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "los_lms_serviced_loans.parquet", rows: 184600, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/silver/los_lms/serviced_loans.parquet" }, { name: "size", type: "34.2 MB" }, { name: "format", type: "PARQUET" }] }
+            ]
+          },
+          {
+            name: "gold_l2",
+            description: "Curated Marts & Durable Lakehouse Store",
+            tables: [
+              { name: "dim_customer_360.parquet", rows: 145000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/gold/marts/dim_customer_360.parquet" }, { name: "size", type: "18.4 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "fact_daily_financial_marts.parquet", rows: 1825, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/gold/marts/fact_daily_financial_marts.parquet" }, { name: "size", type: "12.8 MB" }, { name: "format", type: "PARQUET" }] },
+              { name: "gold_marts.duckdb", rows: 84000, columns: [{ name: "s3_uri", type: "s3://nanopro-data-lake-765865641438-ap-southeast-2-an/lakehouse/gold_marts.duckdb" }, { name: "size", type: "24.6 MB" }, { name: "format", type: "DUCKDB_DATABASE" }] }
+            ]
+          }
+        ]
+      },
+      {
+        id: "duckdb",
+        name: "DuckDB Local Lakehouse (gold_marts)",
+        kind: "duckdb",
+        icon: "🦆",
+        schemas: [
+          {
+            name: "gold_marts",
+            description: "Zero-Latency Columnar In-Memory Analytics (All 8 Projects)",
+            tables: [
+              { name: "mart_aml_suspicious_alerts", rows: 12400, columns: [{ name: "alert_id", type: "VARCHAR PRIMARY KEY" }, { name: "risk_category", type: "VARCHAR" }, { name: "fiu_eligible", type: "BOOLEAN" }, { name: "amount_inr", type: "DECIMAL(18,2)" }] },
+              { name: "mart_alm_structural_liquidity", rows: 365, columns: [{ name: "as_of_date", type: "DATE PRIMARY KEY" }, { name: "net_gap_inr", type: "DECIMAL(20,2)" }, { name: "cumulative_gap_pct", type: "DOUBLE" }] },
+              { name: "mart_credit_card_risk", rows: 54200, columns: [{ name: "account_id", type: "VARCHAR PRIMARY KEY" }, { name: "dpd_bucket", type: "VARCHAR" }, { name: "revolving_balance", type: "DECIMAL(18,2)" }] },
+              { name: "mart_bureau_cibil_scores", rows: 28500, columns: [{ name: "customer_id", type: "VARCHAR PRIMARY KEY" }, { name: "score", type: "INTEGER" }, { name: "delinquency_grade", type: "VARCHAR" }] },
+              { name: "mart_adf_cims_basel3", rows: 52, columns: [{ name: "quarter_code", type: "VARCHAR PRIMARY KEY" }, { name: "crar_pct", type: "DOUBLE" }, { name: "tier1_capital", type: "DECIMAL(22,2)" }] },
+              { name: "mart_upi_switch_reconciliation", rows: 1825, columns: [{ name: "settle_date", type: "DATE PRIMARY KEY" }, { name: "npci_settled_vol", type: "BIGINT" }, { name: "chargeback_count", type: "INTEGER" }] },
+              { name: "mart_jlg_group_collections", rows: 18400, columns: [{ name: "group_id", type: "VARCHAR PRIMARY KEY" }, { name: "recovery_rate", type: "DOUBLE" }, { name: "par_overdue_inr", type: "DECIMAL(18,2)" }] },
+              { name: "mart_los_lms_loan_portfolio", rows: 9800, columns: [{ name: "loan_id", type: "VARCHAR PRIMARY KEY" }, { name: "principal_due", type: "DECIMAL(18,2)" }, { name: "npa_stage", type: "VARCHAR" }] }
+            ]
+          }
+        ]
+      },
+      {
+        id: "bigquery",
+        name: "Google BigQuery Banking Sandbox",
+        kind: "bigquery",
+        icon: "☁️",
+        schemas: [
+          {
+            name: "banking_prod",
+            description: "Google Cloud Multi-Cloud Enterprise Repository",
+            tables: [
+              { name: "cims_regulatory_audit_trail", rows: 840000, columns: [{ name: "audit_id", type: "STRING" }, { name: "return_code", type: "STRING" }, { name: "actor", type: "STRING" }, { name: "verified_at", type: "TIMESTAMP" }] },
+              { name: "aml_str_ml_features", rows: 146200, columns: [{ name: "customer_id", type: "STRING" }, { name: "anomaly_score", type: "FLOAT64" }, { name: "graph_centrality", type: "FLOAT64" }] },
+              { name: "daily_executive_kpi_mart", rows: 1825, columns: [{ name: "close_date", type: "DATE" }, { name: "nim_ratio", type: "FLOAT64" }, { name: "gnpa_pct", type: "FLOAT64" }, { name: "total_deposits", type: "NUMERIC" }] }
+            ]
+          }
+        ]
+      }
+    ];
 
     ailabRenderExplorerTree();
   };
@@ -23001,6 +23134,182 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (window.AILAB_CUA) window.AILAB_CUA.init();
     }, 400);
   });
+
+  // =========================================================================
+  // AIRFLOW ORCHESTRATOR & SFTP HUB CONTROLLER
+  // =========================================================================
+  window.ailabOpenAirflowModal = async function() {
+    const modal = document.getElementById("ailabAirflowModal");
+    if (!modal) return;
+    modal.classList.add("is-open");
+    await ailabLoadAirflowDags();
+    await ailabLoadSftpReports();
+  };
+
+  window.ailabCloseAirflowModal = function(e) {
+    if (e && e.target !== e.currentTarget && !e.target.classList.contains("ailab-modal-close")) return;
+    const modal = document.getElementById("ailabAirflowModal");
+    if (modal) modal.classList.remove("is-open");
+  };
+
+  window.ailabSwitchAirflowTab = function(tab) {
+    document.getElementById("tabAirflowDags")?.classList.toggle("is-active", tab === "dags");
+    document.getElementById("tabAirflowSftp")?.classList.toggle("is-active", tab === "sftp");
+    document.getElementById("tabAirflowArchitecture")?.classList.toggle("is-active", tab === "arch");
+
+    const tDags = document.getElementById("airflowTabDags");
+    const tSftp = document.getElementById("airflowTabSftp");
+    const tArch = document.getElementById("airflowTabArch");
+    if (tDags) tDags.style.display = tab === "dags" ? "block" : "none";
+    if (tSftp) tSftp.style.display = tab === "sftp" ? "block" : "none";
+    if (tArch) tArch.style.display = tab === "arch" ? "block" : "none";
+  };
+
+  window.ailabLoadAirflowDags = async function() {
+    const list = document.getElementById("airflowDagsList");
+    if (!list) return;
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">Loading Airflow DAGs...</div>`;
+
+    try {
+      const res = await fetch("/api/banking/dag/list");
+      const data = await res.json();
+      const dags = data.dags || [];
+      if (!dags.length) {
+        list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No active DAGs found.</div>`;
+        return;
+      }
+
+      list.innerHTML = dags.map(d => `
+        <div style="background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;">⚡</span>
+              <div>
+                <span style="font-weight:700;color:#F8FAFC;font-size:13.5px;">${d.dag_id}</span>
+                <span style="font-size:11px;color:#38BDF8;margin-left:6px;">(${d.project_name})</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="background:rgba(16,185,129,0.2);color:#34D399;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">● ${d.status}</span>
+              <span style="font-size:11px;color:#94A3B8;">${d.schedule}</span>
+            </div>
+          </div>
+
+          <div style="font-size:12px;color:#94A3B8;margin-bottom:10px;line-height:1.4;">
+            ${d.description}
+          </div>
+
+          <!-- Medallion Task Pipeline -->
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:12px;flex-wrap:wrap;">
+            <span style="background:rgba(217,119,6,0.2);color:#F59E0B;padding:2px 8px;border-radius:4px;">L0: ${d.l0_table}</span>
+            <span style="color:#64748B;">➔</span>
+            <span style="background:rgba(6,182,212,0.2);color:#22D3EE;padding:2px 8px;border-radius:4px;">L1: ${d.l1_table}</span>
+            <span style="color:#64748B;">➔</span>
+            <span style="background:rgba(16,185,129,0.2);color:#34D399;padding:2px 8px;border-radius:4px;">L2: ${d.l2_table}</span>
+            <span style="color:#64748B;">➔</span>
+            <span style="background:rgba(168,85,247,0.2);color:#C084FC;padding:2px 8px;border-radius:4px;">Excel: ${d.report_size_mb} MB (${d.email_rule_applied})</span>
+          </div>
+
+          <!-- Controls -->
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button type="button" class="ailab-code-btn" onclick="ailabTriggerDagRun('${d.project_id}', 'INCREMENTAL_LOAD')" style="color:#34D399;border-color:rgba(16,185,129,0.4);font-size:11px;">
+                ▶ Run Incremental (T-1)
+              </button>
+              <button type="button" class="ailab-code-btn" onclick="ailabTriggerDagRun('${d.project_id}', 'FULL_LOAD')" style="color:#38BDF8;border-color:rgba(56,189,248,0.4);font-size:11px;">
+                🔄 Full Load
+              </button>
+              <button type="button" class="ailab-code-btn" onclick="ailabRollbackDagLayer('${d.project_id}', 'L1_HARMONIZED')" style="color:#F87171;border-color:rgba(248,113,113,0.4);font-size:11px;" title="Rollback dirty/broken data directly from UI without opening code!">
+                ⏪ Rollback L1
+              </button>
+            </div>
+            <a href="/api/sftp/reports/download?filename=${encodeURIComponent(d.report_filename)}" target="_blank" class="ailab-code-btn" style="color:#FBBF24;border-color:rgba(251,191,36,0.4);text-decoration:none;font-size:11px;">
+              📥 Download EOD Excel
+            </a>
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      list.innerHTML = `<div style="text-align:center;padding:20px;color:#F87171;">Failed to load DAGs: ${err.message}</div>`;
+    }
+  };
+
+  window.ailabTriggerDagRun = async function(projectId, loadType) {
+    try {
+      const res = await fetch("/api/banking/dag/trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId, load_type: loadType, mode: "APPEND" })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        alert(`✅ DAG Triggered Successfully!\nProject: ${data.result.project_name}\nLoad: ${data.result.load_type}\nT-1 Basis: ${data.result.t1_basis}\nQuality Gate: ${data.result.quality_gate}\nSFTP: ${data.result.sftp_path}\nEmail: ${data.result.email_dispatched.rule}`);
+        await ailabLoadAirflowDags();
+      } else {
+        alert(`❌ Failed: ${data.detail || "Error"}`);
+      }
+    } catch (err) {
+      alert(`Error triggering DAG: ${err.message}`);
+    }
+  };
+
+  window.ailabRollbackDagLayer = async function(projectId, layer) {
+    if (!confirm(`Are you sure you want to rollback ${projectId.toUpperCase()} to ${layer}?\nThis will purge broken data and restore previous stable watermark.`)) return;
+    try {
+      const res = await fetch("/api/banking/dag/rollback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId, target_layer: layer })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        alert(`✅ Rollback Complete!\n${data.result.message}`);
+        await ailabLoadAirflowDags();
+      } else {
+        alert(`❌ Rollback Failed: ${data.detail || "Error"}`);
+      }
+    } catch (err) {
+      alert(`Error rolling back: ${err.message}`);
+    }
+  };
+
+  window.ailabLoadSftpReports = async function() {
+    const list = document.getElementById("airflowSftpReportsList");
+    if (!list) return;
+
+    try {
+      const res = await fetch("/api/sftp/reports/list");
+      const data = await res.json();
+      const reports = data.reports || [];
+      if (!reports.length) {
+        list.innerHTML = `<div style="text-align:center;padding:15px;color:#94A3B8;">No reports generated yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = reports.map(r => `
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:18px;">📊</span>
+            <div>
+              <div style="font-weight:700;color:#F8FAFC;font-size:13px;">${r.filename}</div>
+              <div style="font-size:11px;color:#94A3B8;">SFTP Path: <code>${r.sftp_path}</code></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="background:${r.size_mb <= 5.0 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"};color:${r.size_mb <= 5.0 ? "#34D399" : "#FBBF24"};font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">
+              ${r.size_formatted} • ${r.email_rule}
+            </span>
+            <a href="/api/sftp/reports/download?filename=${encodeURIComponent(r.filename)}" target="_blank" class="ailab-code-btn" style="color:#38BDF8;border-color:rgba(56,189,248,0.4);text-decoration:none;font-size:11px;padding:4px 10px;">
+              📥 1-Click Download
+            </a>
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      list.innerHTML = `<div style="text-align:center;padding:15px;color:#F87171;">Failed to load SFTP reports: ${err.message}</div>`;
+    }
+  };
+
 </script>
 </div>
 
