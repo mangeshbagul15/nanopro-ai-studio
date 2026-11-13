@@ -180,6 +180,11 @@ class ProviderCircuitBreaker:
                     return CircuitBreakerState.HALF_OPEN
             return state
 
+    def get_last_error(self, provider: str) -> str:
+        key = self._normalize(provider)
+        with self._lock:
+            return str(self._last_errors.get(key) or "")[:200]
+
     def can_execute(self, provider: str) -> bool:
         """
         Returns False if provider circuit is OPEN (< 0.01ms check),

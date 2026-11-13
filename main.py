@@ -2781,6 +2781,7 @@ async def api_ai_providers_status():
                 providers[name] = {
                     "configured": bool(adapter.is_available()),
                     "circuit": cb.get_state(name),
+                    "last_error": cb.get_last_error(name),
                 }
             except Exception as exc:
                 providers[name] = {"configured": False, "circuit": "unknown", "error": type(exc).__name__}
