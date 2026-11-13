@@ -2106,6 +2106,390 @@ body.in-global_ai_lab .nano-dynamic-island {
     z-index: 20;
   }
 
+
+/* ========================================================================= */
+/* ANTIGRAVITY / CLAUDE CODE / CODEX PROFESSIONAL DARK THEME (EYE COMFORT)   */
+/* Soft matte colors, zero neon halo, zero text-shadow, zero eye strain.    */
+/* ========================================================================= */
+#view-global_ai_lab,
+#view-global_ai_lab .ailab-app {
+  background: #0D1117 !important;
+  color: #C9D1D9 !important;
+  --al-bg: #0D1117 !important;
+  --al-panel: #161B22 !important;
+  --al-panel-2: #21262D !important;
+  --al-line: #30363D !important;
+  --al-line-2: #30363D !important;
+  --al-text: #C9D1D9 !important;
+  --al-muted: #8B949E !important;
+  --al-dim: #6E7681 !important;
+  --al-accent: #58A6FF !important;
+  --al-accent-glow: transparent !important;
+}
+
+/* TOPBAR: Single-line, compact 44px, no wrapping, eye-comfort palette */
+#view-global_ai_lab .ailab-topbar {
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  background: #161B22 !important;
+  border-bottom: 1px solid #30363D !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  padding: 0 12px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+}
+
+#view-global_ai_lab .ailab-topbar-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 0 0 auto !important;
+}
+
+#view-global_ai_lab .ailab-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  color: #E6EDF3 !important;
+  text-decoration: none !important;
+}
+
+#view-global_ai_lab .ailab-brand-badge {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  background: rgba(56, 139, 253, 0.15) !important;
+  border: 1px solid rgba(56, 139, 253, 0.35) !important;
+  color: #58A6FF !important;
+  box-shadow: none !important;
+}
+
+#view-global_ai_lab .ailab-conn-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  color: #8B949E !important;
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  border-radius: 4px !important;
+  padding: 2px 7px !important;
+}
+
+#view-global_ai_lab .ailab-topbar-center {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
+
+#view-global_ai_lab .ailab-topbar-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+}
+
+/* Select Wrappers & Dropdowns */
+#view-global_ai_lab .ailab-model-selector-wrap,
+#view-global_ai_lab .ailab-effort-wrap {
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  padding: 0 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+#view-global_ai_lab .ailab-model-selector-wrap:hover,
+#view-global_ai_lab .ailab-effort-wrap:hover {
+  border-color: #8B949E !important;
+}
+
+#view-global_ai_lab .ailab-model-select,
+#view-global_ai_lab .ailab-effort-select {
+  background: transparent !important;
+  border: none !important;
+  color: #C9D1D9 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  padding-right: 4px !important;
+}
+
+#view-global_ai_lab .ailab-model-select option,
+#view-global_ai_lab .ailab-effort-select option,
+#view-global_ai_lab .ailab-model-select optgroup {
+  background: #161B22 !important;
+  color: #C9D1D9 !important;
+}
+
+/* Buttons in Topbar */
+#view-global_ai_lab .ailab-browse-btn,
+#view-global_ai_lab .ailab-cua-toggle-btn,
+#view-global_ai_lab .ailab-topbar-sync-btn,
+#view-global_ai_lab .ailab-code-btn {
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  color: #C9D1D9 !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+#view-global_ai_lab .ailab-browse-btn:hover,
+#view-global_ai_lab .ailab-cua-toggle-btn:hover,
+#view-global_ai_lab .ailab-topbar-sync-btn:hover {
+  background: #30363D !important;
+  color: #F0F6FC !important;
+  border-color: #8B949E !important;
+}
+
+/* New Chat Button: Standard Green Button (Claude Code / Antigravity) */
+#view-global_ai_lab .ailab-topbar-new-chat-btn,
+#view-global_ai_lab .ailab-btn-primary.ailab-topbar-new-chat-btn {
+  background: #238636 !important;
+  border: 1px solid rgba(240, 246, 252, 0.1) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+#view-global_ai_lab .ailab-topbar-new-chat-btn:hover {
+  background: #2EA043 !important;
+}
+
+/* Icon Buttons */
+#view-global_ai_lab .ailab-iconbtn {
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  color: #8B949E !important;
+  border-radius: 6px !important;
+  width: 28px !important;
+  height: 28px !important;
+  box-shadow: none !important;
+}
+#view-global_ai_lab .ailab-iconbtn:hover,
+#view-global_ai_lab .ailab-iconbtn.is-active {
+  background: #30363D !important;
+  color: #F0F6FC !important;
+  border-color: #8B949E !important;
+}
+
+/* CHAT AREA: Soft matte dark canvas */
+#view-global_ai_lab .ailab-chat-window,
+#view-global_ai_lab .ailab-messages-wrap {
+  background: #0D1117 !important;
+}
+
+/* ASSISTANT CARD */
+#view-global_ai_lab .ailab-msg-assistant .ailab-bubble,
+#view-global_ai_lab .ailab-asst-bubble {
+  background: #161B22 !important;
+  border: 1px solid #30363D !important;
+  border-radius: 8px !important;
+  padding: 16px 20px !important;
+  color: #C9D1D9 !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* USER BUBBLE */
+#view-global_ai_lab .ailab-msg-user .ailab-bubble,
+#view-global_ai_lab .ailab-user-bubble {
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  color: #C9D1D9 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  box-shadow: none !important;
+}
+
+#view-global_ai_lab .ailab-user-label {
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  color: #58A6FF !important;
+  border-radius: 4px !important;
+}
+
+/* Provenance Card */
+#view-global_ai_lab .ailab-provenance-card {
+  background: #21262D !important;
+  border: 1px solid #30363D !important;
+  border-left: 3px solid #58A6FF !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+}
+#view-global_ai_lab .ailab-prov-header {
+  border-bottom: 1px solid #30363D !important;
+}
+#view-global_ai_lab .ailab-prov-model {
+  color: #E6EDF3 !important;
+}
+#view-global_ai_lab .ailab-prov-lab {
+  color: #58A6FF !important;
+}
+#view-global_ai_lab .ailab-prov-country,
+#view-global_ai_lab .ailab-prov-sub {
+  color: #8B949E !important;
+}
+#view-global_ai_lab .ailab-dur-highlight {
+  color: #2EA043 !important;
+}
+
+/* Markdown Headings & Code */
+#view-global_ai_lab .ailab-asst-bubble h1,
+#view-global_ai_lab .ailab-asst-bubble h2,
+#view-global_ai_lab .ailab-asst-bubble h3,
+#view-global_ai_lab .ailab-asst-bubble h4 {
+  color: #E6EDF3 !important;
+  font-weight: 600 !important;
+  margin-top: 14px !important;
+  margin-bottom: 8px !important;
+  border-bottom: none !important;
+}
+#view-global_ai_lab .ailab-asst-bubble strong {
+  color: #E6EDF3 !important;
+  font-weight: 600 !important;
+}
+#view-global_ai_lab .ailab-asst-bubble p {
+  color: #C9D1D9 !important;
+  margin-bottom: 10px !important;
+}
+#view-global_ai_lab .ailab-asst-bubble code {
+  background: #21262D !important;
+  color: #E6EDF3 !important;
+  border: 1px solid #30363D !important;
+  border-radius: 4px !important;
+  padding: 1px 5px !important;
+  font-size: 12.5px !important;
+}
+#view-global_ai_lab .ailab-asst-bubble pre {
+  background: #0D1117 !important;
+  border: 1px solid #30363D !important;
+  border-radius: 6px !important;
+  padding: 12px 14px !important;
+}
+#view-global_ai_lab .ailab-asst-bubble pre code {
+  background: transparent !important;
+  border: none !important;
+  color: #E6EDF3 !important;
+}
+
+/* Markdown Tables */
+#view-global_ai_lab .ailab-asst-bubble table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+  border: 1px solid #30363D !important;
+  border-radius: 6px !important;
+}
+#view-global_ai_lab .ailab-asst-bubble th {
+  background: #21262D !important;
+  color: #E6EDF3 !important;
+  border: 1px solid #30363D !important;
+  padding: 6px 12px !important;
+  font-size: 12.5px !important;
+}
+#view-global_ai_lab .ailab-asst-bubble td {
+  background: #161B22 !important;
+  color: #C9D1D9 !important;
+  border: 1px solid #30363D !important;
+  padding: 6px 12px !important;
+  font-size: 12.5px !important;
+}
+
+/* Bottom Chat Input Bar */
+#view-global_ai_lab .ailab-input-card {
+  background: #161B22 !important;
+  border: 1px solid #30363D !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+#view-global_ai_lab .ailab-textarea {
+  background: transparent !important;
+  color: #C9D1D9 !important;
+}
+#view-global_ai_lab .ailab-textarea::placeholder {
+  color: #6E7681 !important;
+}
+#view-global_ai_lab .ailab-send-btn {
+  background: #238636 !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(240, 246, 252, 0.1) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+#view-global_ai_lab .ailab-send-btn:hover {
+  background: #2EA043 !important;
+}
+
+/* Sidebars (Chats & Explorer) */
+#view-global_ai_lab .ailab-sidebar,
+#view-global_ai_lab .ailab-explorer {
+  background: #161B22 !important;
+  border-right: 1px solid #30363D !important;
+  color: #C9D1D9 !important;
+}
+#view-global_ai_lab .ailab-sidebar-head,
+#view-global_ai_lab .ailab-explorer-head {
+  background: #161B22 !important;
+  border-bottom: 1px solid #30363D !important;
+  color: #E6EDF3 !important;
+}
+#view-global_ai_lab .ailab-sidebar-title,
+#view-global_ai_lab .ailab-explorer-title {
+  color: #E6EDF3 !important;
+}
+#view-global_ai_lab .ailab-sec-header {
+  color: #8B949E !important;
+}
+#view-global_ai_lab .ailab-chat-item {
+  color: #C9D1D9 !important;
+}
+#view-global_ai_lab .ailab-chat-item:hover {
+  background: #21262D !important;
+}
+#view-global_ai_lab .ailab-chat-item.is-active {
+  background: #21262D !important;
+  border-left: 2px solid #58A6FF !important;
+}
+
 </style>
 
 <div class="ailab-app">
@@ -2253,7 +2637,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             <option value="baidu/ernie-5.5-flash-preview:free">Baidu ERNIE 5.5 Flash (Free)</option>
           </optgroup>
         </select>
-        <span style="font-size:11px;color:#A78BFA;margin-left:4px;pointer-events:none;">▼</span>
+        
       </div>
 
       <div class="ailab-effort-wrap" title="Reasoning &amp; Latency SLA Tier">
@@ -2263,15 +2647,15 @@ body.in-global_ai_lab .nano-dynamic-island {
           <option value="reasoning">🧠 Deep Thinking</option>
           <option value="architecture">🔬 Architecture</option>
         </select>
-        <span style="font-size:11px;color:#10B981;margin-left:4px;pointer-events:none;">▼</span>
+        
       </div>
 
-      <button type="button" class="ailab-browse-btn" id="ailabAirflowTopbarBtn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, 8 Medallion DAGs & SFTP Hub" style="background:rgba(16,185,129,0.22) !important;border:1.5px solid #10B981 !important;box-shadow:0 0 10px rgba(16,185,129,0.4) !important;color:#34D399 !important;font-weight:800 !important;cursor:pointer !important;z-index:999 !important;display:inline-flex !important;align-items:center !important;gap:4px !important;padding:0 7px !important;height:30px !important;">
-        <span class="ailab-pulse-dot" style="background:#10B981 !important;box-shadow:0 0 6px #10B981 !important;width:6px;height:6px;border-radius:50%;display:inline-block;"></span>
-        <span>⏱️ Airflow</span>
+      <button type="button" class="ailab-browse-btn" id="ailabAirflowTopbarBtn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, 8 Medallion DAGs & SFTP Hub">
+        <span class="ailab-pulse-dot" style="background:#2EA043;width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:2px;"></span>
+        <span>⏱️ Airflow &amp; SFTP</span>
       </button>
       <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,750+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
-        <span>🔍 Models</span>
+        <span>🔍 4,750+ Models</span>
       </button>
     </div>
 
@@ -2287,7 +2671,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span class="ailab-live-pulse-dot"></span>
         <span>🖥️ CUA</span>
       </button>
-      <button class="ailab-code-btn ailab-topbar-sync-btn" onclick="ailabLoadLiveModels(true)" title="Auto-discover new world labs & models in real-time" style="color:#38BDF8;border-color:rgba(56,189,248,0.3);">
+      <button class="ailab-code-btn ailab-topbar-sync-btn" onclick="ailabLoadLiveModels(true)" title="Auto-discover new world labs & models in real-time">
         <span>🔄 Sync</span>
       </button>
       <button class="ailab-btn-primary ailab-topbar-new-chat-btn" onclick="ailabNewChat('')">
@@ -3877,10 +4261,11 @@ body.in-global_ai_lab .nano-dynamic-island {
       assistantPlaceholder.remove();
 
       if (execData.status === "success") {
-        // AUTONOMOUS DDL & TABLE CREATION HANDLING (Chat-Driven Table Creation)
+        // DYNAMIC SQL TABLE DDL DETECTOR & REGISTRATION (DuckDB & Snowflake)
+        let detectedTable = null;
         if (execData.action === "CREATE_TABLE" && execData.table_name) {
-          const newTb = {
-            name: execData.table_name,
+          detectedTable = {
+            name: execData.table_name.toUpperCase(),
             rows: 0,
             columns: execData.columns || [
               { name: "ID", type: "VARCHAR PRIMARY KEY" },
@@ -3888,7 +4273,41 @@ body.in-global_ai_lab .nano-dynamic-island {
               { name: "STATUS", type: "VARCHAR" }
             ]
           };
+        } else {
+          // Dynamic parser from LLM response or user text
+          const combinedText = (text + "\n" + (execData.response || "")).replace(/```sql|```/gi, "");
+          const ddlMatch = combinedText.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_\.]+)\s*\(([\s\S]*?)\)/i);
+          if (ddlMatch) {
+            let tName = ddlMatch[1].replace(/["`]/g, "").trim();
+            if (tName.includes(".")) {
+              const parts = tName.split(".");
+              tName = parts[parts.length - 1];
+            }
+            const colDefs = ddlMatch[2].split(/,\s*(?![^()]*\))/);
+            const cols = [];
+            for (const cLine of colDefs) {
+              const clean = cLine.trim().replace(/\n/g, " ");
+              if (clean && !clean.toUpperCase().startsWith("PRIMARY") && !clean.toUpperCase().startsWith("FOREIGN") && !clean.toUpperCase().startsWith("CONSTRAINT") && !clean.toUpperCase().startsWith("INDEX")) {
+                const segs = clean.split(/\s+/);
+                const cName = segs[0].replace(/["`]/g, "").toUpperCase();
+                const cType = segs.slice(1).join(" ").toUpperCase() || "VARCHAR";
+                if (cName && cName.length > 0) cols.push({ name: cName, type: cType });
+              }
+            }
+            detectedTable = {
+              name: tName.toUpperCase(),
+              rows: 0,
+              columns: cols.length > 0 ? cols : [
+                { name: "ID", type: "VARCHAR PRIMARY KEY" },
+                { name: "CREATED_AT", type: "TIMESTAMP" },
+                { name: "STATUS", type: "VARCHAR" }
+              ]
+            };
+          }
+        }
 
+        if (detectedTable) {
+          const newTb = detectedTable;
           if (AILAB_EXPLORER.catalog) {
             const duck = AILAB_EXPLORER.catalog.find(d => d.id === "duckdb");
             if (duck && duck.schemas && duck.schemas[0]) {
