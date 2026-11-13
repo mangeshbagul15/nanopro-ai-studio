@@ -20581,6 +20581,181 @@ body.in-global_ai_lab .nano-dynamic-island {
   border-left: 2px solid #58A6FF !important;
 }
 
+/* ========================================================= */
+/* CLEAN WORKSPACE LAYOUT                                    */
+/* ========================================================= */
+
+/* Topbar: one tidy row, controls shrink instead of overlapping */
+#view-global_ai_lab .ailab-topbar {
+  padding: 0 10px !important;
+  gap: 8px !important;
+  overflow: hidden !important;
+}
+#view-global_ai_lab .ailab-topbar-left,
+#view-global_ai_lab .ailab-topbar-right {
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+}
+#view-global_ai_lab .ailab-topbar-center {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  overflow: hidden !important;
+}
+#view-global_ai_lab .ailab-model-selector-wrap {
+  flex: 1 1 auto !important;
+  min-width: 150px !important;
+  max-width: 230px !important;
+}
+#view-global_ai_lab .ailab-model-select {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+#view-global_ai_lab .ailab-effort-wrap { flex: 0 0 auto !important; }
+#view-global_ai_lab .ailab-brand { flex: 0 0 auto !important; white-space: nowrap !important; }
+#view-global_ai_lab .ailab-conn-badge { flex: 0 0 auto !important; white-space: nowrap !important; }
+#view-global_ai_lab .ailab-topbar .ailab-iconbtn,
+#view-global_ai_lab .ailab-topbar .ailab-code-btn,
+#view-global_ai_lab .ailab-topbar .ailab-cua-toggle-btn,
+#view-global_ai_lab .ailab-topbar .ailab-topbar-new-chat-btn {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+#view-global_ai_lab .ailab-topbar-sync-btn {
+  width: 28px !important;
+  padding: 0 !important;
+  justify-content: center !important;
+}
+
+/* Chat header: title keeps the space, actions stay on one line */
+#view-global_ai_lab .ailab-canvas-head {
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  padding: 10px 16px !important;
+  min-height: 56px;
+}
+#view-global_ai_lab .ailab-chat-title-wrap {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+#view-global_ai_lab .ailab-canvas-head > div:last-child {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#view-global_ai_lab .ailab-canvas-head .ailab-code-btn {
+  height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 11.5px !important;
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+}
+#view-global_ai_lab .ailab-active-sub {
+  gap: 6px !important;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Explorer: slide-over panel, chat keeps full width */
+#view-global_ai_lab .ailab-explorer {
+  position: absolute !important;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px !important;
+  z-index: 45;
+  background: #0B111C !important;
+  border-left: 1px solid var(--al-line);
+  border-right: none !important;
+  box-shadow: -24px 0 48px rgba(0, 0, 0, 0.45);
+}
+#view-global_ai_lab .ailab-explorer.is-hidden { display: none !important; }
+#view-global_ai_lab .ailab-grip-v#ailabExplorerGrip {
+  right: auto !important;
+  left: -3px !important;
+}
+
+/* Empty state: quieter */
+#view-global_ai_lab .ailab-hero { padding: 18px 8px; margin: 10px auto; }
+#view-global_ai_lab .ailab-hero h2 { font-size: 21px; margin-bottom: 6px; }
+#view-global_ai_lab .ailab-hero p { font-size: 12.5px; max-width: 480px; margin-bottom: 14px; }
+#view-global_ai_lab .ailab-pill-grid {
+  gap: 8px;
+  margin-top: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+#view-global_ai_lab .ailab-pill-card { padding: 10px 12px; }
+#view-global_ai_lab .ailab-pill-card-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Composer: single clean block */
+#view-global_ai_lab .ailab-input-cockpit { padding: 10px 14px 12px; gap: 0; }
+#view-global_ai_lab .ailab-input-box { padding: 8px 12px; gap: 6px; }
+#view-global_ai_lab .ailab-input-actions { flex-wrap: nowrap; gap: 8px; }
+#view-global_ai_lab .ailab-input-tags {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+#view-global_ai_lab .ailab-input-actions > div:last-child { flex: 0 0 auto; }
+
+/* Sidebar footer: one compact line */
+#view-global_ai_lab .ailab-storage-footer {
+  padding: 7px 12px;
+  gap: 8px;
+  font-size: 10.5px;
+}
+#view-global_ai_lab .ailab-storage-footer #ailabStorageEngineLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#view-global_ai_lab .ailab-storage-footer button {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: #38BDF8;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+#view-global_ai_lab #ailabHistoryStatus {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow windows: keep icons, drop labels */
+@media (max-width: 1220px) {
+  #view-global_ai_lab .ailab-conn-badge { display: none !important; }
+  #view-global_ai_lab .ailab-cua-toggle-btn {
+    width: 28px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+  #view-global_ai_lab .ailab-cua-toggle-btn .lbl { display: none; }
+  #view-global_ai_lab .ailab-input-tags .ailab-mode-pill,
+  #view-global_ai_lab #ailabSlaLabel { display: none; }
+  #view-global_ai_lab .ailab-canvas-head .ailab-code-btn {
+    width: 30px;
+    justify-content: center;
+    padding: 0 !important;
+  }
+  #view-global_ai_lab .ailab-canvas-head .ailab-code-btn .lbl { display: none; }
+}
+
 </style>
 
 <div class="ailab-app">
@@ -20590,16 +20765,15 @@ body.in-global_ai_lab .nano-dynamic-island {
       <button class="ailab-iconbtn" id="ailabToggleChats" onclick="ailabToggleSidebar()" title="Toggle Chats &amp; Projects">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
-      <button class="ailab-iconbtn is-active" id="ailabToggleExplorer" onclick="ailabToggleExplorer()" title="Toggle Data Modeling Explorer (AWS, Snowflake, BigQuery, DuckDB)">
+      <button class="ailab-iconbtn" id="ailabToggleExplorer" onclick="ailabToggleExplorer()" title="Toggle Data Explorer (AWS, Snowflake, BigQuery, DuckDB)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
       </button>
       <div class="ailab-brand">
         <span>🧠 NanoPro AI Lab</span>
-        <span class="ailab-brand-badge">Frontier</span>
       </div>
       <div class="ailab-conn-badge" id="ailabConnBadge" title="OpenRouter + DuckDB + BigQuery Active">
         <span class="ailab-pulse-dot"></span>
-        <span id="ailabConnText">4,750+ Models Unified Mesh</span>
+        <span id="ailabConnText">4,750+ models</span>
       </div>
       <div class="ailab-live-routed-badge" id="ailabLiveRoutedBadge" style="display:none;align-items:center;gap:6px;background:rgba(16,185,129,0.12);border:1.5px solid #10B981;box-shadow:0 0 12px rgba(16,185,129,0.3);border-radius:8px;padding:3px 10px;font-size:12px;color:#10B981;font-weight:700;white-space:nowrap;transition:all 0.3s ease;" title="Active Sovereign Model dynamically routed by Pareto + Thompson Bandit algorithm"></div>
     </div>
@@ -20607,10 +20781,9 @@ body.in-global_ai_lab .nano-dynamic-island {
     <!-- Center Model Selector Dropdown & Effort -->
     <div class="ailab-topbar-center">
       <div class="ailab-model-selector-wrap" title="Current Selected Frontier AI Model">
-        <span style="font-size:14px;color:#C084FC;">⚡</span>
         <select class="ailab-model-select" id="ailabModelSelect" onchange="ailabChangeModel(this.value)">
           <optgroup label="⚡ High-Tech Mathematical Router">
-            <option value="auto" selected>⚡ AUTO Router (Pareto &lt;800ms)</option>
+            <option value="auto" selected>⚡ AUTO Router</option>
           </optgroup>
           <optgroup label="🇮🇳 Krutrim AI (Ola Sovereign Cloud · Qwen 3.6, GPT-OSS 120B, Gemma 4)">
             <option value="krutrim/Qwen3.6-27B">Krutrim Qwen 3.6 27B</option>
@@ -20741,29 +20914,28 @@ body.in-global_ai_lab .nano-dynamic-island {
         
       </div>
 
-      <button type="button" class="ailab-browse-btn" id="ailabAirflowTopbarBtn" onclick="ailabOpenAirflowModal()" title="Apache Airflow Orchestrator, 8 Medallion DAGs & SFTP Hub">
-        <span class="ailab-pulse-dot" style="background:#2EA043;width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:2px;"></span>
-        <span>⏱️ Airflow &amp; SFTP</span>
-      </button>
-      <button type="button" class="ailab-browse-btn" onclick="ailabOpenModelCatalogModal()" title="Search &amp; Filter 4,750+ Models across OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq">
-        <span>🔍 4,750+ Models</span>
+      <button type="button" class="ailab-iconbtn" onclick="ailabOpenModelCatalogModal()" title="Browse model catalog (4,750+ models)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       </button>
     </div>
 
     <!-- Right Actions -->
     <div class="ailab-topbar-right">
+      <button class="ailab-iconbtn" onclick="ailabOpenAirflowModal()" title="Airflow Orchestrator &amp; SFTP Hub">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </button>
       <button class="ailab-iconbtn" onclick="ailabPinCurrentChat()" title="Pin this chat">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8m-7 4l2-2m10 2l-2-2m-8 6h12m-6 0v6"/></svg>
       </button>
       <button class="ailab-iconbtn" onclick="ailabExportCurrentChat()" title="Export chat as Markdown">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       </button>
-      <button class="ailab-cua-toggle-btn" id="ailabCuaToggleBtn" onclick="ailabToggleCuaPanel()" title="Toggle Autonomous Browser Agent (CUA) Split-Screen Viewport">
+      <button class="ailab-cua-toggle-btn" id="ailabCuaToggleBtn" onclick="ailabToggleCuaPanel()" title="Toggle the autonomous browser agent viewport">
         <span class="ailab-live-pulse-dot"></span>
-        <span>🖥️ CUA</span>
+        <span class="lbl">CUA</span>
       </button>
-      <button class="ailab-code-btn ailab-topbar-sync-btn" onclick="ailabLoadLiveModels(true)" title="Auto-discover new world labs & models in real-time">
-        <span>🔄 Sync</span>
+      <button class="ailab-iconbtn ailab-topbar-sync-btn" onclick="ailabLoadLiveModels(true)" title="Refresh live model catalog">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
       </button>
       <button class="ailab-btn-primary ailab-topbar-new-chat-btn" onclick="ailabNewChat('')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -20816,10 +20988,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>
 
       <div class="ailab-storage-footer">
-        <span id="ailabStorageEngineLabel" title="DuckDB working set + BigQuery durable archive">🦆 DuckDB · 🏛️ BigQuery</span>
-        <span style="color:#C084FC;">•</span>
-        <button type="button" id="ailabBqSyncBtn" onclick="AILAB_DUCKDB.syncToBigQuery()" title="Sync to Google BigQuery durable archive" style="background:none;border:none;color:#38BDF8;font-size:11px;font-weight:700;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;">
-          <span id="ailabBqSyncLabel">🏛️ Sync BigQuery</span>
+        <span id="ailabStorageEngineLabel" title="DuckDB working set + BigQuery durable archive">DuckDB · BigQuery</span>
+        <button type="button" id="ailabBqSyncBtn" onclick="AILAB_DUCKDB.syncToBigQuery()" title="Sync to Google BigQuery durable archive">
+          <span id="ailabBqSyncLabel">Sync</span>
         </button>
       </div>
     </aside>
@@ -20828,7 +20999,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     <div class="ailab-grip-v" id="ailabGrip"></div>
 
     <!-- Panel 2: DATA MODELING EXPLORER (AWS, Snowflake, BigQuery, DuckDB) -->
-    <aside class="ailab-explorer" id="ailabExplorer">
+    <aside class="ailab-explorer is-hidden" id="ailabExplorer">
       <div class="ailab-explorer-head">
         <div style="display:flex;align-items:center;gap:6px;">
           <span style="font-size:14px;">🗄️</span>
@@ -20887,10 +21058,15 @@ body.in-global_ai_lab .nano-dynamic-island {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <button class="ailab-code-btn" onclick="ailabMoveCurrentChat()">📁 Move</button>
-          <button class="ailab-code-btn" onclick="ailabRenameCurrentChat()">✏️ Rename</button>
-          <button class="ailab-code-btn" onclick="ailabClearMessages()">🧹 Clear</button>
-          <button class="ailab-code-btn" onclick="ailabSyncBigQuery()">☁️ Sync BigQuery</button>
+          <button class="ailab-code-btn" onclick="ailabMoveCurrentChat()" title="Move this chat to a project">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><span class="lbl">Move</span>
+          </button>
+          <button class="ailab-code-btn" onclick="ailabRenameCurrentChat()" title="Rename this chat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><span class="lbl">Rename</span>
+          </button>
+          <button class="ailab-code-btn" onclick="ailabClearMessages()" title="Clear this view">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg><span class="lbl">Clear</span>
+          </button>
         </div>
       </div>
 
@@ -20898,25 +21074,25 @@ body.in-global_ai_lab .nano-dynamic-island {
       <div class="ailab-messages-wrap" id="ailabMessagesContainer">
         <!-- Empty Hero State -->
         <div class="ailab-hero" id="ailabEmptyHero">
-          <h2>🧠 NanoPro Global AI Lab</h2>
-          <p>World Foundational AI Creators • 4,750+ Unified Models • OpenRouter, AI/ML API, Hugging Face, Fal.ai, Replicate &amp; Groq • Pareto Engine</p>
-          
+          <h2>🧠 NanoPro AI Lab</h2>
+          <p>One workspace for 4,750+ frontier models, durable chats, diagrams and projects.</p>
+
           <div class="ailab-pill-grid">
             <div class="ailab-pill-card" onclick="ailabSelectPreset('Write a high-performance Python FastAPI service with Pydantic v2 schemas and JWT auth.')">
               <div class="ailab-pill-card-title">💻 Python REST Microservice</div>
-              <div class="ailab-pill-card-desc">Routes to Qwen 2.5 Coder / Claude 3.7 with production async design.</div>
+              <div class="ailab-pill-card-desc">FastAPI, Pydantic v2 and JWT auth.</div>
             </div>
             <div class="ailab-pill-card" onclick="ailabSelectPreset('Design a zero-loss streaming ETL data pipeline connecting DuckDB, Cloudflare Worker, and BigQuery.')">
               <div class="ailab-pill-card-title">⚡ High-Speed Data Pipeline</div>
-              <div class="ailab-pill-card-desc">Evaluates Pareto SLA under 800ms and returns architecture diagrams.</div>
+              <div class="ailab-pill-card-desc">DuckDB to Worker to BigQuery, with diagrams.</div>
             </div>
             <div class="ailab-pill-card" onclick="ailabSelectPreset('Solve this mathematical optimization problem: Maximize Pareto utility U(m) = alpha*Q - beta*L - gamma*C with Thompson Bandit.')">
               <div class="ailab-pill-card-title">🧠 Deep Mathematical Proof</div>
-              <div class="ailab-pill-card-desc">Dispatches to DeepSeek R1 / o3-mini with step-by-step reasoning.</div>
+              <div class="ailab-pill-card-desc">Step-by-step reasoning on R1 or o3-mini.</div>
             </div>
             <div class="ailab-pill-card" onclick="ailabSelectPreset('Render a complete Mermaid architecture diagram for NanoPro 320 Autonomous AI Agents Mesh.')">
-              <div class="ailab-pill-card-title">🏗️ Interactive Mermaid Architecture</div>
-              <div class="ailab-pill-card-desc">Renders live interactive diagram with nodes and cluster topology.</div>
+              <div class="ailab-pill-card-title">🏗️ Mermaid Architecture</div>
+              <div class="ailab-pill-card-desc">Live diagram of your system topology.</div>
             </div>
           </div>
         </div>
@@ -20929,7 +21105,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           <textarea
             class="ailab-textarea"
             id="ailabPromptInput"
-            placeholder="Ask anything, design software, or run math... (Enter to send, Shift+Enter for newline, paste images)"
+            placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
             rows="1"
             onkeydown="ailabHandleKey(event)"
             oninput="ailabAutoResize(this)"
@@ -20953,10 +21129,6 @@ body.in-global_ai_lab .nano-dynamic-island {
           </div>
         </div>
 
-        <div class="ailab-cockpit-footer">
-          <span>⚡ Mathematical Dispatch: Pareto Utility + Thompson 429 Shield</span>
-          <span>Storage: 🦆 DuckDB working set • 🏛️ BigQuery durable archive • <span id="ailabStorageEngineLabel">per-account history</span></span>
-        </div>
       </div>
     </main>
 
@@ -21257,7 +21429,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     historyStorage: null,
     pendingAttachments: [],
     restoreRetries: 0,
-    expandedProjects: {}
+    expandedProjects: {},
+    heroNode: null
   };
 
   // Helper selectors
@@ -21271,7 +21444,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   // DATA MODELING EXPLORER JAVASCRIPT CONTROLLER (AWS, Snowflake, BigQuery, DuckDB)
   // =========================================================================
   window.AILAB_EXPLORER = {
-    isOpen: true,
+    isOpen: false,
     catalog: null,
     treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_duckdb_main": true, "sc_snowflake_CORE_BANKING": true },
     activeTable: null
@@ -21663,31 +21836,30 @@ body.in-global_ai_lab .nano-dynamic-island {
     const s = AILAB.historyStorage || {};
     const cloud = s.cloud || {};
     const parts = [];
-    if (AILAB.storageOwner) parts.push(`👤 Account ${AILAB.storageOwner}`);
     if (s.restored === "ok") {
       const counts = s.restore_counts || {};
       const restored = ["projects", "chats", "messages", "attachments"].reduce((sum, key) => sum + ((counts[key] || {}).inserted || 0), 0);
-      parts.push(restored > 0 ? `${restored} row(s) restored from BigQuery` : "BigQuery archive checked");
+      parts.push(restored > 0 ? `${restored} restored` : "Archive checked");
     } else if (s.restored === "failed") {
-      parts.push("BigQuery restore failed");
+      parts.push("Restore failed");
     } else if (s.restored === "pending") {
-      parts.push("Restoring from BigQuery…");
+      parts.push("Restoring…");
     }
-    if (s.pending_sync_rows > 0) parts.push(`${s.pending_sync_rows} row(s) pending upload`);
-    else if (s.last_sync_at) parts.push("BigQuery in sync");
-    if (!cloud.configured) parts.push(cloud.error ? "BigQuery not reachable" : "BigQuery not configured");
+    if (s.pending_sync_rows > 0) parts.push(`${s.pending_sync_rows} to sync`);
+    else if (s.last_sync_at) parts.push("In sync");
+    if (!cloud.configured) parts.push(cloud.error ? "BigQuery unreachable" : "BigQuery off");
     const kind = s.last_error ? "pending" : (s.restored === "failed" || cloud.configured === false ? "error" : "ready");
     ailabSetHistoryStatus(kind, parts.join(" • ") || "Loading your chats…");
 
     const label = $id("ailabBqSyncLabel");
     if (label) {
-      label.textContent = s.pending_sync_rows > 0 ? `🏛️ Sync BigQuery (${s.pending_sync_rows})` : "🏛️ Sync BigQuery";
+      label.textContent = s.pending_sync_rows > 0 ? `Sync (${s.pending_sync_rows})` : "Sync";
     }
     const engine = $id("ailabStorageEngineLabel");
     if (engine) {
       engine.textContent = cloud.configured
-        ? (s.pending_sync_rows > 0 ? `${s.pending_sync_rows} row(s) awaiting BigQuery upload` : "DuckDB + BigQuery in sync")
-        : (cloud.error ? "BigQuery archive unreachable" : "BigQuery archive not configured");
+        ? (s.pending_sync_rows > 0 ? `DuckDB · BigQuery · ${s.pending_sync_rows} pending` : "DuckDB · BigQuery in sync")
+        : (cloud.error ? "BigQuery unreachable" : "BigQuery off");
     }
     const tag = $id("ailabActiveStorageTag");
     if (tag) {
@@ -21776,6 +21948,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       AILAB.historyStorage = data.storage || AILAB.historyStorage;
       if (AILAB.activeChatId && !AILAB.chats.some(c => c.id === AILAB.activeChatId)) {
         AILAB.activeChatId = null;
+        AILAB.activeProjectId = null;
+        const titleEl = $id("ailabActiveTitle");
+        if (titleEl) titleEl.textContent = "New AI Chat Session";
       }
       ailabRenderSidebar();
       ailabRenderActiveProjectTag();
@@ -22019,7 +22194,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         });
 
         const optHtml = [
-          `<optgroup label="⚡ High-Tech Mathematical Router"><option value="auto">⚡ AUTO Router (Pareto &lt;800ms)</option></optgroup>`,
+          `<optgroup label="⚡ High-Tech Mathematical Router"><option value="auto">⚡ AUTO Router</option></optgroup>`,
           groups.krutrim.length ? `<optgroup label="🇮🇳 Krutrim AI (Ola Sovereign Cloud · ${groups.krutrim.length} Models)">${groups.krutrim.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
           groups.poe.length ? `<optgroup label="⚡ Poe by Quora (${groups.poe.length} Unified Bot Models)">${groups.poe.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
           groups.edenai.length ? `<optgroup label="🌿 Eden AI (${groups.edenai.length} Unified Models · OpenAI, Anthropic, Gemini, Mistral)">${groups.edenai.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
@@ -22251,6 +22426,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     // Minimal non-blocking pulse indicator only if cache was totally empty
     const container = $id("ailabMessagesContainer");
     if (!foundInCache && container) {
+      const hero = AILAB.heroNode || $id("ailabEmptyHero");
+      if (hero) AILAB.heroNode = hero;
       container.innerHTML = '<div style="text-align:center;padding:25px;color:#A78BFA;font-size:13px;"><span class="ailab-pulse-dot" style="display:inline-block;margin-right:6px;"></span>⚡ Reading DuckDB Indexed Partition...</div>';
     }
 
@@ -22283,10 +22460,12 @@ body.in-global_ai_lab .nano-dynamic-island {
   function ailabRenderMessages() {
     const container = $id("ailabMessagesContainer");
     if (!container) return;
+    // Keep the empty-state hero alive; wiping innerHTML would remove it permanently.
+    const hero = AILAB.heroNode || $id("ailabEmptyHero");
+    if (hero) AILAB.heroNode = hero;
     container.innerHTML = "";
 
     if (!AILAB.messages || AILAB.messages.length === 0) {
-      const hero = $id("ailabEmptyHero");
       if (hero) container.appendChild(hero);
       return;
     }
@@ -22511,6 +22690,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     ailabRenderAttachments();
     AILAB.messages.push(userMsg);
     const container = $id("ailabMessagesContainer");
+    const heroEl = $id("ailabEmptyHero");
+    if (heroEl) { AILAB.heroNode = heroEl; heroEl.remove(); }
     container.appendChild(ailabCreateMessageNode(userMsg));
     container.scrollTop = container.scrollHeight;
 
