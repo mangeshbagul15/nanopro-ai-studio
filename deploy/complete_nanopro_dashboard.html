@@ -24093,6 +24093,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     lastUrl: "",
     lastModel: "",
     queue: [],
+    scrollStreak: 0,
 
     init: function () {
       this.bridgeURL = localStorage.getItem("nanopro_cua_bridge") || this.bridgeURL;
@@ -24383,6 +24384,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         "- To copy page text: select_text first (pass the exact visible text when the element has no index), then copy in the next step. paste inserts the clipboard or the text you pass into the indexed field.",
         "- drag moves a slider or drag target: pass from plus to, or from plus dx/dy pixel offsets.",
         "- When the task is finished, return done with a short summary of what you verified.",
+        "- If the answer (title, heading, quote, price…) is already inside VISIBLE TEXT, return done with it now — do not scroll to look for it.",
+        "- Do not scroll more than twice in a row; if the answer is still not visible, return done and say what you did see.",
         "- Keep text fields short; one click or one field per step."
       ].join("\n");
       const observation = [
@@ -24540,6 +24543,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       this.lastCopied = "";
       this.lastActionKey = "";
       this.repeatCount = 0;
+      this.scrollStreak = 0;
       this.clearTaskLog();
       this.logLine("task", "TASK: " + task);
       this.updateActionHud("🧭", "Reading the page…");
@@ -24571,6 +24575,15 @@ body.in-global_ai_lab .nano-dynamic-island {
             }
           }
           this.updateActionHud("🤖", plan.thought || action);
+
+          if (action === "scroll") this.scrollStreak = (this.scrollStreak || 0) + 1;
+          else this.scrollStreak = 0;
+          if (this.scrollStreak > 4) {
+            this.logLine("warn", "Stopped: scrolling did not reveal anything new.");
+            this.updateActionHud("⚠️", "Scrolled 5 times without finding more — stopped");
+            this.lastSummary = "I stopped after five scrolls without finding what the task asked for. The page may need a narrower task.";
+            break;
+          }
 
           if (action === "done") {
             this.logLine("done", "✅ " + (plan.summary || "Task complete."));
