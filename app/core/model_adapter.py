@@ -2006,6 +2006,17 @@ class ModelManager:
         base_list = requested_models or self.task_routing.get(task_type, self.task_routing["general"])
         effective = []
 
+        # 0. An explicitly requested model keeps its priority. Without this the
+        # provider-grouped rules below reorder the list by provider (Groq first),
+        # so a frontier request silently ran on the small fast model instead.
+        if requested_models:
+            for m in requested_models:
+                if not m or m in effective:
+                    continue
+                adapter, provider_type = self.get_adapter_for_model(m)
+                if adapter.is_available() and self.circuit_breaker.can_execute(provider_type):
+                    effective.append(m)
+
         # 1. Include Groq models FIRST (Ultra-fast sub-second LPU inference)
         if self.groq.is_available() and self.circuit_breaker.can_execute("groq"):
             for m in base_list:
