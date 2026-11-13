@@ -265,43 +265,59 @@ def _bigquery_usage() -> Dict[str, Any]:
                     )
             except Exception as exc:
                 last_error = str(exc)[:200]
+                if "hasn't been enabled" in last_error:
+                    break
                 continue
 
         # TABLE_STORAGE is not enabled on every project. Fall back to per-dataset
         # __TABLES__ metadata, which still reports real size_bytes.
+        list_failed = False
         try:
             dataset_ids = [dataset.dataset_id for dataset in client.list_datasets(max_results=10)]
         except Exception as exc:
+            list_failed = True
             dataset_ids = []
             last_error = f"{last_error}; dataset list failed: {str(exc)[:160]}"
         if not dataset_ids:
-            last_error = last_error or "The service account cannot list any BigQuery datasets."
-        else:
-            failures = []
-            for dataset_id in dataset_ids:
-                try:
-                    query = (
-                        f"SELECT COALESCE(SUM(size_bytes), 0) AS bytes, COUNT(*) AS tables "
-                        f"FROM `{project}.{dataset_id}.__TABLES__`"
-                    )
-                    rows = list(client.query(query).result(timeout=5))
-                    if rows:
-                        used += int(rows[0]["bytes"] or 0)
-                        tables += int(rows[0]["tables"] or 0)
-                        datasets += 1
-                except Exception as exc:
-                    failures.append(f"{dataset_id}: {str(exc)[:80]}")
-            if datasets:
+            if list_failed:
                 return _source(
-                    "bigquery", "BigQuery", f"{project} (__TABLES__ metadata)", "cloud",
-                    used_bytes=used,
-                    detail=f"{datasets} datasets, {tables} tables by size_bytes"
-                           + (f"; {len(failures)} dataset(s) unreadable" if failures else ""),
+                    "bigquery", "BigQuery", f"{project} (dataset list)", "cloud",
+                    status="unreachable", reason=last_error or "Could not list BigQuery datasets.",
                     latency_ms=(time.perf_counter() - started) * 1000,
-                    no_fixed_quota=True,
-                    auth_source=auth_source,
                 )
-            last_error = "; ".join(failures)[:300] or last_error
+            return _source(
+                "bigquery", "BigQuery", f"{project} (__TABLES__ metadata)", "cloud",
+                used_bytes=0,
+                detail="Service account is connected but the project holds 0 datasets; measured 0 B",
+                latency_ms=(time.perf_counter() - started) * 1000,
+                no_fixed_quota=True,
+                auth_source=auth_source,
+            )
+        failures = []
+        for dataset_id in dataset_ids:
+            try:
+                query = (
+                    f"SELECT COALESCE(SUM(size_bytes), 0) AS bytes, COUNT(*) AS tables "
+                    f"FROM `{project}.{dataset_id}.__TABLES__`"
+                )
+                rows = list(client.query(query).result(timeout=5))
+                if rows:
+                    used += int(rows[0]["bytes"] or 0)
+                    tables += int(rows[0]["tables"] or 0)
+                    datasets += 1
+            except Exception as exc:
+                failures.append(f"{dataset_id}: {str(exc)[:80]}")
+        if datasets:
+            return _source(
+                "bigquery", "BigQuery", f"{project} (__TABLES__ metadata)", "cloud",
+                used_bytes=used,
+                detail=f"{datasets} datasets, {tables} tables by size_bytes"
+                       + (f"; {len(failures)} dataset(s) unreadable" if failures else ""),
+                latency_ms=(time.perf_counter() - started) * 1000,
+                no_fixed_quota=True,
+                auth_source=auth_source,
+            )
+        last_error = "; ".join(failures)[:300] or last_error
 
         return _source(
             "bigquery", "BigQuery", f"{project} (INFORMATION_SCHEMA)", "cloud",
@@ -443,7 +459,7 @@ def measure_storage_estate(force: bool = False) -> Dict[str, Any]:
 
     result = {
         "status": "success",
-        "code_revision": "storage-estate-3",
+        "code_revision": "storage-estate-4",
         "generated_at": now,
         "generated_at_iso": datetime.now().astimezone().isoformat(timespec="seconds"),
         "sources": sources,
