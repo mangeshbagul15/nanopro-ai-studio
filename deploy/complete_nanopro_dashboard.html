@@ -24772,13 +24772,18 @@ body.in-global_ai_lab .nano-dynamic-island {
       const vw = (snap && snap.scroll && snap.scroll.width) || 1280;
       const vh = (snap && snap.scroll && snap.scroll.viewport) || 800;
       this.visionUsed = (this.visionUsed || 0) + 1;
+      const candidates = (snap && snap.elements || []).filter((e) =>
+        isFinite(Number(e.x)) && isFinite(Number(e.y)) && Number(e.w) > 0 && Number(e.h) > 0 &&
+        Number(e.x) >= 0 && Number(e.y) >= 0 && Number(e.x) < vw && Number(e.y) < vh &&
+        String(e.label || "").trim()
+      ).slice(0, 60);
       const system = [
-        "You are NanoPro CUA's vision module looking at a live browser screenshot.",
-        "Locate the single control the task needs for its next step.",
-        'Reply with ONE JSON object and nothing else: {"thought":"max 12 words","box":[x0,y0,x1,y1]}',
-        "box is the tight bounding rectangle of the target control as fractions of the screenshot width/height (0.0-1.0).",
-        "x0,y0 is the top-left corner and x1,y1 the bottom-right corner of the whole control, not a single point.",
-        "Choose only what is visible in the screenshot. Never target password, OTP or payment fields."
+        "You are NanoPro CUA's vision module. A live browser screenshot is attached.",
+        "Pick the single control the task needs for its next step.",
+        "Every control in the DOM has a known index and exact geometry; the screenshot is 1:1 with the viewport.",
+        'Reply with ONE JSON object and nothing else: {"thought":"max 12 words","index":N}',
+        'N must be one of the CANDIDATES indexes listed. Only if the target control is missing from CANDIDATES, reply {"thought":"...","box":[x0,y0,x1,y1]} with the bounding rectangle as 0.0-1.0 fractions of width/height.',
+        "Never target password, OTP or payment fields."
       ].join("\n");
       const observation = [
         "TASK: " + task,
@@ -24786,9 +24791,12 @@ body.in-global_ai_lab .nano-dynamic-island {
         "VIEWPORT: " + vw + "x" + vh,
         "PAGE TEXT:",
         String((snap && snap.text) || "").slice(0, 1200),
-        "CONTROLS SEEN IN DOM (may help identify the target):",
-        (snap && snap.elements || []).slice(0, 30).map((e) =>
-          "[" + e.i + "] <" + e.tag + '> "' + e.label + '"'
+        "CANDIDATES:",
+        candidates.map((e) =>
+          "[" + e.i + "] <" + e.tag + (e.type ? " type=" + e.type : "") + '> "' + e.label + '"' +
+          " at (" + Math.round(e.x) + "," + Math.round(e.y) + ") size " + Math.round(e.w) + "x" + Math.round(e.h) +
+          (e.required ? " (required)" : "") + (e.checked ? " (checked)" : "") +
+          (e.options ? " options={" + e.options + "}" : "")
         ).join("\n")
       ].join("\n");
       const visionModels = [
@@ -24816,8 +24824,16 @@ body.in-global_ai_lab .nano-dynamic-island {
           const m = text.match(/\{[\s\S]*\}/);
           if (!m) throw new Error("vision returned no JSON");
           const v = JSON.parse(m[0]);
-          let x = NaN, y = NaN;
-          if (Array.isArray(v.box) && v.box.length >= 4) {
+          let x = NaN, y = NaN, picked = null;
+          const idx = Number(v.index);
+          if (isFinite(idx)) {
+            picked = candidates.find((e) => Number(e.i) === idx) || null;
+            if (picked) {
+              x = Math.round(Number(picked.x) + Number(picked.w) / 2);
+              y = Math.round(Number(picked.y) + Number(picked.h) / 2);
+            }
+          }
+          if ((!picked) && Array.isArray(v.box) && v.box.length >= 4) {
             let box = v.box.slice(0, 4).map(Number);
             if (box.every((n) => isFinite(n))) {
               if (Math.max(box[0], box[2]) > 1.5 || Math.max(box[1], box[3]) > 1.5) {
@@ -24839,7 +24855,8 @@ body.in-global_ai_lab .nano-dynamic-island {
           }
           const inset = 3;
           if (!isFinite(x) || !isFinite(y) || x <= inset || y <= inset || x >= vw - inset || y >= vh - inset) throw new Error("vision coordinates out of range");
-          this.logLine("act", "👁️ Vision grounding: " + (v.thought || "target located") + " (" + x + "," + y + ")");
+          this.logLine("act", "👁️ Vision grounding: " + (v.thought || "target located") +
+            (picked ? ' → [' + picked.i + '] "' + picked.label + '"' : " → box") + " (" + x + "," + y + ")");
           return { action: "click", x: x, y: y, thought: v.thought || "vision-grounding click", _vision: true };
         } catch (err) {
           this.logLine("warn", "Vision (" + String(vm).split("/").pop() + ") failed: " + err.message);
