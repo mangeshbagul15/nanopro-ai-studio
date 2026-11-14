@@ -3323,6 +3323,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             <div class="ailab-cua-offline-row">
               <input id="ailabCuaBridgeInput" class="ailab-cua-bridge-input" spellcheck="false">
               <button class="ailab-cua-offline-btn" onclick="AILAB_CUA.saveBridgeURL()">Save</button>
+              <button class="ailab-cua-offline-btn" onclick="AILAB_CUA.requestBridgePermission()" title="Ask Chrome for local network access">🔐 Access द्या</button>
               <button class="ailab-cua-offline-btn primary" onclick="AILAB_CUA.pingBridge(true)">Retry</button>
             </div>
             <div id="ailabCuaOfflineHint" style="display:none;margin:10px 0 0;font-size:12px;line-height:1.55;color:#FCA5A5;"></div>
@@ -6163,6 +6164,27 @@ body.in-global_ai_lab .nano-dynamic-island {
       } catch (_) {
         return "unsupported";
       }
+    },
+
+    requestBridgePermission: async function () {
+      let state = "unsupported";
+      try {
+        const q = await navigator.permissions.query({ name: "local-network-access" });
+        state = (q && q.state) || state;
+        if (state === "prompt" && navigator.permissions.request) {
+          const r = await navigator.permissions.request({ name: "local-network-access" });
+          state = (r && r.state) || state;
+        }
+      } catch (_) {}
+      this.logLine("act", "🔐 Local network access: " + state);
+      const ok = await this.ensureBridge();
+      if (ok) return true;
+      if (state === "denied") {
+        this.logLine("warn", "Chrome ने ब्लॉक केलं — address bar मधला ⚙/🔒 → Site settings → Local network access → Allow, मग Retry.");
+      } else {
+        this.logLine("warn", "Prompt दिसला नाही तर: address bar मधला ⚙/🔒 → Site settings → Local network access → Allow → Retry.");
+      }
+      return false;
     },
 
     pingBridge: async function () {
