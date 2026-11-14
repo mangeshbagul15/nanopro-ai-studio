@@ -2779,11 +2779,19 @@ async def api_ai_providers_status():
         providers = {}
         for name, adapter in adapters.items():
             try:
-                providers[name] = {
+                info = {
                     "configured": bool(adapter.is_available()),
                     "circuit": cb.get_state(name),
                     "last_error": cb.get_last_error(name),
                 }
+                # Number of accounts in the rotation pool (never the keys themselves).
+                keys_fn = getattr(adapter, "_keys", None)
+                if callable(keys_fn):
+                    try:
+                        info["keys"] = len(keys_fn())
+                    except Exception:
+                        pass
+                providers[name] = info
             except Exception as exc:
                 providers[name] = {"configured": False, "circuit": "unknown", "error": type(exc).__name__}
         return JSONResponse({"status": "success", "providers": providers})
