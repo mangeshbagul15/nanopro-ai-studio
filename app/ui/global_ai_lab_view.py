@@ -6152,18 +6152,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     },
 
     bridge: async function (path, body, timeoutMs) {
-      const res = await fetch(this.bridgeURL + path, {
-        method: body ? "POST" : "GET",
-        headers: body ? { "Content-Type": "application/json" } : {},
-        body: body ? JSON.stringify(body) : undefined,
-        signal: AbortSignal.timeout(timeoutMs || 30000)
-      });
-      let data = {};
-      try { data = await res.json(); } catch (_) {}
-      if (!res.ok && res.status !== 400) {
-        throw new Error(data.error || ("bridge HTTP " + res.status));
-      }
-      return data;
+      return this.bridgeAt(this.bridgeURL, path, body, timeoutMs);
     },
 
     bridgePermission: async function () {
@@ -6829,6 +6818,44 @@ body.in-global_ai_lab .nano-dynamic-island {
       return null;
     },
 
+    ensureBridge: async function () {
+      for (let i = 0; i < 3; i++) {
+        try {
+          const info = await this.bridge("/status", null, 3000);
+          this.setOnline(true, info);
+          if (i > 0) this.logLine("done", "🔌 Bridge connected on retry " + (i + 1) + " — it was still starting.");
+          return true;
+        } catch (_) {}
+        if (i < 2) await new Promise((r) => setTimeout(r, 1200));
+      }
+      if (this.bridgeURL.indexOf("//127.0.0.1") >= 0) {
+        const alt = this.bridgeURL.replace("//127.0.0.1", "//localhost");
+        try {
+          const info = await this.bridgeAt(alt, "/status", null, 3000);
+          this.bridgeURL = alt;
+          try { localStorage.setItem("nanopro_cua_bridge", alt); } catch (_) {}
+          this.setOnline(true, info);
+          this.logLine("done", "🔌 Bridge found via " + alt + " — switched automatically.");
+          return true;
+        } catch (_) {}
+      }
+      this.setOnline(false, { error: "connect failed", permission: await this.bridgePermission() });
+      return false;
+    },
+
+    bridgeAt: async function (base, path, body, timeoutMs) {
+      const res = await fetch(base + path, {
+        method: body ? "POST" : "GET",
+        headers: body ? { "Content-Type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(timeoutMs || 30000)
+      });
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok && res.status !== 400) throw new Error(data.error || ("bridge HTTP " + res.status));
+      return data;
+    },
+
     runTask: async function (taskText) {
       const task = String(taskText || "").trim();
       if (!task) return;
@@ -6838,10 +6865,14 @@ body.in-global_ai_lab .nano-dynamic-island {
         return "Task queued — the browser is finishing the previous task first.";
       }
       this.togglePanel(true);
-      await this.pingBridge();
-      if (!this.online) {
-        this.logLine("error", "Local browser bridge is offline — start start_cua_bridge.bat on the laptop.");
-        return "Local browser bridge is offline. Run start_cua_bridge.bat on the laptop, then send the task again.";
+      const connected = await this.ensureBridge();
+      if (!connected) {
+        const perm = await this.bridgePermission();
+        const msg = perm === "denied"
+          ? "CUA ला तुमच्या laptop च्या browser पर्यंत पोहोचता येत नाही — Chrome ने local network access block केलं आहे. Address bar मधला ⚙/🔒 → Site settings → Local network access → Allow करा, मग task पुन्हा पाठवा."
+          : "CUA चा local browser bridge सापडत नाही. Laptop वर start_cua_bridge.bat चालू करा (Chromium विंडो उघडी ठेवा), मग task पुन्हा पाठवा. Chrome विचारत असेल तर 'Local network access' ला Allow द्या.";
+        this.logLine("error", msg);
+        return msg;
       }
 
       this.running = true;
