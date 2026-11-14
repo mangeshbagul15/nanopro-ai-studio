@@ -216,7 +216,7 @@ class BrowserBridge:
             headless=self.headless,
             viewport=VIEWPORT,
             accept_downloads=True,
-            permissions=["clipboard-read", "clipboard-write"],
+            permissions=["clipboard-read", "clipboard-write", "local-network-access"],
             args=[
                 "--no-sandbox",
                 "--disable-blink-features=AutomationControlled",

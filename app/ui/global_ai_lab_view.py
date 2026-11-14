@@ -6619,10 +6619,35 @@ body.in-global_ai_lab .nano-dynamic-island {
       return String(data.response || data.message || data.text || "");
     },
 
+    parseJsonLoose: function (text) {
+      const s = String(text || "");
+      const hits = [];
+      let depth = 0, start = -1, inStr = false, esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (inStr) {
+          if (esc) esc = false;
+          else if (ch === "\\") esc = true;
+          else if (ch === '"') inStr = false;
+          continue;
+        }
+        if (ch === '"') { inStr = true; continue; }
+        if (ch === "{") { if (depth === 0) start = i; depth++; }
+        else if (ch === "}") {
+          if (depth > 0 && --depth === 0 && start >= 0) { hits.push(s.slice(start, i + 1)); start = -1; }
+        }
+      }
+      for (let i = hits.length - 1; i >= 0; i--) {
+        try {
+          const v = JSON.parse(hits[i]);
+          if (v && typeof v === "object" && !Array.isArray(v)) return v;
+        } catch (_) {}
+      }
+      return null;
+    },
+
     squadParse: function (text) {
-      const m = String(text || "").match(/\{[\s\S]*\}/);
-      if (!m) return null;
-      try { return JSON.parse(m[0]); } catch (_) { return null; }
+      return this.parseJsonLoose(text);
     },
 
     criticReview: async function (task, snap, action, outcome) {
@@ -6730,9 +6755,8 @@ body.in-global_ai_lab .nano-dynamic-island {
           const data = await res.json().catch(() => ({}));
           if (!res.ok || (data && data.status === "error")) throw new Error((data && data.error) || ("HTTP " + res.status));
           const text = String(data.response || data.message || data.text || "");
-          const m = text.match(/\{[\s\S]*\}/);
-          if (!m) throw new Error("vision returned no JSON");
-          const v = JSON.parse(m[0]);
+          const v = this.parseJsonLoose(text);
+          if (!v) throw new Error("vision returned no JSON");
           let x = NaN, y = NaN, picked = null;
           const idx = Number(v.index);
           if (isFinite(idx)) {
