@@ -24775,8 +24775,9 @@ body.in-global_ai_lab .nano-dynamic-island {
       const system = [
         "You are NanoPro CUA's vision module looking at a live browser screenshot.",
         "Locate the single control the task needs for its next step.",
-        'Reply with ONE JSON object and nothing else: {"thought":"max 12 words","x_pct":0.0-1.0,"y_pct":0.0-1.0}',
-        "x_pct/y_pct are the fraction of the screenshot width/height at the centre of the target control.",
+        'Reply with ONE JSON object and nothing else: {"thought":"max 12 words","box":[x0,y0,x1,y1]}',
+        "box is the tight bounding rectangle of the target control as fractions of the screenshot width/height (0.0-1.0).",
+        "x0,y0 is the top-left corner and x1,y1 the bottom-right corner of the whole control, not a single point.",
         "Choose only what is visible in the screenshot. Never target password, OTP or payment fields."
       ].join("\n");
       const observation = [
@@ -24784,7 +24785,11 @@ body.in-global_ai_lab .nano-dynamic-island {
         "URL: " + ((frame && frame.url) || (snap && snap.url) || ""),
         "VIEWPORT: " + vw + "x" + vh,
         "PAGE TEXT:",
-        String((snap && snap.text) || "").slice(0, 1200)
+        String((snap && snap.text) || "").slice(0, 1200),
+        "CONTROLS SEEN IN DOM (may help identify the target):",
+        (snap && snap.elements || []).slice(0, 30).map((e) =>
+          "[" + e.i + "] <" + e.tag + '> "' + e.label + '"'
+        ).join("\n")
       ].join("\n");
       const visionModels = [
         "openrouter@nvidia/nemotron-3.5-super-vl:free",
@@ -24811,9 +24816,29 @@ body.in-global_ai_lab .nano-dynamic-island {
           const m = text.match(/\{[\s\S]*\}/);
           if (!m) throw new Error("vision returned no JSON");
           const v = JSON.parse(m[0]);
-          const x = Math.round(Number(v.x_pct) * vw);
-          const y = Math.round(Number(v.y_pct) * vh);
-          if (!isFinite(x) || !isFinite(y) || x <= 0 || y <= 0 || x >= vw || y >= vh) throw new Error("vision coordinates out of range");
+          let x = NaN, y = NaN;
+          if (Array.isArray(v.box) && v.box.length >= 4) {
+            let box = v.box.slice(0, 4).map(Number);
+            if (box.every((n) => isFinite(n))) {
+              if (Math.max(box[0], box[2]) > 1.5 || Math.max(box[1], box[3]) > 1.5) {
+                box = [box[0] / vw, box[1] / vh, box[2] / vw, box[3] / vh];
+              }
+              let [x0, y0, x1, y1] = box;
+              if (x1 < x0) [x0, x1] = [x1, x0];
+              if (y1 < y0) [y0, y1] = [y1, y0];
+              const bw = x1 - x0, bh = y1 - y0;
+              if (bw > 0.001 && bh > 0.001 && bw < 0.95 && bh < 0.95 && bw * bh < 0.5) {
+                x = Math.round(((x0 + x1) / 2) * vw);
+                y = Math.round(((y0 + y1) / 2) * vh);
+              }
+            }
+          }
+          if (!isFinite(x) || !isFinite(y)) {
+            x = Math.round(Number(v.x_pct) * vw);
+            y = Math.round(Number(v.y_pct) * vh);
+          }
+          const inset = 3;
+          if (!isFinite(x) || !isFinite(y) || x <= inset || y <= inset || x >= vw - inset || y >= vh - inset) throw new Error("vision coordinates out of range");
           this.logLine("act", "👁️ Vision grounding: " + (v.thought || "target located") + " (" + x + "," + y + ")");
           return { action: "click", x: x, y: y, thought: v.thought || "vision-grounding click", _vision: true };
         } catch (err) {
