@@ -3575,10 +3575,12 @@ CRITICAL OPERATIONAL RULES:
     if (path === "/api/ai/execute" && request.method === "POST") {
       let body = {};
       try { body = await request.clone().json(); } catch (_) {}
-      // The CUA planner sends agent:"cua". Its prompts talk about browsers and
-      // searches, so they must never hit the edge intent templates below —
-      // never return canned text to an agent that parses JSON actions.
-      if (body && body.agent === "cua") {
+      // The CUA planner and its squad/vision agents send agent:"cua…". Their
+      // prompts talk about browsers, screenshots and searches, so they must
+      // never hit the edge intent templates below — an agent that parses JSON
+      // actions must get real model output, and vision calls carry an image
+      // the edge templates cannot forward.
+      if (body && typeof body.agent === "string" && body.agent.toLowerCase().startsWith("cua")) {
         const cuaRenderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
         try {
           const targetUrl = new URL(path + url.search, cuaRenderBase);
