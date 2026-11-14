@@ -208,6 +208,7 @@ class BrowserBridge:
         self.downloads = []
         self._download_tasks = set()
         self.last_point = {"x": VIEWPORT["width"] / 2, "y": VIEWPORT["height"] / 2}
+        self.last_url = ""
 
     async def start(self):
         self.playwright = await async_playwright().start()
@@ -223,7 +224,17 @@ class BrowserBridge:
         except Exception:
             return True
 
+    def _remember_url(self):
+        try:
+            if self.page and not self.page.is_closed():
+                u = self.page.url or ""
+                if u.startswith(("http://", "https://")):
+                    self.last_url = u
+        except Exception:
+            pass
+
     async def relaunch(self):
+        self._remember_url()
         try:
             if self.context:
                 await self.context.close()
@@ -248,6 +259,12 @@ class BrowserBridge:
         self.context.on("page", self._track_page)
         self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
         self._watch_downloads(self.page)
+        if self.last_url:
+            try:
+                await self.page.goto(self.last_url, wait_until="domcontentloaded", timeout=20000)
+                print(f"[CUA Bridge] restored page {self.last_url}")
+            except Exception as exc:
+                print(f"[CUA Bridge] could not restore {self.last_url}: {exc}")
         self.started_at = time.time()
         print("[CUA Bridge] Chromium (re)launched")
 
@@ -328,6 +345,7 @@ class BrowserBridge:
             title = await page.title()
         except Exception:
             pass
+        self._remember_url()
         return {"url": page.url, "title": title}
 
     async def navigate(self, url):
@@ -337,6 +355,7 @@ class BrowserBridge:
 
     async def snapshot(self):
         page = await self.ensure_page()
+        self._remember_url()
         js = SNAPSHOT_JS.replace("__MAX_ELEMENTS__", str(MAX_ELEMENTS)).replace("__MAX_TEXT__", str(MAX_TEXT))
         try:
             data = await page.evaluate(js)
