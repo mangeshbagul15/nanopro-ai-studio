@@ -9,6 +9,7 @@ Supports:
 """
 
 import os
+import base64
 import time
 import json
 import threading
@@ -529,14 +530,19 @@ class GeminiAdapter(ModelProviderAdapter):
     def __init__(self, api_key: Optional[str] = None, circuit_breaker: Optional[ProviderCircuitBreaker] = None):
         self.api_key = api_key or ""
         self.circuit_breaker = circuit_breaker
-        self._clients: Dict[int, Any] = {}
+        self._clients: Dict[Any, Any] = {}
+
+    def _keys(self) -> List[str]:
+        keys = _provider_secrets("GEMINI_API_KEY")
+        if self.api_key and self.api_key not in keys:
+            keys.insert(0, self.api_key)
+        return [k for k in keys if k and len(k) > 20]
 
     def is_available(self) -> bool:
-        k = self.api_key or _provider_secret("GEMINI_API_KEY")
-        return bool(k and len(k) > 20)
+        return bool(self._keys())
 
-    def _get_client(self, timeout: float = 30.0):
-        k = self.api_key or _provider_secret("GEMINI_API_KEY")
+    def _get_client(self, timeout: float = 30.0, key: str = ""):
+        k = key or ((self._keys() or [""])[0])
         if not k:
             return None
         # The google-genai SDK defaults to no network timeout and retries 5xx
@@ -544,14 +550,15 @@ class GeminiAdapter(ModelProviderAdapter):
         # request for minutes. Bound every call and disable SDK-level retries;
         # the router already owns the provider fallback chain.
         seconds = int(max(5.0, min(float(timeout or 30.0), 120.0)))
-        client = self._clients.get(seconds)
+        cache_key = (seconds, k)
+        client = self._clients.get(cache_key)
         if client is None:
             from google import genai
             client = genai.Client(
                 api_key=k,
                 http_options={"timeout": seconds * 1000, "retry_options": {"attempts": 1}},
             )
-            self._clients[seconds] = client
+            self._clients[cache_key] = client
         return client
 
     def chat(
@@ -564,20 +571,35 @@ class GeminiAdapter(ModelProviderAdapter):
         allow_fallback: bool = True,
         **kwargs
     ) -> Tuple[str, Any]:
-        if not self.is_available():
+        keys = self._keys()
+        if not keys:
             raise ValueError("Gemini API Key is not configured. Set GEMINI_API_KEY environment variable.")
         
         if self.circuit_breaker and not self.circuit_breaker.can_execute("gemini"):
             raise ConnectionError("Gemini circuit breaker is OPEN. Fast-aborting request.")
 
-        client = self._get_client(timeout)
         types = _genai_types
+        if types is None:
+            raise RuntimeError("google-genai SDK is not installed.")
+
+        # Vision grounding: the CUA bridge sends a JPEG data URL.
+        image = str(kwargs.get("image") or "").strip()
+        contents: Any = prompt
+        if image.startswith("data:image/") and "," in image:
+            try:
+                header, b64data = image.split(",", 1)
+                mime = header.split(";")[0].split(":")[1]
+                contents = [prompt, types.Part.from_bytes(data=base64.b64decode(b64data), mime_type=mime)]
+            except Exception:
+                contents = prompt
 
         target_model = "gemini-3.8-flash" if ("gemini" not in model.lower()) else model
         models_to_try = (
             [target_model]
             if not allow_fallback
-            else [target_model, "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
+            # gemini-4-hydrogen is verified fast (2-3s text, 6s vision) on free-tier
+            # keys; 3.7-flash stalls for minutes there, so it is not a fallback.
+            else [target_model, "gemini-4-hydrogen", "gemini-3.6-flash", "gemini-3.1-flash-lite"]
         )
         unique_models = []
         for m in models_to_try:
@@ -587,7 +609,6 @@ class GeminiAdapter(ModelProviderAdapter):
         last_err = None
         for m in unique_models:
             t_start = time.time()
-            # 1. Preferred Fastpath: models.generate_content
             try:
                 cfg_kwargs: Dict[str, Any] = {"temperature": 0.35}
                 if system_prompt:
@@ -597,96 +618,128 @@ class GeminiAdapter(ModelProviderAdapter):
                 if kwargs.get("max_tokens"):
                     cfg_kwargs["max_output_tokens"] = int(kwargs["max_tokens"])
                 cfg = types.GenerateContentConfig(**cfg_kwargs)
-                resp = client.models.generate_content(
-                    model=m,
-                    contents=prompt,
-                    config=cfg
-                )
-                if resp.text:
-                    dur_sec = max(0.0001, time.time() - t_start)
-                    t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
-                    token_count = 0
-                    if hasattr(resp, "usage_metadata") and resp.usage_metadata:
-                        raw_tc = getattr(resp.usage_metadata, "candidates_token_count", 0)
-                        if isinstance(raw_tc, (int, float)):
-                            token_count = int(raw_tc)
-                    if token_count <= 0 and resp.text:
-                        token_count = max(1, len(resp.text.split()))
-                    tps = round(token_count / dur_sec, 2)
-
-                    if self.circuit_breaker:
-                        self.circuit_breaker.record_success("gemini")
-
-                    telemetry = TelemetryDict({
-                        "latency_ms": t_dur_ms,
-                        "token_count": token_count,
-                        "tps": tps,
-                        "model": m,
-                        "provider": "gemini-cloud",
-                        "mode": f"gemini-cloud:{m}"
-                    })
-                    return resp.text.strip(), telemetry
             except Exception as e:
-                last_err = e
-                err_str = str(e).lower()
-                is_provider_fatal = (
-                    _is_timeout_error(e)
-                    or isinstance(e, (ConnectionError, urllib.error.URLError))
-                    or "429" in str(e)
-                    or "resource_exhausted" in err_str
-                    or "rate limit" in err_str
-                    or any(k in err_str for k in ["connection", "disconnect", "remote", "closed", "reset", "network", "timeout", "quota"])
-                    or any(c in str(e) for c in ["401", "502", "503", "504", "529"])
-                )
-                if self.circuit_breaker:
-                    self.circuit_breaker.record_failure("gemini", e)
-                if is_provider_fatal:
-                    raise e
+                raise RuntimeError(f"Gemini config error: {e}")
 
-            # 2. Resilient Fallback: interactions.create
-            try:
-                int_kwargs: Dict[str, Any] = {
-                    "model": m,
-                    "input": prompt
-                }
-                if system_prompt:
-                    int_kwargs["system_instruction"] = system_prompt
-                interaction = client.interactions.create(**int_kwargs)
-                if interaction.output_text:
-                    dur_sec = max(0.0001, time.time() - t_start)
-                    t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
-                    token_count = max(1, len(interaction.output_text.split()))
-                    tps = round(token_count / dur_sec, 2)
+            for key_index, key in enumerate(keys):
+                client = self._get_client(timeout, key)
+                # 1. Preferred Fastpath: models.generate_content
+                try:
+                    resp = client.models.generate_content(
+                        model=m,
+                        contents=contents,
+                        config=cfg
+                    )
+                    if resp.text:
+                        dur_sec = max(0.0001, time.time() - t_start)
+                        t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                        token_count = 0
+                        if hasattr(resp, "usage_metadata") and resp.usage_metadata:
+                            raw_tc = getattr(resp.usage_metadata, "candidates_token_count", 0)
+                            if isinstance(raw_tc, (int, float)):
+                                token_count = int(raw_tc)
+                        if token_count <= 0 and resp.text:
+                            token_count = max(1, len(resp.text.split()))
+                        tps = round(token_count / dur_sec, 2)
 
-                    if self.circuit_breaker:
-                        self.circuit_breaker.record_success("gemini")
+                        if self.circuit_breaker:
+                            self.circuit_breaker.record_success("gemini")
 
-                    telemetry = TelemetryDict({
-                        "latency_ms": t_dur_ms,
-                        "token_count": token_count,
-                        "tps": tps,
+                        telemetry = TelemetryDict({
+                            "latency_ms": t_dur_ms,
+                            "token_count": token_count,
+                            "tps": tps,
+                            "model": m,
+                            "provider": "gemini-cloud",
+                            "mode": f"gemini-cloud:{m}"
+                        })
+                        return resp.text.strip(), telemetry
+                except Exception as e:
+                    last_err = e
+                    err_str = str(e).lower()
+                    is_quota = (
+                        "429" in str(e)
+                        or "resource_exhausted" in err_str
+                        or "rate limit" in err_str
+                        or "quota" in err_str
+                    )
+                    if is_quota and key_index < len(keys) - 1:
+                        # Free-tier quotas are per key; move to the next account
+                        # before burning the remaining models on a dead key.
+                        log_event(
+                            f"Gemini key {key_index + 1}/{len(keys)} is throttled; rotating to the backup key",
+                            level="WARNING", component="ModelRouter"
+                        )
+                        break
+                    is_provider_fatal = (
+                        _is_timeout_error(e)
+                        or isinstance(e, (ConnectionError, urllib.error.URLError))
+                        or is_quota
+                        or any(k in err_str for k in ["connection", "disconnect", "remote", "closed", "reset", "network", "timeout"])
+                        or any(c in str(e) for c in ["401", "502", "503", "504", "529"])
+                    )
+                    if is_provider_fatal:
+                        if self.circuit_breaker:
+                            self.circuit_breaker.record_failure("gemini", e)
+                        raise e
+
+                # 2. Resilient Fallback: interactions.create
+                try:
+                    int_kwargs: Dict[str, Any] = {
                         "model": m,
-                        "provider": "gemini-cloud",
-                        "mode": f"gemini-interactions:{m}"
-                    })
-                    return interaction.output_text.strip(), telemetry
-            except Exception as e:
-                last_err = e
-                err_str = str(e).lower()
-                is_provider_fatal = (
-                    _is_timeout_error(e)
-                    or isinstance(e, (ConnectionError, urllib.error.URLError))
-                    or "429" in str(e)
-                    or "resource_exhausted" in err_str
-                    or "rate limit" in err_str
-                    or any(k in err_str for k in ["connection", "disconnect", "remote", "closed", "reset", "network", "timeout", "quota"])
-                    or any(c in str(e) for c in ["401", "502", "503", "504", "529"])
-                )
-                if self.circuit_breaker:
-                    self.circuit_breaker.record_failure("gemini", e)
-                if is_provider_fatal:
-                    raise e
-                continue
+                        "input": prompt
+                    }
+                    if system_prompt:
+                        int_kwargs["system_instruction"] = system_prompt
+                    interaction = client.interactions.create(**int_kwargs)
+                    if interaction.output_text:
+                        dur_sec = max(0.0001, time.time() - t_start)
+                        t_dur_ms = max(0.1, round(dur_sec * 1000, 1))
+                        token_count = max(1, len(interaction.output_text.split()))
+                        tps = round(token_count / dur_sec, 2)
+
+                        if self.circuit_breaker:
+                            self.circuit_breaker.record_success("gemini")
+
+                        telemetry = TelemetryDict({
+                            "latency_ms": t_dur_ms,
+                            "token_count": token_count,
+                            "tps": tps,
+                            "model": m,
+                            "provider": "gemini-cloud",
+                            "mode": f"gemini-interactions:{m}"
+                        })
+                        return interaction.output_text.strip(), telemetry
+                except Exception as e:
+                    last_err = e
+                    err_str = str(e).lower()
+                    is_quota = (
+                        "429" in str(e)
+                        or "resource_exhausted" in err_str
+                        or "rate limit" in err_str
+                        or "quota" in err_str
+                    )
+                    if is_quota:
+                        if key_index < len(keys) - 1:
+                            log_event(
+                                f"Gemini key {key_index + 1}/{len(keys)} is throttled; rotating to the backup key",
+                                level="WARNING", component="ModelRouter"
+                            )
+                            break
+                        if self.circuit_breaker:
+                            self.circuit_breaker.record_failure("gemini", e)
+                        raise e
+                    is_provider_fatal = (
+                        _is_timeout_error(e)
+                        or isinstance(e, (ConnectionError, urllib.error.URLError))
+                        or any(k in err_str for k in ["connection", "disconnect", "remote", "closed", "reset", "network", "timeout"])
+                        or any(c in str(e) for c in ["401", "502", "503", "504", "529"])
+                    )
+                    if is_provider_fatal:
+                        if self.circuit_breaker:
+                            self.circuit_breaker.record_failure("gemini", e)
+                        raise e
+                    break
 
         raise RuntimeError(f"Gemini execution failed across models {unique_models}: {last_err}")
 

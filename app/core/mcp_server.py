@@ -1079,7 +1079,7 @@ class NanoProMCPServer:
             # A screenshot is only meaningful to the requested vision model; text-only
             # fallbacks would hallucinate coordinates, so they are not chained here.
             models = [model_id] if image.startswith("data:image/") else [
-                model_id, "openai/gpt-oss-120b", "gemini-3.8-flash", "qwen/qwen3.8-27b"
+                model_id, "openai/gpt-oss-120b", "gemini-4-hydrogen", "qwen/qwen3.8-27b"
             ]
             content, used_model, mode = model_manager.execute_with_fallback(
                 prompt=prompt,

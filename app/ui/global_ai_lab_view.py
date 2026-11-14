@@ -3016,6 +3016,10 @@ body.in-global_ai_lab .nano-dynamic-island {
             <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (&lt;300ms SLA)</option>
             <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
           </optgroup>
+          <optgroup label="🔑 Google AI Studio (your keys, free tier)">
+            <option value="gemini-4-hydrogen">Gemini 4 Hydrogen (2-3s, vision)</option>
+            <option value="gemini-3.6-flash">Gemini 3.6 Flash (5-12s)</option>
+          </optgroup>
           <optgroup label="🆓 Free Frontier (verified working)">
             <option value="nvidia/nemotron-3-ultra-550b-a55b:free">Nemotron 3 Ultra 550B (1M ctx, thinking)</option>
             <option value="nvidia/nemotron-3.5-super-vl:free">Nemotron 3.5 Super VL (Fast, Vision)</option>
@@ -6691,35 +6695,41 @@ body.in-global_ai_lab .nano-dynamic-island {
         "PAGE TEXT:",
         String((snap && snap.text) || "").slice(0, 1200)
       ].join("\n");
-      try {
-        const res = await fetch("/api/ai/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: system + "\n\n" + observation,
-            model: "openrouter@nvidia/nemotron-3.5-super-vl:free",
-            effort: "fast",
-            agent: "cua-vision",
-            messages: [],
-            image: frame.screenshot
-          }),
-          signal: AbortSignal.timeout(45000)
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || (data && data.status === "error")) throw new Error((data && data.error) || ("HTTP " + res.status));
-        const text = String(data.response || data.message || data.text || "");
-        const m = text.match(/\{[\s\S]*\}/);
-        if (!m) throw new Error("vision returned no JSON");
-        const v = JSON.parse(m[0]);
-        const x = Math.round(Number(v.x_pct) * vw);
-        const y = Math.round(Number(v.y_pct) * vh);
-        if (!isFinite(x) || !isFinite(y) || x <= 0 || y <= 0 || x >= vw || y >= vh) throw new Error("vision coordinates out of range");
-        this.logLine("act", "👁️ Vision grounding: " + (v.thought || "target located") + " (" + x + "," + y + ")");
-        return { action: "click", x: x, y: y, thought: v.thought || "vision-grounding click", _vision: true };
-      } catch (err) {
-        this.logLine("warn", "Vision grounding unavailable: " + err.message);
-        return null;
+      const visionModels = [
+        "openrouter@nvidia/nemotron-3.5-super-vl:free",
+        "gemini-4-hydrogen"
+      ];
+      for (const vm of visionModels) {
+        try {
+          const res = await fetch("/api/ai/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: system + "\n\n" + observation,
+              model: vm,
+              effort: "fast",
+              agent: "cua-vision",
+              messages: [],
+              image: frame.screenshot
+            }),
+            signal: AbortSignal.timeout(45000)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || (data && data.status === "error")) throw new Error((data && data.error) || ("HTTP " + res.status));
+          const text = String(data.response || data.message || data.text || "");
+          const m = text.match(/\{[\s\S]*\}/);
+          if (!m) throw new Error("vision returned no JSON");
+          const v = JSON.parse(m[0]);
+          const x = Math.round(Number(v.x_pct) * vw);
+          const y = Math.round(Number(v.y_pct) * vh);
+          if (!isFinite(x) || !isFinite(y) || x <= 0 || y <= 0 || x >= vw || y >= vh) throw new Error("vision coordinates out of range");
+          this.logLine("act", "👁️ Vision grounding: " + (v.thought || "target located") + " (" + x + "," + y + ")");
+          return { action: "click", x: x, y: y, thought: v.thought || "vision-grounding click", _vision: true };
+        } catch (err) {
+          this.logLine("warn", "Vision (" + String(vm).split("/").pop() + ") failed: " + err.message);
+        }
       }
+      return null;
     },
 
     runTask: async function (taskText) {
