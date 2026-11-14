@@ -3325,6 +3325,7 @@ body.in-global_ai_lab .nano-dynamic-island {
               <button class="ailab-cua-offline-btn" onclick="AILAB_CUA.saveBridgeURL()">Save</button>
               <button class="ailab-cua-offline-btn primary" onclick="AILAB_CUA.pingBridge(true)">Retry</button>
             </div>
+            <div id="ailabCuaOfflineHint" style="display:none;margin:10px 0 0;font-size:12px;line-height:1.55;color:#FCA5A5;"></div>
           </div>
         </div>
 
@@ -6165,12 +6166,23 @@ body.in-global_ai_lab .nano-dynamic-island {
       return data;
     },
 
+    bridgePermission: async function () {
+      try {
+        if (!navigator.permissions || !navigator.permissions.query) return "unknown";
+        const st = await navigator.permissions.query({ name: "local-network-access" });
+        return (st && st.state) || "unknown";
+      } catch (_) {
+        return "unsupported";
+      }
+    },
+
     pingBridge: async function () {
       try {
         const info = await this.bridge("/status", null, 3000);
         this.setOnline(true, info);
-      } catch (_) {
-        this.setOnline(false);
+      } catch (err) {
+        const permission = await this.bridgePermission();
+        this.setOnline(false, { error: String((err && err.message) || "connection failed"), permission: permission });
       }
     },
 
@@ -6185,6 +6197,25 @@ body.in-global_ai_lab .nano-dynamic-island {
           : '<span>BRIDGE OFFLINE</span>';
       }
       if (offline) offline.style.display = ok ? "none" : "flex";
+      const hintEl = document.getElementById("ailabCuaOfflineHint");
+      if (hintEl) {
+        if (ok) {
+          hintEl.style.display = "none";
+        } else {
+          const perm = (info && info.permission) || "unknown";
+          const httpsPage = location.protocol === "https:";
+          let note;
+          if (perm === "denied") {
+            note = "🚫 Chrome ने या साइटसाठी local network access बंद केलं आहे. Address bar मधला ⚙ किंवा 🔒 → Site settings → Local network access → Allow → Retry दाबा.";
+          } else if (httpsPage) {
+            note = "🔐 Chrome 156+ पहिल्या कनेक्शनला \"Local network access\" विचारतं — Allow द्या. Prompt दिसत नसेल: address bar मधला ⚙/🔒 → Local network access → Allow → Retry. Bridge चालू नसेल तर start_cua_bridge.bat चालवा.";
+          } else {
+            note = "Bridge चालू आहे का तपासा: http://127.0.0.1:8765/status उघडा, मग Retry दाबा.";
+          }
+          hintEl.textContent = note;
+          hintEl.style.display = "block";
+        }
+      }
       if (ok && info && info.url) {
         const urlText = document.getElementById("ailabCuaUrlText");
         if (urlText) urlText.textContent = info.url;
