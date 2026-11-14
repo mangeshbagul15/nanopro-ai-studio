@@ -6168,6 +6168,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     pingBridge: async function () {
       try {
         const info = await this.bridge("/status", null, 3000);
+        if (info && info.status === "starting") throw new Error(info.error || "bridge is restarting Chromium");
         this.setOnline(true, info);
       } catch (err) {
         const permission = await this.bridgePermission();
@@ -6819,14 +6820,15 @@ body.in-global_ai_lab .nano-dynamic-island {
     },
 
     ensureBridge: async function () {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 4; i++) {
         try {
           const info = await this.bridge("/status", null, 3000);
+          if (info && info.status === "starting") throw new Error("bridge is starting");
           this.setOnline(true, info);
           if (i > 0) this.logLine("done", "🔌 Bridge connected on retry " + (i + 1) + " — it was still starting.");
           return true;
         } catch (_) {}
-        if (i < 2) await new Promise((r) => setTimeout(r, 1200));
+        if (i < 3) await new Promise((r) => setTimeout(r, 1200));
       }
       if (this.bridgeURL.indexOf("//127.0.0.1") >= 0) {
         const alt = this.bridgeURL.replace("//127.0.0.1", "//localhost");

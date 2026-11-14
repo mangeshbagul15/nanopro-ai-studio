@@ -211,6 +211,28 @@ class BrowserBridge:
 
     async def start(self):
         self.playwright = await async_playwright().start()
+        await self.relaunch()
+        print(f"[CUA Bridge] Chromium ready (headless={self.headless}, profile={self.profile_dir})")
+
+    def _context_dead(self):
+        try:
+            if self.context is None:
+                return True
+            _ = self.context.pages
+            return False
+        except Exception:
+            return True
+
+    async def relaunch(self):
+        try:
+            if self.context:
+                await self.context.close()
+        except Exception:
+            pass
+        self.context = None
+        self.page = None
+        if self.playwright is None:
+            self.playwright = await async_playwright().start()
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir=self.profile_dir,
             headless=self.headless,
@@ -224,10 +246,10 @@ class BrowserBridge:
             ],
         )
         self.context.on("page", self._track_page)
-        pages = self.context.pages
-        self.page = pages[0] if pages else await self.context.new_page()
+        self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
         self._watch_downloads(self.page)
-        print(f"[CUA Bridge] Chromium ready (headless={self.headless}, profile={self.profile_dir})")
+        self.started_at = time.time()
+        print("[CUA Bridge] Chromium (re)launched")
 
     def _watch_downloads(self, page):
         if page is None:
@@ -276,11 +298,9 @@ class BrowserBridge:
             pass
 
     async def ensure_page(self):
-        if self.page and not self.page.is_closed():
+        if self.page and not self.page.is_closed() and not self._context_dead():
             return self.page
-        if self.context is None:
-            raise RuntimeError("browser not started")
-        self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
+        await self.relaunch()
         return self.page
 
     async def settle(self, ms=450):
@@ -727,20 +747,21 @@ async def cors_middleware(request, handler):
 
 
 async def handle_status(request):
-    async with BRIDGE.lock:
-        state = await BRIDGE.state()
-    return web.json_response(
-        {
-            "status": "online",
-            "engine": "Playwright Chromium (local laptop)",
-            "headless": BRIDGE.headless,
-            "profile": os.path.abspath(BRIDGE.profile_dir),
-            "pid": os.getpid(),
-            "uptime_s": round(time.time() - BRIDGE.started_at, 1),
-            "url": state["url"],
-            "title": state["title"],
-        }
-    )
+    base = {
+        "engine": "Playwright Chromium (local laptop)",
+        "headless": BRIDGE.headless,
+        "profile": os.path.abspath(BRIDGE.profile_dir),
+        "pid": os.getpid(),
+        "uptime_s": round(time.time() - BRIDGE.started_at, 1),
+    }
+    try:
+        async with BRIDGE.lock:
+            state = await BRIDGE.state()
+        return web.json_response({"status": "online", **base, "url": state["url"], "title": state["title"]})
+    except Exception as exc:
+        # Report a booting bridge as reachable so the UI keeps retrying instead
+        # of showing a dead connection while Chromium relaunches.
+        return web.json_response({"status": "starting", **base, "url": "", "title": "", "error": str(exc)})
 
 
 async def handle_frame(request):
@@ -814,11 +835,26 @@ code{background:#111a29;padding:2px 6px;border-radius:4px;color:#7DD3FC} a{color
     return web.Response(text=html, content_type="text/html")
 
 
+async def watchdog(app):
+    while True:
+        await asyncio.sleep(5)
+        try:
+            async with BRIDGE.lock:
+                if BRIDGE._context_dead() or BRIDGE.page is None or BRIDGE.page.is_closed():
+                    await BRIDGE.relaunch()
+        except Exception as exc:
+            print(f"[CUA Bridge] watchdog relaunch failed: {exc}")
+
+
 async def init_app(app):
     await BRIDGE.start()
+    app["watchdog"] = asyncio.create_task(watchdog(app))
 
 
 async def cleanup_app(app):
+    task = app.get("watchdog")
+    if task:
+        task.cancel()
     if BRIDGE:
         await BRIDGE.stop()
 
