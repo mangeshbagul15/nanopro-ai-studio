@@ -764,8 +764,7 @@ def _explorer_databases(catalog: list) -> list:
                 for table in schema.get("tables") or []
                 if str(table.get("name") or "").strip()
             ]
-            if tables:
-                schemas.append({"name": name, "tables": tables})
+            schemas.append({"name": name, "tables": tables})
         databases.append({
             "id": entry.get("id") or engine,
             "name": entry.get("name") or engine.upper(),
