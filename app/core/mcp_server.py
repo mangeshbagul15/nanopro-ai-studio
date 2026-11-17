@@ -128,6 +128,20 @@ class NanoProMCPServer:
                 }
             },
             {
+                "name": "nanopro_bigquery_ddl",
+                "description": "Executes CREATE-only Google BigQuery DDL (schema, dataset, table) and verifies the resulting objects, schema and cluster keys.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "sql": {
+                            "type": "string",
+                            "description": "One or more CREATE SCHEMA / DATASET / TABLE statements"
+                        }
+                    },
+                    "required": ["sql"]
+                }
+            },
+            {
                 "name": "nanopro_supabase_query",
                 "description": "Queries tables and records from Supabase Cloud PostgreSQL and Vector Store via PostgREST.",
                 "inputSchema": {
@@ -603,6 +617,9 @@ class NanoProMCPServer:
                     }
                 return self._execute_bigquery_mcp(sql, max_results)
 
+            elif tool_name == "nanopro_bigquery_ddl":
+                return self._execute_bigquery_ddl(str(args.get("sql") or ""))
+
             elif tool_name == "nanopro_supabase_query":
                 table_name = args.get("table_name", "telemetry")
                 select = args.get("select", "*")
@@ -726,6 +743,27 @@ class NanoProMCPServer:
         except Exception as e:
             return {
                 "content": [{"type": "text", "text": json.dumps({"engine": "Google Cloud BigQuery", "error": str(e), "guidance": "Check BigQuery dataset IAM permissions or billing sandbox."}, indent=2)}]
+            }
+
+    def _execute_bigquery_ddl(self, sql: str) -> Dict[str, Any]:
+        """Runs CREATE-only BigQuery DDL from chat and verifies the created objects."""
+        try:
+            from app.core.bigquery_ddl import DdlRejected, execute
+
+            result = execute(sql)
+            return {
+                "isError": result.get("status") != "success",
+                "content": [{"type": "text", "text": json.dumps(result, default=str)}],
+            }
+        except DdlRejected as exc:
+            return {
+                "isError": True,
+                "content": [{"type": "text", "text": json.dumps({"status": "rejected", "error": str(exc)})}]
+            }
+        except Exception as exc:
+            return {
+                "isError": True,
+                "content": [{"type": "text", "text": json.dumps({"status": "error", "error": str(exc)[:400]})}]
             }
 
     def _execute_supabase_mcp(self, table_name: str, select: str = "*", limit: int = 20) -> Dict[str, Any]:

@@ -21959,73 +21959,14 @@ body.in-global_ai_lab .nano-dynamic-island {
     if (btn) btn.classList.toggle("is-active", !isHidden);
   };
 
-  window.ailabRestoreCustomTables = function() {
-    try {
-      const isLegacyFakeName = (name) => ["nanopro_cbs_bronze", "cmg"].includes(String(name || "").toLowerCase());
-      const customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]").filter(s => !isLegacyFakeName(s));
-      localStorage.setItem("nanopro_custom_schemas", JSON.stringify(customSchemas));
-      if (customSchemas.length > 0 && AILAB_EXPLORER.catalog) {
-        AILAB_EXPLORER.catalog.forEach(db => {
-          const dbId = db.id;
-          if (db && db.schemas) {
-            customSchemas.forEach(scName => {
-              if (!db.schemas.some(s => s.name.toLowerCase() === scName.toLowerCase())) {
-                db.schemas.unshift({ name: scName, description: `Custom Schema [${scName}]`, tables: [] });
-              }
-              AILAB_EXPLORER.treeOpen["sc_" + dbId + "_" + scName] = true;
-            });
-          }
-        });
-      }
-
-      const customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]")
-        .filter(t => !isLegacyFakeName(t.name) && !isLegacyFakeName(t.schema));
-      localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
-      if (customTables.length > 0 && AILAB_EXPLORER.catalog) {
-        AILAB_EXPLORER.catalog.forEach(db => {
-          const dbId = db.id;
-          if (db && db.schemas) {
-            customTables.forEach(ct => {
-              const targetSchemaName = ct.schema || null;
-              let sc = targetSchemaName ? db.schemas.find(s => s.name.toLowerCase() === targetSchemaName.toLowerCase()) : db.schemas[0];
-              if (!sc && targetSchemaName) {
-                sc = { name: targetSchemaName, description: `${targetSchemaName} Lakehouse`, tables: [] };
-                db.schemas.unshift(sc);
-              }
-              if (sc && sc.tables) {
-                if (!sc.tables.some(t => t.name.toLowerCase() === ct.name.toLowerCase())) {
-                  sc.tables.unshift(ct);
-                }
-              }
-            });
-          }
-        });
-      }
-    } catch (_) {}
-  };
-
   window.ailabLoadExplorer = async function(forceRefresh = false) {
     const tree = $id("ailabExplorerTree");
     if (!tree) return;
-    try {
-      let cs = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]");
-      if (cs.some(s => s && s.toLowerCase() === "nanopro_cbs_bronze")) {
-        cs = cs.filter(s => s && s.toLowerCase() !== "nanopro_cbs_bronze");
-        localStorage.setItem("nanopro_custom_schemas", JSON.stringify(cs));
-      }
-      let ct = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]");
-      if (ct.some(t => t && (t.name === "CMG" || (t.schema || "").toLowerCase() === "nanopro_cbs_bronze"))) {
-        ct = ct.filter(t => t && t.name !== "CMG" && (t.schema || "").toLowerCase() !== "nanopro_cbs_bronze");
-        localStorage.setItem("nanopro_custom_tables", JSON.stringify(ct));
-      }
-    } catch (_) {}
-
     try {
       const res = await fetch("/api/ai/explorer/catalog");
       if (res.ok) {
         const data = await res.json();
         AILAB_EXPLORER.catalog = data.databases || [];
-        ailabRestoreCustomTables();
         ailabRenderExplorerTree();
         return;
       }
@@ -22033,7 +21974,6 @@ body.in-global_ai_lab .nano-dynamic-island {
     // No static fallback: an empty catalog is the honest answer when the API is down.
     AILAB_EXPLORER.catalog = [];
 
-    ailabRestoreCustomTables();
     ailabRenderExplorerTree();
   };
 
@@ -23465,203 +23405,24 @@ body.in-global_ai_lab .nano-dynamic-island {
       assistantPlaceholder.remove();
 
       if (execData.status === "success") {
-                // DYNAMIC SQL SCHEMA & TABLE DDL DETECTOR (Google BigQuery, DuckDB, Snowflake, AWS S3)
+        // Real DDL from chat is executed by the backend against BigQuery.
+        // Refresh from the live catalog instead of fabricating catalog nodes.
+        if (execData.action === "CREATE_TABLE" || execData.action === "CREATE_SCHEMA") {
+          if (typeof ailabLoadExplorer === "function") {
+            await ailabLoadExplorer(true);
+          }
+          if (typeof ailabShowDynamicToast === "function") {
+            const label = execData.action === "CREATE_TABLE"
+              ? `Table [${execData.schema_name ? execData.schema_name + "." : ""}${execData.table_name}] created`
+              : `Dataset / Schema [${execData.schema_name}] created`;
+            ailabShowDynamicToast(`🗄️ ${label} — Explorer refreshed from the live catalog.`);
+          }
+        }
+
         const chatPromptStr = (typeof prompt !== "undefined" ? prompt : "") || "";
         const chatResponseStr = (execData && execData.response ? execData.response : "") || "";
-        const chatFullCombined = chatPromptStr + "\n" + chatResponseStr;
-        const chatSqlClean = chatFullCombined.replace(/```sql|```/gi, "");
-
-        // 1. DYNAMIC SCHEMA / DATASET DETECTOR
-        let detectedSchemaName = null;
-        const schemaPatterns = [
-          /CREATE\s+(?:SCHEMA|DATASET)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)/i,
-          /(?:Dataset|Schema)\s+Name\s*[:=]\s*`?([a-zA-Z0-9_]+)`?/i,
-          /(?:create|make|add|build)\s+(?:dataset|schema)\s+`?([a-zA-Z0-9_]+)`?/i,
-          /(?:स्कीमा|डेटासेट)\s+(?:तयार|नाव)\s*[:=]?\s*`?([a-zA-Z0-9_]+)`?/i
-        ];
-
-        for (const sp of schemaPatterns) {
-          const sm = chatSqlClean.match(sp);
-          if (sm) {
-            let candidate = (sm[1] || sm[0]).replace(/["`]/g, "").trim();
-            if (candidate.includes(".")) candidate = candidate.split(".").pop();
-            if (candidate && !["if", "not", "exists", "options", "or", "replace", "table", "schema", "dataset"].includes(candidate.toLowerCase())) {
-              detectedSchemaName = candidate;
-              break;
-            }
-          }
-        }
-
-        if (detectedSchemaName) {
-          const scName = detectedSchemaName;
-          if (AILAB_EXPLORER.catalog) {
-            AILAB_EXPLORER.catalog.forEach(dbObj => {
-              const targetDb = dbObj.id;
-              if (!dbObj.schemas) dbObj.schemas = [];
-              let existingSc = dbObj.schemas.find(s => s.name.toLowerCase() === scName.toLowerCase());
-              if (!existingSc) {
-                dbObj.schemas.unshift({
-                  name: scName,
-                  description: `Lakehouse Schema [${scName}] (${(dbObj.name || targetDb).toUpperCase()})`,
-                  tables: []
-                });
-              }
-              AILAB_EXPLORER.treeOpen["db_" + targetDb] = true;
-              AILAB_EXPLORER.treeOpen["sc_" + targetDb + "_" + scName] = true;
-            });
-          }
-          let customSchemas = [];
-          try { customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]"); } catch (_) {}
-          if (!customSchemas.some(s => s.toLowerCase() === scName.toLowerCase())) {
-            customSchemas.unshift(scName);
-            localStorage.setItem("nanopro_custom_schemas", JSON.stringify(customSchemas));
-          }
-          const expPanel = $id("ailabExplorer");
-          if (expPanel && expPanel.classList.contains("is-hidden")) {
-            ailabToggleExplorer();
-          }
-          ailabRenderExplorerTree();
-          if (typeof ailabShowDynamicToast === "function") {
-            ailabShowDynamicToast(`🗄️ Dataset / Schema [${scName}] created in Explorer across all databases!`);
-          }
-        }
-
-        // 2. DYNAMIC TABLE & ROWS DETECTOR
-        let detectedTable = null;
-        let detectedTableSchema = detectedSchemaName || null;
-        let detectedRows = 0;
-
-        // Check for row insertion / record count
-        const insertMatch = chatSqlClean.match(/INSERT\s+INTO\s+(?:TABLE\s+)?([a-zA-Z0-9_`"\.]+)/i);
-        if (insertMatch) {
-          const insertTuples = chatSqlClean.match(/\((?:'[^']+'|[0-9]+|NULL|TRUE|FALSE)[^)]*\)/gi);
-          if (insertTuples && insertTuples.length > 0) {
-            detectedRows = insertTuples.length;
-          }
-        }
-        if (!detectedRows) {
-          const rowCountMatch = chatSqlClean.match(/(\d+)\s*(?:realistic|records|rows|नोंदी|ग्राहक)/i);
-          if (rowCountMatch) detectedRows = parseInt(rowCountMatch[1], 10);
-        }
-
-        if (execData.action === "CREATE_TABLE" && execData.table_name) {
-          detectedTable = {
-            name: execData.table_name.toUpperCase(),
-            rows: execData.rows || detectedRows,
-            columns: execData.columns || [
-              { name: "ID", type: "VARCHAR PRIMARY KEY" },
-              { name: "CREATED_AT", type: "TIMESTAMP" },
-              { name: "STATUS", type: "VARCHAR" }
-            ]
-          };
-          detectedTableSchema = execData.schema_name || detectedTableSchema;
-        } else {
-          // Look for CREATE TABLE DDL
-          const ddlMatch = chatSqlClean.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)\s*\(([\s\S]*?)\)/i);
-          if (ddlMatch) {
-            let fullTName = ddlMatch[1].replace(/["`]/g, "").trim();
-            let tName = fullTName;
-            if (fullTName.includes(".")) {
-              const parts = fullTName.split(".");
-              detectedTableSchema = parts[parts.length - 2];
-              tName = parts[parts.length - 1];
-            }
-            const colDefs = ddlMatch[2].split(/,\s*(?![^()]*\))/);
-            const cols = [];
-            for (const cLine of colDefs) {
-              const clean = cLine.trim().replace(/\n/g, " ");
-              if (clean && !clean.toUpperCase().startsWith("PRIMARY") && !clean.toUpperCase().startsWith("FOREIGN") && !clean.toUpperCase().startsWith("CONSTRAINT") && !clean.toUpperCase().startsWith("INDEX") && !clean.toUpperCase().startsWith("CLUSTER") && !clean.toUpperCase().startsWith("OPTIONS")) {
-                const segs = clean.split(/\s+/);
-                const cName = segs[0].replace(/["`]/g, "").toUpperCase();
-                const cType = segs.slice(1).join(" ").toUpperCase() || "VARCHAR";
-                if (cName && cName.length > 0) cols.push({ name: cName, type: cType });
-              }
-            }
-            detectedTable = {
-              name: tName.toUpperCase(),
-              schema: detectedTableSchema,
-              rows: detectedRows,
-              columns: cols.length > 0 ? cols : [
-                { name: "ID", type: "VARCHAR PRIMARY KEY" },
-                { name: "CREATED_AT", type: "TIMESTAMP" },
-                { name: "STATUS", type: "VARCHAR" }
-              ]
-            };
-          } else {
-            // Check for references like `schema.table` in the conversation
-            const tableRefMatch = chatSqlClean.match(/(?:table|तक्ता|populate\s+table)\s+`?([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)`?/i);
-            if (tableRefMatch) {
-              detectedTableSchema = tableRefMatch[1];
-              const tName = tableRefMatch[2].toUpperCase();
-              detectedTable = {
-                name: tName,
-                schema: detectedTableSchema,
-                rows: detectedRows,
-                columns: [
-                  { name: "ID", type: "VARCHAR PRIMARY KEY" },
-                  { name: "CREATED_AT", type: "TIMESTAMP" },
-                  { name: "STATUS", type: "VARCHAR" }
-                ]
-              };
-            }
-          }
-        }
-
-        if (detectedTable) {
-          const newTb = detectedTable;
-          const scTarget = detectedTableSchema || null;
-
-          if (AILAB_EXPLORER.catalog) {
-            AILAB_EXPLORER.catalog.forEach(dbObj => {
-              const dbId = dbObj.id;
-              if (!dbObj.schemas) dbObj.schemas = [];
-              let sc = null;
-              if (scTarget) {
-                sc = dbObj.schemas.find(s => s.name.toLowerCase() === scTarget.toLowerCase());
-                if (!sc) {
-                  sc = { name: scTarget, description: `${scTarget} Lakehouse Schema`, tables: [] };
-                  dbObj.schemas.unshift(sc);
-                }
-              } else {
-                sc = dbObj.schemas[0];
-              }
-              if (sc) {
-                const existingTb = sc.tables.find(t => t.name.toLowerCase() === newTb.name.toLowerCase());
-                if (existingTb) {
-                  if (newTb.columns && newTb.columns.length > existingTb.columns.length) existingTb.columns = newTb.columns;
-                  if (newTb.rows > 0) existingTb.rows = newTb.rows;
-                } else {
-                  sc.tables.unshift(newTb);
-                }
-                AILAB_EXPLORER.treeOpen["db_" + dbId] = true;
-                AILAB_EXPLORER.treeOpen["sc_" + dbId + "_" + sc.name] = true;
-                AILAB_EXPLORER.treeOpen["tb_" + dbId + "_" + sc.name + "_" + newTb.name] = true;
-              }
-            });
-          }
-
-          let customTables = [];
-          try { customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]"); } catch (_) {}
-          const existingIdx = customTables.findIndex(t => t.name.toLowerCase() === newTb.name.toLowerCase());
-          if (existingIdx >= 0) {
-            customTables[existingIdx] = newTb;
-          } else {
-            customTables.unshift(newTb);
-          }
-          localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
-
-          const expPanel = $id("ailabExplorer");
-          if (expPanel && expPanel.classList.contains("is-hidden")) {
-            ailabToggleExplorer();
-          }
-          ailabRenderExplorerTree();
-          if (typeof ailabShowDynamicToast === "function") {
-            ailabShowDynamicToast(`🗄️ Table [${scTarget ? scTarget + '.' : ''}${newTb.name}] (${newTb.columns.length} columns, ${newTb.rows} rows) registered in Explorer!`);
-          }
-        }
-
         let transferJob = execData.transfer_job || null;
-        const transferText = (chatPromptStr + " " + (execData.response || "")).toLowerCase();
+        const transferText = (chatPromptStr + " " + chatResponseStr).toLowerCase();
         if (!transferJob && (/(transfer|ट्रान्सफर|migrat|shift|copy|मूव्ह|लोड).*(table|तक्ता|डेटा|data|gb|mb)/i.test(transferText) || /(5gb|1gb|10gb|2gb).*(transfer|डेटा|data)/i.test(transferText))) {
           let srcTable = "RAW_AML_ALERTS";
           let tgtTable = "MART_AML_PROCESSED_TXNS";

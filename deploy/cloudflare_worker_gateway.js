@@ -3626,6 +3626,42 @@ CRITICAL OPERATIONAL RULES:
       const prompt = body.prompt || "";
       const model = body.model || "auto";
       const rawMessages = body.messages || [{ role: "user", content: prompt }];
+      // Explicit BigQuery CREATE DDL must reach the backend that owns the
+      // Google service account. The edge can only answer with text, which
+      // would claim a schema exists when nothing was created.
+      const ddlPrompt = String(prompt || "");
+      const wantsBigQueryDdl = /bigquery/i.test(ddlPrompt) && (
+        /```sql[\s\S]*create\s+(schema|dataset|table)/i.test(ddlPrompt) ||
+        /^\s*create\s+(schema|dataset|table)/i.test(ddlPrompt) ||
+        /execute\s+bigquery\s+ddl:/i.test(ddlPrompt)
+      );
+      if (wantsBigQueryDdl) {
+        const ddlRenderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
+        try {
+          const targetUrl = new URL(path + url.search, ddlRenderBase);
+          const headers = new Headers(request.headers);
+          headers.delete("host");
+          headers.set("Host", targetUrl.host);
+          headers.set("X-Forwarded-Host", url.host);
+          headers.set("X-NanoPro-Gateway", "Cloudflare-BigQuery-DDL-Render-Direct");
+          const response = await fetch(targetUrl.toString(), {
+            method: "POST",
+            headers,
+            body: await request.text(),
+            signal: AbortSignal.timeout(90000)
+          });
+          const fh = new Headers(response.headers);
+          fh.set("X-NanoPro-Routed-Node", ddlRenderBase);
+          fh.set("X-NanoPro-Mode", "RENDER_BIGQUERY_DDL");
+          fh.set("Access-Control-Allow-Origin", "*");
+          return new Response(response.body, { status: response.status, headers: fh });
+        } catch (err) {
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "BigQuery DDL backend is unreachable. Please retry in a few seconds."
+          }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+      }
       return await executeMultiModelAiCore(prompt, model, rawMessages);
     }
 

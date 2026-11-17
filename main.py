@@ -2753,12 +2753,26 @@ async def api_global_ai_smart_route(payload: Dict[str, Any] = Body(...)):
 
 
 @app.post("/api/ai/execute")
-async def api_global_ai_execute(payload: Dict[str, Any] = Body(...)):
+async def api_global_ai_execute(request: Request, payload: Dict[str, Any] = Body(...)):
     """Zero-load AI execution via MCP connectors with OpenRouter & automatic 429 failover."""
     import json
     try:
-        from app.core.mcp_server import mcp_server
         prompt = payload.get("prompt", "")
+
+        # A prompt carrying explicit BigQuery DDL is executed against the live
+        # API instead of being answered as text. Requires a signed-in session.
+        from app.core.chat_bigquery_ddl import maybe_handle
+        ddl_result = maybe_handle(prompt)
+        if ddl_result is not None:
+            from app.core.api_auth import require_session
+            try:
+                user = require_session(request)
+            except HTTPException as exc:
+                return JSONResponse({"status": "error", "message": exc.detail}, status_code=200)
+            ddl_result["user"] = user.get("username") or user.get("email") or "user"
+            return JSONResponse(ddl_result)
+
+        from app.core.mcp_server import mcp_server
         model = payload.get("model", "auto")
         messages = payload.get("messages", [])
         effort = payload.get("effort", "default")
