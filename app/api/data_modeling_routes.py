@@ -872,12 +872,14 @@ def _mutation_response(call) -> JSONResponse:
     from app.core import catalog_admin as ca
     from app.core import data_modeling_ai as dm
 
+    # Errors travel as HTTP 200: the Cloudflare gateway replaces any 5xx with a
+    # generic "backend unavailable" page, which would hide the BigQuery reason.
     try:
         result = call()
     except ca.CatalogError as exc:
-        return JSONResponse({"status": "error", "message": str(exc)[:400]}, status_code=400)
+        return JSONResponse({"status": "error", "message": str(exc)[:400]}, status_code=200)
     except Exception as exc:
-        return JSONResponse({"status": "error", "message": str(exc)[:500]}, status_code=500)
+        return JSONResponse({"status": "error", "message": str(exc)[:500]}, status_code=200)
     try:
         dm.invalidate_catalog()
     except Exception:
