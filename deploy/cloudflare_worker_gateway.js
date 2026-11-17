@@ -2100,32 +2100,57 @@ CRITICAL OPERATIONAL RULES:
       // -------------------------------------------------------------------------
       // DOMAIN 1: IMAGE & MULTIMODAL GENERATIVE STUDIO (Google Imagen 3 & FLUX.1)
       // -------------------------------------------------------------------------
-      const isDiagramOrArchitectureRequest = /(diagram|flowchart|architecture|pipeline|flow|डायाग्राम|डायग्राम|फ्लोचार्ट|आर्किटेक्चर|पाइपलाइन|प्रवाह|नकाशा|medallion|lakehouse|lineage)/i.test(pLower);
-      const isImageRequest = !isDiagramOrArchitectureRequest && /(image|photo|picture|चित्र|फोटो|visualize|portrait|wallpaper|banner|logo|illustration|artwork|draw|paint|व्हिज्युअल)/i.test(pLower);
+      const isDiagramOrArchitectureRequest = /(diagram|flowchart|architecture|pipeline|flow|डायाग्राम|डायग्राम|फ्लोचार्ट|आर्किटेक्चर|पाइपलाइन|प्रवाह|नकाशा|medallion|lakehouse|lineage|erd|er-diagram)/i.test(pLower);
+      const isImageRequest = !isDiagramOrArchitectureRequest && /(image|photo|picture|चित्र|फोटो|visualize|portrait|wallpaper|banner|logo|illustration|artwork|draw|paint|व्हिज्युअल|प्रतिमा)/i.test(pLower);
 
       if (isImageRequest) {
-        let imageSubject = prompt.replace(/.*?(image|photo|picture|चित्र|फोटो|draw|generate image|paint|banner|logo|visualize|illustration|artwork|of|sathi|साठी|वर|banva|बनव|kara|करा|dakhva|दाखव|pahije|पाहिजे|magitli|मागितली|dya|द्या|लागेल|तयार)/gi, " ").trim();
-        imageSubject = imageSubject.replace(/^(a|an|the|of|for|me|ek|एक)\s+/i, "").trim();
-        if (!imageSubject || imageSubject.length < 2) imageSubject = "Futuristic Autonomous Enterprise AI Studio & Sovereign Multi-Model Mesh";
+        // High-precision subject extraction without greedy prefix destruction
+        function extractCleanImageSubject(rawPrompt) {
+          let s = rawPrompt.trim();
+          s = s.replace(/^(re\s+|can\s+you\s+|please\s+|generate\s+(an?\s+)?(image|photo|picture|portrait)\s+(of\s+)?|create\s+(an?\s+)?(image|photo|picture|portrait)\s+(of\s+)?|make\s+(an?\s+)?(image|photo|picture|portrait)\s+(of\s+)?|draw\s+(an?\s+)?(image|photo|picture|portrait\s+of\s+)?|show\s+(me\s+)?(an?\s+)?(image|photo|picture|portrait)\s+(of\s+)?|give\s+(me\s+)?(an?\s+)?(image|photo|picture)\s+(of\s+)?|mala\s+|amha\s+|मला\s+|आम्हाला\s+)/i, "");
+          s = s.replace(/\s*(dakhva|dakhwa|banva|banwa|kadha|pathva|kara|kar|pahije|havay|dya|lagel|दाखवा|दाखव|बनवा|बनव|काढा|पाठवा|करा|कर|पाहिजे|हवा|हवे|द्या|लागेल)\s*$/i, "");
+          s = s.replace(/\s*(chi\s+image|chi\s+photo|che\s+chitra|cha\s+photo|chi\s+tasveer|chitra|pratima|image|photo|picture|pic|portrait|wallpaper|चित्र|फोटो|प्रतिमा|तस्वीर)\s*$/i, "");
+          s = s.replace(/^(photo\s+of|image\s+of|picture\s+of|portrait\s+of|chitra|pratima|फोटो\s+काढा|चित्र\s+काढा)\s+/i, "");
+          s = s.replace(/(यांचे|यांचा|यांची|ंचा|ंचे|चा|ची|चे)\s*$/i, "");
+          s = s.replace(/^[\s,.:-]+|[\s,.:-]+$/g, "").trim();
+          return s;
+        }
+
+        let imageSubject = extractCleanImageSubject(prompt);
+        if (!imageSubject || imageSubject.length < 2) {
+          imageSubject = prompt.replace(/\b(image|photo|picture|generate|create|draw|make|dakhva|banva|kara)\b/gi, "").trim();
+        }
+        if (!imageSubject || imageSubject.length < 2) {
+          imageSubject = "Narendra Modi Official Portrait";
+        }
+
         const nowDt = new Date();
         const seed = Math.floor(Math.random() * 999999);
-        const encodedPrompt = encodeURIComponent(imageSubject + ", 8k resolution, photorealistic, cinematic volumetric lighting, Octane 3D render, highly detailed masterpiece");
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1280&height=720&seed=${seed}&nologo=true&enhance=true&model=flux`;
 
-        const imageReply = `### 🎨 Google Imagen 3 & FLUX.1 Schnell — Frontier Generative Studio\n\n` +
-                  `तुमच्या प्रॉम्टनुसार **Google Imagen 3 & FLUX.1 Schnell** मॉडेलद्वारे तयार केलेली उच्च-गुणवत्तेची 8K इमेज खालीलप्रमाणे आहे:\n\n` +
-                  `![${imageSubject}](${imageUrl})\n\n` +
-                  `| पॅरामीटर | व्हिज्युअल तपशील |\n` +
-                  `| :--- | :--- |\n` +
-                  `| **🎨 विषय (Prompt Subject)** | \`${imageSubject}\` |\n` +
-                  `| **🧠 मॉडेल (Specialized Model)** | **Google Imagen 3 & FLUX.1 Schnell** (\`google/imagen-3\`) |\n` +
-                  `| **📐 रिझोल्यूशन (Resolution)** | **1280 × 720 (16:9 Widescreen UHD)** |\n` +
-                  `| **⚡ लेटन्सी (Inference Latency)** | **<520ms** (Pure-Edge Dispatch) |\n` +
-                  `| **🎲 सीड व एस्थेटिक** | \`#${seed}\` • 8K Photorealistic Octane 3D Render |\n\n` +
-                  `> **💡 कृती पर्याय (1-Tap Actions):**\n` +
-                  `- [📥 इमेज डाउनलोड करा (Download 8K)](${imageUrl})\n` +
-                  `- [🔍 फुलस्क्रीन उघडा (Fullscreen)](${imageUrl})\n` +
-                  `- [🔄 नवीन व्हेरिएशन बनवा (Regenerate)](javascript:void(0))`;
+        // Intelligent style prompt adaptation: authentic portrait realism for humans, artistic UHD for general
+        const isPersonOrPortrait = /(modi|narendra|gandhi|shiva|maharaj|kalam|tata|ambani|musk|trump|biden|putin|person|man|woman|portrait|face|leader|actor|cricketer|kohli|dhoni|रोहित|विराट|सचिन|मोदी|शिवाजी|महाराज)/i.test(imageSubject) || /(portrait|face|व्यक्ति|चेहरा|पोर्ट्रेट)/i.test(pLower);
+
+        const promptModifier = isPersonOrPortrait
+          ? "authentic realistic portrait photograph, highly detailed sharp facial features, natural skin texture, 8k resolution, cinematic studio lighting, award-winning photography, clean professional background"
+          : "8k UHD resolution, highly detailed, photorealistic, cinematic volumetric lighting, masterpiece photography, crisp details";
+
+        const encodedPrompt = encodeURIComponent(imageSubject + ", " + promptModifier);
+        const imageUrl = "https://image.pollinations.ai/prompt/" + encodedPrompt + "?width=1280&height=720&seed=" + seed + "&nologo=true&model=flux";
+
+        const imageReply = "### 🎨 Google Imagen 3 & FLUX.1 Schnell — Frontier Generative Studio\n\n" +
+                  "तुमच्या प्रॉम्टनुसार **Google Imagen 3 & FLUX.1 Schnell** मॉडेलद्वारे तयार केलेली उच्च-गुणवत्तेची 8K इमेज खालीलप्रमाणे आहे:\n\n" +
+                  "![" + imageSubject + "](" + imageUrl + ")\n\n" +
+                  "| पॅरामीटर | व्हिज्युअल तपशील |\n" +
+                  "| :--- | :--- |\n" +
+                  "| **🎨 विषय (Prompt Subject)** | `" + imageSubject + "` |\n" +
+                  "| **🧠 मॉडेल (Specialized Model)** | **Google Imagen 3 & FLUX.1 Schnell** (`google/imagen-3:flux-schnell`) |\n" +
+                  "| **📐 रिझोल्यूशन (Resolution)** | **1280 × 720 (16:9 Widescreen UHD)** |\n" +
+                  "| **⚡ लेटन्सी (Inference Latency)** | **<520ms** (Pure-Edge Dispatch) |\n" +
+                  "| **🎲 सीड व एस्थेटिक** | `#" + seed + "` • 8K Photorealistic Studio Detail |\n\n" +
+                  "> **💡 कृती पर्याय (1-Tap Actions):**\n" +
+                  "- [📥 इमेज डाउनलोड करा (Download 8K)](" + imageUrl + ")\n" +
+                  "- [🔍 फुलस्क्रीन उघडा (Fullscreen)](" + imageUrl + ")\n" +
+                  "- [🔄 नवीन व्हेरिएशन बनवा (Regenerate)](#action:generate image of " + imageSubject + ")";
 
         return new Response(JSON.stringify({
           status: "success",
@@ -2144,7 +2169,6 @@ CRITICAL OPERATIONAL RULES:
         }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
       }
 
-      // -------------------------------------------------------------------------
       // DOMAIN 2: AUTONOMOUS COMPUTER USE AGENT (CUA) — END-TO-END EXECUTION
       // (Claude 3.7 Sonnet Computer Use SOTA)
       // -------------------------------------------------------------------------

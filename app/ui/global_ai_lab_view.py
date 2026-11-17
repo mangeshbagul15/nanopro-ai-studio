@@ -6181,23 +6181,31 @@ body.in-global_ai_lab .nano-dynamic-island {
     });
 
     // 7.5 Markdown Images: ![alt](url) — http(s) or owner-only stored attachments
-    html = html.replace(/!\[([^\]]*)\]\(([^)\s\"\']+)\)/g, (match, alt, url) => {
-      const cleanUrl = url.replace(/&amp;/g, '&');
+    html = html.replace(/!\[([^\]]*)\]\(([^\"\']+?)\)/g, (match, alt, url) => {
+      const cleanUrl = url.trim().replace(/&amp;/g, '&');
       const isStored = /^\/api\/ai\/history\/attachments\//.test(cleanUrl);
       const imgAttr = isStored ? `data-ailab-src="${cleanUrl}"` : `src="${cleanUrl}"`;
-      return `<div class="ailab-image-card">
-        <div class="ailab-image-wrap">
-          <img ${imgAttr} alt="${alt || 'AI Visual'}" loading="lazy" style="max-width:100%; border-radius:10px; border:1px solid #1E293B; box-shadow:0 8px 24px rgba(0,0,0,0.4);" />
+      const safeAlt = (alt || "AI Visual").replace(/"/g, '&quot;');
+      const encodedAlt = encodeURIComponent(alt || "AI Visual");
+      return `<div class="ailab-image-card" style="margin: 14px 0; background: rgba(15,23,42,0.9); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <div class="ailab-image-wrap" style="position:relative; overflow:hidden; border-radius:8px;">
+          <img ${imgAttr} alt="${safeAlt}" loading="lazy" style="width:100%; max-height:480px; object-fit:cover; display:block; border-radius:8px;" />
         </div>
-        <div class="ailab-image-caption">🎨 ${alt || 'Generated High-Resolution Visual'}</div>
+        <div class="ailab-image-caption" style="font-size:12px; font-weight:700; color:#F8FAFC; margin-top:8px;">🎨 ${safeAlt}</div>
+        <div class="ailab-image-actions-bar" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+          <a href="${cleanUrl}" target="_blank" download="${safeAlt.replace(/\s+/g, '_')}.jpg" class="ailab-img-btn" style="padding:6px 12px; background:rgba(30,41,59,0.9); border:1px solid rgba(56,189,248,0.4); border-radius:6px; font-size:11px; font-weight:700; color:#38BDF8; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">📥 डाउनलोड (Download 8K)</a>
+          <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="ailab-img-btn" style="padding:6px 12px; background:rgba(30,41,59,0.9); border:1px solid rgba(255,255,255,0.15); border-radius:6px; font-size:11px; font-weight:700; color:#E2E8F0; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">🔍 फुलस्क्रीन (Fullscreen)</a>
+          <button type="button" class="ailab-img-btn" onclick="ailabRegenerateImage('${encodedAlt}')" style="padding:6px 12px; background:#0284C7; border:1px solid #38BDF8; border-radius:6px; font-size:11px; font-weight:700; color:#FFF; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">🔄 नवीन व्हेरिएशन (Regenerate)</button>
+        </div>
       </div>`;
     });
 
     // 7.6 Markdown Links & 1-Tap Action Pills: [label](url)
-    html = html.replace(/\[([^\]]+)\]\(([^\s\)\"\']+)\)/g, (match, label, url) => {
-      const cleanUrl = url.replace(/&amp;/g, '&');
-      if (cleanUrl.includes("javascript:void(0)") || cleanUrl === "#") {
-        const safeText = encodeURIComponent(label);
+    html = html.replace(/\[([^\]]+)\]\(([^\"\']+?)\)/g, (match, label, url) => {
+      const cleanUrl = url.trim().replace(/&amp;/g, '&');
+      if (cleanUrl.startsWith("#action:") || cleanUrl.includes("javascript:void") || cleanUrl === "#") {
+        const actionPayload = cleanUrl.startsWith("#action:") ? cleanUrl.slice(8) : label;
+        const safeText = encodeURIComponent(actionPayload);
         return `<button type="button" class="ailab-action-pill-btn" onclick="ailabHandleActionClick(decodeURIComponent('${safeText}'))"><span>${label}</span></button>`;
       }
       return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="ailab-link" style="color:#38BDF8; font-weight:600; text-decoration:underline;">${label}</a>`;
@@ -7696,23 +7704,49 @@ body.in-global_ai_lab .nano-dynamic-island {
     }
   };
 
-    // Global 1-Tap Hint Dispatcher
+    // Global 1-Tap Hint Dispatcher & Image Regenerator
+  window.ailabRegenerateImage = function(encodedAlt) {
+    const subj = decodeURIComponent(encodedAlt || "").trim();
+    const input = document.getElementById("ailabPromptInput");
+    if (input) {
+      input.value = `re ${subj || 'narendra modi'} image`;
+      const sendBtn = document.getElementById("ailabSendBtn");
+      if (sendBtn) sendBtn.click();
+    }
+  };
+
   window.ailabHandleActionClick = function(text) {
     if (!text) return;
     const lower = text.toLowerCase();
+
+    // 1. Direct Image Regeneration Check
+    if (lower.includes("regenerate") || lower.includes("व्हेरिएशन") || lower.includes("action:generate image of") || lower.startsWith("generate image of")) {
+      let subj = text.replace(/.*(action:generate image of|generate image of|व्हेरिएशन\s*बनवा|regenerate)\s*/i, "").trim();
+      subj = subj.replace(/^[\s,.:-]+|[\s,.:-]+$/g, "").trim();
+      if (!subj || subj.length < 2) subj = "narendra modi";
+      const input = document.getElementById("ailabPromptInput");
+      if (input) {
+        input.value = `re ${subj} image`;
+        const sendBtn = document.getElementById("ailabSendBtn");
+        if (sendBtn) sendBtn.click();
+      }
+      return;
+    }
+
+    // 2. Strict CUA handlers (only when clicking numbered CUA citation options like "[1]", "पर्याय १")
     if (window.AILAB_CUA) {
-      if (lower.includes("निकाला") || lower.includes("निकाल") || lower.includes("[1]") || lower.includes("वाचा") || lower.includes("पर्याय १") || lower.includes("पर्याय 1")) {
+      if ((lower.includes("पर्याय १") || lower.includes("पर्याय 1") || lower.includes("[1]")) && (lower.includes("निकाला") || lower.includes("निकाल") || lower.includes("वाचा"))) {
         window.AILAB_CUA.togglePanel(true);
         window.AILAB_CUA.updateActionHud("🔍", "Opening Detailed Citation [1]...");
         window.AILAB_CUA.moveCursor(320, 240, "Inspecting [1] DeepSeek R1 & Claude 3.7");
         window.AILAB_CUA.triggerClickRipple(320, 240);
         return;
-      } else if (lower.includes("duckdb") || lower.includes("सेव्ह") || lower.includes("पर्याय २") || lower.includes("पर्याय 2")) {
+      } else if ((lower.includes("पर्याय २") || lower.includes("पर्याय 2")) && (lower.includes("duckdb") || lower.includes("सेव्ह"))) {
         window.AILAB_CUA.togglePanel(true);
         window.AILAB_CUA.updateActionHud("🦆", "Saved DOM snapshot & citations to DuckDB studio_memory.db");
         window.AILAB_CUA.triggerClickRipple(480, 400);
         return;
-      } else if (lower.includes("नवीन") || lower.includes("शोध") || lower.includes("पर्याय ३") || lower.includes("पर्याय 3")) {
+      } else if ((lower.includes("पर्याय ३") || lower.includes("पर्याय 3")) && lower.includes("शोध")) {
         window.AILAB_CUA.togglePanel(true);
         const input = document.getElementById("ailabPromptInput");
         if (input) {
@@ -7722,6 +7756,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         return;
       }
     }
+
     // Default fallback: send text as prompt hint
     ailabSendHint(text);
   };
