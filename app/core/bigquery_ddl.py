@@ -127,6 +127,7 @@ def _describe_table(client: Any, table_ref: str) -> Dict[str, Any]:
         primary_key = []
     if not primary_key:
         primary_key = _primary_key(client, table.dataset_id, table.table_id)
+    partitioning = getattr(table, "time_partitioning", None)
     return {
         "kind": "table",
         "id": f"{table.dataset_id}.{table.table_id}",
@@ -137,6 +138,8 @@ def _describe_table(client: Any, table_ref: str) -> Dict[str, Any]:
         "columns": columns,
         "cluster_fields": list(table.clustering_fields or []),
         "primary_key": primary_key,
+        "partition_field": (partitioning.field if partitioning else "") or "",
+        "partition_type": (partitioning.type_ if partitioning else "") or "",
     }
 
 
@@ -220,5 +223,7 @@ def execute(sql: str) -> Dict[str, Any]:
         "columns": (table or {}).get("columns", []),
         "cluster_fields": (table or {}).get("cluster_fields", []),
         "primary_key": (table or {}).get("primary_key", []),
+        "partition_field": (table or {}).get("partition_field", ""),
+        "partition_type": (table or {}).get("partition_type", ""),
         "duration_ms": round((time.time() - started) * 1000),
     }

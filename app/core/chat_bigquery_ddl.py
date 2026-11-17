@@ -82,6 +82,10 @@ def _markdown(result: Dict[str, Any]) -> str:
         rows.append(f"| **Columns** | {(len(result.get('columns') or []))} |")
         cluster = ", ".join(result.get("cluster_fields") or []) or "—"
         rows.append(f"| **Cluster keys** | {cluster} |")
+        partition = result.get("partition_field") or ""
+        if partition:
+            partition = f"{partition} ({result.get('partition_type') or 'DAY'})"
+        rows.append(f"| **Partition** | {partition or '—'} |")
         primary = ", ".join(result.get("primary_key") or []) or "—"
         rows.append(f"| **Primary key** | {primary} |")
         rows.append(f"| **Rows** | {result.get('rows', 0)} |")
@@ -138,6 +142,7 @@ def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
             "dataset": result.get("dataset_id"),
             "table": result.get("table_id"),
             "cluster_fields": result.get("cluster_fields") or [],
+            "partition_field": result.get("partition_field") or "",
             "objects": result.get("objects") or [],
         },
     }
