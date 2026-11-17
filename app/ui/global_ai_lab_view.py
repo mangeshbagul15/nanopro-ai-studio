@@ -5320,11 +5320,16 @@ body.in-global_ai_lab .nano-dynamic-island {
         return;
       }
 
-      // 3. Explicit BigQuery CREATE DDL runs for real on the backend.
+      // 3. Explicit BigQuery CREATE DDL runs for real on the backend. A pasted
+      // row-wise column spec ("name | type | constraint") is turned into DDL
+      // server-side, so it must take the same path.
+      const hasSpecRow = /(?:\|\s*|\t|\s{2,})[A-Za-z][A-Za-z0-9_]*\s*(?:\||\t|\s{2,})\s*(?:STRING|INT64|INTEGER|NUMERIC|BIGNUMERIC|FLOAT64|BOOL|BOOLEAN|DATE|DATETIME|TIME|TIMESTAMP|JSON|BYTES|GEOGRAPHY)\b/i.test(prompt);
+      const hasCreateIntent = /\b(create|build|make|banav\w*)\b|बनव|तयार/i.test(prompt);
       const isBigQueryDdl = /bigquery/i.test(prompt) && (
         /```sql[\s\S]*create\s+(schema|dataset|table)/i.test(prompt) ||
         /^\s*create\s+(schema|dataset|table)/i.test(prompt) ||
-        /execute\s+bigquery\s+ddl:/i.test(prompt)
+        /execute\s+bigquery\s+ddl:/i.test(prompt) ||
+        (hasCreateIntent && hasSpecRow)
       );
 
       let routeRes = {};
