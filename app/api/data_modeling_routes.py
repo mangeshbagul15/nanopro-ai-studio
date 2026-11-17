@@ -816,3 +816,131 @@ def api_explorer_table(request: Request, database: str = "", schema: str = "main
         "row_count": details.get("row_count"),
         "error": details.get("error") or "",
     })
+
+
+class ExplorerRenameRequest(BaseModel):
+    database: str = ""
+    schema_name: str = ""
+    table: str = ""
+    column: str = ""
+    new_name: str = ""
+
+
+class ExplorerDeleteRequest(BaseModel):
+    database: str = ""
+    schema_name: str = ""
+    table: str = ""
+    confirm: str = ""
+
+
+class ExplorerColumnTypeRequest(BaseModel):
+    database: str = ""
+    schema_name: str = ""
+    table: str = ""
+    column: str = ""
+    column_type: str = ""
+    length: int | None = None
+    precision: int | None = None
+    scale: int | None = None
+    date_format: str = ""
+
+
+def _require_bigquery_mutation(database: str) -> None:
+    from app.core import catalog_admin as ca
+    from app.core import data_modeling_ai as dm
+
+    entry = dm.find_catalog_entry(database)
+    if not entry:
+        raise ca.CatalogError("Database not found in catalog.")
+    if str(entry.get("engine") or "").lower() != "bigquery":
+        raise ca.CatalogError("Live schema edits are currently supported for BigQuery only.")
+
+
+def _mutation_response(call) -> JSONResponse:
+    from app.core import catalog_admin as ca
+    from app.core import data_modeling_ai as dm
+
+    try:
+        result = call()
+    except ca.CatalogError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)[:400]}, status_code=400)
+    except Exception as exc:
+        return JSONResponse({"status": "error", "message": str(exc)[:500]}, status_code=500)
+    try:
+        dm.invalidate_catalog()
+    except Exception:
+        pass
+    return JSONResponse({"status": "success", **result})
+
+
+@explorer_router.get("/schema")
+def api_explorer_schema(request: Request, database: str = "", schema: str = "main"):
+    _session_user(request)
+    from app.core import catalog_admin as ca
+
+    def call():
+        _require_bigquery_mutation(database)
+        return ca.schema_info(schema)
+
+    return _mutation_response(call)
+
+
+@explorer_router.post("/rename")
+def api_explorer_rename(req: ExplorerRenameRequest, request: Request):
+    _session_user(request)
+    from app.core import catalog_admin as ca
+
+    def call():
+        _require_bigquery_mutation(req.database)
+        if req.table:
+            return ca.rename_table(req.schema_name, req.table, req.new_name)
+        return ca.rename_schema(req.schema_name, req.new_name)
+
+    return _mutation_response(call)
+
+
+@explorer_router.post("/delete")
+def api_explorer_delete(req: ExplorerDeleteRequest, request: Request):
+    _session_user(request)
+    from app.core import catalog_admin as ca
+
+    def call():
+        _require_bigquery_mutation(req.database)
+        if req.table:
+            return ca.drop_table(req.schema_name, req.table, req.confirm)
+        return ca.drop_schema(req.schema_name, req.confirm)
+
+    return _mutation_response(call)
+
+
+@explorer_router.post("/column-type")
+def api_explorer_column_type(req: ExplorerColumnTypeRequest, request: Request):
+    _session_user(request)
+    from app.core import catalog_admin as ca
+
+    def call():
+        _require_bigquery_mutation(req.database)
+        return ca.alter_column(
+            req.schema_name,
+            req.table,
+            req.column,
+            req.column_type,
+            length=req.length,
+            precision=req.precision,
+            scale=req.scale,
+            date_format=req.date_format,
+        )
+
+    return _mutation_response(call)
+
+
+@explorer_router.post("/column-rename")
+def api_explorer_column_rename(req: ExplorerRenameRequest, request: Request):
+    _session_user(request)
+    from app.core import catalog_admin as ca
+
+    def call():
+        _require_bigquery_mutation(req.database)
+        return ca.rename_column(req.schema_name, req.table, req.column, req.new_name)
+
+    return _mutation_response(call)

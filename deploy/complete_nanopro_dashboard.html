@@ -22017,7 +22017,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             colsHtml = `
               <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
                 ${tb.columns.map(c => `
-                  <div style="padding:2px 6px 2px 22px;font-size:10.5px;color:#94A3B8;display:flex;align-items:center;gap:5px;font-family:monospace;">
+                  <div style="padding:2px 6px 2px 22px;font-size:10.5px;color:#94A3B8;display:flex;align-items:center;gap:5px;font-family:monospace;" data-ailab-kind="column" data-db="${escapeHtml(db.id)}" data-schema="${escapeHtml(sc.name)}" data-table="${escapeHtml(tb.name)}" data-column="${escapeHtml(c.name)}" data-type="${escapeHtml(c.type)}">
                     <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">• ${escapeHtml(c.name)}</span>
                     ${c.key ? `<span title="${c.key === 'PK' ? 'Primary key' : 'Foreign key'}" style="font-size:8.5px;padding:0 4px;border-radius:3px;${c.key === 'PK' ? 'background:rgba(250,204,21,0.15);color:#FACC15;' : 'background:rgba(56,189,248,0.15);color:#38BDF8;'}">${c.key}</span>` : ""}
                     <span style="color:#64748B;font-size:9.5px;">${escapeHtml(c.type)}</span>
@@ -22044,7 +22044,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
           tablesHtml += `
             <div class="ailab-tree-node">
-              <div class="ailab-tree-row" onclick="ailabClickExplorerTable('${escapeHtml(db.id)}', '${escapeHtml(sc.name)}', '${escapeHtml(tb.name)}', '${escapeHtml(tbKey)}')">
+              <div class="ailab-tree-row" data-ailab-kind="table" data-db="${escapeHtml(db.id)}" data-schema="${escapeHtml(sc.name)}" data-table="${escapeHtml(tb.name)}" onclick="ailabClickExplorerTable('${escapeHtml(db.id)}', '${escapeHtml(sc.name)}', '${escapeHtml(tb.name)}', '${escapeHtml(tbKey)}')">
                 <span class="ailab-tree-arrow ${isTbOpen ? 'is-expanded' : ''}">▶</span>
                 <span style="font-size:11px;">📄</span>
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(tb.name)}</span>
@@ -22059,7 +22059,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         if (tablesHtml || !filter) {
           schemasHtml += `
             <div class="ailab-tree-node">
-              <div class="ailab-tree-row" onclick="ailabToggleTreeNode('${escapeHtml(scKey)}')">
+              <div class="ailab-tree-row" data-ailab-kind="schema" data-db="${escapeHtml(db.id)}" data-schema="${escapeHtml(sc.name)}" onclick="ailabToggleTreeNode('${escapeHtml(scKey)}')">
                 <span class="ailab-tree-arrow ${isScOpen ? 'is-expanded' : ''}">▶</span>
                 <span style="font-size:11px;">📁</span>
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#E2E8F0;">${escapeHtml(sc.name)}</span>
@@ -22143,6 +22143,512 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.ailabFilterExplorer = function(val) {
     ailabRenderExplorerTree();
   };
+
+  // -------------------------------------------------------------
+  // EXPLORER RIGHT-CLICK ADMIN (rename / delete / column type)
+  // -------------------------------------------------------------
+  function ailabEnsureCtxStyles() {
+    if (document.getElementById('ailabCtxStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'ailabCtxStyles';
+    style.textContent = `
+      .ailab-ctx-menu{position:fixed;z-index:100002;min-width:232px;background:#0B1220;border:1px solid #1E293B;border-radius:10px;box-shadow:0 18px 40px rgba(0,0,0,.55);padding:6px;font-size:12px;color:#E2E8F0;}
+      .ailab-ctx-head{padding:8px 10px 6px;border-bottom:1px solid #1E293B;margin-bottom:4px;}
+      .ailab-ctx-title{font-weight:700;color:#F8FAFC;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;}
+      .ailab-ctx-meta{color:#64748B;font-size:10.5px;margin-top:2px;}
+      .ailab-ctx-item{padding:7px 10px;border-radius:7px;cursor:pointer;display:flex;gap:8px;align-items:center;}
+      .ailab-ctx-item:hover{background:#1E293B;}
+      .ailab-ctx-item.is-danger{color:#F87171;}
+      .ailab-ctx-item.is-danger:hover{background:rgba(248,113,113,.12);}
+      .ailab-dlg-overlay{position:fixed;inset:0;background:rgba(2,6,23,.72);z-index:100003;display:flex;align-items:center;justify-content:center;}
+      .ailab-dlg{width:min(440px,92vw);max-height:88vh;overflow:auto;background:#0B1220;border:1px solid #1E293B;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.6);padding:16px;color:#E2E8F0;font-size:12.5px;}
+      .ailab-dlg-title{font-weight:700;color:#F8FAFC;font-size:14px;}
+      .ailab-dlg-sub{color:#64748B;font-size:11px;margin-top:2px;}
+      .ailab-dlg-body{margin-top:12px;}
+      .ailab-dlg-label{display:block;color:#94A3B8;font-size:11px;margin:10px 0 4px;}
+      .ailab-dlg-input,.ailab-dlg-select{width:100%;box-sizing:border-box;background:#0F172A;border:1px solid #334155;border-radius:7px;color:#E2E8F0;padding:7px 9px;font-size:12px;outline:none;}
+      .ailab-dlg-input:focus,.ailab-dlg-select:focus{border-color:#3B82F6;}
+      .ailab-dlg-warn{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.35);color:#FCA5A5;border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.5;}
+      .ailab-dlg-hint{color:#64748B;font-size:10.5px;line-height:1.5;margin-top:8px;}
+      .ailab-dlg-error{color:#F87171;font-size:11px;margin-top:8px;min-height:14px;}
+      .ailab-dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+      .ailab-btn{background:#1E293B;color:#E2E8F0;border:1px solid #334155;border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;}
+      .ailab-btn:hover{background:#273449;}
+      .ailab-btn.primary{background:#2563EB;border-color:#2563EB;color:#fff;}
+      .ailab-btn.primary:disabled{opacity:.45;cursor:not-allowed;}
+      .ailab-btn.is-danger{background:#B91C1C;border-color:#B91C1C;color:#fff;}
+      .ailab-toast-host{position:fixed;right:18px;bottom:18px;z-index:100004;display:flex;flex-direction:column;gap:8px;}
+      .ailab-toast{background:#0B1220;border:1px solid #1E293B;border-left:3px solid #3B82F6;border-radius:8px;padding:9px 12px;color:#E2E8F0;font-size:12px;box-shadow:0 12px 30px rgba(0,0,0,.45);transition:opacity .3s;max-width:360px;}
+      .ailab-toast.success{border-left-color:#22C55E;}
+      .ailab-toast.error{border-left-color:#EF4444;}
+    `;
+    document.head.appendChild(style);
+  }
+
+  window.ailabNotify = function(message, kind) {
+    ailabEnsureCtxStyles();
+    let host = document.getElementById('ailabToastHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'ailabToastHost';
+      host.className = 'ailab-toast-host';
+      document.body.appendChild(host);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'ailab-toast ' + (kind || 'info');
+    toast.textContent = message;
+    host.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 350); }, 3600);
+  };
+
+  function ailabExplorerTableEntry(dbId, schema, table) {
+    const db = (AILAB_EXPLORER.catalog || []).find(d => d.id === dbId);
+    const sc = db ? (db.schemas || []).find(s => s.name === schema) : null;
+    return sc && table ? (sc.tables || []).find(t => t.name === table) : null;
+  }
+
+  function ailabOpenDialog(title, subtitle, bodyHtml) {
+    ailabEnsureCtxStyles();
+    const overlay = document.createElement('div');
+    overlay.className = 'ailab-dlg-overlay';
+    overlay.innerHTML = `<div class="ailab-dlg"><div class="ailab-dlg-title">${title}</div>${subtitle ? `<div class="ailab-dlg-sub">${subtitle}</div>` : ''}<div class="ailab-dlg-body">${bodyHtml}</div><div class="ailab-dlg-actions"><button class="ailab-btn" data-role="cancel">Cancel</button><button class="ailab-btn primary" data-role="ok">Apply</button></div></div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', ev => { if (ev.target === overlay) close(); });
+    overlay.querySelector('[data-role="cancel"]').onclick = close;
+    return { el: overlay, close, ok: overlay.querySelector('[data-role="ok"]'), body: overlay.querySelector('.ailab-dlg-body') };
+  }
+
+  function ailabDialogError(dialog, message) {
+    const box = dialog.body.querySelector('.ailab-dlg-error');
+    if (box) box.textContent = message || '';
+  }
+
+  async function ailabExplorerPost(path, payload) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok || data.status !== 'success') {
+      throw new Error(data.message || data.detail || `Request failed (${res.status})`);
+    }
+    return data;
+  }
+
+  window.ailabExplorerApplyRename = function(dbId, schema, table, newName) {
+    const db = (AILAB_EXPLORER.catalog || []).find(d => d.id === dbId);
+    if (!db) { ailabLoadExplorer(true); return; }
+    if (table) {
+      const sc = (db.schemas || []).find(s => s.name === schema);
+      const tb = sc ? (sc.tables || []).find(t => t.name === table) : null;
+      if (!tb) { ailabLoadExplorer(true); return; }
+      const oldKey = 'tb_' + dbId + '_' + schema + '_' + table;
+      const newKey = 'tb_' + dbId + '_' + schema + '_' + newName;
+      if (AILAB_EXPLORER.treeOpen[oldKey] !== undefined) {
+        AILAB_EXPLORER.treeOpen[newKey] = AILAB_EXPLORER.treeOpen[oldKey];
+        delete AILAB_EXPLORER.treeOpen[oldKey];
+      }
+      tb.name = newName;
+    } else {
+      const sc = (db.schemas || []).find(s => s.name === schema);
+      if (!sc) { ailabLoadExplorer(true); return; }
+      sc.name = newName;
+      const open = {};
+      Object.keys(AILAB_EXPLORER.treeOpen).forEach(key => {
+        if (key === 'sc_' + dbId + '_' + schema) {
+          open['sc_' + dbId + '_' + newName] = AILAB_EXPLORER.treeOpen[key];
+        } else if (key.indexOf('tb_' + dbId + '_' + schema + '_') === 0) {
+          open[key.replace('tb_' + dbId + '_' + schema + '_', 'tb_' + dbId + '_' + newName + '_')] = AILAB_EXPLORER.treeOpen[key];
+        } else {
+          open[key] = AILAB_EXPLORER.treeOpen[key];
+        }
+      });
+      AILAB_EXPLORER.treeOpen = open;
+    }
+    ailabRenderExplorerTree();
+  };
+
+  window.ailabExplorerApplyDelete = function(dbId, schema, table) {
+    const db = (AILAB_EXPLORER.catalog || []).find(d => d.id === dbId);
+    if (!db) { ailabLoadExplorer(true); return; }
+    if (table) {
+      const sc = (db.schemas || []).find(s => s.name === schema);
+      if (sc) sc.tables = (sc.tables || []).filter(t => t.name !== table);
+      delete AILAB_EXPLORER.treeOpen['tb_' + dbId + '_' + schema + '_' + table];
+    } else {
+      db.schemas = (db.schemas || []).filter(s => s.name !== schema);
+      Object.keys(AILAB_EXPLORER.treeOpen).forEach(key => {
+        if (key === 'sc_' + dbId + '_' + schema || key.indexOf('tb_' + dbId + '_' + schema + '_') === 0) {
+          delete AILAB_EXPLORER.treeOpen[key];
+        }
+      });
+    }
+    ailabRenderExplorerTree();
+  };
+
+  window.ailabExplorerApplyColumnChange = function(dbId, schema, table, previous, nextName, nextType) {
+    const tb = ailabExplorerTableEntry(dbId, schema, table);
+    if (tb && Array.isArray(tb.columns)) {
+      const column = tb.columns.find(c => c.name === previous || c.name === nextName);
+      if (column) {
+        if (nextName) column.name = nextName;
+        if (nextType) column.type = nextType;
+      }
+    }
+    ailabRenderExplorerTree();
+  };
+
+  window.ailabRenameDialog = function(kind, dbId, schema, table) {
+    const current = table || schema;
+    const dialog = ailabOpenDialog(
+      kind === 'schema' ? 'Rename schema' : 'Rename table',
+      table ? `${schema}.${table}` : schema,
+      `<label class="ailab-dlg-label">New name</label>
+       <input class="ailab-dlg-input" id="npRenameInput" value="${current}" autocomplete="off">
+       <div class="ailab-dlg-error"></div>
+       ${kind === 'schema' ? '<div class="ailab-dlg-hint">BigQuery datasets rename होत नाहीत — NanoPro सर्व tables नवीन dataset मध्ये copy करून जुना dataset drop करते.</div>' : ''}`
+    );
+    const input = dialog.el.querySelector('#npRenameInput');
+    input.focus();
+    input.select();
+    dialog.ok.textContent = 'Rename';
+    const submit = async () => {
+      const newName = input.value.trim();
+      if (!newName) return;
+      dialog.ok.disabled = true;
+      try {
+        const data = await ailabExplorerPost('/api/ai/explorer/rename', {
+          database: dbId, schema_name: schema, table: table || '', new_name: newName,
+        });
+        dialog.close();
+        ailabExplorerApplyRename(dbId, schema, table, newName, data);
+        ailabNotify(`Renamed to ${newName}`, 'success');
+      } catch (err) {
+        dialog.ok.disabled = false;
+        ailabDialogError(dialog, err.message);
+      }
+    };
+    dialog.ok.onclick = submit;
+    input.addEventListener('keydown', ev => { if (ev.key === 'Enter') submit(); });
+  };
+
+  window.ailabDeleteDialog = function(kind, dbId, schema, table) {
+    const name = table || schema;
+    const dialog = ailabOpenDialog(
+      kind === 'schema' ? 'Delete schema' : 'Delete table',
+      table ? `${schema}.${table}` : schema,
+      `<div class="ailab-dlg-warn">${table
+        ? 'हा table कायमचा delete होईल आणि data परत मिळणार नाही.'
+        : 'हा schema आणि त्यातील सर्व tables कायमचे delete होतील.'}</div>
+       <label class="ailab-dlg-label">पुष्टी करण्यासाठी <b>${name}</b> टाइप करा</label>
+       <input class="ailab-dlg-input" id="npDeleteConfirm" autocomplete="off">
+       <div class="ailab-dlg-error"></div>`
+    );
+    const input = dialog.el.querySelector('#npDeleteConfirm');
+    input.focus();
+    dialog.ok.textContent = 'Delete';
+    dialog.ok.classList.remove('primary');
+    dialog.ok.classList.add('is-danger');
+    dialog.ok.disabled = true;
+    input.addEventListener('input', () => { dialog.ok.disabled = input.value.trim() !== name; });
+    dialog.ok.onclick = async () => {
+      dialog.ok.disabled = true;
+      try {
+        const data = await ailabExplorerPost('/api/ai/explorer/delete', {
+          database: dbId, schema_name: schema, table: table || '', confirm: input.value.trim(),
+        });
+        dialog.close();
+        ailabExplorerApplyDelete(dbId, schema, table);
+        ailabNotify(table ? `Table ${name} deleted` : `Schema ${name} deleted`, 'success');
+        if (!table && data.dropped_tables) ailabNotify(`${data.dropped_tables.length} tables removed`, 'info');
+      } catch (err) {
+        dialog.ok.disabled = false;
+        ailabDialogError(dialog, err.message);
+      }
+    };
+  };
+
+  const AILAB_COLUMN_TYPES = ['STRING', 'INT64', 'NUMERIC', 'BIGNUMERIC', 'FLOAT64', 'BOOL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BYTES', 'JSON', 'GEOGRAPHY'];
+  const AILAB_DATE_FORMATS = [
+    ['', '(format बदलू नका)'],
+    ['%Y-%m-%d', 'YYYY-MM-DD'],
+    ['%d-%m-%Y', 'DD-MM-YYYY'],
+    ['%d/%m/%Y', 'DD/MM/YYYY'],
+    ['%Y/%m/%d', 'YYYY/MM/DD'],
+    ['%d-%b-%Y', 'DD-Mon-YYYY'],
+    ['%m/%d/%Y', 'MM/DD/YYYY'],
+    ['%d-%m-%Y %H:%M:%S', 'DD-MM-YYYY HH:MM:SS'],
+  ];
+
+  window.ailabColumnTypeDialog = async function(dbId, schema, table, presetColumn) {
+    const tb = ailabExplorerTableEntry(dbId, schema, table);
+    let columns = (tb && tb.columns) || [];
+    if (!columns.length) {
+      try {
+        const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
+        const res = await fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: 'no-store' });
+        const data = res.ok ? await res.json() : {};
+        columns = data.columns || [];
+        if (tb) tb.columns = columns;
+      } catch (_) {}
+    }
+    if (!columns.length) {
+      ailabNotify('Columns load झाले नाहीत — आधी table expand करा.', 'error');
+      return;
+    }
+    const columnOptions = columns.map(c => `<option value="${c.name}" data-type="${c.type}"${c.name === presetColumn ? ' selected' : ''}>${c.name} · ${c.type}</option>`).join('');
+    const typeOptions = AILAB_COLUMN_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    const formatOptions = AILAB_DATE_FORMATS.map(f => `<option value="${f[0]}">${f[1]}</option>`).join('');
+    const dialog = ailabOpenDialog(
+      'Change column data type',
+      `${schema}.${table}`,
+      `<label class="ailab-dlg-label">Column</label>
+       <select class="ailab-dlg-select" id="npTypeColumn">${columnOptions}</select>
+       <label class="ailab-dlg-label">New data type</label>
+       <select class="ailab-dlg-select" id="npTypeTarget">${typeOptions}</select>
+       <div id="npTypeLengthRow" style="display:none">
+         <label class="ailab-dlg-label">Length (STRING / BYTES)</label>
+         <input class="ailab-dlg-input" id="npTypeLength" type="number" min="1" placeholder="e.g. 50">
+       </div>
+       <div id="npTypePrecRow" style="display:none">
+         <label class="ailab-dlg-label">Precision</label>
+         <input class="ailab-dlg-input" id="npTypePrecision" type="number" min="1" placeholder="e.g. 12">
+         <label class="ailab-dlg-label">Scale</label>
+         <input class="ailab-dlg-input" id="npTypeScale" type="number" min="0" placeholder="e.g. 2">
+       </div>
+       <div id="npTypeFmtRow" style="display:none">
+         <label class="ailab-dlg-label">Date format</label>
+         <select class="ailab-dlg-select" id="npTypeFormat">${formatOptions}</select>
+         <div class="ailab-dlg-hint" id="npTypeFmtHint"></div>
+       </div>
+       <div class="ailab-dlg-hint">BigQuery थेट फक्त widening conversion करते; इतर बदलांसाठी NanoPro table rebuild करते (data जपून).</div>
+       <div class="ailab-dlg-error"></div>`
+    );
+    const columnSelect = dialog.el.querySelector('#npTypeColumn');
+    const targetSelect = dialog.el.querySelector('#npTypeTarget');
+    const lengthRow = dialog.el.querySelector('#npTypeLengthRow');
+    const precisionRow = dialog.el.querySelector('#npTypePrecRow');
+    const formatRow = dialog.el.querySelector('#npTypeFmtRow');
+    const fmtHint = dialog.el.querySelector('#npTypeFmtHint');
+    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
+
+    const sourceType = () => {
+      const selected = columnSelect.options[columnSelect.selectedIndex];
+      return (selected && selected.getAttribute('data-type') || '').toUpperCase();
+    };
+    const normalizeType = type => ({ INTEGER: 'INT64', BOOLEAN: 'BOOL', FLOAT: 'FLOAT64' })[type] || type;
+    const refresh = () => {
+      const source = sourceType();
+      const target = targetSelect.value;
+      const needsLength = target === 'STRING' || target === 'BYTES';
+      const needsPrecision = target === 'NUMERIC' || target === 'BIGNUMERIC';
+      const needsFormat = dateTypes.indexOf(target) >= 0 || (dateTypes.indexOf(source) >= 0 && target === 'STRING');
+      lengthRow.style.display = needsLength ? '' : 'none';
+      precisionRow.style.display = needsPrecision ? '' : 'none';
+      formatRow.style.display = needsFormat ? '' : 'none';
+      if (needsFormat) {
+        if (source === 'STRING' && dateTypes.indexOf(target) >= 0) {
+          fmtHint.textContent = 'सध्याची text values या format ने parse होतील (PARSE_' + target + ').';
+        } else if (dateTypes.indexOf(source) >= 0 && target === 'STRING') {
+          fmtHint.textContent = 'Values या format मध्ये string म्हणून लिहिल्या जातील (FORMAT_' + source + ').';
+        } else {
+          fmtHint.textContent = 'Format फक्त text ↔ date रूपांतरासाठी लागू होतो; उरलेल्या बदलांसाठी CAST वापरला जाईल.';
+        }
+      }
+    };
+    const initialType = normalizeType(sourceType());
+    if (AILAB_COLUMN_TYPES.indexOf(initialType) >= 0) targetSelect.value = initialType;
+    columnSelect.addEventListener('change', () => {
+      const type = normalizeType(sourceType());
+      if (AILAB_COLUMN_TYPES.indexOf(type) >= 0) targetSelect.value = type;
+      refresh();
+    });
+    targetSelect.addEventListener('change', refresh);
+    refresh();
+    dialog.ok.textContent = 'Apply';
+    dialog.ok.onclick = async () => {
+      const column = columnSelect.value;
+      const target = targetSelect.value;
+      const payload = { database: dbId, schema_name: schema, table: table, column: column, column_type: target };
+      const length = dialog.el.querySelector('#npTypeLength').value.trim();
+      const precision = dialog.el.querySelector('#npTypePrecision').value.trim();
+      const scale = dialog.el.querySelector('#npTypeScale').value.trim();
+      if (lengthRow.style.display !== 'none' && length) payload.length = Number(length);
+      if (precisionRow.style.display !== 'none' && precision) payload.precision = Number(precision);
+      if (precisionRow.style.display !== 'none' && scale !== '') payload.scale = Number(scale);
+      if (formatRow.style.display !== 'none') payload.date_format = dialog.el.querySelector('#npTypeFormat').value;
+      dialog.ok.disabled = true;
+      try {
+        const data = await ailabExplorerPost('/api/ai/explorer/column-type', payload);
+        dialog.close();
+        ailabExplorerApplyColumnChange(dbId, schema, table, data.previous || column, data.column || column, data.type || target);
+        ailabNotify(`${column} → ${data.type || target} (${data.applied === 'recreate' ? 'table rebuilt' : 'in place'})`, 'success');
+        if (Array.isArray(data.notes)) data.notes.forEach(note => ailabNotify(note, 'info'));
+      } catch (err) {
+        dialog.ok.disabled = false;
+        ailabDialogError(dialog, err.message);
+      }
+    };
+  };
+
+  window.ailabColumnRenameDialog = function(dbId, schema, table, column) {
+    const dialog = ailabOpenDialog(
+      'Rename column',
+      `${schema}.${table}`,
+      `<label class="ailab-dlg-label">New name</label>
+       <input class="ailab-dlg-input" id="npColumnRename" value="${column}" autocomplete="off">
+       <div class="ailab-dlg-error"></div>`
+    );
+    const input = dialog.el.querySelector('#npColumnRename');
+    input.focus();
+    input.select();
+    dialog.ok.textContent = 'Rename';
+    const submit = async () => {
+      const newName = input.value.trim();
+      if (!newName) return;
+      dialog.ok.disabled = true;
+      try {
+        await ailabExplorerPost('/api/ai/explorer/column-rename', {
+          database: dbId, schema_name: schema, table: table, column: column, new_name: newName,
+        });
+        dialog.close();
+        ailabExplorerApplyColumnChange(dbId, schema, table, column, newName, '');
+        ailabNotify(`Column renamed to ${newName}`, 'success');
+      } catch (err) {
+        dialog.ok.disabled = false;
+        ailabDialogError(dialog, err.message);
+      }
+    };
+    dialog.ok.onclick = submit;
+    input.addEventListener('keydown', ev => { if (ev.key === 'Enter') submit(); });
+  };
+
+  window.ailabCloseExplorerMenu = function() {
+    const menu = document.getElementById('ailabCtxMenu');
+    if (menu) menu.remove();
+  };
+
+  window.ailabOpenExplorerMenu = function(ev, row) {
+    ailabEnsureCtxStyles();
+    ailabCloseExplorerMenu();
+    const kind = row.getAttribute('data-ailab-kind');
+    const dbId = row.getAttribute('data-db') || '';
+    const schema = row.getAttribute('data-schema') || '';
+    const table = row.getAttribute('data-table') || '';
+    const column = row.getAttribute('data-column') || '';
+    const columnType = row.getAttribute('data-type') || '';
+    const db = (AILAB_EXPLORER.catalog || []).find(d => d.id === dbId);
+    const sc = db ? (db.schemas || []).find(s => s.name === schema) : null;
+    const tb = sc ? (sc.tables || []).find(t => t.name === table) : null;
+
+    let title = schema;
+    let meta = '';
+    let items = [];
+    if (kind === 'schema') {
+      meta = `${((sc && sc.tables) || []).length} tables`;
+      items = [
+        ['rename', '✏️', 'Rename schema'],
+        ['delete', '🗑️', 'Delete schema', true],
+        ['refresh', '🔄', 'Refresh'],
+      ];
+    } else if (kind === 'table') {
+      const cols = (tb && tb.columns) || [];
+      meta = cols.length ? `${cols.length} columns · ${Number(tb.rows || 0).toLocaleString()} rows` : 'Counting columns & rows…';
+      items = [
+        ['rename', '✏️', 'Rename table'],
+        ['coltype', '🔤', 'Change column type'],
+        ['delete', '🗑️', 'Delete table', true],
+        ['refresh', '🔄', 'Reload columns'],
+      ];
+    } else {
+      title = column;
+      meta = `${(columnType || 'COLUMN').toUpperCase()} · ${schema}.${table}`;
+      items = [
+        ['coltype', '🔤', 'Change data type'],
+        ['colrename', '✏️', 'Rename column'],
+      ];
+    }
+
+    const menu = document.createElement('div');
+    menu.id = 'ailabCtxMenu';
+    menu.className = 'ailab-ctx-menu';
+    menu.innerHTML = `<div class="ailab-ctx-head"><div class="ailab-ctx-title">${title}</div><div class="ailab-ctx-meta" data-role="meta">${meta}</div></div>`
+      + items.map(item => `<div class="ailab-ctx-item${item[3] ? ' is-danger' : ''}" data-act="${item[0]}"><span>${item[1]}</span><span>${item[2]}</span></div>`).join('');
+    document.body.appendChild(menu);
+    const rect = menu.getBoundingClientRect();
+    let x = ev.clientX;
+    let y = ev.clientY;
+    if (x + rect.width > window.innerWidth - 8) x = window.innerWidth - rect.width - 8;
+    if (y + rect.height > window.innerHeight - 8) y = window.innerHeight - rect.height - 8;
+    menu.style.left = Math.max(8, x) + 'px';
+    menu.style.top = Math.max(8, y) + 'px';
+
+    menu.addEventListener('click', async e => {
+      const item = e.target.closest('[data-act]');
+      if (!item) return;
+      const act = item.getAttribute('data-act');
+      ailabCloseExplorerMenu();
+      if (act === 'rename') ailabRenameDialog(kind, dbId, schema, table);
+      else if (act === 'delete') ailabDeleteDialog(kind, dbId, schema, table);
+      else if (act === 'coltype') ailabColumnTypeDialog(dbId, schema, table, column);
+      else if (act === 'colrename') ailabColumnRenameDialog(dbId, schema, table, column);
+      else if (act === 'refresh') {
+        if (kind === 'schema') {
+          await ailabLoadExplorer(true);
+        } else if (tb) {
+          tb.columns = [];
+          tb._attemptedColumns = false;
+          await ailabFetchExplorerColumns(dbId, schema, table);
+        }
+      }
+    });
+
+    const updateMeta = text => {
+      const el = document.querySelector('#ailabCtxMenu [data-role="meta"]');
+      if (el) el.textContent = text;
+    };
+    if (kind === 'schema') {
+      const qs = new URLSearchParams({ database: dbId, schema: schema });
+      fetch(`/api/ai/explorer/schema?${qs.toString()}`, { cache: 'no-store' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.status === 'success') updateMeta(`${data.tables} tables · ${Number(data.rows || 0).toLocaleString()} rows`);
+        })
+        .catch(() => {});
+    } else if (kind === 'table') {
+      const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
+      fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: 'no-store' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (!data || data.status !== 'success') return;
+          const cols = data.columns || [];
+          if (tb) tb.columns = cols;
+          updateMeta(`${cols.length} columns · ${Number(data.row_count || 0).toLocaleString()} rows`);
+        })
+        .catch(() => {});
+    }
+  };
+
+  if (!window.__ailabCtxBound) {
+    window.__ailabCtxBound = true;
+    document.addEventListener('contextmenu', ev => {
+      const row = ev.target && ev.target.closest ? ev.target.closest('[data-ailab-kind]') : null;
+      if (!row || !row.closest('#ailabExplorer')) return;
+      ev.preventDefault();
+      ailabOpenExplorerMenu(ev, row);
+    });
+    document.addEventListener('mousedown', ev => {
+      const menu = document.getElementById('ailabCtxMenu');
+      if (menu && !menu.contains(ev.target)) ailabCloseExplorerMenu();
+    });
+    document.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape') ailabCloseExplorerMenu();
+    });
+    window.addEventListener('scroll', () => ailabCloseExplorerMenu(), true);
+  }
 
   window.initGlobalAILab = async function() {
     console.log("[GlobalAILab] Initializing studio workspace...");
