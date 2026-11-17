@@ -81,11 +81,44 @@ def _column_line(field: Any) -> str:
     return line
 
 
+def _table_constraints_repr(table: Any) -> Dict[str, Any]:
+    """Normalises TableConstraints (dict or proto-plus) to an API-shaped dict."""
+    props = getattr(table, "_properties", None)
+    if isinstance(props, dict) and props.get("tableConstraints") is not None:
+        return props.get("tableConstraints") or {}
+    raw = getattr(table, "table_constraints", None)
+    if isinstance(raw, dict):
+        return raw
+    if raw is not None:
+        converter = getattr(raw, "to_api_repr", None)
+        if callable(converter):
+            try:
+                converted = converter()
+                if isinstance(converted, dict):
+                    return converted
+            except Exception:
+                pass
+        primary = getattr(raw, "primary_key", None)
+        foreign_keys = getattr(raw, "foreign_keys", None) or []
+        if primary is not None or foreign_keys:
+            return {
+                "primaryKey": {
+                    "columns": list(getattr(primary, "columns", None) or [])
+                } if primary is not None else {},
+                "foreignKeys": [
+                    {
+                        "columns": list(getattr(fk, "columns", None) or []),
+                        "referencedTable": getattr(fk, "referenced_table", "") or "",
+                        "referencedColumns": list(getattr(fk, "referenced_columns", None) or []),
+                    }
+                    for fk in foreign_keys
+                ],
+            }
+    return {}
+
+
 def _constraints(table: Any, dataset_override: str = "") -> List[str]:
-    constraints = getattr(table, "table_constraints", None)
-    if not constraints:
-        constraints = (getattr(table, "_properties", None) or {}).get("tableConstraints")
-    constraints = constraints or {}
+    constraints = _table_constraints_repr(table)
     lines: List[str] = []
     primary = (constraints.get("primaryKey") or {}).get("columns") or []
     if primary:
@@ -443,9 +476,7 @@ def alter_column(
 
     constraint_lines = _constraints(table_obj)
     notes: List[str] = []
-    constraints = getattr(table_obj, "table_constraints", None)
-    if not constraints:
-        constraints = (getattr(table_obj, "_properties", None) or {}).get("tableConstraints") or {}
+    constraints = _table_constraints_repr(table_obj)
     primary_columns = (constraints.get("primaryKey") or {}).get("columns") or []
     if column in primary_columns:
         constraint_lines = []
