@@ -1788,12 +1788,12 @@ export default {
 
       if (isDiagramOrArchitecture) {
         domain = "System Architecture & Mermaid SVG Synthesis";
-        selectedModel = "anthropic/claude-3.7-sonnet";
+        selectedModel = "meta-llama/llama-3.3-70b-instruct";
         estimatedLatency = 520;
         paretoScore = 0.996;
       } else if (isSymbolOrMath) {
         domain = "Symbolic Logic & Mathematical Formulas";
-        selectedModel = "deepseek/deepseek-r1";
+        selectedModel = "qwen/qwen-2.5-72b-instruct";
         estimatedLatency = 580;
         paretoScore = 0.994;
       } else if (isImageCreative && !isDiagramOrArchitecture) {
@@ -1803,32 +1803,32 @@ export default {
         paretoScore = 0.988;
       } else if (isIndic) {
         domain = "Indic Sovereign Language & CBS";
-        selectedModel = "krutrim/Qwen3.6-27B";
+        selectedModel = "meta-llama/llama-3.3-70b-instruct";
         estimatedLatency = 450;
         paretoScore = 0.992;
       } else if (isMathReasoning) {
         domain = "Deep Mathematical Logic & Algorithms";
-        selectedModel = "deepseek/deepseek-chat";
+        selectedModel = "qwen/qwen-2.5-72b-instruct";
         estimatedLatency = 620;
         paretoScore = 0.993;
       } else if (isDataEngineering) {
         domain = "Enterprise Lakehouse & Pipeline Architecture";
-        selectedModel = "sambanova/Meta-Llama-3.3-70B-Instruct";
+        selectedModel = "meta-llama/llama-3.3-70b-instruct";
         estimatedLatency = 520;
-        paretoScore = 0.956;
+        paretoScore = 0.986;
       } else if (isCodeSpecialist) {
         domain = "Code Generation & System Architecture";
-        selectedModel = "mistral/codestral-latest";
+        selectedModel = "qwen/qwen-2.5-72b-instruct";
         estimatedLatency = 480;
-        paretoScore = 0.983;
+        paretoScore = 0.989;
       } else if (isLongContext) {
         domain = "1M Ultra-Long Context Analysis";
-        selectedModel = "poe/gemini-4-hydrogen";
+        selectedModel = "meta-llama/llama-3.3-70b-instruct";
         estimatedLatency = 710;
         paretoScore = 0.978;
       } else if (isRapidQA) {
         domain = "Rapid Sub-300ms Conversational QA";
-        selectedModel = "groq/qwen3.8-27b";
+        selectedModel = "meta-llama/llama-3.1-8b-instruct";
         estimatedLatency = 240;
         paretoScore = 0.985;
       }
@@ -2956,7 +2956,7 @@ CRITICAL OPERATIONAL RULES:
         }
       }
 
-      async function callOR(targetModel, timeoutMs = 8000) {
+      async function callOR(targetModel, timeoutMs = 15000) {
         const controller = new AbortController();
         const tid = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -3159,7 +3159,7 @@ CRITICAL OPERATIONAL RULES:
           }
         } else {
           activeProvider = "OPENROUTER_FRONTIER_DIRECT";
-          resp = await callOR(model, 8500);
+          resp = await callOR(model, 14000);
         }
       } else {
         // 2. SINGLE AUTO MATHEMATICAL ENGINE:
@@ -3191,106 +3191,107 @@ CRITICAL OPERATIONAL RULES:
         if (isDiagramWorkflow) {
           // Priority 0: Visual Diagrams, Workflows, Architectures & Mermaid Flowcharts
           activeProvider = "MERMAID_ARCHITECTURE_SPECIALIST_MESH";
-          executedModel = "anthropic/claude-3.7-sonnet";
-          resp = await callOR("anthropic/claude-3.7-sonnet", 4000);
+          executedModel = "meta-llama/llama-3.3-70b-instruct";
+          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "meta-llama/llama-3.3-70b-instruct";
-            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 3500);
-          }
-          if (!resp || !resp.ok) {
-            executedModel = "groq/qwen3.8-27b";
-            resp = await callGroq("qwen/qwen3.8-27b", 2500);
+            executedModel = "qwen/qwen-2.5-72b-instruct";
+            resp = await callOR("qwen/qwen-2.5-72b-instruct", 12000);
           }
         } else if (isSymbolMathFormula) {
           // Priority 0.5: Symbols, Formulas, KaTeX, Equations
           activeProvider = "DEEPSEEK_SYMBOLIC_MATH_ENGINE";
-          executedModel = "deepseek/deepseek-r1";
-          resp = await callOR("deepseek/deepseek-r1", 4000);
+          executedModel = "qwen/qwen-2.5-72b-instruct";
+          resp = await callOR("qwen/qwen-2.5-72b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "deepseek/deepseek-chat";
-            resp = await callOR("deepseek/deepseek-chat", 3000);
+            executedModel = "meta-llama/llama-3.3-70b-instruct";
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 12000);
           }
         } else if (isNanoProOrDataEng) {
-          // Priority 1: Lakehouse Data Engineering Specialist (Meta Llama 3.3 70B & Groq LPU)
+          // Priority 1: Lakehouse Data Engineering Specialist (Meta Llama 3.3 70B & Qwen 72B)
           activeProvider = "LAKEHOUSE_DATA_ENGINEER_MESH";
           executedModel = "meta-llama/llama-3.3-70b-instruct";
-          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 3500);
+          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "groq/qwen3.8-27b";
-            resp = await callGroq("qwen/qwen3.8-27b", 2500);
+            executedModel = "qwen/qwen-2.5-72b-instruct";
+            resp = await callOR("qwen/qwen-2.5-72b-instruct", 12000);
           }
         } else if (isSqlDatabase) {
-          // Priority 2: High-Precision SQL & DDL Database Specialist (Qwen 2.5 Coder 32B SOTA)
+          // Priority 2: High-Precision SQL & DDL Database Specialist (Qwen 2.5 72B SOTA)
           activeProvider = "SQL_DATABASE_ENGINEER_SOTA";
-          executedModel = "qwen/qwen-2.5-coder-32b-instruct";
-          resp = await callOR("qwen/qwen-2.5-coder-32b-instruct", 3500);
+          executedModel = "qwen/qwen-2.5-72b-instruct";
+          resp = await callOR("qwen/qwen-2.5-72b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "groq/qwen3.8-27b";
-            resp = await callGroq("qwen/qwen3.8-27b", 2500);
+            executedModel = "meta-llama/llama-3.3-70b-instruct";
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 12000);
           }
         } else if (isMathReasoning) {
-          // Priority 3: Deep Logic & Mathematical Reasoning (DeepSeek & Groq)
+          // Priority 3: Deep Logic & Mathematical Reasoning (Qwen 72B & Llama 70B)
           activeProvider = "DEEPSEEK_MATHEMATICAL_ENGINE";
-          executedModel = "deepseek/deepseek-chat";
-          resp = await callOR("deepseek/deepseek-chat", 3500);
+          executedModel = "qwen/qwen-2.5-72b-instruct";
+          resp = await callOR("qwen/qwen-2.5-72b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "groq/qwen3.8-27b";
-            resp = await callGroq("qwen/qwen3.8-27b", 2500);
+            executedModel = "meta-llama/llama-3.3-70b-instruct";
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 12000);
           }
         } else if (isCodeSpecialist) {
           // Priority 4: Code Generation & Architecture
           activeProvider = "OPENROUTER_CODE_SPECIALIST";
-          executedModel = "qwen/qwen-2.5-coder-32b-instruct";
-          resp = await callOR("qwen/qwen-2.5-coder-32b-instruct", 3500);
+          executedModel = "qwen/qwen-2.5-72b-instruct";
+          resp = await callOR("qwen/qwen-2.5-72b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "groq/qwen3.8-27b";
-            resp = await callGroq("qwen/qwen3.8-27b", 2500);
+            executedModel = "meta-llama/llama-3.3-70b-instruct";
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 12000);
           }
         } else if (isRapidQA) {
-          // Priority 5: Sub-300ms Deterministic Groq LPUs
+          // Priority 5: Sub-300ms Conversational QA (Llama 3.1 8B Instant)
           activeProvider = "GROQ_LPU_DETERMINISTIC";
-          executedModel = "groq/qwen3.8-27b";
-          resp = await callGroq("qwen/qwen3.8-27b", 2500);
+          executedModel = "meta-llama/llama-3.1-8b-instruct";
+          resp = await callOR("meta-llama/llama-3.1-8b-instruct", 8000);
           if (!resp || !resp.ok) {
             executedModel = "meta-llama/llama-3.3-70b-instruct";
-            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 3000);
+            resp = await callOR("meta-llama/llama-3.3-70b-instruct", 12000);
           }
         } else if (isIndic) {
-          // Priority 6: Indic Conversational
+          // Priority 6: Indic Conversational (Llama 3.3 70B Sovereign)
           activeProvider = "INDIC_SOVEREIGN_MESH";
           executedModel = "meta-llama/llama-3.3-70b-instruct";
-          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 3500);
+          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 14000);
           if (!resp || !resp.ok) {
-            executedModel = "groq/qwen3.8-27b";
-            resp = await callGroq("qwen/qwen3.8-27b", 2500);
+            executedModel = "qwen/qwen-2.5-72b-instruct";
+            resp = await callOR("qwen/qwen-2.5-72b-instruct", 12000);
           }
         } else {
-          // Balanced Frontier Pareto Optimizer (Sub-800ms)
-          activeProvider = "GROQ_LPU_FAST_PARETO";
-          executedModel = "groq/qwen3.8-27b";
-          resp = await callGroq("qwen/qwen3.8-27b", 2500);
+          // Balanced Frontier Pareto Optimizer (Llama 3.3 70B Flagship)
+          activeProvider = "BALANCED_FRONTIER_OPTIMIZER";
+          executedModel = "meta-llama/llama-3.3-70b-instruct";
+          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 14000);
           if (!resp || !resp.ok) {
             activeProvider = "OPENROUTER_RAPID_SLA";
-            executedModel = "meta-llama/llama-3.3-70b-instruct";
-            resp = await callOR(executedModel, 3000);
+            executedModel = "qwen/qwen-2.5-72b-instruct";
+            resp = await callOR(executedModel, 12000);
           }
         }
       }
 
-      // 3. ZERO-LOSS 429 SHIELD & FAST MULTI-PROVIDER FAILOVER
+      // 3. ZERO-LOSS MULTI-PROVIDER MULTI-TIER FAILOVER
       if (!resp || !resp.ok) {
-        if (executedModel !== "groq/qwen3.8-27b") {
-          activeProvider = "GROQ_LPU_FAILOVER";
-          executedModel = "groq/qwen3.8-27b";
-          resp = await callGroq("qwen/qwen3.8-27b", 2500);
+        if (executedModel !== "meta-llama/llama-3.3-70b-instruct") {
+          activeProvider = "OPENROUTER_LLAMA70B_FAILOVER";
+          executedModel = "meta-llama/llama-3.3-70b-instruct";
+          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 12000);
         }
       }
       if (!resp || !resp.ok) {
-        if (executedModel !== "meta-llama/llama-3.3-70b-instruct") {
-          activeProvider = "OPENROUTER_SHIELD_FALLBACK";
-          executedModel = "meta-llama/llama-3.3-70b-instruct";
-          resp = await callOR("meta-llama/llama-3.3-70b-instruct", 3000);
+        if (executedModel !== "qwen/qwen-2.5-72b-instruct") {
+          activeProvider = "OPENROUTER_QWEN72B_FAILOVER";
+          executedModel = "qwen/qwen-2.5-72b-instruct";
+          resp = await callOR("qwen/qwen-2.5-72b-instruct", 12000);
         }
+      }
+      if (!resp || !resp.ok) {
+        activeProvider = "OPENROUTER_FREE_ADAPTIVE";
+        executedModel = "openrouter/free";
+        resp = await callOR("openrouter/free", 10000);
       }
 
 
@@ -3533,6 +3534,74 @@ CRITICAL OPERATIONAL RULES:
           `- **Layer**: Gold Marts / Silver Cleaned\n` +
           `- **Storage Format**: Apache Parquet / In-Memory Columnar\n` +
           `- **Catalog Sync**: Updated in NanoPro Explorer Tree.`;
+      } else if (/(aml|anti-money|money laundering|str|ctr|fiu|पैसे धुणे|मनी लाँड्रिंग)/i.test(pCheckEdge)) {
+        edgeKnowledge = `### 🏦 NanoPro AML (Anti-Money Laundering) Enterprise Intelligence\n\n` +
+          `**AML प्रकल्पामध्ये बँकिंग नियमांनुसार (FIU-IND / RBI PMLA) खालील मुख्य तक्ते व अहवाल कार्यरत आहेत:**\n\n` +
+          `#### 1. 📊 मुख्य AML नियामक अहवाल (Regulatory Reports in SBI / HDFC):\n` +
+          `- **CTR (Cash Transaction Report)**: एका महिन्यात ₹10 लाखांपेक्षा जास्त रोख व्यवहारांचा अहवाल दर महिन्याच्या 15 तारखेपूर्वी FIU-IND ला पाठवला जातो.\n` +
+          `- **STR (Suspicious Transaction Report)**: संशयित किंवा ज्ञात उत्पन्नाशी विसंगत व्यवहार आढळल्यास 7 दिवसांच्या आत सादर केला जातो.\n` +
+          `- **CCR (Counterfeit Currency Report)**: बनावट/खोट्या नोटा आढळल्यास तात्काळ अहवाल.\n` +
+          `- **CBWTR (Cross Border Wire Transfer Report)**: ₹5 लाखांवरील आंतरराष्ट्रीय मनी ट्रान्सफर अहवाल.\n` +
+          `- **KYC Risk Profiling**: ग्राहकांची Low, Medium, High Risk वर्गवारी आणि PEP (Politically Exposed Persons) मॉनिटरिंग.\n\n` +
+          `#### 2. 🏛️ NanoPro Medallion Pipeline Layers for AML:\n` +
+          `- **L0 (Bronze - S3)**: \`RAW_AML_ALERTS\` (AWS S3 वरील Parquet डेटा स्त्रोत)\n` +
+          `- **L1 (Silver - Snowflake)**: \`FACT_AML_CASES_CLEANSED\` (SCD-2 Normalization, 0 Nulls Quality Gate)\n` +
+          `- **L2 (Gold - DuckDB)**: \`MART_AML_STR_REGULATORY\` (<20ms SQL Serving Tier)\n` +
+          `- **Outbound Delivery**: \`/data/sftp/outbound/reports/AML_EOD_T1_*.xlsx\`\n\n` +
+          `\`\`\`sql\n` +
+          `-- Production DDL for AML Case Investigation Mart\n` +
+          `CREATE TABLE IF NOT EXISTS MART_AML_STR_REGULATORY (\n` +
+          `    ALERT_ID VARCHAR PRIMARY KEY,\n` +
+          `    ACCOUNT_NUMBER VARCHAR NOT NULL,\n` +
+          `    CUSTOMER_NAME VARCHAR,\n` +
+          `    PAN_NUMBER VARCHAR,\n` +
+          `    ALERT_TRIGGER_RULE VARCHAR,\n` +
+          `    TRANSACTION_AMOUNT DECIMAL(18,2),\n` +
+          `    STR_FILED_FLAG CHAR(1) DEFAULT 'N',\n` +
+          `    FIU_REFERENCE_NUM VARCHAR,\n` +
+          `    CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n` +
+          `);\n` +
+          `\`\`\``;
+      } else if (/(alm|asset liability|liquidity gap|lcr|nsfr|irrbb|तरलता|दायित्व)/i.test(pCheckEdge)) {
+        edgeKnowledge = `### 🏦 NanoPro ALM (Asset Liability Management) Enterprise Intelligence\n\n` +
+          `**ALM प्रकल्पामध्ये रिझर्व्ह बँक (RBI Basel III) नियमांनुसार खालील लिक्विडीटी व इंटरेस्ट रेट रिस्क रिपोर्ट्स तयार केले जातात:**\n\n` +
+          `#### 1. 📊 मुख्य ALM नियामक अहवाल (Regulatory Reports in SBI / HDFC):\n` +
+          `- **Structural Liquidity Statement (SLS)**: बँकेच्या Assets (कर्जे) आणि Liabilities (ठेवी) मधील Maturity Gap चे विश्लेषण (1-14 Days, 15-28 Days, 1-3 Months, 3-6 Months, 1-3 Years, 5+ Years).\n` +
+          `- **Dynamic Liquidity Report (DLR)**: दैनंदिन कॅश फ्लो आणि ट्रेझरी ओव्हरनाईट लिक्विडीटी मॉनिटरिंग.\n` +
+          `- **IRRBB / IRS (Interest Rate Risk in Banking Book)**: व्याजदर बदलल्यास Net Interest Margin (NIM) वर होणारा परिणाम.\n` +
+          `- **LCR (Liquidity Coverage Ratio)**: पुढील 30 दिवसांच्या संभाव्य आर्थिक संकटात टिकण्यासाठी High Quality Liquid Assets (HQLA) प्रमाण (किमान 100% असणे बंधनकारक).\n` +
+          `- **NSFR (Net Stable Funding Ratio)**: 1 वर्षासाठी आवश्यक व उपलब्ध स्थिर निधीचे प्रमाण (>100%).\n\n` +
+          `#### 2. 🏛️ NanoPro Medallion Pipeline Layers for ALM:\n` +
+          `- **L0 (Bronze - S3)**: \`RAW_ALM_CASHFLOWS\`\n` +
+          `- **L1 (Silver - Snowflake)**: \`FACT_ALM_MATURITY_BUCKETS\`\n` +
+          `- **L2 (Gold - DuckDB)**: \`MART_ALM_LIQUIDITY_GAP\`\n` +
+          `- **Outbound Delivery**: \`/data/sftp/outbound/reports/ALM_LIQUIDITY_GAP_EOD_*.xlsx\`\n\n` +
+          `\`\`\`sql\n` +
+          `-- Production DDL for ALM Liquidity Gap Mart\n` +
+          `CREATE TABLE IF NOT EXISTS MART_ALM_LIQUIDITY_GAP (\n` +
+          `    BUCKET_ID VARCHAR PRIMARY KEY,\n` +
+          `    TIME_BUCKET_NAME VARCHAR NOT NULL,\n` +
+          `    TOTAL_INFLOWS DECIMAL(18,2),\n` +
+          `    TOTAL_OUTFLOWS DECIMAL(18,2),\n` +
+          `    NET_GAP DECIMAL(18,2),\n` +
+          `    CUMULATIVE_GAP DECIMAL(18,2),\n` +
+          `    PRUDENTIAL_LIMIT_EXCEEDED CHAR(1) DEFAULT 'N',\n` +
+          `    REPORT_DATE DATE NOT NULL\n` +
+          `);\n` +
+          `\`\`\``;
+      } else if (/(8 projects|8 banking|projects|सर्व प्रकल्प|8 प्रकल्प|आठ प्रकल्प|all projects|banking)/i.test(pCheckEdge)) {
+        edgeKnowledge = `### 🏦 NanoPro Core 8 Banking Projects (End-to-End Enterprise Lakehouse)\n\n` +
+          `NanoPro मध्ये खालील **८ मुख्य बँकिंग प्रोजेक्ट्स** Medallion Architecture आणि Apache Airflow द्वारे २४/७ संचालित आहेत:\n\n` +
+          `| # | प्रकल्प (Project Name) | L0 (Bronze S3) | L1 (Silver Snowflake) | L2 (Gold DuckDB) | मुख्य आउटबाउंड अहवाल |\n` +
+          `| :-: | :--- | :--- | :--- | :--- | :--- |\n` +
+          `| **1** | **AML** (Anti-Money Laundering) | \`RAW_AML_ALERTS\` | \`FACT_AML_CASES_CLEANSED\` | \`MART_AML_STR_REGULATORY\` | CTR, STR, CCR, FIU-IND Disclosures |\n` +
+          `| **2** | **ALM** (Asset Liability Management) | \`RAW_ALM_CASHFLOWS\` | \`FACT_ALM_MATURITY_BUCKETS\` | \`MART_ALM_LIQUIDITY_GAP\` | Structural Liquidity, LCR, IRRBB |\n` +
+          `| **3** | **Credit Card Operations** | \`RAW_CC_TRANSACTIONS\` | \`FACT_CC_CLEANSED_TXNS\` | \`MART_CC_DELINQUENCY_REV\` | 30/60/90 DPD Delinquency, Revolving Balances |\n` +
+          `| **4** | **Bureau Mart** (CIBIL / Experian) | \`RAW_BUREAU_CIBIL_FEEDS\` | \`FACT_BUREAU_MATCHED_SCORES\` | \`MART_BUREAU_RISK_MIGRATION\` | Score Migration, Member Reporting, Default Risk |\n` +
+          `| **5** | **ADF CIMS** (RBI Regulatory) | \`RAW_CIMS_RETURNS_INGEST\` | \`FACT_CIMS_HARMONIZED_RETS\` | \`MART_CIMS_BASEL3_DISCLOSURE\` | Basel-III Returns, PSL, CRR/SLR Disclosures |\n` +
+          `| **6** | **UPI Switch Settlement** | \`RAW_UPI_SWITCH_FEED\` | \`FACT_UPI_SETTLED_TXNS\` | \`MART_UPI_SWITCH_SETTLEMENT\` | NPCI Switch Settlement, VPA Disputes, Chargebacks |\n` +
+          `| **7** | **JLG Microfinance Collections** | \`RAW_JLG_COLLECTIONS_FEED\` | \`FACT_JLG_RECONCILED_DUES\` | \`MART_JLG_PAR_RECOVERY\` | Center Recovery, PAR 30/60/90, Micro-loans |\n` +
+          `| **8** | **LOS & LMS Lifecycle** | \`RAW_LOS_APPLICATIONS\` | \`FACT_LMS_ACTIVE_LOANS\` | \`MART_LOAN_PORTFOLIO_PERF\` | Loan Origination, Disbursals, NPA Aging |`;
       } else {
         edgeKnowledge = `### ⚡ NanoPro Global AI Lab (Sovereign Edge Synthesis)\n\n` +
           `आपला प्रश्न स्वीकारला गेला आहे. **NanoPro Unified Model Mesh** खालील आर्किटेक्चरवर कार्यरत आहे:\n\n` +

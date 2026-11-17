@@ -4964,12 +4964,14 @@ body.in-global_ai_lab .nano-dynamic-island {
       const routedModel = routeRes.selected_model || AILAB.selectedModel;
 
       // 4. Execution Call (OpenRouter + MCP Streaming)
+      const targetModelToExecute = (AILAB.selectedModel === "auto" || !AILAB.selectedModel) ? (routedModel || "auto") : AILAB.selectedModel;
       const execRes = await fetch("/api/ai/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: modelPrompt,
-          model: AILAB.selectedModel === "auto" ? "auto" : AILAB.selectedModel,
+          model: targetModelToExecute,
+          routed_model: routedModel,
           effort: AILAB.selectedEffort,
           messages: AILAB.messages.map(m => ({ role: m.role, content: m.content }))
         })
