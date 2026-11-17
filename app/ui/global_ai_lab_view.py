@@ -3822,7 +3822,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.AILAB_EXPLORER = {
     isOpen: false,
     catalog: null,
-    treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_duckdb_main": true, "sc_snowflake_CORE_BANKING": true },
+    treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_bigquery_nanopro_cbs_bronze": true, "tb_bigquery_nanopro_cbs_bronze_CMG": true, "sc_duckdb_gold_marts": true, "sc_duckdb_nanopro_cbs_bronze": true, "sc_snowflake_L0_STAGING": true, "sc_snowflake_L2_CURATED": true, "sc_snowflake_nanopro_cbs_bronze": true },
     activeTable: null
   };
 
@@ -3870,27 +3870,41 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   window.ailabRestoreCustomTables = function() {
     try {
+      const customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]");
+      if (customSchemas.length > 0 && AILAB_EXPLORER.catalog) {
+        ["bigquery", "duckdb", "snowflake"].forEach(dbId => {
+          const db = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
+          if (db && db.schemas) {
+            customSchemas.forEach(scName => {
+              if (!db.schemas.some(s => s.name.toLowerCase() === scName.toLowerCase())) {
+                db.schemas.unshift({ name: scName, description: `Custom Schema [${scName}]`, tables: [] });
+              }
+              AILAB_EXPLORER.treeOpen["sc_" + dbId + "_" + scName] = true;
+            });
+          }
+        });
+      }
+
       const customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]");
       if (customTables.length > 0 && AILAB_EXPLORER.catalog) {
-        const duck = AILAB_EXPLORER.catalog.find(d => d.id === "duckdb");
-        if (duck && duck.schemas && duck.schemas[0]) {
-          customTables.forEach(ct => {
-            if (!duck.schemas[0].tables.some(t => t.name.toLowerCase() === ct.name.toLowerCase())) {
-              duck.schemas[0].tables.unshift(ct);
-            }
-          });
-        }
-        const snw = AILAB_EXPLORER.catalog.find(d => d.id === "snowflake");
-        if (snw && snw.schemas) {
-          const l2 = snw.schemas.find(s => s.name === "L2_CURATED") || snw.schemas[0];
-          if (l2) {
+        ["bigquery", "duckdb", "snowflake"].forEach(dbId => {
+          const db = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
+          if (db && db.schemas) {
             customTables.forEach(ct => {
-              if (!l2.tables.some(t => t.name.toLowerCase() === ct.name.toLowerCase())) {
-                l2.tables.unshift(ct);
+              const targetSchemaName = ct.schema || (ct.name.toUpperCase() === "CMG" ? "nanopro_cbs_bronze" : null);
+              let sc = targetSchemaName ? db.schemas.find(s => s.name.toLowerCase() === targetSchemaName.toLowerCase()) : db.schemas[0];
+              if (!sc && targetSchemaName) {
+                sc = { name: targetSchemaName, description: `${targetSchemaName} Lakehouse`, tables: [] };
+                db.schemas.unshift(sc);
+              }
+              if (sc && sc.tables) {
+                if (!sc.tables.some(t => t.name.toLowerCase() === ct.name.toLowerCase())) {
+                  sc.tables.unshift(ct);
+                }
               }
             });
           }
-        }
+        });
       }
     } catch (_) {}
   };
@@ -3917,6 +3931,115 @@ body.in-global_ai_lab .nano-dynamic-island {
         kind: "snowflake",
         icon: "❄️",
         schemas: [
+            {
+              name: "nanopro_cbs_bronze",
+              description: "NanoPro CBS Raw Bronze Lakehouse (Snowflake Stage)",
+              tables: [
+                {
+                  name: "CMG",
+                  description: "Customer Master General (CIF 360 Master Record)",
+                  rows: 25,
+                  columns: [
+                  {
+                                    "name": "CUST_ID",
+                                    "type": "VARCHAR(32) PRIMARY KEY"
+                  },
+                  {
+                                    "name": "CUST_NAME",
+                                    "type": "VARCHAR(128) NOT NULL"
+                  },
+                  {
+                                    "name": "GENDER",
+                                    "type": "VARCHAR(8)"
+                  },
+                  {
+                                    "name": "DOB_OR_INCORP_DATE",
+                                    "type": "DATE"
+                  },
+                  {
+                                    "name": "CUST_TYPE",
+                                    "type": "VARCHAR(32) NOT NULL"
+                  },
+                  {
+                                    "name": "PAN_NO",
+                                    "type": "VARCHAR(16)"
+                  },
+                  {
+                                    "name": "PASSPORT_NO",
+                                    "type": "VARCHAR(16)"
+                  },
+                  {
+                                    "name": "GST_NO",
+                                    "type": "VARCHAR(32)"
+                  },
+                  {
+                                    "name": "OCCUPATION",
+                                    "type": "VARCHAR(64)"
+                  },
+                  {
+                                    "name": "ANNUAL_INCOME_TURNOVER",
+                                    "type": "NUMBER(18,2)"
+                  },
+                  {
+                                    "name": "CUSTOMER_SEGMENT",
+                                    "type": "VARCHAR(32) NOT NULL"
+                  },
+                  {
+                                    "name": "RESIDENTIAL_STATUS",
+                                    "type": "VARCHAR(16) NOT NULL"
+                  },
+                  {
+                                    "name": "CITY",
+                                    "type": "VARCHAR(64) NOT NULL"
+                  },
+                  {
+                                    "name": "STATE",
+                                    "type": "VARCHAR(64) NOT NULL"
+                  },
+                  {
+                                    "name": "COUNTRY",
+                                    "type": "VARCHAR(8) NOT NULL"
+                  },
+                  {
+                                    "name": "HOME_BRANCH_SOL_ID",
+                                    "type": "VARCHAR(16) NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_STATUS",
+                                    "type": "VARCHAR(16) NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_LAST_VERIFIED_DATE",
+                                    "type": "DATE"
+                  },
+                  {
+                                    "name": "RE_KYC_DUE_DATE",
+                                    "type": "DATE NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_RISK_CATEGORY",
+                                    "type": "VARCHAR(16) NOT NULL"
+                  },
+                  {
+                                    "name": "PEP_FLAG",
+                                    "type": "BOOLEAN NOT NULL"
+                  },
+                  {
+                                    "name": "SANCTIONS_HIT_FLAG",
+                                    "type": "BOOLEAN NOT NULL"
+                  },
+                  {
+                                    "name": "CUST_STATUS",
+                                    "type": "VARCHAR(16) NOT NULL"
+                  },
+                  {
+                                    "name": "CREATED_AT",
+                                    "type": "TIMESTAMP_NTZ NOT NULL"
+                  }
+]
+                }
+              ]
+            },
           {
             name: "L0_STAGING",
             description: "Raw Landing Tier (Append-Only feeds from AWS S3 Bronze & SFTP Inbound)",
@@ -4014,6 +4137,115 @@ body.in-global_ai_lab .nano-dynamic-island {
         kind: "duckdb",
         icon: "🦆",
         schemas: [
+            {
+              name: "nanopro_cbs_bronze",
+              description: "NanoPro CBS Raw Bronze Lakehouse (DuckDB Columnar)",
+              tables: [
+                {
+                  name: "CMG",
+                  description: "Customer Master General (CIF 360 Master Record)",
+                  rows: 25,
+                  columns: [
+                  {
+                                    "name": "CUST_ID",
+                                    "type": "VARCHAR PRIMARY KEY"
+                  },
+                  {
+                                    "name": "CUST_NAME",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "GENDER",
+                                    "type": "VARCHAR"
+                  },
+                  {
+                                    "name": "DOB_OR_INCORP_DATE",
+                                    "type": "DATE"
+                  },
+                  {
+                                    "name": "CUST_TYPE",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "PAN_NO",
+                                    "type": "VARCHAR"
+                  },
+                  {
+                                    "name": "PASSPORT_NO",
+                                    "type": "VARCHAR"
+                  },
+                  {
+                                    "name": "GST_NO",
+                                    "type": "VARCHAR"
+                  },
+                  {
+                                    "name": "OCCUPATION",
+                                    "type": "VARCHAR"
+                  },
+                  {
+                                    "name": "ANNUAL_INCOME_TURNOVER",
+                                    "type": "DECIMAL(18,2)"
+                  },
+                  {
+                                    "name": "CUSTOMER_SEGMENT",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "RESIDENTIAL_STATUS",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "CITY",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "STATE",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "COUNTRY",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "HOME_BRANCH_SOL_ID",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_STATUS",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_LAST_VERIFIED_DATE",
+                                    "type": "DATE"
+                  },
+                  {
+                                    "name": "RE_KYC_DUE_DATE",
+                                    "type": "DATE NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_RISK_CATEGORY",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "PEP_FLAG",
+                                    "type": "BOOLEAN NOT NULL"
+                  },
+                  {
+                                    "name": "SANCTIONS_HIT_FLAG",
+                                    "type": "BOOLEAN NOT NULL"
+                  },
+                  {
+                                    "name": "CUST_STATUS",
+                                    "type": "VARCHAR NOT NULL"
+                  },
+                  {
+                                    "name": "CREATED_AT",
+                                    "type": "TIMESTAMP NOT NULL"
+                  }
+]
+                }
+              ]
+            },
           {
             name: "gold_marts",
             description: "Zero-Latency Columnar In-Memory Analytics (All 8 Projects)",
@@ -4036,6 +4268,115 @@ body.in-global_ai_lab .nano-dynamic-island {
         kind: "bigquery",
         icon: "☁️",
         schemas: [
+            {
+              name: "nanopro_cbs_bronze",
+              description: "NanoPro CBS Raw Bronze Lakehouse (Core Banking System, asia-south1)",
+              tables: [
+                {
+                  name: "CMG",
+                  description: "Customer Master General (CIF 360 Master Record)",
+                  rows: 25,
+                  columns: [
+                  {
+                                    "name": "CUST_ID",
+                                    "type": "STRING NOT NULL (PK)"
+                  },
+                  {
+                                    "name": "CUST_NAME",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "GENDER",
+                                    "type": "STRING"
+                  },
+                  {
+                                    "name": "DOB_OR_INCORP_DATE",
+                                    "type": "DATE"
+                  },
+                  {
+                                    "name": "CUST_TYPE",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "PAN_NO",
+                                    "type": "STRING"
+                  },
+                  {
+                                    "name": "PASSPORT_NO",
+                                    "type": "STRING"
+                  },
+                  {
+                                    "name": "GST_NO",
+                                    "type": "STRING"
+                  },
+                  {
+                                    "name": "OCCUPATION",
+                                    "type": "STRING"
+                  },
+                  {
+                                    "name": "ANNUAL_INCOME_TURNOVER",
+                                    "type": "NUMERIC"
+                  },
+                  {
+                                    "name": "CUSTOMER_SEGMENT",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "RESIDENTIAL_STATUS",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "CITY",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "STATE",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "COUNTRY",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "HOME_BRANCH_SOL_ID",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_STATUS",
+                                    "type": "STRING NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_LAST_VERIFIED_DATE",
+                                    "type": "DATE"
+                  },
+                  {
+                                    "name": "RE_KYC_DUE_DATE",
+                                    "type": "DATE NOT NULL"
+                  },
+                  {
+                                    "name": "KYC_RISK_CATEGORY",
+                                    "type": "STRING NOT NULL (CLUSTER KEY 1)"
+                  },
+                  {
+                                    "name": "PEP_FLAG",
+                                    "type": "BOOL NOT NULL"
+                  },
+                  {
+                                    "name": "SANCTIONS_HIT_FLAG",
+                                    "type": "BOOL NOT NULL"
+                  },
+                  {
+                                    "name": "CUST_STATUS",
+                                    "type": "STRING NOT NULL (CLUSTER KEY 3)"
+                  },
+                  {
+                                    "name": "CREATED_AT",
+                                    "type": "TIMESTAMP NOT NULL"
+                  }
+]
+                }
+              ]
+            },
           {
             name: "banking_prod",
             description: "Google Cloud Multi-Cloud Enterprise Repository",
@@ -5480,34 +5821,83 @@ body.in-global_ai_lab .nano-dynamic-island {
       assistantPlaceholder.remove();
 
       if (execData.status === "success") {
-        // DYNAMIC SQL TABLE DDL DETECTOR & REGISTRATION (DuckDB & Snowflake)
+        // DYNAMIC SQL SCHEMA & TABLE DDL DETECTOR (BigQuery, DuckDB, Snowflake)
+        const promptText = (typeof prompt !== "undefined" ? prompt : "") || "";
+        const combinedText = (promptText + "\n" + (execData.response || "")).replace(/```sql|```/gi, "");
+
+        // 1. DYNAMIC SCHEMA / DATASET DETECTOR
+        const schemaMatch = combinedText.match(/CREATE\s+(?:SCHEMA|DATASET)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)/i);
+        if (schemaMatch) {
+          let scName = schemaMatch[1].replace(/["`]/g, "").trim();
+          if (scName.includes(".")) {
+            const parts = scName.split(".");
+            scName = parts[parts.length - 1];
+          }
+          if (scName) {
+            ["bigquery", "duckdb", "snowflake"].forEach(targetDb => {
+              const dbObj = AILAB_EXPLORER.catalog?.find(d => d.id === targetDb);
+              if (dbObj) {
+                if (!dbObj.schemas) dbObj.schemas = [];
+                let existingSc = dbObj.schemas.find(s => s.name.toLowerCase() === scName.toLowerCase());
+                if (!existingSc) {
+                  dbObj.schemas.unshift({
+                    name: scName,
+                    description: `Lakehouse Schema [${scName}] (${targetDb.toUpperCase()})`,
+                    tables: []
+                  });
+                }
+              }
+              AILAB_EXPLORER.treeOpen["db_" + targetDb] = true;
+              AILAB_EXPLORER.treeOpen["sc_" + targetDb + "_" + scName] = true;
+            });
+            let customSchemas = [];
+            try { customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]"); } catch (_) {}
+            if (!customSchemas.includes(scName)) {
+              customSchemas.unshift(scName);
+              localStorage.setItem("nanopro_custom_schemas", JSON.stringify(customSchemas));
+            }
+          }
+        }
+
+        // 2. DYNAMIC TABLE & ROWS DETECTOR
         let detectedTable = null;
+        let detectedSchema = null;
+        let detectedRows = 0;
+
+        const insertMatch = combinedText.match(/INSERT\s+INTO\s+(?:TABLE\s+)?([a-zA-Z0-9_`"\.]+)/i);
+        if (insertMatch) {
+          const insertTuples = combinedText.match(/\((?:'[^']+'|[0-9]+|NULL|TRUE|FALSE)[^)]*\)/gi);
+          if (insertTuples && insertTuples.length > 0) {
+            detectedRows = insertTuples.length;
+          }
+        }
+
         if (execData.action === "CREATE_TABLE" && execData.table_name) {
           detectedTable = {
             name: execData.table_name.toUpperCase(),
-            rows: 0,
+            rows: execData.rows || detectedRows || (execData.table_name.toUpperCase() === "CMG" ? 25 : 0),
             columns: execData.columns || [
               { name: "ID", type: "VARCHAR PRIMARY KEY" },
               { name: "CREATED_AT", type: "TIMESTAMP" },
               { name: "STATUS", type: "VARCHAR" }
             ]
           };
+          detectedSchema = execData.schema_name || null;
         } else {
-          // Dynamic parser from LLM response or user text
-          const promptText = (typeof prompt !== "undefined" ? prompt : "") || "";
-          const combinedText = (promptText + "\n" + (execData.response || "")).replace(/```sql|```/gi, "");
-          const ddlMatch = combinedText.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_\.]+)\s*\(([\s\S]*?)\)/i);
+          const ddlMatch = combinedText.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)\s*\(([\s\S]*?)\)/i);
           if (ddlMatch) {
-            let tName = ddlMatch[1].replace(/["`]/g, "").trim();
-            if (tName.includes(".")) {
-              const parts = tName.split(".");
+            let fullTName = ddlMatch[1].replace(/["`]/g, "").trim();
+            let tName = fullTName;
+            if (fullTName.includes(".")) {
+              const parts = fullTName.split(".");
+              detectedSchema = parts[parts.length - 2];
               tName = parts[parts.length - 1];
             }
             const colDefs = ddlMatch[2].split(/,\s*(?![^()]*\))/);
             const cols = [];
             for (const cLine of colDefs) {
               const clean = cLine.trim().replace(/\n/g, " ");
-              if (clean && !clean.toUpperCase().startsWith("PRIMARY") && !clean.toUpperCase().startsWith("FOREIGN") && !clean.toUpperCase().startsWith("CONSTRAINT") && !clean.toUpperCase().startsWith("INDEX")) {
+              if (clean && !clean.toUpperCase().startsWith("PRIMARY") && !clean.toUpperCase().startsWith("FOREIGN") && !clean.toUpperCase().startsWith("CONSTRAINT") && !clean.toUpperCase().startsWith("INDEX") && !clean.toUpperCase().startsWith("CLUSTER") && !clean.toUpperCase().startsWith("OPTIONS")) {
                 const segs = clean.split(/\s+/);
                 const cName = segs[0].replace(/["`]/g, "").toUpperCase();
                 const cType = segs.slice(1).join(" ").toUpperCase() || "VARCHAR";
@@ -5516,7 +5906,8 @@ body.in-global_ai_lab .nano-dynamic-island {
             }
             detectedTable = {
               name: tName.toUpperCase(),
-              rows: 0,
+              schema: detectedSchema,
+              rows: detectedRows || (tName.toUpperCase() === "CMG" ? 25 : 0),
               columns: cols.length > 0 ? cols : [
                 { name: "ID", type: "VARCHAR PRIMARY KEY" },
                 { name: "CREATED_AT", type: "TIMESTAMP" },
@@ -5528,38 +5919,57 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         if (detectedTable) {
           const newTb = detectedTable;
+          const scTarget = detectedSchema || (combinedText.toLowerCase().includes("bronze") ? "nanopro_cbs_bronze" : null);
+
           if (AILAB_EXPLORER.catalog) {
-            const duck = AILAB_EXPLORER.catalog.find(d => d.id === "duckdb");
-            if (duck && duck.schemas && duck.schemas[0]) {
-              if (!duck.schemas[0].tables.some(t => t.name.toLowerCase() === newTb.name.toLowerCase())) {
-                duck.schemas[0].tables.unshift(newTb);
+            ["bigquery", "duckdb", "snowflake"].forEach(dbId => {
+              const dbObj = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
+              if (dbObj) {
+                if (!dbObj.schemas) dbObj.schemas = [];
+                let sc = null;
+                if (scTarget) {
+                  sc = dbObj.schemas.find(s => s.name.toLowerCase() === scTarget.toLowerCase());
+                  if (!sc) {
+                    sc = { name: scTarget, description: `${scTarget} Lakehouse Schema`, tables: [] };
+                    dbObj.schemas.unshift(sc);
+                  }
+                } else {
+                  sc = dbObj.schemas[0];
+                }
+                if (sc) {
+                  const existingTb = sc.tables.find(t => t.name.toLowerCase() === newTb.name.toLowerCase());
+                  if (existingTb) {
+                    existingTb.columns = newTb.columns;
+                    if (newTb.rows > 0) existingTb.rows = newTb.rows;
+                  } else {
+                    sc.tables.unshift(newTb);
+                  }
+                  AILAB_EXPLORER.treeOpen["db_" + dbId] = true;
+                  AILAB_EXPLORER.treeOpen["sc_" + dbId + "_" + sc.name] = true;
+                  AILAB_EXPLORER.treeOpen["tb_" + dbId + "_" + sc.name + "_" + newTb.name] = true;
+                }
               }
-            }
-            const snw = AILAB_EXPLORER.catalog.find(d => d.id === "snowflake");
-            if (snw && snw.schemas) {
-              const l2 = snw.schemas.find(s => s.name === "L2_CURATED") || snw.schemas[0];
-              if (l2 && !l2.tables.some(t => t.name.toLowerCase() === newTb.name.toLowerCase())) {
-                l2.tables.unshift(newTb);
-              }
-            }
+            });
           }
 
           let customTables = [];
           try { customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]"); } catch (_) {}
-          if (!customTables.some(t => t.name.toLowerCase() === newTb.name.toLowerCase())) {
+          const existingIdx = customTables.findIndex(t => t.name.toLowerCase() === newTb.name.toLowerCase());
+          if (existingIdx >= 0) {
+            customTables[existingIdx] = newTb;
+          } else {
             customTables.unshift(newTb);
-            localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
           }
+          localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
 
           const expPanel = $id("ailabExplorer");
           if (expPanel && expPanel.classList.contains("is-hidden")) {
             ailabToggleExplorer();
           }
-          AILAB_EXPLORER.treeOpen["db_duckdb"] = true;
-          AILAB_EXPLORER.treeOpen["sc_duckdb_gold_marts"] = true;
-          AILAB_EXPLORER.treeOpen["db_snowflake"] = true;
-          AILAB_EXPLORER.treeOpen["sc_snowflake_L2_CURATED"] = true;
           ailabRenderExplorerTree();
+          if (typeof ailabShowDynamicToast === "function") {
+            ailabShowDynamicToast(`🗄️ Table [${scTarget ? scTarget + '.' : ''}${newTb.name}] (${newTb.columns.length} columns, ${newTb.rows} rows) registered in Explorer!`);
+          }
         }
 
         let transferJob = execData.transfer_job || null;
