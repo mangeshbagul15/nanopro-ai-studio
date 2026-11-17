@@ -24015,22 +24015,20 @@ body.in-global_ai_lab .nano-dynamic-island {
 
       // 2b. Explorer admin instructions ("VCT rename करा", "column type DATE
       // करा", "TEST table delete करा") run the same catalog operations as the
-      // right-click menu. Anything the backend does not recognise comes back
-      // as status "not_admin" and falls through to normal chat.
-      const looksAdminAction = /(?:\brename\b|\bdelete\b|\bdrop\b|\badd\b[^.\n]{0,40}\bcolumn\b|\bcolumn\b[^.\n]{0,40}\badd\b|\btype\b|प्रकार|नाव\s*बदल|बदला|डिलीट|काढ|जोड|किती|\bcount\b|how\s+many)/i.test(prompt)
-        && /[A-Za-z_][A-Za-z0-9_]{1,}/.test(prompt);
+      // right-click menu. The backend decides: anything it does not recognise
+      // comes back as status "not_admin" and falls through to normal chat.
+      // Always asking (instead of pre-matching phrasing in the browser) keeps
+      // Marathi variants such as "नाव CHAT_LABEL करा" from slipping to the LLM.
       let adminData = null;
-      if (looksAdminAction) {
-        try {
-          const adminRes = await fetch("/api/ai/bigquery_admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: prompt })
-          });
-          const adminJson = await adminRes.json();
-          if (adminJson && adminJson.status && adminJson.status !== "not_admin") adminData = adminJson;
-        } catch (_) { /* fall through to normal chat */ }
-      }
+      try {
+        const adminRes = await fetch("/api/ai/bigquery_admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: prompt })
+        });
+        const adminJson = await adminRes.json();
+        if (adminJson && adminJson.status && adminJson.status !== "not_admin") adminData = adminJson;
+      } catch (_) { /* fall through to normal chat */ }
 
       // 3. Explicit BigQuery CREATE DDL runs for real on the backend.
       // A pasted row-wise column spec ("name | type | constraint") is turned
