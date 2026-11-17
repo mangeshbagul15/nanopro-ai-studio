@@ -187,15 +187,50 @@ def rename_table(schema: str, table: str, new_name: str) -> Dict[str, Any]:
     table = _check_name(table, "table")
     new_name = _check_name(new_name, "table")
     ref = f"{client.project}.{schema}.{table}"
-    client.get_table(ref)
+    table_obj = client.get_table(ref)
     if new_name == table:
         raise CatalogError("New name is identical to the current name.")
-    location = _dataset_location(client, schema)
-    _run(client, f"ALTER TABLE `{ref}` RENAME TO `{new_name}`", location)
+    location = table_obj.location or _dataset_location(client, schema)
+    notes: List[str] = []
+    try:
+        _run(client, f"ALTER TABLE `{ref}` RENAME TO `{new_name}`", location)
+        applied = "rename"
+        rename_error = ""
+    except Exception as exc:
+        # BigQuery refuses RENAME on tables that carry PK/FK constraints, so
+        # copy schema, constraints, partitioning and rows to the new name.
+        rename_error = str(exc)[:300]
+        constraint_lines = _constraints(table_obj)
+        if constraint_lines:
+            notes.append("Constraints (PK/FK) were recreated on the renamed table.")
+        create = _create_sql(
+            client.project, schema, new_name, list(table_obj.schema), constraint_lines, table_obj
+        )
+        _run(client, create, location)
+        try:
+            if int(table_obj.num_rows or 0) > 0:
+                columns = ", ".join(f"`{field.name}`" for field in table_obj.schema)
+                _run(
+                    client,
+                    f"INSERT INTO `{client.project}.{schema}.{new_name}` SELECT {columns} FROM `{ref}`",
+                    location,
+                    timeout=600,
+                )
+            client.delete_table(ref)
+        except Exception as inner:
+            try:
+                client.delete_table(f"{client.project}.{schema}.{new_name}", not_found_ok=True)
+            except Exception:
+                pass
+            raise CatalogError(f"Rename failed: {str(inner)[:300]}") from inner
+        applied = "recreate"
     state = _table_state(client, schema, new_name)
     return {
         "action": "rename_table",
         "auth_source": auth_source,
+        "applied": applied,
+        "rename_error": rename_error,
+        "notes": notes,
         "previous": table,
         **state,
     }
