@@ -22007,6 +22007,18 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.ailabLoadExplorer = async function(forceRefresh = false) {
     const tree = $id("ailabExplorerTree");
     if (!tree) return;
+    try {
+      let cs = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]");
+      if (cs.some(s => s && s.toLowerCase() === "nanopro_cbs_bronze")) {
+        cs = cs.filter(s => s && s.toLowerCase() !== "nanopro_cbs_bronze");
+        localStorage.setItem("nanopro_custom_schemas", JSON.stringify(cs));
+      }
+      let ct = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]");
+      if (ct.some(t => t && (t.name === "CMG" || (t.schema || "").toLowerCase() === "nanopro_cbs_bronze"))) {
+        ct = ct.filter(t => t && t.name !== "CMG" && (t.schema || "").toLowerCase() !== "nanopro_cbs_bronze");
+        localStorage.setItem("nanopro_custom_tables", JSON.stringify(ct));
+      }
+    } catch (_) {}
 
     try {
       const res = await fetch("/api/ai/explorer/catalog");
