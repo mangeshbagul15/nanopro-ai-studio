@@ -535,8 +535,30 @@ def alter_column(
     ]
     temp_ref = f"{client.project}.{schema}.{temp_id}"
     _run(client, create, location)
+
+    # Keep a constraint-free copy of the original rows before the drop so a
+    # failed rename can never lose the table (the very bug this replaced).
+    original_columns = ", ".join(f"`{item.name}`" for item in table_obj.schema)
+    backup_ref = f"{client.project}.{schema}.__np_bak_{uuid.uuid4().hex[:10]}"
+    has_rows = int(table_obj.num_rows or 0) > 0
+    backup_ready = False
+    if has_rows:
+        _run(
+            client,
+            _create_sql(client.project, schema, backup_ref.split(".")[-1], list(table_obj.schema), [], table_obj),
+            location,
+        )
+        _run(
+            client,
+            f"INSERT INTO `{backup_ref}` SELECT {original_columns} FROM `{ref}`",
+            location,
+            timeout=600,
+        )
+        backup_ready = True
+
+    dropped = False
     try:
-        if int(table_obj.num_rows or 0) > 0:
+        if has_rows:
             _run(
                 client,
                 f"INSERT INTO `{temp_ref}` SELECT {', '.join(expressions)} FROM `{ref}`",
@@ -544,13 +566,44 @@ def alter_column(
                 timeout=600,
             )
         client.delete_table(ref)
+        dropped = True
         _run(client, f"ALTER TABLE `{temp_ref}` RENAME TO `{table}`", location)
     except Exception as exc:
         try:
             client.delete_table(temp_ref, not_found_ok=True)
         except Exception:
             pass
+        if dropped:
+            try:
+                if backup_ready:
+                    _run(client, f"ALTER TABLE `{backup_ref}` RENAME TO `{table}`", location)
+                    _apply_constraint_specs(client, schema, table, constraint_specs, location)
+                else:
+                    _run(
+                        client,
+                        _create_sql(
+                            client.project,
+                            schema,
+                            table,
+                            list(table_obj.schema),
+                            _constraints(table_obj),
+                            table_obj,
+                        ),
+                        location,
+                    )
+            except Exception:
+                pass
+        else:
+            try:
+                client.delete_table(backup_ref, not_found_ok=True)
+            except Exception:
+                pass
         raise CatalogError(f"Column change failed: {str(exc)[:300]}") from exc
+    if backup_ready:
+        try:
+            client.delete_table(backup_ref, not_found_ok=True)
+        except Exception:
+            pass
     notes.extend(_apply_constraint_specs(client, schema, table, constraint_specs, location))
 
     state = _table_state(client, schema, table)
