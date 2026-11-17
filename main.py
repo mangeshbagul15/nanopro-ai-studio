@@ -2789,6 +2789,28 @@ async def api_global_ai_execute(request: Request, payload: Dict[str, Any] = Body
         return JSONResponse({"status": "error", "message": str(e)}, status_code=200)
 
 
+@app.post("/api/ai/bigquery_ddl")
+async def api_ai_bigquery_ddl(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Executes CREATE-only BigQuery DDL typed into the AI Lab chat."""
+    from app.core.api_auth import require_session
+
+    try:
+        user = require_session(request)
+    except HTTPException as exc:
+        return JSONResponse({"status": "error", "message": exc.detail}, status_code=exc.status_code)
+
+    from app.core.chat_bigquery_ddl import maybe_handle
+
+    result = maybe_handle(payload.get("prompt", ""))
+    if result is None:
+        return JSONResponse(
+            {"status": "error", "message": "No BigQuery CREATE DDL was found in this prompt."},
+            status_code=400,
+        )
+    result["user"] = user.get("username") or user.get("email") or "user"
+    return JSONResponse(result)
+
+
 @app.get("/api/ai/routing_telemetry")
 async def api_global_ai_telemetry():
     """Returns live telemetry, P95 latency, and bandit probabilities via MCP."""

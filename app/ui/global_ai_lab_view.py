@@ -5286,30 +5286,47 @@ body.in-global_ai_lab .nano-dynamic-island {
         return;
       }
 
-      // 3. Mathematical Smart Routing Call
-      const routeRes = await fetch("/api/ai/smart_route", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: modelPrompt, sla_ms: 800 })
-      }).then(r => r.json()).catch(() => ({}));
+      // 3. Explicit BigQuery CREATE DDL runs for real on the backend.
+      const isBigQueryDdl = /bigquery/i.test(prompt) && (
+        /```sql[\s\S]*create\s+(schema|dataset|table)/i.test(prompt) ||
+        /^\s*create\s+(schema|dataset|table)/i.test(prompt) ||
+        /execute\s+bigquery\s+ddl:/i.test(prompt)
+      );
 
-      const routedModel = routeRes.selected_model || AILAB.selectedModel;
+      let routeRes = {};
+      let execData;
+      if (isBigQueryDdl) {
+        const ddlRes = await fetch("/api/ai/bigquery_ddl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: modelPrompt })
+        });
+        execData = await ddlRes.json();
+      } else {
+        // 3b. Mathematical Smart Routing Call
+        routeRes = await fetch("/api/ai/smart_route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: modelPrompt, sla_ms: 800 })
+        }).then(r => r.json()).catch(() => ({}));
 
-      // 4. Execution Call (OpenRouter + MCP Streaming)
-      const targetModelToExecute = (AILAB.selectedModel === "auto" || !AILAB.selectedModel) ? (routedModel || "auto") : AILAB.selectedModel;
-      const execRes = await fetch("/api/ai/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: modelPrompt,
-          model: targetModelToExecute,
-          routed_model: routedModel,
-          effort: AILAB.selectedEffort,
-          messages: AILAB.messages.map(m => ({ role: m.role, content: m.content }))
-        })
-      });
+        const routedModel = routeRes.selected_model || AILAB.selectedModel;
 
-      const execData = await execRes.json();
+        // 4. Execution Call (OpenRouter + MCP Streaming)
+        const targetModelToExecute = (AILAB.selectedModel === "auto" || !AILAB.selectedModel) ? (routedModel || "auto") : AILAB.selectedModel;
+        const execRes = await fetch("/api/ai/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: modelPrompt,
+            model: targetModelToExecute,
+            routed_model: routedModel,
+            effort: AILAB.selectedEffort,
+            messages: AILAB.messages.map(m => ({ role: m.role, content: m.content }))
+          })
+        });
+        execData = await execRes.json();
+      }
       assistantPlaceholder.remove();
 
       if (execData.status === "success") {
