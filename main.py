@@ -2801,6 +2801,20 @@ async def api_global_ai_execute(request: Request, payload: Dict[str, Any] = Body
     try:
         prompt = payload.get("prompt", "")
 
+        # Explorer admin instructions ("VCT rename करा", "column type DATE करा",
+        # "TEST table delete करा") map onto the same catalog operations the
+        # right-click menus call. The handler returns None for anything else.
+        from app.core.chat_bigquery_admin import maybe_handle as maybe_admin
+        admin_result = maybe_admin(prompt)
+        if admin_result is not None:
+            from app.core.api_auth import require_session
+            try:
+                user = require_session(request)
+            except HTTPException as exc:
+                return JSONResponse({"status": "error", "message": exc.detail}, status_code=200)
+            admin_result["user"] = user.get("username") or user.get("email") or "user"
+            return JSONResponse(admin_result)
+
         # A prompt carrying explicit BigQuery DDL is executed against the live
         # API instead of being answered as text. Requires a signed-in session.
         from app.core.chat_bigquery_ddl import maybe_handle
@@ -2849,6 +2863,26 @@ async def api_ai_bigquery_ddl(request: Request, payload: Dict[str, Any] = Body(.
             {"status": "error", "message": "No BigQuery CREATE DDL was found in this prompt."},
             status_code=400,
         )
+    result["user"] = user.get("username") or user.get("email") or "user"
+    return JSONResponse(result)
+
+
+@app.post("/api/ai/bigquery_admin")
+async def api_ai_bigquery_admin(request: Request, payload: Dict[str, Any] = Body(...)):
+    """Runs Explorer admin instructions typed into the AI Lab chat."""
+    from app.core.api_auth import require_session
+
+    try:
+        user = require_session(request)
+    except HTTPException as exc:
+        return JSONResponse({"status": "error", "message": exc.detail}, status_code=200)
+
+    from app.core.chat_bigquery_admin import maybe_handle
+
+    result = maybe_handle(payload.get("prompt", ""))
+    if result is None:
+        # Not an admin instruction: the caller falls back to normal chat.
+        return JSONResponse({"status": "not_admin"})
     result["user"] = user.get("username") or user.get("email") or "user"
     return JSONResponse(result)
 

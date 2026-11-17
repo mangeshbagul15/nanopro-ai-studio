@@ -5921,6 +5921,25 @@ body.in-global_ai_lab .nano-dynamic-island {
         return;
       }
 
+      // 2b. Explorer admin instructions ("VCT rename करा", "column type DATE
+      // करा", "TEST table delete करा") run the same catalog operations as the
+      // right-click menu. Anything the backend does not recognise comes back
+      // as status "not_admin" and falls through to normal chat.
+      const looksAdminAction = /(?:\brename\b|\bdelete\b|\bdrop\b|\badd\b[^.\n]{0,40}\bcolumn\b|\bcolumn\b[^.\n]{0,40}\badd\b|\btype\b|प्रकार|नाव\s*बदल|बदला|डिलीट|काढ|जोड|किती|\bcount\b|how\s+many)/i.test(prompt)
+        && /[A-Za-z_][A-Za-z0-9_]{1,}/.test(prompt);
+      let adminData = null;
+      if (looksAdminAction) {
+        try {
+          const adminRes = await fetch("/api/ai/bigquery_admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: prompt })
+          });
+          const adminJson = await adminRes.json();
+          if (adminJson && adminJson.status && adminJson.status !== "not_admin") adminData = adminJson;
+        } catch (_) { /* fall through to normal chat */ }
+      }
+
       // 3. Explicit BigQuery CREATE DDL runs for real on the backend. A pasted
       // row-wise column spec ("name | type | constraint") is turned into DDL
       // server-side, so it must take the same path.
@@ -5935,7 +5954,9 @@ body.in-global_ai_lab .nano-dynamic-island {
 
       let routeRes = {};
       let execData;
-      if (isBigQueryDdl) {
+      if (adminData) {
+        execData = adminData;
+      } else if (isBigQueryDdl) {
         const ddlRes = await fetch("/api/ai/bigquery_ddl", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -5981,6 +6002,17 @@ body.in-global_ai_lab .nano-dynamic-island {
               ? `Table [${execData.schema_name ? execData.schema_name + "." : ""}${execData.table_name}] created`
               : `Dataset / Schema [${execData.schema_name}] created`;
             ailabShowDynamicToast(`🗄️ ${label} — Explorer refreshed from the live catalog.`);
+          }
+        }
+
+        // Explorer admin instructions already ran against the live catalog;
+        // reload the tree so rename / delete / retype appears without a reload.
+        if (["rename_table", "rename_schema", "drop_table", "drop_schema", "alter_column", "add_column", "rename_column"].indexOf(execData.action) !== -1) {
+          if (typeof ailabLoadExplorer === "function") {
+            await ailabLoadExplorer(true);
+          }
+          if (typeof ailabShowDynamicToast === "function") {
+            ailabShowDynamicToast(`🛠️ ${execData.summary || execData.action} — Explorer live updated.`);
           }
         }
 
