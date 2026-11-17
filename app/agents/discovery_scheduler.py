@@ -628,6 +628,9 @@ class SystemDiscoveryScheduler:
         return "\n".join(lines)
 
     def start_background_loop(self):
+        if os.environ.get("NANOPRO_AUTOMATION_ENABLED", "0").strip().lower() not in ("1", "true", "yes", "on"):
+            log_event("SystemDiscoveryScheduler disabled (NANOPRO_AUTOMATION_ENABLED is off).", component="SystemDiscoveryScheduler")
+            return
         if self._running:
             return
         self._running = True

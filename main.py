@@ -38,6 +38,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _automation_enabled() -> bool:
+    """Kill switch for autonomous reports, mailers and Telegram/WhatsApp bots.
+
+    Off unless NANOPRO_AUTOMATION_ENABLED is explicitly set to 1/true/yes.
+    """
+    return os.environ.get("NANOPRO_AUTOMATION_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
+
 import json
 from typing import Optional, List, Dict, Any
 
@@ -1270,7 +1278,10 @@ def _execute_staged_boot_phases_2_and_3():
 
         if hasattr(telegram_agent, "start"):
 
-            telegram_agent.start()
+            if _automation_enabled():
+                telegram_agent.start()
+            else:
+                log_event("TelegramAgent daemon disabled (kill switch on).", component="BootSequence")
 
     except Exception as e:
 
@@ -1288,7 +1299,10 @@ def _execute_staged_boot_phases_2_and_3():
 
         from app.core.automation_scheduler import automation_scheduler
 
-        automation_scheduler.start()
+        if _automation_enabled():
+            automation_scheduler.start()
+        else:
+            log_event("AutomationScheduler disabled (NANOPRO_AUTOMATION_ENABLED is off).", component="BootSequence")
 
     except Exception as e:
 
@@ -1306,7 +1320,10 @@ def _execute_staged_boot_phases_2_and_3():
 
         from app.agents.news_agent import news_agent
 
-        news_agent.start()
+        if _automation_enabled():
+            news_agent.start()
+        else:
+            log_event("DiscoveryScheduler & News Agent disabled (kill switch on).", component="BootSequence")
 
     except Exception as e:
 
@@ -1327,7 +1344,10 @@ def _execute_staged_boot_phases_2_and_3():
 
             from app.agents.career_agent import career_hub_agent
 
-            career_hub_agent.start_autonomous_email_dispatcher()
+            if _automation_enabled():
+                career_hub_agent.start_autonomous_email_dispatcher()
+            else:
+                log_event("Autonomous email dispatcher disabled (kill switch on).", component="BootSequence")
 
     except Exception as e:
 
@@ -1345,7 +1365,10 @@ def _execute_staged_boot_phases_2_and_3():
 
         from app.core.telegram_diagnostics_scheduler import telegram_diagnostics_scheduler
 
-        telegram_diagnostics_scheduler.start()
+        if _automation_enabled():
+            telegram_diagnostics_scheduler.start()
+        else:
+            log_event("Telegram diagnostics scheduler disabled (kill switch on).", component="BootSequence")
 
     except Exception as e:
 
@@ -1383,7 +1406,10 @@ def _execute_staged_boot_phases_2_and_3():
 
         rca_incident_sentinel.check_interval_seconds = 300 if cloud_safe_mode() else 60
 
-        rca_incident_sentinel.start()
+        if _automation_enabled():
+            rca_incident_sentinel.start()
+        else:
+            log_event("RCA incident sentinel & probes disabled (kill switch on).", component="BootSequence")
 
     except Exception as e:
 
@@ -1419,7 +1445,10 @@ def _execute_staged_boot_phases_2_and_3():
     try:
         log_event("=== [PHASE 3J] Starting WhatsApp Autonomous Guardian Daemon (T + 31s) ===", component="BootSequence")
         from app.core.whatsapp_guardian import whatsapp_guardian
-        whatsapp_guardian.start()
+        if _automation_enabled():
+            whatsapp_guardian.start()
+        else:
+            log_event("WhatsApp guardian daemon disabled (kill switch on).", component="BootSequence")
     except Exception as e:
         log_event(f"Phase 3J notice: {e}", level="WARNING", component="BootSequence")
 
@@ -14700,7 +14729,10 @@ async def api_etl_reset_watermark(body: dict = None):
 
 async def api_etl_scheduler_start():
 
-    etl_scheduler.start()
+    if _automation_enabled():
+        etl_scheduler.start()
+    else:
+        log_event("ETL Scheduler auto-start skipped (kill switch on).", component="ETLScheduler")
 
     return JSONResponse({"status": "started", "schedules": [
 
@@ -14728,7 +14760,10 @@ try:
 
     from app.core.etl_live_stream import etl_live_streamer
 
-    etl_live_streamer.start(interval=30)
+    if _automation_enabled():
+        etl_live_streamer.start(interval=30)
+    else:
+        log_event("ETL Live Streamer skipped (kill switch on).", component="ETLLiveStream")
 
     log_event("ETL Live Streamer started (9 projects, 30s interval)", component="ETLLiveStream")
 
@@ -14744,7 +14779,10 @@ try:
 
     from app.core.apk_dispatcher import apk_scheduler
 
-    apk_scheduler.start()
+    if _automation_enabled():
+        apk_scheduler.start()
+    else:
+        log_event("APK dispatcher skipped (kill switch on).", component="APKDispatcher")
 
     log_event("APK Scheduler started (every 4h, 5 APKs) -> @mangesh_apk_bot", component="APKDispatcher")
 
@@ -15154,7 +15192,10 @@ async def api_apk_reset_sent_log():
 
 try:
 
-    etl_scheduler.start()
+    if _automation_enabled():
+        etl_scheduler.start()
+    else:
+        log_event("ETL Scheduler auto-start skipped (kill switch on).", component="ETLScheduler")
 
     log_event("ETL Scheduler started (BOD/SOD/Daily/EOD/Weekly/Monthly)", component="ETLScheduler")
 
@@ -15170,7 +15211,10 @@ try:
 
     from app.core.etl_eod_summary import etl_eod_scheduler
 
-    etl_eod_scheduler.start()
+    if _automation_enabled():
+        etl_eod_scheduler.start()
+    else:
+        log_event("ETL EOD summary scheduler skipped (kill switch on).", component="ETLEODSummary")
 
     log_event("ETL EOD Summary Scheduler started (7:00 PM IST daily)", component="ETLEODSummary")
 
@@ -15363,6 +15407,9 @@ app.include_router(cron_gateway_router)
 from app.api.data_modeling_routes import router as data_modeling_router
 
 app.include_router(data_modeling_router)
+
+from app.api.maintenance_routes import router as maintenance_router
+app.include_router(maintenance_router)
 
 from app.core.ai_command_router import router as ai_command_router
 

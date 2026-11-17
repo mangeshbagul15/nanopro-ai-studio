@@ -1,17 +1,7 @@
 name: NanoPro 24/7 Autonomous Cloud Pipeline Scheduler
 
 on:
-  schedule:
-    # 06:00 AM IST = 00:30 UTC (BOD - Beginning of Day Cycle)
-    - cron: '30 0 * * *'
-    # 08:00 AM IST = 02:30 UTC (SOD - Start of Day Cycle)
-    - cron: '30 2 * * *'
-    # 10:00 AM IST = 04:30 UTC (Daily T-1 Incremental Pipeline)
-    - cron: '30 4 * * *'
-    # 06:00 PM IST = 12:30 UTC (EOD - End of Day Cycle & Reconciliation)
-    - cron: '30 12 * * *'
-    # 12:00 AM IST = 18:30 UTC (SFTP 20-Day Retention Policy Enforcement)
-    - cron: '30 18 * * *'
+  # Scheduled crons disabled 2026-11-18. Manual runs still available below.
   workflow_dispatch:
     inputs:
       cycle:
