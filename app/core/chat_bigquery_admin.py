@@ -64,6 +64,10 @@ _CHANGE_VERB = re.compile(
     r"\bchange\b|\balter\b|\bmodify\b|बदल|बदला|करून\s*टाक|सेट\s*कर", re.IGNORECASE
 )
 _SCHEMA_WORD = re.compile(r"\bschema\b|\bdataset\b|स्कीमा|डेटासेट", re.IGNORECASE)
+_DML_WORD = re.compile(
+    r"\brows?\b|\brecords?\b|\bwhere\b|\bdata\b|\bduplicates?\b|ओळी|रेकॉर्ड", re.IGNORECASE
+)
+_COLUMN_WORD = re.compile(r"\bcolumn\b|कॉलम", re.IGNORECASE)
 _NEGATION = re.compile(r"\b(don'?t|do\s+not|never)\b|नको|नका|करू\s+नका|न\s+करा", re.IGNORECASE)
 _REVERT = re.compile(
     r"(?:परत|back\s+to|then\s+rename(?:\s+it)?\s+(?:to|back\s+to))\s+([A-Za-z_][A-Za-z0-9_]*)",
@@ -640,6 +644,11 @@ def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
     except Exception:
         return None
     if not found:
+        return None
+
+    # "delete rows / data ..." and "drop column" are DML or unsupported schema
+    # edits; they must never be resolved into DROP TABLE / DROP SCHEMA.
+    if is_delete and (_DML_WORD.search(text) or _COLUMN_WORD.search(text)):
         return None
 
     try:
