@@ -845,6 +845,18 @@ class ExplorerColumnTypeRequest(BaseModel):
     date_format: str = ""
 
 
+class ExplorerAddColumnRequest(BaseModel):
+    database: str = ""
+    schema_name: str = ""
+    table: str = ""
+    column: str = ""
+    column_type: str = "STRING"
+    length: int | None = None
+    precision: int | None = None
+    scale: int | None = None
+    mode: str = "NULLABLE"
+
+
 def _require_bigquery_mutation(database: str) -> None:
     from app.core import catalog_admin as ca
     from app.core import data_modeling_ai as dm
@@ -929,6 +941,27 @@ def api_explorer_column_type(req: ExplorerColumnTypeRequest, request: Request):
             precision=req.precision,
             scale=req.scale,
             date_format=req.date_format,
+        )
+
+    return _mutation_response(call)
+
+
+@explorer_router.post("/column-add")
+def api_explorer_column_add(req: ExplorerAddColumnRequest, request: Request):
+    _session_user(request)
+    from app.core import catalog_admin as ca
+
+    def call():
+        _require_bigquery_mutation(req.database)
+        return ca.add_column(
+            req.schema_name,
+            req.table,
+            req.column,
+            req.column_type,
+            length=req.length,
+            precision=req.precision,
+            scale=req.scale,
+            mode=req.mode,
         )
 
     return _mutation_response(call)

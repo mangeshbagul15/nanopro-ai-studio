@@ -4434,6 +4434,78 @@ body.in-global_ai_lab .nano-dynamic-island {
     input.addEventListener('keydown', ev => { if (ev.key === 'Enter') submit(); });
   };
 
+  window.ailabAddColumnDialog = function(dbId, schema, table) {
+    const typeOptions = AILAB_COLUMN_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    const dialog = ailabOpenDialog(
+      'Add column',
+      `${schema}.${table}`,
+      `<label class="ailab-dlg-label">Column name</label>
+       <input class="ailab-dlg-input" id="npAddColName" placeholder="e.g. ACCOUNT_STATUS" autocomplete="off">
+       <label class="ailab-dlg-label">Data type</label>
+       <select class="ailab-dlg-select" id="npAddColType">${typeOptions}</select>
+       <div id="npAddColLenRow" style="display:none">
+         <label class="ailab-dlg-label">Length (STRING / BYTES)</label>
+         <input class="ailab-dlg-input" id="npAddColLength" type="number" min="1" placeholder="e.g. 50">
+       </div>
+       <div id="npAddColPrecRow" style="display:none">
+         <label class="ailab-dlg-label">Precision</label>
+         <input class="ailab-dlg-input" id="npAddColPrecision" type="number" min="1" placeholder="e.g. 12">
+         <label class="ailab-dlg-label">Scale</label>
+         <input class="ailab-dlg-input" id="npAddColScale" type="number" min="0" placeholder="e.g. 2">
+       </div>
+       <label class="ailab-dlg-label">Mode</label>
+       <select class="ailab-dlg-select" id="npAddColMode">
+         <option value="NULLABLE">NULLABLE (optional)</option>
+         <option value="REQUIRED">REQUIRED (NOT NULL)</option>
+       </select>
+       <div class="ailab-dlg-hint">ALTER TABLE ... ADD COLUMN थेट चालते; फक्त नवीन column उमटतो, data बदलत नाही.</div>
+       <div class="ailab-dlg-error"></div>`
+    );
+    const nameInput = dialog.el.querySelector('#npAddColName');
+    const typeSelect = dialog.el.querySelector('#npAddColType');
+    const lengthRow = dialog.el.querySelector('#npAddColLenRow');
+    const precisionRow = dialog.el.querySelector('#npAddColPrecRow');
+    const refresh = () => {
+      const type = typeSelect.value;
+      lengthRow.style.display = (type === 'STRING' || type === 'BYTES') ? '' : 'none';
+      precisionRow.style.display = (type === 'NUMERIC' || type === 'BIGNUMERIC') ? '' : 'none';
+    };
+    typeSelect.addEventListener('change', refresh);
+    refresh();
+    nameInput.focus();
+    dialog.ok.textContent = 'Add column';
+    const submit = async () => {
+      const column = nameInput.value.trim();
+      if (!column) { ailabDialogError(dialog, 'Column name आवश्यक आहे.'); return; }
+      const payload = { database: dbId, schema_name: schema, table: table, column: column, column_type: typeSelect.value };
+      const length = dialog.el.querySelector('#npAddColLength').value.trim();
+      const precision = dialog.el.querySelector('#npAddColPrecision').value.trim();
+      const scale = dialog.el.querySelector('#npAddColScale').value.trim();
+      if (lengthRow.style.display !== 'none' && length) payload.length = Number(length);
+      if (precisionRow.style.display !== 'none' && precision) payload.precision = Number(precision);
+      if (precisionRow.style.display !== 'none' && scale !== '') payload.scale = Number(scale);
+      payload.mode = dialog.el.querySelector('#npAddColMode').value;
+      dialog.ok.disabled = true;
+      try {
+        const data = await ailabExplorerPost('/api/ai/explorer/column-add', payload);
+        dialog.close();
+        const tb = ailabExplorerTableEntry(dbId, schema, table);
+        if (tb) {
+          tb.columns = Array.isArray(data.columns) ? data.columns : (tb.columns || []);
+          tb.rows = data.rows !== undefined ? data.rows : tb.rows;
+          AILAB_EXPLORER.treeOpen['tb_' + dbId + '_' + schema + '_' + table] = true;
+        }
+        ailabRenderExplorerTree();
+        ailabNotify(`${column} (${data.type || typeSelect.value}) जोडला`, 'success');
+      } catch (err) {
+        dialog.ok.disabled = false;
+        ailabDialogError(dialog, err.message);
+      }
+    };
+    dialog.ok.onclick = submit;
+    nameInput.addEventListener('keydown', ev => { if (ev.key === 'Enter') submit(); });
+  };
+
   window.ailabCloseExplorerMenu = function() {
     const menu = document.getElementById('ailabCtxMenu');
     if (menu) menu.remove();
@@ -4468,6 +4540,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       meta = cols.length ? `${cols.length} columns · ${Number(tb.rows || 0).toLocaleString()} rows` : 'Counting columns & rows…';
       items = [
         ['rename', '✏️', 'Rename table'],
+        ['addcol', '➕', 'Add column'],
         ['coltype', '🔤', 'Change column type'],
         ['delete', '🗑️', 'Delete table', true],
         ['refresh', '🔄', 'Reload columns'],
@@ -4502,6 +4575,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       ailabCloseExplorerMenu();
       if (act === 'rename') ailabRenameDialog(kind, dbId, schema, table);
       else if (act === 'delete') ailabDeleteDialog(kind, dbId, schema, table);
+      else if (act === 'addcol') ailabAddColumnDialog(dbId, schema, table);
       else if (act === 'coltype') ailabColumnTypeDialog(dbId, schema, table, column);
       else if (act === 'colrename') ailabColumnRenameDialog(dbId, schema, table, column);
       else if (act === 'refresh') {

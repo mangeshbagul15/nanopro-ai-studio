@@ -456,6 +456,52 @@ def alter_column(
     }
 
 
+def add_column(
+    schema: str,
+    table: str,
+    column: str,
+    column_type: str,
+    length: Optional[int] = None,
+    precision: Optional[int] = None,
+    scale: Optional[int] = None,
+    mode: str = "NULLABLE",
+) -> Dict[str, Any]:
+    client, auth_source = _client()
+    schema = _check_name(schema, "schema")
+    table = _check_name(table, "table")
+    column = _check_name(column, "column")
+    target_type = _target_type(column_type, length, precision, scale)
+    mode = (mode or "NULLABLE").strip().upper()
+    if mode not in ("NULLABLE", "REQUIRED"):
+        raise CatalogError("Mode must be NULLABLE or REQUIRED.")
+
+    ref = f"{client.project}.{schema}.{table}"
+    table_obj = client.get_table(ref)
+    if any(field.name == column for field in table_obj.schema):
+        raise CatalogError(f"Column '{column}' already exists.")
+    location = table_obj.location or _dataset_location(client, schema)
+
+    clause = f"ADD COLUMN `{column}` {target_type}"
+    if mode == "REQUIRED":
+        clause += " NOT NULL"
+    _run(client, f"ALTER TABLE `{ref}` {clause}", location)
+
+    fresh = client.get_table(ref)
+    added = next((field for field in fresh.schema if field.name == column), None)
+    if not added:
+        raise CatalogError("BigQuery accepted the DDL but the new column is missing on read-back.")
+    return {
+        "action": "add_column",
+        "auth_source": auth_source,
+        "applied": "alter",
+        "schema": schema,
+        "table": table,
+        "column": column,
+        "type": _type_sql(added),
+        **_table_state(client, schema, table),
+    }
+
+
 def schema_info(schema: str) -> Dict[str, Any]:
     client, auth_source = _client()
     schema = _check_name(schema, "schema")
