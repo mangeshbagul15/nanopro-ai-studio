@@ -3870,7 +3870,9 @@ body.in-global_ai_lab .nano-dynamic-island {
 
   window.ailabRestoreCustomTables = function() {
     try {
-      const customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]");
+      const isLegacyFakeName = (name) => ["nanopro_cbs_bronze", "cmg"].includes(String(name || "").toLowerCase());
+      const customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]").filter(s => !isLegacyFakeName(s));
+      localStorage.setItem("nanopro_custom_schemas", JSON.stringify(customSchemas));
       if (customSchemas.length > 0 && AILAB_EXPLORER.catalog) {
         AILAB_EXPLORER.catalog.forEach(db => {
           const dbId = db.id;
@@ -3885,13 +3887,15 @@ body.in-global_ai_lab .nano-dynamic-island {
         });
       }
 
-      const customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]");
+      const customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]")
+        .filter(t => !isLegacyFakeName(t.name) && !isLegacyFakeName(t.schema));
+      localStorage.setItem("nanopro_custom_tables", JSON.stringify(customTables));
       if (customTables.length > 0 && AILAB_EXPLORER.catalog) {
         AILAB_EXPLORER.catalog.forEach(db => {
           const dbId = db.id;
           if (db && db.schemas) {
             customTables.forEach(ct => {
-              const targetSchemaName = ct.schema || (ct.name.toUpperCase() === "CMG" ? "nanopro_cbs_bronze" : null);
+              const targetSchemaName = ct.schema || null;
               let sc = targetSchemaName ? db.schemas.find(s => s.name.toLowerCase() === targetSchemaName.toLowerCase()) : db.schemas[0];
               if (!sc && targetSchemaName) {
                 sc = { name: targetSchemaName, description: `${targetSchemaName} Lakehouse`, tables: [] };
@@ -5506,8 +5510,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           /CREATE\s+(?:SCHEMA|DATASET)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)/i,
           /(?:Dataset|Schema)\s+Name\s*[:=]\s*`?([a-zA-Z0-9_]+)`?/i,
           /(?:create|make|add|build)\s+(?:dataset|schema)\s+`?([a-zA-Z0-9_]+)`?/i,
-          /(?:स्कीमा|डेटासेट)\s+(?:तयार|नाव)\s*[:=]?\s*`?([a-zA-Z0-9_]+)`?/i,
-          /(?:nanopro_cbs_bronze)/i
+          /(?:स्कीमा|डेटासेट)\s+(?:तयार|नाव)\s*[:=]?\s*`?([a-zA-Z0-9_]+)`?/i
         ];
 
         for (const sp of schemaPatterns) {
@@ -5577,7 +5580,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         if (execData.action === "CREATE_TABLE" && execData.table_name) {
           detectedTable = {
             name: execData.table_name.toUpperCase(),
-            rows: execData.rows || detectedRows || (execData.table_name.toUpperCase() === "CMG" ? 25 : 0),
+            rows: execData.rows || detectedRows,
             columns: execData.columns || [
               { name: "ID", type: "VARCHAR PRIMARY KEY" },
               { name: "CREATED_AT", type: "TIMESTAMP" },
@@ -5610,7 +5613,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             detectedTable = {
               name: tName.toUpperCase(),
               schema: detectedTableSchema,
-              rows: detectedRows || (tName.toUpperCase() === "CMG" ? 25 : 0),
+              rows: detectedRows,
               columns: cols.length > 0 ? cols : [
                 { name: "ID", type: "VARCHAR PRIMARY KEY" },
                 { name: "CREATED_AT", type: "TIMESTAMP" },
@@ -5618,7 +5621,7 @@ body.in-global_ai_lab .nano-dynamic-island {
               ]
             };
           } else {
-            // Check for references like table `nanopro_cbs_bronze.CMG` or `CMG`
+            // Check for references like `schema.table` in the conversation
             const tableRefMatch = chatSqlClean.match(/(?:table|तक्ता|populate\s+table)\s+`?([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)`?/i);
             if (tableRefMatch) {
               detectedTableSchema = tableRefMatch[1];
@@ -5626,33 +5629,8 @@ body.in-global_ai_lab .nano-dynamic-island {
               detectedTable = {
                 name: tName,
                 schema: detectedTableSchema,
-                rows: detectedRows || (tName === "CMG" ? 25 : 0),
-                columns: tName === "CMG" ? [
-                  { name: "CUST_ID", type: "STRING NOT NULL (PK)" },
-                  { name: "CUST_NAME", type: "STRING NOT NULL" },
-                  { name: "GENDER", type: "STRING" },
-                  { name: "DOB_OR_INCORP_DATE", type: "DATE" },
-                  { name: "CUST_TYPE", type: "STRING NOT NULL" },
-                  { name: "PAN_NO", type: "STRING" },
-                  { name: "PASSPORT_NO", type: "STRING" },
-                  { name: "GST_NO", type: "STRING" },
-                  { name: "OCCUPATION", type: "STRING" },
-                  { name: "ANNUAL_INCOME_TURNOVER", type: "NUMERIC" },
-                  { name: "CUSTOMER_SEGMENT", type: "STRING NOT NULL" },
-                  { name: "RESIDENTIAL_STATUS", type: "STRING NOT NULL" },
-                  { name: "CITY", type: "STRING NOT NULL" },
-                  { name: "STATE", type: "STRING NOT NULL" },
-                  { name: "COUNTRY", type: "STRING NOT NULL" },
-                  { name: "HOME_BRANCH_SOL_ID", type: "STRING NOT NULL" },
-                  { name: "KYC_STATUS", type: "STRING NOT NULL" },
-                  { name: "KYC_LAST_VERIFIED_DATE", type: "DATE" },
-                  { name: "RE_KYC_DUE_DATE", type: "DATE NOT NULL" },
-                  { name: "KYC_RISK_CATEGORY", type: "STRING NOT NULL (CLUSTER KEY 1)" },
-                  { name: "PEP_FLAG", type: "BOOL NOT NULL" },
-                  { name: "SANCTIONS_HIT_FLAG", type: "BOOL NOT NULL" },
-                  { name: "CUST_STATUS", type: "STRING NOT NULL (CLUSTER KEY 3)" },
-                  { name: "CREATED_AT", type: "TIMESTAMP NOT NULL" }
-                ] : [
+                rows: detectedRows,
+                columns: [
                   { name: "ID", type: "VARCHAR PRIMARY KEY" },
                   { name: "CREATED_AT", type: "TIMESTAMP" },
                   { name: "STATUS", type: "VARCHAR" }
@@ -5664,7 +5642,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         if (detectedTable) {
           const newTb = detectedTable;
-          const scTarget = detectedTableSchema || (chatSqlClean.toLowerCase().includes("bronze") ? "nanopro_cbs_bronze" : null);
+          const scTarget = detectedTableSchema || null;
 
           if (AILAB_EXPLORER.catalog) {
             AILAB_EXPLORER.catalog.forEach(dbObj => {
