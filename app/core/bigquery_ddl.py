@@ -89,6 +89,27 @@ def _dataset_and_table(target: str) -> tuple:
     return parts[-2], parts[-1]
 
 
+def _primary_key(client: Any, dataset_id: str, table_id: str) -> List[str]:
+    try:
+        from google.cloud import bigquery
+
+        sql = (
+            f"SELECT column_name FROM `{dataset_id}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE` "
+            "WHERE table_name = @table AND constraint_name IN ("
+            f"SELECT constraint_name FROM `{dataset_id}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS` "
+            "WHERE table_name = @table AND constraint_type = 'PRIMARY KEY')"
+        )
+        job = client.query(
+            sql,
+            job_config=bigquery.QueryJobConfig(
+                query_parameters=[bigquery.ScalarQueryParameter("table", "STRING", table_id)]
+            ),
+        )
+        return [row[0] for row in job.result(timeout=30)]
+    except Exception:
+        return []
+
+
 def _describe_table(client: Any, table_ref: str) -> Dict[str, Any]:
     table = client.get_table(table_ref)
     columns = [
@@ -97,11 +118,15 @@ def _describe_table(client: Any, table_ref: str) -> Dict[str, Any]:
     ]
     primary_key: List[str] = []
     try:
-        constraints = getattr(table, "table_constraints", None) or {}
-        pk = constraints.get("primaryKey") or {}
+        constraints = getattr(table, "table_constraints", None)
+        if not constraints:
+            constraints = (getattr(table, "_properties", None) or {}).get("tableConstraints")
+        pk = (constraints or {}).get("primaryKey") or {}
         primary_key = list(pk.get("columns") or [])
     except Exception:
         primary_key = []
+    if not primary_key:
+        primary_key = _primary_key(client, table.dataset_id, table.table_id)
     return {
         "kind": "table",
         "id": f"{table.dataset_id}.{table.table_id}",
