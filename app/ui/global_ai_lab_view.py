@@ -3822,7 +3822,7 @@ body.in-global_ai_lab .nano-dynamic-island {
   window.AILAB_EXPLORER = {
     isOpen: false,
     catalog: null,
-    treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_bigquery_nanopro_cbs_bronze": true, "tb_bigquery_nanopro_cbs_bronze_CMG": true, "sc_duckdb_gold_marts": true, "sc_duckdb_nanopro_cbs_bronze": true, "sc_snowflake_L0_STAGING": true, "sc_snowflake_L2_CURATED": true, "sc_snowflake_nanopro_cbs_bronze": true },
+    treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_duckdb_gold_marts": true, "sc_snowflake_L0_STAGING": true },
     activeTable: null
   };
 
@@ -3872,8 +3872,8 @@ body.in-global_ai_lab .nano-dynamic-island {
     try {
       const customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]");
       if (customSchemas.length > 0 && AILAB_EXPLORER.catalog) {
-        ["bigquery", "duckdb", "snowflake"].forEach(dbId => {
-          const db = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
+        AILAB_EXPLORER.catalog.forEach(db => {
+          const dbId = db.id;
           if (db && db.schemas) {
             customSchemas.forEach(scName => {
               if (!db.schemas.some(s => s.name.toLowerCase() === scName.toLowerCase())) {
@@ -3887,8 +3887,8 @@ body.in-global_ai_lab .nano-dynamic-island {
 
       const customTables = JSON.parse(localStorage.getItem("nanopro_custom_tables") || "[]");
       if (customTables.length > 0 && AILAB_EXPLORER.catalog) {
-        ["bigquery", "duckdb", "snowflake"].forEach(dbId => {
-          const db = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
+        AILAB_EXPLORER.catalog.forEach(db => {
+          const dbId = db.id;
           if (db && db.schemas) {
             customTables.forEach(ct => {
               const targetSchemaName = ct.schema || (ct.name.toUpperCase() === "CMG" ? "nanopro_cbs_bronze" : null);
@@ -3931,115 +3931,6 @@ body.in-global_ai_lab .nano-dynamic-island {
         kind: "snowflake",
         icon: "❄️",
         schemas: [
-            {
-              name: "nanopro_cbs_bronze",
-              description: "NanoPro CBS Raw Bronze Lakehouse (Snowflake Stage)",
-              tables: [
-                {
-                  name: "CMG",
-                  description: "Customer Master General (CIF 360 Master Record)",
-                  rows: 25,
-                  columns: [
-                  {
-                                    "name": "CUST_ID",
-                                    "type": "VARCHAR(32) PRIMARY KEY"
-                  },
-                  {
-                                    "name": "CUST_NAME",
-                                    "type": "VARCHAR(128) NOT NULL"
-                  },
-                  {
-                                    "name": "GENDER",
-                                    "type": "VARCHAR(8)"
-                  },
-                  {
-                                    "name": "DOB_OR_INCORP_DATE",
-                                    "type": "DATE"
-                  },
-                  {
-                                    "name": "CUST_TYPE",
-                                    "type": "VARCHAR(32) NOT NULL"
-                  },
-                  {
-                                    "name": "PAN_NO",
-                                    "type": "VARCHAR(16)"
-                  },
-                  {
-                                    "name": "PASSPORT_NO",
-                                    "type": "VARCHAR(16)"
-                  },
-                  {
-                                    "name": "GST_NO",
-                                    "type": "VARCHAR(32)"
-                  },
-                  {
-                                    "name": "OCCUPATION",
-                                    "type": "VARCHAR(64)"
-                  },
-                  {
-                                    "name": "ANNUAL_INCOME_TURNOVER",
-                                    "type": "NUMBER(18,2)"
-                  },
-                  {
-                                    "name": "CUSTOMER_SEGMENT",
-                                    "type": "VARCHAR(32) NOT NULL"
-                  },
-                  {
-                                    "name": "RESIDENTIAL_STATUS",
-                                    "type": "VARCHAR(16) NOT NULL"
-                  },
-                  {
-                                    "name": "CITY",
-                                    "type": "VARCHAR(64) NOT NULL"
-                  },
-                  {
-                                    "name": "STATE",
-                                    "type": "VARCHAR(64) NOT NULL"
-                  },
-                  {
-                                    "name": "COUNTRY",
-                                    "type": "VARCHAR(8) NOT NULL"
-                  },
-                  {
-                                    "name": "HOME_BRANCH_SOL_ID",
-                                    "type": "VARCHAR(16) NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_STATUS",
-                                    "type": "VARCHAR(16) NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_LAST_VERIFIED_DATE",
-                                    "type": "DATE"
-                  },
-                  {
-                                    "name": "RE_KYC_DUE_DATE",
-                                    "type": "DATE NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_RISK_CATEGORY",
-                                    "type": "VARCHAR(16) NOT NULL"
-                  },
-                  {
-                                    "name": "PEP_FLAG",
-                                    "type": "BOOLEAN NOT NULL"
-                  },
-                  {
-                                    "name": "SANCTIONS_HIT_FLAG",
-                                    "type": "BOOLEAN NOT NULL"
-                  },
-                  {
-                                    "name": "CUST_STATUS",
-                                    "type": "VARCHAR(16) NOT NULL"
-                  },
-                  {
-                                    "name": "CREATED_AT",
-                                    "type": "TIMESTAMP_NTZ NOT NULL"
-                  }
-]
-                }
-              ]
-            },
           {
             name: "L0_STAGING",
             description: "Raw Landing Tier (Append-Only feeds from AWS S3 Bronze & SFTP Inbound)",
@@ -4137,115 +4028,6 @@ body.in-global_ai_lab .nano-dynamic-island {
         kind: "duckdb",
         icon: "🦆",
         schemas: [
-            {
-              name: "nanopro_cbs_bronze",
-              description: "NanoPro CBS Raw Bronze Lakehouse (DuckDB Columnar)",
-              tables: [
-                {
-                  name: "CMG",
-                  description: "Customer Master General (CIF 360 Master Record)",
-                  rows: 25,
-                  columns: [
-                  {
-                                    "name": "CUST_ID",
-                                    "type": "VARCHAR PRIMARY KEY"
-                  },
-                  {
-                                    "name": "CUST_NAME",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "GENDER",
-                                    "type": "VARCHAR"
-                  },
-                  {
-                                    "name": "DOB_OR_INCORP_DATE",
-                                    "type": "DATE"
-                  },
-                  {
-                                    "name": "CUST_TYPE",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "PAN_NO",
-                                    "type": "VARCHAR"
-                  },
-                  {
-                                    "name": "PASSPORT_NO",
-                                    "type": "VARCHAR"
-                  },
-                  {
-                                    "name": "GST_NO",
-                                    "type": "VARCHAR"
-                  },
-                  {
-                                    "name": "OCCUPATION",
-                                    "type": "VARCHAR"
-                  },
-                  {
-                                    "name": "ANNUAL_INCOME_TURNOVER",
-                                    "type": "DECIMAL(18,2)"
-                  },
-                  {
-                                    "name": "CUSTOMER_SEGMENT",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "RESIDENTIAL_STATUS",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "CITY",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "STATE",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "COUNTRY",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "HOME_BRANCH_SOL_ID",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_STATUS",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_LAST_VERIFIED_DATE",
-                                    "type": "DATE"
-                  },
-                  {
-                                    "name": "RE_KYC_DUE_DATE",
-                                    "type": "DATE NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_RISK_CATEGORY",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "PEP_FLAG",
-                                    "type": "BOOLEAN NOT NULL"
-                  },
-                  {
-                                    "name": "SANCTIONS_HIT_FLAG",
-                                    "type": "BOOLEAN NOT NULL"
-                  },
-                  {
-                                    "name": "CUST_STATUS",
-                                    "type": "VARCHAR NOT NULL"
-                  },
-                  {
-                                    "name": "CREATED_AT",
-                                    "type": "TIMESTAMP NOT NULL"
-                  }
-]
-                }
-              ]
-            },
           {
             name: "gold_marts",
             description: "Zero-Latency Columnar In-Memory Analytics (All 8 Projects)",
@@ -4268,115 +4050,6 @@ body.in-global_ai_lab .nano-dynamic-island {
         kind: "bigquery",
         icon: "☁️",
         schemas: [
-            {
-              name: "nanopro_cbs_bronze",
-              description: "NanoPro CBS Raw Bronze Lakehouse (Core Banking System, asia-south1)",
-              tables: [
-                {
-                  name: "CMG",
-                  description: "Customer Master General (CIF 360 Master Record)",
-                  rows: 25,
-                  columns: [
-                  {
-                                    "name": "CUST_ID",
-                                    "type": "STRING NOT NULL (PK)"
-                  },
-                  {
-                                    "name": "CUST_NAME",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "GENDER",
-                                    "type": "STRING"
-                  },
-                  {
-                                    "name": "DOB_OR_INCORP_DATE",
-                                    "type": "DATE"
-                  },
-                  {
-                                    "name": "CUST_TYPE",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "PAN_NO",
-                                    "type": "STRING"
-                  },
-                  {
-                                    "name": "PASSPORT_NO",
-                                    "type": "STRING"
-                  },
-                  {
-                                    "name": "GST_NO",
-                                    "type": "STRING"
-                  },
-                  {
-                                    "name": "OCCUPATION",
-                                    "type": "STRING"
-                  },
-                  {
-                                    "name": "ANNUAL_INCOME_TURNOVER",
-                                    "type": "NUMERIC"
-                  },
-                  {
-                                    "name": "CUSTOMER_SEGMENT",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "RESIDENTIAL_STATUS",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "CITY",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "STATE",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "COUNTRY",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "HOME_BRANCH_SOL_ID",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_STATUS",
-                                    "type": "STRING NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_LAST_VERIFIED_DATE",
-                                    "type": "DATE"
-                  },
-                  {
-                                    "name": "RE_KYC_DUE_DATE",
-                                    "type": "DATE NOT NULL"
-                  },
-                  {
-                                    "name": "KYC_RISK_CATEGORY",
-                                    "type": "STRING NOT NULL (CLUSTER KEY 1)"
-                  },
-                  {
-                                    "name": "PEP_FLAG",
-                                    "type": "BOOL NOT NULL"
-                  },
-                  {
-                                    "name": "SANCTIONS_HIT_FLAG",
-                                    "type": "BOOL NOT NULL"
-                  },
-                  {
-                                    "name": "CUST_STATUS",
-                                    "type": "STRING NOT NULL (CLUSTER KEY 3)"
-                  },
-                  {
-                                    "name": "CREATED_AT",
-                                    "type": "TIMESTAMP NOT NULL"
-                  }
-]
-                }
-              ]
-            },
           {
             name: "banking_prod",
             description: "Google Cloud Multi-Cloud Enterprise Repository",
@@ -5821,55 +5494,84 @@ body.in-global_ai_lab .nano-dynamic-island {
       assistantPlaceholder.remove();
 
       if (execData.status === "success") {
-        // DYNAMIC SQL SCHEMA & TABLE DDL DETECTOR (BigQuery, DuckDB, Snowflake)
-        const promptText = (typeof prompt !== "undefined" ? prompt : "") || "";
-        const combinedText = (promptText + "\n" + (execData.response || "")).replace(/```sql|```/gi, "");
+                // DYNAMIC SQL SCHEMA & TABLE DDL DETECTOR (Google BigQuery, DuckDB, Snowflake, AWS S3)
+        const chatPromptStr = (typeof prompt !== "undefined" ? prompt : "") || "";
+        const chatResponseStr = (execData && execData.response ? execData.response : "") || "";
+        const chatFullCombined = chatPromptStr + "\n" + chatResponseStr;
+        const chatSqlClean = chatFullCombined.replace(/```sql|```/gi, "");
 
         // 1. DYNAMIC SCHEMA / DATASET DETECTOR
-        const schemaMatch = combinedText.match(/CREATE\s+(?:SCHEMA|DATASET)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)/i);
-        if (schemaMatch) {
-          let scName = schemaMatch[1].replace(/["`]/g, "").trim();
-          if (scName.includes(".")) {
-            const parts = scName.split(".");
-            scName = parts[parts.length - 1];
+        let detectedSchemaName = null;
+        const schemaPatterns = [
+          /CREATE\s+(?:SCHEMA|DATASET)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)/i,
+          /(?:Dataset|Schema)\s+Name\s*[:=]\s*`?([a-zA-Z0-9_]+)`?/i,
+          /(?:create|make|add|build)\s+(?:dataset|schema)\s+`?([a-zA-Z0-9_]+)`?/i,
+          /(?:स्कीमा|डेटासेट)\s+(?:तयार|नाव)\s*[:=]?\s*`?([a-zA-Z0-9_]+)`?/i,
+          /(?:nanopro_cbs_bronze)/i
+        ];
+
+        for (const sp of schemaPatterns) {
+          const sm = chatSqlClean.match(sp);
+          if (sm) {
+            let candidate = (sm[1] || sm[0]).replace(/["`]/g, "").trim();
+            if (candidate.includes(".")) candidate = candidate.split(".").pop();
+            if (candidate && !["if", "not", "exists", "options", "or", "replace", "table", "schema", "dataset"].includes(candidate.toLowerCase())) {
+              detectedSchemaName = candidate;
+              break;
+            }
           }
-          if (scName) {
-            ["bigquery", "duckdb", "snowflake"].forEach(targetDb => {
-              const dbObj = AILAB_EXPLORER.catalog?.find(d => d.id === targetDb);
-              if (dbObj) {
-                if (!dbObj.schemas) dbObj.schemas = [];
-                let existingSc = dbObj.schemas.find(s => s.name.toLowerCase() === scName.toLowerCase());
-                if (!existingSc) {
-                  dbObj.schemas.unshift({
-                    name: scName,
-                    description: `Lakehouse Schema [${scName}] (${targetDb.toUpperCase()})`,
-                    tables: []
-                  });
-                }
+        }
+
+        if (detectedSchemaName) {
+          const scName = detectedSchemaName;
+          if (AILAB_EXPLORER.catalog) {
+            AILAB_EXPLORER.catalog.forEach(dbObj => {
+              const targetDb = dbObj.id;
+              if (!dbObj.schemas) dbObj.schemas = [];
+              let existingSc = dbObj.schemas.find(s => s.name.toLowerCase() === scName.toLowerCase());
+              if (!existingSc) {
+                dbObj.schemas.unshift({
+                  name: scName,
+                  description: `Lakehouse Schema [${scName}] (${(dbObj.name || targetDb).toUpperCase()})`,
+                  tables: []
+                });
               }
               AILAB_EXPLORER.treeOpen["db_" + targetDb] = true;
               AILAB_EXPLORER.treeOpen["sc_" + targetDb + "_" + scName] = true;
             });
-            let customSchemas = [];
-            try { customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]"); } catch (_) {}
-            if (!customSchemas.includes(scName)) {
-              customSchemas.unshift(scName);
-              localStorage.setItem("nanopro_custom_schemas", JSON.stringify(customSchemas));
-            }
+          }
+          let customSchemas = [];
+          try { customSchemas = JSON.parse(localStorage.getItem("nanopro_custom_schemas") || "[]"); } catch (_) {}
+          if (!customSchemas.some(s => s.toLowerCase() === scName.toLowerCase())) {
+            customSchemas.unshift(scName);
+            localStorage.setItem("nanopro_custom_schemas", JSON.stringify(customSchemas));
+          }
+          const expPanel = $id("ailabExplorer");
+          if (expPanel && expPanel.classList.contains("is-hidden")) {
+            ailabToggleExplorer();
+          }
+          ailabRenderExplorerTree();
+          if (typeof ailabShowDynamicToast === "function") {
+            ailabShowDynamicToast(`🗄️ Dataset / Schema [${scName}] created in Explorer across all databases!`);
           }
         }
 
         // 2. DYNAMIC TABLE & ROWS DETECTOR
         let detectedTable = null;
-        let detectedSchema = null;
+        let detectedTableSchema = detectedSchemaName || null;
         let detectedRows = 0;
 
-        const insertMatch = combinedText.match(/INSERT\s+INTO\s+(?:TABLE\s+)?([a-zA-Z0-9_`"\.]+)/i);
+        // Check for row insertion / record count
+        const insertMatch = chatSqlClean.match(/INSERT\s+INTO\s+(?:TABLE\s+)?([a-zA-Z0-9_`"\.]+)/i);
         if (insertMatch) {
-          const insertTuples = combinedText.match(/\((?:'[^']+'|[0-9]+|NULL|TRUE|FALSE)[^)]*\)/gi);
+          const insertTuples = chatSqlClean.match(/\((?:'[^']+'|[0-9]+|NULL|TRUE|FALSE)[^)]*\)/gi);
           if (insertTuples && insertTuples.length > 0) {
             detectedRows = insertTuples.length;
           }
+        }
+        if (!detectedRows) {
+          const rowCountMatch = chatSqlClean.match(/(\d+)\s*(?:realistic|records|rows|नोंदी|ग्राहक)/i);
+          if (rowCountMatch) detectedRows = parseInt(rowCountMatch[1], 10);
         }
 
         if (execData.action === "CREATE_TABLE" && execData.table_name) {
@@ -5882,15 +5584,16 @@ body.in-global_ai_lab .nano-dynamic-island {
               { name: "STATUS", type: "VARCHAR" }
             ]
           };
-          detectedSchema = execData.schema_name || null;
+          detectedTableSchema = execData.schema_name || detectedTableSchema;
         } else {
-          const ddlMatch = combinedText.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)\s*\(([\s\S]*?)\)/i);
+          // Look for CREATE TABLE DDL
+          const ddlMatch = chatSqlClean.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_`"\.]+)\s*\(([\s\S]*?)\)/i);
           if (ddlMatch) {
             let fullTName = ddlMatch[1].replace(/["`]/g, "").trim();
             let tName = fullTName;
             if (fullTName.includes(".")) {
               const parts = fullTName.split(".");
-              detectedSchema = parts[parts.length - 2];
+              detectedTableSchema = parts[parts.length - 2];
               tName = parts[parts.length - 1];
             }
             const colDefs = ddlMatch[2].split(/,\s*(?![^()]*\))/);
@@ -5906,7 +5609,7 @@ body.in-global_ai_lab .nano-dynamic-island {
             }
             detectedTable = {
               name: tName.toUpperCase(),
-              schema: detectedSchema,
+              schema: detectedTableSchema,
               rows: detectedRows || (tName.toUpperCase() === "CMG" ? 25 : 0),
               columns: cols.length > 0 ? cols : [
                 { name: "ID", type: "VARCHAR PRIMARY KEY" },
@@ -5914,40 +5617,80 @@ body.in-global_ai_lab .nano-dynamic-island {
                 { name: "STATUS", type: "VARCHAR" }
               ]
             };
+          } else {
+            // Check for references like table `nanopro_cbs_bronze.CMG` or `CMG`
+            const tableRefMatch = chatSqlClean.match(/(?:table|तक्ता|populate\s+table)\s+`?([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)`?/i);
+            if (tableRefMatch) {
+              detectedTableSchema = tableRefMatch[1];
+              const tName = tableRefMatch[2].toUpperCase();
+              detectedTable = {
+                name: tName,
+                schema: detectedTableSchema,
+                rows: detectedRows || (tName === "CMG" ? 25 : 0),
+                columns: tName === "CMG" ? [
+                  { name: "CUST_ID", type: "STRING NOT NULL (PK)" },
+                  { name: "CUST_NAME", type: "STRING NOT NULL" },
+                  { name: "GENDER", type: "STRING" },
+                  { name: "DOB_OR_INCORP_DATE", type: "DATE" },
+                  { name: "CUST_TYPE", type: "STRING NOT NULL" },
+                  { name: "PAN_NO", type: "STRING" },
+                  { name: "PASSPORT_NO", type: "STRING" },
+                  { name: "GST_NO", type: "STRING" },
+                  { name: "OCCUPATION", type: "STRING" },
+                  { name: "ANNUAL_INCOME_TURNOVER", type: "NUMERIC" },
+                  { name: "CUSTOMER_SEGMENT", type: "STRING NOT NULL" },
+                  { name: "RESIDENTIAL_STATUS", type: "STRING NOT NULL" },
+                  { name: "CITY", type: "STRING NOT NULL" },
+                  { name: "STATE", type: "STRING NOT NULL" },
+                  { name: "COUNTRY", type: "STRING NOT NULL" },
+                  { name: "HOME_BRANCH_SOL_ID", type: "STRING NOT NULL" },
+                  { name: "KYC_STATUS", type: "STRING NOT NULL" },
+                  { name: "KYC_LAST_VERIFIED_DATE", type: "DATE" },
+                  { name: "RE_KYC_DUE_DATE", type: "DATE NOT NULL" },
+                  { name: "KYC_RISK_CATEGORY", type: "STRING NOT NULL (CLUSTER KEY 1)" },
+                  { name: "PEP_FLAG", type: "BOOL NOT NULL" },
+                  { name: "SANCTIONS_HIT_FLAG", type: "BOOL NOT NULL" },
+                  { name: "CUST_STATUS", type: "STRING NOT NULL (CLUSTER KEY 3)" },
+                  { name: "CREATED_AT", type: "TIMESTAMP NOT NULL" }
+                ] : [
+                  { name: "ID", type: "VARCHAR PRIMARY KEY" },
+                  { name: "CREATED_AT", type: "TIMESTAMP" },
+                  { name: "STATUS", type: "VARCHAR" }
+                ]
+              };
+            }
           }
         }
 
         if (detectedTable) {
           const newTb = detectedTable;
-          const scTarget = detectedSchema || (combinedText.toLowerCase().includes("bronze") ? "nanopro_cbs_bronze" : null);
+          const scTarget = detectedTableSchema || (chatSqlClean.toLowerCase().includes("bronze") ? "nanopro_cbs_bronze" : null);
 
           if (AILAB_EXPLORER.catalog) {
-            ["bigquery", "duckdb", "snowflake"].forEach(dbId => {
-              const dbObj = AILAB_EXPLORER.catalog.find(d => d.id === dbId);
-              if (dbObj) {
-                if (!dbObj.schemas) dbObj.schemas = [];
-                let sc = null;
-                if (scTarget) {
-                  sc = dbObj.schemas.find(s => s.name.toLowerCase() === scTarget.toLowerCase());
-                  if (!sc) {
-                    sc = { name: scTarget, description: `${scTarget} Lakehouse Schema`, tables: [] };
-                    dbObj.schemas.unshift(sc);
-                  }
+            AILAB_EXPLORER.catalog.forEach(dbObj => {
+              const dbId = dbObj.id;
+              if (!dbObj.schemas) dbObj.schemas = [];
+              let sc = null;
+              if (scTarget) {
+                sc = dbObj.schemas.find(s => s.name.toLowerCase() === scTarget.toLowerCase());
+                if (!sc) {
+                  sc = { name: scTarget, description: `${scTarget} Lakehouse Schema`, tables: [] };
+                  dbObj.schemas.unshift(sc);
+                }
+              } else {
+                sc = dbObj.schemas[0];
+              }
+              if (sc) {
+                const existingTb = sc.tables.find(t => t.name.toLowerCase() === newTb.name.toLowerCase());
+                if (existingTb) {
+                  if (newTb.columns && newTb.columns.length > existingTb.columns.length) existingTb.columns = newTb.columns;
+                  if (newTb.rows > 0) existingTb.rows = newTb.rows;
                 } else {
-                  sc = dbObj.schemas[0];
+                  sc.tables.unshift(newTb);
                 }
-                if (sc) {
-                  const existingTb = sc.tables.find(t => t.name.toLowerCase() === newTb.name.toLowerCase());
-                  if (existingTb) {
-                    existingTb.columns = newTb.columns;
-                    if (newTb.rows > 0) existingTb.rows = newTb.rows;
-                  } else {
-                    sc.tables.unshift(newTb);
-                  }
-                  AILAB_EXPLORER.treeOpen["db_" + dbId] = true;
-                  AILAB_EXPLORER.treeOpen["sc_" + dbId + "_" + sc.name] = true;
-                  AILAB_EXPLORER.treeOpen["tb_" + dbId + "_" + sc.name + "_" + newTb.name] = true;
-                }
+                AILAB_EXPLORER.treeOpen["db_" + dbId] = true;
+                AILAB_EXPLORER.treeOpen["sc_" + dbId + "_" + sc.name] = true;
+                AILAB_EXPLORER.treeOpen["tb_" + dbId + "_" + sc.name + "_" + newTb.name] = true;
               }
             });
           }
@@ -5973,12 +5716,11 @@ body.in-global_ai_lab .nano-dynamic-island {
         }
 
         let transferJob = execData.transfer_job || null;
-        const promptText = (typeof prompt !== "undefined" ? prompt : "") || "";
-        const combinedText = (promptText + " " + (execData.response || "")).toLowerCase();
-        if (!transferJob && (/(transfer|ट्रान्सफर|migrat|shift|copy|मूव्ह|लोड).*(table|तक्ता|डेटा|data|gb|mb)/i.test(combinedText) || /(5gb|1gb|10gb|2gb).*(transfer|डेटा|data)/i.test(combinedText))) {
+        const transferText = (chatPromptStr + " " + (execData.response || "")).toLowerCase();
+        if (!transferJob && (/(transfer|ट्रान्सफर|migrat|shift|copy|मूव्ह|लोड).*(table|तक्ता|डेटा|data|gb|mb)/i.test(transferText) || /(5gb|1gb|10gb|2gb).*(transfer|डेटा|data)/i.test(transferText))) {
           let srcTable = "RAW_AML_ALERTS";
           let tgtTable = "MART_AML_PROCESSED_TXNS";
-          const tableMatches = (promptText + " " + (execData.response || "")).match(/\b([A-Z0-9_]{4,30})\b/g);
+          const tableMatches = (chatPromptStr + " " + (execData.response || "")).match(/\b([A-Z0-9_]{4,30})\b/g);
           if (tableMatches && tableMatches.length >= 2) {
             srcTable = tableMatches[0];
             tgtTable = tableMatches[1];
@@ -5986,9 +5728,9 @@ body.in-global_ai_lab .nano-dynamic-island {
             tgtTable = tableMatches[0];
           }
           let szMb = 5120;
-          if (combinedText.includes("10gb")) szMb = 10240;
-          else if (combinedText.includes("1gb")) szMb = 1024;
-          else if (combinedText.includes("2gb")) szMb = 2048;
+          if (transferText.includes("10gb")) szMb = 10240;
+          else if (transferText.includes("1gb")) szMb = 1024;
+          else if (transferText.includes("2gb")) szMb = 2048;
 
           transferJob = {
             job_id: "JOB_TRANS_" + Math.random().toString(36).slice(2, 7).toUpperCase(),
