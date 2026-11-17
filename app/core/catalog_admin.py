@@ -117,19 +117,18 @@ def _table_constraints_repr(table: Any) -> Dict[str, Any]:
     return {}
 
 
-def _constraints(table: Any, dataset_override: str = "") -> List[str]:
+def _constraint_specs(table: Any, dataset_override: str = "") -> List[Dict[str, Any]]:
     constraints = _table_constraints_repr(table)
-    lines: List[str] = []
+    specs: List[Dict[str, Any]] = []
     primary = (constraints.get("primaryKey") or {}).get("columns") or []
     if primary:
-        lines.append("PRIMARY KEY (" + ", ".join(primary) + ") NOT ENFORCED")
+        specs.append({"kind": "pk", "columns": list(primary)})
     for fk in constraints.get("foreignKeys") or []:
-        columns = fk.get("columns") or []
+        columns = list(fk.get("columns") or [])
         referenced = fk.get("referencedTable") or ""
-        referenced_columns = fk.get("referencedColumns") or []
+        referenced_columns = list(fk.get("referencedColumns") or [])
         if not columns or not referenced:
             continue
-        target_dataset = table.dataset_id
         if "." in referenced:
             referenced_dataset, referenced_table = referenced.split(".", 1)[-2:]
             if dataset_override and referenced_dataset == table.dataset_id:
@@ -137,11 +136,57 @@ def _constraints(table: Any, dataset_override: str = "") -> List[str]:
             referenced = f"{referenced_dataset}.{referenced_table}"
         else:
             referenced = f"{dataset_override or table.dataset_id}.{referenced}"
-        lines.append(
-            "FOREIGN KEY (" + ", ".join(columns) + ")"
-            f" REFERENCES `{referenced}` (" + ", ".join(referenced_columns) + ") NOT ENFORCED"
-        )
+        specs.append({
+            "kind": "fk",
+            "columns": columns,
+            "referenced": referenced,
+            "referenced_columns": referenced_columns,
+        })
+    return specs
+
+
+def _constraints(table: Any, dataset_override: str = "") -> List[str]:
+    lines: List[str] = []
+    for spec in _constraint_specs(table, dataset_override):
+        if spec["kind"] == "pk":
+            lines.append("PRIMARY KEY (" + ", ".join(spec["columns"]) + ") NOT ENFORCED")
+        else:
+            lines.append(
+                "FOREIGN KEY (" + ", ".join(spec["columns"]) + ")"
+                f" REFERENCES `{spec['referenced']}` (" + ", ".join(spec["referenced_columns"]) + ") NOT ENFORCED"
+            )
     return lines
+
+
+def _apply_constraint_specs(
+    client: Any,
+    schema: str,
+    table: str,
+    specs: List[Dict[str, Any]],
+    location: str,
+) -> List[str]:
+    """Adds PK/FK back to a rebuilt table; BigQuery blocks RENAME while they exist."""
+    notes: List[str] = []
+    ref = f"{client.project}.{schema}.{table}"
+    for index, spec in enumerate(specs):
+        try:
+            if spec["kind"] == "pk":
+                _run(
+                    client,
+                    f"ALTER TABLE `{ref}` ADD PRIMARY KEY ({', '.join(spec['columns'])}) NOT ENFORCED",
+                    location,
+                )
+            else:
+                name = f"fk_{table}_{index}"[:60]
+                _run(
+                    client,
+                    f"ALTER TABLE `{ref}` ADD CONSTRAINT `{name}` FOREIGN KEY ({', '.join(spec['columns'])})"
+                    f" REFERENCES `{spec['referenced']}` ({', '.join(spec['referenced_columns'])}) NOT ENFORCED",
+                    location,
+                )
+        except Exception as exc:
+            notes.append(f"Constraint restore failed: {str(exc)[:160]}")
+    return notes
 
 
 def _partition_clause(table: Any) -> str:
@@ -474,16 +519,16 @@ def alter_column(
     )
     fields = [new_field if item.name == column else item for item in table_obj.schema]
 
-    constraint_lines = _constraints(table_obj)
+    constraint_specs = _constraint_specs(table_obj)
     notes: List[str] = []
-    constraints = _table_constraints_repr(table_obj)
-    primary_columns = (constraints.get("primaryKey") or {}).get("columns") or []
-    if column in primary_columns:
-        constraint_lines = []
+    if any(spec["kind"] == "pk" and column in spec["columns"] for spec in constraint_specs):
+        constraint_specs = []
         notes.append("Primary key was dropped because the key column type changed; recreate it if needed.")
 
+    # The rebuilt table is created without constraints: BigQuery refuses to
+    # RENAME a table that carries PK/FK, and the temp name must be renamed.
     temp_id = "__np_tmp_" + uuid.uuid4().hex[:10]
-    create = _create_sql(client.project, schema, temp_id, fields, constraint_lines, table_obj)
+    create = _create_sql(client.project, schema, temp_id, fields, [], table_obj)
     expressions = [
         _conversion_expression(item, new_field, date_format) if item.name == column else f"`{item.name}`"
         for item in table_obj.schema
@@ -506,6 +551,7 @@ def alter_column(
         except Exception:
             pass
         raise CatalogError(f"Column change failed: {str(exc)[:300]}") from exc
+    notes.extend(_apply_constraint_specs(client, schema, table, constraint_specs, location))
 
     state = _table_state(client, schema, table)
     updated = next((item for item in state["columns"] if item["name"] == column), None)
