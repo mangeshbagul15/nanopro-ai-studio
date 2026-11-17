@@ -3995,7 +3995,7 @@ body.in-global_ai_lab .nano-dynamic-island {
                 <span class="ailab-tree-arrow ${isTbOpen ? 'is-expanded' : ''}">▶</span>
                 <span style="font-size:11px;">📄</span>
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(tb.name)}</span>
-                <span class="ailab-tree-badge" style="background:rgba(59,130,246,0.15);color:#93C5FD;">${tb.rows ? tb.rows.toLocaleString() : ''}r</span>
+                <span class="ailab-tree-badge" style="background:rgba(59,130,246,0.15);color:#93C5FD;">${tb.rows ? tb.rows.toLocaleString() + 'r' : ''}</span>
               </div>
               ${colsHtml}
             </div>
