@@ -2172,11 +2172,10 @@ CRITICAL OPERATIONAL RULES:
       // DOMAIN 2: AUTONOMOUS COMPUTER USE AGENT (CUA) — END-TO-END EXECUTION
       // (Claude 3.7 Sonnet Computer Use SOTA)
       // -------------------------------------------------------------------------
-      const isExplicitCodeTask = /(\bdef\b|\bclass\b|\bpython\b|\bfastapi\b|\bscript\b|\bfunction\b|\bdebug\b|\bbug\b|पायथन|कोड)/i.test(pLower);
-      if (!isExplicitCodeTask &&
-          ((pLower.includes("google") || /\bsearch\b/.test(pLower) || pLower.includes("browse") || pLower.includes("screen share") || pLower.includes("side screen") || pLower.includes("cua") || pLower.includes("शोध") || pLower.includes("ब्राउझर") || pLower.includes("web") || pLower.includes("wikipedia") || pLower.includes("open router") || pLower.includes("openrouter")) &&
+      const isExplicitCodeOrSqlTask = /(\bdef\b|\bclass\b|\bpython\b|\bfastapi\b|\bscript\b|\bfunction\b|\bdebug\b|\bbug\b|\bsql\b|\bddl\b|\btable\b|\bdataset\b|\bbigquery\b|\bduckdb\b|\bsnowflake\b|\bselect\b|\binsert\b|\bcreate\b|\baml\b|\bcbs\b|पायथन|कोड|तक्ता|स्कीमा)/i.test(pLower);
+      if (!isExplicitCodeOrSqlTask && !pLower.includes("bigquery") && !pLower.includes("duckdb") &&
+          ((/(google|गुगल)\s*(var|वर|search|शोध|open|उघडा)/i.test(pLower) || /\bsearch\b/.test(pLower) || pLower.includes("browse") || pLower.includes("screen share") || pLower.includes("side screen") || pLower.includes("cua") || pLower.includes("शोध") || pLower.includes("ब्राउझर") || pLower.includes("web") || pLower.includes("wikipedia")) &&
           (pLower.includes("kara") || pLower.includes("करा") || pLower.includes("open") || pLower.includes("उघडा") || /\bsearch\b/.test(pLower) || pLower.includes("शोध") || pLower.includes("share") || pLower.includes("शेअर") || pLower.includes("बघ") || pLower.includes("bagh") || pLower.includes("sanga") || pLower.includes("सांग") || pLower.includes("drive")))) {
-        
         let queryClean = prompt.replace(/.*(google\s*var|गुगल\s*वर|search\s*madhe|browser\s*madhe|ब्राउझर\s*मध्ये|screen\s*share\s*madhe|side\s*screen\s*var|search|शोध|open|उघडा|करा|kara)/gi, "").trim();
         queryClean = queryClean.replace(/side screen share madhe|screen share|side screen|browser|ब्राउझर|स्क्रीन|शेअर|search|kara|करा|शोध|google|गुगल|open|उघडा/gi, "").trim();
         if (!queryClean || queryClean.length < 2) queryClean = "Top Frontier AI Models 2026 DeepSeek Claude Gemini";

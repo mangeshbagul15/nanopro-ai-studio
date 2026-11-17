@@ -23426,7 +23426,14 @@ body.in-global_ai_lab .nano-dynamic-island {
       created_at: Date.now() / 1000
     };
     // Autonomous Browser Control directly from the main chat
-    const isBrowserIntent = /https?:\/\//i.test(prompt) || /(browse|browser|ब्राउझर|\bcua\b|screen share|स्क्रीन शेअर|google|गुगल|search the web|वेबवर शोध|open the (site|website|page|url)|साइट उघड|वेबसाइट उघड)/i.test(prompt);
+    // CRITICAL: NEVER intercept SQL, BigQuery, Table DDL, Database, Schema or AML tasks!
+    const isSqlOrDataTask = /(bigquery|duckdb|snowflake|sql|ddl|table|तक्ता|create table|insert into|select |from |where |database|डेटाबेस|schema|स्कीमा|column|कॉलम|primary key|foreign key|aml|cbs|finacle)/i.test(prompt);
+
+    const isBrowserIntent = !isSqlOrDataTask && (
+      /(browse\s+|browser\s+agent|\bcua\b|screen share|स्क्रीन शेअर|search the web|वेबवर शोध|open (the\s+)?(site|website|page|url)|साइट उघड|वेबसाइट उघड)/i.test(prompt) ||
+      (/(google|गुगल)\s*(var|वर|search|शोध|open|उघडा)/i.test(prompt)) ||
+      (/^https?:\/\/[^\s]+$/i.test(prompt.trim()))
+    );
 
     AILAB.pendingAttachments = [];
     ailabRenderAttachments();
