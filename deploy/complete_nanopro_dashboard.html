@@ -22007,15 +22007,28 @@ body.in-global_ai_lab .nano-dynamic-island {
           const isTbOpen = !!AILAB_EXPLORER.treeOpen[tbKey];
 
           let colsHtml = "";
-          if (tb.columns && tb.columns.length > 0) {
+          if (isTbOpen && tb._loadingColumns) {
             colsHtml = `
-              <div class="ailab-tree-children ${isTbOpen ? 'is-expanded' : ''}" id="child_${escapeHtml(tbKey)}">
+              <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
+                <div style="padding:3px 15px;color:#64748B;font-size:10.5px;">Loading columns…</div>
+              </div>
+            `;
+          } else if (isTbOpen && tb.columns && tb.columns.length > 0) {
+            colsHtml = `
+              <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
                 ${tb.columns.map(c => `
-                  <div style="padding:2px 6px 2px 22px;font-size:10.5px;color:#94A3B8;display:flex;justify-content:space-between;font-family:monospace;">
-                    <span>• ${escapeHtml(c.name)}</span>
+                  <div style="padding:2px 6px 2px 22px;font-size:10.5px;color:#94A3B8;display:flex;align-items:center;gap:5px;font-family:monospace;">
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">• ${escapeHtml(c.name)}</span>
+                    ${c.key ? `<span title="${c.key === 'PK' ? 'Primary key' : 'Foreign key'}" style="font-size:8.5px;padding:0 4px;border-radius:3px;${c.key === 'PK' ? 'background:rgba(250,204,21,0.15);color:#FACC15;' : 'background:rgba(56,189,248,0.15);color:#38BDF8;'}">${c.key}</span>` : ""}
                     <span style="color:#64748B;font-size:9.5px;">${escapeHtml(c.type)}</span>
                   </div>
                 `).join("")}
+              </div>
+            `;
+          } else if (isTbOpen) {
+            colsHtml = `
+              <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
+                <div style="padding:3px 15px;color:#64748B;font-size:10.5px;">${escapeHtml(tb._columnError || "No columns reported.")}</div>
               </div>
             `;
           }
@@ -22074,8 +22087,29 @@ body.in-global_ai_lab .nano-dynamic-island {
     ailabRenderExplorerTree();
   };
 
-  window.ailabClickExplorerTable = function(dbId, schema, table, tbKey) {
+  window.ailabClickExplorerTable = async function(dbId, schema, table, tbKey) {
     AILAB_EXPLORER.treeOpen[tbKey] = !AILAB_EXPLORER.treeOpen[tbKey];
+    const isOpen = !!AILAB_EXPLORER.treeOpen[tbKey];
+
+    const db = (AILAB_EXPLORER.catalog || []).find(d => d.id === dbId);
+    const sc = db ? (db.schemas || []).find(s => s.name === schema) : null;
+    const tableEntry = sc ? (sc.tables || []).find(t => t.name === table) : null;
+
+    // Columns are introspected on first expand so the catalog stays cheap.
+    if (isOpen && tableEntry && (!tableEntry.columns || tableEntry.columns.length === 0) && !tableEntry._loadingColumns) {
+      tableEntry._loadingColumns = true;
+      ailabRenderExplorerTree();
+      try {
+        const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
+        const res = await fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: "no-store" });
+        const data = res.ok ? await res.json() : {};
+        if (data && Array.isArray(data.columns)) tableEntry.columns = data.columns;
+        tableEntry._columnError = (data && data.error) || (res.ok ? "" : `Column lookup failed (${res.status}).`);
+      } catch (_) {
+        tableEntry._columnError = "Column lookup failed.";
+      }
+      tableEntry._loadingColumns = false;
+    }
     ailabRenderExplorerTree();
 
     const fullPath = `${dbId}.${schema}.${table}`;

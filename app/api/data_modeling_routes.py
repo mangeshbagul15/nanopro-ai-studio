@@ -787,3 +787,32 @@ def api_explorer_catalog(request: Request):
     except Exception as exc:
         return JSONResponse({"status": "error", "message": str(exc)[:300]}, status_code=500)
     return JSONResponse({"status": "success", "databases": _explorer_databases(catalog)})
+
+
+@explorer_router.get("/table")
+def api_explorer_table(request: Request, database: str = "", schema: str = "main", table: str = ""):
+    _session_user(request)
+    if not table.strip():
+        return JSONResponse({"status": "error", "message": "table is required"}, status_code=400)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        details = dm.get_table_details(database, schema, table)
+    except Exception as exc:
+        return JSONResponse({"status": "error", "message": str(exc)[:300]}, status_code=400)
+    columns = [
+        {
+            "name": str(column.get("name") or ""),
+            "type": str(column.get("data_type") or ""),
+            "not_null": bool(column.get("not_null")),
+            "key": "PK" if column.get("is_pk") else ("FK" if column.get("is_fk") else ""),
+        }
+        for column in details.get("columns") or []
+    ]
+    return JSONResponse({
+        "status": "success",
+        "columns": columns,
+        "foreign_keys": details.get("foreign_keys") or [],
+        "row_count": details.get("row_count"),
+        "error": details.get("error") or "",
+    })

@@ -921,16 +921,64 @@ def _details_oracle(entry: Dict[str, Any], schema: str, table: str) -> Dict[str,
         conn.close()
 
 
+def _safe_bq_part(value: str) -> str:
+    text = str(value or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", text):
+        raise ValueError(f"Invalid BigQuery identifier: {value!r}")
+    return text
+
+
+def _bigquery_table_keys(client: Any, schema: str, table: str) -> Dict[str, Any]:
+    primary: set = set()
+    foreign: set = set()
+    constraints: List[Dict[str, Any]] = []
+    try:
+        from google.cloud import bigquery  # type: ignore
+
+        sql = (
+            "SELECT tc.constraint_name, tc.constraint_type, kcu.column_name "
+            f"FROM `{client.project}.{schema}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS` tc "
+            f"JOIN `{client.project}.{schema}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE` kcu "
+            "ON tc.constraint_name = kcu.constraint_name AND tc.table_name = kcu.table_name "
+            "WHERE tc.table_name = @table"
+        )
+        job = client.query(
+            sql,
+            job_config=bigquery.QueryJobConfig(
+                query_parameters=[bigquery.ScalarQueryParameter("table", "STRING", table)]
+            ),
+        )
+        for row in job.result(timeout=30):
+            constraint_type = str(row["constraint_type"] or "").upper()
+            column = str(row["column_name"])
+            if constraint_type == "PRIMARY KEY":
+                primary.add(column)
+            elif constraint_type == "FOREIGN KEY":
+                foreign.add(column)
+            constraints.append({
+                "name": str(row["constraint_name"]),
+                "type": constraint_type,
+                "column": column,
+            })
+    except Exception:
+        pass
+    return {"primary": primary, "foreign": foreign, "constraints": constraints}
+
+
 def _details_bigquery(entry: Dict[str, Any], schema: str, table: str) -> Dict[str, Any]:
     client, _ = _bigquery_client()
+    schema = _safe_bq_part(schema)
+    table = _safe_bq_part(table)
     ref = f"{client.project}.{schema}.{table}"
     table_obj = client.get_table(ref)
+    keys = _bigquery_table_keys(client, schema, table)
     columns = [
         {
             "name": f.name,
             "data_type": f.field_type,
             "not_null": f.mode == "REQUIRED",
-            "is_pk": False,
+            "is_pk": f.name in keys["primary"],
+            "is_fk": f.name in keys["foreign"],
             "default": None,
         }
         for f in table_obj.schema
@@ -939,11 +987,15 @@ def _details_bigquery(entry: Dict[str, Any], schema: str, table: str) -> Dict[st
         {k: _jsonable(v) for k, v in dict(row.items()).items()}
         for row in client.list_rows(table_obj, max_results=5)
     ]
-    return {
+    result = {
         "database": entry["name"], "schema": schema, "table": table,
         "columns": columns, "row_count": int(table_obj.num_rows or 0),
         "sample": sample, "ddl": "",
     }
+    foreign_keys = [c for c in keys["constraints"] if c["type"] == "FOREIGN KEY"]
+    if foreign_keys:
+        result["foreign_keys"] = foreign_keys
+    return result
 
 
 def _details_duckdb(entry: Dict[str, Any], schema: str, table: str) -> Dict[str, Any]:
@@ -955,17 +1007,43 @@ def _details_duckdb(entry: Dict[str, Any], schema: str, table: str) -> Dict[str,
         qualified = f"{_quote(schema)}.{_quote(table)}"
         desc = con.execute(f"DESCRIBE {qualified}").fetchall()
         columns = [
-            {"name": d[0], "data_type": d[1], "not_null": str(d[2]).upper() == "NO", "is_pk": False, "default": None}
+            {"name": d[0], "data_type": d[1], "not_null": str(d[2]).upper() == "NO", "is_pk": False, "is_fk": False, "default": None}
             for d in desc
         ]
+        primary, foreign, constraints = set(), set(), []
+        try:
+            cons = con.execute(
+                "SELECT constraint_type, constraint_column_names, constraint_text "
+                "FROM duckdb_constraints() WHERE table_name = ? AND schema_name = ? "
+                "AND constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY')",
+                [table, schema],
+            ).fetchall()
+            for constraint_type, names, definition in cons:
+                kind = str(constraint_type).upper()
+                for name in names or []:
+                    (primary if kind == "PRIMARY KEY" else foreign).add(str(name))
+                constraints.append({
+                    "type": kind,
+                    "columns": list(names or []),
+                    "definition": str(definition or ""),
+                })
+        except Exception:
+            pass
+        for col in columns:
+            col["is_pk"] = col["name"] in primary
+            col["is_fk"] = col["name"] in foreign
         row_count = int(con.execute(f"SELECT COUNT(*) FROM {qualified}").fetchone()[0])
         cur = con.execute(f"SELECT * FROM {qualified} LIMIT 5")
         names = [c[0] for c in cur.description]
         sample = [{names[i]: _jsonable(row[i]) for i in range(len(names))} for row in cur.fetchall()]
-        return {
+        result = {
             "database": entry["name"], "schema": schema, "table": table,
             "columns": columns, "row_count": row_count, "sample": sample, "ddl": "",
         }
+        foreign_keys = [c for c in constraints if c["type"] == "FOREIGN KEY"]
+        if foreign_keys:
+            result["foreign_keys"] = foreign_keys
+        return result
     finally:
         con.close()
 
