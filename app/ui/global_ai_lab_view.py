@@ -3935,11 +3935,20 @@ body.in-global_ai_lab .nano-dynamic-island {
               </div>
             `;
           } else if (isTbOpen) {
-            colsHtml = `
-              <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
-                <div style="padding:3px 15px;color:#64748B;font-size:10.5px;">${escapeHtml(tb._columnError || "No columns reported.")}</div>
-              </div>
-            `;
+            if (!tb._columnError && !tb._attemptedColumns) {
+              setTimeout(() => ailabFetchExplorerColumns(db.id, sc.name, tb.name), 0);
+              colsHtml = `
+                <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
+                  <div style="padding:3px 15px;color:#64748B;font-size:10.5px;">Loading columns…</div>
+                </div>
+              `;
+            } else {
+              colsHtml = `
+                <div class="ailab-tree-children is-expanded" id="child_${escapeHtml(tbKey)}">
+                  <div style="padding:3px 15px;color:#64748B;font-size:10.5px;">${escapeHtml(tb._columnError || "No columns reported.")}</div>
+                </div>
+              `;
+            }
           }
 
           tablesHtml += `
@@ -3995,6 +4004,27 @@ body.in-global_ai_lab .nano-dynamic-island {
     ailabRenderExplorerTree();
   };
 
+  window.ailabFetchExplorerColumns = async function(dbId, schema, table) {
+    const db = (AILAB_EXPLORER.catalog || []).find(d => d.id === dbId);
+    const sc = db ? (db.schemas || []).find(s => s.name === schema) : null;
+    const tableEntry = sc ? (sc.tables || []).find(t => t.name === table) : null;
+    if (!tableEntry || tableEntry._loadingColumns) return;
+    tableEntry._loadingColumns = true;
+    tableEntry._attemptedColumns = true;
+    ailabRenderExplorerTree();
+    try {
+      const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
+      const res = await fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: "no-store" });
+      const data = res.ok ? await res.json() : {};
+      if (data && Array.isArray(data.columns)) tableEntry.columns = data.columns;
+      tableEntry._columnError = (data && data.error) || (res.ok ? "" : `Column lookup failed (${res.status}).`);
+    } catch (_) {
+      tableEntry._columnError = "Column lookup failed.";
+    }
+    tableEntry._loadingColumns = false;
+    ailabRenderExplorerTree();
+  };
+
   window.ailabClickExplorerTable = async function(dbId, schema, table, tbKey) {
     AILAB_EXPLORER.treeOpen[tbKey] = !AILAB_EXPLORER.treeOpen[tbKey];
     const isOpen = !!AILAB_EXPLORER.treeOpen[tbKey];
@@ -4004,19 +4034,9 @@ body.in-global_ai_lab .nano-dynamic-island {
     const tableEntry = sc ? (sc.tables || []).find(t => t.name === table) : null;
 
     // Columns are introspected on first expand so the catalog stays cheap.
-    if (isOpen && tableEntry && (!tableEntry.columns || tableEntry.columns.length === 0) && !tableEntry._loadingColumns) {
-      tableEntry._loadingColumns = true;
-      ailabRenderExplorerTree();
-      try {
-        const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
-        const res = await fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: "no-store" });
-        const data = res.ok ? await res.json() : {};
-        if (data && Array.isArray(data.columns)) tableEntry.columns = data.columns;
-        tableEntry._columnError = (data && data.error) || (res.ok ? "" : `Column lookup failed (${res.status}).`);
-      } catch (_) {
-        tableEntry._columnError = "Column lookup failed.";
-      }
-      tableEntry._loadingColumns = false;
+    if (isOpen && tableEntry && (!tableEntry.columns || tableEntry.columns.length === 0)) {
+      delete tableEntry._columnError;
+      await ailabFetchExplorerColumns(dbId, schema, table);
     }
     ailabRenderExplorerTree();
 
