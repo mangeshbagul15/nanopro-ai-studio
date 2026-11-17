@@ -26,7 +26,10 @@ def extract_sql(prompt: str) -> str:
     if text.lower().startswith(marker):
         return text[len(marker):].strip()
     if _CREATE.match(text):
-        return text
+        # Only trust a raw statement when it carries SQL syntax, otherwise
+        # "Create dataset foo in BigQuery" is read as prose, not as DDL.
+        if "`" in text or "(" in text or re.search(r"\bIF\s+NOT\s+EXISTS\b", text, re.IGNORECASE):
+            return text
     # Natural-language dataset request, e.g. "create dataset foo in BigQuery".
     dataset = _DATASET_REQUEST.search(text)
     if dataset:
