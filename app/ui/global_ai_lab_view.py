@@ -4463,6 +4463,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         ['refresh', '🔄', 'Refresh'],
       ];
     } else if (kind === 'table') {
+      title = table;
       const cols = (tb && tb.columns) || [];
       meta = cols.length ? `${cols.length} columns · ${Number(tb.rows || 0).toLocaleString()} rows` : 'Counting columns & rows…';
       items = [
