@@ -1694,6 +1694,48 @@ async def serve_legacy_dashboard(request: Request, token: Optional[str] = None):
 
 
 
+@app.get("/ai-lab", response_class=HTMLResponse)
+
+async def serve_ai_lab_dashboard(request: Request, token: Optional[str] = None):
+
+    """Dashboard with the Python-side UI modules (live AI Lab chat)."""
+
+    from app.core.auth_manager import auth_manager
+
+    from app.ui.dashboard import get_dashboard_html
+
+    candidate_token = token or request.cookies.get("nanopro_session")
+
+    if not candidate_token:
+
+        auth_hdr = request.headers.get("authorization", "")
+
+        if auth_hdr.lower().startswith("bearer "):
+
+            candidate_token = auth_hdr[7:].strip()
+
+    if candidate_token:
+
+        v_res = auth_manager.validate_session(candidate_token)
+
+        if v_res.get("is_valid") and v_res.get("user"):
+
+            html = get_dashboard_html()
+
+            if "</head>" in html:
+
+                html = html.replace("</head>", _SESSION_BRIDGE + "</head>", 1)
+
+            resp = HTMLResponse(html)
+
+            resp.headers["Cache-Control"] = "private, no-cache, must-revalidate"
+
+            return resp
+
+    return RedirectResponse(url="/", status_code=303)
+
+
+
 @app.get("/logout")
 
 async def serve_logout_gateway():
