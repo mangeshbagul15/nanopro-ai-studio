@@ -726,3 +726,65 @@ def persistence_flush(request: Request):
     from app.core import dm_persistence
 
     return {"status": "success", **dm_persistence.snapshot_now()}
+
+
+# ---------------------------------------------------------------------------
+# Global AI Lab Explorer catalog
+#
+# The Explorer used to be answered with a hardcoded demo catalog. It now reads
+# the same live introspection the Data Modeling catalog uses, so it can never
+# show tables that do not exist.
+# ---------------------------------------------------------------------------
+
+explorer_router = APIRouter(prefix="/api/ai/explorer", tags=["Explorer"])
+
+_EXPLORER_ENGINES = {
+    "snowflake": "❄️",
+    "bigquery": "☁️",
+    "s3": "🪣",
+    "duckdb": "🦆",
+}
+
+_HIDDEN_SCHEMA_NAMES = {"INFORMATION_SCHEMA", "SNOWFLAKE", "SNOWFLAKE_SAMPLE_DATA", "TELEMETRY"}
+
+
+def _explorer_databases(catalog: list) -> list:
+    databases = []
+    for entry in catalog:
+        engine = str(entry.get("engine") or "").lower()
+        if engine not in _EXPLORER_ENGINES:
+            continue
+        schemas = []
+        for schema in entry.get("schemas") or []:
+            name = str(schema.get("name") or "").strip()
+            if not name or name.split(".")[-1].upper() in _HIDDEN_SCHEMA_NAMES:
+                continue
+            tables = [
+                {"name": str(table.get("name") or ""), "type": table.get("type") or "table", "rows": 0, "columns": []}
+                for table in schema.get("tables") or []
+                if str(table.get("name") or "").strip()
+            ]
+            if tables:
+                schemas.append({"name": name, "tables": tables})
+        databases.append({
+            "id": entry.get("id") or engine,
+            "name": entry.get("name") or engine.upper(),
+            "kind": engine,
+            "icon": _EXPLORER_ENGINES[engine],
+            "status": entry.get("status") or "",
+            "error": entry.get("error") or "",
+            "schemas": schemas,
+        })
+    return databases
+
+
+@explorer_router.get("/catalog")
+def api_explorer_catalog(request: Request):
+    _session_user(request)
+    from app.core import data_modeling_ai as dm
+
+    try:
+        catalog = dm.catalog_snapshot(ttl=8.0)
+    except Exception as exc:
+        return JSONResponse({"status": "error", "message": str(exc)[:300]}, status_code=500)
+    return JSONResponse({"status": "success", "databases": _explorer_databases(catalog)})

@@ -15404,9 +15404,11 @@ from app.core.cron_gateway_router import router as cron_gateway_router
 
 app.include_router(cron_gateway_router)
 
+from app.api.data_modeling_routes import explorer_router as explorer_router
 from app.api.data_modeling_routes import router as data_modeling_router
 
 app.include_router(data_modeling_router)
+app.include_router(explorer_router)
 
 from app.core.ai_command_router import router as ai_command_router
 
