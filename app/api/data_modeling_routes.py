@@ -757,7 +757,7 @@ def _explorer_databases(catalog: list) -> list:
         schemas = []
         for schema in entry.get("schemas") or []:
             name = str(schema.get("name") or "").strip()
-            if not name or name.split(".")[-1].upper() in _HIDDEN_SCHEMA_NAMES:
+            if not name or any(part.strip().upper() in _HIDDEN_SCHEMA_NAMES for part in name.split(".")):
                 continue
             tables = [
                 {"name": str(table.get("name") or ""), "type": table.get("type") or "table", "rows": 0, "columns": []}
