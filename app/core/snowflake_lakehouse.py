@@ -413,19 +413,22 @@ def _build_l2(cursor, database: str, tables: List[str], details: Dict[str, Dict[
         cursor.execute(f"INSERT INTO {dq} VALUES {values}")
 
     catalog = f"{database}.{L2_SCHEMA}.MART_CATALOG"
-    cursor.execute(
-        f"CREATE OR REPLACE TABLE {catalog} ("
-        "MART_NAME VARCHAR(120), SOURCE_TABLES VARCHAR(400), ROWS NUMBER(38,0), BUILT_AT TIMESTAMP_NTZ)"
-    )
-    entries = [(mart["name"], ",".join(mart["sources"]), row_counts.get(mart["name"]))
-               for mart in _marts(database) if mart["name"] in marts]
-    entries.append(("DATA_QUALITY_MART", ",".join(tables), len(quality)))
-    built_values = [
-        f"({_lit(name)}, {_lit(sources)}, {('NULL' if count is None else count)}, CURRENT_TIMESTAMP())"
-        for name, sources, count in entries
-    ]
-    if built_values:
-        cursor.execute(f"INSERT INTO {catalog} VALUES {', '.join(built_values)}")
+    try:
+        cursor.execute(
+            f"CREATE OR REPLACE TABLE {catalog} ("
+            "MART_NAME VARCHAR(120), SOURCE_TABLES VARCHAR(400), ROW_COUNT NUMBER(38,0), BUILT_AT TIMESTAMP_NTZ)"
+        )
+        entries = [(mart["name"], ",".join(mart["sources"]), row_counts.get(mart["name"]))
+                   for mart in _marts(database) if mart["name"] in marts]
+        entries.append(("DATA_QUALITY_MART", ",".join(tables), len(quality)))
+        built_values = [
+            f"({_lit(name)}, {_lit(sources)}, {('NULL' if count is None else count)}, CURRENT_TIMESTAMP())"
+            for name, sources, count in entries
+        ]
+        if built_values:
+            cursor.execute(f"INSERT INTO {catalog} VALUES {', '.join(built_values)}")
+    except Exception as exc:
+        errors.append(f"MART_CATALOG: {str(exc)[:180]}")
 
     return {"marts": marts, "rows": row_counts, "quality": quality,
             "skipped": skipped, "errors": errors}

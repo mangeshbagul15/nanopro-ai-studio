@@ -133,6 +133,13 @@ class BuildL2Test(unittest.TestCase):
         self.assertIn("'DATA_QUALITY_MART'", insert_sql)
         self.assertNotIn("'CUSTOMER_360_MART'", insert_sql)
 
+    def test_catalog_avoids_reserved_rows_column(self):
+        cursor = _FakeCursor({"CMG": COLUMNS["CMG"]}, self._counts())
+        lakehouse._build_l2(cursor, "BANK_DB", ["CMG"], {"CMG": {"key": ["CUST_ID"], "strategy": "business_key"}})
+        ddl = next(s for s in cursor.statements if "MART_CATALOG (" in s)
+        self.assertIn("ROW_COUNT", ddl)
+        self.assertNotIn(" ROWS ", ddl)
+
 
 if __name__ == "__main__":
     unittest.main()
