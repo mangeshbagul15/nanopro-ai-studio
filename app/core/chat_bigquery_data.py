@@ -240,19 +240,22 @@ def _relations(client: Any, schema: str, tables: List[str]) -> Dict[Tuple[str, s
     from app.core.catalog_admin import _constraint_specs
 
     relations: Dict[Tuple[str, str], Tuple[str, str]] = {}
+    # Parents may already hold rows from an earlier insert, so any table in the
+    # schema can supply the key a single-table insert points at.
+    available = set(_table_list(client, schema))
     for table in tables:
         table_obj = client.get_table(f"{client.project}.{schema}.{table}")
         for spec in _constraint_specs(table_obj):
             if spec["kind"] != "fk":
                 continue
             referenced_table = spec["referenced"].split(".")[-1]
-            if referenced_table not in tables:
+            if referenced_table not in available:
                 continue
             ref_columns = spec["referenced_columns"] or spec["columns"]
             for column, ref_column in zip(spec["columns"], ref_columns):
                 relations[(table, column)] = (referenced_table, ref_column)
     for (table, column), target in KNOWN_REFS.items():
-        if table in tables and target[0] in tables:
+        if table in tables and target[0] in available:
             relations.setdefault((table, column), target)
     return relations
 
@@ -271,6 +274,18 @@ def _insert_order(tables: List[str], relations: Dict[Tuple[str, str], Tuple[str,
         ordered.extend(sorted(ready))
         pending = [table for table in pending if table not in ready]
     return ordered
+
+
+def _fetch_parent_values(client: Any, schema: str, table: str, column: str,
+                         count: int) -> List[Any]:
+    """Real keys already stored in the parent table, so FK joins match."""
+    try:
+        job = client.query(
+            f"SELECT `{column}` FROM `{client.project}.{schema}.{table}` LIMIT {max(count, 1)}"
+        )
+        return [row[column] for row in job.result(timeout=120) if row[column] is not None]
+    except Exception:
+        return []
 
 
 def _table_rows(client: Any, schema: str, table: str, count: int,
@@ -305,6 +320,11 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
             if name in fk_columns:
                 parent_table, parent_column = relations[(table, name)]
                 parent_values = key_store.get((parent_table, parent_column)) or []
+                if not parent_values:
+                    parent_values = _fetch_parent_values(
+                        client, schema, parent_table, parent_column, count
+                    )
+                    key_store[(parent_table, parent_column)] = parent_values
                 if parent_values:
                     row[name] = parent_values[(index - 1) % len(parent_values)]
                 else:
