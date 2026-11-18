@@ -460,6 +460,19 @@ def _insert_samples(prompt: str) -> Dict[str, Any]:
     )
 
 
+def _json_safe(value: Any) -> Any:
+    # NUMERIC/DATE columns come back as Decimal/date, which JSONResponse cannot encode.
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", "ignore")
+    if isinstance(value, (dict, list, tuple)):
+        return str(value)
+    return value
+
+
 def _render_rows(columns: List[str], rows: List[Dict[str, Any]], truncated: bool) -> str:
     if not columns:
         return "_Query returned no columns._"
@@ -504,7 +517,7 @@ def _run_statement(sql: str, limit: int = 15) -> Dict[str, Any]:
         columns = [field.name for field in result.schema]
         rows = []
         for row in result:
-            rows.append({key: value for key, value in dict(row.items()).items()})
+            rows.append({key: _json_safe(value) for key, value in dict(row.items()).items()})
             if len(rows) > limit:
                 break
         return {

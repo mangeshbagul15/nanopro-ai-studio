@@ -2892,11 +2892,16 @@ async def api_ai_bigquery_admin(request: Request, payload: Dict[str, Any] = Body
 
     from app.core.chat_bigquery_admin import maybe_handle
 
-    result = maybe_handle(payload.get("prompt", ""))
-    if result is None:
-        from app.core.chat_bigquery_data import maybe_handle as maybe_data
+    try:
+        result = maybe_handle(payload.get("prompt", ""))
+        if result is None:
+            from app.core.chat_bigquery_data import maybe_handle as maybe_data
 
-        result = maybe_data(payload.get("prompt", ""))
+            result = maybe_data(payload.get("prompt", ""))
+    except Exception as exc:
+        # The Worker turns any 5xx into a 503 the chat can only show as a
+        # generic failure, so answer with the real reason instead.
+        return JSONResponse({"status": "error", "message": f"{type(exc).__name__}: {exc}"[:500]})
     if result is None:
         # Not an admin/data instruction: the caller falls back to normal chat.
         return JSONResponse({"status": "not_admin"})
