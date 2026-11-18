@@ -99,11 +99,13 @@ def _scalar(name: str, type_sql: str, index: int) -> Any:
     if base == "DATE":
         if "DOB" in upper or "BIRTH" in upper:
             return (date(1980, 1, 1) + timedelta(days=index * 97)).isoformat()
-        return (date(2026, 1, 1) + timedelta(days=index)).isoformat()
+        # Bronze tables can be date-partitioned with 60-day expiry, so rows
+        # dated months back land in partitions that are already gone.
+        return (date.today() - timedelta(days=index % 20)).isoformat()
     if base == "DATETIME":
-        return (datetime(2026, 11, 1, 9, 0) + timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S")
+        return (datetime.now(timezone.utc) - timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S")
     if base == "TIMESTAMP":
-        return (datetime(2026, 11, 1, 9, 0) + timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S+00:00")
+        return (datetime.now(timezone.utc) - timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S+00:00")
     if base == "TIME":
         return f"{(9 + index % 8):02d}:{(index * 7) % 60:02d}:00"
     if base == "JSON":
@@ -136,7 +138,7 @@ def _scalar(name: str, type_sql: str, index: int) -> Any:
     if "CURRENCY" in upper:
         return "INR"
     if "DATE" in upper:
-        return (date(2026, 1, 1) + timedelta(days=index)).isoformat()
+        return (date.today() - timedelta(days=index % 20)).isoformat()
     if "NATURE" in upper or "TYPE" in upper or "CATEGORY" in upper or "MODE" in upper:
         return _KINDS[(index - 1) % len(_KINDS)]
     if "BRANCH" in upper:
@@ -298,7 +300,10 @@ def _insert(client: Any, schema: str, table: str, rows: List[Dict[str, Any]],
         detail = "; ".join(
             str(item.get("message") or item) for item in (job.errors or [])[:2]
         )
-        raise RuntimeError(f"{table}: {exc}{(' | ' + detail) if detail else ''}") from None
+        head = str(payload[0])[:400] if payload else "empty"
+        raise RuntimeError(
+            f"{table}: {exc}{(' | ' + detail) if detail else ''} | first row: {head}"
+        ) from None
     if job.errors:
         detail = "; ".join(str(item.get("message") or item) for item in job.errors[:2])
         raise RuntimeError(f"{table}: load reported errors: {detail}")
