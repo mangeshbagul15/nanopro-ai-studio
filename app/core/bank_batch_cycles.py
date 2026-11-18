@@ -16,6 +16,7 @@ ledger never claims a cycle ran when it did not.
 """
 from __future__ import annotations
 
+import os
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -55,13 +56,27 @@ def business_date(now: Optional[datetime] = None) -> str:
     return _as_ist(now).date().isoformat()
 
 
+def _at(cycle: str) -> tuple:
+    """Scheduled (hour, minute) IST, honouring an Orchestrator override."""
+    try:
+        from app.core.pipeline_orchestrator import cycle_schedules
+
+        override = cycle_schedules().get(cycle)
+        if override:
+            hour, minute = (int(part) for part in str(override).split(":"))
+            return hour, minute
+    except Exception:
+        pass
+    return CYCLES[cycle]["at"]
+
+
 def _scheduled_minutes(cycle: str) -> int:
-    hour, minute = CYCLES[cycle]["at"]
+    hour, minute = _at(cycle)
     return hour * 60 + minute
 
 
 def _scheduled_at(cycle: str, bdate: str) -> datetime:
-    hour, minute = CYCLES[cycle]["at"]
+    hour, minute = _at(cycle)
     day = datetime.fromisoformat(bdate).replace(tzinfo=IST)
     return day.replace(hour=hour, minute=minute)
 
@@ -115,6 +130,19 @@ def _audit(cycle: str, status: str, details: Dict[str, Any]) -> None:
 
 def is_running() -> bool:
     return _INFLIGHT.locked()
+
+
+def _deliver_report(cycle: str, bdate: str, status: str, details: Dict[str, Any]) -> None:
+    """Build the outbound Excel report and notify; never breaks the cycle."""
+    if (os.environ.get("NANOPRO_REPORT_DELIVERY") or "1").strip().lower() in ("0", "false", "no", "off"):
+        return
+    try:
+        from app.core import report_delivery
+
+        report_delivery.deliver(cycle=cycle, business_date=bdate, status=status,
+                                details=details, async_send=True)
+    except Exception as exc:
+        log_event(f"[BatchCycles] report delivery failed: {exc}", level="WARNING", component="BatchCycles")
 
 
 def run(cycle: str, trigger: str = "manual", now: Optional[datetime] = None,
@@ -187,6 +215,7 @@ def _run_locked(cycle: str, trigger: str, now: Optional[datetime], business_date
     STATE["history"].insert(0, record)
     del STATE["history"][20:]
     _audit(cycle, status, details)
+    _deliver_report(cycle, bdate, status, details)
     log_event(
         f"[BatchCycles] {cycle} {bdate} {status} ({details.get('exported_rows')} rows, "
         f"run {run_id or 'n/a'})",
@@ -254,7 +283,7 @@ def status(now: Optional[datetime] = None) -> Dict[str, Any]:
             state = "DUE"
         else:
             state = "PENDING"
-        hour, minute = CYCLES[cycle]["at"]
+        hour, minute = _at(cycle)
         cycles.append({
             "cycle": cycle,
             "label": CYCLES[cycle]["label"],

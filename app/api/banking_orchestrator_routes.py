@@ -1,230 +1,227 @@
-"""FastAPI router for NanoPro Banking Orchestrator and SFTP Reports."""
+"""FastAPI router for the real NanoPro pipeline orchestrator."""
 from __future__ import annotations
 
-import os
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+import threading
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.core.banking_lakehouse_engine import banking_engine
-
-router = APIRouter(prefix="/api/banking", tags=["BankingOrchestrator"])
+router = APIRouter(prefix="/api/banking", tags=["Orchestrator"])
 
 
-class TriggerDagRequest(BaseModel):
-    project_id: str
-    load_type: str = "INCREMENTAL_LOAD"  # FULL_LOAD, INCREMENTAL_LOAD, CUT_PARTITION
-    mode: str = "APPEND"  # APPEND, TRUNCATE_RELOAD
+class OrchestratorRunRequest(BaseModel):
+    dag_id: str
+    mode: str = "incremental"
 
 
-class RollbackLayerRequest(BaseModel):
-    project_id: str
-    target_layer: str = "L1_HARMONIZED"  # L1_HARMONIZED, L0_STAGING
+class OrchestratorPauseRequest(BaseModel):
+    dag_id: str
 
 
-class UpdateDagRequest(BaseModel):
-    project_id: str
-    schedule_time: Optional[str] = None
-    schedule_period: Optional[str] = None
-    load_type: Optional[str] = None
-    status: Optional[str] = None
+class OrchestratorRollbackRequest(BaseModel):
+    dag_id: str
+    target_layer: str = ""
+    confirm: bool = False
 
 
-class PauseDagRequest(BaseModel):
-    project_id: str
+class OrchestratorScheduleRequest(BaseModel):
+    cycle: str
+    at: str
 
 
-class DeleteDagRequest(BaseModel):
-    project_id: str
+class SftpProcessRequest(BaseModel):
+    force: bool = False
 
 
-class AddRecipientRequest(BaseModel):
-    email: str
+class SftpRollbackRequest(BaseModel):
+    key: str
+    confirm: bool = False
+    delete_landing: bool = False
 
 
-class RemoveRecipientRequest(BaseModel):
-    email: str
+class AlertConfigRequest(BaseModel):
+    recipients: Optional[List[str]] = None
+    sender: Optional[str] = None
+    telegram_channel: Optional[str] = None
+    telegram_enabled: Optional[bool] = None
+    whatsapp_number: Optional[str] = None
+    whatsapp_enabled: Optional[bool] = None
+
+
+class AlertTestRequest(BaseModel):
+    channel: str
+
+
+class ReportBuildRequest(BaseModel):
+    cycle: str = "MANUAL"
+    deliver: bool = False
 
 
 # -------------------------------------------------------------
-# DAG Endpoints
+# Live DAG overview + controls
 # -------------------------------------------------------------
-@router.get("/dag/list")
-async def list_banking_dags():
-    """Lists all 8 Banking DAGs with Medallion task status and execution metrics."""
-    return JSONResponse({
-        "status": "success",
-        "dags": banking_engine.list_dags(),
-        "schedules": {
-            "BOD": "06:00 IST (Sanity & Full Load)",
-            "SOD": "08:30 IST (Intraday & Limit Sync)",
-            "EOD": "20:00 IST (Daily T-1 Reconciliation & Reports)"
-        }
-    })
+@router.get("/orchestrator/overview")
+def orchestrator_overview():
+    """Live DAG status, batch cycles, SFTP landing/outbound and alert state."""
+    from app.core import pipeline_orchestrator
+
+    return JSONResponse(pipeline_orchestrator.overview())
 
 
-@router.post("/dag/update")
-async def update_banking_dag(req: UpdateDagRequest):
-    """Edits DAG schedule, execution time, mode, or status."""
+@router.post("/orchestrator/dag/run")
+def orchestrator_run(req: OrchestratorRunRequest):
+    from app.core import pipeline_orchestrator
+
     try:
-        res = banking_engine.update_dag(
-            project_id=req.project_id,
-            schedule_time=req.schedule_time,
-            schedule_period=req.schedule_period,
-            load_type=req.load_type,
-            status=req.status
-        )
-        return JSONResponse({"status": "success", "result": res})
-    except Exception as exc:
+        return JSONResponse(pipeline_orchestrator.run(req.dag_id, mode=req.mode))
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.post("/dag/pause")
-async def pause_banking_dag(req: PauseDagRequest):
-    """Toggles pause/resume state of a DAG."""
+@router.post("/orchestrator/dag/pause")
+def orchestrator_pause(req: OrchestratorPauseRequest):
+    from app.core import pipeline_orchestrator
+
     try:
-        res = banking_engine.pause_dag(project_id=req.project_id)
-        return JSONResponse({"status": "success", "result": res})
-    except Exception as exc:
+        return JSONResponse(pipeline_orchestrator.pause(req.dag_id))
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.post("/dag/delete")
-async def delete_banking_dag(req: DeleteDagRequest):
-    """Deletes a DAG from active schedule."""
+@router.post("/orchestrator/dag/rollback")
+def orchestrator_rollback(req: OrchestratorRollbackRequest):
+    from app.core import pipeline_orchestrator
+
     try:
-        res = banking_engine.delete_dag(project_id=req.project_id)
-        return JSONResponse({"status": "success", "result": res})
-    except Exception as exc:
+        return JSONResponse(pipeline_orchestrator.rollback(
+            req.dag_id, target_layer=req.target_layer, confirm=req.confirm))
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.post("/dag/reset_defaults")
-async def reset_default_dags():
-    """Resets all 8 Banking DAGs to default configuration."""
-    res = banking_engine.reset_default_dags()
-    return JSONResponse({"status": "success", "result": res})
+@router.post("/orchestrator/schedule")
+def orchestrator_schedule(req: OrchestratorScheduleRequest):
+    from app.core import pipeline_orchestrator
 
-
-@router.post("/dag/trigger")
-async def trigger_banking_dag(req: TriggerDagRequest):
-    """Manually triggers a banking pipeline DAG run."""
     try:
-        result = banking_engine.trigger_dag(
-            project_id=req.project_id,
-            load_type=req.load_type,
-            mode=req.mode
-        )
-        return JSONResponse({"status": "success", "result": result})
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-
-@router.post("/dag/rollback")
-async def rollback_banking_layer(req: RollbackLayerRequest):
-    """Rolls back project state to a clean layer watermark."""
-    try:
-        result = banking_engine.rollback_layer(
-            project_id=req.project_id,
-            target_layer=req.target_layer
-        )
-        return JSONResponse({"status": "success", "result": result})
-    except Exception as exc:
+        return JSONResponse(pipeline_orchestrator.set_schedule(req.cycle, req.at))
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
 # -------------------------------------------------------------
-# Dynamic Email Recipient Management
+# SFTP inbound (source files)
 # -------------------------------------------------------------
-@router.get("/recipients")
-async def get_recipients():
-    """Gets configured email recipients, telegram handle, and whatsapp dispatch status."""
-    return JSONResponse({
-        "status": "success",
-        "config": banking_engine.get_recipients()
-    })
+@router.get("/orchestrator/sftp/status")
+def orchestrator_sftp_status():
+    from app.core import sftp_ingestion
+
+    return JSONResponse(sftp_ingestion.status())
 
 
-@router.post("/recipients/add")
-async def add_recipient(req: AddRecipientRequest):
-    """Dynamically adds an email recipient for EOD Excel reports."""
+@router.post("/orchestrator/sftp/upload")
+async def orchestrator_sftp_upload(file: UploadFile = File(...), partner: str = Query("manual")):
+    from app.core import sftp_ingestion
+
+    data = await file.read()
     try:
-        conf = banking_engine.add_recipient(req.email)
-        return JSONResponse({"status": "success", "config": conf})
-    except Exception as exc:
+        result = sftp_ingestion.upload(file.filename or "upload.csv", data, partner=partner)
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+    processed = sftp_ingestion.ingest(result["key"])
+    result["ingest"] = processed
+    if processed.get("status") == "success":
+        threading.Thread(target=sftp_ingestion.refresh_downstream, daemon=True,
+                         name="sftp-downstream").start()
+    return JSONResponse(result)
 
 
-@router.post("/recipients/remove")
-async def remove_recipient(req: RemoveRecipientRequest):
-    """Dynamically removes an email recipient."""
-    try:
-        conf = banking_engine.remove_recipient(req.email)
-        return JSONResponse({"status": "success", "config": conf})
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+@router.post("/orchestrator/sftp/process")
+def orchestrator_sftp_process(req: SftpProcessRequest):
+    from app.core import sftp_ingestion
+
+    return JSONResponse(sftp_ingestion.poll(force=req.force))
 
 
-@router.get("/notifications/logs")
-async def get_notification_logs():
-    """Gets chronological audit trail of dispatched emails, WhatsApp alerts, and Telegram bots."""
-    return JSONResponse({
-        "status": "success",
-        "logs": banking_engine.get_notification_logs()
-    })
+@router.post("/orchestrator/sftp/sample")
+def orchestrator_sftp_sample(partner: str = Query("sample")):
+    from app.core import sftp_ingestion
+
+    result = sftp_ingestion.sample_file(partner=partner)
+    result["ingest"] = sftp_ingestion.ingest(result["key"])
+    if result["ingest"].get("status") == "success":
+        threading.Thread(target=sftp_ingestion.refresh_downstream, daemon=True,
+                         name="sftp-downstream").start()
+    return JSONResponse(result)
+
+
+@router.post("/orchestrator/sftp/rollback")
+def orchestrator_sftp_rollback(req: SftpRollbackRequest):
+    from app.core import sftp_ingestion
+
+    if not req.confirm:
+        raise HTTPException(status_code=400, detail="Rollback requires confirm=true.")
+    return JSONResponse(sftp_ingestion.purge(req.key, delete_landing=req.delete_landing))
 
 
 # -------------------------------------------------------------
-# Multi-Platform Dynamic Live Logs Stream
+# SFTP outbound (final reports)
 # -------------------------------------------------------------
-@router.get("/logs/stream")
-async def get_platform_logs(platform: str = Query("all", description="aws_s3, snowflake, bigquery, duckdb, notifications, or all")):
-    """Gets live stream of platform execution logs."""
-    return JSONResponse({
-        "status": "success",
-        "platform": platform,
-        "logs": banking_engine.get_platform_logs(platform=platform)
-    })
+@router.get("/orchestrator/sftp/outbound")
+def orchestrator_sftp_outbound(limit: int = Query(40, ge=1, le=200)):
+    from app.core import report_delivery
+
+    return JSONResponse(report_delivery.list_outbound(limit=limit))
+
+
+@router.post("/orchestrator/report/build")
+def orchestrator_report_build(req: ReportBuildRequest):
+    from app.core import report_delivery
+
+    if req.deliver:
+        return JSONResponse(report_delivery.deliver(cycle=req.cycle))
+    return JSONResponse(report_delivery.build(cycle=req.cycle))
 
 
 # -------------------------------------------------------------
-# SFTP Reports & Downloads
+# Alerts
 # -------------------------------------------------------------
-@router.get("/sftp/reports/list")
-async def list_sftp_reports():
-    """Lists all generated business reports in the outbound SFTP folder."""
-    return JSONResponse({
-        "status": "success",
-        "reports": banking_engine.list_sftp_reports(),
-        "sftp_connection": {
-            "protocol": "SFTP",
-            "host": "nanopro-studio.onrender.com",
-            "port": 22,
-            "username": "mangeshbagul15",
-            "inbound_path": "/data/sftp/inbound/",
-            "outbound_path": "/data/sftp/outbound/reports/"
-        }
-    })
+@router.get("/orchestrator/alerts/config")
+def orchestrator_alert_config():
+    from app.core import pipeline_alerts
+
+    return JSONResponse({"status": "success", "config": pipeline_alerts.config()})
 
 
-@router.get("/sftp/reports/download")
-async def download_sftp_report(filename: str = Query(..., description="Report filename")):
-    """Direct 1-click web download for genuine business Excel (.xlsx) reports."""
-    report_file = banking_engine.sftp_outbound / filename
-    if not report_file.exists():
-        # Fallback to default date
-        alt_name = filename.split("_EOD")[0] + "_EOD_T1_20261112.xlsx"
-        alt_file = banking_engine.sftp_outbound / alt_name
-        if alt_file.exists():
-            report_file = alt_file
-        else:
-            raise HTTPException(status_code=404, detail="Requested report file not found on SFTP storage.")
+@router.post("/orchestrator/alerts/config")
+def orchestrator_alert_config_save(req: AlertConfigRequest):
+    from app.core import pipeline_alerts
 
-    return FileResponse(
-        path=str(report_file),
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    conf = pipeline_alerts.save_config(
+        recipients=req.recipients,
+        sender=req.sender,
+        telegram_channel=req.telegram_channel,
+        telegram_enabled=req.telegram_enabled,
+        whatsapp_number=req.whatsapp_number,
+        whatsapp_enabled=req.whatsapp_enabled,
     )
+    return JSONResponse({"status": "success", "config": conf})
+
+
+@router.post("/orchestrator/alerts/test")
+def orchestrator_alert_test(req: AlertTestRequest):
+    from app.core import pipeline_alerts
+
+    try:
+        return JSONResponse(pipeline_alerts.test_channel(req.channel))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/orchestrator/logs")
+def orchestrator_logs(limit: int = Query(80, ge=10, le=300)):
+    from app.core import pipeline_orchestrator
+
+    return JSONResponse(pipeline_orchestrator.logs(limit=limit))

@@ -3620,173 +3620,163 @@ body.in-global_ai_lab .nano-dynamic-island {
 </div>
 
 <!-- AIRFLOW ORCHESTRATOR & SFTP HUB MODAL -->
-<div class="ailab-modal-backdrop" id="ailabAirflowModal" style="position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;height:100vh !important;z-index:999999 !important;background:rgba(3,7,18,0.88) !important;backdrop-filter:blur(12px) !important;display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="ailabCloseAirflowModal(event)">
-  <div class="ailab-modal" style="max-width:960px;max-height:90vh;width:960px;" onclick="event.stopPropagation()">
+<div class="ailab-modal-backdrop" id="ailabAirflowModal" style="position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;height:100vh !important;z-index:999999 !important;background:rgba(3,7,18,0.9) !important;backdrop-filter:blur(12px) !important;display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="ailabCloseAirflowModal(event)">
+  <div class="ailab-modal" style="max-width:1060px;max-height:92vh;width:1060px;" onclick="event.stopPropagation()">
     <div class="ailab-modal-head">
       <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:22px;">⚡</span>
+        <span style="font-size:22px;">&#9889;</span>
         <div>
-          <div style="font-size:15px;font-weight:700;color:#F8FAFC;">NanoPro Airflow Orchestrator &amp; Enterprise SFTP Hub</div>
-          <div style="font-size:12px;color:#94A3B8;">8 Core Banking Projects • Dynamic DAG Jobs • Real-Time Logs • Omnichannel Alerts</div>
+          <div style="font-size:15px;font-weight:800;color:#F8FAFC;">NanoPro Airflow Orchestrator &amp; SFTP Hub</div>
+          <div style="font-size:11.5px;color:#94A3B8;">BigQuery &bull; SFTP &bull; AWS S3/Glue &bull; Snowflake L0-L2 &bull; DuckDB &bull; Email / Telegram / WhatsApp</div>
         </div>
       </div>
       <button type="button" class="ailab-modal-close" onclick="ailabCloseAirflowModal()">&times;</button>
     </div>
 
-    <!-- Navigation Pills / Tabs -->
     <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;flex-wrap:wrap;">
-      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">⚡ 8 Banking DAGs &amp; Job Manager</button>
-      <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📂 SFTP Reports &amp; WinSCP</button>
-      <button type="button" class="ailab-pill" id="tabAirflowRecipients" onclick="ailabSwitchAirflowTab('recipients')">📧 Recipients &amp; Notification Logs</button>
-      <button type="button" class="ailab-pill" id="tabAirflowLogs" onclick="ailabSwitchAirflowTab('logs')">📜 Multi-Cloud Dynamic Live Logs</button>
-      <button type="button" class="ailab-pill" id="tabAirflowArchitecture" onclick="ailabSwitchAirflowTab('arch')">⚖️ L1 Quality Gate Architecture</button>
+      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">&#9889; 8 DAGs</button>
+      <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">&#128194; SFTP Hub</button>
+      <button type="button" class="ailab-pill" id="tabAirflowAlerts" onclick="ailabSwitchAirflowTab('alerts')">&#128276; Alerts</button>
+      <button type="button" class="ailab-pill" id="tabAirflowLogs" onclick="ailabSwitchAirflowTab('logs')">&#128220; Logs</button>
+      <button type="button" class="ailab-pill" id="tabAirflowArch" onclick="ailabSwitchAirflowTab('arch')">&#128290; Architecture</button>
     </div>
 
-    <!-- TAB 1: 8 BANKING DAGS & ACTIVE JOB MANAGER -->
-    <div id="airflowTabDags" style="padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
-      <!-- Top Status Banner -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">AIRFLOW SCHEDULER</div>
-          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (8 DAGs)</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">REPORTING BASIS</div>
-          <div style="font-size:13px;font-weight:700;color:#38BDF8;margin-top:2px;">📅 T-1 (Daily Close)</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">L1 QUALITY GATE</div>
-          <div style="font-size:13px;font-weight:700;color:#A78BFA;margin-top:2px;">⚖️ 0 Nulls • 0 Dupes</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
-          <div style="font-size:11px;color:#94A3B8;">EMAIL DISPATCH</div>
-          <div style="font-size:12px;font-weight:600;color:#FBBF24;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">✉️ 5MB Attached/Link</div>
-        </div>
+    <!-- TAB 1: DAGS -->
+    <div id="airflowTabDags" style="padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
+      <div id="airflowOverview" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;gap:10px;">
+        <div id="airflowSchedulerLine" style="font-size:11.5px;color:#CBD5E1;line-height:1.5;">Loading scheduler state...</div>
+        <button type="button" class="ailab-code-btn" onclick="ailabOrchRefreshAll()" style="font-size:11px;color:#38BDF8;white-space:nowrap;">&#8635; Refresh</button>
       </div>
-
-      <!-- Action Toolbar -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;">
-        <div style="font-size:12px;color:#CBD5E1;font-weight:600;">
-          Direct Job Actions: Edit Schedule Time, Pause, Resume, Run Now, Rollback, or Delete
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <button type="button" class="ailab-code-btn" onclick="ailabLoadAirflowDags()" style="font-size:11px;color:#38BDF8;">
-            ↺ Refresh
-          </button>
-          <button type="button" class="ailab-code-btn" onclick="ailabResetDefaultDags()" style="font-size:11px;color:#A78BFA;">
-            ⚡ Reset 8 Defaults
-          </button>
-        </div>
+      <div id="airflowDagsList" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="text-align:center;padding:20px;color:#94A3B8;">Loading live DAGs...</div>
       </div>
-
-      <!-- DAGs List Container -->
-      <div id="airflowDagsList" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
-    <!-- TAB 2: SFTP REPORTS & WINSCP -->
-    <div id="airflowTabSftp" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
-      <!-- WinSCP / FileZilla Credential Card -->
-      <div style="background:linear-gradient(135deg,rgba(30,41,59,0.8),rgba(15,23,42,0.9));border:1px solid rgba(56,189,248,0.3);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:18px;">📂</span>
-            <span style="font-size:14px;font-weight:700;color:#F8FAFC;">WinSCP / FileZilla SFTP Access Credentials</span>
-          </div>
-          <span style="background:rgba(16,185,129,0.2);color:#34D399;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">STATUS: ACTIVE</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;color:#CBD5E1;">
-          <div><strong style="color:#94A3B8;">Host:</strong> <code>nanopro-studio.onrender.com</code></div>
-          <div><strong style="color:#94A3B8;">Port:</strong> <code>22</code></div>
-          <div><strong style="color:#94A3B8;">Username:</strong> <code>mangeshbagul15</code></div>
-          <div><strong style="color:#94A3B8;">Inbound Drop Path:</strong> <code>/data/sftp/inbound/</code></div>
-          <div><strong style="color:#94A3B8;">Outbound Reports:</strong> <code>/data/sftp/outbound/reports/</code></div>
-          <div><strong style="color:#94A3B8;">Supported:</strong> <code>.csv, .xlsx, | delimited</code></div>
-        </div>
+    <!-- TAB 2: SFTP HUB -->
+    <div id="airflowTabSftp" style="display:none;padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
+      <div id="airflowSftpInfo" style="background:rgba(15,23,42,0.85);border:1px solid rgba(56,189,248,0.28);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#CBD5E1;line-height:1.7;">
+        Loading SFTP landing zone...
       </div>
 
-      <!-- Reports List -->
-      <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <span>📊 Outbound Business Excel Reports (T-1 Daily Close)</span>
-        <span style="font-size:11px;color:#34D399;">100% Genuine .XLSX Binary (Opens in Excel)</span>
+      <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;margin-bottom:8px;">Upload a partner file (CSV / TXT / XLSX)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="ailabSftpPartner" placeholder="partner (e.g. cbs_feed)" value="manual" style="width:150px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 10px;color:#F8FAFC;font-size:12px;">
+          <input type="file" id="ailabSftpFile" accept=".csv,.txt,.tsv,.xlsx,.xls" style="flex:1;min-width:220px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:6px;color:#CBD5E1;font-size:11.5px;">
+          <button type="button" class="ailab-btn-primary" id="ailabSftpUploadBtn" onclick="ailabSftpUpload()" style="padding:8px 14px;font-size:12px;">Upload &amp; Ingest</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button type="button" class="ailab-code-btn" onclick="ailabSftpProcess()" style="font-size:11px;color:#34D399;">&#9654; Process all pending</button>
+          <button type="button" class="ailab-code-btn" onclick="ailabSftpSample()" style="font-size:11px;color:#A78BFA;">+ Generate sample CSV</button>
+        </div>
+        <div id="ailabSftpMsg" style="margin-top:8px;font-size:11.5px;color:#94A3B8;"></div>
       </div>
-      <div id="airflowSftpReportsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+      <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;margin-bottom:8px;">Landing files</div>
+      <div id="airflowSftpFilesList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+
+      <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;margin-bottom:8px;">Bronze tables produced by SFTP</div>
+      <div id="airflowSftpTables" style="display:flex;flex-direction:column;gap:6px;"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 8px;flex-wrap:wrap;">
+        <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;">Outbound reports (SFTP delivery)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="ailab-code-btn" onclick="ailabOrchBuildReport(false)" style="font-size:11px;color:#38BDF8;">Build Excel report</button>
+          <button type="button" class="ailab-code-btn" onclick="ailabOrchBuildReport(true)" style="font-size:11px;color:#34D399;">Build + send email / Telegram / WhatsApp</button>
+        </div>
+      </div>
+      <div id="ailabReportMsg" style="font-size:11.5px;color:#94A3B8;margin-bottom:8px;"></div>
+      <div id="airflowSftpOutbound" style="display:flex;flex-direction:column;gap:6px;">
+        <div style="text-align:center;padding:12px;color:#94A3B8;">Loading outbound reports...</div>
+      </div>
     </div>
 
-    <!-- TAB 3: DYNAMIC RECIPIENTS & NOTIFICATION LOGS -->
-    <div id="airflowTabRecipients" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
-      <!-- Recipient Manager Card -->
-      <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:13.5px;font-weight:700;color:#F8FAFC;">📧 Enterprise Email &amp; Alert Recipients Management</div>
-          <span style="font-size:11px;color:#94A3B8;">Sender: <code style="color:#38BDF8;">mangeshbagul15@gmail.com</code></span>
+    <!-- TAB 3: ALERTS -->
+    <div id="airflowTabAlerts" style="display:none;padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
+      <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:10px;">Alert channels</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <label style="font-size:11.5px;color:#94A3B8;">Email recipients (comma separated)
+            <input type="text" id="orchAlertRecipients" style="width:100%;margin-top:4px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 10px;color:#F8FAFC;font-size:12px;">
+          </label>
+          <label style="font-size:11.5px;color:#94A3B8;">Sender email
+            <input type="text" id="orchAlertSender" style="width:100%;margin-top:4px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 10px;color:#F8FAFC;font-size:12px;">
+          </label>
+          <label style="font-size:11.5px;color:#94A3B8;">Telegram chat / channel
+            <input type="text" id="orchAlertTelegram" style="width:100%;margin-top:4px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 10px;color:#F8FAFC;font-size:12px;">
+          </label>
+          <label style="font-size:11.5px;color:#94A3B8;">WhatsApp number (with country code)
+            <input type="text" id="orchAlertWhatsapp" style="width:100%;margin-top:4px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 10px;color:#F8FAFC;font-size:12px;">
+          </label>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <input type="email" id="ailabNewRecipientInput" placeholder="Enter recipient email (e.g. auditor@bank.com)..." style="flex:1;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 12px;color:#F8FAFC;font-size:12px;">
-          <button type="button" class="ailab-btn-primary" onclick="ailabAddRecipient()" style="padding:8px 14px;font-size:12px;">
-            + Add Recipient
-          </button>
+        <div style="display:flex;gap:14px;margin-top:10px;font-size:11.5px;color:#CBD5E1;">
+          <label><input type="checkbox" id="orchAlertTelegramOn"> Telegram enabled</label>
+          <label><input type="checkbox" id="orchAlertWhatsappOn"> WhatsApp enabled</label>
         </div>
-        <div id="ailabRecipientsList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
-        
-        <div style="display:flex;align-items:center;gap:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;font-size:12px;color:#CBD5E1;">
-          <div>✈️ Telegram Channel: <code style="color:#A78BFA;">@mangesh_alerts_bot</code> <span style="color:#34D399;font-weight:600;">(ACTIVE)</span></div>
-          <div>📱 WhatsApp Broadcast: <code style="color:#FBBF24;">+91 98765 43210</code> <span style="color:#34D399;font-weight:600;">(ACTIVE)</span></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+          <button type="button" class="ailab-btn-primary" onclick="ailabOrchSaveAlerts()" style="padding:7px 14px;font-size:12px;">Save</button>
+          <button type="button" class="ailab-code-btn" onclick="ailabOrchTestAlert('email')" style="font-size:11px;color:#38BDF8;">Test Email</button>
+          <button type="button" class="ailab-code-btn" onclick="ailabOrchTestAlert('telegram')" style="font-size:11px;color:#A78BFA;">Test Telegram</button>
+          <button type="button" class="ailab-code-btn" onclick="ailabOrchTestAlert('whatsapp')" style="font-size:11px;color:#34D399;">Test WhatsApp</button>
         </div>
+        <div id="ailabAlertMsg" style="margin-top:8px;font-size:11.5px;color:#94A3B8;"></div>
       </div>
 
-      <!-- Omnichannel Dispatch Logs -->
-      <div style="font-size:13px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <span>📨 Omnichannel Notification Logs (Real Live Dispatch Audit)</span>
-        <button type="button" class="ailab-code-btn" onclick="ailabLoadNotificationLogs()" style="font-size:11px;color:#38BDF8;">↺ Refresh Logs</button>
+      <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;margin-bottom:8px;display:flex;justify-content:space-between;">
+        <span>Delivery log (real provider results)</span>
+        <button type="button" class="ailab-code-btn" onclick="ailabOrchLoadAlerts()" style="font-size:11px;color:#38BDF8;">&#8635; Refresh</button>
       </div>
       <div id="ailabNotificationLogsList" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
 
-    <!-- TAB 4: MULTI-CLOUD DYNAMIC LIVE LOGS -->
-    <div id="airflowTabLogs" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
-      <!-- Platform Sub-Filters -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="display:flex;gap:6px;">
-          <button type="button" class="ailab-pill is-active" id="logSubTab_all" onclick="ailabFilterPlatformLogs('all')">🌟 All Streams</button>
-          <button type="button" class="ailab-pill" id="logSubTab_aws_s3" onclick="ailabFilterPlatformLogs('aws_s3')">☁️ AWS S3</button>
-          <button type="button" class="ailab-pill" id="logSubTab_snowflake" onclick="ailabFilterPlatformLogs('snowflake')">❄️ Snowflake</button>
-          <button type="button" class="ailab-pill" id="logSubTab_bigquery" onclick="ailabFilterPlatformLogs('bigquery')">🏛️ BigQuery</button>
-          <button type="button" class="ailab-pill" id="logSubTab_duckdb" onclick="ailabFilterPlatformLogs('duckdb')">🦆 DuckDB</button>
-          <button type="button" class="ailab-pill" id="logSubTab_airflow" onclick="ailabFilterPlatformLogs('airflow')">⚡ Airflow</button>
-        </div>
-        <button type="button" class="ailab-code-btn" onclick="ailabFilterPlatformLogs(window._activePlatformLogFilter || 'all')" style="font-size:11px;color:#38BDF8;">↺ Live Poll</button>
+    <!-- TAB 4: LOGS -->
+    <div id="airflowTabLogs" style="display:none;padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;">Runtime + orchestrator audit log</div>
+        <button type="button" class="ailab-code-btn" onclick="ailabOrchLoadLogs()" style="font-size:11px;color:#38BDF8;">&#8635; Refresh</button>
       </div>
-
-      <!-- Live Terminal Console -->
-      <div id="ailabPlatformLogsContainer" style="background:#090D16;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;font-size:11.5px;max-height:450px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+      <div id="airflowOrchLogs" style="background:#090D16;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;font-size:11px;max-height:440px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;color:#CBD5E1;"></div>
     </div>
 
-    <!-- TAB 5: QUALITY GATE & EMAIL RULE -->
-    <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(90vh - 180px);">
-      <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
-        <h4 style="margin:0 0 10px 0;font-size:14px;color:#38BDF8;">⚖️ L1 Quality Gate Architecture (No L1 = No Report)</h4>
-        <p style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0 0 14px 0;">
-          डेटा थेट कच्च्या स्टेजवरून (L0_STAGING) रिपोर्टमध्ये कधीच जात नाही. जोपर्यंत L1_HARMONIZED लेयरमध्ये डुप्लिकेट्स, Null व्हॅल्यूज, आणि Negative Balance चे कडक नियम पूर्णपणे पास (100% Validated) होत नाहीत, तोपर्यंत पुढील L2 आणि EOD Excel रिपोर्ट ब्लॉक केला जातो. एरर आल्यास त्वरित अलर्ट ट्रिगर होतो आणि युझर डॅशबोर्डवरूनच <strong>Rollback</strong> करून स्वच्छ डेटा पुन्हा लोड करू शकतो.
-        </p>
-
-        <h4 style="margin:0 0 10px 0;font-size:14px;color:#FBBF24;">✉️ 5MB ईमेल पॉलिसी आणि SFTP पाथ नियम</h4>
-        <ul style="font-size:12.5px;color:#CBD5E1;line-height:1.6;margin:0;padding-left:18px;">
-          <li><strong>ईमेल प्रेषक (Sender):</strong> <code>mangeshbagul15@gmail.com</code></li>
-          <li><strong>ईमेल प्राप्तकर्ता (Recipient):</strong> <code>nanoproaistudio@gmail.com</code></li>
-          <li><strong>फाइल साईज &le; 5MB असल्यास:</strong> Excel (.xlsx) फाईल थेट ईमेलला अटॅच होते, ईमेल बॉडीमध्ये की समरी आणि SFTP चा पाथ दिलेला असतो.</li>
-          <li><strong>फाइल साईज &gt; 5MB असल्यास:</strong> ईमेल बाऊन्स टाळण्यासाठी कोणतीही फाईल अटॅच होत नाही; केवळ ईमेल बॉडी समरी आणि SFTP डाऊनलोड लिंक पाठवली जाते.</li>
-        </ul>
+    <!-- TAB 5: ARCHITECTURE -->
+    <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
+      <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
+        <div style="font-size:13.5px;font-weight:700;color:#38BDF8;margin-bottom:10px;">Live data flow (what the 8 DAGs actually do)</div>
+        <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#CBD5E1;line-height:2;white-space:pre-wrap;">SOURCE 1  BigQuery nanopro_cbs_bronze (CMG, GAM, HTD, SOL, SWIFT_MSG, TAM_LAM, UBO, VCT)
+SOURCE 2  SFTP landing  s3://nanopro-data-lake-765865641438/sftp/inbound/&lt;partner&gt;/  (CSV / TXT / XLSX)
+              |
+              v
+DAG 1 &amp; 2  Parquet in s3://.../bronze/bigquery/... and s3://.../sftp/bronze/... + _MANIFEST.json
+              |
+              v
+DAG 3      Glue tables (nanopro_bronze, nanopro_sftp) + Iceberg gold copy
+              |
+              v
+DAG 4      Snowflake BANK_DB.L0_STAGING   (raw + _RUN_ID / _LOADED_AT)
+DAG 5      Snowflake BANK_DB.L1_HARMONIZED (trim, dedupe on business key, quality gate)
+DAG 6      Snowflake BANK_DB.L2_CURATED   (CUSTOMER_360, BRANCH_NETWORK, ... + DATA_QUALITY_MART)
+              |
+              v
+DAG 7      DuckDB report on bronze Parquet + parity check against Snowflake L0
+              |
+              v
+DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
+        <div style="margin-top:14px;font-size:12px;color:#94A3B8;line-height:1.7;">
+          <div>&bull; <strong style="color:#CBD5E1;">Scheduling:</strong> in-app scheduler thread (no Render cron job), tick every 60 minutes; batch cycles BOD 06:00, SOD 08:00, T1 10:00, EOD 18:00 IST.</div>
+          <div>&bull; <strong style="color:#CBD5E1;">No CDC:</strong> each tick is a snapshot export; new BigQuery rows appear in AWS / Snowflake / DuckDB on the next tick.</div>
+          <div>&bull; <strong style="color:#CBD5E1;">Rollback:</strong> every layer is rebuilt with CREATE OR REPLACE from the S3 bronze source of truth; SFTP rollback drops that batch's tables.</div>
+          <div>&bull; <strong style="color:#CBD5E1;">Pause / schedule changes</strong> are stored in S3 (config/orchestrator_control.json) and survive redeploys.</div>
+        </div>
       </div>
     </div>
 
     <div class="ailab-modal-footer">
-      <span>⚡ Single AUTO Engine evaluates Pareto Frontier in &lt; 3.0ms</span>
-      <span style="color:#10B981;">🛡️ 429 Shield Active • Render RAM: 0 MB</span>
+      <span id="airflowFooterLeft">Live status from scheduler + Snowflake batch ledger</span>
+      <span style="color:#10B981;">&#128737; Honest status only - nothing simulated</span>
     </div>
   </div>
 </div>
-
-
 
 <script>
 (function() {
@@ -8285,451 +8275,514 @@ body.in-global_ai_lab .nano-dynamic-island {
   });
 
   // =========================================================================
-  // AIRFLOW ORCHESTRATOR & SFTP HUB CONTROLLER
+  // NANOPRO AIRFLOW ORCHESTRATOR - REAL PIPELINE CONTROL PLANE
   // =========================================================================
+  const ORCH_API = "/api/banking/orchestrator";
+  window.ailabOrchState = { overview: null, timer: null, alertsFilled: false };
+
+  function orchEsc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, ch => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]
+    ));
+  }
+
+  function orchNum(value) {
+    const n = Number(value);
+    return isFinite(n) ? n.toLocaleString("en-IN") : "0";
+  }
+
+  function orchBadge(status) {
+    const upper = String(status || "NOT_RUN").toUpperCase();
+    const palette = {
+      SUCCESS: ["rgba(16,185,129,0.18)", "#34D399"],
+      PARTIAL: ["rgba(251,191,36,0.18)", "#FBBF24"],
+      ERROR: ["rgba(248,113,113,0.18)", "#F87171"],
+      RUNNING: ["rgba(56,189,248,0.18)", "#38BDF8"],
+      DISPATCHED: ["rgba(56,189,248,0.18)", "#38BDF8"],
+      PAUSED: ["rgba(148,163,184,0.18)", "#94A3B8"],
+      IDLE: ["rgba(100,116,139,0.18)", "#94A3B8"],
+      NOT_RUN: ["rgba(100,116,139,0.18)", "#64748B"]
+    };
+    const [bg, fg] = palette[upper] || palette.NOT_RUN;
+    return `<span style="background:${bg};color:${fg};font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:4px;white-space:nowrap;">&#9679; ${orchEsc(upper)}</span>`;
+  }
+
+  function orchStageColor(stage) {
+    return ({
+      SOURCE: ["rgba(245,158,11,0.18)", "#F59E0B"],
+      CATALOG: ["rgba(167,139,250,0.18)", "#A78BFA"],
+      L0: ["rgba(6,182,212,0.18)", "#22D3EE"],
+      L1: ["rgba(56,189,248,0.18)", "#38BDF8"],
+      L2: ["rgba(16,185,129,0.18)", "#34D399"],
+      REPORT: ["rgba(132,204,22,0.18)", "#A3E635"],
+      ALERTS: ["rgba(244,114,182,0.18)", "#F472B6"]
+    }[stage] || ["rgba(100,116,139,0.18)", "#94A3B8"]);
+  }
+
   window.ailabOpenAirflowModal = async function() {
-    console.log("[Airflow] Opening Airflow Orchestrator & SFTP Modal...");
     const modal = document.getElementById("ailabAirflowModal");
-    if (!modal) {
-      console.error("[Airflow] Modal element #ailabAirflowModal not found!");
-      alert("Airflow modal element not found!");
-      return;
-    }
+    if (!modal) return;
     modal.style.display = "flex";
     modal.classList.add("is-open");
-    try {
-      await ailabLoadAirflowDags();
-    } catch (err) {
-      console.error("[Airflow] Error loading DAGs:", err);
-    }
-    try {
-      await ailabLoadSftpReports();
-    } catch (err) {
-      console.error("[Airflow] Error loading SFTP reports:", err);
-    }
-    try {
-      await ailabLoadRecipients();
-    } catch (err) {
-      console.error("[Airflow] Error loading recipients:", err);
-    }
-    try {
-      await ailabLoadNotificationLogs();
-    } catch (err) {
-      console.error("[Airflow] Error loading notification logs:", err);
-    }
-    try {
-      await ailabFilterPlatformLogs("all");
-    } catch (err) {
-      console.error("[Airflow] Error loading platform logs:", err);
-    }
+    await ailabOrchRefreshAll();
+    if (window.ailabOrchState.timer) clearInterval(window.ailabOrchState.timer);
+    window.ailabOrchState.timer = setInterval(() => {
+      if (modal.style.display !== "none" && !document.hidden) ailabOrchRefreshAll(true);
+    }, 20000);
   };
 
   window.ailabCloseAirflowModal = function(e) {
-    if (e && e.target !== e.currentTarget && !e.target.classList.contains("ailab-modal-close")) return;
+    if (e && e.target !== e.currentTarget &&
+        !(e.target.classList && e.target.classList.contains("ailab-modal-close"))) return;
     const modal = document.getElementById("ailabAirflowModal");
     if (modal) {
       modal.style.display = "none";
       modal.classList.remove("is-open");
     }
+    if (window.ailabOrchState.timer) {
+      clearInterval(window.ailabOrchState.timer);
+      window.ailabOrchState.timer = null;
+    }
   };
 
   window.ailabSwitchAirflowTab = function(tab) {
-    document.getElementById("tabAirflowDags")?.classList.toggle("is-active", tab === "dags");
-    document.getElementById("tabAirflowSftp")?.classList.toggle("is-active", tab === "sftp");
-    document.getElementById("tabAirflowRecipients")?.classList.toggle("is-active", tab === "recipients");
-    document.getElementById("tabAirflowLogs")?.classList.toggle("is-active", tab === "logs");
-    document.getElementById("tabAirflowArchitecture")?.classList.toggle("is-active", tab === "arch");
-
-    const tDags = document.getElementById("airflowTabDags");
-    const tSftp = document.getElementById("airflowTabSftp");
-    const tRecipients = document.getElementById("airflowTabRecipients");
-    const tLogs = document.getElementById("airflowTabLogs");
-    const tArch = document.getElementById("airflowTabArch");
-    if (tDags) tDags.style.display = tab === "dags" ? "block" : "none";
-    if (tSftp) tSftp.style.display = tab === "sftp" ? "block" : "none";
-    if (tRecipients) tRecipients.style.display = tab === "recipients" ? "block" : "none";
-    if (tLogs) tLogs.style.display = tab === "logs" ? "block" : "none";
-    if (tArch) tArch.style.display = tab === "arch" ? "block" : "none";
+    const map = { dags: "tabAirflowDags", sftp: "tabAirflowSftp", alerts: "tabAirflowAlerts",
+                  logs: "tabAirflowLogs", arch: "tabAirflowArch" };
+    Object.keys(map).forEach(key => {
+      document.getElementById(map[key])?.classList.toggle("is-active", key === tab);
+    });
+    ["airflowTabDags", "airflowTabSftp", "airflowTabAlerts", "airflowTabLogs", "airflowTabArch"]
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = (id === ({ dags: "airflowTabDags", sftp: "airflowTabSftp",
+          alerts: "airflowTabAlerts", logs: "airflowTabLogs", arch: "airflowTabArch" }[tab])) ? "block" : "none";
+      });
+    if (tab === "logs") ailabOrchLoadLogs();
+    if (tab === "alerts") ailabOrchLoadAlerts();
   };
 
-  window.ailabLoadAirflowDags = async function() {
-    const list = document.getElementById("airflowDagsList");
-    if (!list) return;
-    list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">Loading Airflow DAGs...</div>`;
-
+  window.ailabOrchRefreshAll = async function(silent) {
+    const dagsBox = document.getElementById("airflowDagsList");
     try {
-      const res = await fetch("/api/banking/dag/list");
-      const data = await res.json();
-      const dags = data.dags || [];
-      if (!dags.length) {
-        list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No active DAGs found. <button onclick="ailabResetDefaultDags()" class="ailab-code-btn" style="color:#38BDF8;margin-left:8px;">Load Defaults</button></div>`;
+      const res = await fetch(ORCH_API + "/overview", { headers: { "Accept": "application/json" } });
+      if (res.status === 401) {
+        if (dagsBox) dagsBox.innerHTML = `<div style="text-align:center;padding:24px;color:#FBBF24;">Session expired - log in to NanoPro to manage the pipeline.</div>`;
         return;
       }
-
-      list.innerHTML = dags.map(d => `
-        <div style="background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;">⚡</span>
-              <div>
-                <span style="font-weight:700;color:#F8FAFC;font-size:13.5px;">${d.dag_id}</span>
-                <span style="font-size:11px;color:#38BDF8;margin-left:6px;">(${d.project_name})</span>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="background:${d.status === 'RUNNING' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${d.status === 'RUNNING' ? '#34D399' : '#F87171'};font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">● ${d.status}</span>
-              <span style="font-size:11px;color:#CBD5E1;background:rgba(30,41,59,0.6);padding:2px 6px;border-radius:4px;">⏱ ${d.schedule}</span>
-            </div>
-          </div>
-
-          <div style="font-size:12px;color:#94A3B8;margin-bottom:10px;line-height:1.4;">
-            ${d.description || ''}
-          </div>
-
-          <!-- Medallion Task Pipeline -->
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:12px;flex-wrap:wrap;">
-            <span style="background:rgba(217,119,6,0.2);color:#F59E0B;padding:2px 8px;border-radius:4px;">L0: ${d.l0_table}</span>
-            <span style="color:#64748B;">➔</span>
-            <span style="background:rgba(6,182,212,0.2);color:#22D3EE;padding:2px 8px;border-radius:4px;">L1: ${d.l1_table}</span>
-            <span style="color:#64748B;">➔</span>
-            <span style="background:rgba(16,185,129,0.2);color:#34D399;padding:2px 8px;border-radius:4px;">L2: ${d.l2_table}</span>
-            <span style="color:#64748B;">➔</span>
-            <span style="background:rgba(168,85,247,0.2);color:#C084FC;padding:2px 8px;border-radius:4px;">Excel: ${d.report_size_mb} MB (${d.email_rule_applied})</span>
-          </div>
-
-          <!-- Controls -->
-          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;flex-wrap:wrap;gap:6px;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <button type="button" class="ailab-code-btn" onclick="ailabTriggerDagRun('${d.project_id}', 'INCREMENTAL_LOAD')" style="color:#34D399;border-color:rgba(16,185,129,0.4);font-size:11px;">
-                ▶ Run Incremental (T-1)
-              </button>
-              <button type="button" class="ailab-code-btn" onclick="ailabTriggerDagRun('${d.project_id}', 'FULL_LOAD')" style="color:#38BDF8;border-color:rgba(56,189,248,0.4);font-size:11px;">
-                ⚡ Full Load
-              </button>
-              <button type="button" class="ailab-code-btn" onclick="ailabPromptEditDag('${d.project_id}', '${d.schedule_time || '20:00'}', '${d.schedule_period || 'EOD'}')" style="color:#FBBF24;border-color:rgba(251,191,36,0.4);font-size:11px;" title="Edit schedule date/time">
-                ⚙ Edit Time
-              </button>
-              <button type="button" class="ailab-code-btn" onclick="ailabTogglePauseDag('${d.project_id}')" style="color:${d.status === 'RUNNING' ? '#F87171' : '#34D399'};border-color:rgba(255,255,255,0.2);font-size:11px;">
-                ${d.status === 'RUNNING' ? '⏸ Pause' : '▶ Resume'}
-              </button>
-              <button type="button" class="ailab-code-btn" onclick="ailabRollbackDagLayer('${d.project_id}', 'L1_HARMONIZED')" style="color:#F87171;border-color:rgba(248,113,113,0.4);font-size:11px;" title="Rollback dirty/broken data directly from UI without opening code!">
-                ⏮ Rollback L1
-              </button>
-              <button type="button" class="ailab-code-btn" onclick="ailabDeleteDag('${d.project_id}')" style="color:#94A3B8;border-color:rgba(148,163,184,0.3);font-size:11px;" title="Delete this DAG">
-                🗑 Delete
-              </button>
-            </div>
-            <a href="/api/sftp/reports/download?filename=${encodeURIComponent(d.report_filename)}" target="_blank" class="ailab-code-btn" style="color:#10B981;border-color:rgba(16,185,129,0.4);text-decoration:none;font-size:11px;font-weight:600;">
-              📥 Download EOD Excel (.xlsx)
-            </a>
-          </div>
-        </div>
-      `).join("");
-    } catch (err) {
-      list.innerHTML = `<div style="text-align:center;padding:20px;color:#F87171;">Failed to load DAGs: ${err.message}</div>`;
-    }
-  };
-
-  window.ailabPromptEditDag = async function(projectId, currentTime, currentPeriod) {
-    const newTime = prompt(`Edit Schedule Execution Time for [${projectId.toUpperCase()}]:
-Enter time in 24h format (HH:MM IST):`, currentTime || "20:00");
-    if (!newTime || !newTime.trim()) return;
-    const newPeriod = prompt(`Select Period for [${projectId.toUpperCase()}]:
-Choose: EOD, BOD, SOD, HOURLY:`, currentPeriod || "EOD");
-    if (!newPeriod) return;
-
-    try {
-      const res = await fetch("/api/banking/dag/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: projectId,
-          schedule_time: newTime.trim(),
-          schedule_period: newPeriod.trim().toUpperCase()
-        })
-      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
-      if (data.status === "success") {
-        alert(`✅ Schedule updated successfully!
-New Schedule: ${data.dag ? data.dag.schedule : newPeriod + " (" + newTime + " IST)"}`);
-        await ailabLoadAirflowDags();
-      } else {
-        alert("Failed to update schedule: " + (data.detail || "Error"));
+      window.ailabOrchState.overview = data;
+      ailabOrchRenderOverview(data);
+      ailabOrchRenderDags(data);
+      ailabOrchRenderSftp(data.sftp || {});
+      ailabOrchRenderOutbound(data.sftp_outbound || {});
+      ailabOrchRenderAlertConfig(data.alerts || {});
+      ailabOrchRenderNotificationLogs((data.alerts || {}).logs || []);
+      const footer = document.getElementById("airflowFooterLeft");
+      if (footer) footer.textContent = "Live status refreshed " + (data.generated_at || "").replace("T", " ");
+    } catch (err) {
+      if (!silent && dagsBox) {
+        dagsBox.innerHTML = `<div style="text-align:center;padding:20px;color:#F87171;">Could not load orchestrator: ${orchEsc(err.message)}</div>`;
       }
-    } catch (err) {
-      alert("Error updating schedule: " + err.message);
     }
   };
 
-  window.ailabTogglePauseDag = async function(projectId) {
-    try {
-      const res = await fetch("/api/banking/dag/pause", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        await ailabLoadAirflowDags();
-      } else {
-        alert("Failed to toggle pause: " + (data.detail || "Error"));
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
+  window.ailabOrchRenderOverview = function(data) {
+    const box = document.getElementById("airflowOverview");
+    if (!box) return;
+    const summary = data.summary || {};
+    const scheduler = data.scheduler || {};
+    const cycles = data.cycles || {};
+    const cycleStates = (cycles.cycles || []).map(c => `${c.cycle}:${c.state}`).join("  ");
+    const tiles = [
+      ["DAGS HEALTHY", `${summary.success || 0} / ${summary.total || 8}`,
+       (summary.paused ? `${summary.paused} paused` : "All schedulable"), summary.success === summary.total ? "#34D399" : "#FBBF24"],
+      ["BUSINESS DATE", cycles.business_date || "-", cycleStates || "Timetable unavailable", "#38BDF8"],
+      ["LAST EXPORT ROWS", orchNum(summary.rows), "BigQuery bronze snapshot", "#A78BFA"],
+      ["SCHEDULER", scheduler.armed ? (scheduler.paused ? "PAUSED" : "ARMED") : "OFF",
+       scheduler.armed ? `every ${scheduler.interval_min || 60} min` : "in-app thread not started",
+       scheduler.armed && !scheduler.paused ? "#34D399" : "#F87171"]
+    ];
+    box.innerHTML = tiles.map(([label, value, sub, color]) => `
+      <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:#94A3B8;letter-spacing:0.4px;">${orchEsc(label)}</div>
+        <div style="font-size:14px;font-weight:800;color:${color};margin-top:2px;">${orchEsc(value)}</div>
+        <div style="font-size:10px;color:#64748B;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${orchEsc(sub)}">${orchEsc(sub)}</div>
+      </div>`).join("");
+
+    const line = document.getElementById("airflowSchedulerLine");
+    if (line) {
+      const last = scheduler.last_attempt ? new Date(scheduler.last_attempt * 1000).toLocaleString("en-IN") : "never";
+      line.innerHTML = `In-app scheduler: <strong style="color:${scheduler.armed ? "#34D399" : "#F87171"};">${scheduler.armed ? "ARMED" : "OFF"}</strong>` +
+        ` &bull; tick every ${scheduler.interval_min || 60} min &bull; last attempt ${orchEsc(last)}` +
+        ` &bull; cycles ${orchEsc((cycles.cycles || []).map(c => `${c.cycle} ${c.scheduled_ist} IST (${c.state})`).join(" | "))}`;
     }
   };
 
-  window.ailabDeleteDag = async function(projectId) {
-    if (!confirm(`Are you sure you want to delete DAG for [${projectId.toUpperCase()}]?`)) return;
-    try {
-      const res = await fetch("/api/banking/dag/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        alert(`DAG [dag_${projectId}_pipeline] deleted.`);
-        await ailabLoadAirflowDags();
-      } else {
-        alert("Failed to delete DAG: " + (data.detail || "Error"));
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-
-  window.ailabResetDefaultDags = async function() {
-    if (!confirm("Reset all 8 Banking DAGs to standard enterprise schedules?")) return;
-    try {
-      const res = await fetch("/api/banking/dag/reset_defaults", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        alert("All 8 Banking DAGs restored to default schedules.");
-        await ailabLoadAirflowDags();
-      }
-    } catch (err) {
-      alert("Error resetting defaults: " + err.message);
-    }
-  };
-
-  window.ailabTriggerDagRun = async function(projectId, loadType) {
-    try {
-      const res = await fetch("/api/banking/dag/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId, load_type: loadType, mode: "APPEND" })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        alert(`✅ DAG Triggered Successfully!
-Project: ${data.result.project_name}
-Load: ${data.result.load_type}
-T-1 Basis: ${data.result.t1_basis}
-Quality Gate: ${data.result.quality_gate}
-SFTP: ${data.result.sftp_path}
-Email Dispatched: Sent to ${Array.isArray(data.result.email_dispatched.to) ? data.result.email_dispatched.to.join(', ') : data.result.email_dispatched.to}`);
-        await ailabLoadAirflowDags();
-        await ailabLoadNotificationLogs();
-      } else {
-        alert(`❌ Failed: ${data.detail || "Error"}`);
-      }
-    } catch (err) {
-      alert(`Error triggering DAG: ${err.message}`);
-    }
-  };
-
-  window.ailabRollbackDagLayer = async function(projectId, layer) {
-    if (!confirm(`Are you sure you want to rollback ${projectId.toUpperCase()} to ${layer}?
-This will purge broken data and restore previous stable watermark.`)) return;
-    try {
-      const res = await fetch("/api/banking/dag/rollback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId, target_layer: layer })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        alert(`✅ Rollback Complete!
-${data.result.message}`);
-        await ailabLoadAirflowDags();
-      } else {
-        alert(`❌ Rollback Failed: ${data.detail || "Error"}`);
-      }
-    } catch (err) {
-      alert(`Error rolling back: ${err.message}`);
-    }
-  };
-
-  // Recipient Management
-  window.ailabLoadRecipients = async function() {
-    const container = document.getElementById("ailabRecipientsList");
-    if (!container) return;
-    try {
-      const res = await fetch("/api/banking/recipients");
-      const data = await res.json();
-      const recipients = (data.config && data.config.recipients) || [];
-      container.innerHTML = recipients.map(r => `
-        <span style="background:rgba(30,41,59,0.9);border:1px solid rgba(56,189,248,0.3);border-radius:6px;padding:4px 10px;font-size:11.5px;color:#F8FAFC;display:inline-flex;align-items:center;gap:6px;">
-          ✉️ ${r}
-          <button type="button" onclick="ailabRemoveRecipient('${r}')" style="background:none;border:none;color:#F87171;cursor:pointer;font-weight:700;font-size:12px;padding:0 2px;">&times;</button>
-        </span>
-      `).join("");
-    } catch (err) {
-      console.error("Error loading recipients:", err);
-    }
-  };
-
-  window.ailabAddRecipient = async function() {
-    const input = document.getElementById("ailabNewRecipientInput");
-    if (!input) return;
-    const email = input.value.trim();
-    if (!email || !email.includes("@")) {
-      alert("Please enter a valid email address.");
+  window.ailabOrchRenderDags = function(data) {
+    const box = document.getElementById("airflowDagsList");
+    if (!box) return;
+    const dags = data.dags || [];
+    if (!dags.length) {
+      box.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No DAGs reported.</div>`;
       return;
     }
-    try {
-      const res = await fetch("/api/banking/recipients/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        input.value = "";
-        await ailabLoadRecipients();
-      } else {
-        alert("Failed: " + (data.detail || "Error"));
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
+    const cycles = (data.cycles || {}).cycles || [];
+    const schedules = data.cycle_schedules || {};
 
-  window.ailabRemoveRecipient = async function(email) {
-    if (!confirm(`Remove ${email} from recipient list?`)) return;
-    try {
-      const res = await fetch("/api/banking/recipients/remove", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        await ailabLoadRecipients();
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
+    box.innerHTML = dags.map(dag => {
+      const [stageBg, stageFg] = orchStageColor(dag.stage);
+      const metrics = [];
+      if (dag.tables != null && dag.tables !== "") metrics.push(`<span style="color:#94A3B8;">tables</span> <strong style="color:#F8FAFC;">${orchEsc(dag.tables)}</strong>`);
+      if (dag.rows != null && dag.rows !== "") metrics.push(`<span style="color:#94A3B8;">rows</span> <strong style="color:#F8FAFC;">${orchNum(dag.rows)}</strong>`);
+      if (dag.duplicates_removed != null) metrics.push(`<span style="color:#94A3B8;">dupes removed</span> <strong style="color:#F8FAFC;">${orchNum(dag.duplicates_removed)}</strong>`);
+      if (dag.run_id) metrics.push(`<span style="color:#94A3B8;">run</span> <code style="color:#CBD5E1;">${orchEsc(dag.run_id)}</code>`);
 
-  // Notification Logs
-  window.ailabLoadNotificationLogs = async function() {
-    const list = document.getElementById("ailabNotificationLogsList");
-    if (!list) return;
-    try {
-      const res = await fetch("/api/banking/notifications/logs");
-      const data = await res.json();
-      const logs = data.logs || [];
-      if (!logs.length) {
-        list.innerHTML = `<div style="text-align:center;padding:12px;color:#94A3B8;">No notifications dispatched yet.</div>`;
-        return;
-      }
-      list.innerHTML = logs.map(l => `
-        <div style="background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="background:${l.channel === 'EMAIL' ? 'rgba(56,189,248,0.2)' : l.channel === 'TELEGRAM' ? 'rgba(167,139,250,0.2)' : 'rgba(251,191,36,0.2)'};color:${l.channel === 'EMAIL' ? '#38BDF8' : l.channel === 'TELEGRAM' ? '#A78BFA' : '#FBBF24'};font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.channel}</span>
-            <div>
-              <div style="font-weight:600;color:#F8FAFC;">${l.subject}</div>
-              <div style="font-size:11px;color:#94A3B8;">To: <code style="color:#CBD5E1;">${l.recipient}</code> • Rule: ${l.rule}</div>
+      const cycleStrip = dag.id === "bq_to_s3" ? `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          ${cycles.map(c => `
+            <span style="background:rgba(30,41,59,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:3px 8px;font-size:10.5px;color:#CBD5E1;">
+              ${orchEsc(c.cycle)} ${orchEsc(c.scheduled_ist)} IST ${orchBadge(c.state)}
+              <button type="button" onclick="ailabOrchEditCycle('${orchEsc(c.cycle)}', '${orchEsc(c.scheduled_ist)}')" style="background:none;border:none;color:#38BDF8;cursor:pointer;font-size:10.5px;padding:0 2px;">edit</button>
+            </span>`).join("")}
+        </div>` : "";
+
+      return `
+        <div style="background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+              <span style="background:${stageBg};color:${stageFg};font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:4px;">${orchEsc(dag.stage)}</span>
+              <span style="font-weight:800;color:#F8FAFC;font-size:13px;">${orchEsc(dag.name)}</span>
+              <code style="font-size:10px;color:#64748B;">${orchEsc(dag.id)}</code>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${dag.in_flight ? `<span style="font-size:10px;color:#38BDF8;">running...</span>` : ""}
+              ${orchBadge(dag.status)}
             </div>
           </div>
-          <div style="text-align:right;">
-            <span style="color:#34D399;font-weight:700;font-size:11px;">● ${l.status}</span>
-            <div style="font-size:10.5px;color:#64748B;">${l.timestamp}</div>
+          <div style="font-size:11.5px;color:#94A3B8;line-height:1.5;margin-bottom:6px;">${orchEsc(dag.description)}</div>
+          <div style="font-size:11px;color:#CBD5E1;line-height:1.6;margin-bottom:6px;">${orchEsc(dag.detail)}</div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;margin-bottom:6px;">${metrics.join("")}</div>
+          <div style="font-size:10.5px;color:#64748B;margin-bottom:8px;">Schedule: ${orchEsc(dag.schedule)}${dag.finished_at ? ` &bull; finished ${orchEsc(dag.finished_at)}` : ""}</div>
+          ${cycleStrip}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;margin-top:8px;">
+            <button type="button" class="ailab-code-btn" onclick="ailabOrchRun('${orchEsc(dag.id)}')" style="font-size:11px;color:#34D399;border-color:rgba(16,185,129,0.4);">&#9654; ${dag.id === "alerts" ? "Send summary" : "Run now"}</button>
+            <button type="button" class="ailab-code-btn" onclick="ailabOrchPause('${orchEsc(dag.id)}')" style="font-size:11px;color:${dag.paused ? "#34D399" : "#FBBF24"};border-color:rgba(255,255,255,0.2);">${dag.paused ? "&#9654; Resume" : "&#10074;&#10074; Pause"}</button>
+            ${dag.id === "alerts" ? "" : `<button type="button" class="ailab-code-btn" onclick="ailabOrchRollback('${orchEsc(dag.id)}')" style="font-size:11px;color:#F87171;border-color:rgba(248,113,113,0.4);">&#9198; Rollback</button>`}
           </div>
-        </div>
-      `).join("");
-    } catch (err) {
-      console.error("Error loading notification logs:", err);
+        </div>`;
+    }).join("");
+  };
+
+  window.ailabOrchRun = async function(dagId) {
+    try {
+      const res = await fetch(ORCH_API + "/dag/run", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dag_id: dagId, mode: "incremental" })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || "Run failed"); return; }
+      const footer = document.getElementById("airflowFooterLeft");
+      if (footer) footer.textContent = data.message || "Dispatched";
+      setTimeout(() => ailabOrchRefreshAll(true), 2000);
+    } catch (err) { alert("Run error: " + err.message); }
+  };
+
+  window.ailabOrchPause = async function(dagId) {
+    try {
+      const res = await fetch(ORCH_API + "/dag/pause", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dag_id: dagId })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || "Pause failed"); return; }
+      await ailabOrchRefreshAll(true);
+    } catch (err) { alert("Pause error: " + err.message); }
+  };
+
+  window.ailabOrchRollback = async function(dagId) {
+    let message = "Rebuild this DAG from the S3 bronze source of truth? Downstream layers are recreated with CREATE OR REPLACE.";
+    if (dagId === "sftp_to_s3") message = "Purge the latest SFTP batch? Its bronze Parquet and Snowflake L0/L1 tables are dropped.";
+    if (!confirm(message)) return;
+    try {
+      const res = await fetch(ORCH_API + "/dag/rollback", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dag_id: dagId, target_layer: "", confirm: true })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || "Rollback failed"); return; }
+      alert(data.message || "Rollback finished");
+      await ailabOrchRefreshAll(true);
+    } catch (err) { alert("Rollback error: " + err.message); }
+  };
+
+  window.ailabOrchEditCycle = async function(cycle, current) {
+    const value = prompt(`${cycle} cycle time (HH:MM IST):`, current || "06:00");
+    if (!value) return;
+    try {
+      const res = await fetch(ORCH_API + "/schedule", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cycle, at: value.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || "Schedule update failed"); return; }
+      await ailabOrchRefreshAll(true);
+    } catch (err) { alert("Schedule error: " + err.message); }
+  };
+
+  window.ailabOrchRenderSftp = function(sftp) {
+    const info = document.getElementById("airflowSftpInfo");
+    if (info) {
+      const fileCount = (sftp.files || []).length;
+      const tableCount = (sftp.tables || []).length;
+      info.innerHTML = `
+        <div><strong style="color:#38BDF8;">Landing zone:</strong> <code>${orchEsc(sftp.landing_prefix || "-")}</code></div>
+        <div><strong style="color:#38BDF8;">Bronze output:</strong> <code>${orchEsc(sftp.bronze_prefix || "-")}</code> &bull; Glue db <code>${orchEsc(sftp.glue_database || "-")}</code></div>
+        <div><strong style="color:#38BDF8;">Accepted:</strong> ${orchEsc((sftp.supported || []).join(" / "))} &bull; max ${orchEsc(sftp.max_mb || 25)} MB per file</div>
+        <div><strong style="color:#38BDF8;">Status:</strong> ${fileCount} file(s) in landing &bull; ${tableCount} table(s) in bronze${sftp.error ? ` &bull; <span style="color:#F87171;">${orchEsc(sftp.error)}</span>` : ""}</div>`;
+    }
+
+    const filesBox = document.getElementById("airflowSftpFilesList");
+    if (filesBox) {
+      const files = sftp.files || [];
+      filesBox.innerHTML = files.length ? files.map(item => `
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="min-width:0;">
+            <div style="font-size:12px;font-weight:700;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orchEsc(item.name)}</div>
+            <div style="font-size:10.5px;color:#94A3B8;">partner ${orchEsc(item.partner)} &bull; ${orchEsc((item.size / 1024).toFixed(1))} KB &bull; ${item.rows ? orchNum(item.rows) + " rows" : "not ingested"}${item.table ? " &bull; table " + orchEsc(item.table) : ""}${item.error ? " &bull; " + orchEsc(item.error) : ""}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${orchBadge(item.status === "new" ? "NOT_RUN" : item.status)}
+            <button type="button" class="ailab-code-btn" onclick="ailabOrchSftpRollback('${orchEsc(item.key)}')" style="font-size:10.5px;color:#F87171;">Rollback</button>
+          </div>
+        </div>`).join("") : `<div style="text-align:center;padding:12px;color:#94A3B8;">No files in the SFTP landing zone yet.</div>`;
+    }
+
+    const tablesBox = document.getElementById("airflowSftpTables");
+    if (tablesBox) {
+      const tables = sftp.tables || [];
+      tablesBox.innerHTML = tables.length ? tables.map(item => `
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:11.5px;color:#F8FAFC;"><strong>${orchEsc(item.table)}</strong> <span style="color:#64748B;">&larr; ${orchEsc(item.source_file)}</span></div>
+          <div style="font-size:11px;color:#94A3B8;">${orchNum(item.rows)} rows &bull; ${orchEsc(item.columns)} cols &bull; ${orchEsc(item.ingested_at)}</div>
+        </div>`).join("") : `<div style="text-align:center;padding:12px;color:#94A3B8;">No SFTP tables yet - upload a file or generate a sample.</div>`;
     }
   };
 
-  // Platform Live Logs Stream
-  window.ailabFilterPlatformLogs = async function(platform) {
-    window._activePlatformLogFilter = platform;
-    ['all', 'aws_s3', 'snowflake', 'bigquery', 'duckdb', 'airflow'].forEach(p => {
-      document.getElementById(`logSubTab_${p}`)?.classList.toggle('is-active', p === platform);
-    });
-
-    const box = document.getElementById("ailabPlatformLogsContainer");
+  window.ailabOrchRenderOutbound = function(out) {
+    const box = document.getElementById("airflowSftpOutbound");
     if (!box) return;
+    const reports = out.reports || [];
+    box.innerHTML = reports.length ? reports.map(item => `
+      <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(52,211,153,0.22);border-radius:7px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orchEsc(item.filename)}</div>
+          <div style="font-size:10.5px;color:#94A3B8;">${orchEsc(item.sftp_path)} &bull; ${orchEsc((item.bytes / 1024).toFixed(1))} KB &bull; ${orchEsc(item.modified || "")}</div>
+        </div>
+        ${item.download_url ? `<a href="${orchEsc(item.download_url)}" target="_blank" rel="noopener" class="ailab-code-btn" style="font-size:10.5px;color:#38BDF8;text-decoration:none;">Download</a>` : ""}
+      </div>`).join("") : `<div style="text-align:center;padding:12px;color:#94A3B8;">No reports published to sftp/outbound/reports yet.</div>`;
+  };
 
+  window.ailabOrchBuildReport = async function(deliver) {
+    const box = document.getElementById("ailabReportMsg");
+    if (box) { box.textContent = deliver ? "Building report and sending alerts..." : "Building report..."; box.style.color = "#94A3B8"; }
     try {
-      const res = await fetch(`/api/banking/logs/stream?platform=${platform}`);
+      const res = await fetch(ORCH_API + "/report/build", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cycle: "MANUAL", deliver: !!deliver })
+      });
       const data = await res.json();
-      const logs = data.logs || [];
-      if (!logs.length) {
-        box.innerHTML = `<div style="color:#64748B;">No live log entries for stream [${platform}].</div>`;
-        return;
+      if (!res.ok) { if (box) { box.textContent = data.detail || "report build failed"; box.style.color = "#F87171"; } return; }
+      const report = data.report || data;
+      if (box) {
+        box.textContent = `${report.filename || "report"}: ${report.status} -> ${report.sftp_path || ""}` +
+          (deliver ? ` | alerts ${(data.results || []).map(r => r.channel + ":" + (r.ok ? "ok" : "fail")).join(", ")}` : "");
+        box.style.color = "#34D399";
       }
-      box.innerHTML = logs.map(l => {
+      await ailabOrchRefreshAll(true);
+    } catch (err) {
+      if (box) { box.textContent = err.message; box.style.color = "#F87171"; }
+    }
+  };
+
+  window.ailabSftpMsg = function(text, color) {
+    const box = document.getElementById("ailabSftpMsg");
+    if (box) { box.textContent = text; box.style.color = color || "#94A3B8"; }
+  };
+
+  window.ailabSftpUpload = async function() {
+    const input = document.getElementById("ailabSftpFile");
+    const partner = (document.getElementById("ailabSftpPartner").value || "manual").trim() || "manual";
+    if (!input || !input.files || !input.files.length) { ailabSftpMsg("Choose a file first.", "#FBBF24"); return; }
+    const button = document.getElementById("ailabSftpUploadBtn");
+    if (button) button.disabled = true;
+    let done = 0;
+    for (const file of input.files) {
+      try {
+        ailabSftpMsg(`Uploading ${file.name}...`);
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`${ORCH_API}/sftp/upload?partner=${encodeURIComponent(partner)}`, { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) { ailabSftpMsg(`${file.name}: ${data.detail || "upload failed"}`, "#F87171"); continue; }
+        const ingest = data.ingest || {};
+        done += 1;
+        ailabSftpMsg(`${file.name}: ${ingest.status} -> ${ingest.table || "?"} (${orchNum(ingest.rows || 0)} rows). Downstream refresh running.`, "#34D399");
+      } catch (err) {
+        ailabSftpMsg(`${file.name}: ${err.message}`, "#F87171");
+      }
+    }
+    if (button) button.disabled = false;
+    if (done) { input.value = ""; setTimeout(() => ailabOrchRefreshAll(true), 1500); }
+  };
+
+  window.ailabSftpProcess = async function() {
+    ailabSftpMsg("Processing landing files...");
+    try {
+      const res = await fetch(ORCH_API + "/sftp/process", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ force: false })
+      });
+      const data = await res.json();
+      if (!res.ok) { ailabSftpMsg(data.detail || "process failed", "#F87171"); return; }
+      const downstream = data.downstream || {};
+      ailabSftpMsg(`${data.status}: ${(data.processed || []).length} ingested, ${(data.errors || []).length} error(s). ` +
+        (downstream.summary ? downstream.summary : "No new files."), data.errors && data.errors.length ? "#FBBF24" : "#34D399");
+      await ailabOrchRefreshAll(true);
+    } catch (err) { ailabSftpMsg(err.message, "#F87171"); }
+  };
+
+  window.ailabSftpSample = async function() {
+    const partner = (document.getElementById("ailabSftpPartner").value || "sample").trim() || "sample";
+    ailabSftpMsg("Generating sample file...");
+    try {
+      const res = await fetch(`${ORCH_API}/sftp/sample?partner=${encodeURIComponent(partner)}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { ailabSftpMsg(data.detail || "sample failed", "#F87171"); return; }
+      ailabSftpMsg(`Sample landed: ${data.key} -> ${(data.ingest || {}).table || "?"}`, "#34D399");
+      await ailabOrchRefreshAll(true);
+    } catch (err) { ailabSftpMsg(err.message, "#F87171"); }
+  };
+
+  window.ailabOrchSftpRollback = async function(key) {
+    if (!confirm(`Purge ${key}?\n\nThis drops its bronze Parquet and Snowflake L0/L1 tables. The landing file is kept.`)) return;
+    try {
+      const res = await fetch(ORCH_API + "/sftp/rollback", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, confirm: true, delete_landing: false })
+      });
+      const data = await res.json();
+      if (!res.ok) { ailabSftpMsg(data.detail || "rollback failed", "#F87171"); return; }
+      ailabSftpMsg(`Rolled back ${data.table_removed || key}: ${(data.snowflake || []).join(", ") || "no tables"}`, "#FBBF24");
+      await ailabOrchRefreshAll(true);
+    } catch (err) { ailabSftpMsg(err.message, "#F87171"); }
+  };
+
+  window.ailabOrchRenderAlertConfig = function(alerts) {
+    if (window.ailabOrchState.alertsFilled) return;
+    const conf = alerts.config || {};
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.value = value == null ? "" : value; };
+    set("orchAlertRecipients", (conf.recipients || []).join(", "));
+    set("orchAlertSender", conf.sender || "");
+    set("orchAlertTelegram", conf.telegram_channel || "");
+    set("orchAlertWhatsapp", conf.whatsapp_number && conf.whatsapp_number.includes("*") ? "" : (conf.whatsapp_number || ""));
+    const tg = document.getElementById("orchAlertTelegramOn");
+    if (tg) tg.checked = conf.telegram_enabled !== false;
+    const wa = document.getElementById("orchAlertWhatsappOn");
+    if (wa) wa.checked = conf.whatsapp_enabled !== false;
+    window.ailabOrchState.alertsFilled = true;
+  };
+
+  window.ailabOrchLoadAlerts = async function() {
+    window.ailabOrchState.alertsFilled = false;
+    await ailabOrchRefreshAll(true);
+  };
+
+  window.ailabOrchSaveAlerts = async function() {
+    const recipients = (document.getElementById("orchAlertRecipients").value || "")
+      .split(",").map(v => v.trim()).filter(Boolean);
+    const body = {
+      recipients,
+      sender: (document.getElementById("orchAlertSender").value || "").trim(),
+      telegram_channel: (document.getElementById("orchAlertTelegram").value || "").trim(),
+      telegram_enabled: document.getElementById("orchAlertTelegramOn").checked,
+      whatsapp_enabled: document.getElementById("orchAlertWhatsappOn").checked
+    };
+    const whatsapp = (document.getElementById("orchAlertWhatsapp").value || "").trim();
+    if (whatsapp) body.whatsapp_number = whatsapp;
+    const msg = document.getElementById("ailabAlertMsg");
+    try {
+      const res = await fetch(ORCH_API + "/alerts/config", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { if (msg) { msg.textContent = data.detail || "save failed"; msg.style.color = "#F87171"; } return; }
+      if (msg) { msg.textContent = "Configuration saved."; msg.style.color = "#34D399"; }
+      window.ailabOrchState.alertsFilled = false;
+      await ailabOrchRefreshAll(true);
+    } catch (err) { if (msg) { msg.textContent = err.message; msg.style.color = "#F87171"; } }
+  };
+
+  window.ailabOrchTestAlert = async function(channel) {
+    const msg = document.getElementById("ailabAlertMsg");
+    if (msg) { msg.textContent = `Sending test ${channel}...`; msg.style.color = "#94A3B8"; }
+    try {
+      const res = await fetch(ORCH_API + "/alerts/test", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel })
+      });
+      const data = await res.json();
+      if (!res.ok) { if (msg) { msg.textContent = data.detail || "test failed"; msg.style.color = "#F87171"; } return; }
+      const results = data.results || [];
+      const text = results.map(r => `${r.channel}: ${r.ok ? "DELIVERED" : "FAILED" + (r.error ? " (" + r.error + ")" : "")}`).join("  |  ");
+      if (msg) { msg.textContent = text || data.status; msg.style.color = results.every(r => r.ok) ? "#34D399" : "#FBBF24"; }
+      await ailabOrchRefreshAll(true);
+    } catch (err) { if (msg) { msg.textContent = err.message; msg.style.color = "#F87171"; } }
+  };
+
+  window.ailabOrchRenderNotificationLogs = function(logs) {
+    const box = document.getElementById("ailabNotificationLogsList");
+    if (!box) return;
+    if (!logs.length) {
+      box.innerHTML = `<div style="text-align:center;padding:12px;color:#94A3B8;">No alerts sent yet.</div>`;
+      return;
+    }
+    box.innerHTML = logs.map(item => {
+      const ok = String(item.status || "").toUpperCase() === "DELIVERED";
+      return `
+        <div style="background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="min-width:0;">
+            <div style="font-size:11.5px;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orchEsc(item.subject)}</div>
+            <div style="font-size:10.5px;color:#94A3B8;">${orchEsc(item.channel)} &bull; ${orchEsc(item.recipient)} &bull; ${orchEsc(item.rule)}${item.error ? " &bull; " + orchEsc(item.error) : ""}</div>
+          </div>
+          <div style="text-align:right;white-space:nowrap;">
+            <span style="color:${ok ? "#34D399" : "#F87171"};font-weight:700;font-size:10.5px;">&#9679; ${orchEsc(item.status)}</span>
+            <div style="font-size:10px;color:#64748B;">${orchEsc(item.timestamp)}</div>
+          </div>
+        </div>`;
+    }).join("");
+  };
+
+  window.ailabOrchLoadLogs = async function() {
+    const box = document.getElementById("airflowOrchLogs");
+    if (!box) return;
+    box.innerHTML = `<div style="color:#64748B;">Loading logs...</div>`;
+    try {
+      const res = await fetch(ORCH_API + "/logs?limit=120");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "HTTP " + res.status);
+      const logs = data.logs || [];
+      if (!logs.length) { box.innerHTML = `<div style="color:#64748B;">No log entries yet.</div>`; return; }
+      box.innerHTML = logs.map(item => {
+        const text = String(item.text || "");
         let color = "#CBD5E1";
-        if (l.level === "GATE_PASS") color = "#34D399";
-        else if (l.level === "WARN") color = "#FBBF24";
-        else if (l.level === "ERROR") color = "#F87171";
-        else if (l.platform === "aws_s3") color = "#F59E0B";
-        else if (l.platform === "snowflake") color = "#38BDF8";
-        else if (l.platform === "bigquery") color = "#A78BFA";
-        else if (l.platform === "duckdb") color = "#34D399";
-        
-        return `<div><span style="color:#64748B;">[${l.timestamp}]</span> <span style="font-weight:700;color:${color};">[${(l.platform||'SYS').toUpperCase()}]</span> <span style="color:${color};">${l.message}</span></div>`;
+        if (/ERROR|FAILED|ERROR_RETRY/i.test(text)) color = "#F87171";
+        else if (/WARNING|PARTIAL|MISSED|PAUSED/i.test(text)) color = "#FBBF24";
+        else if (/SUCCESS|synced|reconciled|registered|DELIVERED/i.test(text)) color = "#34D399";
+        return `<div style="color:${color};">${orchEsc(text)}</div>`;
       }).join("");
     } catch (err) {
-      box.innerHTML = `<div style="color:#F87171;">Error reading logs: ${err.message}</div>`;
+      box.innerHTML = `<div style="color:#F87171;">${orchEsc(err.message)}</div>`;
     }
   };
-
-  window.ailabLoadSftpReports = async function() {
-    const list = document.getElementById("airflowSftpReportsList");
-    if (!list) return;
-
-    try {
-      const res = await fetch("/api/sftp/reports/list");
-      const data = await res.json();
-      const reports = data.reports || [];
-      if (!reports.length) {
-        list.innerHTML = `<div style="text-align:center;padding:15px;color:#94A3B8;">No reports generated yet.</div>`;
-        return;
-      }
-
-      list.innerHTML = reports.map(r => `
-        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:18px;">📊</span>
-            <div>
-              <div style="font-weight:700;color:#F8FAFC;font-size:13px;">${r.filename}</div>
-              <div style="font-size:11px;color:#94A3B8;">SFTP Path: <code>${r.sftp_path}</code></div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="background:${r.size_mb <= 5.0 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"};color:${r.size_mb <= 5.0 ? "#34D399" : "#FBBF24"};font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">
-              ${r.size_formatted} • ${r.email_rule}
-            </span>
-            <a href="/api/sftp/reports/download?filename=${encodeURIComponent(r.filename)}" target="_blank" class="ailab-code-btn" style="color:#38BDF8;border-color:rgba(56,189,248,0.4);text-decoration:none;font-size:11px;padding:4px 10px;">
-              📥 1-Click Download
-            </a>
-          </div>
-        </div>
-      `).join("");
-    } catch (err) {
-      list.innerHTML = `<div style="text-align:center;padding:15px;color:#F87171;">Failed to load SFTP reports: ${err.message}</div>`;
-    }
-  };
-
 </script>
 </div>
 '''

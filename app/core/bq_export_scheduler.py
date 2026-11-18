@@ -35,6 +35,21 @@ def run_once() -> dict:
 
     result = run_pipeline()
     STATE["last_attempt"] = time.time()
+    STATE["last_result"] = {
+        "run_id": result.get("run_id"),
+        "status": result.get("status"),
+        "summary": result.get("summary"),
+        "tables": len(result.get("tables") or []),
+        "rows": result.get("rows"),
+        "bytes": result.get("bytes"),
+        "services": {
+            name: item.get("status")
+            for name, item in (result.get("aws_services") or {}).items()
+            if isinstance(item, dict)
+        },
+        "finished_at": result.get("finished_at"),
+        "duration_ms": result.get("duration_ms"),
+    }
     log_event(
         f"[BQExport] {result.get('status')}: {result.get('summary')}",
         component="BQExportScheduler",
@@ -58,7 +73,7 @@ def run_once() -> dict:
 def _loop() -> None:
     time.sleep(90)  # let the boot sequence finish first
     while True:
-        if _enabled():
+        if _enabled() and not _paused():
             handled = False
             try:
                 from app.core import bank_batch_cycles
@@ -83,7 +98,22 @@ def _loop() -> None:
                 except Exception as exc:
                     STATE["last_attempt"] = time.time()
                     log_event(f"[BQExport] run failed: {exc}", level="WARNING", component="BQExportScheduler")
+            try:
+                from app.core.sftp_ingestion import poll as sftp_poll
+
+                STATE["sftp"] = sftp_poll()
+            except Exception as exc:
+                log_event(f"[BQExport] SFTP poll failed: {exc}", level="WARNING", component="BQExportScheduler")
         time.sleep(_interval_seconds())
+
+
+def _paused() -> bool:
+    try:
+        from app.core.pipeline_orchestrator import is_paused
+
+        return is_paused("bq_to_s3")
+    except Exception:
+        return False
 
 
 def start() -> None:

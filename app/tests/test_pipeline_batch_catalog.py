@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import unittest
@@ -7,6 +8,9 @@ from unittest.mock import patch
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_PROJECT_ROOT))
+
+os.environ.setdefault("NANOPRO_PIPELINE_ALERTS", "0")
+os.environ.setdefault("NANOPRO_REPORT_DELIVERY", "0")
 
 from app.core import bank_batch_cycles as cycles
 from app.core import pipeline_catalog as catalog
