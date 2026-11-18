@@ -2828,6 +2828,19 @@ async def api_global_ai_execute(request: Request, payload: Dict[str, Any] = Body
             ddl_result["user"] = user.get("username") or user.get("email") or "user"
             return JSONResponse(ddl_result)
 
+        # Sample-row inserts and fenced SELECT/INSERT/UPDATE/DELETE run against
+        # the Bronze dataset. Returns None for ordinary questions.
+        from app.core.chat_bigquery_data import maybe_handle as maybe_data
+        data_result = maybe_data(prompt)
+        if data_result is not None:
+            from app.core.api_auth import require_session
+            try:
+                user = require_session(request)
+            except HTTPException as exc:
+                return JSONResponse({"status": "error", "message": exc.detail}, status_code=200)
+            data_result["user"] = user.get("username") or user.get("email") or "user"
+            return JSONResponse(data_result)
+
         from app.core.mcp_server import mcp_server
         model = payload.get("model", "auto")
         messages = payload.get("messages", [])
@@ -2881,7 +2894,11 @@ async def api_ai_bigquery_admin(request: Request, payload: Dict[str, Any] = Body
 
     result = maybe_handle(payload.get("prompt", ""))
     if result is None:
-        # Not an admin instruction: the caller falls back to normal chat.
+        from app.core.chat_bigquery_data import maybe_handle as maybe_data
+
+        result = maybe_data(payload.get("prompt", ""))
+    if result is None:
+        # Not an admin/data instruction: the caller falls back to normal chat.
         return JSONResponse({"status": "not_admin"})
     result["user"] = user.get("username") or user.get("email") or "user"
     return JSONResponse(result)

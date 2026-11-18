@@ -6005,7 +6005,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         // Explorer admin instructions already ran against the live catalog;
         // reload the tree so rename / delete / retype appears without a reload.
-        if (["rename_table", "rename_schema", "drop_table", "drop_schema", "alter_column", "add_column", "rename_column"].indexOf(execData.action) !== -1) {
+        if (["rename_table", "rename_schema", "drop_table", "drop_schema", "alter_column", "add_column", "rename_column", "insert_samples", "mutate_rows"].indexOf(execData.action) !== -1) {
           if (typeof ailabLoadExplorer === "function") {
             await ailabLoadExplorer(true);
           }
