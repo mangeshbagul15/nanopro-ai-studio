@@ -28,6 +28,8 @@ CW_NAMESPACE = "NanoPro/BigQueryAWS"
 GLUE_DATABASE = "nanopro_bronze"
 EXPORT_ROOT = "bronze/bigquery"
 RUN_ID_FORMAT = "%Y%m%dT%H%M%SZ"
+# NanoPro's own chat history lives in BigQuery; it is application state, not bronze lake data.
+EXCLUDED_DATASETS = {"nanopro_studio"}
 
 _CAPS_CACHE: Dict[str, Any] = {"at": 0.0, "value": None}
 _CAPS_TTL = 300.0
@@ -303,7 +305,7 @@ def run_pipeline(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
         return payload
 
     try:
-        available = _bq_datasets(client)
+        available = [name for name in _bq_datasets(client) if name not in EXCLUDED_DATASETS]
     except Exception as exc:
         payload["message"] = f"BigQuery dataset listing failed: {_err(exc)}"
         payload["summary"] = payload["message"]
