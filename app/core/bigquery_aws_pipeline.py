@@ -281,6 +281,13 @@ def run_pipeline(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
     payload["failures"] = failures
     payload["status"] = "success" if all_files and not failures else ("partial" if all_files else "error")
 
+    payload["summary"] = (
+        f"{len(all_files)} tables exported from {len(targets)} dataset(s) — "
+        f"{payload['rows']} rows, {payload['bytes']} bytes to {payload['s3']['prefix']}"
+        + (f"; {len(failures)} failure(s)" if failures else "")
+    )
+    payload["message"] = payload["summary"]
+
     event = {
         "event": "bigquery_to_aws",
         "run_id": run_id,
@@ -295,12 +302,6 @@ def run_pipeline(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
     payload["aws_services"]["dynamodb"] = _dynamodb_record(config, payload)
     payload["aws_services"]["cloudwatch"] = _cloudwatch_metrics(config, payload)
 
-    payload["summary"] = (
-        f"{len(all_files)} tables exported from {len(targets)} dataset(s) — "
-        f"{payload['rows']} rows, {payload['bytes']} bytes to {payload['s3']['prefix']}"
-        + (f"; {len(failures)} failure(s)" if failures else "")
-    )
-    payload["message"] = payload["summary"]
     payload["_http"] = 200 if payload["status"] != "error" else 502
     log_event(f"BigQuery→AWS pipeline {run_id}: {payload['summary']}", component="BigQueryAWSPipeline")
     return payload

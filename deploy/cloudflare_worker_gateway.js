@@ -4815,7 +4815,8 @@ CRITICAL OPERATIONAL RULES:
                               path === "/api/manager/chat" ||
                               path === "/api/prompt" ||
                               path.startsWith("/api/coding") ||
-                              path.startsWith("/api/image");
+                              path.startsWith("/api/image") ||
+                              path === "/api/jobs/bigquery_to_aws";
       const timeoutMs = isSlowEndpoint ? 55000 : CONFIG.CLOUD_TIMEOUT_MS;
 
 
