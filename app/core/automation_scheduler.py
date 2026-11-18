@@ -88,25 +88,16 @@ class AutomationScheduler:
             log_event(f"Could not disable legacy demo jobs: {exc}", level="WARNING", component="AutomationScheduler")
 
     def _ensure_pipeline_tasks_seeded(self):
-        """Register the direct Oracle→S3 schedule; keep DMS as an optional mode."""
+        """Register the BigQuery→AWS S3 schedule; retire every legacy Oracle job."""
         try:
             tasks = db.list_automation_tasks()
             existing = {task.get("name") for task in tasks}
-            legacy_to_s3 = {
-                "ORACLE_DMS_SNOWFLAKE_PIPELINE_DAILY": "ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY",
-                "ORACLE_DMS_SNOWFLAKE_PIPELINE_FORTNIGHTLY": "ORACLE_S3_SNOWFLAKE_PIPELINE_FORTNIGHTLY",
-                "ORACLE_DMS_SNOWFLAKE_PIPELINE_MONTHLY": "ORACLE_S3_SNOWFLAKE_PIPELINE_MONTHLY",
-            }
             for task in tasks:
-                old_name = task.get("name")
-                new_name = legacy_to_s3.get(old_name)
-                if new_name and new_name not in existing:
-                    db.update_automation_task(task["id"], {
-                        "name": new_name,
-                        "description": "Daily Snowflake T-1/live comparison report at 10:00 IST; ingestion runs in the separate 15-minute Oracle→S3 job.",
-                    })
-                    existing.discard(old_name)
-                    existing.add(new_name)
+                old_name = (task.get("name") or "").upper()
+                if "ORACLE" in old_name and task.get("is_enabled"):
+                    db.update_automation_task(task["id"], {"is_enabled": False})
+                    log_event(f"Retired legacy Oracle task [{task.get('name')}] (Oracle permanently removed).",
+                              level="WARNING", component="AutomationScheduler")
             schedules = [
                 ("BOD_PIPELINE_CYCLE", "daily", "06:00", "Beginning of Day (06:00 AM IST) — System validation & 91-Table Full Load into AWS S3, Snowflake L0-L1-L2, and DuckDB Gold Marts.", True),
                 ("SOD_PIPELINE_CYCLE", "daily", "08:00", "Start of Day (08:00 AM IST) — Account limits, opening positions, and intraday delta synchronization.", True),
@@ -125,8 +116,7 @@ class AutomationScheduler:
                 ("DAG_JLG_COLLECTION_PIPELINE", "daily", "20:00", "Airflow DAG — JLG/SHG Microfinance Group Collections & Portfolio at Risk (PAR) Recovery.", True),
                 ("DAG_LOS_LMS_PIPELINE", "daily", "06:00", "Airflow DAG — Loan Origination (LOS) & Loan Management (LMS) NPA Provisioning & Servicing.", True),
                 ("TELEGRAM_APK_DISPATCHER", "hourly", "4", "Autonomous Telegram APK Dispatcher (@mangesh_apk_bot) — Discovers and delivers verified open-source APKs with configurable quantity & interval.", False),
-                ("ORACLE_S3_SNOWFLAKE_PIPELINE_INCREMENTAL", "minutes", "15", "Oracle watermark incremental polling every 15 minutes → S3 → Snowflake L0/L1/L2.", False),
-                ("ORACLE_S3_SNOWFLAKE_PIPELINE_DAILY", "daily", "10:00", "Snowflake daily T-1/live comparison report at 10:00 IST.", False),
+                ("BIGQUERY_AWS_PIPELINE_DAILY", "daily", "02:30", "BigQuery → AWS S3 Parquet export (Bronze), manifest + _SUCCESS, SQS event and DynamoDB run audit.", True),
             ]
             for name, kind, expression, description, enabled in schedules:
                 if name in existing:
@@ -548,28 +538,10 @@ class AutomationScheduler:
                     pass
             res = discover_and_send_apks(count=count)
             return json.dumps(res, default=str), "", 0 if res.get("status") == "success" else 1
-        pipeline_periods = {
-            "oracle_dms_snowflake_pipeline_daily": "daily",
-            "oracle_dms_snowflake_pipeline_fortnightly": "fortnightly",
-            "oracle_dms_snowflake_pipeline_monthly": "monthly",
-            "oracle_s3_snowflake_pipeline_daily": "daily",
-            "oracle_s3_snowflake_pipeline_fortnightly": "fortnightly",
-            "oracle_s3_snowflake_pipeline_monthly": "monthly",
-            "oracle_s3_snowflake_pipeline_incremental": "incremental",
-        }
-        if name in pipeline_periods:
-            from app.core.data_pipeline_runner import run_configured_pipeline
-            period = pipeline_periods[name]
-            result = run_configured_pipeline(
-                report_period="daily" if period == "incremental" else period,
-                include_ingestion=(period == "incremental"),
-                include_report=(period != "incremental"),
-            )
-            if result.get("status") == "success":
-                return json.dumps(result, default=str), "", 0
-            notifications = self._notify_pipeline_failure(result)
-            result["failure_notifications"] = notifications
-            return "", json.dumps(result, default=str), 1
+        if name in ("bigquery_aws_pipeline_daily", "bigquery_aws_pipeline", "bigquery_to_aws"):
+            from app.core.bigquery_aws_pipeline import run_pipeline
+            res = run_pipeline()
+            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
         if name == "connection_interoperability_test":
             from app.core.connection_manager import connection_manager
             res = connection_manager.test_cross_pipeline_interoperability()

@@ -9,10 +9,11 @@ unreachable the entry carries the real error instead of demo metadata.
 Engines covered
   * Snowflake
   * PostgreSQL (Neon, Render, local, Supabase when a PG URL is stored)
-  * Oracle (XE local / LAN / Tailscale, APEX ORDS metadata when available)
   * DuckDB lakehouse files
   * Google BigQuery (Application Default Credentials)
   * AWS S3 data lake (objects, with DuckDB preview/query support)
+
+Oracle is permanently retired and never appears in the catalog.
 """
 
 from __future__ import annotations
@@ -48,10 +49,6 @@ _KNOWN_SPECS: List[Tuple[str, str, str]] = [
     ("POSTGRES_CLOUD_FREE", "PostgreSQL (Neon Cloud)", "postgres"),
     ("POSTGRES_RENDER_CLOUD", "PostgreSQL (Render Cloud)", "postgres"),
     ("MY_POSTGRES_LOCAL", "PostgreSQL (Local)", "postgres"),
-    ("ORACLE_APEX_23AI_CLOUD", "Oracle 23ai (APEX Cloud)", "oracle"),
-    ("MY_ORACLE_XE_REMOTE", "Oracle XE (Remote LAN)", "oracle"),
-    ("MY_ORACLE_XE_REMOTE_New", "Oracle XE (Tailscale)", "oracle"),
-    ("MY_ORACLE_XE_LOCAL", "Oracle XE (Local)", "oracle"),
     ("DUCKDB_GOLD_LAKEHOUSE", "DuckDB Gold Lakehouse", "duckdb"),
     ("GOOGLE_BIGQUERY_SANDBOX", "Google BigQuery", "bigquery"),
     ("AWS_S3_DATA_LAKE", "AWS S3 Data Lake", "s3"),
@@ -188,6 +185,8 @@ def _specs() -> List[Dict[str, Any]]:
                 except Exception:
                     metadata = {}
             engine = engines.get(name) or _engine_for(name, service_type, metadata)
+            if engine == "oracle":
+                continue
             if service_type.strip().lower() in _NON_DATABASE_TYPES or metadata.get("kind") == "api_key":
                 continue
             if not engine:

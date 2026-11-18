@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 BRONZE_SCHEMA = "nanopro_cbs_bronze"
 EXPORT_PREFIX = "bronze/cbs"
+DEFAULT_S3_BUCKET = "nanopro-data-lake-765865641438"
 
 _EXPORT_Q = re.compile(r"\b(export|upload|push|copy|transfer)\b|एक्सपोर्ट|टाक|पाठव|काढ", re.IGNORECASE)
 _S3_Q = re.compile(r"\bs3\b|\baws\b|बकेट", re.IGNORECASE)
@@ -78,7 +79,11 @@ def _aws_config() -> Dict[str, str]:
         "access_key": (os.environ.get("AWS_ACCESS_KEY_ID") or str(cfg.get("username") or "")).strip(),
         "secret_key": (os.environ.get("AWS_SECRET_ACCESS_KEY") or str(cfg.get("secret_value") or "")).strip(),
         "region": (os.environ.get("AWS_DEFAULT_REGION") or str(meta.get("region") or "") or "ap-southeast-2").strip(),
-        "bucket": (os.environ.get("AWS_S3_BUCKET") or str(cfg.get("database_name") or meta.get("bucket") or "")).strip(),
+        "bucket": (
+            os.environ.get("AWS_S3_BUCKET")
+            or str(meta.get("bucket") or cfg.get("database_name") or "")
+            or DEFAULT_S3_BUCKET
+        ).strip(),
     }
 
 

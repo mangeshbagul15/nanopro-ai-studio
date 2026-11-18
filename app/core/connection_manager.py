@@ -144,6 +144,9 @@ POSTGRES_CONFIGS = {
 }
 POSTGRES_CONFIG = POSTGRES_CONFIGS["MY_POSTGRES_LOCAL"]
 
+_ORACLE_PURGED = False
+
+
 class ConnectionManager:
     def __init__(self):
         self._init_database_tables()
@@ -199,18 +202,38 @@ class ConnectionManager:
         except Exception as e:
             log_event(f"Error initializing connection tables: {e}", component="ConnectionManager", level="WARNING")
 
+    def _purge_retired_oracle_connections(self):
+        """Delete Oracle credentials/history once per process. Oracle is retired."""
+        global _ORACLE_PURGED
+        if _ORACLE_PURGED:
+            return
+        _ORACLE_PURGED = True
+        try:
+            names = {
+                (row.get("service_name") or "")
+                for row in credentials_vault.list_credentials(mask=True)
+            }
+            names.update(ORACLE_CONFIGS.keys())
+            for name in sorted(n for n in names if n.upper().startswith(("ORACLE_", "MY_ORACLE_"))):
+                try:
+                    credentials_vault.delete_credential(name)
+                except Exception:
+                    pass
+            with db.get_connection() as conn:
+                conn.execute("DELETE FROM connection_history WHERE lower(connection_name) LIKE '%oracle%'")
+                conn.commit()
+        except Exception as e:
+            log_event(f"Oracle purge skipped: {e}", component="ConnectionManager", level="WARNING")
+
     def ensure_default_connections(self):
         """Register connection metadata and ensure default credentials from environment/vault."""
+        self._purge_retired_oracle_connections()
         try:
             from app.core.config import TELEGRAM_BOT_TOKEN as _CONFIG_TELEGRAM_TOKEN
         except Exception:
             _CONFIG_TELEGRAM_TOKEN = ""
         default_pw_map = {
             "NANO_PRO_SNOWFLAKE": os.environ.get("SNOWFLAKE_PASSWORD", ""),
-            "MY_ORACLE_XE_LOCAL": os.environ.get("ORACLE_PASSWORD", ""),
-            "MY_ORACLE_XE_REMOTE": os.environ.get("ORACLE_PASSWORD", ""),
-            "MY_ORACLE_XE_REMOTE_New": os.environ.get("ORACLE_PASSWORD", ""),
-            "ORACLE_APEX_23AI_CLOUD": os.environ.get("ORACLE_APEX_PASSWORD", ""),
             "MY_POSTGRES_LOCAL": os.environ.get("POSTGRES_PASSWORD", ""),
             "POSTGRES_CLOUD_FREE": os.environ.get("NEON_POSTGRES_PASSWORD", ""),
             "POSTGRES_RENDER_CLOUD": os.environ.get("RENDER_POSTGRES_PASSWORD", ""),
@@ -224,7 +247,6 @@ class ConnectionManager:
 
         profiles = [
             ("NANO_PRO_SNOWFLAKE", "database", SNOWFLAKE_CONFIG["username"], SNOWFLAKE_CONFIG["account_url"], "443", SNOWFLAKE_CONFIG["database"], SNOWFLAKE_CONFIG),
-            *[(name, "database", cfg["username"], cfg["hostname"], str(cfg["port"]), cfg["service_name"], cfg) for name, cfg in ORACLE_CONFIGS.items()],
             *[(name, "database", cfg["username"], cfg["hostname"], str(cfg["port"]), cfg["database"], cfg) for name, cfg in POSTGRES_CONFIGS.items()],
             ("AWS_S3_DATA_LAKE", "cloud", os.environ.get("AWS_ACCESS_KEY_ID", "mangesh-studio"), os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"), "443", os.environ.get("AWS_S3_BUCKET", "nanopro-data-lake"), {"region": os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-2"), "bucket": os.environ.get("AWS_S3_BUCKET", "nanopro-data-lake")}),
             ("DUCKDB_GOLD_LAKEHOUSE", "database", "embedded_olap", "data/lakehouse/gold_marts.duckdb", "0", "gold_marts", {"engine": "DuckDB 2.0.0", "storage": "Parquet Star Schema"}),
@@ -623,310 +645,24 @@ class ConnectionManager:
         return res
 
     def test_oracle_connection(self, connection_name: str = "MY_ORACLE_XE_REMOTE") -> Dict[str, Any]:
+        """Oracle is permanently retired from NanoPro Studio.
+
+        Kept as a callable stub so legacy importers (antigravity agent, autonomous
+        operations manager, DMS endpoint checks) keep working without touching
+        Oracle hosts, drivers or credentials.
         """
-        Executes real Oracle Database connection verification.
-        - Supports MY_ORACLE_XE_LOCAL (127.0.0.1), MY_ORACLE_XE_REMOTE (192.168.31.240),
-          MY_ORACLE_XE_REMOTE_New (100.112.86.83 / Tailscale), or custom registered Oracle instances.
-        - Checks host reachability on port 1521.
-        - Attempts authenticated session via oracledb / cx_Oracle if installed.
-        - Validates service name XEPDB1.
-        - Runs lightweight query: SELECT USER, SYS_CONTEXT('USERENV','DB_NAME'), SYSDATE FROM DUAL.
-        - Dispatches urgent Telegram alert upon any connection failure.
-        """
-        start_time = time.time()
-        test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
-        conn_name = connection_name or "MY_ORACLE_XE_REMOTE"
-        cfg = self.get_connection_config(conn_name, mask=False)
-        default_meta = ORACLE_CONFIGS.get(conn_name, ORACLE_CONFIG)
-        meta = cfg.get("metadata", {}) if cfg else default_meta
-
-        host = meta.get("hostname") or cfg.get("host") or default_meta.get("hostname", "192.168.31.240")
-        port = int(meta.get("port") or cfg.get("port") or default_meta.get("port", 1521))
-        user = meta.get("username") or cfg.get("username") or default_meta.get("username", "SYSTEM")
-        password = (cfg.get("secret_value") if cfg and cfg.get("secret_value") else "") or os.environ.get("ORACLE_PASSWORD", "")
-        service_name = meta.get("service_name") or (cfg.get("database_name") if cfg else "") or cfg.get("service_name") or default_meta.get("service_name", "XEPDB1")
-
-        # Dedicated Handler for Official Oracle Cloud 23ai (APEX / ORDS REST)
-        if conn_name == "ORACLE_APEX_23AI_CLOUD" or meta.get("connection_type") == "ORDS_REST":
-            t0 = time.time()
-            ws_name = meta.get("workspace", "nanoprostudio")
-            u_name = meta.get("oauth_client_id") or "NanoPro ORDS client"
-            client = None
-            try:
-                from app.core.ords_client import ORDSClient
-                client = ORDSClient(conn_name)
-                verification = client.verify()
-                u_name = client.client_id
-                duration = round((time.time() - t0) * 1000, 2)
-                res = {
-                    "connection_name": conn_name,
-                    "status": "Connected; OAuth and L2 REST query verified",
-                    "success": True,
-                    "host": client.hostname,
-                    "port": client.port,
-                    "endpoint": client.schema_url,
-                    "username": u_name,
-                    "workspace": ws_name,
-                    "service_name": f"Oracle APEX 23ai Cloud ({ws_name})",
-                    "response_time_ms": duration,
-                    "timestamp": test_ts,
-                    "verified_version": "ORDS OAuth / REST",
-                    "query_result": f"Authenticated L2 reporting endpoint returned {verification['rows']} rows.",
-                    "error_category": None,
-                    "error_message": None,
-                }
-                self._record_connection_result(conn_name, "oracle", "Connected", duration, u_name, "NANOPRO_L1L2_READ", ws_name, "ORDS OAuth", None, res)
-                return res
-            except Exception as e:
-                duration = round((time.time() - t0) * 1000, 2)
-                err_str = str(e)
-                # Detect Oracle Free Tier external REST block (timeout or HTTP 403 on token endpoint)
-                is_free_tier_block = any(k in err_str.lower() for k in [
-                    "timed out", "timeout", "read operation timed out",
-                    "http 403", "403", "connection refused"
-                ])
-                if is_free_tier_block:
-                    status_msg = "Oracle APEX 23ai Cloud — Database Active (External REST blocked by Free Tier)"
-                    err_category = "APEX_FREE_TIER_EXTERNAL_REST_BLOCKED"
-                    err_detail = (
-                        "Oracle Lifetime Free APEX (apex.oracle.com) blocks external ORDS REST/OAuth calls. "
-                        "The Oracle 23ai Cloud database and APEX workspace 'nanoprostudio' are active and healthy. "
-                        "REST endpoints are accessible only from within APEX apps or Oracle Cloud internal network. "
-                        "To enable external REST: upgrade to Oracle Cloud Always Free (OCI) or use APEX Data REST via OCI API Gateway."
-                    )
-                else:
-                    status_msg = "OAuth/REST verification failed"
-                    err_category = "ORDS_AUTH_OR_REST_FAILED"
-                    err_detail = err_str
-                res = {
-                    "connection_name": conn_name,
-                    "status": status_msg,
-                    "success": False,
-                    "host": client.hostname if client else meta.get("hostname", "oracleapex.com"),
-                    "port": client.port if client else int(meta.get("port", 443)),
-                    "endpoint": client.schema_url if client else meta.get("environment_url", "https://oracleapex.com/ords/"),
-                    "username": u_name,
-                    "workspace": ws_name,
-                    "response_time_ms": duration,
-                    "timestamp": test_ts,
-                    "error_category": err_category,
-                    "error_message": err_detail,
-                    "troubleshooting": (
-                        "Oracle APEX Lifetime Free tier blocks external REST/OAuth. "
-                        "Database is live at apex.oracle.com/ords/nanoprostudio. "
-                        "Use APEX SQL Workshop for direct DB access."
-                    ) if is_free_tier_block else err_detail,
-                }
-                self._record_connection_result(conn_name, "oracle", res["status"], duration, u_name, None, ws_name, "ORDS OAuth", err_detail, res)
-                return res
-
-        if not password or not password.strip():
-            duration = round((time.time() - start_time) * 1000, 2)
-            res = {
-                "connection_name": conn_name,
-                "status": "Not Configured",
-                "success": False,
-                "host": host,
-                "port": port,
-                "username": user,
-                "service_name": service_name,
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "error_category": "MISSING_PASSWORD_IN_VAULT",
-                "error_message": f"Oracle password for user '{user}' is not configured in the Credential Vault or ORACLE_PASSWORD environment variable.",
-                "troubleshooting": "Please save your Oracle XE password in the Credential Vault for MY_ORACLE_XE_REMOTE."
-            }
-            self._record_connection_result(conn_name, "oracle", res["status"], duration, user, None, service_name, None, res["error_message"], res)
-            return res
-
-        # 1. Network Access & Port 1521 Reachability
-        try:
-            sock = socket.create_connection((host, port), timeout=4.0)
-            sock.close()
-            net_reachable = True
-        except socket.gaierror as e:
-            duration = round((time.time() - start_time) * 1000, 2)
-            res = {
-                "connection_name": conn_name,
-                "status": "Connection Failed",
-                "success": False,
-                "host": host,
-                "port": port,
-                "username": user,
-                "service_name": service_name,
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "error_category": "NETWORK_UNREACHABLE",
-                "stage": "network_access",
-                "error_message": f"Failure during network access: Unable to resolve hostname '{host}': {e}",
-                "troubleshooting": "Verify the Oracle host IP address and ensure DNS/hosts routing is available."
-            }
-            self._record_connection_result(conn_name, "oracle", res["status"], duration, user, None, service_name, None, res["error_message"], res)
-            return res
-        except (socket.timeout, OSError) as e:
-            duration = round((time.time() - start_time) * 1000, 2)
-            is_cloud = bool(os.environ.get("RENDER") or os.environ.get("PORT") or os.environ.get("RENDER_INSTANCE_ID"))
-            cloud_note = ""
-            if is_cloud and host in ["127.0.0.1", "localhost", "192.168.31.240", "100.112.86.83"]:
-                cloud_note = f" (Cloud Environment Note: Running on Render Linux. Host {host} is local to your laptop. For Oracle in Cloud, use ORACLE_APEX_23AI_CLOUD which is 100% Connected ✅. For local Oracle XE, run Studio locally on your laptop at http://127.0.0.1:8000)."
-            res = {
-                "connection_name": conn_name,
-                "status": "Connection Failed",
-                "success": False,
-                "host": host,
-                "port": port,
-                "username": user,
-                "service_name": service_name,
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "error_category": "PORT_UNREACHABLE",
-                "stage": "network_access",
-                "error_message": f"Failure during network access: Host {host}:{port} is unreachable ({e}).{cloud_note}",
-                "troubleshooting": f"1. On your laptop, verify Oracle XE is running and port 1521 is open.\n2. In Cloud hosting (Render), use ORACLE_APEX_23AI_CLOUD (Online & Verified)."
-            }
-            self._record_connection_result(conn_name, "oracle", res["status"], duration, user, None, service_name, None, res["error_message"], res)
-            return res
-
-        # 2. Driver check (oracledb or cx_Oracle)
-        oracledb_module = None
-        try:
-            import oracledb
-            oracledb_module = oracledb
-        except ImportError:
-            try:
-                import cx_Oracle
-                oracledb_module = cx_Oracle
-            except ImportError:
-                oracledb_module = None
-
-        if not oracledb_module:
-            duration = round((time.time() - start_time) * 1000, 2)
-            res = {
-                "connection_name": conn_name,
-                "status": "Degraded",
-                "success": False,
-                "host": host,
-                "port": port,
-                "username": user,
-                "service_name": service_name,
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "error_category": "DRIVER_MISSING",
-                "stage": "driver_initialization",
-                "error_message": f"Host {host}:{port} is network-reachable, but 'oracledb' driver is not installed in the local Python environment.",
-                "troubleshooting": "Install the python-oracledb driver: pip install oracledb"
-            }
-            self._record_connection_result(conn_name, "oracle", res["status"], duration, user, None, service_name, None, res["error_message"], res)
-            return res
-
-        # 3. Authenticated Connection & Service Name Validation
-        try:
-            conn = None
-            candidate_pws = [password]
-
-            candidate_services = [service_name]
-            for alt_srv in ["XEPDB1", "XE"]:
-                if alt_srv not in candidate_services:
-                    candidate_services.append(alt_srv)
-
-            last_ora_err = None
-            for p in candidate_pws:
-                for srv in candidate_services:
-                    for u in [user, user.upper()]:
-                        try:
-                            dsn = f"{host}:{port}/{srv}"
-                            conn = oracledb_module.connect(user=u, password=p, dsn=dsn)
-                            service_name = srv
-                            user = u
-                            password = p
-                            break
-                        except Exception as ora_ex:
-                            last_ora_err = ora_ex
-                            if "ORA-01017" not in str(ora_ex) and "ORA-12514" not in str(ora_ex):
-                                break
-                    if conn:
-                        break
-                if conn:
-                    break
-            if not conn and last_ora_err:
-                raise last_ora_err
-            cur = conn.cursor()
-            cur.execute("SELECT USER, SYS_CONTEXT('USERENV','DB_NAME'), SYSDATE FROM DUAL")
-            row = cur.fetchone()
-            duration = round((time.time() - start_time) * 1000, 2)
-
-            # Metadata inspection
-            tables_discovered = []
-            try:
-                cur.execute("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER = USER FETCH FIRST 10 ROWS ONLY")
-                tables_discovered = [r[0] for r in cur.fetchall()]
-            except Exception:
-                pass
-
-            cur.close()
-            conn.close()
-
-            res = {
-                "connection_name": conn_name,
-                "status": "Connected",
-                "success": True,
-                "host": host,
-                "port": port,
-                "username": user,
-                "service_name": service_name,
-                "connected_user": row[0] if row else user,
-                "database_name": row[1] if row else service_name,
-                "server_time": str(row[2]) if row else "",
-                "tables_discovered": tables_discovered,
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "security_note": "Connected using SYSTEM account (elevated privileges). For routine operations, use a dedicated least-privilege user.",
-                "message": "Authenticated Oracle connection established and read-only query verified."
-            }
-            self._record_connection_result(conn_name, "oracle", "Connected", duration, user, "SYSTEM", service_name, None, None, res)
-            return res
-
-        except Exception as e:
-            duration = round((time.time() - start_time) * 1000, 2)
-            err_str = str(e)
-            status = "Connection Failed"
-            err_cat = "UNKNOWN_ERROR"
-            stage = "authentication"
-
-            if "ORA-01017" in err_str or "invalid username/password" in err_str:
-                status = "Authentication Failed"
-                err_cat = "AUTH_FAILED"
-                stage = "authentication"
-            elif "ORA-12514" in err_str or "listener does not currently know of service" in err_str:
-                status = "Connection Failed"
-                err_cat = "SERVICE_NAME_INVALID"
-                stage = "service_resolution"
-            elif "ORA-12154" in err_str:
-                status = "Connection Failed"
-                err_cat = "TNS_RESOLVE_FAILED"
-                stage = "service_resolution"
-            elif "timed out" in err_str or "timeout" in err_str:
-                status = "Timed Out"
-                err_cat = "TIMEOUT"
-                stage = "network_access"
-
-            res = {
-                "connection_name": conn_name,
-                "status": status,
-                "success": False,
-                "host": host,
-                "port": port,
-                "username": user,
-                "service_name": service_name,
-                "response_time_ms": duration,
-                "timestamp": test_ts,
-                "stage": stage,
-                "error_category": err_cat,
-                "error_message": err_str,
-                "troubleshooting": f"Failure during {stage}: {err_str}"
-            }
-            self._record_connection_result(conn_name, "oracle", status, duration, user, None, service_name, None, err_str, res)
-            return res
+        return {
+            "connection_name": connection_name,
+            "status": "Retired",
+            "success": False,
+            "retired": True,
+            "provider": "Oracle",
+            "response_time_ms": 0,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "error_category": "PROVIDER_RETIRED",
+            "error_message": "Oracle support has been permanently removed. NanoPro uses BigQuery + AWS S3 as its data plane.",
+            "troubleshooting": "No action required. Use GOOGLE_BIGQUERY_SANDBOX and AWS_S3_DATA_LAKE instead.",
+        }
 
     def test_postgres_connection(self, connection_name: str = "MY_POSTGRES_LOCAL") -> Dict[str, Any]:
         """
@@ -1653,23 +1389,7 @@ class ConnectionManager:
         try: results["MY_POSTGRES_LOCAL"] = self.test_postgres_connection("MY_POSTGRES_LOCAL")
         except Exception as e: results["MY_POSTGRES_LOCAL"] = {"status": "Connection Failed", "error": str(e)}
 
-        # 7. Oracle Local
-        try: results["MY_ORACLE_XE_LOCAL"] = self.test_oracle_connection("MY_ORACLE_XE_LOCAL")
-        except Exception as e: results["MY_ORACLE_XE_LOCAL"] = {"status": "Connection Failed", "error": str(e)}
-
-        # 8. Oracle Remote
-        try: results["MY_ORACLE_XE_REMOTE"] = self.test_oracle_connection("MY_ORACLE_XE_REMOTE")
-        except Exception as e: results["MY_ORACLE_XE_REMOTE"] = {"status": "Connection Failed", "error": str(e)}
-
-        # 9. Oracle Tailscale
-        try: results["MY_ORACLE_XE_REMOTE_New"] = self.test_oracle_connection("MY_ORACLE_XE_REMOTE_New")
-        except Exception as e: results["MY_ORACLE_XE_REMOTE_New"] = {"status": "Connection Failed", "error": str(e)}
-
-        # 10. Oracle 23ai APEX
-        try: results["ORACLE_APEX_23AI_CLOUD"] = self.test_oracle_connection("ORACLE_APEX_23AI_CLOUD")
-        except Exception as e: results["ORACLE_APEX_23AI_CLOUD"] = {"status": "Connection Failed", "error": str(e)}
-
-        # 11. AWS S3
+        # 7. AWS S3
         try: results["AWS_S3_DATA_LAKE"] = self.test_aws_connection()
         except Exception as e: results["AWS_S3_DATA_LAKE"] = {"status": "Connection Failed", "error": str(e)}
 
@@ -1688,97 +1408,93 @@ class ConnectionManager:
         return results
 
     def test_cross_pipeline_interoperability(self) -> Dict[str, Any]:
-        """
-        Executes an end-to-end multi-database & cloud interoperability test:
-        1. Tests Oracle Database XE source connection & checks source records.
-        2. Validates staging buffer / S3 ingestion channel.
-        3. Validates Snowflake target connection & checks BANK_DB.L0_STAGING.
-        4. Verifies automated ETL pipeline data flow between Oracle, AWS S3 / staging, and Snowflake.
-        5. Records audit verification in connection_history and returns structured diagnostics.
-        """
+        """End-to-end check of the active data plane: BigQuery -> AWS S3 -> Snowflake."""
         start_time = time.time()
         test_ts = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        log_event("Initiating Cross-System Automated Interoperability Test: Oracle XE -> S3/Staging -> Snowflake", component="ConnectionManager")
+        log_event("Initiating Cross-System Interoperability Test: BigQuery -> AWS S3 -> Snowflake", component="ConnectionManager")
 
-        ora_test = self.test_oracle_connection("MY_ORACLE_XE_LOCAL")
-        if not ora_test.get("success"):
-            ora_test = self.test_oracle_connection("MY_ORACLE_XE_REMOTE")
-        if not ora_test.get("success"):
-            ora_test = self.test_oracle_connection("ORACLE_APEX_23AI_CLOUD")
-        ora_status = ora_test.get("status", "Not Tested")
-        ora_ok = ora_test.get("success", False)
+        from app.core.chat_bigquery_data import _client as _bq_client
+        bq_status, bq_ok, bq_detail = "Not Tested", False, ""
+        bq_datasets = 0
+        try:
+            client = _bq_client()
+            bq_datasets = sum(1 for _ in client.list_datasets())
+            bq_ok = True
+            bq_status = "Connected"
+            bq_detail = f"BigQuery client authenticated; {bq_datasets} dataset(s) visible."
+        except Exception as e:
+            bq_status = "Connection Failed"
+            bq_detail = f"{type(e).__name__}: {str(e)[:200]}"
 
         aws_test = self.test_aws_connection()
         aws_status = aws_test.get("status", "Not Tested")
         aws_ok = aws_test.get("success", False)
-
-        staging_dir = Path("data_ingestion")
-        staged_files = list(staging_dir.glob("*.*")) if staging_dir.exists() else []
 
         sf_test = self.test_snowflake_connection()
         sf_status = sf_test.get("status", "Not Tested")
         sf_ok = sf_test.get("success", False)
 
         duration = round((time.time() - start_time) * 1000, 2)
+        all_connected = bool(bq_ok and aws_ok and sf_ok)
 
         pipeline_stages = [
             {
-                "stage": "1. Source Extraction",
-                "system": "MY_ORACLE_XE_REMOTE (192.168.31.240:1521/XEPDB1)",
-                "status": ora_status,
-                "ready": ora_ok,
-                "detail": "Authenticated Oracle XE session established." if ora_ok else (ora_test.get("message") or ora_test.get("error_message"))
+                "stage": "1. Source Warehouse",
+                "system": "Google BigQuery (nanopro-lakehouse-sandbox)",
+                "status": bq_status,
+                "ready": bq_ok,
+                "detail": bq_detail,
             },
             {
-                "stage": "2. Data Staging & Lake Buffer",
-                "system": "AWS S3 Data Lake (nanopro-data-lake) & Staging Pipeline",
+                "stage": "2. Cloud Data Plane",
+                "system": "AWS S3 Data Lake (nanopro-data-lake)",
                 "status": aws_status,
                 "ready": aws_ok,
-                "detail": f"AWS identity/bucket check passed; {len(staged_files)} local staging files detected. No transfer was performed."
+                "detail": aws_test.get("message") or aws_test.get("error_message") or aws_status,
             },
             {
-                "stage": "3. Data Warehouse Target",
-                "system": "NANO_PRO_SNOWFLAKE (XMUTKDJ-KP74023 / BANK_DB.L0_STAGING)",
+                "stage": "3. Analytics Warehouse",
+                "system": "Snowflake (XMUTKDJ-KP74023)",
                 "status": sf_status,
                 "ready": sf_ok,
-                "detail": "Snowflake session active on COMPUTE_WH." if sf_ok else (sf_test.get("message") or sf_test.get("error_message"))
+                "detail": sf_test.get("message") or sf_test.get("error_message") or sf_status,
             },
             {
-                "stage": "4. Automated Cross-DB ETL Engine",
-                "system": "Data Transfer Engine (connection_manager.py)",
-                "status": "Connectivity Verified" if (ora_ok and aws_ok and sf_ok) else "Not Verified",
-                "ready": ora_ok and aws_ok and sf_ok,
-                "detail": "This check verifies connections only; no Oracle→S3→Snowflake data transfer is performed."
-            }
+                "stage": "4. Automated Pipeline",
+                "system": "BigQuery -> S3 Parquet exporter",
+                "status": "Connectivity Verified" if all_connected else "Not Verified",
+                "ready": all_connected,
+                "detail": "Run POST /api/jobs/bigquery_to_aws to execute the real export.",
+            },
         ]
 
-        all_connected = (ora_ok and aws_ok and sf_ok)
         overall_status = "Fully Interconnected" if all_connected else "Partial"
         message = (
-            "Oracle, AWS identity/S3 bucket, and Snowflake connection checks passed. This is a connectivity check; no data was transferred."
+            "BigQuery, AWS S3, and Snowflake connection checks passed."
             if all_connected else
-            f"Interoperability Test: Oracle ({ora_status}), S3 ({aws_status}), Snowflake ({sf_status}). Both Oracle and Snowflake must be Connected for live automated sync."
+            f"Interoperability Test: BigQuery ({bq_status}), S3 ({aws_status}), Snowflake ({sf_status})."
         )
 
         res = {
             "success": all_connected,
             "service": "CROSS_PIPELINE",
-            "connection_name": "ORACLE_AWS_SNOWFLAKE_PIPELINE",
+            "connection_name": "BIGQUERY_AWS_SNOWFLAKE_PIPELINE",
             "status": overall_status,
-            "oracle_status": ora_status,
+            "bigquery_status": bq_status,
+            "bigquery_datasets": bq_datasets,
             "aws_status": aws_status,
             "snowflake_status": sf_status,
             "pipeline_stages": pipeline_stages,
             "response_time_ms": duration,
             "timestamp": test_ts,
             "message": message,
-            "automation_ready": all_connected
+            "automation_ready": all_connected,
         }
 
         self._record_connection_result(
-            "ORACLE_AWS_SNOWFLAKE_PIPELINE", "pipeline", overall_status, duration,
-            "SYSTEM -> MANGESHBAGUL15", "ACCOUNTADMIN", "XEPDB1 -> BANK_DB", "L0_STAGING",
+            "BIGQUERY_AWS_SNOWFLAKE_PIPELINE", "pipeline", overall_status, duration,
+            "BigQuery -> S3", None, "nanopro-lakehouse-sandbox -> nanopro-data-lake", None,
             None if all_connected else message, res
         )
         return res
@@ -1850,7 +1566,7 @@ class ConnectionManager:
     def get_all_connections_health(self) -> List[Dict[str, Any]]:
         """
         Returns live health status of all configured services:
-        Snowflake, Oracle (Local, Remote, Tailscale), Gmail, AWS S3, AWS DMS, Telegram, SQLite.
+        Snowflake, PostgreSQL, Gmail, AWS S3, AWS DMS, Telegram, SQLite.
         """
         connections = [
             {
@@ -1860,42 +1576,6 @@ class ConnectionManager:
                 "target": f"{SNOWFLAKE_CONFIG['database']}.{SNOWFLAKE_CONFIG['schema']}",
                 "user_role": f"{SNOWFLAKE_CONFIG['username']} ({SNOWFLAKE_CONFIG['role']})",
                 "has_credentials": bool(os.environ.get("SNOWFLAKE_PASSWORD") or (self.get_connection_config("NANO_PRO_SNOWFLAKE", mask=False) or {}).get("secret_value")),
-                "configured": True
-            },
-            {
-                "connection_name": "MY_ORACLE_XE_LOCAL",
-                "service_type": "Oracle Database XE (Localhost)",
-                "host_identifier": "127.0.0.1:1521",
-                "target": "XEPDB1",
-                "user_role": "SYSTEM (Local Basic)",
-                "has_credentials": bool(os.environ.get("ORACLE_PASSWORD") or (self.get_connection_config("MY_ORACLE_XE_LOCAL", mask=False) or {}).get("secret_value")),
-                "configured": True
-            },
-            {
-                "connection_name": "MY_ORACLE_XE_REMOTE",
-                "service_type": "Oracle Database XE (Remote LAN)",
-                "host_identifier": f"{ORACLE_CONFIG['hostname']}:{ORACLE_CONFIG['port']}",
-                "target": ORACLE_CONFIG["service_name"],
-                "user_role": f"{ORACLE_CONFIG['username']} (Default)",
-                "has_credentials": bool(os.environ.get("ORACLE_PASSWORD") or (self.get_connection_config("MY_ORACLE_XE_REMOTE", mask=False) or {}).get("secret_value")),
-                "configured": True
-            },
-            {
-                "connection_name": "MY_ORACLE_XE_REMOTE_New",
-                "service_type": "Oracle Database XE (Tailscale)",
-                "host_identifier": "100.112.86.83:1521",
-                "target": "XEPDB1",
-                "user_role": "SYSTEM (Tailscale Secure)",
-                "has_credentials": bool(os.environ.get("ORACLE_PASSWORD") or (self.get_connection_config("MY_ORACLE_XE_REMOTE_New", mask=False) or {}).get("secret_value")),
-                "configured": True
-            },
-            {
-                "connection_name": "ORACLE_APEX_23AI_CLOUD",
-                "service_type": "Oracle Database 23ai (APEX Cloud)",
-                "host_identifier": "oracleapex.com:443 (ORDS REST)",
-                "target": "Workspace: nanoprostudio",
-                "user_role": "mangeshbagul15@gmail.com (Cloud DBA)",
-                "has_credentials": True,
                 "configured": True
             },
             {
@@ -1992,8 +1672,8 @@ class ConnectionManager:
                 "connection_name": "AWS_DMS_MIGRATION",
                 "service_type": "AWS Database Migration Service",
                 "host_identifier": "dms.ap-southeast-2.amazonaws.com",
-                "target": "Oracle XE ➔ S3 Lake CDC",
-                "user_role": "dms.t3.medium (Available)",
+                "target": "Disabled (IAM policy denies DMS; source Oracle retired)",
+                "user_role": "dms.t3.medium",
                 "has_credentials": True,
                 "configured": True
             },
@@ -2016,11 +1696,11 @@ class ConnectionManager:
                 "configured": True
             },
             {
-                "connection_name": "ORACLE_AWS_SNOWFLAKE_PIPELINE",
+                "connection_name": "BIGQUERY_AWS_PIPELINE",
                 "service_type": "Cross-System ETL Pipeline",
-                "host_identifier": "Oracle ➔ S3/Staging ➔ Snowflake",
-                "target": "XEPDB1 ➔ nanopro-data-lake ➔ BANK_DB",
-                "user_role": "SYSTEM ➔ ACCOUNTADMIN",
+                "host_identifier": "BigQuery ➔ AWS S3 (Parquet) ➔ Snowflake",
+                "target": "nanopro-lakehouse-sandbox ➔ nanopro-data-lake ➔ BANK_DB",
+                "user_role": "bigquery.dataViewer ➔ IAM NanoProDataEngineer",
                 "has_credentials": True,
                 "configured": True
             },
@@ -2300,21 +1980,19 @@ class ConnectionManager:
                     "status": "Connection Failed"
                 }
 
-        elif connection_name == "MY_ORACLE_XE_REMOTE":
-            test_res = self.test_oracle_connection()
-            if not test_res.get("success"):
-                duration = round((time.time() - start_time) * 1000, 2)
-                err = f"Cannot execute query on Oracle: Connection test failed ({test_res.get('status')} - {test_res.get('error_message')})"
-                self._record_query_history(query_id, connection_name, database_name, schema_name, query_clean, duration, 0, "error", err)
-                return {
-                    "success": False,
-                    "query_id": query_id,
-                    "connection_name": connection_name,
-                    "error": err,
-                    "connection_status": test_res.get("status"),
-                    "execution_time_ms": duration,
-                    "status": "Connection Failed"
-                }
+        elif connection_name.startswith(("MY_ORACLE_", "ORACLE_")):
+            duration = round((time.time() - start_time) * 1000, 2)
+            err = "Oracle support has been permanently retired. Use GOOGLE_BIGQUERY_SANDBOX instead."
+            self._record_query_history(query_id, connection_name, database_name, schema_name, query_clean, duration, 0, "error", err)
+            return {
+                "success": False,
+                "query_id": query_id,
+                "connection_name": connection_name,
+                "error": err,
+                "connection_status": "Retired",
+                "execution_time_ms": duration,
+                "status": "Retired"
+            }
 
         # PostgreSQL execution (Neon Cloud Free, Render Cloud, Local)
         if connection_name in ["POSTGRES_CLOUD_FREE", "MY_POSTGRES_LOCAL", "POSTGRES_RENDER_CLOUD"]:
@@ -2450,36 +2128,15 @@ class ConnectionManager:
         return str(out_path)
 
     def get_all_oracle_statuses(self) -> Dict[str, Any]:
-        """
-        Tests all 3 configured Oracle database instances (Local, Remote, Tailscale)
-        and reports which ones are ON (reachable/authenticated) and which are OFF.
-        Enables seamless failover and multi-database operation.
-        """
-        results = {}
-        online_candidates = []
-        for cname in ["MY_ORACLE_XE_LOCAL", "MY_ORACLE_XE_REMOTE", "MY_ORACLE_XE_REMOTE_New"]:
-            test_res = self.test_oracle_connection(cname)
-            is_on = test_res.get("success", False) or test_res.get("status") in ["Connected", "Degraded"]
-            results[cname] = {
-                "connection_name": cname,
-                "host": test_res.get("host"),
-                "port": test_res.get("port"),
-                "service": test_res.get("service_name"),
-                "state": "ON" if is_on else "OFF",
-                "status": test_res.get("status"),
-                "response_time_ms": test_res.get("response_time_ms", 0),
-                "message": test_res.get("message") or test_res.get("error_message")
-            }
-            if is_on:
-                online_candidates.append(cname)
-
+        """Oracle is retired; kept for API compatibility and returns a Retired summary."""
         return {
             "status": "success",
+            "retired": True,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "oracle_instances": results,
-            "online_instances_count": len(online_candidates),
-            "primary_active_instance": online_candidates[0] if online_candidates else "None (All currently offline)",
-            "summary": f"{len(online_candidates)} of 3 Oracle instances are reachable."
+            "oracle_instances": {},
+            "online_instances_count": 0,
+            "primary_active_instance": "None (Oracle permanently retired)",
+            "summary": "Oracle support has been permanently removed. Use Google BigQuery + AWS S3 instead.",
         }
 
     def add_custom_database(
@@ -2496,9 +2153,12 @@ class ConnectionManager:
     ) -> Dict[str, Any]:
         """
         Dynamically registers a new database connection into the Credentials Vault.
-        Supports Oracle, Snowflake, PostgreSQL, MySQL, SQL Server, and SQLite.
+        Supports Snowflake, PostgreSQL, MySQL, SQL Server, and SQLite (Oracle is retired).
         Immediately synchronizes local Vault, .env files, SQL Studio catalog, and pushes to GitHub/Render Cloud.
         """
+        if "oracle" in (service_type or "").lower() or connection_name.upper().startswith(("ORACLE_", "MY_ORACLE_")):
+            return {"status": "retired", "success": False, "error": "Oracle support has been permanently retired."}
+
         meta = metadata or {}
         meta["host"] = host
         meta["port"] = port
@@ -2593,12 +2253,13 @@ class ConnectionManager:
         cfg = self.get_connection_config(connection_name, mask=False)
         conn_upper = connection_name.upper()
 
+        if "ORACLE" in conn_upper:
+            return {"status": "retired", "success": False, "connection_name": connection_name,
+                    "message": "Oracle support has been permanently retired. Credential not saved."}
+
         if not cfg:
             # Fallback configuration synthesize
-            if "ORACLE" in conn_upper and connection_name in ORACLE_CONFIGS:
-                oc = ORACLE_CONFIGS[connection_name]
-                cfg = {"service_type": "database", "username": oc["username"], "host": oc["hostname"], "port": str(oc["port"]), "database_name": oc.get("service_name", "XEPDB1"), "metadata": oc}
-            elif "SNOWFLAKE" in conn_upper:
+            if "SNOWFLAKE" in conn_upper:
                 cfg = {"service_type": "database", "username": SNOWFLAKE_CONFIG["username"], "host": SNOWFLAKE_CONFIG["account_url"], "port": "443", "database_name": SNOWFLAKE_CONFIG["database"], "metadata": SNOWFLAKE_CONFIG}
             elif "POSTGRES" in conn_upper and connection_name in POSTGRES_CONFIGS:
                 pc = POSTGRES_CONFIGS[connection_name]
@@ -2624,23 +2285,13 @@ class ConnectionManager:
         env_updated = False
         synced_keys = []
 
-        # 1. Oracle Databases
+        # 1. Oracle is permanently retired — credentials are not synced anywhere
         if "ORACLE" in conn_upper:
-            os.environ["ORACLE_PASSWORD"] = new_password
-            self._update_env_file_variable("ORACLE_PASSWORD", new_password)
-            synced_keys.append("ORACLE_PASSWORD")
-            # Update all active Oracle configs in memory
-            for k in ORACLE_CONFIGS:
-                ORACLE_CONFIGS[k]["password"] = new_password
-            ORACLE_CONFIG["password"] = new_password
-            if conn_upper == "ORACLE_APEX_23AI_CLOUD":
-                os.environ["ORACLE_APEX_PASSWORD"] = new_password
-                self._update_env_file_variable("ORACLE_APEX_PASSWORD", new_password)
-                synced_keys.append("ORACLE_APEX_PASSWORD")
-            env_updated = True
+            return {"status": "retired", "success": False, "connection_name": connection_name,
+                    "message": "Oracle support has been permanently retired. Credential not saved."}
 
         # 2. Snowflake Data Warehouse
-        elif "SNOWFLAKE" in conn_upper:
+        if "SNOWFLAKE" in conn_upper:
             os.environ["SNOWFLAKE_PASSWORD"] = new_password
             self._update_env_file_variable("SNOWFLAKE_PASSWORD", new_password)
             SNOWFLAKE_CONFIG["password"] = new_password
@@ -2970,7 +2621,7 @@ class ConnectionManager:
         """Returns active sentinel state, monitored services, and lockout flags."""
         return {
             "sentinel_active": getattr(self, "_sentinel_running", False),
-            "monitored_targets": ["MY_ORACLE_XE_LOCAL", "MY_ORACLE_XE_REMOTE", "NANO_PRO_SNOWFLAKE", "GMAIL_SMTP", "TELEGRAM"],
+            "monitored_targets": ["NANO_PRO_SNOWFLAKE", "GOOGLE_BIGQUERY_SANDBOX", "AWS_S3_DATA_LAKE", "GMAIL_SMTP", "TELEGRAM"],
             "auth_locked_services": list(getattr(self, "_auth_locked_services", set())),
             "backoff_delays": getattr(self, "_backoff_delays", {})
         }
@@ -2984,9 +2635,8 @@ class ConnectionManager:
         time.sleep(4.0)  # Initial boot grace period
         all_targets = [
             "NANO_PRO_SNOWFLAKE", "DUCKDB_GOLD_LAKEHOUSE", "GOOGLE_BIGQUERY_SANDBOX",
-            "POSTGRES_CLOUD_FREE", "MY_ORACLE_XE_LOCAL", "MY_ORACLE_XE_REMOTE",
-            "POSTGRES_RENDER_CLOUD", "MY_POSTGRES_LOCAL", "GMAIL_SMTP",
-            "TELEGRAM_ALERTS", "STUDIO_MEMORY_DB", "AWS_S3_DATA_LAKE"
+            "POSTGRES_CLOUD_FREE", "POSTGRES_RENDER_CLOUD", "MY_POSTGRES_LOCAL",
+            "GMAIL_SMTP", "TELEGRAM_ALERTS", "STUDIO_MEMORY_DB", "AWS_S3_DATA_LAKE"
         ]
 
         while getattr(self, "_sentinel_running", False):

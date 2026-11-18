@@ -1,6 +1,6 @@
 """
 Mangesh Nano Pro AI Studio - Dynamic Multi-Database Intelligence Engine
-Solves complex natural language database queries across Snowflake, Oracle XE,
+Solves complex natural language database queries across Snowflake, Google BigQuery,
 PostgreSQL, and SQLite with zero hardcoding:
 - Dynamic dialect-aware SQL query generation (LIMIT vs FETCH FIRST)
 - Live database execution and table preview rendering
@@ -58,7 +58,10 @@ class DynamicDBEngine:
 
         # Detect database & schema
         is_snowflake = "snowflake" in p or "bank_db" in p or "bankdb" in p or "l0" in p or "staging" in p
-        is_oracle = "oracle" in p or "xepdb1" in p or "xe" in p or "account_master" in p
+        is_bigquery = any(k in p for k in [
+            "bigquery", "bq", "nanopro_cbs_bronze", "nanopro_studio", "bronze",
+            "oracle", "xepdb1", "account_master",
+        ])
         is_postgres = "postgres" in p or "postgresql" in p or "nanopro_db" in p
         is_sqlite = "sqlite" in p or "local db" in p
 
@@ -66,12 +69,14 @@ class DynamicDBEngine:
         schema_name = "L0_STAGING"
         engine_label = "Snowflake Data Cloud"
 
-        if is_oracle:
-            engine_label = "Oracle Database XE"
-            db_name = "MY_ORACLE_XE_LOCAL (XEPDB1)"
-            schema_name = "SYSTEM"
-            if target_table == "ACCOUNTS":
-                target_table = "ACCOUNT_MASTER"
+        if is_bigquery:
+            engine_label = "Google BigQuery"
+            db_name = "nanopro-lakehouse-sandbox"
+            schema_name = "nanopro_cbs_bronze"
+            if target_table == "ACCOUNT_MASTER":
+                target_table = "ACCOUNTS"
+            elif target_table == "CUSTOMER_MASTER":
+                target_table = "CUSTOMERS"
         elif is_postgres:
             engine_label = "PostgreSQL Enterprise"
             db_name = "nanopro_db"
@@ -91,10 +96,10 @@ class DynamicDBEngine:
                         break
 
         # Generate SQL according to engine
-        if is_oracle:
-            standard_sql = f"SELECT * FROM {target_table} FETCH FIRST {limit_val} ROWS ONLY;"
-            explicit_cols = ", ".join([c["column"] if isinstance(c, dict) else str(c) for c in table_meta["columns"]]) if table_meta else "*"
-            proj_sql = f"SELECT {explicit_cols}\nFROM {target_table}\nFETCH FIRST {limit_val} ROWS ONLY;"
+        if is_bigquery:
+            standard_sql = f"SELECT * FROM `{db_name}.{schema_name}.{target_table}` LIMIT {limit_val};"
+            explicit_cols = ",\n  ".join([c["column"] if isinstance(c, dict) else str(c) for c in table_meta["columns"]]) if table_meta else "*"
+            proj_sql = f"SELECT\n  {explicit_cols}\nFROM `{db_name}.{schema_name}.{target_table}`\nLIMIT {limit_val};"
         else:
             standard_sql = f"SELECT * FROM {db_name}.{schema_name}.{target_table} LIMIT {limit_val};"
             explicit_cols = ",\n  ".join([c["column"] if isinstance(c, dict) else str(c) for c in table_meta["columns"]]) if table_meta else "*"
@@ -250,11 +255,11 @@ Namaskar Mangesh! Here is the verified SQL query and complete table architectura
         if is_mr:
             intro = """🏛️ **मंगेश नॅनो प्रो एआय: संपूर्ण मल्टी-डेटाबेस आर्किटेक्चर व स्कीमा ऑडिट**
 
-नमस्कार मंगेश! आपल्या सिस्टीममध्ये समाविष्ट असलेल्या सर्व ४ डेटाबेस इंजिन्स (Snowflake, Oracle XE, PostgreSQL, SQLite) ची सविस्तर रचना, स्कीमा, टेबल्स, डेटा टाईप्स आणि हेतू खालीलप्रमाणे तपासण्यात आले आहेत:"""
+नमस्कार मंगेश! आपल्या सिस्टीममध्ये समाविष्ट असलेल्या सर्व डेटा प्लॅटफॉर्म्स (Snowflake, Google BigQuery, PostgreSQL, SQLite, AWS S3) ची सविस्तर रचना, स्कीमा, टेबल्स, डेटा टाईप्स आणि हेतू खालीलप्रमाणे तपासण्यात आले आहेत:"""
         else:
             intro = """🏛️ **Mangesh Nano Pro AI: Full Multi-Database Architecture & Deep Schema Audit**
 
-Namaskar Mangesh! The complete architectural inventory, schemas, table hierarchies, PK/FK constraints, and join graphs across all 4 database engines (Snowflake, Oracle XE, PostgreSQL, SQLite) are audited below:"""
+Namaskar Mangesh! The complete architectural inventory, schemas, table hierarchies, PK/FK constraints, and join graphs across all data platforms (Snowflake, Google BigQuery, PostgreSQL, SQLite, AWS S3) are audited below:"""
 
         full_report = f"{intro}\n\n{all_engines}"
 

@@ -6552,7 +6552,7 @@ def _get_raw_dashboard_html() -> str:
 
                         </div>
 
-                        <div style="font-size:11.5px; color:#94A3B8;">Multi-Cloud Orchestration (Snowflake, Oracle XE, S3 Iceberg) &amp; 305 Autonomous AI Specialists across 19 Pods (A-S)</div>
+                        <div style="font-size:11.5px; color:#94A3B8;">Multi-Cloud Orchestration (BigQuery, Snowflake, AWS S3) &amp; 305 Autonomous AI Specialists across 19 Pods (A-S)</div>
 
                     </div>
 
@@ -6562,7 +6562,7 @@ def _get_raw_dashboard_html() -> str:
 
                     <div class="lavish-metric-chip"><span class="dot"></span> Snowflake: Connected</div>
 
-                    <div class="lavish-metric-chip"><span class="dot"></span> Oracle XE: Connected</div>
+                    <div class="lavish-metric-chip"><span class="dot"></span> BigQuery: Connected</div>
 
                     <div class="lavish-metric-chip"><span class="dot"></span> AWS S3: Active</div>
 
@@ -13136,17 +13136,11 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                         <option value="POSTGRES_CLOUD_FREE">&#127381; POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL - ETL L0/L1 Raw]</option>
 
-                        <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD [Oracle 23ai Cloud APEX Workspace]</option>
 
-                        <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]</option>
 
-                        <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]</option>
 
-                        <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]</option>
 
-                        <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle XE Core CBS | 192.168.31.240:1521]</option>
 
-                        <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Production CBS]</option>
 
                         <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD [Render Cloud PostgreSQL]</option>
 
@@ -13554,17 +13548,11 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                                 <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL]</option>
 
-                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD [Oracle 23ai Cloud APEX]</option>
 
-                                <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle Local]</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle 192.168.31.240]</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle Tailscale]</option>
 
-                                <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle LAN 240]</option>
 
-                                <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Prod RAC]</option>
 
                                 <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD [Render PostgreSQL Cloud]</option>
 
@@ -13764,15 +13752,10 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                             <option value="BANK_DB" selected>BANK_DB [Snowflake Cloud DW - XMUTKDJ-KP74023]</option>
 
-                            <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]</option>
 
-                            <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle XE Core CBS Batch | 192.168.31.240]</option>
 
-                            <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Production CBS | 127.0.0.1]</option>
 
                             <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL [PostgreSQL 127.0.0.1:5432 / nanopro_db]</option>
 
@@ -13972,15 +13955,10 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                                     <option value="BANK_DB" selected>BANK_DB (Snowflake Cloud DW)</option>
 
-                                    <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (Oracle XE Local)</option>
 
-                                    <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (Oracle XE LAN)</option>
 
-                                    <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (Oracle XE Tailscale)</option>
 
-                                    <option value="ORCL_LAN_240">ORCL_LAN_240 (Oracle XE Core CBS)</option>
 
-                                    <option value="ORCL_PROD_CORE">ORCL_PROD_CORE (Oracle 19c CBS Prod)</option>
 
                                     <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL (PostgreSQL)</option>
 
@@ -14240,15 +14218,10 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                             <option value="BANK_DB" selected>BANK_DB [Snowflake]</option>
 
-                            <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle Local]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle 192.168.31.240]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle Tailscale]</option>
 
-                            <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle LAN 240]</option>
 
-                            <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Prod]</option>
 
                             <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL [PostgreSQL]</option>
 
@@ -14984,7 +14957,6 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                     <option value="studio_memory.db">Local SQLite (NVMe)</option>
 
-                    <option value="ORACLE_APEX_23AI_CLOUD">Oracle 23ai Cloud APEX</option>
 
                 </select>
 
@@ -15130,13 +15102,9 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE (Neon.tech PostgreSQL Cloud - Lifetime Free)</option>
 
-                        <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (Oracle 23ai Cloud APEX Workspace)</option>
 
-                        <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (Oracle XE Local 19c)</option>
 
-                        <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (Oracle XE LAN)</option>
 
-                        <option value="ORCL_LAN_240">ORCL_LAN_240 (Oracle XE CBS Batch)</option>
 
                         <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD (Render PostgreSQL Cloud)</option>
 
@@ -16310,7 +16278,6 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB.L0_STAGING)</option>
 
-                <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240/XEPDB1)</option>
 
                 <option value="STUDIO_MEMORY_DB">STUDIO_MEMORY_DB (SQLite Internal Ledger)</option>
 
@@ -21272,13 +21239,9 @@ Ready for message compilation and automated dispatch.
 
                             <select class="studio-input" id="quickPwdConn">
 
-                                <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (127.0.0.1:1521/XEPDB1)</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240:1521/XEPDB1)</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (100.112.86.83:1521/XEPDB1)</option>
 
-                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (oracleapex.com:443)</option>
 
                                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB)</option>
 

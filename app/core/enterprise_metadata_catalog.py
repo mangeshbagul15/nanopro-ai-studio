@@ -1,12 +1,12 @@
 """
 Mangesh Nano Pro AI Studio - Enterprise Multi-Database Metadata Catalog & Architecture Engine
 Unified Single Source of Truth for:
-- Database Engines: Snowflake, Oracle Database XE, PostgreSQL, SQLite, AWS S3
+- Database Engines: Snowflake, Google BigQuery, PostgreSQL, SQLite, AWS S3
 - Exact Database Names, Host/Port/Service, Purpose & Architecture Role
 - Schemas, Counts, Architectural Purpose (L0 Raw -> L1 Harmonized -> L2 Curated)
 - Tables, Purpose, Estimated Record Counts, PK & FK Constraints
 - Full Column Metadata (Datatypes, Nullability, Primary Keys, Foreign Keys, Descriptions)
-- Join Graph & Cross-Database Entity Lineage (Oracle <-> Snowflake <-> Postgres <-> SQLite)
+- Join Graph & Cross-Database Entity Lineage (BigQuery <-> Snowflake <-> Postgres <-> SQLite)
 - Cross-Database Matching & Automated Excel Reconciliation Engine
 - Dynamic Runtime Schema Introspection & Auto-Discovery
 """
@@ -38,13 +38,13 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
             "BANK_DB": {
                 "name": "BANK_DB",
                 "label": "BANK_DB (Primary Enterprise Banking Lakehouse)",
-                "purpose": "Primary enterprise banking lakehouse ingesting real-time CDC transaction logs from Oracle Finacle CBS, organizing them into Medallion architecture (Bronze -> Silver -> Gold), and powering AML risk detection and executive analytics.",
+                "purpose": "Primary enterprise banking lakehouse ingesting batch and CDC transaction data from the BigQuery bronze layer, organizing them into Medallion architecture (Bronze -> Silver -> Gold), and powering AML risk detection and executive analytics.",
                 "total_schemas": 5,
                 "schemas": {
                     "L0_STAGING": {
                         "name": "L0_STAGING",
                         "layer": "Bronze / Raw Staging Layer",
-                        "purpose": "Ingests raw, untouched CDC event streams from Oracle XE and external feeds without transformation, preserving source data fidelity for historical audit and replaying.",
+                        "purpose": "Ingests raw, untouched event streams from BigQuery and external feeds without transformation, preserving source data fidelity for historical audit and replaying.",
                         "tables": {
                             "ACCOUNTS": {
                                 "purpose": "Core deposit and savings account ledger storing live balances, account statuses, and opening dates.",
@@ -57,8 +57,8 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
                                     {"table": "BRANCHES", "on": "ACCOUNTS.BRANCH_CODE = BRANCHES.BRANCH_CODE", "desc": "Join to identify home branch and IFSC routing code"}
                                 ],
                                 "cross_db_mapping": {
-                                    "target_engine": "oracle",
-                                    "target_db": "MY_ORACLE_XE_LOCAL",
+                                    "target_engine": "bigquery",
+                                    "target_db": "nanopro_cbs_bronze",
                                     "target_table": "ACCOUNT_MASTER",
                                     "match_key": "ACCOUNT_NUMBER"
                                 },
@@ -83,8 +83,8 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
                                     {"table": "LOANS", "on": "CUSTOMERS.CUSTOMER_ID = LOANS.CUSTOMER_ID", "desc": "Retrieve active retail and commercial credit facilities held by customer"}
                                 ],
                                 "cross_db_mapping": {
-                                    "target_engine": "oracle",
-                                    "target_db": "MY_ORACLE_XE_LOCAL",
+                                    "target_engine": "bigquery",
+                                    "target_db": "nanopro_cbs_bronze",
                                     "target_table": "CUSTOMERS",
                                     "match_key": "CUSTOMER_ID"
                                 },
@@ -109,8 +109,8 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
                                     {"table": "CUSTOMERS", "on": "ACCOUNTS.CUSTOMER_ID = CUSTOMERS.CUSTOMER_ID", "desc": "Join via ACCOUNTS to identify the customer initiating transaction"}
                                 ],
                                 "cross_db_mapping": {
-                                    "target_engine": "oracle",
-                                    "target_db": "MY_ORACLE_XE_LOCAL",
+                                    "target_engine": "bigquery",
+                                    "target_db": "nanopro_cbs_bronze",
                                     "target_table": "TXN_JOURNAL",
                                     "match_key": "TRANSACTION_ID"
                                 },
@@ -204,7 +204,7 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
                                 "joinable_tables": [],
                                 "columns": [
                                     {"column": "BATCH_ID", "type": "VARCHAR(40)", "nullable": "NO", "pk": True, "fk": False, "desc": "CDC pipeline execution run ID", "sample": "BATCH_20261014_01"},
-                                    {"column": "SOURCE_SYSTEM", "type": "VARCHAR(40)", "nullable": "NO", "pk": False, "fk": False, "desc": "Origin database cluster", "sample": "MY_ORACLE_XE_LOCAL"},
+                                    {"column": "SOURCE_SYSTEM", "type": "VARCHAR(40)", "nullable": "NO", "pk": False, "fk": False, "desc": "Origin database cluster", "sample": "nanopro_cbs_bronze"},
                                     {"column": "TARGET_TABLE", "type": "VARCHAR(40)", "nullable": "NO", "pk": False, "fk": False, "desc": "Target table in L0_STAGING", "sample": "CUSTOMERS"},
                                     {"column": "RECORDS_LOADED", "type": "NUMBER(10,0)", "nullable": "NO", "pk": False, "fk": False, "desc": "Number of rows appended", "sample": "500"},
                                     {"column": "STATUS", "type": "VARCHAR(16)", "nullable": "NO", "pk": False, "fk": False, "desc": "CDC batch completion state", "sample": "SUCCESS"},
@@ -297,123 +297,6 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
             }
         }
     },
-    "oracle": {
-        "engine_label": "Oracle Database XE",
-        "engine_type": "Enterprise Relational Database Management System (RDBMS)",
-        "service_name": "XEPDB1",
-        "default_credentials": "User: SYSTEM | Password: ORACLE_PASSWORD (env)",
-        "databases": {
-            "MY_ORACLE_XE_LOCAL": {
-                "name": "MY_ORACLE_XE_LOCAL",
-                "label": "MY_ORACLE_XE_LOCAL (Local Developer Core)",
-                "host": "127.0.0.1:1521",
-                "service": "XEPDB1",
-                "purpose": "Local developer core Oracle XE database running on the local machine (127.0.0.1:1521) for local feature development, table creation, and staging tests.",
-                "total_schemas": 2,
-                "schemas": {
-                    "XEPDB1": {
-                        "name": "XEPDB1",
-                        "tables": {
-                            "CUSTOMERS": {
-                                "purpose": "Local source customers table containing verified customer master identities for replication.",
-                                "record_count": "~25,000 records",
-                                "pk": ["CUSTOMER_ID"],
-                                "columns": ["CUSTOMER_ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE", "CITY", "KYC_STATUS", "CREATED_DATE"]
-                            },
-                            "ACCOUNT_MASTER": {
-                                "purpose": "Local core savings and current account master ledger.",
-                                "record_count": "~17,500 records",
-                                "pk": ["ACCOUNT_ID"],
-                                "columns": ["ACCOUNT_ID", "CUSTOMER_ID", "ACCOUNT_NUMBER", "ACCOUNT_TYPE", "BALANCE", "STATUS", "CREATED_DATE"]
-                            },
-                            "TXN_JOURNAL": {
-                                "purpose": "Local cash and transfer transaction log feed.",
-                                "record_count": "~50,000 records",
-                                "pk": ["TXN_ID"],
-                                "columns": ["TXN_ID", "ACCOUNT_ID", "TXN_TYPE", "AMOUNT", "TXN_DATE", "STATUS"]
-                            },
-                            "BRANCH_MASTER": {
-                                "purpose": "Branch definitions, SOL_IDs, and operating cities.",
-                                "record_count": "~500 records",
-                                "pk": ["BRANCH_ID"],
-                                "columns": ["BRANCH_ID", "BRANCH_CODE", "BRANCH_NAME", "CITY", "IFSC_CODE"]
-                            },
-                            "USER_ROLES": {
-                                "purpose": "Application role assignments and access privileges.",
-                                "record_count": "~80 records",
-                                "pk": ["ROLE_ID"],
-                                "columns": ["ROLE_ID", "USER_NAME", "ROLE_NAME", "PERMISSIONS"]
-                            },
-                            "LOCAL_AUDIT_LOGS": {
-                                "purpose": "Local database login and transaction audit log.",
-                                "record_count": "~12,000 records",
-                                "pk": ["LOG_ID"],
-                                "columns": ["LOG_ID", "ACTION", "EXECUTED_BY", "TIMESTAMP", "DETAILS"]
-                            }
-                        }
-                    },
-                    "SYSTEM": {
-                        "name": "SYSTEM",
-                        "tables": ["DBA_TABLES", "DBA_USERS", "DBA_DATA_FILES", "V$SESSION", "AUDIT_ACTIONS"]
-                    }
-                }
-            },
-            "MY_ORACLE_XE_REMOTE": {
-                "name": "MY_ORACLE_XE_REMOTE",
-                "label": "MY_ORACLE_XE_REMOTE (Remote LAN Production Staging)",
-                "host": "192.168.31.240:1521",
-                "service": "XEPDB1",
-                "purpose": "Primary LAN production staging Oracle XE cluster hosted at 192.168.31.240:1521, receiving live feeds from core banking and serving as the primary source for Snowflake lakehouse CDC ingestion.",
-                "total_schemas": 2,
-                "schemas": {
-                    "XEPDB1": {
-                        "name": "XEPDB1",
-                        "tables": ["CORE_TRANSACTION_FEED", "CUSTOMER_CIF_REGISTRY", "SAVINGS_LEDGER", "NEFT_RTGS_CLEARING", "DAILY_INTEREST_ACCRUAL", "BRANCH_FLOAT_BALANCES"]
-                    },
-                    "SYSTEM": {
-                        "name": "SYSTEM",
-                        "tables": ["DBA_DATA_FILES", "DBA_PROFILES", "V$SESSION_HISTORY", "AUDIT_ACTIONS"]
-                    }
-                }
-            },
-            "MY_ORACLE_XE_REMOTE_New": {
-                "name": "MY_ORACLE_XE_REMOTE_New",
-                "label": "MY_ORACLE_XE_REMOTE_New (Tailscale Encrypted VPN Mesh)",
-                "host": "100.112.86.83:1521",
-                "service": "XEPDB1",
-                "purpose": "Disaster recovery and failover Oracle XE cluster accessible across the encrypted Tailscale VPN mesh (100.112.86.83:1521), ensuring uninterrupted replication during LAN maintenance.",
-                "total_schemas": 2,
-                "schemas": {
-                    "XEPDB1": {
-                        "name": "XEPDB1",
-                        "tables": ["DR_REPLICATED_ACCOUNTS", "DR_CUSTOMER_VAULT", "DR_TXN_MIRROR", "REDO_TRANSPORT_BUFFER", "FAILOVER_HEARTBEAT", "STANDBY_LEDGER_AUDIT"]
-                    },
-                    "SYSTEM": {
-                        "name": "SYSTEM",
-                        "tables": ["LOGMNR_SESSION$", "ROLLING$CONNECTIONS", "DR_SYNC_STATUS", "STANDBY_ARCHIVE_DEST"]
-                    }
-                }
-            },
-            "ORCL_LAN_240": {
-                "name": "ORCL_LAN_240",
-                "label": "ORCL_LAN_240 (Finacle Core CBS Batch Server)",
-                "host": "192.168.31.240:1521",
-                "service": "XEPDB1",
-                "purpose": "Finacle CBS batch processing server handling End-Of-Day (EOD) interest accrual jobs, inter-bank clearing settlements, and ATM switch journals.",
-                "total_schemas": 2,
-                "schemas": {
-                    "XEPDB1": {
-                        "name": "XEPDB1",
-                        "tables": ["CBS_BATCH_JOBS", "EOD_SETTLEMENT_QUEUE", "INTERBANK_SWITCH_LOGS", "CORE_DEPOSITS_REGISTER", "ATM_SWITCH_JOURNAL", "FOREX_RATES_MASTER"]
-                    },
-                    "FINACLE_CBS": {
-                        "name": "FINACLE_CBS",
-                        "tables": ["CBS_CUSTOMER_ACCOUNTS", "CORE_TRANSACTION_FEED", "CHEQUE_CLEARING_HOUSE", "EOD_GL_BALANCE"]
-                    }
-                }
-            }
-        }
-    },
     "postgres": {
         "engine_label": "PostgreSQL Enterprise Fabric",
         "engine_type": "Open-Source Enterprise Object-Relational Database",
@@ -455,7 +338,7 @@ DATABASE_CATALOG: Dict[str, Dict[str, Any]] = {
         "engine_type": "Cloud Object Storage & AWS Glue / Athena Catalog",
         "region": "ap-southeast-2 (Sydney)",
         "bucket": "s3://nanopro-data-lake",
-        "purpose": "Cloud landing buffer receiving bulk CSV, Parquet, and Avro delta dumps from on-premise Oracle clusters before automated COPY INTO ingestion into Snowflake L0_STAGING.",
+        "purpose": "Cloud landing buffer receiving Parquet exports from Google BigQuery before automated ingestion into Snowflake L0_STAGING.",
         "folders": ["landing/raw_cbs/", "staging/cdc_delta/", "reports/executive_audits/"]
     }
 }
@@ -493,7 +376,7 @@ class EnterpriseMetadataCatalog:
         """Returns executive summary of all connected database engines and instances."""
         lines = [
             "🌐 **Unified Enterprise Multi-Database Architecture Overview:**\n",
-            "Mangesh Nano Pro AI Studio connects, synchronizes, and orchestrates across **5 Enterprise Database Engines**:\n"
+            "Mangesh Nano Pro AI Studio connects, synchronizes, and orchestrates across **5 Data Platforms**:\n"
         ]
 
         # 1. Snowflake
@@ -506,16 +389,12 @@ class EnterpriseMetadataCatalog:
             f"   • **Primary Lakehouse:** `BANK_DB` (5 Schemas: `L0_STAGING`, `L1_HARMONIZED`, `L2_CURATED`, `PUBLIC`, `INFORMATION_SCHEMA` ~142,500+ records)\n"
         )
 
-        # 2. Oracle
-        ora = self.catalog["oracle"]
-        ora_dbs = list(ora["databases"].keys())
+        # 2. Google BigQuery
         lines.append(
-            f"2. 🏛️ **{ora['engine_label']}** (Service: `{ora['service_name']}` | {ora['default_credentials']})\n"
-            f"   • **Connected Clusters ({len(ora_dbs)}):** `{', '.join(ora_dbs)}`\n"
-            f"   • **Local Core Developer:** `MY_ORACLE_XE_LOCAL` (`127.0.0.1:1521/XEPDB1`)\n"
-            f"   • **Remote Production Staging:** `MY_ORACLE_XE_REMOTE` (`192.168.31.240:1521/XEPDB1` ~50,000+ records)\n"
-            f"   • **Encrypted VPN Failover:** `MY_ORACLE_XE_REMOTE_New` (`100.112.86.83:1521/XEPDB1` via Tailscale)\n"
-            f"   • **Core CBS Finacle Batch:** `ORCL_LAN_240` (`192.168.31.240:1521/XEPDB1`)\n"
+            "2. 📊 **Google BigQuery** (`nanopro-lakehouse-sandbox`, Always Free Sandbox)\n"
+            "   • **Datasets:** `nanopro_cbs_bronze` (raw CBS), `nanopro_studio` (platform analytics)\n"
+            "   • **Primary Warehouse:** replaces the retired Oracle tier as the source of truth.\n"
+            "   • **Export Path:** Snappy Parquet to `s3://nanopro-data-lake/bronze/bigquery/` (manifest + _SUCCESS).\n"
         )
 
         # 3. Postgres
@@ -549,7 +428,7 @@ class EnterpriseMetadataCatalog:
             "💡 **तुम्ही विचारू शकता:**\n"
             "• *\"BANK_DB च्या L0_STAGING मध्ये कोणते tables आहेत?\"*\n"
             "• *\"ACCOUNTS टेबलचे columns, data types आणि PK/FK काय आहेत?\"*\n"
-            "• *\"Oracle आणि Snowflake CUSTOMERS टेबल match करून report बनवा\"*\n"
+            "• *\"BigQuery आणि Snowflake CUSTOMERS टेबल match करून report बनवा\"*\n"
             "• *\"कोणते tables join करता येतील?\"*"
         )
         return "\n".join(lines)
@@ -590,19 +469,16 @@ class EnterpriseMetadataCatalog:
                 + "\n\n".join(schema_lines)
             )
 
-        # Check Oracle
-        for ora_key, ora_info in self.catalog["oracle"]["databases"].items():
-            if db_upper in [ora_key.upper(), "ORACLE", "ORACLE_XE", "XEPDB1"]:
-                schemas = ora_info.get("schemas", {})
-                return (
-                    f"🏛️ **Database Architecture Dossier: `{ora_key}`**\n\n"
-                    f"• **Engine:** Oracle Database XE (Host: `{ora_info.get('host')}` | Service: `{ora_info.get('service')}`)\n"
-                    f"• **Label:** {ora_info.get('label', ora_key)}\n"
-                    f"• **उद्देश (Why Created):** {ora_info.get('purpose')}\n"
-                    f"• **Credentials:** User: `SYSTEM` (Password: `ORACLE_PASSWORD (env)`)\n"
-                    f"• **Schemas:** `{', '.join(schemas.keys())}`\n"
-                    f"• **Core Tables:** `{', '.join(schemas.get('XEPDB1', {}).get('tables', {}).keys() if isinstance(schemas.get('XEPDB1'), dict) and isinstance(schemas.get('XEPDB1').get('tables'), dict) else schemas.get('XEPDB1', {}).get('tables', []))}`"
-                )
+        # Check BigQuery (the retired Oracle tier has been replaced)
+        if any(token in db_upper for token in ("BIGQUERY", "NANOPRO_CBS_BRONZE", "NANOPRO_STUDIO", "NANOPRO-LAKEHOUSE-SANDBOX")):
+            return (
+                f"📊 **Database Architecture Dossier: `{db_upper}`**\n\n"
+                "• **Engine:** Google BigQuery (Project: `nanopro-lakehouse-sandbox`)\n"
+                "• **Datasets:** `nanopro_cbs_bronze`, `nanopro_studio`\n"
+                "• **उद्देश (Why Created):** Primary analytics warehouse; raw CBS data lands here before Parquet export to AWS S3.\n"
+                "• **Credentials:** Application Default Credentials (Always Free Sandbox, no billing account)\n"
+                "• **Export:** POST `/api/jobs/bigquery_to_aws` writes Snappy Parquet + `_MANIFEST.json` + `_SUCCESS` to S3.\n"
+            )
 
         # Fallback to general engines summary
         return self.get_all_engines_summary()
@@ -642,7 +518,7 @@ class EnterpriseMetadataCatalog:
             # Cross-DB Linkage
             cross_db = tinfo.get("cross_db_mapping", {})
             cross_text = (
-                f"• **Matched Table in Oracle:** `{cross_db.get('target_table')}` (`{cross_db.get('target_db')}`)\n"
+                f"• **Matched Table in BigQuery:** `{cross_db.get('target_table')}` (`{cross_db.get('target_db')}`)\n"
                 f"• **Reconciliation Key:** `{tbl_upper}.{cross_db.get('match_key')} = {cross_db.get('target_table')}.{cross_db.get('match_key')}`"
             ) if cross_db else "• Source ingestion table."
 
@@ -657,11 +533,11 @@ class EnterpriseMetadataCatalog:
                 f"{table_md}\n\n"
                 f"### 🔗 Possible Joins & Relational Logic:\n"
                 f"{join_text}\n\n"
-                f"### 🔀 Cross-Database Mapping (Oracle ⟷ Snowflake):\n"
+                f"### 🔀 Cross-Database Mapping (BigQuery ⟷ Snowflake):\n"
                 f"{cross_text}\n\n"
                 f"💡 **ऑपरेशन पर्याय:**\n"
                 f"• *\"Show first 5 records of {tbl_upper}\"*\n"
-                f"• *\"Match Oracle {tbl_upper} and Snowflake {tbl_upper} data\"*\n"
+                f"• *\"Match BigQuery {tbl_upper} and Snowflake {tbl_upper} data\"*\n"
                 f"• *\"Append new records into Snowflake {tbl_upper}\"*"
             )
 
@@ -673,13 +549,13 @@ class EnterpriseMetadataCatalog:
     def execute_cross_db_match_and_report(
         self,
         table_name: str = "CUSTOMERS",
-        source_engine: str = "oracle",
+        source_engine: str = "bigquery",
         target_engine: str = "snowflake",
         send_email: bool = True,
         send_telegram: bool = True
     ) -> Dict[str, Any]:
         """
-        Matches records between Source (e.g. Oracle XE) and Target (Snowflake L0),
+        Matches records between Source (e.g. BigQuery) and Target (Snowflake L0),
         computes reconciliation metrics, creates an executive Excel audit report,
         and optionally dispatches via email and telegram.
         """
@@ -690,31 +566,31 @@ class EnterpriseMetadataCatalog:
         if tbl == "CUSTOMERS":
             cols = ["CUSTOMER_ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE_NUMBER", "CITY", "KYC_STATUS", "SOURCE_SYSTEM", "MATCH_STATUS"]
             rows = [
-                [1001, "Mangesh", "Bagul", "mangeshbagul15@gmail.com", "+91 84337 55448", "Mumbai", "VERIFIED", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [1002, "Rajesh", "Sharma", "rajesh.sharma@corp.in", "+91 98201 11223", "Mumbai", "VERIFIED", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [1003, "Pooja", "Patil", "pooja.patil@tata.com", "+91 98202 22334", "Pune", "VERIFIED", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [1004, "Amit", "Deshmukh", "amit.deshmukh@hdfc.in", "+91 98203 33445", "Nagpur", "VERIFIED", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [1005, "Sneha", "Kulkarni", "sneha.k@infosys.com", "+91 98204 44556", "Nashik", "PENDING", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"]
+                [1001, "Mangesh", "Bagul", "mangeshbagul15@gmail.com", "+91 84337 55448", "Mumbai", "VERIFIED", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [1002, "Rajesh", "Sharma", "rajesh.sharma@corp.in", "+91 98201 11223", "Mumbai", "VERIFIED", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [1003, "Pooja", "Patil", "pooja.patil@tata.com", "+91 98202 22334", "Pune", "VERIFIED", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [1004, "Amit", "Deshmukh", "amit.deshmukh@hdfc.in", "+91 98203 33445", "Nagpur", "VERIFIED", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [1005, "Sneha", "Kulkarni", "sneha.k@infosys.com", "+91 98204 44556", "Nashik", "PENDING", "BigQuery <-> Snowflake L0", "100% MATCH"]
             ]
             pk_col = "CUSTOMER_ID"
         elif tbl == "ACCOUNTS":
             cols = ["ACCOUNT_ID", "CUSTOMER_ID", "ACCOUNT_NUMBER", "ACCOUNT_TYPE", "BALANCE", "CURRENCY", "STATUS", "SOURCE_SYSTEM", "MATCH_STATUS"]
             rows = [
-                [101, 1001, "ACC1001CORP", "CURRENT", 14250000.50, "INR", "ACTIVE", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [102, 1002, "ACC1002SAV", "SAVINGS", 2890000.00, "INR", "ACTIVE", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [103, 1003, "ACC1003CORP", "CURRENT", 1250000.00, "INR", "ACTIVE", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [104, 1004, "ACC1004SAV", "SAVINGS", 780000.00, "INR", "DORMANT", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                [105, 1005, "ACC1005SAL", "SALARY", 345000.00, "INR", "ACTIVE", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"]
+                [101, 1001, "ACC1001CORP", "CURRENT", 14250000.50, "INR", "ACTIVE", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [102, 1002, "ACC1002SAV", "SAVINGS", 2890000.00, "INR", "ACTIVE", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [103, 1003, "ACC1003CORP", "CURRENT", 1250000.00, "INR", "ACTIVE", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [104, 1004, "ACC1004SAV", "SAVINGS", 780000.00, "INR", "DORMANT", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                [105, 1005, "ACC1005SAL", "SALARY", 345000.00, "INR", "ACTIVE", "BigQuery <-> Snowflake L0", "100% MATCH"]
             ]
             pk_col = "ACCOUNT_ID"
         else:
             cols = ["TRANSACTION_ID", "ACCOUNT_ID", "TXN_TYPE", "AMOUNT", "TXN_DATE", "STATUS", "CHANNEL", "SOURCE_SYSTEM", "MATCH_STATUS"]
             rows = [
-                ["TXN9001", 101, "CREDIT", 500000.00, "2026-03-01 10:14:22", "SUCCESS", "NEFT", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                ["TXN9002", 102, "DEBIT", 12500.00, "2026-03-01 11:20:05", "SUCCESS", "UPI", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                ["TXN9003", 101, "DEBIT", 150000.00, "2026-03-02 09:45:10", "SUCCESS", "RTGS", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                ["TXN9004", 104, "CREDIT", 25000.00, "2026-03-02 14:02:44", "SUCCESS", "IMPS", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"],
-                ["TXN9005", 105, "CREDIT", 85000.00, "2026-03-03 16:30:19", "SUCCESS", "SALARY", "Oracle 127.0.0.1 <-> Snowflake L0", "100% MATCH"]
+                ["TXN9001", 101, "CREDIT", 500000.00, "2026-03-01 10:14:22", "SUCCESS", "NEFT", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                ["TXN9002", 102, "DEBIT", 12500.00, "2026-03-01 11:20:05", "SUCCESS", "UPI", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                ["TXN9003", 101, "DEBIT", 150000.00, "2026-03-02 09:45:10", "SUCCESS", "RTGS", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                ["TXN9004", 104, "CREDIT", 25000.00, "2026-03-02 14:02:44", "SUCCESS", "IMPS", "BigQuery <-> Snowflake L0", "100% MATCH"],
+                ["TXN9005", 105, "CREDIT", 85000.00, "2026-03-03 16:30:19", "SUCCESS", "SALARY", "BigQuery <-> Snowflake L0", "100% MATCH"]
             ]
             pk_col = "TRANSACTION_ID"
 
@@ -725,7 +601,7 @@ class EnterpriseMetadataCatalog:
             import pandas as pd
             df_kpi = pd.DataFrame([
                 {"Metric": "Audit Job Reference", "Value": f"RECON_{int(time.time())}"},
-                {"Metric": "Source Database", "Value": "Oracle Database XE (MY_ORACLE_XE_LOCAL @ 127.0.0.1:1521/XEPDB1)"},
+                {"Metric": "Source Database", "Value": "Google BigQuery (nanopro_cbs_bronze)"},
                 {"Metric": "Source Table", "Value": tbl},
                 {"Metric": "Target Database", "Value": "Snowflake Data Cloud (BANK_DB.L0_STAGING)"},
                 {"Metric": "Target Table", "Value": tbl},
@@ -764,11 +640,11 @@ class EnterpriseMetadataCatalog:
             try:
                 smtp_client.send_email(
                     recipient="nanoproaistudio@gmail.com",
-                    subject=f"📊 Cross-DB Reconciliation Report: Oracle XE ⟷ Snowflake [{tbl}]",
+                    subject=f"📊 Cross-DB Reconciliation Report: BigQuery ⟷ Snowflake [{tbl}]",
                     body=(
                         f"Namaskar Mangesh,\n\n"
-                        f"Cross-database reconciliation between Oracle XE and Snowflake L0_STAGING completed with 100% integrity:\n"
-                        f"• Source Table: Oracle XE ({tbl})\n"
+                        f"Cross-database reconciliation between BigQuery and Snowflake L0_STAGING completed with 100% integrity:\n"
+                        f"• Source Table: BigQuery ({tbl})\n"
                         f"• Target Table: Snowflake BANK_DB.L0_STAGING.{tbl}\n"
                         f"• Compared Records: 500\n"
                         f"• Match Rate: 100% (0 discrepancies, 0 drift)\n\n"
@@ -796,7 +672,7 @@ class EnterpriseMetadataCatalog:
 
         ai_reply = (
             f"⚡ **Cross-Database Data Matching & Final Reconciliation Report Generated!**\n\n"
-            f"• **Source Engine:** 🏛️ **Oracle Database XE** (`MY_ORACLE_XE_LOCAL` @ `127.0.0.1:1521/XEPDB1`) | Table: `{tbl}`\n"
+            f"• **Source Engine:** 📊 **Google BigQuery** (`nanopro_cbs_bronze`) | Table: `{tbl}`\n"
             f"• **Target Engine:** ❄️ **Snowflake Data Cloud** [Database: `BANK_DB` | Schema: `L0_STAGING` | Table: `{tbl}`]\n"
             f"• **Matching Criteria:** Exact Match on Primary Key (`{pk_col}`) with Full-Row Attribute Hashing\n"
             f"• **Execution Duration:** `{duration} ms`\n\n"

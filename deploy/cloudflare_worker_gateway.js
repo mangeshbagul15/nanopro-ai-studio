@@ -3882,7 +3882,7 @@ CRITICAL OPERATIONAL RULES:
       // Node definitions (matching server_manager_hub.py)
       const NODES = [
         { id: "node_cloud_cloudflare_edge", name: "Cloudflare Global Edge Gateway", platform: "Cloudflare Worker", region: "Global Edge", role: "EDGE_GATEWAY_LB", url: "https://mangesh-nanopro.mangeshbagul15.workers.dev", capabilities: ["Global Anycast", "Gateway Routing", "Edge OTP", "Edge AI"] },
-        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "Oracle", "AWS S3"] },
+        { id: "node_cloud_render", name: "Render Cloud Web Service", platform: "Docker FastAPI", region: "Oregon (US)", role: "CLOUD_WEB_SERVICE", url: "https://nanopro-studio.onrender.com", capabilities: ["FastAPI", "305 Agents", "ETL", "Snowflake", "BigQuery", "AWS S3"] },
         { id: "node_cloud_alwaysdata", name: "Alwaysdata Cloud Sentinel", platform: "WSGI Python", region: "Paris (EU)", role: "CLOUD_SENTINEL_24_7", url: "", capabilities: ["Cloud Sentinel", "Cron Worker"] },
         { id: "node_cloud_pythonanywhere", name: "PythonAnywhere Cloud Sentinel", platform: "WSGI Python", region: "Virginia (US)", role: "CLOUD_SENTINEL_24_7", url: "", capabilities: ["Status Sentinel", "Crons"] },
         { id: "node_laptop_master", name: "Local Laptop Master", platform: "Windows 11 (RTX 3050)", region: "Mumbai (Local)", role: "LOCAL_MASTER", url: null, capabilities: ["GPU Video", "Ollama 3B", "DuckDB", "FFmpeg"] },
@@ -4045,7 +4045,7 @@ CRITICAL OPERATIONAL RULES:
           ]
         },
         medallion_pipeline: [
-          { tier: "Bronze L0", label: "Raw Ingestion", status: "ACTIVE", rows_today: 0, source: "AWS S3 + Oracle CDC" },
+          { tier: "Bronze L0", label: "Raw Ingestion", status: "ACTIVE", rows_today: 0, source: "BigQuery + AWS S3" },
           { tier: "Silver L1", label: "Cleansed Data", status: "ACTIVE", rows_today: 0, source: "Snowflake Stage" },
           { tier: "Gold L2", label: "Business Metrics", status: "ACTIVE", rows_today: 0, source: "Snowflake DW" },
           { tier: "Platinum L3", label: "AI Features", status: "ACTIVE", rows_today: 0, source: "Feature Store" },
@@ -4070,8 +4070,8 @@ CRITICAL OPERATIONAL RULES:
           {id:"upstash_vector",name:"Upstash Vector DB",pool:"Vector",type:"Cloud Vector",endpoint:"upstash.com/vector",status:"HEALTHY",latency_ms:22,volume:"1536-dim",role:"Cloud RAG"},
           {id:"faiss",name:"Local FAISS Index",pool:"Vector",type:"GPU Index",endpoint:"embeddings/faiss.idx",status:"NOT_CONFIGURED",latency_ms:2,volume:"18.4K vecs",role:"Local Vector"},
           {id:"duckdb_vss",name:"DuckDB VSS HNSW",pool:"Vector",type:"In-Engine Vector",endpoint:"DUCKDB_VSS_PLUGIN",status:"HEALTHY",latency_ms:1.4,volume:"HNSW indexed",role:"Analytical"},
-          {id:"oracle_apex",name:"Oracle APEX 23ai Cloud",pool:"Timeseries",type:"Cloud DB",endpoint:"ORACLE_APEX_23AI_CLOUD",status:"HEALTHY",latency_ms:82,volume:"20 GB free",role:"Cloud JSON/SQL"},
-          {id:"oracle_xe",name:"Oracle XE 21c Local",pool:"Timeseries",type:"Local Enterprise",endpoint:"localhost:1521/XE",status:"NOT_CONFIGURED",latency_ms:1,volume:"Port 1521",role:"Local Enterprise"},
+          {id:"bigquery_bronze",name:"BigQuery Bronze Layer",pool:"Timeseries",type:"Cloud DW",endpoint:"nanopro_cbs_bronze",status:"HEALTHY",latency_ms:82,volume:"10 GB free",role:"Primary Warehouse"},
+          {id:"bigquery_studio",name:"BigQuery Studio Dataset",pool:"Timeseries",type:"Cloud DW",endpoint:"nanopro_studio",status:"HEALTHY",latency_ms:60,volume:"Always Free",role:"Analytics"},
           {id:"duckdb_ts",name:"DuckDB Timeseries Mart",pool:"Timeseries",type:"Temporal Columnar",endpoint:"gold_marts/market_ticks.parquet",status:"HEALTHY",latency_ms:0.4,volume:"BTC ticks",role:"Tick Store"}
         ],
         api_services: [],

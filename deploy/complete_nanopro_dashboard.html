@@ -12437,7 +12437,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                         </div>
 
-                        <div style="font-size:11.5px; color:#94A3B8;">Multi-Cloud Orchestration (Snowflake, Oracle XE, S3 Iceberg) &amp; 305 Autonomous AI Specialists across 19 Pods (A-S)</div>
+                        <div style="font-size:11.5px; color:#94A3B8;">Multi-Cloud Orchestration (BigQuery, Snowflake, AWS S3) &amp; 305 Autonomous AI Specialists across 19 Pods (A-S)</div>
 
                     </div>
 
@@ -12447,7 +12447,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                     <div class="lavish-metric-chip"><span class="dot"></span> Snowflake: Connected</div>
 
-                    <div class="lavish-metric-chip"><span class="dot"></span> Oracle XE: Connected</div>
+                    <div class="lavish-metric-chip"><span class="dot"></span> BigQuery: Connected</div>
 
                     <div class="lavish-metric-chip"><span class="dot"></span> AWS S3: Active</div>
 
@@ -15262,7 +15262,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                             <option value="python">Python</option>
 
-                            <option value="sql">SQL (PostgreSQL / Oracle / Snowflake)</option>
+                            <option value="sql">SQL (PostgreSQL / BigQuery / Snowflake)</option>
 
                             <option value="javascript">JavaScript / TypeScript</option>
 
@@ -15296,7 +15296,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                 <label class="input-label">Code Generation or Transformation Prompt</label>
 
-                <textarea class="studio-input" id="codingPrompt" rows="2" placeholder="e.g. Write a Python script to read an Excel file and load its data into Oracle with batch inserts."></textarea>
+                <textarea class="studio-input" id="codingPrompt" rows="2" placeholder="e.g. Write a Python script to read an Excel file and load its data into BigQuery with batch inserts."></textarea>
 
                 
 
@@ -15920,7 +15920,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                     <option value="B">Group B: Data Engineering &amp; Pipeline Fabric (20)</option>
 
-                    <option value="C">Group C: Snowflake &amp; Oracle Specialized Engine (20)</option>
+                    <option value="C">Group C: Snowflake &amp; BigQuery Specialized Engine (20)</option>
 
                     <option value="D">Group D: Data Quality, Governance &amp; Catalog (15)</option>
 
@@ -16098,7 +16098,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                     <input type="text" id="nanoProOfficePromptInput" class="nanopro-prompt-input" 
 
-                           placeholder="Command NanoPro: 'Ata je chalua tyach ek summery banav and mala telegram or mail var de', 'Ingest Oracle to Snowflake', 'Kiti agents kam kartat?'..." 
+                           placeholder="Command NanoPro: 'Ata je chalua tyach ek summery banav and mala telegram or mail var de', 'Ingest BigQuery to Snowflake', 'Kiti agents kam kartat?'..." 
 
                            onkeydown="if(event.key==='Enter') executeNanoProOfficePrompt();" />
 
@@ -16116,7 +16116,6 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                     <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Ata je chalua tyach ek summery banav and mala telegram or mail var de')">📊 Summary &rarr; Telegram / Mail</button>
 
-                    <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Ingest Oracle to Snowflake')">⚡ Ingest Oracle to Snowflake</button>
 
                     <button type="button" class="quick-chip" onclick="quickNanoProOfficeAction('Kiti agents kam kartat and kon break var ahe?')">👥 Agent Status</button>
 
@@ -16154,7 +16153,6 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                 <button type="button" class="btn btn-primary" onclick="triggerOfficeDelegationDemo('summary_and_dispatch')" style="font-size:11px; padding:4px 10px; background:linear-gradient(135deg, #0284C7, #10B981); border:none; font-weight:700;" title="Generate executive summary and send to Telegram & Email">&#128227; Summary &rarr; Telegram &amp; Mail</button>
 
-                <button type="button" class="btn btn-secondary" onclick="triggerOfficeDelegationDemo('oracle_to_snowflake')" style="font-size:11px; padding:4px 10px; color:#38BDF8;" title="Trace live flow: Manager ➔ Data Engineer ➔ Snowflake">&#128640; Ingest Oracle to Snowflake</button>
 
                 <button type="button" class="btn btn-secondary" onclick="triggerOfficeDelegationDemo('telegram_interview')" style="font-size:11px; padding:4px 10px; color:#0EA5E9;" title="Trace live flow: Manager ➔ Comms Chief ➔ Telegram Bot">&#128227; Dispatch Telegram Drill</button>
 
@@ -16240,7 +16238,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                             <div style="color:#10B981;">[System] NanoPro Central Orchestrator active across 13 Pods (208 Enterprise Specialists).</div>
 
-                            <div style="color:#38BDF8;">[DB] Oracle XE CDC &amp; Snowflake DW interconnected.</div>
+                            <div style="color:#38BDF8;">[DB] BigQuery Bronze &amp; Snowflake DW interconnected.</div>
 
                             <div style="color:#CBD5E1;">[CRON] 4-Hour discovery scheduler armed.</div>
 
@@ -16326,7 +16324,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                                 <div class="stat-lbl">CURRENT TASK</div>
 
-                                <div id="modalAgentCurrentTask" class="stat-val" style="color:#38BDF8;">Replicating Oracle XE CDC Redo Stream to S3 Bronze</div>
+                                <div id="modalAgentCurrentTask" class="stat-val" style="color:#38BDF8;">Exporting BigQuery Bronze tables to S3 Parquet</div>
 
                                 <div style="margin-top:6px;">
 
@@ -16440,7 +16438,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                                 <div style="color:#10B981;">[Init] Agent worker online and connected to local model engine.</div>
 
-                                <div style="color:#38BDF8;">[Sync] Initialized connection to source Oracle XE stream.</div>
+                                <div style="color:#38BDF8;">[Sync] Initialized connection to BigQuery warehouse.</div>
 
                                 <div style="color:#CBD5E1;">[Status] Task processing proceeding within target SLAs.</div>
 
@@ -16462,7 +16460,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                             <div style="display:flex; gap:8px;">
 
-                                <input type="text" class="studio-input" id="modalDiscussionInput" placeholder="Discuss solution, decide plan, or assign balanced load: e.g. 'Connect Oracle XE with S3 Gold table and balance load across 208 agents'..." style="flex:1; font-size:12px; padding:8px 12px;" onkeydown="if(event.key==='Enter') executeModalDiscussion();" />
+                                <input type="text" class="studio-input" id="modalDiscussionInput" placeholder="Discuss solution, decide plan, or assign balanced load: e.g. 'Connect BigQuery with S3 Gold table and balance load across 208 agents'..." style="flex:1; font-size:12px; padding:8px 12px;" onkeydown="if(event.key==='Enter') executeModalDiscussion();" />
 
                                 <button type="button" class="btn btn-primary" onclick="executeModalDiscussion()" style="font-size:11.5px; padding:8px 14px; font-weight:700;">Discuss &amp; Decide &#10148;</button>
 
@@ -27281,7 +27279,7 @@ ${data.result.message}`);
 
                         <button type="button" class="btn btn-sm btn-secondary" onclick="filterAgentCards('B')" id="filterBtn_B">B: Data Eng (20)</button>
 
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="filterAgentCards('C')" id="filterBtn_C">C: Snowflake/Oracle (20)</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="filterAgentCards('C')" id="filterBtn_C">C: Snowflake/BigQuery (20)</button>
 
                         <button type="button" class="btn btn-sm btn-secondary" onclick="filterAgentCards('D')" id="filterBtn_D">D: Quality/Lineage (15)</button>
 
@@ -27429,7 +27427,7 @@ ${data.result.message}`);
 
                                 <td style="padding:10px 12px; font-weight:700; color:#F8FAFC;">Autonomous Connection Sentinel</td>
 
-                                <td style="padding:10px 12px; color:#94A3B8;">Continuously tests Oracle XE, Snowflake, SMTP, and Telegram connections with lockout prevention.</td>
+                                <td style="padding:10px 12px; color:#94A3B8;">Continuously tests BigQuery, Snowflake, SMTP, and Telegram connections with lockout prevention.</td>
 
                                 <td style="padding:10px 12px; color:#38BDF8;">Every 60s</td>
 
@@ -28443,7 +28441,7 @@ ${data.result.message}`);
 
                 <p style="font-size:12px; color:var(--text-muted); margin:4px 0 0 0;">
 
-                    Autonomous 6-Node Medallion Fabric &bull; Oracle XE &bull; AWS S3 &bull; Snowflake L0-L1-L2 &bull; AI Self-Healing &bull; IT SecOps &bull; BOD/EOD Automation
+                    Autonomous 6-Node Medallion Fabric &bull; BigQuery &bull; AWS S3 &bull; Snowflake L0-L1-L2 &bull; AI Self-Healing &bull; IT SecOps &bull; BOD/EOD Automation
 
                 </p>
 
@@ -28867,31 +28865,31 @@ ${data.result.message}`);
 
 
 
-            <!-- 6. Oracle XE / Render Cloud Standby -->
+            <!-- 6. BigQuery -> AWS S3 Data Plane -->
 
             <div class="panel-card" style="padding:14px; border:1px solid #64748B; background:rgba(15,23,42,0.9);">
 
                 <div style="display:flex; justify-content:space-between; align-items:center;">
 
-                    <b style="color:#94A3B8; font-size:13.5px; display:flex; align-items:center; gap:6px;">🏛️ Oracle XE &amp; Render Cloud Staging</b>
+                    <b style="color:#94A3B8; font-size:13.5px; display:flex; align-items:center; gap:6px;">&#128202; BigQuery &rarr; AWS S3 Data Plane</b>
 
-                    <span id="badgeDbOracle" class="badge" style="background:#0F172A; color:#10B981; border:1px solid #10B981; font-size:10px;">STANDBY DR</span>
+                    <span id="badgeDbBigQuery" class="badge" style="background:#0F172A; color:#10B981; border:1px solid #10B981; font-size:10px;">PRIMARY</span>
 
                 </div>
 
                 <div style="margin-top:8px; font-size:11.5px; color:#CBD5E1; line-height:1.6;">
 
-                    <div><b>Core Banking CBS:</b> Local &amp; Remote XE Standby PDBs</div>
+                    <div><b>Source:</b> Google BigQuery (nanopro-lakehouse-sandbox)</div>
 
-                    <div><b>Failover Readiness:</b> Automated SecOps DR Replica Active</div>
+                    <div><b>Data Plane:</b> AWS S3 Parquet export + manifest</div>
 
-                    <div><b>Render Cloud:</b> <code>nanopro-studio.onrender.com</code> (24/7)</div>
+                    <div><b>Warehouse:</b> Snowflake (after S3 landing)</div>
 
                     <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
 
-                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px;" onclick="testSingleDbConnection('MY_ORACLE_XE_LOCAL')">🔍 Test Oracle</button>
+                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px;" onclick="runBigQueryAwsPipeline()">&#9889; Run BigQuery &rarr; AWS</button>
 
-                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#94A3B8;" onclick="testSingleDbConnection('GOOGLE_BIGQUERY_SANDBOX')">📊 BigQuery Sandbox</button>
+                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#94A3B8;" onclick="testSingleDbConnection('GOOGLE_BIGQUERY_SANDBOX')">&#128202; BigQuery Sandbox</button>
 
                     </div>
 
@@ -29263,17 +29261,11 @@ ${data.result.message}`);
 
                         <option value="POSTGRES_CLOUD_FREE">&#127381; POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL - ETL L0/L1 Raw]</option>
 
-                        <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD [Oracle 23ai Cloud APEX Workspace]</option>
 
-                        <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]</option>
 
-                        <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]</option>
 
-                        <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]</option>
 
-                        <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle XE Core CBS | 192.168.31.240:1521]</option>
 
-                        <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Production CBS]</option>
 
                         <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD [Render Cloud PostgreSQL]</option>
 
@@ -29567,7 +29559,7 @@ ${data.result.message}`);
 
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; background:#0F172A; padding:10px 14px; border-radius:6px; border:1px solid #1E293B; margin-top:10px; font-size:11.5px;">
 
-                <div><span style="color:#F59E0B;">SOURCE:</span> <b id="lineageSourceText" style="color:#F8FAFC;">MY_ORACLE_XE_LOCAL.XEPDB1.CUSTOMERS</b></div>
+                <div><span style="color:#F59E0B;">SOURCE:</span> <b id="lineageSourceText" style="color:#F8FAFC;">nanopro_cbs_bronze.cbs_customers</b></div>
 
                 <div style="color:#64748B;">➔</div>
 
@@ -29681,17 +29673,11 @@ ${data.result.message}`);
 
                                 <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE [Neon.tech Cloud PostgreSQL]</option>
 
-                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD [Oracle 23ai Cloud APEX]</option>
 
-                                <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle Local]</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle 192.168.31.240]</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle Tailscale]</option>
 
-                                <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle LAN 240]</option>
 
-                                <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Prod RAC]</option>
 
                                 <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD [Render PostgreSQL Cloud]</option>
 
@@ -29891,15 +29877,10 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                             <option value="BANK_DB" selected>BANK_DB [Snowflake Cloud DW - XMUTKDJ-KP74023]</option>
 
-                            <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle XE 127.0.0.1:1521 | XEPDB1]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle XE 192.168.31.240:1521 | XEPDB1]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle XE Tailscale 100.112.86.83:1521]</option>
 
-                            <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle XE Core CBS Batch | 192.168.31.240]</option>
 
-                            <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Production CBS | 127.0.0.1]</option>
 
                             <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL [PostgreSQL 127.0.0.1:5432 / nanopro_db]</option>
 
@@ -30099,15 +30080,10 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                                     <option value="BANK_DB" selected>BANK_DB (Snowflake Cloud DW)</option>
 
-                                    <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (Oracle XE Local)</option>
 
-                                    <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (Oracle XE LAN)</option>
 
-                                    <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (Oracle XE Tailscale)</option>
 
-                                    <option value="ORCL_LAN_240">ORCL_LAN_240 (Oracle XE Core CBS)</option>
 
-                                    <option value="ORCL_PROD_CORE">ORCL_PROD_CORE (Oracle 19c CBS Prod)</option>
 
                                     <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL (PostgreSQL)</option>
 
@@ -30367,15 +30343,10 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                             <option value="BANK_DB" selected>BANK_DB [Snowflake]</option>
 
-                            <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL [Oracle Local]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE [Oracle 192.168.31.240]</option>
 
-                            <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New [Oracle Tailscale]</option>
 
-                            <option value="ORCL_LAN_240">ORCL_LAN_240 [Oracle LAN 240]</option>
 
-                            <option value="ORCL_PROD_CORE">ORCL_PROD_CORE [Oracle 19c Prod]</option>
 
                             <option value="MY_POSTGRES_LOCAL">MY_POSTGRES_LOCAL [PostgreSQL]</option>
 
@@ -30417,9 +30388,9 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         </span>
 
-                        <span class="badge" style="background:#0F172A; border:1px solid #D97706; color:#F59E0B; font-size:10.5px; padding:3px 8px;" data-table="MY_ORACLE_XE_LOCAL.XEPDB1.CUSTOMERS">
+                        <span class="badge" style="background:#0F172A; border:1px solid #D97706; color:#F59E0B; font-size:10.5px; padding:3px 8px;" data-table="nanopro_cbs_bronze.cbs_customers">
 
-                            MY_ORACLE_XE_LOCAL.XEPDB1.CUSTOMERS <span style="cursor:pointer; margin-left:4px;" onclick="this.parentElement.remove()">✕</span>
+                            nanopro_cbs_bronze.cbs_customers <span style="cursor:pointer; margin-left:4px;" onclick="this.parentElement.remove()">✕</span>
 
                         </span>
 
@@ -31111,7 +31082,6 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                     <option value="studio_memory.db">Local SQLite (NVMe)</option>
 
-                    <option value="ORACLE_APEX_23AI_CLOUD">Oracle 23ai Cloud APEX</option>
 
                 </select>
 
@@ -31257,13 +31227,9 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <option value="POSTGRES_CLOUD_FREE">POSTGRES_CLOUD_FREE (Neon.tech PostgreSQL Cloud - Lifetime Free)</option>
 
-                        <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (Oracle 23ai Cloud APEX Workspace)</option>
 
-                        <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (Oracle XE Local 19c)</option>
 
-                        <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (Oracle XE LAN)</option>
 
-                        <option value="ORCL_LAN_240">ORCL_LAN_240 (Oracle XE CBS Batch)</option>
 
                         <option value="POSTGRES_RENDER_CLOUD">POSTGRES_RENDER_CLOUD (Render PostgreSQL Cloud)</option>
 
@@ -32437,7 +32403,6 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB.L0_STAGING)</option>
 
-                <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240/XEPDB1)</option>
 
                 <option value="STUDIO_MEMORY_DB">STUDIO_MEMORY_DB (SQLite Internal Ledger)</option>
 
@@ -33681,7 +33646,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <p style="font-size:11.5px; color:#CBD5E1; line-height:1.5;">
 
-                            Autonomous goal-seeking agent teams collaborating across Groups A-S. Self-healing ETL jobs, proactive data drift alerts, automatic deadlock resolution, and multi-cloud sync between Oracle XE, AWS S3, and Snowflake.
+                            Autonomous goal-seeking agent teams collaborating across Groups A-S. Self-healing ETL jobs, proactive data drift alerts, automatic deadlock resolution, and multi-cloud sync between BigQuery, AWS S3, and Snowflake.
 
                         </p>
 
@@ -34387,7 +34352,7 @@ print("[LOAD] Streaming verified records into Gold AML Mart...")
 
                         <label class="input-label">Automated Alert Payload</label>
 
-                        <textarea class="studio-input" id="waBotMessage" rows="3" placeholder="Automated bot message content...">[NANO PRO AI ALERT] Automated background system verification completed. 5 Databases active: Snowflake, 3x Oracle, SQLite.</textarea>
+                        <textarea class="studio-input" id="waBotMessage" rows="3" placeholder="Automated bot message content...">[NANO PRO AI ALERT] Automated background system verification completed. 5 Databases active: BigQuery, Snowflake, 2x PostgreSQL, SQLite.</textarea>
 
                     </div>
 
@@ -37233,7 +37198,7 @@ Ready for message compilation and automated dispatch.
 
                 <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">
 
-                    Central secure vault and live connection testing for Snowflake, Oracle XE, Gmail SMTP, AWS, S3, and Telegram. Passwords are encrypted at rest and never shown in plain text.
+                    Central secure vault and live connection testing for Snowflake, BigQuery, Gmail SMTP, AWS, S3, and Telegram. Passwords are encrypted at rest and never shown in plain text.
 
                 </p>
 
@@ -37245,7 +37210,7 @@ Ready for message compilation and automated dispatch.
 
                     <div style="font-size:12.5px; color:#10B981; font-weight:700; display:flex; align-items:center; gap:6px;">
 
-                        <span>&#128737;</span> AES-256-GCM Vault Active &bull; Full Password Modification Rights &bull; Multi-Oracle Cluster Failover
+                        <span>&#128737;</span> AES-256-GCM Vault Active &bull; Full Password Modification Rights &bull; Multi-Cloud Failover
 
                     </div>
 
@@ -37283,7 +37248,7 @@ Ready for message compilation and automated dispatch.
 
                             <label class="input-label">Connection Name *</label>
 
-                            <input type="text" class="studio-input" id="addDbName" placeholder="e.g. MY_ORACLE_XE_ANALYTICS" />
+                            <input type="text" class="studio-input" id="addDbName" placeholder="e.g. MY_POSTGRES_ANALYTICS" />
 
                         </div>
 
@@ -37293,7 +37258,7 @@ Ready for message compilation and automated dispatch.
 
                             <select class="studio-input" id="addDbType">
 
-                                <option value="oracle">Oracle Database XE</option>
+                                <option value="bigquery">BigQuery Dataset</option>
 
                                 <option value="snowflake">Snowflake Warehouse</option>
 
@@ -37387,7 +37352,7 @@ Ready for message compilation and automated dispatch.
 
                     <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
 
-                        Update passwords anytime across all Oracle, Snowflake, PostgreSQL, Gmail, Resend, Brevo, AWS, and Telegram profiles. Changes take effect instantly across the AES-256-GCM Vault, local <code>.env</code>, runtime memory, and push to GitHub/Render Cloud.
+                        Update passwords anytime across all BigQuery, Snowflake, PostgreSQL, Gmail, Resend, Brevo, AWS, and Telegram profiles. Changes take effect instantly across the AES-256-GCM Vault, local <code>.env</code>, runtime memory, and push to GitHub/Render Cloud.
 
                     </p>
 
@@ -37399,13 +37364,9 @@ Ready for message compilation and automated dispatch.
 
                             <select class="studio-input" id="quickPwdConn">
 
-                                <option value="MY_ORACLE_XE_LOCAL">MY_ORACLE_XE_LOCAL (127.0.0.1:1521/XEPDB1)</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE">MY_ORACLE_XE_REMOTE (192.168.31.240:1521/XEPDB1)</option>
 
-                                <option value="MY_ORACLE_XE_REMOTE_New">MY_ORACLE_XE_REMOTE_New (100.112.86.83:1521/XEPDB1)</option>
 
-                                <option value="ORACLE_APEX_23AI_CLOUD">ORACLE_APEX_23AI_CLOUD (oracleapex.com:443)</option>
 
                                 <option value="NANO_PRO_SNOWFLAKE">NANO_PRO_SNOWFLAKE (BANK_DB)</option>
 
@@ -37515,7 +37476,7 @@ Ready for message compilation and automated dispatch.
 
 
 
-                    <!-- ORACLE XE LOCAL CARD -->
+                    <!-- BIGQUERY DATA WAREHOUSE CARD -->
 
                     <div style="background:rgba(15,23,42,0.85); border:1px solid var(--border); border-radius:10px; padding:14px; position:relative;">
 
@@ -37523,169 +37484,37 @@ Ready for message compilation and automated dispatch.
 
                             <div>
 
-                                <div style="font-size:11px; font-weight:700; color:#F59E0B; letter-spacing:0.5px;">ORACLE XE LOCAL</div>
+                                <div style="font-size:11px; font-weight:700; color:#38BDF8; letter-spacing:0.5px;">SOURCE WAREHOUSE</div>
 
-                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">MY_ORACLE_XE_LOCAL</h3>
+                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">GOOGLE_BIGQUERY_SANDBOX</h3>
 
                             </div>
 
-                            <span id="badgeOracleLocalStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                            <span id="badgeBigQueryStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
 
                         </div>
 
                         <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
 
-                            <div><strong>Host &amp; Port:</strong> 127.0.0.1:1521</div>
+                            <div><strong>Project:</strong> nanopro-lakehouse-sandbox</div>
 
-                            <div><strong>Service Name:</strong> XEPDB1</div>
+                            <div><strong>Datasets:</strong> nanopro_cbs_bronze, nanopro_studio</div>
 
-                            <div><strong>User / Role:</strong> SYSTEM (Default)</div>
+                            <div><strong>Tier:</strong> Always Free Sandbox (10 GB / 1 TB queries)</div>
 
-                            <div><strong>Password:</strong> managed in Vault (not displayed)</div>
-
-                        </div>
-
-                        <div style="display:flex; gap:8px;">
-
-                            <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('MY_ORACLE_XE_LOCAL')" id="btnTestOracleLocal" style="flex:1; background:#D97706;">&#128269; Test Local Oracle</button>
-
-                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('MY_ORACLE_XE_LOCAL', 'database')">&#9881; Update</button>
-
-                        </div>
-
-                        <div id="oracleLocalTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
-
-                    </div>
-
-
-
-                    <!-- ORACLE XE REMOTE CARD -->
-
-                    <div style="background:rgba(15,23,42,0.85); border:1px solid var(--border); border-radius:10px; padding:14px; position:relative;">
-
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-
-                            <div>
-
-                                <div style="font-size:11px; font-weight:700; color:#F59E0B; letter-spacing:0.5px;">ORACLE XE REMOTE (LAN)</div>
-
-                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">MY_ORACLE_XE_REMOTE</h3>
-
-                            </div>
-
-                            <span id="badgeOracleStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
-
-                        </div>
-
-                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-
-                            <div><strong>Host &amp; Port:</strong> 192.168.31.240:1521</div>
-
-                            <div><strong>Service Name:</strong> XEPDB1</div>
-
-                            <div><strong>User / Role:</strong> SYSTEM (Default)</div>
-
-                            <div><strong>Password:</strong> managed in Vault (not displayed)</div>
+                            <div><strong>Export:</strong> AWS S3 Snappy Parquet + manifest</div>
 
                         </div>
 
                         <div style="display:flex; gap:8px;">
 
-                            <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('MY_ORACLE_XE_REMOTE')" id="btnTestOracle" style="flex:1; background:#D97706;">&#128269; Test Remote Oracle</button>
+                            <button type="button" class="btn btn-primary" onclick="testSingleDbConnection('GOOGLE_BIGQUERY_SANDBOX')" id="btnTestBigQuery" style="flex:1; background:#0284C7;">&#128269; Test BigQuery</button>
 
-                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('MY_ORACLE_XE_REMOTE', 'database')">&#9881; Update</button>
-
-                        </div>
-
-                        <div id="oracleTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
-
-                    </div>
-
-
-
-                    <!-- ORACLE XE REMOTE NEW (TAILSCALE) CARD -->
-
-                    <div style="background:rgba(15,23,42,0.85); border:1px solid var(--border); border-radius:10px; padding:14px; position:relative;">
-
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-
-                            <div>
-
-                                <div style="font-size:11px; font-weight:700; color:#F59E0B; letter-spacing:0.5px;">ORACLE XE TAILSCALE</div>
-
-                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">MY_ORACLE_XE_REMOTE_New</h3>
-
-                            </div>
-
-                            <span id="badgeOracleTailscaleStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
+                            <button type="button" class="btn btn-secondary" onclick="runBigQueryAwsPipeline()">&#9889; Export to AWS</button>
 
                         </div>
 
-                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-
-                            <div><strong>Host &amp; Port:</strong> 100.112.86.83:1521 (Tailscale)</div>
-
-                            <div><strong>Service Name:</strong> XEPDB1</div>
-
-                            <div><strong>User / Role:</strong> SYSTEM (Default)</div>
-
-                            <div><strong>Password:</strong> managed in Vault (not displayed)</div>
-
-                        </div>
-
-                        <div style="display:flex; gap:8px;">
-
-                            <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('MY_ORACLE_XE_REMOTE_New')" id="btnTestOracleTailscale" style="flex:1; background:#D97706;">&#128269; Test Tailscale Oracle</button>
-
-                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('MY_ORACLE_XE_REMOTE_New', 'database')">&#9881; Update</button>
-
-                        </div>
-
-                        <div id="oracleTailscaleTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
-
-                    </div>
-
-
-
-                    <!-- ORACLE APEX 23AI CLOUD CARD -->
-
-                    <div style="background:rgba(15,23,42,0.85); border:1px solid #EA580C; border-radius:10px; padding:14px; position:relative;">
-
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-
-                            <div>
-
-                                <div style="font-size:11px; font-weight:700; color:#FB923C; letter-spacing:0.5px;">ORACLE 23ai CLOUD (APEX)</div>
-
-                                <h3 style="font-size:15px; font-weight:700; margin-top:2px;">ORACLE_APEX_23AI_CLOUD</h3>
-
-                            </div>
-
-                            <span id="badgeOracleApexStatus" class="badge" style="background:#1E293B; color:#94A3B8; padding:4px 10px; border-radius:12px; font-size:11px;">Not Tested</span>
-
-                        </div>
-
-                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-
-                            <div><strong>Host &amp; Endpoint:</strong> oracleapex.com:443 (ORDS REST)</div>
-
-                            <div><strong>Workspace:</strong> nanoprostudio (Lifetime Free)</div>
-
-                            <div><strong>User / Role:</strong> mangeshbagul15@gmail.com (Cloud DBA)</div>
-
-                            <div style="font-size:11px; color:#F97316;">Oracle Database 23ai Enterprise Cloud Edition &bull; 24/7 Active</div>
-
-                        </div>
-
-                        <div style="display:flex; gap:8px;">
-
-                            <button type="button" class="btn btn-primary" onclick="testOracleConnectionAction('ORACLE_APEX_23AI_CLOUD')" id="btnTestOracleApex" style="flex:1; background:#EA580C;">&#128269; Test 23ai Cloud APEX</button>
-
-                            <button type="button" class="btn btn-secondary" onclick="openVaultEditModal('ORACLE_APEX_23AI_CLOUD', 'database')">&#9881; Update</button>
-
-                        </div>
-
-                        <div id="oracleApexTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
+                        <div id="bigqueryTestResultBox" style="margin-top:10px; display:none; padding:10px; border-radius:6px; font-size:11.5px;"></div>
 
                     </div>
 
@@ -38317,7 +38146,7 @@ Ready for message compilation and automated dispatch.
 
                             <div style="font-size:11px; font-weight:800; color:#38BDF8; letter-spacing:1px; text-transform:uppercase;">&#9889; AUTOMATED CROSS-SYSTEM INTEROPERABILITY</div>
 
-                            <h3 style="font-size:16px; font-weight:800; color:#F8FAFC; margin-top:3px;">Oracle XE ➔ AWS S3 / Staging ➔ Snowflake Automated Pipeline</h3>
+                            <h3 style="font-size:16px; font-weight:800; color:#F8FAFC; margin-top:3px;">BigQuery ➔ AWS S3 (Parquet) ➔ Snowflake Automated Pipeline</h3>
 
                         </div>
 
@@ -38333,7 +38162,7 @@ Ready for message compilation and automated dispatch.
 
                     <p style="font-size:12px; color:#94A3B8; line-height:1.5; margin-bottom:14px;">
 
-                        Verifies that Oracle Database XE, AWS S3 / Staging Lake, and Snowflake Data Warehouse are interconnected and capable of automated data extraction, staging buffer transformation, and bulk ingestion with live audit logging.
+                        Verifies that Google BigQuery, AWS S3 Lake, and Snowflake Data Warehouse are interconnected and capable of automated extraction, Parquet staging and bulk ingestion with live audit logging.
 
                     </p>
 
@@ -38345,9 +38174,9 @@ Ready for message compilation and automated dispatch.
 
                             <div style="font-size:10px; color:#F59E0B; font-weight:700;">STEP 1: SOURCE EXTRACTION</div>
 
-                            <div style="font-size:12px; font-weight:700; color:#E2E8F0; margin-top:2px;">Oracle Database XE</div>
+                            <div style="font-size:12px; font-weight:700; color:#E2E8F0; margin-top:2px;">Google BigQuery</div>
 
-                            <div style="font-size:11px; color:#64748B;">192.168.31.240:1521/XEPDB1</div>
+                            <div style="font-size:11px; color:#64748B;">nanopro_cbs_bronze / nanopro_studio</div>
 
                         </div>
 
@@ -38475,7 +38304,6 @@ Ready for message compilation and automated dispatch.
 
                     <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('NANO_PRO_SNOWFLAKE', 'database')">&#9658; Pre-fill Snowflake</button>
 
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('MY_ORACLE_XE_REMOTE', 'database')">&#9658; Pre-fill Oracle XE</button>
 
                     <button type="button" class="btn btn-sm btn-secondary" onclick="openVaultEditModal('GMAIL_SMTP', 'email')">&#9658; Pre-fill Gmail SMTP</button>
 
@@ -38495,7 +38323,7 @@ Ready for message compilation and automated dispatch.
 
                         <label class="input-label">Service Name</label>
 
-                        <input type="text" class="studio-input" id="vaultService" value="NANO_PRO_SNOWFLAKE" placeholder="e.g. NANO_PRO_SNOWFLAKE or MY_ORACLE_XE_REMOTE" />
+                        <input type="text" class="studio-input" id="vaultService" value="NANO_PRO_SNOWFLAKE" placeholder="e.g. NANO_PRO_SNOWFLAKE or POSTGRES_CLOUD_FREE" />
 
                     </div>
 
@@ -38505,7 +38333,7 @@ Ready for message compilation and automated dispatch.
 
                         <select class="studio-input" id="vaultType">
 
-                            <option value="database" selected>Database (Snowflake / Oracle / Postgres)</option>
+                            <option value="database" selected>Database (Snowflake / BigQuery / Postgres)</option>
 
                             <option value="email">Email / SMTP (Gmail)</option>
 
@@ -41234,15 +41062,15 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
                     <span class="hub-tile-badge badge-warn">🟡 STREAMING</span>
                 </div>
 
-                <!-- 4. Oracle XE Database -->
-                <div class="hub-tile" onclick="openHubSheet('oracle_fleet')" style="border-left:3px solid #EF4444;">
+                <!-- 4. BigQuery Warehouse -->
+                <div class="hub-tile" onclick="openHubSheet('bigquery_fleet')" style="border-left:3px solid #38BDF8;">
                     <div class="hub-tile-top">
-                        <span class="hub-tile-icon">🗄️</span>
-                        <span class="hub-tile-name">Oracle XE DB</span>
+                        <span class="hub-tile-icon">📊</span>
+                        <span class="hub-tile-name">BigQuery DW</span>
                     </div>
                     <div class="hub-tile-mid">
-                        <div class="hub-tile-val" style="color:#F87171; font-size:12.5px;">3 CDC NODES</div>
-                        <div class="hub-tile-sub">Port 1521 &bull; Active Sync</div>
+                        <div class="hub-tile-val" style="color:#38BDF8; font-size:12.5px;">2 DATASETS</div>
+                        <div class="hub-tile-sub">nanopro_cbs_bronze &bull; Airbyte Free</div>
                     </div>
                     <span class="hub-tile-badge badge-live">🟢 CONNECTED</span>
                 </div>
@@ -42407,27 +42235,27 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
                     ]),
                     action: mkAction('fetchHubData(true)', '📊 Sync Telemetry Now', '#10B981', 'rgba(16,185,129,0.4)')
                 },
-                'oracle_fleet': {
-                    icon: '🗄️',
-                    title: 'Oracle Database XE CDC Cluster',
-                    sub: 'Enterprise Transactional Replication Fleet',
+                'bigquery_fleet': {
+                    icon: '📊',
+                    title: 'Google BigQuery Data Warehouse',
+                    sub: 'Always Free Sandbox — Primary Analytics Warehouse',
                     kpis: [
-                        mkKpi('CDC Cluster', '3 Nodes Active', 'High availability', '#EF4444'),
-                        mkKpi('Port & Service', '1521 / xe', 'TNS Listener OK', '#38BDF8'),
-                        mkKpi('Replication', 'LogMiner CDC', 'Continuous redo log', '#10B981'),
-                        mkKpi('Sync Latency', '< 15 ms', 'Replication SLA', '#FBBF24')
+                        mkKpi('Datasets', '2 Active', 'bronze + studio', '#38BDF8'),
+                        mkKpi('Storage Tier', 'Always Free', '10 GB / 1 TB queries', '#10B981'),
+                        mkKpi('S3 Export', 'Parquet', 'Snappy + manifest', '#FBBF24'),
+                        mkKpi('Query Latency', '< 2 s', 'Sandbox SLA', '#A78BFA')
                     ],
-                    chart: mkChart('LogMiner Stream Activity', '<15ms Lag', [
-                        {h:70, t:'06:00', c:'amber'}, {h:80, t:'07:00', c:'green'}, {h:85, t:'08:00', c:'green'},
-                        {h:90, t:'09:00', c:'green'}, {h:65, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
+                    chart: mkChart('BigQuery Query Volume', 'Sandbox', [
+                        {h:60, t:'06:00', c:'green'}, {h:75, t:'07:00', c:'green'}, {h:80, t:'08:00', c:'green'},
+                        {h:90, t:'09:00', c:'green'}, {h:70, t:'10:00', c:'green'}, {h:100, t:'Now', c:'green'}
                     ]),
                     state: mkState('                                 .'),
                     audit: mkAudit([
-                        {time: '10:13:15', desc: 'LogMiner CDC stream processed 320 banking transactions'},
-                        {time: '09:47:30', desc: 'TNS listener port 1521 connection pool verified'},
-                        {time: '09:14:00', desc: 'Transaction rollback audit: 0 uncommitted deadlocks'}
+                        {time: '10:13:15', desc: 'Parquet export completed to s3://nanopro-data-lake/bronze/bigquery/'},
+                        {time: '09:47:30', desc: 'BigQuery ADC client authenticated against nanopro-lakehouse-sandbox'},
+                        {time: '09:14:00', desc: 'DynamoDB run audit + SQS event published'}
                     ]),
-                    action: mkAction('fetchHubData(true)', '🗄️ Verify Oracle CDC Status', '#F87171', 'rgba(239,68,68,0.4)')
+                    action: mkAction('runBigQueryAwsPipeline()', '📊 Run BigQuery → AWS', '#38BDF8', 'rgba(56,189,248,0.4)')
                 },
                 'postgres_fleet': {
                     icon: '🐘',
@@ -48522,7 +48350,7 @@ function navigateHistory(direction) {
 
             if (!service) {
 
-                alert('Please enter a Service Name (e.g. NANO_PRO_SNOWFLAKE, MY_ORACLE_XE_REMOTE, or GMAIL_SMTP).');
+                alert('Please enter a Service Name (e.g. NANO_PRO_SNOWFLAKE, POSTGRES_CLOUD_FREE, or GMAIL_SMTP).');
 
                 return;
 
@@ -57435,15 +57263,15 @@ async function submitAddDatabaseForm() {
 
     const name = (document.getElementById('addDbName')?.value || '').trim();
 
-    const type = document.getElementById('addDbType')?.value || 'oracle';
+    const type = document.getElementById('addDbType')?.value || 'postgresql';
 
     const host = (document.getElementById('addDbHost')?.value || '').trim();
 
-    const port = parseInt(document.getElementById('addDbPort')?.value || '1521') || 1521;
+    const port = parseInt(document.getElementById('addDbPort')?.value || '5432') || 5432;
 
-    const dbName = (document.getElementById('addDbDatabase')?.value || 'XEPDB1').trim();
+    const dbName = (document.getElementById('addDbDatabase')?.value || 'nanopro_db').trim();
 
-    const user = (document.getElementById('addDbUser')?.value || 'SYSTEM').trim();
+    const user = (document.getElementById('addDbUser')?.value || 'postgres').trim();
 
     const pwd = (document.getElementById('addDbPassword')?.value || '').trim();
 
@@ -81332,6 +81160,59 @@ async function testSingleDbConnection(connName) {
     } catch(e) {
 
         showStudioToast(connName, 'Verified connection operational: ' + e.message, 'info');
+
+    }
+
+}
+
+
+
+async function runBigQueryAwsPipeline() {
+
+    const outBox = document.getElementById('manualPipelineOutputBox');
+
+    if (outBox) {
+
+        outBox.style.display = 'block';
+
+        outBox.innerHTML = `[${new Date().toLocaleTimeString()}] BigQuery &rarr; AWS S3 export started (Parquet + manifest)...`;
+
+    }
+
+    try {
+
+        const token = localStorage.getItem('nanopro_session_token') || '';
+
+        const res = await fetch('/api/jobs/bigquery_to_aws', {
+
+            method: 'POST',
+
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'X-Session-Token': token},
+
+            body: JSON.stringify({})
+
+        });
+
+        const data = await res.json();
+
+        const summary = data.summary || data.message || data.status || 'No summary';
+
+        showStudioToast('BigQuery → AWS', summary, data.status === 'success' ? 'success' : 'warning');
+
+        if (outBox) {
+
+            outBox.innerHTML = `<b>${summary}</b><pre style="white-space:pre-wrap; font-size:11px; color:#94A3B8; margin:8px 0 0;">` +
+
+                (data.tables || []).map(t => `${t.table}: ${t.status} (${t.rows} rows, ${t.bytes} bytes)`).join('
+') +
+
+                `</pre>`;
+
+        }
+
+    } catch (e) {
+
+        showStudioToast('BigQuery → AWS', 'Pipeline request failed: ' + e.message, 'error');
 
     }
 

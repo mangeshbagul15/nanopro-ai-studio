@@ -7289,6 +7289,54 @@ def api_jobs_s3_export(request: Request):
 
 
 
+@app.post('/api/jobs/bigquery_to_aws')
+
+async def api_jobs_bigquery_to_aws(request: Request):
+
+    """Exports every BigQuery dataset to AWS S3 as Parquet (free-tier AWS extras included)."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
+
+    try:
+
+        body = await request.json()
+
+    except Exception:
+
+        body = {}
+
+    datasets = body.get("datasets") if isinstance(body, dict) else None
+
+    from app.core.bigquery_aws_pipeline import run_pipeline
+
+    result = run_pipeline(datasets=datasets)
+
+    status_code = int(result.pop("_http", 200))
+
+    return JSONResponse(result, status_code=status_code)
+
+
+
+@app.get('/api/aws/capabilities')
+
+def api_aws_capabilities(request: Request):
+
+    """Reports which free-tier AWS services this IAM identity can actually use."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
+
+    from app.core.bigquery_aws_pipeline import capabilities
+
+    force = (request.query_params.get("force") or "").lower() in ("1", "true", "yes")
+
+    return JSONResponse(capabilities(force=force))
+
+
+
 @app.post('/api/connections/test/telegram')
 
 async def api_test_telegram_connection_vault():
