@@ -36,7 +36,7 @@ def _sf_type(arrow_type: Any) -> str:
     if pa.types.is_decimal(arrow_type):
         return f"NUMBER({arrow_type.precision},{arrow_type.scale})"
     if pa.types.is_timestamp(arrow_type):
-        return "TIMESTAMP_NTZ"
+        return "TIMESTAMP_TZ" if getattr(arrow_type, "tz", None) else "TIMESTAMP_NTZ"
     if pa.types.is_date(arrow_type):
         return "DATE"
     if pa.types.is_time(arrow_type):
@@ -47,12 +47,16 @@ def _sf_type(arrow_type: Any) -> str:
 
 
 def _lit(value: Any) -> str:
+    from datetime import date, datetime, time as dt_time
+
     if value is None:
         return "NULL"
     if isinstance(value, bool):
         return "TRUE" if value else "FALSE"
     if isinstance(value, (int, float)):
         return str(value)
+    if isinstance(value, (datetime, date, dt_time)):
+        return f"'{value.isoformat()}'"
     text = str(value).replace("\\", "\\\\").replace("'", "''")
     return f"'{text}'"
 
@@ -106,22 +110,16 @@ def _load_l0(connection, cursor, database: str, config: Dict[str, str], files: L
 
             rows = arrow.to_pylist()
             if rows:
-                col_list = ", ".join(f'"{c}"' for c in columns)
-                value_cols = ", ".join(["%s"] * len(columns))
-                value_rows = ", ".join(
-                    "(" + ", ".join(["%s"] * (len(columns) + 2)) + ")" for _ in rows
-                )
-                # _LOADED_AT comes from the warehouse clock, so it is evaluated server-side.
-                insert = (
-                    f'INSERT INTO {fqtn} ({col_list}, "_RUN_ID", "_LOADED_AT", "_SOURCE_KEY") '
-                    f"SELECT {value_cols}, %s, CURRENT_TIMESTAMP(), %s FROM VALUES {value_rows}"
-                )
-                flat: List[Any] = []
-                for row in rows:
-                    flat.extend(row.get(name) for name in columns)
-                    flat.append(run_id)
-                    flat.append(key)
-                cursor.execute(insert, flat)
+                for start in range(0, len(rows), 120):
+                    chunk = rows[start:start + 120]
+                    values = ", ".join(
+                        "(" + ", ".join(
+                            [_lit(row.get(name)) for name in columns]
+                            + [_lit(run_id), "CURRENT_TIMESTAMP()", _lit(key)]
+                        ) + ")"
+                        for row in chunk
+                    )
+                    cursor.execute(f"INSERT INTO {fqtn} VALUES {values}")
             connection.commit()
             loaded.append(table)
             rows_total += len(rows)
