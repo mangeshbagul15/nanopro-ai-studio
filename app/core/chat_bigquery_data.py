@@ -657,13 +657,13 @@ def _pick_column(names: List[str], prompt: str) -> str:
 def _count_answer(client: Any, schema: str, tables: List[str], started: float,
                   listing: bool = False) -> Dict[str, Any]:
     unions = " UNION ALL ".join(
-        f"SELECT '{table}' AS table_name, COUNT(*) AS rows "
+        f"SELECT '{table}' AS table_name, COUNT(*) AS row_count "
         f"FROM `{client.project}.{schema}.{table}`"
         for table in tables
     )
     result = _run_statement(unions, limit=max(len(tables), 1))
     rows = result["rows"]
-    total = sum(int(row.get("rows") or 0) for row in rows)
+    total = sum(int(row.get("row_count") or 0) for row in rows)
     title = "अशा tables आणि त्यांचे live row counts आहेत" if listing else "live counts"
     markdown = "\n".join([
         f"### 🔢 `{schema}` — {title}",
