@@ -99,6 +99,9 @@ def _dynamodb_record(config: Dict[str, str], run: Dict[str, Any]) -> Dict[str, A
                 BillingMode="PROVISIONED",
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
+            ddb.get_waiter("table_exists").wait(
+                TableName=DDB_TABLE_NAME, WaiterConfig={"Delay": 2, "MaxAttempts": 30}
+            )
         ddb.put_item(
             TableName=DDB_TABLE_NAME,
             Item={
