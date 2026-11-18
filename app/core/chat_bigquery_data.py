@@ -40,7 +40,17 @@ KNOWN_REFS: Dict[Tuple[str, str], Tuple[str, str]] = {
     ("TAM_LAM", "FORACID"): ("GAM", "ACID"),
     ("TAM_LAM", "CUST_ID"): ("CMG", "CUST_ID"),
     ("TAM_LAM", "SOL_ID"): ("SOL", "SOL_ID"),
+    ("GAM", "CUST_ID"): ("CMG", "CUST_ID"),
+    ("GAM", "SOL_ID"): ("SOL", "SOL_ID"),
+    ("HTD", "FORACID"): ("GAM", "ACID"),
+    ("UBO", "CUST_ID"): ("CMG", "CUST_ID"),
+    ("SWIFT_MSG", "FORACID"): ("GAM", "ACID"),
+    ("CMG", "HOME_BRANCH_SOL_ID"): ("SOL", "SOL_ID"),
 }
+
+_INT_TYPES = {"INT64", "INTEGER", "BIGINT", "SMALLINT", "INT"}
+_NUM_TYPES = {"NUMERIC", "BIGNUMERIC", "FLOAT64", "FLOAT", "REAL", "DECIMAL", "NUMBER"}
+_BOOL_TYPES = {"BOOL", "BOOLEAN"}
 
 _NAMES = [
     "Rahul Sharma", "Priya Patil", "Amit Deshmukh", "Sneha Joshi",
@@ -76,15 +86,15 @@ def _key_value(column: str, index: int) -> str:
 def _scalar(name: str, type_sql: str, index: int) -> Any:
     upper = name.upper()
     base = _base_type(type_sql)
-    if base == "BOOL":
+    if base in _BOOL_TYPES:
         return index % 2 == 0
-    if base in ("INT64",):
+    if base in _INT_TYPES:
         if "COUNT" in upper or "QTY" in upper:
             return (index % 7) + 1
         if "AGE" in upper:
             return 21 + (index % 45)
         return index
-    if base in ("NUMERIC", "BIGNUMERIC", "FLOAT64"):
+    if base in _NUM_TYPES:
         return round(Decimal(250) + Decimal(index * 137) + Decimal("0.25"), _scale(type_sql))
     if base == "DATE":
         if "DOB" in upper or "BIRTH" in upper:
@@ -142,9 +152,9 @@ def _literal(value: Any, type_sql: str) -> str:
     base = _base_type(type_sql)
     if value is None:
         return "NULL"
-    if base == "BOOL":
+    if base in _BOOL_TYPES:
         return "TRUE" if value else "FALSE"
-    if base in ("INT64", "FLOAT64", "NUMERIC", "BIGNUMERIC"):
+    if base in _INT_TYPES or base in _NUM_TYPES:
         return str(value)
     if base == "DATE":
         return f"DATE '{value}'"
@@ -269,6 +279,13 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
         rows.append(row)
     for column, values in keys.items():
         key_store[(table, column)] = values
+    # Children copy the parent's real values, whichever column they live in
+    # (ACID, CUST_ID, ...), so a later JOIN on that column actually matches.
+    for (child, _), (parent_table, parent_column) in relations.items():
+        if child == table or parent_table != table:
+            continue
+        if parent_column in rows[0]:
+            key_store[(table, parent_column)] = [row[parent_column] for row in rows]
     return rows
 
 
