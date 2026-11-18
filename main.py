@@ -7242,6 +7242,22 @@ async def api_aws_s3_probe(request: Request):
 
 
 
+@app.post('/api/aws/s3_harden')
+
+async def api_aws_s3_harden(request: Request):
+
+    """Applies versioning, public-access block, default encryption and lifecycle to the S3 bucket."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
+
+    from app.core.connection_manager import connection_manager
+
+    return JSONResponse(connection_manager.harden_s3_bucket())
+
+
+
 @app.post('/api/connections/test/telegram')
 
 async def api_test_telegram_connection_vault():

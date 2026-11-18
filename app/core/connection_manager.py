@@ -1244,6 +1244,95 @@ class ConnectionManager:
             result.update(status="error", error_code=code, message=msg[:500])
             return result
 
+    def harden_s3_bucket(self) -> Dict[str, Any]:
+        """Enables versioning, public-access block, AES-256 default encryption and a Glacier lifecycle."""
+        conn_name = "AWS_S3_DATA_LAKE"
+        cfg = self.get_connection_config(conn_name, mask=False)
+
+        access_key = (os.environ.get("AWS_ACCESS_KEY_ID") or (cfg.get("username") if cfg else "")).strip()
+        secret_key = (os.environ.get("AWS_SECRET_ACCESS_KEY") or (cfg.get("secret_value") if cfg else "")).strip()
+        region = (os.environ.get("AWS_DEFAULT_REGION") or (cfg.get("metadata", {}).get("region") if cfg else "") or "ap-southeast-2").strip()
+        bucket_name = (os.environ.get("AWS_S3_BUCKET") or (cfg.get("database_name") if cfg else "") or (cfg.get("metadata", {}).get("bucket") if cfg else "")).strip()
+        result: Dict[str, Any] = {"bucket": bucket_name, "region": region, "steps": {}}
+
+        if not (access_key and secret_key and bucket_name):
+            result.update(status="error", message="AWS credentials or bucket name are not configured.")
+            return result
+
+        import boto3
+        s3 = boto3.Session(
+            region_name=region,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+        ).client("s3")
+        steps = result["steps"]
+        failed = 0
+
+        def record(name: str, ok: bool, detail: Any) -> None:
+            nonlocal failed
+            steps[name] = {"ok": ok, "detail": detail}
+            if not ok:
+                failed += 1
+
+        try:
+            previous = s3.get_bucket_versioning(Bucket=bucket_name).get("Status", "Disabled")
+            if previous != "Enabled":
+                s3.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"})
+            state = s3.get_bucket_versioning(Bucket=bucket_name).get("Status", "Unknown")
+            record("versioning", state == "Enabled", {"previous": previous, "now": state})
+        except Exception as exc:
+            record("versioning", False, str(exc)[:220])
+
+        try:
+            s3.put_public_access_block(Bucket=bucket_name, PublicAccessBlockConfiguration={
+                "BlockPublicAcls": True,
+                "IgnorePublicAcls": True,
+                "BlockPublicPolicy": True,
+                "RestrictPublicBuckets": True,
+            })
+            block = s3.get_public_access_block(Bucket=bucket_name)["PublicAccessBlockConfiguration"]
+            record("public_access_block", all(block.values()), block)
+        except Exception as exc:
+            record("public_access_block", False, str(exc)[:220])
+
+        try:
+            s3.put_bucket_encryption(Bucket=bucket_name, ServerSideEncryptionConfiguration={
+                "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+            })
+            rules = s3.get_bucket_encryption(Bucket=bucket_name)["ServerSideEncryptionConfiguration"]["Rules"]
+            algo = rules[0]["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"]
+            record("default_encryption", algo == "AES256", {"algorithm": algo})
+        except Exception as exc:
+            record("default_encryption", False, str(exc)[:220])
+
+        rule = {
+            "ID": "bronze-90d-glacier",
+            "Status": "Enabled",
+            "Filter": {"Prefix": "bronze/"},
+            "Transitions": [{"Days": 90, "StorageClass": "GLACIER"}],
+            "Expiration": {"Days": 3650},
+        }
+        try:
+            existing = s3.get_bucket_lifecycle_configuration(Bucket=bucket_name).get("Rules", [])
+            rules = [item for item in existing if item.get("ID") != rule["ID"]] + [rule]
+            s3.put_bucket_lifecycle_configuration(
+                Bucket=bucket_name, LifecycleConfiguration={"Rules": rules}
+            )
+            stored = s3.get_bucket_lifecycle_configuration(Bucket=bucket_name).get("Rules", [])
+            found = next((item for item in stored if item.get("ID") == rule["ID"]), None)
+            record("lifecycle", bool(found), {"rule": found, "rules_total": len(stored)})
+        except Exception as exc:
+            record("lifecycle", False, str(exc)[:220])
+
+        result["status"] = "success" if failed == 0 else ("partial" if failed < len(steps) else "error")
+        result["message"] = (
+            "Bucket hardened: versioning, public-access block, AES-256 default encryption and "
+            "the bronze/ Glacier lifecycle are in place."
+            if failed == 0 else f"{failed} hardening step(s) failed; see steps."
+        )
+        result["object_lock"] = "S3 Object Lock can only be enabled when a bucket is created, so this existing bucket cannot use it."
+        return result
+
     def test_telegram_connection(self) -> Dict[str, Any]:
         """Validates Telegram Bot API token via getMe endpoint."""
         start_time = time.time()
