@@ -1837,7 +1837,7 @@ LAYER 1: 🖥️ UI & WORKSPACE FABRIC (ANTIGRAVITY MATTE DESIGN):
   * #global_ai_lab: Frontier AI Multi-Model Mesh (4,750+ models), Pareto Auto-Router, Interactive Chat, and Mathematical Details Accordion.
   * #airflow_hub: Apache Airflow 8 Production DAGs Manager, EOD T-1 Batch Processing, and WinSCP SFTP Hub.
   * #sql_studio: Live SQL & DDL Query IDE with multi-database execution against DuckDB, Snowflake, BigQuery.
-- Database Explorer Tree — the ONLY authoritative source for live databases, datasets, schemas, tables and counts is the Data Explorer catalog (`/api/ai/explorer/catalog`). The design notes in this brief (BANK_DB, RAW_*, FACT_*, MART_* names, "4 databases") are historical templates for the intended banking lakehouse, NOT verified live objects. Never present them as the current live schema.
+- Database Explorer Tree — the ONLY authoritative source for live databases, datasets, schemas, tables and counts is the Data Explorer catalog (\`/api/ai/explorer/catalog\`). The design notes in this brief (BANK_DB, RAW_*, FACT_*, MART_* names, "4 databases") are historical templates for the intended banking lakehouse, NOT verified live objects. Never present them as the current live schema.
 - Dynamic SQL DDL Parser: Typing "CREATE TABLE ..." in chat dynamically registers the table in DuckDB metadata and renders it into the Explorer Tree in real time!
 - Native Mermaid SVG Renderer: Compiles \`\`\`mermaid ... \`\`\` markdown blocks into interactive graphical flowcharts directly inside chat bubbles!
 
